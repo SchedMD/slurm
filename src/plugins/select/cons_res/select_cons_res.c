@@ -279,7 +279,7 @@ _find_cr_node_record (const char *name)
 		this_node = cr_node_hash_table[i];
 		while (this_node) {
 			xassert(this_node->node_ptr->magic == NODE_MAGIC);
-			if (strncmp(this_node->node_ptr->name, name, MAX_NAME_LEN) == 0) {
+			if (strncmp(this_node->node_ptr->name, name, MAX_SLURM_NAME) == 0) {
 			        debug3(" cons_res _find_cr_node_record: hash %s",  name);
 				return this_node;
 			}

@@ -84,7 +84,7 @@ const char plugin_name[]       	= "Linear node selection plugin";
 const char plugin_type[]       	= "select/linear";
 const uint32_t plugin_version	= 90;
 
-static struct node_record *select_node_ptr;
+static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt;
 static uint16_t select_fast_schedule;
 

@@ -197,13 +197,13 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 				 (sizeof(struct sockaddr_in) *
 				  buf_rec_size));
 			xrealloc((agent_args->node_names),
-				 (MAX_NAME_LEN * buf_rec_size));
+				 (MAX_SLURM_NAME * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
 		    node_ptr->slurm_addr;
 		strncpy(&agent_args->
-			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_ptr->name, MAX_NAME_LEN);
+			node_names[MAX_SLURM_NAME * agent_args->node_count],
+			node_ptr->name, MAX_SLURM_NAME);
 		agent_args->node_count++;
 	}
 
@@ -1388,13 +1388,13 @@ extern void re_kill_job(struct job_record *job_ptr)
 			xrealloc((agent_args->slurm_addr),
 				 (sizeof(struct sockaddr_in) * buf_rec_size));
 			xrealloc((agent_args->node_names),
-				 (MAX_NAME_LEN * buf_rec_size));
+				 (MAX_SLURM_NAME * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
 		    node_ptr->slurm_addr;
 		strncpy(&agent_args->
-			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_ptr->name, MAX_NAME_LEN);
+			node_names[MAX_SLURM_NAME * agent_args->node_count],
+			node_ptr->name, MAX_SLURM_NAME);
 		agent_args->node_count++;
 	}
 

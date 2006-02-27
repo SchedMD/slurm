@@ -50,7 +50,7 @@
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 
-#define MAX_NAME_LEN 64
+#define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xffff
 
 /* used to define flags of the launch_tasks_request_msg_t.and
@@ -243,7 +243,7 @@ typedef struct forward_message {
 	List ret_list;
 	pthread_mutex_t *forward_mutex;
 	pthread_cond_t *notify;
-	char node_name[MAX_NAME_LEN];
+	char node_name[MAX_SLURM_NAME];
 } forward_msg_t;
 
 typedef struct forward_struct {

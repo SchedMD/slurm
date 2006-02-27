@@ -79,7 +79,7 @@ static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _validate_node_proc_count(void);
 #endif
 
-static char highest_node_name[MAX_NAME_LEN] = "";
+static char highest_node_name[MAX_SLURM_NAME] = "";
 int node_record_count = 0;
 
 
@@ -300,8 +300,8 @@ static int _parse_node_spec(char *in_line)
 		return 0;	/* no node info */
 	if (strcasecmp(node_name, "localhost") == 0) {
 		xfree(node_name);
-		node_name = xmalloc(MAX_NAME_LEN);
-		getnodename(node_name, MAX_NAME_LEN);
+		node_name = xmalloc(MAX_SLURM_NAME);
+		getnodename(node_name, MAX_SLURM_NAME);
 	}
 
 	error_code = slurm_parser(in_line,
@@ -432,7 +432,7 @@ static int _parse_node_spec(char *in_line)
 			node_ptr = find_node_record(this_node_name);
 		else {
 			strncpy(highest_node_name, this_node_name,
-				MAX_NAME_LEN);
+				MAX_SLURM_NAME);
 			node_ptr = NULL;
 		}
 
@@ -446,13 +446,13 @@ static int _parse_node_spec(char *in_line)
 #ifdef HAVE_FRONT_END	/* Permit NodeAddr value reuse for front-end */
 			if (node_addr)
 				strncpy(node_ptr->comm_name,
-					node_addr, MAX_NAME_LEN);
+					node_addr, MAX_SLURM_NAME);
 			else if (node_hostname)
 				strncpy(node_ptr->comm_name,
-					node_hostname, MAX_NAME_LEN);
+					node_hostname, MAX_SLURM_NAME);
 			else
 				strncpy(node_ptr->comm_name,
-					node_ptr->name, MAX_NAME_LEN);
+					node_ptr->name, MAX_SLURM_NAME);
 #else
 			if (node_addr)
 				this_node_addr = hostlist_shift(addr_list);
@@ -460,11 +460,11 @@ static int _parse_node_spec(char *in_line)
 				this_node_addr = NULL;
 			if (this_node_addr) {
 				strncpy(node_ptr->comm_name, 
-				        this_node_addr, MAX_NAME_LEN);
+				        this_node_addr, MAX_SLURM_NAME);
 				free(this_node_addr);
 			} else
 				strncpy(node_ptr->comm_name, 
-				        node_ptr->name, MAX_NAME_LEN);
+				        node_ptr->name, MAX_SLURM_NAME);
 #endif
 #ifdef MULTIPLE_SLURMD
 			if (port != NO_VAL)
@@ -533,7 +533,7 @@ static int _parse_part_spec(char *in_line)
 	if (partition_name == NULL)
 		return 0;	/* no partition info */
 
-	if (strlen(partition_name) >= MAX_NAME_LEN) {
+	if (strlen(partition_name) >= MAX_SLURM_NAME) {
 		error("_parse_part_spec: partition name %s too long",
 		      partition_name);
 		xfree(partition_name);
@@ -717,8 +717,8 @@ static int _parse_part_spec(char *in_line)
 	if (nodes) {
 		if (strcasecmp(nodes, "localhost") == 0) {
 			xfree(nodes);
-			nodes = xmalloc(MAX_NAME_LEN);
-			getnodename(nodes, MAX_NAME_LEN);
+			nodes = xmalloc(MAX_SLURM_NAME);
+			getnodename(nodes, MAX_SLURM_NAME);
 		}
 		if (part_ptr->nodes) {
 			xstrcat(part_ptr->nodes, ",");

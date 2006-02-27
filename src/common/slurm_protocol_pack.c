@@ -298,7 +298,7 @@ pack_header(header_t * header, Buf buffer)
 		_pack_slurm_addr_array(header->forward.addr,
 				       header->forward.cnt, buffer);
 		packmem(header->forward.name, 
-			(header->forward.cnt * MAX_NAME_LEN), 
+			(header->forward.cnt * MAX_SLURM_NAME), 
 			buffer);
 		pack32_array(header->forward.node_id, 
 			     header->forward.cnt, 

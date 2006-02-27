@@ -175,8 +175,8 @@ static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 		return;
 	}
 	if (!this_hostname) {
-		this_hostname = xmalloc(MAX_NAME_LEN);
-		getnodename(this_hostname, MAX_NAME_LEN);
+		this_hostname = xmalloc(MAX_SLURM_NAME);
+		getnodename(this_hostname, MAX_SLURM_NAME);
 	}
 	if (strcasecmp(node_name, "localhost") == 0)
 		node_name = this_hostname;
@@ -1269,9 +1269,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if ((ctl_conf_ptr->backup_controller != NULL) &&
 	    (strcasecmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
 		xfree (ctl_conf_ptr->backup_controller);
-		ctl_conf_ptr->backup_controller = xmalloc (MAX_NAME_LEN);
+		ctl_conf_ptr->backup_controller = xmalloc (MAX_SLURM_NAME);
 		if ( getnodename (ctl_conf_ptr->backup_controller, 
-		                  MAX_NAME_LEN) ) 
+		                  MAX_SLURM_NAME) ) 
 			fatal ("getnodename: %m");
 	}
 
@@ -1290,9 +1290,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		fatal ("validate_config: ControlMachine not specified.");
 	else if (strcasecmp("localhost", ctl_conf_ptr->control_machine) == 0) {
 		xfree (ctl_conf_ptr->control_machine);
-		ctl_conf_ptr->control_machine = xmalloc (MAX_NAME_LEN);
+		ctl_conf_ptr->control_machine = xmalloc (MAX_SLURM_NAME);
 		if ( getnodename (ctl_conf_ptr->control_machine, 
-		                  MAX_NAME_LEN) ) 
+		                  MAX_SLURM_NAME) ) 
 			fatal ("getnodename: %m");
 	}
 

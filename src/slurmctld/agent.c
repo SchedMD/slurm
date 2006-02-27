@@ -112,7 +112,7 @@ typedef struct thd {
 	forward_t forward;	        /* structure holding info for all
 					   forwarding info
 					*/	
-	char node_name[MAX_NAME_LEN];	/* node's name */
+	char node_name[MAX_SLURM_NAME];	/* node's name */
 	List ret_list;
 } thd_t;
 
@@ -374,8 +374,8 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		thread_ptr[thr_count].slurm_addr = 
 			agent_arg_ptr->slurm_addr[i];
 		strncpy(thread_ptr[thr_count].node_name,
-			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
-			MAX_NAME_LEN);
+			&agent_arg_ptr->node_names[i * MAX_SLURM_NAME],
+			MAX_SLURM_NAME);
 
 		forward_set(&thread_ptr[thr_count].forward,
 			    span[thr_count],
@@ -987,7 +987,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	agent_arg_ptr->retry = 1;
 	agent_arg_ptr->slurm_addr = xmalloc(sizeof(slurm_addr) * count);
 	agent_arg_ptr->node_names = 
-		xmalloc(sizeof(char) * MAX_NAME_LEN * count);
+		xmalloc(sizeof(char) * MAX_SLURM_NAME * count);
 	agent_arg_ptr->msg_type = agent_info_ptr->msg_type;
 	agent_arg_ptr->msg_args = *(agent_info_ptr->msg_args_pptr);
 	*(agent_info_ptr->msg_args_pptr) = NULL;
@@ -997,8 +997,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 		if (thread_ptr[i].state != DSH_NO_RESP)
 			continue;
 		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
-		strncpy(&agent_arg_ptr->node_names[j * MAX_NAME_LEN],
-			thread_ptr[i].node_name, MAX_NAME_LEN);
+		strncpy(&agent_arg_ptr->node_names[j * MAX_SLURM_NAME],
+			thread_ptr[i].node_name, MAX_SLURM_NAME);
 		if ((++j) == count)
 			break;
 	}

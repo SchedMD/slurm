@@ -176,7 +176,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	last_node_update = time (NULL);
 	xassert(config_ptr);
 	xassert(node_name); 
-	xassert(strlen (node_name) < MAX_NAME_LEN);
+	xassert(strlen (node_name) < MAX_SLURM_NAME);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
 	old_buffer_size = (node_record_count) * sizeof (struct node_record);
@@ -463,7 +463,7 @@ find_node_record (char *name)
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {
 			xassert(node_ptr->magic == NODE_MAGIC);
-			if (strncmp(node_ptr->name, name, MAX_NAME_LEN) == 0)
+			if (strncmp(node_ptr->name, name, MAX_SLURM_NAME) == 0)
 				return node_ptr;
 			node_ptr = node_ptr->node_next;
 		}
@@ -1661,7 +1661,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args->slurm_addr = xmalloc (
 		sizeof (struct sockaddr_in) *
 		(node_record_count + 1));
-	kill_agent_args->node_names = xmalloc (MAX_NAME_LEN * 
+	kill_agent_args->node_names = xmalloc (MAX_SLURM_NAME * 
 		(node_record_count + 1));
 	if (msg_type == REQUEST_SHUTDOWN) {
  		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
@@ -1672,9 +1672,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	for (i = 0; i < node_record_count; i++) {
 		kill_agent_args->slurm_addr[kill_agent_args->node_count] = 
 			node_record_table_ptr[i].slurm_addr;
-		pos = MAX_NAME_LEN * kill_agent_args->node_count;
+		pos = MAX_SLURM_NAME * kill_agent_args->node_count;
 		strncpy (&kill_agent_args->node_names[pos],
-			node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_record_table_ptr[i].name, MAX_SLURM_NAME);
 		kill_agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;

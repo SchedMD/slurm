@@ -65,7 +65,7 @@ main(int argc, char * argv[])
 {
 	int error_code;
 	struct config_record this_node;
-	char node_name[MAX_NAME_LEN];
+	char node_name[MAX_SLURM_NAME];
 
 	error_code = get_mach_name(node_name);
 	if (error_code != 0) 
@@ -158,7 +158,7 @@ get_os_name(char *os_name)
 
 /*
  * get_mach_name - Return the name of this node 
- * Input: node_name - buffer for the node name, must be at least MAX_NAME_LEN characters
+ * Input: node_name - buffer for the node name, must be at least MAX_SLURM_NAME characters
  * Output: node_name - filled in with node name
  *         return code - 0 if no error, otherwise errno
  */
@@ -167,7 +167,7 @@ get_mach_name(char *node_name)
 {
     int error_code;
 
-    error_code = getnodename(node_name, MAX_NAME_LEN);
+    error_code = getnodename(node_name, MAX_SLURM_NAME);
     if (error_code != 0)
 	error ("get_mach_name: getnodename error %d\n", error_code);
 

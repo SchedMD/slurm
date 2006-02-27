@@ -300,13 +300,13 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 				 (sizeof(struct sockaddr_in) *
 				  buf_rec_size));
 			xrealloc((agent_args->node_names),
-				 (MAX_NAME_LEN * buf_rec_size));
+				 (MAX_SLURM_NAME * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
 		    node_record_table_ptr[i].slurm_addr;
 		strncpy(&agent_args->
-			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_names[MAX_SLURM_NAME * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_SLURM_NAME);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;

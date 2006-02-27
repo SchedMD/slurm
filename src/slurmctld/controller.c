@@ -115,7 +115,7 @@ static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
 static bool     dump_core = false;
-static char	node_name[MAX_NAME_LEN];
+static char	node_name[MAX_SLURM_NAME];
 static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
-	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
+	if ((error_code = getnodename(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
