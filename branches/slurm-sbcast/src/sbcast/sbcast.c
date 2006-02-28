@@ -225,7 +225,9 @@ static void _bcast_file(void)
 	file_bcast_msg_t bcast_msg;
 	char *buffer;
 
-	buf_size = MIN(SSIZE_MAX, (4 * 1024));
+	/* NOTE: packmem() uses 16 bits to express a block size, 
+	 * buf_size must be no larger than 64k - 1 */
+	buf_size = MIN(SSIZE_MAX, (63 * 1024));
 	buf_size = MIN(buf_size, f_stat.st_size);
 	buffer = xmalloc(buf_size);
 

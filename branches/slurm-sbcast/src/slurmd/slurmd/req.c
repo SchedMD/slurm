@@ -1110,6 +1110,8 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 		flags |= O_CREAT;
 		if (req->force)
 			flags |= O_TRUNC;
+		else
+			flags |= O_EXCL;
 	} else
 		flags |= O_APPEND;
 
