@@ -1,2 +1,2 @@
-#!/bin/bash
+#!/bin/sh
 /bin/sleep 300
