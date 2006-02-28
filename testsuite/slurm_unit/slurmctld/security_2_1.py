@@ -88,7 +88,7 @@ def main(argv=None):
     # Make sure that these files are NOT world READABLE.
     #
     print
-    print "Ensuring the following are not world readble:"
+    print "Ensuring the following are not world readable:"
     files = []
     append_file(files, confpairs, 'JobCredentialPrivateKey')
 
