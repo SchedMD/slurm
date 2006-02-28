@@ -1311,8 +1311,11 @@ _init_slurm_conf(char *file_name)
 {
 	conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t));
 
-	if (file_name == NULL)
-		file_name = SLURM_CONFIG_FILE;
+	if (file_name == NULL) {
+		file_name = getenv("SLURM_CONF");
+		if (file_name == NULL)
+			file_name = SLURM_CONFIG_FILE;
+	}
 
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	s_p_parse_file(conf_hashtbl, file_name);
