@@ -2984,6 +2984,12 @@ void reset_job_priority(void)
  */
 static bool _top_priority(struct job_record *job_ptr)
 {
+#ifdef HAVE_BG
+	/* On BlueGene, all jobs run ASAP. 
+	 * Priority only matters within a specific job size. */
+	return true;
+
+#else
 	struct job_details *detail_ptr = job_ptr->details;
 	bool top;
 
@@ -3019,6 +3025,7 @@ static bool _top_priority(struct job_record *job_ptr)
 			detail_ptr->wait_reason = WAIT_PRIORITY;
 	}
 	return top;
+#endif
 }
 
 
