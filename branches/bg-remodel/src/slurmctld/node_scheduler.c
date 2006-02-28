@@ -614,6 +614,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      max_nodes,
 							      false);
 			}
+
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
 				    (bit_set_count(avail_bitmap) > node_lim)) {
@@ -637,6 +638,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						      min_nodes, max_nodes,
 						      false);
+
 			if ((pick_code == SLURM_SUCCESS) &&
 			    ((node_lim == INFINITE) ||
 			     (bit_set_count(avail_bitmap) <= node_lim))) {

@@ -19,7 +19,7 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 				state_test.c state_test.h \
 				bg_switch_connections.c \
 				block_sys.c \
-				wrap_rm_api.h
+				../wrap_rm_api.h
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 

@@ -415,6 +415,7 @@ static void _term_jobs_on_block(char *bg_block_id)
 	//debug("getting the job info");
 	live_states = JOB_ALL_FLAG
 		& (~JOB_TERMINATED_FLAG)
+		& (~JOB_ERROR_FLAG)
 		& (~JOB_KILLED_FLAG);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", _bg_err_str(rc));

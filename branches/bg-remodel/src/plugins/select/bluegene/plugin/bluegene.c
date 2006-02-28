@@ -107,16 +107,20 @@ extern int init_bg(void)
 	rm_size3D_t bp_size;
 	
 	info("Attempting to contact MMCS");
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		fatal("init_bg: rm_set_serial(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 	
 	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		fatal("init_bg: rm_get_BGL(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
-
+	slurm_mutex_unlock(&api_file_mutex);
+	
 	if ((rc = rm_get_data(bg, RM_Msize, &bp_size)) != STATUS_OK) {
 		fatal("init_bg: rm_get_data(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
@@ -409,12 +413,15 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	rm_partition_t *block_ptr = NULL;
 	int rc, i, user_count;
 
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_get_partition(%s): %s", 
 		      bg_block_id, 
 		      bg_err_str(rc));
 		return REMOVE_USER_ERR;
 	}	
+	slurm_mutex_unlock(&api_file_mutex);
 	
 	if((rc = rm_get_data(block_ptr, RM_PartitionUsersNum, &user_count)) 
 	   != STATUS_OK) {
@@ -1454,12 +1461,15 @@ static int _update_bg_record_state(List bg_destroy_list)
 		return SLURM_SUCCESS;
 	}
 	
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partitions_info(block_state, &block_list))
 	    != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_get_partitions_info(): %s", bg_err_str(rc));
 		return SLURM_ERROR; 
 	}
-
+	slurm_mutex_unlock(&api_file_mutex);
+	
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
@@ -2431,9 +2441,11 @@ static int _reopen_bridge_log(void)
 	if (bridge_api_file == NULL)
 		return SLURM_SUCCESS;
 
+	slurm_mutex_lock(&api_file_mutex);
 	if(fp)
 		fclose(fp);
 	fp = fopen(bridge_api_file,"a");
+	slurm_mutex_unlock(&api_file_mutex);
 	if (fp == NULL) { 
 		error("can't open file for bridgeapi.log at %s: %m", 
 		      bridge_api_file);

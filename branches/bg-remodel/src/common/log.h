@@ -84,6 +84,7 @@ typedef enum {
 	LOG_LEVEL_DEBUG3,
 	LOG_LEVEL_DEBUG4,
 	LOG_LEVEL_DEBUG5,
+	LOG_LEVEL_END
 }	log_level_t;
 
 

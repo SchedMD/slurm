@@ -122,7 +122,8 @@ extern int select_g_job_init(List job_list);
  * IN/OUT bitmap - map of nodes being considered for allocation on input,
  *                 map of nodes actually to be assigned on output
  * IN min_nodes - minimum number of nodes to allocate to job
- * IN max_nodes - maximum number of nodes to allocate to job 
+ * IN max_nodes - maximum number of nodes to allocate to job
+ * IN test_only - if true, only test if ever could run, not necessarily now
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     int min_nodes, int max_nodes, bool test_only);

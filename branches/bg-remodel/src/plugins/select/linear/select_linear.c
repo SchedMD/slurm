@@ -170,6 +170,8 @@ extern int select_p_block_init(List part_list)
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN test_only - if true, only test if ever could run, not necessarily now,
+ *	not used in this implementation of plugin
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init): 
  *	node_record_count - count of nodes configured
@@ -182,7 +184,7 @@ extern int select_p_block_init(List part_list)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     int min_nodes, int max_nodes)
+			     int min_nodes, int max_nodes, bool test_only)
 {
 	int i, index, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this 

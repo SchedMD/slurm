@@ -653,7 +653,7 @@ extern void slurm_init_job_desc_msg PARAMS((job_desc_msg_t * job_desc_msg));
  * slurm_allocate_resources - allocate resources for a job request
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_allocate_resources PARAMS((
@@ -674,7 +674,7 @@ extern void slurm_free_resource_allocation_response_msg PARAMS((
  *	initiate a job step
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using 
  *	slurm_free_resource_allocation_and_run_response_msg
  */
@@ -698,7 +698,7 @@ extern void slurm_free_resource_allocation_and_run_response_msg PARAMS((
  * slurm_confirm_allocation - confirm an existing resource allocation
  * IN job_desc_msg - description of existing job request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_confirm_allocation PARAMS((
@@ -709,7 +709,7 @@ extern int slurm_confirm_allocation PARAMS((
  * slurm_allocation_lookup - retrieve info for an existing resource allocation
  * IN job_id - job allocation identifier
  * OUT resp - job allocation information
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free "info" using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_allocation_lookup PARAMS((
@@ -719,7 +719,7 @@ extern int slurm_allocation_lookup PARAMS((
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 extern int slurm_job_step_create PARAMS((
@@ -740,7 +740,7 @@ extern void slurm_free_job_step_create_response_msg PARAMS((
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_desc_msg - description of batch job request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_submit_batch_job PARAMS((
 	job_desc_msg_t * job_desc_msg, 
@@ -759,7 +759,7 @@ extern void slurm_free_submit_response_response_msg PARAMS((
  * slurm_job_will_run - determine if a job would execute immediately if 
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_job_will_run PARAMS((
 	job_desc_msg_t * job_desc_msg));
@@ -774,7 +774,7 @@ extern int slurm_job_will_run PARAMS((
  * IN job_id     - the job's id
  * IN signal     - signal number
  * IN batch_flag - 1 to signal batch shell only, otherwise 0
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal, 
 			uint16_t batch_flag));
@@ -784,7 +784,7 @@ extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
  * IN job_id  - the job's id
  * IN step_id - the job step's id
  * IN signal  - signal number
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id, 
 				       uint16_t signal));
@@ -793,7 +793,7 @@ extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id,
  * slurm_signal_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
 
@@ -803,7 +803,7 @@ extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to send a signal to a job's batch script
  * IN signal  - signal number
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
 					 uint16_t signal));
@@ -818,7 +818,7 @@ extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
  * IN job_id - the job's id
  * IN job_return_code - the highest exit code of any task of the job
  * IN system_return_code - any slurm/system exit code
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_complete_job PARAMS((
 	uint32_t job_id, uint32_t job_return_code, 
@@ -830,12 +830,35 @@ extern int slurm_complete_job PARAMS((
  * IN step_id - the job step's id or NO_VAL for all of the job's steps
  * IN job_return_code - the highest exit code of any task of the job
  * IN system_return_code - any slurm/system exit code
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_complete_job_step PARAMS((
 	uint32_t job_id, uint32_t step_id, 
 	uint32_t job_return_code, uint32_t system_return_code));
 
+/*
+ * slurm_terminate_job - terminates all steps of an existing job by sending
+ * 	a REQUEST_TERMINATE_JOB rpc to all slurmd in the the job allocation,
+ *      and then calls slurm_complete_job().
+ * IN job_id     - the job's id
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int 
+slurm_terminate_job PARAMS((uint32_t job_id));
+
+/*
+ * slurm_terminate_job_step - terminates a job step by sending a
+ * 	REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and then
+ *	calls slurm_complete_job_step() after verifying that all
+ *	nodes in the job step no longer have running tasks from the job
+ *	step.  (May take over 35 seconds to return.)
+ * IN job_id  - the job's id
+ * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
+ *              to terminate a job's batch script
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_terminate_job_step PARAMS((
+	uint32_t job_id, uint32_t step_id));
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS
@@ -928,7 +951,7 @@ extern void slurm_make_time_str PARAMS((time_t *time, char *string));
  * IN update_time - time of current configuration data
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration 
  *	pointer
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_ctl_conf
  */
 extern int slurm_load_ctl_conf PARAMS((
@@ -1017,7 +1040,7 @@ extern int slurm_pid2jobid PARAMS(( pid_t job_pid, uint32_t * job_id_ptr )) ;
  * slurm_update_job - issue RPC to a job's configuration per request, 
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates
- * RET 0 or -1 on error
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_update_job PARAMS(( job_desc_msg_t * job_msg )) ;
 
@@ -1046,7 +1069,7 @@ extern int slurm_get_select_jobinfo PARAMS((select_jobinfo_t jobinfo,
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags - job step filtering options
- * RET 0 or a slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 extern int slurm_get_job_steps PARAMS((
@@ -1134,7 +1157,7 @@ extern void slurm_print_node_table PARAMS((
  * slurm_update_node - issue RPC to a node's configuration per request, 
  *	only usable by user root
  * IN node_msg - description of node updates
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_update_node PARAMS(( update_node_msg_t * node_msg ));
 
@@ -1197,7 +1220,7 @@ extern void slurm_print_partition_info PARAMS((
  * slurm_update_partition - issue RPC to update a partition's configuration
  *	per request, only usable by user root
  * IN part_msg - description of partition updates
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_update_partition PARAMS(( update_part_msg_t * part_msg ));
 
@@ -1205,7 +1228,7 @@ extern int slurm_update_partition PARAMS(( update_part_msg_t * part_msg ));
  * slurm_delete_partition - issue RPC to delete a partition, only usable
  *	by user root
  * IN part_msg - description of partition to delete
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_delete_partition PARAMS(( delete_part_msg_t * part_msg ));
 

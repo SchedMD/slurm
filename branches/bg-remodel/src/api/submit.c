@@ -48,7 +48,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_desc_msg - description of batch job request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
 slurm_submit_batch_job (job_desc_msg_t *req, 

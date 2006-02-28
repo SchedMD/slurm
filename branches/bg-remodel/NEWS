@@ -12,10 +12,50 @@ documents those changes that are of interest to users and admins.
     variable SpanCount=50 is default.  This is the number of threads per 
     stop on the tree.  
 
+=======
+* Changes in SLURM 1.0.5
+========================
+ -- Correct squeue "NODELIST" output for BlueGene small block jobs.
+ --  Restructure logic for scheduling BlueGene small block jobs. Added
+    "test_only" flag to select_p_job_test() in select plugin.
+ -- Fix possible deadlock situations on BlueGene plugin on errors.
+
+* Changes in SLURM 1.0.4
+========================
+ -- Release job allocation if step creation fails (especially for BlueGene).
+ -- Fix bug select/bluegene warm start with changed bglblock layout.
+ -- Fix bug for queuing full-system BlueGene jobs.
+
+* Changes in SLURM 1.0.3
+========================
+ -- Fix bug that could refuse to queue batch jobs for BlueGene system.
+ -- Add BlueGene plugin mutex lock for reconfig.
+ -- Ignore BlueGene bgljobs in ERROR state (don't try to kill).
+ -- Fix job accounting for batch jobs (Andy Riebs, HP, 
+    slurm.hp.jobacct_divby0a.patch).
+ -- Added proctrack/linuxproc.so to the main RPM.
+ -- Added mutex around bridge api file to avoid locking up the api.
+ -- BlueGene mod: Terminate slurm_prolog and slurm_epilog immediately if 
+    SLURM_JOBID environment variable is invalid.
+ -- Federation driver: allow selection of a sepecific switch interface
+    (sni0, sni1, etc.) with -euidevice/MP_EUIDEVICE.
+ -- Return an error for "scontrol reconfig" if there is already one in 
+    progress 
+
 * Changes in SLURM 1.0.2
 ========================
  -- Correctly report DRAINED node state as type OTHER for "sinfo --summarize".
  -- Fixes in sacct use of malloc (Andy Riebs, HP, sacct_malloc.patch).
+ -- Smap mods: eliminate screen flicker, fix window resize, report more clear
+    message if window too small (Dan Palermo, HP, patch.1.0.0.1.060126.smap).
+ -- Sacct mods for inconsistent records (race condition) and replace --debug
+    option with --verbose (Andy Riebs, HP, slurm.hp.sacct_exp_vvv.patch).
+ -- scancel of a job step will now send a job-step-completed message
+    to the controller after verifying that the step has completed on all nodes.
+ -- Fix task layout bug in srun.
+ -- Added times to node "Reason" field when set down for insufficient 
+    resources or if not responding.
+ -- Validate operation with Elan switch and heterogeneous nodes.
 
 * Changes in SLURM 1.0.1
 ========================
@@ -148,6 +188,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix bug in sinfo partition sorting order.
  -- Fix bugs in srun use of #SLURM options in batch script.
+ -- Use full Elan credential space rather than re-using credentials as soon 
+    as job step completes (helps with fault-tolerance).
 
 * Changes in SLURM 0.6.10
 =========================

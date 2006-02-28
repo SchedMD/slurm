@@ -139,13 +139,15 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		}
 		conn.part_state = RM_PARTITION_READY;
 		
+		slurm_mutex_lock(&api_file_mutex);
 		if(firstconnect) {
 			if ((rc = rm_set_data(curr_switch, 
 					RM_SwitchFirstConnection, &conn)) 
 					!= STATUS_OK) {
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&api_file_mutex);
 				fatal("rm_set_data(RM_SwitchFirstConnection):"
 					" %s", bg_err_str(rc));
-				list_iterator_destroy(itr);
 				return SLURM_ERROR;
 			}
 			firstconnect=0;
@@ -153,21 +155,28 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			if ((rc = rm_set_data(curr_switch, 
 					RM_SwitchNextConnection, &conn)) 
 					!= STATUS_OK) {
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&api_file_mutex);
 				fatal("rm_set_data(RM_SwitchNextConnection):"
 					" %s", bg_err_str(rc));
-				list_iterator_destroy(itr);
 				return SLURM_ERROR;
 			}
 		} 
+		slurm_mutex_unlock(&api_file_mutex);
+			
 		conn_num++;
 		debug2("adding %d -> %d",bg_conn->source, bg_conn->target);
 	}
 	list_iterator_destroy(itr);
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num)) 
 	    != STATUS_OK) {
 		fatal("rm_set_data: RM_SwitchConnNum: %s", bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
-	} 	
+	} 
+	slurm_mutex_unlock(&api_file_mutex);
+				
 	return SLURM_SUCCESS;
 }
 
@@ -326,8 +335,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 	
 	/* set that we are doing a small block */
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionSmall, 
 			      &small)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 	}
 
@@ -337,9 +348,11 @@ extern int configure_small_block(bg_record_t *bg_record)
 			      RM_PartitionNodeCardNum,
 			      &num_ncards))
 	    != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		fatal("rm_set_data: RM_PartitionBPNum: %s", bg_err_str(rc));
 	}
-
+	slurm_mutex_unlock(&api_file_mutex);
+			
 	itr = list_iterator_create(bg_record->bg_block_list);
 	ba_node = list_next(itr);
 	list_iterator_destroy(itr);
@@ -350,10 +363,12 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 	
 	/* Set the one BP */
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionBPNum,
 			      &bg_record->bp_count)) 
 	    != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		fatal("rm_set_data: RM_PartitionBPNum: %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}	
@@ -361,11 +376,13 @@ extern int configure_small_block(bg_record_t *bg_record)
 			      RM_PartitionFirstBP, 
 			      curr_bp)) 
 	    != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		fatal("rm_set_data("
 		      "RM_PartitionFirstBP): %s", 
 		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
 	
 	/* find the bp_id of the bp to get the nodecards */
 	if ((rc = rm_get_data(curr_bp, RM_BPID, &bp_id))
@@ -374,13 +391,16 @@ extern int configure_small_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_nodecards(bp_id, &ncard_list))
 	    != STATUS_OK) {
 		error("rm_get_nodecards(%s): %d",
 		       bp_id, rc);
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
-	
+	slurm_mutex_unlock(&api_file_mutex);
+			
 	if((rc = rm_get_data(ncard_list, RM_NodeCardListSize, &num))
 	   != STATUS_OK) {
 		error("rm_get_data(RM_NodeCardListSize): %s", bg_err_str(rc));
@@ -417,30 +437,35 @@ extern int configure_small_block(bg_record_t *bg_record)
 		}
 		if(bg_record->quarter != quarter)
 			continue;
+
 		if(bg_record->segment != NO_VAL) {
 			if(bg_record->segment != (i%4))
 				continue;
 		}
+
+		slurm_mutex_lock(&api_file_mutex);
 		if (num_ncards) {
 			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionNextNodeCard, 
 					      ncard)) 
 			    != STATUS_OK) {
+				slurm_mutex_unlock(&api_file_mutex);
 				fatal("rm_set_data("
 				      "RM_PartitionNextNodeCard): %s", 
 				      bg_err_str(rc));
-				
 			}
 		} else {
 			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionFirstNodeCard, 
 					      ncard)) 
 			    != STATUS_OK) {
+				slurm_mutex_unlock(&api_file_mutex);
 				fatal("rm_set_data("
 				      "RM_PartitionFirstNodeCard): %s", 
 				      bg_err_str(rc));
 			}
 		}
+		slurm_mutex_unlock(&api_file_mutex);
 		num_ncards++;
 		if(num_ncards == 4)
 			break;
@@ -531,12 +556,14 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	}
 	list_iterator_destroy(bg_itr);
 
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionBPNum,
 			      &bg_record->bp_count)) 
 	    != STATUS_OK) {
 		fatal("rm_set_data: RM_PartitionBPNum: %s", bg_err_str(rc));
 		rc = SLURM_ERROR;
+		slurm_mutex_unlock(&api_file_mutex);
 		goto cleanup;
 	}
 	debug3("BP count %d",bg_record->bp_count);
@@ -547,8 +574,10 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		fatal("rm_set_data: RM_PartitionSwitchNum: %s", 
 		      bg_err_str(rc));
 		rc = SLURM_ERROR;
+		slurm_mutex_unlock(&api_file_mutex);
 		goto cleanup;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
 	debug3("switch count %d",bg_record->switch_count);
 		
 	first_bp = 1;
@@ -572,12 +601,14 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		}
 		
 		if(bg_bp->used) {
+			slurm_mutex_lock(&api_file_mutex);
 			if (first_bp){
 				if ((rc = rm_set_data(bg_record->bg_block,
 						      RM_PartitionFirstBP, 
 						      curr_bp)) 
 				    != STATUS_OK) {
 					list_iterator_destroy(bg_itr);
+					slurm_mutex_unlock(&api_file_mutex);
 					fatal("rm_set_data("
 					      "RM_PartitionFirstBP): %s", 
 					      bg_err_str(rc));
@@ -589,10 +620,12 @@ extern int configure_block_switches(bg_record_t * bg_record)
 						      curr_bp)) 
 				    != STATUS_OK) {
 					list_iterator_destroy(bg_itr);
+					slurm_mutex_unlock(&api_file_mutex);
 					fatal("rm_set_data(RM_PartitionNextBP)"
 					      ": %s", bg_err_str(rc));
 				}
 			}
+			slurm_mutex_unlock(&api_file_mutex);
 		}
 
 		if ((rc = rm_get_data(curr_bp,  RM_BPID, &bpid)) 
@@ -673,6 +706,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 					goto cleanup;
 				}
 				
+				slurm_mutex_lock(&api_file_mutex);
 				if (first_switch){
 					if ((rc = rm_set_data(
 						     bg_record->bg_block,
@@ -683,6 +717,8 @@ extern int configure_block_switches(bg_record_t * bg_record)
 						list_iterator_destroy(
 							switch_itr);
 						list_iterator_destroy(bg_itr);
+						slurm_mutex_unlock(
+							&api_file_mutex);
 						fatal("rm_set_data("
 						      "RM_PartitionFirst"
 						      "Switch): %s", 
@@ -700,12 +736,15 @@ extern int configure_block_switches(bg_record_t * bg_record)
 						list_iterator_destroy(
 							switch_itr);
 						list_iterator_destroy(bg_itr);
+						slurm_mutex_unlock(
+							&api_file_mutex);
 						fatal("rm_set_data("
 						      "RM_PartitionNext"
 						      "Switch:) %s", 
 						      bg_err_str(rc));
 					}
 				}
+				slurm_mutex_unlock(&api_file_mutex);
 			}
 			list_iterator_destroy(switch_itr);
 		}

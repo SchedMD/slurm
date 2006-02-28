@@ -268,6 +268,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/none/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
+		 doc/html/Makefile
 		 testsuite/Makefile
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile

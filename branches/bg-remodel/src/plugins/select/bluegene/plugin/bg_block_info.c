@@ -221,12 +221,15 @@ extern int update_block_list()
 	if(!blocks_are_created)
 		return 0;
 	
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partitions_info(block_state, &block_list))
 	    != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_get_partitions_info(): %s", bg_err_str(rc));
 		return -1; 
 	}
-
+	slurm_mutex_unlock(&api_file_mutex);
+	
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 		   != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
@@ -273,12 +276,14 @@ extern int update_block_list()
 			error("Partition %s not found in bg_list "
 			      "removing from database", name);
 			term_jobs_on_block(name);
+			slurm_mutex_lock(&api_file_mutex);
 			if ((rc = pm_destroy_partition(name)) 
 			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
 					debug("partition %s is not found",
 					      name);
 					free(name);
+					slurm_mutex_unlock(&api_file_mutex);
 					break;
 				}
 				error("pm_destroy_partition(%s): %s",
@@ -286,6 +291,7 @@ extern int update_block_list()
 				      bg_err_str(rc));
 			}
 			rc = rm_remove_partition(name);
+			slurm_mutex_unlock(&api_file_mutex);
 			if (rc != STATUS_OK) {
 				error("rm_remove_partition(%s): %s",
 				      name,

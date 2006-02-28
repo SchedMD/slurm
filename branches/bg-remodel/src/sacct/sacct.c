@@ -281,6 +281,10 @@ void printHeader(void);
 void processJobStart(char *f[]);
 void processJobStep(char *f[]);
 void processJobTerminated(char *f[]);
+int  sameJobStart(long j, char *f[]);
+int  sameJobStep(long js, char *f[]);
+int  sameJobTerminated(long j, char *f[]);
+void showRec(char *f[]);
 void usage(void);
 void *_my_malloc(size_t size);
 void *_my_realloc(void *ptr, size_t size);
@@ -372,16 +376,17 @@ static struct {
 
 FILE *logfile;
 
-int inputError = 0,		/* Muddle through bad data, but complain! */
-    expire_time_match = 0;	/* How much of the timestamp is significant
+int expire_time_match = 0;	/* How much of the timestamp is significant
 				   for --expire */
-long lc = 0,			/* input file line counter */
+
+long inputError = 0,		/* Muddle through bad data, but complain! */
+     lc = 0,			/* input file line counter */
      rc = 0;			/* return code */
 
-long opt_expire = 0;		/* --expire= */
+long opt_expire = 0;		/* --expire= */ 
 
-int  opt_debug = 0,		/* Option flags */
-     opt_dump = 0,		/* --dump */
+				/* option flags */
+int  opt_dump = 0,		/* --dump */
      opt_dup = -1,		/* --duplicates; +1 = explicitly set */
      opt_fdump = 0,		/* --formattted_dump */
      opt_gid = -1,		/* --gid (-1=wildcard, 0=root) */
@@ -389,6 +394,7 @@ int  opt_debug = 0,		/* Option flags */
      opt_help = 0,		/* --help */
      opt_long = 0,		/* --long */
      opt_lowmem = 0,		/* --low_memory */
+     opt_purge = 0,		/* --purge */
      opt_total = 0,		/* --total */
      opt_uid = -1,		/* --uid (-1=wildcard, 0=root) */
      opt_verbose = 0;		/* --verbose */
@@ -520,11 +526,10 @@ void doDump(void)
 	for (j=0; j<Njobs; j++) {
 		if (opt_dup==0)
 			if (jobs[j].jobnum_superseded) {
-				if (opt_verbose)
+				if (opt_verbose > 1)
 					fprintf(stderr,
-						"Note: Skipping older,"
-						" duplicate job %ld"
-						" dated %s\n",
+						"Note: Skipping older"
+						" job %ld dated %s\n",
 						jobs[j].job,
 						jobs[j].submitted);
 				continue;
@@ -691,6 +696,7 @@ void doExpire(void)
 		*new_logfile_name,
 		*old_logfile_name;
 	int	bufsize=MINBUFSIZE,
+		file_err=0,
 		new_file,
 		i;
 	expired_table_t *exp_table;
@@ -713,7 +719,7 @@ void doExpire(void)
 		sprintf(exp_stg, "%04d%02d%02d%02d%02d",
 			(ts->tm_year+1900), (ts->tm_mon+1), ts->tm_mday,
 			ts->tm_hour, ts->tm_min);
-		if (opt_debug)
+		if (opt_verbose)
 			fprintf(stderr, "Purging jobs completed prior to %s\n",
 					exp_stg);
 	}
@@ -773,10 +779,15 @@ void doExpire(void)
 		if (i < TERM_REC_FIELDS)
 			continue;	/* Odd, but complain some other time */
 		if (strcmp(f[F_RECVERSION], "1")) {
+			if (opt_purge)	/* catch it again later */
+				continue;
 			fprintf(stderr,
-				"Invalid record version \"%s\"at input "
-				"line %ld\nIt is unsafe to complete this "
-				"operation -- terminating\n",
+				"Invalid record version \"%s\" at input "
+				"line %ld.\n"
+				"(Use --expire --purge to force the "
+				"removal of this record.)\n"
+				"It is unsafe to complete this "
+				"operation -- terminating.\n",
 				f[F_RECVERSION], lc);
 			exit(1);
 		}
@@ -800,11 +811,11 @@ void doExpire(void)
 				strtol(f[F_JOB], NULL, 10);
 			strncpy(exp_table[exp_table_entries].submitted,
 					f[F_SUBMITTED], TIMESTAMP_LENGTH);
-			exp_table_entries++;
-			if (opt_debug)
+			if (opt_verbose > 2)
 				fprintf(stderr, "Selected: %8ld %s\n",
 					exp_table[exp_table_entries].job,
 					exp_table[exp_table_entries].submitted);
+			exp_table_entries++;
 		}
 	}
 	if (exp_table_entries == 0) {
@@ -842,8 +853,8 @@ void doExpire(void)
 	}
 
 	qsort(exp_table, exp_table_entries, sizeof(expired_table_t), cmp_jrec);
-	if (opt_debug) {
-		fprintf(stderr, "--- debug: contents of exp_table ---");
+	if (opt_verbose > 2) {
+		fprintf(stderr, "--- contents of exp_table ---");
 		for (i=0; i<exp_table_entries; i++) {
 			if ((i%5)==0)
 				fprintf(stderr, "\n");
@@ -851,21 +862,49 @@ void doExpire(void)
 				fprintf(stderr, "\t");
 			fprintf(stderr, "%ld", exp_table[i].job);
 		}
-		fprintf(stderr, "\n---- debug: end of exp_table ---\n");
+		fprintf(stderr, "\n---- end of exp_table ---\n");
 	}
 	rewind(logfile);
+	lc=0;
 	while (fgetLine(&buf, &bufsize, logfile)) {
 		expired_table_t tmp;
+
 		fptr = buf;
-		for (i=0; i<F_SUBMITTED; i++) {
+		lc++;
+
+		for (i=0; i<F_NUMFIELDS; i++) {
+			f[i] = fptr;
 			fptr = strstr(fptr, " ");
 			if (fptr == NULL)
-				break;
-			else
-				fptr++;
+				break; 
+			fptr++;
 		}
-		tmp.job = strtol(buf, NULL, 10);
-		strncpy(tmp.submitted, fptr, TIMESTAMP_LENGTH);
+		if (i >= F_NUMFIELDS) 	/* Enough data for these checks? */
+			if (strncmp(f[F_RECVERSION], "1 ", 2)==0 ) 
+				if ((strncmp(f[F_RECTYPE],
+						"JOB_START ", 10)==0)
+				 || (strncmp(f[F_RECTYPE],
+						 "JOB_STEP ", 9)==0)
+				 || (strncmp(f[F_RECTYPE],
+						 "JOB_TERMINATED ", 15)==0))
+					goto goodrec;
+
+		/* Ugh; invalid record */
+		fprintf(stderr, "Invalid record at input line %ld", lc);
+		if (opt_purge) {
+			fprintf(stderr, "; purging it.\n");
+			continue;
+		}
+		fprintf(stderr,
+			".\n(Use --expire --purge to force the "
+			"removal of this record.)\n"
+			"It is unsafe to complete this "
+			"operation -- terminating.\n");
+		exit(1);
+
+goodrec:
+		tmp.job = strtol(f[F_JOB], NULL, 10);
+		strncpy(tmp.submitted, f[F_SUBMITTED], TIMESTAMP_LENGTH);
 		tmp.submitted[TIMESTAMP_LENGTH-1] = 0;
 		if (bsearch(&tmp, exp_table, exp_table_entries,
 					sizeof(expired_table_t), cmp_jrec)) {
@@ -913,6 +952,7 @@ void doExpire(void)
 		exit(1);
 	}
 	if (WEXITSTATUS(i)) {
+		file_err = 1;
 		fprintf(stderr, "Error: Attempt to execute \"scontrol "
 				"reconfigure\" failed. If SLURM is\n"
 				"running, please rename the file \"%s\"\n"
@@ -931,8 +971,9 @@ void doExpire(void)
 	}
 	fclose(new_logfile);
 	fclose(logfile);
-	unlink(old_logfile_name);
-	printf("%d jobs purged.\n", exp_table_entries);
+	if (file_err==0)
+		unlink(old_logfile_name);
+	printf("%d jobs expired.\n", exp_table_entries);
 	exit(0);
 }
 
@@ -1041,11 +1082,10 @@ void doList(void)
 	for (j=0; j<Njobs; j++) {
 		if (opt_dup==0)
 			if (jobs[j].jobnum_superseded) {
-				if (opt_verbose)
+				if (opt_verbose > 1)
 					fprintf(stderr,
-						"Note: Skipping older,"
-						" duplicate job %ld"
-						" dated %s\n",
+						"Note: Skipping older"
+						" job %ld dated %s\n",
 						jobs[j].job,
 						jobs[j].submitted);
 				continue;
@@ -1059,7 +1099,7 @@ void doList(void)
 			if (rc<ERROR)
 				rc = ERROR;
 		}
-		if (opt_verbose) {
+		if (opt_verbose > 1) {
 			if (jobs[j].job_start_seen==0)
 				fprintf(stderr,
 					"Note: No JOB_START record for "
@@ -1200,7 +1240,7 @@ char *fgetLine(char **buf, int *bsize, FILE *stream)
 		while (strlen(*buf) == (*bsize-1)) {
 			eob = *bsize-1;
 			*bsize += MINBUFSIZE;
-			*buf = realloc(*buf, *bsize);
+			*buf = _my_realloc(*buf, *bsize);
 			ret=fgets(*buf+eob, *bsize, stream);
 		}
 		ret=*buf;
@@ -1249,7 +1289,10 @@ int findJobstepRecord(long j, long jobstep)
 void getData(void)
 {
 	char	*buf,
-		*f[MAX_RECORD_FIELDS+1],
+		*f[MAX_RECORD_FIELDS+2],        /* End list with null entry and,
+						   possibly, more data than we
+						   expected */
+
 		*fptr;
 	int	bufsize=MINBUFSIZE,
 		i;
@@ -1274,24 +1317,33 @@ void getData(void)
 			else
 				*fptr++ = 0;
 		}
-		if (++i < F_NUMFIELDS) {
-			fprintf(stderr,
-				"Invalid record (too short) "
-				"at input line %ld\n", lc);
-			if (opt_debug)
-				fprintf(stderr, "rec> %s\n", buf);
+		f[++i] = 0;
+		if (i < F_NUMFIELDS) {
+			if (opt_verbose > 1)
+				fprintf(stderr,
+					"Invalid record (too short) "
+					"at input line %ld\n", lc);
+			if (opt_verbose > 2)
+				showRec(f);
+			inputError++;
 			continue;
-		} else if (i >= MAX_RECORD_FIELDS)
-			if (opt_debug)
+		} else if (i > MAX_RECORD_FIELDS) {
+			if (opt_verbose > 1)
 				fprintf(stderr,
 					"Extra data at input line %ld\n", lc);
-		if (strcmp(f[F_RECVERSION], "1")) {
-			fprintf(stderr,
-				"Invalid record version at input line %ld\n",
-				lc);
+			if (opt_verbose > 2)
+				showRec(f);
 			inputError++;
-			if (opt_debug)
-				fprintf(stderr, "rec> %s\n", buf);
+		}
+		if (strcmp(f[F_RECVERSION], "1")) {
+			if (opt_verbose > 1)
+				fprintf(stderr,
+					"Invalid record version at input"
+					" line %ld\n",
+					lc);
+			if (opt_verbose > 2)
+				showRec(f);
+			inputError++;
 			continue;
 		}
 		if (NjobstepsSelected) {
@@ -1331,20 +1383,23 @@ void getData(void)
 		} else if (strcmp(f[F_RECTYPE],"JOB_TERMINATED")==0) {
 			processJobTerminated(f);
 		} else {
-			fprintf(stderr,
-				"Invalid record at line %ld of input file\n",
-				lc);
+			if (opt_verbose > 1)
+				fprintf(stderr,
+					"Invalid record at line %ld of"
+					" input file\n",
+					lc);
+			if (opt_verbose > 2)
+				showRec(f);
 			inputError++;
-			if (opt_debug)
-				fprintf(stderr, "rec> %s\n", buf);
 		}
 	}
-	if (opt_debug)
+	if (opt_verbose)
 		fprintf(stderr,
 			"Info: %ld job%s and %ld jobstep%s passed initial"
-			" filters\n",
+			" filters, %ld bad record%s\n",
 			Njobs, (Njobs==1? "" : "s"),
-			Njobsteps, (Njobsteps==1? "" : "s"));
+			Njobsteps, (Njobsteps==1? "" : "s"),
+			inputError, (inputError==1? "" : "s"));
 
 	if (ferror(logfile)) {
 		perror(opt_filein);
@@ -1364,7 +1419,6 @@ void getOptions(int argc, char **argv)
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
-		{"debug", 0, 0, 'D'},
 		{"duplicates", 0, &opt_dup, 1},
 		{"dump", 0, 0, 'd'},
 		{"expire", 1, 0, 'e'},
@@ -1382,13 +1436,14 @@ void getOptions(int argc, char **argv)
 		{"noduplicates", 0, &opt_dup, 0},
 		{"noheader", 0, &opt_header, 0},
 		{"partition", 1, 0, 'p'},
+		{"purge", 0, 0, 'P'},
 		{"state", 1, 0, 's'},
 		{"total", 0, 0,  't'},
 		{"uid", 1, 0, 'u'},
 		{"usage", 0, &opt_help, 3},
 		{"user", 1, 0, 'u'},
-		{"verbose", 0, 0, 'V'},
-		{"version", 0, 0, 'v'},
+		{"verbose", 0, 0, 'v'},
+		{"version", 0, 0, 'V'},
 		{0, 0, 0, 0}
 	};
 
@@ -1398,7 +1453,7 @@ void getOptions(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "abDde:F:f:g:hj:J:lOp:s:tUu:Vv",
+		c = getopt_long(argc, argv, "abde:F:f:g:hj:J:lOPp:s:tUu:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -1414,11 +1469,6 @@ void getOptions(int argc, char **argv)
 						 sizeof(BRIEF_FIELDS)+1);
 			strcat(opt_field_list, BRIEF_FIELDS);
 			strcat(opt_field_list, ",");
-			break;
-
-		case 'D':
-			opt_debug = 1;
-			opt_verbose = 1;
 			break;
 
 		case 'd':
@@ -1488,8 +1538,6 @@ void getOptions(int argc, char **argv)
 			break;
 
 		case 'f':
-			if (opt_debug)
-				fprintf(stderr, "filein: %s\n", optarg);
 			opt_filein =
 			    (char *) _my_realloc(opt_filein, strlen(optarg)+1);
 			strcpy(opt_filein, optarg);
@@ -1558,6 +1606,10 @@ void getOptions(int argc, char **argv)
 			opt_fdump = 1;
 			break;
 
+		case 'P':
+			opt_purge = 1;
+			break;
+
 		case 'p':
 			opt_partition_list =
 			    (char *) _my_realloc(opt_partition_list,
@@ -1600,11 +1652,17 @@ void getOptions(int argc, char **argv)
 			}
 			break;
 
-		case 'V':
-			opt_verbose = 1;
+		case 'v':
+			/* Handle -vvv thusly...
+			 * 0 - report only normal messages and errors
+			 * 1 - report options selected and major operations
+			 * 2 - report data anomalies that probably aren't errors
+			 * 3 - blather on and on
+			 */
+			opt_verbose++;
 			break;
 
-		case 'v':
+		case 'V':
 			{
 				int	i;
 				char	obuf[20]; /* should be long enough */
@@ -1632,9 +1690,8 @@ void getOptions(int argc, char **argv)
 			 * they requested specific jobs or steps. */
 			opt_dup = 0;
 
-	if (opt_debug) {
+	if (opt_verbose) {
 		fprintf(stderr, "Options selected:\n"
-			"\topt_debug=%d\n"
 			"\topt_dump=%d\n"
 			"\topt_dup=%d\n"
 			"\topt_expire=%s (%lu seconds)\n"
@@ -1648,10 +1705,11 @@ void getOptions(int argc, char **argv)
 			"\topt_long=%d\n"
 			"\topt_lowmem=%d\n"
 			"\topt_partition_list=%s\n"
+			"\topt_purge=%d\n"
 			"\topt_state_list=%s\n"
 			"\topt_total=%d\n"
+			"\topt_uid=%d\n"
 			"\topt_verbose=%d\n",
-			opt_debug,
 			opt_dump,
 			opt_dup,
 			opt_expire_timespec, opt_expire,
@@ -1665,8 +1723,10 @@ void getOptions(int argc, char **argv)
 			opt_long,
 			opt_lowmem,
 			opt_partition_list,
+			opt_purge,
 			opt_state_list,
 			opt_total,
+			opt_uid,
 			opt_verbose);
 	}
 
@@ -1691,7 +1751,7 @@ void getOptions(int argc, char **argv)
 			NpartitionsSelected++;
 			start = end + 1;
 		}
-		if (opt_debug) {
+		if (opt_verbose) {
 			int i;
 			fprintf(stderr, "Partitions requested:\n");
 			for (i = 0; i < NpartitionsSelected; i++)
@@ -1721,7 +1781,7 @@ void getOptions(int argc, char **argv)
 			NjobstepsSelected++;
 			start = end + 1;
 		}
-		if (opt_debug) {
+		if (opt_verbose) {
 			int i;
 			fprintf(stderr, "Job steps requested:\n");
 			for (i = 0; i < NjobstepsSelected; i++)
@@ -1743,7 +1803,7 @@ void getOptions(int argc, char **argv)
 			NjobstepsSelected++;
 			start = end + 1;
 		}
-		if (opt_debug) {
+		if (opt_verbose) {
 			int i;
 			fprintf(stderr, "Jobs requested:\n");
 			for (i = 0; i < NjobstepsSelected; i++)
@@ -1761,7 +1821,7 @@ void getOptions(int argc, char **argv)
 			NstatesSelected++;
 			start = end + 1;
 		}
-		if (opt_debug) {
+		if (opt_verbose) {
 			int i;
 			fprintf(stderr, "States requested:\n");
 			for (i = 0; i < NstatesSelected; i++)
@@ -1792,7 +1852,7 @@ void getOptions(int argc, char **argv)
 		printFields[NprintFields++] = i;
 		start = end + 1;
 	}
-	if (opt_debug) {
+	if (opt_verbose) {
 		fprintf(stderr, "%d field%s selected:\n",
 				NprintFields,
 				(NprintFields==1? "" : "s"));
@@ -1840,7 +1900,7 @@ void helpMsg(void)
        "	  * Elapsed time fields are presented as 2 fields, integral\n"
        "	    seconds and integral microseconds\n"
        "    * If --dump is not specified, elapsed time fields are presented\n"
-       "      as [[days:]hours:]minutes:seconds.hundredths\n"
+       "      as [[days-]hours:]minutes:seconds.hundredths\n"
        "    * The default input file is the file named in the \"jobacct_loc\"\n"
        "      parameter in " SLURM_CONFIG_FILE ".\n"
        "\n"
@@ -1916,6 +1976,9 @@ void helpMsg(void)
        "-p <part_list>, --partition=<part_list>\n"
        "    Display or purge information about jobs and job steps in the\n"
        "    <part_list> partition(s). The default is all partitions.\n"
+       "-P --purge\n"
+       "    Used in conjunction with --expire to remove invalid data\n"
+       "    from the job accounting log.\n"
        "-s <state-list>, --state=<state-list>\n"
        "    Select jobs based on their current status: running (r),\n"
        "    completed (cd), failed (f), timeout (to), and node_fail (nf).\n"
@@ -1927,7 +1990,7 @@ void helpMsg(void)
        "    root users are allowed to specify a uid other than their own.\n"
        "--usage\n"
        "    Pointer to this message.\n"
-       "-V, --verbose\n"
+       "-v, --verbose\n"
        "    Primarily for debugging purposes, report the state of various\n"
        "    variables during processing.\n");
 	return;
@@ -2030,7 +2093,11 @@ long initJobStruct(long job, char *f[])
 	char	*p;
 
 	if ((j=Njobs++)>= MAX_JOBS) {
-		fprintf(stderr, "Too many jobs, %ld, listed in log file\n", j);
+		fprintf(stderr, "Too many jobs listed in the log file;\n"
+				"stopped after %ld jobs at input line %ld.\n"
+				"Please use \"--expire\" to reduce the "
+				"size of the log.\n",
+				Njobs, lc);
 		exit(2);
 	} 
 	jobs[j].job = job;
@@ -2851,10 +2918,20 @@ void processJobStart(char *f[])
 	j = findJobRecord(job, f[F_SUBMITTED]);
 	if (j >= 0 ) {	/* Hmmm... that's odd */
 		if (jobs[j].job_start_seen) {
-			fprintf(stderr,
-				"Duplicate JOB_START for job %ld at line "
-				"%ld -- ignoring it\n",
-				job, lc);
+			if (sameJobStart(j, f)) { /* OK if really a duplicate */
+				if (opt_verbose > 1 )
+					fprintf(stderr,
+						"Duplicate JOB_START for job"
+						" %ld at line %ld -- ignoring"
+						" it\n",
+						job, lc);
+			} else {
+				fprintf(stderr,
+					"Conflicting JOB_START for job %ld at"
+					" line %ld -- ignoring it\n",
+					job, lc);
+				inputError++;
+			}
 			return;
 		} /* Data out of order; we'll go ahead and populate it now */
 	} else
@@ -2892,7 +2969,7 @@ void processJobStep(char *f[])
 	j = findJobRecord(job, f[F_SUBMITTED]);
 	if (j<0) {	/* fake it for now */
 		j = initJobStruct(job,f);
-		if (opt_verbose && (opt_jobstep_list==NULL)) 
+		if ((opt_verbose > 1) && (opt_jobstep_list==NULL)) 
 			fprintf(stderr, "Note: JOB_STEP record %ld.%ld preceded"
 					" JOB_START record at line %ld\n",
 					job, jobstep, lc);
@@ -2901,16 +2978,30 @@ void processJobStep(char *f[])
 		if (strcasecmp(f[F_CSTATUS], "R")==0)
 			return; /* if "R" record preceded by F or CD; unusual */
 		if (strcasecmp(jobsteps[js].cstatus, "R")) { /* if not "R" */
-			fprintf(stderr,
-				"Duplicate JOB_STEP record for jobstep %ld.%ld "
-				"at line %ld -- ignoring it\n",
-				job, jobstep, lc);
+			if (sameJobStep(js, f)) {
+				if (opt_verbose > 1)
+					fprintf(stderr,
+					"Duplicate JOB_STEP record for jobstep"
+					" %ld.%ld at line %ld -- ignoring it\n",
+					job, jobstep, lc);
+			} else {
+				fprintf(stderr,
+					"Conflicting JOB_STEP record for"
+					" jobstep %ld.%ld at line %ld"
+					" -- ignoring it\n",
+					job, jobstep, lc);
+				inputError++;
+			}
 			return;
 		}
 		goto replace_js;
 	}
 	if ((js = Njobsteps++)>=MAX_JOBSTEPS) {
-		fprintf(stderr, "Too many jobsteps, %ld, in the log file\n", js);
+		fprintf(stderr, "Too many jobsteps listed in the log file;\n"
+				"stopped after %ld jobs and %ld job steps\n"
+				"at input line %ld. Please use \"--expire\"\n"
+				"to reduce the size of the log.\n",
+				Njobs, js, lc);
 		exit(2);
 	}
 	jobsteps[js].j = j;
@@ -3003,7 +3094,7 @@ void processJobTerminated(char *f[])
 	j = findJobRecord(job, f[F_SUBMITTED]);
 	if (j<0) {	/* fake it for now */
 		j = initJobStruct(job,f);
-		if (opt_verbose) 
+		if (opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
 					"%ld preceded "
 					"other job records at line %ld\n",
@@ -3011,7 +3102,7 @@ void processJobTerminated(char *f[])
 	} else if (jobs[j].job_terminated_seen) {
 		if (strcasecmp(f[F_CSTATUS],"nf")==0) {
 			/* multiple node failures -> extra TERMINATED records */
-			if (opt_verbose)
+			if (opt_verbose > 1)
 				fprintf(stderr, "Note: Duplicate JOB_TERMINATED"
 						" record (nf) for job %ld at"
 						" line %ld\n", 
@@ -3023,9 +3114,20 @@ void processJobTerminated(char *f[])
 			strncpy(jobs[j].cstatus, "nf", 3);
 			return;
 		}
-		fprintf(stderr, "Duplicate JOB_TERMINATED record (%s) for job"
-				" %ld at line %ld -- ignoring it\n",
+		if (sameJobTerminated(j, f)) {
+			if (opt_verbose > 1 )
+				fprintf(stderr,
+					"Duplicate JOB_TERMINATED  record (%s)"
+					" for job %ld at  line %ld --"
+					" ignoring it\n",
+					f[F_CSTATUS], job, lc);
+		} else {
+			fprintf(stderr,
+				"Conflicting JOB_TERMINATED record (%s) for"
+				" job %ld at line %ld -- ignoring it\n",
 				f[F_CSTATUS], job, lc);
+			inputError++;
+		}
 		return;
 	}
 	jobs[j].job_terminated_seen = 1;
@@ -3036,7 +3138,112 @@ void processJobTerminated(char *f[])
 		if (isspace(jobs[j].cstatus[i]))
 				jobs[j].cstatus[i] = 0;
 }
+
+/* Have we seen this data already?  */
 
+int sameJobStart(long j, char *f[])
+{
+	if (jobs[j].uid != atoi(f[F_UID]))
+		return 0;
+	if (jobs[j].gid != atoi(f[F_GID]))
+		return 0;
+	if (strncmp(jobs[j].jobname, f[F_JOBNAME], MAX_JOBNAME_LENGTH))
+		return 0;
+	if (jobs[j].batch != atoi(f[F_BATCH]))
+		return 0;
+	if (jobs[j].priority != atoi(f[F_PRIORITY]))
+		return 0;
+	if (jobs[j].ncpus != strtol(f[F_NCPUS], NULL, 10))
+		return 0;
+	if (strncmp(jobs[j].nodes, f[F_NODES], strlen(jobs[j].nodes)))
+		return 0;
+	return 1;
+}
+
+int sameJobStep(long js, char *f[])
+{ 
+	if (strcmp(jobsteps[js].finished, f[F_FINISHED]))
+		return 0;
+	if (strncmp(jobsteps[js].cstatus, f[F_CSTATUS],
+				strlen(jobsteps[js].cstatus)))
+		return 0;
+	if (jobsteps[js].error != strtol(f[F_ERROR], NULL, 10))
+		return 0;
+	if (jobsteps[js].nprocs != strtol(f[F_NPROCS], NULL, 10))
+		return 0;
+	if (jobsteps[js].ncpus != strtol(f[F_NCPUS], NULL, 10))
+		return 0;
+	if (jobsteps[js].elapsed != strtol(f[F_ELAPSED], NULL, 10))
+		return 0;
+	if (jobsteps[js].tot_cpu_sec != strtol(f[F_CPU_SEC], NULL, 10))
+		return 0;
+	if (jobsteps[js].tot_cpu_usec != strtol(f[F_CPU_USEC], NULL, 10))
+		return 0;
+	if (jobsteps[js].tot_user_sec != strtol(f[F_USER_SEC], NULL, 10))
+		return 0;
+	if (jobsteps[js].tot_user_usec != strtol(f[F_USER_USEC], NULL, 10))
+		return 0;
+	if (jobsteps[js].tot_sys_sec != strtol(f[F_SYS_SEC], NULL, 10))
+		return 0;
+	if (jobsteps[js].tot_sys_usec != strtol(f[F_SYS_USEC], NULL, 10))
+		return 0;
+	if (jobsteps[js].rss != strtol(f[F_RSS], NULL,10))
+		return 0;
+	if (jobsteps[js].ixrss != strtol(f[F_IXRSS], NULL,10))
+		return 0;
+	if (jobsteps[js].idrss != strtol(f[F_IDRSS], NULL,10))
+		return 0;
+	if (jobsteps[js].isrss != strtol(f[F_ISRSS], NULL,10))
+		return 0;
+	if (jobsteps[js].minflt != strtol(f[F_MINFLT], NULL,10))
+		return 0;
+	if (jobsteps[js].majflt != strtol(f[F_MAJFLT], NULL,10))
+		return 0;
+	if (jobsteps[js].nswap != strtol(f[F_NSWAP], NULL,10))
+		return 0;
+	if (jobsteps[js].inblocks != strtol(f[F_INBLOCKS], NULL,10))
+		return 0;
+	if (jobsteps[js].oublocks != strtol(f[F_OUBLOCKS], NULL,10))
+		return 0;
+	if (jobsteps[js].msgsnd != strtol(f[F_MSGSND], NULL,10))
+		return 0;
+	if (jobsteps[js].msgrcv != strtol(f[F_MSGRCV], NULL,10))
+		return 0;
+	if (jobsteps[js].nsignals != strtol(f[F_NSIGNALS], NULL,10))
+		return 0;
+	if (jobsteps[js].nvcsw != strtol(f[F_NVCSW], NULL,10))
+		return 0;
+	if (jobsteps[js].nivcsw != strtol(f[F_NIVCSW], NULL,10))
+		return 0;
+	if (jobsteps[js].vsize != strtol(f[F_VSIZE], NULL,10))
+		return 0;
+	if (jobsteps[js].psize != strtol(f[F_PSIZE], NULL,10))
+		return 0;
+	return 1;		/* they are the same */ 
+}
+
+int  sameJobTerminated(long j, char *f[])
+{
+	if (jobs[j].job_terminated_seen != 1)
+		return 0;
+	if (jobs[j].elapsed != strtol(f[F_TOT_ELAPSED], NULL, 10))
+		return 0;
+	if (strcmp(jobs[j].finished, f[F_FINISHED]))
+		return 0;
+	if (strncmp(jobs[j].cstatus, f[F_CSTATUS], strlen(jobs[j].cstatus)))
+		return 0;
+	return 1;
+}
+
+void showRec(char *f[])
+{
+	int 	i;
+	fprintf(stderr, "rec>");
+	for (i=0; f[i]; i++)
+		fprintf(stderr, " %s", f[i]);
+	fprintf(stderr, "\n");
+	return;
+}
 
 void usage(void)
 {

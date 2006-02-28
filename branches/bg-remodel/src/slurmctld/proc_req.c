@@ -1361,6 +1361,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
+	static bool in_progress = false;
+
 	DEF_TIMERS;
 	/* Locks: Write configuration, job, node and partition */
 	slurmctld_lock_t config_write_lock = { 
@@ -1369,16 +1371,19 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RECONFIGURE");
-	uid = g_slurm_auth_get_uid(msg->cred);\
+	uid = g_slurm_auth_get_uid(msg->cred);
 	if (!_is_super_user(uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
+	if (in_progress)
+		error_code = EINPROGRESS;
 
 	/* do RPC call */
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(config_write_lock);
+		in_progress = true;
 		error_code = read_slurm_conf(0);
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
@@ -1386,6 +1391,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		}
 		if (error_code == SLURM_SUCCESS)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
+		in_progress = false;
 		unlock_slurmctld(config_write_lock);
 	}
 	END_TIMER;

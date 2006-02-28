@@ -484,12 +484,14 @@ job_manager(slurmd_job_t *job)
 	    (interconnect_init(job->switch_job, job->uid) < 0)) {
 		/* error("interconnect_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
+		io_close_task_fds(job);
 		goto fail2;
 	}
 	
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
+		io_close_task_fds(job);
 		goto fail2;
 	}
 
@@ -513,7 +515,6 @@ job_manager(slurmd_job_t *job)
 	if (!job->batch && 
 	    (interconnect_fini(job->switch_job) < 0)) {
 		error("interconnect_fini: %m");
-		exit(1);
 	}
 
     fail2:
@@ -570,7 +571,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	if (slurm_container_create(job) == SLURM_ERROR) {
 		error("slurm_container_create: %m");
-		exit(3);
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -578,19 +579,23 @@ _fork_all_tasks(slurmd_job_t *job)
 	 */
 	debug3("num tasks on this node = %d", job->ntasks);
 	writefds = (int *) xmalloc (job->ntasks * sizeof(int));
-	if (!writefds)
+	if (!writefds) {
 		error("writefds xmalloc failed!");
+		return SLURM_ERROR;
+	}
 	readfds = (int *) xmalloc (job->ntasks * sizeof(int));
-	if (!readfds)
+	if (!readfds) {
 		error("readfds xmalloc failed!");
+		return SLURM_ERROR;
+	}
 	for (i = 0; i < job->ntasks; i++) {
 		fdpair[0] = -1; fdpair[1] = -1;
 		if (pipe (fdpair) < 0) {
 			error ("exec_all_tasks: pipe: %m");
 			return SLURM_ERROR;
 		}
-				
-		debug("New fdpair[0] = %d, fdpair[1] = %d", fdpair[0], fdpair[1]);
+		debug3("New fdpair[0] = %d, fdpair[1] = %d", 
+		       fdpair[0], fdpair[1]);
 		fd_set_close_on_exec(fdpair[0]);
 		fd_set_close_on_exec(fdpair[1]);
 		readfds[i] = fdpair[0];
@@ -602,7 +607,6 @@ _fork_all_tasks(slurmd_job_t *job)
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid;
-/* 		task_t task; */
 
 		if ((pid = fork ()) < 0) {
 			error("fork: %m");
@@ -620,8 +624,10 @@ _fork_all_tasks(slurmd_job_t *job)
 					close(readfds[j]);
 			}
 
-			if (_become_user(job) < 0) 
-				exit(2);
+ 			if (_become_user(job) < 0) {
+ 				error("_become_user failed: %m");
+ 				return SLURM_ERROR;
+ 			}
 
 			/* log_fini(); */ /* note: moved into exec_task() */
 
@@ -650,13 +656,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		if (slurm_container_add(job, pid) == SLURM_ERROR) {
 			error("slurm_container_create: %m");
-			exit(3);
+			return SLURM_ERROR;
 		}
-		    
-/* 		task.id        = i; */
-/* 		task.global_id = job->task[i]->gtid; */
-/* 		task.pid       = job->task[i]->pid; */
-/* 		task.ppid      = job->jmgr_pid; */
 	}
 
 	/*
@@ -783,7 +784,9 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 		}
 		if (t != NULL) {
-			debug3("Process %d, task %d finished", (int)pid, i);
+			verbose("task %lu (%lu) exited status 0x%04x %M",
+				(unsigned long)job->task[i]->gtid,
+				(unsigned long)pid, status);
 			t->exited  = true;
 			t->estatus = status;
 			job->envtp->env = job->env;

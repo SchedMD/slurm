@@ -48,6 +48,10 @@ def main(argv=None):
     # Make sure that these files are NOT world writable.
     #
     print
+    print "NOTE: slurm_epilog and slurm_prolog only exist on BlueGene systems"
+    print "NOTE: JobCredentialPrivateKey, SlurmctldLogFile, and StateSaveLocation only on control host"
+    print "NOTE: SlurmdLogFile and SlurmdSpoolDir only exist on compute servers" 
+    print
     print "Ensuring the following are not world writable:"
     files = []
     files.append(options.conf)
@@ -121,8 +125,8 @@ def check_perms(filename, perm_bits):
     try:
         perm = S_IMODE(os.stat(filename).st_mode)
     except:
-        print >>sys.stderr, 'ERROR: Unable to stat', filename
-        return True
+        print >>sys.stderr, 'WARNING: Unable to stat', filename
+        return False
     
     if perm & perm_bits:
         print >>sys.stderr, 'ERROR: %s: %o has bits %.3o set' % (filename, perm, perm_bits)

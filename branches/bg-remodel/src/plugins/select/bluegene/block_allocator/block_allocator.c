@@ -61,6 +61,7 @@ int best_count;
 int color_count = 0;
 char letters[62];
 char colors[6];
+pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** internal helper functions */
 #ifdef HAVE_BG_FILES
@@ -657,15 +658,19 @@ node_info_error:
 #ifdef HAVE_BG_FILES
 	if (have_db2
 	    && (DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
+		slurm_mutex_lock(&api_file_mutex);
 		if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
+			slurm_mutex_unlock(&api_file_mutex);
 			error("rm_set_serial(%s): %d", BG_SERIAL, rc);
 			return;
 		}
 		if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
+			slurm_mutex_unlock(&api_file_mutex);
 			error("rm_get_BGL(): %d", rc);
 			return;
 		}
-		
+		slurm_mutex_unlock(&api_file_mutex);
+	
 		if ((bg != NULL)
 		&&  ((rc = rm_get_data(bg, RM_Msize, &bp_size)) 
 		     == STATUS_OK)) {
@@ -1780,15 +1785,20 @@ extern int set_bp_map(void)
 		return -1;
 	}
 	
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_set_serial(): %d", rc);
 		return -1;
 	}
 	
 	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_get_BGL(): %d", rc);
 		return -1;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
+	
 	if ((rc = rm_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %d", rc);
 		bp_num = 0;
@@ -2153,14 +2163,18 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		error("Can't access DB2 library, run from service node");
 		return -1;
 	}
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_set_serial(%s): %d", BG_SERIAL, rc);
 		return -1;
 	}
 	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_get_BGL(): %d", rc);
 		return -1;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
 	
 	if (bg == NULL) 
 		return -1;

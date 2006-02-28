@@ -157,7 +157,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 LIST=./slurm.files
 touch $LIST
 if [ -d /etc/init.d ]; then
-   echo "%config(noreplace) /etc/init.d/slurm" >> $LIST
+   echo "/etc/init.d/slurm" >> $LIST
 fi
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
@@ -229,6 +229,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/proctrack_pgid.so
+%{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
@@ -321,79 +322,5 @@ fi
 
 
 %changelog
-* Mon Nov 07 2005 Morris Jette <jette1@llnl.gov>
-- Added PMI libary
-* Tue Oct 11 2005 Morris Jette <jette1@llnl.gov>
-- Added proctrack/rms to switch_elan rpm
-* Thu Sep 01 2005 Morris Jette <jette1@llnl.gov>
-- added etc/slurm.epilog.clean
-* Fri Jul 22 2005 Mark Grondona <mgrondona@llnl.gov>
-- explicitly set modes and owner of %prefix/include/slurm
-* Fri Jun 17 2005 Morris Jette <jette1@llnl.gov>
-- added checkpoint_aix to aix_federation rpm
-* Tue Jun 14 2005 Chris Morrone <morrone2@llnl.gov>
-- include /etc/init.d/slurm only on non-AIX systems
-* Wed Jun 01 2005 Morris Jette <jette1@llnl.gov>
-- combine proctrack_aix plugin into aix_federation rpm
-* Tue May 31 2005  Andy Riebs <andy.riebs@hp.com>
-- added jobacct plugins and sacct program
-* Thu May 26 2005  Morris Jette <jette1@llnl.gov>
-- added select_cons_res.so plugin
-* Tue May 24 2005 Morris Jette <jette1@llnl.gov>
-- optionally include sched_wiki.so and select_bluegene.so
-* Mon May 02 2005 Danny Auble <da@llnl.gov>
-- added sample federation switch plugin file
-* Mon Apr 11 2005 Morris Jette <jette1@llnl.gov>
-- move smap executable within main slurm rpm
-* Thu Apr 07 2005 Morris Jette <jette1@llnl.gov>
-- remove duplicate prolog and epilog from primary slurm rpm
-* Thu Mar 10 2005 Morris Jette <jette1@llnl.gov>
-- added federation switch plugin
-* Fri Mar 04 2005 Morris Jette <jette1@llnl.gov>
-- added proctrack_aix plugin
-* Fri Feb 25 2005 Morris Jette <jette1@llnl.gov>
-- added proctrack_sid plugin
-* Thu Feb 24 2005 Morris Jette <jette1@llnl.gov>
-- added bluegene.conf.example to distribution
-- added slurm_epilog and slurm_prolog to bluegene package
-* Thu Feb 10 2005 Morris Jette <jette1@llnl.gov>
-- disable rpm build termination if unpackaged files found (suse rpm bug)
-* Wed Jan 02 2005 Morris Jette <jette1@llnl.gov>
-- added smap package
-* Tue Nov 16 2004 Morris Jette <jette1@llnl.gov>
-- added sched_hold plugin
-* Wed Oct 13 2004 Morris Jette <jette1@llnl.gov>
-- added new package, bluegene, for select_bluegene.so
-* Fri Oct 01 2004 Mark Grondona <mgrondona@llnl.gov>
-- don't delete and add service in %post
-* Thu Sep 29 2004 Morris Jette <jette1@llnl.gov>
-- added select_linear.so plugin
-* Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
-- don't allow rpm to strip binaries since this breaks interface to parallel
-  debuggers.
-* Thu Jul 29 2004 Morris Jette <jette1@llnl.gov>
-- added checkpoint_none.so and jobcomp_script.so plugins
-* Fri Mar 07 2004 Mark Grondona <mgrondona@llnl.gov>
-- package optional plugins based on file lists instead of tests
-* Tue Jan 27 2004 Morris Jette <jette1@llnl.gov>
-- package slurm switch plugins - none and elan
-* Thu Dec 11 2003 Mark Grondona <mgrondona@llnl.gov>
-- package slurm sched plugins 
-- removed jobcomp-filetxt package -- plugin now part of base package.
-* Mon Nov 03 2003 Mark Grondona <mgrondona@llnl.gov>
-- also package "jobcomp" plugins
-* Fri Oct 10 2003 Mark Grondona <mgrondona@llnl.gov>
-- set _unpackaged_files_terminate_build to off
-* Wed Sep 17 2003 Mark Grondona <mgrondona@llnl.gov>
-- reenable chkconfig --add on install and --del on uninstall
-* Wed Aug 13 2003 Mark Grondona <mgrondona@llnl.gov>
-- do not stop and start slurm on install/upgrade/etc.
-* Thu Apr 10 2003 Mark Grondona <mgrondona@llnl.gov>
-- include html documentation in main package
-* Wed Mar 26 2003 Mark Grondona <mgrondona@llnl.gov>
-- unconditionally build auth-none subpackage
-* Fri Mar 21 2003 Mark Grondona <mgrondona@llnl.gov>
-- allow debug builds when %debug macro is defined
-- other cleanup
-* Sat Jan 26 2003 Joey Ekstrom <jcekstrom@llnl.gov> 
-- Started spec file
+* Tue Feb 14 2006 Morris Jette <jette1@llnl.gov>
+- See the NEWS file for update details

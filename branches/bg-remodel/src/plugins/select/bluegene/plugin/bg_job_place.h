@@ -2,7 +2,7 @@
  *  bg_job_place.h - header for blue gene job placement (e.g. base partition 
  *  selection) functions. 
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> et. al.
  *  
@@ -38,6 +38,7 @@
  *	                      to this job (considers slurm partition limits)
  * IN test_only - test to see if job is ever runnable, 
  *                or (false) runable right now
+ * IN test_only - if true, only test if ever could run, not necessarily now
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise 
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,

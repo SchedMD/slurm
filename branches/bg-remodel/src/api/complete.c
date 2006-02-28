@@ -43,14 +43,14 @@
  * IN job_id - the job's id
  * IN job_return_code - the highest exit code of any task of the job
  * IN system_return_code - any slurm/system exit code
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_complete_job ( uint32_t job_id, uint32_t job_return_code,
                      uint32_t system_return_code )
 {
-	return slurm_complete_job_step ( job_id, NO_VAL, job_return_code, 
-	                                 system_return_code);
+	return slurm_complete_job_step ( job_id, SLURM_BATCH_SCRIPT,
+					 job_return_code, system_return_code);
 }
 
 /*
@@ -59,7 +59,7 @@ slurm_complete_job ( uint32_t job_id, uint32_t job_return_code,
  * IN step_id - the job step's id or NO_VAL for all of the job's steps
  * IN job_return_code - the highest exit code of any task of the job
  * IN system_return_code - any slurm/system exit code
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_complete_job_step ( uint32_t job_id, uint32_t step_id, 

@@ -157,7 +157,7 @@ SLURM_NO_CHANGE_IN_DATA if data has not changed since last packed, otherwise SLU
 
 <h3>Job-Specific Node Selection Functions</h3>
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
-bitstr_t *bitmap, int min_nodes, int max_nodes);</p>
+bitstr_t *bitmap, int min_nodes, int max_nodes, bool test_only);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement 
 specification and a set of nodes which might  be used to satisfy the request, identify 
 the nodes which "best" satify the request. Note that nodes being considered for allocation 
@@ -186,6 +186,9 @@ and partition specifications.<br>
 <span class="commandline"> max_nodes</span>&nbsp; &nbsp;&nbsp;(input) 
 maximum number of nodes to allocate to this job. Note this reflects both job 
 and partition specifications.<br>
+<span class="commandline"> test_only</span>&nbsp; &nbsp;&nbsp;(input)
+if set then we only want to test our ability to run the job at some time, 
+not necesarily now with currently available resources.<br>
 </p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and future attempts may be made to schedule 
@@ -323,6 +326,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 December 2005</p>
+<p style="text-align:center;">Last modified 23 February 2006</p>
 
 <!--#include virtual="footer.txt"-->

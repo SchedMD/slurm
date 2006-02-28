@@ -58,6 +58,10 @@
 #include "src/common/xmalloc.h"
 #include <dlfcn.h>
 
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif				/* WITH_PTHREADS */
+
 // #define DEBUG_PA
 #define BIG_MAX 9999
 #define BUFSIZE 4096
@@ -216,6 +220,7 @@ extern List bp_map_list;
 extern char letters[62];
 extern char colors[6];
 extern int DIM_SIZE[BA_SYSTEM_DIMENSIONS];
+extern pthread_mutex_t api_file_mutex;
 
 /* destroy a bg_info_record_t */
 extern void destroy_bg_info_record(void* object);

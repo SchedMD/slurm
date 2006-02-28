@@ -100,10 +100,12 @@ static int _remove_job(db_job_id_t job_id)
 		if (i > 0)
 			sleep(POLL_INTERVAL);
 
+		slurm_mutex_lock(&api_file_mutex);
 		/* Find the job */
 		if ((rc = rm_get_job(job_id, &job_rec)) != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
+				slurm_mutex_unlock(&api_file_mutex);
 				return STATUS_OK;
 			} 
 
@@ -111,7 +113,8 @@ static int _remove_job(db_job_id_t job_id)
 			      bg_err_str(rc));
 			continue;
 		}
-
+		slurm_mutex_unlock(&api_file_mutex);
+			
 		if ((rc = rm_get_data(job_rec, RM_JobState, &job_state)) != 
 				STATUS_OK) {
 			(void) rm_free_job(job_rec);
@@ -342,11 +345,14 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		& (~JOB_TERMINATED_FLAG) 
 		& (~JOB_KILLED_FLAG)
 		& (~JOB_ERROR_FLAG);
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return;
 	}
-	
+	slurm_mutex_unlock(&api_file_mutex);
+			
 	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
 		error("rm_get_data(RM_JobListSize): %s", bg_err_str(rc));
 		jobs = 0;
@@ -811,6 +817,7 @@ extern int boot_block(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES
 	int rc;
 	
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_part_owner(bg_record->bg_block_id, 
 				    slurmctld_conf.slurm_user_name)) 
 	    != STATUS_OK) {
@@ -818,6 +825,7 @@ extern int boot_block(bg_record_t *bg_record)
 		      bg_record->bg_block_id, 
 		      slurmctld_conf.slurm_user_name,
 		      bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
 	
@@ -827,8 +835,11 @@ extern int boot_block(bg_record_t *bg_record)
 	    != STATUS_OK) {
 		error("pm_create_partition(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
+			
 	rc = 0;
 	while(rc < 10) {
 		if(bg_record->state == RM_PARTITION_CONFIGURING)

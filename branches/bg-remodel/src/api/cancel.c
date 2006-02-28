@@ -43,7 +43,7 @@
  * IN job_id     - the job's id
  * IN signal     - signal number
  * IN batch_flag - 1 to signal batch shell only, otherwise 0
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_kill_job ( uint32_t job_id, uint16_t signal, uint16_t batch_flag )
@@ -77,7 +77,7 @@ slurm_kill_job ( uint32_t job_id, uint16_t signal, uint16_t batch_flag )
  * IN job_id     - the job's id
  * IN step_id    - the job step's id
  * IN signal     - signal number
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)

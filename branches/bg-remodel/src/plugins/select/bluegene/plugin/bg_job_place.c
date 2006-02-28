@@ -87,7 +87,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	ListIterator itr2;
 	bg_record_t *record = NULL;
 	bg_record_t *found_record = NULL;
-	int i;
+	int i, job_running = 0;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->num_procs;
@@ -150,7 +150,7 @@ try_again:
 			      tmp_char);
 			continue;
 		}
-				
+
 		/*
 		 * check that the number of nodes is suitable
 		 */
@@ -363,6 +363,7 @@ try_again:
  *	be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
  *	to this job (considers slurm block limits)
+ * IN test_only - if true, only test if ever could run, not necessarily now
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,

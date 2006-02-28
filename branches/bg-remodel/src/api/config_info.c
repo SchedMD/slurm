@@ -190,7 +190,7 @@ void slurm_print_ctl_conf ( FILE* out,
  * IN update_time - time of current configuration data
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration 
  *	pointer
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_ctl_conf
  */
 int
