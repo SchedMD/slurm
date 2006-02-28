@@ -1096,13 +1096,15 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc = SLURM_SUCCESS;
 
-#if 1
+#if 0
 	info("fname=%s block_no=%u last_block=%u force=%u modes=%o",
 		req->fname, req->block_no, req->last_block, req->force,
 		req->modes);
 	info("uid=%u gid=%u atime=%lu mtime=%lu block_len=%u",
 		req->uid, req->gid, req->atime, req->mtime, req->block_len);
-	info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data);
+	/* when the file being transferred is binary, the following line
+	 * can break the terminal output for slurmd */
+	/* info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data); */
 #endif
 
 	flags = O_WRONLY;

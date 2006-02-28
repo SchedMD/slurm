@@ -3591,12 +3591,14 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
 
 	safe_unpackstr_xmalloc ( & msg->fname, &uint16_tmp, buffer );
 	safe_unpackmem_xmalloc ( & msg->data, &uint16_tmp , buffer ) ;
-	//msg->data = NULL;	/* we just moved the pointer */
+	if ( uint16_tmp != msg->block_len )
+		goto unpack_error;
 	return SLURM_SUCCESS;
 
     unpack_error:
-	xfree(msg -> fname);
-	xfree(msg);
+	xfree( msg -> data );
+	xfree( msg -> fname );
+	xfree( msg );
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
