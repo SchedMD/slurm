@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Define location of slurm executables (if not in default search path)
 #slurm_bin="/home/jette/slurm.way/bin/"
 
