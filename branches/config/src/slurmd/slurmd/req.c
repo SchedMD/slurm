@@ -1634,6 +1634,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	int             nsteps = 0;
 	int		delay;
 	char           *bg_part_id = NULL;
+	slurm_ctl_conf_t *cf;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
 	/* 
@@ -1720,7 +1721,9 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 *  Check for corpses
 	 */
-	delay = MAX(conf->cf->kill_wait, 5);
+	cf = slurm_conf_lock();
+	delay = MAX(cf->kill_wait, 5);
+	slurm_conf_unlock();
 	if ( !_pause_for_job_completion (req->job_id, delay)
 	     && _terminate_all_steps(req->job_id, true) ) {
 		/*

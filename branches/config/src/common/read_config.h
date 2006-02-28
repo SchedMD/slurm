@@ -174,7 +174,9 @@ extern int slurm_conf_reinit(char *file_name);
 
 extern int slurm_conf_destroy(void);
 
-extern slurm_ctl_conf_t *slurm_conf_get_struct(void);
+extern slurm_ctl_conf_t *slurm_conf_lock(void);
+
+extern void slurm_conf_unlock(void);
 
 
 #endif /* !_READ_CONFIG_H */

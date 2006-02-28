@@ -58,9 +58,6 @@ extern pid_t getpgid(pid_t pid);
  * Global config type
  */
 typedef struct slurmd_config {
-
-	slurm_ctl_conf_t *cf;		/* slurm.conf configuration        */
-
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */
 	int 	     *argc;             /* pointer to argument count       */
@@ -91,6 +88,7 @@ typedef struct slurmd_config {
 
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
+	char         *job_acct_parameters;
 } slurmd_conf_t;
 
 slurmd_conf_t * conf;

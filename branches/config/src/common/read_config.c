@@ -1393,9 +1393,22 @@ slurm_conf_destroy(void)
 }
 
 extern slurm_ctl_conf_t *
-slurm_conf_get_struct(void)
+slurm_conf_lock(void)
 {
+	pthread_mutex_lock(&conf_lock);
+
+	if (!conf_initialized) {
+		_init_slurm_conf(NULL);
+		conf_initialized = true;
+	}
+
 	return conf_ptr;
+}
+
+extern void
+slurm_conf_unlock(void)
+{
+	pthread_mutex_unlock(&conf_lock);
 }
 
 /* 
