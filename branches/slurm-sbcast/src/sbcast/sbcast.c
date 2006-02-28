@@ -220,21 +220,23 @@ static void _send_rpc(file_bcast_msg_t *bcast_msg)
 /* read and broadcast the file */
 static void _bcast_file(void)
 {
-	int buf_size, size_read;
+	int buf_size;
+	off_t size_read = 0;
 	file_bcast_msg_t bcast_msg;
 	char *buffer;
 
-	buf_size = MIN(SSIZE_MAX, (64 * 1024));
+	buf_size = MIN(SSIZE_MAX, (4 * 1024));
 	buf_size = MIN(buf_size, f_stat.st_size);
 	buffer = xmalloc(buf_size);
 
-	bcast_msg.fname     = params.dst_fname;
-	bcast_msg.block_no  = 0;
-	bcast_msg.force     = params.force;
-	bcast_msg.modes     = f_stat.st_mode;
-	bcast_msg.uid       = f_stat.st_uid;
-	bcast_msg.gid       = f_stat.st_gid;
-	bcast_msg.data      = buffer;
+	bcast_msg.fname		= params.dst_fname;
+	bcast_msg.block_no	= 0;
+	bcast_msg.last_block	= 0;
+	bcast_msg.force		= params.force;
+	bcast_msg.modes		= f_stat.st_mode;
+	bcast_msg.uid		= f_stat.st_uid;
+	bcast_msg.gid		= f_stat.st_gid;
+	bcast_msg.data		= buffer;
 	if (params.preserve) {
 		bcast_msg.atime     = f_stat.st_atime;
 		bcast_msg.mtime     = f_stat.st_mtime;
@@ -245,8 +247,11 @@ static void _bcast_file(void)
 
 	while ((bcast_msg.block_len = _get_block(buffer, buf_size))) {
 		bcast_msg.block_no++;
+		size_read += bcast_msg.block_len;
+		if (size_read >= f_stat.st_size)
+			bcast_msg.last_block = 1;
 		_send_rpc(&bcast_msg);
-		if (bcast_msg.block_len < buf_size)
+		if (bcast_msg.last_block)
 			break;	/* end of file */
 	}
 }

@@ -545,6 +545,7 @@ typedef struct kvs_get_msg {
 typedef struct file_bcast_msg {
 	char *fname;		/* name of the destination file */
 	uint16_t block_no;	/* block number of this data */
+	uint16_t last_block;	/* last block of bcast if set */
 	uint16_t force;		/* replace existing file if set */
 	uint16_t modes;		/* access rights for destination file */
 	uint32_t uid;		/* owner for destination file */

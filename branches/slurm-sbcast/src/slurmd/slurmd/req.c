@@ -92,7 +92,7 @@ static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
-static void _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
+static int  _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
@@ -216,7 +216,8 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		}
 		break;
 	case REQUEST_FILE_BCAST:
-		_rpc_file_bcast(msg, cli);
+		rc = _rpc_file_bcast(msg, cli);
+		slurm_send_rc_msg(msg, rc);
 		slurm_free_file_bcast_msg(msg->data);
 		break;
 	default:
@@ -1089,15 +1090,29 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	}
 }
 
-static void
+static int
 _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, offset, rc;
+	int fd, flags, offset, inx, rc = SLURM_SUCCESS;
 
-	flags = O_WRONLY | O_CREAT;
-	if (req->force)
-		flags |= O_TRUNC;
+#if 1
+	info("fname=%s block_no=%u last_block=%u force=%u modes=%o",
+		req->fname, req->block_no, req->last_block, req->force,
+		req->modes);
+	info("uid=%u gid=%u atime=%lu mtime=%lu block_len=%u",
+		req->uid, req->gid, req->atime, req->mtime, req->block_len);
+	info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data);
+#endif
+
+	flags = O_WRONLY;
+	if (req->block_no == 1) {
+		flags |= O_CREAT;
+		if (req->force)
+			flags |= O_TRUNC;
+	} else
+		flags |= O_APPEND;
+
 	fd = open(req->fname, flags, 0700);
 	if (fd == -1) {
 		error("Can't open `%s`: %s",
@@ -1107,11 +1122,9 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	offset = 0;
-	info("req->block_len=%u",  req->block_len);	//FIXME
-	info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data);	//FIXME
 	while (req->block_len - offset) {
-		rc = write(fd, &req->data[offset], (req->block_len - offset));
-		if (rc == -1) {
+		inx = write(fd, &req->data[offset], (req->block_len - offset));
+		if (inx == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			error("Can't write `%s`: %s",
@@ -1119,16 +1132,20 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 			rc = errno;
 			goto resp;
 		}
-		offset += rc;
+		offset += inx;
 	}
 	info("Wrote file `%s`, %u bytes", req->fname, req->block_len);
-	if (fchmod(fd, (req->modes & 0777))) {
+	if (req->last_block && fchmod(fd, (req->modes & 0777))) {
 		error("Can't chmod `%s`: %s",
+			req->fname, strerror(errno));
+	}
+	if (req->last_block && fchown(fd, req->uid, req->gid)) {
+		error("Can't chown `%s`: %s",
 			req->fname, strerror(errno));
 	}
 	close(fd);
 	fd = 0;
-	if (req->atime) {
+	if (req->last_block && req->atime) {
 		struct utimbuf time_buf;
 		time_buf.actime  = req->atime;
 		time_buf.modtime = req->mtime;
@@ -1141,6 +1158,8 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 
  resp:	if (fd)
 		close(fd);
+
+	return rc;
 }
 
 static void 

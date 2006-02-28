@@ -3552,6 +3552,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
 	xassert ( msg != NULL );
 
 	pack16 ( msg->block_no, buffer );
+	pack16 ( msg->last_block, buffer );
 	pack16 ( msg->force, buffer );
 	pack16 ( msg->modes, buffer );
 
@@ -3577,6 +3578,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
 	*msg_ptr = msg;
 
 	safe_unpack16 ( & msg->block_no, buffer );
+	safe_unpack16 ( & msg->last_block, buffer );
 	safe_unpack16 ( & msg->force, buffer );
 	safe_unpack16 ( & msg->modes, buffer );
 
