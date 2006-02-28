@@ -623,16 +623,13 @@ _print_config (char *config_param)
 static void
 _print_ping (void)
 {
-	static slurm_ctl_conf_info_msg_t  *slurm_conf_ptr = NULL;
+	static slurm_ctl_conf_info_msg_t *slurm_conf_ptr = NULL;
 
-	if (slurm_conf_ptr == NULL) {
-		slurm_conf_ptr = xmalloc(sizeof(slurm_ctl_conf_info_msg_t));
-		init_slurm_conf(slurm_conf_ptr);
-		read_slurm_conf_ctl(slurm_conf_ptr, false);
-		validate_config(slurm_conf_ptr);
-	}
+	slurm_conf_init(NULL);
 
+	slurm_conf_ptr = slurm_conf_lock();
 	_ping_slurmctld (slurm_conf_ptr);
+	slurm_conf_unlock();
 }
 
 /* Report if slurmctld daemons are responding */
@@ -670,31 +667,32 @@ _ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
 static void
 _print_daemons (void)
 {
-	slurm_ctl_conf_info_msg_t  conf;
+	slurm_ctl_conf_info_msg_t *conf;
 	char me[MAX_NAME_LEN], *b, *c, *n;
 	int actld = 0, ctld = 0, d = 0;
 	char daemon_list[] = "slurmctld slurmd";
 
-	bzero(&conf, sizeof(conf));
-	if (read_slurm_conf_ctl(&conf, true) != SLURM_SUCCESS)
-		return;
+	slurm_conf_init(NULL);
+	conf = slurm_conf_lock();
+
 	getnodename(me, MAX_NAME_LEN);
-	if ((b = conf.backup_controller)) {
+	if ((b = conf->backup_controller)) {
 		if ((strcmp(b, me) == 0) ||
 		    (strcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
-	if ((c = conf.control_machine)) {
+	if ((c = conf->control_machine)) {
 		actld = 1;
 		if ((strcmp(c, me) == 0) ||
 		    (strcasecmp(c, "localhost") == 0))
 			ctld = 1;
 	}
+	slurm_conf_unlock();
+
 	if ((n = get_conf_node_name(me))) {
 		d = 1;
 		xfree(n);
 	}
-	free_slurm_conf(&conf);
 
 	strcpy(daemon_list, "");
 	if (actld && ctld)
