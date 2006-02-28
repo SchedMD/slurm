@@ -925,9 +925,6 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		      request->geometry[X], 
 		      request->geometry[Y], 
 		      request->geometry[Z]);
-		xfree(request->save_name);
-		if(request->elongate_geos)
-			list_destroy(request->elongate_geos);
 		rc = SLURM_ERROR;
 		goto finished;
 	} 
@@ -937,26 +934,18 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		       request->geometry[X], 
 		       request->geometry[Y], 
 		       request->geometry[Z]);
-		xfree(request->save_name);
-		if(request->elongate_geos)
-			list_destroy(request->elongate_geos);
-		slurm_mutex_unlock(&block_state_mutex);
 		rc = SLURM_ERROR;
 		goto finished;
+	} 
+		 
+	if(!my_block_list) {
+		goto finished;
 	}
-	list_destroy(results);
-		
-
 	/*set up bg_record(s) here */
+	list_destroy(results);
 	results = list_create(destroy_bg_record);
 	_add_bg_record(results, request->save_name, 
 		       request->conn_type, num_segment, num_quarter);
-
-	xfree(request->save_name);
-	if(request->elongate_geos)
-		list_destroy(request->elongate_geos);
-
-got_results:
 
 	while((bg_record = (bg_record_t *) list_pop(results)) != NULL) {
 #ifdef HAVE_BG_FILES
@@ -975,6 +964,10 @@ got_results:
 	}
 
 finished:
+	if(my_block_list)
+		xfree(request->save_name);
+	if(request->elongate_geos)
+		list_destroy(request->elongate_geos);
 	if(results)
 		list_destroy(results);
 	

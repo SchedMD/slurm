@@ -557,7 +557,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 
 	lock_slurmctld(job_write_lock);
 	error_code = job_allocate(job_desc_msg, 
-			immediate, false, true, uid, &job_ptr);
+				  immediate, false, true, uid, &job_ptr);
 
 	/* return result */
 	if (error_code) {

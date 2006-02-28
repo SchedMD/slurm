@@ -266,7 +266,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 				continue;
 			}
 									
-			debug("need to make suer%s is free it's part of %s",
+			debug("need to make sure %s is free, it's part of %s",
 			      found_record->bg_block_id, 
 			      bg_record->bg_block_id);
 			list_push(delete_list, found_record);
