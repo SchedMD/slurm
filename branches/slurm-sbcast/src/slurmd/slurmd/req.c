@@ -1094,18 +1094,43 @@ static int
 _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, offset, inx, rc = SLURM_SUCCESS;
+	int fd, flags, offset, inx, rc;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
+	uid_t req_gid = g_slurm_auth_get_gid(msg->cred);
+	pid_t child;
 
 #if 0
-	info("fname=%s block_no=%u last_block=%u force=%u modes=%o",
-		req->fname, req->block_no, req->last_block, req->force,
-		req->modes);
+	info("last_block=%u force=%u modes=%o",
+		req->last_block, req->force, req->modes);
 	info("uid=%u gid=%u atime=%lu mtime=%lu block_len=%u",
 		req->uid, req->gid, req->atime, req->mtime, req->block_len);
 	/* when the file being transferred is binary, the following line
 	 * can break the terminal output for slurmd */
 	/* info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data); */
 #endif
+
+	info("sbcast req_uid=%u fname=%s block_no=%u", 
+		req_uid, req->fname, req->block_no);
+	child = fork();
+	if (child == -1) {
+		error("sbcast: fork failure");
+		return errno;
+	} else if (child > 0) {
+		waitpid(child, &rc, 0);
+		return WEXITSTATUS(rc);
+	}
+
+	/* The child actually performs the I/O and exits with 
+	 * a return code, do not return! */
+	if (setgid(req_gid) < 0) {
+		error("sbcast: uid:%u setgid(%u): %s", req_uid, req_gid, 
+			strerror(errno));
+		exit(errno);
+	}
+	if (setuid(req_uid) < 0) {
+		error("sbcast: getuid(%u): %s", req_uid, strerror(errno));
+		exit(errno);
+	}
 
 	flags = O_WRONLY;
 	if (req->block_no == 1) {
@@ -1119,10 +1144,9 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 
 	fd = open(req->fname, flags, 0700);
 	if (fd == -1) {
-		error("Can't open `%s`: %s",
-			req->fname, strerror(errno));
-		rc = errno;
-		goto resp;
+		error("sbcast: uid:%u can't open `%s`: %s",
+			req_uid, req->fname, strerror(errno));
+		exit(errno);
 	}
 
 	offset = 0;
@@ -1131,21 +1155,20 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 		if (inx == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			error("Can't write `%s`: %s",
-				req->fname, strerror(errno));
-			rc = errno;
-			goto resp;
+			error("sbcast: uid:%u can't write `%s`: %s",
+				req_uid, req->fname, strerror(errno));
+			close(fd);
+			exit(errno);
 		}
 		offset += inx;
 	}
-	info("Wrote file `%s`, %u bytes", req->fname, req->block_len);
 	if (req->last_block && fchmod(fd, (req->modes & 0777))) {
-		error("Can't chmod `%s`: %s",
-			req->fname, strerror(errno));
+		error("sbcast: uid:%u can't chmod `%s`: %s",
+			req_uid, req->fname, strerror(errno));
 	}
 	if (req->last_block && fchown(fd, req->uid, req->gid)) {
-		error("Can't chown `%s`: %s",
-			req->fname, strerror(errno));
+		error("sbcast: uid:%u can't chown `%s`: %s",
+			req_uid, req->fname, strerror(errno));
 	}
 	close(fd);
 	fd = 0;
@@ -1154,16 +1177,11 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 		time_buf.actime  = req->atime;
 		time_buf.modtime = req->mtime;
 		if (utime(req->fname, &time_buf)) {
-			error("Can't utime `%s`: %s",
-				req->fname, strerror(errno));
+			error("sbcast: uid:%u can't utime `%s`: %s",
+				req_uid, req->fname, strerror(errno));
 		}
 	}
-		
-
- resp:	if (fd)
-		close(fd);
-
-	return rc;
+	exit(SLURM_SUCCESS);
 }
 
 static void 
