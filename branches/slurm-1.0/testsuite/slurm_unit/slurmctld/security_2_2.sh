@@ -10,7 +10,7 @@ echo "AuthType=auth/dummy" >>tmp.$$
 
 # Run srun using this config file
 export SLURM_CONF=tmp.$$ 
-${slurm_bin}srun /bin/id
+${slurm_bin}srun /usr/bin/id
 
 # Clean up
 rm tmp.$$
