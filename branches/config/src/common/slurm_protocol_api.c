@@ -67,10 +67,10 @@
 #define MAX_RETRIES 3
 
 /* STATIC VARIABLES */
-static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
+/* static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER; */
 static slurm_protocol_config_t proto_conf_default;
 static slurm_protocol_config_t *proto_conf = &proto_conf_default;
-static slurm_ctl_conf_t slurmctld_conf;
+/* static slurm_ctl_conf_t slurmctld_conf; */
 
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
@@ -106,10 +106,7 @@ slurm_protocol_config_t *slurm_get_api_config()
  */
 extern void  slurm_api_set_conf_file(char *pathname)
 {
-	if (pathname == NULL)
-		return;
-	xfree(slurmctld_conf.slurm_conf);
-	slurmctld_conf.slurm_conf = xstrdup(pathname);
+	slurm_conf_reinit(pathname);
 	return;
 }
 
@@ -121,56 +118,36 @@ extern void  slurm_api_set_conf_file(char *pathname)
 int slurm_api_set_default_config()
 {
 	int rc = SLURM_SUCCESS;
-	struct stat config_stat;
-	static time_t last_config_update = (time_t) 0;
+	slurm_ctl_conf_t *conf;
 
-	slurm_mutex_lock(&config_lock);
-	config_stat.st_mtime = 0;
-	if (slurmctld_conf.slurm_conf
-	&&  (stat(slurmctld_conf.slurm_conf, &config_stat) < 0)) {
-		error("Can't stat %s: %m", slurmctld_conf.slurm_conf);
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
+	/*slurm_conf_init(NULL);*/
+	conf = slurm_conf_lock();
 
-	if (last_config_update
-	&&  (slurmctld_conf.slurm_conf
-	&&   (last_config_update == config_stat.st_mtime))
-	&&  slurmctld_conf.control_addr
-	&&  slurmctld_conf.slurmctld_port)
-  		goto cleanup;
-
-	init_slurm_conf(&slurmctld_conf);
-	read_slurm_conf_ctl(&slurmctld_conf, false);
-	if (!config_stat.st_mtime)
-		stat(slurmctld_conf.slurm_conf, &config_stat);
-	last_config_update = config_stat.st_mtime;
-
-	if ((slurmctld_conf.control_addr == NULL) ||
-	    (slurmctld_conf.slurmctld_port == 0)) {
+	if ((conf->control_addr == NULL) ||
+	    (conf->slurmctld_port == 0)) {
 		error("Unable to establish control machine or port");
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
 	slurm_set_addr(&proto_conf_default.primary_controller,
-		       slurmctld_conf.slurmctld_port,
-		       slurmctld_conf.control_addr);
+		       conf->slurmctld_port,
+		       conf->control_addr);
 	if (proto_conf_default.primary_controller.sin_port == 0) {
 		error("Unable to establish control machine address");
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
-	if (slurmctld_conf.backup_addr) {
+	if (conf->backup_addr) {
 		slurm_set_addr(&proto_conf_default.secondary_controller,
-			       slurmctld_conf.slurmctld_port,
-			       slurmctld_conf.backup_addr);
+			       conf->slurmctld_port,
+			       conf->backup_addr);
 	}
 	proto_conf = &proto_conf_default;
 
       cleanup:
-	slurm_mutex_unlock(&config_lock);
+	slurm_conf_unlock();
 	return rc;
 }
 
@@ -178,19 +155,16 @@ int slurm_api_set_default_config()
  * execute this only at program termination to free all memory */
 void slurm_api_clear_config(void)
 {
-	slurm_mutex_lock(&config_lock);
-	slurmctld_conf.slurmd_port = 0;
-	free_slurm_conf(&slurmctld_conf);
-	slurm_mutex_unlock(&config_lock);
+	slurm_conf_destroy();
 }
 
 /* update internal configuration data structure as needed.
  *	exit with lock set */
-static inline void _lock_update_config()
-{
-	slurm_api_set_default_config();
-	slurm_mutex_lock(&config_lock);
-}
+/* static inline void _lock_update_config() */
+/* { */
+/* 	slurm_api_set_default_config(); */
+/* 	slurm_mutex_lock(&config_lock); */
+/* } */
 
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
@@ -199,10 +173,11 @@ static inline void _lock_update_config()
 char *slurm_get_mpi_default(void)
 {
 	char *mpi_default;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	mpi_default = xstrdup(slurmctld_conf.mpi_default);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	mpi_default = xstrdup(conf->mpi_default);
+	slurm_conf_unlock();
 	return mpi_default;
 }
 
@@ -213,10 +188,11 @@ char *slurm_get_mpi_default(void)
 char *slurm_get_plugin_dir(void)
 {
 	char *plugin_dir;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	plugin_dir = xstrdup(slurmctld_conf.plugindir);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	plugin_dir = xstrdup(conf->plugindir);
+	slurm_conf_unlock();
 	return plugin_dir;
 }
 
@@ -227,10 +203,11 @@ char *slurm_get_plugin_dir(void)
 char *slurm_get_auth_type(void)
 {
 	char *auth_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	auth_type = xstrdup(slurmctld_conf.authtype);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	auth_type = xstrdup(conf->authtype);
+	slurm_conf_unlock();
 	return auth_type;
 }
 
@@ -240,10 +217,11 @@ char *slurm_get_auth_type(void)
 extern uint16_t slurm_get_fast_schedule(void)
 {
 	uint16_t fast_val;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	fast_val = slurmctld_conf.fast_schedule;
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	fast_val = conf->fast_schedule;
+	slurm_conf_unlock();
 	return fast_val;
 }
 
@@ -253,11 +231,15 @@ extern uint16_t slurm_get_fast_schedule(void)
  */
 extern int slurm_set_tree_width(uint16_t tree_width)
 {
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
 	if (tree_width == 0) {
 		error("can't have span count of 0");
 		return SLURM_ERROR;
 	}
-	slurmctld_conf.tree_width = tree_width;
+	conf->tree_width = tree_width;
+	slurm_conf_unlock();
 	return SLURM_SUCCESS;
 }
 /* slurm_get_tree_width
@@ -266,10 +248,11 @@ extern int slurm_set_tree_width(uint16_t tree_width)
 extern uint16_t slurm_get_tree_width(void)
 {
 	uint16_t tree_width;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	tree_width = slurmctld_conf.tree_width;
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	tree_width = conf->tree_width;
+	slurm_conf_unlock();
 	return tree_width;
 }
 
@@ -280,10 +263,12 @@ extern uint16_t slurm_get_tree_width(void)
  */
 extern int slurm_set_auth_type(char *auth_type)
 {
-	_lock_update_config();
-	xfree(slurmctld_conf.authtype);
-	slurmctld_conf.authtype = xstrdup(auth_type);
-	slurm_mutex_unlock(&config_lock);
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	xfree(conf->authtype);
+	conf->authtype = xstrdup(auth_type);
+	slurm_conf_unlock();
 	return 0;
 }
 
@@ -294,10 +279,11 @@ extern int slurm_set_auth_type(char *auth_type)
 char *slurm_get_jobacct_loc(void)
 {
 	char *jobacct_loc;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	jobacct_loc = xstrdup(slurmctld_conf.job_acct_loc);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	jobacct_loc = xstrdup(conf->job_acct_loc);
+	slurm_conf_unlock();
 	return jobacct_loc;
 }
 
@@ -308,10 +294,11 @@ char *slurm_get_jobacct_loc(void)
 char *slurm_get_jobacct_parameters(void)
 {
 	char *jobacct_parameters;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	jobacct_parameters = xstrdup(slurmctld_conf.job_acct_parameters);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	jobacct_parameters = xstrdup(conf->job_acct_parameters);
+	slurm_conf_unlock();
 	return jobacct_parameters;
 }
 
@@ -322,10 +309,11 @@ char *slurm_get_jobacct_parameters(void)
 char *slurm_get_jobacct_type(void)
 {
 	char *jobacct_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	jobacct_type = xstrdup(slurmctld_conf.job_acct_type);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	jobacct_type = xstrdup(conf->job_acct_type);
+	slurm_conf_unlock();
 	return jobacct_type;
 }
 
@@ -336,10 +324,11 @@ char *slurm_get_jobacct_type(void)
 char *slurm_get_jobcomp_type(void)
 {
 	char *jobcomp_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	jobcomp_type = xstrdup(slurmctld_conf.job_comp_type);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	jobcomp_type = xstrdup(conf->job_comp_type);
+	slurm_conf_unlock();
 	return jobcomp_type;
 }
 
@@ -350,10 +339,11 @@ char *slurm_get_jobcomp_type(void)
 char *slurm_get_proctrack_type(void)
 {
 	char *proctrack_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	proctrack_type = xstrdup(slurmctld_conf.proctrack_type);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	proctrack_type = xstrdup(conf->proctrack_type);
+	slurm_conf_unlock();
 	return proctrack_type;
 }
 
@@ -364,10 +354,11 @@ char *slurm_get_proctrack_type(void)
 uint16_t slurm_get_slurmd_port(void)
 {
 	uint16_t slurmd_port;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	slurmd_port = slurmctld_conf.slurmd_port;
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	slurmd_port = conf->slurmd_port;
+	slurm_conf_unlock();
 	return slurmd_port;
 }
 
@@ -378,10 +369,11 @@ uint16_t slurm_get_slurmd_port(void)
 uint32_t slurm_get_slurm_user_id(void)
 {
 	uint32_t slurm_uid;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	slurm_uid = slurmctld_conf.slurm_user_id;
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	slurm_uid = conf->slurm_user_id;
+	slurm_conf_unlock();
 	return slurm_uid;
 }
 
@@ -392,10 +384,11 @@ uint32_t slurm_get_slurm_user_id(void)
 char *slurm_get_sched_type(void)
 {
 	char *sched_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	sched_type = xstrdup(slurmctld_conf.schedtype);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	sched_type = xstrdup(conf->schedtype);
+	slurm_conf_unlock();
 	return sched_type;
 }
 
@@ -406,10 +399,11 @@ char *slurm_get_sched_type(void)
 char *slurm_get_select_type(void)
 {
 	char *select_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	select_type = xstrdup(slurmctld_conf.select_type);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	select_type = xstrdup(conf->select_type);
+	slurm_conf_unlock();
 	return select_type;
 }
 
@@ -420,10 +414,11 @@ char *slurm_get_select_type(void)
 char *slurm_get_switch_type(void)
 {
 	char *switch_type;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	switch_type = xstrdup(slurmctld_conf.switch_type);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	switch_type = xstrdup(conf->switch_type);
+	slurm_conf_unlock();
 	return switch_type;
 }
 
@@ -434,10 +429,11 @@ char *slurm_get_switch_type(void)
 uint16_t slurm_get_wait_time(void)
 {
 	uint16_t wait_time;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	wait_time = slurmctld_conf.wait_time;
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	wait_time = conf->wait_time;
+	slurm_conf_unlock();
 	return wait_time;
 }
 
@@ -448,10 +444,11 @@ uint16_t slurm_get_wait_time(void)
 char *slurm_get_srun_prolog(void)
 {
 	char *prolog;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	prolog = xstrdup(slurmctld_conf.srun_prolog);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	prolog = xstrdup(conf->srun_prolog);
+	slurm_conf_unlock();
 	return prolog;
 }
 
@@ -462,10 +459,11 @@ char *slurm_get_srun_prolog(void)
 char *slurm_get_srun_epilog(void)
 {
 	char *epilog;
+	slurm_ctl_conf_t *conf;
 
-	_lock_update_config();
-	epilog = xstrdup(slurmctld_conf.srun_epilog);
-	slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+	epilog = xstrdup(conf->srun_epilog);
+	slurm_conf_unlock();
 	return epilog;
 }
 
@@ -474,10 +472,11 @@ char *slurm_get_srun_epilog(void)
 char *slurm_get_task_epilog(void)
 {
         char *task_epilog;
+	slurm_ctl_conf_t *conf;
 
-        _lock_update_config();
-        task_epilog = xstrdup(slurmctld_conf.task_epilog);
-        slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+        task_epilog = xstrdup(conf->task_epilog);
+	slurm_conf_unlock();
         return task_epilog;
 }
 
@@ -486,10 +485,11 @@ char *slurm_get_task_epilog(void)
 char *slurm_get_task_prolog(void)
 {
         char *task_prolog;
-        
-	_lock_update_config();
-        task_prolog = xstrdup(slurmctld_conf.task_prolog);
-        slurm_mutex_unlock(&config_lock);
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+        task_prolog = xstrdup(conf->task_prolog);
+	slurm_conf_unlock();
         return task_prolog;
 }
 
@@ -498,10 +498,11 @@ char *slurm_get_task_prolog(void)
 char *slurm_get_task_plugin(void)
 {
         char *task_plugin;
+	slurm_ctl_conf_t *conf;
 
-        _lock_update_config();
-        task_plugin = xstrdup(slurmctld_conf.task_plugin);
-        slurm_mutex_unlock(&config_lock);
+	conf = slurm_conf_lock();
+        task_plugin = xstrdup(conf->task_plugin);
+	slurm_conf_unlock();
         return task_plugin;
 }
 /* Change general slurm communication errors to slurmctld specific errors */
@@ -599,6 +600,7 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 slurm_fd slurm_open_controller_conn()
 {
 	slurm_fd fd;
+	slurm_ctl_conf_t *conf;
 
 	if (slurm_api_set_default_config() < 0)
 		return SLURM_FAILURE;
@@ -608,8 +610,12 @@ slurm_fd slurm_open_controller_conn()
 	
 	debug("Failed to contact primary controller: %m");
 
-	if (!slurmctld_conf.backup_controller) 
+	conf = slurm_conf_lock();
+	if (!conf->backup_controller) {
+		slurm_conf_unlock();
 		goto fail;
+	}
+	slurm_conf_unlock();
 
 	if ((fd = slurm_open_msg_conn(&proto_conf->secondary_controller)) >= 0)
 		return fd;
@@ -1334,7 +1340,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(req->forward.cnt>0) {
-			steps = req->forward.cnt/slurmctld_conf.tree_width;
+			steps = req->forward.cnt/slurm_get_tree_width();
 			steps += 1;
 			timeout += (req->forward.timeout*steps);
 		}
@@ -1375,6 +1381,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	time_t start_time = time(NULL);
 	List ret_list = NULL;
 	int retry = 1;
+	slurm_ctl_conf_t *conf;
+	bool backup_controller_flag;
+	uint16_t slurmctld_timeout;
 
 	if ((fd = slurm_open_controller_conn()) < 0) {
 		rc = SLURM_SOCKET_ERROR;
@@ -1385,6 +1394,11 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	req->orig_addr.sin_addr.s_addr = 0; 
 	//info("here 2");
 	
+	conf = slurm_conf_lock();
+	backup_controller_flag = conf->backup_controller ? true : false;
+	slurmctld_timeout = conf->slurmctld_timeout;
+	slurm_conf_unlock();
+
 	while(retry) {
 		retry = 0;
 		/* If the backup controller is in the process of assuming 
@@ -1407,10 +1421,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		    == ESLURM_IN_STANDBY_MODE) &&
 		   (req->msg_type 
 		    != MESSAGE_NODE_REGISTRATION_STATUS) && 
-		   (slurmctld_conf.backup_controller) &&
+		   (backup_controller_flag) &&
 		   (difftime(time(NULL), start_time) < 
-		    (slurmctld_conf.slurmctld_timeout +
-		     (slurmctld_conf.slurmctld_timeout / 2)))) {
+		    (slurmctld_timeout + (slurmctld_timeout / 2)))) {
 			debug("Neither primary nor backup controller "
 			      "responding, sleep and retry");
 			slurm_free_return_code_msg(resp->data);
@@ -1601,7 +1614,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(msg->forward.cnt>0) {
-			steps = msg->forward.cnt/slurmctld_conf.tree_width;
+			steps = msg->forward.cnt/slurm_get_tree_width();
 			steps += 1;
 			timeout += (msg->forward.timeout*steps);
 		}
@@ -1749,18 +1762,21 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 
 extern int *set_span(int total)
 {
-	int *span = xmalloc(sizeof(int)*slurmctld_conf.tree_width);
+	int *span;
 	int left = total;
 	int i = 0;
-	//info("span count = %d",slurmctld_conf.tree_width);
-	memset(span,0,slurmctld_conf.tree_width);
-	if(total <= slurmctld_conf.tree_width) {
+	uint16_t tree_width = slurm_get_tree_width();
+
+	span = xmalloc(sizeof(int) * tree_width);
+	//info("span count = %d", tree_width);
+	memset(span, 0, tree_width);
+	if(total <= tree_width) {
 		return span;
 	} 
 	
-	while(left>0) {
-		for(i=0; i<slurmctld_conf.tree_width; i++) {
-			if((slurmctld_conf.tree_width-i)>=left) {
+	while(left > 0) {
+		for(i = 0; i < tree_width; i++) {
+			if((tree_width-i) >= left) {
 				if(span[i] == 0) {
 					left = 0;
 					break;
@@ -1769,13 +1785,13 @@ extern int *set_span(int total)
 					left = 0;
 					break;
 				}
-			} else if(left<=slurmctld_conf.tree_width) {
-				span[i]+=left;
+			} else if(left <= tree_width) {
+				span[i] += left;
 				left = 0;
 				break;
 			}
-			span[i] += slurmctld_conf.tree_width;
-			left -= slurmctld_conf.tree_width;
+			span[i] += tree_width;
+			left -= tree_width;
 		}
 	}
 	return span;

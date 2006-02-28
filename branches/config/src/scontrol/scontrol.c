@@ -94,7 +94,7 @@ static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr,
 			uint16_t show_flags);
 static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
 static void	_pid_info(pid_t job_pid);
-static void	_ping_slurmctld(slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr);
+static void     _ping_slurmctld(char *control_machine, char *backup_controller);
 static void	_print_completing (void);
 static void	_print_completing_job(job_info_t *job_ptr, 
 				node_info_msg_t *node_info_msg);
@@ -616,25 +616,33 @@ _print_config (char *config_param)
 		fprintf(stdout, "\n"); 
 	}
 	if (slurm_ctl_conf_ptr)
-		_ping_slurmctld (slurm_ctl_conf_ptr);
+		_ping_slurmctld (slurm_ctl_conf_ptr->control_machine,
+				 slurm_ctl_conf_ptr->backup_controller);
 }
 
 /* Print state of controllers only */
 static void
 _print_ping (void)
 {
-	static slurm_ctl_conf_info_msg_t *slurm_conf_ptr = NULL;
+	slurm_ctl_conf_info_msg_t *conf;
+	char *primary, *secondary;
 
 	slurm_conf_init(NULL);
 
-	slurm_conf_ptr = slurm_conf_lock();
-	_ping_slurmctld (slurm_conf_ptr);
+	conf = slurm_conf_lock();
+	primary = xstrdup(conf->control_machine);
+	secondary = xstrdup(conf->backup_controller);
 	slurm_conf_unlock();
+
+	_ping_slurmctld (primary, secondary);
+
+	xfree(primary);
+	xfree(secondary);
 }
 
 /* Report if slurmctld daemons are responding */
 static void 
-_ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
+_ping_slurmctld(char *control_machine, char *backup_controller)
 {
 	static char *state[2] = { "UP", "DOWN" };
 	int primary = 1, secondary = 1;
@@ -644,16 +652,14 @@ _ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
 	if (slurm_ping(2) == SLURM_SUCCESS)
 		secondary = 0;
 	fprintf(stdout, "Slurmctld(primary/backup) ");
-	if (slurm_ctl_conf_ptr) {
+	if (control_machine || backup_controller) {
 		fprintf(stdout, "at ");
-		if (slurm_ctl_conf_ptr->control_machine)
-			fprintf(stdout, "%s/", 
-				slurm_ctl_conf_ptr->control_machine);
+		if (control_machine)
+			fprintf(stdout, "%s/", control_machine);
 		else
 			fprintf(stdout, "(NULL)/");
-		if (slurm_ctl_conf_ptr->backup_controller)
-			fprintf(stdout, "%s ", 
-				slurm_ctl_conf_ptr->backup_controller);
+		if (backup_controller)
+			fprintf(stdout, "%s ", backup_controller);
 		else
 			fprintf(stdout, "(NULL) ");
 	}
