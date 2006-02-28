@@ -129,13 +129,13 @@ def verify_perms(filename, perm_bits, pwname):
     otherwise.  The checks fail if the file's permissions contain the bits
     'perm_bits', of if the file's uid does not match the supplied entry from
     passwd."""
-    s = os.stat(filename)
     try:
-        perm = S_IMODE(s.st_mode)
+        s = os.stat(filename)
     except:
         print >>sys.stderr, 'WARNING: Unable to stat', filename
         return True
-    
+
+    perm = S_IMODE(s.st_mode)
     if perm & perm_bits:
         print >>sys.stderr, 'ERROR: %s: %o has bits %.3o set' % (filename, perm, perm_bits)
         return False
