@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.0-pre2
+=============================
+ -- Added basic "sbcast" support, still needs message fanout logic.
+
 * Changes in SLURM 1.1.0-pre1
 =============================
  -- New --enable-multiple-slurmd configure parameter to allow running
