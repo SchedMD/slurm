@@ -19,6 +19,14 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.7
+========================
+ -- Change in how AuthType=auth/dummy is handled for security testing.
+
+* Changes in SLURM 1.0.6
+========================
+ -- Prevent slurmstepd from crashing when srun attaches to batch job.
+
 * Changes in SLURM 1.0.5
 ========================
  -- Restructure logic for scheduling BlueGene small block jobs. Added

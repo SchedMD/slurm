@@ -283,7 +283,8 @@ slurm_auth_unpack( Buf buf )
 		plugin_errno = SLURM_AUTH_UNPACK_TYPE;
 		return NULL;
 	}
-	if ( strcmp( tmpstr, plugin_type ) != 0 ) {
+	if (( tmpstr == NULL )
+	||  ( strcmp( tmpstr, plugin_type ) != 0 )) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
 		return NULL;
 	}
@@ -291,7 +292,7 @@ slurm_auth_unpack( Buf buf )
 		plugin_errno = SLURM_AUTH_UNPACK_VERSION;
 		return NULL;
 	}
-	if( version != plugin_version ) {
+	if ( version != plugin_version ) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
 		return NULL;
 	}

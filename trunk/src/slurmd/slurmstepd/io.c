@@ -1068,8 +1068,14 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 
 	memcpy(msg.cred_signature, key->data, SLURM_CRED_SIGLEN);
 	msg.nodeid = job->nodeid;
-	msg.stdout_objs = list_count(job->stdout_eio_objs);
-	msg.stderr_objs = list_count(job->stderr_eio_objs);
+	if (job->stdout_eio_objs == NULL)
+		msg.stdout_objs = 0;
+	else
+		msg.stdout_objs = list_count(job->stdout_eio_objs);
+	if (job->stderr_eio_objs == NULL)
+		msg.stderr_objs = 0;
+	else
+		msg.stderr_objs = list_count(job->stderr_eio_objs);
 	
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
