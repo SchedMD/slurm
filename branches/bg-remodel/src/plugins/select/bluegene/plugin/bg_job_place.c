@@ -223,6 +223,7 @@ try_again:
 						num_block_to_free = 0;
 						num_block_freed = 0;
 						list_remove(itr);
+						temp_list = list_create(NULL);
 						list_push(temp_list, record);
 						num_block_to_free++;
 						free_block_list(temp_list);
@@ -293,10 +294,15 @@ try_again:
 	
 	if(!found && test_only) {
 		slurm_mutex_unlock(&block_state_mutex);
-		request.geometry[X] = req_geometry[X];
-		request.geometry[Y] = req_geometry[Y];
-		request.geometry[Z] = req_geometry[Z];
 		
+		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+			request.start[i] = 0;
+			
+		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+			request.geometry[i] = req_geometry[i];
+			
+		request.save_name = NULL;
+		request.elongate_geos = NULL;
 		request.size = target_size;
 		request.procs = req_procs;
 		request.conn_type = conn_type;
@@ -317,7 +323,6 @@ try_again:
 			} 
 			sprintf(tmp_char, "%s%s\0", 
 				slurmctld_conf.node_prefix, request.save_name);
-			info("converting %s to bitmap", tmp_char);
 			if (node_name2bitmap(tmp_char, 
 					     false, 
 					     &tmp_bitmap)) {
@@ -342,11 +347,15 @@ try_again:
 		itr = list_iterator_create(lists_of_lists);
 		while ((temp_list = (List)list_next(itr)) != NULL) {
 			created++;
+
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+				request.start[i] = 0;
 			
-			request.geometry[X] = req_geometry[X];
-			request.geometry[Y] = req_geometry[Y];
-			request.geometry[Z] = req_geometry[Z];
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+				request.geometry[i] = req_geometry[i];
 			
+			request.save_name = NULL;
+			request.elongate_geos = NULL;
 			request.size = target_size;
 			request.procs = req_procs;
 			request.conn_type = conn_type;
@@ -356,9 +365,9 @@ try_again:
 			request.start_req=0;
 			/* 1- try empty space
 			   2- we see if we can create one in the 
-			      unused midplanes
+			   unused midplanes
 			   3- see if we can create one in the non 
-			      job running midplanes
+			   job running midplanes
 			*/
 			debug("trying with %d", created);
 			if(create_dynamic_block(&request, temp_list) 

@@ -196,7 +196,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	list_push(bg_job_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 
-	if(bg_record->state==RM_PARTITION_READY) {
+	if(bg_record->state == RM_PARTITION_READY) {
 		if(bg_record->user_uid != bg_update_ptr->uid) {
 			slurm_mutex_lock(&block_state_mutex);
 			debug("User isn't correct for job %d on %s, "

@@ -713,7 +713,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 					bg_found_block_list);
 				while ((found_record = (bg_record_t*) 
 					list_next(itr_found)) != NULL) {
-					/*printf("%s %d %s %d\n",*/
+					/*info("%s %d %s %d\n",*/
 /* 					       bg_record->nodes, */
 /* 					       bg_record->quarter, */
 /* 					       found_record->nodes, */
@@ -868,7 +868,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	}
 	
 	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
-		info("proc count = %d size = %d",
+		debug("proc count = %d size = %d",
 		     request->procs, request->size);
 		request->conn_type = SELECT_SMALL;
 		if(request->procs == (procs_per_node/16)) {
@@ -883,12 +883,14 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			       != NULL) {
 				if(bg_record->job_running != NO_VAL)
 					continue;
+				if(bg_record->state != RM_PARTITION_FREE)
+					continue;
 				proc_cnt = bg_record->bp_count * 
 					bg_record->cpus_per_bp;
 				if(proc_cnt == request->procs) {
-					debug("found it here %s, %s",
-					      bg_record->bg_block_id,
-					      bg_record->nodes);
+					debug2("found it here %s, %s",
+					       bg_record->bg_block_id,
+					       bg_record->nodes);
 					list_iterator_destroy(itr);
 					rc = SLURM_SUCCESS;
 					goto finished;
@@ -897,6 +899,31 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					continue;
 				break;
 			}
+			if(bg_record || my_block_list) {
+				goto found_one;
+			}
+			list_iterator_destroy(itr);
+					
+			itr = list_iterator_create(bg_list);
+			while ((bg_record = (bg_record_t *) list_next(itr)) 
+			       != NULL) {
+				if(bg_record->job_running != NO_VAL)
+					continue;
+				proc_cnt = bg_record->bp_count * 
+					bg_record->cpus_per_bp;
+				if(proc_cnt == request->procs) {
+					debug2("found it here %s, %s",
+					       bg_record->bg_block_id,
+					       bg_record->nodes);
+					list_iterator_destroy(itr);
+					rc = SLURM_SUCCESS;
+					goto finished;
+				}
+				if(bg_record->node_cnt > bluegene_bp_node_cnt)
+					continue;
+				break;
+			}
+		found_one:
 			if(bg_record) {
 				debug("going to split %s, %s",
 				      bg_record->bg_block_id,
@@ -918,7 +945,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	
 	if(request->conn_type == SELECT_NAV)
 		request->conn_type = SELECT_TORUS;
-
+	
 	if(!new_ba_request(request)) {
 		error("Problems with request for size %d geo %dx%dx%d", 
 		      request->size,
@@ -928,17 +955,51 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		rc = SLURM_ERROR;
 		goto finished;
 	} 
-	
-	if (!allocate_block(request, results)){
-		debug("allocate failure for %dx%dx%d", 
-		       request->geometry[X], 
-		       request->geometry[Y], 
-		       request->geometry[Z]);
-		rc = SLURM_ERROR;
-		goto finished;
-	} 
-		 
-	if(!my_block_list) {
+
+	if(!list_count(bg_list) || !my_block_list) {
+		bg_record = NULL;
+		goto no_list;
+	}
+
+	itr = list_iterator_create(bg_list);
+	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		request->rotate_count = 0;
+		request->elongate_count = 1;
+
+		if((bg_record->job_running == NO_VAL)
+		   && (bg_record->cpus_per_bp == procs_per_node
+		       || (bg_record->quarter == 0 
+			   && bg_record->segment < 1))) {
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+				request->start[i] = bg_record->start[i];
+			request->start_req = 1;
+			rc = SLURM_SUCCESS;
+			if (!allocate_block(request, results)){
+				debug2("allocate failure for %dx%dx%d", 
+				       request->geometry[X], 
+				       request->geometry[Y], 
+				       request->geometry[Z]);
+				rc = SLURM_ERROR;
+			} else 
+				break;
+		}
+	}
+	list_iterator_destroy(itr);
+
+no_list:
+	if(!bg_record) {
+		request->start_req = 0;
+		rc = SLURM_SUCCESS;
+		if (!allocate_block(request, results)){
+			debug("allocate failure for %dx%dx%d", 
+			      request->geometry[X], 
+			      request->geometry[Y], 
+			      request->geometry[Z]);
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if(rc == SLURM_ERROR || !my_block_list) {
 		goto finished;
 	}
 	/*set up bg_record(s) here */
@@ -1101,6 +1162,7 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 
 	return rc;
 }
+
 extern int bg_free_block(bg_record_t *bg_record)
 {
 	int rc;
@@ -1961,7 +2023,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 		error("you asked for something that was already this size");
 		return SLURM_ERROR;
 	}
-	info("here asking for %d 32s from a %d block",
+	debug("asking for %d 32s from a %d block",
 	     num_segment, bg_record->node_cnt);
 	small_count = num_segment+num_quarter; 
 
@@ -2096,7 +2158,9 @@ static int _add_bg_record(List records, char *nodes,
 		itr = list_iterator_create(bg_list);
 		while ((found_record = 
 			(bg_record_t *) list_next(itr)) != NULL) {
-			if(bit_equal(bg_record->bitmap, found_record->bitmap)){
+			if(bit_equal(bg_record->bitmap, found_record->bitmap)
+			   && (bg_record->quarter == found_record->quarter)
+			   && (bg_record->segment == found_record->segment)){
 				debug3("This partition %s "
 				       "already exists here %s",
 				       bg_record->nodes,
