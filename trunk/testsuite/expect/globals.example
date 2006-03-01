@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Establish global state information for SLURM test suite
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -25,7 +25,7 @@
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 
-global sacct scancel scontrol sinfo smap squeue srun
+global sacct sbcast scancel scontrol sinfo smap squeue srun
 
 #
 # Specify the slurm install directory.
@@ -33,6 +33,7 @@ global sacct scancel scontrol sinfo smap squeue srun
 #
 set slurm_dir   "/usr"
 set sacct       "${slurm_dir}/bin/sacct"
+set sbcast	"{slurm_dir}/bin/sbcast"
 set scancel     "${slurm_dir}/bin/scancel"
 set scontrol    "${slurm_dir}/bin/scontrol"
 set sinfo       "${slurm_dir}/bin/sinfo"
