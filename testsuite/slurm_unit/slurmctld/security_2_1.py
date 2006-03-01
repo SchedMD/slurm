@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from optparse import OptionParser
+import pwd
 import sys
 import os
 import re
@@ -79,22 +80,23 @@ def main(argv=None):
     append_file(files, confpairs, 'PluginDir')
     append_dir(files, confpairs, 'PluginDir')
 
+    pwname = pwd.getpwnam(confpairs['SlurmUser'])
     for fname in files:
-        rc = check_perms(fname, S_IWOTH)
-        if rc is True:
+        rc = verify_perms(fname, S_IWOTH, pwname)
+        if rc is False:
             error = True
 
     #
     # Make sure that these files are NOT world READABLE.
     #
     print
-    print "Ensuring the following are not world readble:"
+    print "Ensuring the following are not world readable:"
     files = []
     append_file(files, confpairs, 'JobCredentialPrivateKey')
 
     for fname in files:
-        rc = check_perms(fname, S_IROTH)
-        if rc is True:
+        rc = verify_perms(fname, S_IROTH, pwname)
+        if rc is False:
             error = True
 
     print
@@ -120,20 +122,29 @@ def append_dir(l, d, key):
         for fname in os.listdir(d[key]):
             l.append(d[key] + '/' + fname)
 
-def check_perms(filename, perm_bits):
-    """Returns 'True' if the file's permissions contain the bits 'perm_bits'"""
+def verify_perms(filename, perm_bits, pwname):
+    """Check file ownership and permission.
+    
+    Returns 'True' when the permission and ownership are verified, and 'False'
+    otherwise.  The checks fail if the file's permissions contain the bits
+    'perm_bits', of if the file's uid does not match the supplied entry from
+    passwd."""
     try:
-        perm = S_IMODE(os.stat(filename).st_mode)
+        s = os.stat(filename)
     except:
         print >>sys.stderr, 'WARNING: Unable to stat', filename
-        return False
-    
+        return True
+
+    perm = S_IMODE(s.st_mode)
     if perm & perm_bits:
         print >>sys.stderr, 'ERROR: %s: %o has bits %.3o set' % (filename, perm, perm_bits)
-        return True
+        return False
+    elif s.st_uid != 0 and s.st_uid != pwname.pw_uid:
+        print >>sys.stderr, 'ERROR: %s has incorrect uid %d' % (filename, s.st_uid)
+        return False
     else:
         print 'OK: %o %s ' % (perm, filename)
-        return False
+        return True
 
 if __name__ == "__main__":
     sys.exit(main())
