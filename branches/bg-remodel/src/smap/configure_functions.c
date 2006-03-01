@@ -38,6 +38,9 @@ typedef struct {
 
 static void	_delete_allocated_blocks(List allocated_blocks);
 static allocated_block_t *_make_request(ba_request_t *request);
+static int      _set_layout(char *com);
+static int      _set_midplane_cnt(char *com);
+static int      _set_nodecard_cnt(char *com);
 static int	_create_allocation(char *com, List allocated_blocks);
 static int	_resolve(char *com);
 static int	_change_state_all_bps(char *com, int state);
@@ -52,6 +55,9 @@ static void	_print_header_command(void);
 static void	_print_text_command(allocated_block_t *allocated_block);
 
 char error_string[255];
+int midplane_node_cnt = 512;
+int nodecard_node_cnt = 32;
+char *layout_mode = "STATIC";
 
 static void _delete_allocated_blocks(List allocated_blocks)
 {
@@ -96,6 +102,84 @@ static allocated_block_t *_make_request(ba_request_t *request)
 	list_destroy(results);
 	return(allocated_block);
 
+}
+
+static int _set_layout(char *com)
+{
+	int i=0;
+	int len = strlen(com);
+	
+	while(i<len) {
+		if(!strncasecmp(com+i, "dynamic", 7)) {
+			layout_mode = "DYNAMIC";
+			break;
+		} else if(!strncasecmp(com+i, "static", 6)) {
+			layout_mode = "STATIC";
+			break;
+		} else if(!strncasecmp(com+i, "overlap", 7)) {
+			layout_mode = "OVERLAP";
+			break;
+		} else {
+			i++;
+		}
+	}
+	if(i>=len) {
+		sprintf(error_string, 
+			"You didn't put in a mode that I recognized. \n"
+			"Please use (STATIC, OVERLAP, or DYNAMIC)\n");
+		return 0;
+	}
+	sprintf(error_string, 
+		"LayoutMode set to %s\n", layout_mode);
+	
+}
+
+static int _set_midplane_cnt(char *com)
+{
+	int i=0;
+	int len = strlen(com);
+
+	while(i<len) {
+		if(com[i] < 58 && com[i] > 47) {
+			break;
+		} else {
+			i++;
+		}
+	}
+	if(i>=len) {		
+		sprintf(error_string, 
+			"I didn't notice the number you typed in\n");
+		return 0;
+	}
+	midplane_node_cnt = atoi(&com[i]);
+	sprintf(error_string, 
+		"MidplaneNodeCnt set to %d\n", midplane_node_cnt);
+		
+	return 1;
+}
+
+static int _set_nodecard_cnt(char *com)
+{
+	int i=0;
+	int len = strlen(com);
+
+	while(i<len) {
+		if(com[i] < 58 && com[i] > 47) {
+			break;
+		} else {
+			i++;
+		}
+	}
+	if(i>=len) {		
+		sprintf(error_string, 
+			"I didn't notice the number you typed in\n");
+		return 0;
+	}
+	nodecard_node_cnt = atoi(&com[i]);
+	sprintf(error_string, 
+		"NodeCardNodeCnt set to %d\n", nodecard_node_cnt);
+		
+	return 1;
 }
 
 static int _create_allocation(char *com, List allocated_blocks)
@@ -739,7 +823,15 @@ static int _save_allocation(char *com, List allocated_blocks)
 		       file_ptr);
 		fputs ("Numpsets=8\n", file_ptr);
 		fputs ("BridgeAPIVerbose=0\n", file_ptr);
-
+		sprintf(save_string, "MidplaneNodeCnt=%d\n\0",
+			midplane_node_cnt);
+		fputs (save_string,file_ptr);
+		sprintf(save_string, "NodeCardNodeCnt=%d\n\0",
+			nodecard_node_cnt);
+		fputs (save_string,file_ptr);
+		sprintf(save_string, "LayoutMode=%s\n\0",
+			layout_mode);
+		fputs (save_string,file_ptr);
 		results_i = list_iterator_create(allocated_blocks);
 		while((allocated_block = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
@@ -1162,6 +1254,12 @@ void get_command(void)
 			exit(0);
 		} if (!strcmp(com, "quit")) {
 			break;
+		} else if (!strncasecmp(com, "layout", 6)) {
+			_set_layout(com);
+		} else if (!strncasecmp(com, "midplane", 8)) {
+			_set_midplane_cnt(com);
+		} else if (!strncasecmp(com, "nodecard", 8)) {
+			_set_nodecard_cnt(com);
 		} else if (!strncasecmp(com, "resolve", 7) ||
 			   !strncasecmp(com, "r ", 2)) {
 			_resolve(com);
