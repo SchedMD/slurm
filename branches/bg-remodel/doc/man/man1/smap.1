@@ -168,12 +168,12 @@ a a a a . . e e               |
  a a a a . . . .            /
 a a a a . . . #            Z
 
-ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
-a  12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
-b  12346 debug    chris  sim3 R  12:34   16 bgl[420x533]
-c  12350 debug    danny  job3 R   0:12    8 bgl[622x733]
-d  12356 debug    dan    colu R  18:05   16 bgl[600x731]
-e  12378 debug    joseph asx4 R   0:34    4 bgl[612x713]
+ID JOBID PARTITION BG_BLOCK USER   NAME ST  TIME NODES BP_LIST
+a  12345 batch     RMP0     joseph tst1 R  43:12   32k bgl[000x333]
+b  12346 debug     RMP1     chris  sim3 R  12:34    8k bgl[420x533]
+c  12350 debug     RMP2     danny  job3 R   0:12    4k bgl[622x733]
+d  12356 debug     RMP3     dan    colu R  18:05    8k bgl[600x731]
+e  12378 debug     RMP4     joseph asx4 R   0:34    2k bgl[612x713]
 
 .fi
 
@@ -236,8 +236,11 @@ The default value is TORUS.
 .TP
 .I \fBSmall\fR
 Equivalent to "Connection=Small".
-If a small connection is specified the midplanes chosen will create 4
-smaller partitions within the midplane each consisting of 128 c\-nodes.
+If a small connection is specified the base partition chosen will create 
+smaller partitions based on options \fBnum32\fR and \fBnum128\fR
+within the base partition.  These number will be altered to take up the 
+entire base partition. Size does not need to be specified with a small 
+request, we will always default to 1 base partition for allocation.
 .TP
 .I \fBMesh\fR
 Equivalent to "Connection=Mesh".

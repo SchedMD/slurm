@@ -1453,10 +1453,10 @@ extern int read_bg_conf(void)
 		fatal("RamDiskImage not configured in bluegene.conf");
 	if (!bluegene_bp_node_cnt)
 		fatal("MidplaneNodeCnt not configured in bluegene.conf "
-		      "make sure it is set before any Nodes= line");
+		      "make sure it is set before any BPs= line");
 	if (!bluegene_segment_node_cnt)
 		fatal("NodeCardNodeCnt not configured in bluegene.conf "
-		      "make sure it is set before any Nodes= line");
+		      "make sure it is set before any BPs= line");
 
 	if (bluegene_layout_mode == NO_VAL) {
 		info("Warning: LayoutMode was not specified in bluegene.conf "
@@ -2274,6 +2274,7 @@ static int _parse_bg_spec(char *in_line)
 				  "BridgeAPIVerbose=", 'd', &api_verb,
 				  "BridgeAPILogFile=", 's', &api_file,
 				  "Nodes=", 's', &nodes,
+				  "BPs=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
 				  "Num32=", 'd', &num_segment,

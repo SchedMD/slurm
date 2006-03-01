@@ -100,40 +100,41 @@ static allocated_block_t *_make_request(ba_request_t *request)
 
 static int _create_allocation(char *com, List allocated_blocks)
 {
-	int i=6, geoi=-1, starti=-1, i2=0;
+	int i=6, geoi=-1, starti=-1, i2=0, num32=-1, num128=-1;
 	int len = strlen(com);
-	
+	char *temp = NULL;
 	allocated_block_t *allocated_block = NULL;
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	
-	request->geometry[0] = -1;
+	request->geometry[0] = (uint16_t)NO_VAL;
 	request->conn_type=SELECT_TORUS;
 	request->rotate = false;
 	request->elongate = false;
-	request->force_contig = false;
 	request->start_req=0;
-			
+	request->size = 0;
+	request->num32 = 0;
+	request->num128 = 0;
+	
 	while(i<len) {
-		
-		while(com[i-1]!=' ' && i<len) {
-			i++;
-		}
-		
+				
 		if(!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type=SELECT_MESH;
 			i+=4;
 		} else if(!strncasecmp(com+i, "small", 5)) {
 			request->conn_type = SELECT_SMALL;
 			i+=5;
+		} else if(!strncasecmp(com+i, "num32", 5)) {
+			num32=0;
+			i+=6;
+		} else if(!strncasecmp(com+i, "num128", 6)) {
+			num128=0;
+			i+=7;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
 			i+=6;
 		} else if(!strncasecmp(com+i, "elongate", 8)) {
 			request->elongate=true;
 			i+=8;
-		} else if(!strncasecmp(com+i, "force", 5)) {
-			request->force_contig=true;
-			i+=5;
 		} else if(!strncasecmp(com+i, "start", 5)) {
 			request->start_req=1;
 			i+=5;					
@@ -141,6 +142,12 @@ static int _create_allocation(char *com, List allocated_blocks)
 			  && starti<0 
 			  && (com[i] < 58 && com[i] > 47)) {
 			starti=i;
+			i++;
+		} else if(num32 == 0 && (com[i] < 58 && com[i] > 47)) {
+			num32=i;
+			i++;
+		} else if(num128 == 0 && (com[i] < 58 && com[i] > 47)) {
+			num128=i;
 			i++;
 		} else if(geoi<0 && (com[i] < 58 && com[i] > 47)) {
 			geoi=i;
@@ -150,14 +157,54 @@ static int _create_allocation(char *com, List allocated_blocks)
 		}
 		
 	}		
+	
+	if(request->conn_type == SELECT_SMALL) {
+		if(num32 > 0) {
+			request->num32 = atoi(&com[num32]);
+			num32 = request->num32/4;
+			request->num32 = num32*4;
+		}
+		
+		if(num128 > 0) {
+			request->num128 = atoi(&com[num128]);
+			num128 = request->num128/4;
+			request->num128 = num128*4;
+		} else 
+			request->num128 = 4;
 
-	if(geoi<0) {
+		if(request->num32 > 0)
+			request->num128 -= num32;
+
+		if(request->num128 > 4) {
+			request->num128 = 4;
+			request->num32 = 0;
+		} else if(request->num32 > 16) {
+			request->num128 = 0;
+			request->num32 = 16;
+		}
+		
+		num128 = request->num128*4;
+		num32 = request->num32;
+		if((num128+num32) > 16) {
+			sprintf(error_string, 
+				"please specify a complete split of a "
+				"Base Partion\n"
+				"(i.e. num32=4 num128=3)\0");
+			geoi = -1;
+		}
+		request->size = 1;
+				
+	}
+
+	if(geoi<0 && !request->size) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
 			"No size or dimension specified, please re-enter");
 	} else {
 		i2=geoi;
 		while(i2<len) {
+			if(request->size)
+				break;
 			if(com[i2]==' ' || i2==(len-1)) {
 				/* for size */
 				request->size = atoi(&com[geoi]);
@@ -440,12 +487,13 @@ error_message:
 	memset(error_string,0,255);
 #ifdef HAVE_BG
 	sprintf(error_string, 
-		"Problem with nodes specified range was %d%d%dx%d%d%d",
+		"Problem with base partitions, "
+		"specified range was %d%d%dx%d%d%d",
 		start[X],start[Y],start[Z],
 		end[X],end[Y],end[Z]);
 #else
 	sprintf(error_string, 
-		"Problem with nodes specified range was %d-%d",
+		"Problem with nodes,  specified range was %d-%d",
 		start[X],end[X]);
 #endif	
 	return 0;
@@ -519,7 +567,6 @@ static int _alter_allocation(char *com, List allocated_blocks)
 	int len = strlen(com);
 	bool rotate = false;
 	bool elongate = false;
-	bool force_contig = false;
 		
 	while(i<len) {
 		
@@ -535,9 +582,6 @@ static int _alter_allocation(char *com, List allocated_blocks)
 		} else if(!strncasecmp(com+i, "elongate", 8)) {
 			elongate=true;
 			i+=8;
-		} else if(!strncasecmp(com+i, "force", 5)) {
-			force_contig=true;				
-			i+=5;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
 			i2=i;
 			i++;
@@ -611,7 +655,8 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->conn_type=allocated_block->request->conn_type;
 		request->rotate =allocated_block->request->rotate;
 		request->elongate = allocated_block->request->elongate;
-		request->force_contig = allocated_block->request->force_contig;
+		request->num32 = allocated_block->request->num32;
+		request->num128 = allocated_block->request->num128;
 				
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -653,6 +698,7 @@ static int _save_allocation(char *com, List allocated_blocks)
 	FILE *file_ptr = NULL;
 	char *conn_type = NULL;
 	char *mode_type = NULL;
+	char extra[20];
 
 	ListIterator results_i;		
 	
@@ -697,17 +743,21 @@ static int _save_allocation(char *com, List allocated_blocks)
 		results_i = list_iterator_create(allocated_blocks);
 		while((allocated_block = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
+			memset(extra,0,20);
 			if(allocated_block->request->conn_type == SELECT_TORUS)
 				conn_type = "TORUS";
 			else if(allocated_block->request->conn_type 
 				== SELECT_MESH)
 				conn_type = "MESH";
-			else
+			else {
 				conn_type = "SMALL";
-			
-			sprintf(save_string, "Nodes=%s Type=%s\n", 
+				sprintf(extra, " Num32=%d Num128=%d\0",
+					allocated_block->request->num32,
+					allocated_block->request->num128);
+			}
+			sprintf(save_string, "BPs=%s Type=%s%s\n", 
 				allocated_block->request->save_name, 
-				conn_type);
+				conn_type, extra);
 			fputs (save_string,file_ptr);
 		}
 		fclose (file_ptr);
@@ -930,19 +980,32 @@ static void _print_header_command(void)
 		  ba_system_ptr->xcord, "TYPE");
 	ba_system_ptr->xcord += 7;
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "CONTIG");
-	ba_system_ptr->xcord += 7;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "ROTATE");
 	ba_system_ptr->xcord += 7;
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "ELONG");
 	ba_system_ptr->xcord += 7;
+#ifdef HAVE_BG
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "BP_COUNT");
+#else
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "NODES");
+#endif
+	ba_system_ptr->xcord += 10;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "NUM32");
 	ba_system_ptr->xcord += 7;
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "NUM128");
+	ba_system_ptr->xcord += 8;
+#ifdef HAVE_BG
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "BP_LIST");
+#else
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "NODELIST");
+#endif
 	ba_system_ptr->xcord = 1;
 	ba_system_ptr->ycord++;
 }
@@ -966,14 +1029,6 @@ static void _print_text_command(allocated_block_t *allocated_block)
 			  ba_system_ptr->xcord, "SMALL");
 	ba_system_ptr->xcord += 7;
 				
-	if(allocated_block->request->force_contig)
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "Y");
-	else
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "N");
-	ba_system_ptr->xcord += 7;
-				
 	if(allocated_block->request->rotate)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "Y");
@@ -992,7 +1047,21 @@ static void _print_text_command(allocated_block_t *allocated_block)
 
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "%d",allocated_block->request->size);
-	ba_system_ptr->xcord += 7;
+	ba_system_ptr->xcord += 10;
+	
+	if(allocated_block->request->conn_type == SELECT_SMALL) {
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%d", 
+			  allocated_block->request->num32);
+		ba_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%d", 
+			  allocated_block->request->num128);
+		ba_system_ptr->xcord += 8;
+		
+	} else
+		ba_system_ptr->xcord += 15;
+	
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "%s",
 		  allocated_block->request->save_name);

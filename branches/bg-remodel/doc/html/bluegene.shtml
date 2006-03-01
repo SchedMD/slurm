@@ -73,19 +73,19 @@ date
 <p>The naming of nodes includes a three-digit suffix representing the base partition's 
 coordinates in the X, Y and Z dimensions with a zero origin.
 For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2. 
-Since jobs must be allocated consecutive nodes in all three dimensions, we have developed 
-an abbreviated format for describing the nodes in one of these three-dimensional blocks. 
+Since jobs must be allocated consecutive base partitions in all three dimensions, we have developed 
+an abbreviated format for describing the base partitions in one of these three-dimensional blocks. 
 The node's prefix of "bg" is followed by the end-points of the block enclosed in square-brackets. 
-For example, " bg[620x731]" is used to represent the eight nodes enclosed in a block 
+For example, " bg[620x731]" is used to represent the eight base partitions enclosed in a block 
 with endpoints bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721, 
 bg730 and bg731).</p></a>
 
 <p>One new tool provided is <i>smap</i>.
-Smap is aware of system topography and provides a map of what nodes are allocated 
+Smap is aware of system topography and provides a map of what base partitions are allocated 
 to jobs, partitions, etc. 
 See the smap man page for details.
 A sample of smap output is provided below showing the location of five jobs. 
-Note the format of the list of nodes allocated to each job.
+Note the format of the list of base partitions allocated to each job.
 Also note that idle (unassigned) base partitions are indicated by a period.
 Down and drained base partitions (those not available for use) are 
 indicated by a number sign (bg703 in the display below).
@@ -96,12 +96,12 @@ Values in the X dimension increase to the right.
 Values in the Z dimension increase down and toward the left.</p>
 
 <pre>
-   a a a a b b d d    ID JOBID PARTITION BG_BLOCK USER   NAME ST TIME NODES NODELIST
-  a a a a b b d d     a  12345 batch     RMP0     joseph tst1 R  43:12   64 bg[000x333]
- a a a a b b c c      b  12346 debug     RMP1     chris  sim3 R  12:34   16 bg[420x533]
-a a a a b b c c       c  12350 debug     RMP2     danny  job3 R   0:12    8 bg[622x733]
-                      d  12356 debug     RMP3     dan    colu R  18:05   16 bg[600x731]
-   a a a a b b d d    e  12378 debug     RMP4     joseph asx4 R   0:34    4 bg[612x713]
+   a a a a b b d d    ID JOBID PARTITION BG_BLOCK USER   NAME ST TIME NODES BP_LIST
+  a a a a b b d d     a  12345 batch     RMP0     joseph tst1 R  43:12  32k bg[000x333]
+ a a a a b b c c      b  12346 debug     RMP1     chris  sim3 R  12:34   8k bg[420x533]
+a a a a b b c c       c  12350 debug     RMP2     danny  job3 R   0:12   4k bg[622x733]
+                      d  12356 debug     RMP3     dan    colu R  18:05   8k bg[600x731]
+   a a a a b b d d    e  12378 debug     RMP4     joseph asx4 R   0:34   2k bg[612x713]
   a a a a b b d d
  a a a a b b c c
 a a a a b b c c
@@ -133,7 +133,7 @@ base partitions.
 Only after the bgblock is READY will your job's output file be created 
 and the script execution begin. 
 If the bgblock boot fails, SLURM will attempt to reboot several times 
-before draining the associated nodes and aborting the job.</p>
+before draining the associated base partitions and aborting the job.</p>
 
 <p>The job will continue to be in a RUNNING state until the bgjob has 
 completed and the bgblock ownership is changed. 
@@ -253,7 +253,7 @@ is enabled to execute jobs only at certain times; while a default partition
 could be configured to execute jobs at other times. 
 Jobs could still be queued in a partition that is configured in a DOWN 
 state and scheduled to execute when changed to an UP state. 
-Nodes can also be moved between slurm partitions either by changing 
+Base partitions can also be moved between slurm partitions either by changing 
 the slurm.conf file and restarting the slurmctld daemon or by using 
 the scontrol reconfig command. </p>
 
@@ -301,10 +301,10 @@ active to establish the initial configuration.
 Note that the defined bgblocks may not overlap (except for the 
 full-system bgblock, which is implicitly created).
 See the smap man page for more information.
-You must insure that the nodes defined in <i>bluegene.conf</i> are 
+You must insure that the base partitions defined in <i>bluegene.conf</i> are 
 consistent with those defined in <i>slurm.conf</i> although the 
 <i>bluegene.conf</i> file contains only the numeric coordinates of 
-nodes while <i>slurm.conf</i> contains the name prefix in addition 
+base partitions while <i>slurm.conf</i> contains the name prefix in addition 
 to the numeric coordinates.
 Note that the Image and Numpsets values defined in <i>bluegene.conf</i>
 are used only when SLURM creates bgblocks.
@@ -356,7 +356,12 @@ BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
+MidplaneNodeCnt=512
+NodeCardNodeCnt=32
 Numpsets=8
+LayoutMode=DYNAMIC
+#LayoutMode=OVERLAP
+#LayoutMode=STATIC
 #
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
@@ -364,11 +369,10 @@ BridgeAPIVerbose=0
 ###############################################################################
 # Define the static partitions (bgblocks)
 #
-# Nodes: The base partitions (midplanes) in the bgblock using XYZ coordinates
+# BPs: The base partitions (midplanes) in the bgblock using XYZ coordinates
 # Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
 #        Type SMALL will divide a midplane into multiple bgblocks
-#        4 bgblocks each containing 128 c-nodes
-#        (smaller bgblocks are presently not supported)
+#        based off options num32 and num128 to determine type of small block
 #
 # IMPORTANT NOTES:
 # * Ordering is very important for laying out switch wires.  Please create
@@ -377,16 +381,16 @@ BridgeAPIVerbose=0
 # * A bgblock is implicitly created containing all resources on the system
 # * Bgblocks must not overlap (except for implicitly created bgblock)
 #   This will be the case when smap is used to create a configuration file
-# * All Nodes defined here must also be defined in the slurm.conf file
+# * All Base partitions defined here must also be defined in the slurm.conf file
 # * Define only the numeric coordinates of the bglblocks here. The prefix
 #   will be based upon the name defined in slurm.conf
 ###############################################################################
 # LEAVE NEXT LINE AS A COMMENT, Full-system bgblock, implicitly created
-# Nodes=[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
+# BPs=[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
 ###############################################################################
 # volume = 1x1x1 = 1
-Nodes=[000x000] Type=TORUS         # 1x1x1 =  1 midplane
-Nodes=[001x001] Type=SMALL         # 1x1x1 =  1 midplane, in four bgblocks
+BPs=[000x000] Type=TORUS         # 1x1x1 =  1 midplane
+BPs=[001x001] Type=SMALL num32=4 num128=3  # 1x1x1 = 4-32 cnode blocks 3-128 conde blocks
 
 </pre></p>
 
@@ -453,10 +457,10 @@ or rebooting of bgblocks.  </p>
 <p>Be aware that SLURM will issue multiple bgblock boot requests as 
 needed (e.g. when the boot fails). 
 If the bgblock boot requests repeatedly fail, SLURM will configure 
-the failing nodes to a DRAINED state so as to avoid continuing 
+the failing base partitions to a DRAINED state so as to avoid continuing 
 repeated reboots and the likely failure of user jobs. 
 A system administrator should address the problem before returning 
-the nodes to service.</p>
+the base partitions to service.</p>
 
 <p>If you cold-start slurmctld (<b>/etc/init.d/slurm startclean</b> 
 or <b>slurmctld -c</b>) it is recommended that you also cold-start 
@@ -483,7 +487,7 @@ information about every Bridge API call issued.</p>
 
 <p>Note that slurmcltld log messages of the sort 
 <i>Nodes bg[000x133] not responding</i> are indicative of the slurmd 
-daemon serving as a front-end to those nodes is not responding (on 
+daemon serving as a front-end to those base partitions is not responding (on 
 non-Blue Gene systems, the slurmd actually does run on the compute 
 nodes, so the message is more meaningful there). </p>
 

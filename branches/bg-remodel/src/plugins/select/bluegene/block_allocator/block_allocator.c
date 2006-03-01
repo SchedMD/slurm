@@ -170,15 +170,7 @@ extern void destroy_bg_info_record(void* object)
  * create a block request.  Note that if the geometry is given,
  * then size is ignored.  
  * 
- * OUT - ba_request: structure to allocate and fill in.  
- * IN - geometry: requested geometry of block
- * IN - size: requested size of block
- * IN - rotate: if true, allows rotation of block during fit
- * IN - elongate: if true, will try to fit different geometries of
- *      same size requests
- * IN - contig: enforce contiguous regions constraint
- * IN - conn_type: connection type of request (SELECT_TORUS or SELECT_MESH)
- * 
+ * IN/OUT - ba_request: structure to allocate and fill in.  
  * return SUCCESS of operation.
  */
 extern int new_ba_request(ba_request_t* ba_request)
@@ -526,7 +518,6 @@ extern void print_ba_request(ba_request_t* ba_request)
 	debug("   conn_type:\t%d", ba_request->conn_type);
 	debug("      rotate:\t%d", ba_request->rotate);
 	debug("    elongate:\t%d", ba_request->elongate);
-	debug("force contig:\t%d", ba_request->force_contig);
 }
 
 /**

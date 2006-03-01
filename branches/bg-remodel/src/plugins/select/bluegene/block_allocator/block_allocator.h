@@ -126,9 +126,10 @@ typedef struct {
 	int conn_type;
 	int rotate_count;
 	int elongate_count;
+	int num32;
+	int num128;
 	bool rotate;
 	bool elongate; 
-	bool force_contig;
 	List elongate_geos;
 } ba_request_t; 
 
