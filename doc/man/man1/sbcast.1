@@ -1,4 +1,4 @@
-.TH SBCAST "1" "January 2006" "sbcast 1.1" "Slurm components"
+.TH SBCAST "1" "February 2006" "sbcast 1.1" "Slurm components"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a SLURM job.
@@ -17,7 +17,8 @@ allocation.
 file copy to be created on each node. 
 \fBDEST\fR should be on a file system local to that node.
 Note that parallel file systems may provide better performance 
-than \fBsbcast\fR can provide.
+than \fBsbcast\fR can provide, particularly for larger files
+(over one megabyte).
 
 .SH "OPTIONS"
 .TP
