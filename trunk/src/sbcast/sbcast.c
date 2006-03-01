@@ -110,6 +110,7 @@ static void _get_job_info(void)
 		exit(1);
 	}
 	jobid = (uint32_t) atol(jobid_str);
+	verbose("jobid      = %u", jobid);
 
 	if (slurm_allocation_lookup(jobid, &alloc_resp) != SLURM_SUCCESS) {
 		error("SLURM jobid %u lookup error: %s",

@@ -129,14 +129,14 @@ extern void parse_command_line(int argc, char *argv[])
 /* print the parameters specified */
 void _print_options( void )
 {
-	printf("-----------------------------\n");
-	printf("compress  = %s\n", params.compress ? "true" : "false");
-	printf("force     = %s\n", params.force ? "true" : "false");
-	printf("preserve  = %s\n", params.preserve ? "true" : "false");
-	printf("verbose   = %d\n", params.verbose);
-	printf("source    = %s\n", params.src_fname);
-	printf("dest      = %s\n", params.dst_fname);
-	printf("-----------------------------\n");
+	info("-----------------------------");
+	info("compress  = %s", params.compress ? "true" : "false");
+	info("force     = %s", params.force ? "true" : "false");
+	info("preserve  = %s", params.preserve ? "true" : "false");
+	info("verbose   = %d", params.verbose);
+	info("source    = %s", params.src_fname);
+	info("dest      = %s", params.dst_fname);
+	info("-----------------------------");
 }
 
 
