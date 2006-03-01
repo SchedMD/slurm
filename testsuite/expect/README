@@ -1,5 +1,5 @@
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -259,6 +259,7 @@ test9.6    Stress test of per-task output files.
 test9.7    Stress test multiple simultaneous commands via multiple threads.
 test9.8    Stress test with maximum slurmctld message concurrency.
 
+
 test10.#   Testing of smap options.
 ===================================
 test10.1   Confirm smap usage option works (--usage option).
@@ -302,4 +303,16 @@ with the basics here.)
 test13.#   Testing of elan switch plugin
 ========================================
 test13.1   Test that we avoid re-using active switch contexts.
+
+
+test14.#   Testing of sbcast options.
+=====================================
+test14.1   Confirm sbcast usage option works (--usage option).
+test14.2   Confirm sbcast help option works (--help option).
+test14.3   Confirm that sbcast reports a proper version number
+           (--version option).
+test14.4   Test sbcast file overwrite (--force option).
+test14.5   Test sbcast time preservation (--preserve option).
+test14.6   Test sbcast logging (--verbose option).
+test14.7   Test sbcast security issues.
 
