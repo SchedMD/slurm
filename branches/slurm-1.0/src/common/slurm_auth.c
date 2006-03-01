@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm_auth.c - implementation-independent authentication API definitions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>
  *  UCRL-CODE-217948.
@@ -38,6 +38,8 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/arg_desc.h"
+
+static bool auth_dummy = false;	/* for security testing */
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -287,7 +289,7 @@ slurm_auth_init( void )
 	auth_type = slurm_get_auth_type();
 	if (strcmp(auth_type, "auth/dummy") == 0) {
 		info( "warning: %s plugin selected", auth_type);
-		retval = SLURM_ERROR;
+		auth_dummy = true;
 		xfree(auth_type);
 		goto done;
 	}
@@ -339,9 +341,12 @@ g_slurm_auth_create( void *hosts, int timeout )
 {
         void **argv;
         void *ret;
-        
-        if ( slurm_auth_init() < 0 )
-                return NULL;
+
+	if ( slurm_auth_init() < 0 )
+		return NULL;
+
+	if ( auth_dummy )
+		return xmalloc(0);
 
         if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
                 return NULL;
@@ -358,6 +363,9 @@ g_slurm_auth_destroy( void *cred )
         if ( slurm_auth_init() < 0 )
                 return SLURM_ERROR;
 
+	if ( auth_dummy )	/* don't worry about leak in testing */
+		return SLURM_SUCCESS;
+
         return (*(g_context->ops.destroy))( cred );
 }
 
@@ -366,9 +374,12 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout )
 {
         int ret;
         void **argv;
-        
+
         if ( slurm_auth_init() < 0 )
                 return SLURM_ERROR;
+
+	if ( auth_dummy )
+		return SLURM_SUCCESS;
 
         if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
                 return SLURM_ERROR;
@@ -382,7 +393,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout )
 uid_t
 g_slurm_auth_get_uid( void *cred )
 {
-        if ( slurm_auth_init() < 0 )
+	if (( slurm_auth_init() < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
         
         return (*(g_context->ops.get_uid))( cred );
@@ -391,7 +402,7 @@ g_slurm_auth_get_uid( void *cred )
 gid_t
 g_slurm_auth_get_gid( void *cred )
 {
-        if ( slurm_auth_init() < 0 )
+	if (( slurm_auth_init() < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
         
         return (*(g_context->ops.get_gid))( cred );
@@ -402,14 +413,17 @@ g_slurm_auth_pack( void *cred, Buf buf )
 {
         if ( slurm_auth_init() < 0 )
                 return SLURM_ERROR;
-        
+ 
+	if ( auth_dummy )
+		return SLURM_SUCCESS;
+
         return (*(g_context->ops.pack))( cred, buf );
 }
 
 void *
 g_slurm_auth_unpack( Buf buf )
 {
-        if ( slurm_auth_init() < 0 )
+	if (( slurm_auth_init() < 0 ) || auth_dummy )
                 return NULL;
         
         return (*(g_context->ops.unpack))( buf );
@@ -420,14 +434,17 @@ g_slurm_auth_print( void *cred, FILE *fp )
 {
         if ( slurm_auth_init() < 0 )
                 return SLURM_ERROR;
-        
+
+	if ( auth_dummy )
+		return SLURM_SUCCESS;
+
         return (*(g_context->ops.print))( cred, fp );
 }
 
 int
 g_slurm_auth_errno( void *cred )
 {
-        if ( slurm_auth_init() < 0 )
+        if (( slurm_auth_init() < 0 ) || auth_dummy )
                 return SLURM_ERROR;
 
         return (*(g_context->ops.sa_errno))( cred );
@@ -438,9 +455,9 @@ g_slurm_auth_errstr( int slurm_errno )
 {
         static char auth_init_msg[] = "authentication initialization failure";
         char *generic;
-        
-        if ( slurm_auth_init() < 0 )
-                return auth_init_msg;
+
+	if (( slurm_auth_init() < 0 ) || auth_dummy )
+		return auth_init_msg;
 
         if (( generic = (char *) slurm_auth_generic_errstr( slurm_errno ) ))
                 return generic;
