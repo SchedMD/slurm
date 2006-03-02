@@ -38,9 +38,16 @@ set cycle_count  100
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
-set node_cnt     "1-4"
+if { [test_bluegene] } {
+	set node_cnt 32-1024
+	set task_cnt 32
+	
+} else {
+	set node_cnt 1-4
+	set task_cnt $max_stress_tasks
+}
+
 set other_opts   "-O"
-set task_cnt     $max_stress_tasks
 
 print_header $test_id
 
