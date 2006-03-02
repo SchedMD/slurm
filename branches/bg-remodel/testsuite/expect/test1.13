@@ -46,7 +46,7 @@ print_header $test_id
 #
 spawn $srun --immediate --hold -t1 $bin_pwd
 expect {
-	-re "Immediate execution impossible" {
+	-re "(Immediate execution impossible|Unable to allocate resources)" {
 		send_user "This error is expected, no worries\n"
 		incr matches
 		exp_continue
