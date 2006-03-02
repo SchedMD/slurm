@@ -39,7 +39,7 @@ typedef struct {
 static void	_delete_allocated_blocks(List allocated_blocks);
 static allocated_block_t *_make_request(ba_request_t *request);
 static int      _set_layout(char *com);
-static int      _set_midplane_cnt(char *com);
+static int      _set_base_part_cnt(char *com);
 static int      _set_nodecard_cnt(char *com);
 static int	_create_allocation(char *com, List allocated_blocks);
 static int	_resolve(char *com);
@@ -55,7 +55,7 @@ static void	_print_header_command(void);
 static void	_print_text_command(allocated_block_t *allocated_block);
 
 char error_string[255];
-int midplane_node_cnt = 512;
+int base_part_node_cnt = 512;
 int nodecard_node_cnt = 32;
 char *layout_mode = "STATIC";
 
@@ -134,7 +134,7 @@ static int _set_layout(char *com)
 	
 }
 
-static int _set_midplane_cnt(char *com)
+static int _set_base_part_cnt(char *com)
 {
 	int i=0;
 	int len = strlen(com);
@@ -151,9 +151,9 @@ static int _set_midplane_cnt(char *com)
 			"I didn't notice the number you typed in\n");
 		return 0;
 	}
-	midplane_node_cnt = atoi(&com[i]);
+	base_part_node_cnt = atoi(&com[i]);
 	sprintf(error_string, 
-		"MidplaneNodeCnt set to %d\n", midplane_node_cnt);
+		"BasePartitionNodeCnt set to %d\n", base_part_node_cnt);
 		
 	return 1;
 }
@@ -199,8 +199,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->num32 = 0;
 	request->num128 = 0;
 	
-	while(i<len) {
-				
+	while(i<len) {				
 		if(!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type=SELECT_MESH;
 			i+=4;
@@ -335,6 +334,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 			request->start[Z] = atoi(&com[starti]);
 		}
 	start_request:
+		if(!strcasecmp(layout_mode,"OVERLAP"))
+			reset_ba_system();
+	
 		/*
 		  Here is where we do the allocating of the partition. 
 		  It will send a request back which we will throw into
@@ -823,8 +825,8 @@ static int _save_allocation(char *com, List allocated_blocks)
 		       file_ptr);
 		fputs ("Numpsets=8\n", file_ptr);
 		fputs ("BridgeAPIVerbose=0\n", file_ptr);
-		sprintf(save_string, "MidplaneNodeCnt=%d\n\0",
-			midplane_node_cnt);
+		sprintf(save_string, "BasePartitionNodeCnt=%d\n\0",
+			base_part_node_cnt);
 		fputs (save_string,file_ptr);
 		sprintf(save_string, "NodeCardNodeCnt=%d\n\0",
 			nodecard_node_cnt);
@@ -1256,8 +1258,8 @@ void get_command(void)
 			break;
 		} else if (!strncasecmp(com, "layout", 6)) {
 			_set_layout(com);
-		} else if (!strncasecmp(com, "midplane", 8)) {
-			_set_midplane_cnt(com);
+		} else if (!strncasecmp(com, "basepartition", 13)) {
+			_set_base_part_cnt(com);
 		} else if (!strncasecmp(com, "nodecard", 8)) {
 			_set_nodecard_cnt(com);
 		} else if (!strncasecmp(com, "resolve", 7) ||

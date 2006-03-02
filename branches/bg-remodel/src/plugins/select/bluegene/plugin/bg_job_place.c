@@ -363,9 +363,9 @@ try_again:
 			request.start_req=0;
 			/* 1- try empty space
 			   2- we see if we can create one in the 
-			   unused midplanes
+			   unused bps
 			   3- see if we can create one in the non 
-			   job running midplanes
+			   job running bps
 			*/
 			debug("trying with %d", created);
 			if(create_dynamic_block(&request, temp_list) 

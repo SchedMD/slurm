@@ -686,7 +686,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 
 		if(found_bpid==BA_SYSTEM_DIMENSIONS) {
 						
-			debug2("adding midplane %d%d%d",
+			debug2("adding bp %d%d%d",
 			       bg_bp->coord[X],
 			       bg_bp->coord[Y],
 			       bg_bp->coord[Z]);

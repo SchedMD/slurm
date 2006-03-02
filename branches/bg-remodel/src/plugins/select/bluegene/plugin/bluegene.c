@@ -193,7 +193,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 	if (bg_record->bg_block_id)
 		info("\tbg_block_id: %s", bg_record->bg_block_id);
 	info("\tnodes: %s", bg_record->nodes);
-	info("\tsize: %d Midplanes %d Nodes %d cpus", 
+	info("\tsize: %d BPs %d Nodes %d cpus", 
 	     bg_record->bp_count,
 	     bg_record->node_cnt,
 	     bg_record->cpus_per_bp * bg_record->bp_count);
@@ -1452,7 +1452,7 @@ extern int read_bg_conf(void)
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
 	if (!bluegene_bp_node_cnt)
-		fatal("MidplaneNodeCnt not configured in bluegene.conf "
+		fatal("BasePartitionNodeCnt not configured in bluegene.conf "
 		      "make sure it is set before any BPs= line");
 	if (!bluegene_segment_node_cnt)
 		fatal("NodeCardNodeCnt not configured in bluegene.conf "
@@ -2028,7 +2028,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 	small_count = num_segment+num_quarter; 
 
 	ba_node = list_pop(bg_record->bg_block_list);
-	/* break midplane up into 16 parts */
+	/* break base partition up into 16 parts */
 	small_size = bluegene_bp_node_cnt/bluegene_segment_node_cnt;
 	node_cnt = 0;
 	if(!full_bp)
@@ -2038,7 +2038,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 	segment = 0;
 	for(i=0; i<small_count; i++) {
 		if(i == num_segment) {
-			/* break midplane up into 4 parts */
+			/* break base partition up into 4 parts */
 			small_size = 4;
 		}
 		
@@ -2194,7 +2194,7 @@ static int _add_bg_record(List records, char *nodes,
 		   != bluegene_bp_node_cnt)
 			fatal("There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes in one "
-			      "midplane with %d nodes.", 
+			      "base partition with %d nodes.", 
 			      ((num_segment*bluegene_segment_node_cnt) + 
 			       (num_quarter*bluegene_quarter_node_cnt)), 
 			      bluegene_bp_node_cnt);
@@ -2207,14 +2207,15 @@ static int _add_bg_record(List records, char *nodes,
 		 */
 		itr = list_iterator_create(bg_record->bg_block_list);
 		while ((ba_node = list_next(itr)) != NULL) {
-			/* break midplane up into 16 parts */
+			/* break base partition up into 16 parts */
 			small_size = 16;
 			node_cnt = 0;
 			quarter = 0;
 			segment = 0;
 			for(i=0; i<small_count; i++) {
 				if(i == num_segment) {
-					/* break midplane up into 4 parts */
+					/* break base partition 
+					   up into 4 parts */
 					small_size = 4;
 				}
 								
@@ -2261,7 +2262,7 @@ static int _parse_bg_spec(char *in_line)
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	char *api_file = NULL, *layout = NULL;
 	int pset_num=-1, api_verb=-1, num_segment=0, num_quarter=0;
-	int mp_node_cnt = 0;
+	int bp_node_cnt = 0;
 	int nc_node_cnt = 0;
 	rm_connection_type_t send_conn;
 
@@ -2279,7 +2280,7 @@ static int _parse_bg_spec(char *in_line)
 				  "Type=", 's', &conn_type,
 				  "Num32=", 'd', &num_segment,
 				  "Num128=", 'd', &num_quarter,
-				  "MidplaneNodeCnt=", 'd', &mp_node_cnt,
+				  "BasePartitionNodeCnt=", 'd', &bp_node_cnt,
 				  "NodeCardNodeCnt=", 'd', &nc_node_cnt,
 				  "LayoutMode=", 's', &layout,
 				  "END");
@@ -2333,9 +2334,9 @@ static int _parse_bg_spec(char *in_line)
 	if (api_verb >= 0) {
 		bridge_api_verb = api_verb;
 	}
-	if (mp_node_cnt > 0 && !bluegene_bp_node_cnt) {
-		bluegene_bp_node_cnt = mp_node_cnt;
-		bluegene_quarter_node_cnt = mp_node_cnt/4;		
+	if (bp_node_cnt > 0 && !bluegene_bp_node_cnt) {
+		bluegene_bp_node_cnt = bp_node_cnt;
+		bluegene_quarter_node_cnt = bp_node_cnt/4;		
 	}
 	if (nc_node_cnt > 0 && !bluegene_segment_node_cnt) {
 		bluegene_segment_node_cnt = nc_node_cnt;		
@@ -2352,8 +2353,8 @@ static int _parse_bg_spec(char *in_line)
 	}
 	
 	if (!bluegene_bp_node_cnt) {
-		error("MidplaneNodeCnt not configured in bluegene.conf "
-		      "defaulting to 512 as MidplaneNodeCnt");
+		error("BasePartitionNodeCnt not configured in bluegene.conf "
+		      "defaulting to 512 as BasePartitionNodeCnt");
 		bluegene_bp_node_cnt = 512;
 		bluegene_quarter_node_cnt = 128;
 	}
