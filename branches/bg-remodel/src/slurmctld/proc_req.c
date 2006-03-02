@@ -1071,13 +1071,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		unlock_slurmctld(job_write_lock);
 		error("_slurm_rpc_job_step_create: %s", 
 			slurm_strerror(error_code));
-#ifdef HAVE_FRONT_END	/* Limited job step support */
-		/* We have already sent a rc so we have to do something here, 
-		   but I don't know what.
-		*/
-#else
 		slurm_send_rc_msg(msg, error_code);
-#endif
 	} else {
 		info("_slurm_rpc_job_step_create: StepId=%u.%u %s %s",
 			step_rec->job_ptr->job_id, step_rec->step_id, 
