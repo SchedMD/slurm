@@ -371,7 +371,8 @@ job_desc_msg_create_from_opts (char *script)
 {
 	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
-	
+	uint16_t tmp = 0;
+
 	slurm_init_job_desc_msg(j);
 	select_g_alloc_jobinfo (&j->select_jobinfo);
 
@@ -409,14 +410,16 @@ job_desc_msg_create_from_opts (char *script)
 		select_g_set_jobinfo(j->select_jobinfo,
 				     SELECT_DATA_GEOMETRY,
 				     opt.geometry);
-	if (opt.conn_type != -1)
+	if (opt.conn_type != -1) 
 		select_g_set_jobinfo(j->select_jobinfo,
 				     SELECT_DATA_CONN_TYPE,
 				     &opt.conn_type);
-	if (opt.no_rotate)
+	if (opt.no_rotate) {
+		tmp = 0;
 		select_g_set_jobinfo(j->select_jobinfo,
 				     SELECT_DATA_ROTATE,
-				     0);	
+				     &tmp);	
+	}
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
 	if (opt.mincpus > -1)

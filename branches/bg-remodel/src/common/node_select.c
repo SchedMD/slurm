@@ -559,7 +559,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			(*jobinfo)->geometry[i] = 0;
 	(*jobinfo)->conn_type = SELECT_NAV;
-	(*jobinfo)->rotate = true;
+	(*jobinfo)->rotate = 1;
 	(*jobinfo)->node_use = SELECT_NAV;
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;

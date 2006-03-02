@@ -164,7 +164,7 @@ static enum  task_dist_states _verify_dist_type(const char *arg);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
 					cpu_bind_type_t *cpu_bind_type);
-static int   _verify_geometry(const char *arg, int *geometry);
+static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_conn_type(const char *arg);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -274,7 +274,7 @@ static int _verify_conn_type(const char *arg)
  * verify geometry arguments, must have proper count
  * returns -1 on error, 0 otherwise
  */
-static int _verify_geometry(const char *arg, int *geometry)
+static int _verify_geometry(const char *arg, uint16_t *geometry)
 {
 	char* token, *delimiter = ",x", *next_ptr;
 	int i, rc = 0;
@@ -288,8 +288,8 @@ static int _verify_geometry(const char *arg, int *geometry)
 			rc = -1;
 			break;
 		}
-		geometry[i] = atoi(token);
-		if (geometry[i] <= 0) {
+		geometry[i] = (uint16_t)atoi(token);
+		if (geometry[i] == 0 || geometry[i] == (uint16_t)NO_VAL) {
 			error("invalid --geometry argument");
 			rc = -1;
 			break;
@@ -732,57 +732,57 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	switch (e->type) {
 	case OPT_STRING:
-	    *((char **) e->arg) = xstrdup(val);
-	    break;
+		*((char **) e->arg) = xstrdup(val);
+		break;
 	case OPT_INT:
-	    if (val != NULL) {
-		    *((int *) e->arg) = (int) strtol(val, &end, 10);
-		    if (!(end && *end == '\0')) 
-			    error("%s=%s invalid. ignoring...", e->var, val);
-	    }
-	    break;
+		if (val != NULL) {
+			*((int *) e->arg) = (int) strtol(val, &end, 10);
+			if (!(end && *end == '\0')) 
+				error("%s=%s invalid. ignoring...", e->var, val);
+		}
+		break;
 
 	case OPT_DEBUG:
-	    if (val != NULL) {
-		    _verbose = (int) strtol(val, &end, 10);
-		    if (!(end && *end == '\0')) 
-			    error("%s=%s invalid", e->var, val);
-	    }
-	    break;
+		if (val != NULL) {
+			_verbose = (int) strtol(val, &end, 10);
+			if (!(end && *end == '\0')) 
+				error("%s=%s invalid", e->var, val);
+		}
+		break;
 
 	case OPT_DISTRIB:
-	    dt = _verify_dist_type(val);
-	    if (dt == SLURM_DIST_UNKNOWN) {
-		    error("\"%s=%s\" -- invalid distribution type. " 
-		          "ignoring...", e->var, val);
-	    } else 
-		    opt.distribution = dt;
-	    break;
+		dt = _verify_dist_type(val);
+		if (dt == SLURM_DIST_UNKNOWN) {
+			error("\"%s=%s\" -- invalid distribution type. " 
+			      "ignoring...", e->var, val);
+		} else 
+			opt.distribution = dt;
+		break;
 
 	case OPT_CPU_BIND:
-	    if (_verify_cpu_bind(val, &opt.cpu_bind,
-					    &opt.cpu_bind_type))
-		    exit(1);
-	    break;
+		if (_verify_cpu_bind(val, &opt.cpu_bind,
+				     &opt.cpu_bind_type))
+			exit(1);
+		break;
 
 	case OPT_NODES:
-	    opt.nodes_set = _verify_node_count( val, 
-			                        &opt.min_nodes, 
-					        &opt.max_nodes );
-	    if (opt.nodes_set == false) {
-		    error("\"%s=%s\" -- invalid node count. ignoring...",
-			  e->var, val);
-	    }
-	    break;
+		opt.nodes_set = _verify_node_count( val, 
+						    &opt.min_nodes, 
+						    &opt.max_nodes );
+		if (opt.nodes_set == false) {
+			error("\"%s=%s\" -- invalid node count. ignoring...",
+			      e->var, val);
+		}
+		break;
 
 	case OPT_OVERCOMMIT:
-	    opt.overcommit = true;
-	    break;
+		opt.overcommit = true;
+		break;
 
 	case OPT_CORE:
-	    opt.core_type = core_format_type (val);
-	    break;
-
+		opt.core_type = core_format_type (val);
+		break;
+	    
 	case OPT_CONN_TYPE:
 		opt.conn_type = _verify_conn_type(val);
 		break;
@@ -792,9 +792,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_GEOMETRY:
-		if (_verify_geometry(val, (int *)opt.geometry)) {
+		if (_verify_geometry(val, opt.geometry)) {
 			error("\"%s=%s\" -- invalid geometry, ignoring...",
-				e->var, val);
+			      e->var, val);
 		}
 		break;
 
@@ -807,8 +807,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	default:
-	    /* do nothing */
-	    break;
+		/* do nothing */
+		break;
 	}
 }
 
@@ -1017,8 +1017,7 @@ void set_options(const int argc, char **argv, int first)
 		case (int)'g':
 			if(!first && opt.geometry)
 				break;
-						
-			if (_verify_geometry(optarg, (int *)opt.geometry))
+			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
 		case (int)'H':
