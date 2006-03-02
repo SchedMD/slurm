@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # UCRL-CODE-217948.
@@ -46,44 +46,49 @@ print_header $test_id
 spawn $smap -Dj -c
 expect {
 	-re "JOBID" {
-	set stuff [concat $stuff "2"]
+		set stuff [concat $stuff "2"]
 		incr matches
 		exp_continue
 	}
 	-re "PARTITION" {
-	set stuff [concat $stuff "3"]
+		set stuff [concat $stuff "3"]
 		incr matches
 		exp_continue
 	}
 	-re "USER" {
-	set stuff [concat $stuff "5"]
+		set stuff [concat $stuff "5"]
 		incr matches
 		exp_continue
 	}
 	-re "NAME" {
-	set stuff [concat $stuff "6"]
+		set stuff [concat $stuff "6"]
 		incr matches
 		exp_continue
 	}
 	-re " ST" {
-	set stuff [concat $stuff "7"]
+		set stuff [concat $stuff "7"]
 		incr matches
 		exp_continue
 	}
 	-re "TIME" {
-	set stuff [concat $stuff "8"]
+		set stuff [concat $stuff "8"]
 		incr matches
 		exp_continue
 	}
 	-re "NODES" {
-	set stuff [concat $stuff "9"]
+		set stuff [concat $stuff "9"]
 		incr matches
 		exp_continue
 	}
 	-re "NODELIST" {
-	set stuff [concat $stuff "10"]
+		set stuff [concat $stuff "10"]
 		incr matches
 		exp_continue	        
+	}
+	-re "BP_LIST" {
+		set stuff [concat $stuff "10"]
+		incr matches
+		exp_continue
 	}
 	
 	timeout {
