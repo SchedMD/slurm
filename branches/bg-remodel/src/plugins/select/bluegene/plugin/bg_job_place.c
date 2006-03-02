@@ -292,7 +292,7 @@ try_again:
 	}
 	list_iterator_destroy(itr);
 	
-	if(!found && test_only) {
+	if(!found && test_only && bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		slurm_mutex_unlock(&block_state_mutex);
 		
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
