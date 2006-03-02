@@ -799,11 +799,11 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	}
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
 	safe_unpack16(&(jobinfo->quarter), buffer);
 	safe_unpack16(&(jobinfo->segment), buffer);
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
 	safe_unpack32(&(jobinfo->max_procs), buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
