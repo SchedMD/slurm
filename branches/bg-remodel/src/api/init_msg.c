@@ -84,6 +84,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->mail_user   = NULL;
 	job_desc_msg->port        = 0;
 	job_desc_msg->begin_time  = 0;
+	job_desc_msg->select_jobinfo = NULL;
 }
 
 /*
