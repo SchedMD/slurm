@@ -5,8 +5,11 @@
 # LinuxImage:           LinuxImage used for creation of all bgblocks.
 # MloaderImage:         MloaderImage used for creation of all bgblocks.
 # RamDiskImage:         RamDiskImage used for creation of all bgblocks.
-# LayoutMode:           Mode in which slurm will create blocks
-# BasePartitionNodeCnt: Number of c-nodes per base partition  
+# LayoutMode:           Mode in which slurm will create blocks:
+#                       STATIC:  Use defined non-overlapping bglblocks
+#                       OVERLAP: Use defined bglblocks, which may overlap
+#                       DYNAMIC: Create bglblocks as needed for each job
+# BasePartitionNodeCnt: Number of c-nodes per base partition.  
 # NodeCardNodeCnt:      Number of c-nodes per node card.
 # Numpsets:             The Numpsets used for creation of all bgblocks 
 #                       equals this value multiplied by the number of 
@@ -41,7 +44,7 @@ BridgeAPIVerbose=0
 #
 # Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
 # Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
-#        Type SMALL will divide a midplane into multiple bgblocks
+#        Type SMALL will divide a midplane into multiple bgblock
 #        based off options num32 and num128 to determine type of small blocks.
 # 
 # IMPORTANT NOTES: 
