@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_functions.c - Functions related to job display mode of smap.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -218,7 +218,7 @@ static void _print_header_job(void)
 		printf("      TIME ");
 		printf("NODES ");
 #ifdef HAVE_BG
-		printf("BG_LIST\n");
+		printf("BP_LIST\n");
 #else
 		printf("NODELIST\n");
 #endif
