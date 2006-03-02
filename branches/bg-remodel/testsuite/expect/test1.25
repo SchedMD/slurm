@@ -44,7 +44,13 @@ print_header $test_id
 #
 set host_0      ""
 set timeout [expr $max_job_delay + $sleep_time]
-spawn $srun -N1-64 --no-kill -t1 $bin_sleep $sleep_time  
+if { [test_bluegene] } {
+	set node_cnt 32-32k
+} else {
+	set node_cnt 1-64
+}
+
+spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time  
 expect {
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"
