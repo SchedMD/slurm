@@ -141,7 +141,7 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 
 	/****** Line 4 ******/
 #ifdef HAVE_BG
-	fprintf ( out, "BasePartions=%s BPIndices=", part_ptr->nodes);
+	fprintf ( out, "BasePartitions=%s BPIndices=", part_ptr->nodes);
 #else
 	fprintf ( out, "Nodes=%s NodeIndices=", part_ptr->nodes);
 #endif
