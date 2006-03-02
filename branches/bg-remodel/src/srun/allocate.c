@@ -412,7 +412,7 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.conn_type != -1)
 		select_g_set_jobinfo(j->select_jobinfo,
 				     SELECT_DATA_CONN_TYPE,
-				     (void *)opt.conn_type);
+				     &opt.conn_type);
 	if (opt.no_rotate)
 		select_g_set_jobinfo(j->select_jobinfo,
 				     SELECT_DATA_ROTATE,
