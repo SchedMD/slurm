@@ -157,7 +157,7 @@ if {$file_cnt != 1} {
 #  file name and confirm it is created
 #
 set job_id   0
-spawn $srun --output=$file_out_J -N1-4 -O -v -t1 $bin_hostname
+spawn $srun --output=$file_out_J -N1-512 -O -v -t1 $bin_hostname
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
