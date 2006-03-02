@@ -35,7 +35,7 @@ source ./globals
 set test_id       "10.13"
 set exit_code     0
 set matches       0
-set non_bg       0
+set non_bg        0
 set prompt        ".*$"
 set created       0
 set file          "bluegene-test.conf"
@@ -137,8 +137,23 @@ if { $exit_code != 1 } {
 			incr matches
 			exp_continue
 		}
-		-re "BPs" {
+		-re "MidplaneNodeCnt" {
 			set stuff [concat $stuff "8"]
+			incr matches
+			exp_continue
+		}
+		-re "NodeCardNodeCnt" {
+			set stuff [concat $stuff "9"]
+			incr matches
+			exp_continue
+		}
+		-re "LayoutMode" {
+			set stuff [concat $stuff "10"]
+			incr matches
+			exp_continue
+		}
+		-re "BPs" {
+			set stuff [concat $stuff "11"]
 			incr matches
 			exp_continue
 		}
@@ -147,7 +162,7 @@ if { $exit_code != 1 } {
 		}
 	}
 
-	if {$matches != 8} {
+	if {$matches != 11} {
 		send_user "$matches\n$stuff"
 		send_user "\nFAILURE: smap bluegene.conf file was created but corrupt\n"
 		set exit_code 1
