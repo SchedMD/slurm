@@ -2133,8 +2133,11 @@ static int _add_bg_record(List records, char *nodes,
 	}
 	bg_record->bg_block_list = list_create(NULL);		
 	bg_record->hostlist = hostlist_create(NULL);
+	bg_record->quarter = NO_VAL;
+	bg_record->segment = NO_VAL;
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
+	debug2("asking for %s %d %d",nodes, num_quarter, num_segment);
 	len = strlen(nodes);
 	i=0;
 	while((nodes[i] != '[' && (nodes[i] > 57 || nodes[i] < 48)) 
@@ -2161,9 +2164,11 @@ static int _add_bg_record(List records, char *nodes,
 			if(bit_equal(bg_record->bitmap, found_record->bitmap)
 			   && (bg_record->quarter == found_record->quarter)
 			   && (bg_record->segment == found_record->segment)){
-				debug3("This partition %s "
+				debug2("This partition %s %d %d"
 				       "already exists here %s",
 				       bg_record->nodes,
+				       bg_record->quarter,
+				       bg_record->segment,
 				       found_record->bg_block_id);
 				list_iterator_destroy(itr);
 				destroy_bg_record(bg_record);
@@ -2177,8 +2182,6 @@ static int _add_bg_record(List records, char *nodes,
 	bg_record->conn_type = conn_type;
 	bg_record->cpus_per_bp = procs_per_node;
 	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
-	bg_record->quarter = NO_VAL;
-	bg_record->segment = NO_VAL;
 	bg_record->job_running = NO_VAL;
 		
 	if(bg_record->conn_type != SELECT_SMALL)
