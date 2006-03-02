@@ -37,7 +37,6 @@ libcommon_la_SOURCES = 			\
 	mpi.c mpi.h                     \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
-	slurm_config.c slurm_config.h	\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\

@@ -108,6 +108,9 @@ static s_p_values_t *_conf_hashtbl_lookup(
 	s_p_values_t *p;
 
 	xassert(key);
+	if (hashtbl == NULL)
+		return NULL;
+
 	idx = _conf_hashtbl_index(key);
 	for (p = hashtbl[idx]; p != NULL; p = p->next) {
 		if (strcasecmp(p->key, key) == 0)
@@ -352,14 +355,16 @@ static int _handle_string(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
-			return -1;
+		int rc;
+		rc = v->handler(&v->data, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
 	} else {
 		v->data = xstrdup(value);
 	}
 
 	v->data_count = 1;
-	return 0;
+	return 1;
 }
 
 static int _handle_long(s_p_values_t *v,
@@ -372,8 +377,10 @@ static int _handle_long(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
-			return -1;
+		int rc;
+		rc = v->handler(&v->data, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
 	} else {
 		char *endptr;
 		long num;
@@ -392,7 +399,7 @@ static int _handle_long(s_p_values_t *v,
 	}
 
 	v->data_count = 1;
-	return 0;
+	return 1;
 }
 
 static int _handle_uint16(s_p_values_t *v,
@@ -405,8 +412,10 @@ static int _handle_uint16(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
-			return -1;
+		int rc;
+		rc = v->handler(&v->data, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
 	} else {
 		char *endptr;
 		long num;
@@ -432,7 +441,7 @@ static int _handle_uint16(s_p_values_t *v,
 	}
 
 	v->data_count = 1;
-	return 0;
+	return 1;
 }
 
 static int _handle_uint32(s_p_values_t *v,
@@ -445,8 +454,10 @@ static int _handle_uint32(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
-			return -1;
+		int rc;
+		rc = v->handler(&v->data, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
 	} else {
 		char *endptr;
 		long num;
@@ -472,7 +483,7 @@ static int _handle_uint32(s_p_values_t *v,
 	}
 
 	v->data_count = 1;
-	return 0;
+	return 1;
 }
 
 static int _handle_pointer(s_p_values_t *v,
@@ -485,14 +496,16 @@ static int _handle_pointer(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
-			return -1;
+		int rc;
+		rc = v->handler(&v->data, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
 	} else {
 		v->data = xstrdup(value);
 	}
 
 	v->data_count = 1;
-	return 0;
+	return 1;
 }
 
 static int _handle_array(s_p_values_t *v,
@@ -503,8 +516,10 @@ static int _handle_array(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		if (v->handler(&new_ptr, v->type, v->key, value, line) != 0)
-			return -1;
+		int rc;
+		rc = v->handler(&new_ptr, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
 	} else {
 		new_ptr = xstrdup(value);
 	}
@@ -513,7 +528,7 @@ static int _handle_array(s_p_values_t *v,
 	data = &((void**)v->data)[v->data_count-1];
 	*data = new_ptr;
 
-	return 0;
+	return 1;
 }
 
 static void _handle_keyvalue_match(s_p_values_t *v,

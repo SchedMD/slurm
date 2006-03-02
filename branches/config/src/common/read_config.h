@@ -129,18 +129,49 @@ extern int read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr,
 extern void report_leftover (char *in_line, int line_num);
 
 /*
- * NEW FUNCTIONS
+ * NEW STUFF
  */
 
+typedef struct slurm_conf_node_entry {
+	char *nodenames;
+	char *hostnames;
+	char *addresses;
+	char *feature;		/* arbitrary list of features associated */
+	uint16_t port;
+	uint32_t cpus;		/* count of cpus running on the node */
+	uint32_t real_memory;	/* MB real memory on the node */
+	char *reason;
+	char *state;
+	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
+	uint32_t weight;	/* arbitrary priority of node for 
+				 * scheduling work on */
+} slurm_conf_node_entry_t;
+
+/*
+ * NOTE: Caller must not be holding slurm_conf_lock().
+ */
 extern int slurm_conf_init(char *file_name);
 
+/*
+ * NOTE: Caller must not be holding slurm_conf_lock().
+ */
 extern int slurm_conf_reinit(char *file_name);
 
+/*
+ * NOTE: Caller must not be holding slurm_conf_lock().
+ */
 extern int slurm_conf_destroy(void);
 
 extern slurm_ctl_conf_t *slurm_conf_lock(void);
 
 extern void slurm_conf_unlock(void);
 
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_node_entry_t structures.
+ * 
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_nodename_array(slurm_conf_node_entry_t **ptr_array[]);
 
 #endif /* !_READ_CONFIG_H */

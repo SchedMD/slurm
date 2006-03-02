@@ -511,6 +511,271 @@ static int _parse_node_spec(char *in_line)
 	return error_code;
 }
 
+/* 
+ * _build_single_node_info - rom the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ * global: default_config_record - default configuration values for
+ *	                           group of nodes
+ *	default_node_record - default node configuration values
+ */
+static int _build_single_node_info(slurm_conf_node_entry_t *ptr,
+				   slurm_conf_node_entry_t *def)
+{
+	char *node_addr = NULL, *node_name = NULL, *state = NULL;
+	char *feature = NULL, *reason = NULL, *node_hostname = NULL;
+	int error_code, first, i;
+	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
+	struct node_record   *node_ptr;
+	struct config_record *config_ptr = NULL;
+	hostlist_t addr_list = NULL, host_list = NULL;
+	char *this_node_name;
+#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
+	char *this_node_addr;
+#endif
+	int port;
+	char *in_line;
+
+	node_addr = node_name = state = feature = (char *) NULL;
+	cpus_val = real_memory_val = state_val = NO_VAL;
+	tmp_disk_val = weight_val = NO_VAL;
+	port = NO_VAL;
+	if ((error_code = load_string(&node_name, "NodeName=", in_line)))
+		return error_code;
+	if (node_name == NULL)
+		return 0;	/* no node info */
+	if (strcasecmp(node_name, "localhost") == 0) {
+		xfree(node_name);
+		node_name = xmalloc(MAX_NAME_LEN);
+		getnodename(node_name, MAX_NAME_LEN);
+	}
+
+	error_code = slurm_parser(in_line,
+				  "Feature=", 's', &feature,
+				  "NodeAddr=", 's', &node_addr,
+				  "NodeHostname=", 's', &node_hostname,
+#ifdef MULTIPLE_SLURMD
+				  "Port=", 'd', &port,
+#endif
+				  "Procs=", 'd', &cpus_val,
+				  "RealMemory=", 'd', &real_memory_val,
+				  "Reason=", 's', &reason,
+				  "State=", 's', &state,
+				  "TmpDisk=", 'd', &tmp_disk_val,
+				  "Weight=", 'd', &weight_val, "END");
+
+	if (error_code)
+		goto cleanup;
+
+	if (state != NULL) {
+		state_val = NO_VAL;
+		for (i = 0; i <= NODE_STATE_END; i++) {
+			if (strcasecmp(node_state_string(i), "END") == 0)
+				break;
+			if (strcasecmp(node_state_string(i), state) == 0) {
+				state_val = i;
+				break;
+			}
+		}
+		if ((i == 0) && (strncasecmp("DRAIN", state, 5) == 0))
+			state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+		if (state_val == NO_VAL) {
+			error("_parse_node_spec: invalid initial state %s for "
+				"node %s", state, node_name);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+		xfree(state);
+	}
+
+#ifndef HAVE_FRONT_END	/* Support NodeAddr expression */
+	if (node_addr &&
+	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
+		error("hostlist_create error for %s: %m", node_addr);
+		error_code = errno;
+		goto cleanup;
+	}
+#endif
+	if (strcasecmp(node_name, "DEFAULT") != 0) {
+		i=1;
+		while (node_name[i] != '\0') {
+			if((node_name[i-1] == '[') 
+			   || (node_name[i-1] < 58 
+			       && node_name[i-1] > 47))
+				break;
+			i++;
+		}
+		xfree(slurmctld_conf.node_prefix);
+		if(node_name[i] == '\0')
+			slurmctld_conf.node_prefix = xstrdup(node_name);
+		else {
+			this_node_name = xmalloc(sizeof(char)*i+1);
+			memset(this_node_name,0,i+1);
+			snprintf(this_node_name, i, "%s", node_name);
+			slurmctld_conf.node_prefix = xstrdup(this_node_name);
+			xfree(this_node_name);
+		}
+		debug3("Prefix is %s %s %d",slurmctld_conf.node_prefix, 
+		       node_name, i);
+	}
+
+	if ((host_list = hostlist_create(node_name)) == NULL) {
+		error("hostlist_create error for %s: %m", node_name);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	first = 1;
+	while ((this_node_name = hostlist_shift(host_list))) {
+		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
+			xfree(node_name);
+			if (cpus_val != NO_VAL)
+				default_config_record.cpus = cpus_val;
+			if (real_memory_val != NO_VAL)
+				default_config_record.real_memory =
+						real_memory_val;
+			if (tmp_disk_val != NO_VAL)
+				default_config_record.tmp_disk =
+						    tmp_disk_val;
+			if (weight_val != NO_VAL)
+				default_config_record.weight = weight_val;
+			if (state_val != NO_VAL)
+				default_node_record.node_state = state_val;
+			if (feature) {
+				xfree(default_config_record.feature);
+				default_config_record.feature = feature;
+				feature = NULL;
+			}
+#ifdef MULTIPLE_SLURMD
+			if (port != NO_VAL)
+				default_node_record.port = port;
+#endif
+			free(this_node_name);
+			break;
+		}
+
+		if (first == 1) {
+			first = 0;
+			config_ptr = create_config_record();
+			config_ptr->nodes = node_name;
+			if (cpus_val != NO_VAL)
+				config_ptr->cpus = cpus_val;
+			if (real_memory_val != NO_VAL)
+				config_ptr->real_memory =
+						    real_memory_val;
+			if (tmp_disk_val != NO_VAL)
+				config_ptr->tmp_disk = tmp_disk_val;
+			if (weight_val != NO_VAL)
+				config_ptr->weight = weight_val;
+			if (feature) {
+				xfree(config_ptr->feature);
+				config_ptr->feature = feature;
+				feature = NULL;
+			}
+		}
+
+		if (strcmp(this_node_name, highest_node_name) <= 0)
+			node_ptr = find_node_record(this_node_name);
+		else {
+			strncpy(highest_node_name, this_node_name,
+				MAX_NAME_LEN);
+			node_ptr = NULL;
+		}
+
+		if (node_ptr == NULL) {
+			node_ptr = create_node_record(config_ptr, 
+			                              this_node_name);
+			if ((state_val != NO_VAL) &&
+			    (state_val != NODE_STATE_UNKNOWN))
+				node_ptr->node_state = state_val;
+			node_ptr->last_response = (time_t) 0;
+#ifdef HAVE_FRONT_END	/* Permit NodeAddr value reuse for front-end */
+			if (node_addr)
+				strncpy(node_ptr->comm_name,
+					node_addr, MAX_NAME_LEN);
+			else if (node_hostname)
+				strncpy(node_ptr->comm_name,
+					node_hostname, MAX_NAME_LEN);
+			else
+				strncpy(node_ptr->comm_name,
+					node_ptr->name, MAX_NAME_LEN);
+#else
+			if (node_addr)
+				this_node_addr = hostlist_shift(addr_list);
+			else
+				this_node_addr = NULL;
+			if (this_node_addr) {
+				strncpy(node_ptr->comm_name, 
+				        this_node_addr, MAX_NAME_LEN);
+				free(this_node_addr);
+			} else
+				strncpy(node_ptr->comm_name, 
+				        node_ptr->name, MAX_NAME_LEN);
+#endif
+#ifdef MULTIPLE_SLURMD
+			if (port != NO_VAL)
+				node_ptr->port = port;
+#endif
+			node_ptr->reason = xstrdup(reason);
+		} else {
+			error("_parse_node_spec: reconfiguration for node %s",
+			     this_node_name);
+			if ((state_val != NO_VAL) &&
+			    (state_val != NODE_STATE_UNKNOWN))
+				node_ptr->node_state = state_val;
+			if (reason) {
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup(reason);
+			}
+		}
+		free(this_node_name);
+	}
+
+	/* free allocated storage */
+	xfree(node_addr);
+	xfree(node_hostname);
+	xfree(reason);
+	if (addr_list)
+		hostlist_destroy(addr_list);
+	hostlist_destroy(host_list);
+	return error_code;
+
+      cleanup:
+	xfree(node_addr);
+	xfree(node_name);
+	xfree(node_hostname);
+	xfree(feature);
+	xfree(reason);
+	xfree(state);
+	return error_code;
+}
+
+/* 
+ * _build_all_node_info - get a array of slurm_conf_node_entry_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ * global: default_config_record - default configuration values for
+ *	                           group of nodes
+ *	default_node_record - default node configuration values
+ */
+static int _build_all_node_info()
+{
+	/* NEW STUFF */
+	slurm_conf_node_entry_t *ptr, **ptr_array;
+	int count;
+	int i;
+
+	count = slurm_conf_nodename_array(&ptr_array);
+	if (count == 0)
+		fatal("No NodeName information available!");
+
+	for (i = 0; i < count; i++) {
+		ptr = ptr_array[i];
+		_build_single_node_info(ptr, ptr);
+	}
+}
+
 
 /*
  * _parse_part_spec - parse the partition specification, build table and 

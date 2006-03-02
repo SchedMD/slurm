@@ -54,13 +54,45 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/parse_config.h"
-#include "src/common/slurm_config.h"
 
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl;
 static slurm_ctl_conf_t *conf_ptr;
 static bool conf_initialized = false;
 
+/*
+ * FIXME - If we eliminate the SlurmdPort option altogether, then
+ *         default_slurmd_port and parse_slurmd_port can
+ *         be removed.
+ */
+static uint16_t default_slurmd_port;
+static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
+			     const char *key, const char *value,
+			     const char *line);
+
+static s_p_hashtbl_t *default_nodename_tbl;
+
+inline static void _normalize_debug_level(uint16_t *level);
+
+typedef struct names_ll_s {
+	char *node_hostname;
+	char *node_name;
+	struct names_ll_s *next;
+} names_ll_t;
+bool all_slurmd_hosts = false;
+#define NAME_HASH_LEN 512
+static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
+static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
+static char *this_hostname = NULL;
+
+static int parse_nodename(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line);
+static void destroy_nodename(void *ptr);
+static int parse_partitionname(void **dest, slurm_parser_enum_t type,
+			       const char *key, const char *value,
+			       const char *line);
+static void destroy_partitionname(void *ptr);
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line);
@@ -119,7 +151,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdDebug", S_P_UINT16},
 	{"SlurmdLogFile", S_P_STRING},
 	{"SlurmdPidFile",  S_P_STRING},
-	{"SlurmdPort", S_P_UINT32},
+	{"SlurmdPort", S_P_UINT32, parse_slurmd_port},
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
@@ -140,13 +172,13 @@ s_p_options_t slurm_nodename_options[] = {
 	{"NodeHostname", S_P_STRING},
 	{"NodeAddr", S_P_STRING},
 	{"Feature", S_P_STRING},
-	{"Port", S_P_LONG},
-	{"Procs", S_P_LONG},
-	{"RealMemory", S_P_LONG},
+	{"Port", S_P_UINT16},
+	{"Procs", S_P_UINT32},
+	{"RealMemory", S_P_UINT32},
 	{"Reason", S_P_STRING},
 	{"State", S_P_STRING},
-	{"TmpDisk", S_P_LONG},
-	{"Weight", S_P_LONG},
+	{"TmpDisk", S_P_UINT32},
+	{"Weight", S_P_UINT32},
 	{NULL}
 };
 
@@ -165,32 +197,206 @@ s_p_options_t slurm_partition_options[] = {
 	{NULL}
 };
 
-inline static void _normalize_debug_level(uint16_t *level);
+/*
+ * This function works almost exactly the same as the
+ * default S_P_UINT16 handler, except that it also sets the
+ * global variable default_slurmd_port.
+ */
+static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
+			     const char *key, const char *value,
+			     const char *line)
+{
+	char *endptr;
+	long num;
+	uint16_t *ptr;
 
-typedef struct names_ll_s {
-	char *node_hostname;
-	char *node_name;
-	struct names_ll_s *next;
-} names_ll_t;
-bool all_slurmd_hosts = false;
-#define NAME_HASH_LEN 512
-static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
-static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
-static char *this_hostname = NULL;
+	errno = 0;
+	num = strtol(value, &endptr, 0);
+	if ((num == 0 && errno == EINVAL)
+	    || (*endptr != '\0')) {
+		error("\"%s\" is not a valid number", value);
+		return -1;
+	} else if (errno == ERANGE) {
+		error("\"%s\" is out of range", value);
+		return -1;
+	} else if (num < 0) {
+		error("\"%s\" is less than zero", value);
+		return -1;
+	} else if (num > 0xffff) {
+		error("\"%s\" is greater than 65535", value);
+		return -1;
+	}
+
+	default_slurmd_port = num;
+
+	ptr = (uint16_t *)xmalloc(sizeof(uint16_t));
+	*ptr = (uint16_t)num;
+	*dest = ptr;
+
+	return 1;
+}
 
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line)
 {
 	error("The option \"%s\" is defunct, see man slurm.conf.", key);
-	return -1;
+	return 1;
 }
 
 static void defunct_destroy(void *ptr)
 {
-	/* do nothing */
+	return;
 }
 
+static int parse_nodename(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value, const char *line)
+{
+	s_p_hashtbl_t *tbl, *dflt;
+	slurm_conf_node_entry_t *n;
+
+	tbl = s_p_hashtbl_create(slurm_nodename_options);
+	s_p_parse_line(tbl, line);
+	/* s_p_dump_values(tbl, slurm_nodename_options); */
+
+	if (strcasecmp(value, "DEFAULT") == 0) {
+		char *tmp;
+		if (s_p_get_string(tbl, "NodeHostname", &tmp)) {
+			error("NodeHostname not allowed with NodeName=DEFAULT");
+			xfree(tmp);
+			return -1;
+		}
+		if (s_p_get_string(tbl, "NodeAddr", &tmp)) {
+			error("NodeAddr not allowed with NodeName=DEFAULT");
+			xfree(tmp);
+			return -1;
+		}
+
+		if (default_nodename_tbl != NULL)
+			s_p_hashtbl_destroy(default_nodename_tbl);
+		default_nodename_tbl = tbl;
+
+		return 0;
+	} else {
+		n = xmalloc(sizeof(slurm_conf_node_entry_t));
+		dflt = default_nodename_tbl;
+
+		s_p_get_string(tbl, "NodeName", &n->nodenames);
+		if (!s_p_get_string(tbl, "NodeHostname", &n->hostnames))
+			n->hostnames = xstrdup(n->nodenames);
+		if (!s_p_get_string(tbl, "NodeAddr", &n->addresses))
+			n->addresses = xstrdup(n->hostnames);
+
+		if (!s_p_get_string(tbl, "Feature", &n->feature))
+			s_p_get_string(dflt, "Feature", &n->feature);
+
+		if (!s_p_get_uint16(tbl, "Port", &n->port)
+		    && !s_p_get_uint16(dflt, "Port", &n->port)) {
+			if (default_slurmd_port != 0)
+				n->port = default_slurmd_port;
+			else
+				n->port = SLURMD_PORT;
+		}
+
+		if (!s_p_get_uint32(tbl, "Procs", &n->cpus)
+		    && !s_p_get_uint32(dflt, "Procs", &n->cpus))
+			n->cpus = 1;
+
+		if (!s_p_get_uint32(tbl, "RealMemory", &n->real_memory)
+		    && !s_p_get_uint32(dflt, "RealMemory", &n->real_memory))
+			n->real_memory = 1;
+
+		if (!s_p_get_string(tbl, "Reason", &n->reason))
+			s_p_get_string(dflt, "Reason", &n->reason);
+
+		if (!s_p_get_string(tbl, "State", &n->state))
+			s_p_get_string(dflt, "State", &n->state);
+
+		if (!s_p_get_uint32(tbl, "TmpDisk", &n->tmp_disk)
+		    && !s_p_get_uint32(dflt, "TmpDisk", &n->tmp_disk))
+			n->tmp_disk = 1;
+
+		if (!s_p_get_uint32(tbl, "Weight", &n->weight)
+		    && !s_p_get_uint32(dflt, "Weight", &n->weight))
+			n->weight = 1;
+
+		s_p_hashtbl_destroy(tbl);
+
+		*dest = (void *)n;
+
+		return 1;
+	}
+
+	/* should not get here */
+}
+
+static void destroy_nodename(void *ptr)
+{
+	slurm_conf_node_entry_t *n = (slurm_conf_node_entry_t *)ptr;
+	xfree(n->nodenames);
+	xfree(n->hostnames);
+	xfree(n->addresses);
+	xfree(n->feature);
+	xfree(n->reason);
+	xfree(n->state);
+	xfree(ptr);
+}
+
+int slurm_conf_nodename_array(slurm_conf_node_entry_t **ptr_array[])
+{
+	int count;
+	slurm_conf_node_entry_t **ptr;
+
+	if (s_p_get_array(conf_hashtbl, "NodeName", &ptr, &count)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
+static int parse_partitionname(void **dest, slurm_parser_enum_t type,
+		   const char *key, const char *value, const char *line)
+{
+	s_p_hashtbl_t *hashtbl;
+
+	hashtbl = s_p_hashtbl_create(slurm_partition_options);
+	s_p_parse_line(hashtbl, line);
+	s_p_dump_values(hashtbl, slurm_partition_options);
+
+	*dest = (void *)hashtbl;
+
+	return 1;
+}
+
+static void destroy_partitionname(void *ptr)
+{
+	s_p_hashtbl_destroy((s_p_hashtbl_t *)ptr);
+}
+
+int slurm_conf_partition_array(slurm_conf_node_entry_t **ptr_array[])
+{
+	int count;
+	slurm_conf_node_entry_t **ptr;
+
+	if (s_p_get_array(conf_hashtbl, "PartitionName", &ptr, &count)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
+void read_slurm_conf_init(void) {
+	s_p_hashtbl_t *hashtbl;
+
+	hashtbl = s_p_hashtbl_create(slurm_conf_options);
+	s_p_parse_file(hashtbl, "/home/morrone/slurm.conf");
+	s_p_dump_values(hashtbl, slurm_conf_options);
+	s_p_hashtbl_destroy(hashtbl);
+}
 
 static void _free_name_hashtbl()
 {
@@ -582,6 +788,7 @@ static void
 _init_slurm_conf(char *file_name)
 {
 	conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t));
+	default_slurmd_port = 0;
 
 	if (file_name == NULL) {
 		file_name = getenv("SLURM_CONF");
@@ -601,6 +808,8 @@ static void
 _destroy_slurm_conf()
 {
 	s_p_hashtbl_destroy(conf_hashtbl);
+	if (default_nodename_tbl != NULL)
+		s_p_hashtbl_destroy(default_nodename_tbl);
 	free_slurm_conf(conf_ptr);
 	xfree(conf_ptr);
 }
@@ -1188,3 +1397,4 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->tree_width = DEFAULT_TREE_WIDTH;
 	}
 }
+
