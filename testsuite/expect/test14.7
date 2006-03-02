@@ -1,14 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test sbcast logging (--verbose option).
+#          Test sbcast security issues.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
 # Note:    This script generates and then deletes files in the working directory 
-#          named test14.6.input, test14.6.output, and test14.6.error
+#          named test14.4.input, test14.4.output, and test14.4.error
 ############################################################################
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,7 +34,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "14.6"
+set test_id     "14.7"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -49,24 +49,37 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
+set uid 0
+spawn $bin_id
+expect {
+	-re "(uid=.*\n)" {
+		set uid $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$uid == 0} {
+	send_user "\nWARNING: This test is unsuitable for execution as user root\n"
+	exit 0
+}
+
 #
 # Delete left-over input script plus stdout/err files
 # Build input script file that broacasts a file
 #
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"					 >$file_in
-#
-exec echo "$srun $bin_rm -f /tmp/test1.$test_id"	>>$file_in
-exec echo "$sbcast -vvvv $sbcast /tmp/test1.$test_id"	>>$file_in
-exec echo "$srun $bin_rm -f /tmp/test1.$test_id"	>>$file_in
-#
+exec echo "$sbcast $sbcast /test1.$test_id"		>>$file_in
+exec echo "$srun ls  /test1.$test_id"	 		>>$file_in
 exec $bin_chmod 700 $file_in
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-spawn $srun -N1-1 --batch --output=$file_out --error=$file_err -t1 $file_in
+spawn $srun -N1 --batch --output=$file_out --error=$file_err -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -100,19 +113,13 @@ set matches 0
 if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
-		-re "force" {
+		-re "REQUEST_FILE_BCAST: Permission denied" {
+			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
 		}
-		-re "preserve" {
-			incr matches
-			exp_continue
-		}
-		-re "modes" {
-			incr matches
-			exp_continue
-		}
-		-re "jobid" {
+		-re "No such file" {
+			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
 		}
@@ -121,8 +128,8 @@ if {[wait_for_file $file_err] == 0} {
 		}
 	}
 }
-if {$matches != 4} {
-	send_user "\nFAILURE: sbcast --verbose option did not produced expected logging\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: sbcast wrote into root file system without root access\n"
 	set exit_code 1
 }
 
