@@ -308,7 +308,6 @@ try_again:
 		request.conn_type = conn_type;
 		request.rotate = rotate;
 		request.elongate = true;
-		request.force_contig = false;
 		request.start_req=0;
 		debug("trying with all free blocks");
 		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
@@ -361,7 +360,6 @@ try_again:
 			request.conn_type = conn_type;
 			request.rotate = rotate;
 			request.elongate = true;
-			request.force_contig = false;
 			request.start_req=0;
 			/* 1- try empty space
 			   2- we see if we can create one in the 
