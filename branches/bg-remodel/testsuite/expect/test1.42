@@ -92,7 +92,7 @@ expect {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "JobState=COMPLETE" {
+	-re "JobState=COMPLETED" {
 		set match_state 1
 		exp_continue
 	}
@@ -123,7 +123,7 @@ if {$match_state == 0} {
 # Confirm dependency info within second job as well as environment 
 # variable based SLURM account
 #
-set match_acct
+set match_acct 0
 set match_jobid 0
 spawn $scontrol show job $job_id2
 expect {
