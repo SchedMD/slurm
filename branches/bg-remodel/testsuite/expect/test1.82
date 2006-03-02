@@ -46,7 +46,14 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N3 -l -t1 $bin_hostname  
+
+if { [test_bluegene] } {
+	set node_cnt 1536
+} else {
+	set node_cnt 3
+}
+
+spawn $srun -N$node_cnt -l -t1 $bin_hostname  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
