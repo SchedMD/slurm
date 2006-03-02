@@ -760,19 +760,23 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 	int i;
 
 	if (jobinfo) {
+		/* NOTE: If new elements are added here, make sure to 
+		 * add equivalant pack of zeros below for NULL pointer */
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			pack16((uint16_t)jobinfo->geometry[i], buffer);
 		}
 		pack16((uint16_t)jobinfo->conn_type, buffer);
 		pack16((uint16_t)jobinfo->rotate, buffer);
-		packstr(jobinfo->bg_block_id, buffer);
 		pack16((uint16_t)jobinfo->quarter, buffer);
 		pack16((uint16_t)jobinfo->segment, buffer);
 		pack32((uint32_t)jobinfo->node_cnt, buffer);
 		pack32((uint32_t)jobinfo->max_procs, buffer);
+		packstr(jobinfo->bg_block_id, buffer);
 	} else {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<(SYSTEM_DIMENSIONS+4); i++)
 			pack16((uint16_t) 0, buffer);
+		pack32((uint32_t) 0, buffer);
+		pack32((uint32_t) 0, buffer);
 		packstr(NULL, buffer);
 	}
 
