@@ -4,7 +4,13 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.0-pre2
 =============================
  -- Added basic "sbcast" support, still needs message fanout logic.
-
+ -- Bluegene specific - Added support for overlapping partitions and 
+    dynamic partitioning. 
+ -- Bluegene specific - Added support for nodecard sized blocks.
+ -- Added logic to accept 1k for 1024 and so on for --nodes option of srun. 
+    This logic is through display tools such as smap, sinfo, scontrol, and 
+    squeue.
+ 
 * Changes in SLURM 1.1.0-pre1
 =============================
  -- New --enable-multiple-slurmd configure parameter to allow running

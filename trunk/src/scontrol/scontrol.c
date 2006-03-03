@@ -1505,10 +1505,11 @@ _update_job (int argc, char *argv[])
 					(char **) NULL, 10);
 			update_cnt++;
 		}
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
+			uint16_t geo[SYSTEM_DIMENSIONS];
 			char* geometry_tmp = xstrdup(&argv[i][9]);
 			char* original_ptr = geometry_tmp;
 			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
@@ -1519,8 +1520,8 @@ _update_job (int argc, char *argv[])
 					rc = -1;
 					break;
 				}
-				job_msg.geometry[j] = atoi(token);
-				if (job_msg.geometry[j] <= 0) {
+				geo[j] = (uint16_t) atoi(token);
+				if (geo[j] <= 0) {
 					error("invalid --geometry argument");
 					rc = -1;
 					break;
@@ -1538,36 +1539,47 @@ _update_job (int argc, char *argv[])
 				xfree(original_ptr);
 			if (rc != 0) {
 				for (j=0; j<SYSTEM_DIMENSIONS; j++)
-					job_msg.geometry[j] = (uint16_t) NO_VAL;
+					geo[j] = (uint16_t) NO_VAL;
 				exit_code = 1;
 			} else
 				update_cnt++;
+			select_g_set_jobinfo(&job_msg.select_jobinfo,
+					     SELECT_DATA_GEOMETRY,
+					     geo);			
 		}
-#endif
+
 		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
+			int16_t rotate;
 			if (strcasecmp(&argv[i][7], "yes") == 0)
-				job_msg.rotate = 1;
+				rotate = 1;
 			else if (strcasecmp(&argv[i][7], "no") == 0)
-				job_msg.rotate = 0;
+				rotate = 0;
 			else
-				job_msg.rotate = 
-					(uint32_t) strtol(&argv[i][7], 
-						(char **) NULL, 10);
+				rotate = (uint16_t) strtol(&argv[i][7], 
+							   (char **) NULL, 10);
+			select_g_set_jobinfo(&job_msg.select_jobinfo,
+					     SELECT_DATA_ROTATE,
+					     rotate);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Connection=", 11) == 0) {
+			int16_t conn_type;
 			if (strcasecmp(&argv[i][11], "torus") == 0)
-				job_msg.conn_type = SELECT_TORUS;
+				conn_type = SELECT_TORUS;
 			else if (strcasecmp(&argv[i][11], "mesh") == 0)
-				job_msg.conn_type = SELECT_MESH;
+				conn_type = SELECT_MESH;
 			else if (strcasecmp(&argv[i][11], "nav") == 0)
-				job_msg.conn_type = SELECT_NAV;
+				conn_type = SELECT_NAV;
 			else
-				job_msg.conn_type = 
+				conn_type = 
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
+			select_g_set_jobinfo(&job_msg.select_jobinfo,
+					     SELECT_DATA_CONN_TYPE,
+					     conn_type);
 			update_cnt++;
 		}
+#endif
 		else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
 			job_msg.begin_time = parse_time(&argv[i][10]);
 			update_cnt++;

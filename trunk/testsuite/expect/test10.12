@@ -34,7 +34,7 @@ source ./globals
 set test_id     "10.12"
 set exit_code   0
 set check       0
-set non_bg     0
+set non_bg      0
 
 print_header $test_id
 

@@ -161,9 +161,9 @@ typedef struct srun_options {
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
 
-	int geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
+	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool no_rotate;		/* --no_rotate, -R		*/
-	int conn_type;		/* --conn-type 			*/
+	int16_t conn_type;	/* --conn-type 			*/
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
 	time_t begin;		/* --begin			*/

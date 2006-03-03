@@ -763,7 +763,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			error("problem with forward msg");
 		}
 	}
-
+	
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
 			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
@@ -776,7 +776,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) slurm_free_cred(auth_cred);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
@@ -790,12 +790,12 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) slurm_free_cred(auth_cred);
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-
+	
 	msg->cred = (void *) auth_cred;
 
 	free_buf(buffer);
@@ -901,7 +901,7 @@ int slurm_add_header_and_send(slurm_fd fd, slurm_msg_t *msg)
 	 * Pack auth credential
 	 */
 	rc = g_slurm_auth_pack(auth_cred, send_buf);
-	(void) g_slurm_auth_destroy(auth_cred);
+	(void) slurm_free_cred(auth_cred);
 	if (rc) {
 		error("authentication: %s",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
@@ -975,7 +975,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	 * Pack auth credential
 	 */
 	rc = g_slurm_auth_pack(auth_cred, buffer);
-	(void) g_slurm_auth_destroy(auth_cred);
+	(void) slurm_free_cred(auth_cred);
 	if (rc) {
 		error("authentication: %s",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
@@ -1389,15 +1389,20 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		retry = 0;
 		/* If the backup controller is in the process of assuming 
 		 * control, we sleep and retry later */
+		
 		ret_list = _send_and_recv_msg(fd, req, resp, 0);
+		
 		if(errno == SLURM_SUCCESS)
 			slurm_free_cred(resp->cred);
 
 		rc = errno;
-		if(ret_list && (list_count(ret_list)>0)) {
-			error("We didn't do things correctly "
-			      "missed %d responses",
-			      list_count(ret_list));
+
+		if(ret_list) {
+			if(list_count(ret_list)>0) {
+				error("We didn't do things correctly "
+				      "missed %d responses",
+				      list_count(ret_list));
+			}
 			list_destroy(ret_list);
 		}
 		
@@ -1544,7 +1549,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	else {
 		msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 		slurm_free_return_code_msg(msg.data);
-		g_slurm_auth_destroy(msg.cred);
+		slurm_free_cred(msg.cred);
 	}
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup("localhost");
@@ -1630,7 +1635,7 @@ failed:
 	else {
 		msg_rc = ((return_code_msg_t *)resp.data)->return_code;
 		slurm_free_return_code_msg(resp.data);
-		g_slurm_auth_destroy(resp.cred);
+		slurm_free_cred(resp.cred);
 	}
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup("localhost");
@@ -1786,7 +1791,7 @@ extern int *set_span(int total)
  */
 void slurm_free_msg(slurm_msg_t * msg)
 {
-	(void) g_slurm_auth_destroy(msg->cred);
+	(void) slurm_free_cred(msg->cred);
 	if(msg->ret_list) {
 		list_destroy(msg->ret_list);
 		msg->ret_list = NULL;
@@ -1800,6 +1805,23 @@ void slurm_free_msg(slurm_msg_t * msg)
 void slurm_free_cred(void *cred)
 {
 	(void) g_slurm_auth_destroy(cred);
+}
+
+int convert_to_kilo(int number, char *tmp)
+{
+	int i;
+	if(number >= 1024) {
+		i = number % 1024;
+		if(i > 0) {
+			i *= 10;
+			i /= 1024;
+			sprintf(tmp, "%d.%dk\0", number/1024, i);
+		} else 
+			sprintf(tmp, "%dk\0", number/1024);
+	} else
+		sprintf(tmp, "%d\0", number);
+
+	return SLURM_SUCCESS;
 }
 
 #if _DEBUG

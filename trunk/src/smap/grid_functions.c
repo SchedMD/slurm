@@ -62,10 +62,8 @@ extern int set_grid(int start, int end, int count)
 		    ||  (ba_system_ptr->grid[x].state & NODE_STATE_DRAIN))
 			continue;
 
-		ba_system_ptr->grid[x].letter = 
-			letters[count%62];
-		ba_system_ptr->grid[x].color = 
-			colors[count%6];
+		ba_system_ptr->grid[x].letter = letters[count%62];
+		ba_system_ptr->grid[x].color = colors[count%6];
 	}
 #endif
 	return 1;
@@ -92,14 +90,18 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
-				if(!set) {
-					if(ba_system_ptr->grid[x][y][z].letter != '#') {
-						ba_system_ptr->grid[x][y][z].letter = 
+				if(set 
+				   || ((ba_system_ptr->grid[x][y][z].letter
+					== '.')
+				       && (ba_system_ptr->grid[x][y][z].letter 
+					   != '#'))) {
+						ba_system_ptr->
+							grid[x][y][z].letter = 
 							letters[count%62];
-						ba_system_ptr->grid[x][y][z].color = 
+						ba_system_ptr->
+							grid[x][y][z].color = 
 							colors[count%6];
-					}
-				}
+				} 
 				i++;
 			}
 		}

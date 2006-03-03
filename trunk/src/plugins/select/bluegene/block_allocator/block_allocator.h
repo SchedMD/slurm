@@ -80,8 +80,6 @@ extern bool have_db2;
 enum {X, Y, Z};
 
 /* */
-enum {MESH, TORUS, SMALL};
-enum {COPROCESSOR, VIRTUAL};
 
 /* NOTE: Definition of bg_info_record_t moved to src/api/node_select_info.h */
 
@@ -124,12 +122,15 @@ typedef struct {
 	int start[BA_SYSTEM_DIMENSIONS];
 	int start_req;
 	int size; 
+	int procs; 
 	int conn_type;
 	int rotate_count;
 	int elongate_count;
+	int nodecards;
+	int quarters;
+	bool passthrough;
 	bool rotate;
 	bool elongate; 
-	bool force_contig;
 	List elongate_geos;
 } ba_request_t; 
 
@@ -167,7 +168,6 @@ typedef struct
 {
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
-
 } ba_switch_t;
 
 /*
@@ -185,8 +185,7 @@ typedef struct {
 	int indecies;
 	int state;
 	int conn_type;
-	int phys_x;
-	
+	int phys_x;	
 } ba_node_t;
 
 typedef struct {

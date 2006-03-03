@@ -171,7 +171,6 @@ extern int fini ( void )
  */
  extern int select_p_block_init(List part_list)
 {
-	xassert(part_list);
 #ifdef HAVE_BG
 	if(read_bg_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
@@ -179,7 +178,7 @@ extern int fini ( void )
 	}
 #else
 	/*looking for blocks only I created */
-	if (create_static_blocks(part_list) == SLURM_ERROR) {
+	if (create_static_blocks() == SLURM_ERROR) {
 		/* error in creating the static blocks, so
 		 * blocks referenced by submitted jobs won't
 		 * correspond to actual slurm blocks.
@@ -188,8 +187,7 @@ extern int fini ( void )
 		return SLURM_ERROR;
 	}
 #endif
-	sort_bg_record_inc_size(bg_list);
-
+	
 	return SLURM_SUCCESS; 
 }
 
@@ -300,6 +298,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		pack_time(last_bg_update, buffer);
 
 		if(bg_list) {
+			slurm_mutex_lock(&block_state_mutex);
 			itr = list_iterator_create(bg_list);
 			while ((bg_record = (bg_record_t *) list_next(itr)) 
 			       != NULL) {
@@ -309,6 +308,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 				blocks_packed++;
 			}
 			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&block_state_mutex);
 		} else {
 			error("select_p_pack_node_info: no bg_list");
 			return SLURM_ERROR;
@@ -339,14 +339,158 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr,
 }
 
 extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
-                                      struct job_record *job_ptr, 
+				       struct job_record *job_ptr, 
                                        enum select_data_info info,
                                        void *data)
 {
        return SLURM_SUCCESS;
 }
 
-extern int select_p_get_info_from_plugin (enum select_data_info info, void *data)
+extern int select_p_get_info_from_plugin (enum select_data_info info, 
+					  void *data)
 {
-       return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
+{
+	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
+	int *nodes = (int *)data;
+	int tmp;
+	ListIterator itr;
+	bg_record_t *bg_record = NULL;
+	bg_record_t *found_record = NULL;
+	
+	switch (type) {
+	case SELECT_GET_NODE_MIN_OFFSET:
+		if(bg_list) {
+			itr = list_iterator_create(bg_list);
+			bg_record = (bg_record_t *)list_next(itr);
+			list_iterator_destroy(itr);
+		}
+		
+		if(!bg_record || 
+		   (bg_record->cpus_per_bp == procs_per_node)) 
+			(*nodes) = bluegene_bp_node_cnt;
+		else 
+			(*nodes) = bg_record->node_cnt;		
+		break;
+	case SELECT_GET_NODE_MAX_OFFSET:
+		if(bg_list) {
+			itr = list_iterator_create(bg_list);
+			while ((bg_record = (bg_record_t *) 
+				list_next(itr)) != NULL) 
+				found_record = bg_record;
+			list_iterator_destroy(itr);
+		}
+		if(!found_record|| 
+		   (found_record->cpus_per_bp == procs_per_node))
+			(*nodes) = bluegene_bp_node_cnt;
+		else
+			(*nodes) = found_record->node_cnt;		
+		break;
+	case SELECT_APPLY_NODE_MIN_OFFSET:
+		if(bg_list) {
+			itr = list_iterator_create(bg_list);
+			bg_record = (bg_record_t *)list_next(itr);
+			list_iterator_destroy(itr);
+		}
+		if(!bg_record || 
+		   (bg_record->cpus_per_bp == procs_per_node)) 
+			(*nodes) *= bluegene_bp_node_cnt;
+		else 
+			(*nodes) *= bg_record->node_cnt;		
+		break;
+	case SELECT_APPLY_NODE_MAX_OFFSET:
+		if(bg_list) {
+			itr = list_iterator_create(bg_list);
+			while ((bg_record = (bg_record_t *) 
+				list_next(itr)) != NULL) 
+				found_record = bg_record;
+			list_iterator_destroy(itr);
+		}
+		if(!found_record || 
+		   (found_record->cpus_per_bp == procs_per_node))
+			(*nodes) *= bluegene_bp_node_cnt;
+		else
+			(*nodes) *= found_record->node_cnt;		
+		break;
+	case SELECT_SET_NODE_CNT:
+		select_g_get_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_ALTERED, &tmp);
+		if(tmp == 1) {
+			return SLURM_SUCCESS;
+		}
+		tmp = 1;
+		select_g_set_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_ALTERED, &tmp);
+		tmp = NO_VAL;
+		select_g_set_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_MAX_PROCS, 
+				     &tmp);
+				
+		if(job_desc->min_nodes == NO_VAL)
+			return SLURM_SUCCESS;
+
+		/* See if min_nodes is greater than one base partition */
+		if(job_desc->min_nodes > bluegene_bp_node_cnt) {
+			/*
+			  if it is make sure it is a factor of 
+			  bluegene_bp_node_cnt, if it isn't make it 
+			  that way 
+			*/
+			tmp = job_desc->min_nodes % bluegene_bp_node_cnt;
+			if(tmp > 0)
+				job_desc->min_nodes += 
+					(bluegene_bp_node_cnt-tmp);
+		}
+		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
+		
+		/* this means it is greater or equal to one bp */
+		if(tmp > 0) 
+			job_desc->min_nodes = tmp;
+		else { 
+			/* this means it is either a quarter or smaller */
+			tmp = job_desc->min_nodes % bluegene_segment_node_cnt;
+			if(tmp > 0)
+				job_desc->min_nodes += 
+					(bluegene_segment_node_cnt-tmp);
+			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
+			job_desc->num_procs = procs_per_node/tmp;
+			job_desc->min_nodes = 1;
+		}
+		
+		if(job_desc->max_nodes == NO_VAL) 
+			return SLURM_SUCCESS;
+		
+		if(job_desc->max_nodes > bluegene_bp_node_cnt) {
+			tmp = job_desc->max_nodes % bluegene_bp_node_cnt;
+			if(tmp > 0)
+				job_desc->max_nodes += 
+					(bluegene_bp_node_cnt-tmp);
+		}
+		tmp = job_desc->max_nodes / bluegene_bp_node_cnt;
+		if(tmp > 0) {
+			job_desc->max_nodes = tmp;
+			tmp = NO_VAL;
+		} else {
+			tmp = job_desc->max_nodes % bluegene_segment_node_cnt;
+			if(tmp > 0)
+				job_desc->max_nodes += 
+					(bluegene_segment_node_cnt-tmp);
+			tmp = bluegene_bp_node_cnt/job_desc->max_nodes;
+			tmp = procs_per_node/tmp;
+			
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_MAX_PROCS, 
+					     &tmp);
+			job_desc->max_nodes = 1;
+		}
+		tmp = NO_VAL;
+			
+		break;
+	default:
+		error("unknown option %d for alter_node_cnt",type);
+	}
+	return SLURM_SUCCESS;
 }

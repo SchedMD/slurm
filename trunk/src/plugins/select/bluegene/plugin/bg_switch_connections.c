@@ -320,11 +320,11 @@ extern int configure_small_block(bg_record_t *bg_record)
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 	int rc = SLURM_SUCCESS;
-	rm_BP_t *curr_bp;
+	rm_BP_t *curr_bp = NULL;
 	rm_bp_id_t bp_id = NULL;
-	int num_ncards = 4;
+	int num_ncards = 0;
 	rm_nodecard_t *ncard;
-	rm_nodecard_list_t *ncard_list;
+	rm_nodecard_list_t *ncard_list = NULL;
 	rm_quarter_t quarter;
 	int num, i;
 
@@ -341,6 +341,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 		slurm_mutex_unlock(&api_file_mutex);
 		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 	}
+
+	num_ncards = bg_record->node_cnt/bluegene_nc_node_cnt;
 
 	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionNodeCardNum,
@@ -435,7 +437,17 @@ extern int configure_small_block(bg_record_t *bg_record)
 		}
 		if(bg_record->quarter != quarter)
 			continue;
+<<<<<<< .working
 		slurm_mutex_lock(&api_file_mutex);
+=======
+
+		if(bg_record->segment != NO_VAL) {
+			if(bg_record->segment != (i%4))
+				continue;
+		}
+
+		slurm_mutex_lock(&api_file_mutex);
+>>>>>>> .merge-right.r7390
 		if (num_ncards) {
 			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionNextNodeCard, 
@@ -678,7 +690,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 
 		if(found_bpid==BA_SYSTEM_DIMENSIONS) {
 						
-			debug2("adding midplane %d%d%d",
+			debug2("adding bp %d%d%d",
 			       bg_bp->coord[X],
 			       bg_bp->coord[Y],
 			       bg_bp->coord[Z]);

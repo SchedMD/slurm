@@ -2,7 +2,7 @@
  *  partition_functions.c - Functions related to partition display 
  *  mode of smap.
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -44,7 +44,9 @@ typedef struct {
 	int letter_num;
 	List nodelist;
 	int size;
-	int quarter;	
+	uint16_t quarter;	
+	uint16_t segment;	
+	int node_cnt;	
 	bool printed;
 
 } db2_block_info_t;
@@ -163,6 +165,7 @@ extern void get_bg_part()
 	partition_info_t part;
 	int number, start[BA_SYSTEM_DIMENSIONS], end[BA_SYSTEM_DIMENSIONS];
 	db2_block_info_t *block_ptr = NULL;
+	db2_block_info_t *found_block = NULL;
 	ListIterator itr;
 	List nodelist = NULL;
 
@@ -240,8 +243,7 @@ extern void get_bg_part()
 	
 	for (i=0; i<new_bg_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
-		list_append(block_list, block_ptr);
-		
+			
 		block_ptr->bg_block_name 
 			= xstrdup(new_bg_ptr->bg_info_array[i].bg_block_id);
 		block_ptr->nodes 
@@ -259,15 +261,31 @@ extern void get_bg_part()
 			= new_bg_ptr->bg_info_array[i].node_use;
 		block_ptr->quarter 
 			= new_bg_ptr->bg_info_array[i].quarter;
-		if(block_ptr->quarter < 1) {
+		block_ptr->segment 
+			= new_bg_ptr->bg_info_array[i].segment;
+		block_ptr->node_cnt 
+			= new_bg_ptr->bg_info_array[i].node_cnt;
+	       
+		itr = list_iterator_create(block_list);
+		while ((found_block = (db2_block_info_t*)list_next(itr)) 
+		       != NULL) {
+			if(!strcmp(block_ptr->nodes, found_block->nodes)) {
+				block_ptr->letter_num = 
+					found_block->letter_num;
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+
+		if(!found_block) {
 			last_count++;
 			_marknodes(block_ptr, last_count);
-		} else 
-			block_ptr->letter_num = last_count;
+		}
 		
 		if(block_ptr->bg_conn_type == SELECT_SMALL)
 			block_ptr->size = 0;
-		
+
+		list_append(block_list, block_ptr);
 	}
 	
 	if (!params.no_header)
@@ -357,22 +375,16 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			end[Z] = (number % 10);
 			j += 3;
 			
-			if(start[X] == 0
-			   && start[Y] == 0
-			   && start[Z] == 0
-			   && end[X] == (DIM_SIZE[X]-1) 
-			   && end[Y] == (DIM_SIZE[Y]-1)
-			   && end[Z] == (DIM_SIZE[Z]-1) 
-			   && block_ptr->state == RM_PARTITION_FREE) 
+			if(block_ptr->state != RM_PARTITION_FREE) 
 				block_ptr->size += set_grid_bg(start,
-								end,
-								count,
-								1);
+							       end,
+							       count,
+							       1);
 			else
 				block_ptr->size += set_grid_bg(start, 
-								end, 
-								count, 
-								0);
+							       end, 
+							       count, 
+							       0);
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;
@@ -441,8 +453,13 @@ static void _print_header_part(void)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODES");
 		ba_system_ptr->xcord += 7;
+#ifdef HAVE_BG
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "BP_LIST");
+#else
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODELIST");
+#endif
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -459,7 +476,11 @@ static void _print_header_part(void)
 		}
 
 		printf("NODES ");
+#ifdef HAVE_BG
+		printf("BP_LIST\n");
+#else
 		printf("NODELIST\n");	
+#endif
 	}	
 }
 
@@ -499,21 +520,15 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int i = 0;
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
+	char tmp_cnt[7];
+
+	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
 
 	if(!params.commandline) {
-		if((params.display == BGPART) 
-		   && db2_info_ptr->quarter != -1) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%c.%d", 
-				  part_ptr->root_only, 
-				  db2_info_ptr->quarter);
-		} else {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%c", 
-				  part_ptr->root_only);
-		}
+		mvwprintw(ba_system_ptr->text_win, 
+			  ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%c", 
+			  part_ptr->root_only);
 		ba_system_ptr->xcord += 4;
 
 		if (part_ptr->name) {
@@ -612,16 +627,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 				ba_system_ptr->xcord += 10;
 			}
 		}
-		if(part_ptr->total_nodes == 0)
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5s", 
-				  "0.25");
-		else	
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5d", 
-				  part_ptr->total_nodes);
+		mvwprintw(ba_system_ptr->text_win, 
+			  ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%5s", tmp_cnt);
+			  
 		ba_system_ptr->xcord += 7;
 
 		tempxcord = ba_system_ptr->xcord;
@@ -630,6 +639,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->allow_groups;
 		else
 			nodes = part_ptr->nodes;
+		i=0;
 		prefixlen = i;
 		while (nodes && nodes[i]) {
 			width = ba_system_ptr->text_win->_maxx 
@@ -659,11 +669,19 @@ static int _print_text_part(partition_info_t *part_ptr,
 			i++;
 		}
 		if((params.display == BGPART) 
-		   && (db2_info_ptr->quarter != -1)) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, ".%d",
-				  db2_info_ptr->quarter);
+		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
+			if(db2_info_ptr->segment != (uint16_t) NO_VAL) {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d.%d", 
+					  db2_info_ptr->quarter,
+					  db2_info_ptr->segment);
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d", 
+					  db2_info_ptr->quarter);
+			}
 		}
 			
 		ba_system_ptr->xcord = 1;
@@ -709,10 +727,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 			} 
 		}
 		
-		if(part_ptr->total_nodes == 0)
-			printf("%5s ", "0.25");
-		else	
-			printf("%5d ", part_ptr->total_nodes);
+		printf("%5s ", tmp_cnt);
 		
 		tempxcord = ba_system_ptr->xcord;
 		
@@ -722,9 +737,15 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->nodes;
 		
 		if((params.display == BGPART) 
-		   && (db2_info_ptr->quarter != -1))
-			printf("%s.%d\n", nodes, db2_info_ptr->quarter);
-		else
+		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
+			if(db2_info_ptr->segment != (uint16_t) NO_VAL)
+				printf("%s.%d.%d\n", nodes, 
+				       db2_info_ptr->quarter,
+				       db2_info_ptr->segment);
+			else 
+				printf("%s.%d\n", nodes, 
+				       db2_info_ptr->quarter);
+		} else
 			printf("%s\n",nodes);
 	}
 	return printed;
@@ -800,10 +821,11 @@ static int _print_rest(db2_block_info_t *block_ptr)
 {
 	partition_info_t part;
 	db2_block_info_t *db2_info_ptr = NULL;
-	ListIterator itr;
 	int set = 0;
 		
-	part.total_nodes = block_ptr->size;
+	if(block_ptr->node_cnt == 0)
+		block_ptr->node_cnt = block_ptr->size;
+	part.total_nodes = block_ptr->node_cnt;
 	if(block_ptr->slurm_part_name)
 		part.name = block_ptr->slurm_part_name;
 	else

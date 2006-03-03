@@ -64,10 +64,10 @@ extern int slurm_load_node_select (time_t update_time,
         req.last_update  = update_time;
         req_msg.msg_type = REQUEST_NODE_SELECT_INFO;
         req_msg.data     = &req;
-
+	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
-
+	
 	switch (resp_msg.msg_type) {
 	case RESPONSE_NODE_SELECT_INFO:
 		*node_select_info_msg_pptr = (node_select_info_msg_t *) 

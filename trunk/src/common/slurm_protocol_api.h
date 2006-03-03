@@ -581,4 +581,5 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 int *set_span(int total);
 void slurm_free_msg(slurm_msg_t * msg);
 void slurm_free_cred(void *cred);
+int convert_to_kilo(int number, char *tmp);
 #endif

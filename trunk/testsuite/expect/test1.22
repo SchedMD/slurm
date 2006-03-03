@@ -43,7 +43,13 @@ print_header $test_id
 #
 set host_0      ""
 set timeout $max_job_delay
-spawn $srun -N1-64 -l --threads=1 -t1 $bin_hostname  
+if { [test_bluegene] } {
+	set node_cnt 32-32k
+} else {
+	set node_cnt 1-64
+}
+
+spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname  
 expect {
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
@@ -72,7 +78,7 @@ if {[string compare $host_0 ""] == 0} {
 #
 set host_0      ""
 set timeout $max_job_delay
-spawn $srun -N1-64 -l --threads=32 -t1 $bin_hostname  
+spawn $srun -N$node_cnt -l --threads=32 -t1 $bin_hostname  
 expect {
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)

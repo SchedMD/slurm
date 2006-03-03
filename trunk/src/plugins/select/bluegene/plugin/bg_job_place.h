@@ -33,9 +33,12 @@
  * Try to find resources for a given job request
  * IN job_ptr - pointer to job record in slurmctld
  * IN/OUT bitmap - nodes availble for assignment to job, clear those not to 
- *	be used
+ *	           be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate 
- *	to this job (considers slurm partition limits)
+ *	                      to this job (considers slurm partition limits)
+ * IN test_only - test to see if job is ever runnable, 
+ *                or (false) runable right now
+ * IN test_only - if true, only test if ever could run, not necessarily now
  * IN test_only - if true, only test if ever could run, not necessarily now
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise 
  */

@@ -41,8 +41,8 @@ set job_id      0
 
 print_header $test_id
 
-if {[test_front_end] == 0} {
-	send_user "\nWARNING: This test is only compatable with front-end systems\n"
+if {[test_bluegene] == 0} {
+	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
 	 exit $exit_code
 }
 
@@ -59,7 +59,7 @@ exec $bin_chmod 700 $file_in
 # Submit a slurm job for blue gene with geometry of 2x1x1
 #
 set timeout $max_job_delay
-spawn $srun --geometry=2x1x1 --no-rotate --nodes=2-2 --batch --output=/dev/null --error=/dev/null $file_in
+spawn $srun --geometry=2x1x1 --no-rotate --nodes=1k-1k --batch --output=/dev/null --error=/dev/null $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -113,7 +113,7 @@ if {$job_id != 0} {
 # Submit a slurm job for blue gene with geometry of 1x2x1
 #
 set jobid 0
-spawn $srun --geometry=1x2x1 --no-rotate --nodes=2-2 --batch --output=/dev/null --error=/dev/null $file_in
+spawn $srun --geometry=1x2x1 --no-rotate --nodes=1k-1k --batch --output=/dev/null --error=/dev/null $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -164,7 +164,7 @@ if {$job_id != 0} {
 # Submit a slurm job for blue gene with geometry of 1x1x2
 #
 set jobid 0
-spawn $srun --geometry=1x1x2 --no-rotate --nodes=2-2 --batch --output=/dev/null --error=/dev/null $file_in
+spawn $srun --geometry=1x1x2 --no-rotate --nodes=1k-1k --batch --output=/dev/null --error=/dev/null $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
