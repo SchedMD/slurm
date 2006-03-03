@@ -53,7 +53,7 @@ set env(SLURM_ACCOUNT) QA_ACCT
 #
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"     >$file_in
-exec echo "$bin_sleep 5"  >>$file_in
+exec echo "$bin_sleep 5"   >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -118,7 +118,7 @@ if {$match_state == 0} {
 	send_user "\nFAILURE: Dependent job not completed\n"
 	set exit_code 1
 }
-exit
+
 #
 # Confirm dependency info within second job as well as environment 
 # variable based SLURM account
@@ -132,7 +132,7 @@ expect {
 		exp_continue
 	}
 	-re "Account=QA_ACCT" {
-		set match_acct
+		set match_acct 1
 		exp_continue
 	}
 	timeout {
