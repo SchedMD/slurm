@@ -48,7 +48,14 @@ print_header $test_id
 #	KillWait (120 secs on BlueGene per IBM recommendation)
 #
 set timeout [expr $max_job_delay + 60 + 60 + 120]
-spawn $srun -N1-2 -n$task_cnt --overcommit --debugger-test -t1 $bin_id  
+
+if { [test_bluegene] } {
+	set node_cnt 1-1024
+} else {
+	set node_cnt 1-2
+}
+
+spawn $srun -N$node_cnt -n$task_cnt --overcommit --debugger-test -t1 $bin_id  
 expect {
 	-re "uid=" {
 		send_user "\nFAILURE: task not stopped\n"

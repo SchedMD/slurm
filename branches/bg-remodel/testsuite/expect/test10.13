@@ -137,7 +137,7 @@ if { $exit_code != 1 } {
 			incr matches
 			exp_continue
 		}
-		-re "MidplaneNodeCnt" {
+		-re "BasePartitionNodeCnt" {
 			set stuff [concat $stuff "8"]
 			incr matches
 			exp_continue

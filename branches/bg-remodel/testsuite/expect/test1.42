@@ -86,7 +86,7 @@ if {$job_id1 == 0} {
 #
 set match_acct  0
 set match_state 0
-spawn $srun -v --dependency=$job_id1 -t1 $scontrol show job $job_id1
+spawn $srun -v --dependency=$job_id1 $scontrol show job $job_id1
 expect {
 	-re "launching ($number).0" {
 		set job_id2 $expect_out(1,string)
@@ -118,7 +118,7 @@ if {$match_state == 0} {
 	send_user "\nFAILURE: Dependent job not completed\n"
 	set exit_code 1
 }
-
+exit
 #
 # Confirm dependency info within second job as well as environment 
 # variable based SLURM account
