@@ -61,10 +61,16 @@ expect {
 		wait
 	}
 }
+if {$matches != 1} {
+	send_user "\nFAILURE: failed to hold job as requested\n"
+	set exit_code 1
+}
+
 
 #
 # Spawn a srun immediate execution job, it should run or fail immediately
 #
+set matches 0
 spawn $srun --immediate -v -t1 $bin_pwd
 expect {
 	-re "Immediate execution impossible" {
@@ -86,7 +92,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$matches != 1} {
 	send_user "\nFAILURE: Immediate initiation option failure\n"
 	set exit_code 1
 }
