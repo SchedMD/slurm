@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "December 2005" "squeue 1.0" "Slurm components"
+.TH SQUEUE "1" "March 2006" "squeue 1.1" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -140,7 +140,8 @@ For job steps this field shows the elapsed time since execution began
 and thus will be inaccurate for job steps which have been suspended.
 .TP
 \fB%n\fR
-List of node names explicitly requested by the job
+List of node names (or base partitions on BlueGene systems) explicitly 
+requested by the job
 .TP
 \fB%N\fR
 List of nodes allocated to the job or job step. In the case of a 
@@ -262,26 +263,26 @@ These codes identify the reason that a job is waiting for execution.
 A job may be waiting for more than one reason, in which case only 
 one of those reasons is displayed.
 .TP 20
-Dependency
+\fBDependency\fR
 This job is waiting for a dependent job to complete.
 .TP
-None
+\fBNone\fR
 No reason is set for this job.
 .TP
-PartitionDown
+\fBPartitionDown\fR
 The partition required by this job is in a DOWN state.
 .TP
-PartitionNodeLimit
+\fBPartitionNodeLimit\fR
 The number of nodes required by this job is outside of it's 
 partitions current limits.
 .TP
-PartitionTimeLimit
+\fBPartitionTimeLimit\fR
 The job's time limit exceeds it's partition's current time limit.
 .TP
-Priority
+\fBPriority\fR
 One or more higher priority jobs exist for this partition.
 .TP
-Resources
+\fBResources\fR
 The job is waiting for resources to become availble.
 
 .SH "JOB STATE CODES"
@@ -290,32 +291,32 @@ execution.
 The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
 An explanation of each state follows.
 .TP 20
-CA  CANCELLED
+\fBCA  CANCELLED\fR
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
 .TP
-CD  COMPLETED
+\fBCD  COMPLETED\fR
 Job has terminated all processes on all nodes.
 .TP
-CG  COMPLETING
+\fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
-F   FAILED
+\fBF   FAILED\fR
 Job terminated with non\-zero exit code or other failure condition.
 .TP
-NF  NODE_FAIL
+\fBNF  NODE_FAIL\fR
 Job terminated due to failure of one or more allocated nodes.
 .TP
-PD  PENDING
+\fBPD  PENDING\fR
 Job is awaiting resource allocation.
 .TP
-R   RUNNING
+\fBR   RUNNING\fR
 Job currently has an allocation.
 .TP
-S   SUSPENDED
+\fBS   SUSPENDED\fR
 Job has an allocation, but execution has been suspended.
 .TP
-TO  TIMEOUT
+\fBTO  TIMEOUT\fR
 Job terminated upon reaching its time limit.
 
 .SH "ENVIRONMENT VARIABLES"
@@ -401,7 +402,7 @@ Print information only about job step 65552.1:
 .ec
 
 .SH "COPYING"
-Copyright (C) 2002 The Regents of the University of California.
+Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL-CODE-217948.
 .LP
