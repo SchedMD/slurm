@@ -1048,11 +1048,15 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 	packstr(msg->node_list, buffer);
 
 	pack16((uint16_t)msg->num_cpu_groups, buffer);
-	pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
-	pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+	if (msg->num_cpu_groups) {
+		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+	}
 
 	pack16((uint16_t)msg->node_cnt, buffer);
-	_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
+	if (msg->node_cnt > 0)
+		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
+
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
 
