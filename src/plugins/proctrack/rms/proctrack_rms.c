@@ -137,10 +137,10 @@ extern int slurm_container_signal  (uint32_t id, int signal)
 
         rc = -1;
         for (i = nids-2; i >= 0 ; i--) {
-		debug3("proctrack/rms(pid %d) Sending signal %d to process %d",
+		debug2("proctrack/rms(pid %d) Sending signal %d to process %d",
 		       getpid(), signal, pids[i]);
 		rc &= kill(pids[i], signal);
-		debug("rc = %d", rc);
+		debug2("  rc = %d", rc);
 	}
         free(pids);
 	debug3("proctrack/rms signal container returning %d", rc);
