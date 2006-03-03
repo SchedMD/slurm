@@ -3625,7 +3625,8 @@ static int *_set_best_path()
 		return NULL;
 	itr = list_iterator_create(best_path);
 	while((path_switch = (ba_path_switch_t*) list_next(itr))) {
-		*passthrough = true;
+		if(passthrough)
+			*passthrough = true;
 #ifdef HAVE_BG
 		debug3("mapping %d%d%d",path_switch->geometry[X],
 		       path_switch->geometry[Y],
