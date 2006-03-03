@@ -437,17 +437,12 @@ extern int configure_small_block(bg_record_t *bg_record)
 		}
 		if(bg_record->quarter != quarter)
 			continue;
-<<<<<<< .working
-		slurm_mutex_lock(&api_file_mutex);
-=======
-
 		if(bg_record->segment != NO_VAL) {
 			if(bg_record->segment != (i%4))
 				continue;
 		}
 
 		slurm_mutex_lock(&api_file_mutex);
->>>>>>> .merge-right.r7390
 		if (num_ncards) {
 			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionNextNodeCard, 
