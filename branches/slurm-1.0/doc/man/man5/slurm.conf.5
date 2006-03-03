@@ -117,7 +117,7 @@ The default value is 1.
 \fBHeartbeatInterval\fR
 The interval, in seconds, at which the SLURM controller tests the 
 status of other daemons. The default value is 30 seconds. 
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBInactiveLimit\fR
 The interval, in seconds, a job or job step is permitted to be inactive
@@ -131,7 +131,7 @@ without waiting for their time limit to be reached.
 This value should reflect the possibility that the srun command may
 stopped by a debugger or considerable time could be required for batch 
 job pre- and post-processing. The default value is unlimited (zero). 
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBJobAcctType\fR
 Define the job accounting mechanism type.
@@ -204,7 +204,7 @@ SIGTERM and SIGKILL signals upon reaching its time limit.
 If the job fails to terminate gracefully 
 in the interval specified, it will be forcably terminated. 
 The default value is 30 seconds.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBMaxJobCount\fR
 The maximum number of jobs SLURM can have in its active database 
@@ -214,7 +214,7 @@ resources. Once this limit is reached, requests to submit additional
 jobs will fail. The default value is 2000 jobs. This value may not 
 be reset via "scontrol reconfig". It only takes effect upon restart 
 of the slurmctld daemon.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is purged from 
@@ -222,7 +222,7 @@ SLURM's active database. Set the values of \fBMaxJobCount\fR and
 \fBMinJobAge\fR to insure the slurmctld daemon does not exhaust 
 its memory or other resources. The default value is 300 seconds. 
 A value of zero prevents any job record purging.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBMpiDefault\fR
 Identifies the default type of MPI to be used. 
@@ -380,7 +380,7 @@ must be different.
 The interval, in seconds, that the backup controller waits for the 
 primary controller to respond before assuming control. 
 The default value is 120 seconds.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBSlurmdDebug\fR
 The level of detail to provide \fBslurmd\fR daemon's logs. 
@@ -422,7 +422,7 @@ The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR
 to respond before configuring that node's state to DOWN. 
 The default value is 300 seconds.
 A value of zero indicates the node should never be set DOWN if not responding.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the SLURM controller, 
@@ -516,7 +516,7 @@ Specifies how many seconds the srun command should by default wait after
 the first task terminates before terminating all remaining tasks. The 
 "--wait" option on the srun command line overrides this value. 
 If set to 0, this feature is disabled.
-May not exceed 65534.
+May not exceed 65533.
 .LP
 The configuration of nodes (or machines) to be managed by Slurm is 
 also specified in \fB/etc/slurm.conf\fR. 
