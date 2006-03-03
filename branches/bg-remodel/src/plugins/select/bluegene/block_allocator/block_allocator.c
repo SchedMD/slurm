@@ -62,6 +62,7 @@ int color_count = 0;
 char letters[62];
 char colors[6];
 pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+bool *passthrough = NULL;
 
 /** internal helper functions */
 #ifdef HAVE_BG_FILES
@@ -192,7 +193,8 @@ extern int new_ba_request(ba_request_t* ba_request)
 	geo[X] = ba_request->geometry[X];
 	geo[Y] = ba_request->geometry[Y];
 	geo[Z] = ba_request->geometry[Z];
-		
+	passthrough = &ba_request->passthrough;
+
 	if(geo[X] != (uint16_t)NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
@@ -3623,6 +3625,7 @@ static int *_set_best_path()
 		return NULL;
 	itr = list_iterator_create(best_path);
 	while((path_switch = (ba_path_switch_t*) list_next(itr))) {
+		*passthrough = true;
 #ifdef HAVE_BG
 		debug3("mapping %d%d%d",path_switch->geometry[X],
 		       path_switch->geometry[Y],

@@ -126,8 +126,9 @@ typedef struct {
 	int conn_type;
 	int rotate_count;
 	int elongate_count;
-	int num32;
-	int num128;
+	int nodecards;
+	int quarters;
+	bool passthrough;
 	bool rotate;
 	bool elongate; 
 	List elongate_geos;

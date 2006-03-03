@@ -86,7 +86,10 @@ static allocated_block_t *_make_request(ba_request_t *request)
 			  request->geometry[2]);
 		return NULL;
 	} else {
-				
+		if(request->passthrough)
+			sprintf(error_string,"THERE ARE PASSTHROUGHS IN "
+				"THIS ALLOCATION!!!!!!!");
+		
 		allocated_block = (allocated_block_t *)xmalloc(
 			sizeof(allocated_block_t));
 		allocated_block->request = request;
@@ -184,7 +187,7 @@ static int _set_nodecard_cnt(char *com)
 
 static int _create_allocation(char *com, List allocated_blocks)
 {
-	int i=6, geoi=-1, starti=-1, i2=0, num32=-1, num128=-1;
+	int i=6, geoi=-1, starti=-1, i2=0, nodecards=-1, quarters=-1;
 	int len = strlen(com);
 	char *temp = NULL;
 	allocated_block_t *allocated_block = NULL;
@@ -196,8 +199,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->elongate = false;
 	request->start_req=0;
 	request->size = 0;
-	request->num32 = 0;
-	request->num128 = 0;
+	request->nodecards = 0;
+	request->quarters = 0;
+	request->passthrough = false;
 	
 	while(i<len) {				
 		if(!strncasecmp(com+i, "mesh", 4)) {
@@ -206,12 +210,12 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if(!strncasecmp(com+i, "small", 5)) {
 			request->conn_type = SELECT_SMALL;
 			i+=5;
-		} else if(!strncasecmp(com+i, "num32", 5)) {
-			num32=0;
+		} else if(!strncasecmp(com+i, "nodecard", 8)) {
+			nodecards=0;
+			i+=5;
+		} else if(!strncasecmp(com+i, "quarter", 7)) {
+			quarters=0;
 			i+=6;
-		} else if(!strncasecmp(com+i, "num128", 6)) {
-			num128=0;
-			i+=7;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
 			i+=6;
@@ -226,11 +230,11 @@ static int _create_allocation(char *com, List allocated_blocks)
 			  && (com[i] < 58 && com[i] > 47)) {
 			starti=i;
 			i++;
-		} else if(num32 == 0 && (com[i] < 58 && com[i] > 47)) {
-			num32=i;
+		} else if(nodecards == 0 && (com[i] < 58 && com[i] > 47)) {
+			nodecards=i;
 			i++;
-		} else if(num128 == 0 && (com[i] < 58 && com[i] > 47)) {
-			num128=i;
+		} else if(quarters == 0 && (com[i] < 58 && com[i] > 47)) {
+			quarters=i;
 			i++;
 		} else if(geoi<0 && (com[i] < 58 && com[i] > 47)) {
 			geoi=i;
@@ -242,37 +246,32 @@ static int _create_allocation(char *com, List allocated_blocks)
 	}		
 	
 	if(request->conn_type == SELECT_SMALL) {
-		if(num32 > 0) {
-			request->num32 = atoi(&com[num32]);
-			num32 = request->num32/4;
-			request->num32 = num32*4;
+		if(nodecards > 0) {
+			request->nodecards = atoi(&com[nodecards]);
+			nodecards = request->nodecards/4;
+			request->nodecards = nodecards*4;
+		}
+
+		request->quarters = 4;
+		
+		if(request->nodecards > 0)
+			request->quarters -= nodecards;
+
+		if(request->quarters > 4) {
+			request->quarters = 4;
+			request->nodecards = 0;
+		} else if(request->nodecards > 16) {
+			request->quarters = 0;
+			request->nodecards = 16;
 		}
 		
-		if(num128 > 0) {
-			request->num128 = atoi(&com[num128]);
-			num128 = request->num128/4;
-			request->num128 = num128*4;
-		} else 
-			request->num128 = 4;
-
-		if(request->num32 > 0)
-			request->num128 -= num32;
-
-		if(request->num128 > 4) {
-			request->num128 = 4;
-			request->num32 = 0;
-		} else if(request->num32 > 16) {
-			request->num128 = 0;
-			request->num32 = 16;
-		}
-		
-		num128 = request->num128*4;
-		num32 = request->num32;
-		if((num128+num32) > 16) {
+		quarters = request->quarters*4;
+		nodecards = request->nodecards;
+		if((quarters+nodecards) > 16) {
 			sprintf(error_string, 
 				"please specify a complete split of a "
 				"Base Partion\n"
-				"(i.e. num32=4 num128=3)\0");
+				"(i.e. nodecards=4)\0");
 			geoi = -1;
 		}
 		request->size = 1;
@@ -741,8 +740,8 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->conn_type=allocated_block->request->conn_type;
 		request->rotate =allocated_block->request->rotate;
 		request->elongate = allocated_block->request->elongate;
-		request->num32 = allocated_block->request->num32;
-		request->num128 = allocated_block->request->num128;
+		request->nodecards = allocated_block->request->nodecards;
+		request->quarters = allocated_block->request->quarters;
 				
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -845,9 +844,9 @@ static int _save_allocation(char *com, List allocated_blocks)
 				conn_type = "MESH";
 			else {
 				conn_type = "SMALL";
-				sprintf(extra, " Num32=%d Num128=%d\0",
-					allocated_block->request->num32,
-					allocated_block->request->num128);
+				sprintf(extra, " NodeCards=%d Quarters=%d\0",
+					allocated_block->request->nodecards,
+					allocated_block->request->quarters);
 			}
 			sprintf(save_string, "BPs=%s Type=%s%s\n", 
 				allocated_block->request->save_name, 
@@ -884,6 +883,8 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 	int start1[BA_SYSTEM_DIMENSIONS];
 	int end1[BA_SYSTEM_DIMENSIONS];
 	int geo[BA_SYSTEM_DIMENSIONS];
+	char *layout = NULL;
+	int pset_num=-1, api_verb=-1, num_segment=0, num_quarter=0;
 	char com[255];
 	int j = 0, number;
 	int len = 0;
@@ -898,9 +899,19 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 	end1[Z] = -1;
 	
 	error_code = slurm_parser(in_line,
+				  "Numpsets=", 'd', &pset_num,
+				  "BasePartitionNodeCnt=", 'd', 
+				  &base_part_node_cnt,
+				  "NodeCardNodeCnt=", 'd', &nodecard_node_cnt,
+				  "LayoutMode=", 's', &layout,
+				  "BPs=", 's', &nodes,
 				  "Nodes=", 's', &nodes,
 				  "Type=", 's', &conn_type,
+				  "NodeCards=", 'd', &num_segment,
+				  "Quarters=", 'd', &num_quarter,
 				  "END");
+	if(layout)
+		_set_layout(layout);
 	if(!nodes)
 		return SLURM_SUCCESS;
 	len = strlen(nodes);
@@ -976,9 +987,11 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 		j++;
 	}
 	memset(com,0,255);
-	sprintf(com,"create %dx%dx%d %s start %dx%dx%d",
+	sprintf(com,"create %dx%dx%d %s start %dx%dx%d "
+		"nodecards=%d quarters=%d",
 		geo[X], geo[Y], geo[Z], conn_type, 
-		start1[X], start1[Y], start1[Z]);
+		start1[X], start1[Y], start1[Z],
+		num_segment, num_quarter);
 	_create_allocation(com, allocated_blocks);
 #endif
 	return SLURM_SUCCESS;
@@ -1015,6 +1028,7 @@ static int _load_configuration(char *com, List allocated_blocks)
 				}
 			}
 		}
+		
 	if(filename[0]=='\0') {
 		sprintf(filename,"bluegene.conf");
 	}
@@ -1088,11 +1102,11 @@ static void _print_header_command(void)
 #endif
 	ba_system_ptr->xcord += 10;
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "NUM32");
-	ba_system_ptr->xcord += 7;
+		  ba_system_ptr->xcord, "NODECARDS");
+	ba_system_ptr->xcord += 11;
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "NUM128");
-	ba_system_ptr->xcord += 8;
+		  ba_system_ptr->xcord, "QUARTERS");
+	ba_system_ptr->xcord += 10;
 #ifdef HAVE_BG
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "BP_LIST");
@@ -1146,15 +1160,15 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	if(allocated_block->request->conn_type == SELECT_SMALL) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%d", 
-			  allocated_block->request->num32);
-		ba_system_ptr->xcord += 7;
+			  allocated_block->request->nodecards);
+		ba_system_ptr->xcord += 11;
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%d", 
-			  allocated_block->request->num128);
-		ba_system_ptr->xcord += 8;
+			  allocated_block->request->quarters);
+		ba_system_ptr->xcord += 10;
 		
 	} else
-		ba_system_ptr->xcord += 15;
+		ba_system_ptr->xcord += 21;
 	
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "%s",
