@@ -35,8 +35,8 @@ set test_id     "1.36"
 
 set exit_code    0
 set mult         4
-set task_cnt     4
 set task_output  0
+set task_cnt 4
 
 print_header $test_id
 
@@ -44,7 +44,14 @@ print_header $test_id
 # Spawn srun with $task_cnt tasks each of which runs a $mult way /bin/id
 #
 set timeout $max_job_delay
-spawn $srun -N1-4 -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id
+
+if { [test_bluegene] } {
+	set node_cnt 1-2048
+} else {
+	set node_cnt 1-4
+}
+
+spawn $srun -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id
 expect {
 	-re "($number): uid=" {
 		incr task_output

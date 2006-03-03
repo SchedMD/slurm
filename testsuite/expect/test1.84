@@ -49,7 +49,11 @@ set cpu_count      0
 set fat_nodes      0
 set host           ""
 set timeout $max_job_delay
-spawn $srun -N1 --cpus-per-task=1 -l -t1 $bin_hostname  
+set node_cnt 1
+set task_cnt 1
+
+
+spawn $srun -N$node_cnt --cpus-per-task=$task_cnt -l -t1 $bin_hostname  
 expect {
 	-re "($number): ($alpha_numeric)" {
 		set task $expect_out(1,string)

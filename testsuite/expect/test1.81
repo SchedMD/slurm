@@ -74,10 +74,11 @@ if {$have_arg == 0} {
 	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname $hostname_arg
 } 
 expect {
-	-re "Unable to create job step: Task count specification invalid" {
-		send_user "\nWARNING: This is not a real error for some system configurations\n"
+	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
 			set can_not_run 1
+			send_user "\nWARNING: error expected, Testing is incompatable with front-end systems\n"
+#	
 		}
 		exp_continue
 	}

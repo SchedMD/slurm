@@ -67,7 +67,13 @@ exec $bin_chmod 700 $file_prog_get
 # Spawn a job to test BNR functionality
 #
 set timeout $max_job_delay
-spawn $srun -l -N1-2 -n10 -O -t1 $file_prog_get
+if { [test_bluegene] } {
+	set node_cnt 1-1024
+} else {
+	set node_cnt 1-2
+}
+
+spawn $srun -l -N$node_cnt -n10 -O -t1 $file_prog_get
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"

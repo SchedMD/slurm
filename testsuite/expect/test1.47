@@ -109,7 +109,7 @@ if {$matches != 2} {
 #
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"              >$file_in
-exec echo "#SLURM -N65000"          >>$file_in
+exec echo "#SLURM -N1000000k"          >>$file_in
 exec echo "$bin_sleep $delay"       >>$file_in
 exec $bin_chmod 700 $file_in
 

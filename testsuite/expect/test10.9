@@ -51,7 +51,7 @@ expect {
 		set too_small 1
 		exp_continue
 	}
-	-re "NODELIST" {
+	-re "LIST" {
 		incr matches
 		if { $matches == 1 } {
 			send "s"

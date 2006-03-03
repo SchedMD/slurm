@@ -144,7 +144,7 @@ nothing_sent:
 		type->type = msg.msg_type;
 		type->msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 		ret_data_info->data = msg.data;
-		g_slurm_auth_destroy(msg.cred);
+		slurm_free_cred(msg.cred);
 	}
 	slurm_mutex_lock(fwd_msg->forward_mutex);
 	while((returned_type = list_pop(ret_list)) != NULL) {

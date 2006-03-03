@@ -53,7 +53,7 @@ set env(SLURM_ACCOUNT) QA_ACCT
 #
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"     >$file_in
-exec echo "$bin_sleep 5"  >>$file_in
+exec echo "$bin_sleep 5"   >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -86,13 +86,13 @@ if {$job_id1 == 0} {
 #
 set match_acct  0
 set match_state 0
-spawn $srun -v --dependency=$job_id1 -t1 $scontrol show job $job_id1
+spawn $srun -v --dependency=$job_id1 $scontrol show job $job_id1
 expect {
 	-re "launching ($number).0" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "JobState=COMPLETE" {
+	-re "JobState=COMPLETED" {
 		set match_state 1
 		exp_continue
 	}
@@ -123,7 +123,7 @@ if {$match_state == 0} {
 # Confirm dependency info within second job as well as environment 
 # variable based SLURM account
 #
-set match_acct
+set match_acct 0
 set match_jobid 0
 spawn $scontrol show job $job_id2
 expect {
@@ -132,7 +132,7 @@ expect {
 		exp_continue
 	}
 	-re "Account=QA_ACCT" {
-		set match_acct
+		set match_acct 1
 		exp_continue
 	}
 	timeout {

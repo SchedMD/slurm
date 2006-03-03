@@ -71,7 +71,13 @@ exec $bin_chmod 700 $task_prolog $task_epilog $file_in
 #
 set matches 0
 set timeout $max_job_delay
-spawn $srun -N1-2 -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
+if { [test_bluegene] } {
+	set node_cnt 1-1024
+} else {
+	set node_cnt 1-2
+}
+
+spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
 expect {
 	-re "TEST==prolog_qa" {
 		incr matches

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_functions.c - Functions related to job display mode of smap.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -39,10 +39,12 @@ extern void get_job()
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t job;
+	uint16_t show_flags = 0;
 
+	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
-				&new_job_ptr, 0);
+				&new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg(job_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -50,7 +52,8 @@ extern void get_job()
 			new_job_ptr = job_info_ptr;
 		}
 	} else
-		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 0);
+		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 
+					     show_flags);
 
 	if (error_code) {
 		if (quiet_flag != 1) {
@@ -78,9 +81,10 @@ extern void get_job()
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
 		
-		if ((job.job_state == JOB_COMPLETE)
-		    || (job.job_state == JOB_END)
-		    || (job.job_state == JOB_FAILED))
+		if ((job.job_state != JOB_PENDING)
+		    &&  (job.job_state != JOB_RUNNING)
+		    &&  (job.job_state != JOB_SUSPENDED)
+		    &&  ((job.job_state & JOB_COMPLETING) == 0))
 			continue;	/* job has completed */
 
 		if (job.node_inx[0] != -1) {
@@ -197,8 +201,13 @@ static void _print_header_job(void)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODES");
 		ba_system_ptr->xcord += 6;
+#ifdef HAVE_BG
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "BP_LIST");
+#else
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODELIST");
+#endif
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -212,7 +221,11 @@ static void _print_header_job(void)
 		printf("ST ");
 		printf("      TIME ");
 		printf("NODES ");
+#ifdef HAVE_BG
+		printf("BP_LIST\n");
+#else
 		printf("NODELIST\n");
+#endif
 	}
 }
 
@@ -225,13 +238,28 @@ static int _print_text_job(job_info_t * job_ptr)
 	int i = 0;
 	int width = 0;
 	char time_buf[20];
-	int quarter = -1;
-
+	char tmp_cnt[7];
+	uint32_t node_cnt = 0;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t segment = (uint16_t) NO_VAL;
+	
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_QUARTER, 
 			     &quarter);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_SEGMENT, 
+			     &segment);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODE_CNT, 
+			     &node_cnt);
+	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
+		quarter = (uint16_t) NO_VAL;
+#else
+	node_cnt = job_ptr->num_nodes;
 #endif
+	convert_to_kilo(node_cnt, tmp_cnt);
+
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%c", job_ptr->num_procs);
@@ -274,21 +302,15 @@ static int _print_text_job(job_info_t * job_ptr)
 			  time_buf);
 		ba_system_ptr->xcord += 11;
 
-		if(quarter != -1)
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5s", 
-				  "0.25");
-		else
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5d", 
-				  job_ptr->num_nodes);
+		mvwprintw(ba_system_ptr->text_win, 
+			  ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%5s", tmp_cnt);
+		
 		ba_system_ptr->xcord += 6;
 
 		tempxcord = ba_system_ptr->xcord;
 		
-
+		i=0;
 		while (job_ptr->nodes[i] != '\0') {
 			if ((printed = mvwaddch(ba_system_ptr->text_win,
 						ba_system_ptr->ycord, 
@@ -307,12 +329,21 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 			i++;
 		}
-		if(quarter != -1) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, ".%d", 
-				  quarter);		
-			ba_system_ptr->xcord += 2;
+		if(quarter != (uint16_t) NO_VAL) {
+			if(segment != (uint16_t) NO_VAL) {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d.%d", 
+					  quarter,
+					  segment);
+				ba_system_ptr->xcord += 4;
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d", 
+					  quarter);
+				ba_system_ptr->xcord += 2;
+			}
 		}
 
 		ba_system_ptr->xcord = 1;
@@ -339,15 +370,15 @@ static int _print_text_job(job_info_t * job_ptr)
 		}
 		
 		printf("%10.10s ", time_buf);
-		
-		if(quarter != -1)
-			printf("%5s ", "0.25");
-		else
-			printf("%5d ", job_ptr->num_nodes);
+
+		printf("%5s ", tmp_cnt);
 		
 		printf("%s", job_ptr->nodes);
-		if(quarter != -1) {
-			printf(".%d",quarter);
+		if(quarter != (uint16_t) NO_VAL) {
+			if(segment != (uint16_t) NO_VAL)
+				printf(".%d.%d", quarter, segment);
+			else
+				printf(".%d", quarter);
 		}
 
 		printf("\n");

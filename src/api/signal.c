@@ -459,7 +459,8 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	 * Otherwise, look through the list of job step info and find
 	 * the one matching step_id.  Terminate that step.
 	 */
-	rc = slurm_get_job_steps((time_t)0, job_id, step_id, &step_info, SHOW_ALL);
+	rc = slurm_get_job_steps((time_t)0, job_id, step_id, 
+				 &step_info, SHOW_ALL);
 	if (rc != 0) {
 		save_errno = errno;
 		goto fail;
@@ -548,7 +549,7 @@ _job_step_wait(uint32_t jobid, uint32_t stepid,
  */
 static int
 _terminate_job_step(const job_step_info_t *step,
-		 const resource_allocation_response_msg_t *allocation)
+		    const resource_allocation_response_msg_t *allocation)
 {
 	slurm_msg_t *msg; /* array of message structs, one per node */
 	kill_tasks_msg_t rpc;
@@ -628,5 +629,4 @@ static int _terminate_batch_script_step(
 
 	return rc;
 }
-
 

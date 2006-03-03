@@ -62,6 +62,7 @@ int color_count = 0;
 char letters[62];
 char colors[6];
 pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+bool *passthrough = NULL;
 
 /** internal helper functions */
 #ifdef HAVE_BG_FILES
@@ -143,6 +144,9 @@ static int *_set_best_path();
 /* */
 static int _set_one_dim(int *start, int *end, int *coord);
 
+/* */
+static void _destroy_geo(void *object);
+
 /* Global */
 List bp_map_list;
 List bg_info_list;
@@ -167,15 +171,7 @@ extern void destroy_bg_info_record(void* object)
  * create a block request.  Note that if the geometry is given,
  * then size is ignored.  
  * 
- * OUT - ba_request: structure to allocate and fill in.  
- * IN - geometry: requested geometry of block
- * IN - size: requested size of block
- * IN - rotate: if true, allows rotation of block during fit
- * IN - elongate: if true, will try to fit different geometries of
- *      same size requests
- * IN - contig: enforce contiguous regions constraint
- * IN - conn_type: connection type of request (SELECT_TORUS or SELECT_MESH)
- * 
+ * IN/OUT - ba_request: structure to allocate and fill in.  
  * return SUCCESS of operation.
  */
 extern int new_ba_request(ba_request_t* ba_request)
@@ -190,14 +186,16 @@ extern int new_ba_request(ba_request_t* ba_request)
 	int *geo_ptr;
 	int messed_with = 0;
 	
+	ba_request->save_name= NULL;
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
-	ba_request->elongate_geos = list_create(NULL);
+	ba_request->elongate_geos = list_create(_destroy_geo);
 	geo[X] = ba_request->geometry[X];
 	geo[Y] = ba_request->geometry[Y];
 	geo[Z] = ba_request->geometry[Z];
-		
-	if(geo[X] != -1) { 
+	passthrough = &ba_request->passthrough;
+
+	if(geo[X] != (uint16_t)NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
@@ -465,10 +463,10 @@ endit:
 	
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
-	ba_request->elongate_geos = list_create(NULL);
+	ba_request->elongate_geos = list_create(_destroy_geo);
 	geo[X] = ba_request->geometry[X];
 		
-	if(geo[X] != -1) { 
+	if(geo[X] != NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
@@ -495,14 +493,10 @@ endit:
  */
 extern void delete_ba_request(ba_request_t *ba_request)
 {
-	int *geo_ptr;
-
-	if(ba_request->save_name!=NULL)
-		xfree(ba_request->save_name);
+	xfree(ba_request->save_name);
+	if(ba_request->elongate_geos)
+		list_destroy(ba_request->elongate_geos);
 	
-	while((geo_ptr = list_pop(ba_request->elongate_geos)) != NULL)
-		xfree(geo_ptr);
-
 	xfree(ba_request);
 }
 
@@ -526,7 +520,6 @@ extern void print_ba_request(ba_request_t* ba_request)
 	debug("   conn_type:\t%d", ba_request->conn_type);
 	debug("      rotate:\t%d", ba_request->rotate);
 	debug("    elongate:\t%d", ba_request->elongate);
-	debug("force contig:\t%d", ba_request->force_contig);
 }
 
 /**
@@ -601,7 +594,10 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	_db2_check();
 		
 	best_count=BEST_COUNT_INIT;
-						
+
+	if(ba_system_ptr)
+		_delete_ba_system();
+
 	ba_system_ptr = (ba_system_t *) xmalloc(sizeof(ba_system_t));
 	
 	ba_system_ptr->xcord = 1;
@@ -789,8 +785,8 @@ extern void ba_set_node_down(ba_node_t *ba_node)
 {
 	if (!_initialized){
 		error("Error, configuration not initialized, "
-			"call init_configuration first");
-		return;
+		      "calling ba_init(NULL)");
+		ba_init(NULL);
 	}
 
 #ifdef DEBUG_PA
@@ -820,9 +816,8 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 {
 
 	if (!_initialized){
-		error("allocate_block Error, configuration not initialized, "
-		      "call init_configuration first");
-		return 0;
+		error("Error, configuration not initialized, "
+		      "calling ba_init(NULL)");
 	}
 
 	if (!ba_request){
@@ -949,7 +944,7 @@ extern char *set_bg_block(List results, int *start,
 		results = list_create(NULL);
 	else
 		send_results = 1;
-	start_list = list_create(NULL);
+	
 #ifdef HAVE_BG
 	if(start[X]>=DIM_SIZE[X] 
 	   || start[Y]>=DIM_SIZE[Y]
@@ -965,10 +960,10 @@ extern char *set_bg_block(List results, int *start,
 	ba_node = &ba_system_ptr->
 			grid[start[X]];	
 #endif
-
+	
 	if(!ba_node)
 		return NULL;
-	
+		
 	list_append(results, ba_node);
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord, 
@@ -978,7 +973,7 @@ extern char *set_bg_block(List results, int *start,
 			     conn_type);
 
 	if(!found) {
-		debug("trying less efficient code");
+		debug2("trying less efficient code");
 		remove_block(results, color_count);
 		list_destroy(results);
 		results = list_create(NULL);
@@ -992,6 +987,7 @@ extern char *set_bg_block(List results, int *start,
 	}
 	if(found) {
 #ifdef HAVE_BG
+		start_list = list_create(NULL);
 		itr = list_iterator_create(results);
 		while((ba_node = (ba_node_t*) list_next(itr))) {
 			list_append(start_list, ba_node);
@@ -1001,8 +997,11 @@ extern char *set_bg_block(List results, int *start,
 		if(!_fill_in_coords(results, 
 				    start_list, 
 				    geometry, 
-				    conn_type))			
+				    conn_type)) {
+			list_destroy(start_list);
 			return NULL;
+		}
+		list_destroy(start_list);			
 #endif		
 	} else {
 		return NULL;
@@ -1509,7 +1508,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				       node_tar[X],
 				       node_tar[Y],
 				       node_tar[Z]);
-				if(conn_type == TORUS) {
+				if(conn_type == SELECT_TORUS) {
 					dim_curr_switch->
 						int_wire[0].used = 1;
 					dim_curr_switch->
@@ -1581,8 +1580,8 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				}
 								
 			} else {
-				if(conn_type == TORUS || 
-				   (conn_type == MESH && 
+				if(conn_type == SELECT_TORUS || 
+				   (conn_type == SELECT_MESH && 
 				    (node_tar[i2] != first[i2]))) {
 					dim_curr_switch->
 						int_wire[0].used = 1;
@@ -2009,11 +2008,11 @@ start_again:
 #endif
 		       x);
 	new_node:
-		debug("starting at %d%d%d",
-		      start[X]
+		debug2("starting at %d%d%d",
+		       start[X]
 #ifdef HAVE_BG
-		      , start[Y],
-		      start[Z]
+		       , start[Y],
+		       start[Z]
 #endif
 			);
 		
@@ -2038,7 +2037,7 @@ start_again:
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
-			debug("trying something else");
+			debug2("trying something else");
 			remove_block(results, color_count);
 			list_destroy(results);
 			results = list_create(NULL);
@@ -2076,7 +2075,7 @@ start_again:
 #endif
 	}							
 requested_end:
-	error("can't allocate");
+	debug("can't allocate");
 	
 	return 0;
 }
@@ -2458,15 +2457,16 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 				set=1;
 			}
 		} else {
-			error("No network connection to create bgblock "
-			      "containing %s", name);
-			error("Use smap to define bgblocks in bluegene.conf");
+			debug("No network connection to create "
+			      "bgblock containing %s", name);
+			debug("Use smap to define bgblocks in "
+			      "bluegene.conf");
 			xfree(name);
 			return NULL;
 		}
 	}
 
-	if(conn_type == TORUS)
+	if(conn_type == SELECT_TORUS)
 		for(i=0;i<count;i++) {
 			_set_one_dim(start, end, ba_node[i]->coord);
 		}
@@ -2497,7 +2497,6 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	int highest_phys_x = geometry[X] - start[X];
 	
 	ListIterator itr;
-	List path = NULL;
 
 	if(!ba_node)
 		return 0;
@@ -2554,12 +2553,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				       node_tar[X],
 				       node_tar[Y],
 				       node_tar[Z]);
-				if((node_tar[X] == 
-				    next_node->coord[X] && 
-				    node_tar[Y] == 
-				    next_node->coord[Y] && 
-				    node_tar[Z] == 
-				    next_node->coord[Z])) {
+				if((node_tar[X] == next_node->coord[X] && 
+				    node_tar[Y] == next_node->coord[Y] && 
+				    node_tar[Z] == next_node->coord[Z])) {
 					not_first = 1;
 					break;
 				}				
@@ -2582,7 +2578,8 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				;
 			next_switch = &next_node->axis_switch[X];
 
- 			if((conn_type == MESH) && (found == (geometry[X]))) {
+ 			if((conn_type == SELECT_MESH) 
+			   && (found == (geometry[X]))) {
 				debug2("we found the end of the mesh");
 				return 1;
 			}
@@ -2592,8 +2589,13 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			       next_node->phys_x, highest_phys_x);
 			if(next_node->phys_x >= highest_phys_x) {
 				debug2("looking for a passthrough");
-				list_destroy(best_path);
+				if(best_path)
+					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
+				if(path)
+					list_destroy(path);
+				path = list_create(_delete_path_list);
+	
 				_find_passthrough(curr_switch,
 						  0,
 						  results,
@@ -2647,8 +2649,12 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				goto found_path;
 			} else if(found == geometry[X]) {
 				debug2("finishing the torus!");
-				list_destroy(best_path);
+				if(best_path)
+					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
+				if(path)
+					list_destroy(path);
+				path = list_create(_delete_path_list);
 				_finish_torus(curr_switch, 
 					      0, 
 					      results, 
@@ -2786,10 +2792,10 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	int *start, int *first, int *geometry, 
 	int found, int conn_type) 
 {
-ba_switch_t *curr_switch = NULL; 
-ba_switch_t *next_switch = NULL; 
+	ba_switch_t *curr_switch = NULL; 
+	ba_switch_t *next_switch = NULL; 
 	
-int port_tar;
+	int port_tar;
 	int source_port=0;
 	int target_port=0;
 	int num_visited=0;
@@ -2801,8 +2807,7 @@ int port_tar;
 	ba_node_t *check_node = NULL;
 	
 	ListIterator itr;
-	List path = NULL;
-
+	
 	if(!ba_node)
 		return 0;
 
@@ -2872,7 +2877,8 @@ int port_tar;
 			next_switch = &next_node->axis_switch[X];
 		
 			
- 			if((conn_type == MESH) && (found == (geometry[X]))) {
+ 			if((conn_type == SELECT_MESH) 
+			   && (found == (geometry[X]))) {
 				debug2("we found the end of the mesh");
 				return 1;
 			}
@@ -2882,8 +2888,12 @@ int port_tar;
 				goto found_path;
 			} else if(found == geometry[X]) {
 				debug2("finishing the torus!");
-				list_destroy(best_path);
+				if(best_path)
+					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
+				if(path)
+					list_destroy(path);
+				path = list_create(_delete_path_list);
 				_finish_torus(curr_switch, 
 					      0, 
 					      results, 
@@ -3007,7 +3017,6 @@ int port_tar;
 							= port_tar;
 					}
 					return 1;
-
 				}
 			} 			
 		}
@@ -3019,15 +3028,19 @@ int port_tar;
 	       ba_node->coord[Z]);
 #endif
 
-	list_destroy(best_path);
+	if(best_path)
+		list_destroy(best_path);
 	best_path = list_create(_delete_path_list);
+	if(path)
+		list_destroy(path);
+	path = list_create(_delete_path_list);
 	int ports_to_try2[2] = {2,4};
 	
 	_find_next_free_using_port_2(curr_switch, 
-			0, 
-			results, 
-			X, 
-			0);
+				     0, 
+				     results, 
+				     X, 
+				     0);
 	if(best_count < BEST_COUNT_INIT) {
 		debug2("yes found next free %d", best_count);
 		node_tar = _set_best_path();
@@ -3255,7 +3268,9 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 			_find_next_free_using_port_2(next_switch, 
 					port_tar, nodes,
 					dim, count);
-			while(list_pop(path) != path_add){
+			while((temp_switch = list_pop(path)) != path_add){
+				xfree(temp_switch);
+				debug3("something here 1");
 			}
 		}
 	}
@@ -3444,8 +3459,11 @@ static int _find_passthrough(ba_switch_t *curr_switch, int source_port,
 		
 				_find_passthrough(next_switch, port_tar, nodes,
 						dim, count, highest_phys_x);
-				while(list_pop(path) != path_add){
-				} 
+				while((temp_switch = list_pop(path)) 
+				      != path_add){
+					xfree(temp_switch);
+					debug3("something here 2");
+				}
 			}
 		}
 	}
@@ -3585,7 +3603,10 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				list_push(path, path_add);
 				_finish_torus(next_switch, port_tar, nodes,
 						dim, count, start);
-				while(list_pop(path) != path_add){
+				while((temp_switch = list_pop(path)) 
+				      != path_add){
+					xfree(temp_switch);
+					debug3("something here 3");
 				} 
 			}
 		}
@@ -3604,6 +3625,8 @@ static int *_set_best_path()
 		return NULL;
 	itr = list_iterator_create(best_path);
 	while((path_switch = (ba_path_switch_t*) list_next(itr))) {
+		if(passthrough)
+			*passthrough = true;
 #ifdef HAVE_BG
 		debug3("mapping %d%d%d",path_switch->geometry[X],
 		       path_switch->geometry[Y],
@@ -3661,6 +3684,11 @@ static int _set_one_dim(int *start, int *end, int *coord)
 	return 1;
 }
 
+static void _destroy_geo(void *object) {
+	int *geo_ptr = (int *)object;
+	xfree(geo_ptr);
+}
+
 //#define BUILD_EXE
 #ifdef BUILD_EXE
 /** */
@@ -3697,7 +3725,7 @@ int main(int argc, char** argv)
 /* 	request->size = 32; */
 /* 	request->rotate = 0; */
 /* 	request->elongate = 0; */
-/* 	request->conn_type = TORUS; */
+/* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
 /* 	if(!allocate_block(request, results)) { */
@@ -3719,7 +3747,7 @@ int main(int argc, char** argv)
 	request->size = 1;
 	request->rotate = 0;
 	request->elongate = 0;
-	request->conn_type = TORUS;
+	request->conn_type = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if(!allocate_block(request, results)) {
@@ -3736,7 +3764,7 @@ int main(int argc, char** argv)
 	request->geometry[2] = 1;
 	request->start_req = 0;
 	request->size = 1;
-	request->conn_type = TORUS;
+	request->conn_type = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if(!allocate_block(request, results)) {
@@ -3752,7 +3780,7 @@ int main(int argc, char** argv)
 /* 	request->geometry[1] = 4; */
 /* 	request->geometry[2] = 4; */
 /* 	//request->size = 2; */
-/* 	request->conn_type = TORUS; */
+/* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
 /* 	if(!allocate_block(request, results)) { */
@@ -3767,7 +3795,7 @@ int main(int argc, char** argv)
 /* 	request->geometry[1] = 4; */
 /* 	request->geometry[2] = 4; */
 /* 	//request->size = 2; */
-/* 	request->conn_type = TORUS; */
+/* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
 /* 	if(!allocate_block(request, results)) { */

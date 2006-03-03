@@ -72,9 +72,11 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BG
 	int mapset = 0;	
 #endif
-	//char *name;	
+	//char *name;
+	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
+
 	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
 		error_code = slurm_get_errno();
 		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
@@ -86,8 +88,9 @@ int main(int argc, char *argv[])
 			exit(1);
 		sleep(10);	/* keep trying to reconnect */
 	}
-	ba_init(new_node_ptr);
 	
+	ba_init(new_node_ptr);
+		
 	if(params.partition) {
 			
 #ifdef HAVE_BG_FILES

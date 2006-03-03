@@ -38,11 +38,18 @@ set env_flag_debug   0
 set env_name_debug   "SLURM_DEBUG"
 set env_valu_debug   1
 set env_name_nnodes  "SLURM_NNODES"
-set min_nodes        1
-set max_nodes        2
+
+if { [test_bluegene] } {
+	set min_nodes        1
+	set max_nodes        1024
+	set env_valu_nprocs  5
+} else {
+	set min_nodes        1
+	set max_nodes        2
+	set env_valu_nprocs  5
+}
 set env_valu_nnodes  "$min_nodes-$max_nodes"
 set env_name_nprocs  "SLURM_NPROCS"
-set env_valu_nprocs  5
 set env_name_stdout  "SLURM_STDOUTMODE"
 set env_valu_stdout  "test$test_id.output"
 set env_name_overcom "SLURM_OVERCOMMIT"
@@ -61,6 +68,7 @@ print_header $test_id
 #
 set env($env_name_debug)   $env_valu_debug
 set env($env_name_nnodes)  $env_valu_nnodes
+send_user "$env_valu_nnodes $env_valu_nprocs\n";
 set env($env_name_nprocs)  $env_valu_nprocs
 set env($env_name_stdout)  $env_valu_stdout
 set env($env_name_overcom) $env_valu_overcom

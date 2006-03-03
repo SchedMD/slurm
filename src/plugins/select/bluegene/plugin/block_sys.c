@@ -94,38 +94,39 @@ static void _print_list(List list)
 static void _pre_allocate(bg_record_t *bg_record)
 {
 	int rc;
-	int send_psets=numpsets;
+	int send_psets=bluegene_numpsets;
 
 	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
-			bluegene_blrts)) != STATUS_OK)
+			      bluegene_blrts)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionBlrtsImg)", bg_err_str(rc));
 
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionLinuxImg,   
-			bluegene_linux)) != STATUS_OK) 
+			      bluegene_linux)) != STATUS_OK) 
 		error("rm_set_data(RM_PartitionLinuxImg)", bg_err_str(rc));
 
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
-			bluegene_mloader)) != STATUS_OK)
+			      bluegene_mloader)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionMloaderImg)", bg_err_str(rc));
 
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionRamdiskImg, 
-			bluegene_ramdisk)) != STATUS_OK)
+			      bluegene_ramdisk)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionRamdiskImg)", bg_err_str(rc));
 
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionConnection, 
-			&bg_record->conn_type)) != STATUS_OK)
+			      &bg_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bg_err_str(rc));
 	
-	if(bg_record->cnodes_per_bp == (procs_per_node/4))
-		send_psets = numpsets/4;
+	rc = bluegene_mp_node_cnt/bg_record->node_cnt;
+	if(rc > 1)
+		send_psets = bluegene_numpsets/rc;
 	
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
-			&send_psets)) != STATUS_OK)
+			      &send_psets)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionUserName, 
-			slurmctld_conf.slurm_user_name)) != STATUS_OK)
+			      slurmctld_conf.slurm_user_name)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionUserName)", bg_err_str(rc));
 /* 	info("setting it here"); */
 /* 	bg_record->bg_block_id = "RMP101"; */
@@ -222,13 +223,111 @@ static int _post_bg_init_read(void *object, void *arg)
 
 	return SLURM_SUCCESS;
 }
+static int _find_32node_segment(bg_record_t *bg_record, 
+				rm_partition_t *block_ptr)
+{
+	char *my_card_name = NULL;
+	char *card_name = NULL;
+	rm_bp_id_t bp_id = NULL;
+	int segment = NO_VAL;
+	int card_count = 0;
+	int num = 0;
+	int i=0;
+	int rc;
+	rm_nodecard_list_t *ncard_list = NULL;
+	rm_nodecard_t *ncard = NULL;
+	rm_BP_t *curr_bp = NULL;
+	
+	if((rc = rm_get_data(block_ptr,
+			     RM_PartitionFirstNodeCard,
+			     &ncard))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_FirstCard): %s",
+		      bg_err_str(rc));
+	}
+	if((rc = rm_get_data(ncard,
+			     RM_NodeCardID,
+			     &my_card_name))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_NodeCardID): %s",
+		      bg_err_str(rc));
+	}
+	
+	if((rc = rm_get_data(block_ptr,
+			     RM_PartitionFirstBP,
+			     &curr_bp))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_PartitionFirstBP): %s",
+		      bg_err_str(rc));
+	}
+	if ((rc = rm_get_data(curr_bp, RM_BPID, &bp_id))
+	    != STATUS_OK) {
+		error("rm_get_data(RM_BPID): %d", rc);
+		return SLURM_ERROR;
+	}
+	
+	if ((rc = rm_get_nodecards(bp_id, &ncard_list))
+	    != STATUS_OK) {
+		error("rm_get_nodecards(%s): %d",
+		       bp_id, rc);
+		free(bp_id);
+		return SLURM_ERROR;
+	}
+	free(bp_id);
+	if((rc = rm_get_data(ncard_list, RM_NodeCardListSize, &num))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_NodeCardListSize): %s", bg_err_str(rc));
+		return SLURM_ERROR;
+	}
+	
+	for(i=0; i<num; i++) {
+		if (i) {
+			if ((rc = 
+			     rm_get_data(ncard_list, 
+					 RM_NodeCardListNext, 
+					 &ncard)) != STATUS_OK) {
+				error("rm_get_data(RM_NodeCardListNext): %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		} else {
+			if ((rc = rm_get_data(ncard_list, 
+					      RM_NodeCardListFirst, 
+					      &ncard)) != STATUS_OK) {
+				error("rm_get_data(RM_NodeCardListFirst: %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		}
+		if ((rc = rm_get_data(ncard, 
+				      RM_NodeCardID, 
+				      &card_name)) != STATUS_OK) {
+			error("rm_get_data(RM_NodeCardID: %s",
+			      rc);
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+		if(strcmp(my_card_name,card_name)) {
+			free(card_name);
+			continue;
+		}
+		free(card_name);
+		bg_record->segment = (i%4);
+		break;
+	}
+cleanup:
+	free(my_card_name);
+	return SLURM_SUCCESS;
+}
 
 extern int configure_block(bg_record_t *bg_record)
 {
 	/* new partition to be added */
 	rm_new_partition(&bg_record->bg_block); 
 	_pre_allocate(bg_record);
-	if(bg_record->cnodes_per_bp < procs_per_node)
+	if(bg_record->cpus_per_bp < procs_per_node)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -252,7 +351,7 @@ int read_bg_blocks()
 	bg_record_t *bg_record = NULL;
 	struct passwd *pw_ent = NULL;
 	
-	int *coord;
+	int *coord = NULL;
 	int block_number, block_count;
 	char *block_name = NULL;
 	rm_partition_list_t *block_list = NULL;
@@ -340,9 +439,10 @@ int read_bg_blocks()
 		
 		free(block_name);
 
-		bg_record->state = -1;
-		bg_record->quarter = -1;
-		bg_record->job_running = -1;
+		bg_record->state = NO_VAL;
+		bg_record->quarter = NO_VAL;
+		bg_record->segment = NO_VAL;
+		bg_record->job_running = NO_VAL;
 				
 		if ((rc = rm_get_data(block_ptr, 
 				      RM_PartitionBPNum, 
@@ -376,10 +476,42 @@ int read_bg_blocks()
 				error("rm_get_data(CardQuarter): %d",rc);
 				bp_cnt = 0;
 			}
-			debug("%s is in quarter %d",
+			if((rc = rm_get_data(block_ptr,
+					     RM_PartitionNodeCardNum,
+					     &i))
+			   != STATUS_OK) {
+				error("rm_get_data(RM_FirstCard): %s",
+				      bg_err_str(rc));
+				bp_cnt = 0;
+			}
+			if(i == 1) {
+				_find_32node_segment(bg_record, block_ptr);
+				i = 16;
+			} 
+			
+			bg_record->cpus_per_bp = procs_per_node/i;
+			bg_record->node_cnt = bluegene_mp_node_cnt/i;
+			
+			debug("%s is in quarter %d segment %d",
 			      bg_record->bg_block_id,
-			      bg_record->quarter);
-		} 
+			      bg_record->quarter,
+			      bg_record->segment);
+			bg_record->conn_type = SELECT_SMALL;
+			
+		} else {
+			bg_record->cpus_per_bp = procs_per_node;
+			bg_record->node_cnt =  bluegene_mp_node_cnt;
+
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionConnection,
+					      &bg_record->conn_type))
+			    != STATUS_OK) {
+				error("rm_get_data"
+				      "(RM_PartitionConnection): %s",
+				      bg_err_str(rc));
+			}
+			
+		}
 
 		bg_record->bg_block_list = list_create(NULL);
 		bg_record->hostlist = hostlist_create(NULL);
@@ -428,34 +560,23 @@ int read_bg_blocks()
 			
 			coord = find_bp_loc(bpid);
 
+			if(!coord) {
+				fatal("Could not find coordinates for "
+				      "BP ID %s", (char *) bpid);
+			}
 			free(bpid);
 
-			if(!coord) {
-				fatal("Could not find coordinates for BP ID %s",
-					(char *) bpid);
-			}
-
 			sprintf(node_name_tmp, 
-				 "%s%d%d%d\0", 
-				 slurmctld_conf.node_prefix,
-				 coord[X], coord[Y], coord[Z]);
+				"%s%d%d%d\0", 
+				slurmctld_conf.node_prefix,
+				coord[X], coord[Y], coord[Z]);
 			
 			hostlist_push(bg_record->hostlist, node_name_tmp);
 		}	
 		
 		// need to get the 000x000 range for nodes
 		// also need to get coords
-		if(small)
-			bg_record->conn_type = SELECT_SMALL;
-		else
-			if ((rc = rm_get_data(block_ptr, 
-					      RM_PartitionConnection,
-					      &bg_record->conn_type))
-			    != STATUS_OK) {
-				error("rm_get_data"
-				      "(RM_PartitionConnection): %s",
-				      bg_err_str(rc));
-			}
+		
 		if ((rc = rm_get_data(block_ptr, RM_PartitionMode,
 					 &bg_record->node_use))
 		    != STATUS_OK) {
@@ -538,11 +659,6 @@ int read_bg_blocks()
 			error("rm_get_data(RM_PartitionSwitchNum): %s",
 			      bg_err_str(rc));
 		} 
-		
-		if(small)
-			bg_record->cnodes_per_bp = procs_per_node/4;
-		else
-			bg_record->cnodes_per_bp = procs_per_node;
 		
 		bg_record->block_lifecycle = STATIC;
 						

@@ -184,7 +184,7 @@ extern int select_p_block_init(List part_list)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-		int min_nodes, int max_nodes, bool test_only)
+			     int min_nodes, int max_nodes, bool test_only)
 {
 	int i, index, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this 
@@ -492,4 +492,9 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 extern int select_p_get_info_from_plugin (enum select_data_info info, void *data)
 {
        return SLURM_SUCCESS;
+}
+
+extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
+{
+	return SLURM_SUCCESS;
 }

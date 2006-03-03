@@ -86,7 +86,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODELIST" {
+	-re "LIST" {
 		set stuff [concat $stuff "10"]
 		incr matches
 		send "q"

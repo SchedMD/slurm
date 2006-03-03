@@ -162,6 +162,7 @@ extern int block_ready(struct job_record *job_ptr)
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 				  SELECT_DATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
+		slurm_mutex_lock(&block_state_mutex);
 		bg_record = find_bg_record(block_id);
 		
 		if(bg_record) {
@@ -177,6 +178,7 @@ extern int block_ready(struct job_record *job_ptr)
 			      block_id);
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}
+		slurm_mutex_unlock(&block_state_mutex);
 		xfree(block_id);
 	} else
 		rc = READY_JOB_ERROR;
@@ -193,7 +195,9 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack16((uint16_t)bg_record->state, buffer);
 	pack16((uint16_t)bg_record->conn_type, buffer);
 	pack16((uint16_t)bg_record->node_use, buffer);	
-	pack32(bg_record->quarter, buffer);	
+	pack16((uint16_t)bg_record->quarter, buffer);	
+	pack16((uint16_t)bg_record->segment, buffer);	
+	pack32((uint32_t)bg_record->node_cnt, buffer);	
 }
 
 extern int update_block_list()
@@ -243,7 +247,7 @@ extern int update_block_list()
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(block_list, RM_PartListFirstPart, 
+			if ((rc = rm_get_data(block_list, RM_PartListFirstPart,
 					      &block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      bg_err_str(rc));

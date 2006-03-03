@@ -53,8 +53,14 @@ else
 	iterations=3
 fi
 
+if [ $5 ]; then
+    inx=512
+else
+    inx=1
+fi
+
 exit_code=0
-inx=1
+
 log="test9.7.$$.output"
 touch $log
 while [ $inx -le $iterations ]

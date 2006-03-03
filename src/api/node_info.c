@@ -125,15 +125,15 @@ extern int slurm_load_node (time_t update_time,
         slurm_msg_t req_msg;
         slurm_msg_t resp_msg;
         node_info_request_msg_t req;
-
+	
         req.last_update  = update_time;
 	req.show_flags   = show_flags;
         req_msg.msg_type = REQUEST_NODE_INFO;
         req_msg.data     = &req;
-
+	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
-
+		
 	switch (resp_msg.msg_type) {
 	case RESPONSE_NODE_INFO:
 		*resp = (node_info_msg_t *) resp_msg.data;

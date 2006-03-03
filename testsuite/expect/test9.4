@@ -43,7 +43,12 @@ set exit_code     0
 set file_in       "test$test_id.input"
 set file_in_task  "test$test_id.%t.input"
 set file_out_task "test$test_id.%t.output"
-set node_cnt      "1-4"
+if { [test_bluegene] } {
+	set node_cnt 1-2048
+} else {
+	set node_cnt 1-4
+}
+
 set other_opts    "-O"
 set task_cnt      $max_stress_tasks
 
