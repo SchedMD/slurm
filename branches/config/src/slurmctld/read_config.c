@@ -85,9 +85,6 @@ int node_record_count = 0;
 
 /* FIXME - declarations for temporarily moved functions */
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
-static int parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr);
-static void validate_config (slurm_ctl_conf_t *ctl_conf_ptr);
-
 
 
 /*
@@ -270,488 +267,180 @@ static int _init_all_slurm_conf(void)
 	return 0;
 }
 
+static int _state_str2int(const char *state_str)
+{
+	int state_val = NO_VAL;
+	int i;
+
+	for (i = 0; i <= NODE_STATE_END; i++) {
+		if (strcasecmp(node_state_string(i), "END") == 0)
+			break;
+		if (strcasecmp(node_state_string(i), state_str) == 0) {
+			state_val = i;
+			break;
+		}
+	}
+	if ((i == 0) && (strncasecmp("DRAIN", state_str, 5) == 0))
+		state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+	if (state_val == NO_VAL) {
+		error("invalid state %s", state_str);
+		errno = EINVAL;
+	}
+	return state_val;
+}
+
+/* Caller must be holding slurm_conf_lock() */
+static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
+{
+	int i;
+	char *tmp;
+
+	for (i = 1; nodenames[i] != '\0'; i++) {
+		if((nodenames[i-1] == '[') 
+		   || (nodenames[i-1] <= '9'
+		       && nodenames[i-1] >= '0'))
+			break;
+	}
+	xfree(conf->node_prefix);
+	if(nodenames[i] == '\0')
+		conf->node_prefix = xstrdup(nodenames);
+	else {
+		tmp = xmalloc(sizeof(char)*i+1);
+		memset(tmp, 0, i+1);
+		snprintf(tmp, i, "%s", nodenames);
+		conf->node_prefix = tmp;
+		tmp = NULL;
+	}
+	debug3("Prefix is %s %s %d", conf->node_prefix, nodenames, i);
+}
 
 /* 
- * _parse_node_spec - parse the node specification (per the configuration 
- *	file format), build table and set values
- * IN/OUT in_line - line from the configuration file, parsed keywords 
- *	and values replaced by blanks
+ * _build_single_nodeline_info - rom the slurm.conf reader, build table,
+ * 	and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
  * global: default_config_record - default configuration values for
  *	                           group of nodes
  *	default_node_record - default node configuration values
  */
-static int _parse_node_spec(char *in_line)
+static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
+				       struct config_record *config_ptr,
+				       slurm_ctl_conf_t *conf)
 {
-	char *node_addr = NULL, *node_name = NULL, *state = NULL;
-	char *feature = NULL, *reason = NULL, *node_hostname = NULL;
-	int error_code, first, i;
-	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
-	struct node_record   *node_ptr;
-	struct config_record *config_ptr = NULL;
-	hostlist_t addr_list = NULL, host_list = NULL;
-	char *this_node_name;
-#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
-	char *this_node_addr;
-#endif
-	int port;
+	int error_code, i;
+	int state_val;
+	struct node_record *node_rec = NULL;
+	hostlist_t alias_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t address_list = NULL;
+	char *alias = NULL;
+	char *hostname = NULL;
+	char *address = NULL;
 
-	node_addr = node_name = state = feature = (char *) NULL;
-	cpus_val = real_memory_val = state_val = NO_VAL;
-	tmp_disk_val = weight_val = NO_VAL;
-	port = NO_VAL;
-	if ((error_code = load_string(&node_name, "NodeName=", in_line)))
-		return error_code;
-	if (node_name == NULL)
-		return 0;	/* no node info */
-	if (strcasecmp(node_name, "localhost") == 0) {
-		xfree(node_name);
-		node_name = xmalloc(MAX_NAME_LEN);
-		getnodename(node_name, MAX_NAME_LEN);
-	}
-
-	error_code = slurm_parser(in_line,
-				  "Feature=", 's', &feature,
-				  "NodeAddr=", 's', &node_addr,
-				  "NodeHostname=", 's', &node_hostname,
-#ifdef MULTIPLE_SLURMD
-				  "Port=", 'd', &port,
-#endif
-				  "Procs=", 'd', &cpus_val,
-				  "RealMemory=", 'd', &real_memory_val,
-				  "Reason=", 's', &reason,
-				  "State=", 's', &state,
-				  "TmpDisk=", 'd', &tmp_disk_val,
-				  "Weight=", 'd', &weight_val, "END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (state != NULL) {
-		state_val = NO_VAL;
-		for (i = 0; i <= NODE_STATE_END; i++) {
-			if (strcasecmp(node_state_string(i), "END") == 0)
-				break;
-			if (strcasecmp(node_state_string(i), state) == 0) {
-				state_val = i;
-				break;
-			}
-		}
-		if ((i == 0) && (strncasecmp("DRAIN", state, 5) == 0))
-			state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
-		if (state_val == NO_VAL) {
-			error("_parse_node_spec: invalid initial state %s for "
-				"node %s", state, node_name);
-			error_code = EINVAL;
+	if (node_ptr->state != NULL) {
+		state_val = _state_str2int(node_ptr->state);
+		if (state_val == NO_VAL)
 			goto cleanup;
-		}
-		xfree(state);
 	}
 
-#ifndef HAVE_FRONT_END	/* Support NodeAddr expression */
-	if (node_addr &&
-	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
-		error("hostlist_create error for %s: %m", node_addr);
+	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
+		error("Unable to create NodeName list from %s",
+		      node_ptr->nodenames);
 		error_code = errno;
 		goto cleanup;
 	}
-#endif
-	if (strcasecmp(node_name, "DEFAULT") != 0) {
-		i=1;
-		while (node_name[i] != '\0') {
-			if((node_name[i-1] == '[') 
-			   || (node_name[i-1] < 58 
-			       && node_name[i-1] > 47))
-				break;
-			i++;
-		}
-		xfree(slurmctld_conf.node_prefix);
-		if(node_name[i] == '\0')
-			slurmctld_conf.node_prefix = xstrdup(node_name);
-		else {
-			this_node_name = xmalloc(sizeof(char)*i+1);
-			memset(this_node_name,0,i+1);
-			snprintf(this_node_name, i, "%s", node_name);
-			slurmctld_conf.node_prefix = xstrdup(this_node_name);
-			xfree(this_node_name);
-		}
-		debug3("Prefix is %s %s %d",slurmctld_conf.node_prefix, 
-		       node_name, i);
+	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
+		error("Unable to create NodeHostname list from %s",
+		      node_ptr->hostnames);
+		error_code = errno;
+		goto cleanup;
 	}
-
-	if ((host_list = hostlist_create(node_name)) == NULL) {
-		error("hostlist_create error for %s: %m", node_name);
+	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+		error("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
 		error_code = errno;
 		goto cleanup;
 	}
 
-	first = 1;
-	while ((this_node_name = hostlist_shift(host_list))) {
-		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
-			xfree(node_name);
-			if (cpus_val != NO_VAL)
-				default_config_record.cpus = cpus_val;
-			if (real_memory_val != NO_VAL)
-				default_config_record.real_memory =
-						real_memory_val;
-			if (tmp_disk_val != NO_VAL)
-				default_config_record.tmp_disk =
-						    tmp_disk_val;
-			if (weight_val != NO_VAL)
-				default_config_record.weight = weight_val;
-			if (state_val != NO_VAL)
-				default_node_record.node_state = state_val;
-			if (feature) {
-				xfree(default_config_record.feature);
-				default_config_record.feature = feature;
-				feature = NULL;
-			}
-#ifdef MULTIPLE_SLURMD
-			if (port != NO_VAL)
-				default_node_record.port = port;
-#endif
-			free(this_node_name);
-			break;
-		}
+	_set_node_prefix(node_ptr->nodenames, conf);
 
-		if (first == 1) {
-			first = 0;
-			config_ptr = create_config_record();
-			config_ptr->nodes = node_name;
-			if (cpus_val != NO_VAL)
-				config_ptr->cpus = cpus_val;
-			if (real_memory_val != NO_VAL)
-				config_ptr->real_memory =
-						    real_memory_val;
-			if (tmp_disk_val != NO_VAL)
-				config_ptr->tmp_disk = tmp_disk_val;
-			if (weight_val != NO_VAL)
-				config_ptr->weight = weight_val;
-			if (feature) {
-				xfree(config_ptr->feature);
-				config_ptr->feature = feature;
-				feature = NULL;
-			}
-		}
-
-		if (strcmp(this_node_name, highest_node_name) <= 0)
-			node_ptr = find_node_record(this_node_name);
-		else {
-			strncpy(highest_node_name, this_node_name,
-				MAX_NAME_LEN);
-			node_ptr = NULL;
-		}
-
-		if (node_ptr == NULL) {
-			node_ptr = create_node_record(config_ptr, 
-			                              this_node_name);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_ptr->node_state = state_val;
-			node_ptr->last_response = (time_t) 0;
-#ifdef HAVE_FRONT_END	/* Permit NodeAddr value reuse for front-end */
-			if (node_addr)
-				strncpy(node_ptr->comm_name,
-					node_addr, MAX_NAME_LEN);
-			else if (node_hostname)
-				strncpy(node_ptr->comm_name,
-					node_hostname, MAX_NAME_LEN);
-			else
-				strncpy(node_ptr->comm_name,
-					node_ptr->name, MAX_NAME_LEN);
+	/* some sanity checks */
+#ifdef HAVE_FRONT_END
+	if (hostlist_count(hostname_list) != 1
+	    || hostlist_count(address_list) != 1) {
+		error("Only one hostname and address allowed "
+		      "in FRONT_END mode");
+		goto cleanup;
+	}
+	hostname = node_ptr->hostnames;
+	address = node_ptr->addresses;
 #else
-			if (node_addr)
-				this_node_addr = hostlist_shift(addr_list);
-			else
-				this_node_addr = NULL;
-			if (this_node_addr) {
-				strncpy(node_ptr->comm_name, 
-				        this_node_addr, MAX_NAME_LEN);
-				free(this_node_addr);
-			} else
-				strncpy(node_ptr->comm_name, 
-				        node_ptr->name, MAX_NAME_LEN);
+	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeHostname are required "
+		      "as NodeName");
+		goto cleanup;
+	}
+	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeAddr are required as NodeName");
+		goto cleanup;
+	}
 #endif
-#ifdef MULTIPLE_SLURMD
-			if (port != NO_VAL)
-				node_ptr->port = port;
-#endif
-			node_ptr->reason = xstrdup(reason);
-		} else {
-			error("_parse_node_spec: reconfiguration for node %s",
-			     this_node_name);
+
+	/* now build the individual node structures */
+	while ((alias = hostlist_shift(alias_list))) {
+#ifndef HAVE_FRONT_END
+		hostname = hostlist_shift(hostname_list);
+		address = hostlist_shift(address_list);
+#endif		
+
+		if (strcmp(alias, highest_node_name) <= 0)
+			node_rec = find_node_record(alias);
+		else {
+			strncpy(highest_node_name, alias, MAX_NAME_LEN);
+			node_rec = NULL;
+		}
+
+		if (node_rec == NULL) {
+			node_rec = create_node_record(config_ptr, alias);
 			if ((state_val != NO_VAL) &&
 			    (state_val != NODE_STATE_UNKNOWN))
-				node_ptr->node_state = state_val;
-			if (reason) {
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup(reason);
+				node_rec->node_state = state_val;
+			node_rec->last_response = (time_t) 0;
+			strncpy(node_rec->comm_name, address, MAX_NAME_LEN);
+
+			node_rec->port = node_ptr->port;
+			node_rec->reason = xstrdup(node_ptr->reason);
+		} else {
+			error("reconfiguration for node %s", alias);
+			if ((state_val != NO_VAL) &&
+			    (state_val != NODE_STATE_UNKNOWN))
+				node_rec->node_state = state_val;
+			if (node_ptr->reason) {
+				xfree(node_rec->reason);
+				node_rec->reason = xstrdup(node_ptr->reason);
 			}
 		}
-		free(this_node_name);
+		free(alias);
+#ifndef HAVE_FRONT_END
+		free(hostname);
+		free(address);
+#endif
 	}
 
 	/* free allocated storage */
-	xfree(node_addr);
-	xfree(node_hostname);
-	xfree(reason);
-	if (addr_list)
-		hostlist_destroy(addr_list);
-	hostlist_destroy(host_list);
+cleanup:
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (address_list)
+		hostlist_destroy(address_list);
 	return error_code;
 
-      cleanup:
-	xfree(node_addr);
-	xfree(node_name);
-	xfree(node_hostname);
-	xfree(feature);
-	xfree(reason);
-	xfree(state);
-	return error_code;
 }
 
 /* 
- * _build_single_node_info - rom the slurm.conf reader, build table, and set values
- * RET 0 if no error, error code otherwise
- * Note: Operates on common variables
- * global: default_config_record - default configuration values for
- *	                           group of nodes
- *	default_node_record - default node configuration values
- */
-static int _build_single_node_info(slurm_conf_node_entry_t *ptr,
-				   slurm_conf_node_entry_t *def)
-{
-	char *node_addr = NULL, *node_name = NULL, *state = NULL;
-	char *feature = NULL, *reason = NULL, *node_hostname = NULL;
-	int error_code, first, i;
-	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
-	struct node_record   *node_ptr;
-	struct config_record *config_ptr = NULL;
-	hostlist_t addr_list = NULL, host_list = NULL;
-	char *this_node_name;
-#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
-	char *this_node_addr;
-#endif
-	int port;
-	char *in_line;
-
-	node_addr = node_name = state = feature = (char *) NULL;
-	cpus_val = real_memory_val = state_val = NO_VAL;
-	tmp_disk_val = weight_val = NO_VAL;
-	port = NO_VAL;
-	if ((error_code = load_string(&node_name, "NodeName=", in_line)))
-		return error_code;
-	if (node_name == NULL)
-		return 0;	/* no node info */
-	if (strcasecmp(node_name, "localhost") == 0) {
-		xfree(node_name);
-		node_name = xmalloc(MAX_NAME_LEN);
-		getnodename(node_name, MAX_NAME_LEN);
-	}
-
-	error_code = slurm_parser(in_line,
-				  "Feature=", 's', &feature,
-				  "NodeAddr=", 's', &node_addr,
-				  "NodeHostname=", 's', &node_hostname,
-#ifdef MULTIPLE_SLURMD
-				  "Port=", 'd', &port,
-#endif
-				  "Procs=", 'd', &cpus_val,
-				  "RealMemory=", 'd', &real_memory_val,
-				  "Reason=", 's', &reason,
-				  "State=", 's', &state,
-				  "TmpDisk=", 'd', &tmp_disk_val,
-				  "Weight=", 'd', &weight_val, "END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (state != NULL) {
-		state_val = NO_VAL;
-		for (i = 0; i <= NODE_STATE_END; i++) {
-			if (strcasecmp(node_state_string(i), "END") == 0)
-				break;
-			if (strcasecmp(node_state_string(i), state) == 0) {
-				state_val = i;
-				break;
-			}
-		}
-		if ((i == 0) && (strncasecmp("DRAIN", state, 5) == 0))
-			state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
-		if (state_val == NO_VAL) {
-			error("_parse_node_spec: invalid initial state %s for "
-				"node %s", state, node_name);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(state);
-	}
-
-#ifndef HAVE_FRONT_END	/* Support NodeAddr expression */
-	if (node_addr &&
-	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
-		error("hostlist_create error for %s: %m", node_addr);
-		error_code = errno;
-		goto cleanup;
-	}
-#endif
-	if (strcasecmp(node_name, "DEFAULT") != 0) {
-		i=1;
-		while (node_name[i] != '\0') {
-			if((node_name[i-1] == '[') 
-			   || (node_name[i-1] < 58 
-			       && node_name[i-1] > 47))
-				break;
-			i++;
-		}
-		xfree(slurmctld_conf.node_prefix);
-		if(node_name[i] == '\0')
-			slurmctld_conf.node_prefix = xstrdup(node_name);
-		else {
-			this_node_name = xmalloc(sizeof(char)*i+1);
-			memset(this_node_name,0,i+1);
-			snprintf(this_node_name, i, "%s", node_name);
-			slurmctld_conf.node_prefix = xstrdup(this_node_name);
-			xfree(this_node_name);
-		}
-		debug3("Prefix is %s %s %d",slurmctld_conf.node_prefix, 
-		       node_name, i);
-	}
-
-	if ((host_list = hostlist_create(node_name)) == NULL) {
-		error("hostlist_create error for %s: %m", node_name);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	first = 1;
-	while ((this_node_name = hostlist_shift(host_list))) {
-		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
-			xfree(node_name);
-			if (cpus_val != NO_VAL)
-				default_config_record.cpus = cpus_val;
-			if (real_memory_val != NO_VAL)
-				default_config_record.real_memory =
-						real_memory_val;
-			if (tmp_disk_val != NO_VAL)
-				default_config_record.tmp_disk =
-						    tmp_disk_val;
-			if (weight_val != NO_VAL)
-				default_config_record.weight = weight_val;
-			if (state_val != NO_VAL)
-				default_node_record.node_state = state_val;
-			if (feature) {
-				xfree(default_config_record.feature);
-				default_config_record.feature = feature;
-				feature = NULL;
-			}
-#ifdef MULTIPLE_SLURMD
-			if (port != NO_VAL)
-				default_node_record.port = port;
-#endif
-			free(this_node_name);
-			break;
-		}
-
-		if (first == 1) {
-			first = 0;
-			config_ptr = create_config_record();
-			config_ptr->nodes = node_name;
-			if (cpus_val != NO_VAL)
-				config_ptr->cpus = cpus_val;
-			if (real_memory_val != NO_VAL)
-				config_ptr->real_memory =
-						    real_memory_val;
-			if (tmp_disk_val != NO_VAL)
-				config_ptr->tmp_disk = tmp_disk_val;
-			if (weight_val != NO_VAL)
-				config_ptr->weight = weight_val;
-			if (feature) {
-				xfree(config_ptr->feature);
-				config_ptr->feature = feature;
-				feature = NULL;
-			}
-		}
-
-		if (strcmp(this_node_name, highest_node_name) <= 0)
-			node_ptr = find_node_record(this_node_name);
-		else {
-			strncpy(highest_node_name, this_node_name,
-				MAX_NAME_LEN);
-			node_ptr = NULL;
-		}
-
-		if (node_ptr == NULL) {
-			node_ptr = create_node_record(config_ptr, 
-			                              this_node_name);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_ptr->node_state = state_val;
-			node_ptr->last_response = (time_t) 0;
-#ifdef HAVE_FRONT_END	/* Permit NodeAddr value reuse for front-end */
-			if (node_addr)
-				strncpy(node_ptr->comm_name,
-					node_addr, MAX_NAME_LEN);
-			else if (node_hostname)
-				strncpy(node_ptr->comm_name,
-					node_hostname, MAX_NAME_LEN);
-			else
-				strncpy(node_ptr->comm_name,
-					node_ptr->name, MAX_NAME_LEN);
-#else
-			if (node_addr)
-				this_node_addr = hostlist_shift(addr_list);
-			else
-				this_node_addr = NULL;
-			if (this_node_addr) {
-				strncpy(node_ptr->comm_name, 
-				        this_node_addr, MAX_NAME_LEN);
-				free(this_node_addr);
-			} else
-				strncpy(node_ptr->comm_name, 
-				        node_ptr->name, MAX_NAME_LEN);
-#endif
-#ifdef MULTIPLE_SLURMD
-			if (port != NO_VAL)
-				node_ptr->port = port;
-#endif
-			node_ptr->reason = xstrdup(reason);
-		} else {
-			error("_parse_node_spec: reconfiguration for node %s",
-			     this_node_name);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_ptr->node_state = state_val;
-			if (reason) {
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup(reason);
-			}
-		}
-		free(this_node_name);
-	}
-
-	/* free allocated storage */
-	xfree(node_addr);
-	xfree(node_hostname);
-	xfree(reason);
-	if (addr_list)
-		hostlist_destroy(addr_list);
-	hostlist_destroy(host_list);
-	return error_code;
-
-      cleanup:
-	xfree(node_addr);
-	xfree(node_name);
-	xfree(node_hostname);
-	xfree(feature);
-	xfree(reason);
-	xfree(state);
-	return error_code;
-}
-
-/* 
- * _build_all_node_info - get a array of slurm_conf_node_entry_t structures
+ * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
@@ -759,10 +448,10 @@ static int _build_single_node_info(slurm_conf_node_entry_t *ptr,
  *	                           group of nodes
  *	default_node_record - default node configuration values
  */
-static int _build_all_node_info()
+static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 {
-	/* NEW STUFF */
-	slurm_conf_node_entry_t *ptr, **ptr_array;
+	slurm_conf_node_t *node, **ptr_array;
+	struct config_record *config_ptr = NULL;
 	int count;
 	int i;
 
@@ -771,8 +460,20 @@ static int _build_all_node_info()
 		fatal("No NodeName information available!");
 
 	for (i = 0; i < count; i++) {
-		ptr = ptr_array[i];
-		_build_single_node_info(ptr, ptr);
+		node = ptr_array[i];
+
+		config_ptr = create_config_record();
+		config_ptr->nodes = xstrdup(node->nodenames);
+		config_ptr->cpus = node->cpus;
+		config_ptr->real_memory = node->real_memory;
+		config_ptr->tmp_disk = node->tmp_disk;
+		config_ptr->weight = node->weight;
+		if (node->feature) {
+			xfree(config_ptr->feature);
+			config_ptr->feature = xstrdup(node->feature);
+		}
+
+		_build_single_nodeline_info(node, config_ptr, conf);
 	}
 }
 
@@ -1033,9 +734,6 @@ static int _parse_part_spec(char *in_line)
 int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
-	FILE *slurm_spec_file;	/* pointer to input data file */
-	int line_num;		/* line number in input file */
-	char in_line[BUFFER_SIZE];	/* input line */
 	int i, j, error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
@@ -1044,6 +742,7 @@ int read_slurm_conf(int recover)
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
+	slurm_ctl_conf_t *conf;
 
 	/* initialization */
 	START_TIMER;
@@ -1056,76 +755,12 @@ int read_slurm_conf(int recover)
 		return error_code;
 	}
 
-	slurm_spec_file = fopen(slurmctld_conf.slurm_conf, "r");
-	if (slurm_spec_file == NULL)
-		fatal("read_slurm_conf error opening file %s, %m",
-		      slurmctld_conf.slurm_conf);
+	slurm_conf_init(NULL);
+	conf = slurm_conf_lock();
+	_build_all_nodeline_info(conf);
+	/* _build_all_partition_info(conf); */
+	slurm_conf_unlock();
 
-	info("read_slurm_conf: loading configuration from %s",
-	     slurmctld_conf.slurm_conf);
-
-	/* process the data file */
-	line_num = 0;
-	while (fgets(in_line, BUFFER_SIZE, slurm_spec_file) != NULL) {
-		line_num++;
-		if (strlen(in_line) >= (BUFFER_SIZE - 1)) {
-			error("read_slurm_conf line %d, of input file %s "
-				"too long", 
-				line_num, slurmctld_conf.slurm_conf);
-			xfree(old_node_table_ptr);
-			fclose(slurm_spec_file);
-			return E2BIG;
-			break;
-		}
-
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
-		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUFFER_SIZE; i++) {
-			if (in_line[i] == (char) NULL)
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUFFER_SIZE; j++) {
-					in_line[j - 1] = in_line[j];
-				}
-				continue;
-			}
-			in_line[i] = (char) NULL;
-			break;
-		}
-
-		/* parse what is left, non-comments */
-
-		/* overall configuration parameters */
-		if ((error_code =
-		     parse_config_spec(in_line, &slurmctld_conf))) {
-			fclose(slurm_spec_file);
-			xfree(old_node_table_ptr);
-			return error_code;
-		}
-
-		/* node configuration parameters */
-		if ((error_code = _parse_node_spec(in_line))) {
-			fclose(slurm_spec_file);
-			xfree(old_node_table_ptr);
-			return error_code;
-		}
-
-		/* partition configuration parameters */
-		if ((error_code = _parse_part_spec(in_line))) {
-			fclose(slurm_spec_file);
-			xfree(old_node_table_ptr);
-			return error_code;
-		}
-
-		/* report any leftover strings on input line */
-		report_leftover(in_line, line_num);
-	}
-	fclose(slurm_spec_file);
-
-	validate_config(&slurmctld_conf);
 	update_logging();
 	g_slurmctld_jobacct_init(slurmctld_conf.job_acct_loc,
 			slurmctld_conf.job_acct_parameters);
@@ -1439,634 +1074,6 @@ static void _validate_node_proc_count(void)
 }
 #endif
 
-/*
- * parse_config_spec - parse the overall configuration specifications, update  
- *	values
- * IN/OUT in_line - input line, parsed info overwritten with white-space
- * IN ctl_conf_ptr - pointer to data structure to be updated
- * RET 0 if no error, otherwise an error code
- *
- * NOTE: slurmctld and slurmd ports are built thus:
- *	if SlurmctldPort/SlurmdPort are set then
- *		get the port number based upon a look-up in /etc/services
- *		if the lookup fails then translate SlurmctldPort/SlurmdPort  
- *		into a number
- *	These port numbers are overridden if set in the configuration file
- */
-int 
-parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr) 
-{
-	int error_code;
-	long fast_schedule = -1, hash_base, heartbeat_interval = -1;
-	long inactive_limit = -1, kill_wait = -1;
-	long ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
-	long sched_port = -1, sched_rootfltr = -1;
-	long slurmctld_debug = -1, slurmd_debug = -1, tree_width = -1;
-	long max_job_cnt = -1, min_job_age = -1, wait_time = -1;
-	long slurmctld_port = -1, slurmd_port = -1;
-	long mpich_gm_dir = -1, kill_tree = -1, cache_groups = -1;
-	char *backup_addr = NULL, *backup_controller = NULL;
-	char *checkpoint_type = NULL, *control_addr = NULL;
-	char *control_machine = NULL, *epilog = NULL, *mpi_default = NULL;
-	char *proctrack_type = NULL, *prolog = NULL;
-	char *propagate_rlimits_except = NULL, *propagate_rlimits = NULL;
-	char *sched_type = NULL, *sched_auth = NULL;
-	char *select_type = NULL;
-	char *state_save_location = NULL, *tmp_fs = NULL;
-	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
-	char *slurmctld_logfile = NULL;
-	char *slurmd_logfile = NULL;
-	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
-	char *plugindir = NULL, *auth_type = NULL, *switch_type = NULL;
-	char *job_acct_loc = NULL, *job_acct_parameters = NULL,
-	     *job_acct_type = NULL;
-	char *job_comp_loc = NULL, *job_comp_type = NULL;
-	char *job_credential_private_key = NULL;
-	char *job_credential_public_certificate = NULL;
-	char *srun_prolog = NULL, *srun_epilog = NULL;
-	char *task_prolog = NULL, *task_epilog = NULL, *task_plugin = NULL;
-	long first_job_id = -1;
-
-	error_code = slurm_parser (in_line,
-		"AuthType=", 's', &auth_type,
-		"CheckpointType=", 's', &checkpoint_type,
-		"CacheGroups=", 'l', &cache_groups,
-		"BackupAddr=", 's', &backup_addr, 
-		"BackupController=", 's', &backup_controller, 
-		"ControlAddr=", 's', &control_addr, 
-		"ControlMachine=", 's', &control_machine, 
-		/* SrunEpilog and TaskEpilog MUST come before Epilog */
-		"SrunEpilog=", 's', &srun_epilog,
-		"TaskEpilog=", 's', &task_epilog,
-		"Epilog=", 's', &epilog, 
-		"FastSchedule=", 'l', &fast_schedule,
-		"FirstJobId=", 'l', &first_job_id,
-		"HashBase=", 'l', &hash_base,	/* defunct */
-		"HeartbeatInterval=", 'l', &heartbeat_interval,
-		"InactiveLimit=", 'l', &inactive_limit,
-		"JobAcctloc=", 's', &job_acct_loc,
-		"JobAcctParameters=", 's', &job_acct_parameters,
-		"JobAcctType=", 's', &job_acct_type,
-		"JobCompLoc=", 's', &job_comp_loc,
-		"JobCompType=", 's', &job_comp_type,
-		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
-		"JobCredentialPublicCertificate=", 's', 
-					&job_credential_public_certificate,
-		"KillTree=", 'l', &kill_tree,
-		"KillWait=", 'l', &kill_wait,
-		"MaxJobCount=", 'l', &max_job_cnt,
-		"MinJobAge=", 'l', &min_job_age,
-		"MpichGmDirectSupport=", 'l', &mpich_gm_dir,
-		"MpiDefault=", 's', &mpi_default,
-		"PluginDir=", 's', &plugindir,
-		"ProctrackType=", 's', &proctrack_type,
-		/* SrunProlog and TaskProlog  MUST come before Prolog */
-		"SrunProlog=", 's', &srun_prolog,
-		"TaskProlog=", 's', &task_prolog,
-		"Prolog=", 's', &prolog,
-		"PropagateResourceLimitsExcept=", 's',&propagate_rlimits_except,
-		"PropagateResourceLimits=",       's',&propagate_rlimits,
-		"ReturnToService=", 'l', &ret2service,
-		"SchedulerAuth=", 's', &sched_auth,
-		"SchedulerPort=", 'l', &sched_port,
-		"SchedulerRootFilter=", 'l', &sched_rootfltr,
-		"SchedulerType=", 's', &sched_type,
-		"SelectType=", 's', &select_type,
-		"SlurmUser=", 's', &slurm_user,
-		"SlurmctldDebug=", 'l', &slurmctld_debug,
-		"SlurmctldLogFile=", 's', &slurmctld_logfile,
-		"SlurmctldPidFile=", 's', &slurmctld_pidfile,
-		"SlurmctldPort=", 'l', &slurmctld_port,
-		"SlurmctldTimeout=", 'l', &slurmctld_timeout,
-		"SlurmdDebug=", 'l', &slurmd_debug,
-		"SlurmdLogFile=", 's', &slurmd_logfile,
-		"SlurmdPidFile=",  's', &slurmd_pidfile,
-		"SlurmdPort=", 'l', &slurmd_port,
-		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
-		"SlurmdTimeout=", 'l', &slurmd_timeout,
-		"StateSaveLocation=", 's', &state_save_location,
-		"SwitchType=", 's', &switch_type,
-		"TaskPlugin=", 's', &task_plugin,
-		"TmpFS=", 's', &tmp_fs,
-		"WaitTime=", 'l', &wait_time,
-		"TreeWidth=", 'l', &tree_width,
-		"END");
-
-	if (error_code)
-		return error_code;
-
-	if ( auth_type ) {
-		if ( ctl_conf_ptr->authtype ) {
-			error( MULTIPLE_VALUE_MSG, "AuthType" );
-			xfree( ctl_conf_ptr->authtype );
-		}
-		ctl_conf_ptr->authtype = auth_type;
-	}
-
-	if ( cache_groups != -1) {
-		if ( ctl_conf_ptr->cache_groups != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "CacheGroups");
-		if ((cache_groups < 0) || (cache_groups > 0xffff))
-			error("CacheGroups=%ld is invalid", cache_groups);
-		else
-			ctl_conf_ptr->cache_groups = cache_groups;
-	}
-
-	if ( checkpoint_type ) {
-		if ( ctl_conf_ptr->checkpoint_type ) {
-			error( MULTIPLE_VALUE_MSG, "CheckpointType" );
-			xfree( ctl_conf_ptr->checkpoint_type );
-		}
-		ctl_conf_ptr->checkpoint_type = checkpoint_type;
-	}
-
-	if ( backup_addr ) {
-		if ( ctl_conf_ptr->backup_addr ) {
-			error (MULTIPLE_VALUE_MSG, "BackupAddr");
-			xfree (ctl_conf_ptr->backup_addr);
-		}
-		ctl_conf_ptr->backup_addr = backup_addr;
-	}
-
-	if ( backup_controller ) {
-		if ( ctl_conf_ptr->backup_controller ) {
-			error (MULTIPLE_VALUE_MSG, "BackupController");
-			xfree (ctl_conf_ptr->backup_controller);
-		}
-		ctl_conf_ptr->backup_controller = backup_controller;
-	}
-
-	if ( control_addr ) {
-		if ( ctl_conf_ptr->control_addr ) {
-			error (MULTIPLE_VALUE_MSG, "ControlAddr");
-			xfree (ctl_conf_ptr->control_addr);
-		}
-		ctl_conf_ptr->control_addr = control_addr;
-	}
-
-	if ( control_machine ) {
-		if ( ctl_conf_ptr->control_machine ) {
-			error (MULTIPLE_VALUE_MSG, "ControlMachine");
-			xfree (ctl_conf_ptr->control_machine);
-		}
-		ctl_conf_ptr->control_machine = control_machine;
-	}
-
-	if ( epilog ) {
-		if ( ctl_conf_ptr->epilog ) {
-			error (MULTIPLE_VALUE_MSG, "Epilog");
-			xfree (ctl_conf_ptr->epilog);
-		}
-		ctl_conf_ptr->epilog = epilog;
-	}
-
-	if ( fast_schedule != -1 ) {
-		if ( ctl_conf_ptr->fast_schedule != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "FastSchedule");
-		if ((fast_schedule < 0) || (fast_schedule > 0xffff))
-			error("FastSchedule=%ld is invalid", fast_schedule);
-		else
-			ctl_conf_ptr->fast_schedule = fast_schedule;
-	}
-
-	if ( first_job_id != -1) {
-		if ( ctl_conf_ptr->first_job_id != (uint32_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "FirstJobId");
-		if (first_job_id < 0)
-			error("FirstJobId=%ld is invalid", first_job_id);
-		else
-			ctl_conf_ptr->first_job_id = first_job_id;
-	}
-
-	if ( heartbeat_interval != -1)
-		error("HeartbeatInterval is defunct, see man slurm.conf");
-
-	if ( inactive_limit != -1) {
-		if ( ctl_conf_ptr->inactive_limit != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "InactiveLimit");
-#ifdef HAVE_BG		/* Inactive limit must be zero on Blue Gene */
-		if (inactive_limit) {
-			error("InactiveLimit=%ld is invalid on Blue Gene",
-				inactive_limit);
-		}
-		inactive_limit = 0;	/* default value too */
-#endif
-		if ((inactive_limit < 0) || (inactive_limit > 0xffff))
-			error("InactiveLimit=%ld is invalid", inactive_limit);
-		else
-			ctl_conf_ptr->inactive_limit = inactive_limit;
-	}
-
-	if ( job_acct_loc ) {
-		if ( ctl_conf_ptr->job_acct_loc ) {
-			error( MULTIPLE_VALUE_MSG, "JobAcctLoc" );
-			xfree( ctl_conf_ptr->job_acct_loc );
-		}
-		ctl_conf_ptr->job_acct_loc = job_acct_loc;
-	}
-
-	if ( job_acct_parameters ) {
-		if ( ctl_conf_ptr->job_acct_parameters ) {
-			error( MULTIPLE_VALUE_MSG, "JobAcctParameters" );
-			xfree( ctl_conf_ptr->job_acct_parameters );
-		}
-		ctl_conf_ptr->job_acct_parameters = job_acct_parameters;
-	}
-
-	if ( job_acct_type ) {
-		if ( ctl_conf_ptr->job_acct_type ) {
-			error( MULTIPLE_VALUE_MSG, "JobAcctType" );
-			xfree( ctl_conf_ptr->job_acct_type );
-		}
-		ctl_conf_ptr->job_acct_type = job_acct_type;
-	}
-
-	if ( job_comp_loc ) {
-		if ( ctl_conf_ptr->job_comp_loc ) {
-			error( MULTIPLE_VALUE_MSG, "JobCompLoc" );
-			xfree( ctl_conf_ptr->job_comp_loc );
-		}
-		ctl_conf_ptr->job_comp_loc = job_comp_loc;
-	}
-
-	if ( job_comp_type ) {
-		if ( ctl_conf_ptr->job_comp_type ) {
-			error( MULTIPLE_VALUE_MSG, "JobCompType" );
-			xfree( ctl_conf_ptr->job_comp_type );
-		}
-		ctl_conf_ptr->job_comp_type = job_comp_type;
-	}
-
-	if ( job_credential_private_key ) {
-		if ( ctl_conf_ptr->job_credential_private_key ) {
-			error (MULTIPLE_VALUE_MSG, "JobCredentialPrivateKey");
-			xfree (ctl_conf_ptr->job_credential_private_key);
-		}
-		ctl_conf_ptr->job_credential_private_key = 
-						job_credential_private_key;
-	}
-
-	if ( job_credential_public_certificate ) {
-		if ( ctl_conf_ptr->job_credential_public_certificate ) {
-			error (MULTIPLE_VALUE_MSG, 
-			       "JobCredentialPublicCertificate");
-			xfree (ctl_conf_ptr->
-			       job_credential_public_certificate);
-		}
-		ctl_conf_ptr->job_credential_public_certificate = 
-					job_credential_public_certificate;
-	}
-
-	if ( kill_tree != -1) {
-		verbose("KillTree configuration parameter is defunct");
-		verbose("  mapping to ProctrackType=proctrack/linuxproc");
-		xfree(proctrack_type);
-		proctrack_type = xstrdup("proctrack/linuxproc");
-	}
-
-	if ( kill_wait != -1) {
-		if ( ctl_conf_ptr->kill_wait != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "KillWait");
-		if ((kill_wait < 0) || (kill_wait > 0xffff))
-			error("KillWait=%ld is invalid", kill_wait);
-		else
-			ctl_conf_ptr->kill_wait = kill_wait;
-	}
-
-	if ( max_job_cnt != -1) {
-		if ( ctl_conf_ptr->max_job_cnt != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "MaxJobCount");
-		if ((max_job_cnt < 0) || (max_job_cnt > 0xffff))
-			error("MaxJobCount=%ld is invalid", max_job_cnt);
-		else
-			ctl_conf_ptr->max_job_cnt = max_job_cnt;
-	}
-
-	if ( min_job_age != -1) {
-		if ( ctl_conf_ptr->min_job_age != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "MinJobAge");
-		if ((min_job_age < 0) || (min_job_age > 0xffff))
-			error("MinJobAge=%ld is invalid", min_job_age);
-		else
-			ctl_conf_ptr->min_job_age = min_job_age;
-	}
-
-	if ( mpich_gm_dir != -1) {
-		verbose("MpichGmDirectSupport configuration parameter is defunct");
-		verbose("  mapping to ProctrackType=proctrack/linuxproc");
-		xfree(proctrack_type);
-		proctrack_type = xstrdup("proctrack/linuxproc");
-	}
-
-	if (mpi_default) {
-		if ( ctl_conf_ptr->mpi_default ) {
-			error( MULTIPLE_VALUE_MSG, "MpiDefault" );
-			xfree( ctl_conf_ptr->mpi_default );
-		}
-		ctl_conf_ptr->mpi_default = mpi_default;
-	}
-
-	if ( plugindir ) {
-		if ( ctl_conf_ptr->plugindir ) {
-			error( MULTIPLE_VALUE_MSG, "PluginDir" );
-			xfree( ctl_conf_ptr->plugindir );
-		}
-		ctl_conf_ptr->plugindir = plugindir;
-	}
-
-	if ( proctrack_type ) {
-		if ( ctl_conf_ptr->proctrack_type ) {
-			error( MULTIPLE_VALUE_MSG, "ProctrackType" );
-			xfree( ctl_conf_ptr->proctrack_type );
-		}
-		ctl_conf_ptr->proctrack_type = proctrack_type;
-	}
-	
-	if ( prolog ) {
-		if ( ctl_conf_ptr->prolog ) {
-			error (MULTIPLE_VALUE_MSG, "Prolog");
-			xfree (ctl_conf_ptr->prolog);
-		}
-		ctl_conf_ptr->prolog = prolog;
-	}
-
-        if ( propagate_rlimits ) {
-                if ( ctl_conf_ptr->propagate_rlimits ) {
-                        error( MULTIPLE_VALUE_MSG,
-                               "PropagateResourceLimits" );
-                        xfree( ctl_conf_ptr->propagate_rlimits );
-                }
-                else if ( ctl_conf_ptr->propagate_rlimits_except ) {
-                        error( "%s keyword conflicts with %s, using latter.",
-                                "PropagateResourceLimitsExcept",
-                                "PropagateResourceLimits");
-                        xfree( ctl_conf_ptr->propagate_rlimits_except );
-                }
-                ctl_conf_ptr->propagate_rlimits = propagate_rlimits;
-        }
-        if ( propagate_rlimits_except ) {
-                if ( ctl_conf_ptr->propagate_rlimits_except ) {
-                        error( MULTIPLE_VALUE_MSG,
-                               "PropagateResourceLimitsExcept" );
-                        xfree( ctl_conf_ptr->propagate_rlimits_except );
-                }
-                else if ( ctl_conf_ptr->propagate_rlimits ) {
-                        error( "%s keyword conflicts with %s, using latter.",
-                                "PropagateResourceLimits",
-                                "PropagateResourceLimitsExcept");
-                        xfree( ctl_conf_ptr->propagate_rlimits );
-                }
-                ctl_conf_ptr->propagate_rlimits_except = 
-                                                      propagate_rlimits_except;
-        }
-
-	if ( ret2service != -1) {
-		if ( ctl_conf_ptr->ret2service != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "ReturnToService");
-		if ((ret2service < 0) || (ret2service > 0xffff))
-			error("ReturnToService=%ld is invalid", ret2service);
-		else
-			ctl_conf_ptr->ret2service = ret2service;
-	}
-
-	if ( sched_auth ) {
-		if ( ctl_conf_ptr->schedauth ) {
-			xfree( ctl_conf_ptr->schedauth );
-		}
-		ctl_conf_ptr->schedauth = sched_auth;
-	}
-
-	if ( sched_port != -1 ) {
-		if (ctl_conf_ptr->schedport != (uint16_t) NO_VAL)
-			 error (MULTIPLE_VALUE_MSG, "SchedulerPort");
-		if (( sched_port < 1 ) || (sched_port > 0xffff))
-			error( "SchedulerPort=%ld is invalid", sched_port );
-		else
-			ctl_conf_ptr->schedport = (uint16_t) sched_port;
-	}
-
-	if ( sched_rootfltr != -1 ) {
-		if ( ctl_conf_ptr->schedrootfltr != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SchedulerRootFilter");
-		if ((sched_rootfltr < 0) || (sched_rootfltr > 0xffff))
-			error("SchedulerRootFilter=%ld is invalid");
-		else
-			ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
-	}
-
-	if ( sched_type ) {
-		if ( ctl_conf_ptr->schedtype ) {
-			xfree( ctl_conf_ptr->schedtype );
-		}
-		ctl_conf_ptr->schedtype = sched_type;
-	}
-
-	if ( select_type ) {
-		if ( ctl_conf_ptr->select_type ) {
-			xfree( ctl_conf_ptr->select_type );
-		}
-		ctl_conf_ptr->select_type = select_type;
-	}
-
-	if ( slurm_user ) {
-		struct passwd *slurm_passwd;
-		slurm_passwd = getpwnam(slurm_user);
-		if (slurm_passwd == NULL) {
-			error ("Invalid user for SlurmUser %s, ignored",
-			       slurm_user);
-		} else {
-			if ( ctl_conf_ptr->slurm_user_name ) {
-				error (MULTIPLE_VALUE_MSG, "SlurmUser");
-				xfree (ctl_conf_ptr->slurm_user_name);
-			}
-			ctl_conf_ptr->slurm_user_name = slurm_user;
-			if (slurm_passwd->pw_uid > 0xffff)
-				error("SlurmUser numberic overflow, will be fixed soon");
-			else
-				ctl_conf_ptr->slurm_user_id = slurm_passwd->pw_uid;
-		}
-	}
-
-	if ( slurmctld_debug != -1) {
-		if ( ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmctldDebug");
-		ctl_conf_ptr->slurmctld_debug = slurmctld_debug;
-	}
-
-	if ( slurmctld_pidfile ) {
-		if ( ctl_conf_ptr->slurmctld_pidfile ) {
-			error (MULTIPLE_VALUE_MSG, "SlurmctldPidFile");
-			xfree (ctl_conf_ptr->slurmctld_pidfile);
-		}
-		ctl_conf_ptr->slurmctld_pidfile = slurmctld_pidfile;
-	}
-
-	if ( slurmctld_logfile ) {
-		if ( ctl_conf_ptr->slurmctld_logfile ) {
-			error (MULTIPLE_VALUE_MSG, "SlurmctldLogFile");
-			xfree (ctl_conf_ptr->slurmctld_logfile);
-		}
-		ctl_conf_ptr->slurmctld_logfile = slurmctld_logfile;
-	}
-
-	if ( slurmctld_port != -1) {
-		if ( ctl_conf_ptr->slurmctld_port != (uint32_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmctldPort");
-		else if (slurmctld_port < 0)
-			error ("SlurmctldPort=%ld is invalid", 
-			       slurmctld_port);
-		else 
-			ctl_conf_ptr->slurmctld_port = slurmctld_port;
-	}
-
-	if ( slurmctld_timeout != -1) {
-		if ( ctl_conf_ptr->slurmctld_timeout != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmctldTimeout");
-		if ((slurmctld_timeout < 0) || (slurmctld_timeout > 0xffff))
-			error("SlurmctldTimeout=%ld is invalid", 
-				slurmctld_timeout);
-		else
-			ctl_conf_ptr->slurmctld_timeout = slurmctld_timeout;
-	}
-
-	if ( slurmd_debug != -1) {
-		if ( ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmdDebug");
-		if ((slurmd_debug < 0) || (slurmd_debug > 0xffff))
-			error("SlurmdDebug=%ld is invalid", slurmd_debug);
-		else
-			ctl_conf_ptr->slurmd_debug = slurmd_debug;
-	}
-
-	if ( slurmd_logfile ) {
-		if ( ctl_conf_ptr->slurmd_logfile ) {
-			error (MULTIPLE_VALUE_MSG, "SlurmdLogFile");
-			xfree (ctl_conf_ptr->slurmd_logfile);
-		}
-		ctl_conf_ptr->slurmd_logfile = slurmd_logfile;
-	}
-
-#ifndef MULTIPLE_SLURMD
-	if ( slurmd_port != -1) {
-		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmdPort");
-		else if (slurmd_port < 0)
-			error ("SlurmdPort=%ld is invalid", slurmd_port);
-		else
-			ctl_conf_ptr->slurmd_port = slurmd_port;
-	}
-#endif
-
-	if ( slurmd_spooldir ) {
-		if ( ctl_conf_ptr->slurmd_spooldir ) {
-			error (MULTIPLE_VALUE_MSG, "SlurmdSpoolDir");
-			xfree (ctl_conf_ptr->slurmd_spooldir);
-		}
-		ctl_conf_ptr->slurmd_spooldir = slurmd_spooldir;
-	}
-
-	if ( slurmd_pidfile ) {
-		if ( ctl_conf_ptr->slurmd_pidfile ) {
-			error (MULTIPLE_VALUE_MSG, "SlurmdPidFile");
-			xfree (ctl_conf_ptr->slurmd_pidfile);
-		}
-		ctl_conf_ptr->slurmd_pidfile = slurmd_pidfile;
-	}
-
-	if ( slurmd_timeout != -1) {
-		if ( ctl_conf_ptr->slurmd_timeout != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmdTimeout");
-		if ((slurmd_timeout < 0) || (slurmd_timeout > 0xffff))
-			error("SlurmdTimeout=%ld is invalid", slurmd_timeout);
-		else
-			ctl_conf_ptr->slurmd_timeout = slurmd_timeout;
-	}
-
-	if ( srun_prolog ) {
-		if ( ctl_conf_ptr->srun_prolog ) {
-			error (MULTIPLE_VALUE_MSG, "SrunProlog");
-			xfree (ctl_conf_ptr->srun_prolog);
-		}
-		ctl_conf_ptr->srun_prolog = srun_prolog;
-	}
-
-	if ( srun_epilog ) {
-		if ( ctl_conf_ptr->srun_epilog ) {
-			error (MULTIPLE_VALUE_MSG, "SrunEpilog");
-			xfree (ctl_conf_ptr->srun_epilog);
-		}
-		ctl_conf_ptr->srun_epilog = srun_epilog;
-	}
-
-	if ( state_save_location ) {
-		if ( ctl_conf_ptr->state_save_location ) {
-			error (MULTIPLE_VALUE_MSG, "StateSaveLocation");
-			xfree (ctl_conf_ptr->state_save_location);
-		}
-		ctl_conf_ptr->state_save_location = state_save_location;
-	}
-
-	if ( switch_type ) {
-		if ( ctl_conf_ptr->switch_type ) {
-			error (MULTIPLE_VALUE_MSG, "SwitchType");
-			xfree (ctl_conf_ptr->switch_type);
-		}
-		ctl_conf_ptr->switch_type = switch_type;
-	}
-
-	if ( task_epilog ) {
-		if ( ctl_conf_ptr->task_epilog ) {
-			error (MULTIPLE_VALUE_MSG, "TaskEpilog");
-			xfree (ctl_conf_ptr->task_epilog);
-		}
-		ctl_conf_ptr->task_epilog = task_epilog;
-	}
-
-	if ( task_prolog ) {
-		if ( ctl_conf_ptr->task_prolog ) {
-			error (MULTIPLE_VALUE_MSG, "TaskProlog");
-			xfree (ctl_conf_ptr->task_prolog);
-		}
-		ctl_conf_ptr->task_prolog = task_prolog;
-	}
-
-	if ( task_plugin ) {
-		if ( ctl_conf_ptr->task_plugin ) {
-			error (MULTIPLE_VALUE_MSG, "TaskPlugin");
-			xfree (ctl_conf_ptr->task_plugin);
-		}
-		 ctl_conf_ptr->task_plugin = task_plugin;
-	}
-
-	if ( tmp_fs ) {
-		if ( ctl_conf_ptr->tmp_fs ) {
-			error (MULTIPLE_VALUE_MSG, "TmpFS");
-			xfree (ctl_conf_ptr->tmp_fs);
-		}
-		ctl_conf_ptr->tmp_fs = tmp_fs;
-	}
-
-	if ( wait_time != -1) {
-		if ( ctl_conf_ptr->wait_time != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "WaitTime");
-		if ((wait_time < 0) || (wait_time > 0xffff))
-			error("WaitTime=%ld is invalid", wait_time);
-		else
-			ctl_conf_ptr->wait_time = wait_time;
-	}
-
-	if ( tree_width != -1) {
-		if ( ctl_conf_ptr->tree_width != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "TreeWidth");
-		if ((tree_width < 1) || (tree_width > 0xffff))
-			error("TreeWidth=%ld is invalid", tree_width);
-		else 
-			ctl_conf_ptr->tree_width = tree_width;
-	}
-
-	return 0;
-}
-
 /* Normalize supplied debug level to be in range per log.h definitions */
 static void _normalize_debug_level(uint16_t *level)
 {
@@ -2076,216 +1083,5 @@ static void _normalize_debug_level(uint16_t *level)
 		*level = LOG_LEVEL_DEBUG3;
 	}
 	/* level is uint16, always > LOG_LEVEL_QUIET(0), can't underflow */
-}
-
-/* validate configuration
- *
- * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
- *
- * NOTE: a backup_controller or control_machine of "localhost" are over-written
- *	with this machine's name.
- * NOTE: if backup_addr is NULL, it is over-written by backup_controller
- * NOTE: if control_addr is NULL, it is over-written by control_machine
- */
-void
-validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
-{
-	if ((ctl_conf_ptr->backup_controller != NULL) &&
-	    (strcasecmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
-		xfree (ctl_conf_ptr->backup_controller);
-		ctl_conf_ptr->backup_controller = xmalloc (MAX_NAME_LEN);
-		if ( getnodename (ctl_conf_ptr->backup_controller, 
-		                  MAX_NAME_LEN) ) 
-			fatal ("getnodename: %m");
-	}
-
-	if ((ctl_conf_ptr->backup_addr == NULL) && 
-	    (ctl_conf_ptr->backup_controller != NULL))
-		ctl_conf_ptr->backup_addr = 
-				xstrdup (ctl_conf_ptr->backup_controller);
-
-	if ((ctl_conf_ptr->backup_controller == NULL) && 
-	    (ctl_conf_ptr->backup_addr != NULL)) {
-		error ("BackupAddr specified without BackupController");
-		xfree (ctl_conf_ptr->backup_addr);
-	}
-
-	if (ctl_conf_ptr->control_machine == NULL)
-		fatal ("validate_config: ControlMachine not specified.");
-	else if (strcasecmp("localhost", ctl_conf_ptr->control_machine) == 0) {
-		xfree (ctl_conf_ptr->control_machine);
-		ctl_conf_ptr->control_machine = xmalloc (MAX_NAME_LEN);
-		if ( getnodename (ctl_conf_ptr->control_machine, 
-		                  MAX_NAME_LEN) ) 
-			fatal ("getnodename: %m");
-	}
-
-	if ((ctl_conf_ptr->control_addr == NULL) && 
-	    (ctl_conf_ptr->control_machine != NULL))
-		ctl_conf_ptr->control_addr = 
-				xstrdup (ctl_conf_ptr->control_machine);
-
-	if ((ctl_conf_ptr->backup_controller != NULL) && 
-	    (strcmp (ctl_conf_ptr->backup_controller, 
-	             ctl_conf_ptr->control_machine) == 0)) {
-		error ("ControlMachine and BackupController identical");
-		xfree (ctl_conf_ptr->backup_addr);
-		xfree (ctl_conf_ptr->backup_controller);
-	}
-
-	if (ctl_conf_ptr->job_credential_private_key == NULL)
-		fatal ("JobCredentialPrivateKey not set");
-	if (ctl_conf_ptr->job_credential_public_certificate == NULL)
-		fatal ("JobCredentialPublicCertificate not set");
-
-	if (ctl_conf_ptr->max_job_cnt < 1)
-		fatal ("MaxJobCount=%u, No jobs permitted",
-		       ctl_conf_ptr->max_job_cnt);
-
-	if (ctl_conf_ptr->authtype == NULL)
-		ctl_conf_ptr->authtype = xstrdup(DEFAULT_AUTH_TYPE);
-
-	if (ctl_conf_ptr->cache_groups == (uint16_t) NO_VAL)
-		ctl_conf_ptr->cache_groups = DEFAULT_CACHE_GROUPS;
-
-	if (ctl_conf_ptr->checkpoint_type == NULL)
-		 ctl_conf_ptr->checkpoint_type = 
-			xstrdup(DEFAULT_CHECKPOINT_TYPE);
-
-	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
-		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
-
-	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
-		ctl_conf_ptr->first_job_id = DEFAULT_FIRST_JOB_ID;
-
-	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
-		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;
-
-	if (ctl_conf_ptr->job_acct_loc == NULL)
-		ctl_conf_ptr->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
-
-	if (ctl_conf_ptr->job_acct_parameters == NULL)
-		ctl_conf_ptr->job_acct_parameters =
-				xstrdup(DEFAULT_JOB_ACCT_PARAMETERS);
-
-	if (ctl_conf_ptr->job_acct_type == NULL)
-		ctl_conf_ptr->job_acct_type = xstrdup(DEFAULT_JOB_ACCT_TYPE);
-
-	if (ctl_conf_ptr->job_comp_type == NULL)
-		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
-
-	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
-
-	if (ctl_conf_ptr->max_job_cnt == (uint16_t) NO_VAL)
-		ctl_conf_ptr->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
-
-	if (ctl_conf_ptr->min_job_age == (uint16_t) NO_VAL)
-		ctl_conf_ptr->min_job_age = DEFAULT_MIN_JOB_AGE;
-
-	if (ctl_conf_ptr->mpi_default == NULL)
-		ctl_conf_ptr->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
-	if (ctl_conf_ptr->plugindir == NULL)
-		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
-
-	if (ctl_conf_ptr->switch_type == NULL)
-		ctl_conf_ptr->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
-
-	if (ctl_conf_ptr->proctrack_type == NULL) {
-		if (!strcmp(ctl_conf_ptr->switch_type,"switch/elan"))
-			ctl_conf_ptr->proctrack_type = 
-					xstrdup("proctrack/rms");
-		else
-			ctl_conf_ptr->proctrack_type = 
-					xstrdup(DEFAULT_PROCTRACK_TYPE);
-	}
-	if ((!strcmp(ctl_conf_ptr->switch_type,   "switch/elan"))
-	&&  (!strcmp(ctl_conf_ptr->proctrack_type,"proctrack/linuxproc")))
-		fatal("proctrack/linuxproc is incompatable with switch/elan");
-
-        if (ctl_conf_ptr->propagate_rlimits_except) {
-                if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits_except,
-                                   NO_PROPAGATE_RLIMITS )) < 0)
-                        fatal( "Bad PropagateResourceLimitsExcept: %s",
-                                ctl_conf_ptr->propagate_rlimits_except );
-        }
-        else {
-                if (ctl_conf_ptr->propagate_rlimits == NULL)
-                        ctl_conf_ptr->propagate_rlimits = xstrdup( "ALL" );
-                if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits,
-                                   PROPAGATE_RLIMITS )) < 0)
-                        fatal( "Bad PropagateResourceLimits: %s",
-                                ctl_conf_ptr->propagate_rlimits );
-        }
-
-	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
-		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;
-
-	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
-		ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
-
-	if (ctl_conf_ptr->schedtype == NULL)
-		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
-
-	if (ctl_conf_ptr->select_type == NULL)
-		ctl_conf_ptr->select_type = xstrdup(DEFAULT_SELECT_TYPE);
-
-	if (ctl_conf_ptr->slurm_user_name == NULL) {
-		ctl_conf_ptr->slurm_user_name = xstrdup("root");
-		ctl_conf_ptr->slurm_user_id   = 0;
-	}
-
-	if (ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
-		_normalize_debug_level(&ctl_conf_ptr->slurmctld_debug);
-	else
-		ctl_conf_ptr->slurmctld_debug = LOG_LEVEL_INFO;
-
-	if (ctl_conf_ptr->slurmctld_pidfile == NULL)
-		ctl_conf_ptr->slurmctld_pidfile =
-			xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
-
-	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmctld_port = SLURMCTLD_PORT;
-
-	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
-		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
-
-	if (ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
-		_normalize_debug_level(&ctl_conf_ptr->slurmd_debug);
-	else
-		ctl_conf_ptr->slurmd_debug = LOG_LEVEL_INFO;
-
-	if (ctl_conf_ptr->slurmd_pidfile == NULL)
-		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
-
-#ifndef MULTIPLE_SLURMD
-	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
-#endif
-
-	if (ctl_conf_ptr->slurmd_spooldir == NULL)
-		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
-
-	if (ctl_conf_ptr->slurmd_timeout == (uint16_t) NO_VAL)
-		ctl_conf_ptr->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
-
-	if (ctl_conf_ptr->state_save_location == NULL)
-		ctl_conf_ptr->state_save_location = xstrdup(
-				DEFAULT_SAVE_STATE_LOC);
-
-	/* see above for switch_type, order dependent */
-
-	if (ctl_conf_ptr->task_plugin == NULL)
-		ctl_conf_ptr->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
-
-	if (ctl_conf_ptr->tmp_fs == NULL)
-		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);
-
-	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
-		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
-	
-	if (ctl_conf_ptr->tree_width == (uint16_t) NO_VAL) 
-		ctl_conf_ptr->tree_width = DEFAULT_TREE_WIDTH;
-
 }
 

@@ -71,6 +71,7 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 			     const char *line);
 
 static s_p_hashtbl_t *default_nodename_tbl;
+static s_p_hashtbl_t *default_partition_tbl;
 
 inline static void _normalize_debug_level(uint16_t *level);
 
@@ -185,15 +186,15 @@ s_p_options_t slurm_nodename_options[] = {
 s_p_options_t slurm_partition_options[] = {
 	{"PartitionName", S_P_STRING},
 	{"AllowGroups", S_P_STRING},
-	{"Default", S_P_STRING},
-	{"Hidden", S_P_STRING},
-	{"RootOnly", S_P_STRING},
-	{"MaxTime", S_P_STRING},
-	{"MaxNodes", S_P_LONG},
-	{"MinNodes", S_P_LONG},
+	{"Default", S_P_BOOLEAN}, /* YES or NO */
+	{"Hidden", S_P_BOOLEAN}, /* YES or NO */
+	{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
+	{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
+	{"MinNodes", S_P_UINT32},
 	{"Nodes", S_P_STRING},
-	{"Shared", S_P_STRING},
-	{"State", S_P_STRING},
+	{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
+	{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
+	{"State", S_P_BOOLEAN}, /* UP or DOWN */
 	{NULL}
 };
 
@@ -241,7 +242,7 @@ static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *line)
 {
 	error("The option \"%s\" is defunct, see man slurm.conf.", key);
-	return 1;
+	return 0;
 }
 
 static void defunct_destroy(void *ptr)
@@ -253,7 +254,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, const char *line)
 {
 	s_p_hashtbl_t *tbl, *dflt;
-	slurm_conf_node_entry_t *n;
+	slurm_conf_node_t *n;
 
 	tbl = s_p_hashtbl_create(slurm_nodename_options);
 	s_p_parse_line(tbl, line);
@@ -278,7 +279,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		return 0;
 	} else {
-		n = xmalloc(sizeof(slurm_conf_node_entry_t));
+		n = xmalloc(sizeof(slurm_conf_node_t));
 		dflt = default_nodename_tbl;
 
 		s_p_get_string(tbl, "NodeName", &n->nodenames);
@@ -332,7 +333,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 
 static void destroy_nodename(void *ptr)
 {
-	slurm_conf_node_entry_t *n = (slurm_conf_node_entry_t *)ptr;
+	slurm_conf_node_t *n = (slurm_conf_node_t *)ptr;
 	xfree(n->nodenames);
 	xfree(n->hostnames);
 	xfree(n->addresses);
@@ -342,12 +343,12 @@ static void destroy_nodename(void *ptr)
 	xfree(ptr);
 }
 
-int slurm_conf_nodename_array(slurm_conf_node_entry_t **ptr_array[])
+int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 {
 	int count;
-	slurm_conf_node_entry_t **ptr;
+	slurm_conf_node_t **ptr;
 
-	if (s_p_get_array(conf_hashtbl, "NodeName", &ptr, &count)) {
+	if (s_p_get_array(conf_hashtbl, "NodeName", (void ***)&ptr, &count)) {
 		*ptr_array = ptr;
 		return count;
 	} else {
@@ -359,28 +360,109 @@ int slurm_conf_nodename_array(slurm_conf_node_entry_t **ptr_array[])
 static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		   const char *key, const char *value, const char *line)
 {
-	s_p_hashtbl_t *hashtbl;
+	s_p_hashtbl_t *tbl, *dflt;
+	slurm_conf_partition_t *p;
+	char *tmp = NULL;
 
-	hashtbl = s_p_hashtbl_create(slurm_partition_options);
-	s_p_parse_line(hashtbl, line);
-	s_p_dump_values(hashtbl, slurm_partition_options);
+	tbl = s_p_hashtbl_create(slurm_partition_options);
+	s_p_parse_line(tbl, line);
+	/* s_p_dump_values(tbl, slurm_partition_options); */
 
-	*dest = (void *)hashtbl;
+	if (strcasecmp(value, "DEFAULT") == 0) {
+		if (default_partition_tbl != NULL)
+			s_p_hashtbl_destroy(default_partition_tbl);
+		default_partition_tbl = tbl;
 
-	return 1;
+		return 0;
+	} else {
+		p = xmalloc(sizeof(slurm_conf_partition_t));
+		dflt = default_partition_tbl;
+
+		s_p_get_string(tbl, "PartitionName", &p->name);
+
+		if (!s_p_get_string(tbl, "AllowGroups", &p->allow_groups))
+			s_p_get_string(dflt, "AllowGroups", &p->allow_groups);
+		if (p->allow_groups && strcasecmp(p->allow_groups, "ALL")==0) {
+			xfree(p->allow_groups);
+			p->allow_groups = NULL; /* NULL means allow all */
+		}
+
+		if (!s_p_get_boolean(tbl, "Default", &p->default_flag)
+		    && !s_p_get_boolean(dflt, "Default", &p->default_flag))
+			p->default_flag = false;
+
+		if (!s_p_get_boolean(tbl, "Hidden", &p->hidden_flag)
+		    && !s_p_get_boolean(dflt, "Hidden", &p->hidden_flag))
+			p->hidden_flag = false;
+
+		if (!s_p_get_uint32(tbl, "MaxTime", &p->max_time)
+		    && !s_p_get_uint32(tbl, "MaxTime", &p->max_time))
+			p->max_time = INFINITE;
+
+		if (!s_p_get_uint32(tbl, "MaxNodes", &p->max_nodes)
+		    && !s_p_get_uint32(tbl, "MaxNodes", &p->max_nodes))
+			p->max_nodes = INFINITE;
+
+		if (!s_p_get_uint32(tbl, "MinNodes", &p->min_nodes)
+		    && !s_p_get_uint32(tbl, "MinNodes", &p->min_nodes))
+			p->min_nodes = 1;
+
+		if (!s_p_get_string(tbl, "Nodes", &p->nodes)
+		    && !s_p_get_string(tbl, "Nodes", &p->nodes))
+			p->nodes = NULL;
+
+		if (!s_p_get_boolean(tbl, "RootOnly", &p->root_only_flag)
+		    && !s_p_get_boolean(dflt, "RootOnly", &p->root_only_flag))
+			p->root_only_flag = false;
+
+		if (!s_p_get_string(tbl, "Shared", &tmp)
+		    && !s_p_get_string(tbl, "Shared", &tmp)) {
+			p->shared = SHARED_NO;
+		} else {
+			if (strcasecmp(tmp, "YES") == 0)
+				p->shared = SHARED_YES;
+			else if (strcasecmp(tmp, "NO") == 0)
+				p->shared = SHARED_NO;
+			else if (strcasecmp(tmp, "FORCE") == 0)
+				p->shared = SHARED_FORCE;
+			else {
+				error("Bad value \"%s\" for Shared", tmp);
+				destroy_partitionname(p);
+				return -1;
+			}
+		}
+
+		if (!s_p_get_boolean(tbl, "State", &p->state_up_flag)
+		    && !s_p_get_boolean(dflt, "State", &p->state_up_flag))
+			p->state_up_flag = true;
+
+		s_p_hashtbl_destroy(tbl);
+
+		*dest = (void *)p;
+
+		return 1;
+	}
+
+	/* should not get here */
 }
 
 static void destroy_partitionname(void *ptr)
 {
-	s_p_hashtbl_destroy((s_p_hashtbl_t *)ptr);
+	slurm_conf_partition_t *p = (slurm_conf_partition_t *)ptr;
+
+	xfree(p->name);
+	xfree(p->nodes);
+	xfree(p->allow_groups);
+	xfree(ptr);
 }
 
-int slurm_conf_partition_array(slurm_conf_node_entry_t **ptr_array[])
+int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[])
 {
 	int count;
-	slurm_conf_node_entry_t **ptr;
+	slurm_conf_partition_t **ptr;
 
-	if (s_p_get_array(conf_hashtbl, "PartitionName", &ptr, &count)) {
+	if (s_p_get_array(conf_hashtbl, "PartitionName",
+			  (void ***)&ptr, &count)) {
 		*ptr_array = ptr;
 		return count;
 	} else {
@@ -808,8 +890,14 @@ static void
 _destroy_slurm_conf()
 {
 	s_p_hashtbl_destroy(conf_hashtbl);
-	if (default_nodename_tbl != NULL)
+	if (default_nodename_tbl != NULL) {
 		s_p_hashtbl_destroy(default_nodename_tbl);
+		default_nodename_tbl = NULL;
+	}
+	if (default_partition_tbl != NULL) {
+		s_p_hashtbl_destroy(default_partition_tbl);
+		default_partition_tbl = NULL;
+	}
 	free_slurm_conf(conf_ptr);
 	xfree(conf_ptr);
 }

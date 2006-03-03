@@ -132,7 +132,7 @@ extern void report_leftover (char *in_line, int line_num);
  * NEW STUFF
  */
 
-typedef struct slurm_conf_node_entry {
+typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
 	char *addresses;
@@ -145,7 +145,26 @@ typedef struct slurm_conf_node_entry {
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint32_t weight;	/* arbitrary priority of node for 
 				 * scheduling work on */
-} slurm_conf_node_entry_t;
+} slurm_conf_node_t;
+
+typedef struct slurm_conf_partition {
+	char	*name;		/* name of the partition */
+	bool     hidden_flag;	/* 1 if hidden by default */
+	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t min_nodes;	/* per job */
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
+	bool     root_only_flag;/* 1 if allocate/submit RPC can only be 
+				   issued by user root */
+	uint16_t shared;	/* 1 if job can share a node,
+				   2 if sharing required */
+	bool     state_up_flag;	/* 1 if state is up, 0 if down */
+	char *nodes;		/* comma delimited list names of nodes */
+	char *allow_groups;	/* comma delimited list of groups, 
+				 * NULL indicates all */
+	bool default_flag;
+} slurm_conf_partition_t;
 
 /*
  * NOTE: Caller must not be holding slurm_conf_lock().
@@ -168,10 +187,20 @@ extern void slurm_conf_unlock(void);
 
 /*
  * Set "ptr_array" with the pointer to an array of pointers to
- * slurm_conf_node_entry_t structures.
+ * slurm_conf_node_t structures.
  * 
  * Return value is the length of the array.
  */
-extern int slurm_conf_nodename_array(slurm_conf_node_entry_t **ptr_array[]);
+extern int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_partition_t structures.
+ * 
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
+
+
 
 #endif /* !_READ_CONFIG_H */

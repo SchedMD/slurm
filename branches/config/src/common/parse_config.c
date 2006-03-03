@@ -388,8 +388,12 @@ static int _handle_long(s_p_values_t *v,
 		num = strtol(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			error("\"%s\" is not a valid number", value);
-			return -1;
+			if (strcasecmp(value, "INFINITE") == 0) {
+				num = (long)-1;
+			} else {
+				error("\"%s\" is not a valid number", value);
+				return -1;
+			}
 		} else if (errno == ERANGE) {
 			error("\"%s\" is out of range", value);
 			return -1;
@@ -424,8 +428,12 @@ static int _handle_uint16(s_p_values_t *v,
 		num = strtol(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			error("\"%s\" is not a valid number", value);
-			return -1;
+			if (strcasecmp(value, "INFINITE") == 0) {
+				num = (uint16_t)-1;
+			} else {
+				error("\"%s\" is not a valid number", value);
+				return -1;
+			}
 		} else if (errno == ERANGE) {
 			error("\"%s\" is out of range", value);
 			return -1;
@@ -466,8 +474,12 @@ static int _handle_uint32(s_p_values_t *v,
 		num = strtol(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			error("\"%s\" is not a valid number", value);
-			return -1;
+			if (strcasecmp(value, "INFINITE") == 0) {
+				num = (uint32_t)-1;
+			} else {
+				error("\"%s\" is not a valid number", value);
+				return -1;
+			}
 		} else if (errno == ERANGE) {
 			error("\"%s\" is out of range", value);
 			return -1;
@@ -475,7 +487,7 @@ static int _handle_uint32(s_p_values_t *v,
 			error("\"%s\" is less than zero", value);
 			return -1;
 		} else if (num > 0xffffffff) {
-			error("\"%s\" is greater than 65535", value);
+			error("\"%s\" is greater than 4294967295", value);
 			return -1;
 		}
 		v->data = xmalloc(sizeof(uint32_t));
@@ -531,6 +543,45 @@ static int _handle_array(s_p_values_t *v,
 	return 1;
 }
 
+static int _handle_boolean(s_p_values_t *v,
+			   const char *value, const char *line)
+{
+	if (v->data_count != 0) {
+		error("%s specified more than once", v->key);
+		return -1;
+	}
+
+	if (v->handler != NULL) {
+		/* call the handler function */
+		int rc;
+		rc = v->handler(&v->data, v->type, v->key, value, line);
+		if (rc != 1)
+			return rc == 0 ? 0 : -1;
+	} else {
+		bool flag;
+
+		if (!strcasecmp(value, "yes")
+		    || !strcasecmp(value, "up")
+		    || !strcasecmp(value, "1")) {
+			flag = true;
+		} else if (!strcasecmp(value, "no")
+			   || !strcasecmp(value, "down")
+			   || !strcasecmp(value, "0")) {
+			flag = false;
+		} else {
+			error("\"%s\" is not a valid option for \"%s\"",
+			      value, v->key);
+			return -1;
+		}
+
+		v->data = xmalloc(sizeof(bool));
+		*(bool *)v->data = flag;
+	}
+
+	v->data_count = 1;
+	return 1;
+}
+
 static void _handle_keyvalue_match(s_p_values_t *v,
 				   const char *value, const char *line)
 {
@@ -554,6 +605,9 @@ static void _handle_keyvalue_match(s_p_values_t *v,
 		break;
 	case S_P_ARRAY:
 		_handle_array(v, value, line);
+		break;
+	case S_P_BOOLEAN:
+		_handle_boolean(v, value, line);
 		break;
 	}
 }
@@ -647,7 +701,7 @@ int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str)
 
 /*
  * s_p_get_long - Search for a key in a s_p_hashtbl_t with value of type
- *                  lone.  If the key is found and has a set value, the
+ *                  long.  If the key is found and has a set value, the
  *                  value is retuned in "num".
  *
  * IN hashtbl - hash table created by s_p_hashtbl_create()
@@ -681,7 +735,7 @@ int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num)
 
 /*
  * s_p_get_uint16 - Search for a key in a s_p_hashtbl_t with value of type
- *                  lone.  If the key is found and has a set value, the
+ *                  uint16.  If the key is found and has a set value, the
  *                  value is retuned in "num".
  *
  * IN hashtbl - hash table created by s_p_hashtbl_create()
@@ -716,7 +770,7 @@ int s_p_get_uint16(const s_p_hashtbl_t *hashtbl, const char *key,
 
 /*
  * s_p_get_uint32 - Search for a key in a s_p_hashtbl_t with value of type
- *                  lone.  If the key is found and has a set value, the
+ *                  uint32.  If the key is found and has a set value, the
  *                  value is retuned in "num".
  *
  * IN hashtbl - hash table created by s_p_hashtbl_create()
@@ -751,7 +805,7 @@ int s_p_get_uint32(const s_p_hashtbl_t *hashtbl, const char *key,
 
 /*
  * s_p_get_pointer - Search for a key in a s_p_hashtbl_t with value of type
- *                   lone.  If the key is found and has a set value, the
+ *                   pointer.  If the key is found and has a set value, the
  *                   value is retuned in "ptr".
  *
  * IN hashtbl - hash table created by s_p_hashtbl_create()
@@ -803,6 +857,40 @@ int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 
 	*ptr_array = (void **)p->data;
 	*count = p->data_count;
+
+	return 1;
+}
+
+/*
+ * s_p_get_boolean - Search for a key in a s_p_hashtbl_t with value of type
+ *                   boolean.  If the key is found and has a set value, the
+ *                   value is retuned in "flag".
+ *
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * IN key - hash table key
+ * OUT flag - pointer to a bool where the value is returned
+ *
+ * Returns 1 when a value was set for "key" during parsing and "num"
+ *   was successfully set, otherwise returns 0;
+ */
+int s_p_get_boolean(const s_p_hashtbl_t *hashtbl, const char *key, bool *flag)
+{
+	s_p_values_t *p;
+
+	p = _conf_hashtbl_lookup(hashtbl, key);
+	if (p == NULL) {
+		error("Invalid key \"%s\"", key);
+		return 0;
+	}
+	if (p->type != S_P_BOOLEAN) {
+		error("Key \"%s\" is not a boolean\n", key);
+		return 0;
+	}
+	if (p->data_count == 0) {
+		return 0;
+	}
+
+	*flag = *(bool *)p->data;
 
 	return 1;
 }

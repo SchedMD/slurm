@@ -42,7 +42,8 @@ typedef enum slurm_parser_enum {
 	S_P_UINT16,
 	S_P_UINT32,
 	S_P_POINTER,
-	S_P_ARRAY
+	S_P_ARRAY,
+	S_P_BOOLEAN
 } slurm_parser_enum_t;
 
 typedef struct conf_file_options {
@@ -75,6 +76,8 @@ int s_p_get_uint32(const s_p_hashtbl_t *hashtbl, const char *key,
 int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr);
 int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 		  void **ptr_array[], int *count);
+int s_p_get_boolean(const s_p_hashtbl_t *hashtbl, const char *key,
+		    bool *num);
 
 /*
  * Given an "options" array, print the current values of all
