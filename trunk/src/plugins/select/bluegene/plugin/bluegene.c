@@ -2050,7 +2050,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 						    quarter,
 						    segment);
 #ifdef HAVE_BG_FILES
-		if((rc = configure_block(found_record)) == SLURM_ERROR) {
+		if(configure_block(found_record) == SLURM_ERROR) {
 			xfree(found_record);
 			slurm_mutex_unlock(&block_state_mutex);
 			error("unable to configure block in api");
