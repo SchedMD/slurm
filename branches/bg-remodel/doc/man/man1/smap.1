@@ -30,14 +30,6 @@ all modes except for 'configure mode' user can type 'quit' to exit just
 configure mode.  Typing 'exit' will end the configuration mode and exit smap.
 Note that unallocated nodes are indicated by a '.' and DOWN or DRAINED 
 nodes by a '#'.
-\fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
-Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
-
-To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
-and 1 is the midplane.  
-
-To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
-no leading 'R'.  
 .RS
 .TP 15
 .I "j"
@@ -52,6 +44,17 @@ Displays information about BG partitions on the system
 .I "c"
 Displays current node states and allows users to configure the system.
 .RE
+
+.TP
+\fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
+Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
+                                                                                  
+To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
+and 1 is the midplane.
+                                                                                  
+To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
+no leading 'R'.
+
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
@@ -99,11 +102,11 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 \fBNAME\fR
 Name of the job.
 .TP
-\fBNODELIST\fR
-Names of nodes associated with this configuration/partition.
+\fBNODELIST\fR or \fBBP_LIST\fR
+Names of nodes or base partitions associated with this configuration/partition.
 .TP
 \fBNODES\fR
-Count of nodes with this particular configuration.
+Count of nodes or base partitions with this particular configuration.
 .TP
 \fBPARTITION\fR
 Name of a partition.  Note that the suffix "*" identifies the
@@ -140,7 +143,7 @@ with right side of one line being logically followed by the
 left side of the next line.
 .PP
 .nf
-On Blue Gene systems, the node chart will indicate the three 
+On BlueGene systems, the node chart will indicate the three 
 dimensional topography of the system.
 The X dimension will increase from left to right on a given line.
 The Y dimension will increase in planes from bottom to top.
@@ -186,22 +189,26 @@ blocks.
 .TP
 \fBOUTPUT\fR
 
+.RS
 .TP
-.I "BG_BLOCK" BlueGene Block Name.
+\fBBG_BLOCK\fR
+BlueGene Block Name.
 .TP
-.I "CONN"
+\fBCONN\fR
 Connection Type: \fBTORUS\fR or \fBMESH\fR or \fBSMALL\fR (for small blocks).
 .TP
-.I "ID"
+\fBID\fR
 Key to identify the nodes associated with this entity in the node chart.
 .TP
-.I "MODE"
+\fBMODE\fR
 Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
-	
+.RE
+
 .TP
 \fBINPUT COMMANDS\fR
+.RS
 .TP
-.I resolve <RACK_MIDPLANE_ID/XYZ>\fR
+\fBresolve <RACK_MIDPLANE_ID/XYZ>\fR
 Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
 
 To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
@@ -210,31 +217,31 @@ and 1 is the midplane.
 To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
 no leading 'R'.  
 
-.RS
 .TP
-.I \fBload <bluegene.conf file>\fR
+\fBload <bluegene.conf file>\fR
 Load an already exsistant bluegene.conf file. This will varify and mapout a
 bluegene.conf file.  After loaded the configuration may be edited and 
 saved as a new file.
-.RS
-.TP .I \fBcreate <size> <options>\fR
+
+.TP 
+\fBcreate <size> <options>\fR
 Submit request for partition creation. The size may be specified either 
 as a count of base partitions or specific dimensions in the X, Y and Z 
 directions separated by "x", for example "2x3x4". A variety of options 
 may be specified. Valid options are listed below. Note that the option
 and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
-.RS
 .TP
-.I \fBStart = XxYxZ\fR
+\fBStart = XxYxZ\fR
 Identify where to start the partition.  This is primarily for testing 
 purposes.  For convenience one can only put the X coord or XxY will also work.
 The default value is 0x0x0.
 .TP
-.I \fBConnection = MESH | TORUS | SMALL\fR
+\fBConnection = MESH | TORUS | SMALL\fR
 Identify how the nodes should be connected in network. 
 The default value is TORUS.
+.RS
 .TP
-.I \fBSmall\fR
+\fBSmall\fR
 Equivalent to "Connection=Small".
 If a small connection is specified the base partition chosen will create 
 smaller partitions based on options \fBnum32\fR and \fBnum128\fR
@@ -242,33 +249,34 @@ within the base partition.  These number will be altered to take up the
 entire base partition. Size does not need to be specified with a small 
 request, we will always default to 1 base partition for allocation.
 .TP
-.I \fBMesh\fR
+\fBMesh\fR
 Equivalent to "Connection=Mesh".
 .TP
-.I \fBTorus\fR
+\fBTorus\fR
 Equivalent to "Connection=Torus".
+.RE
+
 .TP
-.I \fBRotation = TRUE | FALSE\fR
+\fBRotation = TRUE | FALSE\fR
 Specifies that the geometry specified in the size parameter may 
 be rotated in space (e.g. the Y and Z dimensions may be switched).
 The default value is FALSE.
 .TP
-.I \fBRotate\fR
+\fBRotate\fR
 Equivalent to "Rotation=true".
 .TP
-.I \fBElongation = TRUE | FALSE\fR
+\fBElongation = TRUE | FALSE\fR
 If TRUE, permit the geometry specified in the size parameter to be altered as 
 needed to fit available resources. 
 For example, an allocation of "4x2x1" might be used to satisfy a size specification 
 of "2x2x2". 
 The default value is FALSE.
 .TP
-.I \fBElongate\fR
+\fBElongate\fR
 Equivalent to "Elongation=true".
-.RE
 
 .TP
-.I \fBcopy <id> <count>\fR
+\fBcopy <id> <count>\fR
 Submit request for partition to be copied. 
 You may copy a specific partition by specifying its id, by default the 
 last configured partition is copied. 
@@ -276,33 +284,34 @@ You may also specify a number of copies to be made.
 By default, one copy is made.
 
 .TP
-.I \fBdelete <id>\fR
+\fBdelete <id>\fR
 Delete the specified block. 
 
 .TP
-.I \fBdown <node_range>\fR
+\fBdown <node_range>\fR
 Down a specific node or range of nodes. 
 i.e. 000, 000\-111 [000x111]
 .TP
-.I \fBup <node_range>\fR
+\fBup <node_range>\fR
 Bring a specific node or range of nodes up. 
 i.e. 000, 000\-111 [000x111]
 .TP
-.I \fBalldown\fR
+\fBalldown\fR
 Set all nodes to down state.
 .TP
-.I \fBallup\fR
+\fBallup\fR
 Set all nodes to up state.
 
 .TP
-.I \fBsave <file_name>\fR
+\fBsave <file_name>\fR
 Save the current configuration to a file. 
 If no file_name is specified, the configuration is written to a 
 file named "bluegene.conf" in the current working directory.
 
 .TP
-.I \fBclear\fR
+\fBclear\fR
 Clear all partitions created.
+.RE
 
 .SH "NODE STATE CODES"
 .PP
@@ -313,14 +322,14 @@ any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBDRAINED\fR, \fBDRAINING\fR, or \fBCOMPLETING\fR nodes).
 .TP 12
-ALLOCATED
+\fBALLOCATED\fR
 The node has been allocated to one or more jobs.
 .TP
-ALLOCATED+
+\fBALLOCATED+\fR
 The node is allocated to one or more active jobs plus
 one or more jobs are in the process of COMPLETING.
 .TP
-COMPLETING
+\fBCOMPLETING\fR
 All jobs associated with this node are in the process of 
 COMPLETING.  This node state will be removed when
 all of the job's processes have terminated and the SLURM
@@ -328,7 +337,7 @@ epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR man page for
 more information.
 .TP
-DOWN
+\fBDOWN\fR
 The node is unavailable for use. SLURM can automatically
 place nodes in this state if some failure occurs. System
 administrators may also explicitly place nodes in this state. If
@@ -337,13 +346,13 @@ return it to service. See the \fBReturnToService\fR
 and \fBSlurmdTimeout\fR parameter descriptions in the
 \fBslurm.conf\fR(5) man page for more information.
 .TP
-DRAINED
+\fBDRAINED\fR
 The node is unavailable for use per system administrator
 request.  See the \fBupdate node\fR command in the
 \fBscontrol\fR(1) man page or the \fBslurm.conf\fR(5) man page
 for more information.
 .TP
-DRAINING
+\fBDRAINING\fR
 The node is currently executing a job, but will not be allocated
 to additional jobs. The node state will be changed to state
 \fBDRAINED\fR when the last job on it completes. Nodes enter
@@ -351,45 +360,46 @@ this state per system administrator request. See the \fBupdate
 node\fR command in the \fBscontrol\fR(1) man page or the
 \fBslurm.conf\fR(5) man page for more information.
 .TP
-IDLE
+\fBIDLE\fR
 The node is not allocated to any jobs and is available for use.
 .TP
-UNKNOWN
+\fBUNKNOWN\fR
 The SLURM controller has just started and the node's state
 has not yet been determined.
 
 .SH "JOB STATE CODES"
 Jobs typically pass through several states in the course of their
 execution.
-The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
+The typical states are \fBPENDING\fR, \fBRUNNING\fR, \fBSUSPENDED\fR, 
+\fBCOMPLETING\fR, and \fBCOMPLETED\fR.
 An explanation of each state follows.
 .TP 20
-CA  CANCELLED
+\fBCA  CANCELLED\fR
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
 .TP
-CD  COMPLETED
+\fBCD  COMPLETED\fR
 Job has terminated all processes on all nodes.
 .TP
-CG  COMPLETING
+\fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
-F   FAILED
+\fBF   FAILED\fR
 Job terminated with non\-zero exit code or other failure condition.
 .TP
-NF  NODE_FAIL
+\fBNF  NODE_FAIL\fR
 Job terminated due to failure of one or more allocated nodes.
 .TP
-PD  PENDING
+\fBPD  PENDING\fR
 Job is awaiting resource allocation.
 .TP
-R   RUNNING
+\fBR   RUNNING\fR
 Job currently has an allocation.
 .TP
-S   SUSPENDED
+\fBS   SUSPENDED\fR
 Job has an allocation, but execution has been suspended.
 .TP
-TO  TIMEOUT
+\fBTO  TIMEOUT\fR
 Job terminated upon reaching its time limit.
 
 .SH "ENVIRONMENT VARIABLES"
