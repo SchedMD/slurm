@@ -41,6 +41,7 @@ set job_id      0
 set connection  "TORUS"
 set conn_letter  "Tt"
 set geometry    "1x1x1"
+set num_nodes   512-512 
 set cycle_count 2
 
 print_header $test_id
@@ -65,7 +66,7 @@ exec $bin_chmod 700 $file_in
 set timeout $max_job_delay
 
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
-	spawn $srun --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in
+	spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in
 	expect {
 		-re "jobid ($number) submitted" {
 			set job_id $expect_out(1,string)
@@ -135,7 +136,7 @@ exec $scancel --quiet $job_id
 #
 set job_id      0
 set timeout $max_job_delay
-spawn $srun --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in
+spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
