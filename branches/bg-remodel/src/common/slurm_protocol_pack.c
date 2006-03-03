@@ -1129,12 +1129,15 @@ static void
 	pack32((uint32_t)msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 	pack16((uint16_t)msg->num_cpu_groups, buffer);
-	pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
-	pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+	if (msg->num_cpu_groups > 0) {
+		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+	}
 	pack32((uint32_t)msg->job_step_id, buffer);
 
 	pack16((uint16_t)msg->node_cnt, buffer);
-	_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
+	if (msg->node_cnt)
+		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
 
 	slurm_cred_pack(msg->cred, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
