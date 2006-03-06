@@ -11,7 +11,7 @@
 #                       DYNAMIC: Create bgblocks as needed for each job
 # BasePartitionNodeCnt: Number of c-nodes per base partition.  
 # NodeCardNodeCnt:      Number of c-nodes per node card.
-# Numpsets:             The Numpsets used for creation of all bgblocks 
+# NumPsets:             The Numpsets used for creation of all bgblocks 
 #                       equals this value multiplied by the number of 
 #                       base partitions in the bgblock.
 #
@@ -40,29 +40,28 @@ BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
 
 ###############################################################################
-# Define the static/overlap partitions (bglblocks)
+# Define the static/overlap partitions (bgblocks)
 #
-# Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
+# Nodes: The base partitions (midplanes) in the bgblock using XYZ coordinates
 # Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
 #        Type SMALL will divide a midplane into multiple bgblock
-#        based off options num32 and num128 to determine type of small blocks.
+#        based on options num32 and num128 to determine type of small blocks.
 # 
 # IMPORTANT NOTES: 
 # * Ordering is very important for laying out switch wires.  Please create
-#   blocks with smap, and once done don't move the order of blocks
-#   created.
-# * A bglblock is implicitly created containing all resources on the system
-# * Bglblocks must not overlap in static mode (except for implicitly 
-#   created bglblock) This will be the case when smap is used to create 
-#   a configuration file
+#   blocks with smap, and once done don't change the order of blocks created.
+# * A bgblock is implicitly created containing all resources on the system
+# * Bgblocks must not overlap in static mode (except for implicitly 
+#   created bgblock). This will be the case when smap is used to create 
+#   a configuration file.
 # * All Nodes defined here must also be defined in the slurm.conf file
-# * Define only the numeric coordinates of the bglblocks here. The prefix
-#   will be based upon the NodeName defined in slurm.conf
+# * Define only the numeric coordinates of the bgblocks here. The prefix
+#   will be based upon the NodeName defined in slurm.conf.
 ###############################################################################
-# LEAVE NEXT LINE AS A COMMENT, Full-system bglblock, implicitly created
-# Nodes=[000x333] Type=TORUS        # 4x4x4 = 64 midplanes
+# LEAVE NEXT LINE AS A COMMENT, Full-system bgblock, implicitly created
+# BP=[000x333] Type=TORUS         # 4x4x4 = 64 midplanes
 ###############################################################################
-# smap bglblock layout here:
+# smap bgblock layout here:
 BPs=[000x133] Type=TORUS          # 2x4x4 = 32
 BPs=[200x233] Type=TORUS          # 1x4x4 = 16
 BPs=[300x313] Type=TORUS          # 1x2x4 =  8
