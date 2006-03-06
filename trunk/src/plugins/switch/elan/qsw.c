@@ -925,6 +925,7 @@ qsw_prog_fini(qsw_jobinfo_t jobinfo)
 	if (shmid >= 0) {
 		debug2("qsw_prog_fini");
 		shmctl (shmid, IPC_RMID, NULL);
+		debug2("qsw_prog_fini shmctl IPC_RMID complete");
 	}
 	/* Do nothing... apparently this will be handled by
 	 *  callbacks in the kernel exit handlers ... 
