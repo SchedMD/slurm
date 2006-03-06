@@ -711,8 +711,8 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 				&altered);
 	pack32((uint32_t)altered, buffer);
 	altered = part_ptr->min_nodes;
-	/* select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,  */
-/* 				&altered); */
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
+ 				&altered); 
 	pack32((uint32_t)altered, buffer);
 	altered = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
