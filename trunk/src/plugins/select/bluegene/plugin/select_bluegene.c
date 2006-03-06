@@ -383,37 +383,23 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				found_record = bg_record;
 			list_iterator_destroy(itr);
 		}
-		if(!found_record|| 
+		if(!found_record || 
 		   (found_record->cpus_per_bp == procs_per_node))
 			(*nodes) = bluegene_bp_node_cnt;
 		else
 			(*nodes) = found_record->node_cnt;		
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
-		if(bg_list) {
-			itr = list_iterator_create(bg_list);
-			bg_record = (bg_record_t *)list_next(itr);
-			list_iterator_destroy(itr);
+		if((*nodes) == 1) {
+			/* Job will actually get more than one c-node, 
+			 * but we can't be sure exactly how much so we 
+			 * don't scale up this value. */
+			break;
 		}
-		if(!bg_record || 
-		   (bg_record->cpus_per_bp == procs_per_node)) 
-			(*nodes) *= bluegene_bp_node_cnt;
-		else 
-			(*nodes) *= bg_record->node_cnt;		
+		(*nodes) *= bluegene_bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
-		if(bg_list) {
-			itr = list_iterator_create(bg_list);
-			while ((bg_record = (bg_record_t *) 
-				list_next(itr)) != NULL) 
-				found_record = bg_record;
-			list_iterator_destroy(itr);
-		}
-		if(!found_record || 
-		   (found_record->cpus_per_bp == procs_per_node))
-			(*nodes) *= bluegene_bp_node_cnt;
-		else
-			(*nodes) *= found_record->node_cnt;		
+		(*nodes) *= bluegene_bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
 		select_g_get_jobinfo(job_desc->select_jobinfo,
