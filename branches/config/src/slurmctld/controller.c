@@ -106,7 +106,6 @@
 log_options_t log_opts = LOG_OPTS_INITIALIZER;
 
 /* Global variables */
-slurm_ctl_conf_t   slurmctld_conf;
 slurmctld_config_t slurmctld_config;
 int bg_recover = DEFAULT_RECOVER;
 
@@ -119,6 +118,8 @@ static char	node_name[MAX_NAME_LEN];
 static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
+static char    *slurm_conf_filename;
+
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -134,8 +135,7 @@ inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
-static void         _parse_commandline(int argc, char *argv[], 
-                                       slurm_ctl_conf_t *);
+static void         _parse_commandline(int argc, char *argv[]);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(int wait_time);
@@ -162,14 +162,10 @@ int main(int argc, char *argv[])
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
-	_parse_commandline(argc, argv, &slurmctld_conf);
+	_parse_commandline(argc, argv);
 	init_locks();
-	slurm_api_set_conf_file(slurmctld_conf.slurm_conf);
+	slurm_conf_reinit(slurm_conf_filename);
 
-	/* Get SlurmctldPidFile for _kill_old_slurmctld */
-	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf, false)))
-		fatal("read_slurm_conf_ctl reading %s: %s",
-		      slurmctld_conf.slurm_conf, slurm_strerror(error_code));
 	update_logging();
 	_kill_old_slurmctld();
 
@@ -918,8 +914,7 @@ extern int optind, opterr, optopt;
  * IN argv - the command line arguments
  * IN/OUT conf_ptr - pointer to current configuration, update as needed
  */
-static void _parse_commandline(int argc, char *argv[], 
-			       slurm_ctl_conf_t * conf_ptr)
+static void _parse_commandline(int argc, char *argv[])
 {
 	int c = 0;
 
@@ -937,7 +932,7 @@ static void _parse_commandline(int argc, char *argv[],
 			daemonize = 0;
 			break;
 		case 'f':
-			slurmctld_conf.slurm_conf = xstrdup(optarg);
+			slurm_conf_filename = xstrdup(optarg);
 			break;
 		case 'h':
 			_usage(argv[0]);

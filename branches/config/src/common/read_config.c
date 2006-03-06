@@ -55,9 +55,13 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/parse_config.h"
 
+/* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
+ * found in slurmctld.h */
+slurm_ctl_conf_t slurmctld_conf;
+
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl;
-static slurm_ctl_conf_t *conf_ptr;
+static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
 
 /*
@@ -97,7 +101,6 @@ static void destroy_partitionname(void *ptr);
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line);
-static void defunct_destroy(void *ptr);
 static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 				      s_p_hashtbl_t *hashtbl);
 
@@ -112,8 +115,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"Epilog", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
-	{"HashBase", S_P_LONG, defunct_option, defunct_destroy},
-	{"HeartbeatInterval", S_P_LONG, defunct_option, defunct_destroy},
+	{"HashBase", S_P_LONG, defunct_option},
+	{"HeartbeatInterval", S_P_LONG, defunct_option},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctloc", S_P_STRING},
 	{"JobAcctParameters", S_P_STRING},
@@ -122,7 +125,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCompType", S_P_STRING},
 	{"JobCredentialPrivateKey", S_P_STRING},
 	{"JobCredentialPublicCertificate", S_P_STRING},
-	{"KillTree", S_P_UINT16, defunct_option, defunct_destroy},
+	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
 	{"MaxJobCount", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
@@ -245,11 +248,6 @@ static int defunct_option(void **dest, slurm_parser_enum_t type,
 	return 0;
 }
 
-static void defunct_destroy(void *ptr)
-{
-	return;
-}
-
 static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, const char *line)
 {
@@ -310,8 +308,9 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(tbl, "Reason", &n->reason))
 			s_p_get_string(dflt, "Reason", &n->reason);
 
-		if (!s_p_get_string(tbl, "State", &n->state))
-			s_p_get_string(dflt, "State", &n->state);
+		if (!s_p_get_string(tbl, "State", &n->state)
+		    && !s_p_get_string(dflt, "State", &n->state))
+			n->state = NULL;
 
 		if (!s_p_get_uint32(tbl, "TmpDisk", &n->tmp_disk)
 		    && !s_p_get_uint32(dflt, "TmpDisk", &n->tmp_disk))
@@ -825,51 +824,11 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	return;
 }
 
-/*
- * read_slurm_conf_ctl - load the slurm configuration from the configured 
- *	file. 
- * OUT ctl_conf_ptr - pointer to data structure to be filled
- * IN  slurmd_hosts - if true then build a list of hosts on which slurmd runs
- *	(only useful for "scontrol show daemons" command). Otherwise only
- *	record nodes in which NodeName and NodeHostname differ.
- * RET 0 if no error, otherwise an error code
- */
-extern int 
-read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts) 
-{
-	s_p_hashtbl_t *hashtbl;
-
-	assert(ctl_conf_ptr);
-	/* zero the conf structure */
-	init_slurm_conf (ctl_conf_ptr);
-	/* memset(ctl_conf_ptr, 0, sizeof(slurm_ctl_conf_t)); */
-
-	if (ctl_conf_ptr->slurm_conf == NULL) {
-		char *val = getenv("SLURM_CONF");
-
-		if (val == NULL) {
-			val = SLURM_CONFIG_FILE;
-		}
-		ctl_conf_ptr->slurm_conf = xstrdup (val);
-	}
-
-	hashtbl = s_p_hashtbl_create(slurm_conf_options);
-	s_p_parse_file(hashtbl, ctl_conf_ptr->slurm_conf);
-
-	s_p_dump_values(hashtbl, slurm_conf_options);
-
-	validate_and_set_defaults(ctl_conf_ptr, hashtbl);
-	s_p_hashtbl_destroy(hashtbl);
-	
-	return SLURM_SUCCESS;
-}
-
-
 /* caller must lock conf_lock */
 static void
 _init_slurm_conf(char *file_name)
 {
-	conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t));
+	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
 	default_slurmd_port = 0;
 
 	if (file_name == NULL) {
@@ -899,7 +858,7 @@ _destroy_slurm_conf()
 		default_partition_tbl = NULL;
 	}
 	free_slurm_conf(conf_ptr);
-	xfree(conf_ptr);
+	/* xfree(conf_ptr); */
 }
 
 /*
@@ -981,237 +940,6 @@ extern void
 slurm_conf_unlock(void)
 {
 	pthread_mutex_unlock(&conf_lock);
-}
-
-/* 
- * report_leftover - report any un-parsed (non-whitespace) characters on the
- * configuration input line (we over-write parsed characters with whitespace).
- * IN in_line - what is left of the configuration input line.
- * IN line_num - line number of the configuration file.
- */
-void
-report_leftover (char *in_line, int line_num)
-{
-	int i;
-
-	for (i = 0; i < strlen (in_line); i++) {
-		if (isspace ((int) in_line[i]) || (in_line[i] == '\n'))
-			continue;
-		error ("Ignored input on line %d of configuration: %s",
-			line_num, &in_line[i]);
-		break;
-	}
-}
-
-/* validate configuration
- *
- * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
- *
- * NOTE: a backup_controller or control_machine of "localhost" are over-written
- *	with this machine's name.
- * NOTE: if backup_addr is NULL, it is over-written by backup_controller
- * NOTE: if control_addr is NULL, it is over-written by control_machine
- */
-void
-validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
-{
-	if ((ctl_conf_ptr->backup_controller != NULL) &&
-	    (strcasecmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
-		xfree (ctl_conf_ptr->backup_controller);
-		ctl_conf_ptr->backup_controller = xmalloc (MAX_NAME_LEN);
-		if ( getnodename (ctl_conf_ptr->backup_controller, 
-		                  MAX_NAME_LEN) ) 
-			fatal ("getnodename: %m");
-	}
-
-	if ((ctl_conf_ptr->backup_addr == NULL) && 
-	    (ctl_conf_ptr->backup_controller != NULL))
-		ctl_conf_ptr->backup_addr = 
-				xstrdup (ctl_conf_ptr->backup_controller);
-
-	if ((ctl_conf_ptr->backup_controller == NULL) && 
-	    (ctl_conf_ptr->backup_addr != NULL)) {
-		error ("BackupAddr specified without BackupController");
-		xfree (ctl_conf_ptr->backup_addr);
-	}
-
-	if (ctl_conf_ptr->control_machine == NULL)
-		fatal ("validate_config: ControlMachine not specified.");
-	else if (strcasecmp("localhost", ctl_conf_ptr->control_machine) == 0) {
-		xfree (ctl_conf_ptr->control_machine);
-		ctl_conf_ptr->control_machine = xmalloc (MAX_NAME_LEN);
-		if ( getnodename (ctl_conf_ptr->control_machine, 
-		                  MAX_NAME_LEN) ) 
-			fatal ("getnodename: %m");
-	}
-
-	if ((ctl_conf_ptr->control_addr == NULL) && 
-	    (ctl_conf_ptr->control_machine != NULL))
-		ctl_conf_ptr->control_addr = 
-				xstrdup (ctl_conf_ptr->control_machine);
-
-	if ((ctl_conf_ptr->backup_controller != NULL) && 
-	    (strcmp (ctl_conf_ptr->backup_controller, 
-	             ctl_conf_ptr->control_machine) == 0)) {
-		error ("ControlMachine and BackupController identical");
-		xfree (ctl_conf_ptr->backup_addr);
-		xfree (ctl_conf_ptr->backup_controller);
-	}
-
-	if (ctl_conf_ptr->job_credential_private_key == NULL)
-		fatal ("JobCredentialPrivateKey not set");
-	if (ctl_conf_ptr->job_credential_public_certificate == NULL)
-		fatal ("JobCredentialPublicCertificate not set");
-
-	if (ctl_conf_ptr->max_job_cnt < 1)
-		fatal ("MaxJobCount=%u, No jobs permitted",
-		       ctl_conf_ptr->max_job_cnt);
-
-	if (ctl_conf_ptr->authtype == NULL)
-		ctl_conf_ptr->authtype = xstrdup(DEFAULT_AUTH_TYPE);
-
-	if (ctl_conf_ptr->cache_groups == (uint16_t) NO_VAL)
-		ctl_conf_ptr->cache_groups = DEFAULT_CACHE_GROUPS;
-
-	if (ctl_conf_ptr->checkpoint_type == NULL)
-		 ctl_conf_ptr->checkpoint_type = 
-			xstrdup(DEFAULT_CHECKPOINT_TYPE);
-
-	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
-		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
-
-	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
-		ctl_conf_ptr->first_job_id = DEFAULT_FIRST_JOB_ID;
-
-	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
-		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;
-
-	if (ctl_conf_ptr->job_acct_loc == NULL)
-		ctl_conf_ptr->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
-
-	if (ctl_conf_ptr->job_acct_parameters == NULL)
-		ctl_conf_ptr->job_acct_parameters =
-				xstrdup(DEFAULT_JOB_ACCT_PARAMETERS);
-
-	if (ctl_conf_ptr->job_acct_type == NULL)
-		ctl_conf_ptr->job_acct_type = xstrdup(DEFAULT_JOB_ACCT_TYPE);
-
-	if (ctl_conf_ptr->job_comp_type == NULL)
-		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
-
-	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
-
-	if (ctl_conf_ptr->max_job_cnt == (uint16_t) NO_VAL)
-		ctl_conf_ptr->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
-
-	if (ctl_conf_ptr->min_job_age == (uint16_t) NO_VAL)
-		ctl_conf_ptr->min_job_age = DEFAULT_MIN_JOB_AGE;
-
-	if (ctl_conf_ptr->mpi_default == NULL)
-		ctl_conf_ptr->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
-	if (ctl_conf_ptr->plugindir == NULL)
-		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
-
-	if (ctl_conf_ptr->switch_type == NULL)
-		ctl_conf_ptr->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
-
-	if (ctl_conf_ptr->proctrack_type == NULL) {
-		if (!strcmp(ctl_conf_ptr->switch_type,"switch/elan"))
-			ctl_conf_ptr->proctrack_type = 
-					xstrdup("proctrack/rms");
-		else
-			ctl_conf_ptr->proctrack_type = 
-					xstrdup(DEFAULT_PROCTRACK_TYPE);
-	}
-	if ((!strcmp(ctl_conf_ptr->switch_type,   "switch/elan"))
-	&&  (!strcmp(ctl_conf_ptr->proctrack_type,"proctrack/linuxproc")))
-		fatal("proctrack/linuxproc is incompatable with switch/elan");
-
-        if (ctl_conf_ptr->propagate_rlimits_except) {
-                if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits_except,
-                                   NO_PROPAGATE_RLIMITS )) < 0)
-                        fatal( "Bad PropagateResourceLimitsExcept: %s",
-                                ctl_conf_ptr->propagate_rlimits_except );
-        }
-        else {
-                if (ctl_conf_ptr->propagate_rlimits == NULL)
-                        ctl_conf_ptr->propagate_rlimits = xstrdup( "ALL" );
-                if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits,
-                                   PROPAGATE_RLIMITS )) < 0)
-                        fatal( "Bad PropagateResourceLimits: %s",
-                                ctl_conf_ptr->propagate_rlimits );
-        }
-
-	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
-		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;
-
-	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
-		ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
-
-	if (ctl_conf_ptr->schedtype == NULL)
-		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
-
-	if (ctl_conf_ptr->select_type == NULL)
-		ctl_conf_ptr->select_type = xstrdup(DEFAULT_SELECT_TYPE);
-
-	if (ctl_conf_ptr->slurm_user_name == NULL) {
-		ctl_conf_ptr->slurm_user_name = xstrdup("root");
-		ctl_conf_ptr->slurm_user_id   = 0;
-	}
-
-	if (ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
-		_normalize_debug_level(&ctl_conf_ptr->slurmctld_debug);
-	else
-		ctl_conf_ptr->slurmctld_debug = LOG_LEVEL_INFO;
-
-	if (ctl_conf_ptr->slurmctld_pidfile == NULL)
-		ctl_conf_ptr->slurmctld_pidfile =
-			xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
-
-	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmctld_port = SLURMCTLD_PORT;
-
-	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
-		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
-
-	if (ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
-		_normalize_debug_level(&ctl_conf_ptr->slurmd_debug);
-	else
-		ctl_conf_ptr->slurmd_debug = LOG_LEVEL_INFO;
-
-	if (ctl_conf_ptr->slurmd_pidfile == NULL)
-		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
-
-#ifndef MULTIPLE_SLURMD
-	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
-#endif
-
-	if (ctl_conf_ptr->slurmd_spooldir == NULL)
-		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
-
-	if (ctl_conf_ptr->slurmd_timeout == (uint16_t) NO_VAL)
-		ctl_conf_ptr->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
-
-	if (ctl_conf_ptr->state_save_location == NULL)
-		ctl_conf_ptr->state_save_location = xstrdup(
-				DEFAULT_SAVE_STATE_LOC);
-
-	/* see above for switch_type, order dependent */
-
-	if (ctl_conf_ptr->task_plugin == NULL)
-		ctl_conf_ptr->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
-
-	if (ctl_conf_ptr->tmp_fs == NULL)
-		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);
-
-	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
-		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
-	
-	if (ctl_conf_ptr->tree_width == (uint16_t) NO_VAL) 
-		ctl_conf_ptr->tree_width = DEFAULT_TREE_WIDTH;
-
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */

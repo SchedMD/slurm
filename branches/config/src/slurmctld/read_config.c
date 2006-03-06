@@ -63,8 +63,6 @@
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
-static int  _parse_node_spec(char *in_line);
-static int  _parse_part_spec(char *in_line);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
@@ -252,7 +250,7 @@ static int _init_all_slurm_conf(void)
 {
 	int error_code;
 
-	init_slurm_conf(&slurmctld_conf);
+	slurm_conf_init(NULL);
 
 	if ((error_code = init_node_conf()))
 		return error_code;
@@ -319,8 +317,6 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
  * 	and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
- * global: default_config_record - default configuration values for
- *	                           group of nodes
  *	default_node_record - default node configuration values
  */
 static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
@@ -328,7 +324,6 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				       slurm_ctl_conf_t *conf)
 {
 	int error_code, i;
-	int state_val;
 	struct node_record *node_rec = NULL;
 	hostlist_t alias_list = NULL;
 	hostlist_t hostname_list = NULL;
@@ -336,6 +331,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	char *alias = NULL;
 	char *hostname = NULL;
 	char *address = NULL;
+	int state_val = NODE_STATE_UNKNOWN;
 
 	if (node_ptr->state != NULL) {
 		state_val = _state_str2int(node_ptr->state);
@@ -444,8 +440,6 @@ cleanup:
  *	from the slurm.conf reader, build table, and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
- * global: default_config_record - default configuration values for
- *	                           group of nodes
  *	default_node_record - default node configuration values
  */
 static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
@@ -477,247 +471,89 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	}
 }
 
-
 /*
- * _parse_part_spec - parse the partition specification, build table and 
- *	set values
- * IN/OUT in_line - line from the configuration file, parsed keywords 
- *	and values replaced by blanks
+ * _build_single_partitionline_info - get a array of slurm_conf_partition_t
+ *	structures from the slurm.conf reader, build table, and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
  * global: part_list - global partition list pointer
  *	default_part - default parameters for a partition
  */
-static int _parse_part_spec(char *in_line)
+static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 {
-	char *allow_groups = NULL, *nodes = NULL, *partition_name = NULL;
-	char *max_time_str = NULL, *default_str = NULL, *root_str = NULL;
-	char *shared_str = NULL, *state_str = NULL, *hidden_str = NULL;
-	int max_time_val = NO_VAL, max_nodes_val = NO_VAL;
-	int min_nodes_val = NO_VAL, root_val = NO_VAL, default_val = NO_VAL;
-	int hidden_val = NO_VAL, state_val = NO_VAL, shared_val = NO_VAL;
-	int error_code;
 	struct part_record *part_ptr;
-	static int default_part_val = NO_VAL;
 
-	if ((error_code =
-	     load_string(&partition_name, "PartitionName=", in_line)))
-		return error_code;
-	if (partition_name == NULL)
-		return 0;	/* no partition info */
-
-	if (strlen(partition_name) >= MAX_NAME_LEN) {
+	if (strlen(part->name) >= MAX_NAME_LEN) {
 		error("_parse_part_spec: partition name %s too long",
-		      partition_name);
-		xfree(partition_name);
+		      part->name);
 		return EINVAL;
 	}
 
-	allow_groups = default_str = root_str = nodes = NULL;
-	shared_str = state_str = NULL;
-	error_code = slurm_parser(in_line,
-				  "AllowGroups=", 's', &allow_groups,
-				  "Default=", 's', &default_str,
-				  "Hidden=", 's', &hidden_str,
-				  "RootOnly=", 's', &root_str,
-				  "MaxTime=", 's', &max_time_str,
-				  "MaxNodes=", 'd', &max_nodes_val,
-				  "MinNodes=", 'd', &min_nodes_val,
-				  "Nodes=", 's', &nodes,
-				  "Shared=", 's', &shared_str,
-				  "State=", 's', &state_str, "END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (default_str) {
-		if (strcasecmp(default_str, "YES") == 0)
-			default_val = 1;
-		else if (strcasecmp(default_str, "NO") == 0)
-			default_val = 0;
-		else {
-			error("_parse_part_spec: ignored partition %s update, "
-				"bad state %s", partition_name, default_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(default_str);
-	} else
-		default_val = default_part_val;
-
-	if (hidden_str) {
-		if (strcasecmp(hidden_str, "YES") == 0)
-			hidden_val = 1;
-		else if (strcasecmp(hidden_str, "NO") == 0)
-			hidden_val = 0;
-		else {
-			error("_parse_part_spec: ignored partition %s update, "
-				"bad key %s", partition_name, hidden_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(hidden_str);
-	}
-
-	if (root_str) {
-		if (strcasecmp(root_str, "YES") == 0)
-			root_val = 1;
-		else if (strcasecmp(root_str, "NO") == 0)
-			root_val = 0;
-		else {
-			error("_parse_part_spec ignored partition %s update, "
-				"bad key %s", partition_name, root_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(root_str);
-	}
-
-	if (max_time_str) {
-		if (strcasecmp(max_time_str, "INFINITE") == 0)
-			max_time_val = INFINITE;
-		else {
-			char *end_ptr;
-			max_time_val = strtol(max_time_str, &end_ptr, 10);
-			if ((max_time_str[0] != '\0') && 
-			    (end_ptr[0] != '\0')) {
-				error_code = EINVAL;
-				goto cleanup;
-			}
-		}
-		xfree(max_time_str);
-	}
-
-	if (shared_str) {
-		if (strcasecmp(shared_str, "YES") == 0)
-			shared_val = SHARED_YES;
-		else if (strcasecmp(shared_str, "NO") == 0)
-			shared_val = SHARED_NO;
-		else if (strcasecmp(shared_str, "FORCE") == 0)
-			shared_val = SHARED_FORCE;
-		else {
-			error("_parse_part_spec ignored partition %s update, "
-				"bad shared %s", partition_name, shared_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(shared_str);
-	}
-
-	if (state_str) {
-		if (strcasecmp(state_str, "UP") == 0)
-			state_val = 1;
-		else if (strcasecmp(state_str, "DOWN") == 0)
-			state_val = 0;
-		else {
-			error("_parse_part_spec ignored partition %s update, "
-				"bad state %s", partition_name, state_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(state_str);
-	}
-
-	if (strcasecmp(partition_name, "DEFAULT") == 0) {
-		xfree(partition_name);
-		if (default_val != NO_VAL)
-			default_part_val = default_val;
-		if (hidden_val != NO_VAL)
-			default_part.hidden  = hidden_val;
-		if (max_time_val != NO_VAL)
-			default_part.max_time  = max_time_val;
-		if (max_nodes_val != NO_VAL)
-			default_part.max_nodes = max_nodes_val;
-		if (min_nodes_val != NO_VAL)
-			default_part.min_nodes = min_nodes_val;
-		if (root_val != NO_VAL)
-			default_part.root_only = root_val;
-		if (state_val != NO_VAL)
-			default_part.state_up  = state_val;
-		if (shared_val != NO_VAL)
-			default_part.shared    = shared_val;
-		if (allow_groups) {
-			xfree(default_part.allow_groups);
-			if (strcasecmp(allow_groups, "ALL")) {
-				default_part.allow_groups = allow_groups;
-				allow_groups = NULL;
-			}
-		}
-		if (nodes) {
-			xfree(default_part.nodes);
-			default_part.nodes = nodes;
-			nodes = NULL;
-		}
-		return 0;
-	}
-
-	part_ptr = list_find_first(part_list, &list_find_part, partition_name);
+	part_ptr = list_find_first(part_list, &list_find_part, part->name);
 	if (part_ptr == NULL) {
 		part_ptr = create_part_record();
-		strcpy(part_ptr->name, partition_name);
+		strcpy(part_ptr->name, part->name);
 	} else {
-		verbose("_parse_node_spec: duplicate entry for partition %s",
-		     partition_name);
+		verbose("_parse_part_spec: duplicate entry for partition %s",
+			part->name);
 	}
-	if (default_val == 1) {
+
+	if (part->default_flag) {
 		if ((strlen(default_part_name) > 0)
-		&&  strcmp(default_part_name,partition_name))
+		&&  strcmp(default_part_name, part->name))
 			info("_parse_part_spec: changing default partition "
 				"from %s to %s", 
-				default_part_name, partition_name);
-		strcpy(default_part_name, partition_name);
+				default_part_name, part->name);
+		strcpy(default_part_name, part->name);
 		default_part_loc = part_ptr;
 	}
-	if (hidden_val != NO_VAL)
-		part_ptr->hidden  = hidden_val;
-	if (max_time_val != NO_VAL)
-		part_ptr->max_time  = max_time_val;
-	if (max_nodes_val != NO_VAL)
-		part_ptr->max_nodes = max_nodes_val;
-	if (min_nodes_val != NO_VAL)
-		part_ptr->min_nodes = min_nodes_val;
-	if (root_val != NO_VAL)
-		part_ptr->root_only = root_val;
-	if (state_val != NO_VAL)
-		part_ptr->state_up  = state_val;
-	if (shared_val != NO_VAL)
-		part_ptr->shared    = shared_val;
-	if (allow_groups) {
+	part_ptr->hidden    = part->hidden_flag ? 1 : 0;
+	part_ptr->max_time  = part->max_time;
+	part_ptr->max_nodes = part->max_nodes;
+	part_ptr->min_nodes = part->min_nodes;
+	part_ptr->root_only = part->root_only_flag ? 1 : 0;
+	part_ptr->state_up  = part->state_up_flag ? 1 : 0;
+	part_ptr->shared    = part->shared;
+	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
-		part_ptr->allow_groups = allow_groups;
-		allow_groups = NULL;
+		part_ptr->allow_groups = xstrdup(part->allow_groups);
 	}
-	if (nodes) {
-		if (strcasecmp(nodes, "localhost") == 0) {
-			xfree(nodes);
-			nodes = xmalloc(MAX_NAME_LEN);
-			getnodename(nodes, MAX_NAME_LEN);
-		}
+	if (part->nodes) {
 		if (part_ptr->nodes) {
 			xstrcat(part_ptr->nodes, ",");
-			xstrcat(part_ptr->nodes, nodes);
-			xfree(nodes);
+			xstrcat(part_ptr->nodes, part->nodes);
 		} else {
-			part_ptr->nodes = nodes;
-			nodes = NULL;
+			part_ptr->nodes = xstrdup(part->nodes);
 		}
 	}
-	xfree(partition_name);
-	return 0;
 
-      cleanup:
-	xfree(allow_groups);
-	xfree(default_str);
-	xfree(hidden_str);
-	xfree(max_time_str);
-	xfree(root_str);
-	xfree(nodes);
-	xfree(partition_name);
-	xfree(shared_str);
-	xfree(state_str);
-	return error_code;
+	return 0;
 }
 
+/*
+ * _build_all_partitionline_info - get a array of slurm_conf_partition_t
+ *	structures from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ * global: part_list - global partition list pointer
+ *	default_part - default parameters for a partition
+ */
+static int _build_all_partitionline_info()
+{
+	slurm_conf_partition_t *part, **ptr_array;
+	int count;
+	int i;
+
+	count = slurm_conf_partition_array(&ptr_array);
+	if (count == 0)
+		fatal("No PartitionName information available!");
+
+	for (i = 0; i < count; i++) {
+		part = ptr_array[i];
+
+		_build_single_partitionline_info(part);
+	}
+}
 
 /*
  * read_slurm_conf - load the slurm configuration from the configured file. 
@@ -755,10 +591,9 @@ int read_slurm_conf(int recover)
 		return error_code;
 	}
 
-	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
 	_build_all_nodeline_info(conf);
-	/* _build_all_partition_info(conf); */
+	_build_all_partitionline_info();
 	slurm_conf_unlock();
 
 	update_logging();

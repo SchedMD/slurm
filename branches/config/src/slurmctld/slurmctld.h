@@ -189,8 +189,6 @@ extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * not DOWN, DRAINED or DRAINING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
-extern struct config_record default_config_record;
-extern struct node_record default_node_record;
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures

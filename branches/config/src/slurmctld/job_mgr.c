@@ -3601,6 +3601,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	uint32_t *job_id_ptr;
 	char *endptr;
 
+	xassert(slurmctld_conf.state_save_location);
 	f_dir = opendir(slurmctld_conf.state_save_location);
 	if (!f_dir) {
 		error("opendir(%s): %m", 
