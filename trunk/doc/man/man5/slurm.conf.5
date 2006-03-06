@@ -131,7 +131,7 @@ without waiting for their time limit to be reached.
 This value should reflect the possibility that the srun command may
 stopped by a debugger or considerable time could be required for batch 
 job pre- and post-processing. The default value is unlimited (zero). 
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBJobAcctType\fR
 Define the job accounting mechanism type.
@@ -204,7 +204,7 @@ SIGTERM and SIGKILL signals upon reaching its time limit.
 If the job fails to terminate gracefully 
 in the interval specified, it will be forcably terminated. 
 The default value is 30 seconds.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBMaxJobCount\fR
 The maximum number of jobs SLURM can have in its active database 
@@ -214,7 +214,7 @@ resources. Once this limit is reached, requests to submit additional
 jobs will fail. The default value is 2000 jobs. This value may not 
 be reset via "scontrol reconfig". It only takes effect upon restart 
 of the slurmctld daemon.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is purged from 
@@ -222,7 +222,7 @@ SLURM's active database. Set the values of \fBMaxJobCount\fR and
 \fBMinJobAge\fR to insure the slurmctld daemon does not exhaust 
 its memory or other resources. The default value is 300 seconds. 
 A value of zero prevents any job record purging.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBMpiDefault\fR
 Identifies the default type of MPI to be used. 
@@ -380,7 +380,7 @@ execute on the same nodes or the values of \fBSlurmctldPort\fR and
 The interval, in seconds, that the backup controller waits for the 
 primary controller to respond before assuming control. 
 The default value is 120 seconds.
-May not exceed 65534.
+May not exceed 65533.
 .TP
 \fBSlurmdDebug\fR
 The level of detail to provide \fBslurmd\fR daemon's logs. 
@@ -426,7 +426,7 @@ confirm the state of \fBslurmd\fR, the node will not be automatically set to
 a DOWN state indicating a non-responsive \fBslurmd\fR, and some other tool 
 will take responsibility for monitoring the state of each compute node 
 and its \fBslurmd\fR daemon.
-The value may not exceed 65534.
+The value may not exceed 65533.
 .TP
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the SLURM controller, 
@@ -525,7 +525,7 @@ Specifies how many seconds the srun command should by default wait after
 the first task terminates before terminating all remaining tasks. The 
 "--wait" option on the srun command line overrides this value. 
 If set to 0, this feature is disabled.
-May not exceed 65534.
+May not exceed 65533.
 .LP
 The configuration of nodes (or machines) to be managed by Slurm is 
 also specified in \fB/etc/slurm.conf\fR. 
@@ -588,7 +588,8 @@ node name (e.g. "unit[0-31]rack1" is invalid).
 The node configuration specified the following information:
 .TP
 \fBNodeName\fR
-Name that SLURM uses to refer to a node. 
+Name that SLURM uses to refer to a node (or base partition for 
+BlueGene systems). 
 Typically this would be the string that "/bin/hostname -s" 
 returns, however it may be an arbitary string if 
 \fBNodeHostname\fR is specified.
@@ -733,7 +734,8 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 .TP
 \fBMaxNodes\fR
-Maximum count of nodes which may be allocated to any single job.
+Maximum count of nodes (or base partitions for BlueGene systems) which 
+may be allocated to any single job.
 The default value is "UNLIMITED", which is represented internally as -1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 .TP
@@ -743,14 +745,16 @@ value is "UNLIMITED", which is represented internally as -1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 .TP
 \fBMinNodes\fR
-Minimum count of nodes which may be allocated to any single job.
+Minimum count of nodes (or base partitions for BlueGene systems) which 
+may be allocated to any single job.
 The default value is 1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 .TP
 \fBNodes\fR
-Comma separated list of nodes which are associated with this 
-partition. Node names may be specified using the 
-node range expression syntax described above. A blank list of nodes 
+Comma separated list of nodes (or base partitions for BlueGene systems) 
+which are associated with this partition. 
+Node names may be specified using the node range expression syntax 
+described above. A blank list of nodes 
 (i.e. "Nodes= ") can be used if one wants a partition to exist, 
 but have no resources (possibly on a temporary basis).
 .TP
