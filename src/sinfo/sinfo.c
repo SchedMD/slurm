@@ -486,10 +486,10 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint16_t base_state;
-	int offset = 1;
+	int node_scaling = 1;
 
-	if(sinfo_ptr->part_info->max_offset)
-		offset = sinfo_ptr->part_info->max_offset;
+	if(sinfo_ptr->part_info->node_scaling)
+		node_scaling = sinfo_ptr->part_info->node_scaling;
 	
 	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
@@ -531,15 +531,15 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if (node_ptr->node_state & NODE_STATE_DRAIN)
-		sinfo_ptr->nodes_other += offset;
+		sinfo_ptr->nodes_other += node_scaling;
 	else if ((base_state == NODE_STATE_ALLOCATED)
 	||       (node_ptr->node_state & NODE_STATE_COMPLETING))
-		sinfo_ptr->nodes_alloc += offset;
+		sinfo_ptr->nodes_alloc += node_scaling;
 	else if (base_state == NODE_STATE_IDLE)
-		sinfo_ptr->nodes_idle += offset;
+		sinfo_ptr->nodes_idle += node_scaling;
 	else 
-		sinfo_ptr->nodes_other += offset;
-	sinfo_ptr->nodes_tot += offset;
+		sinfo_ptr->nodes_other += node_scaling;
+	sinfo_ptr->nodes_tot += node_scaling;
 	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
 }
 
@@ -554,13 +554,13 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 			  uint16_t part_inx, node_info_t *node_ptr)
 {
 	sinfo_data_t *sinfo_ptr;
-	int offset = 1;
+	int node_scaling = 1;
 	/* create an entry */
 	sinfo_ptr = xmalloc(sizeof(sinfo_data_t));
 
 	sinfo_ptr->part_info = part_ptr;
-	if(sinfo_ptr->part_info->max_offset) {
-		offset = sinfo_ptr->part_info->max_offset;
+	if(sinfo_ptr->part_info->node_scaling) {
+		node_scaling = sinfo_ptr->part_info->node_scaling;
 	}
 	if (node_ptr) {
 		uint16_t base_state = node_ptr->node_state & 
@@ -568,12 +568,12 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		sinfo_ptr->node_state = node_ptr->node_state;
 		if ((base_state == NODE_STATE_ALLOCATED)
 		||  (node_ptr->node_state & NODE_STATE_COMPLETING))
-			sinfo_ptr->nodes_alloc += offset;
+			sinfo_ptr->nodes_alloc += node_scaling;
 		else if (base_state == NODE_STATE_IDLE)
-			sinfo_ptr->nodes_idle += offset;
+			sinfo_ptr->nodes_idle += node_scaling;
 		else 
-			sinfo_ptr->nodes_other += offset;
-		sinfo_ptr->nodes_tot += offset;
+			sinfo_ptr->nodes_other += node_scaling;
+		sinfo_ptr->nodes_tot += node_scaling;
 		sinfo_ptr->min_cpus = node_ptr->cpus;
 		sinfo_ptr->max_cpus = node_ptr->cpus;
 

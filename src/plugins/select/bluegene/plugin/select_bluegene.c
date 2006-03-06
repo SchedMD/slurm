@@ -355,39 +355,12 @@ extern int select_p_get_info_from_plugin (enum select_data_info info,
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
-	int *nodes = (int *)data;
+	uint32_t *nodes = (uint32_t *)data;
 	int tmp;
-	ListIterator itr;
-	bg_record_t *bg_record = NULL;
-	bg_record_t *found_record = NULL;
 	
 	switch (type) {
-	case SELECT_GET_NODE_MIN_OFFSET:
-		if(bg_list) {
-			itr = list_iterator_create(bg_list);
-			bg_record = (bg_record_t *)list_next(itr);
-			list_iterator_destroy(itr);
-		}
-		
-		if(!bg_record || 
-		   (bg_record->cpus_per_bp == procs_per_node)) 
-			(*nodes) = bluegene_bp_node_cnt;
-		else 
-			(*nodes) = bg_record->node_cnt;		
-		break;
-	case SELECT_GET_NODE_MAX_OFFSET:
-		if(bg_list) {
-			itr = list_iterator_create(bg_list);
-			while ((bg_record = (bg_record_t *) 
-				list_next(itr)) != NULL) 
-				found_record = bg_record;
-			list_iterator_destroy(itr);
-		}
-		if(!found_record || 
-		   (found_record->cpus_per_bp == procs_per_node))
-			(*nodes) = bluegene_bp_node_cnt;
-		else
-			(*nodes) = found_record->node_cnt;		
+	case SELECT_GET_NODE_SCALING:
+		(*nodes) = bluegene_bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
 		if((*nodes) == 1) {
