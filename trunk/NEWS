@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Added logic to accept 1k for 1024 and so on for --nodes option of srun. 
     This logic is through display tools such as smap, sinfo, scontrol, and 
     squeue.
+ -- Added bluegene.conf man page.
  
 * Changes in SLURM 1.1.0-pre1
 =============================
