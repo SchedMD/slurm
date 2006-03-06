@@ -116,12 +116,13 @@ The default value is TORUS.
 \fBMESH\fR: Communication occur over a mesh.
 .TP
 \fBSMALL\fR: The base partition is divided into more than one bgblock.
-The administrator should define the number of 32 c\-node and 128 c\-node 
-blocks using the options \fBnum32\fR and \fBnum128\fR respectively. 
+The administrator should define the number of single node cards and 
+quarter base partition blocks using the options \fBNodeCards\fR and 
+\fBQuarters\fR respectively. 
 The total number of c\-nodes in defined blocks must not exceed
 \fBBasePartitionNodeCnt\fR.
 If not specified, the base partition will be divided into four 
-blocks each with 128 c\-nodes. 
+blocks.
 See example below.
 .TP
 \fBTORUS\fR: Communications occur over a torus (end\-points of network 
@@ -179,7 +180,7 @@ BPs=[330x331] Type=TORUS          # 1x1x2 =  2
 .br
 BPs=[332x332] Type=TORUS          # 1x1x1 =  1
 .br
-BPs=[333x333] Type=SMALL num32=4 num128=3 # 1/16 * 4 + 1/4 * 3
+BPs=[333x333] Type=SMALL NodeCards=4 Quarters=3 # 1/16 * 4 + 1/4 * 3
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.

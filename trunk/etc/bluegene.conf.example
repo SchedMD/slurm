@@ -68,4 +68,4 @@ BPs=[300x313] Type=TORUS          # 1x2x4 =  8
 BPs=[320x323] Type=TORUS          # 1x1x4 =  4
 BPs=[330x331] Type=TORUS          # 1x1x2 =  2
 BPs=[332x332] Type=TORUS          # 1x1x1 =  1
-BPs=[333x333] Type=SMALL num32=4 num128=3 # 1x1x1 = 4-32 cnode blocks 3-128 c-node blocks
+BPs=[333x333] Type=SMALL NodeCards=4 Quarters=3 # 1x1x1 = 4-32 c-node blocks 3-128 c-node blocks
