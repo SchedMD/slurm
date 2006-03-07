@@ -14,12 +14,17 @@
 #    This macro must be placed after AC_PROG_CC or equivalent.
 ##*****************************************************************************
 
-AC_DEFUN([X_AC_NUMA], [
+AC_DEFUN([X_AC_NUMA],
+[
+  AC_CHECK_LIB([numa],
+	[numa_available],
+	[ac_have_numa=yes; NUMA_LIBS="-lnuma"])
 
-# Test if numa_available function exists
-  save_LIBS="$LIBS"
-  LIBS="-lnuma $LIBS"
-  AC_CHECK_FUNCS(numa_available, [have_numa_available=yes], [LIBS="$save_LIBS"])
-  AM_CONDITIONAL(HAVE_NUMA_AFFINITY, test "x$have_numa_available" = "xyes")
+  AC_SUBST(NUMA_LIBS)
+  if test "x$ac_have_numa" = "xyes"; then
+    AC_DEFINE(HAVE_NUMA, 1, [define if you have the numa library])
+  else
+    AC_MSG_WARN([Unable to locate NUMA memory affinity functions])
+  fi
 ])
 
