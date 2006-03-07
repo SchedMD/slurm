@@ -578,7 +578,12 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg);
 int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 
 /* Slurm message functions */
-int *set_span(int total);
+
+/* set_span
+ * build an array indicating how message fanout should occur
+ * NODE: Returned array MUST be release by caller using xfree */
+extern int *set_span(int total);
+
 void slurm_free_msg(slurm_msg_t * msg);
 void slurm_free_cred(void *cred);
 int convert_to_kilo(int number, char *tmp);
