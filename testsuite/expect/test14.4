@@ -72,7 +72,7 @@ exec $bin_chmod 700 $file_in
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-spawn $srun -N1-1 --batch --output=$file_out --error=$file_err -t1 $file_in
+spawn $srun -N1-4 --batch --output=$file_out --error=$file_err -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
