@@ -270,14 +270,11 @@ extern int forward_msg(forward_struct_t *forward_struct,
 
 /*
  * forward_set - add to the message possible forwards to go to
- * IN: forward     - forward_t *   - message to add forwards to
- * IN: thr_count   - int           - number of messages already done
- * IN: pos         - int *         - posistion in the forward_addr and names
- *                                   will change to update to set the 
- *				     correct start after forwarding 
- *      			     information has been added.
- * IN: forward_addr- sockaddr_in * - list of address structures to forward to
- * IN: forward_names - char *      - list of names in MAX_SLURM_NAME increments
+ * IN: forward     - forward_t *   - struct to store forward info
+ * IN: span        - int           - count of forwards to do
+ * IN: pos         - int *         - position in the original messages addr 
+ *                                   structure
+ * IN: from        - forward_t *   - information from original message
  * RET: SLURM_SUCCESS - int
  */
 extern int forward_set(forward_t *forward, 
@@ -331,6 +328,20 @@ extern int forward_set(forward_t *forward,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * forward_set_launch - add to the message possible forwards to go to during 
+ *                      a job launch
+ * IN: forward     - forward_t *           - struct to store forward info
+ * IN: span        - int                   - count of forwards to do
+ * IN: step_layout - slurm_step_layout_t * - contains information about hosts
+ *                                           from original message
+ * IN: slurmd_addr - slurm_addr *          - addrs of hosts to send messages to
+ * IN: itr         - hostlist_iterator_t   - count into host list of hosts to 
+ *                                           send messages to 
+ * IN: timeout     - int32_t               - timeout if any to wait for 
+ *                                           message responses
+ * RET: SLURM_SUCCESS - int
+ */
 extern int forward_set_launch(forward_t *forward, 
 			      int span,
 			      int *pos,
@@ -352,7 +363,8 @@ extern int forward_set_launch(forward_t *forward,
 	
 	if(span > 0) {
 		forward->addr = xmalloc(sizeof(slurm_addr) * span);
-		forward->name = xmalloc(sizeof(char) * (MAX_SLURM_NAME * span));
+		forward->name = 
+			xmalloc(sizeof(char) * (MAX_SLURM_NAME * span));
 		forward->node_id = xmalloc(sizeof(int32_t) * span);
 		forward->timeout = timeout;
 		forward->init = FORWARD_INIT;
