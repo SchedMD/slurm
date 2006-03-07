@@ -113,7 +113,7 @@ set matches 0
 if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
-		-re "REQUEST_FILE_BCAST: Permission denied" {
+		-re "REQUEST_FILE_BCAST.* Permission denied" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
