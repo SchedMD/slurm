@@ -284,7 +284,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			sleep(1);
 		}
 		
-		if(bg_record->job_running == NO_VAL) {
+		if(bg_record->job_running == -1) {
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}
@@ -441,7 +441,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		bg_record->job_running = NO_VAL;
+		bg_record->job_running = -1;
 		
 		/*remove user from list */
 		if(bg_record->target_name) {

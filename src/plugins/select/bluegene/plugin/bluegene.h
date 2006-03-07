@@ -87,10 +87,10 @@ typedef struct bg_record {
 	int job_running;                /* job id if there is a job running 
 					   on the block */
 	int cpus_per_bp;                /* count of cpus per base part */
-	int node_cnt;                   /* count of nodes per block */
-	int quarter;                    /* used for small blocks 
+	uint32_t node_cnt;              /* count of nodes per block */
+	uint16_t quarter;                    /* used for small blocks 
 					   determine quarter of BP */
-	int segment;                    /* used for small blocks 
+	uint16_t segment;                    /* used for small blocks 
 					   determine segment of quarter */
 } bg_record_t;
 

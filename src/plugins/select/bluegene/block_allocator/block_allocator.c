@@ -597,7 +597,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 
 	if(ba_system_ptr)
 		_delete_ba_system();
-
+	
 	ba_system_ptr = (ba_system_t *) xmalloc(sizeof(ba_system_t));
 	
 	ba_system_ptr->xcord = 1;
@@ -646,7 +646,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 		DIM_SIZE[X] = node_info_ptr->record_count;
 #endif
 		ba_system_ptr->num_of_proc = node_info_ptr->record_count;
-        } 
+	} 
 node_info_error:
 #ifdef HAVE_BG_FILES
 	if (have_db2

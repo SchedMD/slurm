@@ -212,23 +212,19 @@ extern int update_block_list()
 	char *name = NULL;
 	rm_partition_list_t *block_list = NULL;
 	bg_record_t *bg_record = NULL;
-	//struct passwd *pw_ent = NULL;
 	time_t now;
 	struct tm *time_ptr;
 	char reason[128];
 	int skipped_dealloc = 0;
 
-	if(!blocks_are_created)
-		return 0;
-	
 	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partitions_info(block_state, &block_list))
 	    != STATUS_OK) {
 		slurm_mutex_unlock(&api_file_mutex);
-		error("rm_get_partitions_info(): %s", bg_err_str(rc));
+		if(rc != PARTITION_NOT_FOUND)
+			error("rm_get_partitions_info(): %s", bg_err_str(rc));
 		return -1; 
 	}
-	slurm_mutex_unlock(&api_file_mutex);
 	
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 		   != STATUS_OK) {
@@ -236,6 +232,7 @@ extern int update_block_list()
 		updated = -1;
 		num_blocks = 0;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
 			
 	for (j=0; j<num_blocks; j++) {
 		if (j) {
@@ -359,11 +356,11 @@ extern int update_block_list()
 		if(bg_record->boot_state == 1) {
 			switch(bg_record->state) {
 			case RM_PARTITION_CONFIGURING:
-				debug("checking to make sure user %s "
-				      "is the user.", 
-				      bg_record->target_name);
-				if(update_block_user(bg_record) == 1) 
-					last_bg_update = time(NULL);
+				/* debug("checking to make sure user %s " */
+/* 				      "is the user.",  */
+/* 				      bg_record->target_name); */
+/* 				if(update_block_user(bg_record) == 1)  */
+/* 					last_bg_update = time(NULL); */
 				break;
 			case RM_PARTITION_ERROR:
 				error("partition in an error state");
@@ -415,6 +412,7 @@ extern int update_block_list()
 	if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", bg_err_str(rc));
 	}
+	
 #endif
 	return updated;
 }

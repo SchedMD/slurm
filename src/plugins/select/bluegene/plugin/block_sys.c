@@ -147,6 +147,7 @@ static int _post_allocate(bg_record_t *bg_record)
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	
+	slurm_mutex_lock(&api_file_mutex);
 	for(i=0;i<MAX_ADD_RETRY; i++) {
 		if ((rc = rm_add_partition(bg_record->bg_block)) 
 		    != STATUS_OK) {
@@ -159,11 +160,14 @@ static int _post_allocate(bg_record_t *bg_record)
 		sleep(3);
 	}
 	if(rc == SLURM_ERROR) {
+		info("going to free it");
 		if ((rc = rm_free_partition(bg_record->bg_block)) 
 		    != STATUS_OK)
 			error("rm_free_partition(): %s", bg_err_str(rc));
 		fatal("couldn't add last partition.");
 	}
+	slurm_mutex_unlock(&api_file_mutex);
+	
 	debug("done adding\n");
 	
 	/* Get back the new partition id */
@@ -193,8 +197,6 @@ static int _post_allocate(bg_record_t *bg_record)
 		} else {
 			bg_record->user_uid = pw_ent->pw_uid;
 		} 
-		last_bg_update = time(NULL);
-		
 	}
 	/* We are done with the partition */
 	if ((rc = rm_free_partition(bg_record->bg_block)) != STATUS_OK)
@@ -205,6 +207,7 @@ static int _post_allocate(bg_record_t *bg_record)
 static int _post_bg_init_read(void *object, void *arg)
 {
 	bg_record_t *bg_record = (bg_record_t *) object;
+	bg_record_t *tmp_record = NULL;
 	int i = 1024;
 	bg_record->nodes = xmalloc(i);
 	while (hostlist_ranged_string(bg_record->hostlist, i,
@@ -219,6 +222,11 @@ static int _post_bg_init_read(void *object, void *arg)
 		fatal("Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		tmp_record = xmalloc(sizeof(bg_record_t));
+		copy_bg_record(bg_record, tmp_record);
+		list_push(bg_list, tmp_record);
+	}
 	//print_bg_record(bg_record);
 
 	return SLURM_SUCCESS;
@@ -229,7 +237,7 @@ static int _find_32node_segment(bg_record_t *bg_record,
 	char *my_card_name = NULL;
 	char *card_name = NULL;
 	rm_bp_id_t bp_id = NULL;
-	int segment = NO_VAL;
+	int segment = (uint16_t)NO_VAL;
 	int card_count = 0;
 	int num = 0;
 	int i=0;
@@ -357,6 +365,7 @@ int read_bg_blocks()
 	rm_partition_list_t *block_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	rm_nodecard_t *ncard = NULL;
+	rm_quarter_t quarter;
 	bool small = false;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -370,18 +379,18 @@ int read_bg_blocks()
 	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partitions_info(state, &block_list))
 			!= STATUS_OK) {
-		error("rm_get_partitions_info(): %s", bg_err_str(rc));
+		error("2 rm_get_partitions_info(): %s", bg_err_str(rc));
 		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 		
 	}
-	slurm_mutex_unlock(&api_file_mutex);
 	
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &block_count))
 			!= STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		block_count = 0;
 	}
+	slurm_mutex_unlock(&api_file_mutex);
 	
 	for(block_number=0; block_number<block_count; block_number++) {
 		
@@ -434,15 +443,15 @@ int read_bg_blocks()
 		
 		bg_record = xmalloc(sizeof(bg_record_t));
 		list_push(bg_curr_block_list, bg_record);
-									
+		
 		bg_record->bg_block_id = xstrdup(block_name);
 		
 		free(block_name);
 
 		bg_record->state = NO_VAL;
-		bg_record->quarter = NO_VAL;
-		bg_record->segment = NO_VAL;
-		bg_record->job_running = NO_VAL;
+		bg_record->quarter = (uint16_t) NO_VAL;
+		bg_record->segment = (uint16_t) NO_VAL;
+		bg_record->job_running = -1;
 				
 		if ((rc = rm_get_data(block_ptr, 
 				      RM_PartitionBPNum, 
@@ -472,10 +481,11 @@ int read_bg_blocks()
 			}
 			if ((rc = rm_get_data(ncard, 
 				      RM_NodeCardQuarter, 
-				      &bg_record->quarter)) != STATUS_OK) {
+				      &quarter)) != STATUS_OK) {
 				error("rm_get_data(CardQuarter): %d",rc);
 				bp_cnt = 0;
 			}
+			bg_record->quarter = quarter;
 			if((rc = rm_get_data(block_ptr,
 					     RM_PartitionNodeCardNum,
 					     &i))

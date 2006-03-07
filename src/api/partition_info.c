@@ -181,10 +181,9 @@ extern int slurm_load_partitions (time_t update_time,
         req_msg.msg_type = REQUEST_PARTITION_INFO;
         req_msg.data     = &req;
 	
-
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
-
+	
 	switch (resp_msg.msg_type) {
 	case RESPONSE_PARTITION_INFO:
 		*resp = (partition_info_msg_t *) resp_msg.data;
