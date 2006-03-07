@@ -91,7 +91,8 @@ extern int forward_msg(forward_struct_t *forward_struct,
  */
 /********************************************************************
 Code taken from slurmctld/agent.c
-This function should be used sending a message that could be forwarded.
+This function should be used to set up the forward structure in 
+a message that could be forwarded.
 
 //set the span with total count of hosts to send to
 int *span = set_span(agent_arg_ptr->node_count);
