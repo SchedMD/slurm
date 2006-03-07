@@ -101,32 +101,17 @@ extern int getnodename (char *name, size_t len);
 /*
  * get_conf_node_hostname - Return the NodeHostname for given NodeName
  */
-extern char *get_conf_node_hostname(char *node_name);
+extern char *slurm_conf_get_hostname(char *node_name);
 
 /*
  * get_conf_node_name - Return the NodeName for given NodeHostname
  */
-extern char *get_conf_node_name(char *node_hostname);
+extern char *slurm_conf_get_nodename(char *node_hostname);
 
 /*
- * read_slurm_conf_ctl - load the slurm configuration from the configured 
- *	file. 
- * OUT ctl_conf_ptr - pointer to data structure to be filled
- * IN  slurmd_hosts - if true then build a list of hosts on which slurmd runs
- *	(only useful for "scontrol show daemons" command). Otherwise only 
- *	record nodes in which NodeName and NodeHostname differ.
- * RET 0 if no error, otherwise an error code
+ * slurm_conf_get_port - Return the port for a given NodeName
  */
-extern int read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr,
-	bool slurmd_hosts);
-
-/* 
- * report_leftover - report any un-parsed (non-whitespace) characters on the
- * configuration input line (we over-write parsed characters with whitespace).
- * IN in_line - what is left of the configuration input line.
- * IN line_num - line number of the configuration file.
- */
-extern void report_leftover (char *in_line, int line_num);
+extern uint16_t slurm_conf_get_port(char *node_name);
 
 /*
  * NEW STUFF

@@ -695,7 +695,7 @@ _print_daemons (void)
 	}
 	slurm_conf_unlock();
 
-	if ((n = get_conf_node_name(me))) {
+	if ((n = slurm_conf_get_nodename(me))) {
 		d = 1;
 		xfree(n);
 	}

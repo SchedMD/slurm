@@ -67,11 +67,7 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 
-#ifdef MULTIPLE_SLURMD
-#define GETOPT_ARGS	"L:Dvhcf:MN:P:"
-#else
-#define GETOPT_ARGS	"L:Dvhcf:M"
-#endif
+#define GETOPT_ARGS	"L:Dvhcf:MN:"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -509,9 +505,6 @@ _read_config()
         char *path_pubkey;
 	slurm_ctl_conf_t *cf;
 
-	/* cf->slurm_conf = xstrdup(conf->conffile); */
-
-	/* read_slurm_conf_ctl(&cf, false); */
 	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
 
@@ -520,9 +513,6 @@ _read_config()
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
 
-#ifndef MULTIPLE_SLURMD
-	conf->port          =  cf->slurmd_port;
-#endif
 	conf->slurm_user_id =  cf->slurm_user_id;
 
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
@@ -533,7 +523,9 @@ _read_config()
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		_free_and_set(&conf->node_name,
-			      get_conf_node_name(conf->hostname));
+			      slurm_conf_get_nodename(conf->hostname));
+	conf->port = slurm_conf_get_port(conf->node_name);
+
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
@@ -681,14 +673,9 @@ _process_cmdline(int ac, char **av)
 		case 'M':
 			conf->mlock_pages = 1;
 			break;
-#ifdef MULTIPLE_SLURMD
 		case 'N':
 			conf->node_name = xstrdup(optarg);
 			break;
-		case 'P':
-			conf->port = (uint16_t)atoi(optarg);
-			break;
-#endif
 		default:
 			_usage(c);
 			exit(1);

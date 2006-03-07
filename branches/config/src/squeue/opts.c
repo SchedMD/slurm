@@ -221,7 +221,7 @@ parse_command_line( int argc, char* argv[] )
 			params.node = xmalloc(128);
 			getnodename(params.node, 128);
 		}
-		name1 = get_conf_node_name(params.node);
+		name1 = slurm_conf_get_nodename(params.node);
 		xfree(params.node);
 		params.node = xstrdup(name1);
 	}

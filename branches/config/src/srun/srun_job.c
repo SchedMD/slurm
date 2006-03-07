@@ -149,7 +149,7 @@ job_create_noalloc(void)
 
 
 	for (i = 0; i < job->nhosts; i++) {
-		char *nd = get_conf_node_hostname(job->step_layout->host[i]);
+		char *nd = slurm_conf_get_hostname(job->step_layout->host[i]);
 		slurm_set_addr ( &job->slurmd_addr[i], 
 				  slurm_get_slurmd_port(), nd );
 		xfree(nd);

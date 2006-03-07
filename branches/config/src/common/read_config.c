@@ -79,13 +79,17 @@ static s_p_hashtbl_t *default_partition_tbl;
 
 inline static void _normalize_debug_level(uint16_t *level);
 
+#define NAME_HASH_LEN 512
 typedef struct names_ll_s {
-	char *node_hostname;
-	char *node_name;
+	char *alias;	/* NodeName */
+	char *hostname;	/* NodeHostname */
+	char *address;	/* NodeAddr */
+	uint16_t port;
+	slurm_addr addr;
+	bool addr_initialized;
 	struct names_ll_s *next;
 } names_ll_t;
-bool all_slurmd_hosts = false;
-#define NAME_HASH_LEN 512
+bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 static char *this_hostname = NULL;
@@ -487,8 +491,9 @@ static void _free_name_hashtbl()
 	for (i=0; i<NAME_HASH_LEN; i++) {
 		p = host_to_node_hashtbl[i];
 		while (p) {
-			xfree(p->node_hostname);
-			xfree(p->node_name);
+			xfree(p->alias);
+			xfree(p->hostname);
+			xfree(p->address);
 			q = p->next;
 			xfree(p);
 			p = q;
@@ -496,8 +501,9 @@ static void _free_name_hashtbl()
 		host_to_node_hashtbl[i] = NULL;
 		p = node_to_host_hashtbl[i];
 		while (p) {
-			xfree(p->node_hostname);
-			xfree(p->node_name);
+			xfree(p->alias);
+			xfree(p->hostname);
+			xfree(p->address);
 			q = p->next;
 			xfree(p);
 			p = q;
@@ -521,18 +527,19 @@ static int _get_hash_idx(char *s)
 	return i % NAME_HASH_LEN;
 }
 
-static void _push_to_hashtbl(char *node, char *host)
+static void _push_to_hashtbl(char *alias, char *hostname,
+			     char *address, uint16_t port)
 {
 	int idx;
 	names_ll_t *p, *new;
 	char *hh;
 
-	hh = host ? host : node;
-	idx = _get_hash_idx(hh);
+	idx = _get_hash_idx(hostname);
+
 #ifndef HAVE_FRONT_END		/* Operate only on front-end */
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->node_hostname, hh)==0) {
+		if (strcmp(p->hostname, hostname)==0) {
 			fatal("Duplicated NodeHostname %s in the config file",
 				hh);
 			return;
@@ -541,24 +548,30 @@ static void _push_to_hashtbl(char *node, char *host)
 	}
 #endif
 	new = (names_ll_t *)xmalloc(sizeof(*new));
-	new->node_hostname = xstrdup(hh);
-	new->node_name = xstrdup(node);
+	new->alias = xstrdup(alias);
+	new->hostname = xstrdup(hostname);
+	new->address = xstrdup(address);
+	new->port = port;
+	new->addr_initialized = false;
 	new->next = host_to_node_hashtbl[idx];
 	host_to_node_hashtbl[idx] = new;
 
-	idx = _get_hash_idx(node);
+	idx = _get_hash_idx(alias);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->node_name, node)==0) {
+		if (strcmp(p->alias, alias)==0) {
 			fatal("Duplicated NodeName %s in the config file",
-				node);
+			      p->alias);
 			return;
 		}
 		p = p->next;
 	}
 	new = (names_ll_t *)xmalloc(sizeof(*new));
-	new->node_name = xstrdup(node);
-	new->node_hostname = xstrdup(hh);
+	new->alias = xstrdup(alias);
+	new->hostname = xstrdup(hostname);
+	new->address = xstrdup(address);
+	new->port = port;
+	new->addr_initialized = false;
 	new->next = node_to_host_hashtbl[idx];
 	node_to_host_hashtbl[idx] = new;
 }
@@ -568,106 +581,181 @@ static void _push_to_hashtbl(char *node, char *host)
  * If node_hostname is NULL, only node_name will be used and 
  * no lookup table record is created.
  */
-static void _register_conf_node_aliases(char *node_name, char *node_hostname)
+static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 {
-	hostlist_t node_list = NULL, host_list = NULL;
-	char *hn = NULL, *nn;
+	hostlist_t alias_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t address_list = NULL;
+	char *alias = NULL;
+	char *hostname = NULL;
+	char *address = NULL;
+	int error_code;
 
-	if (node_name == NULL || *node_name == '\0')
-		return;
-	if (strcasecmp(node_name, "DEFAULT") == 0) {
-		if (node_hostname) {
-			fatal("NodeHostname for NodeName=DEFAULT is illegal");
-		}
-		return;
-	}
-	if (!this_hostname) {
-		this_hostname = xmalloc(MAX_NAME_LEN);
-		getnodename(this_hostname, MAX_NAME_LEN);
-	}
-	if (strcasecmp(node_name, "localhost") == 0)
-		node_name = this_hostname;
-	if (node_hostname == NULL)
-		node_hostname = node_name;
-	if (strcasecmp(node_hostname, "localhost") == 0)
-		node_hostname = this_hostname;
+	if (node_ptr->nodenames == NULL || *node_ptr->nodenames == '\0')
+		return -1;
 
-	node_list = hostlist_create(node_name);
-#ifdef HAVE_FRONT_END	/* Common NodeHostname for all NodeName values */
-	/* Expect one common node_hostname for all back-end nodes */
-	hn = node_hostname;
+	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
+		error("Unable to create NodeName list from %s",
+		      node_ptr->nodenames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
+		error("Unable to create NodeHostname list from %s",
+		      node_ptr->hostnames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+		error("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	/* some sanity checks */
+#ifdef HAVE_FRONT_END
+	if (hostlist_count(hostname_list) != 1
+	    || hostlist_count(address_list) != 1) {
+		error("Only one hostname and address allowed "
+		      "in FRONT_END mode");
+		goto cleanup;
+	}
+	hostname = node_ptr->hostnames;
+	address = node_ptr->addresses;
 #else
-	host_list = hostlist_create(node_hostname);
-	if (hostlist_count(node_list) != hostlist_count(host_list))
-		fatal("NodeName and NodeHostname have different "
-			"number of records");
-#endif
-	while ((nn = hostlist_shift(node_list))) {
-		if (host_list)
-			hn = hostlist_shift(host_list);
-		_push_to_hashtbl(nn, hn);
-		if (host_list)
-			free(hn);
-		free(nn);
+	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeHostname are required "
+		      "as NodeName");
+		goto cleanup;
 	}
-	hostlist_destroy(node_list);
-	if (host_list)
-		hostlist_destroy(host_list);
+	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeAddr are required as NodeName");
+		goto cleanup;
+	}
+#endif
 
-	return;
+	/* now build the individual node structures */
+	while ((alias = hostlist_shift(alias_list))) {
+#ifndef HAVE_FRONT_END
+		hostname = hostlist_shift(hostname_list);
+		address = hostlist_shift(address_list);
+#endif
+
+		_push_to_hashtbl(alias, hostname, address, node_ptr->port);
+
+		free(alias);
+#ifndef HAVE_FRONT_END
+		free(hostname);
+		free(address);
+#endif
+	}
+
+	/* free allocated storage */
+cleanup:
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (address_list)
+		hostlist_destroy(address_list);
+	return error_code;
 }
 
+static void _init_slurmd_nodehash(void)
+{
+	slurm_conf_node_t **ptr_array;
+	int count;
+	int i;
+
+	if (nodehash_initialized)
+		return;
+	else
+		nodehash_initialized = true;
+
+	count = slurm_conf_nodename_array(&ptr_array);
+	if (count == 0) {
+		return;
+	}
+
+	for (i = 0; i < count; i++) {
+		_register_conf_node_aliases(ptr_array[i]);
+	}
+}
+
+extern void slurm_conf_nodehash_init(void)
+{
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	slurm_conf_unlock();
+}
+
+
 /*
- * get_conf_node_hostname - Return the NodeHostname for given NodeName
+ * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
  */
-extern char *get_conf_node_hostname(char *node_name)
+extern char *slurm_conf_get_hostname(char *node_name)
 {
 	int idx;
 	names_ll_t *p;
+
+	_init_slurmd_nodehash();
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->node_name, node_name) == 0) {
-			return xstrdup(p->node_hostname);
+		if (strcmp(p->alias, node_name) == 0) {
+			return xstrdup(p->hostname);
 		}
 		p = p->next;
 	}
 
-	if (all_slurmd_hosts)
-		return NULL;
-	else {
-		 /* Assume identical if we didn't explicitly save all pairs */
-		return xstrdup(node_name);
-	}
+	return NULL;
 }
 
 /*
- * get_conf_node_name - Return the NodeName for given NodeHostname
+ * slurm_conf_get_nodename - Return the NodeName for given NodeHostname
  */
-extern char *get_conf_node_name(char *node_hostname)
+extern char *slurm_conf_get_nodename(char *node_hostname)
 {
 	int idx;
 	names_ll_t *p;
 
+	_init_slurmd_nodehash();
+
 	idx = _get_hash_idx(node_hostname);
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->node_hostname, node_hostname) == 0) {
-			return xstrdup(p->node_name);
+		if (strcmp(p->hostname, node_hostname) == 0) {
+			return xstrdup(p->alias);
 		}
 		p = p->next;
 	}
 
-	if (all_slurmd_hosts)
-		return NULL;
-	else {
-		/* Assume identical if we didn't explicitly save all pairs */
-		return xstrdup(node_hostname);
-	}
+	return NULL;
 }
 
+/*
+ * slurm_conf_get_port - Return the port for a given NodeName
+ */
+extern uint16_t slurm_conf_get_port(char *node_name)
+{
+	int idx;
+	names_ll_t *p;
 
+	_init_slurmd_nodehash();
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->alias, node_name) == 0) {
+			return p->port;
+		}
+		p = p->next;
+	}
+
+	return 0;
+}
 
 
 /* getnodename - equivalent to gethostname, but return only the first 
