@@ -103,7 +103,24 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		error("_find_best_block_match: There is no bg_list");
 		return SLURM_ERROR;
 	}
-	
+	/* have to check checked to see which time the node 
+	   scheduler is looking to see if it is runnable.  If test_only 
+	   we want to fall through to tell the scheduler that it is runnable
+	   just not right now. 
+	*/
+	slurm_mutex_lock(&block_state_mutex);
+	if((full_system_block->job_running != -1) && (!test_only)) {
+		slurm_mutex_unlock(&block_state_mutex);
+		
+		debug("_find_best_block_match none found "
+		      "full system running on block %s. %d",
+		      full_system_block->bg_block_id, 
+		      full_system_block->job_running);
+
+		return SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&block_state_mutex);
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
