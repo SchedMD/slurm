@@ -118,18 +118,16 @@ if {[wait_for_file $file_out] == 0} {
 			}
 			if {$record == 2} {
 				if {$hour != $expect_out(1,string)} {
-					set preserved 0
-				}
-				if {$minute != $expect_out(2,string)} {
-					set preserved 0
+					if {$minute != $expect_out(2,string)} {
+						set preserved 0
+					}
 				}
 			}
 			if {$record == 3} {
 				if {$hour == $expect_out(1,string)} {
-					set reset 0
-				}
-				if {$minute == $expect_out(2,string)} {
-					set reset 0
+					if {$minute == $expect_out(2,string)} {
+						set reset 0
+					}
 				}
 			}
 			exp_continue;
