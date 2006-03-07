@@ -166,24 +166,6 @@ static int _get_block(char *buffer, size_t buf_size)
 /* issue the RPC to ship the file's data */
 static void _send_rpc(file_bcast_msg_t *bcast_msg)
 {
-#if 0
-	/* Temporary test code to xmit a file to only node 0 */
-	slurm_msg_t msg;
-	int rc;
-
-	msg.msg_type = REQUEST_FILE_BCAST;
-	msg.address = alloc_resp->node_addr[0];
-	msg.data = bcast_msg;
-
-	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0)) {
-		error("slurm_send_recv_rc_msg_only_one: %m");
-		exit(1);
-	}
-	if (rc) {
-		error("REQUEST_FILE_BCAST: %s", slurm_strerror(rc));
-		exit(1);
-	}
-#else
 	/* This code will handle message fanout to multiple slurmd */
 	forward_t from, forward;
 	slurm_msg_t msg;
@@ -230,6 +212,12 @@ static void _send_rpc(file_bcast_msg_t *bcast_msg)
 		while((ret_data_info = list_next(data_itr)) != NULL) {
 			i = ret_type->msg_rc;
 			if (i != SLURM_SUCCESS) {
+				if (!strcmp(ret_data_info->node_name,
+						"localhost")) {
+					xfree(ret_data_info->node_name);
+					ret_data_info->node_name =
+						xstrdup(from.name);
+				}
 				error("REQUEST_FILE_BCAST(%s): %s",
 					ret_data_info->node_name,
 					slurm_strerror(i));
@@ -244,7 +232,6 @@ static void _send_rpc(file_bcast_msg_t *bcast_msg)
 	if (rc)
 		exit(1);
 //	slurm_free_resource_allocation_response_msg(alloc_resp);
-#endif
 }
 
 /* read and broadcast the file */
