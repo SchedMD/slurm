@@ -44,8 +44,10 @@
 extern void forward_init(forward_t *forward, forward_t *from);
 
 /*
- * forward_msg        - logic to forward and collect return codes from childern
- *                      of a parent forward
+ * forward_msg	      - logic to forward a message which has been received and
+ *			accumulate the return codes from processes getting the
+ *			the forwarded message
+ *
  * IN: forward_struct - forward_struct_t *   - holds information about message
  *                                             that needs to be forwarded to 
  *      				       childern processes
@@ -55,11 +57,9 @@ extern void forward_init(forward_t *forward, forward_t *from);
  */
 
 /*********************************************************************
-Code taken from common/slurm_protocol_api.c  
-//This function should only be used when a message is being recieved.
-
-//set up the forward_struct off of the buffer being received right after 
-//header is pulled off the received buffer
+// Code taken from common/slurm_protocol_api.c  
+// Set up the forward_struct using the remainder of the buffer being received,
+// right after header has been removed form the original buffer
 
 forward_struct = xmalloc(sizeof(forward_struct_t));
 forward_struct->buf_len = remaining_buf(buffer);
@@ -70,8 +70,8 @@ forward_struct->ret_list = ret_list;
 
 forward_struct->timeout = timeout - header.forward.timeout;
 
-//send the structure created off the buffer and the header from the message
-if(forward_msg(forward_struct, &header) == SLURM_ERROR) {
+// Send the structure created off the buffer and the header from the message
+if (forward_msg(forward_struct, &header) == SLURM_ERROR) {
        error("problem with forward msg");
 }
 
