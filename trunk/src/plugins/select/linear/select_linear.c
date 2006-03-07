@@ -496,9 +496,5 @@ extern int select_p_get_info_from_plugin (enum select_data_info info, void *data
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
-	if (type == SELECT_GET_NODE_SCALING) {
-		uint32_t *nodes = (uint32_t *)data;
-		*nodes = 1;
-	}
 	return SLURM_SUCCESS;
 }

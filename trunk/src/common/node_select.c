@@ -425,10 +425,15 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info,
  */
 extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 {
-       if (slurm_select_init() < 0)
+	if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.alter_node_cnt))(type, data);
+	if (type == SELECT_GET_NODE_SCALING) {
+		/* default to one, so most plugins don't have to */
+		uint32_t *nodes = (uint32_t *)data;
+		*nodes = 1;
+	}	
+	return (*(g_select_context->ops.alter_node_cnt))(type, data);
 }
 
 /*
