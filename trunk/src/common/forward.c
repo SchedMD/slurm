@@ -185,6 +185,13 @@ cleanup:
 	slurm_mutex_unlock(fwd_msg->forward_mutex);
 }
 
+/*
+ * forward_init    - initilize forward structure
+ * IN: forward     - forward_t *   - struct to store forward info
+ * IN: from        - forward_t *   - (OPTIONAL) can be NULL, can be used to
+ *                                   init the forward to this state
+ * RET: VOID
+ */
 extern void forward_init(forward_t *forward, forward_t *from)
 {
 	if(from) {
@@ -198,6 +205,19 @@ extern void forward_init(forward_t *forward, forward_t *from)
 		forward->init = FORWARD_INIT;
 	}
 }
+
+/*
+ * forward_msg        - logic to forward a message which has been received and
+ *                      accumulate the return codes from processes getting the
+ *                      the forwarded message
+ *
+ * IN: forward_struct - forward_struct_t *   - holds information about message
+ *                                             that needs to be forwarded to
+ *                                             childern processes
+ * IN: header         - header_t             - header from message that came in
+ *                                             needing to be forwarded.
+ * RET: SLURM_SUCCESS - int
+ */
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header)
 {
@@ -269,10 +289,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
 }
 
 /*
- * forward_set - add to the message possible forwards to go to
+ * forward_set - divide a mesage up into components for forwarding
  * IN: forward     - forward_t *   - struct to store forward info
  * IN: span        - int           - count of forwards to do
- * IN: pos         - int *         - position in the original messages addr 
+ * IN/OUT: pos     - int *         - position in the original messages addr 
  *                                   structure
  * IN: from        - forward_t *   - information from original message
  * RET: SLURM_SUCCESS - int
