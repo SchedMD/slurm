@@ -33,7 +33,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/dist_tasks.h"
 
-/* STRUCTURES */
 /*
  * forward_init    - initilize forward structure 
  * IN: forward     - forward_t *   - struct to store forward info
@@ -55,7 +54,6 @@ extern void forward_init(forward_t *forward, forward_t *from);
  *                                             needing to be forwarded.
  * RET: SLURM_SUCCESS - int
  */
-
 /*********************************************************************
 // Code taken from common/slurm_protocol_api.c  
 // Set up the forward_struct using the remainder of the buffer being received,
@@ -76,30 +74,29 @@ if (forward_msg(forward_struct, &header) == SLURM_ERROR) {
 }
 
 *********************************************************************/
-
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header);
 
 /*
- * forward_set     - add to the message possible forwards to go to
+ * forward_set     - divide a mesage up into components for forwarding
  * IN: forward     - forward_t *   - struct to store forward info
  * IN: span        - int           - count of forwards to do
- * IN: pos         - int *         - position in the original messages  
+ * IN/OUT: pos     - int *         - position in the original messages  
  *                                   structures
  * IN: from        - forward_t *   - information from original message
  * RET: SLURM_SUCCESS - int
  */
 /********************************************************************
-Code taken from slurmctld/agent.c
-This function should be used to set up the forward structure in 
-a message that could be forwarded.
+// Code taken from slurmctld/agent.c
+// This function should be used to set up the forward structure in 
+// a message that could be forwarded.
 
-//set the span with total count of hosts to send to
+// Set the span with total count of hosts to send to
 int *span = set_span(agent_arg_ptr->node_count);
 
-// fill in a local forward structure with count of thread to create
-// array of names and addrs of hosts and node_id (if any) to be sent to
-// along with the timeout of the message
+// Fill in a local forward structure with count of threads to created
+// by this program, an array of names and addrs of hosts and node_id 
+// (if any) to be sent to along with the timeout of the message
 forward.cnt = agent_info_ptr->thread_count;
 forward.name = agent_arg_ptr->node_names;
 forward.addr = agent_arg_ptr->slurm_addr;
@@ -112,8 +109,8 @@ for (i = 0; i < agent_info_ptr->thread_count; i++) {
 	strncpy(thread_ptr[thr_count].node_name,
 		&agent_arg_ptr->node_names[i * MAX_SLURM_NAME],
 		MAX_SLURM_NAME);
-// for each 'main' thread we want to add hosts for this one to forward to.
-// send the thread_ptr's forward, span at the thr_count, the address of 
+// For each 'main' thread we want to add hosts for this one to forward to.
+// Send the thread_ptr's forward, span at the thr_count, the address of 
 // position we are in the count, and the forward we set up earlier
 	forward_set(&thread_ptr[thr_count].forward,
 		    span[thr_count],
@@ -123,10 +120,10 @@ for (i = 0; i < agent_info_ptr->thread_count; i++) {
 	thr_count++;		       
 }
 
-//free the span
+// Free the span
 xfree(span);
-// set the new thread_count to the number with the forwards taken out of the 
-// count since we don't keep track of those on the master sender
+// Set the new thread_count to the number with the forwards taken out 
+// of the count since we don't keep track of those on the master sender
 agent_info_ptr->thread_count = thr_count;	
 ********************************************************************/
 extern int forward_set (forward_t *forward, 
