@@ -4,8 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.7
 ========================
  -- Change in how AuthType=auth/dummy is handled for security testing.
- -- fix for bluegene systems to allow full system partitions to stay booted 
-    when other jobs are submitted to the queue
+ -- Fix for bluegene systems to allow full system partitions to stay booted 
+    when other jobs are submitted to the queue.
+
 * Changes in SLURM 1.0.6
 ========================
  -- Prevent slurmstepd from crashing when srun attaches to batch job.
