@@ -1391,10 +1391,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		 * control, we sleep and retry later */
 		
 		ret_list = _send_and_recv_msg(fd, req, resp, 0);
-		
 		if(errno == SLURM_SUCCESS)
 			slurm_free_cred(resp->cred);
-
+		
 		rc = errno;
 
 		if(ret_list) {
@@ -1410,8 +1409,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		   (resp->msg_type == RESPONSE_SLURM_RC) &&
 		   ((((return_code_msg_t *) resp->data)->return_code) 
 		    == ESLURM_IN_STANDBY_MODE) &&
-		   (req->msg_type 
-		    != MESSAGE_NODE_REGISTRATION_STATUS) && 
+		   (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) && 
 		   (slurmctld_conf.backup_controller) &&
 		   (difftime(time(NULL), start_time) < 
 		    (slurmctld_conf.slurmctld_timeout +
@@ -1432,6 +1430,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
       cleanup:
 	if (rc != SLURM_SUCCESS) 
  		_remap_slurmctld_errno(); 
+		
 	return rc;
 }
 
@@ -1803,7 +1802,7 @@ void slurm_free_msg(slurm_msg_t * msg)
  * Free just the credential of a message
  */
 void slurm_free_cred(void *cred)
-{
+{	
 	(void) g_slurm_auth_destroy(cred);
 }
 

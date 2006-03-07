@@ -76,7 +76,6 @@ int main(int argc, char *argv[])
 	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
-
 	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
 		error_code = slurm_get_errno();
 		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
@@ -89,7 +88,9 @@ int main(int argc, char *argv[])
 		sleep(10);	/* keep trying to reconnect */
 	}
 	
+	printf("starting\n");
 	ba_init(new_node_ptr);
+	printf("done hey\n");
 		
 	if(params.partition) {
 			

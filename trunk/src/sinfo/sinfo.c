@@ -230,7 +230,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 	} else
 		error_code =
 		    slurm_load_partitions((time_t) NULL, &new_part_ptr,
-			show_flags);
+					  show_flags);
 	if (error_code) {
 		slurm_perror("slurm_load_part");
 		return error_code;

@@ -76,8 +76,10 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  * 
  */
 static int _find_best_block_match(struct job_record* job_ptr, 
-		bitstr_t* slurm_block_bitmap, int min_nodes, int max_nodes,
-		int spec, bg_record_t** found_bg_record, bool test_only)
+				  bitstr_t* slurm_block_bitmap, 
+				  int min_nodes, int max_nodes,
+				  int spec, bg_record_t** found_bg_record, 
+				  bool test_only)
 {
 	ListIterator itr;
 	ListIterator itr2;
@@ -88,11 +90,11 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	uint32_t req_procs = job_ptr->num_procs;
 	uint32_t proc_cnt;
 	ba_request_t request; 
-	int i, job_running = 0;
+	int i;
 	int rot_cnt = 0;
 	int created = 0;
 	int found = 0;
-	int max_procs = NO_VAL;
+	int max_procs = (uint16_t) NO_VAL;
 	List lists_of_lists = NULL;
 	List temp_list = NULL;
 	char tmp_char[256];
@@ -107,8 +109,6 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_GEOMETRY, &req_geometry);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_ROTATE, &rotate);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_ROTATE, &rotate);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -137,7 +137,8 @@ try_again:
 		debug3("asking for %d-%d looking at %d", 
 		      req_procs, max_procs, proc_cnt);
 		if ((proc_cnt < req_procs)
-		    || (max_procs != NO_VAL && proc_cnt > max_procs)) {
+		    || (max_procs != (uint16_t) NO_VAL 
+			&& proc_cnt > max_procs)) {
 			/* We use the proccessor count per partition here
 			   mostly to see if we can run on a smaller partition. 
 			 */
@@ -190,11 +191,12 @@ try_again:
 		   scheduler that it is runnable just not right now. 
 		*/
 		debug3("job_running = %d", record->job_running);
-		if((record->job_running != NO_VAL) 
+		if((record->job_running != -1) 
 		   && !test_only) {
-			debug("block %s in use by %s", 
+			debug("block %s in use by %s job %d", 
 			      record->bg_block_id,
-			      record->user_name);
+			      record->user_name,
+			      record->job_running);
 			found = 1;
 			continue;
 		}
@@ -210,7 +212,8 @@ try_again:
 					found_record->bg_block_id)))
 				continue;
 			if(blocks_overlap(record, found_record)) {
-				if((found_record->job_running != NO_VAL) 
+				if((found_record->job_running 
+				    != -1) 
 				   && !test_only) {
 					debug("can't use %s, there is a job "
 					      "(%d) running on an overlapping "
@@ -419,7 +422,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
-		SELECT_PRINT_MIXED);
+				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%d-%d", 
 	      buf, 
 	      min_nodes, 
@@ -463,17 +466,17 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_GEOMETRY, 
 					     &record->geo);
+			tmp16 = record->conn_type;
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
-					     &record->conn_type);
+					     &tmp16);
 		}
 		if(test_only) {
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-				
 		} 
 	}
-
+	
 	return rc;
 }
