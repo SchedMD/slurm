@@ -468,10 +468,10 @@ static int _handle_uint32(s_p_values_t *v,
 			return rc == 0 ? 0 : -1;
 	} else {
 		char *endptr;
-		long num;
+		long long num;
 
 		errno = 0;
-		num = strtol(value, &endptr, 0);
+		num = strtoll(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
 			if (strcasecmp(value, "INFINITE") == 0) {
