@@ -127,15 +127,10 @@ if {$task_mask != $mask} {
 # Run a job step with verbosity and all tasks on CPU 0
 #
 set task_mask 0
-set verbose_cnt 0
 send "$srun -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
-		exp_continue
-	}
-	-re "setting affinity of task" {
-		incr verbose_cnt
 		exp_continue
 	}
 	-re "error" {
@@ -152,6 +147,24 @@ expect {
 if {$task_mask != $task_cnt} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$task_cnt)\n"
 	set exit_code 1
+}
+set verbose_cnt 0
+send "$srun -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
+expect {
+	-re "setting affinity of task" {
+		incr verbose_cnt
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+	}
+	-re $prompt
 }
 if {$verbose_cnt != $task_cnt} {
 	send_user "\nFAILURE: verbose messages count inconsisent ($verbose_cnt,$task_cnt)\n"
