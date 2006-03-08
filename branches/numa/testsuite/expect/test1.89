@@ -113,7 +113,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -139,7 +139,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -161,7 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -190,7 +190,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding\n"
+			send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -223,7 +223,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding\n"
+			send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -298,7 +298,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -325,7 +325,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -352,7 +352,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -379,7 +379,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -406,7 +406,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -433,7 +433,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -454,7 +454,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		kill_srun
 		set exit_code 1
 	}
