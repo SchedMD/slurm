@@ -215,13 +215,8 @@ static int _post_bg_init_read(void *object, void *arg)
 		i *= 2;
 		xrealloc(bg_record->nodes, i);
 	}
+	process_nodes(bg_record);
 	
-	if (node_name2bitmap(bg_record->nodes, 
-			     false, 
-			     &bg_record->bitmap)) {
-		fatal("Unable to convert nodes %s to bitmap", 
-		      bg_record->nodes);
-	}
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		tmp_record = xmalloc(sizeof(bg_record_t));
 		copy_bg_record(bg_record, tmp_record);
@@ -465,6 +460,20 @@ int read_bg_blocks()
 		if(bp_cnt==0)
 			goto clean_up;
 
+		if ((rc = rm_get_data(block_ptr, RM_PartitionBPNum,
+				&bg_record->bp_count)) != STATUS_OK) {
+			error("rm_get_data(RM_PartitionBPNum): %s",
+			      bg_err_str(rc));
+		} 
+		debug("has %d BPs",
+		      bg_record->bp_count);
+				
+		if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
+				&bg_record->switch_count)) != STATUS_OK) {
+			error("rm_get_data(RM_PartitionSwitchNum): %s",
+			      bg_err_str(rc));
+		} 
+
 		if ((rc = rm_get_data(block_ptr, RM_PartitionSmall, &small)) 
 		    != STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bg_err_str(rc));
@@ -510,7 +519,8 @@ int read_bg_blocks()
 			
 		} else {
 			bg_record->cpus_per_bp = procs_per_node;
-			bg_record->node_cnt =  bluegene_bp_node_cnt;
+			bg_record->node_cnt =  bluegene_bp_node_cnt
+				* bg_record->bp_count;
 
 			if ((rc = rm_get_data(block_ptr, 
 					      RM_PartitionConnection,
@@ -655,21 +665,7 @@ int read_bg_blocks()
 				bg_record->user_uid = pw_ent->pw_uid;
 			} 
 		}
-
-		if ((rc = rm_get_data(block_ptr, RM_PartitionBPNum,
-				&bg_record->bp_count)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionBPNum): %s",
-			      bg_err_str(rc));
-		} 
-		debug("has %d BPs",
-		      bg_record->bp_count);
 				
-		if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
-				&bg_record->switch_count)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionSwitchNum): %s",
-			      bg_err_str(rc));
-		} 
-		
 		bg_record->block_lifecycle = STATIC;
 						
 clean_up:	if (bg_recover

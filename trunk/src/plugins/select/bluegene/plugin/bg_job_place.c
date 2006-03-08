@@ -225,24 +225,19 @@ try_again:
 					   LAYOUT_DYNAMIC) {
 						num_block_to_free = 0;
 						num_block_freed = 0;
-						list_remove(itr);
 						temp_list = list_create(NULL);
 						list_push(temp_list, record);
 						num_block_to_free++;
 						free_block_list(temp_list);
 						list_destroy(temp_list);
-						slurm_mutex_unlock(
-							&block_state_mutex);
 						/* wait for all necessary 
 						   blocks to be freed */
 						while(num_block_to_free 
 						      != num_block_freed) {
 							sleep(1);
 						}
-						slurm_mutex_lock(
-							&block_state_mutex);
-					}	
-					break;
+					} else
+						break;
 				}
 			} 
 		}
@@ -316,6 +311,7 @@ try_again:
 		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
 			error("this job will never run on "
 			      "this system");
+			xfree(request.save_name);
 			return SLURM_ERROR;
 		} else {
 			if(!request.save_name) {

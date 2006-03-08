@@ -149,7 +149,11 @@ int schedule(void)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-
+#ifdef HAVE_BG
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t segment = (uint16_t) NO_VAL;
+	char tmp_char[256];
+#endif
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */
 	if (switch_no_frag() && job_is_completing()) {
@@ -201,8 +205,35 @@ int schedule(void)
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
 			last_job_update = time(NULL);
+#ifdef HAVE_BG
+			select_g_get_jobinfo(job_ptr->select_jobinfo, 
+					     SELECT_DATA_QUARTER, 
+					     &quarter);
+			select_g_get_jobinfo(job_ptr->select_jobinfo, 
+					     SELECT_DATA_SEGMENT, 
+					     &segment);
+			if(quarter != (uint16_t)NO_VAL) {
+				if(segment != (uint16_t)NO_VAL) {
+					sprintf(tmp_char,"%s.%d.%d\0",
+						job_ptr->nodes,
+						quarter,
+						segment);
+				} else {
+					sprintf(tmp_char,"%s.%d\0",
+						job_ptr->nodes,
+						quarter);
+				}
+			} else {
+				sprintf(tmp_char,"%s\0",job_ptr->nodes);
+			}
+			info("schedule: JobId=%u BPList=%s",
+			     job_ptr->job_id, tmp_char);
+			quarter = (uint16_t) NO_VAL;
+			segment = (uint16_t) NO_VAL;
+#else
 			info("schedule: JobId=%u NodeList=%s",
 			     job_ptr->job_id, job_ptr->nodes);
+#endif
 			if (job_ptr->batch_flag)
 				_launch_job(job_ptr);
 			else

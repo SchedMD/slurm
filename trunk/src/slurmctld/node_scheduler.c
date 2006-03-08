@@ -1421,14 +1421,17 @@ extern void re_kill_job(struct job_record *job_ptr)
 		hostlist_destroy(kill_hostlist);
 		return;
 	}
-
 	hostlist_uniq(kill_hostlist);
 	hostlist_ranged_string(kill_hostlist, 
 			sizeof(host_str), host_str);
+#ifdef HAVE_BG
+	info("Resending TERMINATE_JOB request JobId=%u BPlist=%s",
+			job_ptr->job_id, host_str);
+#else
 	info("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
 			job_ptr->job_id, host_str);
+#endif
 	hostlist_destroy(kill_hostlist);
-
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
 	return;
