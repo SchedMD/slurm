@@ -1,8 +1,8 @@
 /*****************************************************************************\
- * src/common/env.c - add an environment variable to environment vector
- * $Id$
+ *  src/common/env.c - add an environment variable to environment vector
+ *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, Danny Auble <da@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -324,7 +324,62 @@ int setup_env(env_t *env)
 		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "");
 		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", "");
 		if (setstat) {
-			error("Unable to clear SLURM_CPU_BIND_*");
+			error("Unable to set SLURM_CPU_BIND_*");
+			rc = SLURM_FAILURE;
+		}
+	}
+
+	if (env->mem_bind_type) {
+		unsetenvp(env->env, "SLURM_MEM_BIND");	/* don't propagate SLURM_MEM_BIND */
+		int setstat = 0;
+		if (env->mem_bind_type & MEM_BIND_VERBOSE) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", "verbose");
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", "quiet");
+		}
+		if (setstat) {
+			error("Unable to set SLURM_MEM_BIND_VERBOSE");
+			rc = SLURM_FAILURE;
+		}
+ 
+		setstat = 0;
+		if (env->mem_bind_type & MEM_BIND_NONE) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "none");
+		} else if (env->mem_bind_type & MEM_BIND_RANK) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "rank");
+		} else if (env->mem_bind_type & MEM_BIND_MAPCPU) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "map_cpu:");
+		} else if (env->mem_bind_type & MEM_BIND_MASKCPU) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "mask_cpu:");
+		} else if (env->mem_bind_type & (~MEM_BIND_VERBOSE)) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "unknown");
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "");
+		}
+		if (setstat) {
+			error("Unable to set SLURM_MEM_BIND_TYPE");
+			rc = SLURM_FAILURE;
+		}
+
+		setstat = 0;
+		if (env->mem_bind) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST", env->mem_bind);
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST", "");
+		}
+		if (setenvf(&env->env, "SLURM_MEM_BIND_LIST", env->mem_bind)) {
+			error("Unable to set SLURM_MEM_BIND_LIST");
+			rc = SLURM_FAILURE;
+		}
+	} else {
+		unsetenvp(env->env, "SLURM_MEM_BIND");  /* don't propagate SLURM_MEM_BIND */
+		/* set SLURM_MEM_BIND_* env vars to defaults */
+		int setstat = 0;
+		setstat |= setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", "quiet");
+		setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "");
+		setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST", "");
+		if (setstat) {
+			error("Unable to set SLURM_MEM_BIND_*");
 			rc = SLURM_FAILURE;
 		}
 	}
