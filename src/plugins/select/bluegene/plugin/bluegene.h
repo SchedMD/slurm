@@ -158,6 +158,7 @@ extern void fini_bg(void);
 /* Log a bg_record's contents */
 extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
+extern void process_nodes(bg_record_t *bg_record);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
 /* return bg_record from bg_list */
@@ -166,7 +167,7 @@ extern bg_record_t *find_bg_record(char *bg_block_id);
 /* change username of a block bg_record_t target_name needs to be 
    updated before call of function. 
 */
-extern int update_block_user(bg_record_t *bg_block_id); 
+extern int update_block_user(bg_record_t *bg_block_id, int set); 
 extern int format_node_name(bg_record_t *bg_record, char tmp_char[]);
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 

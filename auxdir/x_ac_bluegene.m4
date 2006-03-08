@@ -39,7 +39,7 @@ AC_DEFUN([X_AC_BLUEGENE],
          fi
 
          have_bg_ar=yes
-         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -Wl,-rpath /usr/lib64 -L/usr/lib64 -lexpat"
+         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -L/usr/lib64 -lexpat"
       
       fi
       

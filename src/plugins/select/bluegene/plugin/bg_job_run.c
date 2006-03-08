@@ -270,8 +270,6 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			      found_record->bg_block_id, 
 			      bg_record->bg_block_id);
 			list_push(delete_list, found_record);
-			if(bluegene_layout_mode == LAYOUT_DYNAMIC)
-				list_remove(itr);
 			num_block_to_free++;
 		}		
 		list_iterator_destroy(itr);
@@ -296,6 +294,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   is a no-op if issued prior 
 			   to the script initiation */
 			(void) slurm_fail_job(bg_update_ptr->job_id);
+			remove_from_bg_list(bg_job_block_list, bg_record);
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}
@@ -452,8 +451,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 					xstrdup(slurmctld_conf.
 						slurm_user_name);
 			}
-		
-			update_block_user(bg_record);
+			update_block_user(bg_record, 1);
 		} else {
 			bg_record->target_name = 
 				xstrdup(slurmctld_conf.slurm_user_name);
@@ -839,11 +837,13 @@ extern int boot_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&api_file_mutex);
-			
+	list_push(bg_booted_block_list, bg_record);
+
 	rc = 0;
 	while(rc < 10) {
-		if(bg_record->state == RM_PARTITION_CONFIGURING)
+		if(bg_record->state == RM_PARTITION_CONFIGURING) {
 			break;
+		}
 		sleep(1);
 		rc++;
 	}
@@ -854,11 +854,13 @@ extern int boot_block(bg_record_t *bg_record)
 	if(bg_record->state != RM_PARTITION_CONFIGURING)
 		bg_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bg_record->bg_block_id);
+	
 	bg_record->boot_state = 1;
 	//bg_record->boot_count = 0;
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
 #else
+	list_push(bg_booted_block_list, bg_record);
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record->state = RM_PARTITION_READY;
 	last_bg_update = time(NULL);

@@ -77,15 +77,19 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			   slurmctld_conf.slurm_user_name)) {
 			if(strcmp(bg_record->target_name, 
 				  bg_record->user_name)) {
-				error("Partition %s was in a ready state "
+				error("Block %s was in a ready state "
 				      "for user %s but is being freed. "
 				      "Job %d was lost.",
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
 				      bg_record->job_running);
 				(void) slurm_fail_job(bg_record->job_running);
+				slurm_mutex_unlock(&block_state_mutex);
+				remove_from_bg_list(bg_job_block_list, 
+						    bg_record);
+				slurm_mutex_lock(&block_state_mutex);
 			} else {
-				debug("Partition %s was in a ready state "
+				debug("Block %s was in a ready state "
 				      "but is being freed. No job running.",
 				      bg_record->bg_block_id);
 			}
@@ -94,7 +98,9 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			      "for partition %s.",
 			      bg_record->bg_block_id);
 		}
-					   
+		slurm_mutex_unlock(&block_state_mutex);
+		remove_from_bg_list(bg_booted_block_list, bg_record);
+		slurm_mutex_lock(&block_state_mutex);
 	} else if(bg_record->user_name) {
 		error("Target Name was not set "
 		      "not set for partition %s.",
@@ -270,31 +276,49 @@ extern int update_block_list()
 		bg_record = find_bg_record(name);
 		
 		if(bg_record == NULL) {
-			error("Partition %s not found in bg_list "
+			error("Block %s not found in bg_list "
 			      "removing from database", name);
 			term_jobs_on_block(name);
-			slurm_mutex_lock(&api_file_mutex);
-			if ((rc = pm_destroy_partition(name)) 
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionState, &state))
 			    != STATUS_OK) {
-				if(rc == PARTITION_NOT_FOUND) {
-					debug("partition %s is not found",
-					      name);
-					free(name);
-					slurm_mutex_unlock(&api_file_mutex);
-					break;
-				}
-				error("pm_destroy_partition(%s): %s",
-				      name, 
+				error("rm_get_data(RM_PartitionState): %s",
 				      bg_err_str(rc));
+				updated = -1;
+				break;
 			}
-			rc = rm_remove_partition(name);
+			slurm_mutex_lock(&api_file_mutex);
+			if (state != NO_VAL
+			    && state != RM_PARTITION_FREE 
+			    && state != RM_PARTITION_DEALLOCATING) {
+				if ((rc = pm_destroy_partition(name)) 
+				    != STATUS_OK) {
+					if(rc == PARTITION_NOT_FOUND) {
+						debug("partition %s is "
+						      "not found",
+						      name);
+						free(name);
+						slurm_mutex_unlock(
+							&api_file_mutex);
+						break;
+					}
+					error("pm_destroy_partition(%s): %s",
+					      name, 
+					      bg_err_str(rc));
+				}
+			}
+			if ((state == RM_PARTITION_FREE)
+			    ||  (state == RM_PARTITION_ERROR)) {
+				rc = rm_remove_partition(name);
+				if (rc != STATUS_OK) {
+					error("rm_remove_partition(%s): %s",
+					      name,
+					      bg_err_str(rc));
+				} else
+					debug("done\n");
+			}
 			slurm_mutex_unlock(&api_file_mutex);
-			if (rc != STATUS_OK) {
-				error("rm_remove_partition(%s): %s",
-				      name,
-				      bg_err_str(rc));
-			} else
-				debug("done\n");
+			
 			free(name);
 			continue;
 		}
@@ -359,8 +383,8 @@ extern int update_block_list()
 				/* debug("checking to make sure user %s " */
 /* 				      "is the user.",  */
 /* 				      bg_record->target_name); */
-/* 				if(update_block_user(bg_record) == 1)  */
-/* 					last_bg_update = time(NULL); */
+				if(update_block_user(bg_record, 0) == 1)
+					last_bg_update = time(NULL);
 				break;
 			case RM_PARTITION_ERROR:
 				error("partition in an error state");

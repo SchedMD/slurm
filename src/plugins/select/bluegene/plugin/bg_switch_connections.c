@@ -475,7 +475,7 @@ cleanup:
 		return SLURM_ERROR;
 	}
 	
-	debug("making the small block");
+	debug2("making the small block");
 	return rc;
 }
 
@@ -506,7 +506,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
-		debug("node %d%d%d",
+		debug2("node %d%d%d",
 		      ba_node->coord[X], 
 		      ba_node->coord[Y], 
 		      ba_node->coord[Z]);
