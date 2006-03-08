@@ -149,6 +149,7 @@ test1.87   Confirm node selection from within a job step on existing allocation
            (--relative, --nodes and --nprocs options).
 test1.88   Basic MPI functionality tests.
 test1.89   Test of CPU affinity support.
+test1.90   Test of memory affinity support.
 **NOTE**   The above tests for mutliple processor/partition systems only
 
 test2.#    Testing of scontrol options (to be run as unprivileged user). 
