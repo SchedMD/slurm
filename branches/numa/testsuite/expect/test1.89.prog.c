@@ -70,7 +70,7 @@ main (int argc, char **argv)
 
 	_load_mask(&mask);
 	if ((task_str = getenv("SLURM_PROCID")) == NULL) {
-		fprintf(stderr, "ERROR: getenv(SLURM_TASKID) failed\n");
+		fprintf(stderr, "ERROR: getenv(SLURM_PROCID) failed\n");
 		exit(1);
 	}
 	task_id = atoi(task_str);
