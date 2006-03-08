@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of memory affinity support.
+#          Test of CPU and memory affinity support for NUMA systems.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -64,7 +64,7 @@ send_user "\ntask numa plugin installed\n"
 # Build a test program to report affinity by task
 #
 exec $bin_rm -f $file_prog
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc $file_prog.c -o $file_prog -lnuma
 exec $bin_chmod 700 $file_prog
 
 #
@@ -76,13 +76,13 @@ spawn $srun --allocate -N1 --verbose -t2
 # Run a job step to get allocated processor count and affinity
 #
 expect -re $prompt
-set mask 0
 set task_cnt 0
+set full_mask 0
 send "$srun -c1 $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		set full_mask $expect_out(2,string)
 		incr task_cnt
-		set mask $expect_out(2,string)
 		exp_continue
 	}
 	-re "error" {
@@ -98,13 +98,44 @@ expect {
 }
 
 #
-# Run a job step with affinity
+# Run a job step with CPU and memory affinity
 #
-set task_mask 0
+set cpu_mask 0
+set mem_mask 0
+send "$srun -c1 --cpu_bind=rank $file_prog\n"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr cpu_mask $expect_out(2,string)
+		incr mem_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+	}
+	-re $prompt
+}
+if {$cpu_mask != $full_mask} {
+	send_user "\nFAILURE: CPU affinity mask inconsistency ($cpu_mask,$full_mask)\n"
+	set exit_code 1
+}
+if {$mem_mask == $full_mask} {
+	send_user "\nFAILURE: memory affinity mask inconsistency ($mem_mask,$full_mask)\n"
+	set exit_code 1
+}
+
+set cpu_mask 0
+set mem_mask 0
 send "$srun -c1 --mem_bind=rank $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr cpu_mask $expect_out(2,string)
+		incr mem_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -118,10 +149,16 @@ expect {
 	}
 	-re $prompt
 }
-if {$task_mask != $mask} {
-	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$mask)\n"
+if {$cpu_mask == $full_mask} {
+	send_user "\nFAILURE: CPU affinity mask inconsistency ($cpu_mask,$full_mask)\n"
 	set exit_code 1
 }
+if {$mem_mask != $full_mask} {
+	send_user "\nFAILURE: memory affinity mask inconsistency ($mem_mask,$full_mask)\n"
+	set exit_code 1
+}
+# Stop now, need to validate rest of test
+exit $exit_code
 
 #
 # Run a job step with verbosity and all tasks using memory of CPU 0
