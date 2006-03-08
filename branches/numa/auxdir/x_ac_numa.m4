@@ -21,6 +21,7 @@ AC_DEFUN([X_AC_NUMA],
 	[ac_have_numa=yes; NUMA_LIBS="-lnuma"])
 
   AC_SUBST(NUMA_LIBS)
+  AM_CONDITIONAL(HAVE_NUMA, test "x$ac_have_numa" = "xyes")
   if test "x$ac_have_numa" = "xyes"; then
     AC_DEFINE(HAVE_NUMA, 1, [define if you have the numa library])
   else
