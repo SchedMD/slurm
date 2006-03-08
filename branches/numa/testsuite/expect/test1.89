@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
