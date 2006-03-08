@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -67,14 +67,17 @@ exec echo "echo TEST==\$TEST"           >>$file_in
 exec $bin_chmod 700 $task_prolog $task_epilog $file_in
 
 #
-# Submit a slurm job that will execute two tasks
+# Submit a slurm job that will execute $tasks tasks
+# Note: If running on more than one node and writing to an 
+#    NFS file, overwritting of data has been observed, this
+#    causes the test to fail
 #
 set matches 0
 set timeout $max_job_delay
 if { [test_bluegene] } {
 	set node_cnt 1-1024
 } else {
-	set node_cnt 1-2
+	set node_cnt 1-1
 }
 
 spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
@@ -139,7 +142,7 @@ expect {
 	}
 }
 if {$matches != $tasks} {
-	send_user "\nFAILURE: task prolog output is missing or uid mismatch\n"
+	send_user "\nFAILURE: task prolog output is missing or uid mismatch ($matches:$tasks)\n"
 	set exit_code 1
 }
 
@@ -156,7 +159,7 @@ expect {
 	}
 }
 if {$matches != $tasks} {
-	send_user "\nFAILURE: task epilog output is missing or uid mismatch\n"
+	send_user "\nFAILURE: task epilog output is missing or uid mismatch ($matches:$tasks)\n"
 	set exit_code 1
 }
 	
