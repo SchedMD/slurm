@@ -37,6 +37,7 @@ typedef struct s_p_values s_p_values_t;
 typedef s_p_values_t * s_p_hashtbl_t;
 
 typedef enum slurm_parser_enum {
+	S_P_IGNORE = 0,
 	S_P_STRING,
 	S_P_LONG,
 	S_P_UINT16,
@@ -58,8 +59,13 @@ typedef struct conf_file_options {
 s_p_hashtbl_t *s_p_hashtbl_create(struct conf_file_options options[]);
 void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
 
+
 void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename);
-void s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line);
+
+/*
+ * Returns 1 if the line is parsed cleanly, and 0 otherwise.
+ */
+int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line);
 
 /*
  * s_p_get_string

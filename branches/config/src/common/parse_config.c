@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <stdint.h>
+#include <ctype.h>
 
 /* #include "src/common/slurm_protocol_defs.h" */
 #include "src/common/log.h"
@@ -54,7 +55,7 @@
 
 static regex_t keyvalue_re;
 static char *keyvalue_pattern =
-	"(^|[[:space:]])([[:alpha:]]+)"
+	"^([[:space:]]*)([[:alpha:]]+)"
 	"[[:space:]]*=[[:space:]]*"
 	"([[:graph:]]+)([[:space:]]|$)";
 static bool keyvalue_initialized = false;
@@ -339,7 +340,7 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 			break;
 		}
 	}
-	/*_strip_cr_nl(buf);*/ /* not necessary */
+	/* _strip_cr_nl(buf); */ /* not necessary */
 	_strip_escapes(buf);
 	
 	return !eof;
@@ -588,6 +589,9 @@ static void _handle_keyvalue_match(s_p_values_t *v,
 	/* debug3("key = %s, value = %s, line = \"%s\"", */
 	/*        v->key, value, line); */
 	switch (v->type) {
+	case S_P_IGNORE:
+		/* do nothing */
+		break;
 	case S_P_STRING:
 		_handle_string(v, value, line);
 		break;
@@ -612,6 +616,61 @@ static void _handle_keyvalue_match(s_p_values_t *v,
 	}
 }
 
+/*
+ * Return 1 if all characters in "line" are white-space characters,
+ *   otherwise return 0.
+ */
+static int _line_is_space(const char *line)
+{
+	int len = strlen(line);
+	int i;
+
+	for (i = 0; i < len; i++) {
+		if (!isspace(line[i]))
+			return 0;
+	}
+
+	return 1;
+}
+
+
+/*
+ * Returns 1 if the line is parsed cleanly, and 0 otherwise.
+ */
+int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
+{
+	char *key, *value;
+	const char *leftover = line;
+	const char *ptr = line;
+	s_p_values_t *p;
+
+	_keyvalue_regex_init();
+
+	while (_keyvalue_regex(ptr, &key, &value, &leftover) == 0) {
+		if (p = _conf_hashtbl_lookup(hashtbl, key)) {
+			_handle_keyvalue_match(p, value, line);
+			ptr = leftover;
+		} else {
+			error("Parsing failed at unrecognized key: %s", key);
+			xfree(key);
+			xfree(value);
+			return 0;
+		}
+		xfree(key);
+		xfree(value);
+	}
+
+	if (!_line_is_space(leftover)) {
+		char *ptr = xstrdup(leftover);
+		_strip_cr_nl(ptr);
+		error("Parsing failed at: \"%s\"", ptr);
+		xfree(ptr);
+		return 0;
+	}
+
+	return 1;
+}
+
 void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
@@ -626,42 +685,11 @@ void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 		/* skip empty lines */
 		if (line[0] == '\0')
 			continue;
-		/* debug3("line = \"%s\"", line); */
 
-		if (_keyvalue_regex(line, &key, &value, &leftover) == 0) {
-			s_p_values_t *p;
-
-			if (p = _conf_hashtbl_lookup(hashtbl, key)) {
-				_handle_keyvalue_match(p, value, line);
-			} else {
-				fatal("UNRECOGNIZED KEY %s!", key);
-			}
-			xfree(key);
-			xfree(value);
-		}
+		s_p_parse_line(hashtbl, line);
 	}
 
 	fclose(f);
-}
-
-void s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
-{
-	char *key, *value, *leftover;
-	const char *ptr = line;
-	s_p_values_t *p;
-
-	_keyvalue_regex_init();
-
-	while (_keyvalue_regex(ptr, &key, &value, &leftover) == 0) {
-		if (p = _conf_hashtbl_lookup(hashtbl, key)) {
-			_handle_keyvalue_match(p, value, leftover);
-			ptr = leftover;
-		} else {
-			fatal("UNRECOGNIZED KEY %s!", key);
-		}
-		xfree(key);
-		xfree(value);
-	}
 }
 
 /*
@@ -919,42 +947,42 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 		switch(op->type) {
 		case S_P_STRING:
 			if (s_p_get_string(hashtbl, op->key, &str)) {
-			        debug("%s = %s", op->key, str);
+			        verbose("%s = %s", op->key, str);
 				xfree(str);
 			} else {
-				debug("%s", op->key);
+				verbose("%s", op->key);
 			}
 			break;
 		case S_P_LONG:
 			if (s_p_get_long(hashtbl, op->key, &num))
-				debug("%s = %ld", op->key, num);
+				verbose("%s = %ld", op->key, num);
 			else
-				debug("%s", op->key);
+				verbose("%s", op->key);
 			break;
 		case S_P_UINT16:
 			if (s_p_get_uint16(hashtbl, op->key, &num16))
-				debug("%s = %hu", op->key, num16);
+				verbose("%s = %hu", op->key, num16);
 			else
-				debug("%s", op->key);
+				verbose("%s", op->key);
 			break;
 		case S_P_UINT32:
 			if (s_p_get_uint32(hashtbl, op->key, &num32))
-				debug("%s = %u", op->key, num32);
+				verbose("%s = %u", op->key, num32);
 			else
-				debug("%s", op->key);
+				verbose("%s", op->key);
 			break;
 		case S_P_POINTER:
 			if (s_p_get_pointer(hashtbl, op->key, &ptr))
-				debug("%s = %x", op->key, ptr);
+				verbose("%s = %x", op->key, ptr);
 			else
-				debug("%s", op->key);
+				verbose("%s", op->key);
 			break;
 		case S_P_ARRAY:
 			if (s_p_get_array(hashtbl, op->key,
 					  &ptr_array, &count)) {
-				debug("%s, count = %d", op->key, count);
+				verbose("%s, count = %d", op->key, count);
 			} else {
-				debug("%s", op->key);
+				verbose("%s", op->key);
 			}
 			break;
 		}

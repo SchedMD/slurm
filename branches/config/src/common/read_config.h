@@ -101,17 +101,17 @@ extern int getnodename (char *name, size_t len);
 /*
  * get_conf_node_hostname - Return the NodeHostname for given NodeName
  */
-extern char *slurm_conf_get_hostname(char *node_name);
+extern char *slurm_conf_get_hostname(const char *node_name);
 
 /*
  * get_conf_node_name - Return the NodeName for given NodeHostname
  */
-extern char *slurm_conf_get_nodename(char *node_hostname);
+extern char *slurm_conf_get_nodename(const char *node_hostname);
 
 /*
  * slurm_conf_get_port - Return the port for a given NodeName
  */
-extern uint16_t slurm_conf_get_port(char *node_name);
+extern uint16_t slurm_conf_get_port(const char *node_name);
 
 /*
  * NEW STUFF

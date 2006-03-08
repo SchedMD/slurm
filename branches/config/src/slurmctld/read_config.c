@@ -293,6 +293,7 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 	int i;
 	char *tmp;
 
+	xassert(nodenames != NULL);
 	for (i = 1; nodenames[i] != '\0'; i++) {
 		if((nodenames[i-1] == '[') 
 		   || (nodenames[i-1] <= '9'
@@ -452,6 +453,8 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0)
 		fatal("No NodeName information available!");
+
+	error("count = %d", count);
 
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
