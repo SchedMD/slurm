@@ -2,7 +2,7 @@
  *  slurmd/slurmstepd/task.c - task launching functions for slurmstepd
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -287,9 +287,12 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->procid = t->gtid;
 	job->envtp->localid = t->id;
 	job->envtp->task_pid = getpid();
+
 	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
 	job->envtp->cpu_bind_type = job->cpu_bind_type;
-	
+	job->envtp->mem_bind = xstrdup(job->mem_bind);
+	job->envtp->mem_bind_type = job->mem_bind_type;
+
 	setup_env(job->envtp);
 	job->env = job->envtp->env;
 	job->envtp->env = NULL;
