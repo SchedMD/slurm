@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm.h - Definitions for all of the SLURM RPCs
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, 
  *	Joey Ekstrom <ekstrom1@llnl.gov> et. al.
@@ -229,6 +229,14 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	CPU_BIND_MAPCPU	= 0x08,	/* =map_cpu:<list of CPU IDs> */
 	CPU_BIND_MASKCPU= 0x10	/* =mask_cpu:<list of CPU masks> */
 } cpu_bind_type_t;
+
+typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
+	MEM_BIND_VERBOSE= 0x01,	/* =v, */
+	MEM_BIND_NONE   = 0x02,	/* =no */
+	MEM_BIND_RANK   = 0x04,	/* =rank */
+	MEM_BIND_MAPCPU = 0x08,	/* =map_mem:<list of CPU IDs> */
+	MEM_BIND_MASKCPU= 0x10	/* =mask_mem:<list of CPU masks> */
+} mem_bind_type_t;
 
 /* The last entry in node_states must be STATE_END, keep in sync with 
  * node_state_string. values may be ORed with NODE_STATE_FLAGS below. 

@@ -271,6 +271,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
+		 src/plugins/task/numa/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile
