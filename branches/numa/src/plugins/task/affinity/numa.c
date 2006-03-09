@@ -26,24 +26,29 @@
 \*****************************************************************************/
 #include "affinity.h"
 
-#ifdef HAVE_NUMAX
+#ifdef HAVE_NUMA
 
-static _memset_to_str(const nodemask_t *mask, char *str)
+static char * _memset_to_str(nodemask_t *mask, char *str)
 {
-	int base;
+	int base, begin = 0;
 	char *ptr = str;
 	char *ret = 0;
 
-	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
+	for (base = NUMA_NUM_NODES - 4; base >= 0; base -= 4) {
 		char val = 0;
-		if (CPU_ISSET(base, mask))
+		if (nodemask_isset(mask, base))
 			val |= 1;
-		if (CPU_ISSET(base + 1, mask))
+		if (nodemask_isset(mask, base + 1))
 			val |= 2;
-		if (CPU_ISSET(base + 2, mask))
+		if (nodemask_isset(mask, base + 2))
 			val |= 4;
-		if (CPU_ISSET(base + 3, mask))
+		if (nodemask_isset(mask, base + 3))
 			val |= 8;
+		if ((begin == 0) && (val == 0) && (base > 124)) {
+			/* try to keep output to 32 bit mask */
+			continue;
+		}
+		begin = 1;
 		if (!ret && val)
 			ret = ptr;
 		*ptr++ = val_to_char(val);
@@ -52,13 +57,44 @@ static _memset_to_str(const nodemask_t *mask, char *str)
 	return ret ? ret : ptr - 1;
 }
 
+static int _str_to_memset(nodemask_t *mask, const char* str)
+{
+	int len = strlen(str);
+	const char *ptr = str + len - 1;
+	int base = 0;
+
+	/* skip 0x, it's all hex anyway */
+	if (len > 1 && !memcmp(str, "0x", 2L))
+		str += 2;
+
+	nodemask_zero(mask);
+	while (ptr >= str) {
+		char val = char_to_val(*ptr);
+		if (val == (char) -1)
+			return -1;
+		if (val & 1)
+			nodemask_set(mask, base);
+		if (val & 2)
+			 nodemask_set(mask, base+1);
+		if (val & 4)
+			 nodemask_set(mask, base+2);
+		if (val & 8)
+			 nodemask_set(mask, base+3);
+		len--;
+		ptr--;
+		base += 4;
+	}
+
+	return 0;
+}
+
 void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 {
 	char bind_type[42];
 	char status[42];
 	char prefix[42];
 	char suffix[42];
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[1 + NUMA_NUM_NODES / 4];
 	int task_id = job->envtp->procid;
 	pid_t mypid = job->envtp->task_pid;
 
@@ -107,18 +143,18 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 {
 	int nummasks, maskid, i;
 	char *curstr, *selstr;
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[1 + NUMA_NUM_NODES / 4];
 	int local_id = job->envtp->localid;
 
-	debug3("get_cpuset (%d) %s\n", job->cpu_bind_type, job->cpu_bind);
-	CPU_ZERO(mask);
+	debug3("get_memset (%d) %s\n", job->mem_bind_type, job->mem_bind);
+	nodemask_zero(mask);
 
 	if (job->mem_bind_type & MEM_BIND_NONE) {
 		return true;
 	}
 
 	if (job->mem_bind_type & MEM_BIND_RANK) {
-		CPU_SET(job->envtp->localid % job->cpus, mask);
+		nodemask_set(mask, job->envtp->localid % job->cpus);
 		return true;
 	}
 
@@ -129,7 +165,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 	maskid = 0;
 	selstr = NULL;
 
-	/* get number of strings present in cpu_bind */
+	/* get number of strings present in mem_bind */
 	curstr = job->mem_bind;
 	while (*curstr) {
 		if (nummasks == local_id+1) {
@@ -162,27 +198,27 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 	/* extract the selected mask from the list */
 	i = 0;
 	curstr = mstr;
-	while (*selstr && *selstr != ',' && i++ < (CPU_SETSIZE/4))
+	while (*selstr && *selstr != ',' && i++ < (NUMA_NUM_NODES/4))
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
 	if (job->mem_bind_type & MEM_BIND_MASKCPU) {
 		/* convert mask string into nodemask_t mask */
-		if (str_to_cpuset(mask, mstr) < 0) {
-			error("str_to_cpuset %s", mstr);
+		if (_str_to_memset(mask, mstr) < 0) {
+			error("_str_to_memset %s", mstr);
 			return false;
 		}
 		return true;
 	}
 
 	if (job->mem_bind_type & MEM_BIND_MAPCPU) {
-		unsigned int mycpu = 0;
+		unsigned int my_node = 0;
 		if (strncmp(mstr, "0x", 2) == 0) {
-			mycpu = strtoul (&(mstr[2]), NULL, 16);
+			my_node = strtoul (&(mstr[2]), NULL, 16);
 		} else {
-			mycpu = strtoul (mstr, NULL, 10);
+			my_node = strtoul (mstr, NULL, 10);
 		}
-		CPU_SET(mycpu, mask);
+		nodemask_set(mask, my_node);
 		return true;
 	}
 

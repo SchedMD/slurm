@@ -116,18 +116,18 @@ int task_pre_launch ( slurmd_job_t *job )
 		slurm_chkaffinity(setval ? &new_mask : &cur_mask, job, setval);
 	}
 
-#ifdef HAVE_NUMAX
+#ifdef HAVE_NUMA
 	if (job->mem_bind_type && (numa_available() >= 0)) {
-		nodemask_t new_mask, *cur_mask_ptr;
+		nodemask_t new_mask, cur_mask;
 
-		cur_mask_ptr = numa_get_membind();
+		cur_mask = numa_get_membind();
 		if (get_memset(&new_mask, job)) {
 			if (!(job->mem_bind_type & MEM_BIND_NONE)) {
-				numa_set_bind(&new_mask);
-				cur_mask_ptr = &new_mask;
+				numa_set_membind(&new_mask);
+				cur_mask = new_mask;
 			}
 		}
-		slurm_chk_memset(cur_mask_ptr, job);
+		slurm_chk_memset(&cur_mask, job);
 	}
 #endif
 

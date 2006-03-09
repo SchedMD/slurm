@@ -52,7 +52,7 @@
  * Copyright (C) 2004 Robert Love
  */
 
-static inline int val_to_char(int v)
+inline int val_to_char(int v)
 {
 	if (v >= 0 && v < 10)
 		return '0' + v;
@@ -62,7 +62,7 @@ static inline int val_to_char(int v)
 		return -1;
 }
 
-static inline int char_to_val(int c)
+inline int char_to_val(int c)
 {
 	int cl;
 

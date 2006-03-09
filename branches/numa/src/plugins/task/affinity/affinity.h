@@ -25,7 +25,7 @@
 #  include "config.h"
 #endif
 
-#ifdef HAVE_NUMAX
+#ifdef HAVE_NUMA
 #  include <numa.h>
 #endif
 
@@ -87,6 +87,7 @@ void	slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job);
 #endif
 
 /*** from schedutils.c ***/
+int	char_to_val(int c);
 int	str_to_cpuset(cpu_set_t *mask, const char* str);
 char *	cpuset_to_str(const cpu_set_t *mask, char *str);
-
+int	val_to_char(int v);
