@@ -134,8 +134,6 @@ if {$mem_mask != $full_mask} {
 	send_user "\nFAILURE: memory affinity mask inconsistency ($mem_mask,$full_mask)\n"
 	set exit_code 1
 }
-# Stop now, need to validate rest of test
-exit $exit_code
 
 #
 # Run a job step with verbosity and all tasks using memory of CPU 0
@@ -144,12 +142,8 @@ set task_mask 0
 set verbose_cnt 0
 send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
-		exp_continue
-	}
-	-re "setting affinity of task" {
-		incr verbose_cnt
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -167,6 +161,24 @@ if {$task_mask != $task_cnt} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$task_cnt)\n"
 	set exit_code 1
 }
+set verbose_cnt 0
+send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
+expect {
+	-re "setting affinity of task" {
+		incr verbose_cnt
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
+		set exit_code 1
+	}
+	-re $prompt
+}
 if {$verbose_cnt != $task_cnt} {
 	send_user "\nFAILURE: verbose messages count inconsisent ($verbose_cnt,$task_cnt)\n"
 	set exit_code 1
@@ -181,8 +193,8 @@ while {$cpu_cnt < $task_cnt} {
 	set mask [ expr 1 << $cpu_cnt ]
 	send "$srun -c1 --mem_bind=map_mem:$cpu_cnt $file_prog\n"
 	expect {
-		-re "TASK_ID:($number),MASK:($number)" {
-			incr mask_sum $expect_out(2,string)
+		-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+			incr mask_sum $expect_out(3,string)
 			exp_continue
 		}
 		-re "error" {
@@ -214,8 +226,8 @@ while {$cpu_cnt < $task_cnt} {
 	set mstr [ dec2hex16 $mask]
 	send "$srun -c1 --mem_bind=mask_mem:$mstr $file_prog\n"
 	expect {
-		-re "TASK_ID:($number),MASK:($number)" {
-			incr mask_sum $expect_out(2,string)
+		 -re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+			incr mask_sum $expect_out(3,string)
 			exp_continue
 		}
 		-re "error" {
@@ -289,8 +301,8 @@ send_user "alt_mask: $alt_mask\n"
 set task_mask 0
 send "$srun -c1 --mem_bind=map_mem:$fwd_map $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -316,8 +328,8 @@ if {$task_mask != $full_mask} {
 set task_mask 0
 send "$srun -c1 --mem_bind=map_mem:$rev_map $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -343,8 +355,8 @@ if {$task_mask != $full_mask} {
 set task_mask 0
 send "$srun -c1 --mem_bind=map_mem:$alt_map $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -370,8 +382,8 @@ if {$task_mask != $full_mask} {
 set task_mask 0
 send "$srun -c1 --mem_bind=mask_mem:$fwd_mask $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -397,8 +409,8 @@ if {$task_mask != $full_mask} {
 set task_mask 0
 send "$srun -c1 --mem_bind=mask_mem:$rev_mask $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -424,8 +436,8 @@ if {$task_mask != $full_mask} {
 set task_mask 0
 send "$srun -c1 --mem_bind=mask_mem:$alt_mask $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
