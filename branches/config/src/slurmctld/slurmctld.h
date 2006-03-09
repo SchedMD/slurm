@@ -63,6 +63,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
+#include "src/common/read_config.h" /* location of slurmctld_conf */
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\
@@ -131,7 +132,6 @@ typedef struct slurmctld_config {
 } slurmctld_config_t;
 
 extern slurmctld_config_t slurmctld_config;
-extern slurm_ctl_conf_t slurmctld_conf;
 extern int bg_recover;		/* state recovery mode */
 
 /*****************************************************************************\
