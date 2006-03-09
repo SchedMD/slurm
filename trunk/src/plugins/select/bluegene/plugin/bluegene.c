@@ -354,8 +354,6 @@ extern void process_nodes(bg_record_t *bg_record)
 		      bg_record->nodes);
 	}
 #endif
-	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
-	
 	return;
 }
 
@@ -445,6 +443,9 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		if((rc = remove_all_users(bg_record->bg_block_id, 
 					  bg_record->target_name))
 		   == REMOVE_USER_ERR) {
+			if(rc == INCONSISTENT_DATA
+			   && bluegene_layout_mode == LAYOUT_DYNAMIC)
+				return 0;
 			error("Something happened removing "
 			      "users from block %s", 
 			      bg_record->bg_block_id);
@@ -952,6 +953,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	List results = list_create(NULL);
 	int num_quarter=0, num_segment=0;
 	char *name = NULL;
+	bitstr_t *my_bitmap = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
 	
@@ -961,13 +963,17 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	if(my_block_list) {
 		itr = list_iterator_create(my_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+			if(!my_bitmap) {
+				my_bitmap = 
+					bit_alloc(bit_size(bg_record->bitmap));
+			}
 			if(bg_record->bp_count>0 
-			   && (bg_record->cpus_per_bp == procs_per_node
-			       || (bg_record->quarter == 0 
-				   && bg_record->segment < 1))) {
+			   && !bit_super_set(bg_record->bitmap, 
+					     my_bitmap)) {
+				bit_and(my_bitmap, bg_record->bitmap);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
-				debug2("adding %s %d%d%d %d%d%d",
+				debug("adding %s %d%d%d %d%d%d",
 				       bg_record->nodes,
 				       bg_record->start[X],
 				       bg_record->start[Y],
@@ -982,6 +988,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				if(!name) {
 					debug("I was unable to make the "
 					       "requested block.");
+					FREE_NULL_BITMAP(my_bitmap);
 					slurm_mutex_unlock(&block_state_mutex);
 					return SLURM_ERROR;
 				}
@@ -989,6 +996,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			} 
 		}
 		list_iterator_destroy(itr);
+		if(my_bitmap)
+			FREE_NULL_BITMAP(my_bitmap);
 	} else {
 		debug("No list was given");
 	}
@@ -1032,16 +1041,16 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		if((bg_record->job_running == -1)
 		   && (bg_record->cpus_per_bp == procs_per_node
 		       || (bg_record->quarter == 0 
-			   && bg_record->segment < 1))) {
+			   && (bg_record->segment == 0 
+			       || bg_record->segment == (uint16_t)NO_VAL)))) {
 			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 				request->start[i] = bg_record->start[i];
 			request->start_req = 1;
 			rc = SLURM_SUCCESS;
 			if (!allocate_block(request, results)){
-				debug2("allocate failure for %dx%dx%d", 
-				       request->geometry[X], 
-				       request->geometry[Y], 
-				       request->geometry[Z]);
+				debug2("allocate failure for size %d "
+				       "midplanes", 
+				       request->size);
 				rc = SLURM_ERROR;
 			} else 
 				break;
@@ -1054,10 +1063,8 @@ no_list:
 		request->start_req = 0;
 		rc = SLURM_SUCCESS;
 		if (!allocate_block(request, results)){
-			debug("allocate failure for %dx%dx%d", 
-			      request->geometry[X], 
-			      request->geometry[Y], 
-			      request->geometry[Z]);
+			debug("allocate failure for size %d midplanes", 
+			      request->size);
 			rc = SLURM_ERROR;
 		}
 	}
@@ -1263,6 +1270,14 @@ extern int bg_free_block(bg_record_t *bg_record)
 					      bg_record->bg_block_id);
 					slurm_mutex_unlock(&api_file_mutex);
 					break;
+				} else if(rc == INCOMPATIBLE_STATE) {
+					debug2("pm_destroy_partition(%s): %s "
+					       "State = %d",
+					       bg_record->bg_block_id, 
+					       bg_err_str(rc), 
+					       bg_record->state);
+				   
+					continue;
 				}
 				error("pm_destroy_partition(%s): %s "
 				      "State = %d",
@@ -1338,6 +1353,11 @@ extern void *mult_destroy_block(void *args)
 			usleep(100000);
 			continue;
 		}
+		slurm_mutex_lock(&block_state_mutex);
+		if(bg_record->job_running == -2)
+			goto already_here;
+		bg_record->job_running = -2;
+		slurm_mutex_unlock(&block_state_mutex);
 		debug("removing the jobs on block %s\n",
 		      bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
@@ -1345,7 +1365,10 @@ extern void *mult_destroy_block(void *args)
 		debug2("destroying %s", (char *)bg_record->bg_block_id);
 		bg_free_block(bg_record);
 		remove_from_bg_list(bg_list, bg_record);
-		
+		if(!bg_record->bg_block_id) {
+			error("This one didn't have anything");
+			goto already_here;
+		}
 #ifdef HAVE_BG_FILES
 		debug("removing from database %s", 
 		       (char *)bg_record->bg_block_id);
@@ -1361,12 +1384,13 @@ extern void *mult_destroy_block(void *args)
 		slurm_mutex_unlock(&api_file_mutex);
 	
 #endif
-		slurm_mutex_lock(&freed_cnt_mutex);
-		num_block_freed++;
 		slurm_mutex_lock(&block_state_mutex);
 		if(blocks_are_created)
 			destroy_bg_record(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+	already_here:
+		slurm_mutex_lock(&freed_cnt_mutex);
+		num_block_freed++;
 		slurm_mutex_unlock(&freed_cnt_mutex);
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
@@ -2107,7 +2131,6 @@ static int _add_block_db(bg_record_t *bg_record, int *block_inx)
 #ifdef HAVE_BG_FILES
 	if(configure_block(bg_record) == SLURM_ERROR) {
 		xfree(bg_record);
-		slurm_mutex_unlock(&block_state_mutex);
 		error("unable to configure block in api");
 		return SLURM_ERROR;
 	}
@@ -2116,7 +2139,7 @@ static int _add_block_db(bg_record_t *bg_record, int *block_inx)
 	snprintf(bg_record->bg_block_id, 8, "RMP%d", 
 		 (*block_inx)++);
 #endif
-
+	return SLURM_SUCCESS;
 }
 static int _split_block(bg_record_t *bg_record, int procs, int *block_inx) 
 {
@@ -2168,7 +2191,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 		found_record = _create_small_record(bg_record,
 						    quarter,
 						    segment);
-		if(_add_block_db(found_record, block_inx)  == SLURM_ERROR)
+		if(_add_block_db(found_record, block_inx) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 		list_push(bg_list, found_record);
@@ -2202,7 +2225,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 			
 		while ((bg_record = (bg_record_t *) list_next(itr)) 
 		       != NULL) {
-			if(bg_record->job_running != -1)
+			if(bg_record->job_running > -1)
 				continue;
 			if(bg_record->state != RM_PARTITION_FREE)
 				continue;
@@ -2213,6 +2236,13 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				list_iterator_destroy(itr);
+				request->save_name = 
+					xmalloc(sizeof(char) * 4);
+				sprintf(request->save_name, 
+					"%d%d%d\0",
+					bg_record->start[X],
+					bg_record->start[Y],
+					bg_record->start[Z]);
 				rc = SLURM_SUCCESS;
 				goto finished;
 			}
@@ -2267,7 +2297,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 		last_quarter = (uint16_t) NO_VAL;
 		while ((bg_record = (bg_record_t *) list_next(itr)) 
 		       != NULL) {
-			if(bg_record->job_running != -1)
+			if(bg_record->job_running > -1)
 				continue;
 			proc_cnt = bg_record->bp_count * 
 				bg_record->cpus_per_bp;
@@ -2276,6 +2306,13 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				list_iterator_destroy(itr);
+				request->save_name = 
+					xmalloc(sizeof(char) * 4);
+				sprintf(request->save_name, 
+					"%d%d%d\0",
+					bg_record->start[X],
+					bg_record->start[Y],
+					bg_record->start[Z]);
 				rc = SLURM_SUCCESS;
 				goto finished;
 			} 
@@ -2340,7 +2377,6 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 					bg_record->start[X],
 					bg_record->start[Y],
 					bg_record->start[Z]);
-				//destroy_bg_record(bg_record);
 			}
 			list_iterator_destroy(itr);
 			rc = SLURM_SUCCESS;

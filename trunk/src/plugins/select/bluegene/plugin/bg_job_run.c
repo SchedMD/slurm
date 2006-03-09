@@ -256,7 +256,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		itr = list_iterator_create(bg_list);
 		while ((found_record = (bg_record_t*) 
 			list_next(itr)) != NULL) {
-			if ((!found_record) || (bg_record == found_record))
+			if ((!found_record) 
+			    || (found_record->job_running == -2)
+			    || (bg_record == found_record))
 				continue;
 
 			if(!blocks_overlap(bg_record, found_record)) {

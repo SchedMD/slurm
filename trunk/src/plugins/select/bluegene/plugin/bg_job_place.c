@@ -131,7 +131,23 @@ try_again:
 	      list_count(bg_list),
 	      test_only);
      	itr = list_iterator_create(bg_list);
-	while ((record = (bg_record_t*) list_next(itr))) {
+	while ((record = (bg_record_t*) list_next(itr))) {		
+		/* If test_only we want to fall through to tell the 
+		   scheduler that it is runnable just not right now. 
+		*/
+		debug3("job_running = %d", record->job_running);
+		/*partition is being destroyed, ignore it*/
+		if(record->job_running == -2)
+			continue;
+		else if((record->job_running != -1) 
+		   && !test_only) {
+			debug("block %s in use by %s job %d", 
+			      record->bg_block_id,
+			      record->user_name,
+			      record->job_running);
+			found = 1;
+			continue;
+		}
 		/* Check processor count */
 		proc_cnt = record->bp_count * record->cpus_per_bp;
 		debug3("asking for %d-%d looking at %d", 
@@ -187,20 +203,7 @@ try_again:
 				record->bg_block_id);
 			continue;
 		}
-		/* If test_only we want to fall through to tell the 
-		   scheduler that it is runnable just not right now. 
-		*/
-		debug3("job_running = %d", record->job_running);
-		if((record->job_running != -1) 
-		   && !test_only) {
-			debug("block %s in use by %s job %d", 
-			      record->bg_block_id,
-			      record->user_name,
-			      record->job_running);
-			found = 1;
-			continue;
-		}
-		
+				
 		/* Make sure no other partitions are under this partition 
 		   are booted and running jobs
 		*/
@@ -208,12 +211,12 @@ try_again:
 		while ((found_record = (bg_record_t*)
 			list_next(itr2)) != NULL) {
 			if ((!found_record->bg_block_id)
+			    || (record->job_running == -2)
 			    || (!strcmp(record->bg_block_id, 
 					found_record->bg_block_id)))
 				continue;
 			if(blocks_overlap(record, found_record)) {
-				if((found_record->job_running 
-				    != -1) 
+				if((found_record->job_running > -1) 
 				   && !test_only) {
 					debug("can't use %s, there is a job "
 					      "(%d) running on an overlapping "
@@ -223,21 +226,17 @@ try_again:
 					      found_record->bg_block_id);
 					if(bluegene_layout_mode == 
 					   LAYOUT_DYNAMIC) {
-						num_block_to_free = 0;
-						num_block_freed = 0;
 						temp_list = list_create(NULL);
 						list_push(temp_list, record);
 						num_block_to_free++;
+						slurm_mutex_unlock(
+							&block_state_mutex);
 						free_block_list(temp_list);
+						slurm_mutex_lock(
+							&block_state_mutex);
 						list_destroy(temp_list);
-						/* wait for all necessary 
-						   blocks to be freed */
-						while(num_block_to_free 
-						      != num_block_freed) {
-							sleep(1);
-						}
-					} else
-						break;
+					} 
+					break;
 				}
 			} 
 		}
@@ -433,7 +432,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-			
+			/*FIX ME: isn't correct for small blocks */
 			min_nodes *= bluegene_bp_node_cnt;
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,

@@ -555,9 +555,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				/* If any nodes which can be used have jobs in 
 				 * COMPLETING state then do not schedule the  
 				 * job, this give time to insure Epilog 
-				 * completes before possibly scheduling another 
+				 * completes before possibly scheduling another
 				 * job to the same bgblock. We also want to 
-				 * route the job to the smallest usable block */
+				 * route the job to the smallest usable block*/
 				int ni;
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
