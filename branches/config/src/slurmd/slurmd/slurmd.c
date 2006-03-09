@@ -522,8 +522,12 @@ _read_config()
 
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
-		_free_and_set(&conf->node_name,
-			      slurm_conf_get_nodename(conf->hostname));
+		conf->node_name = slurm_conf_get_nodename(conf->hostname);
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_nodename("localhost");
+	if (conf->node_name == NULL)
+		fatal("Unable to determine this slurmd's NodeName");
+
 	conf->port = slurm_conf_get_port(conf->node_name);
 
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
