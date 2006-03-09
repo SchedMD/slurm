@@ -114,6 +114,8 @@ void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 		sprintf(suffix, "to mask 0x");
 		if (job->mem_bind_type & MEM_BIND_RANK) {
 			strcpy(bind_type, "set to RANK");
+		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
+			strcpy(bind_type, "set to LOCAL");
 		} else if (job->mem_bind_type & MEM_BIND_MAPCPU) {
 			strcpy(bind_type, "set to MAP_MEM");
 		} else if (job->mem_bind_type & MEM_BIND_MASKCPU) {
@@ -147,8 +149,12 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 	int local_id = job->envtp->localid;
 
 	debug3("get_memset (%d) %s\n", job->mem_bind_type, job->mem_bind);
-	nodemask_zero(mask);
+	if (job->mem_bind_type & MEM_BIND_LOCAL) {
+		*mask = numa_get_run_node_mask();
+		return true;
+	}
 
+	nodemask_zero(mask);
 	if (job->mem_bind_type & MEM_BIND_NONE) {
 		return true;
 	}

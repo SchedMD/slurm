@@ -486,6 +486,8 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 				*mem_bind_type |= MEM_BIND_NONE;
 			} else if (strcasecmp(cmd_line_affinity, "rank") == 0) {
 				*mem_bind_type |= MEM_BIND_RANK;
+			} else if (strcasecmp(cmd_line_affinity, "local") == 0) {
+				*mem_bind_type |= MEM_BIND_LOCAL;
 			} else if ((strcasecmp(cmd_line_affinity, "map_mem") == 0) ||
 			           (strcasecmp(cmd_line_affinity, "mapmem") == 0)) {
 				*mem_bind_type |= MEM_BIND_MAPCPU;
@@ -2039,7 +2041,7 @@ static void _help(void)
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
 "\n"
-"Affinity/Multi-core options: (when the task/affinity or task/numa plugin is enabled)\n" 
+"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
 "      --cpu_bind=             Bind tasks to CPUs\n" 
 "             q[uiet],           quietly bind before task runs (default)\n"
 "             v[erbose],         verbosely report binding before task runs\n"
@@ -2049,13 +2051,12 @@ static void _help(void)
 "                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
 "             mask_cpu:<list>    bind by setting CPU masks on tasks as specified\n"
 "                                where <list> is <mask1>,<mask2>,...<maskN>\n"
-"\n"
-"Affinity/Multi-core options: (when the task/numa plugin is enabled)\n"
 "      --mem_bind=             Bind tasks to memory\n"
 "             q[uiet],           quietly bind before task runs (default)\n"
 "             v[erbose],         verbosely report binding before task runs\n"
 "             no[ne]             don't bind tasks to memory (default)\n"
 "             rank               bind by task rank\n"
+"             local              bind to memory local to processor\n"
 "             map_mem:<list>     bind by mapping memory of CPU IDs to tasks as specified\n"
 "                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
 "             mask_mem:<list>    bind by setting menory of CPU masks on tasks as specified\n"

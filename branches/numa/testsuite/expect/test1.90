@@ -185,6 +185,31 @@ if {$verbose_cnt != $task_cnt} {
 }
 
 #
+# Run all tasks all bound to the same CPU's memory (local CPU)
+#
+send "$srun -c1 --cpu_bind=rank --mem_bind=local $file_prog\n"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		if {$expect_out(2,string) != $expect_out(3,string)} {
+			send_user "\nFAILURE: failed to use local memory for a task\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+
+#
 # Run all tasks all bound to the same CPU's memory by specifying a map (for each CPU)
 #
 set cpu_cnt 0

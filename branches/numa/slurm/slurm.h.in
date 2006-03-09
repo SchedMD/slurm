@@ -235,7 +235,8 @@ typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
 	MEM_BIND_NONE   = 0x02,	/* =no */
 	MEM_BIND_RANK   = 0x04,	/* =rank */
 	MEM_BIND_MAPCPU = 0x08,	/* =map_mem:<list of CPU IDs> */
-	MEM_BIND_MASKCPU= 0x10	/* =mask_mem:<list of CPU masks> */
+	MEM_BIND_MASKCPU= 0x10,	/* =mask_mem:<list of CPU masks> */
+	MEM_BIND_LOCAL  = 0x20	/* =local */
 } mem_bind_type_t;
 
 /* The last entry in node_states must be STATE_END, keep in sync with 
