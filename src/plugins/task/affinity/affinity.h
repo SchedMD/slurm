@@ -25,6 +25,10 @@
 #  include "config.h"
 #endif
 
+#ifdef HAVE_NUMA
+#  include <numa.h>
+#endif
+
 #if HAVE_SYS_TYPES_H
 #  include <sys/types.h>
 #endif
@@ -76,7 +80,14 @@ int	get_cpuset(cpu_set_t *mask, slurmd_job_t *job);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
 
+/*** from numa.c ***/
+#ifdef HAVE_NUMA
+int	get_memset(nodemask_t *mask, slurmd_job_t *job);
+void	slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job);
+#endif
+
 /*** from schedutils.c ***/
+int	char_to_val(int c);
 int	str_to_cpuset(cpu_set_t *mask, const char* str);
 char *	cpuset_to_str(const cpu_set_t *mask, char *str);
-
+int	val_to_char(int v);

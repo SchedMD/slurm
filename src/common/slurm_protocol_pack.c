@@ -2592,6 +2592,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr(msg->cwd, buffer);
 	pack32((uint32_t)msg->cpu_bind_type, buffer);
 	packstr(msg->cpu_bind, buffer);
+	pack32((uint32_t)msg->mem_bind_type, buffer);
+	packstr(msg->mem_bind, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
 	pack16((uint16_t)msg->task_flags, buffer);
 	packstr(msg->ofname, buffer);
@@ -2648,6 +2650,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_xmalloc(&msg->cwd, &uint16_tmp, buffer);
 	safe_unpack32(&msg->cpu_bind_type, buffer);
 	safe_unpackstr_xmalloc(&msg->cpu_bind, &uint16_tmp, buffer);
+	safe_unpack32(&msg->mem_bind_type, buffer);
+	safe_unpackstr_xmalloc(&msg->mem_bind, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);

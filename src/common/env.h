@@ -1,7 +1,7 @@
 /*****************************************************************************\
- * src/common/env.h - environment vector manipulation
+ *  src/common/env.h - environment vector manipulation
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -43,6 +43,9 @@ typedef struct env_options {
 	cpu_bind_type_t
 		cpu_bind_type;	/* --cpu_bind=			*/
 	char *cpu_bind;		/* binding map for map/mask_cpu	*/
+	mem_bind_type_t
+		mem_bind_type;	/* --mem_bind=			*/
+	char *mem_bind;		/* binding map for tasks to memory	*/
 	bool overcommit;	/* --overcommit,   -O		*/
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	bool labelio;		/* --label-output, -l		*/

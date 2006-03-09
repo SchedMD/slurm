@@ -67,10 +67,6 @@ dnl Check of sched_getaffinity exists and it's argument count
 dnl
 X_AC_AFFINITY
 
-dnl Check if NUMA  memory afffinity functions exist
-dnl
-X_AC_NUMA
-
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN

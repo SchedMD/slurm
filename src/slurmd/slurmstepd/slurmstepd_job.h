@@ -2,7 +2,7 @@
  *  src/slurmd/slurmstepd/slurmstepd_job.h  slurmd_job_t definition
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -106,6 +106,8 @@ typedef struct slurmd_job {
 	char          *cwd;    /* path to current working directory         */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=                       */
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
+	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
+	char          *mem_bind;       /* binding map for tasks to memory   */
 	switch_jobinfo_t switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	gid_t         gid;     /* group ID for job                          */

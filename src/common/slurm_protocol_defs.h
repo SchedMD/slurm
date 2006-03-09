@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -345,6 +345,8 @@ typedef struct launch_tasks_request_msg {
 	char     *cwd;
 	cpu_bind_type_t cpu_bind_type;	/* --cpu_bind=                    */
 	char     *cpu_bind;	/* binding map for map/mask_cpu           */
+	mem_bind_type_t mem_bind_type;	/* --mem_bind=                    */
+	char     *mem_bind;	/* binding map for tasks to memory        */
 	uint16_t  *resp_port;
 	uint16_t  *io_port;
 
