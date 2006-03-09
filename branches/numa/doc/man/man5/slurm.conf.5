@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2006" "slurm.conf 1.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "January 2006" "slurm.conf 1.1" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -474,11 +474,9 @@ Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific 
 processors).
 Acceptable values include
-"task/none" for systems requiring no special handling,
-"task/affinity" to enable the --cpu_bind CPU affinity srun option 
-(requires the sched_setaffinity function), and
-"task/numa" to enable the --cpu_bind and --mem_bind affinity srun 
-options (requires the numa_available and related functions).
+"task/none" for systems requiring no special handling
+or "tasks/affinity" to enable the \-\-cpu_bind and/or \-\-mem_bind 
+affinity srun options.
 The default value is "task/none".
 The order of task prolog/epilog execution is as follows:
 .RS

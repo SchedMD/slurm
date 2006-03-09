@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 if HAVE_SCHED_SETAFFINITY
 pkglib_LTLIBRARIES = task_affinity.la
 task_affinity_la_SOURCES = task_affinity.c affinity.c schedutils.c affinity.h
-task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLUGIN_FLAGS)
 
 else
 pkglib_LTLIBRARIES =

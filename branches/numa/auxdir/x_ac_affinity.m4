@@ -37,6 +37,21 @@ AC_DEFUN([X_AC_AFFINITY], [
              [Define to 1 if sched_getaffinity takes two arguments.])])
 
 #
+# Test for NUMA memory afffinity functions and set the definitions
+#
+  AC_CHECK_LIB([numa],
+        [numa_available],
+        [ac_have_numa=yes; NUMA_LIBS="-lnuma"])
+                                                                                                     
+  AC_SUBST(NUMA_LIBS)
+  AM_CONDITIONAL(HAVE_NUMA, test "x$ac_have_numa" = "xyes")
+  if test "x$ac_have_numa" = "xyes"; then
+    AC_DEFINE(HAVE_NUMA, 1, [define if you have the numa library])
+  else
+    AC_MSG_WARN([Unable to locate NUMA memory affinity functions])
+  fi
+
+#
 # Test for other affinity functions as appropriate
 # TBD
 
