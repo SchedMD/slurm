@@ -2,7 +2,7 @@
  *  launch.c - initiate the user job's tasks.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -145,6 +145,8 @@ launch(void *arg)
 	r.task_epilog     = opt.task_epilog;
 	r.cpu_bind_type   = opt.cpu_bind_type;
 	r.cpu_bind        = opt.cpu_bind;
+	r.mem_bind_type   = opt.mem_bind_type;
+	r.mem_bind        = opt.mem_bind;
 
 	r.ofname  = fname_remote_string (job->ofname);
 	r.efname  = fname_remote_string (job->efname);

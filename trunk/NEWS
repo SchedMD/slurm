@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     This logic is through display tools such as smap, sinfo, scontrol, and 
     squeue.
  -- Added bluegene.conf man page.
+ -- Added support for memory affinity, see srun --mem_bind option.
  
 * Changes in SLURM 1.1.0-pre1
 =============================

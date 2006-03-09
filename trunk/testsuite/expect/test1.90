@@ -1,14 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of CPU affinity support.
+#          Test of memory affinity support for NUMA systems.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -32,14 +32,14 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.89"
+set test_id     "1.90"
 set exit_code   0
 set file_prog   "test$test_id.prog"
 
 print_header $test_id
 
 #
-# Test if task affinity support is supported.
+# Test if memory affinity support is supported.
 #
 set affinity 0
 log_user 0
@@ -53,18 +53,28 @@ expect {
 		wait
 	}
 }
+spawn ls /usr/include/numa.h
+expect {
+	-re "no such file" {
+		set affinity 0
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
 log_user 1
 if {$affinity == 0} {
-	send_user "\nWARNING: task affinity not supported on this system\n"
+	send_user "\nWARNING: memory affinity not supported on this system\n"
 	exit 0
 }
-send_user "\ntask affinity plugin installed\n"
+send_user "\ntask affinity plugin installed with numa support\n"
 
 #
 # Build a test program to report affinity by task
 #
 exec $bin_rm -f $file_prog
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc $file_prog.c -o $file_prog -lnuma
 exec $bin_chmod 700 $file_prog
 
 #
@@ -76,13 +86,13 @@ spawn $srun --allocate -N1 --verbose -t2
 # Run a job step to get allocated processor count and affinity
 #
 expect -re $prompt
-set mask 0
 set task_cnt 0
+set full_mask 0
 send "$srun -c1 $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		set full_mask $expect_out(2,string)
 		incr task_cnt
-		set mask $expect_out(2,string)
 		exp_continue
 	}
 	-re "error" {
@@ -98,13 +108,15 @@ expect {
 }
 
 #
-# Run a job step with affinity
+# Run a job step with memory affinity
 #
-set task_mask 0
-send "$srun -c1 --cpu_bind=rank $file_prog\n"
+set cpu_mask 0
+set mem_mask 0
+send "$srun -c1 --mem_bind=rank $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr cpu_mask $expect_out(2,string)
+		incr mem_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -118,19 +130,20 @@ expect {
 	}
 	-re $prompt
 }
-if {$task_mask != $mask} {
-	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$mask)\n"
+if {$mem_mask != $full_mask} {
+	send_user "\nFAILURE: memory affinity mask inconsistency ($mem_mask,$full_mask)\n"
 	set exit_code 1
 }
 
 #
-# Run a job step with verbosity and all tasks on CPU 0
+# Run a job step with verbosity and all tasks using memory of CPU 0
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
+set verbose_cnt 0
+send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -149,7 +162,7 @@ if {$task_mask != $task_cnt} {
 	set exit_code 1
 }
 set verbose_cnt 0
-send "$srun -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
+send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
 	-re "setting affinity of task" {
 		incr verbose_cnt
@@ -172,16 +185,41 @@ if {$verbose_cnt != $task_cnt} {
 }
 
 #
-# Run all tasks all bound to the same CPU by specifying a map (for each CPU)
+# Run all tasks all bound to the same CPU's memory (local CPU)
+#
+send "$srun -c1 --cpu_bind=rank --mem_bind=local $file_prog\n"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		if {$expect_out(2,string) != $expect_out(3,string)} {
+			send_user "\nFAILURE: failed to use local memory for a task\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding or failure to recognize prompt\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+
+#
+# Run all tasks all bound to the same CPU's memory by specifying a map (for each CPU)
 #
 set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	send "$srun -c1 --cpu_bind=map_cpu:$cpu_cnt $file_prog\n"
+	send "$srun -c1 --mem_bind=map_mem:$cpu_cnt $file_prog\n"
 	expect {
-		-re "TASK_ID:($number),MASK:($number)" {
-			incr mask_sum $expect_out(2,string)
+		-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+			incr mask_sum $expect_out(3,string)
 			exp_continue
 		}
 		-re "error" {
@@ -204,17 +242,17 @@ while {$cpu_cnt < $task_cnt} {
 }
 
 #
-# Run all tasks all bound to the same CPU by specifying a mask (for each CPU)
+# Run all tasks all bound to the same CPU's memory by specifying a mask (for each CPU)
 #
 set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
 	set mstr [ dec2hex16 $mask]
-	send "$srun -c1 --cpu_bind=mask_cpu:$mstr $file_prog\n"
+	send "$srun -c1 --mem_bind=mask_mem:$mstr $file_prog\n"
 	expect {
-		-re "TASK_ID:($number),MASK:($number)" {
-			incr mask_sum $expect_out(2,string)
+		 -re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+			incr mask_sum $expect_out(3,string)
 			exp_continue
 		}
 		-re "error" {
@@ -283,13 +321,13 @@ send_user "alt_map:  $alt_map\n"
 send_user "alt_mask: $alt_mask\n"
 
 #
-# Run all tasks bound to a different CPU by specifying a forward map
+# Run all tasks bound to a different CPU's memory by specifying a forward map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=map_cpu:$fwd_map $file_prog\n"
+send "$srun -c1 --mem_bind=map_mem:$fwd_map $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -310,13 +348,13 @@ if {$task_mask != $full_mask} {
 }
 
 #
-# Run all tasks bound to a different CPU by specifying a reverse map
+# Run all tasks bound to a different CPU's memory by specifying a reverse map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=map_cpu:$rev_map $file_prog\n"
+send "$srun -c1 --mem_bind=map_mem:$rev_map $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -337,13 +375,13 @@ if {$task_mask != $full_mask} {
 }
 
 #
-# Run all tasks bound to a different CPU by specifying an alternating map
+# Run all tasks bound to a different CPU's memroy by specifying an alternating map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=map_cpu:$alt_map $file_prog\n"
+send "$srun -c1 --mem_bind=map_mem:$alt_map $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -364,13 +402,13 @@ if {$task_mask != $full_mask} {
 }
 
 #
-# Run all tasks bound to a different CPU by specifying a forward mask
+# Run all tasks bound to a different CPU's memory by specifying a forward mask
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:$fwd_mask $file_prog\n"
+send "$srun -c1 --mem_bind=mask_mem:$fwd_mask $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -391,13 +429,13 @@ if {$task_mask != $full_mask} {
 }
 
 #
-# Run all tasks bound to a different CPU by specifying a reverse mask
+# Run all tasks bound to a different CPU's memory by specifying a reverse mask
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:$rev_mask $file_prog\n"
+send "$srun -c1 --mem_bind=mask_mem:$rev_mask $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -418,13 +456,13 @@ if {$task_mask != $full_mask} {
 }
 
 #
-# Run all tasks bound to a different CPU by specifying an alternating mask
+# Run all tasks bound to a different CPU's memory by specifying an alternating mask
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:$alt_mask $file_prog\n"
+send "$srun -c1 --mem_bind=mask_mem:$alt_mask $file_prog\n"
 expect {
-	-re "TASK_ID:($number),MASK:($number)" {
-		incr task_mask $expect_out(2,string)
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {

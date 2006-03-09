@@ -483,7 +483,8 @@ JobAcctType=jobacct/none
 #                   provide resource management within a node (e.g. pinning
 #                   tasks to specific processors). Permissible values are:
 #      "task/none"     : no task launch actions, the default.
-#      "task/affinity" : CPU affinity support (see "srun --cpu_bind=")
+#      "task/affinity" : CPU affinity support (see srun man pages for 
+#                        --cpu_bind and --mem_bind options)
 #
 # Example:
 #
