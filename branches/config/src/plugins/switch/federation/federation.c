@@ -42,6 +42,7 @@
 #include <sys/stat.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
+#include "src/common/read_config.h"
 #include "src/plugins/switch/federation/federation.h"
 #include "src/plugins/switch/federation/federation_keys.h"
 
@@ -170,8 +171,6 @@ static fed_status_t fed_status_tab[]= {
 };
 
 static void _hash_rebuild(fed_libstate_t *state);
-static void _strip_cr_nl(char *line);
-static void _strip_comments(char *line);
 static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name);
 static int _parse_fed_file(hostlist_t *adapter_list);
 static void _init_adapter_cache(void);
@@ -417,47 +416,6 @@ _get_lid_from_adapter(char *adapter_name)
 }
 
 
-/* Explicitly strip out carriage-return and new-line */
-static void _strip_cr_nl(char *line)
-{
-	int len = strlen(line);
-	int i;
-
-	for(i=0;i<len;i++) {
-		if(line[i]=='\r' || line[i]=='\n') {
-			line[i] = '\0';
-			return;
-		}
-	}
-}
-
-/* Strip comments from a line by terminating the string
- * where the comment begins.
- * Everything after a non-escaped "#" is a comment.
- */
-static void _strip_comments(char *line)
-{
-	int i, j;
-	int len = strlen(line);
-
-	/* replace comment flag "#" with an end of string (NULL) */
-	/* escape sequence "\#" translated to "#" */
-	for (i = 0; i < len; i++) {
-		if (line[i] == (char) NULL)
-			break;
-		if (line[i] != '#')
-			continue;
-		if ((i > 0) && (line[i - 1] == '\\')) {
-			for (j = i; j < len; j++) {
-				line[j - 1] = line[j];
-			}
-			continue;
-		}
-		line[i] = (char) NULL;
-		break;
-	}
-}
-
 static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 {
 	ADAPTER_RESOURCES res;
@@ -534,52 +492,26 @@ static char *_get_fed_conf(void)
 
 static int _parse_fed_file(hostlist_t *adapter_list)
 {
-	FILE *fed_spec_file;	/* pointer to input data file */
-	int line_num;		/* line number in input file */
-	char in_line[BUFSIZE];	/* input line */
-	char *adapter_name = NULL;
-	int i, j;
-	int error_code;
+	s_p_options_t options[] = {{"AdapterName", S_P_STRING}, {NULL}};
+	s_p_hashtbl_t *tbl;
+	char *adapter_name;
 
 	debug("Reading the federation.conf file");
 	if (!fed_conf)
 		fed_conf = _get_fed_conf();
-	fed_spec_file = fopen(fed_conf, "r");
-	if (fed_spec_file == NULL)
-		fatal("_parse_fed_file error opening file %s, %m",
-		      fed_conf);
-	line_num = 0;
-	while (fgets(in_line, BUFSIZE, fed_spec_file) != NULL) {
-		line_num++;
-		_strip_cr_nl(in_line);
-		_strip_comments(in_line);
-		if (strlen(in_line) >= (BUFSIZE - 1)) {
-			error("_parse_fed_file line %d, of input file %s "
-			      "too long", line_num, fed_conf);
-			fclose(fed_spec_file);
-			xfree(fed_conf);
-			return E2BIG;
-		}
 
-		/* parse what is left, non-comments */
-		/* partition adapter names */
-		error_code = slurm_parser(in_line,
-					  "AdapterName=", 's', &adapter_name,
-					  "END");
-		if(error_code == SLURM_ERROR)
-			error("There was an error code from slurm_parser");
-		if (adapter_name) {
-			int rc;
-			rc = hostlist_push(*adapter_list, adapter_name);
-			if (rc == 0)
-				error("Adapter name format is incorrect.");
-			adapter_name = NULL;
-		}
-		/* report any leftover strings on input line */
-		report_leftover(in_line, line_num);
+	tbl = s_p_hashtbl_create(options);
+	s_p_parse_file(fed_conf);
+
+	if (s_p_get_string(tbl, "AdapterName", &adapter_name)) {
+		int rc;
+		rc = hostlist_push(*adapter_list, adapter_name);
+		if (rc == 0)
+			error("Adapter name format is incorrect.");
+		xfree(adapter_name);
 	}
-	fclose(fed_spec_file);
-	xfree(fed_conf);
+
+	s_p_hashtbl_destroy(tbl);
 
 	return SLURM_SUCCESS;
 }
