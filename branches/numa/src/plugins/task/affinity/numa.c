@@ -183,7 +183,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 		/* ...select mask string by wrapping task ID into list */
 		maskid = local_id % nummasks;
 		i = maskid;
-		curstr = job->cpu_bind;
+		curstr = job->mem_bind;
 		while (*curstr && i) {
 			if (*curstr == ',')
 			    	i--;
