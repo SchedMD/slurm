@@ -145,7 +145,7 @@ static int _post_allocate(bg_record_t *bg_record)
 	pm_partition_id_t block_id;
 	struct passwd *pw_ent = NULL;
 	/* Add partition record to the DB */
-	debug("adding partition\n");
+	debug2("adding partition\n");
 	
 	slurm_mutex_lock(&api_file_mutex);
 	for(i=0;i<MAX_ADD_RETRY; i++) {
@@ -168,7 +168,7 @@ static int _post_allocate(bg_record_t *bg_record)
 	}
 	slurm_mutex_unlock(&api_file_mutex);
 	
-	debug("done adding\n");
+	debug2("done adding\n");
 	
 	/* Get back the new partition id */
 	if ((rc = rm_get_data(bg_record->bg_block, RM_PartitionID, &block_id))

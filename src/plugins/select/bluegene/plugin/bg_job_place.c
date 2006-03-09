@@ -64,6 +64,8 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 	}
 }
 
+pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*
  * finds the best match for a given job request 
  * 
@@ -126,6 +128,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 
 	*found_bg_record = NULL;
 try_again:	
+	debug("got here");
 	slurm_mutex_lock(&block_state_mutex);
 	debug("number of blocks to check: %d state %d", 
 	      list_count(bg_list),
@@ -135,7 +138,8 @@ try_again:
 		/* If test_only we want to fall through to tell the 
 		   scheduler that it is runnable just not right now. 
 		*/
-		debug3("job_running = %d", record->job_running);
+		debug3("%s job_running = %d", 
+		       record->bg_block_id, record->job_running);
 		/*partition is being destroyed, ignore it*/
 		if(record->job_running == -2)
 			continue;
@@ -228,12 +232,8 @@ try_again:
 					   LAYOUT_DYNAMIC) {
 						temp_list = list_create(NULL);
 						list_push(temp_list, record);
-						num_block_to_free++;
-						slurm_mutex_unlock(
-							&block_state_mutex);
 						free_block_list(temp_list);
-						slurm_mutex_lock(
-							&block_state_mutex);
+						num_block_to_free++;
 						list_destroy(temp_list);
 					} 
 					break;
@@ -422,6 +422,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	      buf, 
 	      min_nodes, 
 	      max_nodes);
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		slurm_mutex_lock(&create_dynamic_mutex);
 	
 	rc = _find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
 				    max_nodes, spec, &record, test_only);
@@ -432,8 +434,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-			/*FIX ME: isn't correct for small blocks */
-			min_nodes *= bluegene_bp_node_cnt;
+			if(job_ptr->num_procs < bluegene_bp_node_cnt) {
+				i = procs_per_node/job_ptr->num_procs;
+				info("divide by %d",i);
+			} else 
+				i = 1;
+			min_nodes *= bluegene_bp_node_cnt/i;
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
 					     &min_nodes);
@@ -472,6 +478,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     "unassigned");
 		} 
 	}
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		slurm_mutex_unlock(&create_dynamic_mutex);
 	
 	return rc;
 }

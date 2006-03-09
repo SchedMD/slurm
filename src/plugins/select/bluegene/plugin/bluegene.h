@@ -130,6 +130,7 @@ extern List bg_curr_block_list; 	/* Initial bg block state */
 extern List bg_list;			/* List of configured BG blocks */
 extern List bg_job_block_list;  	/* jobs running in these blocks */
 extern List bg_booted_block_list;  	/* blocks that are booted */
+extern List bg_freeing_list;  	        /* blocks that being freed */
 
 extern bool agent_fini;
 extern pthread_mutex_t block_state_mutex;
@@ -158,11 +159,12 @@ extern void fini_bg(void);
 /* Log a bg_record's contents */
 extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
+extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
 extern void process_nodes(bg_record_t *bg_record);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
-/* return bg_record from bg_list */
-extern bg_record_t *find_bg_record(char *bg_block_id);
+/* return bg_record from a bg_list */
+extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
 
 /* change username of a block bg_record_t target_name needs to be 
    updated before call of function. 

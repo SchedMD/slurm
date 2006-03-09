@@ -161,15 +161,14 @@ static void _drain_as_needed(char *node_list, char *reason)
 extern int block_ready(struct job_record *job_ptr)
 {
 	int rc = 1;
-#ifdef HAVE_BG_FILES
 	char *block_id = NULL;
 	bg_record_t *bg_record = NULL;
 	
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 				  SELECT_DATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
+		bg_record = find_bg_record_in_list(bg_list, block_id);
 		slurm_mutex_lock(&block_state_mutex);
-		bg_record = find_bg_record(block_id);
 		
 		if(bg_record) {
 			if ((bg_record->user_uid == job_ptr->user_id)
@@ -188,7 +187,6 @@ extern int block_ready(struct job_record *job_ptr)
 		xfree(block_id);
 	} else
 		rc = READY_JOB_ERROR;
-#endif
 	return rc;
 }				
 
@@ -273,10 +271,13 @@ extern int update_block_list()
 			free(name);
 			continue;
 		}
-		bg_record = find_bg_record(name);
+		bg_record = find_bg_record_in_list(bg_list, name);
 		
 		if(bg_record == NULL) {
-			error("Block %s not found in bg_list "
+			if(find_bg_record_in_list(bg_freeing_list, name)) {
+				break;
+			}
+			debug("Block %s not found in bg_list "
 			      "removing from database", name);
 			term_jobs_on_block(name);
 			if ((rc = rm_get_data(block_ptr, 
@@ -311,9 +312,15 @@ extern int update_block_list()
 			    ||  (state == RM_PARTITION_ERROR)) {
 				rc = rm_remove_partition(name);
 				if (rc != STATUS_OK) {
-					error("rm_remove_partition(%s): %s",
-					      name,
-					      bg_err_str(rc));
+					if(rc == PARTITION_NOT_FOUND) {
+						debug("1 block %s not found",
+						      name);
+					} else {
+						error("1 rm_remove_partition"
+						      "(%s): %s",
+						      name,
+						      bg_err_str(rc));
+					}
 				} else
 					debug("done\n");
 			}

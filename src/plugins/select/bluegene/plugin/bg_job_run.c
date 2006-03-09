@@ -186,14 +186,16 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 {
 	bg_record_t * bg_record = NULL;
 	
-	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
+	bg_record = 
+		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if(!bg_record) {
 		error("No block %s", bg_update_ptr->bg_block_id);
 		return;
 	}
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record->job_running = bg_update_ptr->job_id;
-	list_push(bg_job_block_list, bg_record);
+	if(!block_exist_in_list(bg_job_block_list, bg_record))
+		list_push(bg_job_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if(bg_record->state == RM_PARTITION_READY) {
@@ -235,7 +237,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 
 	slurm_mutex_lock(&job_start_mutex);
 		
-	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
+	bg_record = 
+		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if(!bg_record) {
 		error("block %s not found in bg_list",
 		      bg_update_ptr->bg_block_id);
@@ -282,6 +285,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		/* wait for all necessary blocks to be freed */
 		while(num_block_to_free != num_block_freed) {
 			sleep(1);
+			debug("got %d of %d freed",
+			       num_block_freed, 
+			       num_block_to_free);
 		}
 		
 		if(bg_record->job_running == -1) {
@@ -420,7 +426,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 	}
 #endif
 	/* remove the block's users */
-	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
+	bg_record = 
+		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if(bg_record) {
 		debug("got the record %s user is %s",
 		      bg_record->bg_block_id,
@@ -442,7 +449,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		bg_record->job_running = -1;
+		if(bg_record->job_running != -2)
+			bg_record->job_running = -1;
 		
 		/*remove user from list */
 		if(bg_record->target_name) {
@@ -667,14 +675,23 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_BLOCK_ID, &(bg_update_ptr->bg_block_id));
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_NODE_USE, &(bg_update_ptr->node_use));
-	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
+	bg_record = 
+		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if (bg_record) {
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 			bg_record->bp_count);
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->job_running = bg_update_ptr->job_id;
-		list_push(bg_job_block_list, bg_record);
+		if(!block_exist_in_list(bg_job_block_list, bg_record))
+			list_push(bg_job_block_list, bg_record);
+		if(!block_exist_in_list(bg_booted_block_list, bg_record))
+			list_push(bg_booted_block_list, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+	} else {
+		error("bg_record %s does exist, requested for job (%d)", 
+		      bg_update_ptr->bg_block_id, job_ptr->job_id);
+		_bg_list_del(bg_update_ptr);
+		return SLURM_ERROR;
 	}
 	info("Queue start of job %u in BG block %s",
 	     job_ptr->job_id, 
@@ -839,8 +856,11 @@ extern int boot_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&api_file_mutex);
-	list_push(bg_booted_block_list, bg_record);
-
+	slurm_mutex_lock(&block_state_mutex);
+	if(!block_exist_in_list(bg_booted_block_list, bg_record))
+		list_push(bg_booted_block_list, bg_record);
+	slurm_mutex_unlock(&block_state_mutex);
+	
 	rc = 0;
 	while(rc < 10) {
 		if(bg_record->state == RM_PARTITION_CONFIGURING) {
@@ -862,8 +882,9 @@ extern int boot_block(bg_record_t *bg_record)
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
 #else
-	list_push(bg_booted_block_list, bg_record);
 	slurm_mutex_lock(&block_state_mutex);
+	if(!block_exist_in_list(bg_booted_block_list, bg_record))
+		list_push(bg_booted_block_list, bg_record);
 	bg_record->state = RM_PARTITION_READY;
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);				
