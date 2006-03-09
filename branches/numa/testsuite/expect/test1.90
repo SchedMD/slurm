@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of CPU and memory affinity support for NUMA systems.
+#          Test of memory affinity support for NUMA systems.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -45,8 +45,18 @@ set affinity 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "task/numa" {
+	-re "task/affinity" {
 		set affinity 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+spawn ls /usr/include/numa.h
+expect {
+	-re "no such file" {
+		set affinity 0
 		exp_continue
 	}
 	eof {
@@ -58,7 +68,7 @@ if {$affinity == 0} {
 	send_user "\nWARNING: memory affinity not supported on this system\n"
 	exit 0
 }
-send_user "\ntask numa plugin installed\n"
+send_user "\ntask affinity plugin installed with numa support\n"
 
 #
 # Build a test program to report affinity by task
@@ -98,37 +108,8 @@ expect {
 }
 
 #
-# Run a job step with CPU and memory affinity
+# Run a job step with memory affinity
 #
-set cpu_mask 0
-set mem_mask 0
-send "$srun -c1 --cpu_bind=rank $file_prog\n"
-expect {
-	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
-		incr cpu_mask $expect_out(2,string)
-		incr mem_mask $expect_out(3,string)
-		exp_continue
-	}
-	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
-		set exit_code 1
-	}
-	-re $prompt
-}
-if {$cpu_mask != $full_mask} {
-	send_user "\nFAILURE: CPU affinity mask inconsistency ($cpu_mask,$full_mask)\n"
-	set exit_code 1
-}
-if {$mem_mask == $full_mask} {
-	send_user "\nFAILURE: memory affinity mask inconsistency ($mem_mask,$full_mask)\n"
-	set exit_code 1
-}
-
 set cpu_mask 0
 set mem_mask 0
 send "$srun -c1 --mem_bind=rank $file_prog\n"
@@ -148,10 +129,6 @@ expect {
 		set exit_code 1
 	}
 	-re $prompt
-}
-if {$cpu_mask == $full_mask} {
-	send_user "\nFAILURE: CPU affinity mask inconsistency ($cpu_mask,$full_mask)\n"
-	set exit_code 1
 }
 if {$mem_mask != $full_mask} {
 	send_user "\nFAILURE: memory affinity mask inconsistency ($mem_mask,$full_mask)\n"
