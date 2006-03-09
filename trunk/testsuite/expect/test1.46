@@ -67,6 +67,8 @@ main()
 }
 }
 close $fd
+# Add delay due to sporatic error "Clock skew detected"
+exec $bin_sleep 1
 exec $bin_make -f /dev/null $file_in
 exec $bin_chmod 700 $file_in
 
