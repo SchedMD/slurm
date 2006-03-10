@@ -1,8 +1,8 @@
 #!/bin/sh
-# for a file containing a list of allocated nodes, get the slurm
-# jobid for the job running on that node for this user
+# Usage: <squeue path> <node list>
+# Returns SLURM job id allocated  to that node for that user
 #
-node=`head -n 1 $1`
+node=`head -n 1 $2`
 user=`id -un`
-jobid=`squeue -h -o %i -u $user -n $node`
+jobid=`$1 -h -o %i -u $user -n $node`
 echo $jobid
