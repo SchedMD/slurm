@@ -51,6 +51,7 @@
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/common/read_config.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/api/job_info.h"
 #include "bluegene.h"
@@ -64,6 +65,8 @@ static void _drain_as_needed(char *node_list, char *reason);
 
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
+	slurm_ctl_conf_t *conf;
+
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
@@ -73,8 +76,11 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	
 	if(bg_record->target_name 
 	   && bg_record->user_name) {
-		if(!strcmp(bg_record->target_name, 
-			   slurmctld_conf.slurm_user_name)) {
+		int rc;
+		conf = slurm_conf_lock();
+		rc = strcmp(bg_record->target_name, conf->slurm_user_name);
+		slurm_conf_unlock();
+		if (!rc) {
 			if(strcmp(bg_record->target_name, 
 				  bg_record->user_name)) {
 				error("Partition %s was in a ready state "
@@ -99,16 +105,15 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		error("Target Name was not set "
 		      "not set for partition %s.",
 		      bg_record->bg_block_id);
-		bg_record->target_name = 
-			xstrdup(bg_record->user_name);
+		bg_record->target_name = xstrdup(bg_record->user_name);
 	} else {
 		error("Target Name and User Name are "
 		      "not set for partition %s.",
 		      bg_record->bg_block_id);
-		bg_record->user_name = 
-			xstrdup(slurmctld_conf.slurm_user_name);
-		bg_record->target_name = 
-			xstrdup(bg_record->user_name);
+		conf = slurm_conf_lock();
+		bg_record->user_name = xstrdup(conf->slurm_user_name);
+		slurm_conf_unlock();
+		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
 	return SLURM_SUCCESS;
 }

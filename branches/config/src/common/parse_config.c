@@ -640,8 +640,8 @@ static int _line_is_space(const char *line)
 int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 {
 	char *key, *value;
-	const char *leftover = line;
 	const char *ptr = line;
+	char *leftover = (char *)line;
 	s_p_values_t *p;
 
 	_keyvalue_regex_init();
@@ -693,19 +693,23 @@ void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 }
 
 /*
- * s_p_get_string - Search for a key in a s_p_hashtbl_t with value of type
- *                  string.  If the key is found and has a set value, the
- *                  value is retuned in "str".
+ * s_p_get_string
  *
- * IN hashtbl - hash table created by s_p_hashtbl_create()
- * IN key - hash table key.
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * string.  If the key is found and has a set value, the
+ * value is retuned in "str".
+ *
  * OUT str - pointer to a copy of the string value
  *           (caller is resonsible for freeing str with xfree())
+ * IN key - hash table key.
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
  *
  * Returns 1 when a value was set for "key" during parsing and "str"
  *   was successfully set, otherwise returns 0;
+ *
+ * NOTE: Caller is responsible for freeing the returned string with xfree!
  */
-int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str)
+int s_p_get_string(char **str, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -728,18 +732,20 @@ int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str)
 }
 
 /*
- * s_p_get_long - Search for a key in a s_p_hashtbl_t with value of type
- *                  long.  If the key is found and has a set value, the
- *                  value is retuned in "num".
+ * s_p_get_long
  *
- * IN hashtbl - hash table created by s_p_hashtbl_create()
- * IN key - hash table key
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * long.  If the key is found and has a set value, the
+ * value is retuned in "num".
+ *
  * OUT num - pointer to a long where the value is returned
+ * IN key - hash table key
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
  *
  * Returns 1 when a value was set for "key" during parsing and "num"
  *   was successfully set, otherwise returns 0;
  */
-int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num)
+int s_p_get_long(long *num, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -762,19 +768,21 @@ int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num)
 }
 
 /*
- * s_p_get_uint16 - Search for a key in a s_p_hashtbl_t with value of type
- *                  uint16.  If the key is found and has a set value, the
- *                  value is retuned in "num".
+ * s_p_get_uint16
  *
- * IN hashtbl - hash table created by s_p_hashtbl_create()
- * IN key - hash table key
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * uint16.  If the key is found and has a set value, the
+ * value is retuned in "num".
+ *
  * OUT num - pointer to a uint16_t where the value is returned
+ * IN key - hash table key
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
  *
  * Returns 1 when a value was set for "key" during parsing and "num"
  *   was successfully set, otherwise returns 0;
  */
-int s_p_get_uint16(const s_p_hashtbl_t *hashtbl, const char *key,
-		   uint16_t *num)
+int s_p_get_uint16(uint16_t *num, const char *key,
+		   const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -797,19 +805,21 @@ int s_p_get_uint16(const s_p_hashtbl_t *hashtbl, const char *key,
 }
 
 /*
- * s_p_get_uint32 - Search for a key in a s_p_hashtbl_t with value of type
- *                  uint32.  If the key is found and has a set value, the
- *                  value is retuned in "num".
+ * s_p_get_uint32
  *
- * IN hashtbl - hash table created by s_p_hashtbl_create()
- * IN key - hash table key
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * uint32.  If the key is found and has a set value, the
+ * value is retuned in "num".
+ *
  * OUT num - pointer to a uint32_t where the value is returned
+ * IN key - hash table key
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
  *
  * Returns 1 when a value was set for "key" during parsing and "num"
  *   was successfully set, otherwise returns 0;
  */
-int s_p_get_uint32(const s_p_hashtbl_t *hashtbl, const char *key,
-		   uint32_t *num)
+int s_p_get_uint32(uint32_t *num, const char *key,
+		   const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -832,18 +842,20 @@ int s_p_get_uint32(const s_p_hashtbl_t *hashtbl, const char *key,
 }
 
 /*
- * s_p_get_pointer - Search for a key in a s_p_hashtbl_t with value of type
- *                   pointer.  If the key is found and has a set value, the
- *                   value is retuned in "ptr".
+ * s_p_get_pointer
  *
- * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * pointer.  If the key is found and has a set value, the
+ * value is retuned in "ptr".
+ *
+ * OUT ptr - pointer to a void pointer where the value is returned
  * IN key - hash table key
- * OUT num - pointer to a void pointer where the value is returned
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
  *
  * Returns 1 when a value was set for "key" during parsing and "ptr"
  *   was successfully set, otherwise returns 0;
  */
-int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr)
+int s_p_get_pointer(void **ptr, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -865,8 +877,28 @@ int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr)
 	return 1;
 }
 
-int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
-		  void **ptr_array[], int *count)
+
+/*
+ * s_p_get_array
+ *
+ * Most s_p_ data types allow a key to appear only once in a file
+ * (s_p_parse_file) or line (s_p_parse_line).  S_P_ARRAY is the exception.
+ *
+ * S_P_ARRAY allows a key to appear any number of times.  Each time
+ * a particular key is found the value array grows by one element, and
+ * that element contains a pointer to the newly parsed value.  You can
+ * think of this as being an array of S_P_POINTER types.
+ *
+ * OUT ptr_array - pointer to a void pointer-pointer where the value is returned
+ * OUT count - length of ptr_array
+ * IN key - hash table key
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ *
+ * Returns 1 when a value was set for "key" during parsing and both
+ *   "ptr_array" and "count" were successfully set, otherwise returns 0.
+ */
+int s_p_get_array(void **ptr_array[], int *count, 
+		  const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -890,18 +922,20 @@ int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 }
 
 /*
- * s_p_get_boolean - Search for a key in a s_p_hashtbl_t with value of type
- *                   boolean.  If the key is found and has a set value, the
- *                   value is retuned in "flag".
+ * s_p_get_boolean
  *
- * IN hashtbl - hash table created by s_p_hashtbl_create()
- * IN key - hash table key
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * boolean.  If the key is found and has a set value, the
+ * value is retuned in "flag".
+ *
  * OUT flag - pointer to a bool where the value is returned
+ * IN key - hash table key
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
  *
  * Returns 1 when a value was set for "key" during parsing and "num"
  *   was successfully set, otherwise returns 0;
  */
-int s_p_get_boolean(const s_p_hashtbl_t *hashtbl, const char *key, bool *flag)
+int s_p_get_boolean(bool *flag, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
@@ -946,7 +980,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 	for (op = options; op->key != NULL; op++) {
 		switch(op->type) {
 		case S_P_STRING:
-			if (s_p_get_string(hashtbl, op->key, &str)) {
+			if (s_p_get_string(&str, op->key, hashtbl)) {
 			        verbose("%s = %s", op->key, str);
 				xfree(str);
 			} else {
@@ -954,32 +988,32 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 			}
 			break;
 		case S_P_LONG:
-			if (s_p_get_long(hashtbl, op->key, &num))
+			if (s_p_get_long(&num, op->key, hashtbl))
 				verbose("%s = %ld", op->key, num);
 			else
 				verbose("%s", op->key);
 			break;
 		case S_P_UINT16:
-			if (s_p_get_uint16(hashtbl, op->key, &num16))
+			if (s_p_get_uint16(&num16, op->key, hashtbl))
 				verbose("%s = %hu", op->key, num16);
 			else
 				verbose("%s", op->key);
 			break;
 		case S_P_UINT32:
-			if (s_p_get_uint32(hashtbl, op->key, &num32))
+			if (s_p_get_uint32(&num32, op->key, hashtbl))
 				verbose("%s = %u", op->key, num32);
 			else
 				verbose("%s", op->key);
 			break;
 		case S_P_POINTER:
-			if (s_p_get_pointer(hashtbl, op->key, &ptr))
+			if (s_p_get_pointer(&ptr, op->key, hashtbl))
 				verbose("%s = %x", op->key, ptr);
 			else
 				verbose("%s", op->key);
 			break;
 		case S_P_ARRAY:
-			if (s_p_get_array(hashtbl, op->key,
-					  &ptr_array, &count)) {
+			if (s_p_get_array(&ptr_array, &count,
+					  op->key, hashtbl)) {
 				verbose("%s, count = %d", op->key, count);
 			} else {
 				verbose("%s", op->key);

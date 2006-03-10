@@ -503,7 +503,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 	tbl = s_p_hashtbl_create(options);
 	s_p_parse_file(fed_conf);
 
-	if (s_p_get_string(tbl, "AdapterName", &adapter_name)) {
+	if (s_p_get_string(&adapter_name, "AdapterName", tbl)) {
 		int rc;
 		rc = hostlist_push(*adapter_list, adapter_name);
 		if (rc == 0)
