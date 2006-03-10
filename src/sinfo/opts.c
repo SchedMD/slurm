@@ -613,7 +613,7 @@ void _print_options( void )
 	printf("all_flag        = %s\n", params.all_flag ? "true" : "false");
 	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
 			"true" : "false");
-	printf("bg_flag        = %s\n", params.bg_flag ? "true" : "false");
+	printf("bg_flag         = %s\n", params.bg_flag ? "true" : "false");
 	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
 			"true" : "false");
 	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
