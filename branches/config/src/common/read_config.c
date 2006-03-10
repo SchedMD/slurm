@@ -508,15 +508,6 @@ int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[])
 	}
 }
 
-void read_slurm_conf_init(void) {
-	s_p_hashtbl_t *hashtbl;
-
-	hashtbl = s_p_hashtbl_create(slurm_conf_options);
-	s_p_parse_file(hashtbl, "/home/morrone/slurm.conf");
-	s_p_dump_values(hashtbl, slurm_conf_options);
-	s_p_hashtbl_destroy(hashtbl);
-}
-
 static void _free_name_hashtbl()
 {
 	int i;
@@ -1219,26 +1210,26 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->proctrack_type = 
 				xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
-	if ((!strcmp(conf->switch_type,      "switch/elan"))
+	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
 		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
 
-	/* FIXME - figure out how to convert to s_p_get_* */
-        if (conf->propagate_rlimits_except) {
-                if ((parse_rlimits( conf->propagate_rlimits_except,
-                                   NO_PROPAGATE_RLIMITS )) < 0)
-                        fatal( "Bad PropagateResourceLimitsExcept: %s",
-                                conf->propagate_rlimits_except );
-        }
-        else {
-                if (conf->propagate_rlimits == NULL)
+        if (s_p_get_string(&conf->propagate_rlimits_except,
+			   "PropagateResourceLimitsExcept", hashtbl)) {
+                if ((parse_rlimits(conf->propagate_rlimits_except,
+                                   NO_PROPAGATE_RLIMITS)) < 0)
+                        fatal("Bad PropagateResourceLimitsExcept: %s",
+			      conf->propagate_rlimits_except);
+        } else {
+                if (!s_p_get_string(&conf->propagate_rlimits,
+				    "PropagateResourceLimits", hashtbl))
                         conf->propagate_rlimits = xstrdup( "ALL" );
-                if ((parse_rlimits( conf->propagate_rlimits,
+                if ((parse_rlimits(conf->propagate_rlimits,
                                    PROPAGATE_RLIMITS )) < 0)
-                        fatal( "Bad PropagateResourceLimits: %s",
-                                conf->propagate_rlimits );
+                        fatal("Bad PropagateResourceLimits: %s",
+			      conf->propagate_rlimits);
         }
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
