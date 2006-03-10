@@ -124,9 +124,7 @@ int srun(int ac, char **av)
 	char *epilog = NULL;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-struct timeval start_time, end_time;
-long start, end;
-
+	
 	env->stepid = -1;
 	env->procid = -1;
 	env->localid = -1;
@@ -195,8 +193,13 @@ long start, end;
 			_print_job_information(resp);
 		
 		job = job_create_allocation(resp);
-		job->step_layout = step_layout_create(NULL, NULL, NULL);
-
+		job->step_layout = step_layout_create(resp, NULL, NULL);
+		if(!job->step_layout) {
+			fatal("step_layout not created correctly");
+		}
+		if(task_layout(job->step_layout) != SLURM_SUCCESS) {
+			fatal("problem with task layout");
+		}
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
@@ -229,7 +232,6 @@ long start, end;
 	} else if (mode == MODE_ATTACH) {
 		reattach();
 		exit (0);
-
 	} else {
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
@@ -291,7 +293,6 @@ long start, end;
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
 	
-	gettimeofday(&start_time, NULL);
 	if (launch_thr_create(job) < 0)
  		job_fatal(job, "Unable to create launch thread: %m");
 	
@@ -302,14 +303,6 @@ long start, end;
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	}
 	slurm_mutex_unlock(&job->state_mutex);
-	gettimeofday(&end_time, NULL);
-	start = start_time.tv_sec;
-	start *= 1000000;
-	start += start_time.tv_usec;
-	end = end_time.tv_sec;
-	end *= 1000000;
-	end += end_time.tv_usec;
-	//info("done with unpack of launch request %ld",(end-start));
 	
 	/* job is now overdone, clean up  
 	 *

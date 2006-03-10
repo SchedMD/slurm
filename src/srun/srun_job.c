@@ -275,15 +275,6 @@ _job_create_structure(allocation_info_t *info)
 		memcpy( job->slurmd_addr, info->addrs,
 			sizeof(slurm_addr)*job->nhosts);
 
-	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
-	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
-		list_enqueue(job->free_incoming, alloc_io_buf());
-	}
-	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
-	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
-		list_enqueue(job->free_outgoing, alloc_io_buf());
-	}
-	
 	/* ntask task states and statii*/
 	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
 	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));

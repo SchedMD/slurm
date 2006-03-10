@@ -178,10 +178,12 @@ extern slurm_step_layout_t *step_layout_create(
 		error("xmalloc error for step_layout");
 		return NULL;
 	}
+	step_layout->hl = NULL;
 	
 	if(alloc_resp) {
 		step_layout->alloc_nodes = 
 			(char *)xstrdup(alloc_resp->node_list);
+		step_layout->hl	= hostlist_create(alloc_resp->node_list);
 		step_layout->cpus_per_node = alloc_resp->cpus_per_node;
 		step_layout->cpu_count_reps = alloc_resp->cpu_count_reps;
 #ifdef HAVE_FRONT_END	/* Limited job step support */
@@ -189,7 +191,8 @@ extern slurm_step_layout_t *step_layout_create(
 		 * Normally we would not permit execution of job steps,
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
-		step_layout->num_hosts    = 1;
+		step_layout->num_hosts  = 1;
+		step_layout->num_tasks  = alloc_resp->node_cnt;
 #else
 		step_layout->num_hosts = alloc_resp->node_cnt;
 #endif	
@@ -208,7 +211,10 @@ extern slurm_step_layout_t *step_layout_create(
 	}
 
 	if(step_req) {
+		if(step_layout->hl)
+			hostlist_destroy(step_layout->hl);
 		step_layout->hl	= hostlist_create(step_req->node_list);
+		
 #ifdef HAVE_FRONT_END   /* Limited job step support */
 		/* All jobs execute through front-end on Blue Gene.
 		 * Normally we would not permit execution of job steps,
@@ -216,13 +222,12 @@ extern slurm_step_layout_t *step_layout_create(
 		 * one of the allocated nodes. */
 		step_layout->num_hosts = 1;
 #else
-		step_layout->num_hosts = hostlist_count(step_layout->hl);
+		step_layout->num_hosts = step_req->node_count;
 #endif
 		step_layout->task_dist	= step_req->task_dist;
 		step_layout->num_tasks  = step_req->num_tasks;
 	} else {
 		debug("no step_req given for step_layout_create");
-		step_layout->hl = NULL;
 	}
 
 	return step_layout;
