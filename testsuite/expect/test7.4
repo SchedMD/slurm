@@ -40,7 +40,7 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 
 # Note this appears as a single argv value to totalviewcli
-set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`test7.4.bash %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`test7.4.bash $squeue %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
