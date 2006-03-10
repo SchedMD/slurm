@@ -40,7 +40,7 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 
 # Note this appears as a single argv value to totalviewcli
-set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`test7.4.bash $squeue %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`test7.4.sh $squeue %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
@@ -113,16 +113,11 @@ expect {
 		send "yes\n"
 		exp_continue
 	}
-	-re "Attached to parallel task ($number).*" {
+	-re "Attached to parallel task ($number)" {
 		incr matches
-		if {$expect_out(1,string) == 5} {
-			send "G\n"
-		}
 		exp_continue
 	}
 	-re "Loaded MPI.*($number).*" {
-#		This would be a re-send of "G" above, but totalviewcli
-#		seems to ignore any input until after sending this message
 		send "G\n"
 		exp_continue
 	}
@@ -194,16 +189,11 @@ expect {
 		send "yes\n"
 		exp_continue
 	}
-	-re "Attached to parallel task ($number).*" {
+	-re "Attached to parallel task ($number)" {
 		incr matches
-		if {$expect_out(1,string) == 5} {
-			send "G\n"
-		}
 		exp_continue
 	}
 	-re "Loaded MPI.*($number).*" {
-#		This would be a re-send of "G" above, but totalviewcli
-#		seems to ignore any input until after sending this message
 		send "G\n"
 		exp_continue
 	}
