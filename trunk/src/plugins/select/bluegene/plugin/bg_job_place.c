@@ -152,6 +152,11 @@ try_again:
 			found = 1;
 			continue;
 		}
+		
+		if(!test_only && bluegene_layout_mode == LAYOUT_OVERLAP) {
+			if(!created && record->state != RM_PARTITION_READY)
+				continue;
+		}
 		/* Check processor count */
 		proc_cnt = record->bp_count * record->cpus_per_bp;
 		debug3("asking for %d-%d looking at %d", 
@@ -288,7 +293,15 @@ try_again:
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
+	if(!test_only 
+	   && !*found_bg_record 
+	   && bluegene_layout_mode == LAYOUT_OVERLAP) {
+		created = 1;
+		slurm_mutex_unlock(&block_state_mutex);
+		goto try_again;
+	}
+		
 	if(!found && test_only && bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		slurm_mutex_unlock(&block_state_mutex);
 		
