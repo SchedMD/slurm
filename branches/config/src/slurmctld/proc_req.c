@@ -278,83 +278,72 @@ void slurmctld_req (slurm_msg_t * msg)
  */
 void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
+
 	conf_ptr->last_update         = time(NULL);
-	conf_ptr->authtype            = xstrdup(slurmctld_conf.authtype);
-	conf_ptr->backup_addr         = xstrdup(slurmctld_conf.backup_addr);
-	conf_ptr->backup_controller   = xstrdup(slurmctld_conf.
-					backup_controller);
-	conf_ptr->cache_groups        = slurmctld_conf.cache_groups;
-	conf_ptr->checkpoint_type     = xstrdup(slurmctld_conf.checkpoint_type);
-	conf_ptr->control_addr        = xstrdup(slurmctld_conf.control_addr);
-	conf_ptr->control_machine     = xstrdup(slurmctld_conf.
-					control_machine);
-	conf_ptr->epilog              = xstrdup(slurmctld_conf.epilog);
-	conf_ptr->fast_schedule       = slurmctld_conf.fast_schedule;
-	conf_ptr->first_job_id        = slurmctld_conf.first_job_id;
-	conf_ptr->inactive_limit      = slurmctld_conf.inactive_limit;
-	conf_ptr->job_acct_loc        = xstrdup(slurmctld_conf.job_acct_loc);
-	conf_ptr->job_acct_parameters = xstrdup(slurmctld_conf.
-					job_acct_parameters);
-	conf_ptr->job_acct_type       = xstrdup(slurmctld_conf.
-					job_acct_type);
-	conf_ptr->job_comp_loc        = xstrdup(slurmctld_conf.job_comp_loc);
-	conf_ptr->job_comp_type       = xstrdup(slurmctld_conf.
-					job_comp_type);
-	conf_ptr->job_credential_private_key = xstrdup(slurmctld_conf.
+	conf_ptr->authtype            = xstrdup(conf.authtype);
+	conf_ptr->backup_addr         = xstrdup(conf.backup_addr);
+	conf_ptr->backup_controller   = xstrdup(conf.backup_controller);
+	conf_ptr->cache_groups        = conf.cache_groups;
+	conf_ptr->checkpoint_type     = xstrdup(conf.checkpoint_type);
+	conf_ptr->control_addr        = xstrdup(conf.control_addr);
+	conf_ptr->control_machine     = xstrdup(conf.control_machine);
+	conf_ptr->epilog              = xstrdup(conf.epilog);
+	conf_ptr->fast_schedule       = conf.fast_schedule;
+	conf_ptr->first_job_id        = conf.first_job_id;
+	conf_ptr->inactive_limit      = conf.inactive_limit;
+	conf_ptr->job_acct_loc        = xstrdup(conf.job_acct_loc);
+	conf_ptr->job_acct_parameters = xstrdup(conf.job_acct_parameters);
+	conf_ptr->job_acct_type       = xstrdup(conf.job_acct_type);
+	conf_ptr->job_comp_loc        = xstrdup(conf.job_comp_loc);
+	conf_ptr->job_comp_type       = xstrdup(conf.job_comp_type);
+	conf_ptr->job_credential_private_key = xstrdup(conf.
 					job_credential_private_key);
-	conf_ptr->job_credential_public_certificate = xstrdup(slurmctld_conf.
+	conf_ptr->job_credential_public_certificate = xstrdup(conf.
 					job_credential_public_certificate);
-	conf_ptr->kill_wait           = slurmctld_conf.kill_wait;
-	conf_ptr->max_job_cnt         = slurmctld_conf.max_job_cnt;
-	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
-	conf_ptr->mpi_default         = xstrdup(slurmctld_conf.mpi_default);
-	conf_ptr->plugindir           = xstrdup(slurmctld_conf.plugindir);
-	conf_ptr->proctrack_type      = xstrdup(slurmctld_conf.proctrack_type);
-	conf_ptr->prolog              = xstrdup(slurmctld_conf.prolog);
-        conf_ptr->propagate_rlimits   = xstrdup(slurmctld_conf.
-                                                propagate_rlimits);
-        conf_ptr->propagate_rlimits_except = xstrdup(slurmctld_conf.
-                                                     propagate_rlimits_except);
-	conf_ptr->ret2service         = slurmctld_conf.ret2service;
-	conf_ptr->schedauth           = xstrdup(slurmctld_conf.schedauth);
-	conf_ptr->schedport           = slurmctld_conf.schedport;
-	conf_ptr->schedrootfltr       = slurmctld_conf.schedrootfltr;
-	conf_ptr->schedtype           = xstrdup(slurmctld_conf.schedtype);
-	conf_ptr->select_type         = xstrdup(slurmctld_conf.select_type);
-	conf_ptr->slurm_user_id       = slurmctld_conf.slurm_user_id;
-	conf_ptr->slurm_user_name     = xstrdup(slurmctld_conf.
-					slurm_user_name);
-	conf_ptr->slurmctld_debug     = slurmctld_conf.slurmctld_debug;
-	conf_ptr->slurmctld_logfile   = xstrdup(slurmctld_conf.
-					slurmctld_logfile);
-	conf_ptr->slurmctld_pidfile   = xstrdup(slurmctld_conf.
-					slurmctld_pidfile);
-	conf_ptr->slurmctld_port      = slurmctld_conf.slurmctld_port;
-	conf_ptr->slurmctld_timeout   = slurmctld_conf.slurmctld_timeout;
-	conf_ptr->slurmd_debug        = slurmctld_conf.slurmd_debug;
-	conf_ptr->slurmd_logfile      = xstrdup(slurmctld_conf.
-					slurmd_logfile);
-	conf_ptr->slurmd_pidfile      = xstrdup(slurmctld_conf.
-					slurmd_pidfile);
-#ifndef MULTIPLE_SLURMD
-	conf_ptr->slurmd_port         = slurmctld_conf.slurmd_port;
-#endif
-	conf_ptr->slurmd_spooldir     = xstrdup(slurmctld_conf.
-					slurmd_spooldir);
-	conf_ptr->slurmd_timeout      = slurmctld_conf.slurmd_timeout;
-	conf_ptr->slurm_conf          = xstrdup(slurmctld_conf.slurm_conf);
-	conf_ptr->state_save_location = xstrdup(slurmctld_conf.
-					state_save_location);
-	conf_ptr->switch_type         = xstrdup(slurmctld_conf.switch_type);
-	conf_ptr->task_epilog         = xstrdup(slurmctld_conf.task_epilog);
-	conf_ptr->task_prolog         = xstrdup(slurmctld_conf.task_prolog);
-	conf_ptr->task_plugin         = xstrdup(slurmctld_conf.task_plugin);
-	conf_ptr->tmp_fs              = xstrdup(slurmctld_conf.tmp_fs);
-	conf_ptr->wait_time           = slurmctld_conf.wait_time;
-	conf_ptr->srun_prolog         = xstrdup(slurmctld_conf.srun_prolog);
-	conf_ptr->srun_epilog         = xstrdup(slurmctld_conf.srun_epilog);
-	conf_ptr->node_prefix         = xstrdup(slurmctld_conf.node_prefix);
-	conf_ptr->tree_width          = slurmctld_conf.tree_width;
+	conf_ptr->kill_wait           = conf.kill_wait;
+	conf_ptr->max_job_cnt         = conf.max_job_cnt;
+	conf_ptr->min_job_age         = conf.min_job_age;
+	conf_ptr->mpi_default         = xstrdup(conf.mpi_default);
+	conf_ptr->plugindir           = xstrdup(conf.plugindir);
+	conf_ptr->proctrack_type      = xstrdup(conf.proctrack_type);
+	conf_ptr->prolog              = xstrdup(conf.prolog);
+        conf_ptr->propagate_rlimits   = xstrdup(conf.propagate_rlimits);
+        conf_ptr->propagate_rlimits_except = xstrdup(conf.
+						     propagate_rlimits_except);
+	conf_ptr->ret2service         = conf.ret2service;
+	conf_ptr->schedauth           = xstrdup(conf.schedauth);
+	conf_ptr->schedport           = conf.schedport;
+	conf_ptr->schedrootfltr       = conf.schedrootfltr;
+	conf_ptr->schedtype           = xstrdup(conf.schedtype);
+	conf_ptr->select_type         = xstrdup(conf.select_type);
+	conf_ptr->slurm_user_id       = conf.slurm_user_id;
+	conf_ptr->slurm_user_name     = xstrdup(conf.slurm_user_name);
+	conf_ptr->slurmctld_debug     = conf.slurmctld_debug;
+	conf_ptr->slurmctld_logfile   = xstrdup(conf.slurmctld_logfile);
+	conf_ptr->slurmctld_pidfile   = xstrdup(conf.slurmctld_pidfile);
+	conf_ptr->slurmctld_port      = conf.slurmctld_port;
+	conf_ptr->slurmctld_timeout   = conf.slurmctld_timeout;
+	conf_ptr->slurmd_debug        = conf.slurmd_debug;
+	conf_ptr->slurmd_logfile      = xstrdup(conf.slurmd_logfile);
+	conf_ptr->slurmd_pidfile      = xstrdup(conf.slurmd_pidfile);
+	conf_ptr->slurmd_port         = conf.slurmd_port;
+	conf_ptr->slurmd_spooldir     = xstrdup(conf.slurmd_spooldir);
+	conf_ptr->slurmd_timeout      = conf.slurmd_timeout;
+	conf_ptr->slurm_conf          = xstrdup(conf.slurm_conf);
+	conf_ptr->state_save_location = xstrdup(conf.state_save_location);
+	conf_ptr->switch_type         = xstrdup(conf.switch_type);
+	conf_ptr->task_epilog         = xstrdup(conf.task_epilog);
+	conf_ptr->task_prolog         = xstrdup(conf.task_prolog);
+	conf_ptr->task_plugin         = xstrdup(conf.task_plugin);
+	conf_ptr->tmp_fs              = xstrdup(conf.tmp_fs);
+	conf_ptr->wait_time           = conf.wait_time;
+	conf_ptr->srun_prolog         = xstrdup(conf.srun_prolog);
+	conf_ptr->srun_epilog         = xstrdup(conf.srun_epilog);
+	conf_ptr->node_prefix         = xstrdup(conf.node_prefix);
+	conf_ptr->tree_width          = conf.tree_width;
+
+	slurm_conf_unlock();
 	return;
 }
 
