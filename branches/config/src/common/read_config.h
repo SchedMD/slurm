@@ -77,48 +77,6 @@ extern slurm_ctl_conf_t slurmctld_conf;
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH          50
 
-/* 
- * init_slurm_conf - initialize or re-initialize the slurm configuration 
- *	values defaults (NULL or NO_VAL). Note that the configuration
- *	file pathname (slurm_conf) is not changed.    
- * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
- */
-extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
-
-/* 
- * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.   
- * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
- */
-extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
-
-/*
- * getnodename - equivalent to gethostname(), but return only the first 
- *      component of the fully qualified name (e.g. "linux123.foo.bar" 
- *      becomes "linux123") 
- * NOTE: NodeName in the config may be different from real hostname.
- *       Use get_conf_node_name() to get the former.
- */
-extern int getnodename (char *name, size_t len);
-
-/*
- * get_conf_node_hostname - Return the NodeHostname for given NodeName
- */
-extern char *slurm_conf_get_hostname(const char *node_name);
-
-/*
- * get_conf_node_name - Return the NodeName for given NodeHostname
- */
-extern char *slurm_conf_get_nodename(const char *node_hostname);
-
-/*
- * slurm_conf_get_port - Return the port for a given NodeName
- */
-extern uint16_t slurm_conf_get_port(const char *node_name);
-
-/*
- * NEW STUFF
- */
-
 typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
@@ -154,17 +112,35 @@ typedef struct slurm_conf_partition {
 } slurm_conf_partition_t;
 
 /*
- * NOTE: Caller must not be holding slurm_conf_lock().
+ * slurm_conf_init - load the slurm configuration from the a file.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	If the conf structures have already been initialized by a call to
+ *	slurm_conf_init, any subsequent calls will do nothing until
+ *	slurm_conf_destroy is called.
+ * RET SLURM_SUCCESS if conf file is initialized.  If the slurm conf
+ *       was already initialied, return SLURM_ERROR.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern int slurm_conf_init(char *file_name);
 
 /*
- * NOTE: Caller must not be holding slurm_conf_lock().
+ * slurm_conf_reinit - reload the slurm configuration from a file.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	Unlike slurm_conf_init, slurm_conf_reinit will always reread the
+ *	file and reinitialize the configuration structures.
+ * RET SLURM_SUCCESS if conf file is reinitialized, otherwise SLURM_ERROR.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern int slurm_conf_reinit(char *file_name);
 
 /*
- * NOTE: Caller must not be holding slurm_conf_lock().
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern int slurm_conf_destroy(void);
 
@@ -188,6 +164,43 @@ extern int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[]);
  */
 extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
 
+/*
+ * get_conf_node_hostname - Return the NodeHostname for given NodeName
+ */
+extern char *slurm_conf_get_hostname(const char *node_name);
+
+/*
+ * get_conf_node_name - Return the NodeName for given NodeHostname
+ */
+extern char *slurm_conf_get_nodename(const char *node_hostname);
+
+/*
+ * slurm_conf_get_port - Return the port for a given NodeName
+ */
+extern uint16_t slurm_conf_get_port(const char *node_name);
+
+/* 
+ * init_slurm_conf - initialize or re-initialize the slurm configuration 
+ *	values defaults (NULL or NO_VAL). Note that the configuration
+ *	file pathname (slurm_conf) is not changed.    
+ * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
+ */
+extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
+
+/* 
+ * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.   
+ * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
+ */
+extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
+
+/*
+ * getnodename - equivalent to gethostname(), but return only the first 
+ *      component of the fully qualified name (e.g. "linux123.foo.bar" 
+ *      becomes "linux123") 
+ * NOTE: NodeName in the config may be different from real hostname.
+ *       Use get_conf_node_name() to get the former.
+ */
+extern int getnodename (char *name, size_t len);
 
 
 #endif /* !_READ_CONFIG_H */

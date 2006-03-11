@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
 
 	/* purge remaining data structures */
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
-	free_slurm_conf(&slurmctld_conf);
+	slurm_conf_destroy();
 	slurm_api_clear_config();
 	sleep(1);
 #endif

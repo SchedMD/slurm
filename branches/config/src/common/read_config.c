@@ -958,13 +958,8 @@ _init_slurm_conf(char *file_name)
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
 	default_slurmd_port = 0;
 
-	if (file_name == NULL) {
-		file_name = getenv("SLURM_CONF");
-		if (file_name == NULL)
-			file_name = SLURM_CONFIG_FILE;
-	}
-
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
+	conf_ptr->last_update = time(NULL);
 	s_p_parse_file(conf_hashtbl, file_name);
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	validate_and_set_defaults(conf_ptr, conf_hashtbl);
@@ -989,14 +984,16 @@ _destroy_slurm_conf()
 }
 
 /*
- * slurm_conf_init - load the slurm configuration from the configured file.
+ * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
- *                If file_name is NULL, then the compiled-in default
- *                file name is used.
- * Note: If the conf structures have already been initialized by a call to
- *       slurm_conf_read, any subsequent calls will do nothing until
- *       slurm_conf_destroy is called.
- * RET 0 if no error, otherwise an error code.
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	If the conf structures have already been initialized by a call to
+ *	slurm_conf_init, any subsequent calls will do nothing until
+ *	slurm_conf_destroy is called.
+ * RET SLURM_SUCCESS if conf file is initialized.  If the slurm conf
+ *       was already initialied, return SLURM_ERROR.
  */
 extern int
 slurm_conf_init(char *file_name)
@@ -1005,7 +1002,13 @@ slurm_conf_init(char *file_name)
 
 	if (conf_initialized) {
 		pthread_mutex_unlock(&conf_lock);
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
+	}
+
+	if (file_name == NULL) {
+		file_name = getenv("SLURM_CONF");
+		if (file_name == NULL)
+			file_name = SLURM_CONFIG_FILE;
 	}
 
 	_init_slurm_conf(file_name);
@@ -1015,12 +1018,29 @@ slurm_conf_init(char *file_name)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * slurm_conf_reinit - reload the slurm configuration from a file.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	Unlike slurm_conf_init, slurm_conf_reinit will always reread the
+ *	file and reinitialize the configuration structures.
+ * RET SLURM_SUCCESS if conf file is reinitialized, otherwise SLURM_ERROR.
+ */
 extern int 
 slurm_conf_reinit(char *file_name)
 {
 	pthread_mutex_lock(&conf_lock);
 
+	if (file_name == NULL) {
+		file_name = getenv("SLURM_CONF");
+		if (file_name == NULL)
+			file_name = SLURM_CONFIG_FILE;
+	}
+
 	if (conf_initialized) {
+		/* could check modified time on slurm.conf here */
 		_destroy_slurm_conf();
 	}
 
