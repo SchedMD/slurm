@@ -8,7 +8,8 @@
 #    X_AC_BG
 #
 #  DESCRIPTION:
-#    Test for Blue Gene/L specific files. If found define HAVE_BG
+#    Test for Blue Gene/L specific files. 
+#    If found define HAVE_BG and HAVE_FRONT_END.
 ##*****************************************************************************
 
 

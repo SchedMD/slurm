@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.0-pre3
 =============================
+ -- Added framework for XCPU job launch support.
 
 * Changes in SLURM 1.1.0-pre2
 =============================
