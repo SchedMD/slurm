@@ -33,6 +33,101 @@
 
 #include <stdint.h>
 
+/*
+ * This slurm file parser provides a method for parsing a file
+ * for key-value pairs of the form "key = value" (any amount of white-space
+ * is allowed between key, equals sign, and value).  The parser handles
+ * comments, line continuations, and escaped characters automatically.
+ * This parser can be used for any slurm-like configuration file, not
+ * just slurm.conf.  If you are looking for code specific to slurm.conf,
+ * look in src/common/slurm_conf.[hc].
+ *
+ * A comment begins with a "#" and ends at the end of the line. A line
+ * continuation is a "\" character at the end of the line (only white-space
+ * may follow the "\").  A line continuation tells the parser to
+ * concatonate the following line with the current line.
+ *
+ * To include a literal "\" or "#" character in a file, it can be escaped
+ * by a preceding "\".
+ *
+ * To use this parser, first construct an array of s_p_options_t structures.
+ * Only the "key" string needs to be non-zero.  Zero or NULL are valid
+ * defaults for type, handler, and destroy, which conventiently allows
+ * then to be left out in any static initializations of options arrays. For
+ * instance:
+ *
+ *	s_p_options_t options[] = {{"Apples", S_P_UINT16},
+ *	                           {"Oranges"},
+ *	                           {NULL}};
+ *
+ * In this example, the handler and destroy functions for the "Apples" key
+ * are NULL pointers, and for key "Oranges" even the type is zero.  A zero
+ * type is equivalent to specifying type S_P_IGNORE.
+ *
+ * Once an s_p_options_t array is defined, it is converted into a slurm
+ * parser hash table structure with the s_p_hashtbl_create() function.
+ * The s_p_hashtbl_t thus returned can be given to the s_p_parse_file()
+ * function to parse a file, and fill in the s_p_hashtbl_t structure with
+ * the values found in the file.  Values for keys can then be retrieved
+ * from the s_p_hashtbl_t with the functions with names beginning with
+ * "s_p_get_", e.g. s_p_get_boolean(), s_p_get_string(), s_p_get_uint16(),
+ * etc.
+ *
+ * Valid types
+ * -----------
+ *
+ * S_P_IGNORE - Any instance of specified key and associated value in a file
+ *	will be allowed, but the value will not be stored and will not
+ *	be retirevable from the s_p_hashtbl_t.
+ * S_P_STRING - The value for a given key will be saved in string form, no
+ *      converstions will be performed on the value.
+ * S_P_LONG - The value for a given key must be a valid
+ *	string representation of a long integer (as determined by strtol()),
+ *	otherwise an error will be raised.
+ * S_P_UINT16 - The value for a given key must be a valid
+ *	string representation of an unsigned 16-bit integer.
+ * S_P_LONG - The value for a given key must be be a valid
+ *	string representation of an unsigned 32-bit integer.
+ * S_P_POINTER - The parser makes no assumption about the type of the value.
+ *    	The s_p_get_pointer() function will return a pointer to the
+ *	s_p_hashtbl_t's internal copy of the value.  By default, the value
+ *	will simply be the string representation of the value found in the file.
+ *	This differs from S_P_STRING in that s_p_get_string() returns a COPY
+ *	of the value which must be xfree'ed by the user.  The pointer
+ *	returns by s_p_get_pointer() must NOT be freed by the user.
+ *  	It is intended that normally S_P_POINTER with be used in conjunction
+ *	with "handler" and "destroy" functions to implement a custom type.
+ * S_P_ARRAY - This (and S_P_IGNORE, which does not record the fact that it
+ *	has seen the key previously) is the only type which allows its key to
+ * 	appear multiple times in a file.  With any other type (except
+ *	S_P_IGNORE), an error will be raised when a key is seen more than
+ *	once in a file.
+ *	S_P_ARRAY works mostly the same as S_P_POINTER, except that it builds
+ *	an array of pointers to the found values.
+ *
+ * Handlers and destructors
+ * ------------------------
+ *
+ * Any key specified in an s_p_options_t array can have function callbacks for
+ * a "handler" function and a "destroy" function.  The prototypes for each
+ * are available below in the typedef of s_p_options_t.
+ *
+ * A handler function is given the the "key" string, "value" string, and a
+ * pointer to the entire "line" on which the key-value pair was found.  The
+ * handler can transform the value any way it desires, and then return
+ * a pointer to the newly allocated value data in the "data" pointer.
+ * The return code from "handler" must be 0 if the value is invalid, 1 if
+ * the value is valid but no value will be set for "data" (the parser will not
+ * flag this key as already seen, and the destroy() function will not be
+ * called during s_p_hashtbl_destroy()), and 2 if "data" is set.
+ *
+ * If the "destroy" function is set for a key, and the parser marked a key as
+ * "seen" during parsing, then it will pass the pointer to the value data
+ * to the "destroy" function when s_p_hashtbl_destroy() is called.  If
+ * a key was "seen" during parsing, but the "destroy" function is NULL,
+ * s_p_hashtbl_destroy() will call xfree() on the data pointer.
+ */
+
 typedef struct s_p_values s_p_values_t;
 typedef s_p_values_t * s_p_hashtbl_t;
 
@@ -50,9 +145,9 @@ typedef enum slurm_parser_enum {
 typedef struct conf_file_options {
 	char *key;
 	slurm_parser_enum_t type;
-	int (*handler)(void **, slurm_parser_enum_t,
-		       const char *, const char *, const char *);
-	void (*destroy)(void *);
+	int (*handler)(void **data, slurm_parser_enum_t type,
+		       const char *key, const char *value, const char *line);
+	void (*destroy)(void *data);
 } s_p_options_t;
 
 

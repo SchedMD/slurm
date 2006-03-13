@@ -65,9 +65,9 @@ struct s_p_values {
 	int type;
 	int data_count;
 	void *data;
-	int (*handler)(void **, slurm_parser_enum_t,
-		       const char *, const char *, const char *);
-	void (*destroy)(void *);
+	int (*handler)(void **data, slurm_parser_enum_t type,
+		       const char *key, const char *value, const char *line);
+	void (*destroy)(void *data);
 	s_p_values_t *next;
 };
 
