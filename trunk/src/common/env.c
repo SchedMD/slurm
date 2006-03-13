@@ -225,7 +225,7 @@ int setup_env(env_t *env)
 
 	if (env == NULL)
 		return SLURM_ERROR;
-
+	
 	if (env->task_pid
 	  && setenvf(&env->env, "SLURM_TASK_PID", "%d", (int)env->task_pid)) {
 		error("Unable to set SLURM_TASK_PID environment variable");
@@ -237,14 +237,14 @@ int setup_env(env_t *env)
 		error("Unable to set SLURM_NPROCS environment variable");
 		rc = SLURM_FAILURE;
 	} 
- 
+	
 	if (env->cpus_per_task 
 	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d", 
 		      env->cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	} 
-
+ 
 	if (env->cpus_on_node 
 	   && setenvf(&env->env, "SLURM_CPUS_ON_NODE", "%d", 
 		      env->cpus_on_node) ) {
@@ -273,7 +273,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 	}
-
+	
 	if (env->cpu_bind_type) {
 		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
 		int setstat = 0;

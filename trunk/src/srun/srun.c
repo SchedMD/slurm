@@ -278,7 +278,7 @@ int srun(int ac, char **av)
 	setup_env(env);
 	xfree(env->task_count);
 	xfree(env);
-
+	
 	_run_srun_prolog(job);
 
 	if (msg_thr_create(job) < 0)

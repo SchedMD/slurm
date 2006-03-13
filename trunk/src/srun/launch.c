@@ -192,7 +192,7 @@ launch(void *arg)
 		m->buffer = buffer;
 
 		j=0; 
-  		while(host = hostlist_next(itr)) { 
+		while((host = hostlist_next(itr)) != NULL) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
   				free(host);
 				break; 
