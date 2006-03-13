@@ -117,7 +117,8 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Loaded MPI.*($number).*" {
+	-re "Loaded MPI support.*" {
+		exec sleep 2
 		send "G\n"
 		exp_continue
 	}
@@ -129,8 +130,9 @@ expect {
 		incr no_capability
 		exp_continue
 	}
-	-re "Process 1 has exited" {
+	-re "Process 1 has exited.*" {
 		incr matches
+		exec sleep 2
 		send "quit\n"
 		exp_continue
 	}
@@ -193,7 +195,8 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Loaded MPI.*($number).*" {
+	-re "Loaded MPI support.*" {
+		exec sleep 2
 		send "G\n"
 		exp_continue
 	}
@@ -205,8 +208,9 @@ expect {
 		incr no_capability
 		exp_continue
 	}
-	-re "Process 1 has exited" {
+	-re "Process 1 has exited.*" {
 		incr matches
+		exec sleep 2
 		send "quit\n"
 		exp_continue
 	}
