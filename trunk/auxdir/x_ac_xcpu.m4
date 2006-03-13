@@ -30,6 +30,7 @@ AC_DEFUN([X_AC_XCPU],
 
    if test "$ac_xcpu" != "no" ; then
       if test -d "/mnt/xcpu" ; then
+         ac_xcpu=yes
          AC_DEFINE(HAVE_XCPU, 1, [Define to 1 if using XCPU for job launch])
          AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
       else
