@@ -182,6 +182,8 @@ launch(void *arg)
 	itr = hostlist_iterator_create(hostlist);
 	job->thr_count = 0;
 	for (i = 0; i < job->step_layout->num_hosts; i++) {
+		if(!job->step_layout->host[i])
+			break;
 		slurm_msg_t                *m = &msg_array_ptr[job->thr_count];
 		
 		m->srun_node_id    = (uint32_t)i;			
@@ -190,7 +192,7 @@ launch(void *arg)
 		m->ret_list = NULL;
 		m->orig_addr.sin_addr.s_addr = 0;
 		m->buffer = buffer;
-
+		
 		j=0; 
 		while((host = hostlist_next(itr)) != NULL) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
@@ -201,7 +203,7 @@ launch(void *arg)
 			free(host);
   		}
 		hostlist_iterator_reset(itr);
-		/* debug2("using %d %s with %d tasks\n", j,  */
+		/* debug2("using %d %s with %d tasks\n", j, */
 /* 		       job->step_layout->host[i], */
 /* 		       r.nprocs); */
 		memcpy(&m->address, 
@@ -215,13 +217,11 @@ launch(void *arg)
 				   job->slurmd_addr,
 				   itr,
 				   opt.msg_timeout);
-		
 		job->thr_count++;
 	}
 	xfree(span);
 	hostlist_iterator_destroy(itr);
 	hostlist_destroy(hostlist);
-	
 	_p_launch(msg_array_ptr, job);
 	
 	if (fail_launch_cnt) {

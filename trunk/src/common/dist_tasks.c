@@ -222,7 +222,7 @@ extern slurm_step_layout_t *step_layout_create(
 		 * one of the allocated nodes. */
 		step_layout->num_hosts = 1;
 #else
-		step_layout->num_hosts = step_req->node_count;
+		step_layout->num_hosts = hostlist_count(step_layout->hl);
 #endif
 		step_layout->task_dist	= step_req->task_dist;
 		step_layout->num_tasks  = step_req->num_tasks;
@@ -285,7 +285,7 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 			cpu_cnt = 0;
 		}
 	}
-	step_layout->tasks = xmalloc(sizeof(uint32_t)   
+	step_layout->tasks = xmalloc(sizeof(uint32_t) 
 				     * step_layout->num_hosts);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
 				     * step_layout->num_hosts);
