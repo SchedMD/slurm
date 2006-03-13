@@ -35,20 +35,28 @@
 
 /*
  * This slurm file parser provides a method for parsing a file
- * for key-value pairs of the form "key = value" (any amount of white-space
- * is allowed between key, equals sign, and value).  The parser handles
- * comments, line continuations, and escaped characters automatically.
- * This parser can be used for any slurm-like configuration file, not
- * just slurm.conf.  If you are looking for code specific to slurm.conf,
- * look in src/common/slurm_conf.[hc].
+ * for key-value pairs of the form "key = value".  This parser can be used
+ * for any slurm-like configuration file, not just slurm.conf.  If you are
+ * looking for code specific to slurm.conf, look in
+ * src/common/slurm_conf.[hc].
+ *
+ * In the parsed file, any amount of white-space is allowed between the the
+ * key, equal-sign, and value.  The parser handles comments, line
+ * continuations, and escaped characters automatically.  Double-quotes can
+ * be used to surround an entire value if white-space is needed within
+ * a value string.
  *
  * A comment begins with a "#" and ends at the end of the line. A line
  * continuation is a "\" character at the end of the line (only white-space
  * may follow the "\").  A line continuation tells the parser to
- * concatonate the following line with the current line.
+ * concatenate the following line with the current line.
  *
  * To include a literal "\" or "#" character in a file, it can be escaped
  * by a preceding "\".
+ *
+ * Double-quotes CANNOT be escaped, and they must surround the entire value
+ * string, they cannot be used within some substring of a value string.
+ * An empty string can be specified with doubles quotes: Apple="".
  *
  * To use this parser, first construct an array of s_p_options_t structures.
  * Only the "key" string needs to be non-zero.  Zero or NULL are valid
@@ -113,9 +121,10 @@
  * are available below in the typedef of s_p_options_t.
  *
  * A handler function is given the the "key" string, "value" string, and a
- * pointer to the entire "line" on which the key-value pair was found.  The
- * handler can transform the value any way it desires, and then return
- * a pointer to the newly allocated value data in the "data" pointer.
+ * pointer to the entire "line" on which the key-value pair was found (this is
+ * the line after the parser has removed comments and concatenated continued
+ * lines).  The handler can transform the value any way it desires, and then
+ * return a pointer to the newly allocated value data in the "data" pointer.
  * The return code from "handler" must be 0 if the value is invalid, 1 if
  * the value is valid but no value will be set for "data" (the parser will not
  * flag this key as already seen, and the destroy() function will not be

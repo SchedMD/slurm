@@ -55,9 +55,12 @@
 
 static regex_t keyvalue_re;
 static char *keyvalue_pattern =
-	"^([[:space:]]*)([[:alpha:]]+)"
+	"^[[:space:]]*"
+	"([[:alpha:]]+)" /* key */
 	"[[:space:]]*=[[:space:]]*"
-	"([[:graph:]]+)([[:space:]]|$)";
+	"((\"([^\"]*)\")|([[:graph:]]+))" /* value: quoted with whitespace,
+					   * or unquoted and no whitespace */
+	"([[:space:]]|$)";
 static bool keyvalue_initialized = false;
 
 struct s_p_values {
@@ -213,23 +216,37 @@ static void _keyvalue_regex_init(void)
 static int _keyvalue_regex(const char *line,
 			   char **key, char **value, char **remaining)
 {
-        size_t nmatch = 5;
-        regmatch_t pmatch[5];
+        size_t nmatch = 8;
+        regmatch_t pmatch[8];
 	char *start;
 	size_t len;
 	char *match;
 
+	*key = NULL;
+	*value = NULL;
+	*remaining = (char *)line;
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
 	if (regexec(&keyvalue_re, line, nmatch, pmatch, 0)
 	    == REG_NOMATCH) {
 		return -1;
 	}
-	
-	*key = (char *)(xstrndup(line + pmatch[2].rm_so,
-				 pmatch[2].rm_eo - pmatch[2].rm_so));
-	*value = (char *)(xstrndup(line + pmatch[3].rm_so,
-				   pmatch[3].rm_eo - pmatch[3].rm_so));
-	*remaining = (char *)(line + pmatch[3].rm_eo);
+
+	*key = (char *)(xstrndup(line + pmatch[1].rm_so,
+				 pmatch[1].rm_eo - pmatch[1].rm_so));
+
+
+	if (pmatch[4].rm_so != -1) {
+		*value = (char *)(xstrndup(line + pmatch[4].rm_so,
+					   pmatch[4].rm_eo - pmatch[4].rm_so));
+	} else if (pmatch[5].rm_so != -1) {
+		*value = (char *)(xstrndup(line + pmatch[5].rm_so,
+					   pmatch[5].rm_eo - pmatch[5].rm_so));
+	} else {
+		*value = xstrdup("");
+	}
+
+	*remaining = (char *)(line + pmatch[2].rm_eo);
+
 	return 0;
 }
 
