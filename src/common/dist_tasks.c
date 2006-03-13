@@ -296,8 +296,10 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 
 	if (step_layout->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(step_layout);
+#ifndef HAVE_FRONT_END
 	else if(step_layout->task_dist == SLURM_DIST_ARBITRARY)
 		return _task_layout_hostfile(step_layout);
+#endif
 	else
 		return _task_layout_block(step_layout);
 }
@@ -320,11 +322,11 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 	step_alloc_hosts = hostlist_create(step_layout->step_nodes);
 	itr_task = hostlist_iterator_create(step_alloc_hosts);
 	while(host = hostlist_next(itr)) {
-
 		step_layout->tasks[i] = 0;
 		while(host_task = hostlist_next(itr_task)) {
 			if(!strcmp(host, host_task))
 				step_layout->tasks[i]++;
+			free(host_task);
 		}
 		debug2("%s got %d tasks\n",
 		       host,
@@ -333,9 +335,9 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 			goto reset_hosts;
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t) 
 					       * step_layout->tasks[i]);
-		hostlist_iterator_reset(itr_task);
 		taskid = 0;
 		j = 0;
+		hostlist_iterator_reset(itr_task);
 		while(host_task = hostlist_next(itr_task)) {
 			if(!strcmp(host, host_task)) {
 				step_layout->tids[i][j] = taskid;
@@ -349,10 +351,10 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 		hostlist_iterator_reset(itr_task);	
 		free(host);
 	}
-
 	hostlist_iterator_destroy(itr);
 	hostlist_iterator_destroy(itr_task);
 	hostlist_destroy(job_alloc_hosts);
+	hostlist_destroy(step_alloc_hosts);
 
 	return SLURM_SUCCESS;
 }
