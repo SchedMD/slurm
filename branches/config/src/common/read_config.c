@@ -254,7 +254,7 @@ static s_p_options_t _downnodes_options[] = {
 };
 /*
  * This function works almost exactly the same as the
- * default S_P_UINT16 handler, except that it also sets the
+ * default S_P_UINT32 handler, except that it also sets the
  * global variable default_slurmd_port.
  */
 static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
@@ -263,7 +263,7 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 {
 	char *endptr;
 	unsigned long num;
-	uint16_t *ptr;
+	uint32_t *ptr;
 
 	errno = 0;
 	num = strtoul(value, &endptr, 0);
@@ -277,16 +277,16 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 	} else if (num < 0) {
 		error("\"%s\" is less than zero", value);
 		return -1;
-	} else if (num > 0xffff) {
-		error("\"%s\" is greater than 65535", value);
+	} else if (num > 0xffffffff) {
+		error("\"%s\" is greater than 4294967295", value);
 		return -1;
 	}
 
-	default_slurmd_port = (uint16_t)num;
+	default_slurmd_port = (uint32_t)num;
 
-	ptr = (uint16_t *)xmalloc(sizeof(uint16_t));
-	*ptr = (uint16_t)num;
-	*dest = ptr;
+	ptr = (uint32_t *)xmalloc(sizeof(uint32_t));
+	*ptr = (uint32_t)num;
+	*dest = (void *)ptr;
 
 	return 1;
 }
