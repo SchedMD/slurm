@@ -67,12 +67,13 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout);
  * RET a pointer to an integer array listing task counts per node
  * NOTE: allocates memory that should be xfreed by caller
  */
-int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
+uint32_t *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 			uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
 			const char *tlist, uint32_t num_tasks) 
 {
 	hostlist_t master_hl = NULL, task_hl = NULL;
-	int i, index, count, hostid, nnodes, ncpus, *cpus, *ntask = NULL;
+	int i, index, count, hostid, nnodes, ncpus;
+	uint32_t *cpus, *ntask = NULL;
 	char *this_node_name;
 	
 	if (!tlist || num_tasks == 0)
@@ -85,7 +86,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 		fatal("hostlist_create error for %s: %m", tlist);
 
 	nnodes = hostlist_count(task_hl);
-	ntask = (int *) xmalloc(sizeof(int *) * nnodes);
+	ntask = (uint32_t *) xmalloc(sizeof(uint32_t *) * nnodes);
 	if (!ntask) {
 		hostlist_destroy(master_hl);
 		hostlist_destroy(task_hl);
@@ -137,7 +138,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	 * by the cpu constraints.
 	 */
 	cpus = ntask;
-	ntask = (int *) xmalloc(sizeof(int *) * nnodes);
+	ntask = (uint32_t *) xmalloc(sizeof(int *) * nnodes);
 	if (!ntask) {
 		slurm_seterrno(ENOMEM);
 		xfree(cpus);

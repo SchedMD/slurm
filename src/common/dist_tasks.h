@@ -78,7 +78,7 @@ typedef struct slurm_step_layout {
  * RET a pointer to an integer array listing task counts per node
  * NOTE: allocates memory that should be xfreed by caller
  */
-int * distribute_tasks(const char *mlist,
+uint32_t * distribute_tasks(const char *mlist,
 		       uint16_t num_cpu_groups,
 		       uint32_t *cpus_per_node,
 		       uint32_t *cpu_count_reps,

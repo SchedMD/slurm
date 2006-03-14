@@ -368,7 +368,8 @@ static char *adapter_name_check(char *network)
 }
 
 int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist, 
-			   int *tasks_per_node, int cyclic_alloc, char *network) 
+			uint32_t *tasks_per_node, int cyclic_alloc, 
+			char *network) 
 {
 	hostlist_t list = NULL;
 	bool sn_all;
