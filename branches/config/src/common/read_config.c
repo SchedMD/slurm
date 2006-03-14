@@ -262,11 +262,11 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 			     const char *line)
 {
 	char *endptr;
-	long num;
+	unsigned long num;
 	uint16_t *ptr;
 
 	errno = 0;
-	num = strtol(value, &endptr, 0);
+	num = strtoul(value, &endptr, 0);
 	if ((num == 0 && errno == EINVAL)
 	    || (*endptr != '\0')) {
 		error("\"%s\" is not a valid number", value);
@@ -282,7 +282,7 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 		return -1;
 	}
 
-	default_slurmd_port = num;
+	default_slurmd_port = (uint16_t)num;
 
 	ptr = (uint16_t *)xmalloc(sizeof(uint16_t));
 	*ptr = (uint16_t)num;
