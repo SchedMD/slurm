@@ -39,6 +39,9 @@
 #endif
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -85,8 +88,108 @@ const char plugin_type[]       	= "select/linear";
 const uint32_t plugin_version	= 90;
 
 static struct node_record *select_node_ptr = NULL;
-static int select_node_cnt;
+static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
+
+#ifdef HAVE_XCPU
+#define XCPU_POLL_TIME 30
+static pthread_t xcpu_thread = 0;
+static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int agent_fini = 0;
+
+static void *xcpu_agent(void *args)
+{
+	int i;
+	static time_t last_xcpu_test;
+	char reason[12], clone_path[128], down_node_list[512];
+	struct stat buf;
+	time_t now;
+	struct tm * time_ptr;
+
+	last_xcpu_test = time(NULL) + XCPU_POLL_TIME;
+	while (!agent_fini) {
+		now = time(NULL);
+
+		if (difftime(now, last_xcpu_test) >= XCPU_POLL_TIME) {
+			info("Running XCPU node state test");
+			time_ptr = localtime(&now);
+			down_node_list[0] = '\0';
+
+			for (i=0; i<select_node_cnt; i++) {
+				snprintf(clone_path, sizeof(clone_path), "%s/%s/clone",
+					XCPU_DIR, select_node_ptr[i].name);
+				if (stat(clone_path, &buf) == 0)
+					continue;
+				error("stat %s: %m", clone_path);
+				if ((strlen(select_node_ptr[i].name) +
+				     strlen(down_node_list) + 2) <
+				    sizeof(down_node_list)) {
+					if (down_node_list[0] != '\0')
+						strcat(down_node_list,",");
+					strcat(down_node_list, 
+						select_node_ptr[i].name);
+				} else
+					error("down_node_list overflow");
+			}
+			if (down_node_list[0]) {
+				strftime(reason, sizeof(reason),
+					"select_linear: Can not stat XCPU "
+					"[SLURM@%b %d %H:%M]",
+					time_ptr);
+				slurm_drain_nodes(down_node_list, reason);
+			}
+			last_xcpu_test = now;
+		}
+
+		sleep(1);
+	}
+	return NULL;
+}
+
+static int _init_status_pthread(void)
+{
+	pthread_attr_t attr;
+
+	slurm_mutex_lock( &thread_flag_mutex );
+	if ( xcpu_thread ) {
+		debug2("XCPU thread already running, not starting "
+			"another");
+		slurm_mutex_unlock( &thread_flag_mutex );
+		return SLURM_ERROR;
+	}
+
+	slurm_attr_init( &attr );
+	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	pthread_create( &xcpu_thread, &attr, xcpu_agent, NULL);
+	slurm_mutex_unlock( &thread_flag_mutex );
+	pthread_attr_destroy( &attr );
+
+	return SLURM_SUCCESS;
+}
+
+static int _fini_status_pthread(void)
+{
+	int i, rc=SLURM_SUCCESS;
+
+	slurm_mutex_lock( &thread_flag_mutex );
+	if ( xcpu_thread ) {
+		agent_fini = 1;
+		for (i=0; i<4; i++) {
+			if (pthread_kill(xcpu_thread, 0)) {
+				xcpu_thread = 0;
+				break;
+			}
+			sleep(1);
+		}
+		if ( xcpu_thread ) {
+			error("could not kill XCPU agent thread");
+			rc = SLURM_ERROR;
+		}
+	}
+	slurm_mutex_unlock( &thread_flag_mutex );
+	return rc;
+}
+#endif
 
 static bool 
 _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
@@ -107,12 +210,20 @@ _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
  */
 extern int init ( void )
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	rc = _init_status_pthread();
+#endif
+	return rc;
 }
 
 extern int fini ( void )
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	rc = _fini_status_pthread();
+#endif
+	return rc;
 }
 
 /*
@@ -417,7 +528,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
-	int i;
+	int i, rc=SLURM_SUCCESS;
 	uint32_t cnt=0;
 
 	xassert(job_ptr);
@@ -431,6 +542,16 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 			cnt += select_node_ptr[i].config_ptr->cpus;
 		else
 			cnt += select_node_ptr[i].cpus;
+#ifdef HAVE_XCPU
+{		char clone_path[128];
+		snprintf(clone_path, sizeof(clone_path), "%s/%s/clone",
+			XCPU_DIR, select_node_ptr[i].name);
+		if (chown(clone_path, (uid_t)job_ptr->user_id, -1)) {
+			error("chown %s: %m", clone_path);
+			rc = SLURM_ERROR;
+		}
+}
+#endif
 	}
 	debug2("reset num_proc for %u from %u to %u",job_ptr->job_id,
 			job_ptr->num_procs, cnt);
@@ -441,7 +562,23 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	int i;
+	char clone_path[128];
+
+	for (i=0; i<select_node_cnt; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		snprintf(clone_path, sizeof(clone_path), "%s/%s/clone",
+			XCPU_DIR, select_node_ptr[i].name);
+		if (chown(clone_path, (uid_t)0, -1)) {
+			error("chown %s: %m", clone_path);
+			rc = SLURM_ERROR;
+		}
+	}
+#endif
+	return rc;
 }
 
 extern int select_p_job_suspend(struct job_record *job_ptr)
