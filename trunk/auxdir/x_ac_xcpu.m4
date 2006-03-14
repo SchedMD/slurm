@@ -8,34 +8,33 @@
 #    X_AC_XCPU
 #
 #  DESCRIPTION:
-#    Test for XCPU specific files. 
-#    If found define HAVE_XCPU and HAVE_FRONT_END.
-#    Explicitly disable with --enable-xcpu=no
+#    Test for XCPU job launch support. 
+#    If found define HAVE_XCPU, XCPU_DIR and HAVE_FRONT_END.
+#    Explicitly set path with --with-xcpu=PATH, defaults to "/mnt".
 ##*****************************************************************************
 
 
 AC_DEFUN([X_AC_XCPU],
 [
    AC_MSG_CHECKING([whether XCPU is enabled])
-   AC_ARG_ENABLE([xcpu],
-    AC_HELP_STRING([--enable-xcpu], [enable XCPU job launch]),
-    [ case "$enableval" in
-        yes) ac_xcpu=yes ;;
-        no)  ac_xcpu=no ;;
-        *)   AC_MSG_RESULT([doh!])
-             AC_MSG_ERROR([bad value "$enableval" for --enable-xcpu]) ;;
-      esac
-    ]
+
+   xcpu_default_dirs="/mnt"
+
+   AC_ARG_WITH([xcpu],
+    AC_HELP_STRING([--with-xcpu=PATH], [specify path to XCPU directory]),
+    [ try_path=$withval ]
    )
 
-   if test "$ac_xcpu" != "no" ; then
-      if test -d "/mnt/xcpu" ; then
+   ac_xcpu=no
+   for xcpu_dir in $try_path "" $xcpu_default_dirs; do
+      if test -d "$xcpu_dir/xcpu" ; then
          ac_xcpu=yes
          AC_DEFINE(HAVE_XCPU, 1, [Define to 1 if using XCPU for job launch])
+         AC_DEFINE_UNQUOTED(XCPU_DIR, "$xcpu_dir/xcpu", [Define location of XCPU directory])
          AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
-      else
-         ac_xcpu=no
+         break
       fi
-   fi
+   done
+
    AC_MSG_RESULT($ac_xcpu)
 ])

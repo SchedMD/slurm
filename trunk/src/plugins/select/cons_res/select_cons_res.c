@@ -554,6 +554,11 @@ _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
  */
 extern int init(void)
 {
+#ifdef HAVE_XCPU
+	error("%s presently incompatible with XCPU use", plugin_name);
+	return SLURM_ERROR;
+#endif
+
 	verbose("%s loaded ", plugin_name);
 	return SLURM_SUCCESS;
 }
