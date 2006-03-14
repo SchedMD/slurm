@@ -111,6 +111,10 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
 			       const char *line);
 static void destroy_partitionname(void *ptr);
+static int parse_downnodes(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line);
+static void destroy_downnodes(void *ptr);
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line);
@@ -206,10 +210,13 @@ s_p_options_t slurm_conf_options[] = {
 	{"Shared"},
 	{"State"},
 
+	{"DownNodes", S_P_ARRAY, parse_downnodes, destroy_downnodes},
+	/* "State" and "Reason" are already ignored */
+
 	{NULL}
 };
 
-s_p_options_t slurm_nodename_options[] = {
+static s_p_options_t _nodename_options[] = {
 	{"NodeName", S_P_STRING},
 	{"NodeHostname", S_P_STRING},
 	{"NodeAddr", S_P_STRING},
@@ -224,7 +231,7 @@ s_p_options_t slurm_nodename_options[] = {
 	{NULL}
 };
 
-s_p_options_t slurm_partition_options[] = {
+static s_p_options_t _partition_options[] = {
 	{"PartitionName", S_P_STRING},
 	{"AllowGroups", S_P_STRING},
 	{"Default", S_P_BOOLEAN}, /* YES or NO */
@@ -239,6 +246,12 @@ s_p_options_t slurm_partition_options[] = {
 	{NULL}
 };
 
+static s_p_options_t _downnodes_options[] = {
+	{"DownNodes", S_P_STRING},
+	{"Reason", S_P_STRING},
+	{"State", S_P_STRING},
+	{NULL}
+};
 /*
  * This function works almost exactly the same as the
  * default S_P_UINT16 handler, except that it also sets the
@@ -292,9 +305,9 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_node_t *n;
 
-	tbl = s_p_hashtbl_create(slurm_nodename_options);
+	tbl = s_p_hashtbl_create(_nodename_options);
 	s_p_parse_line(tbl, line);
-	/* s_p_dump_values(tbl, slurm_nodename_options); */
+	/* s_p_dump_values(tbl, _nodename_options); */
 
 	if (strcasecmp(value, "DEFAULT") == 0) {
 		char *tmp;
@@ -401,9 +414,9 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 	slurm_conf_partition_t *p;
 	char *tmp = NULL;
 
-	tbl = s_p_hashtbl_create(slurm_partition_options);
+	tbl = s_p_hashtbl_create(_partition_options);
 	s_p_parse_line(tbl, line);
-	/* s_p_dump_values(tbl, slurm_partition_options); */
+	/* s_p_dump_values(tbl, _partition_options); */
 
 	if (strcasecmp(value, "DEFAULT") == 0) {
 		if (default_partition_tbl != NULL)
@@ -500,6 +513,58 @@ int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[])
 
 	if (s_p_get_array((void ***)&ptr, &count, "PartitionName",
 			  conf_hashtbl)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
+static int parse_downnodes(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line)
+{
+	s_p_hashtbl_t *tbl, *dflt;
+	slurm_conf_downnodes_t *n;
+
+	tbl = s_p_hashtbl_create(_downnodes_options);
+	s_p_parse_line(tbl, line);
+	/* s_p_dump_values(tbl, _downnodes_options); */
+
+	n = xmalloc(sizeof(slurm_conf_node_t));
+	dflt = default_nodename_tbl;
+
+	s_p_get_string(&n->nodenames, "DownNodes", tbl);
+
+	if (!s_p_get_string(&n->reason, "Reason", tbl))
+		n->reason = xstrdup("Set in slurm.conf");
+
+	if (!s_p_get_string(&n->state, "State", tbl))
+		n->state = NULL;
+
+	s_p_hashtbl_destroy(tbl);
+
+	*dest = (void *)n;
+
+	return 1;
+}
+
+static void destroy_downnodes(void *ptr)
+{
+	slurm_conf_downnodes_t *n = (slurm_conf_downnodes_t *)ptr;
+	xfree(n->nodenames);
+	xfree(n->reason);
+	xfree(n->state);
+	xfree(ptr);
+}
+
+int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
+{
+	int count;
+	slurm_conf_downnodes_t **ptr;
+
+	if (s_p_get_array((void ***)&ptr, &count, "DownNodes", conf_hashtbl)) {
 		*ptr_array = ptr;
 		return count;
 	} else {
@@ -958,6 +1023,12 @@ _init_slurm_conf(char *file_name)
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
 	default_slurmd_port = 0;
 
+	if (file_name == NULL) {
+		file_name = getenv("SLURM_CONF");
+		if (file_name == NULL)
+			file_name = SLURM_CONFIG_FILE;
+	}
+
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
 	s_p_parse_file(conf_hashtbl, file_name);
@@ -1003,12 +1074,6 @@ slurm_conf_init(char *file_name)
 	if (conf_initialized) {
 		pthread_mutex_unlock(&conf_lock);
 		return SLURM_ERROR;
-	}
-
-	if (file_name == NULL) {
-		file_name = getenv("SLURM_CONF");
-		if (file_name == NULL)
-			file_name = SLURM_CONFIG_FILE;
 	}
 
 	_init_slurm_conf(file_name);

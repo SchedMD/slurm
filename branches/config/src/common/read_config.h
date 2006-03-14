@@ -111,6 +111,12 @@ typedef struct slurm_conf_partition {
 	bool default_flag;
 } slurm_conf_partition_t;
 
+typedef struct slurm_conf_downnodes {
+	char *nodenames;
+	char *reason;
+	char *state;
+} slurm_conf_downnodes_t;
+
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
@@ -163,6 +169,14 @@ extern int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[]);
  * Return value is the length of the array.
  */
 extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_node_t structures.
+ * 
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
 
 /*
  * get_conf_node_hostname - Return the NodeHostname for given NodeName

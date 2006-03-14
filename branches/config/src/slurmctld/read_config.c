@@ -408,14 +408,8 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			node_rec->port = node_ptr->port;
 			node_rec->reason = xstrdup(node_ptr->reason);
 		} else {
-			error("reconfiguration for node %s", alias);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_rec->node_state = state_val;
-			if (node_ptr->reason) {
-				xfree(node_rec->reason);
-				node_rec->reason = xstrdup(node_ptr->reason);
-			}
+			/* FIXME - maybe should be fatal? */
+			error("reconfiguration for node %s, ignoring!", alias);
 		}
 		free(alias);
 #ifndef HAVE_FRONT_END
@@ -434,6 +428,72 @@ cleanup:
 		hostlist_destroy(address_list);
 	return error_code;
 
+}
+
+static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
+{
+	int error_code = 0;
+	struct node_record *node_rec = NULL;
+	hostlist_t alias_list = NULL;
+	char *alias = NULL;
+	int state_val = NODE_STATE_DOWN;
+
+	if (down->state != NULL) {
+		state_val = _state_str2int(down->state);
+		if (state_val == NO_VAL) {
+			error("Invalid State \"%s\"", down->state);
+			goto cleanup;
+		}
+	}
+
+	if ((alias_list = hostlist_create(down->nodenames)) == NULL) {
+		error("Unable to create NodeName list from %s",
+		      down->nodenames);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	while ((alias = hostlist_shift(alias_list))) {
+		node_rec = find_node_record(alias);
+		if (node_rec == NULL) {
+			error("DownNode \"%s\" does not exist!", alias);
+			free(alias);
+			continue;
+		}
+
+		if ((state_val != NO_VAL) &&
+		    (state_val != NODE_STATE_UNKNOWN))
+			node_rec->node_state = state_val;
+		if (down->reason) {
+			xfree(node_rec->reason);
+			node_rec->reason = xstrdup(down->reason);
+		}
+		free(alias);
+	}
+
+cleanup:
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	return error_code;
+}
+
+static void _handle_all_downnodes()
+{
+	slurm_conf_downnodes_t *ptr, **ptr_array;
+	int count;
+	int i;
+
+	count = slurm_conf_downnodes_array(&ptr_array);
+	if (count == 0) {
+		debug("No DownNodes");
+		return;
+	}	
+
+	for (i = 0; i < count; i++) {
+		ptr = ptr_array[i];
+
+		_handle_downnodes_line(ptr);
+	}
 }
 
 /* 
@@ -596,6 +656,7 @@ int read_slurm_conf(int recover)
 
 	conf = slurm_conf_lock();
 	_build_all_nodeline_info(conf);
+	_handle_all_downnodes();
 	_build_all_partitionline_info();
 	slurm_conf_unlock();
 

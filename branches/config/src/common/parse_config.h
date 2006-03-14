@@ -125,10 +125,10 @@
  * the line after the parser has removed comments and concatenated continued
  * lines).  The handler can transform the value any way it desires, and then
  * return a pointer to the newly allocated value data in the "data" pointer.
- * The return code from "handler" must be 0 if the value is invalid, 1 if
+ * The return code from "handler" must be -1 if the value is invalid, 0 if
  * the value is valid but no value will be set for "data" (the parser will not
  * flag this key as already seen, and the destroy() function will not be
- * called during s_p_hashtbl_destroy()), and 2 if "data" is set.
+ * called during s_p_hashtbl_destroy()), and 1 if "data" is set.
  *
  * If the "destroy" function is set for a key, and the parser marked a key as
  * "seen" during parsing, then it will pass the pointer to the value data
