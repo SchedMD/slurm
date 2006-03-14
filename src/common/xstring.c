@@ -65,6 +65,7 @@ strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
 strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
+strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 
 /*
@@ -249,6 +250,32 @@ char * xstrdup(const char *str)
 	rsiz = strlcpy(result, str, siz);
 
 	xassert(rsiz == siz-1);
+
+	return result;
+}
+
+/*
+ * Duplicate at most "n" characters of a string.
+ *   str (IN)		string to duplicate
+ *   n (IN)
+ *   RETURN		copy of string
+ */
+char * xstrndup(const char *str, size_t n)
+{
+	size_t siz,
+	       rsiz;
+	char   *result;
+
+	if (str == NULL)
+		return NULL;
+
+	siz = strlen(str);
+	if (n < siz)
+		siz = n;
+	siz++;
+	result = (char *)xmalloc(siz);
+
+	rsiz = strlcpy(result, str, siz);
 
 	return result;
 }

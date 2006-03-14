@@ -61,8 +61,6 @@
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
 struct node_record **node_hash_table = NULL;	/* node_record hash table */ 
-struct config_record default_config_record;
-struct node_record default_node_record;
 time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation 
 						 * or deletion */
 time_t last_node_update = (time_t) NULL;	/* time of last update to 
@@ -124,7 +122,6 @@ char * bitmap2node_name (bitstr_t *bitmap)
  *	slurm.conf file and typically describes the configuration of a 
  *	large number of nodes
  * RET pointer to the config_record
- * global: default_config_record - default configuration values
  * NOTE: memory allocated will remain in existence until 
  *	_delete_config_record() is called to delete all configuration records
  */
@@ -136,18 +133,9 @@ struct config_record * create_config_record (void)
 	config_ptr = (struct config_record *)
 		     xmalloc (sizeof (struct config_record));
 
-	/* set default values */
-	config_ptr->cpus = default_config_record.cpus;
-	config_ptr->real_memory = default_config_record.real_memory;
-	config_ptr->tmp_disk = default_config_record.tmp_disk;
-	config_ptr->weight = default_config_record.weight;
 	config_ptr->nodes = NULL;
 	config_ptr->node_bitmap = NULL;
 	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
-	if (default_config_record.feature)
-		config_ptr->feature = xstrdup(default_config_record.feature);
-	else
-		config_ptr->feature = NULL;
 
 	if (list_append(config_list, config_ptr) == NULL)
 		fatal ("create_config_record: unable to allocate memory");
@@ -161,9 +149,6 @@ struct config_record * create_config_record (void)
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
- * global: default_node_record - default node values
- * NOTE: the record's values are initialized to those of default_node_record, 
- *	node_name and config_ptr's cpus, real_memory, and tmp_disk values
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
  *	the global node table is no longer required
  */
@@ -194,9 +179,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 
 	node_ptr = node_record_table_ptr + (node_record_count++);
 	strcpy (node_ptr->name, node_name);
-	node_ptr->node_state = default_node_record.node_state;
-	node_ptr->last_response = default_node_record.last_response;
-	node_ptr->port = default_node_record.port;
+	node_ptr->last_response = (time_t)0;
 	node_ptr->config_ptr = config_ptr;
 	node_ptr->part_cnt = 0;
 	node_ptr->part_pptr = NULL;
@@ -514,8 +497,6 @@ static int _hash_index (char *name)
  *	entries.
  * RET 0 if no error, otherwise an error code
  * global: node_record_table_ptr - pointer to global node table
- *         default_node_record - default values for node records
- *         default_config_record - default values for configuration records
  *         node_hash_table - table of hash indecies
  *         last_node_update - time of last node table update
  */
@@ -526,23 +507,6 @@ int init_node_conf (void)
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
-
-	strcpy (default_node_record.name, "DEFAULT");
-	default_node_record.node_state = NODE_STATE_UNKNOWN;
-	default_node_record.last_response = (time_t) 0;
-	default_node_record.cpus = 1;
-	default_node_record.real_memory = 1;
-	default_node_record.tmp_disk = 1;
-	default_node_record.config_ptr = NULL;
-	default_node_record.part_cnt = 0;
-	default_node_record.part_pptr = NULL;
-	default_config_record.cpus = 1;
-	default_config_record.real_memory = 1;
-	default_config_record.tmp_disk = 1;
-	default_config_record.weight = 1;
-	xfree(default_config_record.feature);
-	xfree(default_config_record.nodes);
-	FREE_NULL_BITMAP (default_config_record.node_bitmap);
 
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();

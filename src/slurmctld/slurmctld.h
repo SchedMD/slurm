@@ -64,6 +64,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
+#include "src/common/read_config.h" /* location of slurmctld_conf */
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\
@@ -132,7 +133,6 @@ typedef struct slurmctld_config {
 } slurmctld_config_t;
 
 extern slurmctld_config_t slurmctld_config;
-extern slurm_ctl_conf_t slurmctld_conf;
 extern int bg_recover;		/* state recovery mode */
 
 /*****************************************************************************\
@@ -190,8 +190,6 @@ extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * not DOWN, DRAINED or DRAINING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
-extern struct config_record default_config_record;
-extern struct node_record default_node_record;
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures

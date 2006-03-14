@@ -4,6 +4,14 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.0-pre3
 =============================
  -- Added framework for XCPU job launch support.
+ -- New general configuration file parser and slurm.conf handling code.
+    Allows long lines to be continued on the next line by ending with a "\".
+    Whitespace is allowed between the key and "=", and between the "=" and
+    value.
+    WARNING: A NodeName may now occur only once in a slurm.conf file.
+             If you want to temporarily make nodes DOWN in the slurm.conf,
+             use the new DownNodes keyword (see "man slurm.conf").
+
 
 * Changes in SLURM 1.1.0-pre2
 =============================
