@@ -653,7 +653,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 
 	/* a batch script does not need switch info */
 	if (!batch_step) {
-		int *tasks_per_node;
+		uint32_t *tasks_per_node;
 		tasks_per_node = distribute_tasks(job_ptr->nodes,
 						  job_ptr->num_cpu_groups,
 						  job_ptr->cpus_per_node,

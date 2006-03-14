@@ -1,7 +1,7 @@
 /*****************************************************************************\
- * src/common/switch.c - Generic switch (interconnect) for slurm
+ *  src/common/switch.c - Generic switch (interconnect) for slurm
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -51,7 +51,7 @@ typedef struct slurm_switch_ops {
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t jobinfo,
 						char *nodelist,
-						int *tasks_per_node, 
+						uint32_t *tasks_per_node, 
 						int cyclic_alloc, 
 						char *network);
 	switch_jobinfo_t (*copy_jobinfo)  ( switch_jobinfo_t jobinfo );
@@ -331,14 +331,14 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t *jobinfo)
 }
 
 extern int  switch_build_jobinfo(switch_jobinfo_t jobinfo, 
-		char *nodelist, int *tasks_per_node, int cyclic_alloc,
-		char *network)
+		char *nodelist, uint32_t *tasks_per_node, 
+		int cyclic_alloc, char *network)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
 	return (*(g_context->ops.build_jobinfo))( jobinfo, nodelist, 
-			(int *)tasks_per_node, cyclic_alloc, network );
+			tasks_per_node, cyclic_alloc, network );
 }
 
 extern switch_jobinfo_t switch_copy_jobinfo(switch_jobinfo_t jobinfo)
