@@ -501,7 +501,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		fed_conf = _get_fed_conf();
 
 	tbl = s_p_hashtbl_create(options);
-	s_p_parse_file(fed_conf);
+	s_p_parse_file(tbl, fed_conf);
 
 	if (s_p_get_string(&adapter_name, "AdapterName", tbl)) {
 		int rc;
