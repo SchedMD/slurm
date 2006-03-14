@@ -211,15 +211,10 @@ _job_create_structure(allocation_info_t *info)
 	job->stepid  = info->stepid;
 	
 #ifdef HAVE_FRONT_END	/* Limited job step support */
-	/* All jobs execute through front-end on Blue Gene/L.
-	 * Normally we would not permit execution of job steps,
-	 * but can fake it by just allocating all tasks to
-	 * one of the allocated nodes. */
-	job->nhosts    = 1;
 	opt.overcommit = true;
-#else
-	job->nhosts   = info->nnodes;
 #endif
+	job->nhosts   = info->nnodes;
+
 
 	job->select_jobinfo = info->select_jobinfo;
 	job->jobid   = info->jobid;

@@ -2060,7 +2060,7 @@ int _max_nprocs(struct job_record  *job_ptr)
  * OUT: SLURM error code if launch fails, or SLURM_SUCCESS
  */
 int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
-						uint32_t *step_id)
+		       uint32_t *step_id)
 {
 	struct job_record  *job_ptr;
 	time_t now = time(NULL);
@@ -2150,9 +2150,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	}
 
 	/* Initialization of data structures */
-	launch_msg_ptr =
-	    (batch_job_launch_msg_t *)
-	    xmalloc(sizeof(batch_job_launch_msg_t));
+	launch_msg_ptr = (batch_job_launch_msg_t *)
+		xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
 	launch_msg_ptr->step_id = step_rec->step_id;
 	launch_msg_ptr->gid = job_ptr->group_id;
@@ -2181,7 +2180,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 		launch_msg_ptr->nprocs = job_desc_msg->num_procs;
 	if (launch_msg_ptr->nprocs < 0)
 		launch_msg_ptr->nprocs = job_ptr->num_procs;
-	
+
 	launch_msg_ptr->num_cpu_groups = job_ptr->num_cpu_groups;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint32_t) *
 			job_ptr->num_cpu_groups);

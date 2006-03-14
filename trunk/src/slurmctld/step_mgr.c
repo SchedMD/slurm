@@ -606,8 +606,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
 	node_count = bit_set_count(nodeset);
-	//select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &node_count);
-
+	
 	if (step_specs->num_tasks == NO_VAL) {
 		if (step_specs->cpu_count != NO_VAL)
 			step_specs->num_tasks = step_specs->cpu_count;
