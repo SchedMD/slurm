@@ -357,10 +357,10 @@ _task_count_string (srun_job_t *job)
 	char *str = xstrdup ("");
 	if(job->step_layout->tasks == NULL)
 		return (str);
-	last_val = job->step_layout->tasks[0];
+	last_val = job->step_layout->cpus[0];
 	last_cnt = 1;
 	for (i=1; i<job->nhosts; i++) {
-		if (last_val == job->step_layout->tasks[i])
+		if (last_val == job->step_layout->cpus[i])
 			last_cnt++;
 		else {
 			if (last_cnt > 1)
@@ -368,7 +368,7 @@ _task_count_string (srun_job_t *job)
 			else
 				sprintf(tmp, "%d,", last_val);
 			xstrcat(str, tmp);
-			last_val = job->step_layout->tasks[i];
+			last_val = job->step_layout->cpus[i];
 			last_cnt = 1;
 		}
 	}

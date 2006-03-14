@@ -1004,7 +1004,6 @@ _sprint_task_cnt(batch_job_launch_msg_t *msg)
         int i;
         char *task_str = xstrdup("");
         char tmp[16], *comma = "";
-
 	for (i=0; i<msg->num_cpu_groups; i++) {
 		if (i == 1)
 			comma = ",";
@@ -1015,7 +1014,7 @@ _sprint_task_cnt(batch_job_launch_msg_t *msg)
 			sprintf(tmp, "%s%d", comma, msg->cpus_per_node[i]);
 		xstrcat(task_str, tmp);
 	}
-
+	
         return task_str;
 }
 
