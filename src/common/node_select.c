@@ -103,7 +103,7 @@ static slurm_select_context_t * g_select_context = NULL;
 static pthread_mutex_t		g_select_context_lock = 
 					PTHREAD_MUTEX_INITIALIZER;
 
-#ifdef HAVE_BG		/* node selection specific logic */
+#ifdef HAVE_BG			/* node selection specific logic */
 #  define JOBINFO_MAGIC 0x83ac
 struct select_jobinfo {
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
@@ -113,13 +113,13 @@ struct select_jobinfo {
 	uint16_t node_use;	/* see enum node_use_type */
 	char *bg_block_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
-	uint16_t quarter;        /* for bg to tell which quarter of a small
-				   partition the job is running */ 
-	uint16_t segment;        /* for bg to tell which segment of a quarter 
-				   of a small partition the job is running */ 
+	uint16_t quarter;       /* for bg to tell which quarter of a small
+				 * partition the job is running */ 
+	uint16_t segment;       /* for bg to tell which segment of a quarter 
+				 *  of a small partition the job is running */ 
 	uint32_t node_cnt;      /* how many cnodes in block */ 
 	uint16_t altered;       /* see if we have altered this job 
-				   or not yet */
+				 * or not yet */
 	uint32_t max_procs;	/* maximum processors to use */
 };
 #endif
