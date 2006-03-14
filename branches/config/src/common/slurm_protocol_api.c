@@ -123,9 +123,13 @@ int slurm_api_set_default_config()
 	/*slurm_conf_init(NULL);*/
 	conf = slurm_conf_lock();
 
-	if ((conf->control_addr == NULL) ||
-	    (conf->slurmctld_port == 0)) {
-		error("Unable to establish control machine or port");
+	if (conf->control_addr == NULL) {
+		error("Unable to establish controller machine");
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	if (conf->slurmctld_port == 0) {
+		error("Unable to establish controller port");
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}

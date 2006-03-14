@@ -553,9 +553,10 @@ _read_config()
 	     (conf->node_name[0] == '\0') )
 		fatal("Node name lookup failure");
  
-	if ( (cf->control_addr == NULL) || 
-	     (cf->slurmctld_port == 0)    )
-		fatal("Unable to establish control machine or port");
+	if (cf->control_addr == NULL)
+		fatal("Unable to establish controller machine");
+	if (cf->slurmctld_port == 0)
+		fatal("Unable to establish controller port");
 
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
