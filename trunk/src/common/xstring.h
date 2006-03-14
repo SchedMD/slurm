@@ -87,6 +87,11 @@ void _xmemcat(char **str, char *start, char *end);
 char *xstrdup(const char *str);
 
 /*
+** strndup which uses xmalloc routines
+*/
+char *xstrndup(const char *str, size_t n);
+
+/*
 ** replacement for libc basename
 */
 char *xbasename(char *path);

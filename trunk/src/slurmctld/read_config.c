@@ -57,13 +57,12 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_rlimits_info.h"
 
 #define BUFFER_SIZE	1024
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
-static int  _parse_node_spec(char *in_line);
-static int  _parse_part_spec(char *in_line);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
@@ -81,6 +80,9 @@ static void _validate_node_proc_count(void);
 
 static char highest_node_name[MAX_SLURM_NAME] = "";
 int node_record_count = 0;
+
+/* FIXME - declarations for temporarily moved functions */
+#define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
 
 /*
@@ -248,7 +250,7 @@ static int _init_all_slurm_conf(void)
 {
 	int error_code;
 
-	init_slurm_conf(&slurmctld_conf);
+	slurm_conf_init(NULL);
 
 	if ((error_code = init_node_conf()))
 		return error_code;
@@ -263,488 +265,358 @@ static int _init_all_slurm_conf(void)
 	return 0;
 }
 
-
-/* 
- * _parse_node_spec - parse the node specification (per the configuration 
- *	file format), build table and set values
- * IN/OUT in_line - line from the configuration file, parsed keywords 
- *	and values replaced by blanks
- * RET 0 if no error, error code otherwise
- * Note: Operates on common variables
- * global: default_config_record - default configuration values for
- *	                           group of nodes
- *	default_node_record - default node configuration values
- */
-static int _parse_node_spec(char *in_line)
+static int _state_str2int(const char *state_str)
 {
-	char *node_addr = NULL, *node_name = NULL, *state = NULL;
-	char *feature = NULL, *reason = NULL, *node_hostname = NULL;
-	int error_code, first, i;
-	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
-	struct node_record   *node_ptr;
-	struct config_record *config_ptr = NULL;
-	hostlist_t addr_list = NULL, host_list = NULL;
-	char *this_node_name;
-#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
-	char *this_node_addr;
-#endif
-	int port;
+	int state_val = NO_VAL;
+	int i;
 
-	node_addr = node_name = state = feature = (char *) NULL;
-	cpus_val = real_memory_val = state_val = NO_VAL;
-	tmp_disk_val = weight_val = NO_VAL;
-	port = NO_VAL;
-	if ((error_code = load_string(&node_name, "NodeName=", in_line)))
-		return error_code;
-	if (node_name == NULL)
-		return 0;	/* no node info */
-	if (strcasecmp(node_name, "localhost") == 0) {
-		xfree(node_name);
-		node_name = xmalloc(MAX_SLURM_NAME);
-		getnodename(node_name, MAX_SLURM_NAME);
-	}
-
-	error_code = slurm_parser(in_line,
-				  "Feature=", 's', &feature,
-				  "NodeAddr=", 's', &node_addr,
-				  "NodeHostname=", 's', &node_hostname,
-#ifdef MULTIPLE_SLURMD
-				  "Port=", 'd', &port,
-#endif
-				  "Procs=", 'd', &cpus_val,
-				  "RealMemory=", 'd', &real_memory_val,
-				  "Reason=", 's', &reason,
-				  "State=", 's', &state,
-				  "TmpDisk=", 'd', &tmp_disk_val,
-				  "Weight=", 'd', &weight_val, "END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (state != NULL) {
-		state_val = NO_VAL;
-		for (i = 0; i <= NODE_STATE_END; i++) {
-			if (strcasecmp(node_state_string(i), "END") == 0)
-				break;
-			if (strcasecmp(node_state_string(i), state) == 0) {
-				state_val = i;
-				break;
-			}
-		}
-		if ((i == 0) && (strncasecmp("DRAIN", state, 5) == 0))
-			state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
-		if (state_val == NO_VAL) {
-			error("_parse_node_spec: invalid initial state %s for "
-				"node %s", state, node_name);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(state);
-	}
-
-#ifndef HAVE_FRONT_END	/* Support NodeAddr expression */
-	if (node_addr &&
-	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
-		error("hostlist_create error for %s: %m", node_addr);
-		error_code = errno;
-		goto cleanup;
-	}
-#endif
-	if (strcasecmp(node_name, "DEFAULT") != 0) {
-		i=1;
-		while (node_name[i] != '\0') {
-			if((node_name[i-1] == '[') 
-			   || (node_name[i-1] < 58 
-			       && node_name[i-1] > 47))
-				break;
-			i++;
-		}
-		xfree(slurmctld_conf.node_prefix);
-		if(node_name[i] == '\0')
-			slurmctld_conf.node_prefix = xstrdup(node_name);
-		else {
-			this_node_name = xmalloc(sizeof(char)*i+1);
-			memset(this_node_name,0,i+1);
-			snprintf(this_node_name, i, "%s", node_name);
-			slurmctld_conf.node_prefix = xstrdup(this_node_name);
-			xfree(this_node_name);
-		}
-		debug3("Prefix is %s %s %d",slurmctld_conf.node_prefix, 
-		       node_name, i);
-	}
-
-	if ((host_list = hostlist_create(node_name)) == NULL) {
-		error("hostlist_create error for %s: %m", node_name);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	first = 1;
-	while ((this_node_name = hostlist_shift(host_list))) {
-		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
-			xfree(node_name);
-			if (cpus_val != NO_VAL)
-				default_config_record.cpus = cpus_val;
-			if (real_memory_val != NO_VAL)
-				default_config_record.real_memory =
-						real_memory_val;
-			if (tmp_disk_val != NO_VAL)
-				default_config_record.tmp_disk =
-						    tmp_disk_val;
-			if (weight_val != NO_VAL)
-				default_config_record.weight = weight_val;
-			if (state_val != NO_VAL)
-				default_node_record.node_state = state_val;
-			if (feature) {
-				xfree(default_config_record.feature);
-				default_config_record.feature = feature;
-				feature = NULL;
-			}
-#ifdef MULTIPLE_SLURMD
-			if (port != NO_VAL)
-				default_node_record.port = port;
-#endif
-			free(this_node_name);
+	for (i = 0; i <= NODE_STATE_END; i++) {
+		if (strcasecmp(node_state_string(i), "END") == 0)
+			break;
+		if (strcasecmp(node_state_string(i), state_str) == 0) {
+			state_val = i;
 			break;
 		}
+	}
+	if ((i == 0) && (strncasecmp("DRAIN", state_str, 5) == 0))
+		state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+	if (state_val == NO_VAL) {
+		error("invalid state %s", state_str);
+		errno = EINVAL;
+	}
+	return state_val;
+}
 
-		if (first == 1) {
-			first = 0;
-			config_ptr = create_config_record();
-			config_ptr->nodes = node_name;
-			if (cpus_val != NO_VAL)
-				config_ptr->cpus = cpus_val;
-			if (real_memory_val != NO_VAL)
-				config_ptr->real_memory =
-						    real_memory_val;
-			if (tmp_disk_val != NO_VAL)
-				config_ptr->tmp_disk = tmp_disk_val;
-			if (weight_val != NO_VAL)
-				config_ptr->weight = weight_val;
-			if (feature) {
-				xfree(config_ptr->feature);
-				config_ptr->feature = feature;
-				feature = NULL;
-			}
-		}
+/* Caller must be holding slurm_conf_lock() */
+static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
+{
+	int i;
+	char *tmp;
 
-		if (strcmp(this_node_name, highest_node_name) <= 0)
-			node_ptr = find_node_record(this_node_name);
-		else {
-			strncpy(highest_node_name, this_node_name,
-				MAX_SLURM_NAME);
-			node_ptr = NULL;
-		}
+	xassert(nodenames != NULL);
+	for (i = 1; nodenames[i] != '\0'; i++) {
+		if((nodenames[i-1] == '[') 
+		   || (nodenames[i-1] <= '9'
+		       && nodenames[i-1] >= '0'))
+			break;
+	}
+	xfree(conf->node_prefix);
+	if(nodenames[i] == '\0')
+		conf->node_prefix = xstrdup(nodenames);
+	else {
+		tmp = xmalloc(sizeof(char)*i+1);
+		memset(tmp, 0, i+1);
+		snprintf(tmp, i, "%s", nodenames);
+		conf->node_prefix = tmp;
+		tmp = NULL;
+	}
+	debug3("Prefix is %s %s %d", conf->node_prefix, nodenames, i);
+}
 
-		if (node_ptr == NULL) {
-			node_ptr = create_node_record(config_ptr, 
-			                              this_node_name);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_ptr->node_state = state_val;
-			node_ptr->last_response = (time_t) 0;
-#ifdef HAVE_FRONT_END	/* Permit NodeAddr value reuse for front-end */
-			if (node_addr)
-				strncpy(node_ptr->comm_name,
-					node_addr, MAX_SLURM_NAME);
-			else if (node_hostname)
-				strncpy(node_ptr->comm_name,
-					node_hostname, MAX_SLURM_NAME);
-			else
-				strncpy(node_ptr->comm_name,
-					node_ptr->name, MAX_SLURM_NAME);
+/* 
+ * _build_single_nodeline_info - rom the slurm.conf reader, build table,
+ * 	and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
+				       struct config_record *config_ptr,
+				       slurm_ctl_conf_t *conf)
+{
+	int error_code, i;
+	struct node_record *node_rec = NULL;
+	hostlist_t alias_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t address_list = NULL;
+	char *alias = NULL;
+	char *hostname = NULL;
+	char *address = NULL;
+	int state_val = NODE_STATE_UNKNOWN;
+
+	if (node_ptr->state != NULL) {
+		state_val = _state_str2int(node_ptr->state);
+		if (state_val == NO_VAL)
+			goto cleanup;
+	}
+
+	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
+		error("Unable to create NodeName list from %s",
+		      node_ptr->nodenames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
+		error("Unable to create NodeHostname list from %s",
+		      node_ptr->hostnames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+		error("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	_set_node_prefix(node_ptr->nodenames, conf);
+
+	/* some sanity checks */
+#ifdef HAVE_FRONT_END
+	if (hostlist_count(hostname_list) != 1
+	    || hostlist_count(address_list) != 1) {
+		error("Only one hostname and address allowed "
+		      "in FRONT_END mode");
+		goto cleanup;
+	}
+	hostname = node_ptr->hostnames;
+	address = node_ptr->addresses;
 #else
-			if (node_addr)
-				this_node_addr = hostlist_shift(addr_list);
-			else
-				this_node_addr = NULL;
-			if (this_node_addr) {
-				strncpy(node_ptr->comm_name, 
-				        this_node_addr, MAX_SLURM_NAME);
-				free(this_node_addr);
-			} else
-				strncpy(node_ptr->comm_name, 
-				        node_ptr->name, MAX_SLURM_NAME);
+	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeHostname are required "
+		      "as NodeName");
+		goto cleanup;
+	}
+	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeAddr are required as NodeName");
+		goto cleanup;
+	}
 #endif
-#ifdef MULTIPLE_SLURMD
-			if (port != NO_VAL)
-				node_ptr->port = port;
-#endif
-			node_ptr->reason = xstrdup(reason);
-		} else {
-			error("_parse_node_spec: reconfiguration for node %s",
-			     this_node_name);
+
+	/* now build the individual node structures */
+	while ((alias = hostlist_shift(alias_list))) {
+#ifndef HAVE_FRONT_END
+		hostname = hostlist_shift(hostname_list);
+		address = hostlist_shift(address_list);
+#endif		
+
+		if (strcmp(alias, highest_node_name) <= 0)
+			node_rec = find_node_record(alias);
+		else {
+			strncpy(highest_node_name, alias, MAX_SLURM_NAME);
+			node_rec = NULL;
+		}
+
+		if (node_rec == NULL) {
+			node_rec = create_node_record(config_ptr, alias);
 			if ((state_val != NO_VAL) &&
 			    (state_val != NODE_STATE_UNKNOWN))
-				node_ptr->node_state = state_val;
-			if (reason) {
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup(reason);
-			}
+				node_rec->node_state = state_val;
+			node_rec->last_response = (time_t) 0;
+			strncpy(node_rec->comm_name, address, MAX_SLURM_NAME);
+
+			node_rec->port = node_ptr->port;
+			node_rec->reason = xstrdup(node_ptr->reason);
+		} else {
+			/* FIXME - maybe should be fatal? */
+			error("reconfiguration for node %s, ignoring!", alias);
 		}
-		free(this_node_name);
+		free(alias);
+#ifndef HAVE_FRONT_END
+		free(hostname);
+		free(address);
+#endif
 	}
 
 	/* free allocated storage */
-	xfree(node_addr);
-	xfree(node_hostname);
-	xfree(reason);
-	if (addr_list)
-		hostlist_destroy(addr_list);
-	hostlist_destroy(host_list);
+cleanup:
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (address_list)
+		hostlist_destroy(address_list);
 	return error_code;
 
-      cleanup:
-	xfree(node_addr);
-	xfree(node_name);
-	xfree(node_hostname);
-	xfree(feature);
-	xfree(reason);
-	xfree(state);
+}
+
+static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
+{
+	int error_code = 0;
+	struct node_record *node_rec = NULL;
+	hostlist_t alias_list = NULL;
+	char *alias = NULL;
+	int state_val = NODE_STATE_DOWN;
+
+	if (down->state != NULL) {
+		state_val = _state_str2int(down->state);
+		if (state_val == NO_VAL) {
+			error("Invalid State \"%s\"", down->state);
+			goto cleanup;
+		}
+	}
+
+	if ((alias_list = hostlist_create(down->nodenames)) == NULL) {
+		error("Unable to create NodeName list from %s",
+		      down->nodenames);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	while ((alias = hostlist_shift(alias_list))) {
+		node_rec = find_node_record(alias);
+		if (node_rec == NULL) {
+			error("DownNode \"%s\" does not exist!", alias);
+			free(alias);
+			continue;
+		}
+
+		if ((state_val != NO_VAL) &&
+		    (state_val != NODE_STATE_UNKNOWN))
+			node_rec->node_state = state_val;
+		if (down->reason) {
+			xfree(node_rec->reason);
+			node_rec->reason = xstrdup(down->reason);
+		}
+		free(alias);
+	}
+
+cleanup:
+	if (alias_list)
+		hostlist_destroy(alias_list);
 	return error_code;
 }
 
+static void _handle_all_downnodes()
+{
+	slurm_conf_downnodes_t *ptr, **ptr_array;
+	int count;
+	int i;
+
+	count = slurm_conf_downnodes_array(&ptr_array);
+	if (count == 0) {
+		debug("No DownNodes");
+		return;
+	}	
+
+	for (i = 0; i < count; i++) {
+		ptr = ptr_array[i];
+
+		_handle_downnodes_line(ptr);
+	}
+}
+
+/* 
+ * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
+{
+	slurm_conf_node_t *node, **ptr_array;
+	struct config_record *config_ptr = NULL;
+	int count;
+	int i;
+
+	count = slurm_conf_nodename_array(&ptr_array);
+	if (count == 0)
+		fatal("No NodeName information available!");
+
+	error("count = %d", count);
+
+	for (i = 0; i < count; i++) {
+		node = ptr_array[i];
+
+		config_ptr = create_config_record();
+		config_ptr->nodes = xstrdup(node->nodenames);
+		config_ptr->cpus = node->cpus;
+		config_ptr->real_memory = node->real_memory;
+		config_ptr->tmp_disk = node->tmp_disk;
+		config_ptr->weight = node->weight;
+		if (node->feature) {
+			xfree(config_ptr->feature);
+			config_ptr->feature = xstrdup(node->feature);
+		}
+
+		_build_single_nodeline_info(node, config_ptr, conf);
+	}
+}
 
 /*
- * _parse_part_spec - parse the partition specification, build table and 
- *	set values
- * IN/OUT in_line - line from the configuration file, parsed keywords 
- *	and values replaced by blanks
+ * _build_single_partitionline_info - get a array of slurm_conf_partition_t
+ *	structures from the slurm.conf reader, build table, and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
  * global: part_list - global partition list pointer
  *	default_part - default parameters for a partition
  */
-static int _parse_part_spec(char *in_line)
+static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 {
-	char *allow_groups = NULL, *nodes = NULL, *partition_name = NULL;
-	char *max_time_str = NULL, *default_str = NULL, *root_str = NULL;
-	char *shared_str = NULL, *state_str = NULL, *hidden_str = NULL;
-	int max_time_val = NO_VAL, max_nodes_val = NO_VAL;
-	int min_nodes_val = NO_VAL, root_val = NO_VAL, default_val = NO_VAL;
-	int hidden_val = NO_VAL, state_val = NO_VAL, shared_val = NO_VAL;
-	int error_code;
 	struct part_record *part_ptr;
-	static int default_part_val = NO_VAL;
 
-	if ((error_code =
-	     load_string(&partition_name, "PartitionName=", in_line)))
-		return error_code;
-	if (partition_name == NULL)
-		return 0;	/* no partition info */
-
-	if (strlen(partition_name) >= MAX_SLURM_NAME) {
+	if (strlen(part->name) >= MAX_SLURM_NAME) {
 		error("_parse_part_spec: partition name %s too long",
-		      partition_name);
-		xfree(partition_name);
+		      part->name);
 		return EINVAL;
 	}
 
-	allow_groups = default_str = root_str = nodes = NULL;
-	shared_str = state_str = NULL;
-	error_code = slurm_parser(in_line,
-				  "AllowGroups=", 's', &allow_groups,
-				  "Default=", 's', &default_str,
-				  "Hidden=", 's', &hidden_str,
-				  "RootOnly=", 's', &root_str,
-				  "MaxTime=", 's', &max_time_str,
-				  "MaxNodes=", 'd', &max_nodes_val,
-				  "MinNodes=", 'd', &min_nodes_val,
-				  "Nodes=", 's', &nodes,
-				  "Shared=", 's', &shared_str,
-				  "State=", 's', &state_str, "END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (default_str) {
-		if (strcasecmp(default_str, "YES") == 0)
-			default_val = 1;
-		else if (strcasecmp(default_str, "NO") == 0)
-			default_val = 0;
-		else {
-			error("_parse_part_spec: ignored partition %s update, "
-				"bad state %s", partition_name, default_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(default_str);
-	} else
-		default_val = default_part_val;
-
-	if (hidden_str) {
-		if (strcasecmp(hidden_str, "YES") == 0)
-			hidden_val = 1;
-		else if (strcasecmp(hidden_str, "NO") == 0)
-			hidden_val = 0;
-		else {
-			error("_parse_part_spec: ignored partition %s update, "
-				"bad key %s", partition_name, hidden_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(hidden_str);
-	}
-
-	if (root_str) {
-		if (strcasecmp(root_str, "YES") == 0)
-			root_val = 1;
-		else if (strcasecmp(root_str, "NO") == 0)
-			root_val = 0;
-		else {
-			error("_parse_part_spec ignored partition %s update, "
-				"bad key %s", partition_name, root_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(root_str);
-	}
-
-	if (max_time_str) {
-		if (strcasecmp(max_time_str, "INFINITE") == 0)
-			max_time_val = INFINITE;
-		else {
-			char *end_ptr;
-			max_time_val = strtol(max_time_str, &end_ptr, 10);
-			if ((max_time_str[0] != '\0') && 
-			    (end_ptr[0] != '\0')) {
-				error_code = EINVAL;
-				goto cleanup;
-			}
-		}
-		xfree(max_time_str);
-	}
-
-	if (shared_str) {
-		if (strcasecmp(shared_str, "YES") == 0)
-			shared_val = SHARED_YES;
-		else if (strcasecmp(shared_str, "NO") == 0)
-			shared_val = SHARED_NO;
-		else if (strcasecmp(shared_str, "FORCE") == 0)
-			shared_val = SHARED_FORCE;
-		else {
-			error("_parse_part_spec ignored partition %s update, "
-				"bad shared %s", partition_name, shared_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(shared_str);
-	}
-
-	if (state_str) {
-		if (strcasecmp(state_str, "UP") == 0)
-			state_val = 1;
-		else if (strcasecmp(state_str, "DOWN") == 0)
-			state_val = 0;
-		else {
-			error("_parse_part_spec ignored partition %s update, "
-				"bad state %s", partition_name, state_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-		xfree(state_str);
-	}
-
-	if (strcasecmp(partition_name, "DEFAULT") == 0) {
-		xfree(partition_name);
-		if (default_val != NO_VAL)
-			default_part_val = default_val;
-		if (hidden_val != NO_VAL)
-			default_part.hidden  = hidden_val;
-		if (max_time_val != NO_VAL)
-			default_part.max_time  = max_time_val;
-		if (max_nodes_val != NO_VAL)
-			default_part.max_nodes = max_nodes_val;
-		if (min_nodes_val != NO_VAL)
-			default_part.min_nodes = min_nodes_val;
-		if (root_val != NO_VAL)
-			default_part.root_only = root_val;
-		if (state_val != NO_VAL)
-			default_part.state_up  = state_val;
-		if (shared_val != NO_VAL)
-			default_part.shared    = shared_val;
-		if (allow_groups) {
-			xfree(default_part.allow_groups);
-			if (strcasecmp(allow_groups, "ALL")) {
-				default_part.allow_groups = allow_groups;
-				allow_groups = NULL;
-			}
-		}
-		if (nodes) {
-			xfree(default_part.nodes);
-			default_part.nodes = nodes;
-			nodes = NULL;
-		}
-		return 0;
-	}
-
-	part_ptr = list_find_first(part_list, &list_find_part, partition_name);
+	part_ptr = list_find_first(part_list, &list_find_part, part->name);
 	if (part_ptr == NULL) {
 		part_ptr = create_part_record();
-		strcpy(part_ptr->name, partition_name);
+		strcpy(part_ptr->name, part->name);
 	} else {
-		verbose("_parse_node_spec: duplicate entry for partition %s",
-		     partition_name);
+		verbose("_parse_part_spec: duplicate entry for partition %s",
+			part->name);
 	}
-	if (default_val == 1) {
+
+	if (part->default_flag) {
 		if ((strlen(default_part_name) > 0)
-		&&  strcmp(default_part_name,partition_name))
+		&&  strcmp(default_part_name, part->name))
 			info("_parse_part_spec: changing default partition "
 				"from %s to %s", 
-				default_part_name, partition_name);
-		strcpy(default_part_name, partition_name);
+				default_part_name, part->name);
+		strcpy(default_part_name, part->name);
 		default_part_loc = part_ptr;
 	}
-	if (hidden_val != NO_VAL)
-		part_ptr->hidden  = hidden_val;
-	if (max_time_val != NO_VAL)
-		part_ptr->max_time  = max_time_val;
-	if (max_nodes_val != NO_VAL)
-		part_ptr->max_nodes = max_nodes_val;
-	if (min_nodes_val != NO_VAL)
-		part_ptr->min_nodes = min_nodes_val;
-	if (root_val != NO_VAL)
-		part_ptr->root_only = root_val;
-	if (state_val != NO_VAL)
-		part_ptr->state_up  = state_val;
-	if (shared_val != NO_VAL)
-		part_ptr->shared    = shared_val;
-	if (allow_groups) {
+	part_ptr->hidden    = part->hidden_flag ? 1 : 0;
+	part_ptr->max_time  = part->max_time;
+	part_ptr->max_nodes = part->max_nodes;
+	part_ptr->min_nodes = part->min_nodes;
+	part_ptr->root_only = part->root_only_flag ? 1 : 0;
+	part_ptr->state_up  = part->state_up_flag ? 1 : 0;
+	part_ptr->shared    = part->shared;
+	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
-		part_ptr->allow_groups = allow_groups;
-		allow_groups = NULL;
+		part_ptr->allow_groups = xstrdup(part->allow_groups);
 	}
-	if (nodes) {
-		if (strcasecmp(nodes, "localhost") == 0) {
-			xfree(nodes);
-			nodes = xmalloc(MAX_SLURM_NAME);
-			getnodename(nodes, MAX_SLURM_NAME);
-		}
+	if (part->nodes) {
 		if (part_ptr->nodes) {
 			xstrcat(part_ptr->nodes, ",");
-			xstrcat(part_ptr->nodes, nodes);
-			xfree(nodes);
+			xstrcat(part_ptr->nodes, part->nodes);
 		} else {
-			part_ptr->nodes = nodes;
-			nodes = NULL;
+			part_ptr->nodes = xstrdup(part->nodes);
 		}
 	}
-	xfree(partition_name);
-	return 0;
 
-      cleanup:
-	xfree(allow_groups);
-	xfree(default_str);
-	xfree(hidden_str);
-	xfree(max_time_str);
-	xfree(root_str);
-	xfree(nodes);
-	xfree(partition_name);
-	xfree(shared_str);
-	xfree(state_str);
-	return error_code;
+	return 0;
 }
 
+/*
+ * _build_all_partitionline_info - get a array of slurm_conf_partition_t
+ *	structures from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ * global: part_list - global partition list pointer
+ *	default_part - default parameters for a partition
+ */
+static int _build_all_partitionline_info()
+{
+	slurm_conf_partition_t *part, **ptr_array;
+	int count;
+	int i;
+
+	count = slurm_conf_partition_array(&ptr_array);
+	if (count == 0)
+		fatal("No PartitionName information available!");
+
+	for (i = 0; i < count; i++) {
+		part = ptr_array[i];
+
+		_build_single_partitionline_info(part);
+	}
+}
 
 /*
  * read_slurm_conf - load the slurm configuration from the configured file. 
@@ -761,9 +633,6 @@ static int _parse_part_spec(char *in_line)
 int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
-	FILE *slurm_spec_file;	/* pointer to input data file */
-	int line_num;		/* line number in input file */
-	char in_line[BUFFER_SIZE];	/* input line */
 	int i, j, error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
@@ -772,6 +641,7 @@ int read_slurm_conf(int recover)
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
+	slurm_ctl_conf_t *conf;
 
 	/* initialization */
 	START_TIMER;
@@ -784,76 +654,12 @@ int read_slurm_conf(int recover)
 		return error_code;
 	}
 
-	slurm_spec_file = fopen(slurmctld_conf.slurm_conf, "r");
-	if (slurm_spec_file == NULL)
-		fatal("read_slurm_conf error opening file %s, %m",
-		      slurmctld_conf.slurm_conf);
+	conf = slurm_conf_lock();
+	_build_all_nodeline_info(conf);
+	_handle_all_downnodes();
+	_build_all_partitionline_info();
+	slurm_conf_unlock();
 
-	info("read_slurm_conf: loading configuration from %s",
-	     slurmctld_conf.slurm_conf);
-
-	/* process the data file */
-	line_num = 0;
-	while (fgets(in_line, BUFFER_SIZE, slurm_spec_file) != NULL) {
-		line_num++;
-		if (strlen(in_line) >= (BUFFER_SIZE - 1)) {
-			error("read_slurm_conf line %d, of input file %s "
-				"too long", 
-				line_num, slurmctld_conf.slurm_conf);
-			xfree(old_node_table_ptr);
-			fclose(slurm_spec_file);
-			return E2BIG;
-			break;
-		}
-
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
-		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUFFER_SIZE; i++) {
-			if (in_line[i] == (char) NULL)
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUFFER_SIZE; j++) {
-					in_line[j - 1] = in_line[j];
-				}
-				continue;
-			}
-			in_line[i] = (char) NULL;
-			break;
-		}
-
-		/* parse what is left, non-comments */
-
-		/* overall configuration parameters */
-		if ((error_code =
-		     parse_config_spec(in_line, &slurmctld_conf))) {
-			fclose(slurm_spec_file);
-			xfree(old_node_table_ptr);
-			return error_code;
-		}
-
-		/* node configuration parameters */
-		if ((error_code = _parse_node_spec(in_line))) {
-			fclose(slurm_spec_file);
-			xfree(old_node_table_ptr);
-			return error_code;
-		}
-
-		/* partition configuration parameters */
-		if ((error_code = _parse_part_spec(in_line))) {
-			fclose(slurm_spec_file);
-			xfree(old_node_table_ptr);
-			return error_code;
-		}
-
-		/* report any leftover strings on input line */
-		report_leftover(in_line, line_num);
-	}
-	fclose(slurm_spec_file);
-
-	validate_config(&slurmctld_conf);
 	update_logging();
 	g_slurmctld_jobacct_init(slurmctld_conf.job_acct_loc,
 			slurmctld_conf.job_acct_parameters);
@@ -1166,3 +972,15 @@ static void _validate_node_proc_count(void)
 	list_iterator_destroy(part_iterator);
 }
 #endif
+
+/* Normalize supplied debug level to be in range per log.h definitions */
+static void _normalize_debug_level(uint16_t *level)
+{
+	if (*level > LOG_LEVEL_DEBUG3) {
+		error("Normalizing debug level from %u to %d", 
+		      *level, LOG_LEVEL_DEBUG3);
+		*level = LOG_LEVEL_DEBUG3;
+	}
+	/* level is uint16, always > LOG_LEVEL_QUIET(0), can't underflow */
+}
+
