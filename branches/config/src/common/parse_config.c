@@ -58,8 +58,8 @@ static char *keyvalue_pattern =
 	"^[[:space:]]*"
 	"([[:alpha:]]+)" /* key */
 	"[[:space:]]*=[[:space:]]*"
-	"((\"([^\"]*)\")|([[:graph:]]+))" /* value: quoted with whitespace,
-					   * or unquoted and no whitespace */
+	"((\"([^\"]*)\")|([^[:space:]]+))" /* value: quoted with whitespace,
+					    * or unquoted and no whitespace */
 	"([[:space:]]|$)";
 static bool keyvalue_initialized = false;
 
