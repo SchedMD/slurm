@@ -563,11 +563,11 @@ of larger clusters.
 In order to support the concept of jobs requiring consecutive nodes
 on some architectures, 
 node specifications should be place in this file in consecutive order.
-If a specific node name is listed more than once in the configuration 
-file only its "State" and "Reason" fields may be reset. 
-This may be useful to record the state of nodes which are temporarily 
+No single node name may be listed more than once in the configuration
+file.
+Use "DownNodes=" to record the state of nodes which are temporarily 
 in a DOWN or DRAINED state without altering permanent configuration 
-information as shown in the example.
+information.
 A job step's tasks are allocated to nodes in order the nodes appear 
 in the configuration file. There is presently no capability within 
 SLURM to arbitarily order a job step's tasks.
@@ -687,6 +687,34 @@ The units of weight are arbitrary, but larger weights
 should be assigned to nodes with more processors, memory, 
 disk space, higher processor speed, etc.
 Weight is an integer value with a default value of 1.
+.LP
+The "DownNodes=" configuration permits you to mark certain nodes as in a 
+DOWN or DRAINED state without altering the permanent configuration
+information listed under a "NodeName=" specification.
+.TP
+\fBDownNodes\fR
+Any node name, or list of node names, from the "NodeName=" specifications.
+.TP
+\fBReason\fR
+Identifies the reason for a node being in state "DOWN" or "DRAINED" 
+or "DRAINING". Use quotes to enclose a reason having more than one 
+word.
+.TP
+\fBState\fR
+State of the node with respect to the initiation of user jobs. 
+Acceptable values are "BUSY", "DOWN", "DRAINED", "DRAINING", "IDLE", 
+and "UNKNOWN". "BUSY" indicates the node has been allocated work 
+and should not be used in the configuration file.
+"DOWN" indicates the node failed and is unavailable to be allocated work.
+"DRAINED" indicates the node was configured unavailable to be 
+allocated work and is presently not performing any work.
+"DRAINING" indicates the node is unavailable to be allocated new 
+work, but is completing the processing of a job.
+"IDLE" indicates the node available to be allocated work, but 
+has none at present
+"UNKNOWN" indicates the node's state is undefined, but will be 
+established when the \fBslurmd\fR daemon on that node registers.
+The default value is "UNKNOWN".
 .LP
 The partition configuration permits you to establish different job 
 limits or access controls for various groups (or partitions) of nodes. 
@@ -869,7 +897,7 @@ NodeName=dev[0-25] NodeAddr=edev[0-25] Weight=16
 .br
 # Update records for specific DOWN nodes
 .br
-NodeName=dev20 State=DOWN Reason="power,ETA=Dec25"
+DownNodes=dev20 State=DOWN Reason="power,ETA=Dec25"
 .br
 #
 .br
