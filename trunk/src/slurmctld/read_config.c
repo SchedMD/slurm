@@ -514,8 +514,6 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	if (count == 0)
 		fatal("No NodeName information available!");
 
-	error("count = %d", count);
-
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
 
