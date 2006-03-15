@@ -5,7 +5,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -92,7 +92,7 @@ static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
 
 #ifdef HAVE_XCPU
-#define XCPU_POLL_TIME 30
+#define XCPU_POLL_TIME 120
 static pthread_t xcpu_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_fini = 0;
@@ -116,8 +116,9 @@ static void *xcpu_agent(void *args)
 			down_node_list[0] = '\0';
 
 			for (i=0; i<select_node_cnt; i++) {
-				snprintf(clone_path, sizeof(clone_path), "%s/%s/clone",
-					XCPU_DIR, select_node_ptr[i].name);
+				snprintf(clone_path, sizeof(clone_path), 
+					"%s/%s/xcpu/clone", XCPU_DIR, 
+					select_node_ptr[i].name);
 				if (stat(clone_path, &buf) == 0)
 					continue;
 				error("stat %s: %m", clone_path);
@@ -544,11 +545,15 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 			cnt += select_node_ptr[i].cpus;
 #ifdef HAVE_XCPU
 {		char clone_path[128];
-		snprintf(clone_path, sizeof(clone_path), "%s/%s/clone",
-			XCPU_DIR, select_node_ptr[i].name);
+		snprintf(clone_path, sizeof(clone_path), 
+			"%s/%s/xcpu/clone", XCPU_DIR, 
+			select_node_ptr[i].name);
 		if (chown(clone_path, (uid_t)job_ptr->user_id, -1)) {
 			error("chown %s: %m", clone_path);
 			rc = SLURM_ERROR;
+		} else {
+			debug("chown %s to %u", clone_path, 
+				job_ptr->user_id);
 		}
 }
 #endif
@@ -570,11 +575,14 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	for (i=0; i<select_node_cnt; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		snprintf(clone_path, sizeof(clone_path), "%s/%s/clone",
-			XCPU_DIR, select_node_ptr[i].name);
+		snprintf(clone_path, sizeof(clone_path), 
+			"%s/%s/xcpu/clone", XCPU_DIR, 
+			select_node_ptr[i].name);
 		if (chown(clone_path, (uid_t)0, -1)) {
 			error("chown %s: %m", clone_path);
 			rc = SLURM_ERROR;
+		} else {
+			debug("chown %s to 0", clone_path);
 		}
 	}
 #endif
