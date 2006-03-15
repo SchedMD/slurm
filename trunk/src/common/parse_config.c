@@ -406,7 +406,8 @@ static int _handle_long(s_p_values_t *v,
 		num = strtol(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			if (strcasecmp(value, "INFINITE") == 0) {
+			if (strcasecmp(value, "UNLIMITED") == 0
+			    || strcasecmp(value, "INFINITE") == 0) {
 				num = (long)-1;
 			} else {
 				error("\"%s\" is not a valid number", value);
@@ -446,7 +447,8 @@ static int _handle_uint16(s_p_values_t *v,
 		num = strtoul(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			if (strcasecmp(value, "INFINITE") == 0) {
+			if (strcasecmp(value, "UNLIMITED") == 0
+			    || strcasecmp(value, "INFINITE") == 0) {
 				num = (uint16_t)-1;
 			} else {
 				error("\"%s\" is not a valid number", value);
@@ -492,7 +494,8 @@ static int _handle_uint32(s_p_values_t *v,
 		num = strtoul(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			if (strcasecmp(value, "INFINITE") == 0) {
+			if (strcasecmp(value, "UNLIMITED") == 0
+			    || strcasecmp(value, "INFINITE") == 0) {
 				num = (uint32_t)-1;
 			} else {
 				error("\"%s\" is not a valid number", value);
