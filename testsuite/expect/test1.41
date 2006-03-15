@@ -62,7 +62,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re "host:" {
+	-re " host:" {
 		incr resp_cnt
 		exp_continue
 	}
