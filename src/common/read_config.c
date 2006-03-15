@@ -1261,7 +1261,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 #ifdef HAVE_BG
 		/* Inactive limit must be zero on Blue Gene */
 		error("InactiveLimit=%ld is invalid on Blue Gene",
-		      cont->inactive_limit);
+		      conf->inactive_limit);
 		conf->inactive_limit = 0; /* default value too */
 #endif
 	} else {
