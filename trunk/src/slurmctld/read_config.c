@@ -249,8 +249,9 @@ static int _build_bitmaps(void)
 static int _init_all_slurm_conf(void)
 {
 	int error_code;
+	char *conf_name = xstrdup(slurmctld_conf.slurm_conf);
 
-	slurm_conf_init(NULL);
+	slurm_conf_reinit(conf_name);
 
 	if ((error_code = init_node_conf()))
 		return error_code;
