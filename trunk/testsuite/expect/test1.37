@@ -40,15 +40,20 @@ set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set job_id1      0
 set host_name    ""
+set nodelist_name ""
 
 print_header $test_id
 
 #
-# Submit a job and get the node's name
+# Submit a job and get the node's NodeName from the nodelist
 #
 set timeout $max_job_delay
-spawn $srun -l -t1 $bin_hostname
+spawn $srun -v -N1 -l -t1 $bin_hostname
 expect {
+	-re "on host ($alpha_numeric)," {
+		set nodelist_name $expect_out(1,string)
+		exp_continue
+	}
 	-re "0: ($alpha_numeric)" {
 		set host_name $expect_out(1,string)
 		exp_continue
@@ -63,7 +68,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $host_name ""] == 0} {
+if {[string compare $nodelist_name ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	exit 1
 }
@@ -86,7 +91,7 @@ exec $bin_chmod 700 $file_in
 # with sharing permitted. Insure the first job completes before the 
 # second job is started.
 #
-spawn $srun --batch -N1 --exclusive --nodelist=$host_name -t1 --output=$file_out --error=$file_err  $file_in
+spawn $srun --batch -N1 --exclusive --nodelist=$nodelist_name -t1 --output=$file_out --error=$file_err  $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -110,7 +115,7 @@ if {$job_id1 == 0} {
 set partition "dummy"
 set waited 1
 set timeout [expr $timeout + 5]
-spawn $srun -N1 --nodelist=$host_name -t1 --share $scontrol -o show job $job_id1
+spawn $srun -N1 --nodelist=$nodelist_name -t1 --share $scontrol -o show job $job_id1
 expect {
 	-re "Partition=($alpha_numeric)" {
 		set partition $expect_out(1,string)

@@ -80,7 +80,11 @@ if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	exit 1	
 }
-set include_node $host_0
+if {[string compare $nodelist_name ""] == 0} {
+    send_user "\nFAILURE: Did not get nodelist_name of task 0\n"
+    exit 1	
+}
+set include_node $nodelist_name
 
 #
 # Submit a job directly to that node
@@ -136,10 +140,10 @@ if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	set exit_code   1	
 }
-if {[string compare $host_0 $include_node] != 0} {
-	send_user "\nFAILURE: Allocation lacked an included node\n"
-	set exit_code   1	
-}
+#if {[string compare $host_0 $include_node] != 0} {
+#	send_user "\nFAILURE: Allocation lacked an included node\n"
+#	set exit_code   1	
+#}
 
 #
 # Run three tasks at a time on some node and do so repeatedly
@@ -147,13 +151,6 @@ if {[string compare $host_0 $include_node] != 0} {
 # Note: process output in order of expected completion
 #
 set front_end [test_front_end]
-if { $front_end == 1 } {
-	if {[string compare $nodelist_name ""] == 0} {
-		send_user "\nFAILURE: Did not get nodelist_name of task 0\n"
-		exit 1	
-	}
-	set include_node $nodelist_name
-}
 
 set successes 0
 for {set inx 0} {$inx < $interations} {incr inx} {
