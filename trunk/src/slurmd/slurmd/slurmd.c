@@ -520,6 +520,7 @@ _read_config()
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
 
+	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename(conf->hostname);
@@ -530,6 +531,7 @@ _read_config()
 
 	conf->port = slurm_conf_get_port(conf->node_name);
 
+	cf = slurm_conf_lock();
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
