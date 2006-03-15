@@ -179,17 +179,23 @@ extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
 
 /*
- * get_conf_node_hostname - Return the NodeHostname for given NodeName
+ * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_hostname(const char *node_name);
 
 /*
- * get_conf_node_name - Return the NodeName for given NodeHostname
+ * slurm_conf_get_nodename - Return the NodeName for given NodeHostname
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_nodename(const char *node_hostname);
 
 /*
  * slurm_conf_get_port - Return the port for a given NodeName
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern uint16_t slurm_conf_get_port(const char *node_name);
 

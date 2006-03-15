@@ -78,6 +78,7 @@ static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 
 inline static void _normalize_debug_level(uint16_t *level);
+static void _init_slurm_conf(char *file_name);
 
 /* data structures for looking up slurmd port numbers */
 struct slurmd_port {
@@ -750,6 +751,7 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
+	_init_slurm_conf(NULL);
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0) {
 		return;
@@ -776,16 +778,20 @@ extern char *slurm_conf_get_hostname(const char *node_name)
 	int idx;
 	names_ll_t *p;
 
+	slurm_conf_lock();
 	_init_slurmd_nodehash();
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
-			return xstrdup(p->hostname);
+			char *hostname = xstrdup(p->hostname);
+			slurm_conf_unlock();
+			return hostname;
 		}
 		p = p->next_alias;
 	}
+	slurm_conf_unlock();
 
 	return NULL;
 }
@@ -798,16 +804,20 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	int idx;
 	names_ll_t *p;
 
+	slurm_conf_lock();
 	_init_slurmd_nodehash();
 
 	idx = _get_hash_idx(node_hostname);
 	p = host_to_node_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->hostname, node_hostname) == 0) {
-			return xstrdup(p->alias);
+			char *alias = xstrdup(p->alias);
+			slurm_conf_unlock();
+			return alias;
 		}
 		p = p->next_hostname;
 	}
+	slurm_conf_unlock();
 
 	return NULL;
 }
@@ -820,16 +830,20 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 	int idx;
 	names_ll_t *p;
 
+	slurm_conf_lock();
 	_init_slurmd_nodehash();
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
-			return p->port;
+			uint16_t port = p->port;
+			slurm_conf_unlock();
+			return port;
 		}
 		p = p->next_alias;
 	}
+	slurm_conf_unlock();
 
 	return 0;
 }
