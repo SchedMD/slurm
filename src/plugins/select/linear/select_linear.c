@@ -111,7 +111,7 @@ static void *xcpu_agent(void *args)
 		now = time(NULL);
 
 		if (difftime(now, last_xcpu_test) >= XCPU_POLL_TIME) {
-			info("Running XCPU node state test");
+			debug3("Running XCPU node state test");
 			time_ptr = localtime(&now);
 			down_node_list[0] = '\0';
 
