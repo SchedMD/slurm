@@ -11,6 +11,12 @@
 #    Test for XCPU job launch support. 
 #    If found define HAVE_XCPU, XCPU_DIR and HAVE_FRONT_END.
 #    Explicitly set path with --with-xcpu=PATH, defaults to "/mnt".
+#
+#  NOTES:
+#    SLURM still has no way to signal XCPU spawned processes.
+#    SLURM is not confirming that all processes have completed prior
+#    to marking a job/node as COMPLETED. For that it needs to check 
+#    for subdirectories (not files) under /mnt/xcpu/<host>/xcpu.
 ##*****************************************************************************
 
 
