@@ -88,17 +88,28 @@ as follows: </p>
 <p style="margin-left:.2in"><b>api</b>&#151;Application Program Interfaces into 
 the SLURM code. Used to send and get SLURM information from the central manager. 
 These are the functions user applications might utilize.<br>
-<b>common</b>&#151;General purpose functions for widespread use throughout SLURM.<br>
-<b>plugins</b>&#151;Plugin functions for various infrastructure. A separate subdirectory 
-is used for each plugin class:<br> 
-<span class="commandline">auth</span> for user authentication,<br> 
-<span class="commandline">checkpoint</span> for system-initiated checkpoint 
+<b>api</b>&#151;Application Programming Interfaces for SLURM commands and 
+user application use.<br>
+<b>common</b>&#151;General purpose functions for widespread use throughout 
+SLURM.<br>
+<b>plugins</b>&#151;Plugin functions for various infrastructure. A separate 
+subdirectory is used for each plugin class:<br> 
+<ul>
+<li><span class="commandline">auth</span> for user authentication,<br> 
+<li><span class="commandline">checkpoint</span> for system-initiated checkpoint 
 and restart of user jobs,<br>
-<span class="commandline">jobcomp</span> for job completion logging,<br> 
-<span class="commandline">sched</span> for job scheduler,<br> 
-<span class="commandline">select</span> for a job's node selection,<br>
-<span class="commandline">switch</span> for switch (interconnect) specific functions, 
-etc.<br>
+<li><span class="commandline">jobacct</span> for job accounting,<br>
+<li><span class="commandline">jobcomp</span> for job completion logging,<br>
+<li><span class="commandline">mpi</span> for MPI support,<br>
+<li><span class="commandline">proctrack</span> for process tracking,<br>
+<li><span class="commandline">sched</span> for job scheduler,<br> 
+<li><span class="commandline">select</span> for a job's node selection,<br>
+<li><span class="commandline">switch</span> for switch (interconnect) specific 
+functions,<br>
+<li><span class="commandline">task</span> for task affinity to processors.<br>
+</ul>
+<b>sbcast</b>&#151;User command to broadcast a file to all nodes associated 
+with an existing SLURM job.<br>
 <b>scancel</b>&#151;User command to cancel (or signal) a job or job step.<br>
 <b>scontrol</b>&#151;Administrator tool to manage SLURM.<br>
 <b>sinfo</b>&#151;User command to get information on SLURM nodes and partitions.<br>
@@ -109,8 +120,8 @@ the execution of user applications.<br>
 This is particularly valuable on systems like Blue Gene, which has a three
 dimension torus topography.<br>
 <b>squeue</b>&#151;User command to get information on SLURM jobs and job steps.<br>
-<b>srun</b>&#151;User command to submit a job, get an allocation, and/or initiation 
-a parallel job step.</p>
+<b>srun</b>&#151;User command to submit a job, get an allocation, and/or 
+initiation a parallel job step.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -134,7 +145,8 @@ and options including stress tests. Get these test from
 <h2>Adding Files and Directories</h2>
 <p>If you are adding files and directories to SLURM, it will be necessary to
 re-build configuration files before executing the <b>configure</b> command.
-You can do this by executing the command <b>autoreconf --force --install</b>.
+Update <b>Makefile.am</b> files as needed then execute 
+<b>autogen.sh</b> before executing <b>configure</b>.
 
 <h2>Tricks of the Trade</h2>
 <h3>HAVE_FRONT_END</h3>
@@ -185,6 +197,6 @@ host1> slurmd -N foo21 -P 17003
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 May 2005</p>
+<p style="text-align:center;">Last modified 15 March 2006</p>
 
 <!--#include virtual="footer.txt"-->
