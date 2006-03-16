@@ -178,7 +178,8 @@ extern int fini ( void )
 	}
 #else
 	/*looking for blocks only I created */
-	if (create_dynamic_blocks() == SLURM_ERROR) {
+	if (create_defined_blocks(bluegene_layout_mode) 
+			== SLURM_ERROR) {
 		/* error in creating the static blocks, so
 		 * blocks referenced by submitted jobs won't
 		 * correspond to actual slurm blocks.
