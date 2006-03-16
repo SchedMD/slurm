@@ -88,10 +88,10 @@ typedef struct bg_record {
 					   on the block */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
-	uint16_t quarter;                    /* used for small blocks 
+	uint16_t quarter;               /* used for small blocks 
 					   determine quarter of BP */
-	uint16_t nodecard;                    /* used for small blocks 
-					   determine nodecard of quarter */
+	uint16_t nodecard;             /* used for small blocks 
+					  determine nodecard of quarter */
 } bg_record_t;
 
 typedef struct {

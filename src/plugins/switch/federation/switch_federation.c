@@ -127,7 +127,7 @@ int init ( void )
 
 int fini ( void )
 {
-	return SLURM_SUCCESS;
+	return fed_fini();
 }
 
 int switch_p_slurmctld_init( void )

@@ -153,10 +153,10 @@ try_again:
 			continue;
 		}
 		
-		if(!test_only && bluegene_layout_mode == LAYOUT_OVERLAP) {
-			if(!created && record->state != RM_PARTITION_READY)
-				continue;
-		}
+		/* if(!test_only && bluegene_layout_mode == LAYOUT_OVERLAP) { */
+/* 			if(!created && record->state != RM_PARTITION_READY) */
+/* 				continue; */
+/* 		} */
 		/* Check processor count */
 		proc_cnt = record->bp_count * record->cpus_per_bp;
 		debug3("asking for %d-%d looking at %d", 
@@ -225,8 +225,19 @@ try_again:
 					found_record->bg_block_id)))
 				continue;
 			if(blocks_overlap(record, found_record)) {
-				if((found_record->job_running > -1) 
-				   && !test_only) {
+				if(!test_only
+				   && bluegene_layout_mode == LAYOUT_OVERLAP) {
+					if(!created && record->state 
+						!= RM_PARTITION_READY)
+						break;
+					else if(created == 1 
+						&& found_record->state 
+						!= RM_PARTITION_FREE) {
+						break;
+					} 
+				}
+				if(!test_only
+				   && (found_record->job_running > -1)) {
 					debug("can't use %s, there is a job "
 					      "(%d) running on an overlapping "
 					      "block %s", 
@@ -294,10 +305,9 @@ try_again:
 	}
 	list_iterator_destroy(itr);
 
-	if(!test_only 
-	   && !*found_bg_record 
-	   && bluegene_layout_mode == LAYOUT_OVERLAP) {
-		created = 1;
+	if(bluegene_layout_mode == LAYOUT_OVERLAP 
+	   &&!test_only && created<2 && !*found_bg_record) {
+		created++;
 		slurm_mutex_unlock(&block_state_mutex);
 		goto try_again;
 	}
@@ -331,8 +341,10 @@ try_again:
 				      "create_dynamic_block");
 				return SLURM_ERROR;
 			} 
+			slurm_conf_lock();
 			sprintf(tmp_char, "%s%s\0", 
 				slurmctld_conf.node_prefix, request.save_name);
+			slurm_conf_unlock();
 			if (node_name2bitmap(tmp_char, 
 					     false, 
 					     &tmp_bitmap)) {
@@ -395,9 +407,11 @@ try_again:
 	
 	/* set the bitmap and do other allocation activities */
 	if (*found_bg_record) {
+		format_node_name(*found_bg_record, tmp_char);
+	
 		debug("_find_best_block_match %s <%s>", 
 			(*found_bg_record)->bg_block_id, 
-			(*found_bg_record)->nodes);
+			tmp_char);
 		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_SUCCESS;

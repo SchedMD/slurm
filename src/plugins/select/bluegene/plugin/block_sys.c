@@ -124,10 +124,11 @@ static void _pre_allocate(bg_record_t *bg_record)
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
 			      &send_psets)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
-
+	slurm_conf_lock();
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionUserName, 
 			      slurmctld_conf.slurm_user_name)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionUserName)", bg_err_str(rc));
+	slurm_conf_unlock();
 /* 	info("setting it here"); */
 /* 	bg_record->bg_block_id = "RMP101"; */
 /* 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionID,  */
@@ -185,13 +186,16 @@ static int _post_allocate(bg_record_t *bg_record)
 		free(block_id);
 		
 		xfree(bg_record->target_name);
+
+		slurm_conf_lock();
 		bg_record->target_name = 
 			xstrdup(slurmctld_conf.slurm_user_name);
 
 		xfree(bg_record->user_name);
 		bg_record->user_name = 
 			xstrdup(slurmctld_conf.slurm_user_name);
-
+		slurm_conf_unlock();
+	
 		if((pw_ent = getpwnam(bg_record->user_name)) == NULL) {
 			error("getpwnam(%s): %m", bg_record->user_name);
 		} else {
@@ -465,8 +469,8 @@ int read_bg_blocks()
 			error("rm_get_data(RM_PartitionBPNum): %s",
 			      bg_err_str(rc));
 		} 
-		debug("has %d BPs",
-		      bg_record->bp_count);
+		debug3("has %d BPs",
+		       bg_record->bp_count);
 				
 		if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
 				&bg_record->switch_count)) != STATUS_OK) {
@@ -511,10 +515,10 @@ int read_bg_blocks()
 			bg_record->cpus_per_bp = procs_per_node/i;
 			bg_record->node_cnt = bluegene_bp_node_cnt/i;
 			
-			debug("%s is in quarter %d nodecard %d",
-			      bg_record->bg_block_id,
-			      bg_record->quarter,
-			      bg_record->nodecard);
+			debug3("%s is in quarter %d nodecard %d",
+			       bg_record->bg_block_id,
+			       bg_record->quarter,
+			       bg_record->nodecard);
 			bg_record->conn_type = SELECT_SMALL;
 			
 		} else {
@@ -586,10 +590,12 @@ int read_bg_blocks()
 			}
 			free(bpid);
 
+			slurm_conf_lock();
 			sprintf(node_name_tmp, 
 				"%s%d%d%d\0", 
 				slurmctld_conf.node_prefix,
 				coord[X], coord[Y], coord[Z]);
+			slurm_conf_unlock();
 			
 			hostlist_push(bg_record->hostlist, node_name_tmp);
 		}	
@@ -613,9 +619,9 @@ int read_bg_blocks()
 		else
 			bg_record->boot_state = 0;
 			
-		debug("Partition %s is in state %d",
-		      bg_record->bg_block_id, 
-		      bg_record->state);
+		debug3("Partition %s is in state %d",
+		       bg_record->bg_block_id, 
+		       bg_record->state);
 		
 		if ((rc = rm_get_data(block_ptr, RM_PartitionUsersNum,
 					 &bp_cnt)) != STATUS_OK) {
@@ -623,12 +629,14 @@ int read_bg_blocks()
 			      bg_err_str(rc));
 		} else {
 			if(bp_cnt==0) {
+				slurm_conf_lock();
 				bg_record->user_name = 
 					xstrdup(slurmctld_conf.
 						slurm_user_name);
 				bg_record->target_name = 
 					xstrdup(slurmctld_conf.
 						slurm_user_name);
+				slurm_conf_unlock();
 			} else {
 				user_name = NULL;
 				if ((rc = rm_get_data(block_ptr, 
@@ -646,11 +654,13 @@ int read_bg_blocks()
 				}
 				bg_record->user_name = xstrdup(user_name);
 			
-				if(!bg_record->boot_state)
+				if(!bg_record->boot_state) {
+					slurm_conf_lock();
 					bg_record->target_name = 
 						xstrdup(slurmctld_conf.
 							slurm_user_name);
-				else
+					slurm_conf_unlock();
+				} else
 					bg_record->target_name = 
 						xstrdup(user_name);
 				
