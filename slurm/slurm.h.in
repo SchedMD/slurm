@@ -194,7 +194,7 @@ enum select_data_type {
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
 	SELECT_DATA_BLOCK_ID,	/* data-> char bg_block_id */
 	SELECT_DATA_QUARTER,	/* data-> uint16_t quarter */
-	SELECT_DATA_SEGMENT,	/* data-> uint16_t segment */
+	SELECT_DATA_NODECARD,	/* data-> uint16_t nodecard */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_DATA_ALTERED,    /* data-> uint16_t altered */
 	SELECT_DATA_MAX_PROCS	/* data-> uint32_t max_procs */

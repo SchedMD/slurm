@@ -90,8 +90,8 @@ typedef struct bg_record {
 	uint32_t node_cnt;              /* count of nodes per block */
 	uint16_t quarter;                    /* used for small blocks 
 					   determine quarter of BP */
-	uint16_t segment;                    /* used for small blocks 
-					   determine segment of quarter */
+	uint16_t nodecard;                    /* used for small blocks 
+					   determine nodecard of quarter */
 } bg_record_t;
 
 typedef struct {
@@ -119,10 +119,10 @@ extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
 extern bg_layout_t bluegene_layout_mode;
-extern int bluegene_numpsets;
-extern int bluegene_bp_node_cnt;
-extern int bluegene_segment_node_cnt;
-extern int bluegene_quarter_node_cnt;
+extern uint16_t bluegene_numpsets;
+extern uint16_t bluegene_bp_node_cnt;
+extern uint16_t bluegene_nodecard_node_cnt;
+extern uint16_t bluegene_quarter_node_cnt;
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 

@@ -44,7 +44,7 @@ typedef struct {
 	int conn_type;
 	int node_use;
 	int quarter;
-	int segment;
+	int nodecard;
 	int node_cnt;
 } bg_info_record_t;
 

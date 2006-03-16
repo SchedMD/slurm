@@ -115,7 +115,7 @@ struct select_jobinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t quarter;       /* for bg to tell which quarter of a small
 				 * partition the job is running */ 
-	uint16_t segment;       /* for bg to tell which segment of a quarter 
+	uint16_t nodecard;       /* for bg to tell which nodecard of a quarter 
 				 *  of a small partition the job is running */ 
 	uint32_t node_cnt;      /* how many cnodes in block */ 
 	uint16_t altered;       /* see if we have altered this job 
@@ -569,7 +569,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
 	(*jobinfo)->quarter = (uint16_t) NO_VAL;
-	(*jobinfo)->segment = (uint16_t) NO_VAL;
+	(*jobinfo)->nodecard = (uint16_t) NO_VAL;
 	(*jobinfo)->node_cnt = NO_VAL;
 	(*jobinfo)->max_procs =  NO_VAL;
 	
@@ -616,8 +616,8 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_QUARTER:
 		jobinfo->quarter = *uint16;
 		break;
-	case SELECT_DATA_SEGMENT:
-		jobinfo->segment = *uint16;
+	case SELECT_DATA_NODECARD:
+		jobinfo->nodecard = *uint16;
 		break;
 	case SELECT_DATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
@@ -680,8 +680,8 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_QUARTER:
 		*uint16 = jobinfo->quarter;
 		break;
-	case SELECT_DATA_SEGMENT:
-		*uint16 = jobinfo->segment;
+	case SELECT_DATA_NODECARD:
+		*uint16 = jobinfo->nodecard;
 		break;
 	case SELECT_DATA_NODE_CNT:
 		*uint32 = jobinfo->node_cnt;
@@ -725,7 +725,7 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
 		rc->quarter = jobinfo->quarter;
-		rc->segment = jobinfo->segment;
+		rc->nodecard = jobinfo->nodecard;
 		rc->node_cnt = jobinfo->node_cnt;
 		rc->altered = jobinfo->altered;
 		rc->max_procs = jobinfo->max_procs;
@@ -773,7 +773,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack16((uint16_t)jobinfo->conn_type, buffer);
 		pack16((uint16_t)jobinfo->rotate, buffer);
 		pack16((uint16_t)jobinfo->quarter, buffer);
-		pack16((uint16_t)jobinfo->segment, buffer);
+		pack16((uint16_t)jobinfo->nodecard, buffer);
 		pack32((uint32_t)jobinfo->node_cnt, buffer);
 		pack32((uint32_t)jobinfo->max_procs, buffer);
 		packstr(jobinfo->bg_block_id, buffer);
@@ -805,7 +805,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
 	safe_unpack16(&(jobinfo->quarter), buffer);
-	safe_unpack16(&(jobinfo->segment), buffer);
+	safe_unpack16(&(jobinfo->nodecard), buffer);
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
 	safe_unpack32(&(jobinfo->max_procs), buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
@@ -915,7 +915,7 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->quarter = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->segment = (int) uint16_tmp;
+	bg_info_record->nodecard = (int) uint16_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
 		

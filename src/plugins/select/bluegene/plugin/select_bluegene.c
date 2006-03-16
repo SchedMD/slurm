@@ -410,10 +410,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = tmp;
 		else { 
 			/* this means it is either a quarter or smaller */
-			tmp = job_desc->min_nodes % bluegene_segment_node_cnt;
+			tmp = job_desc->min_nodes % bluegene_nodecard_node_cnt;
 			if(tmp > 0)
 				job_desc->min_nodes += 
-					(bluegene_segment_node_cnt-tmp);
+					(bluegene_nodecard_node_cnt-tmp);
 			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
 			job_desc->num_procs = procs_per_node/tmp;
 			job_desc->min_nodes = 1;
@@ -433,10 +433,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = tmp;
 			tmp = NO_VAL;
 		} else {
-			tmp = job_desc->max_nodes % bluegene_segment_node_cnt;
+			tmp = job_desc->max_nodes % bluegene_nodecard_node_cnt;
 			if(tmp > 0)
 				job_desc->max_nodes += 
-					(bluegene_segment_node_cnt-tmp);
+					(bluegene_nodecard_node_cnt-tmp);
 			tmp = bluegene_bp_node_cnt/job_desc->max_nodes;
 			tmp = procs_per_node/tmp;
 			

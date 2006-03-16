@@ -226,13 +226,13 @@ static int _post_bg_init_read(void *object, void *arg)
 
 	return SLURM_SUCCESS;
 }
-static int _find_32node_segment(bg_record_t *bg_record, 
-				rm_partition_t *block_ptr)
+static int _find_nodecard(bg_record_t *bg_record, 
+			  rm_partition_t *block_ptr)
 {
 	char *my_card_name = NULL;
 	char *card_name = NULL;
 	rm_bp_id_t bp_id = NULL;
-	int segment = (uint16_t)NO_VAL;
+	int nodecard = (uint16_t)NO_VAL;
 	int card_count = 0;
 	int num = 0;
 	int i=0;
@@ -317,7 +317,7 @@ static int _find_32node_segment(bg_record_t *bg_record,
 			continue;
 		}
 		free(card_name);
-		bg_record->segment = (i%4);
+		bg_record->nodecard = (i%4);
 		break;
 	}
 cleanup:
@@ -445,7 +445,7 @@ int read_bg_blocks()
 
 		bg_record->state = NO_VAL;
 		bg_record->quarter = (uint16_t) NO_VAL;
-		bg_record->segment = (uint16_t) NO_VAL;
+		bg_record->nodecard = (uint16_t) NO_VAL;
 		bg_record->job_running = -1;
 				
 		if ((rc = rm_get_data(block_ptr, 
@@ -504,17 +504,17 @@ int read_bg_blocks()
 				bp_cnt = 0;
 			}
 			if(i == 1) {
-				_find_32node_segment(bg_record, block_ptr);
+				_find_nodecard(bg_record, block_ptr);
 				i = 16;
 			} 
 			
 			bg_record->cpus_per_bp = procs_per_node/i;
 			bg_record->node_cnt = bluegene_bp_node_cnt/i;
 			
-			debug("%s is in quarter %d segment %d",
+			debug("%s is in quarter %d nodecard %d",
 			      bg_record->bg_block_id,
 			      bg_record->quarter,
-			      bg_record->segment);
+			      bg_record->nodecard);
 			bg_record->conn_type = SELECT_SMALL;
 			
 		} else {

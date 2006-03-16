@@ -342,7 +342,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 	}
 
-	num_ncards = bg_record->node_cnt/bluegene_segment_node_cnt;
+	num_ncards = bg_record->node_cnt/bluegene_nodecard_node_cnt;
 
 	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionNodeCardNum,
@@ -437,8 +437,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 		}
 		if(bg_record->quarter != quarter)
 			continue;
-		if(bg_record->segment != (uint16_t) NO_VAL) {
-			if(bg_record->segment != (i%4))
+		if(bg_record->nodecard != (uint16_t) NO_VAL) {
+			if(bg_record->nodecard != (i%4))
 				continue;
 		}
 
@@ -507,9 +507,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
 		debug2("node %d%d%d",
-		      ba_node->coord[X], 
-		      ba_node->coord[Y], 
-		      ba_node->coord[Z]);
+		       ba_node->coord[X], 
+		       ba_node->coord[Y], 
+		       ba_node->coord[Z]);
 		bg_itr = list_iterator_create(bg_bp_list);
 		while((bg_bp = list_next(bg_itr)) != NULL) {
 			if((bg_bp->coord[X] == ba_node->coord[X])
@@ -527,26 +527,21 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		}
 		bg_record->bp_count++;
 		bg_bp->used = 1;
-		for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {
-			
+		for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {			
 			ba_switch = &ba_node->axis_switch[i];
 			if(ba_switch->int_wire[0].used) {
 				_lookat_path(bg_bp, ba_switch, 0, 1, i);
 			}
-			
-		/* 	if(ba_switch->int_wire[1].used) { */
-/* 				_lookat_path(bg_bp, ba_switch, 1, 0, i); */
-/* 			} */
 		}
 	}
 	list_iterator_destroy(itr);
 	
 	bg_itr = list_iterator_create(bg_bp_list);
 	while((bg_bp = list_next(bg_itr)) != NULL) {
-		debug3("node %d%d%d",
+		debug3("node %d%d%d %d",
 		      bg_bp->coord[X], 
 		      bg_bp->coord[Y], 
-		      bg_bp->coord[Z]);
+		      bg_bp->coord[Z], list_count(bg_bp->switch_list));
 		itr = list_iterator_create(bg_bp->switch_list);
 		while((bg_switch = list_next(itr)) != NULL) {
 			bg_record->switch_count++;
@@ -590,8 +585,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	}
 	
 	bg_itr = list_iterator_create(bg_bp_list);
-	while((bg_bp = list_next(bg_itr)) != NULL) {
-			
+	while((bg_bp = list_next(bg_itr)) != NULL) {			
 		if (_get_bp_by_location(bg, bg_bp->coord, &curr_bp) 
 		    == SLURM_ERROR) {
 			list_iterator_destroy(bg_itr);

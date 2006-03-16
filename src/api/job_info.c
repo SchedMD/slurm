@@ -83,7 +83,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	struct group *group_info = NULL;
 	char tmp1[7], tmp2[7];
 	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t segment = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
 	
 #ifdef HAVE_BG
 	char *nodelist = "BP_List";
@@ -91,8 +91,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 			     SELECT_DATA_QUARTER, 
 			     &quarter);
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_SEGMENT, 
-			     &segment);
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
 #else
 	char *nodelist = "NodeList";
 #endif	
@@ -162,8 +162,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	fprintf ( out, "%s=%s", nodelist, job_ptr->nodes);
 	if(job_ptr->nodes) {
 		if(quarter != (uint16_t) NO_VAL) {
-			if(segment != (uint16_t) NO_VAL) 
-				fprintf( out, ".%d.%d", quarter, segment);
+			if(nodecard != (uint16_t) NO_VAL) 
+				fprintf( out, ".%d.%d", quarter, nodecard);
 			else
 				fprintf( out, ".%d", quarter);
 		} 

@@ -472,8 +472,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     SELECT_DATA_QUARTER, 
 					     &record->quarter);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_SEGMENT, 
-					     &record->segment);
+					     SELECT_DATA_NODECARD, 
+					     &record->nodecard);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT, 
 					     &record->node_cnt);
