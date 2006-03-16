@@ -1261,11 +1261,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl)) {
 #ifdef HAVE_BG
 		/* Inactive limit must be zero on Blue Gene */
-		error("InactiveLimit=%ld is invalid on Blue Gene",
-		      conf->inactive_limit);
-		conf->inactive_limit = 0; /* default value too */
+		if (conf->inactive_limit) {
+			error("InactiveLimit=%ld is invalid on Blue Gene",
+				conf->inactive_limit);
+		}
+		conf->inactive_limit = 0;
 #endif
 	} else {
+#ifdef HAVE_BG
+		conf->inactive_limit = 0;
+#endif
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
