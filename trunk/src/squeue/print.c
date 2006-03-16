@@ -548,7 +548,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char* suffix)
 {
 	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t segment = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
 	char tmp_char[6];
 	
 	if (job == NULL) {	/* Print the Header instead */
@@ -568,14 +568,14 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 				     SELECT_DATA_QUARTER, 
 				     &quarter);
 		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_SEGMENT, 
-				     &segment);
+				     SELECT_DATA_NODECARD, 
+				     &nodecard);
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
 		if(quarter != (uint16_t) NO_VAL) {
-			if(segment != (uint16_t) NO_VAL) 
-				sprintf(tmp_char,".%d.%d\0",quarter,segment);
+			if(nodecard != (uint16_t) NO_VAL) 
+				sprintf(tmp_char,".%d.%d\0",quarter,nodecard);
 			else
 				sprintf(tmp_char,".%d\0",quarter);
 			_print_str(tmp_char, width, right, false);

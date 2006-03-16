@@ -1210,7 +1210,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	if (!s_p_get_string(&conf->control_machine, "ControlMachine", hashtbl))
-		fatal ("validate_config: ControlMachine not specified.");
+		fatal ("validate_and_set_defaults: "
+		       "ControlMachine not specified.");
 	else if (strcasecmp("localhost", conf->control_machine) == 0) {
 		xfree (conf->control_machine);
 		conf->control_machine = xmalloc(MAX_SLURM_NAME);

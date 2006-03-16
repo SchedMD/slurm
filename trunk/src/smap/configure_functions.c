@@ -890,7 +890,7 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 	int end1[BA_SYSTEM_DIMENSIONS];
 	int geo[BA_SYSTEM_DIMENSIONS];
 	char *layout = NULL;
-	int pset_num=-1, api_verb=-1, num_segment=0, num_quarter=0;
+	int pset_num=-1, api_verb=-1, num_nodecard=0, num_quarter=0;
 	char com[255];
 	int j = 0, number;
 	int len = 0;
@@ -913,7 +913,7 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 				  "BPs=", 's', &nodes,
 				  "Nodes=", 's', &nodes,
 				  "Type=", 's', &conn_type,
-				  "NodeCards=", 'd', &num_segment,
+				  "NodeCards=", 'd', &num_nodecard,
 				  "Quarters=", 'd', &num_quarter,
 				  "END");
 	if(layout)
@@ -997,7 +997,7 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 		"nodecards=%d quarters=%d",
 		geo[X], geo[Y], geo[Z], conn_type, 
 		start1[X], start1[Y], start1[Z],
-		num_segment, num_quarter);
+		num_nodecard, num_quarter);
 	_create_allocation(com, allocated_blocks);
 #endif
 	return SLURM_SUCCESS;

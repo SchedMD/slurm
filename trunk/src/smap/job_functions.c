@@ -241,15 +241,15 @@ static int _print_text_job(job_info_t * job_ptr)
 	char tmp_cnt[7];
 	uint32_t node_cnt = 0;
 	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t segment = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
 	
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_QUARTER, 
 			     &quarter);
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_SEGMENT, 
-			     &segment);
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);
@@ -330,12 +330,12 @@ static int _print_text_job(job_info_t * job_ptr)
 			i++;
 		}
 		if(quarter != (uint16_t) NO_VAL) {
-			if(segment != (uint16_t) NO_VAL) {
+			if(nodecard != (uint16_t) NO_VAL) {
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
 					  ba_system_ptr->xcord, ".%d.%d", 
 					  quarter,
-					  segment);
+					  nodecard);
 				ba_system_ptr->xcord += 4;
 			} else {
 				mvwprintw(ba_system_ptr->text_win, 
@@ -375,8 +375,8 @@ static int _print_text_job(job_info_t * job_ptr)
 		
 		printf("%s", job_ptr->nodes);
 		if(quarter != (uint16_t) NO_VAL) {
-			if(segment != (uint16_t) NO_VAL)
-				printf(".%d.%d", quarter, segment);
+			if(nodecard != (uint16_t) NO_VAL)
+				printf(".%d.%d", quarter, nodecard);
 			else
 				printf(".%d", quarter);
 		}

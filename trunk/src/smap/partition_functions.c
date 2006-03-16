@@ -45,7 +45,7 @@ typedef struct {
 	List nodelist;
 	int size;
 	uint16_t quarter;	
-	uint16_t segment;	
+	uint16_t nodecard;	
 	int node_cnt;	
 	bool printed;
 
@@ -261,8 +261,8 @@ extern void get_bg_part()
 			= new_bg_ptr->bg_info_array[i].node_use;
 		block_ptr->quarter 
 			= new_bg_ptr->bg_info_array[i].quarter;
-		block_ptr->segment 
-			= new_bg_ptr->bg_info_array[i].segment;
+		block_ptr->nodecard 
+			= new_bg_ptr->bg_info_array[i].nodecard;
 		block_ptr->node_cnt 
 			= new_bg_ptr->bg_info_array[i].node_cnt;
 	       
@@ -670,12 +670,12 @@ static int _print_text_part(partition_info_t *part_ptr,
 		}
 		if((params.display == BGPART) 
 		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
-			if(db2_info_ptr->segment != (uint16_t) NO_VAL) {
+			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL) {
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
 					  ba_system_ptr->xcord, ".%d.%d", 
 					  db2_info_ptr->quarter,
-					  db2_info_ptr->segment);
+					  db2_info_ptr->nodecard);
 			} else {
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
@@ -738,10 +738,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 		
 		if((params.display == BGPART) 
 		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
-			if(db2_info_ptr->segment != (uint16_t) NO_VAL)
+			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL)
 				printf("%s.%d.%d\n", nodes, 
 				       db2_info_ptr->quarter,
-				       db2_info_ptr->segment);
+				       db2_info_ptr->nodecard);
 			else 
 				printf("%s.%d\n", nodes, 
 				       db2_info_ptr->quarter);
