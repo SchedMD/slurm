@@ -64,6 +64,7 @@ static void _drain_as_needed(char *node_list, char *reason);
 
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
+	slurm_conf_lock();
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
@@ -83,7 +84,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
 				      bg_record->job_running);
-				(void) slurm_fail_job(bg_record->job_running);
+				if(bg_record->job_running > -1)
+					slurm_fail_job(bg_record->job_running);
 				slurm_mutex_unlock(&block_state_mutex);
 				remove_from_bg_list(bg_job_block_list, 
 						    bg_record);
@@ -116,6 +118,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		bg_record->target_name = 
 			xstrdup(bg_record->user_name);
 	}
+	slurm_conf_unlock();
+			
 	return SLURM_SUCCESS;
 }
 
@@ -171,7 +175,9 @@ extern int block_ready(struct job_record *job_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		
 		if(bg_record) {
-			if ((bg_record->user_uid == job_ptr->user_id)
+			if(bg_record->job_running != job_ptr->job_id) {
+				rc = 0;
+			} else if ((bg_record->user_uid == job_ptr->user_id)
 			    && (bg_record->state == RM_PARTITION_READY)) {
 				rc = 1;
 			} else if (bg_record->user_uid != job_ptr->user_id)
@@ -390,8 +396,10 @@ extern int update_block_list()
 				/* debug("checking to make sure user %s " */
 /* 				      "is the user.",  */
 /* 				      bg_record->target_name); */
+				slurm_conf_lock();
 				if(update_block_user(bg_record, 0) == 1)
 					last_bg_update = time(NULL);
+				slurm_conf_unlock();
 				break;
 			case RM_PARTITION_ERROR:
 				error("partition in an error state");

@@ -951,8 +951,8 @@ extern char *set_bg_block(List results, int *start,
 	   || start[Z]>=DIM_SIZE[Z])
 		return NULL;
 	if(geometry[X]<=0 
-	   || geometry[Y]>=0
-	   || geometry[Z]>=0) {
+	   || geometry[Y]<=0
+	   || geometry[Z]<=0) {
 		error("problem with geometry %d%d%d, needs to be at least 111",
 		      geometry[X],
 		      geometry[Y],

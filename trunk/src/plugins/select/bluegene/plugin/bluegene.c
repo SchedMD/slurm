@@ -182,7 +182,8 @@ extern void fini_bg(void)
 	xfree(bluegene_ramdisk);
 	xfree(bridge_api_file);
 	xfree(bluegene_layout_mode);
-
+	xfree(bg_conf);
+	
 #ifdef HAVE_BG_FILES
 	if(bg)
 		if ((rc = rm_free_BGL(bg)) != STATUS_OK)
@@ -225,8 +226,9 @@ extern void print_bg_record(bg_record_t* bg_record)
 	}
 #else
 	format_node_name(bg_record, tmp_char);
-	info("bg_block_id=%s block=%s", bg_record->bg_block_id, 
-	     tmp_char);
+	info("Record: BlockID:%s Nodes:%s Conn:%s",
+	     bg_record->bg_block_id, tmp_char,
+	     convert_conn_type(bg_record->conn_type));
 #endif
 }
 
@@ -262,12 +264,12 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 		if(bit_equal(bg_record->bitmap, found_record->bitmap)
 		   && (bg_record->quarter == found_record->quarter)
 		   && (bg_record->nodecard == found_record->nodecard)){
-			debug("This partition %s %d %d "
-			      "already exists here %s",
-			      bg_record->nodes,
-			      bg_record->quarter,
-			      bg_record->nodecard,
-			      found_record->bg_block_id);
+			debug2("This partition %s %d %d "
+			       "already exists here %s",
+			       bg_record->nodes,
+			       bg_record->quarter,
+			       bg_record->nodecard,
+			       found_record->bg_block_id);
 			rc = 1;
 			break;
 		}
@@ -471,7 +473,10 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		error("Must set target_name to run update_block_user.");
 		return -1;
 	}
-
+	if(!bg_record->user_name) {
+		error("No user_name");
+		bg_record->user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	}
 #ifdef HAVE_BG_FILES
 	int rc=0;	
 	if(set) {
@@ -489,16 +494,19 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 				     bg_record->target_name, 
 				     bg_record->bg_block_id);
 				
+				slurm_mutex_lock(&api_file_mutex);
 				if ((rc = rm_add_part_user(
 					     bg_record->bg_block_id, 
 					     bg_record->target_name)) 
 				    != STATUS_OK) {
+					slurm_mutex_unlock(&api_file_mutex);
 					error("rm_add_part_user(%s,%s): %s", 
 					      bg_record->bg_block_id, 
 					      bg_record->target_name,
 					      bg_err_str(rc));
 					return -1;
 				} 
+				slurm_mutex_unlock(&api_file_mutex);
 			}
 		}
 	}
@@ -638,12 +646,14 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		}
 		
 		info("Removing user %s from Block %s", user, bg_block_id);
+		slurm_mutex_lock(&api_file_mutex);
 		if ((rc = rm_remove_part_user(bg_block_id, user)) 
 		    != STATUS_OK) {
 			debug("user %s isn't on block %s",
 			      user, 
 			      bg_block_id);
 		}
+		slurm_mutex_unlock(&api_file_mutex);
 		free(user);
 	}
 	if ((rc = rm_free_partition(block_ptr)) != STATUS_OK) {
@@ -661,6 +671,7 @@ extern void set_block_user(bg_record_t *bg_record)
 	      bg_record->bg_block_id);
 	bg_record->boot_state = 0;
 	bg_record->boot_count = 0;
+	slurm_conf_lock();
 	if((rc = update_block_user(bg_record, 1)) == 1) {
 		last_bg_update = time(NULL);
 	} else if (rc == -1) {
@@ -672,6 +683,7 @@ extern void set_block_user(bg_record_t *bg_record)
 	xfree(bg_record->target_name);
 	bg_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
+	slurm_conf_unlock();			
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
@@ -927,10 +939,9 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 			snprintf(bg_record->bg_block_id, 8, "RMP%d", 
 				 block_inx++);
 			format_node_name(bg_record, tmp_char);
-			info("BG BlockID:%s Nodes:%s Conn:%s Mode:%s",
+			info("Record: BlockID:%s Nodes:%s Conn:%s",
 			     bg_record->bg_block_id, tmp_char,
-			     convert_conn_type(bg_record->conn_type),
-			     convert_node_use(bg_record->node_use));
+			     convert_conn_type(bg_record->conn_type));
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);
@@ -1174,6 +1185,7 @@ extern int create_full_system_block()
 	geo[Y] = max_dim[Y];
 	geo[Z] = max_dim[Z];
 #endif
+	slurm_conf_lock();
 	name = xmalloc(sizeof(char)*(10+strlen(slurmctld_conf.node_prefix)));
 	if((geo[X] == 0) && (geo[Y] == 0) && (geo[Z] == 0))
 		sprintf(name, "%s000\0", slurmctld_conf.node_prefix);
@@ -1181,7 +1193,8 @@ extern int create_full_system_block()
 		sprintf(name, "%s[000x%d%d%d]\0",
 			slurmctld_conf.node_prefix,
 			geo[X], geo[Y], geo[Z]);
-	
+	slurm_conf_unlock();
+			
 	if(bg_found_block_list) {
 		itr = list_iterator_create(bg_found_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
@@ -1601,12 +1614,12 @@ extern int read_bg_conf(void)
 	if (stat(bg_conf, &config_stat) < 0)
 		fatal("can't stat bluegene.conf file %s: %m", bg_conf);
 	if (last_config_update) {
+		_reopen_bridge_log();
+		last_config_update = config_stat.st_mtime; 
 		if(last_config_update == config_stat.st_mtime)
 			debug("bluegene.conf unchanged");
 		else
 			debug("bluegene.conf changed, doing nothing");
-		_reopen_bridge_log();
-		last_config_update = config_stat.st_mtime; 
 		return SLURM_SUCCESS;
 	}
 	last_config_update = config_stat.st_mtime; 
@@ -1615,7 +1628,6 @@ extern int read_bg_conf(void)
 	/* bg_conf defined in bg_node_alloc.h */
 	tbl = s_p_hashtbl_create(options);
 	s_p_parse_file(tbl, bg_conf);
-	xfree(bg_conf);
 	if (!s_p_get_string(&bluegene_blrts, "BlrtsImage", tbl)) 
 		fatal("BlrtsImage not configured in bluegene.conf");
 	if (!s_p_get_string(&bluegene_linux, "LinuxImage", tbl)) 
@@ -1850,9 +1862,11 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
+				slurm_conf_lock();
 				sprintf(node_name_tmp, "%s%d%d%d\0", 
 					slurmctld_conf.node_prefix,
 					x, y, z);		
+				slurm_conf_unlock();
 				list_append(bg_record->bg_block_list, 
 					    &ba_system_ptr->grid[x][y][z]);
 				node_count++;
@@ -1941,8 +1955,7 @@ static int _validate_config_nodes(void)
 		list_iterator_destroy(itr_curr);
 			
 		if (!bg_record->bg_block_id) {
-			format_node_name(bg_record, tmp_char);
-				
+			format_node_name(bg_record, tmp_char);	
 			info("Block found in bluegene.conf to be "
 			     "created: Nodes:%s", 
 			     tmp_char);
@@ -1950,8 +1963,7 @@ static int _validate_config_nodes(void)
 		} else {
 			list_push(bg_found_block_list, bg_record);
 			format_node_name(bg_record, tmp_char);
-				
-			info("Found existing BG BlockID:%s Nodes:%s Conn:%s",
+			info("Existing: BlockID:%s Nodes:%s Conn:%s",
 			     bg_record->bg_block_id, 
 			     tmp_char,
 			     convert_conn_type(bg_record->conn_type));
@@ -1991,7 +2003,7 @@ static int _validate_config_nodes(void)
 			debug("full system %s",
 			      bg_record->bg_block_id);
 			format_node_name(bg_record, tmp_char);
-			info("Found existing BG BlockID:%s Nodes:%s Conn:%s",
+			info("Existing: BlockID:%s Nodes:%s Conn:%s",
 			     bg_record->bg_block_id, 
 			     tmp_char,
 			     convert_conn_type(bg_record->conn_type));
@@ -2504,10 +2516,12 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 	
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 	
+	slurm_conf_lock();
 	bg_record->user_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
 	bg_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
+	slurm_conf_unlock();
 	if((pw_ent = getpwnam(bg_record->user_name)) == NULL) {
 		error("getpwnam(%s): %m", bg_record->user_name);
 	} else {
@@ -2531,6 +2545,7 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 	
 	if(i<len) {
 		len -= i;
+		slurm_conf_lock();
 		bg_record->nodes = xmalloc(sizeof(char)*
 					   (len
 					    +strlen(slurmctld_conf.node_prefix)
@@ -2538,6 +2553,8 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 		
 		sprintf(bg_record->nodes, "%s%s\0", 
 			slurmctld_conf.node_prefix, blockreq->block+i);
+		slurm_conf_unlock();
+			
 	} else 
 		fatal("BPs=%s is in a weird format", blockreq->block); 
 	

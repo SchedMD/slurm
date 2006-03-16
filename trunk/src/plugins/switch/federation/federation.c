@@ -512,8 +512,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 	}
 
 	s_p_hashtbl_destroy(tbl);
-	xfree(fed_conf);
-
+	
 	return SLURM_SUCCESS;
 }
 
@@ -2358,6 +2357,13 @@ fed_init(void)
 	fed_state = tmp;
 	_unlock();
 	
+	return SLURM_SUCCESS;
+}
+
+int
+fed_fini(void)
+{
+	xfree(fed_conf);
 	return SLURM_SUCCESS;
 }
 

@@ -290,8 +290,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			       num_block_to_free);
 		}
 		
-		if(bg_record->job_running == -1) {
+		if(bg_record->job_running <= -1) {
 			slurm_mutex_unlock(&job_start_mutex);
+			debug("job already finished before boot");
 			return;
 		}
 		if((rc = boot_block(bg_record))
@@ -310,8 +311,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->boot_state = 1;		
 	}
 	
+	if(bg_record->job_running <= -1) {
+		slurm_mutex_unlock(&job_start_mutex);
+		debug("job finished which booting");
+		return;
+	}
 	slurm_mutex_lock(&block_state_mutex);
-
+		
 	bg_record->boot_count = 0;
 	xfree(bg_record->target_name);
 	bg_record->target_name = xstrdup(uid_to_string(bg_update_ptr->uid));
@@ -453,6 +459,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			bg_record->job_running = -1;
 		
 		/*remove user from list */
+		slurm_conf_lock();
 		if(bg_record->target_name) {
 			if(strcmp(bg_record->target_name, 
 				  slurmctld_conf.slurm_user_name)) {
@@ -466,7 +473,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			bg_record->target_name = 
 				xstrdup(slurmctld_conf.slurm_user_name);
 		}	
-		
+		slurm_conf_unlock();
+			
 		bg_record->boot_state = 0;
 		bg_record->boot_count = 0;
 		
@@ -835,6 +843,7 @@ extern int boot_block(bg_record_t *bg_record)
 	int rc;
 	
 	slurm_mutex_lock(&api_file_mutex);
+	slurm_conf_lock();
 	if ((rc = rm_set_part_owner(bg_record->bg_block_id, 
 				    slurmctld_conf.slurm_user_name)) 
 	    != STATUS_OK) {
@@ -842,10 +851,12 @@ extern int boot_block(bg_record_t *bg_record)
 		      bg_record->bg_block_id, 
 		      slurmctld_conf.slurm_user_name,
 		      bg_err_str(rc));
+		slurm_conf_unlock();
 		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
-	
+	slurm_conf_unlock();
+			
 	info("Booting block %s", 
 	     bg_record->bg_block_id);
 	if ((rc = pm_create_partition(bg_record->bg_block_id)) 

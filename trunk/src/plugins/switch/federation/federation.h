@@ -81,6 +81,7 @@ fed_jobinfo_t *fed_copy_jobinfo(fed_jobinfo_t *jp);
 void fed_free_jobinfo(fed_jobinfo_t *jp);
 int fed_load_table(fed_jobinfo_t *jp, int uid, int pid);
 int fed_init(void);
+int fed_fini(void);
 int fed_unload_table(fed_jobinfo_t *jp);
 int fed_unpack_libstate(fed_libstate_t *lp, Buf buffer);
 int fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data);
