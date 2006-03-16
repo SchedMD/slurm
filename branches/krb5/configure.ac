@@ -158,6 +158,7 @@ X_AC_SLURM_WITH_SSL
 dnl
 dnl Check for compilation of SLURM auth modules:
 dnl
+X_AC_KRB5
 X_AC_MUNGE
 
 dnl
@@ -227,6 +228,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
+		 src/plugins/auth/krb5/Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
 		 src/plugins/checkpoint/Makefile

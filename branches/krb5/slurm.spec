@@ -57,6 +57,11 @@ Summary: SLURM auth implementation using Brent Chun's authd
 Group: System Environment/Base
 Requires: slurm authd
 
+%package auth-krb5
+Summary: SLURM auth implementation using Kerberos v5
+Group: System Environment/Base
+Requires: slurm krb5-devel
+
 %package auth-munge
 Summary: SLURM auth implementation using Chris Dunlap's Munge
 Group: System Environment/Base
@@ -98,6 +103,9 @@ SLURM NULL authentication module
 %description auth-authd
 SLURM authentication module for Brent Chun's authd
 
+%description auth-krb5
+SLURM authentication module for Kerberos version 5
+
 %description auth-munge
 SLURM authentication module for Chris Dunlap's Munge
 
@@ -122,6 +130,7 @@ SLURM plugins for IBM AIX and Federation switch.
     %{?_enable_debug}			\
     %{?with_proctrack}			\
     %{?with_ssl}			\
+    %{?with_krb5}			\
     %{?with_munge}                      \
     %{?with_cflags}
 
@@ -163,7 +172,7 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd sched_wiki; do
+for plugin in auth_munge auth_krb5 auth_authd sched_wiki; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
@@ -261,6 +270,10 @@ rm -rf $RPM_BUILD_ROOT
 %files auth-none
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_none.so
+#############################################################################
+
+%files -f auth_krb5.files auth-krb5
+%defattr(-,root,root)
 #############################################################################
 
 %files -f auth_munge.files auth-munge

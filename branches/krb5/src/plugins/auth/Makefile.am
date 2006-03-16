@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for auth plugins
 
-SUBDIRS = authd munge none
+SUBDIRS = authd krb5 munge none
