@@ -1,6 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Frequently Asked Questions</h1>
+<h2>For Users</h2>
 <ol>
 <li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
 <li><a href="#rlimit">Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</a></li>
@@ -12,14 +13,21 @@ to run on nodes?</a></li>
 <li><a href="#cred">Why are &quot;Invalid job credential&quot; errors generated?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
 job?</a></li>
+<li><a href="#share">How can I control the execution of multiple jobs per node?</a></l
+i>
+<li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
+</ol>
+<h2>For Administrators</h2>
+<ol>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
 <li><a href="#fast_schedule">How can I configure SLURM to use the resources actually 
 found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
 has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
-<li><a href="#share">How can I control the execution of multiple jobs per node?</a></li>
 </ol>
+
+<h2>For Users</h2>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
 As the SLURM daemon on each node determines that all processes associated with 
@@ -156,7 +164,31 @@ satisfy the request, no lower priority job in that partition's queue
 will be considered as a backfill candidate. Any programmer wishing 
 to augment the existing code is welcome to do so. 
 
-<p><a name="suspend"><b>9. How is job suspend/resume useful?</b></a><br>
+<p><a name="share"><b>9. How can I control the execution of multiple
+jobs per node?</b></a><br>
+There are two mechanism to control this.
+If you want to allocate individual processors on a node to jobs,
+configure <i>SelectType=select/cons_res</i>.
+See <a href="cons_res.html">Consumable Resources in SLURM</a>
+for details about this configuration.
+If you want to allocate whole nodes to jobs, configure
+configure <i>SelectType=select/linear</i>.
+Each partition also has a configuration parameter <i>Shared</i>
+that enables more than one job to execute on each node.
+See <i>man slurm.conf</i> for more information about these
+configuration paramters.</p>
+
+<p><a name="steps"><b>10. How can I run multiple jobs from within a 
+single script?</b></a><br>
+A SLURM job is just a resource allocation. You can execute many 
+job steps within that allocation, either in parallel or sequentially. 
+Some jobs actually launch thousands of job steps this way. The job 
+steps will be allocated nodes that are not already allocated to 
+other job steps. This essential provides a second level of resource 
+management within the job for the job steps.</p>
+
+<h2>For Administrators</h2>
+<p><a name="suspend"><b>1. How is job suspend/resume useful?</b></a><br>
 Job suspend/resume is most useful to get particularly large jobs initiated 
 in a timely fashion with minimal overhead. Say you want to get a full-system
 job initiated. Normally you would need to either cancel all running jobs 
@@ -177,7 +209,7 @@ Suspending and resuming a job makes use of the SIGSTOP and SIGCONT
 signals respectively, so swap and disk space should be sufficient to 
 accommodate all jobs allocated to a node, either running or suspended.
 
-<p><a name="fast_schedule"><b>10. How can I configure SLURM to use 
+<p><a name="fast_schedule"><b>2. How can I configure SLURM to use 
 the resources actually found on a node rather than what is defined 
 in <i>slurm.conf</i>?</b></a><br>
 SLURM can either base it's scheduling decisions upon the node 
@@ -190,7 +222,7 @@ A value of one is the default and results in the node configuration
 defined in <i>slurm.conf</i> being used. See &quot;man slurm.conf&quot;
 for more details.</p>
 
-<p><a name="return_to_service"><b>11. Why is a node shown in state 
+<p><a name="return_to_service"><b>3. Why is a node shown in state 
 DOWN when the node has registered for service?</b></a><br>
 The configuration parameter <i>ReturnToService</i> in <i>slurm.conf</i>
 controls how DOWN nodes are handled. 
@@ -203,7 +235,7 @@ the command &quot;scontrol update NodeName=whatever State=RESUME&quot;.
 See &quot;man slurm.conf&quot; and &quot;man scontrol&quot; for more 
 details.</p>
 
-<p><a name="down_node"><b>12. What happens when a node crashes?</b></a><br>
+<p><a name="down_node"><b>4. What happens when a node crashes?</b></a><br>
 A node is set DOWN when the slurmd daemon on it stops responding 
 for <i>SlurmdTimeout</i> as defined in <i>slurm.conf</i>.
 The node can also be set DOWN when certain errors occur or the 
@@ -213,7 +245,7 @@ with the srun option <i>--no-kill</i>.
 Any active job step on that node will be killed. 
 See the slurm.conf and srun man pages for more information.</p>
  
-<p><a name="share"><b>13. How can I control the execution of multiple 
+<p><a name="share"><b>5. How can I control the execution of multiple 
 jobs per node?</b></a><br>
 There are two mechanism to control this. 
 If you want to allocate individual processors on a node to jobs, 
@@ -227,6 +259,6 @@ that enables more than one job to execute on each node.
 See <i>man slurm.conf</i> for more information about these 
 configuration paramters.</p>
 
-<p style="text-align:center;">Last modified 22 February 2006</p>
+<p style="text-align:center;">Last modified 17 March 2006</p>
 
 <!--#include virtual="footer.txt"-->
