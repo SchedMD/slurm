@@ -194,6 +194,7 @@ int stepd_resume(int fd);
 		void *ptr = buf;					\
 		int rc;							\
 		while(remaining > 0) {					\
+			rc = write(fd, ptr, remaining);			\
 			if (rc < 0) {					\
 				error("%s:%d: %s: safe_write (%d of %d) failed: %m", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
