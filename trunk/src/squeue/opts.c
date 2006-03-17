@@ -222,8 +222,10 @@ parse_command_line( int argc, char* argv[] )
 			getnodename(params.node, 128);
 		}
 		name1 = slurm_conf_get_nodename(params.node);
-		xfree(params.node);
-		params.node = xstrdup(name1);
+		if (name1) {
+			xfree(params.node);
+			params.node = xstrdup(name1);
+		}
 	}
 
 	if ( ( params.partitions == NULL ) && 
