@@ -46,6 +46,9 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   if test "x$prefix" != "xNONE" ; then
   	tryssldir="$tryssldir $prefix"
   fi
+  if test "x$tryssldir" == "xno" ; then
+     AC_MSG_ERROR([OpenSSL libary is required for SLURM operation, please install])
+  fi
   
   AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
   	for ssldir in $tryssldir "" $ssl_default_dirs; do 
