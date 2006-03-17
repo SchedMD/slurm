@@ -470,12 +470,15 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    && !s_p_get_string(&tmp, "Shared", dflt)) {
 			p->shared = SHARED_NO;
 		} else {
-			if (strcasecmp(tmp, "YES") == 0)
-				p->shared = SHARED_YES;
-			else if (strcasecmp(tmp, "NO") == 0)
+			if (strcasecmp(tmp, "NO") == 0)
 				p->shared = SHARED_NO;
+#ifndef HAVE_XCPU
+			/* Only "Shared=NO" is valid on XCPU systems */
+			else if (strcasecmp(tmp, "YES") == 0)
+				p->shared = SHARED_YES;
 			else if (strcasecmp(tmp, "FORCE") == 0)
 				p->shared = SHARED_FORCE;
+#endif
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
 				destroy_partitionname(p);
