@@ -169,12 +169,12 @@ int stepd_resume(int fd);
 		while (remaining > 0) {					\
 			rc = read(fd, ptr, remaining);			\
 			if (rc == 0) {					\
-				error("%s:%d: %s: safe_read (%d of %d) EOF", \
+				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
 			} else if (rc < 0) {				\
-				error("%s:%d: %s: safe_read (%d of %d) failed: %m", \
+				debug("%s:%d: %s: safe_read (%d of %d) failed: %m", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
@@ -196,7 +196,7 @@ int stepd_resume(int fd);
 		while(remaining > 0) {					\
 			rc = write(fd, ptr, remaining);			\
 			if (rc < 0) {					\
-				error("%s:%d: %s: safe_write (%d of %d) failed: %m", \
+				debug("%s:%d: %s: safe_write (%d of %d) failed: %m", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
