@@ -914,6 +914,12 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	slurmstepd_info_t *step;
 
+#ifdef HAVE_XCPU
+	error("REQUEST_SIGNAL_TASKS not support with XCPU system");
+	rc = ESLURM_NOT_SUPPORTED;
+	goto done;
+#endif
+
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
@@ -1569,6 +1575,18 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	int step_cnt  = 0;  
 	int fd;
 
+#ifdef HAVE_XCPU
+	error("REQUEST_SIGNAL_JOB not supported with XCPU system");
+	if (msg->conn_fd >= 0) {
+		slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			error ("_rpc_signal_job: close(%d): %m",
+				msg->conn_fd);
+		msg->conn_fd = -1;
+	}
+	return;
+#endif
+
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
 	job_uid = _get_job_uid(req->job_id);
 	/* 
@@ -1582,6 +1600,7 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 				error ("_rpc_signal_job: close(%d): %m",
 				       msg->conn_fd);
+			msg->conn_fd = -1;
 		}
 		return;
 	} 
