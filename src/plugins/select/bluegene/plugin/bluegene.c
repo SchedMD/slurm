@@ -2682,19 +2682,24 @@ static int _reopen_bridge_log(void)
 	slurm_mutex_lock(&api_file_mutex);
 	if(fp)
 		fclose(fp);
-	fp = fopen(bridge_api_file,"a");
-	slurm_mutex_unlock(&api_file_mutex);
+	debug("got here %s", bridge_api_file);
+	fp = fopen(bridge_api_file, "a");
+	debug("fp %d", fp);
 	if (fp == NULL) { 
 		error("can't open file for bridgeapi.log at %s: %m", 
 		      bridge_api_file);
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
 
 #ifdef HAVE_BG_FILES
+	debug("hey");
 	setSayMessageParams(fp, bridge_api_verb);
+	slurm_mutex_unlock(&api_file_mutex);	
+	debug("done");
 #else
 	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", 
-			bridge_api_verb) < 20) {
+		    bridge_api_verb) < 20) {
 		error("can't write to bridgeapi.log: %m");
 		return SLURM_ERROR;
 	}
