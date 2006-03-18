@@ -733,6 +733,8 @@ int s_p_get_string(char **str, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
@@ -769,6 +771,8 @@ int s_p_get_long(long *num, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
@@ -806,6 +810,8 @@ int s_p_get_uint16(uint16_t *num, const char *key,
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
@@ -843,6 +849,8 @@ int s_p_get_uint32(uint32_t *num, const char *key,
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
@@ -879,6 +887,8 @@ int s_p_get_pointer(void **ptr, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
@@ -922,6 +932,8 @@ int s_p_get_array(void **ptr_array[], int *count,
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
@@ -959,6 +971,8 @@ int s_p_get_boolean(bool *flag, const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
 
+	if (!hashtbl)
+		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
