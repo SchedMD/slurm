@@ -172,6 +172,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	last_node_update = time(NULL);
 	kill_job->job_id = job_ptr->job_id;
 	kill_job->job_uid = job_ptr->user_id;
+	kill_job->nodes = xstrdup(job_ptr->nodes);
 	kill_job->select_jobinfo = select_g_copy_jobinfo(
 			job_ptr->select_jobinfo);
 

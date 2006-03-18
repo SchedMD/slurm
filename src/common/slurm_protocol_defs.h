@@ -415,7 +415,9 @@ typedef struct return_code_msg {
 	uint32_t return_code;
 } return_code_msg_t;
 
-/* Note: We include select_jobinfo here in addition to the job launch 
+/* Note: We include the node list here for reliable cleanup on XCPU systems.
+ *
+ * Note: We include select_jobinfo here in addition to the job launch 
  * RPC in order to insure reliable clean-up of a BlueGene partition in
  * the event of some launch failure or race condition preventing slurmd 
  * from getting the MPIRUN_PARTITION at that time. It is needed for 
@@ -423,6 +425,7 @@ typedef struct return_code_msg {
 typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint32_t job_uid;
+	char *nodes;
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
 } kill_job_msg_t;
 
