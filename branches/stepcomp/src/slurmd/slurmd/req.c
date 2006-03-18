@@ -57,8 +57,10 @@
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/util-net.h"
+#include "src/common/read_config.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -246,7 +248,8 @@ _close_fds(void)
 
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req, 
-		      slurm_addr *cli, slurm_addr *self)
+		      slurm_addr *cli, slurm_addr *self,
+		      hostset_t step_hset)
 {
 	int rc;
 	int len = 0;
@@ -255,6 +258,32 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	uid_t uid = (uid_t)-1;
 	struct passwd *pw = NULL;
 	gids_t *gids = NULL;
+
+	int rank, count, parent, children;
+	char *parent_alias = NULL;
+	slurm_addr parent_addr;
+
+	/* Find the slurm_addr of this node's parent slurmd in the step */
+	/* step_hset can be NULL is the user is the SlurmUser, and the
+	   user's credential did not validate in _check_job_credential */
+	if (step_hset == NULL) {
+		/* all nodes have to send step completion message directly
+		   to the slurmctld */
+		parent = -1;
+		children = 0;
+	} else {
+		count = hostset_count(step_hset);
+		rank = hostset_index(step_hset, conf->node_name, 0);
+		tree_parent_and_children(rank, count, REVERSE_TREE_WIDTH,
+					 &parent, &children);
+		if (rank != 0) { /* rank 0 talks directly to the slurmctld */
+			parent_alias = hostset_nth(step_hset, parent);
+			parent_addr = slurm_conf_get_addr(parent_alias);
+		}
+	}
+	debug("Node %s (rank %d), parent %s (rank %d), children %d",
+	      conf->node_name, rank, parent_alias, parent, children);
+	/* FIXME - send the reverse tree info to slurmstepd! */
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
@@ -369,7 +398,8 @@ rwfail:
  */
 static int
 _forkexec_slurmstepd(slurmd_step_type_t type, void *req, 
-		     slurm_addr *cli, slurm_addr *self)
+		     slurm_addr *cli, slurm_addr *self,
+		     const hostset_t step_hset)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -400,7 +430,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("Unable to close write to_slurmd in parent: %m");
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
-						req, cli, self)) < 0) {
+						req, cli, self,
+						step_hset)) < 0) {
 			error("Unable to init slurmstepd");
 			rc = SLURM_FAILURE;
 			goto done;
@@ -461,9 +492,20 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 	}
 }
 
+
+/*
+ * The job(step) credential is the only place to get a definitive
+ * list of the nodes allocated to a job step.  We need to return
+ * a hostset_t of the nodes.
+ *
+ * FIXME - Rewrite this to only take a slurm_cred_t and only return a
+ *         slurm_cred_arg_t.  The other parameters, jobid, stepid, etc.
+ *         should be checked one caller layer higher.
+ */
 static int
 _check_job_credential(slurm_cred_t cred, uint32_t jobid, 
-		      uint32_t stepid, uid_t uid, int tasks_to_launch)
+		      uint32_t stepid, uid_t uid, int tasks_to_launch,
+		      hostset_t *step_hset)
 {
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
@@ -483,8 +525,12 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	 * performing validity check of the credential
 	 */
 	if (user_ok) {
-		if (rc >= 0)
+		*step_hset = NULL;
+		if (rc >= 0) {
+			if (hset = hostset_create(arg.hostlist))
+				*step_hset = hset;
 			xfree(arg.hostlist);
+		}
 		return SLURM_SUCCESS;
 	}
 
@@ -540,7 +586,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                 }
         }
 
-	hostset_destroy(hset);
+	*step_hset = hset;
 	xfree(arg.hostlist);
 	arg.ntask_cnt = 0;
 	xfree(arg.ntask);
@@ -548,8 +594,9 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	return SLURM_SUCCESS;
 
     fail:
-	if (hset)
+	if (hset) 
 		hostset_destroy(hset);
+	*step_hset = NULL;
 	xfree(arg.hostlist);
         arg.ntask_cnt = 0;
         xfree(arg.ntask);
@@ -570,6 +617,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	bool     super_user = false, run_prolog = false;
 	slurm_addr self;
 	socklen_t adlen;
+	hostset_t step_hset = NULL;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req->srun_node_id = msg->srun_node_id;
@@ -594,7 +642,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 #endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
-				  req->tasks_to_launch[req->srun_node_id]) 
+				  req->tasks_to_launch[req->srun_node_id],
+				  &step_hset) 
 	    < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
@@ -617,9 +666,14 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	}
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self);
+
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
+				      step_hset);
 
     done:
+	if (step_hset)
+		hostset_destroy(step_hset);
+
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
 
 		error("launch_tasks: unable to send return code: %m");
@@ -654,6 +708,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_addr self;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
+	hostset_t step_hset;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -676,7 +731,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 #endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid, 
-			spawn_tasks_to_launch) < 0) {
+				  spawn_tasks_to_launch, &step_hset) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
@@ -699,9 +754,12 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
-	errnum = _forkexec_slurmstepd(SPAWN_TASKS, (void *)req, cli, &self);
+	errnum = _forkexec_slurmstepd(SPAWN_TASKS, (void *)req, cli, &self,
+				      step_hset);
 
     done:
+	if (step_hset)
+		hostset_destroy(step_hset);
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
 
 		error("spawn_task: unable to send return code: %m");
@@ -759,6 +817,8 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
 	char    *bg_part_id = NULL;
 	bool	replied = false;
+	/* FIXME - fill in hset with local NodeName only for batch mode */
+	hostset_t step_hset;
 
 	if (!_slurm_authorized_user(req_uid) && (req_uid != req->uid)) {
 		error("Security violation, batch launch RPC from uid %u",
@@ -820,7 +880,8 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	else
 		info("Launching batch job %u.%u for UID %d",
 			req->job_id, req->step_id, req->uid);
-	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL);
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
+				  step_hset);
 	slurm_mutex_unlock(&launch_mutex);
 
     done:

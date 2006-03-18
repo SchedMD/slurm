@@ -92,6 +92,7 @@ strong_alias(hostset_insert,		slurm_hostset_insert);
 strong_alias(hostset_shift,		slurm_hostset_shift);
 strong_alias(hostset_shift_range,	slurm_hostset_shift_range);
 strong_alias(hostset_within,		slurm_hostset_within);
+strong_alias(hostset_nth,		slurm_hostset_nth);
 
 /*
  * lsd_fatal_error : fatal error macro
@@ -2755,6 +2756,12 @@ size_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
 {
 	return hostlist_deranged_string(set->hl, n, buf);
 }
+
+char * hostset_nth(hostset_t set, int n)
+{
+	return hostlist_nth(set->hl, n);
+}
+	
 
 int hostset_index(hostset_t set, const char *host, int jobid)
 {

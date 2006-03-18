@@ -21,6 +21,7 @@ slurmd_SOURCES = 	        	\
 	req.c req.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
+	reverse_tree_math.c reverse_tree_math.h \
 	xcpu.c xcpu.h			\
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
