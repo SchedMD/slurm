@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.8
+========================
+ -- Fix to communication between slurmd and slurmstepd to allow for partial
+    reads and writes on their communication pipes.
+
 * Changes in SLURM 1.0.7
 ========================
  -- Change in how AuthType=auth/dummy is handled for security testing.
