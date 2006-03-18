@@ -2,7 +2,7 @@
  *  src/slurmd/slurmd/req.c - slurmd request handling
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-5 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -59,6 +59,7 @@
 #include "src/common/util-net.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmd/xcpu.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
@@ -97,7 +98,8 @@ static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
-static bool _pause_for_job_completion(uint32_t jobid, int maxtime);
+static bool _pause_for_job_completion(uint32_t jobid, char *nodes, 
+		int maxtime);
 static int _waiter_init (uint32_t jobid);
 static int _waiter_complete (uint32_t jobid);
 
@@ -1042,7 +1044,8 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
 
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
+	nsteps = xcpu_signal(SIGTERM, req->nodes) +
+		_kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
 	         req->job_id, nsteps );
 
@@ -1420,7 +1423,7 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 			continue;
 		}
 
-		debug2("terminsate job step %u.%u", jobid, stepd->stepid);
+		debug2("terminate job step %u.%u", jobid, stepd->stepid);
 		if (stepd_terminate(fd) < 0)
 			debug("kill jobid=%u failed: %m", jobid);
 		close(fd);
@@ -1795,6 +1798,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
+	xcpu_signal(SIGCONT, req->nodes);
 	_kill_all_active_steps(req->job_id, SIGCONT, true);
 	if (errno == ESLURMD_STEP_SUSPENDED) {
 		/*
@@ -1802,9 +1806,11 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 		 * bother with a "nice" termination.
 		 */
 		debug2("Job is currently suspened, terminating");
-		nsteps = _terminate_all_steps(req->job_id, true);
+		nsteps = xcpu_signal(SIGKILL, req->nodes) +
+			_terminate_all_steps(req->job_id, true);
 	} else {
-		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
+		nsteps = xcpu_signal(SIGTERM, req->nodes) +
+			_kill_all_active_steps(req->job_id, SIGTERM, true);
 	}
 
 	/*
@@ -1834,7 +1840,6 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
-		
 	}
 
 	/*
@@ -1843,12 +1848,13 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	cf = slurm_conf_lock();
 	delay = MAX(cf->kill_wait, 5);
 	slurm_conf_unlock();
-	if ( !_pause_for_job_completion (req->job_id, delay)
-	     && _terminate_all_steps(req->job_id, true) ) {
+	if ( !_pause_for_job_completion (req->job_id, req->nodes, delay)
+	&&   (xcpu_signal(SIGKILL, req->nodes) +
+	      _terminate_all_steps(req->job_id, true)) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion (req->job_id, 0);
+		_pause_for_job_completion (req->job_id, req->nodes, 0);
 	}
 
 	/*
@@ -1944,17 +1950,23 @@ static int _waiter_complete (uint32_t jobid)
  *  Returns true if all job processes are gone
  */
 static bool
-_pause_for_job_completion (uint32_t job_id, int max_time)
+_pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 {
 	int sec = 0;
 	bool rc = false;
 
-	while ( ((sec++ < max_time) || (max_time == 0))
-	      && (rc = _job_still_running (job_id))) {
-		if ((max_time == 0) && (sec > 1))
+	while ((sec++ < max_time) || (max_time == 0)) {
+		rc = (_job_still_running (job_id) ||
+			xcpu_signal(0, nodes));
+		if (!rc)
+			break;
+		if ((max_time == 0) && (sec > 1)) {
+			xcpu_signal(SIGKILL, nodes);
 			_terminate_all_steps(job_id, true);
+		}
 		sleep (1);
 	}
+
 	/* 
 	 * Return true if job is NOT running
 	 */

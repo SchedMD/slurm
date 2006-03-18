@@ -285,6 +285,7 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	if (msg) {
+		xfree(msg->nodes);
 		select_g_free_jobinfo(&msg->select_jobinfo);
 		xfree(msg);
 	}

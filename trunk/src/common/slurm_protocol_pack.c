@@ -1464,12 +1464,14 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 
 	pack32((uint32_t)msg->job_id,  buffer);
 	pack32((uint32_t)msg->job_uid, buffer);
+	packstr(msg->nodes, buffer);
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
 
 static int
 _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 {
+	uint16_t uint16_tmp;
 	kill_job_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
@@ -1479,7 +1481,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
-
+	safe_unpackstr_xmalloc(&(tmp_ptr->nodes), &uint16_tmp, buffer);
 	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
@@ -1487,6 +1489,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
+	xfree(tmp_ptr->nodes);
 	xfree(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
