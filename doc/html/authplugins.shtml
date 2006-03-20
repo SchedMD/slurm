@@ -23,7 +23,7 @@ production use due to lack of effective security.</li>
 <p>The <span class="commandline">plugin_name</span> and <span class="commandline">plugin_version</span> 
 symbols required by the SLURM Plugin API require no specialization for authentication. 
 Note carefully, however, the versioning discussion below.</p>
-<p>The programmer is urged to study <span class="commandline">src/plugins/auth/auth_none.c</span> 
+<p>The programmer is urged to study <span class="commandline">src/plugins/auth/none/auth_none.c</span> 
 for an example implementation of a SLURM authentication plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 <h2>Data Objects</h2>
