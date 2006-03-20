@@ -11,7 +11,9 @@ documents those changes that are of interest to users and admins.
     WARNING: A NodeName may now occur only once in a slurm.conf file.
              If you want to temporarily make nodes DOWN in the slurm.conf,
              use the new DownNodes keyword (see "man slurm.conf").
-
+ -- Gracefully handle request to submit batch job from within an existing batch job.
+ -- Warn user attempting to create a job allocation from within an existing job
+    allocation.
 
 * Changes in SLURM 1.1.0-pre2
 =============================

@@ -96,6 +96,15 @@ allocate_nodes(void)
 	xsignal_save_mask(&oset);
 	xsignal_unblock(sigarray);
 
+	/* Do not re-use existing job id when submitting new job
+	 * from within a running job */
+	if (j->job_id != NO_VAL) {
+		info("WARNING: Creating SLURM job allocation from within "
+			"another allocation");
+		info("WARNING: You are attempting to initiate a second job");
+		j->job_id = NO_VAL;
+	}
+
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
 		if (destroy_job)
 			goto done;
