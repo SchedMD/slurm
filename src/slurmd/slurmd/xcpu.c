@@ -55,8 +55,8 @@ static int _send_sig(char *path, int sig, char *msg)
 	else {
 		debug2("%s to %s", msg, path);
 		len = strlen(msg) + 1;
-		if (write(fd, msg, len) == len)
-			rc = 1;
+		write(fd, msg, len);
+		rc = 1;
 	}
 
 	close(fd);
