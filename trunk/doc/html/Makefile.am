@@ -23,6 +23,7 @@ generated_html = \
 	overview.html \
 	platforms.html \
 	plugins.html \
+	proctrack_plugins.html \
 	programmer_guide.html \
 	publications.html \
 	quickstart_admin.html \
