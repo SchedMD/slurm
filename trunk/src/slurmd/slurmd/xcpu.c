@@ -63,6 +63,24 @@ static int _send_sig(char *path, int sig, char *msg)
 	return rc;
 }
 
+static char *_sig_name(int sig)
+{
+	static char name[8];
+
+	switch(sig) {
+	case SIGCONT:
+		return "SIGCONT";
+	case SIGKILL:
+		return "SIGKILL";
+	case SIGTERM:
+		return "SIGTERM";
+	default:
+		snprintf(name, sizeof(name), "%d", sig);
+		return name;
+	}
+
+}
+
 /* Identify every XCPU process in a specific node and signal it.
  * Return the process count */
 extern int xcpu_signal(int sig, char *nodes)
@@ -79,7 +97,10 @@ extern int xcpu_signal(int sig, char *nodes)
 		error("hostlist_create: %m");
 		return 0;
 	}
-	snprintf(sig_msg, sizeof(sig_msg), "signal %d", sig);
+
+	/* Plan 9 only takes strings, so we map number to name */
+	snprintf(sig_msg, sizeof(sig_msg), "signal %s",
+		_sig_name(sig));
 
 	/* For each node, look for processes */
 	while (node = hostlist_shift(hl)) {
