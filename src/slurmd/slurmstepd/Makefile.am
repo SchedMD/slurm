@@ -12,7 +12,7 @@ slurmstepd_LDADD = 				   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
-	$(SSL_LIBS) 
+	$(SSL_LIBS) $(PAM_LIBS) 
 
 
 slurmstepd_SOURCES = 	        	\

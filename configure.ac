@@ -67,6 +67,10 @@ dnl Check of sched_getaffinity exists and it's argument count
 dnl
 X_AC_AFFINITY
 
+dnl
+dnl Check for PAM module support
+X_AC_PAM
+
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
