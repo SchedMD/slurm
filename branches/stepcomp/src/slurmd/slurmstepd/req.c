@@ -44,6 +44,7 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/stepd_api.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/req.h"
 

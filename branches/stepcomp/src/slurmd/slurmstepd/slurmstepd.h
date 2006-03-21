@@ -28,6 +28,20 @@
 #ifndef _SLURMSTEPD_H
 #define _SLURMSTEPD_H
 
+#include "src/common/bitstring.h"
+
 extern int slurmstepd_blocked_signals[];
+
+typedef struct {
+	pthread_cond_t cond;
+	pthread_mutex_t lock;
+	int rank;
+	int parent_rank;
+	slurm_addr parent_addr;
+	int children;
+	bitstr_t *bits;
+} step_complete_t;
+
+extern step_complete_t step_complete;
 
 #endif /* !_SLURMSTEPD_H */

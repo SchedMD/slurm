@@ -224,6 +224,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_file_bcast_msg(msg->data);
 		break;
+/* 	case REQUEST_STEP_COMPLETE: */
+/* 		rc = _rpc_step_complete(msg, cli); */
+/* 		slurm_free_step_complete_msg(msg->data); */
+/* 		break; */
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
 		      msg->msg_type);
@@ -259,9 +263,12 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	struct passwd *pw = NULL;
 	gids_t *gids = NULL;
 
-	int rank, count, parent, children;
+	int rank, count, parent_rank, children;
 	char *parent_alias = NULL;
 	slurm_addr parent_addr;
+
+	/* send type over to slurmstepd */
+	safe_write(fd, &type, sizeof(int));
 
 	/* Find the slurm_addr of this node's parent slurmd in the step */
 	/* step_hset can be NULL is the user is the SlurmUser, and the
@@ -269,24 +276,26 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	if (step_hset == NULL) {
 		/* all nodes have to send step completion message directly
 		   to the slurmctld */
-		parent = -1;
+		parent_rank = -1;
 		children = 0;
 	} else {
 		count = hostset_count(step_hset);
 		rank = hostset_index(step_hset, conf->node_name, 0);
 		tree_parent_and_children(rank, count, REVERSE_TREE_WIDTH,
-					 &parent, &children);
+					 &parent_rank, &children);
 		if (rank != 0) { /* rank 0 talks directly to the slurmctld */
-			parent_alias = hostset_nth(step_hset, parent);
+			parent_alias = hostset_nth(step_hset, parent_rank);
 			parent_addr = slurm_conf_get_addr(parent_alias);
 		}
 	}
 	debug("Node %s (rank %d), parent %s (rank %d), children %d",
-	      conf->node_name, rank, parent_alias, parent, children);
+	      conf->node_name, rank, parent_alias, parent_rank, children);
 	/* FIXME - send the reverse tree info to slurmstepd! */
-
-	/* send type over to slurmstepd */
-	safe_write(fd, &type, sizeof(int));
+	/* send reverse-tree info to the slurmstepd */
+	safe_write(fd, &rank, sizeof(int));
+	safe_write(fd, &parent_rank, sizeof(int));
+	safe_write(fd, &children, sizeof(int));
+	safe_write(fd, &parent_addr, sizeof(slurm_addr));
 
 	/* send conf over to slurmstepd */
 	buffer = init_buf(0);

@@ -107,6 +107,15 @@ static int mgr_sigarray[] = {
 	SIGUSR2, SIGALRM, SIGHUP, 0
 };
 
+step_complete_t step_complete = {
+	PTHREAD_COND_INITIALIZER,
+	PTHREAD_MUTEX_INITIALIZER,
+	-1,
+	-1,
+	0,
+	-1,
+	NULL
+};
 
 /* 
  * Prototypes
@@ -440,6 +449,19 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	return SLURM_SUCCESS;
 }
 
+static void
+_wait_for_children_slurmstepd(slurmd_job_t *job)
+{
+	debug("Rank %d waiting for %d children",
+	      step_complete.rank, step_complete.children);
+}
+
+static void
+_send_step_complete_msg(slurmd_job_t *job)
+{
+	debug("Rank %d sending complete message to parent rank %d",
+	      step_complete.rank, step_complete.parent_rank);
+}
 
 /* 
  * Executes the functions of the slurmd job manager process,
@@ -550,6 +572,9 @@ job_manager(slurmd_job_t *job)
 		error("job_manager exiting abnormally, rc = %d", rc);
 		_send_launch_resp(job, rc);
 	}
+
+	_wait_for_children_slurmstepd(job);
+	_send_step_complete_msg(job);
 
 	return(rc);
 }
