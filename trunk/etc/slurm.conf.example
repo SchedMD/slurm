@@ -280,8 +280,8 @@ JobAcctType=jobacct/none
 #
 # o Define the location where job accounting logs are to be
 #   written. For
-#    - jobacct/none - this parameter is ignored
-#    - jobacct/log  - the fully-qualified file name for the data file
+#    - jobacct/none   - this parameter is ignored
+#    - jobacct/linux  - the fully-qualified file name for the data file
 #
 # JobAcctLoc=/var/log/slurm_accounting.log
 
@@ -289,7 +289,7 @@ JobAcctType=jobacct/none
 # o Define any parameters to pass to the job accounting plugin. Parameters
 #   should be comma separated and quoted as shown in the example below. For
 #    - jobacct/none - this parameter is ignored
-#    - jobacct/log  - the parameters available are
+#    - jobacct/linux  - the parameters available are
 #          - Frequency=N       - where N is the number of seconds
 #                                between sampling the memory usage stats
 #                                (psize, vsize). If N=0, no sampling is
@@ -302,8 +302,8 @@ JobAcctType=jobacct/none
 #                                accounting message.
 #          - StaggerSlotSize   - For a process that might be sending
 #                                a message at the same time as N other
-#                                processes in the job, where N is 10 or greater,
-#                                each process will pause a bit before
+#                                processes in the job, where N is 10 or 
+#                                greater, each process will pause a bit before
 #                                trying to send its message. For N tasks,
 #                                N "staggered timeslots" are defined,
 #                                in increments of (StaggerSlotSize*.001)
