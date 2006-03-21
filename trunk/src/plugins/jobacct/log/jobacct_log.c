@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobacct_log.c - slurm job accounting plugin.
+ *  jobacct_linux.c - slurm job accounting plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -24,7 +24,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  *
- *  This file is patterned after jobcomp_log.c, written by Morris Jette and
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
@@ -364,7 +364,7 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 }
 
 /*
- * JOBACCT/LOG plugin code for SLURMCTLD
+ * JOBACCT/LINUX plugin code for SLURMCTLD
  */ 
 
 
@@ -382,7 +382,7 @@ int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 
 
 	debug2("slurmctld_jobacct_init() called");
-	info("jobacct LOG plugin loaded (%s)", rev_stg);
+	info("jobacct LINUX plugin loaded (%s)", rev_stg);
 	slurm_mutex_lock( &logfile_lock );
 	if (LOGFILE)
 		fclose(LOGFILE);
@@ -536,7 +536,7 @@ static int _print_record(struct job_record *job_ptr, char *data)
 
 
 /*
- * JOBACCT/LOG plugin code for SLURMD
+ * JOBACCT/LINUX plugin code for SLURMD
  */
 
 /* Format of the JOB_STEP record */
@@ -608,7 +608,7 @@ int slurmd_jobacct_init(char *job_acct_parameters)
 		*this_parameter,
 		*val_ptr;
 
-	info("jobacct LOG plugin (%s)", rev_stg);
+	info("jobacct LINUX plugin (%s)", rev_stg);
 
 	/* Parse the JobAcctParameters */
 
@@ -716,10 +716,10 @@ int slurmd_jobacct_smgr(void)
 			prec_frequency = 0;
 		}
 		else 
-			debug3("jobacct LOG dynamic logging enabled");
+			debug3("jobacct LINUX dynamic logging enabled");
 	} else {
 		prec_frequency = 0;
-		debug2("jobacct LOG dynamic logging disabled"); 
+		debug2("jobacct LINUX dynamic logging disabled"); 
 	}
 	return 0;
 }
