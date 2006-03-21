@@ -91,8 +91,8 @@
  * matures.
  */
 const char plugin_name[] =
-    "Job accounting LOG plugin for slurmctld and slurmd";
-const char plugin_type[] = "jobacct/log";
+    "Job accounting LINUX plugin for slurmctld and slurmd";
+const char plugin_type[] = "jobacct/linux";
 const uint32_t plugin_version = 100;
 
 /*
