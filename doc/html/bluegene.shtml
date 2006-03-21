@@ -540,8 +540,17 @@ daemon serving as a front-end to those base partitions is not responding (on
 non-BlueGene systems, the slurmd actually does run on the compute 
 nodes, so the message is more meaningful there). </p>
 
+<p>Note that you can emulate a BlueGene system on stand-alone Linux 
+system. After running <b>configure</b>, manually define "HAVE_BG" 
+and "HAVE_FRONT_END" in the config.h file. The execute <b>make</b> 
+normally. These variables will build the code as if it were running 
+on an actual BlueGene computer, but avoid making calls to the BG
+Bridge libary (that is controlled by the variable "HAVE_BG_FILES", 
+which is left undefined). You can use this to test configurations, 
+scheduling logic, etc. </p>
+ 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 March 2006</p>
+<p style="text-align:center;">Last modified 21 March 2006</p>
 
 <!--#include virtual="footer.txt"-->
