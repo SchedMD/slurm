@@ -233,6 +233,15 @@ int srun(int ac, char **av)
 		reattach();
 		exit (0);
 	} else {
+		/* Combined job allocation and job step launch */
+#ifdef HAVE_FRONT_END
+		uid_t my_uid = getuid();
+		if ((my_uid != 0)
+		&&  (my_uid != slurm_get_slurm_user_id())) {
+			error("srun task launch not supported on this system");
+			exit(1);
+		}
+#endif
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
