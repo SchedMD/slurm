@@ -270,8 +270,9 @@
 #
 # o Define the job accounting mechanism to use.
 #
-#   "jobacct/log"    : Generate job accounting data for each job.
-#   "jobacct/none"   : Do not track accounting data.
+#   "jobacct/linux"    : Generate job accounting data for 
+#                        each job for linux systems only.
+#   "jobacct/none"     : Do not track accounting data.
 #
 
 JobAcctType=jobacct/none
