@@ -516,9 +516,9 @@ static bool
 _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 {
 	char *end_ptr;
-	int val1, val2;
+	double val1, val2;
 	
-	val1 = strtol(arg, &end_ptr, 10);
+	val1 = strtod(arg, &end_ptr);
 	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
 		val1 *= 1024;
 		end_ptr++;
@@ -532,7 +532,7 @@ _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	if (end_ptr[0] != '-')
 		return false;
 
-	val2 = strtol(&end_ptr[1], &end_ptr, 10);
+	val2 = strtod(&end_ptr[1], &end_ptr);
 	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
 		val2 *= 1024;
 		end_ptr++;
