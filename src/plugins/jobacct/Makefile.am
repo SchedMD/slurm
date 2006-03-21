@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for jobacct plugins
 
-SUBDIRS = log none
+SUBDIRS = linux none
