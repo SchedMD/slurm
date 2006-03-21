@@ -149,12 +149,21 @@ authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtame via the <b>AuthType</b> keyword in the SLURM 
 configuration file.  Currently available authentication types include
 <a href="http://www.theether.org/authd/">authd</a>, 
+Kerberos 5,
 <a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a>, and none.
 The default authentication infrastructure is "none". This permits any user to execute 
 any job as another user. This may be fine for testing purposes, but certainly not for production 
 use. <b>Configure some AuthType value other than "none" if you want any security.</b>
-We recommend the use of Munge unless you are experienced with authd.
-</p>
+We recommend the use of Munge unless you are experienced with authd or
+require Kerberos 5.
+Note that Kerberos may used to authenticate communications, but jobs are not 
+initiated with Kerberos credentials and no logic in SLURM refreshes 
+Kerberos credentials. 
+In order to insure that executing jobs maintain a current Kerberos credential, 
+the job must either generate its own credential (possibly using a <i>keytabs</i>
+file) or a credential refresh daemon may be used (request <i>credscache</i> 
+from <a href="mailto:ariddle@llnl.gov">ariddle@llnl.gov</a>).</p>
+
 <p>While SLURM itself does not rely upon synchronized clocks on all nodes
 of a cluster for proper operation, its underlying authentication mechanism 
 may have this requirement. For instance, if SLURM is making use of the
@@ -381,12 +390,14 @@ components, but relies upon an external entity to determine the user who
 initiated a request.  
 You must specify one &quot;auth&quot; plugin for this purpose. 
 Currently, only three 
-authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, and 
-<b>auth/munge</b>. The auth/none plugin is built and used by default, but either 
-Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris Dunlap's 
-<a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a> should be installed in order to 
-get properly authenticated communications. 
-Unless you are experience with authd, we recommend the use of munge.
+authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, 
+<b>auth/krb5</b> and <b>auth/munge</b>. 
+The auth/none plugin is built and used by default, but either 
+Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, Kerberos 5
+or Chris Dunlap's <a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a> 
+should be installed in order to get properly authenticated communications. 
+Unless you are experience with authd or require Kerberos, we recommend 
+the use of munge.
 The configure script in the top-level directory of this distribution will determine 
 which authentication plugins may be built. The configuration file specifies which 
 of the available plugins will be utilized. </p>
@@ -570,6 +581,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 January 2006</p>
+<p style="text-align:center;">Last modified 21 March 2006</p>
 
 <!--#include virtual="footer.txt"-->

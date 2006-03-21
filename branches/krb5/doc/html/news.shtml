@@ -61,6 +61,7 @@ the slurmctld and slurmd daemons respecitively.</li>
 <li>Support added for <i>xcpu</i> job launch.</li>
 <li>Add support for overlapping BlueGene blocks.</li>
 <li>Add support for 1/16 midplane BlueGene blocks.</li>
+<li>Add Kerberos authentication support.</li>
 </ul>
 
 <h2><a name="12">Major Updates in SLURM Version 1.2 and beyond</a></h2>
@@ -73,10 +74,9 @@ to coordinate activies. Future development plans includes:
 <li>Enforce CPU and memory limits by job.</li>
 <li>Convert state save functions to plugins for use of various databases.</li>
 <li>Develop Perl API to SLURM.</li>
-<li>Add Kerberos credential support including credential forwarding and refresh.</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 30 January 2006</p>
+<p style="text-align:center;">Last modified 21 March 2006</p>
 
 <!--#include virtual="footer.txt"-->

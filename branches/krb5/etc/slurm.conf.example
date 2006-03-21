@@ -154,6 +154,7 @@
 #
 # "auth/none"   : no authentication, the default
 # "auth/authd"  : Brent Chun's authd
+# "auth/krb5"   : Kerberos 5
 # "auth/munge"  : LLNL's munge
 #
 # WARNING: The use of "auth/none" permits any user to execute jobs as any 
