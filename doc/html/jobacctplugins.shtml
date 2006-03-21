@@ -23,14 +23,14 @@ The major type must be &quot;jobacct.&quot;
 The minor type can be any suitable name
 for the type of accounting package. We currently use
 <ul>
-<li><b>log</b>&#151;Implements log-file based job accounting. The
-<b>sacct</b> program can be used to read and write the data.
+<li><b>linux</b>&#151;Implements log-file based job accounting for 
+linux systems. The <b>sacct</b> program can be used to read and write the data.
 <li><b>none</b>&#151;This is a no-op plugin which disables job
 accounting.
 </ul>
 
 <p>The programmer is urged to study 
-<span class="commandline">src/plugins/jobacct/log</span>
+<span class="commandline">src/plugins/jobacct/linux</span>
 for a sample implementation of a SLURM job accounting plugin.
 <p class="footer"><a href="#top">top</a>
 
@@ -64,7 +64,7 @@ char *job_acct_parameters)
 <p style="margin-left:.2in"><b>Description</b>:
 Called when slurmctld starts, or when
 <span class="commandline">scontrol&nbsp;reconfigure</span> is invoked.
-The <span class="commandline">jobacct/log</span> plugin uses this call
+The <span class="commandline">jobacct/linux</span> plugin uses this call
 to close the previous logfile, if open, open the new logfile, as
 specified by <span class="commandline">job_acct_loc</span>, and set up
 the root of its runtime lists.
@@ -215,7 +215,7 @@ should return
 
 <p class="commandline">int slurmd_jobacct_smgr(void) 
 <p style="margin-left:.2in"><b>Description</b>:
-Called when the session manager starts. For jobacct/log, this entry is
+Called when the session manager starts. For jobacct/linux, this entry is
 used to initiate a thread which monitors run time usage statistics.
 <p style="margin-left:.2in"><b>Arguments</b>: none.
 <p style="margin-left:.2in"><b>Returns</b>:  Currently ignored, but
@@ -268,11 +268,11 @@ plugins, the job accounting API counts on three parameters:
 <dt><span class="commandline">JobAcctType</span>
 <dd>Specifies which plugin should be used.
 <dt><span class="commandline">JobAcctLoc</span>
-<dd>To be used at the plugin's discretion; jobacct_log uses it to
+<dd>To be used at the plugin's discretion; jobacct_linux uses it to
 specify the location of the accounting data file.
 <dt><span class="commandline">JobAcctParameters</span>
 <dd>This is a catch-all for any other parameters that the plugin might
-need. For consistency with the jobacct_log plugin, these parameters
+need. For consistency with the jobacct_linux plugin, these parameters
 should be specified in a comma-separated list.
 </dl>
 

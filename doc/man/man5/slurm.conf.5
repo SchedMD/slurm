@@ -135,19 +135,19 @@ May not exceed 65533.
 .TP
 \fBJobAcctType\fR
 Define the job accounting mechanism type.
-Acceptable values at present include "jobacct/log" and "jobacct/none".
+Acceptable values at present include "jobacct/linux" and "jobacct/none".
 The default value is "jobacct/none".
-In order to use the \fBsacct\fR tool, "jobacct/log" must be configured.a
+In order to use the \fBsacct\fR tool, "jobacct/linux" must be configured.a
 \fBJobAcctLoc\fR
 Define the location where job accounting logs are to be written.
 For jobacct/none this parameter is ignored.
-For jobacct/log this is the fully-qualified file name for the data file.
+For jobacct/linux this is the fully-qualified file name for the data file.
 .TP
 \fBJobAcctParameters\fR
 Define any parameters to pass to the job accounting plugin, in a
 quoted and comma-separated list.
 For jobacct/none this parameter is ignored.
-For jobacct/log the parameters available are
+For jobacct/linux the parameters available are
 .RS
 .TP
 \fBFrequency=N\fR, where N is the number of seconds between
@@ -882,7 +882,7 @@ JobCredentialPrivateKey=/usr/local/slurm/private.key
 .br
 JobCredentialPublicCertificate=/usr/local/slurm/public.cert
 .br
-JobAcctType=jobacct/log
+JobAcctType=jobacct/linux
 .br
 JobAcctLoc=/var/log/slurm_accounting.log
 .br

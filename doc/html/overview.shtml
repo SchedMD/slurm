@@ -48,7 +48,7 @@ building block approach. These plugins presently include:
 
 <li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX or none.</li>
 
-<li><a href="jobacctplugins.html">Job accounting</a>: log or none</li>
+<li><a href="jobacctplugins.html">Job accounting</a>: linux or none</li>
 
 <li><a href="jobcompplugins.html">Job completion logging</a>: text file, 
 arbitrary script, or none (default).</li>
