@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	int mapset = 0;	
 #endif
 	//char *name;
-	
+       
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
@@ -88,10 +88,8 @@ int main(int argc, char *argv[])
 		sleep(10);	/* keep trying to reconnect */
 	}
 	
-	printf("starting\n");
 	ba_init(new_node_ptr);
-	printf("done hey\n");
-		
+			
 	if(params.partition) {
 			
 #ifdef HAVE_BG_FILES
@@ -127,9 +125,10 @@ int main(int argc, char *argv[])
 		} else {
 			int *coord = find_bp_loc(params.partition);
 			if(coord)
-				printf("%s resolves to X=%d Y=%d Z=%d or bg%d%d%d\n",
+				printf("%s resolves to X=%d Y=%d Z=%d\n",
 				       params.partition,
 				       coord[X], coord[Y], coord[Z],
+				       slurmctld_conf.node_prefix,
 				       coord[X], coord[Y], coord[Z]);
 			else
 				printf("%s has no resolve.\n", 

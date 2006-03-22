@@ -433,9 +433,8 @@ static int _resolve(char *com)
 		
 		if(coord)
 			sprintf(error_string, 
-				"%s resolves to X=%d Y=%d Z=%d or bg%d%d%d\n",
-				com+i,coord[X],coord[Y],coord[Z],
-				coord[X],coord[Y],coord[Z]);
+				"%s resolves to X=%d Y=%d Z=%d\n",
+				com+i,coord[X],coord[Y],coord[Z]);
 		else
 			sprintf(error_string, "%s has no resolve.\n", 
 				com+i);	
