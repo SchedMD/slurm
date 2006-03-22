@@ -679,6 +679,7 @@ static void _opt_default()
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
+	opt.jobid_set = false;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
@@ -1360,6 +1361,7 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_JOBID:
 			opt.jobid = _get_int(optarg, "jobid");
+			opt.jobid_set = true;
 			break;
 		case LONG_OPT_TIMEO:
 			opt.msg_timeout = 
