@@ -61,6 +61,7 @@ static int _handle_daemon_pid(int fd, slurmd_job_t *job);
 static int _handle_suspend(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_terminate(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_completion(int fd, slurmd_job_t *job, uid_t uid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -419,6 +420,10 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 	case REQUEST_STEP_TERMINATE:
 		debug("Handling REQUEST_STEP_TERMINATE");
 		rc = _handle_terminate(fd, job, uid);
+		break;
+	case REQUEST_STEP_COMPLETION:
+		debug("Handling REQUEST_STEP_COMPLETION");
+		rc = _handle_completion(fd, job, uid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -912,6 +917,55 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		suspended = false;
 	}
 	pthread_mutex_unlock(&suspend_mutex);
+
+done:
+	/* Send the return code and errno */
+	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_completion(int fd, slurmd_job_t *job, uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	int errnum = 0;
+	int first;
+	int last;
+
+	debug("_handle_completion for job %u.%u",
+	      job->jobid, job->stepid);
+
+	debug3("  uid = %d", uid);
+	if (!_slurm_authorized_user(uid)) {
+		debug("job step completion message from uid %ld for job %u.%u ",
+		      (long)uid, job->jobid, job->stepid);
+		rc = -1;
+		errnum = EPERM;
+		goto done;
+	}
+
+	safe_read(fd, &first, sizeof(int));
+	safe_read(fd, &last, sizeof(int));
+
+	debug("_handle_completion rank = %d first = %d, last = %d",
+	      step_complete.rank, first, last);
+
+	/*
+	 * Record the completed nodes
+	 */
+	pthread_mutex_lock(&step_complete.lock);
+	debug("_handle_completion rank = %d, bits size = %d, left = %d",
+	      step_complete.rank, bit_size(step_complete.bits), bit_clear_count(step_complete.bits));
+	bit_nset(step_complete.bits,
+		 first - (step_complete.rank+1),
+		 last - (step_complete.rank+1));
+	debug("_handle_completion rank = %d, bits left = %d",
+	      step_complete.rank, bit_clear_count(step_complete.bits));
+	pthread_cond_signal(&step_complete.cond);
+	pthread_mutex_unlock(&step_complete.lock);
 
 done:
 	/* Send the return code and errno */

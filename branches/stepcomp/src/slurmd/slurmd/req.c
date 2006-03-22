@@ -97,6 +97,7 @@ static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
+static int  _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
@@ -224,10 +225,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_file_bcast_msg(msg->data);
 		break;
-/* 	case REQUEST_STEP_COMPLETE: */
-/* 		rc = _rpc_step_complete(msg, cli); */
-/* 		slurm_free_step_complete_msg(msg->data); */
-/* 		break; */
+	case REQUEST_STEP_COMPLETE:
+		rc = _rpc_step_complete(msg, cli);
+		slurm_free_step_complete_msg(msg->data);
+		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
 		      msg->msg_type);
@@ -1082,6 +1083,45 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 
 done3:
 	xfree(step);
+done2:
+	close(fd);
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static int
+_rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr)
+{
+	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
+	int               rc = SLURM_SUCCESS;
+	int               fd;
+	uid_t             req_uid;
+	slurmstepd_info_t *step;
+
+	debug3("Entering _rpc_step_complete");
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->job_step_id);
+	if (fd == -1) {
+		error("stepd_connect to %u.%u failed: %m",
+				req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
+
+	/* step completion messages are only allowed from other slurmstepd,
+	   so only root or SlurmUser is allowed here */
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	if (!_slurm_authorized_user(req_uid)) {
+		debug("step completion from uid %ld for job %u.%u",
+		      (long) req_uid, req->job_id, req->job_step_id);
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done2;
+	}
+
+	rc = stepd_completion(fd, req->range_first, req->range_last);
+	if (rc == -1)
+		rc = ESLURMD_JOB_NOTRUNNING;
+
 done2:
 	close(fd);
 done:

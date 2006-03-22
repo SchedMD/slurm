@@ -309,6 +309,15 @@ typedef struct complete_job_step_msg {
 	char *node_name;
 } complete_job_step_msg_t;
 
+typedef struct step_complete_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;
+	uint32_t range_first;
+	uint32_t range_last;
+/* 	uint32_t job_rc; */
+/* 	uint32_t slurm_rc; */
+} step_complete_msg_t;
+
 typedef struct kill_tasks_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;

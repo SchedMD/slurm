@@ -112,9 +112,9 @@ step_complete_t step_complete = {
 	PTHREAD_MUTEX_INITIALIZER,
 	-1,
 	-1,
-	0,
+	{},
 	-1,
-	NULL
+	(bitstr_t *)NULL
 };
 
 /* 
@@ -452,15 +452,47 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 static void
 _wait_for_children_slurmstepd(slurmd_job_t *job)
 {
-	debug("Rank %d waiting for %d children",
-	      step_complete.rank, step_complete.children);
+	int left;
+
+	pthread_mutex_lock(&step_complete.lock);
+	while((left = bit_clear_count(step_complete.bits)) > 0) {
+		debug("Rank %d waiting for %d (of %d) children",
+		      step_complete.rank, left, step_complete.children);
+		pthread_cond_wait(&step_complete.cond, &step_complete.lock);
+	}
+	pthread_mutex_unlock(&step_complete.lock);
+	debug("Rank %d got all children completions, sending complete to %d",
+	      step_complete.rank, step_complete.parent_rank);
 }
 
 static void
 _send_step_complete_msg(slurmd_job_t *job)
 {
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc = -1;
+
 	debug("Rank %d sending complete message to parent rank %d",
 	      step_complete.rank, step_complete.parent_rank);
+	msg.job_id = job->jobid;
+	msg.job_step_id = job->stepid;
+	msg.range_first = step_complete.rank;
+	msg.range_last = step_complete.children + step_complete.rank;
+
+	memset(&req, 0, sizeof(req));
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+	req.address = step_complete.parent_addr;
+
+	if (step_complete.parent_rank == -1) {
+		/* FIXME - sent completion message to controller */
+		debug("Rank %d sending completion to slurmctld",
+		      step_complete.rank);
+		return;
+	}
+	slurm_send_recv_rc_msg_only_one(&req, &rc, 5);
+	debug("Rank %d sent complete message, rc = %d",
+	      step_complete.rank, rc);
 }
 
 /* 
