@@ -125,8 +125,12 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bg)
 			error("rm_get_data(RM_BPLoc): %s", bg_err_str(rc));
 			continue;
 		}
-		snprintf(bg_down_node, sizeof(bg_down_node), "bg%d%d%d",
+		slurm_conf_lock();
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%d%d%d", 
+			 slurmctld_conf.node_prefix,
 			 bp_loc.X, bp_loc.Y, bp_loc.Z);
+		slurm_conf_unlock();
+	
 		if (node_already_down(bg_down_node))
 			break;
 
@@ -213,9 +217,12 @@ static void _test_down_nodes(rm_BGL_t *bg)
 			continue;
 		}
 
-		snprintf(bg_down_node, sizeof(bg_down_node), "bg%d%d%d", 
+		slurm_conf_lock();
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%d%d%d", 
+			 slurmctld_conf.node_prefix,
 			 bp_loc.X, bp_loc.Y, bp_loc.Z);
-
+		slurm_conf_unlock();
+	
 		if (node_already_down(bg_down_node))
 			continue;
 

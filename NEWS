@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- JobAcct plugin renamed from "log" to "linux" in preparation for support of 
     new system types. 
     WARNING: "JobAcctType=jobacct/log" is no longer supported.
+ -- removed vestigal 'bg' names from bluegene plugin and smap
 
 * Changes in SLURM 1.1.0-pre2
 =============================
