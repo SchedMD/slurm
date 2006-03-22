@@ -106,6 +106,7 @@ typedef struct srun_options {
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
+	bool jobid_set;		/* true of jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
 	unsigned int dependency;/* --dependency, -P jobid	*/
 	int nice;		/* --nice			*/

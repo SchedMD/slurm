@@ -458,9 +458,10 @@ _run_batch_job(void)
 	if (!(req = job_desc_msg_create_from_opts (script)))
 		fatal ("Unable to create job request");
 
-	/* Do not re-use existing job id when submitting new job 
-	 * from within a running job */
-	req->job_id = NO_VAL;
+	/* Do not re-use existing job id from environment variable
+	 * when submitting new job from within a running job */
+	if (opt.jobid_set != NO_VAL)
+		req->job_id = (uint32_t)opt.jobid;
 
 	retries = 0;
 	while (  (retries < MAX_RETRIES)
