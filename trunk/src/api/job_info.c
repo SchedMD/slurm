@@ -424,6 +424,16 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	job_info_msg_t *jinfo;
 	job_info_t *job_ptr;
 
+	if (jobid == 0) {
+		char *env = getenv("SLURM_JOBID");
+		if (env)
+			jobid = (uint32_t) atol(env);
+		if (jobid == 0) {
+			slurm_seterrno(ESLURM_INVALID_JOB_ID);
+			return SLURM_ERROR;
+		}
+	}
+
 	if ((error_code = slurm_load_jobs ((time_t) NULL, &jinfo, 1)))
 		return error_code;
 
@@ -441,6 +451,60 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	if (error_code)
 		slurm_seterrno(ESLURM_INVALID_JOB_ID);
 	return error_code; 
+}
+
+/*
+ * slurm_job_warn   - warn a job before it reaches its time limit and is
+ *                    terminated.
+ * IN jobid         - slurm job id (if zero, use SLURM_JOBID env var)
+ * IN min_time      - number of seconds before termination to notify job
+ * OUT rem_time_ptr - number of seconds remaining before termination, 
+ *                    unused if NULL
+ * IN signal        - signal to send job (if zero, do not signal)
+ * OUT warn_ptr     - set to 1 when remaining time is less than or 
+ *                    equal to min_time, user should initialize to 0,
+ *                    unused if NULL
+ * RET 0 or -1 on error
+ */
+extern int
+slurm_job_warn(uint32_t jobid, uint32_t min_time, uint32_t *rem_time_ptr, 
+		uint16_t signal, uint16_t *warn_ptr)
+{
+	time_t end_time;
+	long end_delay;
+
+	if (jobid == 0) {
+		char *env = getenv("SLURM_JOBID");
+		if (env)
+			jobid = (uint32_t) atol(env);
+		if (jobid == 0) {
+			slurm_seterrno(ESLURM_INVALID_JOB_ID);
+			return SLURM_ERROR;
+		}
+	}
+
+	/* If/when there is a new system call for this, modify
+	 * slurm_get_end_time() to use it as well */
+	if (slurm_get_end_time(jobid, &end_time))
+		return SLURM_ERROR;
+
+	end_delay = (long) difftime(end_time, time(NULL));
+	if (rem_time_ptr)
+		*rem_time_ptr = (uint32_t) MAX(end_delay, 0);
+	if (min_time <= *rem_time_ptr) {
+		if (warn_ptr)
+			*warn_ptr = 1;
+		if (signal)
+			kill(getpid(), signal);
+	} else {
+		/* work to be done in the future */
+		/* we need to address changing time limits */
+		if (warn_ptr || signal) {
+			slurm_seterrno(ESLURM_NOT_SUPPORTED);
+			return SLURM_ERROR;
+		}
+	}
+	return SLURM_SUCCESS;
 }
 
 /*

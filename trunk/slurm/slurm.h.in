@@ -1034,6 +1034,22 @@ extern void slurm_print_job_info PARAMS(( FILE*, job_info_t * job_ptr,
 extern int slurm_get_end_time PARAMS((uint32_t jobid, time_t *end_time_ptr));
 
 /*
+ * slurm_job_warn   - warn a job before it reaches its time limit and is
+ *                    terminated.
+ * IN jobid         - slurm job id (if zero, use SLURM_JOBID env var)
+ * IN min_time      - number of seconds before termination to notify job
+ * OUT rem_time_ptr - number of seconds remaining before termination,
+ *                    unused if NULL
+ * IN signal        - signal to send job (if zero, do not signal)
+ * OUT warn_ptr     - set to 1 when remaining time is less than or
+ *                    equal to min_time, user should initialize to 0,
+ *                    unused if NULL
+ * RET 0 or -1 on error
+ */
+extern int slurm_job_warn PARAMS((uint32_t jobid, uint32_t min_time, 
+		uint32_t *rem_time_ptr, uint16_t signal, uint16_t *warn_ptr));
+
+/*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
  *	on this machine
  * IN job_pid - process_id of interest on this machine

@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Warn user attempting to create a job allocation from within an existing job
     allocation.
  -- Add web page description for proctrack plugin.
+ -- Add new function slurm_job_warn() to notify when a job's time limit approches
+    (not yet fully implemented).
 
 * Changes in SLURM 1.1.0-pre2
 =============================
