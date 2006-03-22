@@ -548,7 +548,8 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 		snprintf(clone_path, sizeof(clone_path), 
 			"%s/%s/xcpu/clone", XCPU_DIR, 
 			select_node_ptr[i].name);
-		if (chown(clone_path, (uid_t)job_ptr->user_id, -1)) {
+		if (chown(clone_path, (uid_t)job_ptr->user_id, 
+				(gid_t)job_ptr->group_id)) {
 			error("chown %s: %m", clone_path);
 			rc = SLURM_ERROR;
 		} else {
@@ -578,7 +579,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		snprintf(clone_path, sizeof(clone_path), 
 			"%s/%s/xcpu/clone", XCPU_DIR, 
 			select_node_ptr[i].name);
-		if (chown(clone_path, (uid_t)0, -1)) {
+		if (chown(clone_path, (uid_t)0, (gid_t)0)) {
 			error("chown %s: %m", clone_path);
 			rc = SLURM_ERROR;
 		} else {
