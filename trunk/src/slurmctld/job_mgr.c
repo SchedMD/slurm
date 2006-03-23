@@ -2339,16 +2339,18 @@ void job_time_limit(void)
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
-		if (slurmctld_conf.inactive_limit && 
-		    (job_ptr->time_last_active <= old)) {
+		if (slurmctld_conf.inactive_limit
+		&&  (job_ptr->time_last_active <= old)
+		&&  (job_ptr->part_ptr)
+		&&  (job_ptr->part_ptr->root_only == 0)) {
 			/* job inactive, kill it */
 			info("Inactivity time limit reached for JobId=%u",
 				job_ptr->job_id);
 			_job_timed_out(job_ptr);
 			continue;
 		}
-		if ((job_ptr->time_limit != INFINITE) &&
-		    (job_ptr->end_time <= now)) {
+		if ((job_ptr->time_limit != INFINITE)
+		&&  (job_ptr->end_time <= now)) {
 			last_job_update = now;
 			info("Time limit exhausted for JobId=%u",
 				job_ptr->job_id);
