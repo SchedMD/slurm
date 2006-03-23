@@ -698,6 +698,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_assert_primary_time;
 	time_t now;
 	int ping_interval;
+	DEF_TIMERS;
 
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = { 
@@ -734,6 +735,7 @@ static void *_slurmctld_background(void *no_data)
 		sleep(1);
 
 		now = time(NULL);
+		START_TIMER;
 
 		if (slurmctld_config.shutdown_time) {
 			int i;
@@ -824,6 +826,9 @@ static void *_slurmctld_background(void *no_data)
 		}
 		unlock_slurmctld(config_read_lock);
 
+		END_TIMER;
+		if (DELTA_TIMER > 1000000)	/* more than one second */ 
+			info("_slurmctld_background loop %s", TIME_STR);
 	}
 	debug3("_slurmctld_background shutting down");
 
