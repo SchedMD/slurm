@@ -580,6 +580,15 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
+	if (batch_step
+	&&  (job_ptr->batch_flag || job_ptr->next_step_id)) {
+		info("user %u attempting to run batch script within "
+			"an existing job", step_specs->user_id);
+		/* This seems hazardous to allow, but LSF seems to 
+		 * work this way, so don't treat it as an error.
+		 * return ESLURM_ACCESS_DENIED ; */
+	}
+
 	if ((step_specs->user_id != job_ptr->user_id) &&
 	    (step_specs->user_id != 0))
 		return ESLURM_ACCESS_DENIED ;
