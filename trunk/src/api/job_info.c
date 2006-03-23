@@ -45,6 +45,7 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
+#include "src/common/xstring.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
@@ -412,6 +413,26 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 }
 
 /*
+ * slurm_get_rem_time - get the expected time remaining for a given job
+ * IN jobid     - slurm job id
+ * RET remaining time in seconds or -1 on error 
+ */
+extern long slurm_get_rem_time(uint32_t jobid)
+{
+	time_t now = time(NULL);
+	time_t end_time;
+	long rc;
+
+	if (slurm_get_end_time(jobid, &end_time) != SLURM_SUCCESS)
+		return -1L;
+
+	rc = difftime(end_time, now);
+	if (rc < 0)
+		rc = 0L;
+	return rc;
+}
+
+/*
  * slurm_get_end_time - get the expected end time for a given slurm job
  * IN jobid     - slurm job id
  * end_time_ptr - location in which to store scheduled end time for job 
@@ -420,90 +441,75 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 extern int
 slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 {
-	int error_code, i;
-	job_info_msg_t *jinfo;
-	job_info_t *job_ptr;
+	int rc;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+	old_job_alloc_msg_t job_msg;
+	srun_timeout_msg_t *timeout_msg;
+	time_t now = time(NULL);
+	static uint32_t jobid_cache = 0;
+	static uint32_t jobid_env = 0;
+	static time_t endtime_cache = 0;
+	static time_t last_test_time = 0;
+
+	if (!end_time_ptr)
+		slurm_seterrno_ret(EINVAL);
 
 	if (jobid == 0) {
-		char *env = getenv("SLURM_JOBID");
-		if (env)
-			jobid = (uint32_t) atol(env);
+		if (jobid_env) {
+			jobid = jobid_env;
+		} else {
+			char *env = getenv("SLURM_JOBID");
+			if (env) {
+				jobid = (uint32_t) atol(env);
+				jobid_env = jobid;
+			}
+		}
 		if (jobid == 0) {
 			slurm_seterrno(ESLURM_INVALID_JOB_ID);
 			return SLURM_ERROR;
 		}
 	}
 
-	if ((error_code = slurm_load_jobs ((time_t) NULL, &jinfo, 1)))
-		return error_code;
-
-	error_code = SLURM_ERROR;	/* error until job found */
-	job_ptr = jinfo->job_array;
-	for (i = 0; i < jinfo->record_count; i++) {
-		if (job_ptr[i].job_id != jobid)
-			continue;
-		*end_time_ptr = job_ptr[i].end_time;
-		error_code = SLURM_SUCCESS;
-		break;
-	}
-	slurm_free_job_info_msg(jinfo);
-
-	if (error_code)
-		slurm_seterrno(ESLURM_INVALID_JOB_ID);
-	return error_code; 
-}
-
-/*
- * slurm_job_warn   - warn a job before it reaches its time limit and is
- *                    terminated.
- * IN jobid         - slurm job id (if zero, use SLURM_JOBID env var)
- * IN min_time      - number of seconds before termination to notify job
- * OUT rem_time_ptr - number of seconds remaining before termination, 
- *                    unused if NULL
- * IN signal        - signal to send job (if zero, do not signal)
- * OUT warn_ptr     - set to 1 when remaining time is less than or 
- *                    equal to min_time, user should initialize to 0,
- *                    unused if NULL
- * RET 0 or -1 on error
- */
-extern int
-slurm_job_warn(uint32_t jobid, uint32_t min_time, uint32_t *rem_time_ptr, 
-		uint16_t signal, uint16_t *warn_ptr)
-{
-	time_t end_time;
-	long end_delay;
-
-	if (jobid == 0) {
-		char *env = getenv("SLURM_JOBID");
-		if (env)
-			jobid = (uint32_t) atol(env);
-		if (jobid == 0) {
-			slurm_seterrno(ESLURM_INVALID_JOB_ID);
-			return SLURM_ERROR;
-		}
+	/* Just use cached data if data less than 60 seconds old */
+	if ((jobid == jobid_cache)
+	&&  (difftime(now, last_test_time) < 60)) {
+		*end_time_ptr  = endtime_cache;
+		return SLURM_SUCCESS;
 	}
 
-	/* If/when there is a new system call for this, modify
-	 * slurm_get_end_time() to use it as well */
-	if (slurm_get_end_time(jobid, &end_time))
+	job_msg.job_id     = jobid;
+	req_msg.msg_type   = REQUEST_JOB_END_TIME;
+	req_msg.data       = &job_msg;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	end_delay = (long) difftime(end_time, time(NULL));
-	if (rem_time_ptr)
-		*rem_time_ptr = (uint32_t) MAX(end_delay, 0);
-	if (min_time <= *rem_time_ptr) {
-		if (warn_ptr)
-			*warn_ptr = 1;
-		if (signal)
-			kill(getpid(), signal);
-	} else {
-		/* work to be done in the future */
-		/* we need to address changing time limits */
-		if (warn_ptr || signal) {
-			slurm_seterrno(ESLURM_NOT_SUPPORTED);
-			return SLURM_ERROR;
-		}
+	switch (resp_msg.msg_type) {
+	case SRUN_TIMEOUT:
+		timeout_msg = (srun_timeout_msg_t *) resp_msg.data;
+		last_test_time = time(NULL);
+		jobid_cache    = jobid;
+		endtime_cache  = timeout_msg->timeout;
+		*end_time_ptr  = endtime_cache;
+		slurm_free_srun_timeout_msg(resp_msg.data);
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (endtime_cache)
+			*end_time_ptr  = endtime_cache;
+		else if (rc)
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		if (endtime_cache)
+		*end_time_ptr  = endtime_cache;
+		else
+			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
 	}
+
 	return SLURM_SUCCESS;
 }
 

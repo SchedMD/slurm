@@ -78,6 +78,7 @@ inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
+inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
@@ -102,7 +103,7 @@ inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
-inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
+inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 
 
@@ -146,6 +147,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_JOB_INFO:
 		_slurm_rpc_dump_jobs(msg);
 		slurm_free_job_info_request_msg(msg->data);
+		break;
+	case REQUEST_JOB_END_TIME:
+		_slurm_rpc_end_time(msg);
+		slurm_free_old_job_alloc_msg(msg->data);
 		break;
 	case REQUEST_NODE_INFO:
 		_slurm_rpc_dump_nodes(msg);
@@ -263,7 +268,7 @@ void slurmctld_req (slurm_msg_t * msg)
 					rc);
 			slurm_free_jobacct_msg(msg->data);
 		}
-		break; 
+		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -695,6 +700,40 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(dump);
 	}
+}
+
+/* _slurm_rpc_end_time - Process RPC for job end time */
+static void _slurm_rpc_end_time(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	old_job_alloc_msg_t *time_req_msg =
+		(old_job_alloc_msg_t *) msg->data;
+	srun_timeout_msg_t timeout_msg;
+	slurm_msg_t response_msg;
+	int rc;
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST JOB_END_TIME");
+	lock_slurmctld(job_read_lock);
+	rc = job_end_time(time_req_msg, &timeout_msg);
+	unlock_slurmctld(job_read_lock);
+	END_TIMER;
+
+	if (rc != SLURM_SUCCESS) {
+		slurm_send_rc_msg(msg, rc);
+	} else {
+		response_msg.address  = msg->address;
+		response_msg.msg_type = SRUN_TIMEOUT;
+		response_msg.data     = &timeout_msg;
+		forward_init(&response_msg.forward, NULL);
+		response_msg.ret_list = NULL;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+	}
+	debug2("_slurm_rpc_end_time jobid=%u %s", 
+		time_req_msg->job_id, TIME_STR);
 }
 
 /* _slurm_rpc_dump_nodes - process RPC for node state information */

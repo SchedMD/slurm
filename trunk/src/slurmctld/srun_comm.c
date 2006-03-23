@@ -215,12 +215,10 @@ extern void srun_ping (void)
 
 /*
  * srun_timeout - notify srun of a job's imminent timeout
- * IN job_id  - if of job to notify
- * IN timeout - when job is scheduled to be killed
+ * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_timeout (uint32_t job_id, time_t timeout)
+extern void srun_timeout (struct job_record *job_ptr)
 {
-	struct job_record *job_ptr = find_job_record (job_id);
 	slurm_addr * addr;
 	srun_timeout_msg_t *msg_arg;
 	ListIterator step_iterator;
@@ -234,9 +232,9 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->port, job_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-		msg_arg->job_id   = job_id;
+		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
-		msg_arg->timeout = timeout;
+		msg_arg->timeout  = job_ptr->end_time;
 		_srun_agent_launch(addr, job_ptr->host, SRUN_TIMEOUT, 
 				msg_arg);
 	}
@@ -254,7 +252,7 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
-		msg_arg->timeout  = timeout;
+		msg_arg->timeout  = job_ptr->end_time;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, 
 				msg_arg);
 	}	

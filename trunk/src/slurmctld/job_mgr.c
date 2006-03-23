@@ -2357,8 +2357,8 @@ void job_time_limit(void)
 		}
 
 		/* Give srun command warning message about pending timeout */
-		if (job_ptr->end_time <= (now + 60))
-			srun_timeout (job_ptr->job_id, job_ptr->end_time);
+		if (job_ptr->end_time <= (now + PERIODIC_TIMEOUT * 2))
+			srun_timeout (job_ptr);
 
 		/* test for and purge inactive job steps */
 		if (slurmctld_conf.inactive_limit == 0)
@@ -4139,3 +4139,24 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	return rc;
 }
 
+/*
+ * job_end_time - Process JOB_END_TIME
+ * IN time_req_msg - job end time request
+ * OUT timeout_msg - job timeout response to be sent
+ * RET SLURM_SUCESS or an error code
+ */
+extern int job_end_time(old_job_alloc_msg_t *time_req_msg,
+		srun_timeout_msg_t *timeout_msg)
+{
+	struct job_record *job_ptr;
+	xassert(timeout_msg);
+
+	job_ptr = find_job_record(time_req_msg->job_id);
+	if (!job_ptr)
+		return ESLURM_INVALID_JOB_ID;
+
+	timeout_msg->job_id  = time_req_msg->job_id;
+	timeout_msg->step_id = NO_VAL;
+	timeout_msg->timeout = job_ptr->end_time;
+	return SLURM_SUCCESS;
+}

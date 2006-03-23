@@ -30,6 +30,8 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include "src/slurmctld/slurmctld.h"
+
 /*
  * srun_allocate - notify srun of a resource allocation
  * IN job_id - id of the job allocated resource
@@ -55,9 +57,8 @@ extern void srun_response(uint32_t job_id, uint32_t step_id);
 
 /*
  * srun_timeout - notify srun of a job's timeout
- * IN job_id  - if of job to notify
- * IN timeout - when job is scheduled to be killed
+ * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_timeout (uint32_t job_id, time_t timeout);
+extern void srun_timeout (struct job_record *job_ptr);
 
 #endif /* !_HAVE_SRUN_COMM_H */

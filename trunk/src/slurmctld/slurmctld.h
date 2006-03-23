@@ -656,6 +656,15 @@ extern void job_completion_logger(struct job_record  *job_ptr);
 extern bool job_epilog_complete(uint32_t job_id, char *node_name, 
 		uint32_t return_code);
 
+/*
+ * job_end_time - Process JOB_END_TIME
+ * IN time_req_msg - job end time request
+ * OUT timeout_msg - job timeout response to be sent
+ * RET SLURM_SUCESS or an error code
+ */
+extern int job_end_time(old_job_alloc_msg_t *time_req_msg,
+		srun_timeout_msg_t *timeout_msg);
+
 /* job_fini - free all memory associated with job records */
 extern void job_fini (void);
 
