@@ -63,6 +63,7 @@ typedef struct slurm_jobacct_ops {
 	int (*slurmctld_jobacct_job_start)	(struct job_record *job_ptr);
 	int (*slurm_jobacct_process_message)(struct slurm_msg *msg);
 	int (*slurmd_jobacct_init)		(char *job_acct_parameters);
+	int (*slurmd_jobacct_fini)		();
 	int (*slurmd_jobacct_jobstep_launched)	(slurmd_job_t *job);
 	int (*slurmd_jobacct_jobstep_terminated)	(slurmd_job_t *job);
 	int (*slurmd_jobacct_smgr)		(void);
@@ -79,6 +80,7 @@ static const char *syms[] = {
 	"slurmctld_jobacct_job_start",
 	"slurm_jobacct_process_message",
 	"slurmd_jobacct_init",
+	"slurmd_jobacct_fini",
 	"slurmd_jobacct_jobstep_launched",
 	"slurmd_jobacct_jobstep_terminated",
 	"slurmd_jobacct_smgr",
@@ -277,6 +279,11 @@ g_slurmd_jobacct_init(char *job_acct_parameters)
 					(job_acct_parameters);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
+}
+extern int
+g_slurmd_jobacct_fini()
+{
+	return (*(g_context->ops.slurmd_jobacct_fini))();
 }
 
 

@@ -60,7 +60,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -91,10 +91,10 @@
  * matures.
  */
 const char plugin_name[] =
-    "Job accounting LINUX plugin for slurmctld and slurmd";
+"Job accounting LINUX plugin for slurmctld and slurmd";
 const char plugin_type[] = "jobacct/linux";
 const uint32_t plugin_version = 100;
-
+
 /*
  * Data and routines common to the slurmctld and slurmd plugins
  */
@@ -114,9 +114,9 @@ const uint32_t plugin_version = 100;
 #define NOT_FOUND "NOT_FOUND"
 
 typedef enum _stats_msg_type {
-		TO_CONTROLLER=100,
-		TO_MYNODE=101,
-		TO_NODE0=102
+	TO_CONTROLLER=100,
+	TO_MYNODE=101,
+	TO_NODE0=102
 } _stats_msg_type_t;
 
 typedef struct _stats_msg {
@@ -130,9 +130,9 @@ typedef struct _stats_msg {
 /* Job records */
 
 static List		jobsteps_active,
-			jobsteps_retiring;
+	jobsteps_retiring;
 static pthread_mutex_t	jobsteps_active_lock = PTHREAD_MUTEX_INITIALIZER,
-			jobsteps_retiring_lock = PTHREAD_MUTEX_INITIALIZER;
+	jobsteps_retiring_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct	_jrec {
 	uint32_t	jobid;		/* record is for this SLURM job id */
@@ -146,9 +146,10 @@ typedef struct	_jrec {
 	struct rusage	rusage;		/* capture everything from wait3() */
 	int	        status;		/* First non-zero completion code */
 	uint32_t        max_vsize;	/* max virtual mem size of any proc  */
-	uint32_t        max_psize;	/* max phys. memory size of any proc */ 
-	int		not_reported;	/* Used by nodes 0,1 to track how
-					   many nodes still have to report in */
+	uint32_t        max_psize;	/* max phys. memory size of any proc */
+	pid_t        pid;               /* pid of process running */
+	int		not_reported;	/* Used by nodes 0,1 to track how many
+					   nodes still have to report in */
 	char		node0[HOST_NAME_MAX]; /* It's proven to be hard to */ 
 	char		node1[HOST_NAME_MAX]; /* keep track of these!      */
 } _jrec_t;
@@ -188,7 +189,7 @@ typedef struct _mynode_msg {
  * slurmd_jobacct_task_exit() */
 
 static long	max_psize = 0,
-		max_vsize = 0;
+	max_vsize = 0;
 
 typedef struct _prec {	/* process record */
 	pid_t	pid;
@@ -199,24 +200,23 @@ typedef struct _prec {	/* process record */
 
 static _prec_t		*precTable = NULL; /* Keep it thread safe! */
 static pthread_mutex_t  precTable_lock = PTHREAD_MUTEX_INITIALIZER;
-			/* precTable_lock prevents collisions between
-			 * slurmd_jobacct_task_exit() and _watch_tasks() */
+/* precTable_lock prevents collisions between
+ * slurmd_jobacct_task_exit() and _watch_tasks() */
 static long		nPrecs = 0;	   /* Number of precTable entries */
 static long		prec_frequency = 0; /* seconds between precTable 
 					       updates, 0 = don't do it */
-static pthread_t _watch_tasks_thread_id;
-
 static long		max_send_retries = DEFAULT_SEND_RETRIES,
-			max_send_retry_delay = DEFAULT_SEND_RETRY_DELAY,
-			stagger_slot_size = DEFAULT_STAGGER_SLOT_SIZE;
-
+	max_send_retry_delay = DEFAULT_SEND_RETRY_DELAY,
+	stagger_slot_size = DEFAULT_STAGGER_SLOT_SIZE;
+static bool             fini = false;
 /* Finally, pre-define all the routines. */
 
 static _jrec_t	*_alloc_jrec(slurmd_job_t *job);
+static void     _destroy_jrec(void *object);
 static _jrec_t	*_get_jrec_by_jobstep(List jrecs,
-			uint32_t jobid, uint32_t stepid);
+				      uint32_t jobid, uint32_t stepid);
 static void	 _aggregate_job_data(_jrec_t *jrec, _jrec_t *inrec);
-static void	 _get_node_01_names(char *node0, char *node1, char **env);
+static void	 _get_node_01_names(_jrec_t *jrec, char **env);
 static void	 _get_offspring_data(_prec_t *ancestor, pid_t pid);
 static _prec_t	*_get_process_data(void);
 static int	 _get_process_data_line(FILE *in, _prec_t *prec);
@@ -228,8 +228,7 @@ static void	 _process_mynode_msg_launch(_jrec_t *jrec);
 static void	 _process_mynode_msg_taskdata(_jrec_t *jrec);
 static void	 _process_node0_data(_jrec_t *inrec);
 static void	 _process_node0_msg(_jrec_t *inrec);
-static void	 _remove_jrec_from_list(List jrecs, 
-			uint32_t jobid, uint32_t stepid);
+static void	 _remove_jrec_from_list(List jrecs, _jrec_t *jrec);
 static int	 _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec);
 static int	 _send_data_to_node_0(_jrec_t *jrec);
 static int	 _send_data_to_slurmctld(_jrec_t *jrec, int done); 
@@ -240,7 +239,7 @@ static void	*_watch_tasks(void *arg);
 
 static struct job_record *(*find_job_record_in_slurmctld)(uint32_t job_id);
 
-
+
 /*
  * The following routines are used from both slurmctld and slurmd
  *
@@ -250,7 +249,7 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 {
 	struct job_record	*job_ptr;
 	uint32_t		jobid,
-				stepid;
+		stepid;
 	int			rc = SLURM_SUCCESS;
 	jobacct_msg_t		*jmsg;
 	_stats_msg_type_t	msgtype;
@@ -261,9 +260,9 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 	msgtype = ntohl(stats->msg_type);
 	jobid   = ntohl(stats->jobid);
 	stepid  = ntohl(stats->stepid); 
-	debug2("jobacct(%d): in slurm_jobacct_process_message, "
-			"job %u.%u, msgtype=%d", 
-			getpid(), jobid, stepid, msgtype);
+	debug("jobacct(%d): in slurm_jobacct_process_message, "
+	       "job %u.%u, msgtype=%d", 
+	       getpid(), jobid, stepid, msgtype);
 
 	switch (msgtype) {
 
@@ -274,14 +273,14 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
  * We flush the file to ensure that the data are immediately available
  * to potential consumers.
  */
-	  case TO_CONTROLLER: 
-		debug2("jobacct(%d) slurmctld received record for "
-				"job %d, \"%30s...\"",
-				getpid(), jobid, stats->data);
+	case TO_CONTROLLER: 
+		debug("jobacct(%d) slurmctld received record for "
+		       "job %d, \"%30s...\"",
+		       getpid(), jobid, stats->data);
 		if ((job_ptr = (*find_job_record_in_slurmctld)(jobid))==NULL) {
 			error("jobacct(%d): job %lu record not found, "
-					"record starts %30s",
-					getpid(), jobid, jmsg->data);
+			      "record starts %30s",
+			      getpid(), jobid, jmsg->data);
 			return(SLURM_ERROR);
 		}
 		rc = _print_record(job_ptr, stats->data);
@@ -293,7 +292,7 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
  * all of the data for the job.
  */
 
-	  case TO_MYNODE:
+	case TO_MYNODE:
 		_process_mynode_msg( (_mynode_msg_t *) stats->data );
 		break;
 
@@ -302,20 +301,20 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
  * manager (mgr.c) takes any task data and sends it here for aggregation.
  */
 
-	  case TO_NODE0:
+	case TO_NODE0:
 		_process_node0_msg( (_jrec_t *)stats->data);
 		break;
 
-	  default:
+	default:
 		error("jobacct(%d): unknown message type: %d",
-				getpid(), msgtype);
+		      getpid(), msgtype);
 		rc = SLURM_ERROR;
 		break;
 	}
 
 	return rc;
 }
-
+
 /*
  * Send a message to slurmctld.
  */
@@ -323,13 +322,13 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 
 	slurm_msg_t		*msg=NULL,
-				*retmsg=NULL;
+		*retmsg=NULL;
 	jobacct_msg_t		*jmsg;
 	int			rc = SLURM_SUCCESS,
-				retry;
+		retry;
 
-	debug2("jobacct(%d): _send_msg_to_slurmctld, msgtype=%d",
-			getpid(), ntohl(stats->msg_type)); 
+	debug("jobacct(%d): _send_msg_to_slurmctld, msgtype=%d",
+	       getpid(), ntohl(stats->msg_type)); 
 	jmsg = xmalloc(sizeof(jobacct_msg_t));
 	jmsg->len = sizeof(_stats_msg_t);
 	jmsg->data = (char *)stats;
@@ -339,30 +338,23 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 	msg->data	= jmsg;
 	msg->data_size  = sizeof(jobacct_msg_t);
 
-	for (retry=0; retry<max_send_retries; retry++) {
-		if ((rc=slurm_send_recv_controller_msg(msg, retmsg)) >= 0)
-			break;
-		if (retry==0)
-			srand( (getpid()*times(NULL))%RAND_MAX );
-		sleep(1+(rand()/(RAND_MAX/max_send_retry_delay)));
-	}
-	if (rc<0)
+	if ((rc=slurm_send_recv_controller_msg(msg, retmsg)) < 0)
 		error("jobacct(%d): _send_msg_to_slurmctld(msg, retmsg)"
-				" says %d (%m) after %d tries",
-				getpid(), rc, retry);
+		      " says %d (%m) after %d tries",
+		      getpid(), rc, retry);
 	else {
-		debug3("jobacct(%d): slurm_send_recv_controller_msg says %d",
-				rc);
+		debug("jobacct(%d): slurm_send_recv_controller_msg says %d",
+		       rc);
 	}
 	xfree(jmsg);
 	xfree(msg);
 	xfree(retmsg);
-	debug2("jobacct(%d): leaving _send_msg_to_slurmctld, rc=%d",
-			getpid(), rc);
+	debug("jobacct(%d): leaving _send_msg_to_slurmctld, rc=%d",
+	       getpid(), rc);
 
 	return rc;
 }
-
+
 /*
  * JOBACCT/LINUX plugin code for SLURMCTLD
  */ 
@@ -381,7 +373,7 @@ int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 	struct stat	statbuf;
 
 
-	debug2("slurmctld_jobacct_init() called");
+	debug("slurmctld_jobacct_init() called");
 	info("jobacct LINUX plugin loaded (%s)", rev_stg);
 	slurm_mutex_lock( &logfile_lock );
 	if (LOGFILE)
@@ -389,7 +381,7 @@ int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 	log_file=job_acct_loc;
 	if (*log_file != '/')
 		fatal("JobAcctLoc must specify an absolute pathname");
-	if (stat(log_file, &statbuf)==0)	/* preserve current file mode */
+	if (stat(log_file, &statbuf)==0)       /* preserve current file mode */
 		prot = statbuf.st_mode;
 	LOGFILE = fopen(log_file, "a");
 	if (LOGFILE == NULL) {
@@ -404,28 +396,28 @@ int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 	_get_slurmctld_syms();
 	return rc;
 }
- 
+
 int slurmctld_jobacct_job_complete(struct job_record *job_ptr) 
 {
 	int		rc = SLURM_SUCCESS,
-			tmp;
+		tmp;
 	char		*buf;
 	struct tm	ts; /* timestamp decoder */
 
-	debug2("slurmctld_jobacct_job_complete() called");
+	debug("slurmctld_jobacct_job_complete() called");
 	if (job_ptr->end_time == 0) {
-		debug2("jobacct: job %u never started", job_ptr->job_id);
+		debug("jobacct: job %u never started", job_ptr->job_id);
 		return rc;
 	}
 	gmtime_r(&job_ptr->end_time, &ts);
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-		"JOB_TERMINATED 1 12 %u %04d%02d%02d%02d%02d%02d %s",
-		(int) (job_ptr->end_time - job_ptr->start_time),
-		1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-		ts.tm_hour, ts.tm_min, ts.tm_sec,
-		job_state_string_compact(
-			(job_ptr->job_state) & ~JOB_COMPLETING));
+		       "JOB_TERMINATED 1 12 %u %04d%02d%02d%02d%02d%02d %s",
+		       (int) (job_ptr->end_time - job_ptr->start_time),
+		       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
+		       ts.tm_hour, ts.tm_min, ts.tm_sec,
+		       job_state_string_compact(
+			       (job_ptr->job_state) & ~JOB_COMPLETING));
 	if (tmp >= MAX_MSG_SIZE) {
 		error("slurmctld_jobacct_job_complete buffer overflow");
 		rc = SLURM_ERROR;
@@ -435,18 +427,18 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 	xfree(buf);
 	return rc;
 }
-
+
 int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 {
 	int		i,
-			ncpus=0,
-			rc=SLURM_SUCCESS,
-			tmp;
+		ncpus=0,
+		rc=SLURM_SUCCESS,
+		tmp;
 	char		*buf,
-			*jname;
+		*jname;
 	long		priority;
 	
-	debug2("slurmctld_jobacct_job_start() called");
+	debug("slurmctld_jobacct_job_start() called");
 	for (i=0; i < job_ptr->num_cpu_groups; i++)
 		ncpus += (job_ptr->cpus_per_node[i])
 			* (job_ptr->cpu_count_reps[i]);
@@ -467,10 +459,10 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 	}
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-			"JOB_START 1 16 %d %d %s %u %ld %u %s",
-			job_ptr->user_id, job_ptr->group_id, jname,
-			job_ptr->batch_flag, priority, ncpus,
-			job_ptr->nodes);
+		       "JOB_START 1 16 %d %d %s %u %ld %u %s",
+		       job_ptr->user_id, job_ptr->group_id, jname,
+		       job_ptr->batch_flag, priority, ncpus,
+		       job_ptr->nodes);
 	if (tmp >= MAX_MSG_SIZE) {
 		error("slurmctld_jobacct_job_start buffer overflow");
 		rc = SLURM_ERROR;
@@ -481,7 +473,7 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 	xfree(jname);
 	return rc;
 }
- 
+
 /*
  * Some symbols that we need when plugged in to slurmctld are unresolvable
  * when plugged in to slurmd; this makes the plugrack routines very unhappy,
@@ -493,15 +485,11 @@ static void _get_slurmctld_syms(void)
 
 	if ((slurmctld_handle=dlopen("", RTLD_LAZY)) == NULL)
 		error("dlopen failed in _get_slurmctld_syms");
-	if ((find_job_record_in_slurmctld=
-				dlsym(slurmctld_handle, "find_job_record"))==NULL)
+	if ((find_job_record_in_slurmctld = dlsym(slurmctld_handle, 
+						  "find_job_record"))==NULL)
 		error("find_job_record not found in _get_slurmctld_syms");
 	dlclose(slurmctld_handle);
 }
-
-
-
-
 
 
 /*
@@ -515,17 +503,17 @@ static int _print_record(struct job_record *job_ptr, char *data)
 
 	ts = xmalloc(sizeof(struct tm));
 	gmtime_r(&job_ptr->start_time, ts);
-	debug2("jobacct:_print_record, job=%u, rec starts \"%20s",
-			job_ptr->job_id, data);
+	debug("jobacct:_print_record, job=%u, rec starts \"%20s",
+	       job_ptr->job_id, data);
 	slurm_mutex_lock( &logfile_lock );
 	if (fprintf(LOGFILE,
-			"%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
-			job_ptr->job_id, job_ptr->partition,
-			1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
-			ts->tm_hour, ts->tm_min, ts->tm_sec, 
-			(int) job_ptr->start_time, 
-			job_ptr->user_id, job_ptr->group_id, data)
-		< 0)
+		    "%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
+		    job_ptr->job_id, job_ptr->partition,
+		    1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
+		    ts->tm_hour, ts->tm_min, ts->tm_sec, 
+		    (int) job_ptr->start_time, 
+		    job_ptr->user_id, job_ptr->group_id, data)
+	    < 0)
 		rc=SLURM_ERROR;
 	fdatasync(LOGFILE_FD);
 	slurm_mutex_unlock( &logfile_lock );
@@ -533,8 +521,6 @@ static int _print_record(struct job_record *job_ptr, char *data)
 	return rc;
 }
 
-
-
 /*
  * JOBACCT/LINUX plugin code for SLURMD
  */
@@ -543,41 +529,41 @@ static int _print_record(struct job_record *job_ptr, char *data)
 
 #define RECORD_VERSION 1
 #define NUM_FIELDS 38
-const char	*_jobstep_format =
-		"JOB_STEP "
-		"%u "	/* RECORD_VERSION */
-		"%u "	/* NUM_FIELDS */
-		"%u "	/* stepid */
-		"%s "	/* completion time */
-		"%s "	/* completion status */
-		"%d "	/* completion code */
-		"%u "	/* nprocs */
-		"%u "	/* number of cpus */
-		"%u "	/* elapsed seconds */
-		"%u "	/* total cputime seconds */
-		"%u "	/* total cputime microseconds */
-		"%u "	/* user seconds */
-		"%u "	/* user microseconds */
-		"%u "	/* system seconds */
-		"%u "	/* system microseconds */
-		"%u "	/* max rss */
-		"%u "	/* max ixrss */
-		"%u "	/* max idrss */
-		"%u "	/* max isrss */
-		"%u "	/* max minflt */
-		"%u "	/* max majflt */
-		"%u "	/* max nswap */
-		"%u "	/* total inblock */
-		"%u "	/* total outblock */
-		"%u "	/* total msgsnd */
-		"%u "	/* total msgrcv */
-		"%u "	/* total nsignals */
-		"%u "	/* total nvcsw */
-		"%u "	/* total nivcsw */
-		"%u "	/* max vsize */
-		"%u"	/* max psize */
-		;
-
+const char	*_jobstep_format = 
+"JOB_STEP "
+"%u "	/* RECORD_VERSION */
+"%u "	/* NUM_FIELDS */
+"%u "	/* stepid */
+"%s "	/* completion time */
+"%s "	/* completion status */
+"%d "	/* completion code */
+"%u "	/* nprocs */
+"%u "	/* number of cpus */
+"%u "	/* elapsed seconds */
+"%u "	/* total cputime seconds */
+"%u "	/* total cputime microseconds */
+"%u "	/* user seconds */
+"%u "	/* user microseconds */
+"%u "	/* system seconds */
+"%u "	/* system microseconds */
+"%u "	/* max rss */
+"%u "	/* max ixrss */
+"%u "	/* max idrss */
+"%u "	/* max isrss */
+"%u "	/* max minflt */
+"%u "	/* max majflt */
+"%u "	/* max nswap */
+"%u "	/* total inblock */
+"%u "	/* total outblock */
+"%u "	/* total msgsnd */
+"%u "	/* total msgrcv */
+"%u "	/* total nsignals */
+"%u "	/* total nvcsw */
+"%u "	/* total nivcsw */
+"%u "	/* max vsize */
+"%u"	/* max psize */
+;
+
 /*
  * The following routine is called by the slurmd mainline
  */
@@ -622,7 +608,7 @@ int slurmd_jobacct_init(char *job_acct_parameters)
 			*next_parameter++ = 0;
 		if ((val_ptr=strstr(this_parameter, "="))==NULL) {
 			error("jobacct: parameter \"%s\" missing \"=\", "
-				"ignoring it", this_parameter);
+			      "ignoring it", this_parameter);
 			continue;
 		}
 		val_ptr++;
@@ -634,44 +620,31 @@ int slurmd_jobacct_init(char *job_acct_parameters)
 			}
 		}
 		error("jobacct: unknown parameter, \"%s\", ignoring it",
-				this_parameter);
-	next_parm: ;
+		      this_parameter);
+	next_parm: 
+		;
 	}
 	xfree(parameter_buffer);
+	
 
-	if (max_send_retries < 1) {
-		error("jobacct: \"MaxSendRetries=%ld\" is invalid; using %ld",
-				max_send_retries, DEFAULT_SEND_RETRIES);
-		max_send_retries = DEFAULT_SEND_RETRIES;
-	}
-	if (max_send_retry_delay < 0) {
-		error("jobacct: \"MaxSendRetryDelay=%ld\" is invalid;"
-				" using %ld",
-				max_send_retry_delay, DEFAULT_SEND_RETRY_DELAY);
-		max_send_retry_delay = DEFAULT_SEND_RETRY_DELAY;
-	}
-	if (stagger_slot_size < 0) {
-		error("jobacct: \"StaggerSlotSize=%ld\" is invalid;"
-				" using %ld",
-				stagger_slot_size, DEFAULT_STAGGER_SLOT_SIZE);
-		stagger_slot_size = DEFAULT_STAGGER_SLOT_SIZE;
-	}
-
-	debug2("jobacct: frequency=%ld, MaxSendRetries=%ld,"
-			" MaxSendRetryDelay=%ld, StaggerSlotSize=%ld",
-		prec_frequency, max_send_retries, max_send_retry_delay,
-		stagger_slot_size);
-
+	debug("jobacct: frequency=%ld", prec_frequency);
+	
 	/* finish the plugin's initialization */
 
 	slurmd_port=slurm_get_slurmd_port();
 	jobsteps_active = list_create(NULL); 
 	jobsteps_retiring = list_create(NULL); 
-
+	fini = false;
 	return rc;
 }
 
-
+int slurmd_jobacct_fini()
+{
+	fini = true;
+	return SLURM_SUCCESS;
+}
+
+
 /*
  * The following routines are called by the slurmd/mgr process
  */
@@ -685,42 +658,50 @@ int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 	jrec = _alloc_jrec(job);
 	jrec->nodeid = job->nodeid;
 	info("jobacct(%d): in slurmd_jobacct_jobstep_launched with %d cpus,"
-			" node0,1=%s,%s, this is node %d of %d",
-			getpid(), job->cpus, jrec->node0, jrec->node1,
-			job->nodeid, job->nnodes);
+	     " node0,1=%s,%s, this is node %d of %d",
+	     getpid(), job->cpus, jrec->node0, jrec->node1,
+	     job->nodeid, job->nnodes);
 	rc = _send_data_to_mynode(LAUNCH, jrec);
-	xfree(jrec);
+	info("hey here");
+	_destroy_jrec(jrec);
+	info("hey here2");
 	return rc;
 }
 
 int slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
 {
-	debug3("jobacct(%d): slurmd_jobacct_jobstep_terminated(%u.%u)",
-			getpid(), job->jobid, job->stepid);
+	debug("jobacct(%d): slurmd_jobacct_jobstep_terminated(%u.%u)",
+	       getpid(), job->jobid, job->stepid);
 	return SLURM_SUCCESS;
 }
-
+
 /*
- * The following routines are called from the slurmd session manager process
+ * The following routines are called from the slurmd 
  */
 
 int slurmd_jobacct_smgr(void)
 {
-	if (prec_frequency == 0)	/* don't want dynamic monitoring? */
+	pthread_attr_t attr;
+	pthread_t _watch_tasks_thread_id;
+	
+	if (prec_frequency == 0) {	/* don't want dynamic monitoring? */
+		debug2("jobacct LINUX dynamic logging disabled");
 		return 0;
-	if ( _get_process_data() ) {	/* If we can gather the data... */ 
-		if  (pthread_create(&_watch_tasks_thread_id, NULL,
-					&_watch_tasks, NULL)) {
-			debug("jobacct failed to create _watch_tasks "
-					"thread: %m");
-			prec_frequency = 0;
-		}
-		else 
-			debug3("jobacct LINUX dynamic logging enabled");
-	} else {
-		prec_frequency = 0;
-		debug2("jobacct LINUX dynamic logging disabled"); 
 	}
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	
+	if  (pthread_create(&_watch_tasks_thread_id, &attr,
+			    &_watch_tasks, NULL)) {
+		debug("jobacct failed to create _watch_tasks "
+		      "thread: %m");
+		prec_frequency = 0;
+	}
+	else 
+		debug3("jobacct LINUX dynamic logging enabled");
+	pthread_attr_destroy(&attr);
+	
 	return 0;
 }
 
@@ -735,30 +716,20 @@ int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct ru
 	else
 		active--;
 
-	debug2("slurmd_jobacct_task_exit(%d) for job %u.%u,"
-			" node %d, status=%d, nprocs %d, active %d",
-			getpid(),
-			job->jobid, job->stepid, job->nodeid, status/256,
-			job->nprocs, active);
+	debug("slurmd_jobacct_task_exit(%d) for job %u.%u,"
+	       " node %d, status=%d, nprocs %d, active %d",
+	       getpid(),
+	       job->jobid, job->stepid, job->nodeid, status/256,
+	       job->nprocs, active);
 	jrec = _alloc_jrec(job);
 	jrec->nodeid			= job->nodeid;
 	memcpy(&jrec->rusage, rusage, sizeof(struct rusage));
 	jrec->status		 	= status/256;
-	if (prec_frequency)	/* if dynamic monitoring */
-		if (active==0) {
-			debug3("slurmd_jobacct_task_exit(%d) cancelling "
-					"_watch_tasks",
-				getpid(), job->jobid, job->stepid);
-			pthread_cancel(_watch_tasks_thread_id); 
-			pthread_join(_watch_tasks_thread_id,NULL);
-		}
-	jrec->max_psize			= max_psize;
-	jrec->max_vsize			= max_vsize;
 	rc = _send_data_to_mynode(TASKDATA, jrec);
-	xfree(jrec);
+	_destroy_jrec(jrec);
 	return rc;
 }
-
+
 /*
  * Local utility routines
  */
@@ -772,8 +743,8 @@ int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct ru
 static void _aggregate_job_data(_jrec_t *jrec, _jrec_t *inrec)
 {
 	debug("jobacct(%d): entering _aggregate_job_data, inbound utime=%d.%06d",
-			getpid(), inrec->rusage.ru_utime.tv_sec,
-			inrec->rusage.ru_utime.tv_usec);
+	      getpid(), inrec->rusage.ru_utime.tv_sec,
+	      inrec->rusage.ru_utime.tv_usec);
 	jrec->rusage.ru_utime.tv_sec	+= inrec->rusage.ru_utime.tv_sec;
 	jrec->rusage.ru_utime.tv_usec	+= inrec->rusage.ru_utime.tv_usec;
 	while (jrec->rusage.ru_utime.tv_usec >= 1E6) {
@@ -807,11 +778,11 @@ static void _aggregate_job_data(_jrec_t *jrec, _jrec_t *inrec)
 	if ( jrec->max_vsize < inrec->max_vsize)
 		jrec->max_vsize		= inrec->max_vsize;
 	debug("jobacct(%d): leaving _aggregate_job_data, total utime=%d.%06d",
-			getpid(), jrec->rusage.ru_utime.tv_sec,
-			jrec->rusage.ru_utime.tv_usec);
+	      getpid(), jrec->rusage.ru_utime.tv_sec,
+	      jrec->rusage.ru_utime.tv_usec);
 	return;
 }
-
+
 /*
  * Allocate and initialize a jrec.
  */
@@ -850,13 +821,23 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 	jrec->status			= 0;
 	jrec->max_vsize			= 0;
 	jrec->max_psize			= 0; 
+	jrec->pid			= getpid(); 
 	jrec->not_reported		= job->nnodes;
 	if (job->batch)	/* Account for the batch control pseudo-step */
 		jrec->not_reported++;
-	_get_node_01_names(jrec->node0, jrec->node1, job->env);
+	info("got not reported %d",jrec->not_reported);
+	_get_node_01_names(jrec, job->env);
 	return jrec;
 }
-
+
+static void _destroy_jrec(void *object)
+{
+	_jrec_t *jrec = (_jrec_t *)object;
+	if(jrec) {
+		xfree(jrec);
+	}
+}
+
 /*
  * Select a jrec from the list by jobid and stepid.
  *
@@ -864,7 +845,7 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
  */
 
 static _jrec_t *_get_jrec_by_jobstep(List jrecs, uint32_t jobid,
-		uint32_t stepid) {
+				     uint32_t stepid) {
 	_jrec_t *jrec = NULL;
 	ListIterator i;
 
@@ -881,17 +862,17 @@ static _jrec_t *_get_jrec_by_jobstep(List jrecs, uint32_t jobid,
 	list_iterator_destroy(i);
 	return jrec;
 }
-
+
 /*
  * Get the node name for the first node in the current allocation, then
  * get the name of the second node for redundancy.
  */
 
-static void _get_node_01_names( char *node0, char *node1, char **env ) {
+static void _get_node_01_names(_jrec_t *jrec, char **env) {
 	hostlist_t	hl;
 	char		*hname;
 	int		i=0,
-			slen;
+		slen;
 	const char	*env_var = "SLURM_NODELIST=";
 	slen = strlen(env_var);
 	while (env && env[i+1] && *(hname=env[i++])) {
@@ -899,22 +880,25 @@ static void _get_node_01_names( char *node0, char *node1, char **env ) {
 			hname += slen;
 			hl = hostlist_create(hname);
 			hname = hostlist_shift(hl);
-			strncpy(node0, hname, HOST_NAME_MAX);
+			strncpy(jrec->node0, hname, HOST_NAME_MAX);
+			free(hname);
 			hname = hostlist_shift(hl);
-			if (hname)
-				strncpy(node1, hname, HOST_NAME_MAX);
+			if(hname) {
+				strncpy(jrec->node1, hname, HOST_NAME_MAX);
+				free(hname);
+			}
 			hostlist_destroy(hl);
 			goto done;
 		}
 		/* Either user cleared SLURM_NODELIST or 
 		 * never set (as is case with POE on AIX) */
-		strncpy(node0, NOT_FOUND, HOST_NAME_MAX);
+		strncpy(jrec->node0, NOT_FOUND, HOST_NAME_MAX);
 	}
-  done:
-	debug2("jobacct(%d): node0 is \"%s\"\n", getpid(), node0);
+done:
+	debug2("jobacct(%d): node0 is \"%s\"\n", jrec->pid, jrec->node0);
 	return;
 }
-
+
 /* 
  * _get_offspring_data() -- collect memory usage data for the offspring
  *
@@ -948,7 +932,7 @@ _get_offspring_data(_prec_t *ancestor, pid_t pid) {
 	}
 	return;
 }
-
+
 /*
  * _get_process_data() - Build a table of all current processes
  *
@@ -979,7 +963,12 @@ static _prec_t *_get_process_data(void) {
 	
 	int		i, my_pid;
 	long		psize, vsize;
-
+	_jrec_t         *jrec = NULL;
+	ListIterator    itr;
+	
+	if(!jobsteps_active || !list_count(jobsteps_active))
+		return NULL;
+	
 	if (SlashProcOpen) {
 		rewinddir(SlashProc);
 	} else {
@@ -995,10 +984,11 @@ static _prec_t *_get_process_data(void) {
 	while ((SlashProcEntry=readdir(SlashProc))) {
 		if (nPrecs >= precTableSize) 	/* then add another 100 */
 			precTable = (_prec_t *)realloc(precTable,
-					(precTableSize+=100)*sizeof(_prec_t));
+						       (precTableSize+=100)
+						       *sizeof(_prec_t));
 		/* Save a few cyles by simulating
-			strcat(statFileName, SlashProcEntry->d_name);
-			strcat(statFileName, "/stat");
+		   strcat(statFileName, SlashProcEntry->d_name);
+		   strcat(statFileName, "/stat");
 		   while checking for a numeric filename (which really
 		   should be a pid).
 		*/
@@ -1019,35 +1009,44 @@ static _prec_t *_get_process_data(void) {
 		if (_get_process_data_line(statFile, &precTable[nPrecs]))
 			nPrecs++;	/* If valid data, preserve it */
 		fclose(statFile);
-NextSlashProcEntry: ;
+	NextSlashProcEntry: 
+		;
 	}
 	if (nPrecs == 0)
 		return NULL;	/* We have no business being here! */
 
-	my_pid = getpid();	/* Tally the data for my children's children */
-	psize = 0;
-	vsize = 0;
-	for (i=0; i<nPrecs; i++) {
-		if (precTable[i].ppid == my_pid) {
+	itr = list_iterator_create(jobsteps_active);
+	while(jrec = (_jrec_t *)list_next(itr)) {
+		psize = 0;
+		vsize = 0;
+		for (i=0; i<nPrecs; i++) {
+			if (precTable[i].ppid == jrec->pid) {
 				/* find all my descendents */
-			_get_offspring_data(&precTable[i],
-				precTable[i].pid);
+				_get_offspring_data(&precTable[i],
+						    precTable[i].pid);
 				/* tally their memory usage */
-			psize += precTable[i].psize;
-			vsize += precTable[i].vsize;
-			if (vsize==0)
-				vsize=1; /* Flag to let us know we found it,
-					    though it is already finished */
+				psize += precTable[i].psize;
+				vsize += precTable[i].vsize;
+				/* Flag to let us know we found it,
+				   though it is already finished */
+				if (vsize==0)
+					vsize=1; 
+				
+			}
 		}
+		if (jrec->max_psize < psize)
+			jrec->max_psize = psize;
+		if (jrec->max_vsize < vsize)
+			jrec->max_vsize = vsize;
+		debug("got info for %d size now %d %d", 
+		      jrec->pid, jrec->max_psize, jrec->max_vsize);
+				
 	}
-	if (max_psize < psize)
-		max_psize = psize;
-	if (max_vsize < vsize)
-		max_vsize = vsize;
+	list_iterator_destroy(itr);
 
 	return precTable;
 }
-
+
 /* _get_process_data_line() - get line of data from /proc/<pid>/stat
  *
  * IN:	in - input file channel
@@ -1075,16 +1074,16 @@ static int _get_process_data_line(FILE *in, _prec_t *prec) {
 
 	s = xmalloc(max_path_len + 1);
 	nvals=fscanf(in,
-		"%d %s %c %d %d "
-		"%d %d %d %lu %lu "
-		"%lu %lu %lu %lu %lu "
-		"%ld %ld %ld %ld %ld "
-		"%ld %lu %lu %ld %lu", 
-		&prec->pid, s, &c, &prec->ppid, &d,
-		&d, &d, &d, &lu, &lu,
-		&lu, &lu, &lu, &lu, &lu,
-		&ld, &ld, &ld, &ld, &ld,
-		&ld, &lu, &prec->vsize, &prec->psize, &lu );
+		     "%d %s %c %d %d "
+		     "%d %d %d %lu %lu "
+		     "%lu %lu %lu %lu %lu "
+		     "%ld %ld %ld %ld %ld "
+		     "%ld %lu %lu %ld %lu", 
+		     &prec->pid, s, &c, &prec->ppid, &d,
+		     &d, &d, &d, &lu, &lu,
+		     &lu, &lu, &lu, &lu, &lu,
+		     &ld, &ld, &ld, &ld, &ld,
+		     &ld, &lu, &prec->vsize, &prec->psize, &lu );
 	/* The fields in the record are
 	 *	pid, command, state, ppid, pgrp,
 	 *	session, tty_nr, tpgid, flags, minflt,
@@ -1100,7 +1099,7 @@ static int _get_process_data_line(FILE *in, _prec_t *prec) {
 	prec->vsize /= 1024;		/* and convert vsize to kibibytes */
 	return 1;
 }
-
+
 /*
  * Simply duplicate a jobrecord's fields in network format
  *
@@ -1135,31 +1134,35 @@ static int _pack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
 	outrec->status = htonl(inrec->status);
 	outrec->max_vsize = htonl(inrec->max_vsize);
 	outrec->max_psize = htonl(inrec->max_psize); 
+	outrec->pid = htonl(inrec->pid); 
 	outrec->not_reported = htonl(inrec->not_reported);
 	strcpy(outrec->node0, inrec->node0);
 	strcpy(outrec->node1, inrec->node1);
 	return SLURM_SUCCESS;
 }
-
+
 static void _process_mynode_msg(_mynode_msg_t *msg) {
-	debug2("jobacct(%d): in process_mynode_msg(msg=%d) for job %u.%u",
-			getpid(), msg->msgtype, msg->jrec.jobid,
-			msg->jrec.stepid);
+	_jrec_t *jrec = &msg->jrec;
+	//_unpack_jobrec(jrec, &msg->jrec);
+	debug("jobacct(%d): in process_mynode_msg(msg=%d) for job %u.%u",
+	       jrec->pid, msg->msgtype, jrec->jobid,
+	       jrec->stepid);
+	
 	switch (msg->msgtype) {
-	  case LAUNCH:
-		  _process_mynode_msg_launch( (_jrec_t *) &msg->jrec);
-		  break;
-	  case TASKDATA:
-		  _process_mynode_msg_taskdata( (_jrec_t *) &msg->jrec);
-		  break;
-	  default:
-		  error("jobacct(%d): invalid mynode msgtype: %d", 
-				  getpid(), msg->msgtype);
-		  break;
+	case LAUNCH:
+		_process_mynode_msg_launch(jrec);
+		break;
+	case TASKDATA:
+		_process_mynode_msg_taskdata(jrec);
+		break;
+	default:
+		error("jobacct(%d): invalid mynode msgtype: %d", 
+		      getpid(), msg->msgtype);
+		break;
 	}
 	return;
 }
-
+
 /*
  * Job step launched, so set up a jrec for it.
  */
@@ -1167,14 +1170,14 @@ static void _process_mynode_msg(_mynode_msg_t *msg) {
 static void _process_mynode_msg_launch(_jrec_t *inrec) { 
 	_jrec_t	*jrec;
 
-	debug2("jobacct(%d): in _process_mynode_msg_launch", getpid());
+	debug("jobacct(%d): in _process_mynode_msg_launch", inrec->pid);
 	slurm_mutex_lock(&jobsteps_active_lock);
 	/* Have we seen this one before? */
 	if (_get_jrec_by_jobstep(jobsteps_active, inrec->jobid,
-				inrec->stepid)) {
+				 inrec->stepid)) {
 		slurm_mutex_unlock(&jobsteps_active_lock);
 		error("jobacct(%d): dup launch record for %u.%u",
-				getpid(), inrec->jobid, inrec->stepid);
+		      getpid(), inrec->jobid, inrec->stepid);
 		return;
 	}
 	jrec = xmalloc(sizeof(_jrec_t));
@@ -1184,7 +1187,7 @@ static void _process_mynode_msg_launch(_jrec_t *inrec) {
 		_send_data_to_slurmctld(jrec, 0);
 	slurm_mutex_unlock(&jobsteps_active_lock);
 }
-
+
 /*
  * Capture and aggregate task data from slurmd/smgr.
  */
@@ -1192,25 +1195,27 @@ static void _process_mynode_msg_launch(_jrec_t *inrec) {
 static void _process_mynode_msg_taskdata(_jrec_t *inrec){
 	_jrec_t		*jrec;
 
-	debug2("jobacct(%d): in _process_mynode_msg_taskdata for job %u.%u"
-			" ntasks=%d",
-			getpid(), inrec->jobid, inrec->stepid, inrec->ntasks); 
+	debug("jobacct(%d): in _process_mynode_msg_taskdata for job %u.%u"
+	       " ntasks=%d",
+	       inrec->pid, inrec->jobid, inrec->stepid, inrec->ntasks); 
 	slurm_mutex_lock(&jobsteps_active_lock);
 	jrec = _get_jrec_by_jobstep(jobsteps_active, inrec->jobid,
-			inrec->stepid);
+				    inrec->stepid);
 	if ( jrec == NULL ) {
 		slurm_mutex_unlock(&jobsteps_active_lock);
 		error("jobacct(%d): task data but no record for %u.%u,"
-				" discarding data",
-				getpid(), inrec->jobid, inrec->stepid);
+		      " discarding data",
+		      inrec->pid, inrec->jobid, inrec->stepid);
 		return;
 	}
 	_aggregate_job_data(jrec, inrec);
-	if (--jrec->ntasks == 0)	/* All tasks have reported */
+	if (--jrec->ntasks == 0) {	/* All tasks have reported */
 		_send_data_to_node_0(jrec);
+		_remove_jrec_from_list(jobsteps_active, jrec);
+	}
 	slurm_mutex_unlock(&jobsteps_active_lock);
 }
-
+
 /* Aggregate the final data from each node
  *
  * Input: inrec - jrec in host order
@@ -1220,7 +1225,7 @@ static void _process_node0_data(_jrec_t *inrec) {
 
 	slurm_mutex_lock(&jobsteps_retiring_lock);
 	jrec = _get_jrec_by_jobstep(jobsteps_retiring, inrec->jobid,
-			inrec->stepid);
+				    inrec->stepid);
 	if (jrec == NULL) {
 		jrec = xmalloc(sizeof(_jrec_t));
 		memcpy(jrec, inrec, sizeof(_jrec_t));
@@ -1232,23 +1237,21 @@ static void _process_node0_data(_jrec_t *inrec) {
 	}
 	if (--jrec->not_reported < 0)
 		error("jobacct(%d): invalid, not_reported=%d",
-				getpid(), jrec->not_reported);
-	debug2("jobacct(%d): not_reported=%d after node0 message, "
-			"cum. utime=%d.%06d",
-			getpid(), jrec->not_reported,
-			jrec->rusage.ru_utime.tv_sec,
-			jrec->rusage.ru_utime.tv_usec );
+		      getpid(), jrec->not_reported);
+	debug("jobacct(%d): not_reported=%d after node0 message, "
+	       "cum. utime=%d.%06d",
+	       getpid(), jrec->not_reported,
+	       jrec->rusage.ru_utime.tv_sec,
+	       jrec->rusage.ru_utime.tv_usec );
 	if (jrec->not_reported <= 0) {
 		_send_data_to_slurmctld(jrec, 1);
-		_remove_jrec_from_list(jobsteps_retiring, jrec->jobid,
-				jrec->stepid);
-		slurm_mutex_unlock(&jobsteps_retiring_lock);
-		xfree(jrec); 
-	} else {
-		slurm_mutex_unlock(&jobsteps_retiring_lock);
-	}
+		_remove_jrec_from_list(jobsteps_retiring, jrec);
+		_destroy_jrec(jrec);
+	} 
+	slurm_mutex_unlock(&jobsteps_retiring_lock);
+	
 }
-
+
 /*
  * Process the data sent to node0 for aggregation.
  *
@@ -1260,37 +1263,40 @@ static void _process_node0_msg(_jrec_t *nrec) {
 
 	hrec = xmalloc(sizeof(_jrec_t));
 	_unpack_jobrec(hrec, nrec);
-	debug2("jobacct(%d): Received %u.%u node0 message, "
-			"nodeid=%d, utime=%d.%06d",
-			getpid(), hrec->jobid, hrec->stepid,
-			hrec->nodeid,
-			hrec->rusage.ru_utime.tv_sec,
-			hrec->rusage.ru_utime.tv_usec);
+	debug("jobacct(%d): Received %u.%u node0 message, "
+	       "nodeid=%d, utime=%d.%06d",
+	       getpid(), hrec->jobid, hrec->stepid,
+	       hrec->nodeid,
+	       hrec->rusage.ru_utime.tv_sec,
+	       hrec->rusage.ru_utime.tv_usec);
 	_process_node0_data(hrec);
-	xfree(hrec);
+	_destroy_jrec(hrec);
 }
-
+
 /*
  * Remove a jobstep record from the list.
  */
-static void _remove_jrec_from_list(List jrecs, uint32_t jobid, uint32_t stepid)
+static void _remove_jrec_from_list(List jrecs, _jrec_t * injrec)
 {
 	_jrec_t		*jrec;
 
-	ListIterator i = list_iterator_create(jrecs);
-	while ((jrec = list_next(i))) {
-		if ( (jrec->jobid == jobid )
-				&& (jrec->stepid == stepid)) {
-			debug2("jobacct(%d): in _remove_jrec_from_list, "
-				"found %u.%u record",
-				getpid(), jobid, stepid); 
+	if(!injrec)
+		return;
+
+	ListIterator itr = list_iterator_create(jrecs);
+	while ((jrec = list_next(itr))) {
+		if (jrec == injrec) {
+			debug("jobacct(%d): in _remove_jrec_from_list, "
+			      "found %u.%u record",
+			      jrec->pid, jrec->jobid, jrec->stepid); 
+			list_remove(itr);
 			break;
 		}
 	}
-	list_remove(i);
+	list_iterator_destroy(itr);
 	return;
 }
-
+
 /*
  * Send data from the slurmd/mgr or slurmd/smgr process to the
  * parent slurmd process. Since we're on the same node, we will
@@ -1305,11 +1311,11 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 	_mynode_msg_t	*node_msg;
 	_stats_msg_t	stats;
 	int		rc=SLURM_SUCCESS,
-		        ret_rc,
-			retry;
+		ret_rc,
+		retry;
 	
-	debug2("jobacct(%d): in _send_data_to_mynode(msgtype %d, job %u)",
-			getpid(), msgtype, jrec->jobid);
+	debug("jobacct(%d): in _send_data_to_mynode(msgtype %d, job %u)",
+	       getpid(), msgtype, jrec->jobid);
 	stats.msg_type = htonl(TO_MYNODE);
 	stats.jobid    = htonl(jrec->jobid);
 	stats.stepid   = htonl(jrec->stepid);
@@ -1331,31 +1337,21 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 	msg->data      = &jmsg;
 	msg->data_size = sizeof(jobacct_msg_t);
 	
-	debug2("jobacct(%d): attempting send_recv_node_msg(msg, %d, localhost)"
-			" for job %u.%u",
-			getpid(), slurmd_port, jrec->jobid, jrec->stepid);
-	for (retry=0; retry<max_send_retries; retry++) {
-		if (jrec->nnodes) /* Beware batch jobs! */
-			if (jrec->nprocs/jrec->nnodes > 0)
-				_stagger_time(-1, jrec->nprocs/jrec->nnodes);
-			       /* avoid simultaneous msgs from all processes */
-		if ((rc=slurm_send_recv_rc_msg_only_one(msg, &ret_rc, 0)) >=0)
-				break;
-		if (retry==0)
-			srand( (getpid()*times(NULL))%RAND_MAX );
-		sleep(1+(rand()/(RAND_MAX/max_send_retry_delay)));
-	}
-	if (rc<0)
+	debug("jobacct(%d): attempting send_recv_node_msg(msg, %d, localhost)"
+	       " for job %u.%u",
+	       jrec->pid, slurmd_port, jrec->jobid, jrec->stepid);
+	/* avoid simultaneous msgs from all processes */
+	if ((rc = slurm_send_recv_rc_msg_only_one(msg, &ret_rc, 0)) < 0)
 		error("jobacct(%d): _send_data_to_mynode(msg, %d, localhost)"
-				" says %d (%m) after %d tries",
-				getpid(), slurmd_port, rc, retry);
+		      " says %d (%m) after %d tries",
+		      jrec->pid, slurmd_port, rc, retry);
 	else 
-		debug2("jobacct(%d): _send_data_to_mynode(msg, %d, localhost) "
-				"succeeded", getpid(), slurmd_port);
+		debug("jobacct(%d): _send_data_to_mynode(msg, %d, localhost) "
+		       "succeeded", jrec->pid, slurmd_port);
 	xfree(msg);
 	return rc;
 }
-
+
 /*
  * Send data to the first node in the allocation for aggregation.
  *
@@ -1367,14 +1363,14 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 	jobacct_msg_t	jmsg;
 	_stats_msg_t	stats;
 	int		ret_rc,
-		        rc=SLURM_SUCCESS,
-			retry;
+		rc=SLURM_SUCCESS,
+		retry;
 
-	debug2("jobacct(%d): in _send_data_to_node_0(job %u), nodes0,1=%s,%s"
-			", utime=%d.%06d",
-			getpid(), jrec->jobid, jrec->node0, jrec->node1,
-			jrec->rusage.ru_utime.tv_sec,
-			jrec->rusage.ru_utime.tv_usec);
+	debug("jobacct(%d): in _send_data_to_node_0(job %u), nodes0,1=%s,%s"
+	       ", utime=%d.%06d",
+	       getpid(), jrec->jobid, jrec->node0, jrec->node1,
+	       jrec->rusage.ru_utime.tv_sec,
+	       jrec->rusage.ru_utime.tv_usec);
 
 	if (jrec->nodeid==0) { /* don't need to send it to ourselves */
 		_process_node0_data(jrec);
@@ -1383,7 +1379,7 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 
 	if (strcmp(jrec->node0, NOT_FOUND)==0) {
 		error("jobacct(%d): job %d has no node0",
-				getpid(), jrec->jobid);
+		      getpid(), jrec->jobid);
 		return SLURM_SUCCESS;	/* can't do anything here */
 	}
 
@@ -1403,31 +1399,22 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 	msg->msg_type  = MESSAGE_JOBACCT_DATA;
 	msg->data      = &jmsg;
 	msg->data_size = sizeof(jobacct_msg_t);
-	debug2("jobacct(%d): attempting send_recv_node_msg(msg, %d, %s)",
-			getpid(), slurmd_port, jrec->node0);
-	for (retry=0; retry<max_send_retries; retry++) {
-		if (jrec->nnodes > 0)
-			_stagger_time(jrec->nodeid, jrec->nnodes);
-			/* avoid simultaneous msgs from all processes */
-		if ((rc = slurm_send_recv_rc_msg_only_one(msg, &ret_rc, 0))>=0)
-			break;
-		if (retry==0)
-			srand( (getpid()*times(NULL))%RAND_MAX );
-		sleep(1+(rand()/(RAND_MAX/max_send_retry_delay)));
-	}
-	if (rc<0)
+	debug("jobacct(%d): attempting send_recv_node_msg(msg, %d, %s)",
+	       getpid(), slurmd_port, jrec->node0);
+	if((rc = slurm_send_recv_rc_msg_only_one(msg, &ret_rc, 0)) < 0)
 		error("jobacct(%d): _send_data_to_node_0(msg, %d, %s)"
-				" says %d (%m) after %d tries",
-				getpid(), slurmd_port, jrec->node0, rc, retry);
+		      " says %d (%m) after %d tries",
+		      getpid(), slurmd_port, jrec->node0, rc, retry);
 	else {
-		debug2("jobacct(%d): _send_data_to_node_0(msg, %d, %s)"
-				" succeeded",
-			getpid(), slurmd_port, jrec->node0);
+		debug("jobacct(%d): _send_data_to_node_0(msg, %d, %s)"
+		       " succeeded",
+		       getpid(), slurmd_port, jrec->node0);
 	}
+	
 	xfree(msg);
 	return rc;
 }
-
+
 /*
  * Send data to slurmctld to be logged.
  *
@@ -1441,16 +1428,16 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 #define DATETIME_SIZE 16
 	char		*comp_status,
-			*tbuf;
+		*tbuf;
 	int		nchars,
-			rc=SLURM_SUCCESS;
+		rc=SLURM_SUCCESS;
 	long		elapsed;
 	_stats_msg_t	*stats;
 	struct tm 	ts; /* timestamp decoder */
 	time_t		now;
 
-	debug2("jobacct(%d): in _send_data_to_slurmctld(msg,%d)",
-			getpid(), done);
+	debug("jobacct(%d): in _send_data_to_slurmctld(msg,%d)",
+	       getpid(), done);
 	if (done)
 		if (jrec->status)
 			comp_status = "F";
@@ -1462,8 +1449,8 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 	now = time(NULL);
 	gmtime_r(&now, &ts);
 	nchars = snprintf(tbuf, DATETIME_SIZE, "%04d%02d%02d%02d%02d%02d",
-		1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-		ts.tm_hour, ts.tm_min, ts.tm_sec);
+			  1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
+			  ts.tm_hour, ts.tm_min, ts.tm_sec);
 	xassert(nchars < DATETIME_SIZE);	/* Should never happen... */
 
 	stats = xmalloc(sizeof(_stats_msg_t));
@@ -1474,39 +1461,41 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
 
 	nchars = snprintf(stats->data, MAX_MSG_SIZE, _jobstep_format,
-		1,				/* RECORD_VERSION */
-		38,				/* NUM_FIELDS */
-		jrec->stepid,			/* stepid */
-		tbuf,				/* completion time */
-		comp_status,			/* completion status */
-		jrec->status,		/* completion code */
-		jrec->nprocs,			/* number of processes */
-		jrec->ncpus,			/* number of cpus */
-		elapsed,			/* elapsed seconds */
-		jrec->rusage.ru_utime.tv_sec	/* total cputime seconds */
-		 + jrec->rusage.ru_stime.tv_sec,
-		jrec->rusage.ru_utime.tv_usec	/* total cputime usecs */
-		 + jrec->rusage.ru_stime.tv_usec,
-		jrec->rusage.ru_utime.tv_sec,	/* user seconds */
-		jrec->rusage.ru_utime.tv_usec,	/* user microseconds */
-		jrec->rusage.ru_stime.tv_sec,	/* system seconds */
-		jrec->rusage.ru_stime.tv_usec,	/* system microseconds */
-		jrec->rusage.ru_maxrss,		/* max rss */
-		jrec->rusage.ru_ixrss,		/* max ixrss */
-		jrec->rusage.ru_idrss,		/* max idrss */
-		jrec->rusage.ru_isrss,		/* max isrss */
-		jrec->rusage.ru_minflt,		/* max minflt */
-		jrec->rusage.ru_majflt,		/* max majflt */
-		jrec->rusage.ru_nswap,		/* max nswap */
-		jrec->rusage.ru_inblock,	/* total inblock */
-		jrec->rusage.ru_oublock,	/* total outblock */
-		jrec->rusage.ru_msgsnd,		/* total msgsnd */
-		jrec->rusage.ru_msgrcv,		/* total msgrcv */
-		jrec->rusage.ru_nsignals,	/* total nsignals */
-		jrec->rusage.ru_nvcsw,		/* total nvcsw */
-		jrec->rusage.ru_nivcsw,		/* total nivcsw */
-		jrec->max_vsize,		/* max vsize */
-		jrec->max_psize);		/* max psize */
+			  1,			/* RECORD_VERSION */
+			  38,			/* NUM_FIELDS */
+			  jrec->stepid,		/* stepid */
+			  tbuf,			/* completion time */
+			  comp_status,		/* completion status */
+			  jrec->status,		/* completion code */
+			  jrec->nprocs,		/* number of processes */
+			  jrec->ncpus,		/* number of cpus */
+			  elapsed,		/* elapsed seconds */
+			  /* total cputime seconds */
+			  jrec->rusage.ru_utime.tv_sec	
+			  + jrec->rusage.ru_stime.tv_sec,
+			  /* total cputime seconds */
+			  jrec->rusage.ru_utime.tv_usec	
+			  + jrec->rusage.ru_stime.tv_usec,
+			  jrec->rusage.ru_utime.tv_sec,	/* user seconds */
+			  jrec->rusage.ru_utime.tv_usec,/* user microseconds */
+			  jrec->rusage.ru_stime.tv_sec,	/* system seconds */
+			  jrec->rusage.ru_stime.tv_usec,/* system microsecs */
+			  jrec->rusage.ru_maxrss,	/* max rss */
+			  jrec->rusage.ru_ixrss,	/* max ixrss */
+			  jrec->rusage.ru_idrss,	/* max idrss */
+			  jrec->rusage.ru_isrss,	/* max isrss */
+			  jrec->rusage.ru_minflt,	/* max minflt */
+			  jrec->rusage.ru_majflt,	/* max majflt */
+			  jrec->rusage.ru_nswap,	/* max nswap */
+			  jrec->rusage.ru_inblock,	/* total inblock */
+			  jrec->rusage.ru_oublock,	/* total outblock */
+			  jrec->rusage.ru_msgsnd,	/* total msgsnd */
+			  jrec->rusage.ru_msgrcv,	/* total msgrcv */
+			  jrec->rusage.ru_nsignals,	/* total nsignals */
+			  jrec->rusage.ru_nvcsw,	/* total nvcsw */
+			  jrec->rusage.ru_nivcsw,	/* total nivcsw */
+			  jrec->max_vsize,		/* max vsize */
+			  jrec->max_psize);		/* max psize */
 	if (nchars >= MAX_MSG_SIZE) {
 		error("_send_data_to_slurmctld buffer overflow");
 		rc = SLURM_ERROR;
@@ -1518,7 +1507,7 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 	xfree(tbuf);
 	return rc;
 }
-
+
 /*
  * Pause briefly to avoid flooding the receiver with simultaneous
  * messages.
@@ -1550,12 +1539,12 @@ static void _stagger_time(long nodeid, long n_contenders) {
 	req.tv_sec = sleep_time / (long long)1e9;
 	req.tv_nsec = sleep_time % (long long)1e9;
 	debug3("jobacct(%d): will sleep %ld.%09ld seconds "
-			"in _stagger_time()",
-			getpid(), req.tv_sec, req.tv_nsec);
+	       "in _stagger_time()",
+	       getpid(), req.tv_sec, req.tv_nsec);
 	nanosleep(&req, NULL);
 	return;
 }
-
+
 /*
  *  Translate a jobrecord's fields from network format to host format
  *
@@ -1591,12 +1580,13 @@ static int _unpack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
 	outrec->status = ntohl(inrec->status);
 	outrec->max_vsize = ntohl(inrec->max_vsize);
 	outrec->max_psize = ntohl(inrec->max_psize); 
+	outrec->pid = ntohl(inrec->pid); 
 	outrec->not_reported = ntohl(inrec->not_reported);
 	strcpy(outrec->node0, inrec->node0);
 	strcpy(outrec->node1, inrec->node1);
 	return SLURM_SUCCESS;
 }
-
+
 /* _watch_tasks() -- monitor slurm jobs and track their memory usage
  *
  * IN, OUT:	Irrelevant; this is invoked by pthread_create()
@@ -1606,13 +1596,13 @@ static void *_watch_tasks(void *arg) {
 
 	int	tmp;
 
-	while(1) {	/* Do this until slurm_jobacct_task_exit() stops us */
+	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
 		sleep(prec_frequency);
-		pthread_testcancel();
-		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &tmp);
+		//pthread_testcancel();
+		//pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &tmp);
 		slurm_mutex_lock(&precTable_lock);
 		_get_process_data();	/* Update the data */ 
 		slurm_mutex_unlock(&precTable_lock);
-		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp);
+		//pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp);
 	} 
 }

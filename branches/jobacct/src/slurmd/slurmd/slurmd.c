@@ -335,6 +335,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 		_service_connection((void *) arg);
 		return;
 	}
+	pthread_attr_destroy(&attr);
 	return;
 }
 
@@ -787,7 +788,9 @@ _slurmd_init()
 	 * Set up the job accounting plugin
 	 */
 	g_slurmd_jobacct_init(conf->job_acct_parameters);
-
+	/* tell the accountants to start counting */
+	g_slurmd_jobacct_smgr();
+	
 
 	/*
 	 * Cache the group access list
@@ -843,6 +846,7 @@ _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
 	slurmd_task_fini(); 
+	g_slurmd_jobacct_fini();
 	return SLURM_SUCCESS;
 }
 

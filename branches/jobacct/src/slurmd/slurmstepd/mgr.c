@@ -478,7 +478,7 @@ job_manager(slurmd_job_t *job)
 	}
 
 	g_slurmd_jobacct_jobstep_launched(job);
-
+		
 	/* Call interconnect_init() before becoming user */
 	if (!job->batch && 
 	    (interconnect_init(job->switch_job, job->uid) < 0)) {
@@ -506,8 +506,8 @@ job_manager(slurmd_job_t *job)
 	_send_launch_resp(job, 0);
 
 	/* tell the accountants to start counting */
-	g_slurmd_jobacct_smgr();
-
+	//g_slurmd_jobacct_smgr();
+	info("got here");
 	_wait_for_all_tasks(job);
 
 	job->state = SLURMSTEPD_STEP_ENDING;
@@ -757,6 +757,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	int completed = 0;
 
 	do {
+		info("waiting");
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {
 			if (errno == ECHILD) {
@@ -795,8 +796,9 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			setup_env(job->envtp);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
-				run_script("user task_epilog", job->task_epilog, 
-					job->jobid, job->uid, 2, job->env);
+				run_script("user task_epilog", 
+					   job->task_epilog, 
+					   job->jobid, job->uid, 2, job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;

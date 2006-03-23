@@ -129,6 +129,11 @@ int slurmd_jobacct_init(char *job_acct_parameters)
 	return SLURM_SUCCESS;
 }
 
+int slurmd_jobacct_fini()
+{
+	return SLURM_SUCCESS;
+}
+
 int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 {
 	debug3("slurmd_jobacct_jobstep_launched() called");

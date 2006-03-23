@@ -3531,7 +3531,7 @@ static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer )
 	*msg_ptr = msg;
 
 	safe_unpack16(&msg->len, buffer );
-	safe_unpackmem_xmalloc(&msg->data, &uint16_tmp , buffer ) ;
+	safe_unpackmem_xmalloc(&msg->data, &uint16_tmp, buffer ) ;
 	/* debug("jobacct: unpacked message"); */
 	return SLURM_SUCCESS;
 
