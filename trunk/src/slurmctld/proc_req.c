@@ -1576,14 +1576,19 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				return;
 			}
 #endif
+			lock_slurmctld(job_write_lock);
 			error_code = _launch_batch_step(job_desc_msg, uid,
 							&step_id);
+			unlock_slurmctld(job_write_lock);
+			END_TIMER;
 
 			if (error_code != SLURM_SUCCESS) {
 				info("_launch_batch_step: %s",
 				     slurm_strerror(error_code));
 				slurm_send_rc_msg(msg, error_code);
 			} else {
+				info("_slurm_rpc_submit_batch_job JobId=%u %s",
+					job_desc_msg->job_id, TIME_STR);
 				submit_msg.job_id     = job_desc_msg->job_id;
 				submit_msg.step_id    = step_id;
 				submit_msg.error_code = error_code;
@@ -1599,6 +1604,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			}
 			return;
 		}
+
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, false, false,
 					  false, uid, &job_ptr);
@@ -2082,16 +2088,17 @@ inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg)
 static char **
 _xduparray(uint16_t size, char ** array)
 {
-  int i;
-  char ** result;
+	int i;
+	char ** result;
 
-  if (size == 0)
-    return (char **)NULL;
+	if (size == 0)
+		return (char **)NULL;
 
-  result = (char **) xmalloc(sizeof(char *) * size);
-  for (i=0; i<size; i++)
-    result[i] = xstrdup(array[i]);
-  return result;
+	result = (char **) xmalloc(sizeof(char *) * size);
+	for (i=0; i<size; i++)
+		result[i] = xstrdup(array[i]);
+
+	return result;
 }
 
 
@@ -2118,7 +2125,6 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	struct job_record  *job_ptr;
 	time_t now = time(NULL);
 	int error_code = SLURM_SUCCESS;
-	DEF_TIMERS;
 
 	batch_job_launch_msg_t *launch_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
@@ -2130,8 +2136,6 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	 * the slurmd.
 	 */
 	job_step_create_request_msg_t req_step_msg;
-	slurmctld_lock_t job_write_lock = { 
-	  NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	struct step_record *step_rec;
 	
 	/*
@@ -2154,11 +2158,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	req_step_msg.network = NULL;
 	req_step_msg.node_list = NULL;
 
-	START_TIMER;
-	lock_slurmctld(job_write_lock);
 	error_code = step_create(&req_step_msg, &step_rec, false, true);
-	unlock_slurmctld(job_write_lock);
-	END_TIMER;
 	
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
@@ -2166,9 +2166,6 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	/*
 	 * TODO: check all instances of step_record to ensure there's no
 	 * problem with a null switch_job_info pointer.
-	 *
-	 * TODO: figure out if I'm using lock_slurmctld() correctly in this
-	 * procedure
 	 */
 
 	/* Get the allocation in order to construct the batch job
@@ -2265,7 +2262,6 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_queue_request(agent_arg_ptr);
 	
 	*step_id = step_rec->step_id;
-
 	return SLURM_SUCCESS;
 }
 
