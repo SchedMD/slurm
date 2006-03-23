@@ -1580,7 +1580,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 							&step_id);
 
 			if (error_code != SLURM_SUCCESS) {
-				info("_slurm_rpc_submit_batch_job: %s",
+				info("_launch_batch_step: %s",
 				     slurm_strerror(error_code));
 				slurm_send_rc_msg(msg, error_code);
 			} else {
@@ -2161,7 +2161,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	END_TIMER;
 	
 	if (error_code != SLURM_SUCCESS)
-	  return error_code;
+		return error_code;
 	
 	/*
 	 * TODO: check all instances of step_record to ensure there's no
