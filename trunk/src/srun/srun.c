@@ -460,8 +460,8 @@ _run_batch_job(void)
 
 	/* Do not re-use existing job id from environment variable
 	 * when submitting new job from within a running job */
-	if (opt.jobid_set != NO_VAL)
-		req->job_id = (uint32_t)opt.jobid;
+	if (!opt.jobid_set)
+		req->job_id = NO_VAL;
 
 	retries = 0;
 	while (  (retries < MAX_RETRIES)

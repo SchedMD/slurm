@@ -1876,6 +1876,8 @@ static void _opt_list()
 		info("nodes          : %d %s", opt.min_nodes,
 			opt.nodes_set ? "(set)" : "(default)");
 	}
+	info("jobid          : %u %s", opt.jobid, 
+		opt.jobid_set ? "(set)" : "(default)");
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
