@@ -162,21 +162,52 @@ int stepd_suspend(int fd);
  */
 int stepd_resume(int fd);
 
-#define safe_read(fd, ptr, size) do {					\
-		if (read(fd, ptr, size) != size) {			\
-			debug("%s:%d: %s: read (%d bytes) failed: %m",	\
-			      __FILE__, __LINE__, __CURRENT_FUNC__,	\
-			      (int)size);				\
-			goto rwfail;					\
+#define safe_read(fd, buf, size) do {					\
+		int remaining = size;					\
+		void *ptr = buf;					\
+		int rc;							\
+		while (remaining > 0) {					\
+			rc = read(fd, ptr, remaining);			\
+			if (rc == 0) {					\
+				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
+				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      remaining, (int)size);		\
+				goto rwfail;				\
+			} else if (rc < 0) {				\
+				debug("%s:%d: %s: safe_read (%d of %d) failed: %m", \
+				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      remaining, (int)size);		\
+				goto rwfail;				\
+			} else {					\
+				ptr += rc;				\
+				remaining -= rc;			\
+				if (remaining > 0)			\
+					debug3("%s:%d: %s: safe_read (%d of %d) partial read", \
+					       __FILE__, __LINE__, __CURRENT_FUNC__, \
+					       remaining, (int)size);	\
+			}						\
 		}							\
 	} while (0)
 
-#define safe_write(fd, ptr, size) do {					\
-		if (write(fd, ptr, size) != size) {			\
-			debug("%s:%d: %s: write (%d bytes) failed: %m",	\
-			      __FILE__, __LINE__, __CURRENT_FUNC__,	\
-			      (int)size);				\
-			goto rwfail;					\
+#define safe_write(fd, buf, size) do {					\
+		int remaining = size;					\
+		void *ptr = buf;					\
+		int rc;							\
+		while(remaining > 0) {					\
+			rc = write(fd, ptr, remaining);			\
+			if (rc < 0) {					\
+				debug("%s:%d: %s: safe_write (%d of %d) failed: %m", \
+				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      remaining, (int)size);		\
+				goto rwfail;				\
+			} else {					\
+				ptr += rc;				\
+				remaining -= rc;			\
+				if (remaining > 0)			\
+					debug3("%s:%d: %s: safe_write (%d of %d) partial write", \
+					       __FILE__, __LINE__, __CURRENT_FUNC__, \
+					       remaining, (int)size);	\
+			}						\
 		}							\
 	} while (0)
 
