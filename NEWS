@@ -52,6 +52,11 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.8
+========================
+ -- Fix to communication between slurmd and slurmstepd to allow for partial
+    reads and writes on their communication pipes.
+
 * Changes in SLURM 1.0.7
 ========================
  -- Change in how AuthType=auth/dummy is handled for security testing.
