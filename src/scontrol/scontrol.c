@@ -446,9 +446,10 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 static void
 _pid_info(pid_t job_pid)
 {
-	int error_code;
+	int error_code, i;
 	uint32_t job_id;
-	time_t end_time;
+	time_t end_time, start_time = time(NULL);
+	long rem_time;
 
 	error_code = slurm_pid2jobid (job_pid, &job_id);
 	if (error_code) {
@@ -465,9 +466,13 @@ _pid_info(pid_t job_pid)
 			slurm_perror ("slurm_get_end_time error");
 		return;
 	}
+	for (i=0; i<10000; i++)
+		rem_time = slurm_get_rem_time(0);
 
-	/* printf("Slurm job id: %u\n", job_id);   old format */
-	printf("Slurm job id %u ends at %s", job_id, ctime(&end_time));
+	printf("Slurm job id %u ends at %s\n", job_id, ctime(&end_time));
+	printf("slurm_get_rem_time is %ld\n", rem_time);
+	printf("10000 slurm_get_rem_time calls in %d seconds\n",
+		(int) difftime(time(NULL), start_time));
 	return;
 }
 

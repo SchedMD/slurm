@@ -431,6 +431,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_job_desc_msg((job_desc_msg_t *)
 				    msg->data, buffer);
 		 break;
+	 case REQUEST_JOB_END_TIME:
 	 case REQUEST_OLD_JOB_RESOURCE_ALLOCATION:
 		 _pack_old_job_desc_msg((old_job_alloc_msg_t *) msg->data,
 					buffer);
@@ -700,6 +701,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
 					   buffer);
 		 break;
+	 case REQUEST_JOB_END_TIME:
 	 case REQUEST_OLD_JOB_RESOURCE_ALLOCATION:
 		 rc = _unpack_old_job_desc_msg((old_job_alloc_msg_t **) &
 					       (msg->data), buffer);
