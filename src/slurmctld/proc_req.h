@@ -38,11 +38,13 @@
 #	define START_TIMER	gettimeofday(&tv1, NULL)
 #	define END_TIMER	gettimeofday(&tv2, NULL); \
 				diff_tv_str(&tv1, &tv2, tv_str, 20)
+#	define DELTA_TIMER	diff_tv(&tv1, &tv2)
 #	define TIME_STR 	tv_str
 #else
 #	define DEF_TIMERS	int tv1, tv2, tv_str
 #	define START_TIMER	tv1 = 0
 #	define END_TIMER	tv2 = tv_str = 0
+#	define DELTA_TIMER	0L
 #	define TIME_STR 	""
 #endif
 
@@ -55,6 +57,14 @@
  */
 extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
 		char *tv_str, int len_tv_str);
+
+/*
+ * diff_tv - return the difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * RET time in micro-seconds
+ */
+inline long diff_tv(struct timeval *tv1, struct timeval *tv2);
 
 /*
  * slurmctld_req  - Process an individual RPC request
