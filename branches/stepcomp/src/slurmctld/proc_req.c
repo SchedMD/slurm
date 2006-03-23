@@ -97,6 +97,7 @@ inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
+inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
@@ -264,6 +265,10 @@ void slurmctld_req (slurm_msg_t * msg)
 			slurm_free_jobacct_msg(msg->data);
 		}
 		break; 
+	case REQUEST_STEP_COMPLETE:
+		_slurm_rpc_step_complete(msg);
+		slurm_free_step_complete_msg(msg->data);
+		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -1480,6 +1485,29 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 	/* No op: just used to knock loose accept RPC thread */
 	if (error_code == SLURM_SUCCESS)
 		debug("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
+}
+
+/* _slurm_rpc_step_complete - process step completion RPC */
+/* FIXME - doesn't do anything but print a debug message yet */
+static void _slurm_rpc_step_complete(slurm_msg_t *msg)
+{
+	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
+	uid_t uid;
+
+	debug2("Processing RPC: REQUEST_STEP_COMPLETE");
+	uid = g_slurm_auth_get_uid(msg->cred);
+	if (!_is_super_user(uid)) {
+		/* Don't trust slurm_rc, it is not from slurmstepd */
+		error("Invalid user %d attempted REQUEST_STEP_COMPLETE",
+		      uid);
+		return;
+	}
+
+	debug("Got %d.%d step completion for nodes rank %d through rank %d",
+	      req->job_id, req->job_step_id,
+	      req->range_first, req->range_last);
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */

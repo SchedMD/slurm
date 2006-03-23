@@ -488,11 +488,14 @@ _send_step_complete_msg(slurmd_job_t *job)
 		/* FIXME - sent completion message to controller */
 		debug("Rank %d sending completion to slurmctld",
 		      step_complete.rank);
+		slurm_send_recv_controller_rc_msg(&req, &rc);
+		return;
+	} else {
+		slurm_send_recv_rc_msg_only_one(&req, &rc, 5);
+		debug("Rank %d sent complete message, rc = %d",
+		      step_complete.rank, rc);
 		return;
 	}
-	slurm_send_recv_rc_msg_only_one(&req, &rc, 5);
-	debug("Rank %d sent complete message, rc = %d",
-	      step_complete.rank, rc);
 }
 
 /* 
