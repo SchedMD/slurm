@@ -71,7 +71,7 @@
 #define MAX_PRINTFIELDS 100
 #define MAX_STATES 100
 
-#define MAX_RECORD_FIELDS 38
+#define MAX_RECORD_FIELDS 100
 
 #define NO_JOBSTEP -1
 
@@ -95,53 +95,52 @@
 #define F_UIDGID	4
 #define F_RESERVED1	5
 #define F_RECTYPE	6
-#define F_RECVERSION	7
-#define F_NUMFIELDS	8
 
 /* JOB_START fields */
-#define F_UID		9
-#define F_GID		10
-#define F_JOBNAME	11
-#define F_BATCH		12
-#define F_PRIORITY	13
-#define F_NCPUS		14
-#define F_NODES		15
+#define F_UID		7
+#define F_GID		8
+#define F_JOBNAME	9
+#define F_BATCH		10
+#define F_PRIORITY	11
+#define F_NCPUS		12
+#define F_NODES		13
 
 /* JOB_STEP fields */
-#define F_JOBSTEP	9
-#define F_FINISHED	10
-#define F_CSTATUS	11
-#define F_ERROR		12
-#define F_NPROCS	13
-/*define F_NCPUS 14 (defined above) */
-#define F_ELAPSED	15
-#define F_CPU_SEC	16
-#define F_CPU_USEC	17
-#define F_USER_SEC	18
-#define F_USER_USEC	19
-#define F_SYS_SEC	20
-#define F_SYS_USEC	21
-#define F_RSS		22
-#define F_IXRSS		23
-#define F_IDRSS		24
-#define F_ISRSS		25
-#define F_MINFLT	26
-#define F_MAJFLT	27
-#define F_NSWAP		28
-#define F_INBLOCKS	29
-#define F_OUBLOCKS	30
-#define F_MSGSND	31
-#define F_MSGRCV	32
-#define F_NSIGNALS	33
-#define F_NVCSW		34
-#define F_NIVCSW	35
-#define F_VSIZE		36
-#define F_PSIZE		37
+#define F_JOBSTEP	7
+#define F_STEPNAME      8
+#define F_FINISHED	9
+#define F_CSTATUS	10
+#define F_ERROR		11
+#define F_NTASKS	12
+#define F_STEPNCPUS     13
+#define F_ELAPSED	14
+#define F_CPU_SEC	15
+#define F_CPU_USEC	16
+#define F_USER_SEC	17
+#define F_USER_USEC	18
+#define F_SYS_SEC	19
+#define F_SYS_USEC	20
+#define F_RSS		21
+#define F_IXRSS		22
+#define F_IDRSS		23
+#define F_ISRSS		24
+#define F_MINFLT	25
+#define F_MAJFLT	26
+#define F_NSWAP		27
+#define F_INBLOCKS	28
+#define F_OUBLOCKS	29
+#define F_MSGSND	30
+#define F_MSGRCV	31
+#define F_NSIGNALS	32
+#define F_NVCSW		33
+#define F_NIVCSW	34
+#define F_VSIZE		35
+#define F_PSIZE		36
 
 /* JOB_COMPLETION fields */
-#define F_TOT_ELAPSED	9 
-/*define F_FINISHED	10 */
-/*define F_CSTATUS	11 */
+#define F_TOT_ELAPSED	7
+#define F_COMP_FINISH	8 
+#define F_COMP_CSTATUS	9
 
 struct {
 	int	job_start_seen,		/* useful flags */

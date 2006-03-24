@@ -66,7 +66,7 @@ int sameJobStep(long js, char *f[])
 		return 0;
 	if (jobsteps[js].error != strtol(f[F_ERROR], NULL, 10))
 		return 0;
-	if (jobsteps[js].nprocs != strtol(f[F_NPROCS], NULL, 10))
+	if (jobsteps[js].nprocs != strtol(f[F_NTASKS], NULL, 10))
 		return 0;
 	if (jobsteps[js].ncpus != strtol(f[F_NCPUS], NULL, 10))
 		return 0;
@@ -282,7 +282,7 @@ void processJobStart(char *f[])
 		if (isspace(jobs[j].nodes[i]))
 			jobs[j].nodes[i] = 0;
 	if (strcmp(jobs[j].nodes, "(null)")==0) {
-		free(jobs[j].nodes);
+		xfree(jobs[j].nodes);
 		jobs[j].nodes = "unknown";
 	}
 }
@@ -349,8 +349,9 @@ void processJobStep(char *f[])
 replace_js:
 	strcpy(jobsteps[js].finished, f[F_FINISHED]);
 	strcpy(jobsteps[js].cstatus, f[F_CSTATUS]);
+	strcpy(jobsteps[js].stepname, f[F_STEPNAME]);
 	jobsteps[js].error = strtol(f[F_ERROR], NULL, 10);
-	jobsteps[js].nprocs = strtol(f[F_NPROCS], NULL, 10);
+	jobsteps[js].nprocs = strtol(f[F_NTASKS], NULL, 10);
 	jobsteps[js].ncpus = strtol(f[F_NCPUS], NULL, 10);
 	jobsteps[js].elapsed = strtol(f[F_ELAPSED], NULL, 10);
 	jobsteps[js].tot_cpu_sec = strtol(f[F_CPU_SEC], NULL, 10);
@@ -469,8 +470,8 @@ void processJobTerminated(char *f[])
 	}
 	jobs[j].job_terminated_seen = 1;
 	jobs[j].elapsed = strtol(f[F_TOT_ELAPSED], NULL, 10);
-	strcpy(jobs[j].finished, f[F_FINISHED]);
-	strncpy(jobs[j].cstatus, f[F_CSTATUS], 3);
+	strcpy(jobs[j].finished, f[F_COMP_FINISH]);
+	strncpy(jobs[j].cstatus, f[F_COMP_CSTATUS], 3);
 	for (i=0; jobs[j].cstatus[i]; i++)
 		if (isspace(jobs[j].cstatus[i]))
 			jobs[j].cstatus[i] = 0;

@@ -294,12 +294,11 @@ char *_prefix_filename(char *path, char *prefix) {
 int get_data(void)
 {
 	char line[BUFFER_SIZE];
-	char	*f[MAX_RECORD_FIELDS+2],    /* End list with null entry and,
-					       possibly, more data than we
-					       expected */
-		*fptr;
-	int	bufsize=MINBUFSIZE,
-		i;
+	char *f[MAX_RECORD_FIELDS+2];    /* End list with null entry and,
+					    possibly, more data than we
+					    expected */
+	char *fptr;
+	int i;
 	FILE *fd = NULL;
 	int lc = 0;
 
@@ -317,39 +316,11 @@ int get_data(void)
 				if (fptr)
 					*fptr = 0;
 				break; 
-			}
-			else
+			} else
 				*fptr++ = 0;
 		}
 		f[++i] = 0;
-		if (i < F_NUMFIELDS) {
-			if (params.opt_verbose > 1)
-				fprintf(stderr,
-					"Invalid record (too short) "
-					"at input line %ld\n", lc);
-			if (params.opt_verbose > 2)
-				_show_rec(f);
-			inputError++;
-			continue;
-		} else if (i > MAX_RECORD_FIELDS) {
-			if (params.opt_verbose > 1)
-				fprintf(stderr,
-					"Extra data at input line %ld\n", lc);
-			if (params.opt_verbose > 2)
-				_show_rec(f);
-			inputError++;
-		}
-		if (strcmp(f[F_RECVERSION], "1")) {
-			if (params.opt_verbose > 1)
-				fprintf(stderr,
-					"Invalid record version at input"
-					" line %ld\n",
-					lc);
-			if (params.opt_verbose > 2)
-				_show_rec(f);
-			inputError++;
-			continue;
-		}
+		
 		if (NjobstepsSelected) {
 			for (i = 0; i < NjobstepsSelected; i++) {
 				if (strcmp(jobstepsSelected[i].job, f[F_JOB]))
@@ -1044,7 +1015,7 @@ void doExpire(void)
 {
 #define EXP_STG_LENGTH 12
 #define TERM_REC_FIELDS 11
-	char	*buf,
+	char	line[BUFFER_SIZE],
 		exp_stg[EXP_STG_LENGTH+1], /* YYYYMMDDhhmm */
 		*expired_logfile_name,
 		*f[TERM_REC_FIELDS],
@@ -1116,12 +1087,11 @@ void doExpire(void)
 	}
 
 	/* create our initial buffer */
-	buf = xmalloc(bufsize);
 	exp_table = xmalloc( sizeof(expired_table_t)
 				* (exp_table_allocated=10000));
-	while (fgets(buf, BUFFER_SIZE, fd)) {
+	while (fgets(line, BUFFER_SIZE, fd)) {
 		lc++;
-		fptr = buf;	/* break the record into NULL-
+		fptr = line;	/* break the record into NULL-
 				   terminated strings */
 		for (i = 0; i < TERM_REC_FIELDS; i++) {
 			f[i] = fptr;
@@ -1133,19 +1103,6 @@ void doExpire(void)
 		}
 		if (i < TERM_REC_FIELDS)
 			continue;	/* Odd, but complain some other time */
-		if (strcmp(f[F_RECVERSION], "1")) {
-			if (params.opt_purge)	/* catch it again later */
-				continue;
-			fprintf(stderr,
-				"Invalid record version \"%s\" at input "
-				"line %ld.\n"
-				"(Use --expire --purge to force the "
-				"removal of this record.)\n"
-				"It is unsafe to complete this "
-				"operation -- terminating.\n",
-				f[F_RECVERSION], lc);
-			exit(1);
-		}
 		if (strcmp(f[F_RECTYPE], "JOB_TERMINATED")==0) {
 			if (strncmp(exp_stg, f[F_FINISHED],
 				    expire_time_match)<0) 
@@ -1188,12 +1145,14 @@ void doExpire(void)
 		fprintf(stderr, "Error while opening %s", 
 			expired_logfile_name);
 		perror("");
+		xfree(expired_logfile_name);
 		exit(1);
 	}
 	if (new_file) {  /* By default, the expired file looks like the log */
 		chmod(expired_logfile_name, prot);
 		chown(expired_logfile_name, uid, gid);
 	}
+	xfree(expired_logfile_name);
 	new_logfile_name = _prefix_filename(params.opt_filein, ".new.");
 	if ((new_logfile = fopen(new_logfile_name, "w"))==NULL) {
 		fprintf(stderr, "Error while opening %s",
@@ -1225,28 +1184,24 @@ void doExpire(void)
 	}
 	rewind(fd);
 	lc=0;
-	while (fgets(buf, BUFFER_SIZE, fd)) {
+	while (fgets(line, BUFFER_SIZE, fd)) {
 		expired_table_t tmp;
 
-		fptr = buf;
+		fptr = line;
 		lc++;
 
-		for (i=0; i<F_NUMFIELDS; i++) {
+		for (i=0; i<MAX_RECORD_FIELDS; i++) {
 			f[i] = fptr;
 			fptr = strstr(fptr, " ");
 			if (fptr == NULL)
 				break; 
 			fptr++;
 		}
-		if (i >= F_NUMFIELDS) 	/* Enough data for these checks? */
-			if (strncmp(f[F_RECVERSION], "1 ", 2)==0 ) 
-				if ((strncmp(f[F_RECTYPE],
-					     "JOB_START ", 10)==0)
-				    || (strncmp(f[F_RECTYPE],
-						"JOB_STEP ", 9)==0)
-				    || (strncmp(f[F_RECTYPE],
-						"JOB_TERMINATED ", 15)==0))
-					goto goodrec;
+		
+		if ((strncmp(f[F_RECTYPE], "JOB_START ", 10)==0)
+		    || (strncmp(f[F_RECTYPE], "JOB_STEP ", 9)==0)
+		    || (strncmp(f[F_RECTYPE], "JOB_TERMINATED ", 15)==0))
+			goto goodrec;
 
 		/* Ugh; invalid record */
 		fprintf(stderr, "Invalid record at input line %ld", lc);
@@ -1267,12 +1222,12 @@ void doExpire(void)
 		tmp.submitted[TIMESTAMP_LENGTH-1] = 0;
 		if (bsearch(&tmp, exp_table, exp_table_entries,
 			    sizeof(expired_table_t), _cmp_jrec)) {
-			if (fputs(buf, expired_logfile)<0) {
+			if (fputs(line, expired_logfile)<0) {
 				perror("writing expired_logfile");
 				exit(1);
 			}
 		} else {
-			if (fputs(buf, new_logfile)<0) {
+			if (fputs(line, new_logfile)<0) {
 				perror("writing new_logfile");
 				exit(1);
 			}
@@ -1323,8 +1278,8 @@ void doExpire(void)
 		perror("looking for late-arriving records");
 		exit(1);
 	}
-	while (fgets(buf, BUFFER_SIZE, fd)) {
-		if (fputs(buf, new_logfile)<0) {
+	while (fgets(line, BUFFER_SIZE, fd)) {
+		if (fputs(line, new_logfile)<0) {
 			perror("writing final records");
 			exit(1);
 		}
@@ -1334,6 +1289,7 @@ void doExpire(void)
 	if (file_err==0)
 		unlink(old_logfile_name);
 	printf("%d jobs expired.\n", exp_table_entries);
+	xfree(exp_table);
 	exit(0);
 }
 
@@ -1385,7 +1341,7 @@ void doFdump(char* fields[], int lc)
 		{"????",	"vsize",	"vsize" },	/* 36 */
 		{"????",	"psize",	"psize" }	/* 37 */
 	};
-	numfields = atoi(fields[F_NUMFIELDS]);
+	numfields = -1;//atoi(fields[F_NUMFIELDS]);
 	printf("\n-------Line %ld ---------------\n", lc);
 	if (strcmp(fields[F_RECTYPE], "JOB_START")==0)
 		for (i=0; fields[i] && (i<numfields); i++)

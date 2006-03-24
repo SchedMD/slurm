@@ -147,11 +147,12 @@ typedef struct	_jrec {
 	int	        status;		/* First non-zero completion code */
 	uint32_t        max_vsize;	/* max virtual mem size of any proc  */
 	uint32_t        max_psize;	/* max phys. memory size of any proc */
-	pid_t        pid;               /* pid of process running */
+	pid_t           pid;            /* pid of process running */
 	int		not_reported;	/* Used by nodes 0,1 to track how many
 					   nodes still have to report in */
 	char		node0[HOST_NAME_MAX]; /* It's proven to be hard to */ 
 	char		node1[HOST_NAME_MAX]; /* keep track of these!      */
+	char		stepname[HOST_NAME_MAX]; /* exec name  */
 } _jrec_t;
 
 /* Other useful declarations */
@@ -412,7 +413,7 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 	gmtime_r(&job_ptr->end_time, &ts);
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-		       "JOB_TERMINATED 1 12 %u %04d%02d%02d%02d%02d%02d %s",
+		       "JOB_TERMINATED %u %04d%02d%02d%02d%02d%02d %s",
 		       (int) (job_ptr->end_time - job_ptr->start_time),
 		       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 		       ts.tm_hour, ts.tm_min, ts.tm_sec,
@@ -459,7 +460,7 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 	}
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-		       "JOB_START 1 16 %d %d %s %u %ld %u %s",
+		       "JOB_START %d %d %s %u %ld %u %s",
 		       job_ptr->user_id, job_ptr->group_id, jname,
 		       job_ptr->batch_flag, priority, ncpus,
 		       job_ptr->nodes);
@@ -527,13 +528,10 @@ static int _print_record(struct job_record *job_ptr, char *data)
 
 /* Format of the JOB_STEP record */
 
-#define RECORD_VERSION 1
-#define NUM_FIELDS 38
 const char	*_jobstep_format = 
 "JOB_STEP "
-"%u "	/* RECORD_VERSION */
-"%u "	/* NUM_FIELDS */
 "%u "	/* stepid */
+"%s "	/* step process name */
 "%s "	/* completion time */
 "%s "	/* completion status */
 "%d "	/* completion code */
@@ -790,6 +788,8 @@ static void _aggregate_job_data(_jrec_t *jrec, _jrec_t *inrec)
 static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 {
 	_jrec_t *jrec;
+	char tmp[HOST_NAME_MAX];
+	int i=0, j=0;
 
 	jrec = xmalloc(sizeof(_jrec_t));
 	jrec->jobid			= job->jobid;
@@ -823,6 +823,14 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 	jrec->max_psize			= 0; 
 	jrec->pid			= getpid(); 
 	jrec->not_reported		= job->nnodes;
+	
+	strncpy(tmp, job->argv[0], HOST_NAME_MAX);
+	j = 0;
+	for(i=1; i<strlen(tmp); i++)
+		if(tmp[i-1] == '/')
+			j = i;
+	strncpy(jrec->stepname, tmp+j, HOST_NAME_MAX);
+				
 	if (job->batch)	/* Account for the batch control pseudo-step */
 		jrec->not_reported++;
 	info("got not reported %d",jrec->not_reported);
@@ -1138,6 +1146,7 @@ static int _pack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
 	outrec->not_reported = htonl(inrec->not_reported);
 	strcpy(outrec->node0, inrec->node0);
 	strcpy(outrec->node1, inrec->node1);
+	strcpy(outrec->stepname, inrec->stepname);
 	return SLURM_SUCCESS;
 }
 
@@ -1459,11 +1468,10 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 	stats->stepid    = htonl(jrec->stepid);
 	if ((elapsed=time(NULL)-jrec->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-
+	
 	nchars = snprintf(stats->data, MAX_MSG_SIZE, _jobstep_format,
-			  1,			/* RECORD_VERSION */
-			  38,			/* NUM_FIELDS */
 			  jrec->stepid,		/* stepid */
+			  jrec->stepname,	/* step exe name */
 			  tbuf,			/* completion time */
 			  comp_status,		/* completion status */
 			  jrec->status,		/* completion code */
@@ -1584,6 +1592,7 @@ static int _unpack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
 	outrec->not_reported = ntohl(inrec->not_reported);
 	strcpy(outrec->node0, inrec->node0);
 	strcpy(outrec->node1, inrec->node1);
+	strcpy(outrec->stepname, inrec->stepname);
 	return SLURM_SUCCESS;
 }
 
