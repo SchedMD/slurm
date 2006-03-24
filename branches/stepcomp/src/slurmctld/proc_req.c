@@ -855,7 +855,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 
 	/* do RPC call */
-	if (job_step_kill_msg->job_step_id == NO_VAL) {
+	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
 		error_code = job_signal(job_step_kill_msg->job_id, 
 					job_step_kill_msg->signal, 
 					job_step_kill_msg->batch_flag, uid);
@@ -960,7 +960,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	}
 
 	/* Mark job and/or job step complete */
-	if (complete_job_step_msg->job_step_id == NO_VAL) {
+	if (complete_job_step_msg->job_step_id == SLURM_BATCH_SCRIPT) {
 		error_code = job_complete(complete_job_step_msg->job_id,
 					  uid, job_requeue,
 					  complete_job_step_msg->job_rc);
@@ -1539,7 +1539,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
-		if (job_desc_msg->job_id != NO_VAL) {
+		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 			/* Non-super users not permitted to run job steps on front-end.
@@ -1592,7 +1592,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			job_ptr->job_id, TIME_STR);
 		/* send job_ID */
 		submit_msg.job_id     = job_ptr->job_id;
-		submit_msg.step_id    = NO_VAL;
+		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
@@ -2000,7 +2000,7 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	END_TIMER;
 
 	if (error_code) {
-		if (ckpt_ptr->step_id == NO_VAL)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
 			info("_slurm_rpc_checkpoint %s %u: %s", op, 
 				ckpt_ptr->job_id, slurm_strerror(error_code));
 		else
@@ -2008,7 +2008,7 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 				ckpt_ptr->job_id, ckpt_ptr->step_id, 
 				slurm_strerror(error_code));
 	} else {
-		if (ckpt_ptr->step_id == NO_VAL)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
 			info("_slurm_rpc_checkpoint %s for %u %s", op,
 				ckpt_ptr->job_id, TIME_STR);
 		else
