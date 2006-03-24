@@ -1138,6 +1138,17 @@ extern bool step_on_node(struct job_record  *job_ptr,
 			 struct node_record *node_ptr);
 
 /*
+ * step_partial_comp - Note the completion of a job step on at least
+ *	some of its nodes
+ * IN req     - step_completion_msg RPC from slurmstepd
+ * OUT rem    - count of nodes for which responses are still pending
+ * OUT max_rc - highest return code for any step thus far
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int step_partial_comp(step_complete_msg_t *req, int *rem,
+		int *max_rc);
+
+/*
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files

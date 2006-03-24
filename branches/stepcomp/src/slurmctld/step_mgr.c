@@ -2,7 +2,7 @@
  *  step_mgr.c - manage the job step information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -970,3 +970,87 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	(void) slurm_send_node_msg(conn_fd, &resp_msg);
 	return rc;
 }
+
+/*
+ * step_partial_comp - Note the completion of a job step on at least
+ *	some of its nodes
+ * IN req     - step_completion_msg RPC from slurmstepd
+ * OUT rem    - count of nodes for which responses are still pending
+ * OUT max_rc - highest return code for any step thus far
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int step_partial_comp(step_complete_msg_t *req, int *rem, 
+		int *max_rc)
+{
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	struct node_record *node_ptr;
+	hostlist_t hl;
+	int rc = SLURM_SUCCESS;
+	char *hostname;
+	int min_inx, max_inx;
+
+	/* find the job */
+	job_ptr = find_job_record (req->job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if (job_ptr->job_state == JOB_PENDING)
+		return ESLURM_JOB_PENDING;
+	if ((job_ptr->job_state != JOB_RUNNING)
+	&&  (job_ptr->job_state != JOB_SUSPENDED))
+		return ESLURM_ALREADY_DONE;
+	step_ptr = find_step_record(job_ptr, req->job_step_id);
+	if (step_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+
+	/* now identify the nodes that have responded */
+	hl = hostlist_create(step_ptr->step_node_list);
+	if (hl == NULL)
+		fatal("hostlist_create: %m");
+	hostname = hostlist_nth(hl, req->range_last);
+	if (hostname == NULL) {
+		error("could not find %u entry in hostlist %s "
+			"for %u.%u", step_ptr->step_node_list,
+			req->job_id, req->job_step_id);
+		rc = EINVAL;
+		goto fini;
+	}
+	node_ptr = find_node_record(hostname);
+	if (node_ptr == NULL) {
+		error("could not find host %s for %u.%u",
+			hostname, req->job_id, req->job_step_id);
+		rc = EINVAL;
+		xfree(hostname);
+		goto fini;
+	}
+	max_inx = node_ptr - node_record_table_ptr;
+	free(hostname);
+	if (req->range_first == req->range_last) {
+		min_inx = max_inx;
+	} else {
+		hostname = hostlist_nth(hl, req->range_first);
+		node_ptr = find_node_record(hostname);
+		if (node_ptr == NULL) {
+			error("could not find host %s for %u.%u",
+				hostname, req->job_id,
+				req->job_step_id);
+			rc = EINVAL;
+			free(hostname);
+			goto fini;
+		}
+		min_inx = node_ptr - node_record_table_ptr;
+		free(hostname);
+	}
+	
+	/* now clear the bitmap and count remaining bits */
+	bit_nclear(step_ptr->step_node_bitmap, min_inx, max_inx);
+	if (rem)
+		*rem = bit_set_count(step_ptr->step_node_bitmap);
+/* FIXME: preserve highest step exit code, from req->step_rc */
+	if (max_rc)
+		*max_rc = req->step_rc;
+
+fini:	hostlist_destroy(hl);
+	return rc;
+}
+
