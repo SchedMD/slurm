@@ -542,13 +542,14 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	slurm_send_recv_controller_rc_msg(&req, &rc);
 }
 
-/* Given a starting point in the step_complete.bits bitstring, "start",
+/* Given a starting bit in the step_complete.bits bitstring, "start",
  * find the next contiguous range of set bits and return the first
  * and last indices of the range in "first" and "last".
  *
  * caller is holding step_complete.lock
  */
-static int bit_getrange(int start, int size, int *first, int *last)
+static int
+_bit_getrange(int start, int size, int *first, int *last)
 {
 	int i;
 	bool found_first = false;
@@ -597,7 +598,7 @@ _send_step_complete_msgs(slurmd_job_t *job)
 		return;
 	}
 
-	while(bit_getrange(start, size, &first, &last)) {
+	while(_bit_getrange(start, size, &first, &last)) {
 		/* THIS node is not in the bit string, so we need to prepend
 		   the local rank or send a seperate complete message */
 		if (start == 0) {
