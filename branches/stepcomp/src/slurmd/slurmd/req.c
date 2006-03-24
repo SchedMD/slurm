@@ -264,7 +264,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	struct passwd *pw = NULL;
 	gids_t *gids = NULL;
 
-	int rank, count, parent_rank, children;
+	int rank, count;
+	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr parent_addr;
 
@@ -279,23 +280,30 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		   to the slurmctld */
 		parent_rank = -1;
 		children = 0;
+		depth = 0;
+		max_depth = 0;
 	} else {
 		count = hostset_count(step_hset);
 		rank = hostset_index(step_hset, conf->node_name, 0);
-		tree_parent_and_children(rank, count, REVERSE_TREE_WIDTH,
-					 &parent_rank, &children);
+		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
+				  &parent_rank, &children,
+				  &depth, &max_depth);
 		if (rank != 0) { /* rank 0 talks directly to the slurmctld */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			parent_addr = slurm_conf_get_addr(parent_alias);
 		}
 	}
-	debug("Node %s (rank %d), parent %s (rank %d), children %d",
-	      conf->node_name, rank, parent_alias, parent_rank, children);
+	debug3("slurmstepd rank %d (%s), parent rank %d (%s), "
+	       "children %d, depth %d, max_depth %d",
+	       rank, conf->node_name, parent_rank, parent_alias,
+	       children, depth, max_depth);
 	/* FIXME - send the reverse tree info to slurmstepd! */
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
 	safe_write(fd, &parent_rank, sizeof(int));
 	safe_write(fd, &children, sizeof(int));
+	safe_write(fd, &depth, sizeof(int));
+	safe_write(fd, &max_depth, sizeof(int));
 	safe_write(fd, &parent_addr, sizeof(slurm_addr));
 
 	/* send conf over to slurmstepd */

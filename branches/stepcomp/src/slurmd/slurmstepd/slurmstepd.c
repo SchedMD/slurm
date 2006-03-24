@@ -168,6 +168,8 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.rank, sizeof(int));
 	safe_read(sock, &step_complete.parent_rank, sizeof(int));
 	safe_read(sock, &step_complete.children, sizeof(int));
+	safe_read(sock, &step_complete.depth, sizeof(int));
+	safe_read(sock, &step_complete.max_depth, sizeof(int));
 	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
 	step_complete.bits = bit_alloc(step_complete.children);
 	pthread_mutex_unlock(&step_complete.lock);

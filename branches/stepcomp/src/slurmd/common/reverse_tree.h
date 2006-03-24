@@ -1,10 +1,10 @@
 /*****************************************************************************\
- * src/slurmd/slurmstepd/slurmstepd.h - slurmstepd general header file
- * $Id$
+ * src/slurmd/common/reverse_tree.h
+ * $Id: slurmd.h 7501 2006-03-14 20:05:50Z morrone $
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Christopher J. Morrone <morrone2@llnl.gov>.
+ *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,26 +24,11 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#ifndef _REVERSE_TREE_H
+#define _REVERSE_TREE_H
 
-#ifndef _SLURMSTEPD_H
-#define _SLURMSTEPD_H
+#define REVERSE_TREE_WIDTH 2
+#define REVERSE_TREE_CHILDREN_TIMEOUT 60 /* seconds */
+#define REVERSE_TREE_PARENT_RETRY 5 /* seconds */
 
-#include "src/common/bitstring.h"
-
-extern int slurmstepd_blocked_signals[];
-
-typedef struct {
-	pthread_cond_t cond;
-	pthread_mutex_t lock;
-	int rank;
-	int depth;
-	int parent_rank;
-	slurm_addr parent_addr;
-	int children;
-	int max_depth;
-	bitstr_t *bits;
-} step_complete_t;
-
-extern step_complete_t step_complete;
-
-#endif /* !_SLURMSTEPD_H */
+#endif /* !_REVERSE_TREE_H */

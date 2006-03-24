@@ -1497,7 +1497,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	debug2("Processing RPC: REQUEST_STEP_COMPLETE");
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if (!_is_super_user(uid)) {
-		/* Don't trust slurm_rc, it is not from slurmstepd */
+		/* Don't trust rpc, it is not from slurmstepd */
 		error("Invalid user %d attempted REQUEST_STEP_COMPLETE",
 		      uid);
 		return;

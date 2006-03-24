@@ -944,33 +944,30 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 		      (long)uid, job->jobid, job->stepid);
 		rc = -1;
 		errnum = EPERM;
-		goto done;
+		/* Send the return code and errno */
+		safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, &errnum, sizeof(int));
+		return SLURM_SUCCESS;
 	}
 
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 
-	debug("_handle_completion rank = %d first = %d, last = %d",
-	      step_complete.rank, first, last);
-
 	/*
 	 * Record the completed nodes
 	 */
 	pthread_mutex_lock(&step_complete.lock);
-	debug("_handle_completion rank = %d, bits size = %d, left = %d",
-	      step_complete.rank, bit_size(step_complete.bits), bit_clear_count(step_complete.bits));
 	bit_nset(step_complete.bits,
 		 first - (step_complete.rank+1),
 		 last - (step_complete.rank+1));
-	debug("_handle_completion rank = %d, bits left = %d",
-	      step_complete.rank, bit_clear_count(step_complete.bits));
+	/* Send the return code and errno, we do this within the locked
+	 * region to ensure that the stepd doesn't exit before we can
+	 * perform this send. */
+	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
 	pthread_cond_signal(&step_complete.cond);
 	pthread_mutex_unlock(&step_complete.lock);
 
-done:
-	/* Send the return code and errno */
-	safe_write(fd, &rc, sizeof(int));
-	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
