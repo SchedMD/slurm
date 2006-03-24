@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2005" "scontrol 1.0" "Slurm components"
+.TH SCONTROL "1" "March 2006" "scontrol 1.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -217,6 +217,9 @@ Set the job's partition to the specified value.
 .TP
 \fIPriority\fP=<number>
 Set the job's priority to the specified value.
+Note that a job priority of zero prevents the job from ever being scheduled.
+By setting a job's priority to zero it is held.
+Set the priority to a non-zero value to permit it to run.
 .TP
 \fINice\fP[=delta]
 Adjust job's priority by the specified value. Default value is 100.
