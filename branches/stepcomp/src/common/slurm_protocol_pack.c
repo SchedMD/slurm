@@ -2889,8 +2889,7 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->job_step_id, buffer);
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
-/* 	pack32((uint32_t)msg->job_rc, buffer); */
-/* 	pack32((uint32_t)msg->slurm_rc, buffer); */
+	pack32((uint32_t)msg->step_rc, buffer);
 }
 
 static int
@@ -2905,8 +2904,7 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack32(&msg->range_first, buffer);
 	safe_unpack32(&msg->range_last, buffer);
-/* 	safe_unpack32(&msg->job_rc, buffer); */
-/* 	safe_unpack32(&msg->slurm_rc, buffer); */
+	safe_unpack32(&msg->step_rc, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

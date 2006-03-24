@@ -168,7 +168,7 @@ int stepd_resume(int fd);
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
-int stepd_completion(int fd, int range_first, int range_last);
+int stepd_completion(int fd, int range_first, int range_last, int step_rc);
 
 #define safe_read(fd, ptr, size) do {					\
 		if (read(fd, ptr, size) != size) {			\

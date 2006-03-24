@@ -1126,7 +1126,8 @@ _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done2;
 	}
 
-	rc = stepd_completion(fd, req->range_first, req->range_last);
+	rc = stepd_completion(fd, req->range_first, req->range_last,
+			      req->step_rc);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 

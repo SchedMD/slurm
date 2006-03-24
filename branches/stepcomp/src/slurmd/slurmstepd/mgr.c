@@ -118,7 +118,8 @@ step_complete_t step_complete = {
 	{},
 	-1,
 	-1,
-	(bitstr_t *)NULL
+	(bitstr_t *)NULL,
+	0
 };
 
 /* 
@@ -458,6 +459,7 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 {
 	int left;
 	int rc;
+	int i;
 	struct timespec ts = {0, 0};
 
 	pthread_mutex_lock(&step_complete.lock);
@@ -483,6 +485,11 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 		      step_complete.rank);
 	}
 
+	/* Find the maximum task return code */
+	for (i = 0; i < job->ntasks; i++)
+		step_complete.step_rc = MAX(step_complete.step_rc,
+					 WEXITSTATUS(job->task[i]->estatus));
+
 	pthread_mutex_unlock(&step_complete.lock);
 }
 
@@ -500,6 +507,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;
 	msg.range_last = last;
+	msg.step_rc = step_complete.step_rc;
 
 	memset(&req, 0, sizeof(req));
 	req.msg_type = REQUEST_STEP_COMPLETE;
@@ -613,7 +621,6 @@ _send_step_complete_msgs(slurmd_job_t *job)
 	      			       (last + step_complete.rank + 1));
 		start = last + 1;
 	}
-	debug("Rank %d sending completions done", step_complete.rank);
 	pthread_mutex_unlock(&step_complete.lock);
 }
 

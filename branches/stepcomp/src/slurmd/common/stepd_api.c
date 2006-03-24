@@ -589,7 +589,7 @@ rwfail:
  * and sets errno.
  */
 int
-stepd_completion(int fd, int range_first, int range_last)
+stepd_completion(int fd, int range_first, int range_last, int step_rc)
 {
 	int req = REQUEST_STEP_COMPLETION;
 	int rc;
@@ -600,6 +600,7 @@ stepd_completion(int fd, int range_first, int range_last)
 	safe_write(fd, &req, sizeof(int));
 	safe_write(fd, &range_first, sizeof(int));
 	safe_write(fd, &range_last, sizeof(int));
+	safe_write(fd, &step_rc, sizeof(int));
 
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));

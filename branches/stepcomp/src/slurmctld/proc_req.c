@@ -1503,9 +1503,9 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		return;
 	}
 
-	debug("Got %d.%d step completion for nodes rank %d through rank %d",
-	      req->job_id, req->job_step_id,
-	      req->range_first, req->range_last);
+	debug("Got %d.%d step completion for nodes rank %d through rank %d"
+	      " rc = %d", req->job_id, req->job_step_id,
+	      req->range_first, req->range_last, req->step_rc);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }

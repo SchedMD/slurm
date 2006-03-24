@@ -934,6 +934,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	int errnum = 0;
 	int first;
 	int last;
+	int step_rc;
 
 	debug("_handle_completion for job %u.%u",
 	      job->jobid, job->stepid);
@@ -952,6 +953,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
+	safe_read(fd, &step_rc, sizeof(int));
 
 	/*
 	 * Record the completed nodes
@@ -960,6 +962,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	bit_nset(step_complete.bits,
 		 first - (step_complete.rank+1),
 		 last - (step_complete.rank+1));
+	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
 	/* Send the return code and errno, we do this within the locked
 	 * region to ensure that the stepd doesn't exit before we can
 	 * perform this send. */

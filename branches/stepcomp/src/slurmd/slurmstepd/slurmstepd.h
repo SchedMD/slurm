@@ -42,6 +42,7 @@ typedef struct {
 	int children;
 	int max_depth;
 	bitstr_t *bits;
+	int step_rc;
 } step_complete_t;
 
 extern step_complete_t step_complete;
