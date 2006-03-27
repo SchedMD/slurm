@@ -361,12 +361,12 @@ struct 	step_record {
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
+	uint32_t exit_code;		/* highest exit code from any task */
+	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 };
 
 extern List job_list;			/* list of job_record entries */
 
- extern List job_list;                  /* list of job_record entries */
- 
 /*****************************************************************************\
  *  Consumable Resources parameters and data structures
 \*****************************************************************************/

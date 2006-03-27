@@ -110,6 +110,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 		if (step_ptr->network)
 			xfree(step_ptr->network);
 		xfree(step_ptr);
@@ -155,6 +156,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
 				xfree(step_ptr->network);
 			xfree(step_ptr);
@@ -638,6 +640,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
+	step_ptr->exit_code = NO_VAL;
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -984,13 +987,9 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	struct node_record *node_ptr;
-	hostlist_t hl;
-	int rc = SLURM_SUCCESS;
-	char *hostname;
-	int min_inx, max_inx;
+	int nodes;
 
-	/* find the job */
+	/* find the job, step, and validate input */
 	job_ptr = find_job_record (req->job_id);
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
@@ -1002,55 +1001,34 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
+	if (req->range_last < req->range_first)
+		return EINVAL;
 
-	/* now identify the nodes that have responded */
-	hl = hostlist_create(step_ptr->step_node_list);
-	if (hl == NULL)
-		fatal("hostlist_create: %m");
-	hostname = hostlist_nth(hl, req->range_last);
-	if (hostname == NULL) {
-		error("could not find %u entry in hostlist %s "
-			"for %u.%u", step_ptr->step_node_list,
-			req->job_id, req->job_step_id);
-		rc = EINVAL;
-		goto fini;
-	}
-	node_ptr = find_node_record(hostname);
-	if (node_ptr == NULL) {
-		error("could not find host %s for %u.%u",
-			hostname, req->job_id, req->job_step_id);
-		rc = EINVAL;
-		xfree(hostname);
-		goto fini;
-	}
-	max_inx = node_ptr - node_record_table_ptr;
-	free(hostname);
-	if (req->range_first == req->range_last) {
-		min_inx = max_inx;
+	if (step_ptr->exit_code == NO_VAL) {
+		/* initialize the node bitmap for exited nodes */
+		nodes = bit_set_count(step_ptr->step_node_bitmap);
+		if (req->range_last >= nodes)	/* range is zero origin */
+			return EINVAL;
+		xassert(step_ptr->exit_node_bitmap == NULL);
+		step_ptr->exit_node_bitmap = bit_alloc(nodes);
+		if (step_ptr->exit_node_bitmap == NULL)
+			fatal("bit_alloc: %m");
+		step_ptr->exit_code = req->step_rc;
 	} else {
-		hostname = hostlist_nth(hl, req->range_first);
-		node_ptr = find_node_record(hostname);
-		if (node_ptr == NULL) {
-			error("could not find host %s for %u.%u",
-				hostname, req->job_id,
-				req->job_step_id);
-			rc = EINVAL;
-			free(hostname);
-			goto fini;
-		}
-		min_inx = node_ptr - node_record_table_ptr;
-		free(hostname);
+		xassert(step_ptr->exit_node_bitmap);
+		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
+		if (req->range_last >= nodes)	/* range is zero origin */
+			return EINVAL;
+		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
 	}
-	
-	/* now clear the bitmap and count remaining bits */
-	bit_nclear(step_ptr->step_node_bitmap, min_inx, max_inx);
+
+	bit_nclear(step_ptr->exit_node_bitmap, req->range_first,
+		req->range_last);
 	if (rem)
 		*rem = bit_set_count(step_ptr->step_node_bitmap);
-/* FIXME: preserve highest step exit code, from req->step_rc */
 	if (max_rc)
-		*max_rc = req->step_rc;
+		*max_rc = step_ptr->exit_code;
 
-fini:	hostlist_destroy(hl);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
