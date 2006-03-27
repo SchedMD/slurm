@@ -1534,6 +1534,8 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		}
 		unlock_slurmctld(job_write_lock);
 		slurm_send_rc_msg(msg, rc);
+		if (!rc)	/* partition completion */
+			schedule_job_save();	/* Has own locking */
 		return;
 	}
 

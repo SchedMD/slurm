@@ -1032,7 +1032,6 @@ extern int kill_job_by_part_name(char *part_name)
 			else
 				job_ptr->end_time = time(NULL);
 			deallocate_nodes(job_ptr, false, suspended);
-			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 
@@ -1107,7 +1106,6 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				else
 					job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false, suspended);
-				delete_all_step_records(job_ptr);
 				job_completion_logger(job_ptr);
 			} else {
 				error("Removing failed node %s from job_id %u",
@@ -1659,7 +1657,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->end_time = job_ptr->suspend_time;
 		else
 			job_ptr->end_time = now;
-		delete_all_step_records(job_ptr);
 		job_completion_logger(job_ptr);
 	}
 
@@ -2877,7 +2874,6 @@ void reset_job_bitmaps(void)
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 			}
-			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 	}

@@ -995,9 +995,6 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		return ESLURM_INVALID_JOB_ID;
 	if (job_ptr->job_state == JOB_PENDING)
 		return ESLURM_JOB_PENDING;
-	if ((job_ptr->job_state != JOB_RUNNING)
-	&&  (job_ptr->job_state != JOB_SUSPENDED))
-		return ESLURM_ALREADY_DONE;
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
@@ -1022,10 +1019,10 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
 	}
 
-	bit_nclear(step_ptr->exit_node_bitmap, req->range_first,
+	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
 		req->range_last);
 	if (rem)
-		*rem = bit_set_count(step_ptr->step_node_bitmap);
+		*rem = bit_clear_count(step_ptr->step_node_bitmap);
 	if (max_rc)
 		*max_rc = step_ptr->exit_code;
 
