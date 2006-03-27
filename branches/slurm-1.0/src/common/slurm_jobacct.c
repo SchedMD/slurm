@@ -51,6 +51,12 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
+ * The following global is used by the jobacct/log plugin; it must
+ * persist when the plugin is reloaded, so we define it here.
+ */
+extern FILE * JOBACCT_LOGFILE = NULL;
+
+/*
  * WARNING:  Do not change the order of these fields or add additional
  * fields at the beginning of the structure.  If you do, job accounting
  * plugins will stop working.  If you need to add fields, add them 

@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.9
+========================
+ -- Fix job accounting logic to open new log file on slurmctld reconfig.
+    (Andy Riebs, slurm.hp.logfile.patch).
+
 * Changes in SLURM 1.0.8
 ========================
  -- Fix to communication between slurmd and slurmstepd to allow for partial
