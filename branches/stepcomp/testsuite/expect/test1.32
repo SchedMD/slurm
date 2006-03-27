@@ -68,33 +68,29 @@ expect {
 # Note: For systems supporting proper pthreads, instead use
 #       exec $bin_kill -USR1 $srun_pid, otherwise we need pkill 
 #       and can get multiple signals delivered
+# Note: We send the signals right after task startup rather than
+#	interspersed with messages because some versions of 
+#	Expect have difficulties handling unbuffered srun output
 #
 set timeout $max_job_delay
 spawn $srun -N1 -t1 --unbuffered $file_prog
 set srun_pid [exp_pid]
+exec $bin_sleep 1
+exec $bin_kill -USR1 $srun_pid
+#exec $bin_pkill -USR1 -n -u $uid srun
+exec $bin_kill -USR2 $srun_pid
+#exec $bin_pkill -USR2 -n -u $uid srun
 expect {
 	-re "WAITING" {
-		if {$matches == 0} {
-			set matches 1
-			exec $bin_kill -USR1 $srun_pid
-#			exec $bin_pkill -USR1 -n -u $uid srun
-		}
+		incr matches
 		exp_continue
 	}
 	-re "SIGUSR1" {
 		set usr1cnt [expr $usr1cnt + 1]
-		if {$matches == 1} {
-			set matches 2
-			exec $bin_kill -USR2 $srun_pid
-#			exec $bin_pkill -USR2 -n -u $uid srun
-		}
 		exp_continue
 	}
 	-re "SIGUSR2" {
 		set usr2cnt [expr $usr2cnt + 1]
-		if {$matches == 2} {
-			set matches 3
-		}
 		exp_continue
 	}
 	-re "error.*not running" {
@@ -108,15 +104,16 @@ expect {
 		exp_continue
 	}
 	eof {
+		send_user "\nEOF\n"
 		wait
 	}
 }
-if {$matches != 3} {
-	send_user "\nFAILURE: srun failed to forward signals\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: srun failed to initialize properly\n"
 	set exit_code 1
 }
-if {($usr1cnt > 1) || ($usr2cnt > 1)} {
-	send_user "\nFAILURE: $file_prog received more than one copy of the same signal\n"
+if {($usr1cnt != 1) || ($usr2cnt != 1)} {
+	send_user "\nFAILURE: $file_prog received wrong number of signals\n"
 	set exit_code 1
 }
 
