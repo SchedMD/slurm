@@ -1129,8 +1129,10 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 	&& hostrange_width_combine(tail, hr)) {
 		tail->hi = hr->hi;
 	} else {
-		if ((hl->hr[hl->nranges++] = hostrange_copy(hr)) == NULL)
+		hostrange_t new = hostrange_copy(hr);
+		if (new == NULL)
 			goto error;
+		hl->hr[hl->nranges++] = new;
 	}
 
 	retval = hl->nhosts += hostrange_count(hr);
