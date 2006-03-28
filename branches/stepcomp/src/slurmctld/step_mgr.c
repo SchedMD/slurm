@@ -1022,7 +1022,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
 		req->range_last);
 	if (rem)
-		*rem = bit_clear_count(step_ptr->step_node_bitmap);
+		*rem = bit_clear_count(step_ptr->exit_node_bitmap);
 	if (max_rc)
 		*max_rc = step_ptr->exit_code;
 
