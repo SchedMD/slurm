@@ -44,19 +44,23 @@
 #include "src/common/getopt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/list.h"
 
 #define ERROR 2
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
  * which have no logical jobsteps. */
 #define NOT_JOBSTEP "4294967294"
+#define BATCH_JOB_SUBMIT "19700101000000"
 
 #define BRIEF_FIELDS "jobstep,status,error"
 #define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
-#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,nprocs,ncpus,elapsed,status,error"
+#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
 
 #define BUFFER_SIZE 4096
 #define MINBUFSIZE 1024
+#define STATUS_COUNT 10
 
 /* The following literals define how many significant characters
  * are used in a yyyymmddHHMMSS timestamp. */
@@ -97,123 +101,46 @@
 #define F_RECTYPE	6
 
 /* JOB_START fields */
-#define F_UID		7
-#define F_GID		8
-#define F_JOBNAME	9
-#define F_BATCH		10
-#define F_PRIORITY	11
-#define F_NCPUS		12
-#define F_NODES		13
+#define F_JOBNAME	7
+#define F_BATCH		8
+#define F_PRIORITY	9
+#define F_NCPUS		10
+#define F_NODES		11
 
 /* JOB_STEP fields */
 #define F_JOBSTEP	7
-#define F_STEPNAME      8
-#define F_FINISHED	9
-#define F_CSTATUS	10
-#define F_ERROR		11
-#define F_NTASKS	12
-#define F_STEPNCPUS     13
-#define F_ELAPSED	14
-#define F_CPU_SEC	15
-#define F_CPU_USEC	16
-#define F_USER_SEC	17
-#define F_USER_USEC	18
-#define F_SYS_SEC	19
-#define F_SYS_USEC	20
-#define F_RSS		21
-#define F_IXRSS		22
-#define F_IDRSS		23
-#define F_ISRSS		24
-#define F_MINFLT	25
-#define F_MAJFLT	26
-#define F_NSWAP		27
-#define F_INBLOCKS	28
-#define F_OUBLOCKS	29
-#define F_MSGSND	30
-#define F_MSGRCV	31
-#define F_NSIGNALS	32
-#define F_NVCSW		33
-#define F_NIVCSW	34
-#define F_VSIZE		35
-#define F_PSIZE		36
+#define F_FINISHED	8
+#define F_STATUS	9
+#define F_ERROR		10
+#define F_NTASKS	11
+#define F_STEPNCPUS     12
+#define F_ELAPSED	13
+#define F_CPU_SEC	14
+#define F_CPU_USEC	15
+#define F_USER_SEC	16
+#define F_USER_USEC	17
+#define F_SYS_SEC	18
+#define F_SYS_USEC	19
+#define F_RSS		20
+#define F_IXRSS		21
+#define F_IDRSS		22
+#define F_ISRSS		23
+#define F_MINFLT	24
+#define F_MAJFLT	25
+#define F_NSWAP		26
+#define F_INBLOCKS	27
+#define F_OUBLOCKS	28
+#define F_MSGSND	29
+#define F_MSGRCV	30
+#define F_NSIGNALS	31
+#define F_NVCSW		32
+#define F_NIVCSW	33
+#define F_VSIZE		34
+#define F_PSIZE		35
+#define F_STEPNAME      36
 
 /* JOB_COMPLETION fields */
 #define F_TOT_ELAPSED	7
-#define F_COMP_FINISH	8 
-#define F_COMP_CSTATUS	9
-
-struct {
-	int	job_start_seen,		/* useful flags */
-		job_step_seen,
-		job_terminated_seen,
-		jobnum_superseded;	/* older jobnum was reused */
-	long	first_jobstep; /* linked list into jobsteps */
-	/* fields retrieved from JOB_START and JOB_TERMINATED records */
-	long	job;
-	char	*partition;
-	char	submitted[TIMESTAMP_LENGTH];	/* YYYYMMDDhhmmss */
-	time_t	starttime;
-	int	uid;
-	int	gid;
-	char	jobname[MAX_JOBNAME_LENGTH];
-	int	batch;
-	int	priority;
-	long	ncpus;
-	long	nprocs;
-	char	*nodes;
-	char	finished[15];
-	char	cstatus[3];
-	long	elapsed;
-	long	tot_cpu_sec, tot_cpu_usec;
-	long	tot_user_sec, tot_user_usec;
-	long	tot_sys_sec, tot_sys_usec;
-	long	rss, ixrss, idrss, isrss;
-	long	minflt, majflt;
-	long	nswap;
-	long	inblocks, oublocks;
-	long	msgsnd, msgrcv;
-	long	nsignals;
-	long	nvcsw, nivcsw;
-	long	vsize, psize;
-	/* fields accumulated from JOB_STEP records */
-	int	error;
-} jobs[MAX_JOBS];
-
-struct {
-	long	j;		/* index into jobs */
-	long	jobstep;	/* job's step number */
-	long	next;		/* linked list of job steps */
-	char	finished[15];	/* YYYYMMDDhhmmss */
-	char	stepname[MAX_JOBNAME_LENGTH];
-	char	cstatus[3];
-	int	error;
-	long	nprocs, ncpus;
-	long	elapsed;
-	long	tot_cpu_sec, tot_cpu_usec;
-	long	tot_user_sec, tot_user_usec;
-	long	tot_sys_sec, tot_sys_usec;
-	long	rss, ixrss, idrss, isrss;
-	long	minflt, majflt;
-	long	nswap;
-	long	inblocks, oublocks;
-	long	msgsnd, msgrcv;
-	long	nsignals;
-	long	nvcsw, nivcsw;
-	long	vsize, psize;
-} jobsteps[MAX_JOBSTEPS];
-
-struct {
-	char *job;
-	char *step;
-} jobstepsSelected[MAX_JOBSTEPS];
-
-typedef struct fields {
-	char *name;		/* Specified in --fields= */
-	void (*print_routine) ();	/* Who gets to print it? */
-} fields_t;
-
-
-extern fields_t fields[];
 
 /* On output, use fields 12-37 from JOB_STEP */
 
@@ -222,6 +149,77 @@ typedef enum {	HEADLINE,
 		JOB,
 		JOBSTEP
 } type_t;
+
+enum {
+	CANCELLED,
+	COMPLETED,
+	COMPLETING,
+	FAILED,
+	NODEFAILED,
+	PENDING,
+	RUNNING,
+	TIMEDOUT
+};
+
+typedef struct header {
+	long	jobnum;
+	char	*partition;
+	char	submitted[TIMESTAMP_LENGTH];	/* YYYYMMDDhhmmss */
+	time_t	starttime;
+	int	uid;
+	int	gid;
+	int     rec_type;
+} acct_header_t;
+
+typedef struct job_rec {
+	int	job_start_seen,		/* useful flags */
+		job_step_seen,
+		job_terminated_seen,
+		jobnum_superseded;	/* older jobnum was reused */
+	long	first_jobstep; /* linked list into jobsteps */
+	/* fields retrieved from JOB_START and JOB_TERMINATED records */
+	acct_header_t header;
+	char	*nodes;
+	char	finished[TIMESTAMP_LENGTH];
+	char	*jobname;
+	int	batch;
+	int	priority;
+	long	ncpus;
+	long	ntasks;
+	int	status;
+	int	error;
+	long	elapsed;
+	long	tot_cpu_sec, tot_cpu_usec;
+	long	vsize, psize;
+	/* fields accumulated from JOB_STEP records */
+	struct rusage	rusage;
+	List    steps;
+} job_rec_t;
+
+typedef struct step_rec {
+	acct_header_t header;
+	long	stepnum;	/* job's step number */
+	long	next;		/* linked list of job steps */
+	char	finished[TIMESTAMP_LENGTH];	/* YYYYMMDDhhmmss */
+	char	*stepname;
+	int	status;
+	int	error;
+	long	ntasks, ncpus;
+	long	elapsed;
+	long	tot_cpu_sec, tot_cpu_usec;
+	long	vsize, psize;
+	struct rusage	rusage;
+} step_rec_t;
+
+typedef struct selected_step_t {
+	char *job;
+	char *step;
+} selected_step_t;
+
+typedef struct fields {
+	char *name;		/* Specified in --fields= */
+	void (*print_routine) ();	/* Who gets to print it? */
+} fields_t;
 
 /* Input parameters */
 typedef struct sacct_parameters {
@@ -247,65 +245,72 @@ typedef struct sacct_parameters {
 	char *opt_state_list;	/* --states */
 } sacct_parameters_t;
 
+extern fields_t fields[];
 extern sacct_parameters_t params;
 
 extern long inputError;		/* Muddle through bad data, but complain! */
 
-extern long Njobs;
-extern long Njobsteps;
-extern int printFields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
-	NprintFields;
+extern List jobs;
+
+extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
+	nprintfields;
 
 /* process.c */
-void processJobStart(char *f[]);
-void processJobStep(char *f[]);
-void processJobTerminated(char *f[]);
+void process_start(char *f[], int lc);
+void process_step(char *f[], int lc);
+void process_terminated(char *f[], int lc);
+void destroy_job(void *object);
+void destroy_step(void *object);
 
 /* print.c */
-void print_cpu(type_t type, long idx);
-void print_elapsed(type_t type, long idx);
-void print_error(type_t type, long idx);
-void print_finished(type_t type, long idx);
-void print_gid(type_t type, long idx);
-void print_group(type_t type, long idx);
-void print_idrss(type_t type, long idx);
-void print_inblocks(type_t type, long idx);
-void print_isrss(type_t type, long idx);
-void print_ixrss(type_t type, long idx);
-void print_job(type_t type, long idx);
-void print_name(type_t type, long idx);
-void print_step(type_t type, long idx);
-void print_majflt(type_t type, long idx);
-void print_minflt(type_t type, long idx);
-void print_msgrcv(type_t type, long idx);
-void print_msgsnd(type_t type, long idx);
-void print_ncpus(type_t type, long idx);
-void print_nivcsw(type_t type, long idx);
-void print_nodes(type_t type, long idx);
-void print_nsignals(type_t type, long idx);
-void print_nswap(type_t type, long idx);
-void print_ntasks(type_t type, long idx);
-void print_nvcsw(type_t type, long idx);
-void print_outblocks(type_t type, long idx);
-void print_partition(type_t type, long idx);
-void print_psize(type_t type, long idx);
-void print_rss(type_t type, long idx);
-void print_status(type_t type, long idx);
-void print_submitted(type_t type, long idx);
-void print_systemcpu(type_t type, long idx);
-void print_uid(type_t type, long idx);
-void print_user(type_t type, long idx);
-void print_usercpu(type_t type, long idx);
-void print_vsize(type_t type, long idx);
+void print_fields(type_t type, void *object);
+void print_cpu(type_t type, void *object);
+void print_elapsed(type_t type, void *object);
+void print_error(type_t type, void *object);
+void print_finished(type_t type, void *object);
+void print_gid(type_t type, void *object);
+void print_group(type_t type, void *object);
+void print_idrss(type_t type, void *object);
+void print_inblocks(type_t type, void *object);
+void print_isrss(type_t type, void *object);
+void print_ixrss(type_t type, void *object);
+void print_job(type_t type, void *object);
+void print_name(type_t type, void *object);
+void print_step(type_t type, void *object);
+void print_majflt(type_t type, void *object);
+void print_minflt(type_t type, void *object);
+void print_msgrcv(type_t type, void *object);
+void print_msgsnd(type_t type, void *object);
+void print_ncpus(type_t type, void *object);
+void print_nivcsw(type_t type, void *object);
+void print_nodes(type_t type, void *object);
+void print_nsignals(type_t type, void *object);
+void print_nswap(type_t type, void *object);
+void print_ntasks(type_t type, void *object);
+void print_nvcsw(type_t type, void *object);
+void print_outblocks(type_t type, void *object);
+void print_partition(type_t type, void *object);
+void print_psize(type_t type, void *object);
+void print_rss(type_t type, void *object);
+void print_status(type_t type, void *object);
+void print_submitted(type_t type, void *object);
+void print_systemcpu(type_t type, void *object);
+void print_uid(type_t type, void *object);
+void print_user(type_t type, void *object);
+void print_usercpu(type_t type, void *object);
+void print_vsize(type_t type, void *object);
 
 /* options.c */
+int decode_status_char(char *status);
+char *decode_status_int(int status);
 int get_data(void);
 void parse_command_line(int argc, char **argv);
-void doDump(void);
-void doExpire(void);
-void doFdump(char* fields[], int lc);
-void doHelp(void);
-void doList(void);
-
+void do_dump(void);
+void do_expire(void);
+void do_fdump(char* fields[], int lc);
+void do_help(void);
+void do_list(void);
+void sacct_init();
+void sacct_fini();
 
 #endif /* !_SACCT_H */

@@ -336,7 +336,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 
 	log_fini();
-	info("running %s", job->argv[0]);
+	
 	execve(job->argv[0], job->argv, job->env);
 
 	/* 

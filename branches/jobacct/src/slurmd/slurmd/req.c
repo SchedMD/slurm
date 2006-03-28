@@ -570,7 +570,6 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	bool     super_user = false, run_prolog = false;
 	slurm_addr self;
 	socklen_t adlen;
-	slurmd_job_t job;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req->srun_node_id = msg->srun_node_id;
@@ -656,7 +655,6 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_addr self;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
-	slurmd_job_t job;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -763,7 +761,6 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
 	char    *bg_part_id = NULL;
 	bool	replied = false;
-	slurmd_job_t job;
 
 	if (!_slurm_authorized_user(req_uid) && (req_uid != req->uid)) {
 		error("Security violation, batch launch RPC from uid %u",

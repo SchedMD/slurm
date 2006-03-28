@@ -413,12 +413,12 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 	gmtime_r(&job_ptr->end_time, &ts);
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-		       "JOB_TERMINATED %u %04d%02d%02d%02d%02d%02d %s",
+		       "%d %u %04d%02d%02d%02d%02d%02d %s",
+		       JOB_TERMINATED,
 		       (int) (job_ptr->end_time - job_ptr->start_time),
 		       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 		       ts.tm_hour, ts.tm_min, ts.tm_sec,
-		       job_state_string_compact(
-			       (job_ptr->job_state) & ~JOB_COMPLETING));
+		       job_ptr->job_state);
 	if (tmp >= MAX_MSG_SIZE) {
 		error("slurmctld_jobacct_job_complete buffer overflow");
 		rc = SLURM_ERROR;
@@ -455,13 +455,12 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 				jname[i]=job_ptr->name[i];
 		}
 	} else {
-		jname = (char*) xmalloc(10);
-		strncpy(jname, "(noname)", 10);
+		jname = xstrdup("allocation");
 	}
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-		       "JOB_START %d %d %s %u %ld %u %s",
-		       job_ptr->user_id, job_ptr->group_id, jname,
+		       "%d %s %u %ld %u %s",
+		       JOB_START, jname,
 		       job_ptr->batch_flag, priority, ncpus,
 		       job_ptr->nodes);
 	if (tmp >= MAX_MSG_SIZE) {
@@ -529,11 +528,10 @@ static int _print_record(struct job_record *job_ptr, char *data)
 /* Format of the JOB_STEP record */
 
 const char	*_jobstep_format = 
-"JOB_STEP "
+"%d "
 "%u "	/* stepid */
-"%s "	/* step process name */
 "%s "	/* completion time */
-"%s "	/* completion status */
+"%d "	/* completion status */
 "%d "	/* completion code */
 "%u "	/* nprocs */
 "%u "	/* number of cpus */
@@ -559,7 +557,8 @@ const char	*_jobstep_format =
 "%u "	/* total nvcsw */
 "%u "	/* total nivcsw */
 "%u "	/* max vsize */
-"%u"	/* max psize */
+"%u "	/* max psize */
+"%s"	/* step process name */
 ;
 
 /*
@@ -1436,9 +1435,9 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 
 static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 #define DATETIME_SIZE 16
-	char		*comp_status,
-		*tbuf;
-	int		nchars,
+	int     comp_status;
+	char 	*tbuf;
+	int	nchars,
 		rc=SLURM_SUCCESS;
 	long		elapsed;
 	_stats_msg_t	*stats;
@@ -1449,11 +1448,11 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 	       getpid(), done);
 	if (done)
 		if (jrec->status)
-			comp_status = "F";
+			comp_status = JOB_FAILED;
 		else
-			comp_status = "CD";
+			comp_status = JOB_COMPLETE;
 	else
-		comp_status = "R";
+		comp_status = JOB_RUNNING;
 	tbuf = xmalloc(DATETIME_SIZE);
 	now = time(NULL);
 	gmtime_r(&now, &ts);
@@ -1470,8 +1469,8 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
 	
 	nchars = snprintf(stats->data, MAX_MSG_SIZE, _jobstep_format,
+			  JOB_STEP,
 			  jrec->stepid,		/* stepid */
-			  jrec->stepname,	/* step exe name */
 			  tbuf,			/* completion time */
 			  comp_status,		/* completion status */
 			  jrec->status,		/* completion code */
@@ -1503,7 +1502,9 @@ static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 			  jrec->rusage.ru_nvcsw,	/* total nvcsw */
 			  jrec->rusage.ru_nivcsw,	/* total nivcsw */
 			  jrec->max_vsize,		/* max vsize */
-			  jrec->max_psize);		/* max psize */
+			  jrec->max_psize,		/* max psize */
+			  jrec->stepname);      	/* step exe name */
+			  
 	if (nchars >= MAX_MSG_SIZE) {
 		error("_send_data_to_slurmctld buffer overflow");
 		rc = SLURM_ERROR;

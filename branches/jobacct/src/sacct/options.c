@@ -28,23 +28,16 @@
 
 #include "sacct.h"
 
-int expire_time_match = 0;	/* How much of the timestamp is significant
-				   for --expire */
-int NjobstepsSelected = 0;
-char *partitionsSelected[MAX_PARTITIONS];
-int NpartitionsSelected = 0;
-char *statesSelected[MAX_STATES];
-int NstatesSelected = 0;
+typedef struct expired_table {  /* table of expired jobs */
+	long job;
+	char submitted[TIMESTAMP_LENGTH];
+} expired_table_t;
 
-
-typedef struct	expired_table {  /* table of expired jobs */
-	long	job;
-	char	submitted[TIMESTAMP_LENGTH];
-} 	expired_table_t;
-
-void _show_rec(char *f[]);
+void _destroy_parts(void *object);
+void _destroy_steps(void *object);
+char *_convert_type(int rec_type);
 int _cmp_jrec(const void *a1, const void *a2);
-void _dump_header(long j);
+void _dump_header(acct_header_t header);
 FILE *_open_log_file(void);
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -52,7 +45,41 @@ void _usage(void);
 void _init_params();
 char *_prefix_filename(char *path, char *prefix);
 
+int expire_time_match = 0;	/* How much of the timestamp is significant
+				   for --expire */
+int selected_status[STATUS_COUNT];
+List selected_parts = NULL;
+List selected_steps = NULL;
 
+void _destroy_parts(void *object)
+{
+	char *part = (char *)object;
+	xfree(part);
+}
+
+void _destroy_steps(void *object)
+{
+	selected_step_t *step = (selected_step_t *)object;
+	if(step) {
+		xfree(step->job);
+		xfree(step->step);
+		xfree(step);
+	}
+}
+
+char *_convert_type(int rec_type)
+{
+	switch(rec_type) {
+	case JOB_START:
+		return "JOB_START";
+	case JOB_STEP:
+		return "JOB_STEP";
+	case JOB_TERMINATED:
+		return "JOB_TERMINATED";
+	default:
+		return "UNKNOWN";
+	}
+}
 
 void _show_rec(char *f[])
 {
@@ -80,16 +107,17 @@ int _cmp_jrec(const void *a1, const void *a2) {
  * In:	Index into the jobs table
  * Out: Nothing.
  */
-void _dump_header(long j)
+void _dump_header(acct_header_t header)
 {
-	printf("%ld %s %s %ld %s %s ",
-	       jobs[j].job,
-	       jobs[j].partition,
-	       jobs[j].submitted,
-	       jobs[j].starttime,
+	printf("%ld %s %s %ld %ld %ld %s %s ",
+	       header.jobnum,
+	       header.partition,
+	       header.submitted,
+	       header.starttime,
+	       header.uid,
+	       header.gid,
 	       "-",	/* reserved 2 */
-	       "-"	/* reserved 1 */
-		);
+	       "-");	/* reserved 1 */
 }
 /* _open_log_file() -- find the current or specified log file, and open it
  *
@@ -291,6 +319,72 @@ char *_prefix_filename(char *path, char *prefix) {
 	return(out);
 }
 
+int decode_status_char(char *status)
+{
+	if (!strcasecmp(status, "p"))
+		return JOB_PENDING; 	/* we should never see this */
+	else if (!strcasecmp(status, "r"))
+		return JOB_RUNNING;
+	else if (!strcasecmp(status, "su"))
+		return JOB_SUSPENDED;
+	else if (!strcasecmp(status, "cd"))
+		return JOB_COMPLETE;
+	else if (!strcasecmp(status, "ca"))
+		return JOB_CANCELLED;
+	else if (!strcasecmp(status, "f"))
+		return JOB_FAILED;
+	else if (!strcasecmp(status, "to"))
+		return JOB_TIMEOUT;
+	else if (!strcasecmp(status, "nf"))
+		return JOB_NODE_FAIL;
+	else if (!strcasecmp(status, "je"))
+		return JOB_END;
+	else
+		return -1; // unknown
+} 
+
+char *decode_status_int(int status)
+{
+	switch(status) {
+	case JOB_PENDING:
+		return "PENDING"; 	/* we should never see this */
+	case JOB_RUNNING:
+		return "RUNNING";
+	case JOB_SUSPENDED:
+		return "SUSPENDED";
+	case JOB_COMPLETE:
+		return "COMPLETED";
+	case JOB_CANCELLED:
+		return "CANCELLED";
+	case JOB_FAILED:
+		return "FAILED";
+	case JOB_TIMEOUT:
+		return "TIMEOUT";
+	case JOB_NODE_FAIL:
+		return "NODE_FAILED";
+	case JOB_END:
+		return "JOB_END";
+	default:
+		return "UNKNOWN";
+	}
+	/* if (!strcasecmp(cs, "ca"))  */
+/* 		return "CANCELLED"; */
+/* 	else if (strcasecmp(cs, "cd")==0)  */
+/* 		return "COMPLETED"; */
+/* 	else if (strcasecmp(cs, "cg")==0)  */
+/* 		return "COMPLETING";	/\* we should never see this *\/ */
+/* 	else if (strcasecmp(cs, "f")==0)  */
+/* 		return "FAILED"; */
+/* 	else if (strcasecmp(cs, "nf")==0) */
+/* 		return "NODEFAILED"; */
+/* 	else if (strcasecmp(cs, "p")==0) */
+/* 		return "PENDING"; 	/\* we should never see this *\/ */
+/* 	else if (strcasecmp(cs, "r")==0) */
+/* 		return "RUNNING";  */
+/* 	else if (strcasecmp(cs, "to")==0) */
+/* 		return "TIMEDOUT"; */
+} 
+
 int get_data(void)
 {
 	char line[BUFFER_SIZE];
@@ -301,6 +395,10 @@ int get_data(void)
 	int i;
 	FILE *fd = NULL;
 	int lc = 0;
+	int rec_type = -1;
+	selected_step_t *selected_step = NULL;
+	char *selected_part = NULL;
+	ListIterator itr = NULL;
 
 	fd = _open_log_file();
 	
@@ -320,43 +418,52 @@ int get_data(void)
 				*fptr++ = 0;
 		}
 		f[++i] = 0;
+		rec_type = atoi(f[F_RECTYPE]);
 		
-		if (NjobstepsSelected) {
-			for (i = 0; i < NjobstepsSelected; i++) {
-				if (strcmp(jobstepsSelected[i].job, f[F_JOB]))
+		if (list_count(selected_steps)) {
+			itr = list_iterator_create(selected_steps);
+			while(selected_step = list_next(itr)) {
+				if (strcmp(selected_step->job, f[F_JOB]))
 					continue;
 				/* job matches; does the step> */
-				if (jobstepsSelected[i].step == NULL)
+				if (selected_step->step == NULL)
 					goto foundjob;
 				/* is it anything but JOB_STEP? */
-				if (strcmp(f[F_RECTYPE], "JOB_STEP"))
+				if (rec_type == JOB_STEP)
 					goto foundjob;
-				if (strcmp(f[F_JOBSTEP],
-					   jobstepsSelected[i].step) == 0)
+				if (!strcmp(f[F_JOBSTEP], selected_step->step))
 					goto foundjob;
 			}
+			list_iterator_destroy(itr);
 			continue;	/* no match */
 		}
 	foundjob:
-		if (NpartitionsSelected) {
-			for (i = 0; i < NpartitionsSelected; i++)
-				if (strcasecmp(f[F_PARTITION],
-					       partitionsSelected[i]) == 0)
+		if(itr)
+			list_iterator_destroy(itr);
+		if (list_count(selected_parts)) {
+			itr = list_iterator_create(selected_parts);
+			while(selected_part = list_next(itr)) 
+				if (!strcasecmp(f[F_PARTITION], selected_part))
 					goto foundp;
+			list_iterator_destroy(itr);
 			continue;	/* no match */
 		}
-	foundp: 
+	foundp:
+		if(itr)
+			list_iterator_destroy(itr);
+		
 		if (params.opt_fdump) {
-			doFdump(f, lc);
+			do_fdump(f, lc);
 			continue;
 		}
+		    
 		/* Build suitable tables with all the data */
-		if (strcmp(f[F_RECTYPE],"JOB_START")==0) {
-			processJobStart(f);
-		} else if (strcmp(f[F_RECTYPE],"JOB_STEP")==0) {
-			processJobStep(f);
-		} else if (strcmp(f[F_RECTYPE],"JOB_TERMINATED")==0) {
-			processJobTerminated(f);
+		if (rec_type == JOB_START) {
+			process_start(f, lc);
+		} else if (rec_type == JOB_STEP) {
+			process_step(f, lc);
+		} else if (rec_type == JOB_TERMINATED) {
+			process_terminated(f, lc);
 		} else {
 			if (params.opt_verbose > 1)
 				fprintf(stderr,
@@ -368,14 +475,7 @@ int get_data(void)
 			inputError++;
 		}
 	}
-	if (params.opt_verbose)
-		fprintf(stderr,
-			"Info: %ld job%s and %ld jobstep%s passed initial"
-			" filters, %ld bad record%s\n",
-			Njobs, (Njobs==1? "" : "s"),
-			Njobsteps, (Njobsteps==1? "" : "s"),
-			inputError, (inputError==1? "" : "s"));
-
+	
 	if (ferror(fd)) {
 		perror(params.opt_filein);
 		exit(1);
@@ -390,6 +490,8 @@ void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end, *start, *acct_type;
+	selected_step_t *selected_step = NULL;
+	ListIterator itr = NULL;
 	struct stat stat_buf;
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
@@ -419,8 +521,7 @@ void parse_command_line(int argc, char **argv)
 		{"user", 1, 0, 'u'},
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
-		{0, 0, 0, 0}
-	};
+		{0, 0, 0, 0}};
 
 	_init_params();
 
@@ -455,7 +556,6 @@ void parse_command_line(int argc, char **argv)
 		case 'e':
 		{	/* decode the time spec */
 			long	acc=0;
-			int		i;
 			params.opt_expire_timespec = strdup(optarg);
 			for (i=0; params.opt_expire_timespec[i]; i++) {
 				char	c = params.opt_expire_timespec[i];
@@ -645,7 +745,6 @@ void parse_command_line(int argc, char **argv)
 
 		case 'V':
 		{
-			int	i;
 			char	obuf[20]; /* should be long enough */
 			char	*rev="$Revision: 7267 $";
 			char	*s;
@@ -727,17 +826,17 @@ void parse_command_line(int argc, char **argv)
 
 		start = params.opt_partition_list;
 		while ((end = strstr(start, ","))) {
-			*end = 0;;
-			partitionsSelected[NpartitionsSelected] = start;
-			NpartitionsSelected++;
+			*end = 0;
+			acct_type = xstrdup(start);
+			list_append(selected_parts, acct_type);
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
-			int i;
 			fprintf(stderr, "Partitions requested:\n");
-			for (i = 0; i < NpartitionsSelected; i++)
-				fprintf(stderr, "\t: %s\n",
-					partitionsSelected[i]);
+			itr = list_iterator_create(selected_parts);
+			while(start = list_next(itr)) 
+				fprintf(stderr, "\t: %s\n", start);
+			list_iterator_destroy(itr);
 		}
 	}
 
@@ -757,18 +856,22 @@ void parse_command_line(int argc, char **argv)
 				exit(1);
 			}
 			*dot++ = 0;
-			jobstepsSelected[NjobstepsSelected].job = start;
-			jobstepsSelected[NjobstepsSelected].step = dot;
-			NjobstepsSelected++;
+			selected_step = xmalloc(sizeof(selected_step_t));
+			list_append(selected_steps, selected_step);
+			
+			selected_step->job = xstrdup(start);
+			selected_step->step = xstrdup(dot);
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
-			int i;
 			fprintf(stderr, "Job steps requested:\n");
-			for (i = 0; i < NjobstepsSelected; i++)
+			itr = list_iterator_create(selected_steps);
+			while(selected_step = list_next(itr)) 
 				fprintf(stderr, "\t: %s.%s\n",
-					jobstepsSelected[i].job,
-					jobstepsSelected[i].step);
+					selected_step->job,
+					selected_step->step);
+			list_iterator_destroy(itr);
+			
 		}
 	}
 
@@ -779,17 +882,20 @@ void parse_command_line(int argc, char **argv)
 			while (isspace(*start))
 				start++;	/* discard whitespace */
 			*end = 0;
-			jobstepsSelected[NjobstepsSelected].job = start;
-			jobstepsSelected[NjobstepsSelected].step = NULL;
-			NjobstepsSelected++;
+			selected_step = xmalloc(sizeof(selected_step_t));
+			list_append(selected_steps, selected_step);
+			
+			selected_step->job = xstrdup(start);
+			selected_step->step = NULL;
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
-			int i;
 			fprintf(stderr, "Jobs requested:\n");
-			for (i = 0; i < NjobstepsSelected; i++)
-				fprintf(stderr, "\t: %s\n",
-					jobstepsSelected[i].job);
+			itr = list_iterator_create(selected_steps);
+			while(selected_step = list_next(itr)) 
+				fprintf(stderr, "\t: %s\n", 
+					selected_step->job);
+			list_iterator_destroy(itr);
 		}
 	}
 
@@ -798,15 +904,18 @@ void parse_command_line(int argc, char **argv)
 		start = params.opt_state_list;
 		while ((end = strstr(start, ","))) {
 			*end = 0;
-			statesSelected[NstatesSelected] = start;
-			NstatesSelected++;
+			selected_status[decode_status_char(start)] = 1;
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
-			int i;
 			fprintf(stderr, "States requested:\n");
-			for (i = 0; i < NstatesSelected; i++)
-				fprintf(stderr, "\t: %s\n", statesSelected[i]);
+			for(i=0; i< STATUS_COUNT; i++) {
+				if(selected_status[i]) {
+					fprintf(stderr, "\t: %s\n", 
+						decode_status_int(i));
+					break;
+				}
+			}
 		}
 	}
 
@@ -815,14 +924,14 @@ void parse_command_line(int argc, char **argv)
 		if (params.opt_dump || params.opt_expire)
 			goto endopt;
 		params.opt_field_list = xmalloc(sizeof(DEFAULT_FIELDS)+1);
-		strcpy(params.opt_field_list,DEFAULT_FIELDS); 
+		strcpy(params.opt_field_list, DEFAULT_FIELDS); 
 		strcat(params.opt_field_list, ",");
 	}
 	start = params.opt_field_list;
 	while ((end = strstr(start, ","))) {
 		*end = 0;
 		for (i = 0; fields[i].name; i++) {
-			if (strcasecmp(fields[i].name, start) == 0)
+			if (!strcasecmp(fields[i].name, start))
 				goto foundfield;
 		}
 		fprintf(stderr,
@@ -830,17 +939,17 @@ void parse_command_line(int argc, char **argv)
 			start);
 		exit(1);
 	foundfield:
-		printFields[NprintFields++] = i;
+		printfields[nprintfields++] = i;
 		start = end + 1;
 	}
 	if (params.opt_verbose) {
 		fprintf(stderr, "%d field%s selected:\n",
-			NprintFields,
-			(NprintFields==1? "" : "s"));
-		for (i = 0; i < NprintFields; i++)
+			nprintfields,
+			(nprintfields==1? "" : "s"));
+		for (i = 0; i < nprintfields; i++)
 			fprintf(stderr,
 				"\t%s\n",
-				fields[printFields[i]].name);
+				fields[printfields[i]].name);
 	} 
 endopt:
 	if (optind < argc) {
@@ -853,140 +962,138 @@ endopt:
 	return;
 }
 
-void doDump(void)
+void do_dump(void)
 {
-	long	j, js;
 	int rc;
-	for (j=0; j<Njobs; j++) {
-		if (params.opt_dup==0)
-			if (jobs[j].jobnum_superseded) {
+	ListIterator itr = NULL;
+	ListIterator itr_step = NULL;
+	job_rec_t *job = NULL;
+	step_rec_t *step = NULL;
+
+	itr = list_iterator_create(jobs);
+	while(job = list_next(itr)) {
+		if (!params.opt_dup)
+			if (job->jobnum_superseded) {
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Note: Skipping older"
 						" job %ld dated %s\n",
-						jobs[j].job,
-						jobs[j].submitted);
+						job->header.jobnum,
+						job->header.submitted);
 				continue;
 			}
 		if (params.opt_uid>=0)
-			if (jobs[j].uid != params.opt_uid)
+			if (job->header.uid != params.opt_uid)
 				continue;
 		/* JOB_START */
 		if (params.opt_jobstep_list == NULL) {
-			if ((jobs[j].job_start_seen==0) &&
-			    (jobs[j].job_step_seen) ) {
+			if (!job->job_start_seen && job->job_step_seen) {
 				/* If we only saw JOB_TERMINATED, the
 				 * job was probably canceled. */ 
 				fprintf(stderr,
 					"Error: No JOB_START record for "
 					"job %ld\n",
-					jobs[j].job);
+					job->header.jobnum);
 				if (rc<ERROR)
 					rc = ERROR;
 			}
-			_dump_header(j);
-			printf("JOB_START %d %d %d %d %s %d %d %ld %s\n", 
-			       1,
-			       16,
-			       jobs[j].uid,
-			       jobs[j].gid,
-			       jobs[j].jobname,
-			       jobs[j].batch,
-			       jobs[j].priority,
-			       jobs[j].ncpus,
-			       jobs[j].nodes
-				);
+			_dump_header(job->header);
+			printf("JOB_START %s %d %d %ld %s\n", 
+			       job->jobname,
+			       job->batch,
+			       job->priority,
+			       job->ncpus,
+			       job->nodes);
 		}
 		/* JOB_STEP */
-		for (js=jobs[j].first_jobstep; js>=0; js=jobsteps[js].next) {
-			if ((strcasecmp(jobsteps[js].cstatus, "R")==0) &&
-			    jobs[j].job_terminated_seen) {
-				strcpy(jobsteps[js].cstatus,"f");
-				jobsteps[js].error=1;
+		itr_step = list_iterator_create(job->steps);
+		while(step = list_next(itr_step)) {
+			if (step->status == JOB_RUNNING &&
+			    job->job_terminated_seen) {
+				step->status = JOB_FAILED;
+				step->error=1;
 			}
-			_dump_header(j);
-			printf("JOB_STEP %d %d %ld %s ",
-			       1,
-			       38,
-			       jobsteps[js].jobstep,
-			       jobsteps[js].stepname); 
+			_dump_header(step->header);
+			printf("JOB_STEP %ld %s ",
+			       step->stepnum,
+			       step->stepname); 
 			printf("%s %s %d %ld %ld %ld ",
-			       jobsteps[js].finished,
-			       jobsteps[js].cstatus,
-			       jobsteps[js].error,
-			       jobsteps[js].nprocs,
-			       jobsteps[js].ncpus,
-			       jobsteps[js].elapsed);
+			       step->finished,
+			       decode_status_int(step->status),
+			       step->error,
+			       step->ntasks,
+			       step->ncpus,
+			       step->elapsed);
 			printf("%ld %ld %ld %ld %ld %ld ",
-			       jobsteps[js].tot_cpu_sec,
-			       jobsteps[js].tot_cpu_usec,
-			       jobsteps[js].tot_user_sec,
-			       jobsteps[js].tot_user_usec,
-			       jobsteps[js].tot_sys_sec,
-			       jobsteps[js].tot_sys_usec);
+			       step->tot_cpu_sec,
+			       step->tot_cpu_usec,
+			       step->rusage.ru_utime.tv_sec,
+			       step->rusage.ru_utime.tv_usec,
+			       step->rusage.ru_stime.tv_sec,
+			       step->rusage.ru_stime.tv_usec);
 			printf("%ld %ld %ld %ld %ld %ld %ld %ld %ld "
 			       "%ld %ld %ld %ld %ld %ld %ld\n",
-			       jobsteps[js].rss,
-			       jobsteps[js].ixrss,
-			       jobsteps[js].idrss,
-			       jobsteps[js].isrss,
-			       jobsteps[js].minflt,
-			       jobsteps[js].majflt,
-			       jobsteps[js].nswap,
-			       jobsteps[js].inblocks,
-			       jobsteps[js].oublocks,
-			       jobsteps[js].msgsnd,
-			       jobsteps[js].msgrcv,
-			       jobsteps[js].nsignals,
-			       jobsteps[js].nvcsw,
-			       jobsteps[js].nivcsw,
-			       jobsteps[js].vsize,
-			       jobsteps[js].psize);
+			       step->rusage.ru_maxrss,
+			       step->rusage.ru_ixrss,
+			       step->rusage.ru_idrss,
+			       step->rusage.ru_isrss,
+			       step->rusage.ru_minflt,
+			       step->rusage.ru_majflt,
+			       step->rusage.ru_nswap,
+			       step->rusage.ru_inblock,
+			       step->rusage.ru_oublock,
+			       step->rusage.ru_msgsnd,
+			       step->rusage.ru_msgrcv,
+			       step->rusage.ru_nsignals,
+			       step->rusage.ru_nvcsw,
+			       step->rusage.ru_nivcsw,
+			       step->vsize,
+			       step->psize);
 		}
+		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
 		if (params.opt_jobstep_list == NULL) {
-			_dump_header(j);
-			printf("JOB_TERMINATED %d %d %ld ",
-			       1,
-			       38,
-			       jobs[j].elapsed);
+			_dump_header(job->header);
+			printf("JOB_TERMINATED %ld ",
+			       job->elapsed);
 			printf("%s %s %d %ld %ld %ld ",
-			       jobs[j].finished,
-			       jobs[j].cstatus,
-			       jobs[j].error,
-			       jobs[j].nprocs,
-			       jobs[j].ncpus,
-			       jobs[j].elapsed);
+			       job->finished,
+			       decode_status_int(job->status),
+			       job->error,
+			       job->ntasks,
+			       job->ncpus,
+			       job->elapsed);
 			printf("%ld %ld %ld %ld %ld %ld ",
-			       jobs[j].tot_cpu_sec,
-			       jobs[j].tot_cpu_usec,
-			       jobs[j].tot_user_sec,
-			       jobs[j].tot_user_usec,
-			       jobs[j].tot_sys_sec,
-			       jobs[j].tot_sys_usec);
+			       job->tot_cpu_sec,
+			       job->tot_cpu_usec,
+			       job->rusage.ru_utime.tv_sec,
+			       job->rusage.ru_utime.tv_usec,
+			       job->rusage.ru_stime.tv_sec,
+			       job->rusage.ru_stime.tv_usec);
 			printf("%ld %ld %ld %ld %ld %ld ",
-			       jobs[j].rss,
-			       jobs[j].ixrss,
-			       jobs[j].idrss,
-			       jobs[j].isrss,
-			       jobs[j].minflt,
-			       jobs[j].majflt);
+			       job->rusage.ru_maxrss,
+			       job->rusage.ru_ixrss,
+			       job->rusage.ru_idrss,
+			       job->rusage.ru_isrss,
+			       job->rusage.ru_minflt,
+			       job->rusage.ru_majflt);
 			printf("%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", 
-			       jobs[j].nswap,
-			       jobs[j].inblocks,
-			       jobs[j].oublocks,
-			       jobs[j].msgsnd,
-			       jobs[j].msgrcv,
-			       jobs[j].nsignals,
-			       jobs[j].nvcsw,
-			       jobs[j].nivcsw,
-			       jobs[j].vsize,
-			       jobs[j].psize);
+			       job->rusage.ru_nswap,
+			       job->rusage.ru_inblock,
+			       job->rusage.ru_oublock,
+			       job->rusage.ru_msgsnd,
+			       job->rusage.ru_msgrcv,
+			       job->rusage.ru_nsignals,
+			       job->rusage.ru_nvcsw,
+			       job->rusage.ru_nivcsw,
+			       job->vsize,
+			       job->psize);
 		}
 	}
+	list_iterator_destroy(itr);		
 }
 
-/* doExpire() -- purge expired data from the accounting log file
+/* do_expire() -- purge expired data from the accounting log file
  *
  * What we're doing:
  *  1. Open logfile.orig
@@ -1011,7 +1118,7 @@ void doDump(void)
  * 13. Unlink .old.<logfile>
  */
 
-void doExpire(void)
+void do_expire(void)
 {
 #define EXP_STG_LENGTH 12
 #define TERM_REC_FIELDS 11
@@ -1038,6 +1145,10 @@ void doExpire(void)
 		*new_logfile;
 	FILE *fd = NULL;
 	int lc=0;
+	int rec_type = -1;
+	ListIterator itr = NULL;
+	char *start = NULL;
+
 	/* Figure out our expiration date */
 	{
 		struct tm	*ts;	/* timestamp decoder */
@@ -1062,7 +1173,7 @@ void doExpire(void)
 			"a hard-linked file name\n", params.opt_filein);
 		exit(1);
 	}
-	if ( (statbuf.st_mode & S_IFREG)==0 ) {
+	if (!(statbuf.st_mode & S_IFREG)) {
 		fprintf(stderr, "%s is not a regular file; --expire "
 			"only works on accounting log files\n",
 			params.opt_filein);
@@ -1102,20 +1213,23 @@ void doExpire(void)
 				*fptr++ = 0;
 		}
 		if (i < TERM_REC_FIELDS)
-			continue;	/* Odd, but complain some other time */
-		if (strcmp(f[F_RECTYPE], "JOB_TERMINATED")==0) {
+			continue;
+		rec_type = atoi(f[F_RECTYPE]);
+		/* Odd, but complain some other time */
+		if (rec_type == JOB_TERMINATED) {
 			if (strncmp(exp_stg, f[F_FINISHED],
 				    expire_time_match)<0) 
 				continue;
-			if (NpartitionsSelected) {
-				for (i = 0; i < NpartitionsSelected; i++)
-					if (strcasecmp(f[F_PARTITION],
-						       partitionsSelected[i]) 
-					    == 0)
-						goto pmatch;
-				continue;	/* no match */
+			if (list_count(selected_parts)) {
+				itr = list_iterator_create(selected_parts);
+				while(start = list_next(itr)) 
+					if(!strcasecmp(f[F_PARTITION], start)) 
+						break;
+				list_iterator_destroy(itr);
+				if(!start)
+					continue;	/* no match */
 			}
-		pmatch: 
+					
 			if (exp_table_allocated <= exp_table_entries)
 				exp_table = xrealloc(exp_table,
 						     sizeof(expired_table_t) *
@@ -1174,7 +1288,7 @@ void doExpire(void)
 	if (params.opt_verbose > 2) {
 		fprintf(stderr, "--- contents of exp_table ---");
 		for (i=0; i<exp_table_entries; i++) {
-			if ((i%5)==0)
+			if (!(i%5))
 				fprintf(stderr, "\n");
 			else
 				fprintf(stderr, "\t");
@@ -1197,10 +1311,11 @@ void doExpire(void)
 				break; 
 			fptr++;
 		}
+		rec_type = atoi(f[F_RECTYPE]);
 		
-		if ((strncmp(f[F_RECTYPE], "JOB_START ", 10)==0)
-		    || (strncmp(f[F_RECTYPE], "JOB_STEP ", 9)==0)
-		    || (strncmp(f[F_RECTYPE], "JOB_TERMINATED ", 15)==0))
+		if (rec_type == JOB_START
+		    || rec_type == JOB_STEP
+		    || rec_type == JOB_TERMINATED)
 			goto goodrec;
 
 		/* Ugh; invalid record */
@@ -1241,7 +1356,7 @@ void doExpire(void)
 	if (rename(new_logfile_name, params.opt_filein)) {
 		perror("renaming new logfile");
 		/* undo it? */
-		if (rename(old_logfile_name, params.opt_filein)==0) 
+		if (!rename(old_logfile_name, params.opt_filein)) 
 			fprintf(stderr, "Please correct the problem "
 				"and try again");
 		else
@@ -1286,79 +1401,133 @@ void doExpire(void)
 	}
 	fclose(new_logfile);
 	fclose(fd);
-	if (file_err==0)
+	if (!file_err)
 		unlink(old_logfile_name);
 	printf("%d jobs expired.\n", exp_table_entries);
 	xfree(exp_table);
 	exit(0);
 }
 
-void doFdump(char* fields[], int lc)
+void do_fdump(char* f[], int lc)
 {
 	int	i=0,
 		numfields;
-	struct {
-		char	*start;
-		char	*step;
-		char	*term;
-	} fnames[] = {
-		{ "job",	"job",	"job"	},		/*  0 */
-		{ "partition",	"partition",	"partition" },	/*  1 */
-		{ "submitted",	"submitted",	"submitted" },	/*  2 */
-		{ "starttime",	"starttime",	"starttime" },	/*  3 */
-		{ "uid.gid",	"uid.gid",	"uid.gid" },	/*  4 */
-		{ "reserved-1",	"reserved-1",	"reserved-1" },	/*  5 */
-		{ "recordType", "recordType",	"recordType" },	/*  6 */
-		{ "recordVers",	"recordVers",	"recordVers" },	/*  7 */
-		{ "numFields",	"numFields",	"numFields" },	/*  8 */
-		{ "uid",	"jobStep",	"totElapsed" },	/*  9 */
-		{ "gid",	"finished",	"finished" },	/* 10 */
-		{"jobName",	"cStatus",	"cStatus" },	/* 11 */ 
-		{"batchFlag",	"error",	"error" },	/* 12 */
-		{"priority",	"nprocs",	"nprocs" },	/* 13 */
-		{"ncpus",	"ncpus",	"ncpus" },	/* 14 */
-		{"nodeList",	"elapsed",	"elapsed" },	/* 15 */
-		{"????",	"cpu_sec",	"cpu_sec" },	/* 16 */
-		{"????",	"cpu_usec",	"cpu_usec" },	/* 17 */
-		{"????",	"user_sec",	"user_sec" },	/* 18 */
-		{"????",	"user_usec",	"user_usec" },	/* 19 */
-		{"????",	"sys_sec",	"sys_sec" },	/* 20 */
-		{"????",	"sys_usec",	"sys_usec" },	/* 21 */
-		{"????",	"rss",		"rss" },	/* 22 */
-		{"????",	"ixrss",	"ixrss" },	/* 23 */
-		{"????",	"idrss",	"idrss" },	/* 24 */
-		{"????",	"isrss",	"isrss" },	/* 25 */
-		{"????",	"minflt",	"minflt" },	/* 26 */
-		{"????",	"majflt",	"majflt" },	/* 27 */
-		{"????",	"nswap",	"nswap" },	/* 28 */
-		{"????",	"inblocks",	"inblocks" },	/* 29 */
-		{"????",	"oublocks",	"oublocks" },	/* 30 */
-		{"????",	"msgsnd",	"msgsnd" },	/* 31 */
-		{"????",	"msgrcv",	"msgrcv" },	/* 32 */
-		{"????",	"nsignals",	"nsignals" },	/* 33 */
-		{"????",	"nvcsw",	"nvcsw" },	/* 34 */
-		{"????",	"nivcsw",	"nivcsw" },	/* 35 */
-		{"????",	"vsize",	"vsize" },	/* 36 */
-		{"????",	"psize",	"psize" }	/* 37 */
-	};
-	numfields = -1;//atoi(fields[F_NUMFIELDS]);
-	printf("\n-------Line %ld ---------------\n", lc);
-	if (strcmp(fields[F_RECTYPE], "JOB_START")==0)
-		for (i=0; fields[i] && (i<numfields); i++)
-			printf("%12s: %s\n", fnames[i].start, fields[i]);
-	else if (strcmp(fields[F_RECTYPE], "JOB_STEP")==0)
-		for (i=0; fields[i] && (i<numfields); i++)
-			printf("%12s: %s\n", fnames[i].step, fields[i]);
-	else if (strcmp(fields[F_RECTYPE], "JOB_TERMINATED")==0)
-		for (i=0; fields[i] && (i<numfields); i++)
-			printf("%12s: %s\n", fnames[i].term, fields[i]);
-	else 	/* _get_data() already told them of unknown record type */
-		printf("      Field[%02d]: %s\n", i, fields[i]); 
-	for ( ; fields[i]; i++)	/* Any extra data? */
-		printf("extra field[%02d]: %s\n", i, fields[i]);
+	char **type;
+	char	*start[] = {"job",       /* F_JOB */
+			    "partition", /* F_PARTITION */
+			    "submitted", /* F_SUBMITTED */
+			    "starttime", /* F_STARTTIME */
+			    "uid.gid",	 /* F_UIDGID */
+			    "reserved-1",/* F_RESERVED1 */
+			    "recordType",/* F_RECTYPE */
+			    "jobName",	 /* F_JOBNAME */ 
+			    "batchFlag", /* F_BATCH */
+			    "priority",	 /* F_PRIORITY */
+			    "ncpus",	 /* F_NCPUS */
+			    "nodeList", /* F_NODES */
+			    NULL};
+		
+	char	*step[] = {"job",       /* F_JOB */
+			   "partition", /* F_PARTITION */
+			   "submitted", /* F_SUBMITTED */
+			   "starttime", /* F_STARTTIME */
+			   "uid.gid",	 /* F_UIDGID */
+			   "reserved-1",/* F_RESERVED1 */
+			   "recordType",/* F_RECTYPE */
+			   "jobStep",	 /* F_JOBSTEP */
+			   "finished",	 /* F_FINISHED */
+			   "status",	 /* F_STATUS */ 
+			   "error",	 /* F_ERROR */
+			   "ntasks",	 /* F_NTASKS */
+			   "ncpus",	 /* F_STEPNCPUS */
+			   "elapsed",	 /* F_ELAPSED */
+			   "cpu_sec",	 /* F_CPU_SEC */
+			   "cpu_usec",	 /* F_CPU_USEC */
+			   "user_sec",	 /* F_USER_SEC */
+			   "user_usec",	 /* F_USER_USEC */
+			   "sys_sec",	 /* F_SYS_SEC */
+			   "sys_usec",	 /* F_SYS_USEC */
+			   "rss",	 /* F_RSS */
+			   "ixrss",	 /* F_IXRSS */
+			   "idrss",	 /* F_IDRSS */
+			   "isrss",	 /* F_ISRSS */
+			   "minflt",	 /* F_MINFLT */
+			   "majflt",	 /* F_MAJFLT */
+			   "nswap",	 /* F_NSWAP */
+			   "inblocks",	 /* F_INBLOCKS */
+			   "oublocks",	 /* F_OUTBLOCKS */
+			   "msgsnd",	 /* F_MSGSND */
+			   "msgrcv",	 /* F_MSGRCV */
+			   "nsignals",	 /* F_NSIGNALS */
+			   "nvcsw",	 /* F_VCSW */
+			   "nivcsw",	 /* F_NIVCSW */
+			   "vsize",	 /* F_VSIZE */
+			   "psize",      /* F_PSIZE */
+			   "StepName",	 /* F_STEPNAME */
+			   NULL};
+       
+	char	*term[] = {"job",       /* F_JOB */
+			   "partition", /* F_PARTITION */
+			   "submitted", /* F_SUBMITTED */
+			   "starttime", /* F_STARTTIME */
+			   "uid.gid",	 /* F_UIDGID */
+			   "reserved-1",/* F_RESERVED1 */
+			   "recordType",/* F_RECTYPE */
+			   "totElapsed",	/*  9 */
+			   "finished",	/* 10 */
+			   "status",	/* 11 */ 
+			   "error",	 /* F_ERROR */
+			   "ntasks",	 /* F_NTASKS */
+			   "ncpus",	 /* F_STEPNCPUS */
+			   "elapsed",	 /* F_ELAPSED */
+			   "cpu_sec",	 /* F_CPU_SEC */
+			   "cpu_usec",	 /* F_CPU_USEC */
+			   "user_sec",	 /* F_USER_SEC */
+			   "user_usec",	 /* F_USER_USEC */
+			   "sys_sec",	 /* F_SYS_SEC */
+			   "sys_usec",	 /* F_SYS_USEC */
+			   "rss",	 /* F_RSS */
+			   "ixrss",	 /* F_IXRSS */
+			   "idrss",	 /* F_IDRSS */
+			   "isrss",	 /* F_ISRSS */
+			   "minflt",	 /* F_MINFLT */
+			   "majflt",	 /* F_MAJFLT */
+			   "nswap",	 /* F_NSWAP */
+			   "inblocks",	 /* F_INBLOCKS */
+			   "oublocks",	 /* F_OUTBLOCKS */
+			   "msgsnd",	 /* F_MSGSND */
+			   "msgrcv",	 /* F_MSGRCV */
+			   "nsignals",	 /* F_NSIGNALS */
+			   "nvcsw",	 /* F_VCSW */
+			   "nivcsw",	 /* F_NIVCSW */
+			   "vsize",	 /* F_VSIZE */
+			   "psize",      /* F_PSIZE */
+			   NULL};	 
+		
+	i = atoi(f[F_RECTYPE]);
+	printf("\n------- Line %ld %s -------\n", lc, _convert_type(i));
+	if (i == JOB_START)
+		type = start;
+	else if (i == JOB_STEP)
+		type = step;
+	else if (i == JOB_TERMINATED)
+		type = term;
+	else 	{/* _get_data() already told them of unknown record type */
+		while(f[i]) {
+			printf("      Field[%02d]: %s\n", i, f[i]); 
+			i++;
+		}
+		return;
+	}
+	i=0;
+	while(type[i]) {
+		printf("%12s: %s\n", type[i], f[i]);
+		i++;
+	}
+	
 }
 
-void doHelp(void)
+void do_help(void)
 {
 	switch (params.opt_help) {
 	case 1:
@@ -1376,7 +1545,7 @@ void doHelp(void)
 	}
 }
 
-/* doList() -- List the assembled data
+/* do_list() -- List the assembled data
  *
  * In:	Nothing explicit.
  * Out:	void.
@@ -1384,107 +1553,105 @@ void doHelp(void)
  * At this point, we have already selected the desired data,
  * so we just need to print it for the user.
  */
-void doList(void)
+void do_list(void)
 {
 	int	f, pf;
-	long	j, js;
-	int	doJobs=1,
-		doJobsteps=1,
+	int	do_jobs=1,
+		do_jobsteps=1,
 		i;
 	int rc = 0;
+	
+	ListIterator itr = NULL;
+	ListIterator itr_step = NULL;
+	job_rec_t *job = NULL;
+	step_rec_t *step = NULL;
+
 	if (params.opt_total)
-		doJobsteps = 0;
+		do_jobsteps = 0;
 	else if (params.opt_jobstep_list)
-		doJobs = 0;
-	for (j=0; j<Njobs; j++) {
-		if (params.opt_dup==0)
-			if (jobs[j].jobnum_superseded) {
+		do_jobs = 0;
+	itr = list_iterator_create(jobs);
+	while(job = list_next(itr)) {
+		if (!params.opt_dup)
+			if (job->jobnum_superseded) {
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Note: Skipping older"
 						" job %ld dated %s\n",
-						jobs[j].job,
-						jobs[j].submitted);
+						job->header.jobnum,
+						job->header.submitted);
 				continue;
 			}
-		if ((jobs[j].job_start_seen==0) && jobs[j].job_step_seen) {
+		if (!job->job_start_seen && job->job_step_seen) {
 			/* If we only saw JOB_TERMINATED, the job was
 			 * probably canceled. */
 			fprintf(stderr,
-				"Error: No JOB_START record for " "job %ld\n",
-				jobs[j].job);
+				"Error: No JOB_START record for job %ld\n",
+				job->header.jobnum);
 			if (rc<ERROR)
 				rc = ERROR;
 		}
 		if (params.opt_verbose > 1) {
-			if (jobs[j].job_start_seen==0)
+			if (!job->job_start_seen)
 				fprintf(stderr,
 					"Note: No JOB_START record for "
 					"job %ld\n",
-					jobs[j].job);
-			if (jobs[j].job_step_seen==0)
+					job->header.jobnum);
+			if (!job->job_step_seen)
 				fprintf(stderr,
 					"Note: No JOB_STEP record for "
 					"job %ld\n",
-					jobs[j].job);
-			if (jobs[j].job_terminated_seen==0)
+					job->header.jobnum);
+			if (!job->job_terminated_seen)
 				fprintf(stderr,
 					"Note: No JOB_TERMINATED record for "
 					"job %ld\n",
-					jobs[j].job);
+					job->header.jobnum);
 		}
-		if (params.opt_uid >= 0 && (jobs[j].uid != params.opt_uid))
+		if (params.opt_uid >= 0 && (job->header.uid != params.opt_uid))
 			continue;
-		if (params.opt_gid >= 0 && (jobs[j].gid != params.opt_gid))
+		if (params.opt_gid >= 0 && (job->header.gid != params.opt_gid))
 			continue;
-		if (doJobs) {
+		if (do_jobs) {
 			if (params.opt_state_list) {
-				for (i=0; i<NstatesSelected; i++) {
-					if (strcasecmp(jobs[j].cstatus,
-						       statesSelected[i])==0)
-						goto jstate;
-				}
-				continue;
+				if(!selected_status[job->status])
+					continue;
 			}
-		jstate:
-			for (f=0; f<NprintFields; f++) {
-				pf = printFields[f];
-				if (f)
-					printf(" ");
-				(fields[pf].print_routine)(JOB, j);
-			}
-			printf("\n");
+			print_fields(JOB, job);
 		}
-		if (doJobsteps) {
-			for (js=jobs[j].first_jobstep;
-			     js>=0;
-			     js=jobsteps[js].next) {
-				if ((strcasecmp(jobsteps[js].cstatus,"R")==0) 
-				    && jobs[j].job_terminated_seen) {
-					strcpy(jobsteps[js].cstatus,"f");
-					jobsteps[js].error=1;
+		if (do_jobsteps) {
+			itr_step = list_iterator_create(job->steps);
+			while(step = list_next(itr_step)) {
+				if (step->status == JOB_RUNNING 
+				    && job->job_terminated_seen) {
+					step->status == JOB_FAILED;
+					step->error=1;
 				}
 				if (params.opt_state_list) {
-					for (i=0; i<NstatesSelected; i++) {
-						if (strcasecmp(
-							    jobsteps[js].
-							    cstatus,
-							    statesSelected[i])
-						    == 0)
-							goto js_state;
-					}
-					continue;
+					if(!selected_status[step->status])
+						continue;
 				}
-			js_state:
-				for(f=0; f<NprintFields; f++) {
-					pf = printFields[f];
-					if (f)
-						printf(" ");
-					(fields[pf].print_routine)(
-						JOBSTEP, js);
-				}
-				printf("\n");
+				print_fields(JOBSTEP, step);
 			} 
+			list_iterator_destroy(itr_step);
 		}
 	}
+	list_iterator_destroy(itr);
+}
+
+void sacct_init()
+{
+	int i=0;
+	jobs = list_create(destroy_job);
+	selected_parts = list_create(_destroy_parts);
+	selected_steps = list_create(_destroy_steps);
+	for(i=0; i<STATUS_COUNT; i++)
+		selected_status[i] = 0;
+}
+
+void sacct_fini()
+{
+	list_destroy(jobs);
+	list_destroy(selected_parts);
+	list_destroy(selected_steps);
 }

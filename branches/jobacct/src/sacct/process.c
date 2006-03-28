@@ -28,134 +28,126 @@
 
 #include "sacct.h"
 
-int  sameJobStart(long j, char *f[]);
-int  sameJobStep(long js, char *f[]);
-int  sameJobTerminated(long j, char *f[]);
-void linkJobstep(long j, long js);
-int _find_job_record(long job, char *submitted);
-int _find_step_record(long j, long jobstep);
-long _init_job_struct(long job, char *f[]);
-
+int _same_start(job_rec_t *job, job_rec_t *temp_rec);
+int _same_step(step_rec_t *step, step_rec_t *temp_rec);
+int _same_terminated(job_rec_t *job, job_rec_t *temp_rec);
+job_rec_t *_find_job_record(acct_header_t header);
+step_rec_t *_find_step_record(job_rec_t *job, long jobstep);
+job_rec_t *_init_job_rec(acct_header_t header, int lc);
+int _parse_line(char *f[], void **data);
 /* Have we seen this data already?  */
 
-int sameJobStart(long j, char *f[])
+int _same_start(job_rec_t *job, job_rec_t *temp_rec)
 {
-	if (jobs[j].uid != atoi(f[F_UID]))
+	if (job->header.uid != temp_rec->header.uid)
 		return 0;
-	if (jobs[j].gid != atoi(f[F_GID]))
+	if (job->header.gid != temp_rec->header.gid)
 		return 0;
-	if (strncmp(jobs[j].jobname, f[F_JOBNAME], MAX_JOBNAME_LENGTH))
+	if (strcmp(job->jobname, temp_rec->jobname))
 		return 0;
-	if (jobs[j].batch != atoi(f[F_BATCH]))
+	if (job->batch != temp_rec->batch)
 		return 0;
-	if (jobs[j].priority != atoi(f[F_PRIORITY]))
+	if (job->priority != temp_rec->priority)
 		return 0;
-	if (jobs[j].ncpus != strtol(f[F_NCPUS], NULL, 10))
+	if (job->ncpus != temp_rec->ncpus)
 		return 0;
-	if (strncmp(jobs[j].nodes, f[F_NODES], strlen(jobs[j].nodes)))
+	if (strcmp(job->nodes, temp_rec->nodes))
 		return 0;
 	return 1;
 }
 
-int sameJobStep(long js, char *f[])
+int _same_step(step_rec_t *step, step_rec_t *temp_rec)
 { 
-	if (strcmp(jobsteps[js].finished, f[F_FINISHED]))
+	if (strcmp(step->finished, temp_rec->finished))
 		return 0;
-	if (strncmp(jobsteps[js].cstatus, f[F_CSTATUS],
-		    strlen(jobsteps[js].cstatus)))
+	if (step->status != temp_rec->status)
 		return 0;
-	if (jobsteps[js].error != strtol(f[F_ERROR], NULL, 10))
+	if (step->error != temp_rec->error)
 		return 0;
-	if (jobsteps[js].nprocs != strtol(f[F_NTASKS], NULL, 10))
+	if (step->ntasks != temp_rec->ntasks)
 		return 0;
-	if (jobsteps[js].ncpus != strtol(f[F_NCPUS], NULL, 10))
+	if (step->ncpus != temp_rec->ncpus)
 		return 0;
-	if (jobsteps[js].elapsed != strtol(f[F_ELAPSED], NULL, 10))
+	if (step->elapsed != temp_rec->elapsed)
 		return 0;
-	if (jobsteps[js].tot_cpu_sec != strtol(f[F_CPU_SEC], NULL, 10))
+	if (temp_rec->tot_cpu_sec != step->tot_cpu_usec)
 		return 0;
-	if (jobsteps[js].tot_cpu_usec != strtol(f[F_CPU_USEC], NULL, 10))
+	if (temp_rec->tot_cpu_usec != step->tot_cpu_usec)
 		return 0;
-	if (jobsteps[js].tot_user_sec != strtol(f[F_USER_SEC], NULL, 10))
+	if (temp_rec->rusage.ru_utime.tv_sec != step->rusage.ru_utime.tv_sec)
 		return 0;
-	if (jobsteps[js].tot_user_usec != strtol(f[F_USER_USEC], NULL, 10))
+	if (temp_rec->rusage.ru_utime.tv_usec != step->rusage.ru_utime.tv_usec)
 		return 0;
-	if (jobsteps[js].tot_sys_sec != strtol(f[F_SYS_SEC], NULL, 10))
+	if (temp_rec->rusage.ru_stime.tv_sec != step->rusage.ru_stime.tv_sec)
 		return 0;
-	if (jobsteps[js].tot_sys_usec != strtol(f[F_SYS_USEC], NULL, 10))
+	if (temp_rec->rusage.ru_stime.tv_usec != step->rusage.ru_stime.tv_usec)
 		return 0;
-	if (jobsteps[js].rss != strtol(f[F_RSS], NULL,10))
+	if (temp_rec->rusage.ru_inblock != step->rusage.ru_inblock)
 		return 0;
-	if (jobsteps[js].ixrss != strtol(f[F_IXRSS], NULL,10))
+	if (temp_rec->rusage.ru_oublock != step->rusage.ru_oublock)
 		return 0;
-	if (jobsteps[js].idrss != strtol(f[F_IDRSS], NULL,10))
+	if (temp_rec->rusage.ru_msgsnd != step->rusage.ru_msgsnd)
 		return 0;
-	if (jobsteps[js].isrss != strtol(f[F_ISRSS], NULL,10))
+	if (temp_rec->rusage.ru_msgrcv != step->rusage.ru_msgrcv)
 		return 0;
-	if (jobsteps[js].minflt != strtol(f[F_MINFLT], NULL,10))
+	if (temp_rec->rusage.ru_nsignals != step->rusage.ru_nsignals)
 		return 0;
-	if (jobsteps[js].majflt != strtol(f[F_MAJFLT], NULL,10))
+	if (temp_rec->rusage.ru_nvcsw != step->rusage.ru_nvcsw)
 		return 0;
-	if (jobsteps[js].nswap != strtol(f[F_NSWAP], NULL,10))
+	if (temp_rec->rusage.ru_nivcsw != step->rusage.ru_nivcsw)
 		return 0;
-	if (jobsteps[js].inblocks != strtol(f[F_INBLOCKS], NULL,10))
+	if(temp_rec->rusage.ru_maxrss != step->rusage.ru_maxrss)
 		return 0;
-	if (jobsteps[js].oublocks != strtol(f[F_OUBLOCKS], NULL,10))
+	if(temp_rec->rusage.ru_ixrss != step->rusage.ru_ixrss)
 		return 0;
-	if (jobsteps[js].msgsnd != strtol(f[F_MSGSND], NULL,10))
+	if(temp_rec->rusage.ru_idrss != step->rusage.ru_idrss)
 		return 0;
-	if (jobsteps[js].msgrcv != strtol(f[F_MSGRCV], NULL,10))
+	if(temp_rec->rusage.ru_isrss != step->rusage.ru_isrss)
 		return 0;
-	if (jobsteps[js].nsignals != strtol(f[F_NSIGNALS], NULL,10))
+	if(temp_rec->rusage.ru_minflt != step->rusage.ru_minflt)
 		return 0;
-	if (jobsteps[js].nvcsw != strtol(f[F_NVCSW], NULL,10))
+	if(temp_rec->rusage.ru_majflt != step->rusage.ru_majflt)
 		return 0;
-	if (jobsteps[js].nivcsw != strtol(f[F_NIVCSW], NULL,10))
+	if(temp_rec->rusage.ru_nswap != step->rusage.ru_nswap)
 		return 0;
-	if (jobsteps[js].vsize != strtol(f[F_VSIZE], NULL,10))
+	if (temp_rec->psize != step->psize)
 		return 0;
-	if (jobsteps[js].psize != strtol(f[F_PSIZE], NULL,10))
+	if (temp_rec->vsize != step->vsize)
 		return 0;
+
 	return 1;		/* they are the same */ 
 }
 
-int  sameJobTerminated(long j, char *f[])
+int _same_terminated(job_rec_t *job, job_rec_t *temp_rec)
 {
-	if (jobs[j].job_terminated_seen != 1)
+	if (job->job_terminated_seen != 1)
 		return 0;
-	if (jobs[j].elapsed != strtol(f[F_TOT_ELAPSED], NULL, 10))
+	if (job->elapsed != temp_rec->elapsed)
 		return 0;
-	if (strcmp(jobs[j].finished, f[F_FINISHED]))
+	if (strcmp(job->finished, temp_rec->finished))
 		return 0;
-	if (strncmp(jobs[j].cstatus, f[F_CSTATUS], strlen(jobs[j].cstatus)))
+	if (job->status != temp_rec->status)
 		return 0;
 	return 1;
 }
 
-void linkJobstep(long j, long js)
+job_rec_t *_find_job_record(acct_header_t header)
 {
-	long	*current;
-	current = &jobs[j].first_jobstep;
-	while ( (*current>=0) &&
-		(jobsteps[*current].jobstep < jobsteps[js].jobstep)) {
-		current = &jobsteps[*current].next;
-	}
-	jobsteps[js].next = *current;
-	*current = js; 
-}
+	int	i;
+	job_rec_t *job = NULL;
+	ListIterator itr = list_iterator_create(jobs);
 
-int _find_job_record(long job, char *submitted)
-{
-	int	cmp,
-		i;
-
-	for (i=0; i<Njobs; i++) {
-		if (jobs[i].job == job) {
-			cmp = strncmp(jobs[i].submitted, submitted,
-				      TIMESTAMP_LENGTH);
-			if ( cmp == 0)
-				return i;
-			else if (cmp < 0)
+	while((job = (job_rec_t *)list_next(itr)) != NULL) {
+		if (job->header.jobnum == header.jobnum) {
+			if(!strcmp(job->header.submitted, BATCH_JOB_SUBMIT)) {
+				strncpy(job->header.submitted, 
+					header.submitted, TIMESTAMP_LENGTH);
+				break;
+			}
+			
+			if(!strcmp(job->header.submitted, header.submitted))
+				break;
+			else {
 				/* If we're looking for a later
 				 * record with this job number, we
 				 * know that this one is an older,
@@ -163,316 +155,434 @@ int _find_job_record(long job, char *submitted)
 				 *   We assume that the newer record
 				 * will be created if it doesn't
 				 * already exist. */
-				jobs[i].jobnum_superseded = 1;
+				job->jobnum_superseded = 1;
+			}
 		}
 	}
-	return -1;
+	list_iterator_destroy(itr);
+	return job;
 }
 
-int _find_step_record(long j, long jobstep)
+step_rec_t *_find_step_record(job_rec_t *job, long stepnum)
 {
 	int	i;
-	if ((i=jobs[j].first_jobstep)<0)
-		return -1;
-	for (; i>=0; i=jobsteps[i].next) {
-		if (jobsteps[i].jobstep == jobstep)
-			return i;
+	step_rec_t *step = NULL;
+	ListIterator itr = NULL;
+
+	if(!list_count(job->steps))
+		return step;
+	
+	itr = list_iterator_create(job->steps);
+	while((step = (step_rec_t *)list_next(itr)) != NULL) {
+		if (step->stepnum == stepnum)
+			break;
 	}
-	return -1;
+	list_iterator_destroy(itr);
+	return step;
 }
 
-long _init_job_struct(long job, char *f[])
+job_rec_t *_init_job_rec(acct_header_t header, int lc)
 {
 	long	j;
 	char	*p;
 
-	if ((j=Njobs++)>= MAX_JOBS) {
-		fprintf(stderr, "Too many jobs listed in the log file;\n"
-			"stopped after %ld jobs at input line %ld.\n"
-			"Please use \"--expire\" to reduce the "
-			"size of the log.\n",
-			Njobs, -1);
-		exit(2);
-	} 
-	jobs[j].job = job;
-	jobs[j].job_start_seen = 0;
-	jobs[j].job_step_seen = 0;
-	jobs[j].job_terminated_seen = 0;
-	jobs[j].jobnum_superseded = 0;
-	jobs[j].first_jobstep = -1;
-	jobs[j].partition = xmalloc(strlen(f[F_PARTITION])+1);
-	strcpy(jobs[j].partition, f[F_PARTITION]);
-	strncpy(jobs[j].submitted, f[F_SUBMITTED], 16);
-	strncpy(jobs[j].jobname, "(unknown)", MAX_JOBNAME_LENGTH);
-	strcpy(jobs[j].cstatus,"r");
-	strcpy(jobs[j].finished,"?");
-	jobs[j].starttime = strtol(f[F_STARTTIME], NULL, 10);
-	/* Early versions of jobacct treated F_UIDGID as a reserved
-	 * field, so we might find "-" here. Take advantage of the
-	 * fact that atoi() will return 0 if it finds something that's
-	 * not a number for uid and gid.
-	 */
-	jobs[j].uid = atoi(f[F_UIDGID]);
-	if ((p=strstr(f[F_UIDGID],".")))
-		jobs[j].gid=atoi(++p);
-	jobs[j].tot_cpu_sec = 0;
-	jobs[j].tot_cpu_usec = 0;
-	jobs[j].tot_user_sec = 0;
-	jobs[j].tot_user_usec = 0;
-	jobs[j].tot_sys_sec = 0;
-	jobs[j].tot_sys_usec = 0;
-	jobs[j].rss = 0;
-	jobs[j].ixrss = 0;
-	jobs[j].idrss = 0;
-	jobs[j].isrss = 0;
-	jobs[j].minflt = 0;
-	jobs[j].majflt = 0;
-	jobs[j].nswap = 0;
-	jobs[j].inblocks = 0;
-	jobs[j].oublocks = 0;
-	jobs[j].msgsnd = 0;
-	jobs[j].msgrcv = 0;
-	jobs[j].nsignals = 0;
-	jobs[j].nvcsw = 0;
-	jobs[j].nivcsw = 0;
-	jobs[j].vsize = 0;
-	jobs[j].psize = 0;
-	jobs[j].error = 0;
-	return j;
+	job_rec_t *job = xmalloc(sizeof(job_rec_t));
+
+	job->header.jobnum = header.jobnum;
+	job->header.partition = xstrdup(header.partition);
+	strncpy(job->header.submitted, header.submitted, TIMESTAMP_LENGTH);
+	job->header.starttime = header.starttime;
+	job->header.uid = header.uid;
+	job->header.gid = header.gid;
+	job->job_start_seen = 0;
+	job->job_step_seen = 0;
+	job->job_terminated_seen = 0;
+	job->jobnum_superseded = 0;
+	job->first_jobstep = -1;
+	job->jobname = xstrdup("(unknown)");
+	job->status = JOB_RUNNING;
+	strncpy(job->finished, "?", TIMESTAMP_LENGTH);
+	job->tot_cpu_sec = 0;
+	job->tot_cpu_usec = 0;
+	job->rusage.ru_utime.tv_sec = 0;
+	job->rusage.ru_utime.tv_usec += 0;
+	job->rusage.ru_stime.tv_sec += 0;
+	job->rusage.ru_stime.tv_usec += 0;
+	job->rusage.ru_inblock += 0;
+	job->rusage.ru_oublock += 0;
+	job->rusage.ru_msgsnd += 0;
+	job->rusage.ru_msgrcv += 0;
+	job->rusage.ru_nsignals += 0;
+	job->rusage.ru_nvcsw += 0;
+	job->rusage.ru_nivcsw += 0;
+	job->rusage.ru_maxrss = 0;
+	job->rusage.ru_ixrss = 0;
+	job->rusage.ru_idrss = 0;
+	job->rusage.ru_isrss = 0;
+	job->rusage.ru_minflt = 0;
+	job->rusage.ru_majflt = 0;
+	job->rusage.ru_nswap = 0;
+	job->vsize = 0;
+	job->psize = 0;
+	job->error = 0;
+	job->steps = list_create(destroy_step);
+	return job;
 }
 
-void processJobStart(char *f[])
+
+
+step_rec_t *_init_step(long jobnum, char *f[], int lc)
+{
+	long	j;
+	char	*p;
+	step_rec_t *step = NULL;
+
+	return step;
+}
+
+int _parse_line(char *f[], void **data)
+{
+	char *p = NULL;
+	int i = atoi(f[F_RECTYPE]);
+	job_rec_t **job = (job_rec_t **)data;
+	step_rec_t **step = (step_rec_t **)data;
+	
+	switch(i) {
+	case JOB_START:
+		*job = xmalloc(sizeof(job_rec_t));
+		(*job)->header.jobnum = strtol(f[F_JOB], NULL, 10);
+		(*job)->header.partition = xstrdup(f[F_PARTITION]);
+		strncpy((*job)->header.submitted, 
+			f[F_SUBMITTED], TIMESTAMP_LENGTH);
+		(*job)->header.starttime = strtol(f[F_STARTTIME], NULL, 10);
+		(*job)->header.uid = atoi(f[F_UIDGID]);
+		if ((p=strstr(f[F_UIDGID], ".")))
+			(*job)->header.gid=atoi(++p);
+		(*job)->jobname = xstrdup(f[F_JOBNAME]);
+		(*job)->batch = atoi(f[F_BATCH]);
+		(*job)->priority = atoi(f[F_PRIORITY]);
+		(*job)->ncpus = strtol(f[F_NCPUS], NULL, 10);
+		(*job)->nodes = xstrdup(f[F_NODES]);
+		for (i=0; (*job)->nodes[i]; i++)  /* discard trailing <CR> */
+			if (isspace((*job)->nodes[i]))
+				(*job)->nodes[i] = 0;
+		if (!strcmp((*job)->nodes, "(null)")) {
+			xfree((*job)->nodes);
+			(*job)->nodes = xstrdup("unknown");
+		}
+		break;
+	case JOB_STEP:
+		*step = xmalloc(sizeof(step_rec_t));
+		(*step)->header.jobnum = strtol(f[F_JOB], NULL, 10);
+		strncpy((*step)->header.submitted, 
+			f[F_SUBMITTED], TIMESTAMP_LENGTH);
+		if (!strcmp(f[F_JOBSTEP], NOT_JOBSTEP)) {
+			(*step)->stepnum = -2;
+			return;
+		}
+		(*step)->header.partition = xstrdup(f[F_PARTITION]);
+		(*step)->header.starttime = strtol(f[F_STARTTIME], NULL, 10);
+		(*step)->header.uid = atoi(f[F_UIDGID]);
+		if ((p=strstr(f[F_UIDGID], ".")))
+			(*step)->header.gid=atoi(++p);
+		
+		(*step)->stepnum = strtol(f[F_JOBSTEP], NULL, 10);
+		strncpy((*step)->finished, f[F_FINISHED], TIMESTAMP_LENGTH);
+		(*step)->status = atoi(f[F_STATUS]);
+		(*step)->error = strtol(f[F_ERROR], NULL, 10);
+		(*step)->ntasks = strtol(f[F_NTASKS], NULL, 10);
+		(*step)->ncpus = strtol(f[F_NCPUS], NULL, 10);
+		(*step)->elapsed = strtol(f[F_ELAPSED], NULL, 10);
+		
+		(*step)->tot_cpu_sec = strtol(f[F_CPU_SEC], NULL, 10);
+		(*step)->tot_cpu_usec = strtol(f[F_CPU_USEC], NULL, 10);
+		(*step)->rusage.ru_utime.tv_sec = 
+			strtol(f[F_USER_SEC], NULL, 10);
+		(*step)->rusage.ru_utime.tv_usec = 
+			strtol(f[F_USER_USEC], NULL, 10);
+		(*step)->rusage.ru_stime.tv_sec = strtol(f[F_SYS_SEC], NULL, 10);
+		(*step)->rusage.ru_stime.tv_usec = 
+			strtol(f[F_SYS_USEC], NULL, 10);
+		(*step)->rusage.ru_maxrss = strtol(f[F_RSS], NULL,10);
+		(*step)->rusage.ru_ixrss = strtol(f[F_IXRSS], NULL,10);
+		(*step)->rusage.ru_idrss = strtol(f[F_IDRSS], NULL,10);
+		(*step)->rusage.ru_isrss = strtol(f[F_ISRSS], NULL,10);
+		(*step)->rusage.ru_minflt = strtol(f[F_MINFLT], NULL,10);
+		(*step)->rusage.ru_majflt = strtol(f[F_MAJFLT], NULL,10);
+		(*step)->rusage.ru_nswap = strtol(f[F_NSWAP], NULL,10);
+		(*step)->rusage.ru_inblock = strtol(f[F_INBLOCKS], NULL,10);
+		(*step)->rusage.ru_oublock = strtol(f[F_OUBLOCKS], NULL,10);
+		(*step)->rusage.ru_msgsnd = strtol(f[F_MSGSND], NULL,10);
+		(*step)->rusage.ru_msgrcv = strtol(f[F_MSGRCV], NULL,10);
+		(*step)->rusage.ru_nsignals = strtol(f[F_NSIGNALS], NULL,10);
+		(*step)->rusage.ru_nvcsw = strtol(f[F_NVCSW], NULL,10);
+		(*step)->rusage.ru_nivcsw = strtol(f[F_NIVCSW], NULL,10);
+		(*step)->vsize = strtol(f[F_VSIZE], NULL,10);
+		(*step)->psize = strtol(f[F_PSIZE], NULL,10);
+		(*step)->stepname = xstrdup(f[F_STEPNAME]);
+	break;
+	case JOB_TERMINATED:
+		*job = xmalloc(sizeof(job_rec_t));
+		(*job)->header.jobnum = strtol(f[F_JOB], NULL, 10);
+		(*job)->header.partition = xstrdup(f[F_PARTITION]);
+		strncpy((*job)->header.submitted, 
+			f[F_SUBMITTED], TIMESTAMP_LENGTH);
+		(*job)->header.starttime = strtol(f[F_STARTTIME], NULL, 10);
+		(*job)->header.uid = atoi(f[F_UIDGID]);
+		if ((p=strstr(f[F_UIDGID], ".")))
+			(*job)->header.gid=atoi(++p);
+		(*job)->elapsed = strtol(f[F_TOT_ELAPSED], NULL, 10);
+		strncpy((*job)->finished, f[F_FINISHED], TIMESTAMP_LENGTH);
+		(*job)->status = atoi(f[F_STATUS]);
+		
+		break;
+	default:
+		printf("UNKOWN TYPE %d",i);
+		break;
+	}
+}
+
+void process_start(char *f[], int lc)
 {
 	int	i;
-	long	j;	/* index in jobs[] */
-	long	job;
+	job_rec_t *job = NULL;
+	job_rec_t *temp = NULL;
 
-	job = strtol(f[F_JOB], NULL, 10);
-	j = _find_job_record(job, f[F_SUBMITTED]);
-	if (j >= 0 ) {	/* Hmmm... that's odd */
-		if (jobs[j].job_start_seen) {
-			if (sameJobStart(j, f)) {/* OK if really a duplicate */
+	_parse_line(f, (void **)&temp);
+	
+	job = _find_job_record(temp->header);
+	if (job) {	/* Hmmm... that's odd */
+		if (job->job_start_seen) {
+			if (_same_start(job, temp)) {
+				/* OK if really a duplicate */
 				if (params.opt_verbose > 1 )
 					fprintf(stderr,
 						"Duplicate JOB_START for job"
 						" %ld at line %ld -- ignoring"
 						" it\n",
-						job, -1);
+						job, lc);
 			} else {
 				fprintf(stderr,
 					"Conflicting JOB_START for job %ld at"
 					" line %ld -- ignoring it\n",
-					job, -1);
+					job, lc);
 				inputError++;
 			}
+			destroy_job(job);
 			return;
 		} /* Data out of order; we'll go ahead and populate it now */
 	} else
-		j = _init_job_struct(job,f);
-	jobs[j].job_start_seen = 1;
-	jobs[j].uid = atoi(f[F_UID]);
-	jobs[j].gid = atoi(f[F_GID]);
-	strncpy(jobs[j].jobname, f[F_JOBNAME], MAX_JOBNAME_LENGTH);
-	jobs[j].batch = atoi(f[F_BATCH]);
-	jobs[j].priority = atoi(f[F_PRIORITY]);
-	jobs[j].ncpus = strtol(f[F_NCPUS], NULL, 10);
-	jobs[j].nodes = xmalloc(strlen(f[F_NODES])+1);
-	strcpy(jobs[j].nodes, f[F_NODES]); 
-	for (i=0; jobs[j].nodes[i]; i++)	/* discard trailing <CR> */
-		if (isspace(jobs[j].nodes[i]))
-			jobs[j].nodes[i] = 0;
-	if (strcmp(jobs[j].nodes, "(null)")==0) {
-		xfree(jobs[j].nodes);
-		jobs[j].nodes = "unknown";
-	}
+		job = _init_job_rec(temp->header, lc);
+
+	list_append(jobs, job);
+
+	job->job_start_seen = 1;
+	job->header.uid = temp->header.uid;
+	job->header.gid = temp->header.gid;
+	xfree(job->jobname);
+	job->jobname = xstrdup(temp->jobname);
+	job->batch = temp->batch;
+	job->priority = temp->priority;
+	job->ncpus = temp->ncpus;
+	xfree(job->nodes);
+	job->nodes = xstrdup(temp->nodes);
+	destroy_job(temp);
 }
 
-void processJobStep(char *f[])
+void process_step(char *f[], int lc)
 {
-	long	j,	/* index into jobs */
-		js,	/* index into jobsteps */
-		job,
-		jobstep;
+	job_rec_t *job = NULL;
+	
+	step_rec_t *step = NULL;
+	step_rec_t *temp = NULL;
 
-	job = strtol(f[F_JOB], NULL, 10);
-	if (strcmp(f[F_JOBSTEP],NOT_JOBSTEP)==0)
-		jobstep = -2;
-	else
-		jobstep = strtol(f[F_JOBSTEP], NULL, 10);
-	j = _find_job_record(job, f[F_SUBMITTED]);
-	if (j<0) {	/* fake it for now */
-		j = _init_job_struct(job,f);
+	_parse_line(f, (void **)&temp);
+
+	job = _find_job_record(temp->header);
+	
+	if (temp->stepnum == -2) {
+		destroy_step(temp);
+		return;
+	}
+	if (!job) {	/* fake it for now */
+		job = _init_job_rec(temp->header, lc);
 		if ((params.opt_verbose > 1) 
 		    && (params.opt_jobstep_list==NULL)) 
 			fprintf(stderr, 
 				"Note: JOB_STEP record %ld.%ld preceded "
 				"JOB_START record at line %ld\n",
-				job, jobstep, -1);
+				temp->header.jobnum, temp->stepnum, lc);
 	}
-	if ((js=_find_step_record(j, jobstep))>=0) {
-		if (strcasecmp(f[F_CSTATUS], "R")==0)
+	if ((step = _find_step_record(job, temp->stepnum))) {
+		
+		if (temp->status == JOB_RUNNING) {
+			destroy_step(temp);
 			return;/* if "R" record preceded by F or CD; unusual */
-		if (strcasecmp(jobsteps[js].cstatus, "R")) { /* if not "R" */
-			if (sameJobStep(js, f)) {
+		}
+		if (step->status != JOB_RUNNING) { /* if not JOB_RUNNING */
+			if (_same_step(step, temp)) {
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Duplicate JOB_STEP record "
 						"for jobstep %ld.%ld at line "
 						"%ld -- ignoring it\n",
-						job, jobstep, -1);
+						step->header.jobnum, 
+						step->stepnum, lc);
 			} else {
 				fprintf(stderr,
 					"Conflicting JOB_STEP record for"
 					" jobstep %ld.%ld at line %ld"
 					" -- ignoring it\n",
-					job, jobstep, -1);
+					step->header.jobnum, 
+					step->stepnum, lc);
 				inputError++;
 			}
+			destroy_step(temp);
 			return;
 		}
-		goto replace_js;
+		strncpy(step->finished, temp->finished, TIMESTAMP_LENGTH);
+		step->status = temp->status;
+		step->error = temp->error;
+		step->ntasks = temp->ntasks;
+		step->ncpus = temp->ncpus;
+		step->elapsed = temp->elapsed;
+		step->tot_cpu_sec = temp->tot_cpu_sec;
+		step->tot_cpu_usec = temp->tot_cpu_usec;
+		memcpy(&step->rusage, &temp->rusage, sizeof(struct rusage));
+		step->vsize = temp->vsize;
+		step->psize = temp->psize;
+		xfree(step->stepname);
+		step->stepname = xstrdup(temp->stepname);
+		goto got_step;
 	}
-	if ((js = Njobsteps++)>=MAX_JOBSTEPS) {
-		fprintf(stderr, "Too many jobsteps listed in the log file;\n"
-			"stopped after %ld jobs and %ld job steps\n"
-			"at input line %ld. Please use \"--expire\"\n"
-			"to reduce the size of the log.\n",
-			Njobs, js, -1);
-		exit(2);
-	}
-	jobsteps[js].j = j;
-	jobsteps[js].jobstep = jobstep;
-	if (jobstep >= 0) {
-		linkJobstep(j, js);
-		jobs[j].job_step_seen = 1;
-	}
-replace_js:
-	strcpy(jobsteps[js].finished, f[F_FINISHED]);
-	strcpy(jobsteps[js].cstatus, f[F_CSTATUS]);
-	strcpy(jobsteps[js].stepname, f[F_STEPNAME]);
-	jobsteps[js].error = strtol(f[F_ERROR], NULL, 10);
-	jobsteps[js].nprocs = strtol(f[F_NTASKS], NULL, 10);
-	jobsteps[js].ncpus = strtol(f[F_NCPUS], NULL, 10);
-	jobsteps[js].elapsed = strtol(f[F_ELAPSED], NULL, 10);
-	jobsteps[js].tot_cpu_sec = strtol(f[F_CPU_SEC], NULL, 10);
-	jobsteps[js].tot_cpu_usec = strtol(f[F_CPU_USEC], NULL, 10);
-	jobsteps[js].tot_user_sec = strtol(f[F_USER_SEC], NULL, 10);
-	jobsteps[js].tot_user_usec = strtol(f[F_USER_USEC], NULL, 10);
-	jobsteps[js].tot_sys_sec = strtol(f[F_SYS_SEC], NULL, 10);
-	jobsteps[js].tot_sys_usec = strtol(f[F_SYS_USEC], NULL, 10);
-	jobsteps[js].rss = strtol(f[F_RSS], NULL,10);
-	jobsteps[js].ixrss = strtol(f[F_IXRSS], NULL,10);
-	jobsteps[js].idrss = strtol(f[F_IDRSS], NULL,10);
-	jobsteps[js].isrss = strtol(f[F_ISRSS], NULL,10);
-	jobsteps[js].minflt = strtol(f[F_MINFLT], NULL,10);
-	jobsteps[js].majflt = strtol(f[F_MAJFLT], NULL,10);
-	jobsteps[js].nswap = strtol(f[F_NSWAP], NULL,10);
-	jobsteps[js].inblocks = strtol(f[F_INBLOCKS], NULL,10);
-	jobsteps[js].oublocks = strtol(f[F_OUBLOCKS], NULL,10);
-	jobsteps[js].msgsnd = strtol(f[F_MSGSND], NULL,10);
-	jobsteps[js].msgrcv = strtol(f[F_MSGRCV], NULL,10);
-	jobsteps[js].nsignals = strtol(f[F_NSIGNALS], NULL,10);
-	jobsteps[js].nvcsw = strtol(f[F_NVCSW], NULL,10);
-	jobsteps[js].nivcsw = strtol(f[F_NIVCSW], NULL,10);
-	jobsteps[js].vsize = strtol(f[F_VSIZE], NULL,10);
-	jobsteps[js].psize = strtol(f[F_PSIZE], NULL,10);
-
-	if (jobs[j].job_terminated_seen == 0) {	/* If the job is still running,
+	step = temp;
+	temp = NULL;
+	list_append(job->steps, step);
+	
+	job->job_step_seen = 1;
+	
+got_step:
+	destroy_step(temp);
+	
+	if (job->job_terminated_seen == 0) {	/* If the job is still running,
 						   this is the most recent
 						   status */
-		strcpy(jobs[j].finished, f[F_FINISHED]);
-		jobs[j].cstatus[0] = 'r'; jobs[j].cstatus[1] = 0;
-		if ( jobs[j].error == 0 )
-			jobs[j].error = jobsteps[js].error;
-		jobs[j].elapsed = time(NULL) - jobs[j].starttime;
+		strncpy(job->finished, step->finished, TIMESTAMP_LENGTH);
+		job->status = JOB_RUNNING;
+		if ( job->error == 0 )
+			job->error = step->error;
+		job->elapsed = time(NULL) - job->header.starttime;
 	}
 	/* now aggregate the aggregatable */
-	jobs[j].tot_cpu_sec += jobsteps[js].tot_cpu_sec;
-	jobs[j].tot_cpu_usec += jobsteps[js].tot_cpu_usec;
-	jobs[j].tot_user_sec += jobsteps[js].tot_user_sec;
-	jobs[j].tot_user_usec += jobsteps[js].tot_user_usec;
-	jobs[j].tot_sys_sec += jobsteps[js].tot_sys_sec;
-	jobs[j].tot_sys_usec += jobsteps[js].tot_sys_usec;
-	jobs[j].inblocks += jobsteps[js].inblocks;
-	jobs[j].oublocks += jobsteps[js].oublocks;
-	jobs[j].msgsnd += jobsteps[js].msgsnd;
-	jobs[j].msgrcv += jobsteps[js].msgrcv;
-	jobs[j].nsignals += jobsteps[js].nsignals;
-	jobs[j].nvcsw += jobsteps[js].nvcsw;
-	jobs[j].nivcsw += jobsteps[js].nivcsw;
+	job->tot_cpu_sec += step->tot_cpu_sec;
+	job->tot_cpu_usec += step->tot_cpu_usec;
+	job->rusage.ru_utime.tv_sec += step->rusage.ru_utime.tv_sec;
+	job->rusage.ru_utime.tv_usec += step->rusage.ru_utime.tv_usec;
+	job->rusage.ru_stime.tv_sec += step->rusage.ru_stime.tv_sec;
+	job->rusage.ru_stime.tv_usec += step->rusage.ru_stime.tv_usec;
+	job->rusage.ru_inblock += step->rusage.ru_inblock;
+	job->rusage.ru_oublock += step->rusage.ru_oublock;
+	job->rusage.ru_msgsnd += step->rusage.ru_msgsnd;
+	job->rusage.ru_msgrcv += step->rusage.ru_msgrcv;
+	job->rusage.ru_nsignals += step->rusage.ru_nsignals;
+	job->rusage.ru_nvcsw += step->rusage.ru_nvcsw;
+	job->rusage.ru_nivcsw += step->rusage.ru_nivcsw;
+		
 	/* and finally the maximums for any process */
-	if (jobs[j].rss < jobsteps[js].rss)
-		jobs[j].rss = jobsteps[js].rss;
-	if (jobs[j].ixrss < jobsteps[js].ixrss)
-		jobs[j].ixrss = jobsteps[js].ixrss;
-	if (jobs[j].idrss < jobsteps[js].idrss)
-		jobs[j].idrss = jobsteps[js].idrss;
-	if (jobs[j].isrss < jobsteps[js].isrss)
-		jobs[j].isrss = jobsteps[js].isrss;
-	if (jobs[j].majflt < jobsteps[js].majflt)
-		jobs[j].majflt = jobsteps[js].majflt;
-	if (jobs[j].minflt < jobsteps[js].minflt)
-		jobs[j].minflt = jobsteps[js].minflt;
-	if (jobs[j].nswap < jobsteps[js].nswap)
-		jobs[j].nswap = jobsteps[js].nswap;
-	if (jobs[j].psize < jobsteps[js].psize)
-		jobs[j].psize = jobsteps[js].psize;
-	if (jobs[j].vsize < jobsteps[js].vsize)
-		jobs[j].vsize = jobsteps[js].vsize;
+	if(job->rusage.ru_maxrss < step->rusage.ru_maxrss)
+		job->rusage.ru_maxrss = step->rusage.ru_maxrss;
+	if(job->rusage.ru_ixrss < step->rusage.ru_ixrss)
+		job->rusage.ru_ixrss = step->rusage.ru_ixrss;
+	if(job->rusage.ru_idrss < step->rusage.ru_idrss)
+		job->rusage.ru_idrss = step->rusage.ru_idrss;
+	if(job->rusage.ru_isrss < step->rusage.ru_isrss)
+		job->rusage.ru_isrss = step->rusage.ru_isrss;
+	if(job->rusage.ru_minflt < step->rusage.ru_minflt)
+		job->rusage.ru_minflt = step->rusage.ru_minflt;
+	if(job->rusage.ru_majflt < step->rusage.ru_majflt)
+		job->rusage.ru_majflt = step->rusage.ru_majflt;
+	if(job->rusage.ru_nswap < step->rusage.ru_nswap)
+		job->rusage.ru_nswap = step->rusage.ru_nswap;
+	if (job->psize < step->psize)
+		job->psize = step->psize;
+	if (job->vsize < step->vsize)
+		job->vsize = step->vsize;
+
 }
 
-void processJobTerminated(char *f[])
+void process_terminated(char *f[], int lc)
 {
-	long	i,
-		j,
-		job;
+	job_rec_t *job = NULL;
+	job_rec_t *temp = NULL;
+	_parse_line(f, (void **)&temp);
 
-	job = strtol(f[F_JOB], NULL, 10);
-	j = _find_job_record(job, f[F_SUBMITTED]);
-	if (j<0) {	/* fake it for now */
-		j = _init_job_struct(job,f);
+	job = _find_job_record(temp->header);
+	if (!job) {	/* fake it for now */
+		job = _init_job_rec(temp->header, lc);
 		if (params.opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
 				"%ld preceded "
 				"other job records at line %ld\n",
-				job, -1);
-	} else if (jobs[j].job_terminated_seen) {
-		if (strcasecmp(f[F_CSTATUS],"nf")==0) {
+				temp->header.jobnum, lc);
+	} else if (job->job_terminated_seen) {
+		if (temp->status == JOB_NODE_FAIL) {
 			/* multiple node failures - extra TERMINATED records */
 			if (params.opt_verbose > 1)
 				fprintf(stderr, 
 					"Note: Duplicate JOB_TERMINATED "
 					"record (nf) for job %ld at "
 					"line %ld\n", 
-					job, -1);
+					temp->header.jobnum, lc);
 			/* JOB_TERMINATED/NF records may be preceded
 			 * by a JOB_TERMINATED/CA record; NF is much
 			 * more interesting.
 			 */
-			strncpy(jobs[j].cstatus, "nf", 3);
+			job->status = temp->status;
 			return;
 		}
-		if (sameJobTerminated(j, f)) {
+		if (_same_terminated(job, temp)) {
 			if (params.opt_verbose > 1 )
 				fprintf(stderr,
 					"Duplicate JOB_TERMINATED record (%s) "
 					"for job %ld at  line %ld -- "
 					"ignoring it\n",
-					f[F_CSTATUS], job, -1);
+					decode_status_int(temp->status),
+					job, lc);
 		} else {
 			fprintf(stderr,
 				"Conflicting JOB_TERMINATED record (%s) for "
 				"job %ld at line %ld -- ignoring it\n",
-				f[F_CSTATUS], job, -1);
+				decode_status_int(temp->status), job, lc);
 			inputError++;
 		}
 		return;
 	}
-	jobs[j].job_terminated_seen = 1;
-	jobs[j].elapsed = strtol(f[F_TOT_ELAPSED], NULL, 10);
-	strcpy(jobs[j].finished, f[F_COMP_FINISH]);
-	strncpy(jobs[j].cstatus, f[F_COMP_CSTATUS], 3);
-	for (i=0; jobs[j].cstatus[i]; i++)
-		if (isspace(jobs[j].cstatus[i]))
-			jobs[j].cstatus[i] = 0;
+	job->job_terminated_seen = 1;
+	job->elapsed = temp->elapsed;
+	strncpy(job->finished, temp->finished, TIMESTAMP_LENGTH);
+	job->status = temp->status;
+	destroy_job(temp);
+}
+
+void destroy_job(void *object)
+{
+	job_rec_t *job = (job_rec_t *)object;
+	if (job) {
+		if(job->steps)
+			list_destroy(job->steps);
+		xfree(job->header.partition);
+		xfree(job->jobname);
+		xfree(job->nodes);
+		xfree(job);
+	}
+}
+
+void destroy_step(void *object)
+{
+	step_rec_t *step = (step_rec_t *)object;
+	if (step) {
+		xfree(step->header.partition);
+		xfree(step->stepname);
+		xfree(step);
+	}
 }

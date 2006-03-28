@@ -179,12 +179,13 @@ fields_t fields[] = {{"cpu", print_cpu},
 
 long inputError = 0;		/* Muddle through bad data, but complain! */
 
+List jobs = NULL;
 
-long Njobs = 0;
-long Njobsteps = 0;
+long njobs = 0;
+long njobsteps = 0;
 
-int printFields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
-	NprintFields = 0;
+int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
+	nprintfields = 0;
 
 int main(int argc, char **argv)
 {
@@ -197,7 +198,7 @@ int main(int argc, char **argv)
 		USAGE
 	} op;
 	int rc = SLURM_SUCCESS;
-
+	
 	parse_command_line(argc, argv);
 
 	/* What are we doing? Requests for help take highest priority,
@@ -261,13 +262,15 @@ int main(int argc, char **argv)
 	} else
 		op = LIST;
 
+	sacct_init();
+	
 	switch (op) {
 	case DUMP:
 		get_data();
-		doDump();
+		do_dump();
 		break;
 	case EXPIRE:
-		doExpire();
+		do_expire();
 		break;
 	case FDUMP:
 		get_data();
@@ -276,15 +279,17 @@ int main(int argc, char **argv)
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */
 		get_data();
-		doList();
+		do_list();
 		break;
 	case HELP:
-		doHelp();
+		do_help();
 		break;
 	default:
 		fprintf(stderr, "sacct bug: should never get here\n");
+		sacct_fini();
 		exit(2);
 	}
+	sacct_fini();
 	return (rc);
 }
 
@@ -298,17 +303,17 @@ void invalidSwitchCombo(char *good, char *bad)
 void _print_header(void)
 {
 	int	i,j;
-	for (i=0; i<NprintFields; i++) {
+	for (i=0; i<nprintfields; i++) {
 		if (i)
 			printf(" ");
-		j=printFields[i];
+		j=printfields[i];
 		(fields[j].print_routine)(HEADLINE, 0);
 	}
 	printf("\n");
-	for (i=0; i<NprintFields; i++) {
+	for (i=0; i<nprintfields; i++) {
 		if (i)
 			printf(" ");
-		j=printFields[i];
+		j=printfields[i];
 		(fields[j].print_routine)(UNDERSCORE, 0);
 	}
 	printf("\n");
