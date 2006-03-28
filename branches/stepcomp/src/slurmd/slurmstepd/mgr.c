@@ -593,6 +593,7 @@ _send_step_complete_msgs(slurmd_job_t *job)
 {
 	int start, size;
 	int first, last;
+	bool sent_own_comp_msg = false;
 
 	pthread_mutex_lock(&step_complete.lock);
 	start = 0;
@@ -608,19 +609,21 @@ _send_step_complete_msgs(slurmd_job_t *job)
 
 	while(_bit_getrange(start, size, &first, &last)) {
 		/* THIS node is not in the bit string, so we need to prepend
-		   the local rank or send a seperate complete message */
-		if (start == 0) {
-			if (first == 0)
-				first = -1;
-			else
-				_one_step_complete_msg(job, step_complete.rank,
-						       step_complete.rank);
+		   the local rank */
+		if (start == 0 && first == 0) {
+			sent_own_comp_msg = true;
+			first = -1;
 		}
 
 		_one_step_complete_msg(job, (first + step_complete.rank + 1),
 	      			       (last + step_complete.rank + 1));
 		start = last + 1;
 	}
+
+	if (!sent_own_comp_msg)
+		_one_step_complete_msg(job, step_complete.rank,
+				       step_complete.rank);
+
 	pthread_mutex_unlock(&step_complete.lock);
 }
 
