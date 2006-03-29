@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix job accounting logic to open new log file on slurmctld reconfig.
     (Andy Riebs, slurm.hp.logfile.patch).
+ -- Fix bug which allows a user to run a batch script on a node not allocated
+    by the slurmctld.
 
 * Changes in SLURM 1.0.8
 ========================
