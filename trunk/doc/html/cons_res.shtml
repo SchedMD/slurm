@@ -35,6 +35,16 @@ this plug-in is described below.
      view, working the same way as when using the default node selection scheme.</li>
  <li>We introduce a new switch <i>--exclusive</i> which will allow users to reserve/use nodes in
     exclusive mode even when consumable resources is enabled. see "man srun" for details. </li>
+ <li>Using the <i>--overcommit</i> or <i>-O</i> switch in the
+     <b>select/cons_res</b> environment is only allowed/possible when a user
+     requests dedicated nodes using the <i>--exclusive</i>
+     switch. Overcommiting CPUs in a non-dedicated environment would
+     impact jobs that are co-located on the nodes which is not a
+     desirable feature.We are currently looking into "pinning" the
+     processes to jobs' allocated CPUs which should allow users in
+     <b>the future</b> to overcommit CPUs in a the <b>select/cons_res</b> environment
+     without affecting co-located jobs.</li>
+
  <li>SLURM's default <b>select/linear</b> plugin is using a best fit algorithm based on
         number of consecutive nodes. We have chosen the same node allocation
         approach for consistency.</li>
