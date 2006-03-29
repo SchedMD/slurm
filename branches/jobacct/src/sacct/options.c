@@ -1335,7 +1335,7 @@ void do_expire(void)
 	itr = list_iterator_create(keep_list);
 	while(exp_rec = list_next(itr)) {
 		itr2 = list_iterator_create(other_list);
-		while(exp_rec2 = list_next(itr)) {
+		while(exp_rec2 = list_next(itr2)) {
 			if(exp_rec2->job != exp_rec->job)
 				continue;
 			if (fputs(exp_rec2->line, new_logfile)<0) {
@@ -1343,7 +1343,7 @@ void do_expire(void)
 				list_iterator_destroy(itr2);
 				goto finished;
 			}
-			list_remove(itr);
+			list_remove(itr2);
 			_destroy_exp(exp_rec2);
 		}
 		list_iterator_destroy(itr2);

@@ -413,12 +413,12 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 	gmtime_r(&job_ptr->end_time, &ts);
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
-		       "%d %u %04d%02d%02d%02d%02d%02d %s",
+		       "%d %u %04d%02d%02d%02d%02d%02d %d\0",
 		       JOB_TERMINATED,
 		       (int) (job_ptr->end_time - job_ptr->start_time),
 		       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 		       ts.tm_hour, ts.tm_min, ts.tm_sec,
-		       job_ptr->job_state);
+		       job_ptr->job_state & (~JOB_COMPLETING));
 	if (tmp >= MAX_MSG_SIZE) {
 		error("slurmctld_jobacct_job_complete buffer overflow");
 		rc = SLURM_ERROR;
