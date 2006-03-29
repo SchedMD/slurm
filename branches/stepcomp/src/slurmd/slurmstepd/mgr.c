@@ -737,8 +737,10 @@ job_manager(slurmd_job_t *job)
 		_send_launch_resp(job, rc);
 	}
 
-	_wait_for_children_slurmstepd(job);
-	_send_step_complete_msgs(job);
+	if (!job->batch && step_complete.rank > -1) {
+		_wait_for_children_slurmstepd(job);
+		_send_step_complete_msgs(job);
+	}
 
 	return(rc);
 }

@@ -272,12 +272,14 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
 
-	/* Find the slurm_addr of this node's parent slurmd in the step */
-	/* step_hset can be NULL is the user is the SlurmUser, and the
-	   user's credential did not validate in _check_job_credential */
+	/* step_hset can be NULL for batch scripts, OR if the user is
+	 * the SlurmUser, and the job credential did not validate in
+	 * _check_job_credential.  If the job credential did not validate,
+	 * then it did not come from the controller and there is no reason
+	 * to send step completion messages to the controller.
+	 */
 	if (step_hset == NULL) {
-		/* all nodes have to send step completion message directly
-		   to the slurmctld */
+		rank = -1;
 		parent_rank = -1;
 		children = 0;
 		depth = 0;
@@ -289,6 +291,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
 		if (rank != 0) { /* rank 0 talks directly to the slurmctld */
+			/* Find the slurm_addr of this node's parent slurmd
+			   in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			parent_addr = slurm_conf_get_addr(parent_alias);
 		}
@@ -338,11 +342,6 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	/* send req over to slurmstepd */
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
-		/*
-		 * The validity of req->uid was verified against the
-		 * auth credential in _rpc_batch_job().  req->gid
-		 * has NOT yet been checked!
-		 */
 		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
 		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
@@ -726,7 +725,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_addr self;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
-	hostset_t step_hset;
+	hostset_t step_hset = NULL;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -835,17 +834,15 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
 	char    *bg_part_id = NULL;
 	bool	replied = false;
-	/* FIXME - fill in hset with local NodeName only for batch mode */
-	hostset_t step_hset;
 
-	if (!_slurm_authorized_user(req_uid) && (req_uid != req->uid)) {
+	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
 	} 
 
-	if (req->step_id != NO_VAL && req->step_id != 0)
+	if (req->step_id != SLURM_BATCH_SCRIPT && req->step_id != 0)
 		first_job_run = false;
 		
 	/*
@@ -892,14 +889,15 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	slurm_mutex_lock(&launch_mutex);
-	if (req->step_id == NO_VAL)
+	if (req->step_id == SLURM_BATCH_SCRIPT)
 		info("Launching batch job %u for UID %d",
 			req->job_id, req->uid);
 	else
 		info("Launching batch job %u.%u for UID %d",
 			req->job_id, req->step_id, req->uid);
+
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
-				  step_hset);
+				  (hostset_t)NULL);
 	slurm_mutex_unlock(&launch_mutex);
 
     done:
