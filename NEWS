@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     WARNING: "JobAcctType=jobacct/log" is no longer supported.
  -- Removed vestigal 'bg' names from bluegene plugin and smap
  -- InactiveLimit parameter is not enforced for RootOnly partitions.
+ -- Update select/cons_res web page (Susanne Balle, HP, cons_res_doc_patch_3_29_06).
  
 * Changes in SLURM 1.1.0-pre2
 =============================
