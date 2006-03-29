@@ -35,7 +35,8 @@ slurmstepd_SOURCES = 	        	\
 	$(top_builddir)/src/slurmd/common/run_script.c \
 	$(top_builddir)/src/slurmd/common/run_script.h \
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
-	$(top_builddir)/src/slurmd/common/task_plugin.h
+	$(top_builddir)/src/slurmd/common/task_plugin.h \
+	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"

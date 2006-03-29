@@ -859,20 +859,25 @@ extern slurm_addr slurm_conf_get_addr(const char *node_name)
 	int idx;
 	names_ll_t *p;
 
+	slurm_conf_lock();
 	_init_slurmd_nodehash();
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
+			slurm_addr a;
 			if (!p->addr_initialized) {
 				slurm_set_addr(&p->addr, p->port, p->address);
 				p->addr_initialized = true;
 			}
-			return p->addr;
+			a = p->addr;
+			slurm_conf_unlock();
+			return a;
 		}
 		p = p->next_alias;
 	}
+	slurm_conf_unlock();
 
 	/* FIXME - needs to return a success/fail flag, and set address
 	   through a parameter */

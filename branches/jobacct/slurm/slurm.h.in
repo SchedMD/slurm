@@ -168,6 +168,12 @@ enum job_wait_reason {
 	WAIT_TIME		/* job waiting for specific begin time */
 };
 
+enum job_acct_types {
+	JOB_START,
+	JOB_STEP,
+	JOB_TERMINATED
+};
+
 #ifdef HAVE_BG
 #  define SYSTEM_DIMENSIONS 3	/* for job geometry */
 #else

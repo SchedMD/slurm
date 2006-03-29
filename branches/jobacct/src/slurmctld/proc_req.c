@@ -97,6 +97,7 @@ inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
+inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
@@ -264,6 +265,10 @@ void slurmctld_req (slurm_msg_t * msg)
 			slurm_free_jobacct_msg(msg->data);
 		}
 		break; 
+	case REQUEST_STEP_COMPLETE:
+		_slurm_rpc_step_complete(msg);
+		slurm_free_step_complete_msg(msg->data);
+		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -850,7 +855,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 
 	/* do RPC call */
-	if (job_step_kill_msg->job_step_id == NO_VAL) {
+	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
 		error_code = job_signal(job_step_kill_msg->job_id, 
 					job_step_kill_msg->signal, 
 					job_step_kill_msg->batch_flag, uid);
@@ -916,12 +921,20 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_JOB_STEP");
+	debug2("Processing RPC: REQUEST_COMPLETE_JOB_STEP %u.%u",
+		complete_job_step_msg->job_id, 
+		complete_job_step_msg->job_step_id);
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if (!_is_super_user(uid)) {
 		/* Don't trust slurm_rc, it is not from slurmd */
 		complete_job_step_msg->slurm_rc = SLURM_SUCCESS;
 	}
+
+	if (complete_job_step_msg->job_step_id != NO_VAL) {
+/* FIXME: defunct call */
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+
 	lock_slurmctld(job_write_lock);
 
 	/* do RPC call */
@@ -955,7 +968,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	}
 
 	/* Mark job and/or job step complete */
-	if (complete_job_step_msg->job_step_id == NO_VAL) {
+	if (complete_job_step_msg->job_step_id == SLURM_BATCH_SCRIPT) {
 		error_code = job_complete(complete_job_step_msg->job_id,
 					  uid, job_requeue,
 					  complete_job_step_msg->job_rc);
@@ -1483,6 +1496,95 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 		debug("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 }
 
+/* _slurm_rpc_step_complete - process step completion RPC to note the completion of 
+ *	a job step on at least some nodes. If the job step is complete, it may 
+ *	represent the termination of an entire job */
+static void _slurm_rpc_step_complete(slurm_msg_t *msg)
+{
+/* NOTE: patterned after _slurm_rpc_job_step_complete() */
+	int error_code = SLURM_SUCCESS, rc, rem, step_rc;
+	DEF_TIMERS;
+	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	uid_t uid;
+	bool job_requeue = false;
+	bool dump_job = false, dump_node = false;
+
+	/* init */
+	START_TIMER;
+	debug("Processing RPC: REQUEST_STEP_COMPLETE for %u.%u "
+		"nodes %u-%u rc=%u",
+		req->job_id, req->job_step_id,
+		req->range_first, req->range_last, req->step_rc);
+	uid = g_slurm_auth_get_uid(msg->cred);
+	if (!_is_super_user(uid)) {
+		/* Don't trust RPC, it is not from slurmstepd */
+		error("Invalid user %d attempted REQUEST_STEP_COMPLETE",
+		      uid);
+		return;
+	}
+
+	lock_slurmctld(job_write_lock);
+	rc = step_partial_comp(req, &rem, &step_rc);
+	if (rc || rem) {	/* some error or not totally done */
+		if (rc) {
+			info("step_partial_comp: %s",
+				slurm_strerror(rc));
+		}
+		unlock_slurmctld(job_write_lock);
+		slurm_send_rc_msg(msg, rc);
+		if (!rc)	/* partition completion */
+			schedule_job_save();	/* Has own locking */
+		return;
+	}
+
+/* FIXME: test for error, possibly cause batch job requeue */
+	if (req->job_step_id == SLURM_BATCH_SCRIPT) {
+		error_code = job_complete(req->job_id, uid, 
+			job_requeue, step_rc);
+		unlock_slurmctld(job_write_lock);
+		END_TIMER;
+
+		/* return result */
+		if (error_code) {
+			info("_slurm_rpc_step_complete JobId=%u: %s",
+				req->job_id, slurm_strerror(error_code));
+			slurm_send_rc_msg(msg, error_code);
+		} else {
+			debug2("_slurm_rpc_step_complete JobId=%u: %s",
+				 req->job_id, TIME_STR);
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			dump_job = true;
+		}
+	} else {
+		error_code = job_step_complete(req->job_id, req->job_step_id,
+				uid, job_requeue, step_rc);
+		unlock_slurmctld(job_write_lock);
+		END_TIMER;
+
+		/* return result */
+		if (error_code) {
+			info("_slurm_rpc_step_complete StepId=%u.%u %s",
+				req->job_id, req->job_step_id,
+				slurm_strerror(error_code));
+			slurm_send_rc_msg(msg, error_code);
+		} else {
+			info("_slurm_rpc_step_complete StepId=%u.%u %s",
+				req->job_id, req->job_step_id,
+				TIME_STR);
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			dump_job = true;
+		}
+	}
+
+	if (dump_job)
+		(void) schedule_job_save();	/* Has own locking */
+	if (dump_node)
+		(void) schedule_node_save();	/* Has own locking */
+}
+
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
 static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 {
@@ -1512,7 +1614,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
-		if (job_desc_msg->job_id != NO_VAL) {
+		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 			/* Non-super users not permitted to run job steps on front-end.
@@ -1565,7 +1667,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			job_ptr->job_id, TIME_STR);
 		/* send job_ID */
 		submit_msg.job_id     = job_ptr->job_id;
-		submit_msg.step_id    = NO_VAL;
+		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
@@ -1973,7 +2075,7 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	END_TIMER;
 
 	if (error_code) {
-		if (ckpt_ptr->step_id == NO_VAL)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
 			info("_slurm_rpc_checkpoint %s %u: %s", op, 
 				ckpt_ptr->job_id, slurm_strerror(error_code));
 		else
@@ -1981,7 +2083,7 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 				ckpt_ptr->job_id, ckpt_ptr->step_id, 
 				slurm_strerror(error_code));
 	} else {
-		if (ckpt_ptr->step_id == NO_VAL)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
 			info("_slurm_rpc_checkpoint %s for %u %s", op,
 				ckpt_ptr->job_id, TIME_STR);
 		else

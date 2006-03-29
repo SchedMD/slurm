@@ -163,6 +163,17 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);
 	
+	/* receive reverse-tree info from slurmd */
+	pthread_mutex_lock(&step_complete.lock);
+	safe_read(sock, &step_complete.rank, sizeof(int));
+	safe_read(sock, &step_complete.parent_rank, sizeof(int));
+	safe_read(sock, &step_complete.children, sizeof(int));
+	safe_read(sock, &step_complete.depth, sizeof(int));
+	safe_read(sock, &step_complete.max_depth, sizeof(int));
+	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
+	step_complete.bits = bit_alloc(step_complete.children);
+	pthread_mutex_unlock(&step_complete.lock);
+
 	/* receive conf from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);

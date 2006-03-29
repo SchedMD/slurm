@@ -2,7 +2,7 @@
  *  step_mgr.c - manage the job step information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -110,6 +110,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 		if (step_ptr->network)
 			xfree(step_ptr->network);
 		xfree(step_ptr);
@@ -155,6 +156,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
 				xfree(step_ptr->network);
 			xfree(step_ptr);
@@ -348,12 +350,10 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->kill_on_step_done) &&
-	    (list_count(job_ptr->step_list) <= 1))
+	if ((job_ptr->kill_on_step_done)
+	&&  (list_count(job_ptr->step_list) <= 1)
+	&&  (!IS_JOB_FINISHED(job_ptr)))
 		return job_complete(job_id, uid, requeue, job_return_code);
-
-	if (IS_JOB_FINISHED(job_ptr))
-		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_COMPLETE RPC from uid %d",
@@ -638,6 +638,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
+	step_ptr->exit_code = NO_VAL;
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -970,3 +971,59 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	(void) slurm_send_node_msg(conn_fd, &resp_msg);
 	return rc;
 }
+
+/*
+ * step_partial_comp - Note the completion of a job step on at least
+ *	some of its nodes
+ * IN req     - step_completion_msg RPC from slurmstepd
+ * OUT rem    - count of nodes for which responses are still pending
+ * OUT max_rc - highest return code for any step thus far
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int step_partial_comp(step_complete_msg_t *req, int *rem, 
+		int *max_rc)
+{
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	int nodes;
+
+	/* find the job, step, and validate input */
+	job_ptr = find_job_record (req->job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if (job_ptr->job_state == JOB_PENDING)
+		return ESLURM_JOB_PENDING;
+	step_ptr = find_step_record(job_ptr, req->job_step_id);
+	if (step_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if (req->range_last < req->range_first)
+		return EINVAL;
+
+	if (step_ptr->exit_code == NO_VAL) {
+		/* initialize the node bitmap for exited nodes */
+		nodes = bit_set_count(step_ptr->step_node_bitmap);
+		if (req->range_last >= nodes)	/* range is zero origin */
+			return EINVAL;
+		xassert(step_ptr->exit_node_bitmap == NULL);
+		step_ptr->exit_node_bitmap = bit_alloc(nodes);
+		if (step_ptr->exit_node_bitmap == NULL)
+			fatal("bit_alloc: %m");
+		step_ptr->exit_code = req->step_rc;
+	} else {
+		xassert(step_ptr->exit_node_bitmap);
+		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
+		if (req->range_last >= nodes)	/* range is zero origin */
+			return EINVAL;
+		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
+	}
+
+	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
+		req->range_last);
+	if (rem)
+		*rem = bit_clear_count(step_ptr->exit_node_bitmap);
+	if (max_rc)
+		*max_rc = step_ptr->exit_code;
+
+	return SLURM_SUCCESS;
+}
+

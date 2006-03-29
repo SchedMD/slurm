@@ -199,6 +199,13 @@ extern char *slurm_conf_get_nodename(const char *node_hostname);
  */
 extern uint16_t slurm_conf_get_port(const char *node_name);
 
+/*
+ * slurm_conf_get_addr - Return the slurm_addr for a given NodeName
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern slurm_addr slurm_conf_get_addr(const char *node_name);
+
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
  *	values defaults (NULL or NO_VAL). Note that the configuration

@@ -141,6 +141,7 @@ typedef enum {
 	RESPONSE_CHECKPOINT_COMP,
 	REQUEST_SUSPEND,
 	RESPONSE_SUSPEND,
+	REQUEST_STEP_COMPLETE,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -306,6 +307,14 @@ typedef struct complete_job_step_msg {
 	uint32_t slurm_rc;
 	char *node_name;
 } complete_job_step_msg_t;
+
+typedef struct step_complete_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;
+	uint32_t range_first;
+	uint32_t range_last;
+ 	uint32_t step_rc;	/* largest task return code */
+} step_complete_msg_t;
 
 typedef struct kill_tasks_msg {
 	uint32_t job_id;

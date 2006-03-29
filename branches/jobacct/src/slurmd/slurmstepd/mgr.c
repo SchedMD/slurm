@@ -48,6 +48,7 @@
 #include <string.h>
 #include <sys/utsname.h>
 #include <sys/types.h>
+#include <time.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -72,6 +73,7 @@
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
+#include "src/slurmd/common/reverse_tree.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/task.h"
@@ -107,6 +109,18 @@ static int mgr_sigarray[] = {
 	SIGUSR2, SIGALRM, SIGHUP, 0
 };
 
+step_complete_t step_complete = {
+	PTHREAD_COND_INITIALIZER,
+	PTHREAD_MUTEX_INITIALIZER,
+	-1,
+	-1,
+	-1,
+	{},
+	-1,
+	-1,
+	(bitstr_t *)NULL,
+	0
+};
 
 /* 
  * Prototypes
@@ -440,6 +454,178 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	return SLURM_SUCCESS;
 }
 
+static void
+_wait_for_children_slurmstepd(slurmd_job_t *job)
+{
+	int left;
+	int rc;
+	int i;
+	struct timespec ts = {0, 0};
+
+	pthread_mutex_lock(&step_complete.lock);
+
+	/* wait an extra 3 seconds for every level of tree below this level */
+	ts.tv_sec += 3 * (step_complete.max_depth - step_complete.depth);
+	ts.tv_sec += time(NULL) + REVERSE_TREE_CHILDREN_TIMEOUT;
+
+	while((left = bit_clear_count(step_complete.bits)) > 0) {
+		debug3("Rank %d waiting for %d (of %d) children",
+		      step_complete.rank, left, step_complete.children);
+		rc = pthread_cond_timedwait(&step_complete.cond,
+					    &step_complete.lock, &ts);
+		if (rc == ETIMEDOUT) {
+			debug2("Rank %d timed out waiting for %d (of %d)"
+			       " children", step_complete.rank, left,
+			       step_complete.children);
+			break;
+		}
+	}
+	if (left == 0) {
+		debug2("Rank %d got all children completions",
+		      step_complete.rank);
+	}
+
+	/* Find the maximum task return code */
+	for (i = 0; i < job->ntasks; i++)
+		step_complete.step_rc = MAX(step_complete.step_rc,
+					 WEXITSTATUS(job->task[i]->estatus));
+
+	pthread_mutex_unlock(&step_complete.lock);
+}
+
+
+/* caller is holding step_complete.lock */
+static void
+_one_step_complete_msg(slurmd_job_t *job, int first, int last)
+{
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc = -1;
+	int retcode;
+
+	msg.job_id = job->jobid;
+	msg.job_step_id = job->stepid;
+	msg.range_first = first;
+	msg.range_last = last;
+	msg.step_rc = step_complete.step_rc;
+
+	memset(&req, 0, sizeof(req));
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+	req.address = step_complete.parent_addr;
+
+	/* Do NOT change this check to "step_complete.rank == 0", because
+	 * there are odd situations where SlurmUser or root could
+	 * craft a launch without a valid credential, and no tree information
+	 * can be built with out the hostlist from the credential.
+	 */
+	if (step_complete.parent_rank == -1) {
+		/* this is the base of the tree, its parent is slurmctld */
+		debug3("Rank %d sending complete to slurmctld, range %d to %d",
+		       step_complete.rank, first, last);
+		slurm_send_recv_controller_rc_msg(&req, &rc);
+		return;
+	}
+
+	debug3("Rank %d sending complete to rank %d, range %d to %d",
+	       step_complete.rank, step_complete.parent_rank, first, last);
+	retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
+	if (retcode == SLURM_SUCCESS && rc == 0)
+		return;
+
+	/* On error, pause then try sending to parent again.
+	 * The parent slurmstepd may just not have started yet, because
+	 * of the way that the launch message forwarding works.
+	 */
+	sleep(REVERSE_TREE_PARENT_RETRY);
+	debug3("Rank %d retry sending complete to rank %d, range %d to %d",
+	       step_complete.rank, step_complete.parent_rank, first, last);
+	retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
+	if (retcode == SLURM_SUCCESS && rc == 0)
+		return;
+
+	/* on error AGAIN, send to the slurmctld instead */
+	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
+	       step_complete.rank, first, last);
+	slurm_send_recv_controller_rc_msg(&req, &rc);
+}
+
+/* Given a starting bit in the step_complete.bits bitstring, "start",
+ * find the next contiguous range of set bits and return the first
+ * and last indices of the range in "first" and "last".
+ *
+ * caller is holding step_complete.lock
+ */
+static int
+_bit_getrange(int start, int size, int *first, int *last)
+{
+	int i;
+	bool found_first = false;
+
+	for (i = start; i < size; i++) {
+		if (bit_test(step_complete.bits, i)) {
+			if (found_first) {
+				*last = i;
+				continue;
+			} else {
+				found_first = true;
+				*first = i;
+				*last = i;
+			}
+		} else {
+			if (!found_first) {
+				continue;
+			} else {
+				*last = i - 1;
+				break;
+			}
+		}
+	}
+
+	if (found_first)
+		return 1;
+	else
+		return 0;
+}
+
+static void
+_send_step_complete_msgs(slurmd_job_t *job)
+{
+	int start, size;
+	int first, last;
+	bool sent_own_comp_msg = false;
+
+	pthread_mutex_lock(&step_complete.lock);
+	start = 0;
+	size = bit_size(step_complete.bits);
+
+	/* If no children, send message and return early */
+	if (size == 0) {
+		_one_step_complete_msg(job, step_complete.rank,
+				       step_complete.rank);
+		pthread_mutex_unlock(&step_complete.lock);
+		return;
+	}
+
+	while(_bit_getrange(start, size, &first, &last)) {
+		/* THIS node is not in the bit string, so we need to prepend
+		   the local rank */
+		if (start == 0 && first == 0) {
+			sent_own_comp_msg = true;
+			first = -1;
+		}
+
+		_one_step_complete_msg(job, (first + step_complete.rank + 1),
+	      			       (last + step_complete.rank + 1));
+		start = last + 1;
+	}
+
+	if (!sent_own_comp_msg)
+		_one_step_complete_msg(job, step_complete.rank,
+				       step_complete.rank);
+
+	pthread_mutex_unlock(&step_complete.lock);
+}
 
 /* 
  * Executes the functions of the slurmd job manager process,
@@ -549,6 +735,11 @@ job_manager(slurmd_job_t *job)
 	if (rc != 0) {
 		error("job_manager exiting abnormally, rc = %d", rc);
 		_send_launch_resp(job, rc);
+	}
+
+	if (!job->batch && step_complete.rank > -1) {
+		_wait_for_children_slurmstepd(job);
+		_send_step_complete_msgs(job);
 	}
 
 	return(rc);

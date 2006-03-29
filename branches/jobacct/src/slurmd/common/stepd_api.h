@@ -54,7 +54,8 @@ typedef enum {
 	REQUEST_DAEMON_PID,
 	REQUEST_STEP_SUSPEND,
 	REQUEST_STEP_RESUME,
-	REQUEST_STEP_TERMINATE
+	REQUEST_STEP_TERMINATE,
+	REQUEST_STEP_COMPLETION
 } step_msg_t;
 
 typedef enum {
@@ -161,6 +162,13 @@ int stepd_suspend(int fd);
  * and sets errno.
  */
 int stepd_resume(int fd);
+
+/*
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int stepd_completion(int fd, int range_first, int range_last, int step_rc);
 
 #define safe_read(fd, ptr, size) do {					\
 		if (read(fd, ptr, size) != size) {			\

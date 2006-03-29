@@ -1784,7 +1784,6 @@ void make_node_idle(struct node_record *node_ptr,
 					info("Job %u completion process took "
 						"%ld seconds", job_ptr->job_id,
 						(long) delay);
-				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 			}
 		} else {
