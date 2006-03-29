@@ -59,7 +59,6 @@
 #define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
 
 #define BUFFER_SIZE 4096
-#define MINBUFSIZE 1024
 #define STATUS_COUNT 10
 
 /* The following literals define how many significant characters
@@ -68,16 +67,9 @@
 #define MATCH_HOUR 10
 #define MATCH_MINUTE 12
 
-#define MAX_JOBNAME_LENGTH 256
-#define MAX_JOBS 100000
-#define MAX_JOBSTEPS 500000
-#define MAX_PARTITIONS 1000
 #define MAX_PRINTFIELDS 100
-#define MAX_STATES 100
-
+#define EXPIRE_READ_LENGTH 10
 #define MAX_RECORD_FIELDS 100
-
-#define NO_JOBSTEP -1
 
 #define SECONDS_IN_MINUTE 60
 #define SECONDS_IN_HOUR (60*SECONDS_IN_MINUTE)

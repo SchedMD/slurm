@@ -28,13 +28,15 @@
 
 #include "sacct.h"
 
-typedef struct expired_table {  /* table of expired jobs */
+typedef struct expired_rec {  /* table of expired jobs */
 	long job;
 	char submitted[TIMESTAMP_LENGTH];
-} expired_table_t;
+	char *line;
+} expired_rec_t;
 
 void _destroy_parts(void *object);
 void _destroy_steps(void *object);
+void _destroy_exp(void *object);
 char *_convert_type(int rec_type);
 int _cmp_jrec(const void *a1, const void *a2);
 void _dump_header(acct_header_t header);
@@ -66,6 +68,14 @@ void _destroy_steps(void *object)
 		xfree(step);
 	}
 }
+void _destroy_exp(void *object)
+{
+	expired_rec_t *exp_rec = (expired_rec_t *)object;
+	if(exp_rec) {
+		xfree(exp_rec->line);
+		xfree(exp_rec);
+	}
+}
 
 char *_convert_type(int rec_type)
 {
@@ -92,8 +102,8 @@ void _show_rec(char *f[])
 }
 
 int _cmp_jrec(const void *a1, const void *a2) {
-	expired_table_t *j1 = (expired_table_t *) a1;
-	expired_table_t *j2 = (expired_table_t *) a2;
+	expired_rec_t *j1 = (expired_rec_t *) a1;
+	expired_rec_t *j2 = (expired_rec_t *) a2;
 
 	if (j1->job <  j2->job)
 		return -1;
@@ -388,7 +398,7 @@ char *decode_status_int(int status)
 int get_data(void)
 {
 	char line[BUFFER_SIZE];
-	char *f[MAX_RECORD_FIELDS+2];    /* End list with null entry and,
+	char *f[MAX_RECORD_FIELDS];    /* End list with null entry and,
 					    possibly, more data than we
 					    expected */
 	char *fptr;
@@ -1120,64 +1130,62 @@ void do_dump(void)
 
 void do_expire(void)
 {
-#define EXP_STG_LENGTH 12
-#define TERM_REC_FIELDS 11
 	char	line[BUFFER_SIZE],
-		exp_stg[EXP_STG_LENGTH+1], /* YYYYMMDDhhmm */
-		*expired_logfile_name,
-		*f[TERM_REC_FIELDS],
-		*fptr,
-		*new_logfile_name,
-		*old_logfile_name;
-	int	bufsize=MINBUFSIZE,
-		file_err=0,
+		exp_stg[TIMESTAMP_LENGTH], /* YYYYMMDDhhmm */
+		*f[EXPIRE_READ_LENGTH],
+		*fptr = NULL,
+		*logfile_name = NULL,
+		*old_logfile_name = NULL;
+	int	file_err=0,
 		new_file,
 		i;
-	expired_table_t *exp_table;
-	int	exp_table_allocated = 0,
-		exp_table_entries = 0;
+	expired_rec_t *exp_rec = NULL;
+	expired_rec_t *exp_rec2 = NULL;
+	List keep_list = list_create(_destroy_exp);
+	List exp_list = list_create(_destroy_exp);
+	List other_list = list_create(_destroy_exp);
 	pid_t	pid;
 	struct	stat statbuf;
 	mode_t	prot = 0600;
 	uid_t	uid;
 	gid_t	gid;
-	FILE	*expired_logfile,
-		*new_logfile;
+	FILE	*expired_logfile = NULL,
+		*new_logfile = NULL;
 	FILE *fd = NULL;
 	int lc=0;
 	int rec_type = -1;
 	ListIterator itr = NULL;
-	char *start = NULL;
+	ListIterator itr2 = NULL;
+	char *temp = NULL;
 
 	/* Figure out our expiration date */
-	{
-		struct tm	*ts;	/* timestamp decoder */
-		time_t		expiry;
-		expiry = time(NULL)-params.opt_expire;
-		ts = gmtime(&expiry);
-		sprintf(exp_stg, "%04d%02d%02d%02d%02d",
-			(ts->tm_year+1900), (ts->tm_mon+1), ts->tm_mday,
-			ts->tm_hour, ts->tm_min);
-		if (params.opt_verbose)
-			fprintf(stderr, "Purging jobs completed prior to %s\n",
-				exp_stg);
-	}
+	struct tm	*ts;	/* timestamp decoder */
+	time_t		expiry;
+	expiry = time(NULL)-params.opt_expire;
+	ts = gmtime(&expiry);
+	sprintf(exp_stg, "%04d%02d%02d%02d%02d",
+		(ts->tm_year+1900), (ts->tm_mon+1), ts->tm_mday,
+		ts->tm_hour, ts->tm_min);
+	if (params.opt_verbose)
+		fprintf(stderr, "Purging jobs completed prior to %s\n",
+			exp_stg);
+
 	/* Open the current or specified logfile, or quit */
 	fd = _open_log_file();
 	if (stat(params.opt_filein, &statbuf)) {
 		perror("stat'ing logfile");
-		exit(1);
+		goto finished;
 	}
 	if ((statbuf.st_mode & S_IFLNK) == S_IFLNK) {
 		fprintf(stderr, "%s is a symbolic link; --expire requires "
 			"a hard-linked file name\n", params.opt_filein);
-		exit(1);
+		goto finished;
 	}
 	if (!(statbuf.st_mode & S_IFREG)) {
 		fprintf(stderr, "%s is not a regular file; --expire "
 			"only works on accounting log files\n",
 			params.opt_filein);
-		exit(1);
+		goto finished;
 	}
 	prot = statbuf.st_mode & 0777;
 	gid  = statbuf.st_gid;
@@ -1188,23 +1196,24 @@ void do_expire(void)
 			fprintf(stderr,"Error checking for %s: ",
 				old_logfile_name);
 			perror("");
-			exit(1);
+			goto finished;
 		}
 	} else {
 		fprintf(stderr, "Warning! %s exists -- please remove "
 			"or rename it before proceeding",
 			old_logfile_name);
-		exit(1);
+		goto finished;
 	}
 
 	/* create our initial buffer */
-	exp_table = xmalloc( sizeof(expired_table_t)
-				* (exp_table_allocated=10000));
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		lc++;
 		fptr = line;	/* break the record into NULL-
 				   terminated strings */
-		for (i = 0; i < TERM_REC_FIELDS; i++) {
+		exp_rec = xmalloc(sizeof(expired_rec_t));
+		exp_rec->line = xstrdup(line);
+	
+		for (i = 0; i < EXPIRE_READ_LENGTH; i++) {
 			f[i] = fptr;
 			fptr = strstr(fptr, " ");
 			if (fptr == NULL)
@@ -1212,148 +1221,145 @@ void do_expire(void)
 			else
 				*fptr++ = 0;
 		}
-		if (i < TERM_REC_FIELDS)
-			continue;
+		
+		exp_rec->job = strtol(f[F_JOB], NULL, 10);
+		strncpy(exp_rec->submitted, f[F_SUBMITTED], TIMESTAMP_LENGTH);
+		
 		rec_type = atoi(f[F_RECTYPE]);
 		/* Odd, but complain some other time */
 		if (rec_type == JOB_TERMINATED) {
 			if (strncmp(exp_stg, f[F_FINISHED],
-				    expire_time_match)<0) 
-				continue;
+				    expire_time_match)<0) {
+				list_append(keep_list, exp_rec);
+				continue;				
+			}
 			if (list_count(selected_parts)) {
 				itr = list_iterator_create(selected_parts);
-				while(start = list_next(itr)) 
-					if(!strcasecmp(f[F_PARTITION], start)) 
+				while(temp = list_next(itr)) 
+					if(!strcasecmp(f[F_PARTITION], temp)) 
 						break;
 				list_iterator_destroy(itr);
-				if(!start)
-					continue;	/* no match */
+				if(!temp) {
+					list_append(keep_list, exp_rec);
+					continue;
+				} /* no match */
 			}
-					
-			if (exp_table_allocated <= exp_table_entries)
-				exp_table = xrealloc(exp_table,
-						     sizeof(expired_table_t) *
-						     (exp_table_allocated
-						      +=10000));
-			exp_table[exp_table_entries].job =
-				strtol(f[F_JOB], NULL, 10);
-			strncpy(exp_table[exp_table_entries].submitted,
-				f[F_SUBMITTED], TIMESTAMP_LENGTH);
+			list_append(exp_list, exp_rec);
 			if (params.opt_verbose > 2)
 				fprintf(stderr, "Selected: %8ld %s\n",
-					exp_table[exp_table_entries].job,
-					exp_table[exp_table_entries].
-					submitted);
-			exp_table_entries++;
+					exp_rec->job,
+					exp_rec->submitted);
+		} else {
+			list_append(other_list, exp_rec);
 		}
 	}
-	if (exp_table_entries == 0) {
+	if (!list_count(exp_list)) {
 		printf("No job records were purged.\n");
-		exit(0);
+		goto finished;
 	}
-	expired_logfile_name =
-		xmalloc(strlen(params.opt_filein)+sizeof(".expired"));
-	sprintf(expired_logfile_name, "%s.expired", params.opt_filein);
-	new_file = stat(expired_logfile_name, &statbuf);
-	if ((expired_logfile = fopen(expired_logfile_name, "a"))==NULL) {
+	logfile_name = xmalloc(strlen(params.opt_filein)+sizeof(".expired"));
+	sprintf(logfile_name, "%s.expired", params.opt_filein);
+	new_file = stat(logfile_name, &statbuf);
+	if ((expired_logfile = fopen(logfile_name, "a"))==NULL) {
 		fprintf(stderr, "Error while opening %s", 
-			expired_logfile_name);
+			logfile_name);
 		perror("");
-		xfree(expired_logfile_name);
-		exit(1);
+		xfree(logfile_name);
+		goto finished;
 	}
+
 	if (new_file) {  /* By default, the expired file looks like the log */
-		chmod(expired_logfile_name, prot);
-		chown(expired_logfile_name, uid, gid);
+		chmod(logfile_name, prot);
+		chown(logfile_name, uid, gid);
 	}
-	xfree(expired_logfile_name);
-	new_logfile_name = _prefix_filename(params.opt_filein, ".new.");
-	if ((new_logfile = fopen(new_logfile_name, "w"))==NULL) {
+	xfree(logfile_name);
+
+	logfile_name = _prefix_filename(params.opt_filein, ".new.");
+	if ((new_logfile = fopen(logfile_name, "w"))==NULL) {
 		fprintf(stderr, "Error while opening %s",
-			new_logfile_name);
+			logfile_name);
 		perror("");
-		exit(1);
+		goto finished;
 	}
-	chmod(new_logfile_name, prot);     /* preserve file protection */
-	chown(new_logfile_name, uid, gid); /* and ownership */
+	chmod(logfile_name, prot);     /* preserve file protection */
+	chown(logfile_name, uid, gid); /* and ownership */
 	/* Use line buffering to allow us to safely write
 	 * to the log file at the same time as slurmctld. */ 
 	if (setvbuf(new_logfile, NULL, _IOLBF, 0)) {
 		perror("setvbuf()");
-		exit(1);
+		goto finished;
 	}
 
-	qsort(exp_table, exp_table_entries, 
-	      sizeof(expired_table_t), _cmp_jrec);
+	list_sort(exp_list, (ListCmpF) _cmp_jrec);
+	list_sort(keep_list, (ListCmpF) _cmp_jrec);
+	
 	if (params.opt_verbose > 2) {
-		fprintf(stderr, "--- contents of exp_table ---");
-		for (i=0; i<exp_table_entries; i++) {
+		fprintf(stderr, "--- contents of exp_list ---");
+		itr = list_iterator_create(exp_list);
+		while(exp_rec = list_next(itr)) {
 			if (!(i%5))
 				fprintf(stderr, "\n");
 			else
 				fprintf(stderr, "\t");
-			fprintf(stderr, "%ld", exp_table[i].job);
+			fprintf(stderr, "%ld", exp_rec->job);
 		}
-		fprintf(stderr, "\n---- end of exp_table ---\n");
+		fprintf(stderr, "\n---- end of exp_list ---\n");
+		list_iterator_destroy(itr);
 	}
-	rewind(fd);
-	lc=0;
-	while (fgets(line, BUFFER_SIZE, fd)) {
-		expired_table_t tmp;
-
-		fptr = line;
-		lc++;
-
-		for (i=0; i<MAX_RECORD_FIELDS; i++) {
-			f[i] = fptr;
-			fptr = strstr(fptr, " ");
-			if (fptr == NULL)
-				break; 
-			fptr++;
-		}
-		rec_type = atoi(f[F_RECTYPE]);
-		
-		if (rec_type == JOB_START
-		    || rec_type == JOB_STEP
-		    || rec_type == JOB_TERMINATED)
-			goto goodrec;
-
-		/* Ugh; invalid record */
-		fprintf(stderr, "Invalid record at input line %ld", lc);
-		if (params.opt_purge) {
-			fprintf(stderr, "; purging it.\n");
-			continue;
-		}
-		fprintf(stderr,
-			".\n(Use --expire --purge to force the "
-			"removal of this record.)\n"
-			"It is unsafe to complete this "
-			"operation -- terminating.\n");
-		exit(1);
-
-	goodrec:
-		tmp.job = strtol(f[F_JOB], NULL, 10);
-		strncpy(tmp.submitted, f[F_SUBMITTED], TIMESTAMP_LENGTH);
-		tmp.submitted[TIMESTAMP_LENGTH-1] = 0;
-		if (bsearch(&tmp, exp_table, exp_table_entries,
-			    sizeof(expired_table_t), _cmp_jrec)) {
-			if (fputs(line, expired_logfile)<0) {
+	/* write the expired file */
+	itr = list_iterator_create(exp_list);
+	while(exp_rec = list_next(itr)) {
+		itr2 = list_iterator_create(other_list);
+		while(exp_rec2 = list_next(itr2)) {
+			if(exp_rec2->job != exp_rec->job)
+				continue;
+			if (fputs(exp_rec2->line, expired_logfile)<0) {
 				perror("writing expired_logfile");
-				exit(1);
+				list_iterator_destroy(itr2);
+				goto finished;
 			}
-		} else {
-			if (fputs(line, new_logfile)<0) {
-				perror("writing new_logfile");
-				exit(1);
-			}
+			list_remove(itr2);
+			_destroy_exp(exp_rec2);
 		}
+		list_iterator_destroy(itr2);
+		if (fputs(exp_rec->line, expired_logfile)<0) {
+			perror("writing expired_logfile");
+			list_iterator_destroy(itr);
+			goto finished;
+		}		
 	}
+	list_iterator_destroy(itr);
 	fclose(expired_logfile);
+	
+	/* write the new log */
+	itr = list_iterator_create(keep_list);
+	while(exp_rec = list_next(itr)) {
+		itr2 = list_iterator_create(other_list);
+		while(exp_rec2 = list_next(itr)) {
+			if(exp_rec2->job != exp_rec->job)
+				continue;
+			if (fputs(exp_rec2->line, new_logfile)<0) {
+				perror("writing expired_logfile");
+				list_iterator_destroy(itr2);
+				goto finished;
+			}
+			list_remove(itr);
+			_destroy_exp(exp_rec2);
+		}
+		list_iterator_destroy(itr2);
+		if (fputs(exp_rec->line, new_logfile)<0) {
+			perror("writing expired_logfile");
+			list_iterator_destroy(itr);
+			goto finished;
+		}		
+	}
+	list_iterator_destroy(itr);
+	
 	if (rename(params.opt_filein, old_logfile_name)) {
 		perror("renaming logfile to .old.");
-		exit(1);
+		goto finished;
 	}
-	if (rename(new_logfile_name, params.opt_filein)) {
+	if (rename(logfile_name, params.opt_filein)) {
 		perror("renaming new logfile");
 		/* undo it? */
 		if (!rename(old_logfile_name, params.opt_filein)) 
@@ -1365,21 +1371,21 @@ void do_expire(void)
 				"please rename it to \"%s\" if necessary, "
 			        "and try again\n",
 				old_logfile_name, params.opt_filein);
-		exit(1);
+		goto finished;
 	}
 	fflush(new_logfile);	/* Flush the buffers before forking */
 	fflush(fd);
 	if ((pid=fork())) {
 		if (waitpid(pid, &i, 0) < 1) {
 			perror("forking scontrol");
-			exit(1);
+			goto finished;
 		}
 	} else {
 		fclose(new_logfile);
 		fclose(fd);
 		execlp("scontrol", "scontrol", "reconfigure", NULL);
 		perror("attempting to run \"scontrol reconfigure\"");
-		exit(1);
+		goto finished;
 	}
 	if (WEXITSTATUS(i)) {
 		file_err = 1;
@@ -1391,21 +1397,25 @@ void do_expire(void)
 	}
 	if (fseek(fd, 0, SEEK_CUR)) {	/* clear EOF */
 		perror("looking for late-arriving records");
-		exit(1);
+		goto finished;
 	}
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		if (fputs(line, new_logfile)<0) {
 			perror("writing final records");
-			exit(1);
+			goto finished;
 		}
 	}
 	fclose(new_logfile);
 	fclose(fd);
 	if (!file_err)
 		unlink(old_logfile_name);
-	printf("%d jobs expired.\n", exp_table_entries);
-	xfree(exp_table);
-	exit(0);
+	printf("%d jobs expired.\n", list_count(exp_list));
+finished:
+	list_destroy(exp_list);
+	list_destroy(keep_list);
+	list_destroy(other_list);
+	xfree(old_logfile_name);
+	xfree(logfile_name);
 }
 
 void do_fdump(char* f[], int lc)
