@@ -144,7 +144,7 @@ part_fini:
 	}
 	if(!params.commandline) {
 		
-		signal(SIGWINCH, (sighandler_t) _resize_handler);
+		signal(SIGWINCH, (__sighandler_t)_resize_handler);
 		initscr();
 		
 #ifdef HAVE_BG

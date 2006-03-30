@@ -47,10 +47,12 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/jobacct.h"
 
 #define MAX_RETRIES 10
 
@@ -70,7 +72,7 @@ create_step_record (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	step_ptr = (struct step_record *) xmalloc (sizeof (struct step_record));
+	step_ptr = (struct step_record *) xmalloc(sizeof (struct step_record));
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr; 
@@ -565,9 +567,9 @@ cleanup:
  * 	the job.
  */
 extern int
-step_create ( job_step_create_request_msg_t *step_specs, 
-		struct step_record** new_step_record,
-		bool kill_job_when_step_done, bool batch_step )
+step_create(job_step_create_request_msg_t *step_specs, 
+	    struct step_record** new_step_record,
+	    bool kill_job_when_step_done, bool batch_step)
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -680,6 +682,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 
 	*new_step_record = step_ptr;
+	jobacct_step_start(step_ptr);
 	return SLURM_SUCCESS;
 }
 

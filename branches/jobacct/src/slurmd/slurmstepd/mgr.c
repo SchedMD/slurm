@@ -119,6 +119,9 @@ step_complete_t step_complete = {
 	-1,
 	-1,
 	(bitstr_t *)NULL,
+	0,
+	{},
+	0,
 	0
 };
 
@@ -159,8 +162,7 @@ static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _complete_job(uint32_t jobid, uint32_t stepid, 
-			    int err, int status);
+static int    _complete_job(slurmd_job_t *job, int err, int status);
 
 /*
  * Initialize the group list using the list of gids from the slurmd if
@@ -218,7 +220,7 @@ _batch_cleanup(slurmd_job_t *job, int level, int status)
 			verbose("job %u.%u completed with slurm_rc = %d, "
 				"job_rc = %d", 
 				job->jobid, job->stepid, rc, status);
-		_complete_job(job->jobid, job->stepid, rc, status);
+		_complete_job(job, rc, status);
 
 	}
 }
@@ -299,6 +301,39 @@ mgr_spawn_task_setup(spawn_task_request_msg_t *msg, slurm_addr *cli,
 	job->envtp->self = self;
 	
 	return job;
+}
+
+void aggregate_job_data(struct rusage rusage, int psize, int vsize) 
+{
+	step_complete.max_psize = MAX(step_complete.max_psize, psize);
+	step_complete.max_vsize = MAX(step_complete.max_vsize, vsize);
+	/* sum up all rusage stuff */
+	step_complete.rusage.ru_utime.tv_sec	+= rusage.ru_utime.tv_sec;
+	step_complete.rusage.ru_utime.tv_usec	+= rusage.ru_utime.tv_usec;
+	while (step_complete.rusage.ru_utime.tv_usec >= 1E6) {
+		step_complete.rusage.ru_utime.tv_sec++;
+		step_complete.rusage.ru_utime.tv_usec -= 1E6;
+	}
+	step_complete.rusage.ru_stime.tv_sec	+= rusage.ru_stime.tv_sec;
+	step_complete.rusage.ru_stime.tv_usec	+= rusage.ru_stime.tv_usec;
+	while (step_complete.rusage.ru_stime.tv_usec >= 1E6) {
+		step_complete.rusage.ru_stime.tv_sec++;
+		step_complete.rusage.ru_stime.tv_usec -= 1E6;
+	}
+	step_complete.rusage.ru_maxrss		+= rusage.ru_maxrss;
+	step_complete.rusage.ru_ixrss		+= rusage.ru_ixrss;
+	step_complete.rusage.ru_idrss		+= rusage.ru_idrss;
+	step_complete.rusage.ru_isrss		+= rusage.ru_isrss;
+	step_complete.rusage.ru_minflt		+= rusage.ru_minflt;
+	step_complete.rusage.ru_majflt		+= rusage.ru_majflt;
+	step_complete.rusage.ru_nswap		+= rusage.ru_nswap;
+	step_complete.rusage.ru_inblock		+= rusage.ru_inblock;
+	step_complete.rusage.ru_oublock		+= rusage.ru_oublock;
+	step_complete.rusage.ru_msgsnd		+= rusage.ru_msgsnd;
+	step_complete.rusage.ru_msgrcv		+= rusage.ru_msgrcv;
+	step_complete.rusage.ru_nsignals	+= rusage.ru_nsignals;
+	step_complete.rusage.ru_nvcsw		+= rusage.ru_nvcsw;
+	step_complete.rusage.ru_nivcsw		+= rusage.ru_nivcsw;
 }
 
 static void
@@ -508,7 +543,14 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
+	
+	/************* acct stuff ********************/
+	aggregate_job_data(job->rusage, job->max_psize, job->max_vsize);
+	/*********************************************/	
 
+	memcpy(&msg.rusage, &step_complete.rusage, sizeof(struct rusage));
+	msg.max_psize = step_complete.max_psize;
+	msg.max_vsize = step_complete.max_vsize;
 	memset(&req, 0, sizeof(req));
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
@@ -693,7 +735,7 @@ job_manager(slurmd_job_t *job)
 
 	/* tell the accountants to start counting */
 	//g_slurmd_jobacct_smgr();
-	info("got here");
+	
 	_wait_for_all_tasks(job);
 
 	job->state = SLURMSTEPD_STEP_ENDING;
@@ -944,12 +986,10 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	int i;
 	int status;
 	pid_t pid;
-	struct rusage rusage;
 	int completed = 0;
 
 	do {
-		info("waiting");
-		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
+		pid = wait3(&status, waitflag ? 0 : WNOHANG, &job->rusage);
 		if (pid == -1) {
 			if (errno == ECHILD) {
 				debug("No child processes");
@@ -1002,7 +1042,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 			job->envtp->procid = i;
 			post_term(job);
-			g_slurmd_jobacct_task_exit(job, pid, status, &rusage);
+			//g_slurmd_jobacct_task_exit(job, pid, status, &job->rusage);
 		}
 
 	} while ((pid > 0) && !waitflag);
@@ -1275,16 +1315,24 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 
 static int
-_complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
+_complete_job(slurmd_job_t *job, int err, int status)
 {
 	int                      rc, i;
 	slurm_msg_t              req_msg;
 	complete_job_step_msg_t  req;
 
-	req.job_id	= jobid;
-	req.job_step_id	= stepid; 
+	req.job_id	= job->jobid;
+	req.job_step_id	= job->stepid; 
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
+	/************* acct stuff ********************/
+	aggregate_job_data(job->rusage, job->max_psize, job->max_vsize);
+	/*********************************************/	
+
+	memcpy(&req.rusage, &step_complete.rusage, sizeof(struct rusage));
+	req.max_psize = step_complete.max_psize;
+	req.max_vsize = step_complete.max_vsize;
+	
 	req.node_name	= conf->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
 	req_msg.data	= &req;	
@@ -1297,7 +1345,8 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 	for (i=0; i<=MAX_RETRY; i++) {
 		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) >= 0)
 			break;
-		info("Retrying job complete RPC for %u.%u", jobid, stepid);
+		info("Retrying job complete RPC for %u.%u",
+		     job->jobid, job->stepid);
 		sleep(RETRY_DELAY);
 	}
 	if (i > MAX_RETRY) {

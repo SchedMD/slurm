@@ -43,6 +43,7 @@
 #endif				/*  HAVE_CONFIG_H */
 
 #include <slurm/slurm.h>
+#include <sys/wait.h>
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -306,6 +307,9 @@ typedef struct complete_job_step_msg {
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	char *node_name;
+	struct rusage rusage;
+	uint32_t max_vsize;
+	uint32_t max_psize;
 } complete_job_step_msg_t;
 
 typedef struct step_complete_msg {
@@ -314,6 +318,9 @@ typedef struct step_complete_msg {
 	uint32_t range_first;
 	uint32_t range_last;
  	uint32_t step_rc;	/* largest task return code */
+	struct rusage rusage;
+	uint32_t max_vsize;
+	uint32_t max_psize;
 } step_complete_msg_t;
 
 typedef struct kill_tasks_msg {

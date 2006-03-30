@@ -264,7 +264,7 @@ void slurmctld_req (slurm_msg_t * msg)
 					rc);
 			slurm_free_jobacct_msg(msg->data);
 		}
-		break; 
+		break;
 	case REQUEST_STEP_COMPLETE:
 		_slurm_rpc_step_complete(msg);
 		slurm_free_step_complete_msg(msg->data);

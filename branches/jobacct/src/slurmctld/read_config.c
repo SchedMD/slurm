@@ -57,6 +57,8 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/jobacct.h"
+
 #include "src/common/slurm_rlimits_info.h"
 
 #define BUFFER_SIZE	1024
@@ -660,8 +662,8 @@ int read_slurm_conf(int recover)
 	slurm_conf_unlock();
 
 	update_logging();
-	g_slurmctld_jobacct_init(slurmctld_conf.job_acct_loc,
-			slurmctld_conf.job_acct_parameters);
+	jobacct_init(slurmctld_conf.job_acct_loc,
+		     slurmctld_conf.job_acct_parameters);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
 	switch_init();

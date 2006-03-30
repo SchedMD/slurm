@@ -925,7 +925,7 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
 	resp_msg.data     = &resp;
-	resp_msg.forward.cnt = 0;
+	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
@@ -1126,8 +1126,7 @@ _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done2;
 	}
 
-	rc = stepd_completion(fd, req->range_first, req->range_last,
-			      req->step_rc);
+	rc = stepd_completion(fd, req);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 

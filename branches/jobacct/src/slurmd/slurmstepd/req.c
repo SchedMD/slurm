@@ -934,6 +934,9 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	int errnum = 0;
 	int first;
 	int last;
+	int psize;
+	int vsize;
+	struct rusage rusage;
 	int step_rc;
 
 	debug("_handle_completion for job %u.%u",
@@ -941,7 +944,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 
 	debug3("  uid = %d", uid);
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step completion message from uid %ld for job %u.%u ",
+		debug("step completion message from uid %ld for job %u.%u ",
 		      (long)uid, job->jobid, job->stepid);
 		rc = -1;
 		errnum = EPERM;
@@ -954,6 +957,9 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
+	safe_read(fd, &rusage, sizeof(struct rusage));
+	safe_read(fd, &psize, sizeof(int));
+	safe_read(fd, &vsize, sizeof(int));
 
 	/*
 	 * Record the completed nodes
@@ -963,6 +969,11 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 		 first - (step_complete.rank+1),
 		 last - (step_complete.rank+1));
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
+
+	/************* acct stuff ********************/
+	aggregate_job_data(rusage, psize, vsize);
+	/*********************************************/
+	
 	/* Send the return code and errno, we do this within the locked
 	 * region to ensure that the stepd doesn't exit before we can
 	 * perform this send. */
@@ -970,7 +981,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_write(fd, &errnum, sizeof(int));
 	pthread_cond_signal(&step_complete.cond);
 	pthread_mutex_unlock(&step_complete.lock);
-
+	
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;

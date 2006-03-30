@@ -61,6 +61,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/jobacct.h"
 
 #define BUFFER_SIZE 1024
 #define DETAILS_FLAG 0xdddd
@@ -1409,7 +1410,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) {
 				error_code = SLURM_SUCCESS;
-				g_slurmctld_jobacct_job_start(job_ptr);
+				jobacct_job_start(job_ptr);
 			}
 		return error_code;
 	}
@@ -1424,8 +1425,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-	} else 
-		g_slurmctld_jobacct_job_start(job_ptr);
+	} else {
+		jobacct_job_start(job_ptr);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -3805,7 +3807,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 			mail_job_info(job_ptr, MAIL_JOB_FAIL);
 	}
 
-	g_slurmctld_jobacct_job_complete(job_ptr);
+	jobacct_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 }
 
