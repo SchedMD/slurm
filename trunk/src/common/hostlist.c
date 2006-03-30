@@ -144,7 +144,7 @@ strong_alias(hostset_within,		slurm_hostset_within);
 #define MAX_RANGE    16384    /* 16K Hosts */
 
 /* max number of ranges that will be processed between brackets */
-#define MAX_RANGES    10240    /* 10K Ranges */
+#define MAX_RANGES    12288    /* 12K Ranges */
 
 /* size of internal hostname buffer (+ some slop), hostnames will probably
  * be truncated if longer than MAXHOSTNAMELEN */
