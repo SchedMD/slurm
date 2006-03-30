@@ -54,7 +54,7 @@ if { ![file exists $poe] } {
 }
 
 #find out if we have enough nodes to test functionality
-spawn $scontrol show partition pdebug
+spawn $scontrol show partition $poe_partition
 expect {
 	-re "TotalNodes=($number)" {
 		set node_count $expect_out(1,string)
