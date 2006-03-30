@@ -165,7 +165,7 @@ static	char		*rev_stg = "$Revision$";
 /* File used for logging */
 static char *		log_file = NULL;
 static pthread_mutex_t  logfile_lock = PTHREAD_MUTEX_INITIALIZER;
-static FILE *		LOGFILE;
+static FILE **		LOGFILE;
 static int		LOGFILE_FD;
 
 
@@ -383,23 +383,24 @@ int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 
 	debug2("slurmctld_jobacct_init() called");
 	info("jobacct LINUX plugin loaded (%s)", rev_stg);
+	_get_slurmctld_syms();
 	slurm_mutex_lock( &logfile_lock );
-	if (LOGFILE)
-		fclose(LOGFILE);
+	if (*LOGFILE)
+		fclose(*LOGFILE);
 	log_file=job_acct_loc;
 	if (*log_file != '/')
 		fatal("JobAcctLoc must specify an absolute pathname");
 	if (stat(log_file, &statbuf)==0)	/* preserve current file mode */
 		prot = statbuf.st_mode;
-	LOGFILE = fopen(log_file, "a");
-	if (LOGFILE == NULL) {
+	*LOGFILE = fopen(log_file, "a");
+	if (*LOGFILE == NULL) {
 		fatal("open %s: %m", log_file);
 		rc = SLURM_ERROR;
 	} else
 		chmod(log_file, prot); 
-	if (setvbuf(LOGFILE, NULL, _IOLBF, 0))
+	if (setvbuf(*LOGFILE, NULL, _IOLBF, 0))
 		fatal("setvbuf() failed");
-	LOGFILE_FD = fileno(LOGFILE);
+	LOGFILE_FD = fileno(*LOGFILE);
 	slurm_mutex_unlock( &logfile_lock );
 	_get_slurmctld_syms();
 	return rc;
@@ -493,9 +494,11 @@ static void _get_slurmctld_syms(void)
 
 	if ((slurmctld_handle=dlopen("", RTLD_LAZY)) == NULL)
 		error("dlopen failed in _get_slurmctld_syms");
-	if ((find_job_record_in_slurmctld=
-				dlsym(slurmctld_handle, "find_job_record"))==NULL)
+	if ((find_job_record_in_slurmctld =
+			dlsym(slurmctld_handle, "find_job_record"))==NULL)
 		error("find_job_record not found in _get_slurmctld_syms");
+	if ((LOGFILE = dlsym(slurmctld_handle, "JOBACCT_LOGFILE"))==NULL)
+		error("JOBACCT_LOGFILE not found in _get_slurmctld_syms");
 	dlclose(slurmctld_handle);
 }
 
@@ -518,7 +521,7 @@ static int _print_record(struct job_record *job_ptr, char *data)
 	debug2("jobacct:_print_record, job=%u, rec starts \"%20s",
 			job_ptr->job_id, data);
 	slurm_mutex_lock( &logfile_lock );
-	if (fprintf(LOGFILE,
+	if (fprintf(*LOGFILE,
 			"%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
 			job_ptr->job_id, job_ptr->partition,
 			1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
