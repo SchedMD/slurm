@@ -37,13 +37,13 @@ Note carefully, however, the versioning discussion below.</p>
 <p>A simplified flow of logic follows:
 <pre>
 slurmctld daemon starts
-if (<i>select_p_state_restor)</i>() != SLURM_SUCCESS)
+if (<i>select_p_state_restore)</i>() != SLURM_SUCCESS)
    abort
 
 slurmctld reads the rest of its configuration and state information
 if (<i>select_p_node_init</i>() != SLURM_SUCCESS)
    abort
-if (<i>select_p_part_init</i>() != SLURM_SUCCESS)
+if (<i>select_p_block_init</i>() != SLURM_SUCCESS)
    abort
 
 wait for job 
@@ -132,7 +132,7 @@ of node data records.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
-<p class="commandline">int select_p_part_init (List part_list);</p>
+<p class="commandline">int select_p_block_init (List block_list);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initialization of the partition record data 
 structure. This function is called when the partition records are initially established and again 
 when any partition configurations change. </p>
@@ -142,6 +142,14 @@ record entries. Note that some of these partitions may have no associated nodes.
 consider that nodes can be removed from one partition and added to a different partition.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
+
+<p class="commandline">int select_p_update_block (update_part_msg_t *part_desc_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: This function is called when the admin needs to manually update the state of a block. </p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> part_desc_ptr</span>&nbsp;&nbsp;&nbsp;(input) partitition
+description variable.  Containing the block name and the state to set the block.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int select_p_pack_node_info (time_t last_query_time, Buf *buffer_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: pack node specific information into a buffer.</p>

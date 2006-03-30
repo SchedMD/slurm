@@ -140,8 +140,9 @@ try_again:
 		*/
 		debug3("%s job_running = %d", 
 		       record->bg_block_id, record->job_running);
-		/*partition is being destroyed, ignore it*/
-		if(record->job_running == -2)
+		/*partition is being destroyed (-2), 
+		  or is messed up some how (-3) ignore it*/
+		if(record->job_running < -1)
 			continue;
 		else if((record->job_running != -1) 
 		   && !test_only) {
@@ -153,10 +154,6 @@ try_again:
 			continue;
 		}
 		
-		/* if(!test_only && bluegene_layout_mode == LAYOUT_OVERLAP) { */
-/* 			if(!created && record->state != RM_PARTITION_READY) */
-/* 				continue; */
-/* 		} */
 		/* Check processor count */
 		proc_cnt = record->bp_count * record->cpus_per_bp;
 		debug3("asking for %d-%d looking at %d", 
@@ -237,13 +234,25 @@ try_again:
 					} 
 				}
 				if(!test_only
-				   && (found_record->job_running > -1)) {
-					debug("can't use %s, there is a job "
-					      "(%d) running on an overlapping "
-					      "block %s", 
-					      record->bg_block_id,
-					      found_record->job_running,
-					      found_record->bg_block_id);
+				   && ((found_record->job_running > -1)
+				   || (found_record->job_running == -3))) {
+					if(found_record->job_running > -1)
+						debug("can't use %s, there is "
+						      "a job (%d) running on "
+						      "an overlapping "
+						      "block %s", 
+						      record->bg_block_id,
+						      found_record->
+						      job_running,
+						      found_record->
+						      bg_block_id);
+					else
+						error("can't use %s, "
+						      "overlapping block %s "
+						      "is in an error state.",
+						      record->bg_block_id,
+						      found_record->
+						      bg_block_id);
 					if(bluegene_layout_mode == 
 					   LAYOUT_DYNAMIC) {
 						temp_list = list_create(NULL);
@@ -253,7 +262,7 @@ try_again:
 						list_destroy(temp_list);
 					} 
 					break;
-				}
+				} 
 			} 
 		}
 		list_iterator_destroy(itr2);

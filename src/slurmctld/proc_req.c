@@ -1795,9 +1795,13 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		lock_slurmctld(part_write_lock);
-		error_code = update_part(part_desc_ptr);
-		unlock_slurmctld(part_write_lock);
+		if(part_desc_ptr->hidden == (uint16_t)INFINITE) 
+			error_code = select_g_update_block(part_desc_ptr);
+		else {
+			lock_slurmctld(part_write_lock);
+			error_code = update_part(part_desc_ptr);
+			unlock_slurmctld(part_write_lock);
+		}
 		END_TIMER;
 	}
 

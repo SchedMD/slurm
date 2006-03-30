@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.0-pre4
+=============================
+ -- Bluegene specific - Added support to set bluegene block state to 
+    free/error via scontrol update BlockName 
+
 * Changes in SLURM 1.1.0-pre3
 =============================
  -- Added framework for XCPU job launch support.

@@ -29,8 +29,8 @@
 #include "bluegene.h"
 
 /*****************************************************/
-extern int part_ready(struct job_record *job_ptr);
-extern void pack_partition(bg_record_t *bg_record, Buf buffer);
-extern int unpack_partition(bg_info_record_t *bg_info_record, Buf buffer);
-extern int update_partition_list();
+extern int block_ready(struct job_record *job_ptr);
+extern void pack_block(bg_record_t *bg_record, Buf buffer);
+extern int unpack_block(bg_info_record_t *bg_info_record, Buf buffer);
+extern int update_block_list();
 #endif /* _BG_PART_INFO_H_ */

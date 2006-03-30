@@ -43,25 +43,6 @@
 
 #ifdef HAVE_BG_FILES
 
-/* Determine if specific slurm node is already in DOWN or DRAIN state */
-extern bool node_already_down(char *node_name)
-{
-	uint16_t base_state;
-	struct node_record *node_ptr = find_node_record(node_name);
-
-	if (node_ptr) {
-		base_state = node_ptr->node_state & 
-			(~NODE_STATE_NO_RESPOND);
-		if ((base_state == NODE_STATE_DOWN)
-		||  (base_state == NODE_STATE_DRAIN))
-			return true;
-		else
-			return false;
-	}
-
-	return false;
-}
-
 /* Find the specified BlueGene node ID and drain it from SLURM */
 static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bg)
 {
@@ -304,6 +285,25 @@ static void _test_down_switches(rm_BGL_t *bg)
 	}
 }
 #endif
+
+/* Determine if specific slurm node is already in DOWN or DRAIN state */
+extern bool node_already_down(char *node_name)
+{
+	uint16_t base_state;
+	struct node_record *node_ptr = find_node_record(node_name);
+
+	if (node_ptr) {
+		base_state = node_ptr->node_state & 
+			(~NODE_STATE_NO_RESPOND);
+		if ((base_state == NODE_STATE_DOWN)
+		||  (base_state == NODE_STATE_DRAIN))
+			return true;
+		else
+			return false;
+	}
+
+	return false;
+}
 
 /* 
  * Search MMCS for failed switches and nodes. Failed resources are DRAINED in 

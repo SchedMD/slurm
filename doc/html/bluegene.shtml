@@ -355,6 +355,12 @@ if resources are avaliable and prevent larger jobs from running.
 Bgblocks need not be assigned in the <i>bluegene.conf</i> file 
 for this mode.</p>
 
+<p>Blocks can be freed or set in an error state with scontrol.
+<br>(i.e. scontrol update BlockName=RMP0 state=error) 
+<br>This will end any job on the block and set the state of the block to ERROR
+making it so no job will run on the block.  To set it back to a usuable state 
+set state=free. 
+
 <p>One of these modes must be defined in the <i>bluegene.conf</i> file 
 with the option <i>LayoutMode=MODE</i> (where MODE=STATIC, DYNAMIC or OVERLAP).</p>
 

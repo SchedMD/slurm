@@ -60,7 +60,6 @@
 
 #ifdef HAVE_BG_FILES
 static int  _block_is_deallocating(bg_record_t *bg_record);
-static void _drain_as_needed(char *node_list, char *reason);
 
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
@@ -122,36 +121,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			
 	return SLURM_SUCCESS;
 }
-
-/* If any nodes in node_list are drained, draining, or down, 
- *   then just return
- *   else drain all of the nodes
- * This function lets us drain an entire bgblock only if 
- * we have not already identified a specific node as bad. */
-static void _drain_as_needed(char *node_list, char *reason)
-{
-	bool needed = true;
-	hostlist_t hl;
-	char *host;
-
-	/* scan node list */
-	hl = hostlist_create(node_list);
-	if (!hl) {
-		slurm_drain_nodes(node_list, reason);
-		return;
-	}
-	while ((host = hostlist_shift(hl))) {
-		if (node_already_down(host)) {
-			needed = false;
-			break;
-		}
-	}
-	hostlist_destroy(hl);
-
-	if (needed)
-		slurm_drain_nodes(node_list, reason);
-}
 #endif
+
 
 /*
  * check to see if partition is ready to execute.  Meaning
@@ -362,7 +333,8 @@ extern int update_block_list()
 			updated = -1;
 			slurm_mutex_unlock(&block_state_mutex);
 			break;
-		} else if(bg_record->state != state) {
+		} else if(bg_record->job_running != -3 //plugin set error
+			  && bg_record->state != state) {
 			debug("state of Partition %s was %d and now is %d",
 			      bg_record->bg_block_id, 
 			      bg_record->state, 
@@ -417,10 +389,12 @@ extern int update_block_list()
 					      bg_record->boot_count);
 					bg_record->boot_count++;
 				} else {
-					error("Couldn't boot Partition %s "
+					error("Couldn't boot Block %s "
 					      "for user %s",
 					      bg_record->bg_block_id, 
 					      bg_record->target_name);
+					slurm_mutex_unlock(&block_state_mutex);
+					
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
@@ -428,8 +402,8 @@ extern int update_block_list()
 						"Boot fails "
 						"[SLURM@%b %d %H:%M]",
 						time_ptr);
-					_drain_as_needed(bg_record->nodes,
-						reason);
+					drain_as_needed(bg_record, reason);
+					slurm_mutex_lock(&block_state_mutex);
 					bg_record->boot_state = 0;
 					bg_record->boot_count = 0;
 				}

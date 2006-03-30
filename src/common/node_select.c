@@ -58,37 +58,39 @@
  */
 
 typedef struct slurm_select_ops {
-	int		(*state_save)		( char *dir_name );
-	int	       	(*state_restore)	( char *dir_name );
-	int		(*job_init)		( List job_list );
-	int 		(*node_init)		( struct node_record *node_ptr,
-						  int node_cnt);
-	int 		(*part_init)		( List part_list );
-	int		(*job_test)		( struct job_record *job_ptr,
-						  bitstr_t *bitmap, 
-						  int min_nodes, 
-						  int max_nodes,
-						  bool test_only);
-	int		(*job_begin)		( struct job_record *job_ptr );
-	int		(*job_ready)		( struct job_record *job_ptr );
-	int		(*job_fini)		( struct job_record *job_ptr );
-	int		(*job_suspend)		( struct job_record *job_ptr );
-	int		(*job_resume)		( struct job_record *job_ptr );
-	int		(*pack_node_info)	( time_t last_query_time,
-                                                  Buf *buffer_ptr);
-        int             (*get_extra_jobinfo)    ( struct node_record *node_ptr,
-                                                  struct job_record *job_ptr,
-                                                  enum select_data_info cr_info,
-                                                  void *data);
-        int             (*get_select_nodeinfo)  ( struct node_record *node_ptr,
-                                                  enum select_data_info cr_info, 
-                                                  void *data);
-        int             (*update_nodeinfo)      ( struct job_record *job_ptr,
-                                                  enum select_data_info cr_info);
-        int             (*get_info_from_plugin) ( enum select_data_info cr_info, 
-                                                  void *data);
-	int             (*alter_node_cnt)       ( enum select_node_cnt type,
-						  void *data);
+	int		(*state_save)	       (char *dir_name);
+	int	       	(*state_restore)       (char *dir_name);
+	int		(*job_init)	       (List job_list);
+	int 		(*node_init)	       (struct node_record *node_ptr,
+					        int node_cnt);
+	int 		(*block_init)	       (List block_list);
+	int		(*job_test)	       (struct job_record *job_ptr,
+						bitstr_t *bitmap, 
+						int min_nodes, 
+						int max_nodes,
+						bool test_only);
+	int		(*job_begin)	       (struct job_record *job_ptr);
+	int		(*job_ready)	       (struct job_record *job_ptr);
+	int		(*job_fini)	       (struct job_record *job_ptr);
+	int		(*job_suspend)	       (struct job_record *job_ptr);
+	int		(*job_resume)	       (struct job_record *job_ptr);
+	int		(*pack_node_info)      (time_t last_query_time,
+						Buf *buffer_ptr);
+        int             (*get_extra_jobinfo)   (struct node_record *node_ptr,
+						struct job_record *job_ptr,
+						enum select_data_info cr_info,
+						void *data);
+        int             (*get_select_nodeinfo) (struct node_record *node_ptr,
+						enum select_data_info cr_info, 
+						void *data);
+        int             (*update_nodeinfo)     (struct job_record *job_ptr,
+						enum select_data_info cr_info);
+        int             (*update_block)        (update_part_msg_t
+						*part_desc_ptr);
+	int             (*get_info_from_plugin)(enum select_data_info cr_info,
+						void *data);
+	int             (*alter_node_cnt)      (enum select_node_cnt type,
+						void *data);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -107,16 +109,16 @@ static pthread_mutex_t		g_select_context_lock =
 #  define JOBINFO_MAGIC 0x83ac
 struct select_jobinfo {
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
-						 * dimensions, e.g. X, Y, and Z */
+						 * dimensions, e.g. XYZ */
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
-	char *bg_block_id;	/* Blue Gene partition ID */
+	char *bg_block_id;	/* Blue Gene block ID */
 	uint16_t magic;		/* magic number */
 	uint16_t quarter;       /* for bg to tell which quarter of a small
-				 * partition the job is running */ 
+				 * block the job is running */ 
 	uint16_t nodecard;       /* for bg to tell which nodecard of a quarter 
-				 *  of a small partition the job is running */ 
+				 *  of a small block the job is running */ 
 	uint32_t node_cnt;      /* how many cnodes in block */ 
 	uint16_t altered;       /* see if we have altered this job 
 				 * or not yet */
@@ -155,6 +157,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_get_extra_jobinfo",
                 "select_p_get_select_nodeinfo",
                 "select_p_update_nodeinfo",
+		"select_p_update_block",
                 "select_p_get_info_from_plugin",
 		"select_p_alter_node_cnt"
 	};
@@ -337,15 +340,15 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt)
 
 
 /*
- * Note re/initialization of partition record data structure
- * IN part_list - list of partition records
+ * Note re/initialization of block record data structure
+ * IN block_list - list of partition records
  */
-extern int select_g_block_init(List part_list)
+extern int select_g_block_init(List block_list)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.part_init))(part_list);
+	return (*(g_select_context->ops.block_init))(block_list);
 }
  
 /* 
@@ -401,6 +404,19 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr,
                return SLURM_ERROR;
 
        return (*(g_select_context->ops.update_nodeinfo))(job_ptr, cr_info);
+}
+
+/* 
+ * Update specific block (usually something has gone wrong)  
+ * IN cr_info   - type of data to update for a given job record
+ * IN part_desc_ptr - information about the block
+ */
+extern int select_g_update_block (update_part_msg_t *part_desc_ptr)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.update_block))(part_desc_ptr);
 }
 
 /* 
@@ -856,7 +872,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		snprintf(buf, size,
-			 "CONNECT ROTATE MAX_PROCS GEOMETRY PART_ID");
+			 "CONNECT ROTATE MAX_PROCS GEOMETRY BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
 		convert_to_kilo(jobinfo->max_procs, tmp_char);
@@ -872,7 +888,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		convert_to_kilo(jobinfo->max_procs, tmp_char);
 		snprintf(buf, size, 
 			 "Connection=%s Rotate=%s MaxProcs=%s "
-			 "Geometry=%ux%ux%u Part_ID=%s",
+			 "Geometry=%ux%ux%u Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 tmp_char,
