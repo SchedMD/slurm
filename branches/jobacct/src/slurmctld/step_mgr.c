@@ -344,6 +344,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		      bool requeue, uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
+	struct step_record *step_ptr;
 	int error_code;
 
 	job_ptr = find_job_record(job_id);
@@ -351,7 +352,13 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		info("job_step_complete: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-
+	
+	step_ptr = find_step_record(job_ptr, step_id);
+	if (step_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	else 
+		jobacct_step_complete(step_ptr);
+	
 	if ((job_ptr->kill_on_step_done)
 	&&  (list_count(job_ptr->step_list) <= 1)
 	&&  (!IS_JOB_FINISHED(job_ptr)))
@@ -373,6 +380,47 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * aggregate_step_data - given a step_record, aggregate all process info
+ * IN step - pointer to step record
+ * IN rusage - rusage struct
+ * IN psize - psize
+ * IN vsize - vsize 
+ * RET NONE
+ */
+void aggregate_step_data(struct step_record *step,
+			 struct rusage rusage, int psize, int vsize)
+{
+	step->max_psize = MAX(step->max_psize, psize);
+	step->max_vsize = MAX(step->max_vsize, vsize);
+	/* sum up all rusage stuff */
+	step->rusage.ru_utime.tv_sec	+= rusage.ru_utime.tv_sec;
+	step->rusage.ru_utime.tv_usec	+= rusage.ru_utime.tv_usec;
+	while (step->rusage.ru_utime.tv_usec >= 1E6) {
+		step->rusage.ru_utime.tv_sec++;
+		step->rusage.ru_utime.tv_usec -= 1E6;
+	}
+	step->rusage.ru_stime.tv_sec	+= rusage.ru_stime.tv_sec;
+	step->rusage.ru_stime.tv_usec	+= rusage.ru_stime.tv_usec;
+	while (step->rusage.ru_stime.tv_usec >= 1E6) {
+		step->rusage.ru_stime.tv_sec++;
+		step->rusage.ru_stime.tv_usec -= 1E6;
+	}
+	step->rusage.ru_maxrss		+= rusage.ru_maxrss;
+	step->rusage.ru_ixrss		+= rusage.ru_ixrss;
+	step->rusage.ru_idrss		+= rusage.ru_idrss;
+	step->rusage.ru_isrss		+= rusage.ru_isrss;
+	step->rusage.ru_minflt		+= rusage.ru_minflt;
+	step->rusage.ru_majflt		+= rusage.ru_majflt;
+	step->rusage.ru_nswap		+= rusage.ru_nswap;
+	step->rusage.ru_inblock		+= rusage.ru_inblock;
+	step->rusage.ru_oublock		+= rusage.ru_oublock;
+	step->rusage.ru_msgsnd		+= rusage.ru_msgsnd;
+	step->rusage.ru_msgrcv		+= rusage.ru_msgrcv;
+	step->rusage.ru_nsignals	+= rusage.ru_nsignals;
+	step->rusage.ru_nvcsw		+= rusage.ru_nvcsw;
+	step->rusage.ru_nivcsw		+= rusage.ru_nivcsw;
+}
 
 /* 
  * _pick_step_nodes - select nodes for a job step that satify its requirements
@@ -892,10 +940,12 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		step_iterator = list_iterator_create (job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
 					list_next (step_iterator))) {
-			update_rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, 
-				(void *)step_ptr,
-				&resp_data.event_time, &resp_data.error_code,
-				&resp_data.error_msg);
+			update_rc = checkpoint_op(ckpt_ptr->op, 
+						  ckpt_ptr->data,
+						  (void *)step_ptr,
+						  &resp_data.event_time,
+						  &resp_data.error_code,
+						  &resp_data.error_msg);
 			rc = MAX(rc, update_rc);
 		}
 		if (update_rc != -2)	/* some work done */
@@ -1001,6 +1051,9 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		return ESLURM_INVALID_JOB_ID;
 	if (req->range_last < req->range_first)
 		return EINVAL;
+
+	aggregate_step_data(step_ptr, 
+			    req->rusage, req->max_psize, req->max_vsize);
 
 	if (step_ptr->exit_code == NO_VAL) {
 		/* initialize the node bitmap for exited nodes */

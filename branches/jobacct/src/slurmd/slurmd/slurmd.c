@@ -52,7 +52,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/daemonize.h"
 #include "src/common/slurm_cred.h"
-#include "src/common/slurm_jobacct.h"
+//#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/parse_spec.h"
 #include "src/common/hostlist.h"
@@ -787,9 +787,9 @@ _slurmd_init()
 	/*
 	 * Set up the job accounting plugin
 	 */
-	g_slurmd_jobacct_init(conf->job_acct_parameters);
-	/* tell the accountants to start counting */
-	g_slurmd_jobacct_smgr();
+	/* g_slurmd_jobacct_init(conf->job_acct_parameters); */
+/* 	/\* tell the accountants to start counting *\/ */
+/* 	g_slurmd_jobacct_smgr(); */
 	
 
 	/*
@@ -846,7 +846,7 @@ _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
 	slurmd_task_fini(); 
-	g_slurmd_jobacct_fini();
+	//g_slurmd_jobacct_fini();
 	return SLURM_SUCCESS;
 }
 

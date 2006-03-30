@@ -547,7 +547,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	/************* acct stuff ********************/
 	aggregate_job_data(job->rusage, job->max_psize, job->max_vsize);
 	/*********************************************/	
-
+	info("setting the rusage");
 	memcpy(&msg.rusage, &step_complete.rusage, sizeof(struct rusage));
 	msg.max_psize = step_complete.max_psize;
 	msg.max_vsize = step_complete.max_vsize;
@@ -705,7 +705,7 @@ job_manager(slurmd_job_t *job)
 		io_initialized = true;
 	}
 
-	g_slurmd_jobacct_jobstep_launched(job);
+	//g_slurmd_jobacct_jobstep_launched(job);
 		
 	/* Call interconnect_init() before becoming user */
 	if (!job->batch && 
@@ -734,7 +734,7 @@ job_manager(slurmd_job_t *job)
 	_send_launch_resp(job, 0);
 
 	/* tell the accountants to start counting */
-	//g_slurmd_jobacct_smgr();
+	//g_slurmd_jobacct_smgr(job->jmgr_pid);
 	
 	_wait_for_all_tasks(job);
 
@@ -767,7 +767,7 @@ job_manager(slurmd_job_t *job)
 		_wait_for_io(job);
 	}
 
-	g_slurmd_jobacct_jobstep_terminated(job);
+	//g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:
     fail0:

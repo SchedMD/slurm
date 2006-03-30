@@ -680,7 +680,7 @@ int slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
  * The following routines are called from the slurmd 
  */
 
-int slurmd_jobacct_smgr(void)
+int slurmd_jobacct_smgr(int pid)
 {
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
@@ -694,7 +694,7 @@ int slurmd_jobacct_smgr(void)
 		error("pthread_attr_setdetachstate error %m");
 	
 	if  (pthread_create(&_watch_tasks_thread_id, &attr,
-			    &_watch_tasks, NULL)) {
+			    &_watch_tasks, (void *)&pid)) {
 		debug("jobacct failed to create _watch_tasks "
 		      "thread: %m");
 		prec_frequency = 0;
@@ -1607,7 +1607,7 @@ static int _unpack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
  */
 
 static void *_watch_tasks(void *arg) {
-
+	int *pid = (int *)arg;
 	int	tmp;
 
 	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
@@ -1615,7 +1615,7 @@ static void *_watch_tasks(void *arg) {
 		//pthread_testcancel();
 		//pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &tmp);
 		slurm_mutex_lock(&precTable_lock);
-		_get_process_data();	/* Update the data */ 
+		_get_process_data(*pid);	/* Update the data */ 
 		slurm_mutex_unlock(&precTable_lock);
 		//pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp);
 	} 

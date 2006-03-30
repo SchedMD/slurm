@@ -205,21 +205,21 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		_rpc_pid2jid(msg, cli);
 		slurm_free_job_id_request_msg(msg->data);
 		break;
-	case MESSAGE_JOBACCT_DATA:
-		{
-			int rc=SLURM_SUCCESS;
-			debug3("jobacct(%i) received jobacct message",
-					getpid());
-			slurm_send_rc_msg(msg,rc); /* ACK the message */
-			debug3("jobacct(%i) sent jobacct rc=%d message",
-					getpid(), rc);
-			rc=g_slurm_jobacct_process_message(msg);
-			debug3("jobacct(%i) slurm_jobacct_process_message "
-					"rc=%d",
-					getpid(), rc);
-			slurm_free_jobacct_msg(msg->data);
-		}
-		break;
+	/* case MESSAGE_JOBACCT_DATA: */
+/* 		{ */
+/* 			int rc=SLURM_SUCCESS; */
+/* 			debug3("jobacct(%i) received jobacct message", */
+/* 					getpid()); */
+/* 			slurm_send_rc_msg(msg,rc); /\* ACK the message *\/ */
+/* 			debug3("jobacct(%i) sent jobacct rc=%d message", */
+/* 					getpid(), rc); */
+/* 			rc=g_slurm_jobacct_process_message(msg); */
+/* 			debug3("jobacct(%i) slurm_jobacct_process_message " */
+/* 					"rc=%d", */
+/* 					getpid(), rc); */
+/* 			slurm_free_jobacct_msg(msg->data); */
+/* 		} */
+/* 		break; */
 	case REQUEST_FILE_BCAST:
 		rc = _rpc_file_bcast(msg, cli);
 		slurm_send_rc_msg(msg, rc);
