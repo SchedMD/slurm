@@ -348,6 +348,13 @@ _handle_rc_msg(slurm_msg_t *msg)
 		return SLURM_SUCCESS;
 }
 
+/* FIXME - This should be moved out of the API (into slurm_ll_api and srun),
+ *	or made into a seperate helper-function in the API.  It should
+ *	NOT run as a side effect of the slurm_job_step_create() function
+ *	call.  If made into a helper function, it should take a filename
+ *	as a parameter; it should not check an environment variable on its
+ *	own.
+ */
 static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 {
 	char *hostfile = NULL;
@@ -362,8 +369,9 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	int ret = 0;
 	int line_num = 0;
 	char *nodelist = NULL;
+	int rc;
 	
-	if (hostfile = getenv("MP_HOSTFILE")) {
+	if (hostfile = getenv("SLURM_HOSTFILE")) {
 		if(strlen(hostfile)<1 || !strcmp(hostfile,"NULL")) 
 			goto no_hostfile;
 		if((hostfilep = fopen(hostfile, "r")) == NULL) {
@@ -403,37 +411,33 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 				break;
 			}
 			
-			len += strlen(in_line)+1;
 			hostlist_push(hostlist,in_line);	
 			if(req->num_tasks && (line_num+1)>req->num_tasks) 
   				break; 
 		}
 		fclose (hostfilep);
 		
-		nodelist = (char *)xmalloc(sizeof(char)*len);
-		memset(nodelist, 0, len);
+		nodelist = (char *)xmalloc(0xffff);
+		if (!nodelist) {
+			error("Nodelist xmalloc failed");
+			goto cleanup_hostfile;
+		}
+
+		if (hostlist_ranged_string(hostlist, 0xffff, nodelist) == -1) {
+			error("Hostlist is too long for the allocate RPC!");
+			xfree(nodelist);
+			nodelist = NULL;
+			goto cleanup_hostfile;
+		}
 
 		count = hostlist_count(hostlist);
 		if (count <= 0) {
 			error("Hostlist is empty!\n");
-			xfree(*nodelist);
+			xfree(nodelist);
 			goto cleanup_hostfile;
 		}
 		
-		len = 0;
-		while (hostname = hostlist_shift(hostlist)) {
-			line_num = strlen(hostname)+1;
-			ret = sprintf(nodelist+len, 
-				       "%s,", hostname);
-			if (ret < 0 || ret > line_num) {
-				error("bad snprintf only %d printed",ret);
-				xfree(*nodelist);
-				goto cleanup_hostfile;
-			}
-			len += ret;
-		}
-		nodelist[--len] = '\0';
-		debug2("Hostlist from MP_HOSTFILE = %s\n",
+		debug2("Hostlist from SLURM_HOSTFILE = %s\n",
 		     nodelist);
 					
 	cleanup_hostfile:
