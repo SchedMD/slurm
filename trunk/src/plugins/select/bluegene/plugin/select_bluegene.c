@@ -72,6 +72,8 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
 static int _init_status_pthread(void);
+static int _wait_for_thread (pthread_t thread_id);
+static char *_block_state_str(int state);
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -140,6 +142,23 @@ static int _wait_for_thread (pthread_t thread_id)
 	}
 	error("Could not kill select script pthread");
 	return SLURM_ERROR;
+}
+
+static char *_block_state_str(int state)
+{
+	static char tmp[16];
+
+#ifdef HAVE_BG
+	switch (state) {
+		case 0: 
+			return "ERROR";
+		case 1:
+			return "FREE";
+	}
+#endif
+
+	snprintf(tmp, sizeof(tmp), "%d", state);
+	return tmp;
 }
 
 extern int fini ( void )
@@ -337,6 +356,52 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr,
                                             enum select_data_info info)
 {
        return SLURM_SUCCESS;
+}
+
+extern int select_p_update_part (update_part_msg_t *part_desc_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	bg_record_t *bg_record = NULL;
+	time_t now;
+	struct tm *time_ptr;
+	char reason[128];
+	char time_str[64];
+
+	bg_record = find_bg_record_in_list(bg_list, part_desc_ptr->name);
+	if(!bg_record)
+		return SLURM_ERROR;
+	now = time(NULL);
+	time_ptr = localtime(&now);
+	strftime(time_str, sizeof(time_str),
+		 "[SLURM@%b %d %H:%M]",
+		 time_ptr);
+	snprintf(reason, sizeof(reason),
+		 "update_block: "
+		 "Admin set block %s state to %s %s",
+		 bg_record->bg_block_id, 
+		 _block_state_str(part_desc_ptr->state_up), 
+		 time_str);
+	if(bg_record->job_running > -1) {
+		slurm_fail_job(bg_record->job_running);	
+		while(bg_record->job_running > -1) 
+			sleep(1);
+	}
+	if(!part_desc_ptr->state_up) {
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->job_running = -3;
+		bg_record->state = RM_PARTITION_ERROR;
+		slurm_mutex_unlock(&block_state_mutex);
+	} else if(part_desc_ptr->state_up){
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->job_running = -1;
+		bg_record->state = RM_PARTITION_FREE;
+		slurm_mutex_unlock(&block_state_mutex);
+	} else {
+		return rc;
+	}
+	info("%s",reason);
+	last_bg_update = time(NULL);
+	return rc;
 }
 
 extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 

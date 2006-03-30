@@ -627,6 +627,11 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr,
        return SLURM_SUCCESS;
 }
 
+extern int select_p_update_part (update_part_msg_t *part_desc_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
                                       struct job_record *job_ptr, 
                                        enum select_data_info info,
