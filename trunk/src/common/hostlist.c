@@ -1413,9 +1413,10 @@ static int _parse_single_range(const char *str, struct _range *range)
 	return 1;
 
   error:
-	_error(__FILE__, __LINE__, "Invalid range: `%s'\n", orig);
+    errno = EINVAL;
+	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
 	free(orig);
-	seterrno_ret(EINVAL, 0);
+	return 0;
 }
 
 /*
@@ -2855,10 +2856,27 @@ int main(int ac, char **av)
 	hostset_t set, set1;
 	hostlist_iterator_t iter, iter2;
 
-	if (!(hl1 = hostlist_create(ac > 1 ? av[1] : NULL)))
+    if (ac < 2)
+        printf("Recommended usage: %s [hostlist]\n\n", av[0]);
+
+	if (!(hl1 = hostlist_create(ac > 1 ? av[1] : NULL))) {
 		perror("hostlist_create");
-	if (!(set = hostset_create(ac > 1 ? av[1] : NULL)))
+        exit(1);
+    }
+
+    /* build a temporary hostlist, remove duplicates, 
+     * use it to make the hostset */
+    if (!(hl2 = hostlist_create(ac > 1 ? av[1] : NULL))) {
+        perror("hostlist_create");
+        exit(1);
+    }
+    hostlist_uniq(hl2);
+    hostlist_ranged_string(hl2, 102400, buf);
+	if (!(set = hostset_create(buf))) {
 		perror("hostset_create");
+        exit(1);
+    }
+    hostlist_destroy(hl2);
 
 	hl3 = hostlist_create("f[0-5]");
 	hostlist_delete(hl3, "f[1-3]");

@@ -759,7 +759,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	char    *bg_part_id = NULL;
 	bool	replied = false;
 
-	if (!_slurm_authorized_user(req_uid) && (req_uid != req->uid)) {
+	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */

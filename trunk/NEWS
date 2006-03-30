@@ -58,6 +58,14 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.9
+========================
+ -- Fix job accounting logic to open new log file on slurmctld reconfig.
+    (Andy Riebs, slurm.hp.logfile.patch).
+ -- Fix bug which allows a user to run a batch script on a node not allocated
+    by the slurmctld.
+ -- Fix poe MP_HOSTFILE handling bug on AIX.
+
 * Changes in SLURM 1.0.8
 ========================
  -- Fix to communication between slurmd and slurmstepd to allow for partial
