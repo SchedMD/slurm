@@ -48,6 +48,7 @@ set mpicc       "/usr/local/bin/mpicc"
 set use_pmi	0
 
 set poe		"/usr/bin/poe"
+set poe_partition "pdebug"
 set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
 
