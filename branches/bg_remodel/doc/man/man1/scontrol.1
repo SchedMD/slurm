@@ -343,6 +343,20 @@ in the partition. Specify a number or "INFINITE".
 \fIMinNodes\fP=<count>
 Set the minimum number of nodes which will be allocated to any single job 
 in the partition. 
+.TP
+\fBSPECIFICATIONS FOR UPDATE, BLOCK \fR
+.TP
+Bluegene systems only! 
+.TP
+\fIBlockName\fP=<name>
+Identify the bluegene block to be updated. This specification is required.
+.TP
+\fIState\fP=<free|error>
+This will update the state of a bluegene block to either FREE or ERROR. 
+(i.e. update BlockName=RMP0 STATE=ERROR) State error will not allow jobs
+to run on the block. \fBWARNING!!!!\fR This will cancel any
+running job on the block!
+.TP
 .SH "ENVIRONMENT VARIABLES" 
 .PP 
 Some \fBscontrol\fR options may

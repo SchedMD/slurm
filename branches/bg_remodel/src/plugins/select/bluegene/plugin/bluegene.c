@@ -527,6 +527,52 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 	return 0;
 }
 
+/* If any nodes in node_list are drained, draining, or down, 
+ *   then just return
+ *   else drain all of the nodes
+ * This function lets us drain an entire bgblock only if 
+ * we have not already identified a specific node as bad. */
+extern void drain_as_needed(bg_record_t *bg_record, char *reason)
+{
+	bool needed = true;
+	hostlist_t hl;
+	char *host = NULL;
+
+	if(bg_record->job_running > -1)
+		slurm_fail_job(bg_record->job_running);			
+
+	/* small blocks */
+	if(bg_record->cpus_per_bp != procs_per_node) {
+		info("small block");
+		while(bg_record->job_running > -1) 
+			sleep(1);
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->job_running = -3;
+		bg_record->state = RM_PARTITION_ERROR;
+		slurm_mutex_unlock(&block_state_mutex);
+		return;
+	}
+	
+	/* at least one base partition */
+	hl = hostlist_create(bg_record->nodes);
+	if (!hl) {
+		slurm_drain_nodes(bg_record->nodes, reason);
+		return;
+	}
+	while ((host = hostlist_shift(hl))) {
+		if (node_already_down(host)) {
+			needed = false;
+			free(host);
+			break;
+		}
+		free(host);
+	}
+	hostlist_destroy(hl);
+	
+	if (needed)
+		slurm_drain_nodes(bg_record->nodes, reason);
+}
+
 extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
 {
 	if(bg_record->quarter != (uint16_t)NO_VAL) {

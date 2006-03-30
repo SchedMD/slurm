@@ -170,6 +170,7 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
    updated before call of function. 
 */
 extern int update_block_user(bg_record_t *bg_block_id, int set); 
+extern void drain_as_needed(bg_record_t *bg_record, char *reason);
 extern int format_node_name(bg_record_t *bg_record, char tmp_char[]);
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 

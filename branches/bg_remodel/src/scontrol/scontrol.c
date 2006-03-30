@@ -113,6 +113,7 @@ static void	_update_it (int argc, char *argv[]);
 static int	_update_job (int argc, char *argv[]);
 static int	_update_node (int argc, char *argv[]);
 static int	_update_part (int argc, char *argv[]);
+static int	_update_bluegene_block (int argc, char *argv[]);
 static void	_usage ();
 
 int 
@@ -426,8 +427,8 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 		}
 	}
 	else
-		error_code = slurm_load_partitions ((time_t) NULL, 
-						    &part_info_ptr, show_flags);
+		error_code = slurm_load_partitions((time_t) NULL, 
+						   &part_info_ptr, show_flags);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_part_info_ptr = part_info_ptr;
@@ -1361,15 +1362,17 @@ _update_it (int argc, char *argv[])
 		if (strncasecmp (argv[i], "NodeName=", 9) == 0) {
 			error_code = _update_node (argc, argv);
 			break;
-		}
-		else if (strncasecmp (argv[i], "PartitionName=", 14) == 0) {
+		} else if (strncasecmp (argv[i], "PartitionName=", 14) == 0) {
 			error_code = _update_part (argc, argv);
 			break;
-		}
-		else if (strncasecmp (argv[i], "JobId=", 6) == 0) {
+		} else if (strncasecmp (argv[i], "JobId=", 6) == 0) {
 			error_code = _update_job (argc, argv);
 			break;
+		} else if (strncasecmp (argv[i], "BlockName=", 10) == 0) {
+			error_code = _update_bluegene_block (argc, argv);
+			break;
 		}
+		
 	}
 	
 	if (i >= argc) {
@@ -1890,6 +1893,55 @@ _update_part (int argc, char *argv[])
 		return slurm_get_errno ();
 	} else
 		return 0;
+}
+
+/* 
+ * _update_bluegene_block - update the bluegene block per the 
+ *	supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ *			error message and returns 0
+ */
+static int
+_update_bluegene_block (int argc, char *argv[]) 
+{
+#ifdef HAVE_BG
+	int i, update_cnt = 0;
+	update_part_msg_t part_msg;
+
+	slurm_init_part_desc_msg ( &part_msg );
+	/* means this is for bluegene */
+	part_msg.hidden = (uint16_t)INFINITE;
+
+	for (i=0; i<argc; i++) {
+		if (strncasecmp(argv[i], "BlockName=", 10) == 0)
+			part_msg.name = &argv[i][10];
+		else if (strncasecmp(argv[i], "State=", 6) == 0) {
+			if (strcasecmp(&argv[i][6], "ERROR") == 0)
+				part_msg.state_up = 0;
+			else if (strcasecmp(&argv[i][6], "FREE") == 0)
+				part_msg.state_up = 1;
+			else {
+				exit_code = 1;
+				fprintf (stderr, "Invalid input: %s\n", 
+					 argv[i]);
+				fprintf (stderr, "Acceptable State values "
+					"are FREE and ERROR\n");
+				return 0;
+			}
+			update_cnt++;
+		}
+	}
+	if (slurm_update_partition(&part_msg)) {
+		exit_code = 1;
+		return slurm_get_errno ();
+	} else
+		return 0;
+#else
+	printf("This only works on a bluegene system.\n");
+	return 0;
+#endif
 }
 
 /* _usage - show the valid scontrol commands */

@@ -86,6 +86,13 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr,
 				     enum select_data_info cr_info);
 
 /* 
+ * Update specific block (usually something has gone wrong)  
+ * IN cr_info   - type of data to update for a given job record
+ * IN part_desc_ptr - information about the block
+ */
+extern int select_g_update_block (update_part_msg_t *part_desc_ptr);
+
+/* 
  * Get select data from a plugin
  * IN node_pts  - current node record
  * IN cr_info   - type of data to get from the node record (see enum select_data_info)
@@ -104,7 +111,7 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
  * Note re/initialization of partition record data structure
  * IN part_list - list of partition records
  */
-extern int select_g_part_init(List part_list);
+extern int select_g_block_init(List part_list);
 
 /* 
  * Note the initialization of job records, issued upon restart of 
