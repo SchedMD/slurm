@@ -5,9 +5,9 @@
 AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd
+noinst_PROGRAMS = slurmd.test
 
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) \
-	-DSLURMD_STEP_PATH=\"$(prefix)/sbin/slurmstepd\"
+INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
 slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
@@ -15,13 +15,14 @@ slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libeio.la       \
 	$(SSL_LIBS) 
 
+slurmd_test_LDADD = $(slurmd_LDADD)
 
-slurmd_SOURCES = 	        	\
-	slurmd.c slurmd.h       	\
-	req.c req.h			\
+SLURMD_SOURCES = \
+	slurmd.c slurmd.h \
+	req.c req.h \
 	get_mach_stat.c get_mach_stat.h	\
-	read_proc.c 	        	\
-	xcpu.c xcpu.h			\
+	read_proc.c \
+	xcpu.c xcpu.h \
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
 	$(top_builddir)/src/slurmd/common/setproctitle.c \
@@ -35,6 +36,14 @@ slurmd_SOURCES = 	        	\
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
 	$(top_builddir)/src/slurmd/common/task_plugin.h
 
+slurmd_SOURCES = \
+    $(SLURMD_SOURCES) \
+	config.c
+
+slurmd_test_SOURCES = \
+    $(SLURMD_SOURCES) \
+	testconfig.c
+
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
@@ -42,6 +51,18 @@ slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS) -Wl,-bmaxd
 else
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 endif
+
+slurmd_test_LDFLAGS = $(slurmd_LDFLAGS)
+
+
+config.c: Makefile
+	@( echo "char *slurm_stepd_path = \"$(prefix)/sbin/slurmstepd\";"\
+	 ) > config.c
+
+testconfig.c: Makefile
+	@( stepdir=`cd $(top_builddir)/src/slurmd/slurmstepd && pwd`;\
+	   echo "char *slurm_stepd_path = \"$$stepdir/slurmstepd\";"\
+	 ) > testconfig.c
 
 force:
 $(slurmd_LDADD) : force

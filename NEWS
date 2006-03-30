@@ -22,7 +22,11 @@ documents those changes that are of interest to users and admins.
     WARNING: "JobAcctType=jobacct/log" is no longer supported.
  -- Removed vestigal 'bg' names from bluegene plugin and smap
  -- InactiveLimit parameter is not enforced for RootOnly partitions.
- -- Update select/cons_res web page (Susanne Balle, HP, cons_res_doc_patch_3_29_06).
+ -- Update select/cons_res web page (Susanne Balle, HP, 
+    cons_res_doc_patch_3_29_06).
+ -- Build a "slurmd.test" along with slurmd. slurmd.test has the path to 
+    slurmstepd set allowing it to run unmodified out of the builddir for 
+    testing (Mark Grondona).
  
 * Changes in SLURM 1.1.0-pre2
 =============================

@@ -68,6 +68,8 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
+extern char *slurm_stepd_path;
+
 typedef struct {
 	int ngids;
 	gid_t *gids;
@@ -421,7 +423,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close read to_slurmd in parent: %m");
 		return rc;
 	} else {
-		char **argv = NULL;
+		char *const argv[2] = { slurm_stepd_path, NULL};
 		/*
 		 * Child forks and exits
 		 */
@@ -451,9 +453,6 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("dup2 over STDOUT_FILENO: %m");
 			exit(1);
 		}
-		argv = xmalloc(2 * sizeof(char *));
-		argv[0] = SLURMD_STEP_PATH;
-		argv[1] = NULL;
 		execvp(argv[0], argv);
 
 		fatal("exec of slurmstepd failed: %m");
