@@ -54,14 +54,14 @@ if { ![file exists $poe] } {
 }
 
 #find out if we have enough nodes to test functionality
-spawn $scontrol show partition
+spawn $scontrol show partition pdebug
 expect {
 	-re "TotalNodes=($number)" {
 		set node_count $expect_out(1,string)
 		if { $node_count < 2 } {
 			send_user "WARNING: system must have at least 2 \
 				   nodes to run this test on.  This system \
-				   only has 2.\n"
+				   only has $node_count.\n"
 			exit $exit_code
 		}
 		exp_continue
@@ -84,7 +84,7 @@ for {set i 0} {$i<2} {incr i} {
 				previous poe run\n"
 			exit 1
 		}
-		set env(MP_HOSTFILE) $hostfile
+		set env(SLURM_HOSTFILE) $hostfile
 		set 1node0 $node0
 		set 1node1 $node1
 		set file [open $hostfile "w"]
