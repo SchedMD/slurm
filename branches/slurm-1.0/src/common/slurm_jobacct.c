@@ -52,9 +52,10 @@
 
 /*
  * The following global is used by the jobacct/log plugin; it must
- * persist when the plugin is reloaded, so we define it here.
+ * persist when the plugin is reloaded. Defined extern in slurm_jobacct.h.
  */
-extern FILE * JOBACCT_LOGFILE = NULL;
+
+FILE * JOBACCT_LOGFILE = NULL;
 
 /*
  * WARNING:  Do not change the order of these fields or add additional

@@ -55,6 +55,11 @@
 
 typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
 
+/*
+ * The following global is used by the jobacct/log plugin; it must
+ * persist when the plugin is reloaded, so we define it here.
+ */
+extern FILE * JOBACCT_LOGFILE;
 
 extern int g_slurm_jobacct_process_message(struct slurm_msg *msg);
 
