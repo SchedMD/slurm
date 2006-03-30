@@ -224,7 +224,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/checkpoint_none.so
-%{_libdir}/slurm/jobacct_log.so
+%{_libdir}/slurm/jobacct_linux.so
 %{_libdir}/slurm/jobacct_none.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
