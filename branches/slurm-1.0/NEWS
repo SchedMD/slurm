@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     (Andy Riebs, slurm.hp.logfile.patch).
  -- Fix bug which allows a user to run a batch script on a node not allocated
     by the slurmctld.
+ -- Fix poe MP_HOSTFILE handling bug on AIX.
 
 * Changes in SLURM 1.0.8
 ========================
