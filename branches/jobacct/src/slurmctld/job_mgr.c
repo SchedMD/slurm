@@ -48,7 +48,6 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"

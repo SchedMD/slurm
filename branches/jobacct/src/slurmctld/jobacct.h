@@ -37,7 +37,7 @@
 #include "src/common/xstring.h"
 #include "slurmctld.h"
 
-int jobacct_init(char *job_acct_loc, char *job_acct_parameters);
+int jobacct_init(char *job_acct_log);
 int jobacct_job_start(struct job_record *job_ptr);
 int jobacct_step_start(struct step_record *step);
 int jobacct_step_complete(struct step_record *step);

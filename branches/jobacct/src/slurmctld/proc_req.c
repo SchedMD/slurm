@@ -53,7 +53,6 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -253,18 +252,6 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_node_select_info(msg);
 		/* Note: No data to free */
 		break;
-	case MESSAGE_JOBACCT_DATA:
-		{
-			int rc=SLURM_SUCCESS;
-			debug3("proc_req received jobacct message");
-			slurm_send_rc_msg(msg,rc); /* ACK the message */
-			debug3("proc_req sent rc=%d to jobacct", rc);
-			rc=g_slurm_jobacct_process_message(msg);
-			debug3("proc_req slurm_jobacct_process_message rc=%d",
-					rc);
-			slurm_free_jobacct_msg(msg->data);
-		}
-		break;
 	case REQUEST_STEP_COMPLETE:
 		_slurm_rpc_step_complete(msg);
 		slurm_free_step_complete_msg(msg->data);
@@ -298,7 +285,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->first_job_id        = conf->first_job_id;
 	conf_ptr->inactive_limit      = conf->inactive_limit;
 	conf_ptr->job_acct_loc        = xstrdup(conf->job_acct_loc);
-	conf_ptr->job_acct_parameters = xstrdup(conf->job_acct_parameters);
+	conf_ptr->job_acct_freq       = conf->job_acct_freq;
 	conf_ptr->job_acct_type       = xstrdup(conf->job_acct_type);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);

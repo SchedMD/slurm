@@ -851,6 +851,8 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	jobacct_g_suspend();
+
 	/*
 	 * Signal the container
 	 */

@@ -1988,7 +1988,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack32((uint32_t)build_ptr->first_job_id, buffer);
 	pack16((uint16_t)build_ptr->inactive_limit, buffer);
 	packstr(build_ptr->job_acct_loc, buffer);
-	packstr(build_ptr->job_acct_parameters, buffer);
+	pack16(build_ptr->job_acct_freq, buffer);
 	packstr(build_ptr->job_acct_type, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
@@ -2068,8 +2068,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack32(&build_ptr->first_job_id, buffer);
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_loc, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_parameters, &uint16_tmp,
-			       buffer);
+	safe_unpack16(&build_ptr->job_acct_freq, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
@@ -2142,7 +2141,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->epilog);
 	xfree(build_ptr->job_acct_loc);
-	xfree(build_ptr->job_acct_parameters);
 	xfree(build_ptr->job_acct_type);
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);

@@ -50,35 +50,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
 
-
-extern int g_slurm_jobacct_process_message(struct slurm_msg *msg);
-
-extern int g_slurmctld_jobacct_init(char *job_acct_loc, 
-		char *job_acct_parameters);
-
-extern int g_slurmctld_jobacct_fini(void);
-
-extern int g_slurmctld_jobacct_job_complete(struct job_record *job_ptr);
-
-extern int g_slurmctld_jobacct_job_start(struct job_record *job_ptr);
-
-extern int g_slurmd_jobacct_init(char *job_acct_parameters);
-
-extern int g_slurmd_jobacct_fini();
-
-extern int g_slurmd_jobacct_jobstep_launched(slurmd_job_t *job);
-
-extern int g_slurmd_jobacct_jobstep_terminated(slurmd_job_t *job);
-
-extern int g_slurmd_jobacct_smgr(void);
-
-extern int g_slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid,
-		int status, struct rusage *rusage);
+extern int jobacct_g_init(int frequency);
+extern int jobacct_g_fini(slurmd_job_t *job);
+extern int jobacct_g_suspend();
 
 #endif /*__SLURM_JOBACCT_H__*/
 

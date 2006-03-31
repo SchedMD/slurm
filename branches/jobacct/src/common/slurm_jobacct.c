@@ -43,11 +43,8 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_jobacct.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
@@ -57,17 +54,9 @@
  * at the end of the structure.
  */
 typedef struct slurm_jobacct_ops {
-	int (*slurmctld_jobacct_init)		(char *job_acct_loc,
-						 char *job_acct_parameters);
-	int (*slurmctld_jobacct_job_complete)	(struct job_record *job_ptr);
-	int (*slurmctld_jobacct_job_start)	(struct job_record *job_ptr);
-	int (*slurm_jobacct_process_message)(struct slurm_msg *msg);
-	int (*slurmd_jobacct_init)		(char *job_acct_parameters);
-	int (*slurmd_jobacct_fini)		();
-	int (*slurmd_jobacct_jobstep_launched)	(slurmd_job_t *job);
-	int (*slurmd_jobacct_jobstep_terminated)	(slurmd_job_t *job);
-	int (*slurmd_jobacct_smgr)		(void);
-	int (*slurmd_jobacct_task_exit)		(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage);
+	int (*jobacct_init)		(int frequency);
+	int (*jobacct_fini)		(slurmd_job_t *job);
+	int (*jobacct_suspend)	        ();
 } slurm_jobacct_ops_t;
 
 /*
@@ -75,16 +64,9 @@ typedef struct slurm_jobacct_ops {
  * for slurm_jobacct_ops_t.
  */
 static const char *syms[] = {
-	"slurmctld_jobacct_init",
-	"slurmctld_jobacct_job_complete",
-	"slurmctld_jobacct_job_start",
-	"slurm_jobacct_process_message",
-	"slurmd_jobacct_init",
-	"slurmd_jobacct_fini",
-	"slurmd_jobacct_jobstep_launched",
-	"slurmd_jobacct_jobstep_terminated",
-	"slurmd_jobacct_smgr",
-	"slurmd_jobacct_task_exit",
+	"jobacct_p_init",
+	"jobacct_p_fini",
+	"jobacct_p_suspend",
 };
 
 /*
@@ -198,157 +180,6 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
         return &c->ops;
 }
 
-extern int
-g_slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
-{
-	int retval = SLURM_SUCCESS;
-
-	slurm_mutex_lock( &context_lock );
-	retval=_plugin_init(); 
-	if ( g_context )
-		retval = (*(g_context->ops.slurmctld_jobacct_init))
-			(job_acct_loc, job_acct_parameters);
-	slurm_mutex_unlock( &context_lock );
-	return retval;
-}
-
-extern int
-g_slurmctld_jobacct_fini(void)
-{
-	if ( g_context )
-		return _slurm_jobacct_context_destroy(g_context);
-	return SLURM_SUCCESS;
-}
-
-extern int
-g_slurmctld_jobacct_job_complete(struct job_record *job_ptr)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context )
-		 retval = (*(g_context->ops.slurmctld_jobacct_job_complete))(job_ptr);
-	else {
-		error ("slurm_jobacct plugin context not initialized 2");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-extern int
-g_slurmctld_jobacct_job_start(struct job_record *job_ptr)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context )
-		 retval = (*(g_context->ops.slurmctld_jobacct_job_start))(job_ptr);
-	else {
-		error ("slurm_jobacct plugin context not initialized 1");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-/*
- * g_slurm_jobacct_process_message(slurm_msg *msg) -- Process a
- * MESSAGE_JOBSTEP_ACCOUNTING_DATA message from slurmd.
- */
-extern int
-g_slurm_jobacct_process_message(struct slurm_msg *msg)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context )
-		 retval = (*(g_context->ops.slurm_jobacct_process_message))(msg);
-	else {
-		error ("slurm_jobacct plugin context not initialized 3");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-
-extern int
-g_slurmd_jobacct_init(char *job_acct_parameters)
-{
-	int retval = SLURM_SUCCESS;
-
-	slurm_mutex_lock( &context_lock );
-	_plugin_init(); 
-	if ( g_context )
-		retval = (*(g_context->ops.slurmd_jobacct_init))
-					(job_acct_parameters);
-	slurm_mutex_unlock( &context_lock );
-	return retval;
-}
-extern int
-g_slurmd_jobacct_fini()
-{
-	return (*(g_context->ops.slurmd_jobacct_fini))();
-}
-
-
-extern int
-g_slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context )
-		 retval = (*(g_context->ops.slurmd_jobacct_jobstep_launched))(job);
-	else {
-		error ("slurm_jobacct plugin context not initialized 4");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-
-extern int
-g_slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context )
-		 retval = (*(g_context->ops.slurmd_jobacct_jobstep_terminated))(job);
-	else {
-		error ("slurm_jobacct plugin context not initialized 5");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-
-extern int
-g_slurmd_jobacct_smgr(void)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context )
-		 retval = (*(g_context->ops.slurmd_jobacct_smgr))();
-	else {
-		error ("slurm_jobacct plugin context not initialized 6");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-
-extern int
-g_slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status,
-		struct rusage *rusage)
-{
-	int retval = SLURM_SUCCESS;
-
-	if ( g_context ) {
-		 retval = (*(g_context->ops.slurmd_jobacct_task_exit))
-			(job, pid, status, rusage);
-	} else {
-		error ("slurm_jobacct plugin context not initialized 7");
-		retval = ENOENT;
-	}
-	return retval;
-}
-
-
 static int
 _plugin_init(void)
 {
@@ -378,3 +209,28 @@ _plugin_init(void)
   done:
 	return(retval);
 }
+
+
+extern int jobacct_g_init(int frequency)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	_plugin_init(); 
+	if ( g_context )
+		retval = (*(g_context->ops.jobacct_init))(frequency);
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
+
+extern int jobacct_g_fini(slurmd_job_t *job)
+{
+	return (*(g_context->ops.jobacct_fini))(job);
+}
+
+extern int jobacct_g_suspend()
+{
+	return (*(g_context->ops.jobacct_suspend))();
+}
+
+

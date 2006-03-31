@@ -704,8 +704,6 @@ job_manager(slurmd_job_t *job)
 	} else {
 		io_initialized = true;
 	}
-
-	//g_slurmd_jobacct_jobstep_launched(job);
 		
 	/* Call interconnect_init() before becoming user */
 	if (!job->batch && 
@@ -733,11 +731,9 @@ job_manager(slurmd_job_t *job)
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
 
-	/* tell the accountants to start counting */
-	//g_slurmd_jobacct_smgr(job->jmgr_pid);
-	
 	_wait_for_all_tasks(job);
-
+	jobacct_g_fini(job);
+		
 	job->state = SLURMSTEPD_STEP_ENDING;
 
 	if (!job->batch && 
@@ -766,9 +762,6 @@ job_manager(slurmd_job_t *job)
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
-
-	//g_slurmd_jobacct_jobstep_terminated(job);
-
     fail1:
     fail0:
 	/* If interactive job startup was abnormal, 
@@ -1042,7 +1035,6 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 			job->envtp->procid = i;
 			post_term(job);
-			//g_slurmd_jobacct_task_exit(job, pid, status, &job->rusage);
 		}
 
 	} while ((pid > 0) && !waitflag);

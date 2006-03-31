@@ -138,11 +138,11 @@ extern uint16_t slurm_get_tree_width(void);
  */
 char *slurm_get_jobacct_loc(void);
 
-/* slurm_get_jobacct_parameters
- * returns the job accounting parameters from slurmctld_conf object
- * RET char *    - job accounting parameters,  MUST be xfreed by caller
+/* slurm_get_jobacct_freq
+ * returns the job accounting poll frequency from the slurmctld_conf object
+ * RET int    - job accounting frequency
  */
-char *slurm_get_jobacct_parameters(void);
+uint16_t slurm_get_jobacct_freq(void);
 
 /* slurm_get_jobacct_type
  * returns the job accounting type from slurmctld_conf object

@@ -46,7 +46,6 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -662,8 +661,7 @@ int read_slurm_conf(int recover)
 	slurm_conf_unlock();
 
 	update_logging();
-	jobacct_init(slurmctld_conf.job_acct_loc,
-		     slurmctld_conf.job_acct_parameters);
+	jobacct_init(slurmctld_conf.job_acct_loc);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
 	switch_init();

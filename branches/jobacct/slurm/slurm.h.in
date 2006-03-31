@@ -577,7 +577,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
 	char *job_acct_loc;	/* job accounting log location */
-	char *job_acct_parameters; /* parameters for job accounting plugins */
+	uint16_t job_acct_freq; /* poll frequency for job accounting plugins */
 	char *job_acct_type;	/* job accounting type */
 	char *job_comp_type;	/* job completion logger type */
 	char *job_comp_loc;	/* job completion logging location */
@@ -591,7 +591,7 @@ typedef struct slurm_ctl_conf {
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog */
         char *propagate_rlimits;/* Propagate (all/specific) resource limits */
-        char *propagate_rlimits_except; /* Propagate all rlimits except these */
+        char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */
 	char *schedtype;	/* type of scheduler to use */

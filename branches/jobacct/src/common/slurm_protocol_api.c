@@ -291,19 +291,19 @@ char *slurm_get_jobacct_loc(void)
 	return jobacct_loc;
 }
 
-/* slurm_get_jobacct_parameters
- * returns the job accounting parameters from the slurmctld_conf object
- * RET char *    - job accounting parameters,  MUST be xfreed by caller
+/* slurm_get_jobacct_freq
+ * returns the job accounting poll frequency from the slurmctld_conf object
+ * RET int    - job accounting frequency
  */
-char *slurm_get_jobacct_parameters(void)
+uint16_t slurm_get_jobacct_freq(void)
 {
-	char *jobacct_parameters;
+	uint16_t freq;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	jobacct_parameters = xstrdup(conf->job_acct_parameters);
+	freq = conf->job_acct_freq;
 	slurm_conf_unlock();
-	return jobacct_parameters;
+	return freq;
 }
 
 /* slurm_get_jobacct_type

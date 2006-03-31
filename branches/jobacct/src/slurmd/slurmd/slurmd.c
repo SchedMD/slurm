@@ -52,7 +52,6 @@
 #include "src/common/xsignal.h"
 #include "src/common/daemonize.h"
 #include "src/common/slurm_cred.h"
-//#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/parse_spec.h"
 #include "src/common/hostlist.h"
@@ -549,8 +548,7 @@ _read_config()
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
-	_free_and_set(&conf->job_acct_parameters,
-		      xstrdup(cf->job_acct_parameters));
+	conf->job_acct_freq = cf->job_acct_freq;
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )
@@ -785,14 +783,6 @@ _slurmd_init()
 	}
 
 	/*
-	 * Set up the job accounting plugin
-	 */
-	/* g_slurmd_jobacct_init(conf->job_acct_parameters); */
-/* 	/\* tell the accountants to start counting *\/ */
-/* 	g_slurmd_jobacct_smgr(); */
-	
-
-	/*
 	 * Cache the group access list
 	 */
 	cf = slurm_conf_lock();
@@ -846,7 +836,6 @@ _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
 	slurmd_task_fini(); 
-	//g_slurmd_jobacct_fini();
 	return SLURM_SUCCESS;
 }
 

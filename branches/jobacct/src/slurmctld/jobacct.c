@@ -97,7 +97,7 @@ static int _print_record(struct job_record *job_ptr,
 	return rc;
 }
 
-int jobacct_init(char *job_acct_loc, char *job_acct_parameters)
+int jobacct_init(char *job_acct_log)
 {
 	int 		rc = SLURM_SUCCESS;
 	mode_t		prot = 0600;
@@ -108,7 +108,7 @@ int jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 	slurm_mutex_lock( &logfile_lock );
 	if (LOGFILE)
 		fclose(LOGFILE);
-	log_file=job_acct_loc;
+	log_file=job_acct_log;
 	if (*log_file != '/')
 		fatal("JobAcctLoc must specify an absolute pathname");
 	if (stat(log_file, &statbuf)==0)       /* preserve current file mode */
@@ -175,7 +175,6 @@ int jobacct_step_start(struct step_record *step)
 {
 	int		i;
 	char buf[BUFFER_SIZE];
-	char tbuf[TIMESTAMP_LENGTH];
 	time_t		now;
 	struct tm 	ts; /* timestamp decoder */
 	int	nchars, rc;
@@ -289,10 +288,61 @@ int jobacct_job_complete(struct job_record *job_ptr)
 	tmp = snprintf(buf, BUFFER_SIZE,
 		       "%d %u %d\0",
 		       JOB_TERMINATED,
-		       (int) (job_ptr->end_time - job_ptr->start_time)
+		       (int) (job_ptr->end_time - job_ptr->start_time),
 		       job_ptr->job_state & (~JOB_COMPLETING));
 	
 	rc = _print_record(job_ptr, job_ptr->end_time, buf);
 	return rc;
 }
 
+int jobacct_suspend(struct job_record *job_ptr)
+{
+	int		i;
+	char buf[BUFFER_SIZE];
+	time_t		now;
+	struct tm 	ts; /* timestamp decoder */
+	int	nchars, rc;
+	int elapsed;
+	int     comp_status;
+	struct step_record  *step = NULL;
+	now = time(NULL);
+	/*****************************
+	 * THIS DOESN"T WORK YET!!!!!
+	 *****************************/
+	return SLURM_ERROR;
+	if ((elapsed=now-step->start_time)<0)
+		elapsed=0;	/* For *very* short jobs, if clock is wrong */
+	
+	nchars = snprintf(buf, BUFFER_SIZE, _jobstep_format,
+			  JOB_STEP,
+			  step->step_id,	/* stepid */
+			  job_ptr->job_state,/* completion status */
+			  0,     		/* completion code */
+			  step->num_tasks,	/* number of tasks */
+			  step->job_ptr->num_procs,/* number of cpus */
+			  elapsed,	           /* elapsed seconds */
+			  0,                    /* total cputime seconds */
+			  0,    		/* total cputime seconds */
+			  0,	/* user seconds */
+			  0,/* user microseconds */
+			  0,	/* system seconds */
+			  0,/* system microsecs */
+			  0,	/* max rss */
+			  0,	/* max ixrss */
+			  0,	/* max idrss */
+			  0,	/* max isrss */
+			  0,	/* max minflt */
+			  0,	/* max majflt */
+			  0,	/* max nswap */
+			  0,	/* total inblock */
+			  0,	/* total outblock */
+			  0,	/* total msgsnd */
+			  0,	/* total msgrcv */
+			  0,	/* total nsignals */
+			  0,	/* total nvcsw */
+			  0,	/* total nivcsw */
+			  0,		/* max vsize */
+			  0,		/* max psize */
+			  step->name);      	/* step exe name */
+	rc = _print_record(step->job_ptr, step->start_time, buf);	
+}

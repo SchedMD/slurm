@@ -86,74 +86,22 @@ const uint32_t plugin_version = 100;
  */
 
 /*
- * slurmctld_jobacct_init() is called when the plugin is loaded by
- * slurmctld, before any other functions are called.  Put global
- * initialization here.
- */
-
-int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
-{
-	info("jobacct NONE plugin loaded");
-	debug3("slurmctld_jobacct_init() called");
-	return SLURM_SUCCESS;
-}
-
-
-int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
-{
-	debug3("slurmctld_jobacct_job_complete() called");
-	return SLURM_SUCCESS;
-}
-
-int slurmctld_jobacct_job_start(struct job_record *job_ptr)
-{
-	debug3("slurmctld_jobacct_job_start() called");
-	return SLURM_SUCCESS;
-}
-
-
-int slurm_jobacct_process_message(struct slurm_msg *msg)
-{
-	debug3("slurm_jobacct_process_message() called");
-	return SLURM_SUCCESS;
-}
-
-/*
  * The following routines are called by slurmd
  */
 
-int slurmd_jobacct_init(char *job_acct_parameters)
+int jobacct_p_init(int frequency)
 {
 	info("jobacct NONE plugin loaded");
 	debug3("slurmd_jobacct_init() called");
 	return SLURM_SUCCESS;
 }
 
-int slurmd_jobacct_fini()
+int jobacct_p_fini(slurmd_job_t *job)
 {
 	return SLURM_SUCCESS;
 }
 
-int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
+int jobacct_p_suspend()
 {
-	debug3("slurmd_jobacct_jobstep_launched() called");
-	return SLURM_SUCCESS;
-}
-
-int slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
-{
-	debug3("slurmd_jobacct_jobstep_terminated() called");
-	return SLURM_SUCCESS;
-}
-
-int slurmd_jobacct_smgr(void)
-{
-	debug3("slurmd_jobacct_smgr() called");
-	return SLURM_SUCCESS;
-}
-
-int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage)
-{
-	debug3("slurmd_jobacct_jobstep_complete() called");
 	return SLURM_SUCCESS;
 }
