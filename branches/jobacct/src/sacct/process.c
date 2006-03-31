@@ -58,7 +58,7 @@ int _same_start(job_rec_t *job, job_rec_t *temp_rec)
 
 int _same_step(step_rec_t *step, step_rec_t *temp_rec)
 { 
-	if (strcmp(step->finished, temp_rec->finished))
+	if (step->header.timestamp != temp_rec->header.timestamp)
 		return 0;
 	if (step->status != temp_rec->status)
 		return 0;
@@ -124,7 +124,7 @@ int _same_terminated(job_rec_t *job, job_rec_t *temp_rec)
 		return 0;
 	if (job->elapsed != temp_rec->elapsed)
 		return 0;
-	if (strcmp(job->finished, temp_rec->finished))
+	if (job->header.timestamp != temp_rec->header.timestamp)
 		return 0;
 	if (job->status != temp_rec->status)
 		return 0;
@@ -139,13 +139,12 @@ job_rec_t *_find_job_record(acct_header_t header)
 
 	while((job = (job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == header.jobnum) {
-			if(!strcmp(job->header.submitted, BATCH_JOB_SUBMIT)) {
-				strncpy(job->header.submitted, 
-					header.submitted, TIMESTAMP_LENGTH);
+			if(job->header.job_start == BATCH_JOB_TIMESTAMP) {
+				job->header.job_start = header.job_start;
 				break;
 			}
 			
-			if(!strcmp(job->header.submitted, header.submitted))
+			if(job->header.job_start == header.job_start)
 				break;
 			else {
 				/* If we're looking for a later
@@ -190,18 +189,16 @@ job_rec_t *_init_job_rec(acct_header_t header, int lc)
 
 	job->header.jobnum = header.jobnum;
 	job->header.partition = xstrdup(header.partition);
-	strncpy(job->header.submitted, header.submitted, TIMESTAMP_LENGTH);
-	job->header.starttime = header.starttime;
+	job->header.job_start = header.job_start;
+	job->header.timestamp = header.timestamp;
 	job->header.uid = header.uid;
 	job->header.gid = header.gid;
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
 	job->jobnum_superseded = 0;
-	job->first_jobstep = -1;
 	job->jobname = xstrdup("(unknown)");
 	job->status = JOB_RUNNING;
-	strncpy(job->finished, "?", TIMESTAMP_LENGTH);
 	job->tot_cpu_sec = 0;
 	job->tot_cpu_usec = 0;
 	job->rusage.ru_utime.tv_sec = 0;
@@ -240,6 +237,17 @@ step_rec_t *_init_step(long jobnum, char *f[], int lc)
 	return step;
 }
 
+int _parse_header(char *f[], acct_header_t *header)
+{
+	header->jobnum = atoi(f[F_JOB]);
+	header->partition = xstrdup(f[F_PARTITION]);
+	header->job_start = atoi(f[F_JOB_START]);
+	header->timestamp = atoi(f[F_TIMESTAMP]);
+	header->uid = atoi(f[F_UID]);
+	header->gid = atoi(f[F_GID]);
+	return SLURM_SUCCESS;
+}
+
 int _parse_line(char *f[], void **data)
 {
 	char *p = NULL;
@@ -250,18 +258,11 @@ int _parse_line(char *f[], void **data)
 	switch(i) {
 	case JOB_START:
 		*job = xmalloc(sizeof(job_rec_t));
-		(*job)->header.jobnum = strtol(f[F_JOB], NULL, 10);
-		(*job)->header.partition = xstrdup(f[F_PARTITION]);
-		strncpy((*job)->header.submitted, 
-			f[F_SUBMITTED], TIMESTAMP_LENGTH);
-		(*job)->header.starttime = strtol(f[F_STARTTIME], NULL, 10);
-		(*job)->header.uid = atoi(f[F_UIDGID]);
-		if ((p=strstr(f[F_UIDGID], ".")))
-			(*job)->header.gid=atoi(++p);
+		_parse_header(f, &(*job)->header);
 		(*job)->jobname = xstrdup(f[F_JOBNAME]);
 		(*job)->batch = atoi(f[F_BATCH]);
 		(*job)->priority = atoi(f[F_PRIORITY]);
-		(*job)->ncpus = strtol(f[F_NCPUS], NULL, 10);
+		(*job)->ncpus = atoi(f[F_NCPUS]);
 		(*job)->nodes = xstrdup(f[F_NODES]);
 		for (i=0; (*job)->nodes[i]; i++)  /* discard trailing <CR> */
 			if (isspace((*job)->nodes[i]))
@@ -273,66 +274,41 @@ int _parse_line(char *f[], void **data)
 		break;
 	case JOB_STEP:
 		*step = xmalloc(sizeof(step_rec_t));
-		(*step)->header.jobnum = strtol(f[F_JOB], NULL, 10);
-		strncpy((*step)->header.submitted, 
-			f[F_SUBMITTED], TIMESTAMP_LENGTH);
-		if (!strcmp(f[F_JOBSTEP], NOT_JOBSTEP)) {
-			(*step)->stepnum = -2;
-			return;
-		}
-		(*step)->header.partition = xstrdup(f[F_PARTITION]);
-		(*step)->header.starttime = strtol(f[F_STARTTIME], NULL, 10);
-		(*step)->header.uid = atoi(f[F_UIDGID]);
-		if ((p=strstr(f[F_UIDGID], ".")))
-			(*step)->header.gid=atoi(++p);
-		
-		(*step)->stepnum = strtol(f[F_JOBSTEP], NULL, 10);
-		strncpy((*step)->finished, f[F_FINISHED], TIMESTAMP_LENGTH);
+		_parse_header(f, &(*step)->header);
+		(*step)->stepnum = atoi(f[F_JOBSTEP]);
 		(*step)->status = atoi(f[F_STATUS]);
-		(*step)->error = strtol(f[F_ERROR], NULL, 10);
-		(*step)->ntasks = strtol(f[F_NTASKS], NULL, 10);
-		(*step)->ncpus = strtol(f[F_NCPUS], NULL, 10);
-		(*step)->elapsed = strtol(f[F_ELAPSED], NULL, 10);
-		
-		(*step)->tot_cpu_sec = strtol(f[F_CPU_SEC], NULL, 10);
-		(*step)->tot_cpu_usec = strtol(f[F_CPU_USEC], NULL, 10);
-		(*step)->rusage.ru_utime.tv_sec = 
-			strtol(f[F_USER_SEC], NULL, 10);
-		(*step)->rusage.ru_utime.tv_usec = 
-			strtol(f[F_USER_USEC], NULL, 10);
-		(*step)->rusage.ru_stime.tv_sec = strtol(f[F_SYS_SEC], NULL, 10);
-		(*step)->rusage.ru_stime.tv_usec = 
-			strtol(f[F_SYS_USEC], NULL, 10);
-		(*step)->rusage.ru_maxrss = strtol(f[F_RSS], NULL,10);
-		(*step)->rusage.ru_ixrss = strtol(f[F_IXRSS], NULL,10);
-		(*step)->rusage.ru_idrss = strtol(f[F_IDRSS], NULL,10);
-		(*step)->rusage.ru_isrss = strtol(f[F_ISRSS], NULL,10);
-		(*step)->rusage.ru_minflt = strtol(f[F_MINFLT], NULL,10);
-		(*step)->rusage.ru_majflt = strtol(f[F_MAJFLT], NULL,10);
-		(*step)->rusage.ru_nswap = strtol(f[F_NSWAP], NULL,10);
-		(*step)->rusage.ru_inblock = strtol(f[F_INBLOCKS], NULL,10);
-		(*step)->rusage.ru_oublock = strtol(f[F_OUBLOCKS], NULL,10);
-		(*step)->rusage.ru_msgsnd = strtol(f[F_MSGSND], NULL,10);
-		(*step)->rusage.ru_msgrcv = strtol(f[F_MSGRCV], NULL,10);
-		(*step)->rusage.ru_nsignals = strtol(f[F_NSIGNALS], NULL,10);
-		(*step)->rusage.ru_nvcsw = strtol(f[F_NVCSW], NULL,10);
-		(*step)->rusage.ru_nivcsw = strtol(f[F_NIVCSW], NULL,10);
-		(*step)->vsize = strtol(f[F_VSIZE], NULL,10);
-		(*step)->psize = strtol(f[F_PSIZE], NULL,10);
+		(*step)->error = atoi(f[F_ERROR]);
+		(*step)->ntasks = atoi(f[F_NTASKS]);
+		(*step)->ncpus = atoi(f[F_NCPUS]);
+		(*step)->elapsed = atoi(f[F_ELAPSED]);
+		(*step)->tot_cpu_sec = atoi(f[F_CPU_SEC]);
+		(*step)->tot_cpu_usec = atoi(f[F_CPU_USEC]);
+		(*step)->rusage.ru_utime.tv_sec = atoi(f[F_USER_SEC]);
+		(*step)->rusage.ru_utime.tv_usec = atoi(f[F_USER_USEC]);
+		(*step)->rusage.ru_stime.tv_sec = atoi(f[F_SYS_SEC]);
+		(*step)->rusage.ru_stime.tv_usec = atoi(f[F_SYS_USEC]);
+		(*step)->rusage.ru_maxrss = atoi(f[F_RSS]);
+		(*step)->rusage.ru_ixrss = atoi(f[F_IXRSS]);
+		(*step)->rusage.ru_idrss = atoi(f[F_IDRSS]);
+		(*step)->rusage.ru_isrss = atoi(f[F_ISRSS]);
+		(*step)->rusage.ru_minflt = atoi(f[F_MINFLT]);
+		(*step)->rusage.ru_majflt = atoi(f[F_MAJFLT]);
+		(*step)->rusage.ru_nswap = atoi(f[F_NSWAP]);
+		(*step)->rusage.ru_inblock = atoi(f[F_INBLOCKS]);
+		(*step)->rusage.ru_oublock = atoi(f[F_OUBLOCKS]);
+		(*step)->rusage.ru_msgsnd = atoi(f[F_MSGSND]);
+		(*step)->rusage.ru_msgrcv = atoi(f[F_MSGRCV]);
+		(*step)->rusage.ru_nsignals = atoi(f[F_NSIGNALS]);
+		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
+		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
+		(*step)->vsize = atoi(f[F_VSIZE]);
+		(*step)->psize = atoi(f[F_PSIZE]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
 	break;
 	case JOB_TERMINATED:
 		*job = xmalloc(sizeof(job_rec_t));
-		(*job)->header.jobnum = strtol(f[F_JOB], NULL, 10);
-		(*job)->header.partition = xstrdup(f[F_PARTITION]);
-		strncpy((*job)->header.submitted, 
-			f[F_SUBMITTED], TIMESTAMP_LENGTH);
-		(*job)->header.starttime = strtol(f[F_STARTTIME], NULL, 10);
-		(*job)->header.uid = atoi(f[F_UIDGID]);
-		if ((p=strstr(f[F_UIDGID], ".")))
-			(*job)->header.gid=atoi(++p);
-		(*job)->elapsed = strtol(f[F_TOT_ELAPSED], NULL, 10);
-		strncpy((*job)->finished, f[F_FINISHED], TIMESTAMP_LENGTH);
+		_parse_header(f, &(*job)->header);
+		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);
 		
 		break;
@@ -349,7 +325,6 @@ void process_start(char *f[], int lc)
 	job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp);
-	
 	job = _find_job_record(temp->header);
 	if (job) {	/* Hmmm... that's odd */
 		if (job->job_start_seen) {
@@ -440,7 +415,6 @@ void process_step(char *f[], int lc)
 			destroy_step(temp);
 			return;
 		}
-		strncpy(step->finished, temp->finished, TIMESTAMP_LENGTH);
 		step->status = temp->status;
 		step->error = temp->error;
 		step->ntasks = temp->ntasks;
@@ -460,21 +434,21 @@ void process_step(char *f[], int lc)
 	list_append(job->steps, step);
 	
 	job->job_step_seen = 1;
-	
+	job->ntasks += step->ntasks;
 got_step:
 	destroy_step(temp);
 	
 	if (job->job_terminated_seen == 0) {	/* If the job is still running,
 						   this is the most recent
 						   status */
-		strncpy(job->finished, step->finished, TIMESTAMP_LENGTH);
+		job->header.timestamp = step->header.timestamp;
 		job->status = JOB_RUNNING;
 		if ( job->error == 0 )
 			job->error = step->error;
-		job->elapsed = time(NULL) - job->header.starttime;
+		job->elapsed = time(NULL) - job->header.timestamp;
 	}
 	/* now aggregate the aggregatable */
-	job->tot_cpu_sec += step->tot_cpu_sec;
+		job->tot_cpu_sec += step->tot_cpu_sec;
 	job->tot_cpu_usec += step->tot_cpu_usec;
 	job->rusage.ru_utime.tv_sec += step->rusage.ru_utime.tv_sec;
 	job->rusage.ru_utime.tv_usec += step->rusage.ru_utime.tv_usec;
@@ -489,25 +463,23 @@ got_step:
 	job->rusage.ru_nivcsw += step->rusage.ru_nivcsw;
 		
 	/* and finally the maximums for any process */
-	if(job->rusage.ru_maxrss < step->rusage.ru_maxrss)
-		job->rusage.ru_maxrss = step->rusage.ru_maxrss;
-	if(job->rusage.ru_ixrss < step->rusage.ru_ixrss)
-		job->rusage.ru_ixrss = step->rusage.ru_ixrss;
-	if(job->rusage.ru_idrss < step->rusage.ru_idrss)
-		job->rusage.ru_idrss = step->rusage.ru_idrss;
-	if(job->rusage.ru_isrss < step->rusage.ru_isrss)
-		job->rusage.ru_isrss = step->rusage.ru_isrss;
-	if(job->rusage.ru_minflt < step->rusage.ru_minflt)
-		job->rusage.ru_minflt = step->rusage.ru_minflt;
-	if(job->rusage.ru_majflt < step->rusage.ru_majflt)
-		job->rusage.ru_majflt = step->rusage.ru_majflt;
-	if(job->rusage.ru_nswap < step->rusage.ru_nswap)
-		job->rusage.ru_nswap = step->rusage.ru_nswap;
-	if (job->psize < step->psize)
-		job->psize = step->psize;
-	if (job->vsize < step->vsize)
-		job->vsize = step->vsize;
-
+	job->rusage.ru_maxrss = MAX(job->rusage.ru_maxrss, 
+				    step->rusage.ru_maxrss);
+	job->rusage.ru_ixrss = MAX(job->rusage.ru_ixrss,
+				   step->rusage.ru_ixrss);
+	job->rusage.ru_idrss = MAX(job->rusage.ru_idrss,
+				   step->rusage.ru_idrss);
+	job->rusage.ru_isrss = MAX(job->rusage.ru_isrss,
+				   step->rusage.ru_isrss);
+	job->rusage.ru_minflt = MAX(job->rusage.ru_minflt,
+				    step->rusage.ru_minflt);
+	job->rusage.ru_majflt = MAX(job->rusage.ru_majflt,
+				    step->rusage.ru_majflt);
+	job->rusage.ru_nswap = MAX(job->rusage.ru_nswap,
+				   step->rusage.ru_nswap);
+	job->psize = MAX(job->psize, step->psize);
+	job->vsize = MAX(job->vsize, step->vsize);
+	job->ncpus = MAX(job->ncpus, step->ncpus);
 }
 
 void process_terminated(char *f[], int lc)
@@ -559,7 +531,7 @@ void process_terminated(char *f[], int lc)
 	}
 	job->job_terminated_seen = 1;
 	job->elapsed = temp->elapsed;
-	strncpy(job->finished, temp->finished, TIMESTAMP_LENGTH);
+	job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
 	destroy_job(temp);
 }

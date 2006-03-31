@@ -51,8 +51,7 @@
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
  * which have no logical jobsteps. */
-#define NOT_JOBSTEP "4294967294"
-#define BATCH_JOB_SUBMIT "19700101000000"
+#define BATCH_JOB_TIMESTAMP 0
 
 #define BRIEF_FIELDS "jobstep,status,error"
 #define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
@@ -60,12 +59,6 @@
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
-
-/* The following literals define how many significant characters
- * are used in a yyyymmddHHMMSS timestamp. */
-#define MATCH_DAY 8
-#define MATCH_HOUR 10
-#define MATCH_MINUTE 12
 
 #define MAX_PRINTFIELDS 100
 #define EXPIRE_READ_LENGTH 10
@@ -84,55 +77,65 @@
 /* Map field names to positions */
 
 /* Fields common to all records */
-#define F_JOB		0
-#define F_PARTITION	1
-#define F_SUBMITTED	2
-#define F_STARTTIME	3
-#define F_UIDGID	4
-#define F_RESERVED1	5
-#define F_RECTYPE	6
+enum {	F_JOB =	0,
+	F_PARTITION,	
+	F_JOB_START,	
+	F_TIMESTAMP,	
+	F_UID,	
+	F_GID,	
+	F_RESERVED1,	
+	F_RESERVED2,	
+	F_RECTYPE,	
+	HEADER_LENGTH
+};
 
 /* JOB_START fields */
-#define F_JOBNAME	7
-#define F_BATCH		8
-#define F_PRIORITY	9
-#define F_NCPUS		10
-#define F_NODES		11
+enum {	F_JOBNAME = HEADER_LENGTH,
+	F_BATCH,		
+	F_PRIORITY,	
+	F_NCPUS,		
+	F_NODES,
+	JOB_START_LENGTH
+};
 
 /* JOB_STEP fields */
-#define F_JOBSTEP	7
-#define F_FINISHED	8
-#define F_STATUS	9
-#define F_ERROR		10
-#define F_NTASKS	11
-#define F_STEPNCPUS     12
-#define F_ELAPSED	13
-#define F_CPU_SEC	14
-#define F_CPU_USEC	15
-#define F_USER_SEC	16
-#define F_USER_USEC	17
-#define F_SYS_SEC	18
-#define F_SYS_USEC	19
-#define F_RSS		20
-#define F_IXRSS		21
-#define F_IDRSS		22
-#define F_ISRSS		23
-#define F_MINFLT	24
-#define F_MAJFLT	25
-#define F_NSWAP		26
-#define F_INBLOCKS	27
-#define F_OUBLOCKS	28
-#define F_MSGSND	29
-#define F_MSGRCV	30
-#define F_NSIGNALS	31
-#define F_NVCSW		32
-#define F_NIVCSW	33
-#define F_VSIZE		34
-#define F_PSIZE		35
-#define F_STEPNAME      36
+enum {	F_JOBSTEP = HEADER_LENGTH,
+	F_STATUS,
+	F_ERROR,
+	F_NTASKS,
+	F_STEPNCPUS,
+	F_ELAPSED,
+	F_CPU_SEC,
+	F_CPU_USEC,
+	F_USER_SEC,
+	F_USER_USEC,
+	F_SYS_SEC,
+	F_SYS_USEC,
+	F_RSS,
+	F_IXRSS,
+	F_IDRSS,
+	F_ISRSS,
+	F_MINFLT,
+	F_MAJFLT,
+	F_NSWAP,
+	F_INBLOCKS,
+	F_OUBLOCKS,
+	F_MSGSND,
+	F_MSGRCV,
+	F_NSIGNALS,
+	F_NVCSW,
+	F_NIVCSW,
+	F_VSIZE,
+	F_PSIZE,
+	F_STEPNAME,
+	JOB_STEP_LENGTH
+};
 
-/* JOB_COMPLETION fields */
-#define F_TOT_ELAPSED	7
+/* JOB_TERM fields */
+enum {	F_TOT_ELAPSED = HEADER_LENGTH,
+	F_TERM_STATUS,
+	JOB_TERM_LENGTH
+};
 
 /* On output, use fields 12-37 from JOB_STEP */
 
@@ -142,8 +145,7 @@ typedef enum {	HEADLINE,
 		JOBSTEP
 } type_t;
 
-enum {
-	CANCELLED,
+enum {	CANCELLED,
 	COMPLETED,
 	COMPLETING,
 	FAILED,
@@ -156,8 +158,8 @@ enum {
 typedef struct header {
 	long	jobnum;
 	char	*partition;
-	char	submitted[TIMESTAMP_LENGTH];	/* YYYYMMDDhhmmss */
-	time_t	starttime;
+	time_t 	job_start;
+	time_t	timestamp;
 	int	uid;
 	int	gid;
 	int     rec_type;
@@ -168,11 +170,8 @@ typedef struct job_rec {
 		job_step_seen,
 		job_terminated_seen,
 		jobnum_superseded;	/* older jobnum was reused */
-	long	first_jobstep; /* linked list into jobsteps */
-	/* fields retrieved from JOB_START and JOB_TERMINATED records */
 	acct_header_t header;
 	char	*nodes;
-	char	finished[TIMESTAMP_LENGTH];
 	char	*jobname;
 	int	batch;
 	int	priority;
@@ -183,8 +182,7 @@ typedef struct job_rec {
 	long	elapsed;
 	long	tot_cpu_sec, tot_cpu_usec;
 	long	vsize, psize;
-	/* fields accumulated from JOB_STEP records */
-	struct rusage	rusage;
+	struct rusage rusage;
 	List    steps;
 } job_rec_t;
 
@@ -192,7 +190,6 @@ typedef struct step_rec {
 	acct_header_t header;
 	long	stepnum;	/* job's step number */
 	long	next;		/* linked list of job steps */
-	char	finished[TIMESTAMP_LENGTH];	/* YYYYMMDDhhmmss */
 	char	*stepname;
 	int	status;
 	int	error;
@@ -200,7 +197,7 @@ typedef struct step_rec {
 	long	elapsed;
 	long	tot_cpu_sec, tot_cpu_usec;
 	long	vsize, psize;
-	struct rusage	rusage;
+	struct rusage rusage;
 } step_rec_t;
 
 typedef struct selected_step_t {
@@ -259,7 +256,6 @@ void print_fields(type_t type, void *object);
 void print_cpu(type_t type, void *object);
 void print_elapsed(type_t type, void *object);
 void print_error(type_t type, void *object);
-void print_finished(type_t type, void *object);
 void print_gid(type_t type, void *object);
 void print_group(type_t type, void *object);
 void print_idrss(type_t type, void *object);

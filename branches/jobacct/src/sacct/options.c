@@ -30,7 +30,7 @@
 
 typedef struct expired_rec {  /* table of expired jobs */
 	long job;
-	char submitted[TIMESTAMP_LENGTH];
+	int job_start;
 	char *line;
 } expired_rec_t;
 
@@ -47,8 +47,6 @@ void _usage(void);
 void _init_params();
 char *_prefix_filename(char *path, char *prefix);
 
-int expire_time_match = 0;	/* How much of the timestamp is significant
-				   for --expire */
 int selected_status[STATUS_COUNT];
 List selected_parts = NULL;
 List selected_steps = NULL;
@@ -107,8 +105,12 @@ int _cmp_jrec(const void *a1, const void *a2) {
 
 	if (j1->job <  j2->job)
 		return -1;
-	else if (j1->job == j2->job)
-		return strncmp(j1->submitted, j2->submitted, TIMESTAMP_LENGTH);
+	else if (j1->job == j2->job) {
+		if(j1->job_start == j2->job_start)
+			return 0;
+		else 
+			return 1;
+	}
 	return 1;
 }
 
@@ -119,11 +121,11 @@ int _cmp_jrec(const void *a1, const void *a2) {
  */
 void _dump_header(acct_header_t header)
 {
-	printf("%ld %s %s %ld %ld %ld %s %s ",
+	printf("%ld %s %ld %ld %ld %ld %s %s ",
 	       header.jobnum,
 	       header.partition,
-	       header.submitted,
-	       header.starttime,
+	       header.job_start,
+	       header.timestamp,
 	       header.uid,
 	       header.gid,
 	       "-",	/* reserved 2 */
@@ -198,7 +200,7 @@ void _help_msg(void)
 	       "    isn't reset at the same time (with -e, for example), some\n"
 	       "    job numbers will probably appear more than once in the\n"
 	       "    accounting log file to refer to different jobs; such jobs\n"
-	       "    can be distinguished by the \"submitted\" time stamp in the\n"
+	       "    can be distinguished by the \"job_start\" time stamp in the\n"
 	       "    data records.\n"
 	       "      When data for specific jobs or jobsteps are requested with\n"
 	       "    the --jobs or --jobsteps options, we assume that the user\n"
@@ -428,6 +430,11 @@ int get_data(void)
 				*fptr++ = 0;
 		}
 		f[++i] = 0;
+		
+		if(i < HEADER_LENGTH) {
+			continue;
+		}
+		
 		rec_type = atoi(f[F_RECTYPE]);
 		
 		if (list_count(selected_steps)) {
@@ -436,12 +443,10 @@ int get_data(void)
 				if (strcmp(selected_step->job, f[F_JOB]))
 					continue;
 				/* job matches; does the step> */
-				if (selected_step->step == NULL)
-					goto foundjob;
-				/* is it anything but JOB_STEP? */
-				if (rec_type == JOB_STEP)
-					goto foundjob;
-				if (!strcmp(f[F_JOBSTEP], selected_step->step))
+				if (selected_step->step == NULL
+				    || rec_type == JOB_STEP 
+				    || !strcmp(f[F_JOBSTEP], 
+					       selected_step->step))
 					goto foundjob;
 			}
 			list_iterator_destroy(itr);
@@ -578,21 +583,18 @@ void parse_command_line(int argc, char **argv)
 				case 'd':
 					params.opt_expire += 
 						acc*SECONDS_IN_DAY;
-					expire_time_match = MATCH_DAY;
 					acc=0;
 					break;
 				case 'H':
 				case 'h':
 					params.opt_expire += 
 						acc*SECONDS_IN_HOUR;
-					expire_time_match = MATCH_HOUR;
-					acc=0;
+						acc=0;
 					break;
 				case 'M':
 				case 'm':
 					params.opt_expire += 
 						acc*SECONDS_IN_MINUTE;
-					expire_time_match = MATCH_MINUTE;
 					acc=0;
 					break;
 				default:
@@ -601,10 +603,6 @@ void parse_command_line(int argc, char **argv)
 				} 
 			}
 			params.opt_expire += acc*SECONDS_IN_MINUTE;
-			if ((expire_time_match == 0) || (acc != 0))
-				/* If they say "1d2", we interpret that
-				 * as 24 hours+2 minutes ago. */
-				expire_time_match = MATCH_MINUTE;
 		bad_timespec:
 			if (params.opt_expire <= 0) {
 				fprintf(stderr,
@@ -987,9 +985,9 @@ void do_dump(void)
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Note: Skipping older"
-						" job %ld dated %s\n",
+						" job %ld dated %d\n",
 						job->header.jobnum,
-						job->header.submitted);
+						job->header.job_start);
 				continue;
 			}
 		if (params.opt_uid>=0)
@@ -1027,8 +1025,7 @@ void do_dump(void)
 			printf("JOB_STEP %ld %s ",
 			       step->stepnum,
 			       step->stepname); 
-			printf("%s %s %d %ld %ld %ld ",
-			       step->finished,
+			printf("%s %d %ld %ld %ld ",
 			       decode_status_int(step->status),
 			       step->error,
 			       step->ntasks,
@@ -1066,8 +1063,7 @@ void do_dump(void)
 			_dump_header(job->header);
 			printf("JOB_TERMINATED %ld ",
 			       job->elapsed);
-			printf("%s %s %d %ld %ld %ld ",
-			       job->finished,
+			printf("%s %d %ld %ld %ld ",
 			       decode_status_int(job->status),
 			       job->error,
 			       job->ntasks,
@@ -1110,7 +1106,7 @@ void do_dump(void)
  *  2. stat logfile.orig
  *     - confirm that it's not a sym link
  *     - capture the ownership and permissions
- *  3. scan logfile.orig for JOB_TERMINATED records with F_FINISHED dates
+ *  3. scan logfile.orig for JOB_TERMINATED records with F_TIMESTAMP dates
  *     that precede the specified expiration date. Build exp_table as
  *     a list of expired jobs.
  *  4. Open logfile.expired for append
@@ -1131,7 +1127,6 @@ void do_dump(void)
 void do_expire(void)
 {
 	char	line[BUFFER_SIZE],
-		exp_stg[TIMESTAMP_LENGTH], /* YYYYMMDDhhmm */
 		*f[EXPIRE_READ_LENGTH],
 		*fptr = NULL,
 		*logfile_name = NULL,
@@ -1162,13 +1157,9 @@ void do_expire(void)
 	struct tm	*ts;	/* timestamp decoder */
 	time_t		expiry;
 	expiry = time(NULL)-params.opt_expire;
-	ts = gmtime(&expiry);
-	sprintf(exp_stg, "%04d%02d%02d%02d%02d",
-		(ts->tm_year+1900), (ts->tm_mon+1), ts->tm_mday,
-		ts->tm_hour, ts->tm_min);
 	if (params.opt_verbose)
-		fprintf(stderr, "Purging jobs completed prior to %s\n",
-			exp_stg);
+		fprintf(stderr, "Purging jobs completed prior to %d\n",
+			expiry);
 
 	/* Open the current or specified logfile, or quit */
 	fd = _open_log_file();
@@ -1222,14 +1213,13 @@ void do_expire(void)
 				*fptr++ = 0;
 		}
 		
-		exp_rec->job = strtol(f[F_JOB], NULL, 10);
-		strncpy(exp_rec->submitted, f[F_SUBMITTED], TIMESTAMP_LENGTH);
+		exp_rec->job = atoi(f[F_JOB]);
+		exp_rec->job_start = atoi(f[F_JOB_START]);
 		
 		rec_type = atoi(f[F_RECTYPE]);
 		/* Odd, but complain some other time */
 		if (rec_type == JOB_TERMINATED) {
-			if (strncmp(exp_stg, f[F_FINISHED],
-				    expire_time_match)<0) {
+			if (expiry < atoi(f[F_TIMESTAMP])) {
 				list_append(keep_list, exp_rec);
 				continue;				
 			}
@@ -1246,9 +1236,9 @@ void do_expire(void)
 			}
 			list_append(exp_list, exp_rec);
 			if (params.opt_verbose > 2)
-				fprintf(stderr, "Selected: %8ld %s\n",
+				fprintf(stderr, "Selected: %8ld %d\n",
 					exp_rec->job,
-					exp_rec->submitted);
+					exp_rec->job_start);
 		} else {
 			list_append(other_list, exp_rec);
 		}
@@ -1420,32 +1410,28 @@ finished:
 
 void do_fdump(char* f[], int lc)
 {
-	int	i=0,
+	int	i=0, j=0,
 		numfields;
 	char **type;
-	char	*start[] = {"job",       /* F_JOB */
-			    "partition", /* F_PARTITION */
-			    "submitted", /* F_SUBMITTED */
-			    "starttime", /* F_STARTTIME */
-			    "uid.gid",	 /* F_UIDGID */
-			    "reserved-1",/* F_RESERVED1 */
-			    "recordType",/* F_RECTYPE */
-			    "jobName",	 /* F_JOBNAME */ 
+	char    *header[] = {"job",       /* F_JOB */
+			     "partition", /* F_PARTITION */
+			     "job_start", /* F_JOB_START */
+			     "timestamp", /* F_TIMESTAMP */
+			     "uid",	 /* F_UIDGID */
+			     "gid",	 /* F_UIDGID */
+			     "reserved-1",/* F_RESERVED1 */
+			     "reserved-2",/* F_RESERVED1 */
+			     "recordType",/* F_RECTYPE */
+			     NULL};
+
+	char	*start[] = {"jobName",	 /* F_JOBNAME */ 
 			    "batchFlag", /* F_BATCH */
 			    "priority",	 /* F_PRIORITY */
 			    "ncpus",	 /* F_NCPUS */
 			    "nodeList", /* F_NODES */
 			    NULL};
 		
-	char	*step[] = {"job",       /* F_JOB */
-			   "partition", /* F_PARTITION */
-			   "submitted", /* F_SUBMITTED */
-			   "starttime", /* F_STARTTIME */
-			   "uid.gid",	 /* F_UIDGID */
-			   "reserved-1",/* F_RESERVED1 */
-			   "recordType",/* F_RECTYPE */
-			   "jobStep",	 /* F_JOBSTEP */
-			   "finished",	 /* F_FINISHED */
+	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
 			   "status",	 /* F_STATUS */ 
 			   "error",	 /* F_ERROR */
 			   "ntasks",	 /* F_NTASKS */
@@ -1476,65 +1462,35 @@ void do_fdump(char* f[], int lc)
 			   "StepName",	 /* F_STEPNAME */
 			   NULL};
        
-	char	*term[] = {"job",       /* F_JOB */
-			   "partition", /* F_PARTITION */
-			   "submitted", /* F_SUBMITTED */
-			   "starttime", /* F_STARTTIME */
-			   "uid.gid",	 /* F_UIDGID */
-			   "reserved-1",/* F_RESERVED1 */
-			   "recordType",/* F_RECTYPE */
-			   "totElapsed",	/*  9 */
-			   "finished",	/* 10 */
-			   "status",	/* 11 */ 
-			   "error",	 /* F_ERROR */
-			   "ntasks",	 /* F_NTASKS */
-			   "ncpus",	 /* F_STEPNCPUS */
-			   "elapsed",	 /* F_ELAPSED */
-			   "cpu_sec",	 /* F_CPU_SEC */
-			   "cpu_usec",	 /* F_CPU_USEC */
-			   "user_sec",	 /* F_USER_SEC */
-			   "user_usec",	 /* F_USER_USEC */
-			   "sys_sec",	 /* F_SYS_SEC */
-			   "sys_usec",	 /* F_SYS_USEC */
-			   "rss",	 /* F_RSS */
-			   "ixrss",	 /* F_IXRSS */
-			   "idrss",	 /* F_IDRSS */
-			   "isrss",	 /* F_ISRSS */
-			   "minflt",	 /* F_MINFLT */
-			   "majflt",	 /* F_MAJFLT */
-			   "nswap",	 /* F_NSWAP */
-			   "inblocks",	 /* F_INBLOCKS */
-			   "oublocks",	 /* F_OUTBLOCKS */
-			   "msgsnd",	 /* F_MSGSND */
-			   "msgrcv",	 /* F_MSGRCV */
-			   "nsignals",	 /* F_NSIGNALS */
-			   "nvcsw",	 /* F_VCSW */
-			   "nivcsw",	 /* F_NIVCSW */
-			   "vsize",	 /* F_VSIZE */
-			   "psize",      /* F_PSIZE */
+	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
+			   "status",	 /* F_STATUS */ 
 			   NULL};	 
 		
 	i = atoi(f[F_RECTYPE]);
 	printf("\n------- Line %ld %s -------\n", lc, _convert_type(i));
-	if (i == JOB_START)
+
+	for(j=0; j < HEADER_LENGTH; j++) 
+		printf("%12s: %s\n", header[j], f[j]);
+
+	if (i == JOB_START) {
 		type = start;
-	else if (i == JOB_STEP)
+		j = JOB_START_LENGTH;
+	} else if (i == JOB_STEP) {
 		type = step;
-	else if (i == JOB_TERMINATED)
+		j = JOB_STEP_LENGTH;
+	} else if (i == JOB_TERMINATED) {
 		type = term;
-	else 	{/* _get_data() already told them of unknown record type */
-		while(f[i]) {
-			printf("      Field[%02d]: %s\n", i, f[i]); 
-			i++;
+		j = JOB_TERM_LENGTH;
+	} else {/* _get_data() already told them of unknown record type */
+		while(f[j]) {
+			printf("      Field[%02d]: %s\n", j, f[j]); 
+			j++;
 		}
 		return;
 	}
-	i=0;
-	while(type[i]) {
-		printf("%12s: %s\n", type[i], f[i]);
-		i++;
-	}
 	
+	for(i=HEADER_LENGTH; i < j; i++)
+       		printf("%12s: %s\n", type[i-HEADER_LENGTH], f[i]);	
 }
 
 void do_help(void)
@@ -1587,9 +1543,9 @@ void do_list(void)
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Note: Skipping older"
-						" job %ld dated %s\n",
+						" job %ld dated %d\n",
 						job->header.jobnum,
-						job->header.submitted);
+						job->header.job_start);
 				continue;
 			}
 		if (!job->job_start_seen && job->job_step_seen) {

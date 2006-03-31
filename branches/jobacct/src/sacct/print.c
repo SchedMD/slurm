@@ -153,27 +153,6 @@ void print_error(type_t type, void *object)
 	} 
 }
 
-void print_finished(type_t type, void *object)
-{
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-14s", "Finished");
-		break;
-	case UNDERSCORE:
-		printf("%-14s", "--------------");
-		break;
-	case JOB:
-		printf("%-14s", job->finished);
-		break;
-	case JOBSTEP:
-		printf("%-14s", step->finished);
-		break;
-	} 
-}
-
 void print_gid(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
@@ -727,10 +706,10 @@ void print_submitted(type_t type, void *object)
 		printf("%-14s", "--------------");
 		break;
 	case JOB:
-		printf("%-14s", job->header.submitted);
+		printf("%-14d", job->header.job_start);
 		break;
 	case JOBSTEP:
-		printf("%-14s", step->header.submitted);
+		printf("%-14d", step->header.job_start);
 		break;
 	} 
 }

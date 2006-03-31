@@ -39,7 +39,6 @@ static char *		log_file = NULL;
 const char *_jobstep_format = 
 "%d "
 "%u "	/* stepid */
-"%s "	/* completion time */
 "%d "	/* completion status */
 "%d "	/* completion code */
 "%u "	/* nprocs */
@@ -75,22 +74,20 @@ const char *_jobstep_format =
  */
 
 static int _print_record(struct job_record *job_ptr, 
-			 time_t start_time, char *data)
+			 time_t time, char *data)
 { 
 	struct tm   *ts; /* timestamp decoder */
 	static int   rc=SLURM_SUCCESS;
 
 	ts = xmalloc(sizeof(struct tm));
-	gmtime_r(&start_time, ts);
+	gmtime_r(&time, ts);
 	debug("_print_record, job=%u, \"%20s",
 	      job_ptr->job_id, data);
 	slurm_mutex_lock( &logfile_lock );
 	if (fprintf(LOGFILE,
-		    "%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
+		    "%u %s %u %u %d %d - - %s\n",
 		    job_ptr->job_id, job_ptr->partition,
-		    1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
-		    ts->tm_hour, ts->tm_min, ts->tm_sec, 
-		    (int)start_time, 
+		    job_ptr->start_time, (int)time, 
 		    job_ptr->user_id, job_ptr->group_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
@@ -183,18 +180,9 @@ int jobacct_step_start(struct step_record *step)
 	struct tm 	ts; /* timestamp decoder */
 	int	nchars, rc;
 
-	now = time(NULL);
-	gmtime_r(&now, &ts);
-	nchars = snprintf(tbuf, TIMESTAMP_LENGTH, "%04d%02d%02d%02d%02d%02d",
-			  1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-			  ts.tm_hour, ts.tm_min, ts.tm_sec);
-	xassert(nchars < TIMESTAMP_LENGTH);	/* Should never happen... */
-
-	
 	nchars = snprintf(buf, BUFFER_SIZE, _jobstep_format,
 			  JOB_STEP,
 			  step->step_id,	/* stepid */
-			  tbuf,			/* completion time */
 			  JOB_RUNNING,		/* completion status */
 			  0,     		/* completion code */
 			  step->num_tasks,	/* number of tasks */
@@ -239,13 +227,8 @@ int jobacct_step_complete(struct step_record *step)
 	int     comp_status;
 	
 	now = time(NULL);
-	gmtime_r(&now, &ts);
-	nchars = snprintf(tbuf, TIMESTAMP_LENGTH, "%04d%02d%02d%02d%02d%02d",
-			  1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-			  ts.tm_hour, ts.tm_min, ts.tm_sec);
-	xassert(nchars < TIMESTAMP_LENGTH);	/* Should never happen... */
-
-	if ((elapsed=time(NULL)-step->start_time)<0)
+	
+	if ((elapsed=now-step->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
 	if (step->exit_code)
 		comp_status = JOB_FAILED;
@@ -254,7 +237,6 @@ int jobacct_step_complete(struct step_record *step)
 	nchars = snprintf(buf, BUFFER_SIZE, _jobstep_format,
 			  JOB_STEP,
 			  step->step_id,	/* stepid */
-			  tbuf,			/* completion time */
 			  comp_status,		/* completion status */
 			  step->exit_code,	/* completion code */
 			  step->num_tasks,	/* number of tasks */
@@ -295,7 +277,7 @@ int jobacct_job_complete(struct job_record *job_ptr)
 {
 	int		rc = SLURM_SUCCESS,
 		tmp;
-	char		*buf;
+	char		buf[BUFFER_SIZE];
 	struct tm	ts; /* timestamp decoder */
 
 	debug("jobacct_job_complete() called");
@@ -303,22 +285,14 @@ int jobacct_job_complete(struct job_record *job_ptr)
 		debug("jobacct: job %u never started", job_ptr->job_id);
 		return rc;
 	}
-	gmtime_r(&job_ptr->end_time, &ts);
-	buf = xmalloc(BUFFER_SIZE);
+	
 	tmp = snprintf(buf, BUFFER_SIZE,
-		       "%d %u %04d%02d%02d%02d%02d%02d %d\0",
+		       "%d %u %d\0",
 		       JOB_TERMINATED,
-		       (int) (job_ptr->end_time - job_ptr->start_time),
-		       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-		       ts.tm_hour, ts.tm_min, ts.tm_sec,
+		       (int) (job_ptr->end_time - job_ptr->start_time)
 		       job_ptr->job_state & (~JOB_COMPLETING));
-	if (tmp >= BUFFER_SIZE) {
-		error("jobacct_job_complete buffer overflow");
-		rc = SLURM_ERROR;
-	} else {
-		rc = _print_record(job_ptr, job_ptr->end_time, buf);
-	}
-	xfree(buf);
+	
+	rc = _print_record(job_ptr, job_ptr->end_time, buf);
 	return rc;
 }
 

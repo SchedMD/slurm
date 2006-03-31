@@ -142,7 +142,6 @@ sacct_parameters_t params;
 fields_t fields[] = {{"cpu", print_cpu}, 
 		     {"elapsed", print_elapsed}, 
 		     {"error", print_error}, 
-		     {"finished", print_finished}, 
 		     {"gid", print_gid}, 
 		     {"group", print_group}, 
 		     {"idrss", print_idrss}, 
