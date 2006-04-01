@@ -913,15 +913,14 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 static int
 _abort_job(uint32_t job_id)
 {
-	complete_job_step_msg_t  resp;
+	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
 
 	resp.job_id       = job_id;
-	resp.job_step_id  = NO_VAL;
 	resp.job_rc       = 1;
 	resp.slurm_rc     = 0;
 	resp.node_name    = NULL;	/* unused */
-	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
+	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
 	resp_msg.forward.cnt = 0;
 	resp_msg.ret_list = NULL;

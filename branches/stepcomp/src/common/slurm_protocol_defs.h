@@ -133,7 +133,7 @@ typedef enum {
 	RESPONSE_RUN_JOB_STEP,
 	REQUEST_CANCEL_JOB_STEP,
 	RESPONSE_CANCEL_JOB_STEP,
-	REQUEST_COMPLETE_JOB_STEP,
+	REQUEST_COMPLETE_JOB_STEP, /* DEFUNCT */
 	RESPONSE_COMPLETE_JOB_STEP,
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
@@ -142,6 +142,8 @@ typedef enum {
 	REQUEST_SUSPEND,
 	RESPONSE_SUSPEND,
 	REQUEST_STEP_COMPLETE,
+	REQUEST_COMPLETE_JOB_ALLOCATION,
+	REQUEST_COMPLETE_BATCH_SCRIPT,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -300,6 +302,7 @@ typedef struct part_info_request_msg {
 	uint16_t show_flags;
 } part_info_request_msg_t;
 
+/* DEFUNCT - will be removed in a future version */
 typedef struct complete_job_step_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
@@ -307,6 +310,18 @@ typedef struct complete_job_step_msg {
 	uint32_t slurm_rc;
 	char *node_name;
 } complete_job_step_msg_t;
+
+typedef struct complete_job_allocation {
+	uint32_t job_id;
+	uint32_t job_rc;
+} complete_job_allocation_msg_t;
+
+typedef struct complete_batch_script {
+	uint32_t job_id;
+	uint32_t job_rc;
+	uint32_t slurm_rc;
+	char *node_name;
+} complete_batch_script_msg_t;
 
 typedef struct step_complete_msg {
 	uint32_t job_id;

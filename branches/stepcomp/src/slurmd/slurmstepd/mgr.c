@@ -159,7 +159,7 @@ static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _complete_job(uint32_t jobid, uint32_t stepid, 
+static int    _complete_batch_script(uint32_t jobid, uint32_t stepid, 
 			    int err, int status);
 
 /*
@@ -218,7 +218,7 @@ _batch_cleanup(slurmd_job_t *job, int level, int status)
 			verbose("job %u.%u completed with slurm_rc = %d, "
 				"job_rc = %d", 
 				job->jobid, job->stepid, rc, status);
-		_complete_job(job->jobid, job->stepid, rc, status);
+		_complete_batch_script(job->jobid, job->stepid, rc, status);
 
 	}
 }
@@ -1273,23 +1273,22 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 
 static int
-_complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
+_complete_batch_script(uint32_t jobid, uint32_t stepid, int err, int status)
 {
 	int                      rc, i;
 	slurm_msg_t              req_msg;
-	complete_job_step_msg_t  req;
+	complete_batch_script_msg_t  req;
 
 	req.job_id	= jobid;
-	req.job_step_id	= stepid; 
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
 	req.node_name	= conf->node_name;
-	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
+	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;	
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
 	
-	info("sending REQUEST_COMPLETE_JOB_STEP");
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {

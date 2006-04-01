@@ -208,6 +208,14 @@ static void _pack_complete_job_step_msg(complete_job_step_msg_t * msg,
 					Buf buffer);
 static int _unpack_complete_job_step_msg(complete_job_step_msg_t **
 					 msg_ptr, Buf buffer);
+static void _pack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t * msg, Buf buffer);
+static int _unpack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t ** msg_ptr, Buf buffer);
+static void _pack_complete_batch_script_msg(
+	complete_batch_script_msg_t * msg, Buf buffer);
+static int _unpack_complete_batch_script_msg(
+	complete_batch_script_msg_t ** msg_ptr, Buf buffer);
 static void _pack_step_complete_msg(step_complete_msg_t * msg,
 				    Buf buffer);
 static int _unpack_step_complete_msg(step_complete_msg_t **
@@ -519,6 +527,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_complete_job_step_msg((complete_job_step_msg_t *)
 					     msg->data, buffer);
 		 break;
+	 case REQUEST_COMPLETE_JOB_ALLOCATION:
+		 _pack_complete_job_allocation_msg(
+			 (complete_job_allocation_msg_t *)msg->data, buffer);
+		 break;
+	 case REQUEST_COMPLETE_BATCH_SCRIPT:
+		 _pack_complete_batch_script_msg(
+			 (complete_batch_script_msg_t *)msg->data, buffer);
+		 break;
 	 case REQUEST_STEP_COMPLETE:
 		 _pack_step_complete_msg((step_complete_msg_t *)msg->data,
 					 buffer);
@@ -798,6 +814,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_complete_job_step_msg((complete_job_step_msg_t
 						     **) & (msg->data),
 						    buffer);
+		 break;
+	 case REQUEST_COMPLETE_JOB_ALLOCATION:
+		 rc = _unpack_complete_job_allocation_msg(
+			 (complete_job_allocation_msg_t **)&msg->data, buffer);
+		 break;
+	 case REQUEST_COMPLETE_BATCH_SCRIPT:
+		 rc = _unpack_complete_batch_script_msg(
+			 (complete_batch_script_msg_t **)&msg->data, buffer);
 		 break;
 	 case REQUEST_STEP_COMPLETE:
 		 rc = _unpack_step_complete_msg((step_complete_msg_t
@@ -2871,6 +2895,66 @@ _unpack_complete_job_step_msg(complete_job_step_msg_t ** msg_ptr, Buf buffer)
 
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
+	safe_unpack32(&msg->job_rc, buffer);
+	safe_unpack32(&msg->slurm_rc, buffer);
+	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t * msg, Buf buffer)
+{
+	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->job_rc, buffer);
+}
+
+static int
+_unpack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t ** msg_ptr, Buf buffer)
+{
+	complete_job_allocation_msg_t *msg;
+	uint16_t uint16_tmp;
+
+	msg = xmalloc(sizeof(complete_job_allocation_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->job_rc, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_complete_batch_script_msg(
+	complete_batch_script_msg_t * msg, Buf buffer)
+{
+	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->job_rc, buffer);
+	pack32((uint32_t)msg->slurm_rc, buffer);
+	packstr(msg->node_name, buffer);
+}
+
+static int
+_unpack_complete_batch_script_msg(
+	complete_batch_script_msg_t ** msg_ptr, Buf buffer)
+{
+	complete_batch_script_msg_t *msg;
+	uint16_t uint16_tmp;
+
+	msg = xmalloc(sizeof(complete_batch_script_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_rc, buffer);
 	safe_unpack32(&msg->slurm_rc, buffer);
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
