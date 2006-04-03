@@ -1380,7 +1380,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) {
 				error_code = SLURM_SUCCESS;
-				g_slurmctld_jobacct_job_start(job_ptr);
 			}
 		return error_code;
 	}
@@ -1395,7 +1394,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-	} else 
+	} else if (allocate)
 		g_slurmctld_jobacct_job_start(job_ptr);
 	return SLURM_SUCCESS;
 }
@@ -1611,6 +1610,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
+		g_slurmctld_jobacct_job_complete(job_ptr); /* restart stats */
 	} else if (job_ptr->job_state == JOB_PENDING) {
 		job_ptr->job_state  = JOB_COMPLETE;
 		job_ptr->start_time = 0;

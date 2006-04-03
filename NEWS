@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.10
+=========================
+ -- Fix for job accounting logic submitted from Andy Riebs to handle issues
+    with suspending jobs and such. patch file named requeue.patch
+
 * Changes in SLURM 1.0.9
 ========================
  -- Fix job accounting logic to open new log file on slurmctld reconfig.

@@ -207,6 +207,7 @@ int schedule(void)
 				_launch_job(job_ptr);
 			else
 				srun_allocate(job_ptr->job_id);
+			g_slurmctld_jobacct_job_start(job_ptr);
 			job_cnt++;
 		} else if (error_code !=
 		           ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
