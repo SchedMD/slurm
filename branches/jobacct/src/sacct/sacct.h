@@ -131,7 +131,7 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	JOB_STEP_LENGTH
 };
 
-/* JOB_TERM fields */
+/* JOB_TERM / JOB_SUSPEND fields */
 enum {	F_TOT_ELAPSED = HEADER_LENGTH,
 	F_TERM_STATUS,
 	JOB_TERM_LENGTH
@@ -247,6 +247,7 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 /* process.c */
 void process_start(char *f[], int lc);
 void process_step(char *f[], int lc);
+void process_suspend(char *f[], int lc);
 void process_terminated(char *f[], int lc);
 void destroy_job(void *object);
 void destroy_step(void *object);

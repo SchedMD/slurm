@@ -4148,6 +4148,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 				- job_ptr->pre_sus_time;
 		}
 	}
+	
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
 	step_iterator = list_iterator_create(job_ptr->step_list);
@@ -4158,6 +4159,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	list_iterator_destroy(step_iterator);
 	
     reply:
+	jobacct_job_suspend(job_ptr);
+
 	rc_msg.return_code = rc;
 	resp_msg.msg_type  = RESPONSE_SLURM_RC;
 	resp_msg.data      = &rc_msg;

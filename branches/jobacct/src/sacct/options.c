@@ -473,13 +473,20 @@ int get_data(void)
 		}
 		    
 		/* Build suitable tables with all the data */
-		if (rec_type == JOB_START) {
+		switch(rec_type) {
+		case JOB_START:
 			process_start(f, lc);
-		} else if (rec_type == JOB_STEP) {
+			break;
+		case JOB_STEP:
 			process_step(f, lc);
-		} else if (rec_type == JOB_TERMINATED) {
+			break;
+		case JOB_SUSPEND:
+			process_suspend(f, lc);
+			break;
+		case JOB_TERMINATED:
 			process_terminated(f, lc);
-		} else {
+			break;
+		default:
 			if (params.opt_verbose > 1)
 				fprintf(stderr,
 					"Invalid record at line %ld of"
@@ -488,6 +495,7 @@ int get_data(void)
 			if (params.opt_verbose > 2)
 				_show_rec(f);
 			inputError++;
+			break;
 		}
 	}
 	
@@ -1462,6 +1470,10 @@ void do_fdump(char* f[], int lc)
 			   "StepName",	 /* F_STEPNAME */
 			   NULL};
        
+	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
+			      "status",	 /* F_STATUS */ 
+			      NULL};	 
+
 	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
 			   "status",	 /* F_STATUS */ 
 			   NULL};	 
@@ -1471,17 +1483,23 @@ void do_fdump(char* f[], int lc)
 
 	for(j=0; j < HEADER_LENGTH; j++) 
 		printf("%12s: %s\n", header[j], f[j]);
-
-	if (i == JOB_START) {
+	switch(i) {
+	case JOB_START:
 		type = start;
 		j = JOB_START_LENGTH;
-	} else if (i == JOB_STEP) {
+		break;
+	case JOB_STEP:
 		type = step;
 		j = JOB_STEP_LENGTH;
-	} else if (i == JOB_TERMINATED) {
+		break;
+	case JOB_SUSPEND:
+		type = suspend;
+		j = JOB_TERM_LENGTH;
+	case JOB_TERMINATED:
 		type = term;
 		j = JOB_TERM_LENGTH;
-	} else {/* _get_data() already told them of unknown record type */
+		break;
+	default:
 		while(f[j]) {
 			printf("      Field[%02d]: %s\n", j, f[j]); 
 			j++;

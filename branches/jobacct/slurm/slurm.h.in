@@ -171,6 +171,7 @@ enum job_wait_reason {
 enum job_acct_types {
 	JOB_START,
 	JOB_STEP,
+	JOB_SUSPEND,
 	JOB_TERMINATED
 };
 

@@ -304,13 +304,13 @@ int _parse_line(char *f[], void **data)
 		(*step)->vsize = atoi(f[F_VSIZE]);
 		(*step)->psize = atoi(f[F_PSIZE]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
-	break;
+		break;
+	case JOB_SUSPEND:
 	case JOB_TERMINATED:
 		*job = xmalloc(sizeof(job_rec_t));
 		_parse_header(f, &(*job)->header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
-		(*job)->status = atoi(f[F_STATUS]);
-		
+		(*job)->status = atoi(f[F_STATUS]);		
 		break;
 	default:
 		printf("UNKOWN TYPE %d",i);
@@ -482,6 +482,24 @@ got_step:
 	job->ncpus = MAX(job->ncpus, step->ncpus);
 }
 
+void process_suspend(char *f[], int lc)
+{
+	job_rec_t *job = NULL;
+	job_rec_t *temp = NULL;
+
+	_parse_line(f, (void **)&temp);
+	job = _find_job_record(temp->header);
+	if (!job)    
+		job = _init_job_rec(temp->header, lc);
+	
+	if (job->status == JOB_SUSPENDED) 
+		job->elapsed -= temp->elapsed;
+
+	job->header.timestamp = temp->header.timestamp;
+	job->status = temp->status;
+	destroy_job(temp);
+}
+	
 void process_terminated(char *f[], int lc)
 {
 	job_rec_t *job = NULL;
