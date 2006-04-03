@@ -407,7 +407,8 @@ int slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
  
 int slurmctld_jobacct_job_complete(struct job_record *job_ptr) 
 {
-	int		rc = SLURM_SUCCESS,
+	int		elapsed,
+			rc = SLURM_SUCCESS,
 			tmp;
 	char		*buf;
 	struct tm	ts; /* timestamp decoder */
@@ -417,11 +418,15 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 		debug2("jobacct: job %u never started", job_ptr->job_id);
 		return rc;
 	}
+	if (((job_ptr->job_state) & ~JOB_COMPLETING) == JOB_PENDING)
+		elapsed = 0;	/* The job is being requeued */
+	else
+		elapsed = job_ptr->end_time - job_ptr->start_time;
 	gmtime_r(&job_ptr->end_time, &ts);
 	buf = xmalloc(MAX_BUFFER_SIZE);
 	tmp = snprintf(buf, MAX_MSG_SIZE,
 		"JOB_TERMINATED 1 12 %u %04d%02d%02d%02d%02d%02d %s",
-		(int) (job_ptr->end_time - job_ptr->start_time),
+		elapsed,
 		1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 		ts.tm_hour, ts.tm_min, ts.tm_sec,
 		job_state_string_compact(

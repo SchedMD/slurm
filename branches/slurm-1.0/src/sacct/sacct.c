@@ -508,8 +508,8 @@ char *decodeCstatus(char *cs)
 		return "FAILED";
 	else if (strcasecmp(cs, "nf")==0)
 		return "NODEFAILED";
-	else if (strcasecmp(cs, "p")==0)
-		return "PENDING"; 	/* we should never see this */
+	else if (strcasecmp(cs, "pd")==0)
+		return "PENDING"; 	/* job has been requeued */
 	else if (strcasecmp(cs, "r")==0)
 		return "RUNNING"; 
 	else if (strcasecmp(cs, "to")==0)
