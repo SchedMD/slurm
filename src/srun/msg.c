@@ -890,7 +890,6 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
-		slurm_free_msg(msg);
 		goto cleanup;
 	}
 	if(list_count(ret_list)>0) {
