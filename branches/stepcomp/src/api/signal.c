@@ -410,7 +410,7 @@ slurm_terminate_job (uint32_t job_id)
 	xfree(rc_array);
 	slurm_free_resource_allocation_response_msg(alloc_info);
 
-	slurm_complete_job(job_id, 0, 0);
+	slurm_complete_job(job_id, 0);
 fail1:
 	if (rc) {
 		slurm_seterrno_ret(rc);

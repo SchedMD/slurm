@@ -166,10 +166,6 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_job_step_kill(msg);
 		slurm_free_job_step_kill_msg(msg->data);
 		break;
-	case REQUEST_COMPLETE_JOB_STEP:
-		_slurm_rpc_job_step_complete(msg);
-		slurm_free_job_complete_msg(msg->data);
-		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
 		slurm_free_complete_job_allocation_msg(msg->data);
@@ -911,13 +907,6 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			schedule_job_save();
 		}
 	}
-}
-
-/* _slurm_rpc_job_step_complete - process RPC to note the completion an  
- *	entire job or an individual job step */
-static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
-{
-	error("REQUEST_COMPLETE_JOB_STEP is DEFUNCT");
 }
 
 /* _slurm_rpc_complete_job_allocation - process RPC to note the

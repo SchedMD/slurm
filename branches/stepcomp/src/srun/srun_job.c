@@ -387,7 +387,7 @@ srun_job_destroy(srun_job_t *job, int error)
 		slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
 	} else if (!opt.no_alloc) {
 		debug("cancelling job %u", job->jobid);
-		slurm_complete_job(job->jobid, error, 0);
+		slurm_complete_job(job->jobid, error);
 	} else {
 		debug("no allocation to cancel, killing remote tasks");
 		fwd_signal(job, SIGKILL); 

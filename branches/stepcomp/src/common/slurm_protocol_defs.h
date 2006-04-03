@@ -133,8 +133,8 @@ typedef enum {
 	RESPONSE_RUN_JOB_STEP,
 	REQUEST_CANCEL_JOB_STEP,
 	RESPONSE_CANCEL_JOB_STEP,
-	REQUEST_COMPLETE_JOB_STEP, /* DEFUNCT */
-	RESPONSE_COMPLETE_JOB_STEP,
+	DEFUNCT_REQUEST_COMPLETE_JOB_STEP, /* DEFUNCT */
+	DEFUNCT_RESPONSE_COMPLETE_JOB_STEP, /* DEFUNCT */
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
 	REQUEST_CHECKPOINT_COMP,
@@ -301,15 +301,6 @@ typedef struct part_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
 } part_info_request_msg_t;
-
-/* DEFUNCT - will be removed in a future version */
-typedef struct complete_job_step_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;
-	uint32_t job_rc;
-	uint32_t slurm_rc;
-	char *node_name;
-} complete_job_step_msg_t;
 
 typedef struct complete_job_allocation {
 	uint32_t job_id;
@@ -623,7 +614,6 @@ void inline slurm_free_part_info_request_msg(
 void inline slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
-void inline slurm_free_job_complete_msg(complete_job_step_msg_t * msg);
 
 void inline
 slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
