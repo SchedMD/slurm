@@ -10,7 +10,7 @@
 # Note:    This script generates and then deletes files in the working directory 
 #          named test6.12.input, test6.12.output, and test6.12.error
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -45,7 +45,7 @@ set job_id      0
 print_header $test_id
 
 if { [test_xcpu] } {
-	send_user "\nWARNING: test incomptabible with XCPU system\n"
+	send_user "\nWARNING: This test is incomptabible with XCPU system\n"
 	exit 0
 }
 

@@ -43,7 +43,7 @@ set exit_code   0
 print_header $test_id
 
 if { [test_xcpu] } {
-	send_user "\nWARNING: test is incompatable with XCPU systems\n"
+	send_user "\nWARNING: This test is incompatable with XCPU systems\n"
 	exit 0
 }
 
