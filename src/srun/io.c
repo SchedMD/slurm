@@ -61,7 +61,6 @@ static int    fmt_width       = 0;
 
 static void     _init_stdio_eio_objs(srun_job_t *job);
 static void	_handle_io_init_msg(int fd, srun_job_t *job);
-static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
 static int      _wid(int n);
 static bool     _incoming_buf_free(srun_job_t *job);
@@ -174,6 +173,8 @@ _listening_socket_read(eio_obj_t *obj, List objs)
 
 	debug3("Called _listening_socket_read");
 	_handle_io_init_msg(obj->fd, job);
+
+	return (0);
 }
 
 static void
@@ -215,7 +216,6 @@ static bool
 _server_readable(eio_obj_t *obj)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
-	int i;
 
 	debug4("Called _server_readable");
 
@@ -513,7 +513,7 @@ static int _write_msg(int fd, void *buf, int len, int taskid)
 	int remaining = len;
 	int written = 0;
 	int line_len;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	while (remaining > 0) {
 		start = buf + written;
@@ -814,8 +814,8 @@ io_thr_create(srun_job_t *job)
 	xsignal(SIGTTIN, SIG_IGN);
 
 	slurm_attr_init(&attr);
-	while (errno = pthread_create(&job->ioid, &attr,
-				      &_io_thr_internal, (void *) job)) {
+	while ((errno = pthread_create(&job->ioid, &attr,
+				      &_io_thr_internal, (void *) job))) {
 		if (++retries > MAX_RETRIES) {
 			error ("pthread_create error %m");
 			return SLURM_ERROR;
@@ -943,23 +943,6 @@ _handle_io_init_msg(int fd, srun_job_t *job)
 		fd_set_nonblocking(sd);
 	}
 }
-
-static ssize_t 
-_readx(int fd, char *buf, size_t maxbytes)
-{
-	size_t n;
-
-	if ((n = read(fd, (void *) buf, maxbytes)) < 0) {
-		if (errno == EINTR)
-			return -1;
-		if ((errno == EAGAIN) || 
-		    (errno == EWOULDBLOCK))
-			return -1;
-		error("readx fd %d: %m", fd, n);
-		return -1; /* shutdown socket, cleanup. */
-	}
-	return n;
-}	
 
 
 /*

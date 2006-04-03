@@ -117,11 +117,8 @@ int srun(int ac, char **av)
 {
 	allocation_resp *resp;
 	srun_job_t *job = NULL;
-	char *task_cnt, *bgl_part_id = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
-	char *prolog = NULL;
-	char *epilog = NULL;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	

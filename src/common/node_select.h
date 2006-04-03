@@ -119,6 +119,9 @@ extern int select_g_block_init(List part_list);
  */
 extern int select_g_job_init(List job_list);
 
+
+extern int select_g_block_init(List part_list);
+
 /******************************************************\
  * JOB-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/

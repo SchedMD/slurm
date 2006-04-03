@@ -47,6 +47,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 #include "src/sbcast/sbcast.h"
 
 /* global variables */

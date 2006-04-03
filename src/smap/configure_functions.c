@@ -189,7 +189,6 @@ static int _create_allocation(char *com, List allocated_blocks)
 {
 	int i=6, geoi=-1, starti=-1, i2=0, nodecards=-1, quarters=-1;
 	int len = strlen(com);
-	char *temp = NULL;
 	allocated_block_t *allocated_block = NULL;
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	
@@ -271,7 +270,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 			sprintf(error_string, 
 				"please specify a complete split of a "
 				"Base Partion\n"
-				"(i.e. nodecards=4)\0");
+				"(i.e. nodecards=4)");
 			geoi = -1;
 		}
 		request->size = 1;
@@ -466,11 +465,11 @@ static int _change_state_all_bps(char *com, int state)
 }
 static int _change_state_bps(char *com, int state)
 {
-	int i=0, j=0, x;
+	int i=0, x;
 	int len = strlen(com);
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
 #ifdef HAVE_BG
-	int number=0, y=0, z=0;
+	int number=0, y=0, z=0, j=0;
 #endif
 	char letter = '.';
 	char opposite = '#';
@@ -581,6 +580,7 @@ error_message:
 		start[X],end[X]);
 #endif	
 	return 0;
+#if HAVE_BG
 error_message2:
 	memset(error_string,0,255);
 	sprintf(error_string, 
@@ -588,6 +588,7 @@ error_message2:
 		"You need to specify XYZ or XYZxXYZ",
 		com+i,com);
 	return 0;
+#endif
 }
 static int _remove_allocation(char *com, List allocated_blocks)
 {
@@ -781,7 +782,6 @@ static int _save_allocation(char *com, List allocated_blocks)
 	char save_string[255];
 	FILE *file_ptr = NULL;
 	char *conn_type = NULL;
-	char *mode_type = NULL;
 	char extra[20];
 
 	ListIterator results_i;		
@@ -827,13 +827,13 @@ static int _save_allocation(char *com, List allocated_blocks)
 		       file_ptr);
 		fputs ("Numpsets=8\n", file_ptr);
 		fputs ("BridgeAPIVerbose=0\n", file_ptr);
-		sprintf(save_string, "BasePartitionNodeCnt=%d\n\0",
+		sprintf(save_string, "BasePartitionNodeCnt=%d\n",
 			base_part_node_cnt);
 		fputs (save_string,file_ptr);
-		sprintf(save_string, "NodeCardNodeCnt=%d\n\0",
+		sprintf(save_string, "NodeCardNodeCnt=%d\n",
 			nodecard_node_cnt);
 		fputs (save_string,file_ptr);
-		sprintf(save_string, "LayoutMode=%s\n\0",
+		sprintf(save_string, "LayoutMode=%s\n",
 			layout_mode);
 		fputs (save_string,file_ptr);
 
@@ -849,7 +849,7 @@ static int _save_allocation(char *com, List allocated_blocks)
 				conn_type = "MESH";
 			else {
 				conn_type = "SMALL";
-				sprintf(extra, " NodeCards=%d Quarters=%d\0",
+				sprintf(extra, " NodeCards=%d Quarters=%d",
 					allocated_block->request->nodecards,
 					allocated_block->request->quarters);
 			}
@@ -1010,7 +1010,6 @@ static int _load_configuration(char *com, List allocated_blocks)
 	char in_line[BUFSIZE];	/* input line */
 	int line_num = 0;	/* line number in input file */
 	
-	ListIterator results_i;		
 	_delete_allocated_blocks(allocated_blocks);
 	allocated_blocks = list_create(NULL);
 

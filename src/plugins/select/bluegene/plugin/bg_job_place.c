@@ -351,7 +351,7 @@ try_again:
 				return SLURM_ERROR;
 			} 
 			slurm_conf_lock();
-			sprintf(tmp_char, "%s%s\0", 
+			sprintf(tmp_char, "%s%s", 
 				slurmctld_conf.node_prefix, request.save_name);
 			slurm_conf_unlock();
 			if (node_name2bitmap(tmp_char, 

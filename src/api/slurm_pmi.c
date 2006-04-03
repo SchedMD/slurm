@@ -31,7 +31,10 @@
 #include "src/api/slurm_pmi.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/forward.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/fd.h"
 
 int pmi_fd = -1;
 uint16_t srun_port = 0;
@@ -105,7 +108,6 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	char hostname[64];
 	uint16_t port;
 	kvs_get_msg_t data;
-	List ret_list;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;

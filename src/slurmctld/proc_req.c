@@ -57,6 +57,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"

@@ -34,6 +34,7 @@
 #endif
 
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -42,6 +43,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/net.h"
+#include "src/common/global_srun.h"
 
 #include "src/plugins/mpi/mpichgm/mpichgm.h"
 
@@ -62,7 +64,6 @@ static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 				     gm_slave_t *slave_data);
 
 static int gmpi_fd = -1;
-static int gmpi_port = -1;
 
 static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 				     gm_slave_t *slave_data)

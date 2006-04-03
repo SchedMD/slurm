@@ -42,6 +42,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <utime.h>
+#include <grp.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -57,12 +58,14 @@
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/util-net.h"
+#include "src/common/forward.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/xcpu.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
+#include "src/slurmd/common/run_script.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -117,6 +120,7 @@ static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 static List waiters;
 
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
@@ -233,24 +237,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	return;
 }
 
-/*
- *  Need to close all open fds
- */
-static void
-_close_fds(void)
-{
-	int i;
-	int maxfd = 1024;
-	for (i = 4; i < maxfd; i++) {
-		close(i);
-	}
-}
-
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req, 
 		      slurm_addr *cli, slurm_addr *self)
 {
-	int rc;
 	int len = 0;
 	Buf buffer;
 	slurm_msg_t msg;
@@ -338,7 +328,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		safe_write(fd, &len, sizeof(int));
 		return -1;
 	}
-	if (gids = _gids_cache_lookup(pw->pw_name, pw->pw_gid)) {
+	if ((gids = _gids_cache_lookup(pw->pw_name, pw->pw_gid))) {
 		int i;
 		uint32_t tmp32;
 		safe_write(fd, &gids->ngids, sizeof(int));
@@ -1064,7 +1054,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		int fd;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   stepd->jobid, stepd->stepid);
@@ -1201,7 +1191,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
 	char         host[MAXHOSTNAMELEN];
-	int          i;
 	slurm_addr   ioaddr;
 	void        *job_cred_sig;
 	int          len;
@@ -1301,7 +1290,7 @@ _get_job_uid(uint32_t jobid)
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		if (stepd->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
 			continue;
@@ -1350,7 +1339,7 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		if (stepd->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
 			debug3("Step from other job: jobid=%u (this jobid=%u)",
@@ -1401,7 +1390,7 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		if (stepd->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
 			debug3("Step from other job: jobid=%u (this jobid=%u)",
@@ -1501,7 +1490,7 @@ _steps_completed_now(uint32_t jobid)
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		if (stepd->jobid == jobid) {
 			int fd;
 			fd = stepd_connect(stepd->directory, stepd->nodename,
@@ -1567,7 +1556,6 @@ _epilog_complete(uint32_t jobid, int rc)
 static void 
 _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int rc = SLURM_SUCCESS;
 	signal_job_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 	uid_t job_uid;
@@ -1613,7 +1601,7 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		if (stepd->jobid != req->job_id) {
 			/* multiple jobs expected on shared nodes */
 			debug3("Step from other job: jobid=%u (this jobid=%u)",
@@ -1698,7 +1686,7 @@ _rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		if (stepd->jobid != req->job_id) {
 			/* multiple jobs expected on shared nodes */
 			debug3("Step from other job: jobid=%u (this jobid=%u)",
@@ -1982,7 +1970,6 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 {
 	int   rc      = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
-	job_time_msg_t *req = (job_time_msg_t *) msg->data;
 
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
 		rc = ESLURM_USER_ID_MISSING;
@@ -2173,7 +2160,7 @@ _gids_cache_register(char *user, gid_t gid, gids_t *gids)
 static gids_t *
 _getgroups(void)
 {
-	int n, i, found;
+	int n;
 	gid_t *gg;
 
 	if ((n = getgroups(0, NULL)) < 0) {
@@ -2206,7 +2193,7 @@ init_gids_cache(int cache)
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
 	getgroups(ngids, orig_gids);
 
-	while (pwd = getpwent()) {
+	while ((pwd = getpwent())) {
 		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
 			continue;
 		if (initgroups(pwd->pw_name, pwd->pw_gid)) {

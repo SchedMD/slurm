@@ -71,6 +71,13 @@ typedef struct {
 } slurmstepd_info_t;
 
 /*
+ * Cleanup stale stepd domain sockets.
+ */
+int stepd_cleanup_sockets(const char *directory, const char *nodename);
+
+int stepd_terminate(int fd);
+
+/*
  * Connect to a slurmstepd proccess by way of its unix domain socket.
  *
  * Returns a socket descriptor for the opened socket on success, 

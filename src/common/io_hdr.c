@@ -61,8 +61,6 @@ io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 int
 io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 {
-	uint16_t val;
-
 	safe_unpack16(&hdr->type, buffer);
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
@@ -119,7 +117,6 @@ int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 {
 	Buf buffer;
 	int n = 0;
-	int rc;
 
 	debug3("Entering io_hdr_read_fd");
 	buffer = init_buf(io_hdr_packed_size());

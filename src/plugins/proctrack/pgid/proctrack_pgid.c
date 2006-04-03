@@ -35,10 +35,12 @@
 #  include <inttypes.h>
 #endif
 
+#define __USE_XOPEN_EXTENDED /* getpgid */
+#include <unistd.h>
+
 #include <sys/types.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"

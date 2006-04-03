@@ -167,7 +167,6 @@ extern slurm_step_layout_t *step_layout_create(
 {
 	slurm_step_layout_t *step_layout = NULL;
 	char *temp = NULL;
-	hostlist_t hl;
 	
 	if(step_req && step_resp) {
 		temp = step_req->node_list;
@@ -292,11 +291,11 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 
 
 /* use specific set run tasks on each host listed in hostfile
+ * XXX: Need to handle over-subscribe.
  */
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 {
 	int i=0, j, taskid = 0;
-	bool over_subscribe = false;
 	hostlist_iterator_t itr = NULL, itr_task = NULL;
 	char *host = NULL;
 	char *host_task = NULL;
@@ -307,9 +306,9 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 	itr = hostlist_iterator_create(job_alloc_hosts);
 	step_alloc_hosts = hostlist_create(step_layout->step_nodes);
 	itr_task = hostlist_iterator_create(step_alloc_hosts);
-	while(host = hostlist_next(itr)) {
+	while((host = hostlist_next(itr))) {
 		step_layout->tasks[i] = 0;
-		while(host_task = hostlist_next(itr_task)) {
+		while((host_task = hostlist_next(itr_task))) {
 			if(!strcmp(host, host_task))
 				step_layout->tasks[i]++;
 			free(host_task);
@@ -324,7 +323,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 		taskid = 0;
 		j = 0;
 		hostlist_iterator_reset(itr_task);
-		while(host_task = hostlist_next(itr_task)) {
+		while((host_task = hostlist_next(itr_task))) {
 			if(!strcmp(host, host_task)) {
 				step_layout->tids[i][j] = taskid;
 				j++;

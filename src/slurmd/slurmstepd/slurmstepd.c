@@ -35,12 +35,17 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/slurm_jobacct.h"
+#include "src/common/switch.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
+#include "src/slurmd/common/setproctitle.h"
+#include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
+#include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
@@ -151,8 +156,6 @@ _init_from_slurmd(int sock, char **argv,
 	Buf buffer;
 	int step_type;
 	int len;
-	int rc;	
-	char c;
 	slurm_addr *cli = NULL;
 	slurm_addr *self = NULL;
 	slurm_msg_t *msg = NULL;
@@ -279,7 +282,7 @@ rwfail:
 static slurmd_job_t *
 _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 {
-	slurmd_job_t *job;
+	slurmd_job_t *job = NULL;
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:

@@ -142,7 +142,6 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	srun_info_t   *srun;
 	slurm_addr     resp_addr;
 	slurm_addr     io_addr;
-	int i;
 	
 	xassert(msg != NULL);
 
@@ -321,7 +320,6 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	slurmd_job_t *job;
 	srun_info_t  *srun = NULL;
 	uint32_t      global_taskid = 0;
-	char         *ofname, *efname;
 
 	xassert(msg != NULL);
 	

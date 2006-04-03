@@ -61,6 +61,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <stdlib.h>
 
@@ -340,7 +341,7 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 {
-	int i, j;
+	int i;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
 	int *span = set_span(agent_arg_ptr->node_count);
@@ -451,11 +452,8 @@ static void *_wdog(void *args)
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	unsigned long usec = 1250000;
-	time_t now;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
-	state_t state;
-	int is_ret_list = 1;
 	thd_complete_t thd_comp;
 
 
@@ -559,7 +557,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr, 
 				    int no_resp_cnt, int retry_cnt)
 {
-	ListIterator itr;
+	ListIterator itr = NULL;
 	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;

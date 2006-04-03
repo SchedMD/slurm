@@ -57,7 +57,9 @@ static List block_list = NULL;
 
 static char* _convert_conn_type(enum connection_type conn_type);
 static char* _convert_node_use(enum node_use_type node_use);
+#ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count);
+#endif
 static void _print_header_part(void);
 static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
@@ -348,6 +350,7 @@ extern void get_bg_part()
 	return;
 }
 
+#ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count)
 {
 	int j=0;
@@ -407,6 +410,7 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 	}
 	return SLURM_SUCCESS;
 }
+#endif
 
 static void _print_header_part(void)
 {

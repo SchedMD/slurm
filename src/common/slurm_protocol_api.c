@@ -701,10 +701,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	forward_struct_t *forward_struct = NULL;
 	ret_types_t *ret_type = NULL;
 	ListIterator itr;
-	int i=0;
 	int16_t fwd_cnt = 0;
-	char addrbuf[INET_ADDRSTRLEN];
-	int steps = 0;
 
 	List ret_list = list_create(destroy_ret_types);
 	
@@ -1254,8 +1251,6 @@ void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)
 Buf slurm_pack_msg_no_header(slurm_msg_t * msg)
 {
 	Buf      buffer = NULL;
-	void *   auth_cred;
-	int rc;
 
 	buffer = init_buf(0);
 	
@@ -1264,8 +1259,6 @@ Buf slurm_pack_msg_no_header(slurm_msg_t * msg)
 	 */
 	pack_msg(msg, buffer);
 	
-ret_error:
-
 	return buffer;
 }
 
@@ -1543,7 +1536,6 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
  */
 static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 {
-	int		retval = SLURM_SUCCESS;
 	slurm_msg_t	msg;
 	List ret_list = NULL;
 	ListIterator itr = NULL;
@@ -1834,11 +1826,11 @@ int convert_to_kilo(int number, char *tmp)
 		if(i > 0) {
 			i *= 10;
 			i /= 1024;
-			sprintf(tmp, "%d.%dk\0", number/1024, i);
+			sprintf(tmp, "%d.%dk", number/1024, i);
 		} else 
-			sprintf(tmp, "%dk\0", number/1024);
+			sprintf(tmp, "%dk", number/1024);
 	} else
-		sprintf(tmp, "%d\0", number);
+		sprintf(tmp, "%d", number);
 
 	return SLURM_SUCCESS;
 }

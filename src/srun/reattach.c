@@ -45,6 +45,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
+#include "src/common/forward.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
@@ -324,7 +325,7 @@ _attach_to_job(srun_job_t *job)
 
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		forward_init(&m->forward.cnt, NULL);
+		forward_init(&m->forward, NULL);
 		m->ret_list = NULL;
 
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));

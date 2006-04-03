@@ -44,6 +44,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/global_srun.h"
 
 #include "src/srun/srun_job.h"
 
@@ -56,19 +57,6 @@ static int srun_sigarray[] = {
 	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
-
-/* number of active threads */
-static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
-static int             active = 0;
-
-typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
-
-typedef struct thd {
-        pthread_t	thread;			/* thread ID */
-        pthread_attr_t	attr;			/* thread attributes */
-        state_t		state;      		/* thread state */
-} thd_t;
 
 typedef struct task_info {
 	slurm_msg_t *req_ptr;

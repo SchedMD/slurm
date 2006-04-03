@@ -46,6 +46,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 

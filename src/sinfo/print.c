@@ -159,7 +159,6 @@ static int _print_secs(long time, int width, bool right, bool cut_output)
 static int 
 _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 {
-	int i;
 	char tmp_min[7];
 	char tmp_max[7];
 	convert_to_kilo(min, tmp_min);

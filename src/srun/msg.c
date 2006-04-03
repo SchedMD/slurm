@@ -53,6 +53,9 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/mpi.h"
+#include "src/common/forward.h"
+#include "src/common/global_srun.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -61,6 +64,7 @@
 #include "src/srun/pmi.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/attach.h"
+#include "src/srun/allocate.h"
 
 #include "src/common/xstring.h"
 
@@ -104,6 +108,7 @@ static void     _node_fail_handler(char *nodelist, srun_job_t *job);
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
+#undef safe_read
 #define safe_read(fd, ptr, size) do {					\
 		if (read(fd, ptr, size) != size) {			\
 			debug("%s:%d: %s: read (%d bytes) failed: %m",	\
@@ -113,6 +118,7 @@ static void     _node_fail_handler(char *nodelist, srun_job_t *job);
 		}							\
 	} while (0)
 
+#undef safe_write
 #define safe_write(fd, ptr, size) do {					\
 		if (write(fd, ptr, size) != size) {			\
 			debug("%s:%d: %s: write (%d bytes) failed: %m",	\
@@ -1039,7 +1045,6 @@ msg_thr(void *arg)
 {
 	srun_job_t *job = (srun_job_t *) arg;
 	forked_msg_pipe_t *par_msg = job->forked_msg->par_msg;
-	int done = 0;
 	debug3("msg thread pid = %lu", (unsigned long) getpid());
 
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
@@ -1152,7 +1157,7 @@ par_thr(void *arg)
 	close(par_msg->msg_pipe[0]); // close excess fildes    
 	close(msg_par->msg_pipe[1]); // close excess fildes
 	if(waitpid(par_msg->pid,&status,0)<0) // wait for pid to finish
-		return;// there was an error
+		return NULL;// there was an error
 	debug3("par thread done");
 	return (void *)1;
 }

@@ -242,6 +242,12 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	packmem(str,(uint16_t)_size,buf);		\
 } while (0)				
 
+#define packnull(buf) do { \
+	assert(buf != NULL); \
+	assert(buf->magic == BUF_MAGIC); \
+	packmem(NULL, 0, buf); \
+} while (0)
+
 #define pack_bit_fmt(bitmap,buf) do {	\
 	assert(buf->magic == BUF_MAGIC);		\
 	if (bitmap) {					\

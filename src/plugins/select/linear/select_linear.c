@@ -529,9 +529,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
-	int i, rc=SLURM_SUCCESS;
+	int i;
 	uint32_t cnt=0;
-
+#ifdef HAVE_XCPU
+	/* FIXME - rc is not returned! */
+	int rc=SLURM_SUCCESS;
+#endif
 	xassert(job_ptr);
 	xassert(job_ptr->node_bitmap);
 

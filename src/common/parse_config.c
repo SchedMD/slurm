@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <ctype.h>
 
 /* #include "src/common/slurm_protocol_defs.h" */
@@ -207,8 +208,8 @@ static void _keyvalue_regex_init(void)
 
 /*
  * IN line - string to be search for a key=value pair
- * OUT key - pointer to the key string (caller must free with free())
- * OUT value - pointer to the value string (caller must free with free())
+ * OUT key - pointer to the key string (caller must free with xfree())
+ * OUT value - pointer to the value string (caller must free with xfree())
  * OUT remaining - pointer into the "line" string denoting the start
  *                 of the unsearched portion of the string
  * Return 0 when a key-value pair is found, and -1 otherwise.
@@ -216,11 +217,8 @@ static void _keyvalue_regex_init(void)
 static int _keyvalue_regex(const char *line,
 			   char **key, char **value, char **remaining)
 {
-        size_t nmatch = 8;
-        regmatch_t pmatch[8];
-	char *start;
-	size_t len;
-	char *match;
+	size_t nmatch = 8;
+	regmatch_t pmatch[8];
 
 	*key = NULL;
 	*value = NULL;
@@ -667,7 +665,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 	_keyvalue_regex_init();
 
 	while (_keyvalue_regex(ptr, &key, &value, &leftover) == 0) {
-		if (p = _conf_hashtbl_lookup(hashtbl, key)) {
+		if ((p = _conf_hashtbl_lookup(hashtbl, key))) {
 			_handle_keyvalue_match(p, value, line);
 			ptr = leftover;
 		} else {
@@ -695,7 +693,6 @@ void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
-	char *key, *value, *leftover;
 
 	_keyvalue_regex_init();
 
@@ -1009,7 +1006,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 	void *ptr;
 	void **ptr_array;
 	int count;
-	int i;
+	bool flag;
 
 	for (op = options; op->key != NULL; op++) {
 		switch(op->type) {
@@ -1052,6 +1049,16 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 			} else {
 				verbose("%s", op->key);
 			}
+			break;
+		case S_P_BOOLEAN:
+			if (s_p_get_boolean(&flag, op->key, hashtbl)) {
+				verbose("%s = %s", op->key,
+					flag ? "TRUE" : "FALSE");
+			} else {
+				verbose("%s", op->key);
+			}
+			break;
+		case S_P_IGNORE:
 			break;
 		}
 	}

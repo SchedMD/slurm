@@ -281,7 +281,6 @@ static int _build_sinfo_data(List sinfo_list,
 	hostlist_t hl;
 	sinfo_data_t *sinfo_ptr;
 	char *node_name = NULL;
-	int offset = 0;
 
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {

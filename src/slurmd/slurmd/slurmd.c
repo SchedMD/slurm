@@ -58,6 +58,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
@@ -123,12 +124,6 @@ static void      _update_logging(void);
 static void      _atfork_prepare(void);
 static void      _atfork_final(void);
 static void      _install_fork_handlers(void);
-
-static void
-_step_state_free(void *state)
-{
-	xfree(state);
-}
 
 int 
 main (int argc, char *argv[])
@@ -341,11 +336,9 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 static void *
 _service_connection(void *arg)
 {
-	int rc;
 	conn_t *con = (conn_t *) arg;
 	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	char addrbuf[INET_ADDRSTRLEN];
 
 	debug3("in the service_connection");
 	msg->conn_fd = con->fd;
@@ -450,7 +443,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	i = list_iterator_create(steps);
 	n = 0;
-	while (stepd = list_next(i)) {
+	while ((stepd = list_next(i))) {
 		int fd;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   stepd->jobid, stepd->stepid);

@@ -1069,7 +1069,6 @@ int PMI_KVS_Commit( const char kvsname[] )
 {
 	struct kvs_comm_set kvs_set;
 	int i, rc;
-	Buf buffer;
 
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_KVS_Commit\n");

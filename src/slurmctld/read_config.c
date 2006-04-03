@@ -50,6 +50,7 @@
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/node_select.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -177,9 +178,9 @@ static int _build_bitmaps(void)
 		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
 		||  (base_state == NODE_STATE_DOWN))
 			bit_set(idle_node_bitmap, i);
-		if ((base_state == NODE_STATE_IDLE)
-		||  (base_state == NODE_STATE_ALLOCATED)
-		&&  (no_resp_flag == 0))
+		if ((  (base_state == NODE_STATE_IDLE)
+		    || (base_state == NODE_STATE_ALLOCATED) )
+		   && (no_resp_flag == 0))
 			bit_set(avail_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set(node_record_table_ptr[i].config_ptr->
@@ -326,7 +327,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				       struct config_record *config_ptr,
 				       slurm_ctl_conf_t *conf)
 {
-	int error_code, i;
+	int error_code;
 	struct node_record *node_rec = NULL;
 	hostlist_t alias_list = NULL;
 	hostlist_t hostname_list = NULL;
@@ -633,7 +634,7 @@ static int _build_all_partitionline_info()
 int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
-	int i, j, error_code;
+	int error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
@@ -972,15 +973,4 @@ static void _validate_node_proc_count(void)
 	list_iterator_destroy(part_iterator);
 }
 #endif
-
-/* Normalize supplied debug level to be in range per log.h definitions */
-static void _normalize_debug_level(uint16_t *level)
-{
-	if (*level > LOG_LEVEL_DEBUG3) {
-		error("Normalizing debug level from %u to %d", 
-		      *level, LOG_LEVEL_DEBUG3);
-		*level = LOG_LEVEL_DEBUG3;
-	}
-	/* level is uint16, always > LOG_LEVEL_QUIET(0), can't underflow */
-}
 

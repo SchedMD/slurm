@@ -34,4 +34,6 @@
  */
 void slurmd_req(slurm_msg_t *msg, slurm_addr *client_addr);
 
+int init_gids_cache(int cache);
+
 #endif

@@ -54,7 +54,6 @@
 
 #define MAX_RETRIES 10
 
-static int _job_step_ckpt_error(struct step_record *step_ptr, slurm_fd conn_fd);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    job_step_create_request_msg_t *step_spec );
@@ -422,7 +421,7 @@ try_again:
 				      "switch type elan. Switching DIST type "
 				      "to BLOCK");
 				xfree(step_spec->node_list);
-				step_spec->task_dist == SLURM_DIST_BLOCK;
+				step_spec->task_dist = SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(nodes_picked);
 				goto try_again;
 			}
@@ -891,7 +890,6 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	/* operate on all of a job's steps */
 	else {
 		int update_rc = -2;
-		bool error_reply = false;
 		ListIterator step_iterator;
 
 		step_iterator = list_iterator_create (job_ptr->step_list);

@@ -599,7 +599,6 @@ static void *_service_connection(void *arg)
 	slurm_fd newsockfd = ((connection_arg_t *) arg)->newsockfd;
 	void *return_code = NULL;
 	List ret_list = NULL;
-	ListIterator itr;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	
 	msg->conn_fd = newsockfd;

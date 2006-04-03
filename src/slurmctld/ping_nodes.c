@@ -94,8 +94,6 @@ void ping_begin (void)
  */
 void ping_end (void)
 {
-  long start, end;
-
 	slurm_mutex_lock(&lock_mutex);
 	if (ping_count > 0)
 		ping_count--;

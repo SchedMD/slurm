@@ -40,6 +40,7 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "kill_tree.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

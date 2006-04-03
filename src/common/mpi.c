@@ -197,7 +197,7 @@ int _mpi_init (char *mpi_type)
 	setenvf (NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
 		
 	full_type = xmalloc(sizeof(char) * (strlen(mpi_type)+5));
-	sprintf(full_type,"mpi/%s\0",mpi_type);
+	sprintf(full_type,"mpi/%s",mpi_type);
        
 	g_context = _slurm_mpi_context_create(full_type);
 	xfree(full_type);

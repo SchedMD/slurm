@@ -39,6 +39,7 @@
 //#include "src/common/env.h" 
 #include "src/srun/core-format.h"
 #include "src/common/log.h"
+#include "src/common/env.h"
 
 #define CORE_NORMAL 0
 #define CORE_LIGHT  1 /* Default lightweight corefile from liblwcf */

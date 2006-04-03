@@ -44,8 +44,10 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/stepd_api.h"
+#include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/req.h"
+#include "src/slurmd/slurmstepd/io.h"
 
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid);
@@ -180,6 +182,8 @@ _msg_thr_internal(void *job_arg)
 	debug("Message thread started pid = %lu", (unsigned long) getpid());
 	eio_handle_mainloop(job->msg_handle);
 	debug("Message thread exited");
+
+	return NULL;
 }
 
 int
@@ -715,7 +719,6 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 {
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
-	int sig_len;
 
 	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 

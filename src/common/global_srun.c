@@ -44,6 +44,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/forward.h"
 #include "src/common/global_srun.h"
 
 /* number of active threads */
@@ -223,8 +224,8 @@ static void * _p_signal_task(void *args)
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
 		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
 			if(!host) {
-				while(ret_data_info 
-				      = list_pop(ret_type->ret_data_list)) {
+				while((ret_data_info 
+				      = list_pop(ret_type->ret_data_list))) {
 					error("%s: signal: %s", 
 					      ret_data_info->node_name, 
 					      slurm_strerror(rc));

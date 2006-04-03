@@ -94,7 +94,6 @@ static uint32_t threads_active = 0;	/* currently active threads */
 static void	_dump_ctx(slurm_step_ctx ctx);
 #endif
 static int	_envcount(char **env);
-static void	_free_char_array(char ***argv_p, int cnt);
 static int	_p_launch(slurm_msg_t *req, slurm_step_ctx ctx);
 static int	_sock_bind_wild(int sockfd);
 static void *	_thread_per_node_rpc(void *args);
@@ -421,7 +420,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		m->data		= r;
 
 		j=0; 
-  		while(host = hostlist_next(itr)) { 
+  		while((host = hostlist_next(itr))) { 
   			if(!strcmp(host,ctx->step_layout->host[i])) {
   				free(host);
 				break; 
@@ -765,19 +764,6 @@ static void _xfree_char_array(char ***argv_p, int cnt)
 		xfree(argv[i]);
 	xfree(*argv_p);
 }
-
-
-/* free an array of character strings as created by hostlist_shift */
-static void _free_char_array(char ***argv_p, int cnt)
-{
-	char **argv = *argv_p;
-	int i;
-
-	for (i=0; i<cnt; i++)
-		free(argv[i]); 
-	xfree(*argv_p);
-}
-
 
 /* copy a character array, free with _xfree_char_array */
 static void _xcopy_char_array(char ***argv_p, char **argv, int cnt)

@@ -554,11 +554,7 @@ static void _db2_check(void)
  */
 extern void ba_init(node_info_msg_t *node_info_ptr)
 {
-	node_info_t *node_ptr = NULL;
-	int start, temp;
-	char *numeric = NULL;
 	int x,y,z;
-
 #ifdef HAVE_BG
 	int i;
 #endif
@@ -607,6 +603,9 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	
 	if(node_info_ptr!=NULL) {
 #ifdef HAVE_BG
+		node_info_t *node_ptr = NULL;
+		int start, temp;
+		char *numeric = NULL;
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
 			start = 0;
@@ -647,7 +646,9 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 #endif
 		ba_system_ptr->num_of_proc = node_info_ptr->record_count;
 	} 
+#ifdef HAVE_BG
 node_info_error:
+#endif
 #ifdef HAVE_BG_FILES
 	if (have_db2
 	    && (DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
@@ -934,10 +935,8 @@ extern char *set_bg_block(List results, int *start,
 {
 	char *name = NULL;
 	ba_node_t* ba_node = NULL;
-       	int size = 0;
+	int size = 0;
 	int send_results = 0;
-	List start_list = NULL;
-	ListIterator itr;
 	int found = 0;
 
 	if(!results)
@@ -996,6 +995,9 @@ extern char *set_bg_block(List results, int *start,
 	}
 	if(found) {
 #ifdef HAVE_BG
+		List start_list = NULL;
+		ListIterator itr;
+
 		start_list = list_create(NULL);
 		itr = list_iterator_create(results);
 		while((ba_node = (ba_node_t*) list_next(itr))) {
@@ -2003,7 +2005,9 @@ static int _find_match(ba_request_t *ba_request, List results)
 #endif
 			return 0;
 
+#ifdef HAVE_BG
 start_again:
+#endif
 	x=0;
 	if(x == startx)
 		x = startx-1;
@@ -2016,7 +2020,9 @@ start_again:
 		       ba_request->geometry[Z],
 #endif
 		       x);
+#ifdef HAVE_BG
 	new_node:
+#endif
 		debug2("starting at %d%d%d",
 		       start[X]
 #ifdef HAVE_BG
@@ -2435,7 +2441,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		return NULL;
 	itr = list_iterator_create(nodes);
 	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
-		sprintf(name, "%d%d%d\0", 
+		sprintf(name, "%d%d%d", 
 			ba_node[count]->coord[X],
 			ba_node[count]->coord[Y],
 			ba_node[count]->coord[Z]);
@@ -2496,11 +2502,10 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	int port_tar;
 	int source_port=0;
 	int target_port=0;
-	int num_visited=0;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {3,5};
 	int *node_tar = NULL;
-	int i, i2;
+	int i;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
 	int highest_phys_x = geometry[X] - start[X];
@@ -2807,11 +2812,10 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	int port_tar;
 	int source_port=0;
 	int target_port=0;
-	int num_visited=0;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {3,5};
 	int *node_tar = NULL;
-	int i, i2;
+	int i;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
 	
@@ -3043,7 +3047,6 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	if(path)
 		list_destroy(path);
 	path = list_create(_delete_path_list);
-	int ports_to_try2[2] = {2,4};
 	
 	_find_next_free_using_port_2(curr_switch, 
 				     0, 
@@ -3138,7 +3141,6 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	int port_to_try = 2;
 	int *node_tar= curr_switch->ext_wire[0].node_tar;
 	int *node_src = curr_switch->ext_wire[0].node_tar;
-	int i;
 	int used=0;
 	int broke = 0;
 	ba_node_t *ba_node = NULL;
@@ -3495,7 +3497,6 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 	int *node_src = curr_switch->ext_wire[0].node_tar;
 	int i;
 	int used=0;
-	ba_node_t *ba_node = NULL;
 	ListIterator itr;
 	static bool found = false;
 
