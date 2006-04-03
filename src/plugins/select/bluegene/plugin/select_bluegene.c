@@ -358,7 +358,7 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr,
        return SLURM_SUCCESS;
 }
 
-extern int select_p_update_part (update_part_msg_t *part_desc_ptr)
+extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
