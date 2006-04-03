@@ -46,6 +46,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_spec.h"
@@ -85,8 +86,12 @@ struct slurmd_port {
 	hostset_t aliases; /* NodeName */
 	uint16_t port;
 };
+
+/* Not used now
 static struct slurmd_port *slurmd_port_array;
 static int slurmd_port_array_count;
+*/
+
 
 #define NAME_HASH_LEN 512
 typedef struct names_ll_s {
@@ -858,6 +863,7 @@ extern slurm_addr slurm_conf_get_addr(const char *node_name)
 {
 	int idx;
 	names_ll_t *p;
+	slurm_addr unknown;
 
 	_init_slurmd_nodehash();
 
@@ -876,6 +882,8 @@ extern slurm_addr slurm_conf_get_addr(const char *node_name)
 
 	/* FIXME - needs to return a success/fail flag, and set address
 	   through a parameter */
+	memset(&unknown, 0, sizeof(slurm_addr));
+	return unknown;
 }
 
 

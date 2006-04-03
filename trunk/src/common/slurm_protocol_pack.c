@@ -2175,8 +2175,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
-	select_jobinfo_t jobinfo;
-
 	/* load the data values */
 	pack16((uint16_t)job_desc_ptr->contiguous, buffer);
         pack16((uint16_t)job_desc_ptr->exclusive, buffer);

@@ -155,7 +155,6 @@ static int _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
 					  slurmd_job_t *job, cbuf_t cbuf);
-static struct io_obj *_io_obj(slurmd_job_t *, slurmd_task_info_t *, int, int);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job);
@@ -216,7 +215,7 @@ _client_writable(eio_obj_t *obj)
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
 		msgs = list_iterator_create(client->job->outgoing_cache);
-		while (msg = list_next(msgs)) {
+		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
 		}
@@ -455,8 +454,6 @@ _task_writable(eio_obj_t *obj)
 static int
 _task_write_error(eio_obj_t *obj, List objs)
 {
-	struct task_write_info *t = (struct task_write_info *) obj->arg;
-
 	debug4("Called _task_write_error, closing fd %d", obj->fd);
 
 	close(obj->fd);
@@ -578,10 +575,6 @@ static int
 _task_read(eio_obj_t *obj, List objs)
 {
 	struct task_read_info *out = (struct task_read_info *)obj->arg;
-	struct client_io_info *client;
-	struct io_buf *msg = NULL;
-	eio_obj_t *eio;
-	ListIterator clients;
 	int len;
 	int rc = -1;
 
@@ -628,31 +621,10 @@ again:
 /**********************************************************************
  * General fuctions
  **********************************************************************/
-static char * 
-_local_filename (char *fname, int taskid)
-{
-	int id;
-
-	if (fname == NULL)
-		return NULL;
-
-	if ((id = fname_single_task_io(fname)) < 0) 
-		return fname;
-
-	if (id != taskid)
-		return "/dev/null";
-
-	return (NULL);
-}
 
 static int
 _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 {
-	char *name;
-	int single;
-	int fd;
-	struct passwd *spwd = NULL;
-
 	/*
 	 *  Initialize stdin
 	 */
@@ -692,7 +664,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdout file: %m");
 			return SLURM_ERROR;
 		}
-		task->from_stdout == -1; /* not used */
+		task->from_stdout = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
@@ -723,7 +695,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stderr file: %m");
 			return SLURM_ERROR;
 		}
-		task->from_stderr == -1; /* not used */
+		task->from_stderr = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
 		int perr[2];
@@ -741,6 +713,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		list_append(job->stderr_eio_objs, (void *)task->err);
 		eio_new_initial_obj(job->eio, (void *)task->err);
 	}
+
+	return SLURM_SUCCESS;
 }
 
 int
@@ -751,6 +725,8 @@ io_init_tasks_stdio(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++) {
 		_init_task_stdio_fds(job->task[i], job);
 	}
+
+	return 0;
 }
 
 int
@@ -768,15 +744,6 @@ io_thread_start(slurmd_job_t *job)
 	return 0;
 }
 
-static int
-_xclose(int fd)
-{
-	int rc;
-	do {
-		rc = close(fd);
-	} while (rc == -1 && errno == EINTR);
-	return rc;
-}
 
 void
 _shrink_msg_cache(List cache, slurmd_job_t *job)
@@ -818,7 +785,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->job->clients);
-		while(eio = list_next(clients)) {
+		while((eio = list_next(clients))) {
 			client = (struct client_io_info *)eio->arg;
 			if (client->out_eof == true)
 				continue;
@@ -840,8 +807,6 @@ _route_msg_task_to_client(eio_obj_t *obj)
 static void
 _free_incoming_msg(struct io_buf *msg, slurmd_job_t *job)
 {
-	int i;
-
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
 		/* Put the message back on the free List */
@@ -889,7 +854,7 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
-	while(msg = list_next(msgs)) {
+	while((msg = list_next(msgs))) {
 		_free_outgoing_msg(msg, job);
 	}
 	list_iterator_destroy(msgs);
@@ -910,9 +875,8 @@ io_close_task_fds(slurmd_job_t *job)
 void 
 io_close_all(slurmd_job_t *job)
 {
-	int i;
-
 #if 0
+	int i;
 	for (i = 0; i < job->ntasks; i++)
 		_io_finalize(job->task[i]);
 #endif
@@ -959,7 +923,6 @@ _io_thr(void *arg)
 int
 io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
 {
-	int i;
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
@@ -1014,7 +977,6 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
 int
 io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 {
-	int i;
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
@@ -1148,7 +1110,7 @@ _send_eof_msg(struct task_read_info *out)
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
-	while(eio = list_next(clients)) {
+	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
 		xassert(client->magic == CLIENT_IO_MAGIC);

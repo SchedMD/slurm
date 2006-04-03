@@ -117,7 +117,7 @@ static void _mark_shutdown_true(List obj_list)
 	eio_obj_t *obj;
 	
 	objs = list_iterator_create(obj_list);
-	while (obj = list_next(objs)) {
+	while ((obj = list_next(objs))) {
 		obj->shutdown = true;
 	}
 	list_iterator_destroy(objs);
@@ -135,7 +135,7 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 	}
 
 	/* move new eio objects from the new_objs to the obj_list */
-	while (obj = list_dequeue(eio->new_objs)) {
+	while ((obj = list_dequeue(eio->new_objs))) {
 		list_enqueue(eio->obj_list, obj);
 	}
 

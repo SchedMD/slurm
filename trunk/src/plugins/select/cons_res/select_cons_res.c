@@ -481,7 +481,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 
 static int _clear_select_jobinfo(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS, i, j, nodes;
+	int rc = SLURM_SUCCESS, i, nodes;
 	struct select_cr_job *job = NULL;
 	int job_id;
 	ListIterator iterator;
@@ -1029,7 +1029,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
-	int i, j, rc = ESLURM_INVALID_JOB_ID;
+	int i, rc = ESLURM_INVALID_JOB_ID;
  
 	xassert(job_ptr);
 	xassert(select_cr_job_list);
@@ -1078,7 +1078,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
-	int i, j, rc = ESLURM_INVALID_JOB_ID;
+	int i, rc = ESLURM_INVALID_JOB_ID;
 
 	xassert(job_ptr);
 	xassert(select_cr_job_list);
@@ -1192,8 +1192,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 					enum select_data_info info,
 					void *data)
 {
-	int rc = SLURM_SUCCESS, i;
-	int incr = -1;
+	int rc = SLURM_SUCCESS;
 	struct node_cr_record *this_cr_node;
 
 	xassert(node_ptr);
@@ -1223,7 +1222,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 extern int select_p_update_nodeinfo(struct job_record *job_ptr,
 				    enum select_data_info info)
 {
-	int rc = SLURM_SUCCESS, i, j, job_id, nodes;
+	int rc = SLURM_SUCCESS, i, job_id, nodes;
 	struct select_cr_job *job = NULL;
 	ListIterator iterator;
 

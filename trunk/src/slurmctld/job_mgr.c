@@ -53,6 +53,7 @@
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -1668,7 +1669,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
-	uint16_t geo[SYSTEM_DIMENSIONS];
 
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 
@@ -2705,7 +2705,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	if (detail_ptr) {
 		packstr(detail_ptr->features, buffer);
 	} else {
-		packstr(NULL, buffer);
+		packnull(buffer);
 	}
 
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
@@ -2717,8 +2717,6 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 /* pack job details for "get_job_info" RPC */
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	uint32_t altered;
-	
 	if (detail_ptr) {		
 		pack32((uint32_t) detail_ptr->min_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
@@ -2747,10 +2745,10 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 
-		packstr(NULL, buffer);
-		packstr(NULL, buffer);
-		packstr(NULL, buffer);
-		packstr(NULL, buffer);
+		packnull(buffer);
+		packnull(buffer);
+		packnull(buffer);
+		packnull(buffer);
 	}
 }
 

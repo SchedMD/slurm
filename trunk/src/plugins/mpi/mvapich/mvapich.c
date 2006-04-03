@@ -42,6 +42,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/net.h"
+#include "src/common/fd.h"
+#include "src/common/global_srun.h"
 
 /* NOTE: MVAPICH has changed protocols without changing version numbers.
  * This makes support of MVAPICH very difficult. 
@@ -108,8 +110,6 @@ static void mvapich_info_destroy (struct mvapich_info *mvi);
  */
 static struct mvapich_info * mvapich_info_create (int fd)
 {
-	int n;
-	unsigned char host[4];
 	struct mvapich_info *mvi = xmalloc (sizeof (*mvi));
 
 	mvi->fd = fd;
@@ -335,7 +335,6 @@ static void *mvapich_thr(void *arg)
 extern int mvapich_thr_create(srun_job_t *job)
 {
 	int port;
-	char name[128];
 	pthread_attr_t attr;
 	pthread_t tid;
 

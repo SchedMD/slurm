@@ -54,7 +54,7 @@
  * The following global is used by the jobacct/log plugin; it must
  * persist when the plugin is reloaded, so we define it here.
  */
-extern FILE * JOBACCT_LOGFILE = NULL;
+extern FILE * JOBACCT_LOGFILE;
 
 /*
  * WARNING:  Do not change the order of these fields or add additional

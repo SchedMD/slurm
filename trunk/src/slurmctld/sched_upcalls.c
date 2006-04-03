@@ -116,7 +116,6 @@ static void * sched_get_job_end_time(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_user_id(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_group_name(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_req_nodes(	sched_obj_list_t, int32_t, char * );
-static void * sched_get_job_alloc_nodes( sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_min_nodes(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_partition(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_min_disk( sched_obj_list_t, int32_t, char * );
@@ -753,35 +752,6 @@ sched_get_job_req_nodes( sched_obj_list_t job_data,
 	return "";
 }
 
-
-/* ************************************************************************ */
-/*  TAG(                       sched_get_job_alloc_nodes                 )  */
-/* ************************************************************************ */
-static void *
-sched_get_job_alloc_nodes( sched_obj_list_t job_data,
-                         int32_t idx,
-                         char *type )
-{
-        void *cache;
-        char *nodes;
-
-        if ( type ) *type = 'S';
-        nodes = ( (struct job_record *)job_data->data )[ idx ].nodes;
-
-        if ( nodes ) {
-                if ( ( cache = sched_obj_cache_entry_find( job_data,
-                                                           idx,
-                                                           "alloc_nodes" ) ) != NULL ) {
-                        return cache;
-                }
-                cache = expand_hostlist( nodes );
-                if ( ! cache )
-                        return nodes;
-                sched_obj_cache_entry_add( job_data, idx, "alloc_nodes", cache );
-                return cache;
-        }
-        return "";
-}
 
 /* ************************************************************************ */
 /*  TAG(                       sched_get_job_min_nodes                   )  */

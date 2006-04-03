@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <strings.h>
+#define __USE_ISOC99 /* isblank() */
+#include <ctype.h>
 
 #define _RUN_STAND_ALONE 0
 
@@ -42,7 +44,7 @@ struct tm *time_now_tm;
  */
 static int _get_delta(char *time_str, int *pos, long *delta)
 {
-	int i, offset, rc = 0;
+	int offset;
 	long cnt = 0;
 
 	offset = (*pos) + 1;
@@ -215,10 +217,9 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
  */
 extern time_t parse_time(char *time_str)
 {
-	time_t delta = (time_t) 0;
 	int    hour = -1, minute = -1, second = 0;
 	int    month = -1, mday = -1, year = -1;
-	int num = 0, pos = 0;
+	int    pos = 0;
 	struct tm res_tm;
 
 	time_now = time(NULL);

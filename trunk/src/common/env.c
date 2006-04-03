@@ -31,6 +31,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "slurm/slurm.h"
@@ -40,6 +41,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/node_select.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 

@@ -37,6 +37,7 @@
 #include <grp.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -61,6 +62,7 @@
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/mpi.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/proctrack.h"
@@ -74,7 +76,6 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
-static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static void  _setup_spawn_io(slurmd_job_t *job);
 static int   _run_script(const char *name, const char *path, 
@@ -344,40 +345,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	error("execve(): %s: %m", job->argv[0]); 
 	exit(errno);
 }
-
-/*
- *  Translate a signal number to recognizable signal name.
- *    Returns signal name or "signal <num>" 
- */
-static char *
-_signame(int signo)
-{
-	int i;
-	static char str[10];
-	static struct {
-		int s_num;
-		char * s_name;
-	} sigtbl[] = {   
-		{SIGHUP, "SIGHUP" }, {SIGINT, "SIGINT" }, {SIGQUIT,"SIGQUIT"},
-		{SIGABRT,"SIGABRT"}, {SIGUSR1,"SIGUSR1"}, {SIGUSR2,"SIGUSR2"},
-		{SIGPIPE,"SIGPIPE"}, {SIGALRM,"SIGALRM"}, {SIGTERM,"SIGTERM"},
-		{SIGCHLD,"SIGCHLD"}, {SIGCONT,"SIGCONT"}, {SIGSTOP,"SIGSTOP"},
-		{SIGTSTP,"SIGTSTP"}, {SIGTTIN,"SIGTTIN"}, {SIGTTOU,"SIGTTOU"},
-		{SIGURG, "SIGURG" }, {SIGXCPU,"SIGXCPU"}, {SIGXFSZ,"SIGXFSZ"},
-		{0, NULL}
-	};
-
-	for (i = 0; ; i++) {
-		if ( sigtbl[i].s_num == signo )
-			return sigtbl[i].s_name;
-		if ( sigtbl[i].s_num == 0 )
-			break;
-	}
-
-	snprintf(str, 9, "signal %d", signo);
-	return str;
-}
-
 
 static void
 _make_tmpdir(slurmd_job_t *job)

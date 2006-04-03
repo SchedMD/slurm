@@ -44,6 +44,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/log.h"
+#include "kill_tree.h"
 
 typedef struct xpid_s {
 	pid_t pid;
@@ -123,7 +124,7 @@ static int get_myname(char *s)
 		return -1;
 	}
 	close(fd);
-	if (sscanf(rbuf, "%*ld %s ", s) != 1) {
+	if (sscanf(rbuf, "%*d %s ", s) != 1) {
 		error("Cannot get the command name from /proc/getpid()/stat");
 		return -1;
 	}
@@ -297,7 +298,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			return 0;
 		}
 
-		sprintf(path, "/proc/%d/stat", ppid);
+		sprintf(path, "/proc/%ld/stat", ppid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			return 0;
 		}
@@ -310,7 +311,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			return 0;
 		}
 
-		sprintf(path, "/proc/%d/cmdline", pid);
+		sprintf(path, "/proc/%ld/cmdline", pid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}

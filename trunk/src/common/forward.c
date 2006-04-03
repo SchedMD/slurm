@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include <slurm/slurm.h>
@@ -39,6 +40,7 @@
 #include "src/common/forward.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_protocol_interface.h"
 
 #ifdef WITH_PTHREADS
 #  include <pthread.h>
@@ -50,9 +52,7 @@ void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
 	Buf buffer = init_buf(0);
-	int retry = 0;
 	int i=0;
-	int rc = SLURM_SUCCESS;
 	List ret_list = NULL;
 	ret_types_t *type = NULL;
 	ret_types_t *returned_type = NULL;
@@ -151,8 +151,8 @@ nothing_sent:
 		itr = list_iterator_create(fwd_msg->ret_list);	
 		while((type = (ret_types_t *) list_next(itr)) != NULL) {
 			if(type->msg_rc == returned_type->msg_rc) {
-				while(ret_data_info = 
-				      list_pop(returned_type->ret_data_list)) {
+				while((ret_data_info = 
+				      list_pop(returned_type->ret_data_list))) {
 					list_push(type->ret_data_list, 
 						  ret_data_info);
 				}
@@ -168,8 +168,8 @@ nothing_sent:
 			type->msg_rc = returned_type->msg_rc;
 			type->err = returned_type->err;
 			type->ret_data_list = list_create(destroy_data_info);
-			while(ret_data_info = 
-			      list_pop(returned_type->ret_data_list)) {
+			while((ret_data_info = 
+			      list_pop(returned_type->ret_data_list))) {
 				list_push(type->ret_data_list, ret_data_info);
 			}
 		}		
@@ -183,6 +183,8 @@ cleanup:
 	free_buf(buffer);	
 	pthread_cond_signal(fwd_msg->notify);
 	slurm_mutex_unlock(fwd_msg->forward_mutex);
+
+	return (NULL);
 }
 
 /*
@@ -391,7 +393,7 @@ extern int forward_set_launch(forward_t *forward,
 
 		while(j<span && ((*pos+j) < total)) {
 			i=0; 
-			while(host = hostlist_next(itr)) { 
+			while((host = hostlist_next(itr))) { 
 				if(!strcmp(host,
 					   step_layout->host[*pos+j])) {
 					free(host);

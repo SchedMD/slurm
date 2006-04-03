@@ -42,6 +42,10 @@
 typedef enum {false, true} bool;
 #endif /* !HAVE_STDBOOL_H */
 
+#if HAVE_PTHREAD_H
+#  include <pthread.h>
+#endif
+
 #include <errno.h>              /* for errno   */
 #include "src/common/log.h"	/* for error() */
 

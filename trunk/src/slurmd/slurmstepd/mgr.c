@@ -67,33 +67,19 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
+#include "src/common/forward.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
+#include "src/slurmd/common/run_script.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/req.h"
-
-/* 
- * Map session manager exit status to slurm errno:
- * Keep in sync with smgr.c exit codes.
- */
-static int exit_errno[] = 
-{       0, 
-	ESLURM_INTERCONNECT_FAILURE, 
-	ESLURMD_SET_UID_OR_GID_ERROR,
-	ESLURMD_SET_SID_ERROR,
-	ESCRIPT_CHDIR_FAILED,
-	-1,
-	ESLURMD_EXECVE_FAILED
-};
-
-#define MAX_SMGR_EXIT_STATUS 6
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -130,7 +116,6 @@ static void _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 		int status);
-static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _kill_running_tasks(slurmd_job_t *job);
 static void _wait_for_all_tasks(slurmd_job_t *job);
@@ -215,7 +200,6 @@ slurmd_job_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
 	int           status = 0;
-	uint32_t      jobid  = msg->job_id;
 	slurmd_job_t *job = NULL;
 	char       buf[1024];
 	hostlist_t hl = hostlist_create(msg->nodes);
@@ -455,7 +439,6 @@ job_manager(slurmd_job_t *job)
 {
 	int rc = 0;
 	bool io_initialized = false;
-	int fd;
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
@@ -542,7 +525,6 @@ job_manager(slurmd_job_t *job)
 	g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:
-    fail0:
 	/* If interactive job startup was abnormal, 
 	 * be sure to notify client.
 	 */
@@ -564,7 +546,6 @@ _fork_all_tasks(slurmd_job_t *job)
 	int i;
 	int *writefds; /* array of write file descriptors */
 	int *readfds; /* array of read file descriptors */
-	uint32_t cont_id;
 	int fdpair[2];
 
 	xassert(job != NULL);
@@ -850,23 +831,6 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		while (_send_pending_exit_msgs(job)) {;}
 	}
 }
-
-
-static void
-_set_unexited_task_status(slurmd_job_t *job, int status)
-{
-	int i;
-	for (i = 0; i < job->ntasks; i++) {
-		slurmd_task_info_t *t = job->task[i];
-
-		if (t->exited) continue;
-
-		t->exited  = true;
-		t->estatus = status;
-	}
-}
-
-
 
 /*
  * Make sure all processes in session are dead for interactive jobs.  On 
@@ -1269,7 +1233,7 @@ _initgroups(slurmd_job_t *job)
 	username = job->pwd->pw_name;
 	gid = job->pwd->pw_gid;
 	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
-	if (rc = initgroups(username, gid)) {
+	if ((rc = initgroups(username, gid))) {
 		if ((errno == EPERM) && (getuid != (uid_t) 0)) {
 			debug("Error in initgroups(%s, %ld): %m",
 				username, (long)gid);

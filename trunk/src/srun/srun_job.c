@@ -45,6 +45,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/io_hdr.h"
+#include "src/common/global_srun.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -198,7 +199,7 @@ static srun_job_t *
 _job_create_structure(allocation_info_t *info)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
-	int i, cpu_inx, cpu_cnt;
+	int i;
 	
 	_set_nprocs(info);
 	debug2("creating job with %d tasks", opt.nprocs);

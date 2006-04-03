@@ -73,7 +73,7 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 				  int one_liner )
 {
 	int j;
-	char tmp1[7], tmp2[7];
+	char tmp1[7];
 
 	/****** Line 1 ******/
 	fprintf ( out, "PartitionName=%s ", part_ptr->name);

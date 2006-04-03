@@ -137,7 +137,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	job_step_info_response_msg_t *step_info;
 	int rc;
 	int i;
-	int save_errno;
+	int save_errno = 0;
 
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		return -1;
@@ -203,7 +203,7 @@ _get_step_addresses(const job_step_info_t *step,
 
 	num_nodes = hostset_count(step_nodes);
 	addrs = xmalloc(sizeof(slurm_addr) * num_nodes);
-	while (hostname = hostlist_next(step_nodes_it)) {
+	while ((hostname = hostlist_next(step_nodes_it))) {
 		i = hostset_index(alloc_nodes, hostname, 0);
 		addrs[i] = allocation->node_addr[i];
 		free(hostname);
@@ -267,9 +267,7 @@ static int _signal_batch_script_step(
 {
 	slurm_msg_t msg;
 	kill_tasks_msg_t rpc;
-	int num_nodes;
 	int rc = SLURM_SUCCESS;
-	int i;
 
 	rpc.job_id = allocation->job_id;
 	rpc.job_step_id = SLURM_BATCH_SCRIPT;
@@ -343,6 +341,8 @@ _p_send_recv_rc_msg(int messages, slurm_msg_t msg[],
 
 	pthread_cond_destroy(&active_cond);
 	pthread_mutex_destroy(&active_mutex);
+
+	return (0);
 }
 
 static void *
@@ -361,6 +361,8 @@ _thr_send_recv_rc_msg(void *args)
 	(*active)--;
 	pthread_cond_signal(cond);
 	slurm_mutex_unlock(lock);
+
+	return (NULL);
 }
 
 /*
@@ -438,7 +440,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	job_step_info_response_msg_t *step_info;
 	int rc = 0;
 	int i;
-	int save_errno;
+	int save_errno = 0;
 
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		return -1;
@@ -611,7 +613,6 @@ static int _terminate_batch_script_step(
 {
 	slurm_msg_t msg;
 	kill_tasks_msg_t rpc;
-	int num_nodes;
 	int rc = SLURM_SUCCESS;
 	int i;
 

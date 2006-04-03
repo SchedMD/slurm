@@ -36,6 +36,7 @@
 #include <rms/rmscall.h>
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -114,8 +115,6 @@ extern int slurm_container_signal  (uint32_t id, int signal)
 	int nids = 0;
 	int i;
 	int rc;
-	int ids[MAX_IDS];
-	bool cont_exists = false;
 
 	if (id <= 0)
 		return -1;
@@ -156,10 +155,6 @@ extern int slurm_container_signal  (uint32_t id, int signal)
  */
 extern int slurm_container_destroy (uint32_t id)
 {
-	pid_t pids[8];
-	int nids = 0;
-	int i;
-
 	debug2("proctrack/rms: destroying container %u\n", id);
 	if (id == 0)
 		return SLURM_SUCCESS;

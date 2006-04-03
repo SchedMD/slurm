@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/param.h>
 
 #include "src/common/log.h"
@@ -44,6 +45,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
+#include "src/common/mpi.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
@@ -62,16 +64,16 @@ static int             fail_launch_cnt = 0;
 
 typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED, DSH_JOINED} state_t;
 
-typedef struct task_info {
+typedef struct launch_info {
 	slurm_msg_t *req;
 	srun_job_t *job;
-} task_info_t;
+} launch_info_t;
 
 typedef struct thd {
         pthread_t	thread;			/* thread ID */
         state_t		state;      		/* thread state */
 	time_t          tstart;			/* time thread started */
-	task_info_t     task;
+	launch_info_t   task;
 } thd_t;
 
 static int    _check_pending_threads(thd_t *thd, int count);
@@ -114,7 +116,6 @@ launch(void *arg)
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts);
-	char addrbuf[INET_ADDRSTRLEN];
 	Buf buffer = NULL;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
@@ -479,19 +480,17 @@ _update_contacted_node(srun_job_t *j, int id)
 static void * _p_launch_task(void *arg)
 {
 	thd_t                      *th     = (thd_t *)arg;
-	task_info_t                *tp     = &(th->task);
+	launch_info_t              *tp     = &(th->task);
 	slurm_msg_t                *req    = tp->req;
 	launch_tasks_request_msg_t *msg    = req->data;
 	srun_job_t                 *job    = tp->job;
 	int                        nodeid  = req->srun_node_id;
-	int                        failure = 0;
 	int                        retry   = 3; /* retry thrice */
 	List ret_list = NULL;
 	ListIterator itr;
 	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
-	int found = 0;
 	
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);

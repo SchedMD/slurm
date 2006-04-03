@@ -40,6 +40,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
@@ -538,7 +539,6 @@ create_job_step(srun_job_t *job,
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
-	char *temp = NULL;
 
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");

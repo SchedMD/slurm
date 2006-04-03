@@ -45,6 +45,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
+#include "src/common/forward.h"
 
 #define BUFFER_SIZE 1024
 
@@ -358,20 +359,16 @@ _handle_rc_msg(slurm_msg_t *msg)
 static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 {
 	char *hostfile = NULL;
-	char *hostname = NULL;
 	FILE *hostfilep = NULL;
 	char in_line[BUFFER_SIZE];	/* input line */
 	int i, j;
 	int line_size;
 	hostlist_t hostlist = NULL;
-	int count;
-	int len = 0;
-	int ret = 0;
+	int count = 0;
 	int line_num = 0;
 	char *nodelist = NULL;
-	int rc;
 	
-	if (hostfile = getenv("SLURM_HOSTFILE")) {
+	if ((hostfile = getenv("SLURM_HOSTFILE"))) {
 		if(strlen(hostfile)<1 || !strcmp(hostfile,"NULL")) 
 			goto no_hostfile;
 		if((hostfilep = fopen(hostfile, "r")) == NULL) {

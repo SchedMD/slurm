@@ -35,6 +35,7 @@
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -161,7 +162,8 @@ static void *_msg_thread(void *x)
 		success = 1;
 	}
 
-fini:	slurm_mutex_lock(&agent_mutex);
+/* fini: */
+	slurm_mutex_lock(&agent_mutex);
 	agent_cnt--;
 	if (success)
 		msg_arg_ptr->bar_ptr->port = 0;

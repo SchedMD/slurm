@@ -56,6 +56,8 @@ typedef struct slurm_switch_context * slurm_switch_context_t;
 /* initialize the switch plugin */
 extern int  switch_init   (void);
 
+extern int switch_g_slurmd_init(void);
+
 /* terminate the switch plugin and free all memory */
 extern int switch_fini (void);
 
@@ -278,6 +280,11 @@ extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
  * Clear switch state on this node
  */
 extern int switch_g_clear_node_state(void);
+
+/*
+ * Initialize slurmd step switch state 
+ */
+extern int switch_g_slurmd_step_init(void);
 
 /*
  * Allocate storage for a node's switch state record

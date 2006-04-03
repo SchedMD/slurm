@@ -100,6 +100,7 @@ _set_umask(char **env)
 
 	mask = strtol(val, (char **)NULL, 8);
 	umask(mask);
+	return SLURM_SUCCESS;
 }
 
 /*

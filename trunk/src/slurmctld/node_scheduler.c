@@ -1157,8 +1157,8 @@ extern void build_node_details(struct job_record *job_ptr)
 	
 	/* Use hostlist here to insure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
-		fatal("hostlist_create error for %s: %m", this_node_name);
-	
+		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
+
 	job_ptr->node_cnt = hostlist_count(host_list);	
 
 	xrealloc(job_ptr->cpus_per_node, 

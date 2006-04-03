@@ -40,6 +40,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/slurmctld/slurmctld.h"
 #include "../block_allocator/block_allocator.h"
 #include "../wrap_rm_api.h"

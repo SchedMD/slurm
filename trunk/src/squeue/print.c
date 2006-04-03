@@ -575,9 +575,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		_print_nodes(job->nodes, width, right, false);
 		if(quarter != (uint16_t) NO_VAL) {
 			if(nodecard != (uint16_t) NO_VAL) 
-				sprintf(tmp_char,".%d.%d\0",quarter,nodecard);
+				sprintf(tmp_char,".%d.%d",quarter,nodecard);
 			else
-				sprintf(tmp_char,".%d\0",quarter);
+				sprintf(tmp_char,".%d",quarter);
 			_print_str(tmp_char, width, right, false);
 		}
 	}
@@ -626,7 +626,6 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 {
 	uint32_t node_cnt = 0;
 	char tmp_char[6];
-	int i=0;
 
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);

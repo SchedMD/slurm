@@ -44,6 +44,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/list.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/slurmd/common/stepd_api.h"
 
 static int
@@ -313,6 +314,8 @@ _sockname_regex_init(regex_t *re, const char *nodename)
         }
 
 	xfree(pattern);
+
+	return 0;
 }
 
 static int
@@ -390,7 +393,6 @@ stepd_available(const char *directory, const char *nodename)
 		}
 	}
 
-done2:
 	closedir(dp);
 done:
 	regfree(&re);
