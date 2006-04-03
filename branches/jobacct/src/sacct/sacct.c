@@ -180,9 +180,6 @@ long inputError = 0;		/* Muddle through bad data, but complain! */
 
 List jobs = NULL;
 
-long njobs = 0;
-long njobsteps = 0;
-
 int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields = 0;
 

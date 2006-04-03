@@ -55,7 +55,7 @@
 
 #define BRIEF_FIELDS "jobstep,status,error"
 #define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
-#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
+#define LONG_FIELDS "jobstep,jobname,partition,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
@@ -91,7 +91,7 @@ enum {	F_JOB =	0,
 
 /* JOB_START fields */
 enum {	F_JOBNAME = HEADER_LENGTH,
-	F_BATCH,		
+	F_TRACK_STEPS,		
 	F_PRIORITY,	
 	F_NCPUS,		
 	F_NODES,
@@ -173,7 +173,7 @@ typedef struct job_rec {
 	acct_header_t header;
 	char	*nodes;
 	char	*jobname;
-	int	batch;
+	int	track_steps;
 	int	priority;
 	long	ncpus;
 	long	ntasks;

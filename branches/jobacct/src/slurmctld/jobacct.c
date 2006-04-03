@@ -81,7 +81,7 @@ static int _print_record(struct job_record *job_ptr,
 
 	ts = xmalloc(sizeof(struct tm));
 	gmtime_r(&time, ts);
-	debug("_print_record, job=%u, \"%s\"",
+	debug3("_print_record, job=%u, \"%s\"",
 	      job_ptr->job_id, data);
 	slurm_mutex_lock( &logfile_lock );
 	if (fprintf(LOGFILE,
@@ -104,7 +104,7 @@ int jobacct_init(char *job_acct_log)
 	struct stat	statbuf;
 
 
-	debug("jobacct_init() called");
+	debug2("jobacct_init() called");
 	slurm_mutex_lock( &logfile_lock );
 	if (LOGFILE)
 		fclose(LOGFILE);
@@ -133,9 +133,10 @@ int jobacct_job_start(struct job_record *job_ptr)
 		rc=SLURM_SUCCESS,
 		tmp;
 	char	buf[BUFFER_SIZE], *jname;
-	long		priority;
-	
-	debug("jobacct_job_start() called");
+	long	priority;
+	int track_steps = 0;
+
+	debug2("jobacct_job_start() called");
 	for (i=0; i < job_ptr->num_cpu_groups; i++)
 		ncpus += (job_ptr->cpus_per_node[i])
 			* (job_ptr->cpu_count_reps[i]);
@@ -152,11 +153,16 @@ int jobacct_job_start(struct job_record *job_ptr)
 		}
 	} else {
 		jname = xstrdup("allocation");
+		track_steps = 1;
 	}
+
+	if(job_ptr->batch_flag)
+		track_steps = 1;
+
 	tmp = snprintf(buf, BUFFER_SIZE,
-		       "%d %s %u %ld %u %s",
+		       "%d %s %d %ld %u %s",
 		       JOB_START, jname,
-		       job_ptr->batch_flag, priority, ncpus,
+		       track_steps, priority, ncpus,
 		       job_ptr->nodes);
 	
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
@@ -265,7 +271,7 @@ int jobacct_job_complete(struct job_record *job_ptr)
 		tmp;
 	char		buf[BUFFER_SIZE];
 	
-	debug("jobacct_job_complete() called");
+	debug2("jobacct_job_complete() called");
 	if (job_ptr->end_time == 0) {
 		debug("jobacct: job %u never started", job_ptr->job_id);
 		return rc;

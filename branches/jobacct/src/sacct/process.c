@@ -28,108 +28,10 @@
 
 #include "sacct.h"
 
-int _same_start(job_rec_t *job, job_rec_t *temp_rec);
-int _same_step(step_rec_t *step, step_rec_t *temp_rec);
-int _same_terminated(job_rec_t *job, job_rec_t *temp_rec);
 job_rec_t *_find_job_record(acct_header_t header);
 step_rec_t *_find_step_record(job_rec_t *job, long jobstep);
 job_rec_t *_init_job_rec(acct_header_t header, int lc);
 int _parse_line(char *f[], void **data);
-/* Have we seen this data already?  */
-
-int _same_start(job_rec_t *job, job_rec_t *temp_rec)
-{
-	if (job->header.uid != temp_rec->header.uid)
-		return 0;
-	if (job->header.gid != temp_rec->header.gid)
-		return 0;
-	if (strcmp(job->jobname, temp_rec->jobname))
-		return 0;
-	if (job->batch != temp_rec->batch)
-		return 0;
-	if (job->priority != temp_rec->priority)
-		return 0;
-	if (job->ncpus != temp_rec->ncpus)
-		return 0;
-	if (strcmp(job->nodes, temp_rec->nodes))
-		return 0;
-	return 1;
-}
-
-int _same_step(step_rec_t *step, step_rec_t *temp_rec)
-{ 
-	if (step->header.timestamp != temp_rec->header.timestamp)
-		return 0;
-	if (step->status != temp_rec->status)
-		return 0;
-	if (step->error != temp_rec->error)
-		return 0;
-	if (step->ntasks != temp_rec->ntasks)
-		return 0;
-	if (step->ncpus != temp_rec->ncpus)
-		return 0;
-	if (step->elapsed != temp_rec->elapsed)
-		return 0;
-	if (temp_rec->tot_cpu_sec != step->tot_cpu_usec)
-		return 0;
-	if (temp_rec->tot_cpu_usec != step->tot_cpu_usec)
-		return 0;
-	if (temp_rec->rusage.ru_utime.tv_sec != step->rusage.ru_utime.tv_sec)
-		return 0;
-	if (temp_rec->rusage.ru_utime.tv_usec != step->rusage.ru_utime.tv_usec)
-		return 0;
-	if (temp_rec->rusage.ru_stime.tv_sec != step->rusage.ru_stime.tv_sec)
-		return 0;
-	if (temp_rec->rusage.ru_stime.tv_usec != step->rusage.ru_stime.tv_usec)
-		return 0;
-	if (temp_rec->rusage.ru_inblock != step->rusage.ru_inblock)
-		return 0;
-	if (temp_rec->rusage.ru_oublock != step->rusage.ru_oublock)
-		return 0;
-	if (temp_rec->rusage.ru_msgsnd != step->rusage.ru_msgsnd)
-		return 0;
-	if (temp_rec->rusage.ru_msgrcv != step->rusage.ru_msgrcv)
-		return 0;
-	if (temp_rec->rusage.ru_nsignals != step->rusage.ru_nsignals)
-		return 0;
-	if (temp_rec->rusage.ru_nvcsw != step->rusage.ru_nvcsw)
-		return 0;
-	if (temp_rec->rusage.ru_nivcsw != step->rusage.ru_nivcsw)
-		return 0;
-	if(temp_rec->rusage.ru_maxrss != step->rusage.ru_maxrss)
-		return 0;
-	if(temp_rec->rusage.ru_ixrss != step->rusage.ru_ixrss)
-		return 0;
-	if(temp_rec->rusage.ru_idrss != step->rusage.ru_idrss)
-		return 0;
-	if(temp_rec->rusage.ru_isrss != step->rusage.ru_isrss)
-		return 0;
-	if(temp_rec->rusage.ru_minflt != step->rusage.ru_minflt)
-		return 0;
-	if(temp_rec->rusage.ru_majflt != step->rusage.ru_majflt)
-		return 0;
-	if(temp_rec->rusage.ru_nswap != step->rusage.ru_nswap)
-		return 0;
-	if (temp_rec->psize != step->psize)
-		return 0;
-	if (temp_rec->vsize != step->vsize)
-		return 0;
-
-	return 1;		/* they are the same */ 
-}
-
-int _same_terminated(job_rec_t *job, job_rec_t *temp_rec)
-{
-	if (job->job_terminated_seen != 1)
-		return 0;
-	if (job->elapsed != temp_rec->elapsed)
-		return 0;
-	if (job->header.timestamp != temp_rec->header.timestamp)
-		return 0;
-	if (job->status != temp_rec->status)
-		return 0;
-	return 1;
-}
 
 job_rec_t *_find_job_record(acct_header_t header)
 {
@@ -198,7 +100,7 @@ job_rec_t *_init_job_rec(acct_header_t header, int lc)
 	job->job_terminated_seen = 0;
 	job->jobnum_superseded = 0;
 	job->jobname = xstrdup("(unknown)");
-	job->status = JOB_RUNNING;
+	job->status = JOB_PENDING;
 	job->tot_cpu_sec = 0;
 	job->tot_cpu_usec = 0;
 	job->rusage.ru_utime.tv_sec = 0;
@@ -260,7 +162,7 @@ int _parse_line(char *f[], void **data)
 		*job = xmalloc(sizeof(job_rec_t));
 		_parse_header(f, &(*job)->header);
 		(*job)->jobname = xstrdup(f[F_JOBNAME]);
-		(*job)->batch = atoi(f[F_BATCH]);
+		(*job)->track_steps = atoi(f[F_TRACK_STEPS]);
 		(*job)->priority = atoi(f[F_PRIORITY]);
 		(*job)->ncpus = atoi(f[F_NCPUS]);
 		(*job)->nodes = xstrdup(f[F_NODES]);
@@ -327,37 +229,24 @@ void process_start(char *f[], int lc)
 	_parse_line(f, (void **)&temp);
 	job = _find_job_record(temp->header);
 	if (job) {	/* Hmmm... that's odd */
-		if (job->job_start_seen) {
-			if (_same_start(job, temp)) {
-				/* OK if really a duplicate */
-				if (params.opt_verbose > 1 )
-					fprintf(stderr,
-						"Duplicate JOB_START for job"
-						" %ld at line %ld -- ignoring"
-						" it\n",
-						job, lc);
-			} else {
-				fprintf(stderr,
-					"Conflicting JOB_START for job %ld at"
-					" line %ld -- ignoring it\n",
-					job, lc);
-				inputError++;
-			}
-			destroy_job(job);
-			return;
-		} /* Data out of order; we'll go ahead and populate it now */
-	} else
-		job = _init_job_rec(temp->header, lc);
-
+		fprintf(stderr,
+			"Conflicting JOB_START for job %ld at"
+			" line %ld -- ignoring it\n",
+			job->header.jobnum, lc);
+		inputError++;
+		destroy_job(temp);
+		return;
+	}
+	
+	job = _init_job_rec(temp->header, lc);
 	list_append(jobs, job);
-
 	job->job_start_seen = 1;
 	job->header.uid = temp->header.uid;
 	job->header.gid = temp->header.gid;
 	xfree(job->jobname);
 	job->jobname = xstrdup(temp->jobname);
-	job->batch = temp->batch;
 	job->priority = temp->priority;
+	job->track_steps = temp->track_steps;
 	job->ncpus = temp->ncpus;
 	xfree(job->nodes);
 	job->nodes = xstrdup(temp->nodes);
@@ -395,23 +284,14 @@ void process_step(char *f[], int lc)
 			return;/* if "R" record preceded by F or CD; unusual */
 		}
 		if (step->status != JOB_RUNNING) { /* if not JOB_RUNNING */
-			if (_same_step(step, temp)) {
-				if (params.opt_verbose > 1)
-					fprintf(stderr,
-						"Duplicate JOB_STEP record "
-						"for jobstep %ld.%ld at line "
-						"%ld -- ignoring it\n",
-						step->header.jobnum, 
-						step->stepnum, lc);
-			} else {
-				fprintf(stderr,
-					"Conflicting JOB_STEP record for"
-					" jobstep %ld.%ld at line %ld"
-					" -- ignoring it\n",
-					step->header.jobnum, 
-					step->stepnum, lc);
-				inputError++;
-			}
+			fprintf(stderr,
+				"Conflicting JOB_STEP record for "
+				"jobstep %ld.%ld at line %ld "
+				"-- ignoring it\n",
+				step->header.jobnum, 
+				step->stepnum, lc);
+			inputError++;
+			
 			destroy_step(temp);
 			return;
 		}
@@ -448,7 +328,7 @@ got_step:
 		job->elapsed = time(NULL) - job->header.timestamp;
 	}
 	/* now aggregate the aggregatable */
-		job->tot_cpu_sec += step->tot_cpu_sec;
+	job->tot_cpu_sec += step->tot_cpu_sec;
 	job->tot_cpu_usec += step->tot_cpu_usec;
 	job->rusage.ru_utime.tv_sec += step->rusage.ru_utime.tv_sec;
 	job->rusage.ru_utime.tv_usec += step->rusage.ru_utime.tv_usec;
@@ -504,8 +384,8 @@ void process_terminated(char *f[], int lc)
 {
 	job_rec_t *job = NULL;
 	job_rec_t *temp = NULL;
-	_parse_line(f, (void **)&temp);
 
+	_parse_line(f, (void **)&temp);
 	job = _find_job_record(temp->header);
 	if (!job) {	/* fake it for now */
 		job = _init_job_rec(temp->header, lc);
@@ -528,29 +408,21 @@ void process_terminated(char *f[], int lc)
 			 * more interesting.
 			 */
 			job->status = temp->status;
-			return;
+			goto finished;
 		}
-		if (_same_terminated(job, temp)) {
-			if (params.opt_verbose > 1 )
-				fprintf(stderr,
-					"Duplicate JOB_TERMINATED record (%s) "
-					"for job %ld at  line %ld -- "
-					"ignoring it\n",
-					decode_status_int(temp->status),
-					job, lc);
-		} else {
-			fprintf(stderr,
-				"Conflicting JOB_TERMINATED record (%s) for "
-				"job %ld at line %ld -- ignoring it\n",
-				decode_status_int(temp->status), job, lc);
-			inputError++;
-		}
-		return;
+		
+		fprintf(stderr,
+			"Conflicting JOB_TERMINATED record (%s) for "
+			"job %ld at line %ld -- ignoring it\n",
+			decode_status_int(temp->status), job, lc);
+		inputError++;
+		goto finished;
 	}
 	job->job_terminated_seen = 1;
 	job->elapsed = temp->elapsed;
 	job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
+finished:
 	destroy_job(temp);
 }
 

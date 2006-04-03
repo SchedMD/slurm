@@ -418,6 +418,7 @@ int get_data(void)
 		lc++;
 		fptr = line;	/* break the record into NULL-
 				   terminated strings */
+				
 		for (i = 0; i < MAX_RECORD_FIELDS; i++) {
 			f[i] = fptr;
 			fptr = strstr(fptr, " ");
@@ -475,22 +476,30 @@ int get_data(void)
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
+			if(i < JOB_START_LENGTH)
+				printf("Bad data on a Job Start\n");
 			process_start(f, lc);
 			break;
 		case JOB_STEP:
+			if(i < JOB_STEP_LENGTH)
+				printf("Bad data on a Step entry\n");
 			process_step(f, lc);
 			break;
 		case JOB_SUSPEND:
+			if(i < JOB_TERM_LENGTH)
+				printf("Bad data on a Suspend entry\n");
 			process_suspend(f, lc);
 			break;
 		case JOB_TERMINATED:
+			if(i < JOB_TERM_LENGTH)
+				printf("Bad data on a Job Termt\n");
 			process_terminated(f, lc);
 			break;
 		default:
 			if (params.opt_verbose > 1)
 				fprintf(stderr,
-					"Invalid record at line %ld of"
-					" input file\n",
+					"Invalid record at line %ld of "
+					"input file\n",
 					lc);
 			if (params.opt_verbose > 2)
 				_show_rec(f);
@@ -1016,7 +1025,7 @@ void do_dump(void)
 			_dump_header(job->header);
 			printf("JOB_START %s %d %d %ld %s\n", 
 			       job->jobname,
-			       job->batch,
+			       job->track_steps,
 			       job->priority,
 			       job->ncpus,
 			       job->nodes);
@@ -1433,7 +1442,7 @@ void do_fdump(char* f[], int lc)
 			     NULL};
 
 	char	*start[] = {"jobName",	 /* F_JOBNAME */ 
-			    "batchFlag", /* F_BATCH */
+			    "TrackSteps", /* F_TRACK_STEPS */
 			    "priority",	 /* F_PRIORITY */
 			    "ncpus",	 /* F_NCPUS */
 			    "nodeList", /* F_NODES */
@@ -1603,7 +1612,7 @@ void do_list(void)
 			}
 			print_fields(JOB, job);
 		}
-		if (do_jobsteps) {
+		if (do_jobsteps && job->track_steps) {
 			itr_step = list_iterator_create(job->steps);
 			while(step = list_next(itr_step)) {
 				if (step->status == JOB_RUNNING 

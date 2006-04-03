@@ -214,23 +214,36 @@ _plugin_init(void)
 extern int jobacct_g_init(int frequency)
 {
 	int retval = SLURM_SUCCESS;
-
 	slurm_mutex_lock( &context_lock );
 	_plugin_init(); 
-	if ( g_context )
+
+	if ( g_context ) 
 		retval = (*(g_context->ops.jobacct_init))(frequency);
+	
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
 extern int jobacct_g_fini(slurmd_job_t *job)
 {
-	return (*(g_context->ops.jobacct_fini))(job);
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.jobacct_fini))(job);
+	slurm_mutex_unlock( &context_lock );	
+	return retval;
 }
 
 extern int jobacct_g_suspend()
 {
-	return (*(g_context->ops.jobacct_suspend))();
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.jobacct_suspend))();
+	slurm_mutex_unlock( &context_lock );	
+	return retval;
 }
 
 
