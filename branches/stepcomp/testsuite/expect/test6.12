@@ -44,6 +44,11 @@ set job_id      0
 
 print_header $test_id
 
+if { [test_xcpu] } {
+	send_user "\nWARNING: test incomptabible with XCPU system\n"
+	exit 0
+}
+
 #
 # Delete left-over input script plus stdout/err files
 #
