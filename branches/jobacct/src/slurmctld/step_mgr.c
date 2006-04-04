@@ -684,6 +684,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 	step_ptr->num_tasks = step_specs->num_tasks;
+	step_ptr->num_cpus = step_specs->cpu_count;
 	step_ptr->time_last_active = now;
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);

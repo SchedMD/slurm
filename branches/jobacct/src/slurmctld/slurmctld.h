@@ -348,6 +348,7 @@ struct 	step_record {
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
 	uint32_t num_tasks;		/* number of tasks required */
+	uint32_t num_cpus;		/* number of cpus required */
 	time_t start_time;      	/* step allocation time */
 	char *step_node_list;		/* list of nodes allocated to job 
 					   step */

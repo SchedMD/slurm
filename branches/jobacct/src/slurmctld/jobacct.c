@@ -182,7 +182,7 @@ int jobacct_step_start(struct step_record *step)
 		 JOB_RUNNING,		/* completion status */
 		 0,     		/* completion code */
 		 step->num_tasks,	/* number of tasks */
-		 step->job_ptr->num_procs,/* number of cpus */
+		 step->num_cpus,        /* number of cpus */
 		 0,	        	/* elapsed seconds */
 		 0,                    /* total cputime seconds */
 		 0,    		/* total cputime seconds */
@@ -207,7 +207,7 @@ int jobacct_step_start(struct step_record *step)
 		 0,		/* max vsize */
 		 0,		/* max psize */
 		 step->name,      	/* step exe name */
-		 step->job_ptr->nodes); /* name of nodes step running on */
+		 step->step_node_list); /* name of nodes step running on */
 	return _print_record(step->job_ptr, step->start_time, buf);	
 }
 
@@ -234,7 +234,7 @@ int jobacct_step_complete(struct step_record *step)
 		 comp_status,		/* completion status */
 		 step->exit_code,	/* completion code */
 		 step->num_tasks,	/* number of tasks */
-		 step->job_ptr->num_procs,/* number of cpus */
+		 step->num_cpus,        /* number of cpus */
 		 elapsed,	          /* elapsed seconds */
 		 /* total cputime seconds */
 		 step->rusage.ru_utime.tv_sec	
@@ -263,7 +263,7 @@ int jobacct_step_complete(struct step_record *step)
 		 step->max_vsize,		/* max vsize */
 		 step->max_psize,		/* max psize */
 		 step->name,      	/* step exe name */
-		 step->job_ptr->nodes); /* name of nodes step running on */
+		 step->step_node_list); /* name of nodes step running on */
 	rc = _print_record(step->job_ptr, now, buf);	
 	return rc;
 }
