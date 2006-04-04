@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -78,6 +79,10 @@ struct request_params {
 	int fd;
 	slurmd_job_t *job;
 };
+
+static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
+static int message_connections;
 
 /*
  *  Returns true if "uid" is a "slurm authorized user" - i.e. uid == 0
@@ -213,6 +218,24 @@ msg_thr_create(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Bounded wait for the connection count to drop to zero.
+ * This gives connection threads a chance to complete any pending
+ * RPCs before the slurmstepd exits.
+ */
+static void _wait_for_connections()
+{
+	struct timespec ts = {0, 0};
+	int rc = 0;
+
+	pthread_mutex_lock(&message_lock);
+	ts.tv_sec = time(NULL) + STEPD_MESSAGE_COMP_WAIT;
+	while (message_connections > 0 && rc == 0)
+		rc = pthread_cond_timedwait(&message_cond, &message_lock, &ts);
+
+	pthread_mutex_unlock(&message_lock);
+}
+
 static bool 
 _msg_socket_readable(eio_obj_t *obj)
 {
@@ -222,6 +245,7 @@ _msg_socket_readable(eio_obj_t *obj)
 			debug2("  false, shutdown");
 			_domain_socket_destroy(obj->fd);
 			obj->fd = -1;
+			_wait_for_connections();
 		} else {
 			debug2("  false");
 		}
@@ -256,6 +280,10 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 		obj->shutdown = true;
 		return SLURM_SUCCESS;
 	}
+
+	pthread_mutex_lock(&message_lock);
+	message_connections++;
+	pthread_mutex_unlock(&message_lock);
 
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
@@ -342,6 +370,12 @@ _handle_accept(void *arg)
 
 	if (close(fd) == -1)
 		error("Closing accepted fd: %m");
+
+	pthread_mutex_lock(&message_lock);
+	message_connections--;
+	pthread_cond_signal(&message_cond);
+	pthread_mutex_unlock(&message_lock);
+
 	debug3("Leaving  _handle_accept");
 	return NULL;
 

@@ -30,6 +30,8 @@
 
 #include "src/common/bitstring.h"
 
+#define STEPD_MESSAGE_COMP_WAIT 15 /* seconds */
+
 extern int slurmstepd_blocked_signals[];
 
 typedef struct {
