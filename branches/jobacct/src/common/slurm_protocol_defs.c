@@ -488,11 +488,6 @@ extern char *job_reason_string(enum job_wait_reason inx)
 	}
 }
 
-void inline slurm_free_jobacct_msg(jobacct_msg_t *msg)
-{
-	xfree(msg);
-}
-
 void inline slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {

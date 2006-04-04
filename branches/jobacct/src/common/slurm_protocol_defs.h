@@ -167,9 +167,7 @@ typedef enum {
 	PMI_KVS_GET_REQ,
 	PMI_KVS_GET_RESP,
 
-	RESPONSE_SLURM_RC = 8001,
-	MESSAGE_UPLOAD_ACCOUNTING_INFO,
-	MESSAGE_JOBACCT_DATA,
+	RESPONSE_SLURM_RC = 8001
 } slurm_msg_type_t;
 
 typedef enum {
@@ -551,11 +549,6 @@ typedef struct suspend_msg {
 	uint32_t job_id;        /* slurm job_id */
 } suspend_msg_t;
 
-typedef struct jobacct_msg {
-	uint16_t len;		/* job accounting plugins specify their own */
-	char *data;		/* data structure; we just pass it to them. */
-} jobacct_msg_t;
-
 typedef struct kvs_get_msg {
 	uint16_t task_id;	/* job step's task id */
 	uint16_t size;		/* count of tasks in job */
@@ -665,8 +658,6 @@ void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
-
-void inline slurm_free_jobacct_msg(jobacct_msg_t *msg);
 
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);

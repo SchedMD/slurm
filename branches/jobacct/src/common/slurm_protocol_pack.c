@@ -272,10 +272,6 @@ static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer);
 
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
-static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer );
-
-static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer );
-
 static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer);
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer);
 static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer);
@@ -564,8 +560,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_batch_job_launch_msg((batch_job_launch_msg_t *)
 					    msg->data, buffer);
 		 break;
-	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
-		 break;
 	 case RESPONSE_JOB_READY:
 	 case RESPONSE_SLURM_RC:
 		 _pack_return_code_msg((return_code_msg_t *) msg->data,
@@ -626,9 +620,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	 case RESPONSE_NODE_SELECT_INFO:
 		_pack_node_select_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	 case MESSAGE_JOBACCT_DATA:
-		_pack_jobacct_data((jobacct_msg_t *) msg->data, buffer);
 		break;
 	 case REQUEST_FILE_BCAST:
 		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer);
@@ -852,8 +843,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_batch_job_launch_msg((batch_job_launch_msg_t **)
 						   & (msg->data), buffer);
 		 break;
-	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
-		 break;
 	 case RESPONSE_JOB_READY:
 	 case RESPONSE_SLURM_RC:
 		 rc = _unpack_return_code_msg((return_code_msg_t **)
@@ -921,10 +910,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_NODE_SELECT_INFO:
 		rc = _unpack_node_select_info_msg((node_select_info_msg_t **) &
 			(msg->data), buffer);
-		break;
-	 case MESSAGE_JOBACCT_DATA:
-		rc = _unpack_jobacct_data( (jobacct_msg_t **) 
-				& msg->data, buffer);
 		break;
 	 case REQUEST_FILE_BCAST:
 		rc = _unpack_file_bcast( (file_bcast_msg_t **)
@@ -3669,37 +3654,6 @@ _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer)
     unpack_error:
 	*msg_ptr = NULL;
 	xfree(msg);
-	return SLURM_ERROR;
-}
-
-static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer )
-{
-	xassert ( msg != NULL );
-	/* debug("jobacct: packing message"); */
-
-	pack16((uint16_t)msg->len, buffer );
-	packmem(msg->data, msg->len, buffer ) ;
-}
-
-static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer )
-{
-	uint16_t uint16_tmp;
-	jobacct_msg_t *msg ;
-
-	xassert ( msg_ptr != NULL );
-
-	msg = xmalloc ( sizeof (jobacct_msg_t) ) ;
-	*msg_ptr = msg;
-
-	safe_unpack16(&msg->len, buffer );
-	safe_unpackmem_xmalloc(&msg->data, &uint16_tmp, buffer ) ;
-	/* debug("jobacct: unpacked message"); */
-	return SLURM_SUCCESS;
-
-    unpack_error:
-	xfree(msg->data);
-	xfree(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
