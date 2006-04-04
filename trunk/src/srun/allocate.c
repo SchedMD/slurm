@@ -106,6 +106,25 @@ allocate_nodes(void)
 		j->job_id = NO_VAL;
 	}
 
+	/* FIXME - this is an ugly place to check SLURM_HOSTFILE */
+	if (j->req_nodes == NULL) {
+		char *nodelist = NULL;
+		char *hostfile = getenv("SLURM_HOSTFILE");
+
+		if (hostfile != NULL) {
+			nodelist = slurm_read_hostfile(hostfile, j->num_tasks);
+			if (nodelist == NULL) {
+				error("Failure getting NodeNames from hostfile");
+				/* FIXME - need to fail somehow */
+				goto done;
+			} else {
+				j->req_nodes = xstrdup(nodelist);
+				free(nodelist);
+				j->task_dist = SLURM_DIST_ARBITRARY;
+			}
+		}
+	}
+
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
 		if (destroy_job)
 			goto done;
@@ -544,6 +563,27 @@ create_job_step(srun_job_t *job,
 		error ("Unable to allocate step request message");
 		return -1;
 	}
+
+	/* FIXME - this is also an ugly place to check SLURM_HOSTFILE, 
+	 *	and does not quite work.
+	 */
+	if (req->node_list == NULL) {
+		char *nodelist = NULL;
+		char *hostfile = getenv("SLURM_HOSTFILE");
+
+		if (hostfile != NULL) {
+			nodelist = slurm_read_hostfile(hostfile, req->num_tasks);
+			if (nodelist == NULL) {
+				error("Error reading SLURM hostfile");
+				return -1;
+			}
+			req->node_list = xstrdup(nodelist);
+			free(nodelist);
+			req->task_dist = SLURM_DIST_ARBITRARY;
+		}
+	}
+
+
 	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) {
 		error ("Unable to create job step: %m");
 		return -1;
