@@ -733,6 +733,23 @@ extern int slurm_job_step_create PARAMS((
 	job_step_create_response_msg_t ** slurm_step_alloc_resp_msg));
 
 /*
+ * slurm_read_hostfile - Read a SLURM hostfile specified by "filename".
+ *	"filename" must contain a list of SLURM NodeNames, one per line.
+ *	Reads up to "n" number of hostnames from the file. Returns a
+ *	string representing a hostlist ranged string of the contents of
+ *	the file.  This is a helper function, it does not contact any
+ *	SLURM daemons.
+ *
+ * IN filename - name of SLURM Hostlist file to be read.
+ * IN n - number of NodeNames required
+ * RET - a string representing the hostlist.  Returns NULL if there are
+ *	fewer than "n" hostnames in the file, or if an error occurs.
+ *
+ * NOTE: Returned string must be freed with free().
+ */
+extern char *slurm_read_hostfile PARAMS((char *filename, int n));
+
+/*
  * slurm_free_job_step_create_response_msg - free slurm 
  *	job step create response message
  * IN msg - pointer to job step create response message

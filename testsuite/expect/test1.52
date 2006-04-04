@@ -84,7 +84,7 @@ for {set i 0} {$i<2} {incr i} {
 				previous poe run\n"
 			exit 1
 		}
-		set env(MP_HOSTFILE) $hostfile
+		set env(SLURM_HOSTFILE) $hostfile
 		set 1node0 $node0
 		set 1node1 $node1
 		set file [open $hostfile "w"]
