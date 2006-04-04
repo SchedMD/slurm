@@ -410,7 +410,7 @@ slurm_terminate_job (uint32_t job_id)
 	xfree(rc_array);
 	slurm_free_resource_allocation_response_msg(alloc_info);
 
-	slurm_complete_job(job_id, 0, 0);
+	slurm_complete_job(job_id, 0);
 fail1:
 	if (rc) {
 		slurm_seterrno_ret(rc);
@@ -422,10 +422,7 @@ fail1:
 
 /*
  * slurm_terminate_job_step - terminates a job step by sending a
- * 	REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and then
- *	it calls slurm_complete_job_step() after verifying that all
- *	nodes in the job step no longer have running tasks from the job
- *	step.  (May take over 35 seconds to return.)
+ * 	REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step.
  * IN job_id  - the job's id
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to terminate a job's batch script
@@ -538,11 +535,7 @@ _job_step_wait(uint32_t jobid, uint32_t stepid,
 }
 
 /*
- * Send a REQUEST_TERMINATE_TASKS rpc to all nodes in a job step.  Then
- * poll the slurmds for up to 35 seconds (with REQUEST_SIGNAL_TASKS)
- * waiting for the job step to completely terminate.  Finally, if all
- * slurmds report ESLURM_INVALID_JOB_ID then send REQUEST_COMPLETE_JOB_STEP
- * to the slurmctld.
+ * Send a REQUEST_TERMINATE_TASKS rpc to all nodes in a job step.
  *
  * RET Upon successful termination of the job step, 0 shall be returned.
  * Otherwise, -1 shall be returned and errno set to indicate the error.
@@ -581,22 +574,7 @@ _terminate_job_step(const job_step_info_t *step,
 
 	xfree(msg);
 	xfree(rc_array);
-
-	/*
-	 *  Wait until all nodes report that the step is gone
-	 */
-	rc = _job_step_wait(step->job_id, step->step_id,
-			    address, num_nodes, 35);
-	
 	xfree(address);
-
-	/*
-	 * If the job step is really gone, then signal the controller
-	 * with the job step completion message.
-	 */
-	if (rc == 0) {
-		rc = slurm_complete_job_step(step->job_id, step->step_id, 0, 0);
-	}
 
 	if (rc == -1 && errno == ESLURM_ALREADY_DONE) {
 		rc = 0;

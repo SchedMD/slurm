@@ -162,7 +162,8 @@ static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _complete_job(slurmd_job_t *job, int err, int status);
+static int    _complete_batch_script(slurmd_job_t *job, 
+				     int err, int status);
 
 /*
  * Initialize the group list using the list of gids from the slurmd if
@@ -220,8 +221,8 @@ _batch_cleanup(slurmd_job_t *job, int level, int status)
 			verbose("job %u.%u completed with slurm_rc = %d, "
 				"job_rc = %d", 
 				job->jobid, job->stepid, rc, status);
-		_complete_job(job, rc, status);
 
+		_complete_batch_script(job, rc, status);
 	}
 }
 /*
@@ -492,7 +493,7 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 static void
 _wait_for_children_slurmstepd(slurmd_job_t *job)
 {
-	int left;
+	int left = 0;
 	int rc;
 	int i;
 	struct timespec ts = {0, 0};
@@ -500,24 +501,29 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 	pthread_mutex_lock(&step_complete.lock);
 
 	/* wait an extra 3 seconds for every level of tree below this level */
-	ts.tv_sec += 3 * (step_complete.max_depth - step_complete.depth);
-	ts.tv_sec += time(NULL) + REVERSE_TREE_CHILDREN_TIMEOUT;
+	if (step_complete.children > 0) {
+		ts.tv_sec += 3 * (step_complete.max_depth-step_complete.depth);
+		ts.tv_sec += time(NULL) + REVERSE_TREE_CHILDREN_TIMEOUT;
 
-	while((left = bit_clear_count(step_complete.bits)) > 0) {
-		debug3("Rank %d waiting for %d (of %d) children",
-		      step_complete.rank, left, step_complete.children);
-		rc = pthread_cond_timedwait(&step_complete.cond,
-					    &step_complete.lock, &ts);
-		if (rc == ETIMEDOUT) {
-			debug2("Rank %d timed out waiting for %d (of %d)"
-			       " children", step_complete.rank, left,
-			       step_complete.children);
-			break;
+		while((left = bit_clear_count(step_complete.bits)) > 0) {
+			debug3("Rank %d waiting for %d (of %d) children",
+			     step_complete.rank, left, step_complete.children);
+			rc = pthread_cond_timedwait(&step_complete.cond,
+						    &step_complete.lock, &ts);
+			if (rc == ETIMEDOUT) {
+				debug2("Rank %d timed out waiting for %d"
+				       " (of %d) children", step_complete.rank,
+				       left, step_complete.children);
+				break;
+			}
 		}
-	}
-	if (left == 0) {
-		debug2("Rank %d got all children completions",
-		      step_complete.rank);
+		if (left == 0) {
+			debug2("Rank %d got all children completions",
+			       step_complete.rank);
+		}
+	} else {
+		debug2("Rank %d has no children slurmstepd",
+		       step_complete.rank);
 	}
 
 	/* Find the maximum task return code */
@@ -1307,31 +1313,23 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 
 static int
-_complete_job(slurmd_job_t *job, int err, int status)
+_complete_batch_script(slurmd_job_t *job, int err, int status)
 {
 	int                      rc, i;
 	slurm_msg_t              req_msg;
-	complete_job_step_msg_t  req;
+	complete_batch_script_msg_t  req;
 
 	req.job_id	= job->jobid;
-	req.job_step_id	= job->stepid; 
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
-	/************* acct stuff ********************/
-	aggregate_job_data(job->rusage, job->max_psize, job->max_vsize);
-	/*********************************************/	
-
-	memcpy(&req.rusage, &step_complete.rusage, sizeof(struct rusage));
-	req.max_psize = step_complete.max_psize;
-	req.max_vsize = step_complete.max_vsize;
-	
+		
 	req.node_name	= conf->node_name;
-	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
+	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;	
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
 	
-	info("sending REQUEST_COMPLETE_JOB_STEP");
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {

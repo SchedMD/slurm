@@ -192,7 +192,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 
 		if (destroy_job) {
 			verbose("cancelling job %u", old.job_id);
-			slurm_complete_job(old.job_id, 0, 0);
+			slurm_complete_job(old.job_id, 0);
 			debugger_launch_failure(allocate_job);
 			exit(0);
 		}

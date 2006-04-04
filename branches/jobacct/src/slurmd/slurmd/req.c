@@ -269,21 +269,36 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		depth = 0;
 		max_depth = 0;
 	} else {
+#ifndef HAVE_FRONT_END
 		count = hostset_count(step_hset);
 		rank = hostset_index(step_hset, conf->node_name, 0);
 		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
-		if (rank != 0) { /* rank 0 talks directly to the slurmctld */
+		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
 			/* Find the slurm_addr of this node's parent slurmd
 			   in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			parent_addr = slurm_conf_get_addr(parent_alias);
 		}
+#else
+		/* In FRONT_END mode, one slurmd pretends to be all
+		 * NodeNames, so we can't compare conf->node_name
+		 * to the NodeNames in step_hset.  Just send step complete
+		 * RPC directly to the controller.
+		 */
+		rank = 0;
+		parent_rank = -1;
+		children = 0;
+		depth = 0;
+		max_depth = 0;
+#endif
 	}
+	
 	debug3("slurmstepd rank %d (%s), parent rank %d (%s), "
 	       "children %d, depth %d, max_depth %d",
-	       rank, conf->node_name, parent_rank, parent_alias,
+	       rank, conf->node_name,
+	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
 	/* FIXME - send the reverse tree info to slurmstepd! */
 	/* send reverse-tree info to the slurmstepd */
@@ -899,15 +914,14 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 static int
 _abort_job(uint32_t job_id)
 {
-	complete_job_step_msg_t  resp;
+	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
 
 	resp.job_id       = job_id;
-	resp.job_step_id  = NO_VAL;
 	resp.job_rc       = 1;
 	resp.slurm_rc     = 0;
 	resp.node_name    = NULL;	/* unused */
-	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
+	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
 	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
@@ -975,14 +989,16 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	int               fd;
 	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid;
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->cred);
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	slurmstepd_info_t *step;
 
 #ifdef HAVE_XCPU
-	error("REQUEST_SIGNAL_TASKS not support with XCPU system");
-	rc = ESLURM_NOT_SUPPORTED;
-	goto done;
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_TASKS not support with XCPU system");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto done;
+	}
 #endif
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
@@ -1000,7 +1016,6 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done2;
 	} 
 
-	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long) req_uid, req->job_id, req->job_step_id, 
@@ -1681,15 +1696,17 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	int fd;
 
 #ifdef HAVE_XCPU
-	error("REQUEST_SIGNAL_JOB not supported with XCPU system");
-	if (msg->conn_fd >= 0) {
-		slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
-			error ("_rpc_signal_job: close(%d): %m",
-				msg->conn_fd);
-		msg->conn_fd = -1;
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_JOB not supported with XCPU system");
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+				error ("_rpc_signal_job: close(%d): %m",
+					msg->conn_fd);
+			msg->conn_fd = -1;
+		}
+		return;
 	}
-	return;
 #endif
 
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);

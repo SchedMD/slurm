@@ -204,10 +204,14 @@ static int _unpack_job_step_info_response_msg(job_step_info_response_msg_t
 					      ** msg, Buf buffer);
 static int _unpack_job_step_info_members(job_step_info_t * step, Buf buffer);
 
-static void _pack_complete_job_step_msg(complete_job_step_msg_t * msg,
-					Buf buffer);
-static int _unpack_complete_job_step_msg(complete_job_step_msg_t **
-					 msg_ptr, Buf buffer);
+static void _pack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t * msg, Buf buffer);
+static int _unpack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t ** msg_ptr, Buf buffer);
+static void _pack_complete_batch_script_msg(
+	complete_batch_script_msg_t * msg, Buf buffer);
+static int _unpack_complete_batch_script_msg(
+	complete_batch_script_msg_t ** msg_ptr, Buf buffer);
 static void _pack_step_complete_msg(step_complete_msg_t * msg,
 				    Buf buffer);
 static int _unpack_step_complete_msg(step_complete_msg_t **
@@ -511,9 +515,13 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_job_step_kill_msg((job_step_kill_msg_t *) 
 					 msg->data, buffer);
 		 break;
-	 case REQUEST_COMPLETE_JOB_STEP:
-		 _pack_complete_job_step_msg((complete_job_step_msg_t *)
-					     msg->data, buffer);
+	 case REQUEST_COMPLETE_JOB_ALLOCATION:
+		 _pack_complete_job_allocation_msg(
+			 (complete_job_allocation_msg_t *)msg->data, buffer);
+		 break;
+	 case REQUEST_COMPLETE_BATCH_SCRIPT:
+		 _pack_complete_batch_script_msg(
+			 (complete_batch_script_msg_t *)msg->data, buffer);
 		 break;
 	 case REQUEST_STEP_COMPLETE:
 		 _pack_step_complete_msg((step_complete_msg_t *)msg->data,
@@ -536,7 +544,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case RESPONSE_RECONFIGURE:
 	 case RESPONSE_SHUTDOWN:
 	 case RESPONSE_CANCEL_JOB_STEP:
-	 case RESPONSE_COMPLETE_JOB_STEP:
 		 break;
 	 case REQUEST_JOB_ATTACH:
 		 break;
@@ -785,10 +792,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
 					        & (msg->data), buffer);
 		 break;
-	 case REQUEST_COMPLETE_JOB_STEP:
-		 rc = _unpack_complete_job_step_msg((complete_job_step_msg_t
-						     **) & (msg->data),
-						    buffer);
+	 case REQUEST_COMPLETE_JOB_ALLOCATION:
+		 rc = _unpack_complete_job_allocation_msg(
+			 (complete_job_allocation_msg_t **)&msg->data, buffer);
+		 break;
+	 case REQUEST_COMPLETE_BATCH_SCRIPT:
+		 rc = _unpack_complete_batch_script_msg(
+			 (complete_batch_script_msg_t **)&msg->data, buffer);
 		 break;
 	 case REQUEST_STEP_COMPLETE:
 		 rc = _unpack_step_complete_msg((step_complete_msg_t
@@ -816,7 +826,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_RECONFIGURE:
 	 case RESPONSE_SHUTDOWN:
 	 case RESPONSE_CANCEL_JOB_STEP:
-	 case RESPONSE_COMPLETE_JOB_STEP:
 		 break;
 	 case REQUEST_JOB_ATTACH:
 		 break;
@@ -2835,87 +2844,56 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer)
 }
 
 static void
-_pack_complete_job_step_msg(complete_job_step_msg_t * msg, Buf buffer)
+_pack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t * msg, Buf buffer)
 {
 	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
+	pack32((uint32_t)msg->job_rc, buffer);
+}
+
+static int
+_unpack_complete_job_allocation_msg(
+	complete_job_allocation_msg_t ** msg_ptr, Buf buffer)
+{
+	complete_job_allocation_msg_t *msg;
+	uint16_t uint16_tmp;
+
+	msg = xmalloc(sizeof(complete_job_allocation_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->job_rc, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_complete_batch_script_msg(
+	complete_batch_script_msg_t * msg, Buf buffer)
+{
+	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->job_rc, buffer);
 	pack32((uint32_t)msg->slurm_rc, buffer);
-	pack32((uint32_t)msg->rusage.ru_utime.tv_sec, buffer);
-	pack32((uint32_t)msg->rusage.ru_utime.tv_usec, buffer);
-	pack32((uint32_t)msg->rusage.ru_stime.tv_sec, buffer);
-	pack32((uint32_t)msg->rusage.ru_stime.tv_usec, buffer);
-	pack32((uint32_t)msg->rusage.ru_maxrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_ixrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_idrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_isrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_minflt, buffer);
-	pack32((uint32_t)msg->rusage.ru_majflt, buffer);
-	pack32((uint32_t)msg->rusage.ru_nswap, buffer);
-	pack32((uint32_t)msg->rusage.ru_inblock, buffer);
-	pack32((uint32_t)msg->rusage.ru_oublock, buffer);
-	pack32((uint32_t)msg->rusage.ru_msgsnd, buffer);
-	pack32((uint32_t)msg->rusage.ru_msgrcv, buffer);
-	pack32((uint32_t)msg->rusage.ru_nsignals, buffer);
-	pack32((uint32_t)msg->rusage.ru_nvcsw, buffer);
-	pack32((uint32_t)msg->rusage.ru_nivcsw, buffer);
-	pack32((uint32_t)msg->max_vsize, buffer);
-	pack32((uint32_t)msg->max_psize, buffer);	
 	packstr(msg->node_name, buffer);
 }
 
 static int
-_unpack_complete_job_step_msg(complete_job_step_msg_t ** msg_ptr, Buf buffer)
+_unpack_complete_batch_script_msg(
+	complete_batch_script_msg_t ** msg_ptr, Buf buffer)
 {
-	complete_job_step_msg_t *msg;
+	complete_batch_script_msg_t *msg;
 	uint16_t uint16_tmp;
-	uint32_t uint32_tmp;
 
-	msg = xmalloc(sizeof(complete_job_step_msg_t));
+	msg = xmalloc(sizeof(complete_batch_script_msg_t));
 	*msg_ptr = msg;
 
 	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack32(&msg->job_rc, buffer);
 	safe_unpack32(&msg->slurm_rc, buffer);
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_utime.tv_sec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_utime.tv_usec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_stime.tv_sec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_stime.tv_usec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_maxrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_ixrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_idrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_isrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_minflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_majflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nswap = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_inblock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_oublock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_msgsnd = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_msgrcv = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nsignals = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nvcsw = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nivcsw = uint32_tmp;
-	safe_unpack32(&msg->max_vsize, buffer);
-	safe_unpack32(&msg->max_psize, buffer);
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
