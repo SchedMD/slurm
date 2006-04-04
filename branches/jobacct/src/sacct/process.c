@@ -123,7 +123,7 @@ job_rec_t *_init_job_rec(acct_header_t header, int lc)
 	job->rusage.ru_nswap = 0;
 	job->vsize = 0;
 	job->psize = 0;
-	job->error = 0;
+	job->exitcode = 0;
 	job->steps = list_create(destroy_step);
 	return job;
 }
@@ -179,7 +179,7 @@ int _parse_line(char *f[], void **data)
 		_parse_header(f, &(*step)->header);
 		(*step)->stepnum = atoi(f[F_JOBSTEP]);
 		(*step)->status = atoi(f[F_STATUS]);
-		(*step)->error = atoi(f[F_ERROR]);
+		(*step)->exitcode = atoi(f[F_EXITCODE]);
 		(*step)->ntasks = atoi(f[F_NTASKS]);
 		(*step)->ncpus = atoi(f[F_NCPUS]);
 		(*step)->elapsed = atoi(f[F_ELAPSED]);
@@ -206,6 +206,7 @@ int _parse_line(char *f[], void **data)
 		(*step)->vsize = atoi(f[F_VSIZE]);
 		(*step)->psize = atoi(f[F_PSIZE]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
+		(*step)->nodes = xstrdup(f[F_STEPNODES]);
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:
@@ -233,7 +234,7 @@ void process_start(char *f[], int lc)
 			"Conflicting JOB_START for job %ld at"
 			" line %ld -- ignoring it\n",
 			job->header.jobnum, lc);
-		inputError++;
+		input_error++;
 		destroy_job(temp);
 		return;
 	}
@@ -290,13 +291,13 @@ void process_step(char *f[], int lc)
 				"-- ignoring it\n",
 				step->header.jobnum, 
 				step->stepnum, lc);
-			inputError++;
+			input_error++;
 			
 			destroy_step(temp);
 			return;
 		}
 		step->status = temp->status;
-		step->error = temp->error;
+		step->exitcode = temp->exitcode;
 		step->ntasks = temp->ntasks;
 		step->ncpus = temp->ncpus;
 		step->elapsed = temp->elapsed;
@@ -315,16 +316,20 @@ void process_step(char *f[], int lc)
 	
 	job->job_step_seen = 1;
 	job->ntasks += step->ntasks;
+	if(!strcmp(job->nodes, "(unknown)")) {
+		xfree(job->nodes);
+		job->nodes = xstrdup(step->nodes);
+	}
 got_step:
 	destroy_step(temp);
-	
+		
 	if (job->job_terminated_seen == 0) {	/* If the job is still running,
 						   this is the most recent
 						   status */
+		if ( job->exitcode == 0 )
+			job->exitcode = step->exitcode;
 		job->header.timestamp = step->header.timestamp;
 		job->status = JOB_RUNNING;
-		if ( job->error == 0 )
-			job->error = step->error;
 		job->elapsed = time(NULL) - job->header.timestamp;
 	}
 	/* now aggregate the aggregatable */
@@ -415,7 +420,7 @@ void process_terminated(char *f[], int lc)
 			"Conflicting JOB_TERMINATED record (%s) for "
 			"job %ld at line %ld -- ignoring it\n",
 			decode_status_int(temp->status), job, lc);
-		inputError++;
+		input_error++;
 		goto finished;
 	}
 	job->job_terminated_seen = 1;
@@ -445,6 +450,7 @@ void destroy_step(void *object)
 	if (step) {
 		xfree(step->header.partition);
 		xfree(step->stepname);
+		xfree(step->nodes);
 		xfree(step);
 	}
 }

@@ -53,9 +53,9 @@
  * which have no logical jobsteps. */
 #define BATCH_JOB_TIMESTAMP 0
 
-#define BRIEF_FIELDS "jobstep,status,error"
-#define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
-#define LONG_FIELDS "jobstep,jobname,partition,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
+#define BRIEF_FIELDS "jobstep,status,exitcode"
+#define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,exitcode"
+#define LONG_FIELDS "jobstep,jobname,partition,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,exitcode"
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
@@ -101,7 +101,7 @@ enum {	F_JOBNAME = HEADER_LENGTH,
 /* JOB_STEP fields */
 enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_STATUS,
-	F_ERROR,
+	F_EXITCODE,
 	F_NTASKS,
 	F_STEPNCPUS,
 	F_ELAPSED,
@@ -128,6 +128,7 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_VSIZE,
 	F_PSIZE,
 	F_STEPNAME,
+	F_STEPNODES,
 	JOB_STEP_LENGTH
 };
 
@@ -178,7 +179,7 @@ typedef struct job_rec {
 	long	ncpus;
 	long	ntasks;
 	int	status;
-	int	error;
+	int	exitcode;
 	long	elapsed;
 	long	tot_cpu_sec, tot_cpu_usec;
 	long	vsize, psize;
@@ -190,9 +191,10 @@ typedef struct step_rec {
 	acct_header_t header;
 	long	stepnum;	/* job's step number */
 	long	next;		/* linked list of job steps */
+	char	*nodes;
 	char	*stepname;
 	int	status;
-	int	error;
+	int	exitcode;
 	long	ntasks, ncpus;
 	long	elapsed;
 	long	tot_cpu_sec, tot_cpu_usec;
@@ -237,7 +239,7 @@ typedef struct sacct_parameters {
 extern fields_t fields[];
 extern sacct_parameters_t params;
 
-extern long inputError;		/* Muddle through bad data, but complain! */
+extern long input_error;	/* Muddle through bad data, but complain! */
 
 extern List jobs;
 
@@ -256,7 +258,7 @@ void destroy_step(void *object);
 void print_fields(type_t type, void *object);
 void print_cpu(type_t type, void *object);
 void print_elapsed(type_t type, void *object);
-void print_error(type_t type, void *object);
+void print_exitcode(type_t type, void *object);
 void print_gid(type_t type, void *object);
 void print_group(type_t type, void *object);
 void print_idrss(type_t type, void *object);

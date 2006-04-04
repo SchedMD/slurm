@@ -132,23 +132,23 @@ void print_elapsed(type_t type, void *object)
 	} 
 }
 
-void print_error(type_t type, void *object)
+void print_exitcode(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
-		printf("%5s", "Error");
+		printf("%8s", "ExitCode");
 		break;
 	case UNDERSCORE:
-		printf("%5s", "-----");
+		printf("%8s", "--------");
 		break;
 	case JOB:
-		printf("%5d", job->error);
+		printf("%8d", job->exitcode);
 		break;
 	case JOBSTEP:
-		printf("%5d", step->error);
+		printf("%8d", step->exitcode);
 		break;
 	} 
 }
@@ -323,10 +323,17 @@ void print_name(type_t type, void *object)
 		printf("%-18s", "------------------");
 		break;
 	case JOB:
-		printf("%-18s", job->jobname);
+		if(strlen(job->jobname)<19)
+			printf("%-18s", job->jobname);
+		else
+			printf("%-15.15s...", job->jobname);
+			
 		break;
 	case JOBSTEP:
-		printf("%-18s", step->stepname);
+		if(strlen(step->stepname)<19)
+			printf("%-18s", step->stepname);
+		else
+			printf("%-15.15s...", step->stepname);
 		break;
 	} 
 }
@@ -339,7 +346,7 @@ void print_step(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-10s", "Jobstep");
+		printf("%-10s", "JobID");
 		break;
 	case UNDERSCORE:
 		printf("%-10s", "----------");
@@ -622,10 +629,18 @@ void print_partition(type_t type, void *object)
 		printf("%-10s", "----------");
 		break;
 	case JOB:
-		printf("%-10s", job->header.partition);
+		if(strlen(job->header.partition)<11)
+			printf("%-10s", job->header.partition);
+		else
+			printf("%-7.7s...", job->header.partition);
+		
 		break;
 	case JOBSTEP:
-		printf("%-10s", step->header.partition);
+		if(strlen(step->header.partition)<11)
+			printf("%-10s", step->header.partition);
+		else
+			printf("%-7.7s...", step->header.partition);
+	
 		break;
 	} 
 }
@@ -643,7 +658,7 @@ void print_psize(type_t type, void *object)
 		printf("%10s", "------");
 		break;
 	case JOB:
-		printf("%10ld", job->psize);
+		printf("%10.ld", job->psize);
 		break;
 	case JOBSTEP:
 		printf("%10ld", step->psize);

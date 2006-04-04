@@ -141,7 +141,7 @@ void _print_header(void);
 sacct_parameters_t params;
 fields_t fields[] = {{"cpu", print_cpu}, 
 		     {"elapsed", print_elapsed}, 
-		     {"error", print_error}, 
+		     {"exitcode", print_exitcode}, 
 		     {"gid", print_gid}, 
 		     {"group", print_group}, 
 		     {"idrss", print_idrss}, 
@@ -176,7 +176,7 @@ fields_t fields[] = {{"cpu", print_cpu},
 		     {"vsize", print_vsize}, 
 		     {NULL, NULL}};
 
-long inputError = 0;		/* Muddle through bad data, but complain! */
+long input_error = 0;		/* Muddle through bad data, but complain! */
 
 List jobs = NULL;
 
@@ -193,8 +193,9 @@ int main(int argc, char **argv)
 		HELP,
 		USAGE
 	} op;
-	int rc = SLURM_SUCCESS;
+	int rc = 0;
 	
+	sacct_init();
 	parse_command_line(argc, argv);
 
 	/* What are we doing? Requests for help take highest priority,
@@ -219,7 +220,8 @@ int main(int argc, char **argv)
 			invalidSwitchCombo("--dump",
 					   "--brief, --long, "
 					   "--fields, --total");
-			exit(1);
+			rc = 1;
+			goto finished;
 		}
 	} else if (params.opt_fdump) {
 		op = FDUMP;
@@ -253,12 +255,12 @@ int main(int argc, char **argv)
 					   "--brief, --long, --fields, "
 					   "--total, --gid, --uid, --jobs, "
 					   "--jobstep, --state");
-			exit(1);
+			rc = 1;
+			goto finished;
 		}
 	} else
 		op = LIST;
 
-	sacct_init();
 	
 	switch (op) {
 	case DUMP:
@@ -285,6 +287,7 @@ int main(int argc, char **argv)
 		sacct_fini();
 		exit(2);
 	}
+finished:
 	sacct_fini();
 	return (rc);
 }

@@ -661,7 +661,7 @@ int read_slurm_conf(int recover)
 	slurm_conf_unlock();
 
 	update_logging();
-	jobacct_init(slurmctld_conf.job_acct_loc);
+	jobacct_init(slurmctld_conf.job_acct_logfile);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
 	switch_init();

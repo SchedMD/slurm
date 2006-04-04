@@ -87,8 +87,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->first_job_id);
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
-	fprintf(out, "JobAcctLoc        = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_loc);
+	fprintf(out, "JobAcctLogFile    = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_logfile);
 	fprintf(out, "JobAcctFrequency = %d\n",
 		slurm_ctl_conf_ptr->job_acct_freq);
 	fprintf(out, "JobAcctType       = %s\n", 

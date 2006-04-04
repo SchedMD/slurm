@@ -282,13 +282,13 @@ extern int slurm_set_auth_type(char *auth_type)
  */
 char *slurm_get_jobacct_loc(void)
 {
-	char *jobacct_loc;
+	char *jobacct_logfile;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	jobacct_loc = xstrdup(conf->job_acct_loc);
+	jobacct_logfile = xstrdup(conf->job_acct_logfile);
 	slurm_conf_unlock();
-	return jobacct_loc;
+	return jobacct_logfile;
 }
 
 /* slurm_get_jobacct_freq

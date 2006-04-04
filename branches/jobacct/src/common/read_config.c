@@ -136,7 +136,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"HashBase", S_P_LONG, defunct_option},
 	{"HeartbeatInterval", S_P_LONG, defunct_option},
 	{"InactiveLimit", S_P_UINT16},
-	{"JobAcctloc", S_P_STRING},
+	{"JobAcctLogFile", S_P_STRING},
 	{"JobAcctFrequency", S_P_UINT16},
 	{"JobAcctType", S_P_STRING},
 	{"JobCompLoc", S_P_STRING},
@@ -927,7 +927,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
-	xfree (ctl_conf_ptr->job_acct_loc);
+	xfree (ctl_conf_ptr->job_acct_logfile);
 	xfree (ctl_conf_ptr->job_acct_type);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
@@ -984,7 +984,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->job_acct_loc);
+	xfree (ctl_conf_ptr->job_acct_logfile);
 	ctl_conf_ptr->job_acct_freq             = 0;
 	xfree (ctl_conf_ptr->job_acct_type);
 	xfree (ctl_conf_ptr->job_comp_loc);
@@ -1281,8 +1281,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
-	if (!s_p_get_string(&conf->job_acct_loc, "JobAcctLoc", hashtbl))
-		conf->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
+	if (!s_p_get_string(&conf->job_acct_logfile, 
+			    "JobAcctLogFile", hashtbl))
+		conf->job_acct_logfile = xstrdup(DEFAULT_JOB_ACCT_LOGFILE);
 
 	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl))
 		conf->job_acct_freq = DEFAULT_JOB_ACCT_FREQ;

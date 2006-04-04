@@ -232,7 +232,7 @@ void _help_msg(void)
 	       "-l, --long\n"
 	       "    Equivalent to specifying\n"
 	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,nprocs,\n"
-	       "    ncpus,elapsed,status,error\"\n"
+	       "    ncpus,elapsed,status,exitcode\"\n"
 	       "-O, --formatted_dump\n"
 	       "    Dump accounting records in an easy-to-read format, primarily\n"
 	       "    for debugging.\n"
@@ -440,33 +440,35 @@ int get_data(void)
 		
 		if (list_count(selected_steps)) {
 			itr = list_iterator_create(selected_steps);
-			while(selected_step = list_next(itr)) {
+			while((selected_step = list_next(itr))) {
 				if (strcmp(selected_step->job, f[F_JOB]))
 					continue;
 				/* job matches; does the step> */
 				if (selected_step->step == NULL
 				    || rec_type == JOB_STEP 
 				    || !strcmp(f[F_JOBSTEP], 
-					       selected_step->step))
+					       selected_step->step)) {
+					list_iterator_destroy(itr);
 					goto foundjob;
+				}
 			}
 			list_iterator_destroy(itr);
 			continue;	/* no match */
 		}
 	foundjob:
-		if(itr)
-			list_iterator_destroy(itr);
+		
 		if (list_count(selected_parts)) {
 			itr = list_iterator_create(selected_parts);
-			while(selected_part = list_next(itr)) 
-				if (!strcasecmp(f[F_PARTITION], selected_part))
+			while((selected_part = list_next(itr))) 
+				if (!strcasecmp(f[F_PARTITION], 
+						selected_part)) {
+					list_iterator_destroy(itr);
 					goto foundp;
+				}
 			list_iterator_destroy(itr);
 			continue;	/* no match */
 		}
 	foundp:
-		if(itr)
-			list_iterator_destroy(itr);
 		
 		if (params.opt_fdump) {
 			do_fdump(f, lc);
@@ -476,24 +478,32 @@ int get_data(void)
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
-			if(i < JOB_START_LENGTH)
+			if(i < JOB_START_LENGTH) {
 				printf("Bad data on a Job Start\n");
-			process_start(f, lc);
+				_show_rec(f);
+			} else 
+				process_start(f, lc);
 			break;
 		case JOB_STEP:
-			if(i < JOB_STEP_LENGTH)
+			if(i < JOB_STEP_LENGTH) {
 				printf("Bad data on a Step entry\n");
-			process_step(f, lc);
+				_show_rec(f);
+			} else
+				process_step(f, lc);
 			break;
 		case JOB_SUSPEND:
-			if(i < JOB_TERM_LENGTH)
+			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Suspend entry\n");
-			process_suspend(f, lc);
+				_show_rec(f);
+			} else
+				process_suspend(f, lc);
 			break;
 		case JOB_TERMINATED:
-			if(i < JOB_TERM_LENGTH)
-				printf("Bad data on a Job Termt\n");
-			process_terminated(f, lc);
+			if(i < JOB_TERM_LENGTH) {
+				printf("Bad data on a Job Term\n");
+				_show_rec(f);
+			} else
+				process_terminated(f, lc);
 			break;
 		default:
 			if (params.opt_verbose > 1)
@@ -503,7 +513,7 @@ int get_data(void)
 					lc);
 			if (params.opt_verbose > 2)
 				_show_rec(f);
-			inputError++;
+			input_error++;
 			break;
 		}
 	}
@@ -1036,15 +1046,16 @@ void do_dump(void)
 			if (step->status == JOB_RUNNING &&
 			    job->job_terminated_seen) {
 				step->status = JOB_FAILED;
-				step->error=1;
+				step->exitcode=1;
 			}
 			_dump_header(step->header);
-			printf("JOB_STEP %ld %s ",
+			printf("JOB_STEP %ld %s %s ",
 			       step->stepnum,
-			       step->stepname); 
+			       step->stepname,
+			       step->nodes); 
 			printf("%s %d %ld %ld %ld ",
 			       decode_status_int(step->status),
-			       step->error,
+			       step->exitcode,
 			       step->ntasks,
 			       step->ncpus,
 			       step->elapsed);
@@ -1082,7 +1093,7 @@ void do_dump(void)
 			       job->elapsed);
 			printf("%s %d %ld %ld %ld ",
 			       decode_status_int(job->status),
-			       job->error,
+			       job->exitcode,
 			       job->ntasks,
 			       job->ncpus,
 			       job->elapsed);
@@ -1286,6 +1297,7 @@ void do_expire(void)
 		fprintf(stderr, "Error while opening %s",
 			logfile_name);
 		perror("");
+		fclose(expired_logfile);
 		goto finished;
 	}
 	chmod(logfile_name, prot);     /* preserve file protection */
@@ -1294,7 +1306,8 @@ void do_expire(void)
 	 * to the log file at the same time as slurmctld. */ 
 	if (setvbuf(new_logfile, NULL, _IOLBF, 0)) {
 		perror("setvbuf()");
-		goto finished;
+		fclose(expired_logfile);
+		goto finished2;
 	}
 
 	list_sort(exp_list, (ListCmpF) _cmp_jrec);
@@ -1318,12 +1331,15 @@ void do_expire(void)
 	while(exp_rec = list_next(itr)) {
 		itr2 = list_iterator_create(other_list);
 		while(exp_rec2 = list_next(itr2)) {
-			if(exp_rec2->job != exp_rec->job)
+			if((exp_rec2->job != exp_rec->job) 
+			   || (exp_rec2->job_start != exp_rec->job_start))
 				continue;
 			if (fputs(exp_rec2->line, expired_logfile)<0) {
 				perror("writing expired_logfile");
 				list_iterator_destroy(itr2);
-				goto finished;
+				list_iterator_destroy(itr);
+				fclose(expired_logfile);
+				goto finished2;
 			}
 			list_remove(itr2);
 			_destroy_exp(exp_rec2);
@@ -1332,7 +1348,8 @@ void do_expire(void)
 		if (fputs(exp_rec->line, expired_logfile)<0) {
 			perror("writing expired_logfile");
 			list_iterator_destroy(itr);
-			goto finished;
+			fclose(expired_logfile);
+			goto finished2;
 		}		
 	}
 	list_iterator_destroy(itr);
@@ -1346,25 +1363,26 @@ void do_expire(void)
 			if(exp_rec2->job != exp_rec->job)
 				continue;
 			if (fputs(exp_rec2->line, new_logfile)<0) {
-				perror("writing expired_logfile");
+				perror("writing keep_logfile");
 				list_iterator_destroy(itr2);
-				goto finished;
+				list_iterator_destroy(itr);
+				goto finished2;
 			}
 			list_remove(itr2);
 			_destroy_exp(exp_rec2);
 		}
 		list_iterator_destroy(itr2);
 		if (fputs(exp_rec->line, new_logfile)<0) {
-			perror("writing expired_logfile");
+			perror("writing keep_logfile");
 			list_iterator_destroy(itr);
-			goto finished;
+			goto finished2;
 		}		
 	}
 	list_iterator_destroy(itr);
 	
 	if (rename(params.opt_filein, old_logfile_name)) {
 		perror("renaming logfile to .old.");
-		goto finished;
+		goto finished2;
 	}
 	if (rename(logfile_name, params.opt_filein)) {
 		perror("renaming new logfile");
@@ -1378,7 +1396,7 @@ void do_expire(void)
 				"please rename it to \"%s\" if necessary, "
 			        "and try again\n",
 				old_logfile_name, params.opt_filein);
-		goto finished;
+		goto finished2;
 	}
 	fflush(new_logfile);	/* Flush the buffers before forking */
 	fflush(fd);
@@ -1388,11 +1406,9 @@ void do_expire(void)
 			goto finished;
 		}
 	} else {
-		fclose(new_logfile);
-		fclose(fd);
 		execlp("scontrol", "scontrol", "reconfigure", NULL);
 		perror("attempting to run \"scontrol reconfigure\"");
-		goto finished;
+		goto finished2;
 	}
 	if (WEXITSTATUS(i)) {
 		file_err = 1;
@@ -1404,20 +1420,22 @@ void do_expire(void)
 	}
 	if (fseek(fd, 0, SEEK_CUR)) {	/* clear EOF */
 		perror("looking for late-arriving records");
-		goto finished;
+		goto finished2;
 	}
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		if (fputs(line, new_logfile)<0) {
 			perror("writing final records");
-			goto finished;
+			goto finished2;
 		}
 	}
-	fclose(new_logfile);
-	fclose(fd);
-	if (!file_err)
-		unlink(old_logfile_name);
+	
 	printf("%d jobs expired.\n", list_count(exp_list));
+finished2:
+	fclose(new_logfile);
+	if (!file_err)
+		unlink(old_logfile_name);	
 finished:
+	fclose(fd);
 	list_destroy(exp_list);
 	list_destroy(keep_list);
 	list_destroy(other_list);
@@ -1450,7 +1468,7 @@ void do_fdump(char* f[], int lc)
 		
 	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
 			   "status",	 /* F_STATUS */ 
-			   "error",	 /* F_ERROR */
+			   "exitcode",	 /* F_EXITCODE */
 			   "ntasks",	 /* F_NTASKS */
 			   "ncpus",	 /* F_STEPNCPUS */
 			   "elapsed",	 /* F_ELAPSED */
@@ -1477,6 +1495,7 @@ void do_fdump(char* f[], int lc)
 			   "vsize",	 /* F_VSIZE */
 			   "psize",      /* F_PSIZE */
 			   "StepName",	 /* F_STEPNAME */
+			   "StepNodes",	 /* F_STEPNODES */
 			   NULL};
        
 	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
@@ -1618,7 +1637,6 @@ void do_list(void)
 				if (step->status == JOB_RUNNING 
 				    && job->job_terminated_seen) {
 					step->status == JOB_FAILED;
-					step->error=1;
 				}
 				if (params.opt_state_list) {
 					if(!selected_status[step->status])
