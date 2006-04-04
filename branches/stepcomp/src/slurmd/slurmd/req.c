@@ -285,21 +285,36 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		depth = 0;
 		max_depth = 0;
 	} else {
+#ifndef HAVE_FRONT_END
 		count = hostset_count(step_hset);
 		rank = hostset_index(step_hset, conf->node_name, 0);
 		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
-		if (rank != 0) { /* rank 0 talks directly to the slurmctld */
+		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
 			/* Find the slurm_addr of this node's parent slurmd
 			   in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			parent_addr = slurm_conf_get_addr(parent_alias);
 		}
+#else
+		/* In FRONT_END mode, one slurmd pretends to be all
+		 * NodeNames, so we can't compare conf->node_name
+		 * to the NodeNames in step_hset.  Just send step complete
+		 * RPC directly to the controller.
+		 */
+		rank = 0;
+		parent_rank = -1;
+		children = 0;
+		depth = 0;
+		max_depth = 0;
+#endif
 	}
+	
 	debug3("slurmstepd rank %d (%s), parent rank %d (%s), "
 	       "children %d, depth %d, max_depth %d",
-	       rank, conf->node_name, parent_rank, parent_alias,
+	       rank, conf->node_name,
+	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
 	/* FIXME - send the reverse tree info to slurmstepd! */
 	/* send reverse-tree info to the slurmstepd */
