@@ -693,7 +693,6 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
-	int rc = SLURM_SUCCESS;
 
 	if(!filename) {
 		error("s_p_parse_file: No filename given.");
