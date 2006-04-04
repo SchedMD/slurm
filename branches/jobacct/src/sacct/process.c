@@ -320,6 +320,8 @@ void process_step(char *f[], int lc)
 		xfree(job->nodes);
 		job->nodes = xstrdup(step->nodes);
 	}
+	if(list_count(job->steps) > 1)
+		job->track_steps = 1;
 got_step:
 	destroy_step(temp);
 		
