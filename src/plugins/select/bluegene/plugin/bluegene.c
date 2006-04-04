@@ -79,13 +79,6 @@ int destroy_cnt = 0;
 # endif
 #endif
 
-typedef struct blockreq {
-	char *block;
-	rm_connection_type_t conn_type;
-	uint16_t quarters;
-	uint16_t nodecards;
-} blockreq_t;
-
 /* some local functions */
 #ifdef HAVE_BG
 static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
@@ -103,10 +96,6 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 static bg_record_t *_create_small_record(bg_record_t *bg_record, 
 					 uint16_t quarter, uint16_t nodecard);
 static int _add_bg_record(List records, blockreq_t *blockreq);
-static int _parse_blockreq(void **dest, slurm_parser_enum_t type,
-			    const char *key, const char *value, 
-			    const char *line);
-static void _destroy_blockreq(void *ptr);
 static int  _reopen_bridge_log(void);
 
 /* Initialize all plugin variables */
@@ -1634,25 +1623,7 @@ extern int read_bg_conf(void)
 	blockreq_t **blockreq_array = NULL;
 	static time_t last_config_update = (time_t) 0;
 	struct stat config_stat;
-	s_p_options_t options[] = {
-		{"BlrtsImage", S_P_STRING}, 
-		{"LinuxImage", S_P_STRING},
-		{"MloaderImage", S_P_STRING},
-		{"LinuxImage", S_P_STRING},
-		{"BridgeAPILogFile", S_P_STRING},
-		{"RamDiskImage", S_P_STRING},
-		{"LayoutMode", S_P_STRING},
-		{"BridgeAPIVerbose", S_P_UINT16},
-		{"BasePartitionNodeCnt", S_P_UINT16},
-		{"NodeCardNodeCnt", S_P_UINT16},
-		{"Numpsets", S_P_UINT16},
-		{"BPs", S_P_ARRAY, _parse_blockreq, _destroy_blockreq},
-		{"Type", S_P_IGNORE},
-		{"Nodecards", S_P_IGNORE},
-		{"Quarters", S_P_IGNORE},
-		{NULL}
-	};
-	
+		
 	debug("Reading the bluegene.conf file");
 
 	/* check if config file has changed */
@@ -1673,8 +1644,12 @@ extern int read_bg_conf(void)
 
 	/* initialization */
 	/* bg_conf defined in bg_node_alloc.h */
-	tbl = s_p_hashtbl_create(options);
-	s_p_parse_file(tbl, bg_conf);
+	tbl = s_p_hashtbl_create(bg_conf_file_options);
+	
+	if(s_p_parse_file(tbl, bg_conf) == SLURM_ERROR)
+		fatal("something wrong with opening/reading bluegene "
+		      "conf file");
+	
 	if (!s_p_get_string(&bluegene_blrts, "BlrtsImage", tbl)) 
 		fatal("BlrtsImage not configured in bluegene.conf");
 	if (!s_p_get_string(&bluegene_linux, "LinuxImage", tbl)) 
@@ -1910,7 +1885,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				slurm_conf_lock();
-				sprintf(node_name_tmp, "%s%d%d%d\0", 
+				sprintf(node_name_tmp, "%s%d%d%d", 
 					slurmctld_conf.node_prefix,
 					x, y, z);		
 				slurm_conf_unlock();
@@ -2654,53 +2629,6 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 		destroy_bg_record(bg_record);
 	} 
 	return SLURM_SUCCESS;
-}
-
-static int _parse_blockreq(void **dest, slurm_parser_enum_t type,
-			    const char *key, const char *value, 
-			    const char *line)
-{
-	s_p_options_t block_options[] = {
-		{"BPs", S_P_STRING},
-		{"Type", S_P_STRING},
-		{"Nodecards", S_P_UINT16},
-		{"Quarters", S_P_UINT16},
-		{NULL}
-	};
-	s_p_hashtbl_t *tbl;
-	char *tmp=NULL;
-	blockreq_t *n = NULL;
-
-	tbl = s_p_hashtbl_create(block_options);
-	s_p_parse_line(tbl, line);
-	
-	n = xmalloc(sizeof(blockreq_t));
-	s_p_get_string(&n->block, "BPs", tbl);
-
-	s_p_get_string(&tmp, "Type", tbl);
-	if (!tmp || !strcasecmp(tmp,"TORUS"))
-		n->conn_type = SELECT_TORUS;
-	else if(!strcasecmp(tmp,"MESH"))
-		n->conn_type = SELECT_MESH;
-	else
-		n->conn_type = SELECT_SMALL;
-	
-	s_p_get_uint16(&n->nodecards, "Nodecards", tbl);
-	s_p_get_uint16(&n->quarters, "Quarters", tbl);
-
-	s_p_hashtbl_destroy(tbl);
-
-	*dest = (void *)n;
-	return 1;
-}
-
-static void _destroy_blockreq(void *ptr)
-{
-	blockreq_t *n = (blockreq_t *)ptr;
-	if(n) {
-		xfree(n->block);
-		xfree(n);
-	}
 }
 
 static int _reopen_bridge_log(void)

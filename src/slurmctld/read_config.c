@@ -327,7 +327,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				       struct config_record *config_ptr,
 				       slurm_ctl_conf_t *conf)
 {
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	struct node_record *node_rec = NULL;
 	hostlist_t alias_list = NULL;
 	hostlist_t hostname_list = NULL;
@@ -533,6 +533,7 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -617,6 +618,7 @@ static int _build_all_partitionline_info()
 
 		_build_single_partitionline_info(part);
 	}
+	return SLURM_SUCCESS;
 }
 
 /*

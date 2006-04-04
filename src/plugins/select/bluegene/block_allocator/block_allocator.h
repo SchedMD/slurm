@@ -81,10 +81,6 @@ enum {X, Y, Z};
 
 /* */
 
-/* NOTE: Definition of bg_info_record_t moved to src/api/node_select_info.h */
-
-extern List bg_info_list;			/* List of BG blocks */
-
 /** 
  * structure that holds switch path information for finding the wiring 
  * path without setting the configuration.
@@ -133,6 +129,13 @@ typedef struct {
 	bool elongate; 
 	List elongate_geos;
 } ba_request_t; 
+
+typedef struct blockreq {
+	char *block;
+	int conn_type;
+	uint16_t quarters;
+	uint16_t nodecards;
+} blockreq_t;
 
 /** 
  * structure that holds the configuration settings for each connection
@@ -223,9 +226,13 @@ extern char letters[62];
 extern char colors[6];
 extern int DIM_SIZE[BA_SYSTEM_DIMENSIONS];
 extern pthread_mutex_t api_file_mutex;
+extern s_p_options_t bg_conf_file_options[];
 
-/* destroy a bg_info_record_t */
-extern void destroy_bg_info_record(void* object);
+extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value, 
+			  const char *line);
+
+extern void destroy_blockreq(void *ptr);
 
 /**
  * create a block request.  Note that if the geometry is given,

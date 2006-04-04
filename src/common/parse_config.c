@@ -689,15 +689,25 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 	return 1;
 }
 
-void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
+int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
+	int rc = SLURM_SUCCESS;
 
+	if(!filename) {
+		error("s_p_parse_file: No filename given.");
+		return SLURM_ERROR;
+	}
+	
 	_keyvalue_regex_init();
-
+	
 	f = fopen(filename, "r");
-
+	if (f == NULL) {
+		error("s_p_parse_file: problem reading the file %s",
+		      filename);
+		return SLURM_ERROR;
+	}
 	while(_get_next_line(line, BUFFER_SIZE, f)) {
 		/* skip empty lines */
 		if (line[0] == '\0')
@@ -707,6 +717,7 @@ void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 	}
 
 	fclose(f);
+	return SLURM_SUCCESS;
 }
 
 /*

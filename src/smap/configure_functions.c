@@ -49,7 +49,7 @@ static int	_remove_allocation(char *com, List allocated_blocks);
 static int	_alter_allocation(char *com, List allocated_blocks);
 static int	_copy_allocation(char *com, List allocated_blocks);
 static int	_save_allocation(char *com, List allocated_blocks);
-static void     _strip_13_10(char *line);
+static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks);
 static int	_load_configuration(char *com, List allocated_blocks);
 static void	_print_header_command(void);
 static void	_print_text_command(allocated_block_t *allocated_block);
@@ -134,7 +134,7 @@ static int _set_layout(char *com)
 	}
 	sprintf(error_string, 
 		"LayoutMode set to %s\n", layout_mode);
-	
+	return 1;
 }
 
 static int _set_base_part_cnt(char *com)
@@ -863,24 +863,9 @@ static int _save_allocation(char *com, List allocated_blocks)
 	return 1;
 }
 
-/* Explicitly strip out  new-line and carriage-return */
-static void _strip_13_10(char *line)
-{
-	int len = strlen(line);
-	int i;
-
-	for(i=0;i<len;i++) {
-		if(line[i]==13 || line[i]==10) {
-			line[i] = '\0';
-			return;
-		}
-	}
-}
-
-static int _parse_bg_spec(char *in_line, List allocated_blocks)
+static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 {
 #ifdef HAVE_BG
-	int error_code = SLURM_SUCCESS;
 	char *nodes = NULL, *conn_type = NULL;
 	int bp_count = 0;
 	int start[BA_SYSTEM_DIMENSIONS];
@@ -888,8 +873,6 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 	int start1[BA_SYSTEM_DIMENSIONS];
 	int end1[BA_SYSTEM_DIMENSIONS];
 	int geo[BA_SYSTEM_DIMENSIONS];
-	char *layout = NULL;
-	int pset_num=-1, api_verb=-1, num_nodecard=0, num_quarter=0;
 	char com[255];
 	int j = 0, number;
 	int len = 0;
@@ -902,21 +885,21 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 	end1[X] = -1;
 	end1[Y] = -1;
 	end1[Z] = -1;
+
+	switch(blockreq->conn_type) {
+	case SELECT_MESH:
+		conn_type = "mesh";
+		break;
+	case SELECT_SMALL:
+		conn_type = "small";
+		break;
+	case SELECT_TORUS:
+	default:
+		conn_type = "torus";
+		break;
+	}
 	
-	error_code = slurm_parser(in_line,
-				  "Numpsets=", 'd', &pset_num,
-				  "BasePartitionNodeCnt=", 'd', 
-				  &base_part_node_cnt,
-				  "NodeCardNodeCnt=", 'd', &nodecard_node_cnt,
-				  "LayoutMode=", 's', &layout,
-				  "BPs=", 's', &nodes,
-				  "Nodes=", 's', &nodes,
-				  "Type=", 's', &conn_type,
-				  "NodeCards=", 'd', &num_nodecard,
-				  "Quarters=", 'd', &num_quarter,
-				  "END");
-	if(layout)
-		_set_layout(layout);
+	nodes = blockreq->block;
 	if(!nodes)
 		return SLURM_SUCCESS;
 	len = strlen(nodes);
@@ -996,7 +979,7 @@ static int _parse_bg_spec(char *in_line, List allocated_blocks)
 		"nodecards=%d quarters=%d",
 		geo[X], geo[Y], geo[Z], conn_type, 
 		start1[X], start1[Y], start1[Z],
-		num_nodecard, num_quarter);
+		blockreq->nodecards, blockreq->quarters);
 	_create_allocation(com, allocated_blocks);
 #endif
 	return SLURM_SUCCESS;
@@ -1006,10 +989,11 @@ static int _load_configuration(char *com, List allocated_blocks)
 	int len = strlen(com);
 	int i=5, j=0;
 	char filename[100];
-	FILE *file_ptr = NULL;
-	char in_line[BUFSIZE];	/* input line */
-	int line_num = 0;	/* line number in input file */
-	
+	s_p_hashtbl_t *tbl = NULL;
+	char *layout = NULL;
+	blockreq_t **blockreq_array = NULL;
+	int count = 0;
+
 	_delete_allocated_blocks(allocated_blocks);
 	allocated_blocks = list_create(NULL);
 
@@ -1036,49 +1020,40 @@ static int _load_configuration(char *com, List allocated_blocks)
 	if(filename[0]=='\0') {
 		sprintf(filename,"bluegene.conf");
 	}
-	file_ptr = fopen(filename,"r");
-	if (file_ptr==NULL) {
+
+	tbl = s_p_hashtbl_create(bg_conf_file_options);
+	if(s_p_parse_file(tbl, filename) == SLURM_ERROR) {
 		memset(error_string,0,255);
-		sprintf(error_string, "problem reading file %s", filename);
+		sprintf(error_string, "ERROR: couldn't open/read %s",
+			filename);
 		return 0;
 	}
 
-	while (fgets(in_line, BUFSIZE, file_ptr) != NULL) {
-		line_num++;
-		_strip_13_10(in_line);
-		if (strlen(in_line) >= (BUFSIZE - 1)) {
+	if (!s_p_get_string(&layout, "LayoutMode", tbl)) {
+		memset(error_string,0,255);
+		sprintf(error_string, 
+			"Warning: LayoutMode was not specified in "
+			"bluegene.conf defaulting to STATIC partitioning");
+	} else {
+		_set_layout(layout);
+		xfree(layout);
+	}
+		
+	if(strcasecmp(layout_mode, "DYNAMIC")) {
+		if (!s_p_get_array((void ***)&blockreq_array, 
+				   &count, "BPs", tbl)) {
 			memset(error_string,0,255);
 			sprintf(error_string, 
-				"_read_bg_config line %d, of input file %s "
-				"too long", line_num, filename);
-			fclose(file_ptr);
-			return 0;
-		}
-
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
-		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUFSIZE; i++) {
-			if (in_line[i] == (char) NULL)
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUFSIZE; j++) {
-					in_line[j - 1] = in_line[j];
-				}
-				continue;
-			}
-			in_line[i] = (char) NULL;
-			break;
+				"WARNING: no blocks defined in "
+				"bluegene.conf");
 		}
 		
-		/* parse what is left, non-comments */
-		/* block configuration parameters */
-		_parse_bg_spec(in_line, allocated_blocks);
+		for (i = 0; i < count; i++) {
+			_add_bg_record(blockreq_array[i], allocated_blocks);
+		}
 	}
-	fclose(file_ptr);
-	
+			
+	s_p_hashtbl_destroy(tbl);
 	return 1;
 }
 

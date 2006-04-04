@@ -214,17 +214,17 @@ int schedule(void)
 					     &nodecard);
 			if(quarter != (uint16_t)NO_VAL) {
 				if(nodecard != (uint16_t)NO_VAL) {
-					sprintf(tmp_char,"%s.%d.%d\0",
+					sprintf(tmp_char,"%s.%d.%d",
 						job_ptr->nodes,
 						quarter,
 						nodecard);
 				} else {
-					sprintf(tmp_char,"%s.%d\0",
+					sprintf(tmp_char,"%s.%d",
 						job_ptr->nodes,
 						quarter);
 				}
 			} else {
-				sprintf(tmp_char,"%s\0",job_ptr->nodes);
+				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
 			info("schedule: JobId=%u BPList=%s",
 			     job_ptr->job_id, tmp_char);
