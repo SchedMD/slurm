@@ -988,14 +988,16 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	int               fd;
 	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid;
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->cred);
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	slurmstepd_info_t *step;
 
 #ifdef HAVE_XCPU
-	error("REQUEST_SIGNAL_TASKS not support with XCPU system");
-	rc = ESLURM_NOT_SUPPORTED;
-	goto done;
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_TASKS not support with XCPU system");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto done;
+	}
 #endif
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
@@ -1013,7 +1015,6 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done2;
 	} 
 
-	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long) req_uid, req->job_id, req->job_step_id, 
@@ -1695,15 +1696,17 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	int fd;
 
 #ifdef HAVE_XCPU
-	error("REQUEST_SIGNAL_JOB not supported with XCPU system");
-	if (msg->conn_fd >= 0) {
-		slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
-			error ("_rpc_signal_job: close(%d): %m",
-				msg->conn_fd);
-		msg->conn_fd = -1;
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_JOB not supported with XCPU system");
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+				error ("_rpc_signal_job: close(%d): %m",
+					msg->conn_fd);
+			msg->conn_fd = -1;
+		}
+		return;
 	}
-	return;
 #endif
 
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
