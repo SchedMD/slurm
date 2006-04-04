@@ -87,7 +87,6 @@ inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
@@ -1524,7 +1523,6 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
  *	represent the termination of an entire job */
 static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
-/* NOTE: patterned after _slurm_rpc_job_step_complete() */
 	int error_code = SLURM_SUCCESS, rc, rem, step_rc;
 	DEF_TIMERS;
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
@@ -1563,10 +1561,10 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		return;
 	}
 
-/* FIXME: test for error, possibly cause batch job requeue */
 	if (req->job_step_id == SLURM_BATCH_SCRIPT) {
-		error_code = job_complete(req->job_id, uid, 
-			job_requeue, step_rc);
+		/* FIXME: test for error, possibly cause batch job requeue */
+		error_code = job_complete(req->job_id, uid, job_requeue, 
+				step_rc);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 
