@@ -675,7 +675,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 	char *alias = NULL;
 	char *hostname = NULL;
 	char *address = NULL;
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 
 	if (node_ptr->nodenames == NULL || *node_ptr->nodenames == '\0')
 		return -1;
@@ -1056,7 +1056,8 @@ _init_slurm_conf(char *file_name)
 
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
-	s_p_parse_file(conf_hashtbl, file_name);
+	if(s_p_parse_file(conf_hashtbl, file_name) == SLURM_ERROR)
+		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	validate_and_set_defaults(conf_ptr, conf_hashtbl);
 	conf_ptr->slurm_conf = xstrdup(file_name);

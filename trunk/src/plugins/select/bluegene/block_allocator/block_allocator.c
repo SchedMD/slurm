@@ -41,12 +41,7 @@
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
 
-#ifdef HAVE_BG
-int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
-#else
-int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
-#endif
-
+/* Global */
 bool _initialized = false;
 bool _wires_initialized = false;
 bool _bp_map_initialized = false;
@@ -59,17 +54,43 @@ List path = NULL;
 List best_path = NULL;
 int best_count;
 int color_count = 0;
-char letters[62];
-char colors[6];
-pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool *passthrough = NULL;
 
+/* extern Global */
+List bp_map_list = NULL;
+char letters[62];
+char colors[6];
+#ifdef HAVE_BG
+int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
+#else
+int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
+#endif
+pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+s_p_options_t bg_conf_file_options[] = {
+	{"BlrtsImage", S_P_STRING}, 
+	{"LinuxImage", S_P_STRING},
+	{"MloaderImage", S_P_STRING},
+	{"LinuxImage", S_P_STRING},
+	{"BridgeAPILogFile", S_P_STRING},
+	{"RamDiskImage", S_P_STRING},
+	{"LayoutMode", S_P_STRING},
+	{"BridgeAPIVerbose", S_P_UINT16},
+	{"BasePartitionNodeCnt", S_P_UINT16},
+	{"NodeCardNodeCnt", S_P_UINT16},
+	{"Numpsets", S_P_UINT16},
+	{"BPs", S_P_ARRAY, parse_blockreq, destroy_blockreq},
+	{"Type", S_P_IGNORE},
+	{"Nodecards", S_P_IGNORE},
+	{"Quarters", S_P_IGNORE},
+	{NULL}
+};
+
+#ifdef HAVE_BG
 /** internal helper functions */
 #ifdef HAVE_BG_FILES
 /** */
 static void _bp_map_list_del(void *object);
 #endif
-#ifdef HAVE_BG
 /* */
 static int _check_for_options(ba_request_t* ba_request); 
 /* */
@@ -147,23 +168,50 @@ static int _set_one_dim(int *start, int *end, int *coord);
 /* */
 static void _destroy_geo(void *object);
 
-/* Global */
-List bp_map_list;
-List bg_info_list;
-
-extern void destroy_bg_info_record(void* object)
+extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value, 
+			  const char *line)
 {
-	bg_info_record_t* bg_info_record = (bg_info_record_t*) object;
+	s_p_options_t block_options[] = {
+		{"BPs", S_P_STRING},
+		{"Type", S_P_STRING},
+		{"Nodecards", S_P_UINT16},
+		{"Quarters", S_P_UINT16},
+		{NULL}
+	};
+	s_p_hashtbl_t *tbl;
+	char *tmp=NULL;
+	blockreq_t *n = NULL;
 
-	if (bg_info_record) {
-		if(bg_info_record->nodes) 
-			xfree(bg_info_record->nodes);
-		if(bg_info_record->owner_name)
-			xfree(bg_info_record->owner_name);
-		if(bg_info_record->bg_block_id)
-			xfree(bg_info_record->bg_block_id);
-		
-		xfree(bg_info_record);
+	tbl = s_p_hashtbl_create(block_options);
+	s_p_parse_line(tbl, line);
+	
+	n = xmalloc(sizeof(blockreq_t));
+	s_p_get_string(&n->block, "BPs", tbl);
+
+	s_p_get_string(&tmp, "Type", tbl);
+	if (!tmp || !strcasecmp(tmp,"TORUS"))
+		n->conn_type = SELECT_TORUS;
+	else if(!strcasecmp(tmp,"MESH"))
+		n->conn_type = SELECT_MESH;
+	else
+		n->conn_type = SELECT_SMALL;
+	
+	s_p_get_uint16(&n->nodecards, "Nodecards", tbl);
+	s_p_get_uint16(&n->quarters, "Quarters", tbl);
+
+	s_p_hashtbl_destroy(tbl);
+
+	*dest = (void *)n;
+	return 1;
+}
+
+extern void destroy_blockreq(void *ptr)
+{
+	blockreq_t *n = (blockreq_t *)ptr;
+	if(n) {
+		xfree(n->block);
+		xfree(n);
 	}
 }
 
@@ -555,15 +603,21 @@ static void _db2_check(void)
 extern void ba_init(node_info_msg_t *node_info_ptr)
 {
 	int x,y,z;
+
 #ifdef HAVE_BG
+	node_info_t *node_ptr = NULL;
+	int start, temp;
+	char *numeric = NULL;
 	int i;
-#endif
 
 #ifdef HAVE_BG_FILES
 	rm_BGL_t *bg = NULL;
 	rm_size3D_t bp_size;
 	int rc = 0;
-#endif		
+#endif /* HAVE_BG_FILES */
+	
+#endif /* HAVE_BG */
+
 	/* We only need to initialize once, so return if already done so. */
 	if (_initialized){
 		return;
@@ -603,9 +657,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	
 	if(node_info_ptr!=NULL) {
 #ifdef HAVE_BG
-		node_info_t *node_ptr = NULL;
-		int start, temp;
-		char *numeric = NULL;
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
 			start = 0;
@@ -648,7 +699,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	} 
 #ifdef HAVE_BG
 node_info_error:
-#endif
+
 #ifdef HAVE_BG_FILES
 	if (have_db2
 	    && (DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
@@ -679,7 +730,6 @@ node_info_error:
 	}
 #endif
 
-#ifdef HAVE_BG
 	if ((DIM_SIZE[X]==0) || (DIM_SIZE[X]==0) || (DIM_SIZE[X]==0)) {
 		debug("Setting default system dimensions");
 		DIM_SIZE[X]=8;
@@ -790,7 +840,7 @@ extern void ba_set_node_down(ba_node_t *ba_node)
 		ba_init(NULL);
 	}
 
-#ifdef DEBUG_PA
+#ifdef DEBUG_BA
 #ifdef HAVE_BG
 	debug("ba_set_node_down: node to set down: [%d%d%d]", 
 	      ba_node->coord[X], ba_node->coord[Y], ba_node->coord[Z]); 
@@ -1037,31 +1087,35 @@ extern char *set_bg_block(List results, int *start,
 
 extern int reset_ba_system()
 {
-	int x, y, z;
+	int x;
+#ifdef HAVE_BG
+	int y, z;
+#endif
 	int coord[BA_SYSTEM_DIMENSIONS];
 
-	for (x = 0; x < DIM_SIZE[X]; x++)
+	for (x = 0; x < DIM_SIZE[X]; x++) {
+#ifdef HAVE_BG
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
-#ifdef HAVE_BG
 				coord[X] = x;
 				coord[Y] = y;
 				coord[Z] = z;
 				_new_ba_node(&ba_system_ptr->grid[x][y][z], 
 					     coord);
+			}
 #else
-				coord[X] = x;
-				_new_ba_node(&ba_system_ptr->grid[x], coord);
+		coord[X] = x;
+		_new_ba_node(&ba_system_ptr->grid[x], coord);
 
 #endif
-			}
+	}
 				
 	return 1;
 }
 /* init_grid - set values of every grid point */
 extern void init_grid(node_info_msg_t * node_info_ptr)
 {
-	node_info_t *node_ptr;
+	node_info_t *node_ptr = NULL;
 	int x, i = 0;
 	uint16_t node_base_state;
 	/* For systems with more than 62 active jobs or BG blocks, 
@@ -1207,6 +1261,8 @@ extern char *find_bp_rack_mid(char* xyz)
 
 /********************* Local Functions *********************/
 
+#ifdef HAVE_BG
+
 #ifdef HAVE_BG_FILES
 static void _bp_map_list_del(void *object)
 {
@@ -1218,10 +1274,9 @@ static void _bp_map_list_del(void *object)
 	}
 }
 #endif
-#ifdef HAVE_BG
+
 static int _check_for_options(ba_request_t* ba_request) 
 {
-
 	int temp;
 	int set=0;
 	int *geo = NULL;
@@ -1293,7 +1348,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	int *geo = NULL;
 	int temp_geo;
 	int i, j;
-	geo = xmalloc(sizeof(int)*3);
+	geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
 	if(rotate) {
 		for (i = (BA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
 			for (j = 1; j <= i; j++) {
@@ -1332,14 +1387,14 @@ static int _fill_in_coords(List results, List start_list,
 	ba_node_t *check_node = NULL;
 	int rc = 1;
 	ListIterator itr = NULL;
-	int y=0, z=0, j;
+	int y=0, z=0;
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
 	
 	if(!start_list)
 		return 0;
 	itr = list_iterator_create(start_list);
-	while(check_node = (ba_node_t*) list_next(itr)) {		
+	while((check_node = (ba_node_t*) list_next(itr))) {		
 		curr_switch = &check_node->axis_switch[X];
 	
 		for(y=0; y<geometry[Y]; y++) {
@@ -1388,7 +1443,7 @@ static int _fill_in_coords(List results, List start_list,
 	list_iterator_destroy(itr);
 	
 	itr = list_iterator_create(results);
-	while(ba_node = (ba_node_t*) list_next(itr)) {	
+	while((ba_node = (ba_node_t*) list_next(itr))) {	
 		if(!_find_yz_path(ba_node, 
 				  check_node->coord, 
 				  geometry, 
@@ -1448,18 +1503,9 @@ static int _copy_the_path(ba_switch_t *curr_switch, ba_switch_t *mark_switch,
 		return 0;
 	}
 	next_switch = &ba_system_ptr->
-		grid[node_tar[X]]
-#ifdef HAVE_BG
-		[node_tar[Y]]
-		[node_tar[Z]]
-#endif
-		.axis_switch[X];
+		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[X];
 	next_mark_switch = &ba_system_ptr->
-		grid[mark_node_tar[X]]
-#ifdef HAVE_BG
-		[mark_node_tar[Y]]
-		[mark_node_tar[Z]]
-#endif
+		grid[mark_node_tar[X]][mark_node_tar[Y]][mark_node_tar[Z]]
 		.axis_switch[X];
 
 	_copy_the_path(next_switch, next_mark_switch, start, port_tar);
@@ -1672,9 +1718,7 @@ static int _create_config_even(ba_node_t *grid)
 #else
 	for(x=0;x<DIM_SIZE[X];x++) {
 		source = &grid[x];
-				
 		target = &grid[x+1];
-		
 		_set_external_wires(X, x, source, 
 				    target);
 	}
@@ -2077,10 +2121,8 @@ start_again:
 						return 0;
 					else {
 						start[X]=0;
-#ifdef HAVE_BG
 						start[Y]=0;
 						start[Z]=0;
-#endif
 						goto start_again;
 					}
 				}
@@ -2803,13 +2845,13 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 }
 
 static int _find_x_path2(List results, ba_node_t *ba_node, 
-	int *start, int *first, int *geometry, 
-	int found, int conn_type) 
+			 int *start, int *first, int *geometry, 
+			 int found, int conn_type) 
 {
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
 	
-	int port_tar;
+	int port_tar = 0;
 	int source_port=0;
 	int target_port=0;
 	int broke = 0, not_first = 0;
@@ -2880,13 +2922,14 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 			not_first = 0;
 				
 		broke_it:
+			next_node = &ba_system_ptr->
+				grid[node_tar[X]]
 #ifdef HAVE_BG
-			next_node = &ba_system_ptr->
-				grid[node_tar[X]][node_tar[Y]][node_tar[Z]];
-#else
-			next_node = &ba_system_ptr->
-				grid[node_tar[X]];
+				[node_tar[Y]]
+				[node_tar[Z]]
 #endif
+				;
+
 			next_switch = &next_node->axis_switch[X];
 		
 			
@@ -3056,13 +3099,15 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	if(best_count < BEST_COUNT_INIT) {
 		debug2("yes found next free %d", best_count);
 		node_tar = _set_best_path();
+
+		next_node = &ba_system_ptr->
+			grid[node_tar[X]]
 #ifdef HAVE_BG
-		next_node = &ba_system_ptr->
-			grid[node_tar[X]][node_tar[Y]][node_tar[Z]];
-#else
-		next_node = &ba_system_ptr->
-			grid[node_tar[X]];
+			[node_tar[Y]]
+			[node_tar[Z]]
 #endif
+			;
+
 		next_switch = &next_node->axis_switch[X];
 		
 #ifdef HAVE_BG
@@ -3141,7 +3186,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	int port_to_try = 2;
 	int *node_tar= curr_switch->ext_wire[0].node_tar;
 	int *node_src = curr_switch->ext_wire[0].node_tar;
-	int used=0;
+	int used = 0;
 	int broke = 0;
 	ba_node_t *ba_node = NULL;
 	
@@ -3183,11 +3228,12 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 #endif
 	   .used) {
 		
+#ifdef HAVE_BG
 		debug2("this one not found %d%d%d",
 		       node_tar[X],
 		       node_tar[Y],
 		       node_tar[Z]);
-		
+#endif		
 		broke = 0;
 				
 		if((source_port%2))

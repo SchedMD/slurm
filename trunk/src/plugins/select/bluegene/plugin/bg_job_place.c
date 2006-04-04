@@ -116,9 +116,12 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 
-	if(req_geometry[0] != (uint16_t)NO_VAL)
+	if(req_geometry[0] != (uint16_t)NO_VAL) {
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 			target_size *= (uint16_t)req_geometry[i];
+		if(!max_nodes)
+			max_nodes = min_nodes;
+	}
 	if (target_size == 0) {	/* no geometry specified */
 		target_size = min_nodes;
 		req_geometry[X] = (uint16_t)NO_VAL;

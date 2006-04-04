@@ -1669,6 +1669,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
+#if SYSTEM_DIMENSIONS
+	uint16_t geo[SYSTEM_DIMENSIONS];
+#endif
 
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 

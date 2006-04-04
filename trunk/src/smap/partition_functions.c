@@ -165,7 +165,6 @@ extern void get_bg_part()
 	static node_select_info_msg_t *new_bg_ptr = NULL;
 
 	partition_info_t part;
-	int number, start[BA_SYSTEM_DIMENSIONS], end[BA_SYSTEM_DIMENSIONS];
 	db2_block_info_t *block_ptr = NULL;
 	db2_block_info_t *found_block = NULL;
 	ListIterator itr;
@@ -824,9 +823,7 @@ static int _in_slurm_partition(List slurm_nodes, List bg_nodes)
 static int _print_rest(db2_block_info_t *block_ptr)
 {
 	partition_info_t part;
-	db2_block_info_t *db2_info_ptr = NULL;
-	int set = 0;
-		
+			
 	if(block_ptr->node_cnt == 0)
 		block_ptr->node_cnt = block_ptr->size;
 	part.total_nodes = block_ptr->node_cnt;
