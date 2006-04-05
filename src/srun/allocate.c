@@ -193,7 +193,8 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	resource_allocation_response_msg_t *r = *resp;
 	int sleep_time = MIN_ALLOC_WAIT;
 
-	info ("job %u queued and waiting for resources", r->job_id);
+	if (!opt.quiet)
+		info ("job %u queued and waiting for resources", r->job_id);
 
 	old.job_id = r->job_id;
 	slurm_free_resource_allocation_response_msg(r);
@@ -220,7 +221,8 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 		if (sleep_time < MAX_ALLOC_WAIT)
 			sleep_time++;
 	}
-	info ("job %u has been allocated resources", (*resp)->job_id);
+	if (!opt.quiet)
+		info ("job %u has been allocated resources", (*resp)->job_id);
 }
 
 /* Wait up to sleep_time for RPC from slurmctld indicating resource allocation
