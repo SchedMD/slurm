@@ -1389,7 +1389,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 				(node_ptr->comp_job_cnt)--;
 			if ((--job_ptr->node_cnt) == 0) {
 				last_node_update = time(NULL);
-				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 			}
 			continue;

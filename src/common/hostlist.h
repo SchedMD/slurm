@@ -426,4 +426,6 @@ int hostset_count(hostset_t set);
  */
 int hostset_index(hostset_t set, const char *host, int jobid);
 
+char * hostset_nth(hostset_t set, int n);
+
 #endif /* !_HOSTLIST_H */

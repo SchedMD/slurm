@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -35,6 +35,11 @@ set test_id     "1.30"
 set exit_code   0
 
 print_header $test_id
+
+if { [test_xcpu] } {
+	send_user "\nWARNING: This test is incompatable with XCPU systems\n"
+	exit 0
+}
 
 #
 # Spawn a srun immediate jobs with ever larger node counts

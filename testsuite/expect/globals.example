@@ -48,6 +48,9 @@ set srun        "${slurm_dir}/bin/srun"
 set mpicc       "/usr/local/bin/mpicc"
 set use_pmi	0
 
+# If using XCPU job launch, specify directory location as needed
+set xcpu_dir	"/mnt/xcpu"
+
 set poe		"/usr/bin/poe"
 set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
@@ -372,7 +375,11 @@ proc wait_for_job { job_id state } {
 ################################################################
 
 proc test_front_end { } {
-	global scontrol bin_bash bin_grep
+	global scontrol bin_bash bin_grep xcpu_dir
+
+	if [file exists $xcpu_dir] {
+		return 1
+	}
 
 	log_user 0
 	set bluegene 0
@@ -389,6 +396,26 @@ proc test_front_end { } {
 	log_user 1
 	
 	return $bluegene
+}
+
+################################################################
+#
+# Proc: test_xcpu
+#
+# Purpose: Determine if the system xcpu for task launch
+#
+# Returns 1 if the system is xcpu, 0 otherwise
+#
+################################################################
+
+proc test_xcpu { } {
+	global xcpu_dir
+
+	if [file exists $xcpu_dir] {
+		return 1
+	}
+
+	return 0
 }
 
 ################################################################

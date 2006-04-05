@@ -70,7 +70,11 @@ set timeout $max_job_delay
 if { [test_bluegene] } {
 	set node_cnt 1-1024
 } else {
-	set node_cnt 1-2
+	if { [test_xcpu] } {
+		set node_cnt 1-1
+	} else {
+		set node_cnt 1-2
+	}
 }
 
 spawn $srun -l -N$node_cnt -n10 -O -t1 $file_prog_get

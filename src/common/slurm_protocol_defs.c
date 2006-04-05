@@ -263,7 +263,15 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 	}
 }
 
-void slurm_free_job_complete_msg(complete_job_step_msg_t * msg)
+void slurm_free_complete_job_allocation_msg(
+	complete_job_allocation_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
+void slurm_free_complete_batch_script_msg(complete_batch_script_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
@@ -486,11 +494,6 @@ extern char *job_reason_string(enum job_wait_reason inx)
 		default:
 			return "?";
 	}
-}
-
-void inline slurm_free_jobacct_msg(jobacct_msg_t *msg)
-{
-	xfree(msg);
 }
 
 void inline slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
@@ -743,8 +746,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->control_addr);
 		xfree(config_ptr->control_machine);
 		xfree(config_ptr->epilog);
-		xfree(config_ptr->job_acct_loc);
-		xfree(config_ptr->job_acct_parameters);
+		xfree(config_ptr->job_acct_logfile);
 		xfree(config_ptr->job_acct_type);
 		xfree(config_ptr->job_comp_loc);
 		xfree(config_ptr->job_comp_type);
@@ -951,3 +953,9 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 	}
 }
 
+extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}

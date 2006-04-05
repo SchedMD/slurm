@@ -2,7 +2,7 @@
  *  step_mgr.c - manage the job step information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -47,10 +47,12 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/jobacct.h"
 
 #define MAX_RETRIES 10
 
@@ -69,7 +71,7 @@ create_step_record (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	step_ptr = (struct step_record *) xmalloc (sizeof (struct step_record));
+	step_ptr = (struct step_record *) xmalloc(sizeof (struct step_record));
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr; 
@@ -109,6 +111,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 		if (step_ptr->network)
 			xfree(step_ptr->network);
 		xfree(step_ptr);
@@ -154,6 +157,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
 				xfree(step_ptr->network);
 			xfree(step_ptr);
@@ -339,6 +343,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		      bool requeue, uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
+	struct step_record *step_ptr;
 	int error_code;
 
 	job_ptr = find_job_record(job_id);
@@ -346,13 +351,17 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		info("job_step_complete: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-
-	if ((job_ptr->kill_on_step_done) &&
-	    (list_count(job_ptr->step_list) <= 1))
+	
+	step_ptr = find_step_record(job_ptr, step_id);
+	if (step_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	else 
+		jobacct_step_complete(step_ptr);
+	
+	if ((job_ptr->kill_on_step_done)
+	&&  (list_count(job_ptr->step_list) <= 1)
+	&&  (!IS_JOB_FINISHED(job_ptr)))
 		return job_complete(job_id, uid, requeue, job_return_code);
-
-	if (IS_JOB_FINISHED(job_ptr))
-		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_COMPLETE RPC from uid %d",
@@ -370,6 +379,47 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * aggregate_step_data - given a step_record, aggregate all process info
+ * IN step - pointer to step record
+ * IN rusage - rusage struct
+ * IN psize - psize
+ * IN vsize - vsize 
+ * RET NONE
+ */
+void aggregate_step_data(struct step_record *step,
+			 struct rusage rusage, int psize, int vsize)
+{
+	step->max_psize = MAX(step->max_psize, psize);
+	step->max_vsize = MAX(step->max_vsize, vsize);
+	/* sum up all rusage stuff */
+	step->rusage.ru_utime.tv_sec	+= rusage.ru_utime.tv_sec;
+	step->rusage.ru_utime.tv_usec	+= rusage.ru_utime.tv_usec;
+	while (step->rusage.ru_utime.tv_usec >= 1E6) {
+		step->rusage.ru_utime.tv_sec++;
+		step->rusage.ru_utime.tv_usec -= 1E6;
+	}
+	step->rusage.ru_stime.tv_sec	+= rusage.ru_stime.tv_sec;
+	step->rusage.ru_stime.tv_usec	+= rusage.ru_stime.tv_usec;
+	while (step->rusage.ru_stime.tv_usec >= 1E6) {
+		step->rusage.ru_stime.tv_sec++;
+		step->rusage.ru_stime.tv_usec -= 1E6;
+	}
+	step->rusage.ru_maxrss		+= rusage.ru_maxrss;
+	step->rusage.ru_ixrss		+= rusage.ru_ixrss;
+	step->rusage.ru_idrss		+= rusage.ru_idrss;
+	step->rusage.ru_isrss		+= rusage.ru_isrss;
+	step->rusage.ru_minflt		+= rusage.ru_minflt;
+	step->rusage.ru_majflt		+= rusage.ru_majflt;
+	step->rusage.ru_nswap		+= rusage.ru_nswap;
+	step->rusage.ru_inblock		+= rusage.ru_inblock;
+	step->rusage.ru_oublock		+= rusage.ru_oublock;
+	step->rusage.ru_msgsnd		+= rusage.ru_msgsnd;
+	step->rusage.ru_msgrcv		+= rusage.ru_msgrcv;
+	step->rusage.ru_nsignals	+= rusage.ru_nsignals;
+	step->rusage.ru_nvcsw		+= rusage.ru_nvcsw;
+	step->rusage.ru_nivcsw		+= rusage.ru_nivcsw;
+}
 
 /* 
  * _pick_step_nodes - select nodes for a job step that satify its requirements
@@ -564,9 +614,9 @@ cleanup:
  * 	the job.
  */
 extern int
-step_create ( job_step_create_request_msg_t *step_specs, 
-		struct step_record** new_step_record,
-		bool kill_job_when_step_done, bool batch_step )
+step_create(job_step_create_request_msg_t *step_specs, 
+	    struct step_record** new_step_record,
+	    bool kill_job_when_step_done, bool batch_step)
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -642,10 +692,12 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 	step_ptr->num_tasks = step_specs->num_tasks;
+	step_ptr->num_cpus = step_specs->cpu_count;
 	step_ptr->time_last_active = now;
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
+	step_ptr->exit_code = NO_VAL;
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -687,6 +739,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 
 	*new_step_record = step_ptr;
+	jobacct_step_start(step_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -895,10 +948,12 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		step_iterator = list_iterator_create (job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
 					list_next (step_iterator))) {
-			update_rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, 
-				(void *)step_ptr,
-				&resp_data.event_time, &resp_data.error_code,
-				&resp_data.error_msg);
+			update_rc = checkpoint_op(ckpt_ptr->op, 
+						  ckpt_ptr->data,
+						  (void *)step_ptr,
+						  &resp_data.event_time,
+						  &resp_data.error_code,
+						  &resp_data.error_msg);
 			rc = MAX(rc, update_rc);
 		}
 		if (update_rc != -2)	/* some work done */
@@ -977,3 +1032,62 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	(void) slurm_send_node_msg(conn_fd, &resp_msg);
 	return rc;
 }
+
+/*
+ * step_partial_comp - Note the completion of a job step on at least
+ *	some of its nodes
+ * IN req     - step_completion_msg RPC from slurmstepd
+ * OUT rem    - count of nodes for which responses are still pending
+ * OUT max_rc - highest return code for any step thus far
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int step_partial_comp(step_complete_msg_t *req, int *rem, 
+		int *max_rc)
+{
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	int nodes;
+
+	/* find the job, step, and validate input */
+	job_ptr = find_job_record (req->job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if (job_ptr->job_state == JOB_PENDING)
+		return ESLURM_JOB_PENDING;
+	step_ptr = find_step_record(job_ptr, req->job_step_id);
+	if (step_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if (req->range_last < req->range_first)
+		return EINVAL;
+
+	aggregate_step_data(step_ptr, 
+			    req->rusage, req->max_psize, req->max_vsize);
+
+	if (step_ptr->exit_code == NO_VAL) {
+		/* initialize the node bitmap for exited nodes */
+		nodes = bit_set_count(step_ptr->step_node_bitmap);
+		if (req->range_last >= nodes)	/* range is zero origin */
+			return EINVAL;
+		xassert(step_ptr->exit_node_bitmap == NULL);
+		step_ptr->exit_node_bitmap = bit_alloc(nodes);
+		if (step_ptr->exit_node_bitmap == NULL)
+			fatal("bit_alloc: %m");
+		step_ptr->exit_code = req->step_rc;
+	} else {
+		xassert(step_ptr->exit_node_bitmap);
+		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
+		if (req->range_last >= nodes)	/* range is zero origin */
+			return EINVAL;
+		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
+	}
+
+	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
+		req->range_last);
+	if (rem)
+		*rem = bit_clear_count(step_ptr->exit_node_bitmap);
+	if (max_rc)
+		*max_rc = step_ptr->exit_code;
+
+	return SLURM_SUCCESS;
+}
+

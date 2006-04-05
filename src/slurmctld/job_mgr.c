@@ -48,7 +48,6 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
@@ -62,6 +61,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/jobacct.h"
 
 #define BUFFER_SIZE 1024
 #define DETAILS_FLAG 0xdddd
@@ -842,6 +842,13 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
 	pack16((uint16_t)step_ptr->port, buffer);
 	pack32(step_ptr->num_tasks, buffer);
+	pack32(step_ptr->exit_code, buffer);
+	if (step_ptr->exit_code != NO_VAL) {
+		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
+		pack16((uint16_t) _bitstr_bits(step_ptr->exit_node_bitmap), 
+			buffer);
+	}
+
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
@@ -857,11 +864,11 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr;
-	uint16_t step_id, cyclic_alloc, name_len, port, batch_step;
-	uint32_t num_tasks;
+	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
+	uint32_t num_tasks, exit_code;
 	time_t start_time;
 	char *step_node_list = NULL, *host = NULL;
-	char *name = NULL, *network = NULL;
+	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 
@@ -869,6 +876,12 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
 	safe_unpack32(&num_tasks, buffer);
+	safe_unpack32(&exit_code, buffer);
+	if (exit_code != NO_VAL) {
+		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
+		safe_unpack16(&bit_cnt, buffer);
+	}
+
 	safe_unpack_time(&start_time, buffer);
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
@@ -895,7 +908,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	if (step_ptr == NULL)
 		step_ptr = create_step_record(job_ptr);
 	if (step_ptr == NULL)
-		return SLURM_FAILURE;
+		goto unpack_error;
 
 	/* free any left-over values */
 	xfree(step_ptr->step_node_list);
@@ -916,6 +929,22 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->time_last_active = time(NULL);
 	step_ptr->switch_job   = switch_tmp;
 	step_ptr->check_job    = check_tmp;
+
+	step_ptr->exit_code    = exit_code;
+	if (bit_fmt) {
+		/* NOTE: This is only recovered if a job step completion
+		 * is actively in progress at step save time. Otherwise
+		 * the bitmap is NULL. */ 
+		step_ptr->exit_node_bitmap = bit_alloc(bit_cnt);
+		if (step_ptr->exit_node_bitmap == NULL)
+			fatal("bit_alloc: %m");
+		if (bit_unfmt(step_ptr->exit_node_bitmap, bit_fmt)) {
+			error("error recovering exit_node_bitmap from %s",
+				bit_fmt);
+		}
+		xfree(bit_fmt);
+	}
+
 	switch_g_job_step_allocated(switch_tmp, step_ptr->step_node_list);
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
@@ -925,7 +954,9 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	xfree(name);
 	xfree(network);
 	xfree(step_node_list);
-	if (switch_tmp) switch_free_jobinfo(switch_tmp);
+	xfree(bit_fmt);
+	if (switch_tmp)
+		switch_free_jobinfo(switch_tmp);
 	return SLURM_FAILURE;
 }
 
@@ -1002,7 +1033,6 @@ extern int kill_job_by_part_name(char *part_name)
 			else
 				job_ptr->end_time = time(NULL);
 			deallocate_nodes(job_ptr, false, suspended);
-			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 
@@ -1077,7 +1107,6 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				else
 					job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false, suspended);
-				delete_all_step_records(job_ptr);
 				job_completion_logger(job_ptr);
 			} else {
 				error("Removing failed node %s from job_id %u",
@@ -1381,7 +1410,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) {
 				error_code = SLURM_SUCCESS;
-				g_slurmctld_jobacct_job_start(job_ptr);
+				jobacct_job_start(job_ptr);
 			}
 		return error_code;
 	}
@@ -1396,8 +1425,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-	} else 
-		g_slurmctld_jobacct_job_start(job_ptr);
+	} else {
+		jobacct_job_start(job_ptr);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -1629,7 +1659,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->end_time = job_ptr->suspend_time;
 		else
 			job_ptr->end_time = now;
-		delete_all_step_records(job_ptr);
 		job_completion_logger(job_ptr);
 	}
 
@@ -2849,7 +2878,6 @@ void reset_job_bitmaps(void)
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 			}
-			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 	}
@@ -3781,7 +3809,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 			mail_job_info(job_ptr, MAIL_JOB_FAIL);
 	}
 
-	g_slurmctld_jobacct_job_complete(job_ptr);
+	jobacct_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 }
 
@@ -4048,8 +4076,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 {
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
-	struct job_record *job_ptr;
-	struct step_record *step_ptr;
+	struct job_record *job_ptr = NULL;
+	struct step_record *step_ptr = NULL;
 	ListIterator step_iterator;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
@@ -4123,6 +4151,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 				- job_ptr->pre_sus_time;
 		}
 	}
+	
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
 	step_iterator = list_iterator_create(job_ptr->step_list);
@@ -4133,6 +4162,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	list_iterator_destroy(step_iterator);
 	
     reply:
+	jobacct_job_suspend(job_ptr);
+
 	rc_msg.return_code = rc;
 	resp_msg.msg_type  = RESPONSE_SLURM_RC;
 	resp_msg.data      = &rc_msg;

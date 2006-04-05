@@ -40,17 +40,17 @@ void sig_handler(int sig)
 	{
 		case SIGUSR1:
 			printf("Received SIGUSR1\n");
-			fflush(NULL);
+			fflush(stdout);
 			sigusr1_cnt++;
 			break;
 		case SIGUSR2:
 			printf("Received SIGUSR2\n");
-			fflush(NULL);
+			fflush(stdout);
 			sigusr2_cnt++;
 			break;
 		default:
 			printf("Received signal %d\n", sig);
-			fflush(NULL);
+			fflush(stdout);
 	}
 }
 
@@ -71,7 +71,7 @@ main (int argc, char **argv)
 	}
 
 	printf("WAITING\n");
-	fflush(NULL);
+	fflush(stdout);
 
 	while (!sigusr1_cnt || !sigusr2_cnt) {
 		sleep(1);

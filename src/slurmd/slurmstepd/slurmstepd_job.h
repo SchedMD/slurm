@@ -113,7 +113,6 @@ typedef struct slurmd_job {
 	gid_t         gid;     /* group ID for job                          */
 	int           ngids;   /* length of the following gids array        */
 	gid_t        *gids;    /* array of gids for user specified in uid   */
-
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
 	bool           spawn_task; /* stand-alone task                      */
@@ -164,6 +163,9 @@ typedef struct slurmd_job {
 	uint32_t       cont_id;
 
 	char          *batchdir;
+	struct rusage rusage;
+	int max_psize;
+	int max_vsize;
 } slurmd_job_t;
 
 

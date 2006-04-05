@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -46,7 +46,11 @@ set timeout $max_job_delay
 if { [test_bluegene] } {
 	set node_cnt 32-32k
 } else {
-	set node_cnt 1-64
+	if { [test_xcpu] } {
+		set node_cnt 1-1
+	} else {
+		set node_cnt 1-64
+	}
 }
 
 spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname  

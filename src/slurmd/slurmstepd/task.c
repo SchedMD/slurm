@@ -63,6 +63,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/mpi.h"
+#include "src/common/xmalloc.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/proctrack.h"
@@ -337,6 +338,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 
 	log_fini();
+	
 	execve(job->argv[0], job->argv, job->env);
 
 	/* 

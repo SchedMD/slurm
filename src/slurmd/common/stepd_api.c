@@ -584,3 +584,36 @@ stepd_terminate(int fd)
 rwfail:
 	return -1;
 }
+
+/*
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_completion(int fd, step_complete_msg_t *sent)
+{
+	int req = REQUEST_STEP_COMPLETION;
+	int rc;
+	int errnum = 0;
+
+	debug("Entering stepd_completion, range_first = %d, range_last = %d",
+	      sent->range_first, sent->range_last);
+	safe_write(fd, &req, sizeof(int));
+	safe_write(fd, &sent->range_first, sizeof(int));
+	safe_write(fd, &sent->range_last, sizeof(int));
+	safe_write(fd, &sent->step_rc, sizeof(int));
+	safe_write(fd, &sent->rusage, sizeof(struct rusage));
+	safe_write(fd, &sent->max_psize, sizeof(int));
+	safe_write(fd, &sent->max_vsize, sizeof(int));
+	
+	/* Receive the return code and errno */
+	safe_read(fd, &rc, sizeof(int));
+	safe_read(fd, &errnum, sizeof(int));
+
+	errno = errnum;
+	return rc;
+rwfail:
+	return -1;
+}
+

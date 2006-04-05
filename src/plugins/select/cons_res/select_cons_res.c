@@ -997,8 +997,8 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 			continue;
 		for (i=0; i<job->nhosts; i++)
 			cnt += job->cpus[i];
-		debug2("reset num_proc for %u from %u to %u",job_ptr->job_id,
-				job_ptr->num_procs, cnt);
+		debug2("cons_res: reset num_procs for %u from %u to %u",
+				job_ptr->job_id, job_ptr->num_procs, cnt);
 		job_ptr->num_procs = cnt;
 		break; 
 	}

@@ -35,19 +35,23 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_jobacct.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/io.h"
+#include "src/slurmd/slurmstepd/mgr.h"
 
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid);
@@ -62,6 +66,7 @@ static int _handle_daemon_pid(int fd, slurmd_job_t *job);
 static int _handle_suspend(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_terminate(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_completion(int fd, slurmd_job_t *job, uid_t uid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -78,6 +83,10 @@ struct request_params {
 	int fd;
 	slurmd_job_t *job;
 };
+
+static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
+static int message_connections;
 
 /*
  *  Returns true if "uid" is a "slurm authorized user" - i.e. uid == 0
@@ -215,6 +224,24 @@ msg_thr_create(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Bounded wait for the connection count to drop to zero.
+ * This gives connection threads a chance to complete any pending
+ * RPCs before the slurmstepd exits.
+ */
+static void _wait_for_connections()
+{
+	struct timespec ts = {0, 0};
+	int rc = 0;
+
+	pthread_mutex_lock(&message_lock);
+	ts.tv_sec = time(NULL) + STEPD_MESSAGE_COMP_WAIT;
+	while (message_connections > 0 && rc == 0)
+		rc = pthread_cond_timedwait(&message_cond, &message_lock, &ts);
+
+	pthread_mutex_unlock(&message_lock);
+}
+
 static bool 
 _msg_socket_readable(eio_obj_t *obj)
 {
@@ -224,6 +251,7 @@ _msg_socket_readable(eio_obj_t *obj)
 			debug2("  false, shutdown");
 			_domain_socket_destroy(obj->fd);
 			obj->fd = -1;
+			_wait_for_connections();
 		} else {
 			debug2("  false");
 		}
@@ -258,6 +286,10 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 		obj->shutdown = true;
 		return SLURM_SUCCESS;
 	}
+
+	pthread_mutex_lock(&message_lock);
+	message_connections++;
+	pthread_mutex_unlock(&message_lock);
 
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
@@ -344,6 +376,12 @@ _handle_accept(void *arg)
 
 	if (close(fd) == -1)
 		error("Closing accepted fd: %m");
+
+	pthread_mutex_lock(&message_lock);
+	message_connections--;
+	pthread_cond_signal(&message_cond);
+	pthread_mutex_unlock(&message_lock);
+
 	debug3("Leaving  _handle_accept");
 	return NULL;
 
@@ -422,6 +460,10 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 	case REQUEST_STEP_TERMINATE:
 		debug("Handling REQUEST_STEP_TERMINATE");
 		rc = _handle_terminate(fd, job, uid);
+		break;
+	case REQUEST_STEP_COMPLETION:
+		debug("Handling REQUEST_STEP_COMPLETION");
+		rc = _handle_completion(fd, job, uid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -848,6 +890,8 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	jobacct_g_suspend();
+
 	/*
 	 * Signal the container
 	 */
@@ -919,6 +963,66 @@ done:
 	/* Send the return code and errno */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errnum, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_completion(int fd, slurmd_job_t *job, uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	int errnum = 0;
+	int first;
+	int last;
+	int psize;
+	int vsize;
+	struct rusage rusage;
+	int step_rc;
+
+	debug("_handle_completion for job %u.%u",
+	      job->jobid, job->stepid);
+
+	debug3("  uid = %d", uid);
+	if (!_slurm_authorized_user(uid)) {
+		debug("step completion message from uid %ld for job %u.%u ",
+		      (long)uid, job->jobid, job->stepid);
+		rc = -1;
+		errnum = EPERM;
+		/* Send the return code and errno */
+		safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, &errnum, sizeof(int));
+		return SLURM_SUCCESS;
+	}
+
+	safe_read(fd, &first, sizeof(int));
+	safe_read(fd, &last, sizeof(int));
+	safe_read(fd, &step_rc, sizeof(int));
+	safe_read(fd, &rusage, sizeof(struct rusage));
+	safe_read(fd, &psize, sizeof(int));
+	safe_read(fd, &vsize, sizeof(int));
+
+	/*
+	 * Record the completed nodes
+	 */
+	pthread_mutex_lock(&step_complete.lock);
+	bit_nset(step_complete.bits,
+		 first - (step_complete.rank+1),
+		 last - (step_complete.rank+1));
+	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
+
+	/************* acct stuff ********************/
+	aggregate_job_data(rusage, psize, vsize);
+	/*********************************************/
+	
+	/* Send the return code and errno, we do this within the locked
+	 * region to ensure that the stepd doesn't exit before we can
+	 * perform this send. */
+	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
+	pthread_cond_signal(&step_complete.cond);
+	pthread_mutex_unlock(&step_complete.lock);
+	
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;

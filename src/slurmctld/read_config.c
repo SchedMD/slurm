@@ -46,7 +46,6 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -58,6 +57,8 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/jobacct.h"
+
 #include "src/common/slurm_rlimits_info.h"
 
 #define BUFFER_SIZE	1024
@@ -664,8 +665,7 @@ int read_slurm_conf(int recover)
 	slurm_conf_unlock();
 
 	update_logging();
-	g_slurmctld_jobacct_init(slurmctld_conf.job_acct_loc,
-			slurmctld_conf.job_acct_parameters);
+	jobacct_init(slurmctld_conf.job_acct_logfile);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
 	switch_init();
@@ -922,7 +922,6 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			time_t now = time(NULL);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			job_ptr->end_time = MIN(job_ptr->end_time, now);
-			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 			cnt++;
 		} else if ((base_state == NODE_STATE_UNKNOWN) || 

@@ -64,6 +64,11 @@ void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
 int job_manager(slurmd_job_t *job);
 
 /*
+ * with step completion add totals together.
+ */
+void aggregate_job_data(struct rusage rusage, int psize, int vsize);
+
+/*
  * Register passwd entries so that we do not need to call initgroups(2)
  * frequently.
  */
