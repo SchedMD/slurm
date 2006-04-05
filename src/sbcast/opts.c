@@ -50,10 +50,11 @@
 /* getopt_long options, integers but not characters */
 
 /* FUNCTIONS */
-static void  _help( void );
-static void  _print_options( void );
-static void  _print_version( void );
-static void  _usage( void );
+static void     _help( void );
+static uint32_t _map_size( char *buf );
+static void     _print_options( void );
+static void     _print_version( void );
+static void     _usage( void );
 
 /*
  * parse_command_line, fill in params data structure with data
@@ -67,6 +68,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"compress",  no_argument,       0, 'C'},
 		{"force",     no_argument,       0, 'f'},
 		{"preserve",  no_argument,       0, 'p'},
+		{"size",      required_argument, 0, 's'},
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
@@ -76,13 +78,16 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if (getenv("SBCAST_COMPRESS"))
 		params.compress = true;
-	if ( ( env_val = getenv("SBCAST_FORCE") ) )
+	if (getenv("SBCAST_FORCE"))
 		params.force = true;
-	if ( ( env_val = getenv("SBCAST_PRESERVE") ) )
+	if (getenv("SBCAST_PRESERVE"))
 		params.preserve = true;
+	if ( ( env_val = getenv("SBCAST_SIZE") ) )
+		params.block_size = _map_size(env_val);
+		
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "CfpvV",
+	while((opt_char = getopt_long(argc, argv, "Cfps:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -98,6 +103,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'p':
 			params.preserve = true;
+			break;
+		case (int) 's':
+			params.block_size = _map_size(optarg);
 			break;
 		case (int) 'v':
 			params.verbose++;
@@ -130,16 +138,42 @@ extern void parse_command_line(int argc, char *argv[])
 #endif
 }
 
+/* map size in string to number, interpret suffix of "k" or "m" */
+static uint32_t _map_size( char *buf )
+{
+	long b_size;
+	char *end_ptr;
+
+	b_size = strtol(buf, &end_ptr, 10);
+	if ((b_size == LONG_MIN) || (b_size == LONG_MAX)
+	||  (b_size < 0)) {
+		fprintf(stderr, "size specification is invalid, ignored\n");
+		b_size = 0;
+	}
+	else if (end_ptr[0] == '\0')
+		;
+	else if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+		b_size *= 1024;
+	else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M'))
+		b_size *= (1024 * 1024);
+	else {
+		fprintf(stderr, "size specification is invalid, ignored\n");
+		b_size = 0;
+	}
+	return (uint32_t) b_size;
+}
+
 /* print the parameters specified */
-void _print_options( void )
+static void _print_options( void )
 {
 	info("-----------------------------");
-	info("compress  = %s", params.compress ? "true" : "false");
-	info("force     = %s", params.force ? "true" : "false");
-	info("preserve  = %s", params.preserve ? "true" : "false");
-	info("verbose   = %d", params.verbose);
-	info("source    = %s", params.src_fname);
-	info("dest      = %s", params.dst_fname);
+	info("block_size = %u", params.block_size);
+	info("compress   = %s", params.compress ? "true" : "false");
+	info("force      = %s", params.force ? "true" : "false");
+	info("preserve   = %s", params.preserve ? "true" : "false");
+	info("verbose    = %d", params.verbose);
+	info("source     = %s", params.src_fname);
+	info("dest       = %s", params.dst_fname);
 	info("-----------------------------");
 }
 
@@ -161,6 +195,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress      compress the file being transmitted\n\
   -f, --force         replace destination file as required\n\
   -p, --preserve      preserve modes and times of source file\n\
+  -s, --size          block size in bytes (rounded off)\n\
   -v, --verbose       provide detailed event logging\n\
   -V, --version       print version information and exit\n\
 \nHelp options:\n\

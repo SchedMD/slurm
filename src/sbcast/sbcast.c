@@ -130,10 +130,10 @@ static void _get_job_info(void)
 
 /* load a buffer with data from the file to broadcast, 
  * return number of bytes read, zero on end of file */
-static int _get_block(char *buffer, size_t buf_size)
+static ssize_t _get_block(char *buffer, size_t buf_size)
 {
 	static int fd = 0;
-	int buf_used = 0, rc;
+	ssize_t buf_used = 0, rc;
 
 	if (!fd) {
 		fd = open(params.src_fname, O_RDONLY);
@@ -238,25 +238,29 @@ static void _send_rpc(file_bcast_msg_t *bcast_msg)
 /* read and broadcast the file */
 static void _bcast_file(void)
 {
-	int buf_size;
-	off_t size_read = 0;
+	int buf_size, i;
+	ssize_t size_block, size_read = 0;
 	file_bcast_msg_t bcast_msg;
-	char *buffer;
+	char *buffer[FILE_BLOCKS];
 
 	/* NOTE: packmem() uses 16 bits to express a block size, 
 	 * buf_size must be no larger than 64k - 1 */
 	buf_size = MIN(SSIZE_MAX, (63 * 1024));
 	buf_size = MIN(buf_size, f_stat.st_size);
-	buffer = xmalloc(buf_size);
 
 	bcast_msg.fname		= params.dst_fname;
-	bcast_msg.block_no	= 0;
+	bcast_msg.block_no	= 1;
 	bcast_msg.last_block	= 0;
 	bcast_msg.force		= params.force;
 	bcast_msg.modes		= f_stat.st_mode;
 	bcast_msg.uid		= f_stat.st_uid;
 	bcast_msg.gid		= f_stat.st_gid;
-	bcast_msg.data		= buffer;
+	for (i=0; i<FILE_BLOCKS; i++) {
+		buffer[i]              = xmalloc(buf_size);
+		bcast_msg.block[i]     = buffer[i];
+		bcast_msg.block_len[i] = 0;
+	}
+
 	if (params.preserve) {
 		bcast_msg.atime     = f_stat.st_atime;
 		bcast_msg.mtime     = f_stat.st_mtime;
@@ -265,13 +269,24 @@ static void _bcast_file(void)
 		bcast_msg.mtime     = 0;
 	}
 
-	while ((bcast_msg.block_len = _get_block(buffer, buf_size))) {
-		bcast_msg.block_no++;
-		size_read += bcast_msg.block_len;
-		if (size_read >= f_stat.st_size)
-			bcast_msg.last_block = 1;
+	while (1) {
+		size_block = 0;
+		for (i=0; i<FILE_BLOCKS; i++) {
+			bcast_msg.block_len[i] = 
+				_get_block(buffer[i], buf_size);
+			size_read += bcast_msg.block_len[i];
+			if (size_read >= f_stat.st_size)
+				bcast_msg.last_block = 1;
+			size_block += bcast_msg.block_len[i];
+			if (size_block >= params.block_size)
+				break;
+		}
 		_send_rpc(&bcast_msg);
 		if (bcast_msg.last_block)
 			break;	/* end of file */
+		bcast_msg.block_no += FILE_BLOCKS;
 	}
+
+	for (i=0; i<FILE_BLOCKS; i++)
+		xfree(buffer[i]);
 }
