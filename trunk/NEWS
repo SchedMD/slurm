@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Bluegene specific - Added support to set bluegene block state to 
     free/error via scontrol update BlockName 
+ -- Add needed symbol to select/bluegene in order to load plugin.
 
 * Changes in SLURM 1.1.0-pre3
 =============================
