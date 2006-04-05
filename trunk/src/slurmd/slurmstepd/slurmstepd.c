@@ -114,7 +114,6 @@ main (int argc, char *argv[])
 	xfree(conf->spooldir);
 	xfree(conf->node_name);
 	xfree(conf->logfile);
-	xfree(conf->job_acct_parameters);
 	xfree(conf);
 	info("done with job");
 	return 0;
@@ -166,6 +165,17 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);
 	
+	/* receive reverse-tree info from slurmd */
+	pthread_mutex_lock(&step_complete.lock);
+	safe_read(sock, &step_complete.rank, sizeof(int));
+	safe_read(sock, &step_complete.parent_rank, sizeof(int));
+	safe_read(sock, &step_complete.children, sizeof(int));
+	safe_read(sock, &step_complete.depth, sizeof(int));
+	safe_read(sock, &step_complete.max_depth, sizeof(int));
+	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
+	step_complete.bits = bit_alloc(step_complete.children);
+	pthread_mutex_unlock(&step_complete.lock);
+
 	/* receive conf from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);
@@ -197,7 +207,7 @@ _init_from_slurmd(int sock, char **argv,
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
-	g_slurmd_jobacct_init(conf->job_acct_parameters);
+	jobacct_g_init(conf->job_acct_freq);
 	switch_g_slurmd_step_init();
 
 	/* receive cli from slurmd */

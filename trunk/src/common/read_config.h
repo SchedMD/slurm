@@ -40,8 +40,8 @@ extern slurm_ctl_conf_t slurmctld_conf;
 #define DEFAULT_FIRST_JOB_ID        1
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
-#define DEFAULT_JOB_ACCT_LOC        "/var/log/slurm_accounting.log"
-#define DEFAULT_JOB_ACCT_PARAMETERS "Frequency=30"
+#define DEFAULT_JOB_ACCT_LOGFILE    "/var/log/slurm_accounting.log"
+#define DEFAULT_JOB_ACCT_FREQ       30
 #define DEFAULT_JOB_ACCT_TYPE       "jobacct/none"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
@@ -198,6 +198,13 @@ extern char *slurm_conf_get_nodename(const char *node_hostname);
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern uint16_t slurm_conf_get_port(const char *node_name);
+
+/*
+ * slurm_conf_get_addr - Return the slurm_addr for a given NodeName
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern slurm_addr slurm_conf_get_addr(const char *node_name);
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 

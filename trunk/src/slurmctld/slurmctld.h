@@ -348,6 +348,7 @@ struct 	step_record {
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
 	uint32_t num_tasks;		/* number of tasks required */
+	uint32_t num_cpus;		/* number of cpus required */
 	time_t start_time;      	/* step allocation time */
 	char *step_node_list;		/* list of nodes allocated to job 
 					   step */
@@ -361,12 +362,16 @@ struct 	step_record {
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
+	uint32_t exit_code;		/* highest exit code from any task */
+	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
+	struct rusage rusage;           /* keep track of process info in the 
+					   step */
+	int max_psize;
+	int max_vsize;
 };
 
 extern List job_list;			/* list of job_record entries */
 
- extern List job_list;                  /* list of job_record entries */
- 
 /*****************************************************************************\
  *  Consumable Resources parameters and data structures
 \*****************************************************************************/
@@ -388,6 +393,17 @@ enum select_data_info {
 /*****************************************************************************\
  *  Global slurmctld functions
 \*****************************************************************************/
+
+/*
+ * aggregate_step_data - given a step_record, aggregate all process info
+ * IN step - pointer to step record
+ * IN rusage - rusage struct
+ * IN psize - psize
+ * IN vsize - vsize 
+ * RET NONE
+ */
+void aggregate_step_data(struct step_record *step,
+			 struct rusage rusage, int psize, int vsize);
 
 /*
  * bitmap2node_name - given a bitmap, build a list of comma separated node 
@@ -1145,6 +1161,17 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
  */
 extern bool step_on_node(struct job_record  *job_ptr, 
 			 struct node_record *node_ptr);
+
+/*
+ * step_partial_comp - Note the completion of a job step on at least
+ *	some of its nodes
+ * IN req     - step_completion_msg RPC from slurmstepd
+ * OUT rem    - count of nodes for which responses are still pending
+ * OUT max_rc - highest return code for any step thus far
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int step_partial_comp(step_complete_msg_t *req, int *rem,
+		int *max_rc);
 
 /*
  * Synchronize the batch job in the system with their files.

@@ -11,7 +11,8 @@ sacct_LDADD =					\
 	$(top_builddir)/src/common/libcommon.la	\
 	$(top_builddir)/src/api/libslurm.la
 
-sacct_SOURCES = sacct.c
+noinst_HEADERS = sacct.c 
+sacct_SOURCES = sacct.c process.c print.c options.c
 
 force:
 $(sacct_LDADD) : force

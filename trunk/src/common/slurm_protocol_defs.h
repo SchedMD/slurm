@@ -43,6 +43,7 @@
 #endif				/*  HAVE_CONFIG_H */
 
 #include <slurm/slurm.h>
+#include <sys/wait.h>
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -134,14 +135,17 @@ typedef enum {
 	RESPONSE_RUN_JOB_STEP,
 	REQUEST_CANCEL_JOB_STEP,
 	RESPONSE_CANCEL_JOB_STEP,
-	REQUEST_COMPLETE_JOB_STEP,
-	RESPONSE_COMPLETE_JOB_STEP,
+	DEFUNCT_REQUEST_COMPLETE_JOB_STEP, /* DEFUNCT */
+	DEFUNCT_RESPONSE_COMPLETE_JOB_STEP, /* DEFUNCT */
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
 	REQUEST_CHECKPOINT_COMP,
 	RESPONSE_CHECKPOINT_COMP,
 	REQUEST_SUSPEND,
 	RESPONSE_SUSPEND,
+	REQUEST_STEP_COMPLETE,
+	REQUEST_COMPLETE_JOB_ALLOCATION,
+	REQUEST_COMPLETE_BATCH_SCRIPT,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -166,9 +170,7 @@ typedef enum {
 	PMI_KVS_GET_REQ,
 	PMI_KVS_GET_RESP,
 
-	RESPONSE_SLURM_RC = 8001,
-	MESSAGE_UPLOAD_ACCOUNTING_INFO,
-	MESSAGE_JOBACCT_DATA,
+	RESPONSE_SLURM_RC = 8001
 } slurm_msg_type_t;
 
 typedef enum {
@@ -300,13 +302,28 @@ typedef struct part_info_request_msg {
 	uint16_t show_flags;
 } part_info_request_msg_t;
 
-typedef struct complete_job_step_msg {
+typedef struct complete_job_allocation {
 	uint32_t job_id;
-	uint32_t job_step_id;
+	uint32_t job_rc;
+} complete_job_allocation_msg_t;
+
+typedef struct complete_batch_script {
+	uint32_t job_id;
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	char *node_name;
-} complete_job_step_msg_t;
+} complete_batch_script_msg_t;
+
+typedef struct step_complete_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;
+	uint32_t range_first;
+	uint32_t range_last;
+ 	uint32_t step_rc;	/* largest task return code */
+	struct rusage rusage;
+	uint32_t max_vsize;
+	uint32_t max_psize;
+} step_complete_msg_t;
 
 typedef struct kill_tasks_msg {
 	uint32_t job_id;
@@ -536,11 +553,6 @@ typedef struct suspend_msg {
 	uint32_t job_id;        /* slurm job_id */
 } suspend_msg_t;
 
-typedef struct jobacct_msg {
-	uint16_t len;		/* job accounting plugins specify their own */
-	char *data;		/* data structure; we just pass it to them. */
-} jobacct_msg_t;
-
 typedef struct kvs_get_msg {
 	uint16_t task_id;	/* job step's task id */
 	uint16_t size;		/* count of tasks in job */
@@ -601,7 +613,6 @@ void inline slurm_free_part_info_request_msg(
 void inline slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
-void inline slurm_free_job_complete_msg(complete_job_step_msg_t * msg);
 
 void inline
 slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
@@ -621,39 +632,33 @@ void inline slurm_free_update_part_msg(update_part_msg_t * msg);
 void inline slurm_free_delete_part_msg(delete_part_msg_t * msg);
 void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
-void inline slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t *
-						msg);
-void inline slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
-						 msg);
-void inline slurm_free_spawn_task_request_msg(spawn_task_request_msg_t *
-						msg);
+void inline 
+slurm_free_complete_job_allocation_msg(complete_job_allocation_msg_t * msg);
+void inline
+slurm_free_complete_batch_script_msg(complete_batch_script_msg_t * msg);
+void inline 
+slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg);
+void inline 
+slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t * msg);
+void inline slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg);
 void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
-
 void inline 
 slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg);
 void inline
 slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
-
 void inline slurm_free_kill_job_msg(kill_job_msg_t * msg);
 void inline slurm_free_signal_job_msg(signal_job_msg_t * msg);
 void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
-
 void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
-
 void inline slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
-
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
-
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
-
-void inline slurm_free_jobacct_msg(jobacct_msg_t *msg);
-
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
 void slurm_free_resource_allocation_and_run_response_msg (
@@ -669,6 +674,7 @@ void slurm_free_node_info_msg(node_info_msg_t * msg);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
+void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);

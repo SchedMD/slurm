@@ -241,9 +241,9 @@ char * xstrdup(const char *str)
 	       rsiz;
 	char   *result;
 
-	if (str == NULL)
+	if (str == NULL) {
 		return NULL;
-
+	}
 	siz = strlen(str) + 1;
 	result = (char *)xmalloc(siz);
 

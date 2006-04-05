@@ -50,7 +50,6 @@
 #include "src/common/node_select.c"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -59,8 +58,10 @@
 #include "src/common/list.h"
 #include "src/common/util-net.h"
 #include "src/common/forward.h"
+#include "src/common/read_config.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -100,6 +101,7 @@ static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
+static int  _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
@@ -208,25 +210,14 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		_rpc_pid2jid(msg, cli);
 		slurm_free_job_id_request_msg(msg->data);
 		break;
-	case MESSAGE_JOBACCT_DATA:
-		{
-			int rc=SLURM_SUCCESS;
-			debug3("jobacct(%i) received jobacct message",
-					getpid());
-			slurm_send_rc_msg(msg,rc); /* ACK the message */
-			debug3("jobacct(%i) sent jobacct rc=%d message",
-					getpid(), rc);
-			rc=g_slurm_jobacct_process_message(msg);
-			debug3("jobacct(%i) slurm_jobacct_process_message "
-					"rc=%d",
-					getpid(), rc);
-			slurm_free_jobacct_msg(msg->data);
-		}
-		break;
 	case REQUEST_FILE_BCAST:
 		rc = _rpc_file_bcast(msg, cli);
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_file_bcast_msg(msg->data);
+		break;
+	case REQUEST_STEP_COMPLETE:
+		rc = _rpc_step_complete(msg, cli);
+		slurm_free_step_complete_msg(msg->data);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -239,7 +230,8 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req, 
-		      slurm_addr *cli, slurm_addr *self)
+		      slurm_addr *cli, slurm_addr *self,
+		      hostset_t step_hset)
 {
 	int len = 0;
 	Buf buffer;
@@ -248,8 +240,66 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	struct passwd *pw = NULL;
 	gids_t *gids = NULL;
 
+	int rank, count;
+	int parent_rank, children, depth, max_depth;
+	char *parent_alias = NULL;
+	slurm_addr parent_addr;
+
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
+
+	/* step_hset can be NULL for batch scripts, OR if the user is
+	 * the SlurmUser, and the job credential did not validate in
+	 * _check_job_credential.  If the job credential did not validate,
+	 * then it did not come from the controller and there is no reason
+	 * to send step completion messages to the controller.
+	 */
+	if (step_hset == NULL) {
+		rank = -1;
+		parent_rank = -1;
+		children = 0;
+		depth = 0;
+		max_depth = 0;
+	} else {
+#ifndef HAVE_FRONT_END
+		count = hostset_count(step_hset);
+		rank = hostset_index(step_hset, conf->node_name, 0);
+		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
+				  &parent_rank, &children,
+				  &depth, &max_depth);
+		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
+			/* Find the slurm_addr of this node's parent slurmd
+			   in the step host list */
+			parent_alias = hostset_nth(step_hset, parent_rank);
+			parent_addr = slurm_conf_get_addr(parent_alias);
+		}
+#else
+		/* In FRONT_END mode, one slurmd pretends to be all
+		 * NodeNames, so we can't compare conf->node_name
+		 * to the NodeNames in step_hset.  Just send step complete
+		 * RPC directly to the controller.
+		 */
+		rank = 0;
+		parent_rank = -1;
+		children = 0;
+		depth = 0;
+		max_depth = 0;
+#endif
+	}
+	
+	debug3("slurmstepd rank %d (%s), parent rank %d (%s), "
+	       "children %d, depth %d, max_depth %d",
+	       rank, conf->node_name,
+	       parent_rank, parent_alias ? parent_alias : "NONE",
+	       children, depth, max_depth);
+	/* FIXME - send the reverse tree info to slurmstepd! */
+	/* send reverse-tree info to the slurmstepd */
+	safe_write(fd, &rank, sizeof(int));
+	safe_write(fd, &parent_rank, sizeof(int));
+	safe_write(fd, &children, sizeof(int));
+	safe_write(fd, &depth, sizeof(int));
+	safe_write(fd, &max_depth, sizeof(int));
+	safe_write(fd, &parent_addr, sizeof(slurm_addr));
 
 	/* send conf over to slurmstepd */
 	buffer = init_buf(0);
@@ -283,11 +333,6 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	/* send req over to slurmstepd */
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
-		/*
-		 * The validity of req->uid was verified against the
-		 * auth credential in _rpc_batch_job().  req->gid
-		 * has NOT yet been checked!
-		 */
 		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
 		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
@@ -361,7 +406,8 @@ rwfail:
  */
 static int
 _forkexec_slurmstepd(slurmd_step_type_t type, void *req, 
-		     slurm_addr *cli, slurm_addr *self)
+		     slurm_addr *cli, slurm_addr *self,
+		     const hostset_t step_hset)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -392,7 +438,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("Unable to close write to_slurmd in parent: %m");
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
-						req, cli, self)) < 0) {
+						req, cli, self,
+						step_hset)) < 0) {
 			error("Unable to init slurmstepd");
 			rc = SLURM_FAILURE;
 			goto done;
@@ -450,9 +497,20 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 	}
 }
 
+
+/*
+ * The job(step) credential is the only place to get a definitive
+ * list of the nodes allocated to a job step.  We need to return
+ * a hostset_t of the nodes.
+ *
+ * FIXME - Rewrite this to only take a slurm_cred_t and only return a
+ *         slurm_cred_arg_t.  The other parameters, jobid, stepid, etc.
+ *         should be checked one caller layer higher.
+ */
 static int
 _check_job_credential(slurm_cred_t cred, uint32_t jobid, 
-		      uint32_t stepid, uid_t uid, int tasks_to_launch)
+		      uint32_t stepid, uid_t uid, int tasks_to_launch,
+		      hostset_t *step_hset)
 {
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
@@ -472,8 +530,12 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	 * performing validity check of the credential
 	 */
 	if (user_ok) {
-		if (rc >= 0)
+		*step_hset = NULL;
+		if (rc >= 0) {
+			if ((hset = hostset_create(arg.hostlist)))
+				*step_hset = hset;
 			xfree(arg.hostlist);
+		}
 		return SLURM_SUCCESS;
 	}
 
@@ -529,7 +591,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                 }
         }
 
-	hostset_destroy(hset);
+	*step_hset = hset;
 	xfree(arg.hostlist);
 	arg.ntask_cnt = 0;
 	xfree(arg.ntask);
@@ -537,8 +599,9 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	return SLURM_SUCCESS;
 
     fail:
-	if (hset)
+	if (hset) 
 		hostset_destroy(hset);
+	*step_hset = NULL;
 	xfree(arg.hostlist);
         arg.ntask_cnt = 0;
         xfree(arg.ntask);
@@ -559,6 +622,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	bool     super_user = false, run_prolog = false;
 	slurm_addr self;
 	socklen_t adlen;
+	hostset_t step_hset = NULL;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req->srun_node_id = msg->srun_node_id;
@@ -583,7 +647,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 #endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
-				  req->tasks_to_launch[req->srun_node_id]) 
+				  req->tasks_to_launch[req->srun_node_id],
+				  &step_hset) 
 	    < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
@@ -606,9 +671,14 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	}
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self);
+
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
+				      step_hset);
 
     done:
+	if (step_hset)
+		hostset_destroy(step_hset);
+
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
 
 		error("launch_tasks: unable to send return code: %m");
@@ -643,6 +713,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_addr self;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
+	hostset_t step_hset = NULL;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -665,7 +736,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 #endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid, 
-			spawn_tasks_to_launch) < 0) {
+				  spawn_tasks_to_launch, &step_hset) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
@@ -688,9 +759,13 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
-	errnum = _forkexec_slurmstepd(SPAWN_TASKS, (void *)req, cli, &self);
+
+	errnum = _forkexec_slurmstepd(SPAWN_TASKS, (void *)req, cli, &self,
+				      step_hset);
 
     done:
+	if (step_hset)
+		hostset_destroy(step_hset);
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
 
 		error("spawn_task: unable to send return code: %m");
@@ -756,7 +831,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	} 
 
-	if (req->step_id != NO_VAL && req->step_id != 0)
+	if (req->step_id != SLURM_BATCH_SCRIPT && req->step_id != 0)
 		first_job_run = false;
 		
 	/*
@@ -803,13 +878,16 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	slurm_mutex_lock(&launch_mutex);
-	if (req->step_id == NO_VAL)
+	if (req->step_id == SLURM_BATCH_SCRIPT)
 		info("Launching batch job %u for UID %d",
 			req->job_id, req->uid);
 	else
 		info("Launching batch job %u.%u for UID %d",
 			req->job_id, req->step_id, req->uid);
-	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL);
+
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
+				  (hostset_t)NULL);
+
 	slurm_mutex_unlock(&launch_mutex);
 
     done:
@@ -825,17 +903,16 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 static int
 _abort_job(uint32_t job_id)
 {
-	complete_job_step_msg_t  resp;
+	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
 
 	resp.job_id       = job_id;
-	resp.job_step_id  = NO_VAL;
 	resp.job_rc       = 1;
 	resp.slurm_rc     = 0;
 	resp.node_name    = NULL;	/* unused */
-	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
+	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
-	resp_msg.forward.cnt = 0;
+	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
@@ -901,14 +978,16 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	int               fd;
 	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid;
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->cred);
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	slurmstepd_info_t *step;
 
 #ifdef HAVE_XCPU
-	error("REQUEST_SIGNAL_TASKS not support with XCPU system");
-	rc = ESLURM_NOT_SUPPORTED;
-	goto done;
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_TASKS not support with XCPU system");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto done;
+	}
 #endif
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
@@ -926,7 +1005,6 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done2;
 	} 
 
-	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long) req_uid, req->job_id, req->job_step_id, 
@@ -1001,6 +1079,45 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 
 done3:
 	xfree(step);
+done2:
+	close(fd);
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static int
+_rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr)
+{
+	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
+	int               rc = SLURM_SUCCESS;
+	int               fd;
+	uid_t             req_uid;
+	slurmstepd_info_t *step;
+
+	debug3("Entering _rpc_step_complete");
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->job_step_id);
+	if (fd == -1) {
+		error("stepd_connect to %u.%u failed: %m",
+				req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
+
+	/* step completion messages are only allowed from other slurmstepd,
+	   so only root or SlurmUser is allowed here */
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	if (!_slurm_authorized_user(req_uid)) {
+		debug("step completion from uid %ld for job %u.%u",
+		      (long) req_uid, req->job_id, req->job_step_id);
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done2;
+	}
+
+	rc = stepd_completion(fd, req);
+	if (rc == -1)
+		rc = ESLURMD_JOB_NOTRUNNING;
+
 done2:
 	close(fd);
 done:
@@ -1569,15 +1686,17 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	int fd;
 
 #ifdef HAVE_XCPU
-	error("REQUEST_SIGNAL_JOB not supported with XCPU system");
-	if (msg->conn_fd >= 0) {
-		slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
-			error ("_rpc_signal_job: close(%d): %m",
-				msg->conn_fd);
-		msg->conn_fd = -1;
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_JOB not supported with XCPU system");
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+				error ("_rpc_signal_job: close(%d): %m",
+					msg->conn_fd);
+			msg->conn_fd = -1;
+		}
+		return;
 	}
-	return;
 #endif
 
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);

@@ -168,6 +168,13 @@ enum job_wait_reason {
 	WAIT_TIME		/* job waiting for specific begin time */
 };
 
+enum job_acct_types {
+	JOB_START,
+	JOB_STEP,
+	JOB_SUSPEND,
+	JOB_TERMINATED
+};
+
 #ifdef HAVE_BG
 #  define SYSTEM_DIMENSIONS 3	/* for job geometry */
 #else
@@ -570,8 +577,8 @@ typedef struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
-	char *job_acct_loc;	/* job accounting log location */
-	char *job_acct_parameters; /* parameters for job accounting plugins */
+	char *job_acct_logfile;	/* job accounting log location */
+	uint16_t job_acct_freq; /* poll frequency for job accounting plugins */
 	char *job_acct_type;	/* job accounting type */
 	char *job_comp_type;	/* job completion logger type */
 	char *job_comp_loc;	/* job completion logging location */
@@ -585,7 +592,7 @@ typedef struct slurm_ctl_conf {
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog */
         char *propagate_rlimits;/* Propagate (all/specific) resource limits */
-        char *propagate_rlimits_except; /* Propagate all rlimits except these */
+        char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */
 	char *schedtype;	/* type of scheduler to use */
@@ -840,24 +847,10 @@ extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
  * slurm_complete_job - note the completion of a job and all of its steps 
  * IN job_id - the job's id
  * IN job_return_code - the highest exit code of any task of the job
- * IN system_return_code - any slurm/system exit code
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_complete_job PARAMS((
-	uint32_t job_id, uint32_t job_return_code, 
-	uint32_t system_return_code));
-
-/*
- * slurm_complete_job_step - note the completion of a specific job step 
- * IN job_id - the job's id
- * IN step_id - the job step's id or NO_VAL for all of the job's steps
- * IN job_return_code - the highest exit code of any task of the job
- * IN system_return_code - any slurm/system exit code
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-extern int slurm_complete_job_step PARAMS((
-	uint32_t job_id, uint32_t step_id, 
-	uint32_t job_return_code, uint32_t system_return_code));
+extern int slurm_complete_job PARAMS((uint32_t job_id,
+	uint32_t job_return_code));
 
 /*
  * slurm_terminate_job - terminates all steps of an existing job by sending
@@ -866,8 +859,7 @@ extern int slurm_complete_job_step PARAMS((
  * IN job_id     - the job's id
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int 
-slurm_terminate_job PARAMS((uint32_t job_id));
+extern int slurm_terminate_job PARAMS((uint32_t job_id));
 
 /*
  * slurm_terminate_job_step - terminates a job step by sending a

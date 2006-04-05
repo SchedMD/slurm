@@ -21,8 +21,9 @@ SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
 	get_mach_stat.c get_mach_stat.h	\
-	read_proc.c \
-	xcpu.c xcpu.h \
+	read_proc.c 	        	\
+	reverse_tree_math.c reverse_tree_math.h \
+	xcpu.c xcpu.h			\
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
 	$(top_builddir)/src/slurmd/common/setproctitle.c \
@@ -34,7 +35,8 @@ SLURMD_SOURCES = \
 	$(top_builddir)/src/slurmd/common/run_script.c \
 	$(top_builddir)/src/slurmd/common/run_script.h \
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
-	$(top_builddir)/src/slurmd/common/task_plugin.h
+	$(top_builddir)/src/slurmd/common/task_plugin.h \
+	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
 slurmd_SOURCES = \
     $(SLURMD_SOURCES) \

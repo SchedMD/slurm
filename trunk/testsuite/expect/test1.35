@@ -10,7 +10,7 @@
 # Note:    This script generates and then deletes files in the working directory 
 #          named test1.35.input, test1.35.output, and test1.35.error
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -73,7 +73,11 @@ set timeout $max_job_delay
 if { [test_bluegene] } {
 	set node_cnt 32-2048
 } else {
-	set node_cnt 1-4
+	if { [test_xcpu] } {
+		set node_cnt 1-1
+	} else {
+		set node_cnt 1-4
+	}
 }
 
 spawn $srun --batch -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in

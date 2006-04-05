@@ -28,6 +28,28 @@
 #ifndef _SLURMSTEPD_H
 #define _SLURMSTEPD_H
 
+#include "src/common/bitstring.h"
+
+#define STEPD_MESSAGE_COMP_WAIT 15 /* seconds */
+
 extern int slurmstepd_blocked_signals[];
+
+typedef struct {
+	pthread_cond_t cond;
+	pthread_mutex_t lock;
+	int rank;
+	int depth;
+	int parent_rank;
+	slurm_addr parent_addr;
+	int children;
+	int max_depth;
+	bitstr_t *bits;
+	int step_rc;
+	struct rusage rusage;
+	int max_psize;
+	int max_vsize;
+} step_complete_t;
+
+extern step_complete_t step_complete;
 
 #endif /* !_SLURMSTEPD_H */

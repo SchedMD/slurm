@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -148,12 +148,16 @@ if {[string compare $host_0 ""] == 0} {
 #
 # Run three tasks at a time on some node and do so repeatedly
 # This checks for slurmd race conditions
+# The sleep between cycles is to make sure the job step completion 
+# logic has time to be processed (slurmd -> slurmctld messages)
 # Note: process output in order of expected completion
 #
 set front_end [test_front_end]
 
 set successes 0
 for {set inx 0} {$inx < $interations} {incr inx} {
+	exec $bin_usleep 250000
+
 	set failures 0
 	spawn $srun -N1 --nodelist=$include_node -t1 -l $bin_hostname
 	set   alloc $spawn_id

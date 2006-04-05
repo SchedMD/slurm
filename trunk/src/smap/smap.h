@@ -72,7 +72,7 @@
 
 enum { JOBS, SLURMPART, BGPART, COMMANDS };
 
-typedef void (*sighandler_t) (int);
+//typedef void (*sighandler_t) (int);
 
 /* Input parameters */
 typedef struct {
