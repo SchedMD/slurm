@@ -266,7 +266,7 @@ configuration paramters.</p>
 <p><a name="inc_plugin"><b>6. When the SLURM daemon starts, it 
 prints &quot;cannot resolve X plugin operations&quot; and exits. 
 What does this mean?</b></a><br>
-This means that symbols expected in the plugin which were 
+This means that symbols expected in the plugin were 
 not found by the daemon. This typically happens when the 
 plugin was built or installed improperly or the configuration 
 file is telling the plugin to use an old plugin (say from the 
