@@ -1,10 +1,10 @@
-.TH SBCAST "1" "February 2006" "sbcast 1.1" "Slurm components"
+.TH SBCAST "1" "April 2006" "sbcast 1.1" "Slurm components"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a SLURM job.
 
 .SH "SYNOPSIS"
-\fBsbcast\fR [\-CfpvV] SOURCE DEST 
+\fBsbcast\fR [\-CfpsvV] SOURCE DEST 
 
 .SH "DESCRIPTION"
 \fBsbcast\fR is used to transmit a file to all nodes allocated 
@@ -32,6 +32,13 @@ If the destination file already exists, replace it.
 Preserves modification times, access times, and modes from the 
 original file.
 .TP
+\fB\-s\fR \fIsize\fR, \fB\-\-size\fR=\fIsize\fR
+Specify the block size used for file broadcast.
+The size can have a suffix of \fIk\fR or \fIm\fR for kilobytes 
+or megabytes respecitively (defaults to bytes).
+This size subject to rounding and range limits to maintain 
+good performance.
+.TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Provide detailed event logging through program execution.
 .TP
@@ -53,6 +60,9 @@ these settings.)
 .TP
 \fBSBCAST_PRESERVE\fR
 \fB\-p, \-\-preserve\fR
+.TP
+\fBSBCAST_SIZE\fR
+\fB\-s\fR \fIsize\fR, \fB\-\-size\fR=\fIsize\fR
 
 .SH "EXAMPLE"
 

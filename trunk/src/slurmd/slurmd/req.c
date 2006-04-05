@@ -1092,7 +1092,7 @@ static int
 _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, offset, inx, rc;
+	int i, fd, flags, offset, inx, rc;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 	uid_t req_gid = g_slurm_auth_get_gid(msg->cred);
 	pid_t child;
@@ -1100,11 +1100,11 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 #if 0
 	info("last_block=%u force=%u modes=%o",
 		req->last_block, req->force, req->modes);
-	info("uid=%u gid=%u atime=%lu mtime=%lu block_len=%u",
-		req->uid, req->gid, req->atime, req->mtime, req->block_len);
+	info("uid=%u gid=%u atime=%lu mtime=%lu block_len[0]=%u",
+		req->uid, req->gid, req->atime, req->mtime, req->block_len[0]);
 	/* when the file being transferred is binary, the following line
 	 * can break the terminal output for slurmd */
-	/* info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data); */
+	/* info("req->block[0]=%s, @ %lu", req->block[0], (unsigned long) &req->block[0]); */
 #endif
 
 	info("sbcast req_uid=%u fname=%s block_no=%u", 
@@ -1147,18 +1147,21 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 		exit(errno);
 	}
 
-	offset = 0;
-	while (req->block_len - offset) {
-		inx = write(fd, &req->data[offset], (req->block_len - offset));
-		if (inx == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("sbcast: uid:%u can't write `%s`: %s",
-				req_uid, req->fname, strerror(errno));
-			close(fd);
-			exit(errno);
+	for (i=0; i<FILE_BLOCKS; i++) {
+		offset = 0;
+		while (req->block_len[i] - offset) {
+			inx = write(fd, &req->block[i][offset], 
+				(req->block_len[i] - offset));
+			if (inx == -1) {
+				if ((errno == EINTR) || (errno == EAGAIN))
+					continue;
+				error("sbcast: uid:%u can't write `%s`: %s",
+					req_uid, req->fname, strerror(errno));
+				close(fd);
+				exit(errno);
+			}
+			offset += inx;
 		}
-		offset += inx;
 	}
 	if (req->last_block && fchmod(fd, (req->modes & 0777))) {
 		error("sbcast: uid:%u can't chmod `%s`: %s",

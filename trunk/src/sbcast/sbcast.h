@@ -37,6 +37,7 @@
 #include <src/common/macros.h>
 
 struct sbcast_parameters {
+	uint32_t block_size;
 	bool compress;
 	bool force;
 	bool preserve;
