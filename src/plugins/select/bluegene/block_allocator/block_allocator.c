@@ -104,11 +104,16 @@ static int _copy_the_path(ba_switch_t *curr_switch, ba_switch_t *mark_switch,
 /* */
 static int _find_yz_path(ba_node_t *ba_node, int *first, 
 			 int *geometry, int conn_type);
+#endif
+
+#ifndef HAVE_BG_FILES
+#ifdef HAVE_BG
 /* */
 static int _create_config_even(ba_node_t ***grid);
 #else
 /* */
 static int _create_config_even(ba_node_t *grid);
+#endif
 #endif
 
 /** */
@@ -702,7 +707,7 @@ node_info_error:
 
 #ifdef HAVE_BG_FILES
 	if (have_db2
-	    && (DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
+	    && ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0))) {
 		slurm_mutex_lock(&api_file_mutex);
 		if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
 			slurm_mutex_unlock(&api_file_mutex);
@@ -1671,6 +1676,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 
 #endif
 
+#ifndef HAVE_BG_FILES
 /** */
 #ifdef HAVE_BG
 static int _create_config_even(ba_node_t ***grid)
@@ -1725,6 +1731,7 @@ static int _create_config_even(ba_node_t *grid)
 #endif
 	return 1;
 }
+#endif
 
 static int _reset_the_path(ba_switch_t *curr_switch, int source, 
 			   int target, int dim)
@@ -1810,11 +1817,9 @@ extern int set_bp_map(void)
 	int rc;
 	rm_BP_t *my_bp = NULL;
 	ba_bp_map_t *bp_map = NULL;
-	int bp_num, i, j;
+	int bp_num, i;
 	char *bp_id = NULL;
 	rm_location_t bp_loc;
-	rm_wire_t *my_wire = NULL;
-	rm_port_t *my_port = NULL;
 	int number = 0;
 
 	if(_bp_map_initialized)

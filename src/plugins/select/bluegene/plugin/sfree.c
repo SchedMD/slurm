@@ -266,9 +266,9 @@ int main(int argc, char *argv[])
 
 static int _free_block(delete_record_t *delete_record)
 {
-	int state=NO_VAL;
 	int rc;
 	int i=0;
+
 	info("freeing bgblock %s", delete_record->bg_block_id);
 	_term_jobs_on_block(delete_record->bg_block_id);
 	while (1) {
@@ -307,7 +307,7 @@ static int _update_bg_record_state()
 	rm_partition_state_flag_t block_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
 	rm_partition_list_t *block_list = NULL;
-	int j, rc, i, num_blocks = 0;
+	int j, rc, num_blocks = 0;
 	rm_partition_state_t state = -2;
 	rm_partition_t *block_ptr = NULL;
 	delete_record_t *delete_record = NULL;

@@ -487,7 +487,6 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	int i, rc = SLURM_SUCCESS;
 	ListIterator itr, switch_itr, bg_itr;
 	ba_node_t* ba_node;
-	char *name2;
 	rm_BP_t *curr_bp;
 	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
 	rm_switch_t *curr_switch;
