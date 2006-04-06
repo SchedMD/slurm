@@ -51,7 +51,6 @@ List bg_sys_allocated = NULL;
 static void _pre_allocate(bg_record_t *bg_record);
 static int _post_allocate(bg_record_t *bg_record);
 static int _post_bg_init_read(void *object, void *arg);
-static int _split_block(bg_record_t *bg_record);
 
 #define MAX_ADD_RETRY 2
 
@@ -236,8 +235,6 @@ static int _find_nodecard(bg_record_t *bg_record,
 	char *my_card_name = NULL;
 	char *card_name = NULL;
 	rm_bp_id_t bp_id = NULL;
-	int nodecard = (uint16_t)NO_VAL;
-	int card_count = 0;
 	int num = 0;
 	int i=0;
 	int rc;
@@ -592,7 +589,7 @@ int read_bg_blocks()
 
 			slurm_conf_lock();
 			sprintf(node_name_tmp, 
-				"%s%d%d%d\0", 
+				"%s%d%d%d", 
 				slurmctld_conf.node_prefix,
 				coord[X], coord[Y], coord[Z]);
 			slurm_conf_unlock();
