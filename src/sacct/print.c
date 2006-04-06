@@ -355,7 +355,7 @@ void print_step(type_t type, void *object)
 		printf("%-10d", job->header.jobnum);
 		break;
 	case JOBSTEP:
-		snprintf(outbuf, sizeof(outbuf), "%d.%d",
+		snprintf(outbuf, sizeof(outbuf), "%u.%u",
 			 step->header.jobnum,
 			 step->stepnum);
 		printf("%-10s", outbuf);
