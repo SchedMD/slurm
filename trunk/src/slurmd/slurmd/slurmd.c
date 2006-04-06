@@ -359,6 +359,7 @@ _service_connection(void *arg)
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
+
 	debug2("got this type of message %d with %d other responses",
 	     msg->msg_type, list_count(ret_list));
 	msg->ret_list = ret_list;
