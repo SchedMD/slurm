@@ -36,6 +36,7 @@ static FILE *		LOGFILE;
 static int		LOGFILE_FD;
 static pthread_mutex_t  logfile_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *		log_file = NULL;
+static int              init;
 /* Format of the JOB_STEP record */
 const char *_jobstep_format = 
 "%d "
@@ -117,14 +118,16 @@ int jobacct_init(char *job_acct_log)
 		prot = statbuf.st_mode;
 	LOGFILE = fopen(log_file, "a");
 	if (LOGFILE == NULL) {
-		fatal("open %s: %m", log_file);
-		rc = SLURM_ERROR;
+		error("open %s: %m", log_file);
+		init = 0;
+		return SLURM_ERROR;
 	} else
 		chmod(log_file, prot); 
 	if (setvbuf(LOGFILE, NULL, _IOLBF, 0))
-		fatal("setvbuf() failed");
+		error("setvbuf() failed");
 	LOGFILE_FD = fileno(LOGFILE);
 	slurm_mutex_unlock( &logfile_lock );
+	init = 1;
 	return rc;
 }
 
@@ -138,6 +141,10 @@ int jobacct_job_start(struct job_record *job_ptr)
 	long	priority;
 	int track_steps = 0;
 
+	if(!init) {
+		debug("jobacct init was not called or it failed");
+		return SLURM_ERROR;
+	}
 	debug2("jobacct_job_start() called");
 	for (i=0; i < job_ptr->num_cpu_groups; i++)
 		ncpus += (job_ptr->cpus_per_node[i])
@@ -176,7 +183,11 @@ int jobacct_job_start(struct job_record *job_ptr)
 int jobacct_step_start(struct step_record *step)
 {
 	char buf[BUFFER_SIZE];
-
+	if(!init) {
+		debug("jobacct init was not called or it failed");
+		return SLURM_ERROR;
+	}
+	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
@@ -219,6 +230,11 @@ int jobacct_step_complete(struct step_record *step)
 	int rc;
 	int elapsed;
 	int comp_status;
+	
+	if(!init) {
+		debug("jobacct init was not called or it failed");
+		return SLURM_ERROR;
+	}
 	
 	now = time(NULL);
 	
@@ -273,6 +289,11 @@ int jobacct_job_complete(struct job_record *job_ptr)
 {
        	char		buf[BUFFER_SIZE];
 	
+	if(!init) {
+		debug("jobacct init was not called or it failed");
+		return SLURM_ERROR;
+	}
+	
 	debug2("jobacct_job_complete() called");
 	if (job_ptr->end_time == 0) {
 		debug("jobacct: job %u never started", job_ptr->job_id);
@@ -293,6 +314,10 @@ int jobacct_job_suspend(struct job_record *job_ptr)
 	static time_t	now = 0;
 	static time_t	temp = 0;
 	int elapsed;
+	if(!init) {
+		debug("jobacct init was not called or it failed");
+		return SLURM_ERROR;
+	}
 		
 	/* tell what time has passed */
 	if(!now)
