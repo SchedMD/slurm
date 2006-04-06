@@ -1187,10 +1187,10 @@ slurm_conf_unlock(void)
 /* Normalize supplied debug level to be in range per log.h definitions */
 static void _normalize_debug_level(uint16_t *level)
 {
-	if (*level > LOG_LEVEL_DEBUG3) {
+	if (*level > LOG_LEVEL_END) {
 		error("Normalizing debug level from %u to %d", 
-		      *level, LOG_LEVEL_DEBUG3);
-		*level = LOG_LEVEL_DEBUG3;
+		      *level, (LOG_LEVEL_END - 1));
+		*level = (LOG_LEVEL_END - 1);
 	}
 	/* level is uint16, always > LOG_LEVEL_QUIET(0), can't underflow */
 }
