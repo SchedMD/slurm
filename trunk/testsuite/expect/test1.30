@@ -41,12 +41,20 @@ if { [test_xcpu] } {
 	exit 0
 }
 
+# NOTE: One CPU per task emulation is not scalable to do via srun
+# so we use "--share" as a no-op for this argument
+if { [test_bluegene] } {
+	set srun_opts "--share"
+} else {
+	set srun_opts "-c1"
+}
+
 #
 # Spawn a srun immediate jobs with ever larger node counts
 #
-set timeout 60
+set timeout $max_job_delay
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
-	spawn $srun --immediate -N$node_cnt -c1 -t2 $bin_hostname
+	spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_hostname
 	expect {
 		-re "Immediate execution impossible" {
 			send_user "This error is expected, no worries\n"
@@ -61,6 +69,11 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		-re "Unable to allocate resources" {
 			send_user "This error is expected, no worries\n"
 			set node_cnt 0
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: some error happened\n"
+			set exit_code   1
 			exp_continue
 		}
 		timeout {
