@@ -70,6 +70,11 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.10
+=========================
+ -- Fix for job accounting logic submitted from Andy Riebs to handle issues
+    with suspending jobs and such. patch file named requeue.patch
+
 * Changes in SLURM 1.0.9
 ========================
  -- Fix job accounting logic to open new log file on slurmctld reconfig.
