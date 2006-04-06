@@ -70,7 +70,6 @@ static void _nodelist_del(void *object);
 static int _list_match_all(void *object, void *key);
 static int _in_slurm_partition(List slurm_nodes, List bg_nodes);
 static int _print_rest(db2_block_info_t *block_ptr);
-static int _addto_node_list(List nodelist, int *start, int *end);
 static int _make_nodelist(char *nodes, List nodelist);
 #endif
 
