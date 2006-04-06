@@ -240,7 +240,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	struct passwd *pw = NULL;
 	gids_t *gids = NULL;
 
-	int rank, count;
+	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr parent_addr;
@@ -262,6 +262,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		max_depth = 0;
 	} else {
 #ifndef HAVE_FRONT_END
+		int count;
 		count = hostset_count(step_hset);
 		rank = hostset_index(step_hset, conf->node_name, 0);
 		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
