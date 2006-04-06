@@ -302,10 +302,10 @@ void print_job(type_t type, void *object)
 		printf("%8s", "--------");
 		break;
 	case JOB:
-		printf("%8ld", job->header.jobnum);
+		printf("%8d", job->header.jobnum);
 		break;
 	case JOBSTEP:
-		printf("%8ld", step->header.jobnum);
+		printf("%8d", step->header.jobnum);
 		break;
 	} 
 }
@@ -355,7 +355,7 @@ void print_step(type_t type, void *object)
 		printf("%-10d", job->header.jobnum);
 		break;
 	case JOBSTEP:
-		snprintf(outbuf, sizeof(outbuf), "%ld.%ld",
+		snprintf(outbuf, sizeof(outbuf), "%d.%d",
 			 step->header.jobnum,
 			 step->stepnum);
 		printf("%-10s", outbuf);
@@ -461,10 +461,10 @@ void print_ncpus(type_t type, void *object)
 		printf("%7s", "-------");
 		break;
 	case JOB:
-		printf("%7ld", job->ncpus);
+		printf("%7d", job->ncpus);
 		break;
 	case JOBSTEP:
-		printf("%7ld", step->ncpus);
+		printf("%7d", step->ncpus);
 		break;
 	} 
 }
@@ -493,7 +493,6 @@ void print_nivcsw(type_t type, void *object)
 void print_nodes(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -566,10 +565,10 @@ void print_ntasks(type_t type, void *object)
 		printf("%7s", "-------");
 		break;
 	case JOB:
-		printf("%7ld", job->ntasks);
+		printf("%7d", job->ntasks);
 		break;
 	case JOBSTEP:
-		printf("%7ld", step->ntasks);
+		printf("%7d", step->ntasks);
 		break;
 	} 
 }
@@ -658,10 +657,10 @@ void print_psize(type_t type, void *object)
 		printf("%10s", "------");
 		break;
 	case JOB:
-		printf("%10.ld", job->psize);
+		printf("%10.d", job->psize);
 		break;
 	case JOBSTEP:
-		printf("%10ld", step->psize);
+		printf("%10d", step->psize);
 		break;
 	} 
 }
@@ -721,10 +720,10 @@ void print_submitted(type_t type, void *object)
 		printf("%-14s", "--------------");
 		break;
 	case JOB:
-		printf("%-14d", job->header.job_start);
+		printf("%-14d", (int)job->header.job_start);
 		break;
 	case JOBSTEP:
-		printf("%-14d", step->header.job_start);
+		printf("%-14d", (int)step->header.job_start);
 		break;
 	} 
 }
@@ -844,10 +843,10 @@ void print_vsize(type_t type, void *object)
 		printf("%10s", "------");
 		break;
 	case JOB:
-		printf("%10ld", job->vsize);
+		printf("%10d", job->vsize);
 		break;
 	case JOBSTEP:
-		printf("%10ld", step->vsize);
+		printf("%10d", step->vsize);
 		break;
 	} 
 }

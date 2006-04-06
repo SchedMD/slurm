@@ -1092,7 +1092,6 @@ _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr)
 	int               rc = SLURM_SUCCESS;
 	int               fd;
 	uid_t             req_uid;
-	slurmstepd_info_t *step;
 
 	debug3("Entering _rpc_step_complete");
 	fd = stepd_connect(conf->spooldir, conf->node_name,
