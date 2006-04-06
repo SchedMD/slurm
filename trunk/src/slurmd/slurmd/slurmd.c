@@ -345,16 +345,12 @@ _service_connection(void *arg)
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
-	/* slurm_print_slurm_addr(&msg->orig_addr, addrbuf, INET_ADDRSTRLEN); */
-/* 	info("using this addr %s",addrbuf); */
 	
 	ret_list = slurm_receive_msg(con->fd, msg, 0);	
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
 		goto cleanup;
 	}
-	/* slurm_print_slurm_addr(&msg->orig_addr, addrbuf, INET_ADDRSTRLEN); */
-/* 	info("now this addr %s",addrbuf); */
 	
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
