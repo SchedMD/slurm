@@ -51,9 +51,6 @@ static int _signal_batch_script_step(
 	const resource_allocation_response_msg_t *allocation, uint16_t signal);
 static int _terminate_job_step(const job_step_info_t *step,
 		       const resource_allocation_response_msg_t *allocation);
-static int _job_step_wait(uint32_t jobid, uint32_t stepid,
-			  const slurm_addr addresses[], int num_nodes,
-			  int wait_time);
 static int _terminate_batch_script_step(
 	const resource_allocation_response_msg_t *allocation);
 static int _p_send_recv_rc_msg(int num_nodes, slurm_msg_t msg[],
@@ -480,61 +477,6 @@ fail:
 	return rc ? -1 : 0;
 }
 
-
-/*
- * Poll the slurmds at the addresses listed in "addresses" for the
- * existence of the specified job step.
- *
- * Return 0 if the job step is completely terminated.  Otherwise, -1
- * shall be returned.
- */
-static int
-_job_step_wait(uint32_t jobid, uint32_t stepid,
-	       const slurm_addr addresses[], int num_nodes,
-	       int wait_time)
-{
-	slurm_msg_t *msg; /* array of message structs, one per node */
-	kill_tasks_msg_t rpc;
-	int *rc_array;
-	int rc = -1;
-	int i;
-	time_t start_time;
-
-	/* same remote procedure call for each node */
-	rpc.job_id = jobid;
-	rpc.job_step_id = stepid;
-	rpc.signal = 0;
-
-        msg = xmalloc(sizeof(slurm_msg_t) * num_nodes);
-	rc_array = xmalloc(sizeof(int) * num_nodes);
-	for (i = 0; i < num_nodes; i++) {
-		msg[i].msg_type = REQUEST_SIGNAL_TASKS;
-		msg[i].data = &rpc;
-		msg[i].address = addresses[i];
-	}
-
-	start_time = time(NULL);
-	while(time(NULL) < start_time+wait_time && rc != 0) {
-		_p_send_recv_rc_msg(num_nodes, msg, rc_array, 10);
-	
-		rc = 0;
-		for (i = 0; i < num_nodes; i++) {
-			if (rc_array[i] != ESLURM_INVALID_JOB_ID) {
-				rc = -1;
-				break;
-			}
-		}
-		if (rc == 0)
-			break;
-		else
-			sleep(2);
-	}
-
-	xfree(rc_array);
-	xfree(msg);
-
-	return rc;
-}
 
 /*
  * Send a REQUEST_TERMINATE_TASKS rpc to all nodes in a job step.
