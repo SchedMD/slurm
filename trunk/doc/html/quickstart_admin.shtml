@@ -181,12 +181,22 @@ slurm.conf.</p>
 command. This places all MPI processes in a process-tree under the control of 
 the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
 SLURM. 
-Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf.</p>
+Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf.
+Note that any direct use of <span class="commandline">srun</span> 
+will only launch one task per node when the LAM/MPI plugin is used.
+To launch more than one task per node usng the
+<span class="commandline">srun</span> command, the <i>--mpi=none</i>
+option will be required to explicitly disable the LAM/MPI plugin.</p>
 
 <p>Another good open-source MPI for use with SLURM is
 <a href="http://www.open-mpi.org/">Open MPI</a>.
 Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf 
-for use of Open MPI.</p>
+for use of Open MPI.
+Note that any direct use of <span class="commandline">srun</span> 
+will only launch one task per node when the LAM/MPI plugin is used.
+To launch more than one task per node usng the
+<span class="commandline">srun</span> command, the <i>--mpi=none</i>
+option will be required to explicitly disable the LAM/MPI plugin.</p>
 
 <p>Note that the ordering of tasks within an job's allocation matches that of 
 nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
@@ -570,6 +580,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 January 2006</p>
+<p style="text-align:center;">Last modified 5 April 2006</p>
 
 <!--#include virtual="footer.txt"-->
