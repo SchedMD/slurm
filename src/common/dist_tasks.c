@@ -257,8 +257,11 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 				     * step_layout->num_hosts);
 	step_layout->host  = xmalloc(sizeof(char *)
 				     * step_layout->num_hosts);
-	step_layout->tids  = xmalloc(sizeof(uint32_t *)
-				     * step_layout->num_hosts);
+	if ((step_layout->cpus == NULL) || (step_layout->tasks == NULL) ||
+	    (step_layout->host == NULL)) {
+		slurm_seterrno(ENOMEM);
+		return SLURM_ERROR;
+	}
 
 	for (i=0; i<step_layout->num_hosts; i++) {
 		step_layout->host[i] = hostlist_shift(step_layout->hl);
@@ -268,6 +271,14 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 			cpu_inx++;
 			cpu_cnt = 0;
 		}
+	}
+	step_layout->tasks = xmalloc(sizeof(uint32_t) 
+				     * step_layout->num_hosts);
+	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
+				     * step_layout->num_hosts);
+	if ((step_layout->tasks == NULL) || (step_layout->tids == NULL)) {
+		slurm_seterrno(ENOMEM);
+		return SLURM_ERROR;
 	}
 
 	if (step_layout->task_dist == SLURM_DIST_CYCLIC)
