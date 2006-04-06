@@ -1448,9 +1448,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
 			set_slurmctld_state_loc();
-		}
-		if (error_code == SLURM_SUCCESS)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
+		}
 		in_progress = false;
 		unlock_slurmctld(config_write_lock);
 	}
