@@ -45,7 +45,9 @@ BridgeAPIVerbose=0
 # Nodes: The base partitions (midplanes) in the bgblock using XYZ coordinates
 # Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
 #        Type SMALL will divide a midplane into multiple bgblock
-#        based on options num32 and num128 to determine type of small blocks.
+#        based on options NodeCards (count of single node card bglblocks)
+#        and Quarters (count of quarter midplane bglblocks) to determine 
+#        type of small blocks.
 # 
 # IMPORTANT NOTES: 
 # * Ordering is very important for laying out switch wires.  Please create
