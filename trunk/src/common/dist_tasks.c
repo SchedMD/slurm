@@ -50,9 +50,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-static int _task_layout_hostfile(slurm_step_layout_t *step_layout);
 static int _task_layout_block(slurm_step_layout_t *step_layout);
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout);
+#ifndef HAVE_FRONT_END
+static int _task_layout_hostfile(slurm_step_layout_t *step_layout);
+#endif
 
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
@@ -289,7 +291,7 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 		return _task_layout_block(step_layout);
 }
 
-
+#ifndef HAVE_FRONT_END
 /* use specific set run tasks on each host listed in hostfile
  * XXX: Need to handle over-subscribe.
  */
@@ -343,6 +345,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 
 	return SLURM_SUCCESS;
 }
+#endif
 
 /* to effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many tasks go on each node and
