@@ -1986,7 +1986,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      shutdown                 shutdown slurm controller.                   \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
-     update <SPECIFICATIONS>  update job, node, or partition configuration \n\
+     update <SPECIFICATIONS>  update job, node, partition, or bluegene     \n\
+                              block configuration                          \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
@@ -2003,7 +2004,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
-  input for the update keyword, editing as needed.                         \n\
+  input for the update keyword, editing as needed.  Bluegene blocks are    \n\
+  only able to be set to an error or free state. (Bluegene systems only)   \n\
                                                                            \n\
   <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
   \"enable\", \"create\", \"vacate\", \"restart\", or \"error\".           \n\
