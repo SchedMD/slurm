@@ -92,7 +92,7 @@ typedef struct prec {	/* process record */
 
 static bool fini = false;
 static bool suspended = false;
-static int max_psize = 0, max_vsize = 0;
+static int max_psize = 0, max_vsize = 0, freq = 0;
 static List prec_list = NULL;
 /* Finally, pre-define all the routines. */
 
@@ -133,13 +133,15 @@ int jobacct_p_init(int frequency)
 		return rc;
 	}
 
+	freq = frequency;
+	
 	/* create polling thread */
 	slurm_attr_init(&attr);
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 	
 	if  (pthread_create(&_watch_tasks_thread_id, &attr,
-			    &_watch_tasks, (void*)frequency)) {
+			    &_watch_tasks, NULL)) {
 		debug("jobacct failed to create _watch_tasks "
 		      "thread: %m");
 		frequency = 0;
@@ -376,14 +378,12 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg) {
 
-	int frequency = (int)arg;
 	pid_t pid = getpid();
-
 	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
 		if(!suspended) {
 			_get_process_data(pid);	/* Update the data */ 
 		}
-		sleep(frequency);
+		sleep(freq);
 	} 
 	return NULL;
 }
