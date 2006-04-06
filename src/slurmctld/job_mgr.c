@@ -1701,6 +1701,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
 #endif
+	uint32_t total_nodes;
 
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 
@@ -1823,8 +1824,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
 	}
-	if ((part_ptr->state_up)
-	&&  (job_desc->min_nodes > part_ptr->total_nodes)) {
+	total_nodes = part_ptr->total_nodes;
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
+			&total_nodes);
+	if ((part_ptr->state_up) &&  (job_desc->min_nodes > total_nodes)) {
 		info("Job requested too many nodes (%d) of partition %s(%d)", 
 		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_nodes);
