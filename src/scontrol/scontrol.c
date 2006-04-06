@@ -3,7 +3,7 @@
  *	provides interface to read, write, update, and configurations.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -66,6 +66,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/node_select.h"
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
@@ -1555,13 +1556,13 @@ _update_job (int argc, char *argv[])
 				exit_code = 1;
 			} else
 				update_cnt++;
-			select_g_set_jobinfo(&job_msg.select_jobinfo,
+			select_g_set_jobinfo(job_msg.select_jobinfo,
 					     SELECT_DATA_GEOMETRY,
-					     geo);			
+					     (void *) &geo);			
 		}
 
 		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
-			int16_t rotate;
+			uint16_t rotate;
 			if (strcasecmp(&argv[i][7], "yes") == 0)
 				rotate = 1;
 			else if (strcasecmp(&argv[i][7], "no") == 0)
@@ -1569,13 +1570,13 @@ _update_job (int argc, char *argv[])
 			else
 				rotate = (uint16_t) strtol(&argv[i][7], 
 							   (char **) NULL, 10);
-			select_g_set_jobinfo(&job_msg.select_jobinfo,
+			select_g_set_jobinfo(job_msg.select_jobinfo,
 					     SELECT_DATA_ROTATE,
-					     rotate);
+					     (void *) &rotate);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Connection=", 11) == 0) {
-			int16_t conn_type;
+			uint16_t conn_type;
 			if (strcasecmp(&argv[i][11], "torus") == 0)
 				conn_type = SELECT_TORUS;
 			else if (strcasecmp(&argv[i][11], "mesh") == 0)
@@ -1586,9 +1587,9 @@ _update_job (int argc, char *argv[])
 				conn_type = 
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
-			select_g_set_jobinfo(&job_msg.select_jobinfo,
+			select_g_set_jobinfo(job_msg.select_jobinfo,
 					     SELECT_DATA_CONN_TYPE,
-					     conn_type);
+					     (void *) &conn_type);
 			update_cnt++;
 		}
 #endif
