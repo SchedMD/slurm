@@ -798,7 +798,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 			pack16((uint16_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
-		packstr(NULL, buffer);
+		packstr("", buffer);
 	}
 
 	return SLURM_SUCCESS;
