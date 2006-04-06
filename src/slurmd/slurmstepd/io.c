@@ -286,9 +286,14 @@ _client_read(eio_obj_t *obj, List objs)
 		if ((n = read(obj->fd, buf, client->in_remaining)) < 0) {
 			if (errno == EINTR)
 				goto again;
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				debug5("_client_read returned %s",
+					errno == EAGAIN ? "EAGAIN" : "EWOULDBLOCK");
+				return SLURM_SUCCESS;
+			}
 			debug5("  error in _client_read: %m");
 		}
-		if (n <= 0) { /* got eof */
+		if (n <= 0) { /* got eof (or unhandled error) */
 			debug5("  got eof on _client_read body");
 			client->in_eof = true;
 			list_enqueue(client->job->free_incoming, client->in_msg);
