@@ -34,7 +34,6 @@
 source ./globals
 
 set test_id     "11.7"
-set partition   "debug"
 set exit_code   0
 set env(SLURM_LL_API_DEBUG) "2"
 set num_nodes   2
@@ -55,7 +54,7 @@ if { ![file exists $poe] } {
 }
 
 #find out if we have enough nodes to test functionality
-spawn $scontrol show partition
+spawn $scontrol show partition $poe_partition
 expect {
 	-re "TotalNodes=($number)" {
 		set node_count $expect_out(1,string)
@@ -90,14 +89,14 @@ for {set i 0} {$i<2} {incr i} {
 		set file [open $hostfile "w"]
 		puts $file "$node1\n$node0"
 		close $file
-		spawn $poe $bin_hostname -resd yes -rmpool $partition -procs \
+		spawn $poe $bin_hostname -rmpool $poe_partition -procs \
 				$num_tasks -nodes $num_nodes -retry wait \
 				-hostfile $hostfile
 	} else {
 		#
 		# execute poe with a specific node count
 		#
-		spawn $poe $bin_hostname -resd yes -rmpool $partition -procs \
+		spawn $poe $bin_hostname -rmpool $poe_partition -procs \
 				$num_tasks -nodes $num_nodes -retry wait
 	}
 	expect {

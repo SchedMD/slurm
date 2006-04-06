@@ -52,6 +52,7 @@ set use_pmi	0
 set xcpu_dir	"/mnt/xcpu"
 
 set poe		"/usr/bin/poe"
+set poe_partition "pdebug"
 set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
 
