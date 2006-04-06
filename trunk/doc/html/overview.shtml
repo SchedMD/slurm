@@ -14,9 +14,8 @@ work.</p>
 
 <p>SLURM has been developed through the collaborative efforts of 
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
-<a href="http://www.hp.com/">Hewlett-Packard</a>,
-<a href="http://www.lnxi.com/">Linux NetworX</a>, and
-<a href="http://www.pathscale.com/">PathScale</a>.
+<a href="http://www.hp.com/">Hewlett-Packard</a>, and
+<a href="http://www.lnxi.com/">Linux NetworX</a>.
 Linux NetworX distributes SLURM as a component in their ClusterWorX software.
 HP distributes and supports SLURM as a component in their XC System Software.</p>
 
@@ -144,6 +143,6 @@ PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
 PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
-<p style="text-align:center;">Last modified 7 December 2005</p>
+<p style="text-align:center;">Last modified 5 April 2005</p>
 
 <!--#include virtual="footer.txt"-->
