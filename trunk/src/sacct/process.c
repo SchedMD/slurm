@@ -214,7 +214,7 @@ void process_start(char *f[], int lc)
 	job = _find_job_record(temp->header);
 	if (job) {	/* Hmmm... that's odd */
 		fprintf(stderr,
-			"Conflicting JOB_START for job %d at"
+			"Conflicting JOB_START for job %u at"
 			" line %d -- ignoring it\n",
 			job->header.jobnum, lc);
 		input_error++;
@@ -257,7 +257,7 @@ void process_step(char *f[], int lc)
 		if ((params.opt_verbose > 1) 
 		    && (params.opt_jobstep_list==NULL)) 
 			fprintf(stderr, 
-				"Note: JOB_STEP record %d.%d preceded "
+				"Note: JOB_STEP record %u.%u preceded "
 				"JOB_START record at line %d\n",
 				temp->header.jobnum, temp->stepnum, lc);
 	}
@@ -270,7 +270,7 @@ void process_step(char *f[], int lc)
 		if (step->status != JOB_RUNNING) { /* if not JOB_RUNNING */
 			fprintf(stderr,
 				"Conflicting JOB_STEP record for "
-				"jobstep %d.%d at line %d "
+				"jobstep %u.%u at line %d "
 				"-- ignoring it\n",
 				step->header.jobnum, 
 				step->stepnum, lc);
@@ -380,7 +380,7 @@ void process_terminated(char *f[], int lc)
 		job = _init_job_rec(temp->header, lc);
 		if (params.opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
-				"%d preceded "
+				"%u preceded "
 				"other job records at line %d\n",
 				temp->header.jobnum, lc);
 	} else if (job->job_terminated_seen) {
@@ -389,7 +389,7 @@ void process_terminated(char *f[], int lc)
 			if (params.opt_verbose > 1)
 				fprintf(stderr, 
 					"Note: Duplicate JOB_TERMINATED "
-					"record (nf) for job %d at "
+					"record (nf) for job %u at "
 					"line %d\n", 
 					temp->header.jobnum, lc);
 			/* JOB_TERMINATED/NF records may be preceded
@@ -402,7 +402,7 @@ void process_terminated(char *f[], int lc)
 		
 		fprintf(stderr,
 			"Conflicting JOB_TERMINATED record (%s) for "
-			"job %d at line %d -- ignoring it\n",
+			"job %u at line %d -- ignoring it\n",
 			decode_status_int(temp->status), 
 			job->header.jobnum, lc);
 		input_error++;

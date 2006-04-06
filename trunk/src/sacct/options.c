@@ -121,7 +121,7 @@ int _cmp_jrec(const void *a1, const void *a2) {
  */
 void _dump_header(acct_header_t header)
 {
-	printf("%d %s %d %d %d %d %s %s ",
+	printf("%u %s %d %d %d %d %s %s ",
 	       header.jobnum,
 	       header.partition,
 	       (int)header.job_start,
@@ -1011,7 +1011,7 @@ void do_dump(void)
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Note: Skipping older"
-						" job %d dated %d\n",
+						" job %u dated %d\n",
 						job->header.jobnum,
 						(int)job->header.job_start);
 				continue;
@@ -1026,7 +1026,7 @@ void do_dump(void)
 				 * job was probably canceled. */ 
 				fprintf(stderr,
 					"Error: No JOB_START record for "
-					"job %d\n",
+					"job %u\n",
 					job->header.jobnum);
 			}
 			_dump_header(job->header);
@@ -1046,7 +1046,7 @@ void do_dump(void)
 				step->exitcode=1;
 			}
 			_dump_header(step->header);
-			printf("JOB_STEP %d %s %s ",
+			printf("JOB_STEP %u %s %s ",
 			       step->stepnum,
 			       step->stepname,
 			       step->nodes); 
@@ -1582,7 +1582,7 @@ void do_list(void)
 				if (params.opt_verbose > 1)
 					fprintf(stderr,
 						"Note: Skipping older"
-						" job %d dated %d\n",
+						" job %u dated %d\n",
 						job->header.jobnum,
 						(int)job->header.job_start);
 				continue;
@@ -1591,7 +1591,7 @@ void do_list(void)
 			/* If we only saw JOB_TERMINATED, the job was
 			 * probably canceled. */
 			fprintf(stderr,
-				"Error: No JOB_START record for job %d\n",
+				"Error: No JOB_START record for job %u\n",
 				job->header.jobnum);
 			if (rc<ERROR)
 				rc = ERROR;
@@ -1600,17 +1600,17 @@ void do_list(void)
 			if (!job->job_start_seen)
 				fprintf(stderr,
 					"Note: No JOB_START record for "
-					"job %d\n",
+					"job %u\n",
 					job->header.jobnum);
 			if (!job->job_step_seen)
 				fprintf(stderr,
 					"Note: No JOB_STEP record for "
-					"job %d\n",
+					"job %u\n",
 					job->header.jobnum);
 			if (!job->job_terminated_seen)
 				fprintf(stderr,
 					"Note: No JOB_TERMINATED record for "
-					"job %d\n",
+					"job %u\n",
 					job->header.jobnum);
 		}
 		if (params.opt_uid >= 0 && (job->header.uid != params.opt_uid))
