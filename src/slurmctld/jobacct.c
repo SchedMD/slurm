@@ -120,6 +120,7 @@ int jobacct_init(char *job_acct_log)
 	if (LOGFILE == NULL) {
 		error("open %s: %m", log_file);
 		init = 0;
+		slurm_mutex_unlock( &logfile_lock );
 		return SLURM_ERROR;
 	} else
 		chmod(log_file, prot); 
