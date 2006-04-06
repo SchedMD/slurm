@@ -403,7 +403,8 @@ void process_terminated(char *f[], int lc)
 		fprintf(stderr,
 			"Conflicting JOB_TERMINATED record (%s) for "
 			"job %d at line %d -- ignoring it\n",
-			decode_status_int(temp->status), job, lc);
+			decode_status_int(temp->status), 
+			job->header.jobnum, lc);
 		input_error++;
 		goto finished;
 	}
