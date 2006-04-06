@@ -113,7 +113,7 @@ int jobacct_init(char *job_acct_log)
 		fclose(LOGFILE);
 	log_file=job_acct_log;
 	if (*log_file != '/')
-		fatal("JobAcctLoc must specify an absolute pathname");
+		fatal("JobAcctLogfile must specify an absolute pathname");
 	if (stat(log_file, &statbuf)==0)       /* preserve current file mode */
 		prot = statbuf.st_mode;
 	LOGFILE = fopen(log_file, "a");
