@@ -597,9 +597,12 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 
 	job->step_layout->tasks[resp->srun_node_id] = resp->ntasks;
 
+	info ("ntasks = %d\n");
+
 	for (i = 0; i < resp->ntasks; i++) {
 		job->step_layout->tids[resp->srun_node_id][i] = resp->gtids[i];
-		job->hostid[resp->gtids[i]]      = resp->srun_node_id;
+		job->step_layout->hostids[resp->gtids[i]]  = resp->srun_node_id;
+		info ("setting task%d on hostid %d\n", resp->gtids[i], resp->srun_node_id);
 	}
 	_update_step_layout(job->forked_msg->par_msg->msg_pipe[1],
 			    job->step_layout, resp->srun_node_id);
@@ -702,11 +705,14 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg       = (task_exit_msg_t *) exit_msg->data;
 	hostlist_t       hl        = hostlist_create(NULL);
-	int              hostid    = job->hostid[msg->task_id_list[0]]; 
-	char            *host      = job->step_layout->host[hostid];
+	int              task0     = msg->task_id_list[0];
+	char            *host      = NULL;
 	int              status    = msg->return_code;
 	int              i;
 	char             buf[1024];
+
+	if (!(host = step_layout_host_name(job->step_layout, task0)))
+		host = "Unknown host";
 
 	if (!job->etimeout && !tasks_exited) 
 		job->etimeout = time(NULL) + opt.max_exit_timeout;
@@ -743,7 +749,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		}
 	}
 
-	update_tasks_state(job, hostid);
+	update_tasks_state(job, step_layout_host_id(job->step_layout, task0));
 
 	_print_exit_status(job, hl, host, status);
 

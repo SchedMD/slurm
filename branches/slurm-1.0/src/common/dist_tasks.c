@@ -243,6 +243,7 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->tids);
 		xfree(step_layout->cpus);
 		xfree(step_layout->tasks);
+		xfree(step_layout->hostids);
 		
 		hostlist_destroy(step_layout->hl);
 		xfree(step_layout);
@@ -265,11 +266,10 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 				     * step_layout->num_hosts);
 	step_layout->host  = xmalloc(sizeof(char *)
 				     * step_layout->num_hosts);
-	if ((step_layout->cpus == NULL) || (step_layout->tasks == NULL) ||
-	    (step_layout->host == NULL)) {
-		slurm_seterrno(ENOMEM);
-		return SLURM_ERROR;
-	}
+	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
+				     * step_layout->num_hosts);
+	step_layout->hostids = xmalloc(sizeof(uint32_t) 
+				     * step_layout->num_tasks);
 
 	for (i=0; i<step_layout->num_hosts; i++) {
 		step_layout->host[i] = hostlist_shift(step_layout->hl);
@@ -280,14 +280,6 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 			cpu_cnt = 0;
 		}
 	}
-	step_layout->tasks = xmalloc(sizeof(uint32_t)   
-				     * step_layout->num_hosts);
-	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
-				     * step_layout->num_hosts);
-	if ((step_layout->tasks == NULL) || (step_layout->tids == NULL)) {
-		slurm_seterrno(ENOMEM);
-		return SLURM_ERROR;
-	}
 
 	if (step_layout->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(step_layout);
@@ -295,6 +287,26 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 		return _task_layout_hostfile(step_layout);
 	else
 		return _task_layout_block(step_layout);
+}
+
+int 
+step_layout_host_id (slurm_step_layout_t *s, int taskid)
+{
+	if (taskid > s->num_tasks - 1)
+		return SLURM_ERROR;
+
+	return (s->hostids[taskid]);
+}
+
+char *
+step_layout_host_name (slurm_step_layout_t *s, int taskid)
+{
+	int hostid = step_layout_host_id (s, taskid);
+
+	if (hostid < 0)
+		return NULL;
+	
+	return (s->host[hostid]);
 }
 
 
@@ -334,6 +346,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 		while(host_task = hostlist_next(itr_task)) {
 			if(!strcmp(host, host_task)) {
 				step_layout->tids[i][j] = taskid;
+				step_layout->hostids[taskid] = i;
 				j++;
 			}
 			taskid++;
@@ -385,8 +398,11 @@ static int _task_layout_block(slurm_step_layout_t *step_layout)
 			slurm_seterrno(ENOMEM);
 			return SLURM_ERROR;
 		}
-		for (j=0; j<step_layout->tasks[i]; j++)
-			step_layout->tids[i][j] = taskid++;
+		for (j=0; j<step_layout->tasks[i]; j++) {
+			step_layout->tids[i][j] = taskid;
+			step_layout->hostids[taskid] = i;
+			taskid++;
+		}
 	}
 	return SLURM_SUCCESS;
 }
@@ -423,7 +439,9 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout)
 			   && (taskid<step_layout->num_tasks)); i++) {
 			if ((j<step_layout->cpus[i]) || over_subscribe) {
 				step_layout->tids[i][step_layout->tasks[i]] = 
-					taskid++;
+					taskid;
+				step_layout->hostids[taskid] = i;
+				taskid++;
 				step_layout->tasks[i]++;
 				if ((j+1) < step_layout->cpus[i])
 					space_remaining = true;
