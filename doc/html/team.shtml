@@ -4,8 +4,7 @@
 <p>SLURM development has been a joint effort of 
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory</a> (LLNL),
 <a href="http://www.hp.com/">HP</a>,
-<a href="http://www.lnxi.com/">Linux NetworX</a>, and
-<a href="http://www.pathscale.com/">PathScale</a>.
+<a href="http://www.lnxi.com/">Linux NetworX</a>.
 
 <p>The current SLURM development staff includes: </p>
 <ul>
@@ -19,14 +18,15 @@
 <li>Andy Riebs (HP)</li>
 </ul>
 
-<p> SLURM alumni and contributers include: </p>
+<p> SLURM contributers include: </p>
 <ul>
-<li>Ernest Artiaga (Barcelona Supercomputer Center)</li>
+<li>Ernest Artiaga (Barcelona Supercomputer Center, Spain)</li>
+<li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
 <li>Chris Dunlap (LLNL)</li>
 <li>Joey Ekstrom (LLNL/Bringham Young University)</li>
 <li>Jim Garlick (LLNL)</li>
-<li>Takao Hatazaki (HP)</li>
+<li>Takao Hatazaki (HP, Japan)</li>
 <li>Nathan Huff (North Dakota State University)</li>
 <li>David Jackson (Cluster Resources)</li>
 <li>Greg Johnson (LANL) </li>
@@ -38,6 +38,6 @@
 <li>Jay Windley (Linux NetworX)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 21 December 2005</p>
+<p style="text-align:center;">Last modified 7 April 2007</p>
 
 <!--#include virtual="footer.txt"-->
