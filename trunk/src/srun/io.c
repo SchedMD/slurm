@@ -50,6 +50,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/io_hdr.h"
 #include "src/common/net.h"
+#include "src/common/dist_tasks.h"
 
 #include "src/srun/io.h"
 #include "src/srun/srun_job.h"
@@ -731,7 +732,8 @@ again:
 		int nodeid;
 		struct server_io_info *server;
 		msg->ref_count = 1;
-		nodeid = info->job->hostid[header.gtaskid];
+		nodeid = step_layout_host_id(info->job->step_layout, 
+				             header.gtaskid);
 		debug3("  taskid %d maps to nodeid %d", header.gtaskid, nodeid);
 		server = info->job->ioserver[nodeid]->arg;
 		list_enqueue(server->msg_queue, msg);

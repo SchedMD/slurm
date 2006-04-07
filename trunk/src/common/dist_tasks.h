@@ -56,6 +56,7 @@ typedef struct slurm_step_layout {
 	uint32_t *tasks;	/* number of tasks on each host */
 	
 	uint32_t **tids;	/* host id => task id mapping */
+	uint32_t *hostids;      /* task id => host id mapping */
 	
 	uint32_t num_hosts;	/* node count */
 	uint32_t num_tasks;	/* number of tasks to execute */
@@ -94,5 +95,9 @@ extern slurm_step_layout_t *step_layout_create(
 extern int step_layout_destroy(slurm_step_layout_t *step_layout);
 /* build maps for task layout on nodes */
 extern int task_layout(slurm_step_layout_t *step_layout);
+
+extern int step_layout_host_id (slurm_step_layout_t *s, int taskid);
+
+extern char * step_layout_host_name (slurm_step_layout_t *s, int hostid);
  
 #endif /* !_DIST_TASKS_H */

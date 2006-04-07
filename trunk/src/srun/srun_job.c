@@ -244,8 +244,6 @@ _job_create_structure(allocation_info_t *info)
 	job->listenport = (int *) 
 		xmalloc(job->num_listen * sizeof(int));
 	
-	job->hostid = xmalloc(opt.nprocs * sizeof(uint32_t));
-	
  	slurm_mutex_init(&job->task_mutex);
 	
 	job->old_job = false;

@@ -584,9 +584,9 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                         goto fail; 
                 }
                 
-                if (!(arg.ntask[host_index] == tasks_to_launch)) {
-                        error("job cr credential (%d != %d) invalid for this host [%d.%d %ld %s]",
-                              arg.ntask[host_index], tasks_to_launch, arg.jobid, arg.stepid, 
+                if (tasks_to_launch > arg.ntask[host_index]) {
+                        error("job cr credential (%d > %d) invalid for this host [%d.%d %ld %s]",
+                              tasks_to_launch, arg.ntask[host_index], arg.jobid, arg.stepid, 
                               (long) arg.uid, arg.hostlist);
                         goto fail;
                 }

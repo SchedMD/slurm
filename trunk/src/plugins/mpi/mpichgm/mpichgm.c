@@ -177,14 +177,17 @@ static int _gmpi_establish_map(srun_job_t *job)
 	 */
 	lmap = (char *)xmalloc(128*nprocs);
 	for (i=0; i<nprocs; i++) {
+		int ihostid = step_layout_host_id(job->step_layout, i);
 		/*
 		 * Compose the string to send.
 		 */
 		dp = &slave_data[i];
 		p = lmap;
 		for (j=0; j<nprocs; j++) {
-			if (job->hostid[i] == job->hostid[j] &&
-			    dp->numanode == slave_data[j].numanode) {
+			int jhostid = step_layout_host_id (job->step_layout, j);
+
+			if ((ihostid == jhostid) && 
+			    (dp->numanode == slave_data[j].numanode)) {
 				sprintf(tmp, "<%u>", j);
 				strcpy(p, tmp);
 				p += strlen(tmp);
@@ -210,7 +213,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 		bzero(&addr, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_addr.s_addr
-			= job->slurmd_addr[job->hostid[i]].sin_addr.s_addr;
+			= job->slurmd_addr[ihostid].sin_addr.s_addr;
 		addr.sin_port = htons(dp->remote_port);
 		if (connect(newfd, (struct sockaddr *)&addr, sizeof(addr)))
 			fatal("GMPI master failed to connect");
