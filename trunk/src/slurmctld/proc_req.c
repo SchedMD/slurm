@@ -1121,7 +1121,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 #endif
-
 	if (error_code == SLURM_SUCCESS) {
 		/* issue the RPC */
 		lock_slurmctld(job_write_lock);

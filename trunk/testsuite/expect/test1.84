@@ -42,8 +42,8 @@ set exit_code   0
 
 print_header $test_id
 
-if { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatable with XCPU systems\n"
+if { [test_front_end] } {
+	send_user "\nWARNING: This test is incompatable with FRONT_END systems\n"
 	exit 0
 }
 
@@ -82,7 +82,7 @@ expect {
 		wait
 	}
 }
-# On Blue Gene/L each node has 512 CPUs, more than slurmd can launch
+# On Blue Gene/L each node has 1024 CPUs, more than slurmd can launch
 if {$fat_nodes == 1} {
 	exit 0
 }

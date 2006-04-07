@@ -120,7 +120,8 @@ job_rec_t *_init_job_rec(acct_header_t header, int lc)
 	job->psize = 0;
 	job->exitcode = 0;
 	job->steps = list_create(destroy_step);
-	return job;
+	job->nodes = NULL;
+      	return job;
 }
 
 int _parse_header(char *f[], acct_header_t *header)
@@ -232,7 +233,6 @@ void process_start(char *f[], int lc)
 	job->priority = temp->priority;
 	job->track_steps = temp->track_steps;
 	job->ncpus = temp->ncpus;
-	xfree(job->nodes);
 	job->nodes = xstrdup(temp->nodes);
 	destroy_job(temp);
 }
@@ -299,7 +299,7 @@ void process_step(char *f[], int lc)
 	
 	job->job_step_seen = 1;
 	job->ntasks += step->ntasks;
-	if(!strcmp(job->nodes, "(unknown)")) {
+	if(!job->nodes || !strcmp(job->nodes, "(unknown)")) {
 		xfree(job->nodes);
 		job->nodes = xstrdup(step->nodes);
 	}

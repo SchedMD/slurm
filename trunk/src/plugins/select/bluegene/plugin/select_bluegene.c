@@ -453,7 +453,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		select_g_set_jobinfo(job_desc->select_jobinfo,
 				     SELECT_DATA_MAX_PROCS, 
 				     &tmp);
-				
+		
 		if(job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
 

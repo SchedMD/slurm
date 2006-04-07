@@ -526,7 +526,7 @@ _step_req_create(srun_job_t *j)
 	r->network    = xstrdup(opt.network);
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = false;      /* XXX fix this oneday */
-
+	
 	/* CJM - why are "UNKNOWN" and "default" behaviours different? */
 	/*       why do we even HAVE the SLURM_DIST_UNKNOWN state?? */
 	switch (opt.distribution) {

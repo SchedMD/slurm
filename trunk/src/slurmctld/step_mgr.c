@@ -674,7 +674,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	
 	if ((step_specs->num_tasks < 1)
 	||  (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE))) {
-		info("step has invalid task count: %u", step_specs->num_tasks);
+		error("step has invalid task count: %u", 
+		      step_specs->num_tasks);
 		return ESLURM_BAD_TASK_COUNT;
 	}
 

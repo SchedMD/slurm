@@ -172,7 +172,7 @@ int jobacct_job_start(struct job_record *job_ptr)
 	tmp = snprintf(buf, BUFFER_SIZE,
 		       "%d %s %d %ld %u %s",
 		       JOB_START, jname,
-		       track_steps, priority, ncpus,
+		       track_steps, priority, job_ptr->num_procs,
 		       job_ptr->nodes);
 	
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
@@ -184,10 +184,17 @@ int jobacct_job_start(struct job_record *job_ptr)
 int jobacct_step_start(struct step_record *step)
 {
 	char buf[BUFFER_SIZE];
+	int cpus = 0;
+
 	if(!init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
+#ifdef HAVE_BG
+	cpus = step->job_ptr->num_procs;
+#else
+	cpus = step->num_cpus;
+#endif
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -195,7 +202,7 @@ int jobacct_step_start(struct step_record *step)
 		 JOB_RUNNING,		/* completion status */
 		 0,     		/* completion code */
 		 step->num_tasks,	/* number of tasks */
-		 step->num_cpus,        /* number of cpus */
+		 cpus,                  /* number of cpus */
 		 0,	        	/* elapsed seconds */
 		 0,                    /* total cputime seconds */
 		 0,    		/* total cputime seconds */
@@ -228,10 +235,10 @@ int jobacct_step_complete(struct step_record *step)
 {
 	char buf[BUFFER_SIZE];
 	time_t now;
-	int rc;
 	int elapsed;
 	int comp_status;
-	
+	int cpus = 0;
+
 	if(!init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
@@ -245,6 +252,12 @@ int jobacct_step_complete(struct step_record *step)
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
+
+#ifdef HAVE_BG
+	cpus = step->job_ptr->num_procs;
+#else
+	cpus = step->num_cpus;
+#endif
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -252,8 +265,8 @@ int jobacct_step_complete(struct step_record *step)
 		 comp_status,		/* completion status */
 		 step->exit_code,	/* completion code */
 		 step->num_tasks,	/* number of tasks */
-		 step->num_cpus,        /* number of cpus */
-		 elapsed,	          /* elapsed seconds */
+		 cpus,                  /* number of cpus */
+		 elapsed,	        /* elapsed seconds */
 		 /* total cputime seconds */
 		 step->rusage.ru_utime.tv_sec	
 		 + step->rusage.ru_stime.tv_sec,
@@ -282,8 +295,8 @@ int jobacct_step_complete(struct step_record *step)
 		 step->max_psize,		/* max psize */
 		 step->name,      	/* step exe name */
 		 step->step_node_list); /* name of nodes step running on */
-	rc = _print_record(step->job_ptr, now, buf);	
-	return rc;
+       
+	return _print_record(step->job_ptr, now, buf);	
 }
 
 int jobacct_job_complete(struct job_record *job_ptr) 
