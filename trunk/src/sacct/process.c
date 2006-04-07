@@ -165,7 +165,7 @@ int _parse_line(char *f[], void **data)
 		(*step)->status = atoi(f[F_STATUS]);
 		(*step)->exitcode = atoi(f[F_EXITCODE]);
 		(*step)->ntasks = atoi(f[F_NTASKS]);
-		(*step)->ncpus = atoi(f[F_NCPUS]);
+		(*step)->ncpus = atoi(f[F_STEPNCPUS]);
 		(*step)->elapsed = atoi(f[F_ELAPSED]);
 		(*step)->tot_cpu_sec = atoi(f[F_CPU_SEC]);
 		(*step)->tot_cpu_usec = atoi(f[F_CPU_USEC]);
