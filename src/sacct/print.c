@@ -644,6 +644,35 @@ void print_partition(type_t type, void *object)
 	} 
 }
 
+void print_blockid(type_t type, void *object)
+{ 
+	job_rec_t *job = (job_rec_t *)object;
+	step_rec_t *step = (step_rec_t *)object;
+
+	switch(type) {
+	case HEADLINE:
+		printf("%-16s", "BlockID");
+		break;
+	case UNDERSCORE:
+		printf("%-16s", "----------------");
+		break;
+	case JOB:
+		if(strlen(job->header.partition)<17)
+			printf("%-16s", job->header.partition);
+		else
+			printf("%-13.13s...", job->header.partition);
+		
+		break;
+	case JOBSTEP:
+		if(strlen(step->header.partition)<17)
+			printf("%-16s", step->header.blockid);
+		else
+			printf("%-13.13s...", step->header.blockid);
+	
+		break;
+	} 
+}
+
 void print_psize(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;

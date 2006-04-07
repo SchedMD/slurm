@@ -83,7 +83,7 @@ enum {	F_JOB =	0,
 	F_TIMESTAMP,	
 	F_UID,	
 	F_GID,	
-	F_RESERVED1,	
+	F_BLOCKID,	
 	F_RESERVED2,	
 	F_RECTYPE,	
 	HEADER_LENGTH
@@ -159,6 +159,7 @@ enum {	CANCELLED,
 typedef struct header {
 	uint32_t jobnum;
 	char	*partition;
+	char	*blockid;
 	time_t 	job_start;
 	time_t	timestamp;
 	uint32_t uid;
@@ -181,24 +182,28 @@ typedef struct job_rec {
 	int32_t	status;
 	int32_t	exitcode;
 	uint32_t elapsed;
-	uint32_t tot_cpu_sec, tot_cpu_usec;
-	uint32_t vsize, psize;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	uint32_t vsize;
+	uint32_t psize;
 	struct rusage rusage;
 	List    steps;
 } job_rec_t;
 
 typedef struct step_rec {
-	acct_header_t header;
+	acct_header_t   header;
 	uint32_t	stepnum;	/* job's step number */
-	uint32_t	next;		/* linked list of job steps */
 	char	        *nodes;
 	char	        *stepname;
 	int32_t	        status;
 	int32_t	        exitcode;
-	uint32_t	ntasks, ncpus;
+	uint32_t	ntasks; 
+	uint32_t        ncpus;
 	uint32_t	elapsed;
-	uint32_t	tot_cpu_sec, tot_cpu_usec;
-	uint32_t	vsize, psize;
+	uint32_t	tot_cpu_sec;
+	uint32_t        tot_cpu_usec;
+	uint32_t	vsize;
+	uint32_t        psize;
 	struct rusage rusage;
 } step_rec_t;
 
@@ -251,6 +256,7 @@ void process_start(char *f[], int lc);
 void process_step(char *f[], int lc);
 void process_suspend(char *f[], int lc);
 void process_terminated(char *f[], int lc);
+void destroy_acct_header(void *object);
 void destroy_job(void *object);
 void destroy_step(void *object);
 
@@ -281,6 +287,7 @@ void print_ntasks(type_t type, void *object);
 void print_nvcsw(type_t type, void *object);
 void print_outblocks(type_t type, void *object);
 void print_partition(type_t type, void *object);
+void print_blockid(type_t type, void *object);
 void print_psize(type_t type, void *object);
 void print_rss(type_t type, void *object);
 void print_status(type_t type, void *object);
