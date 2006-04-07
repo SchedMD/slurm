@@ -30,7 +30,8 @@
 
 job_rec_t *_find_job_record(acct_header_t header);
 step_rec_t *_find_step_record(job_rec_t *job, long jobstep);
-job_rec_t *_init_job_rec(acct_header_t header, int lc);
+job_rec_t *_init_job_rec(acct_header_t header);
+step_rec_t *_init_step_rec(acct_header_t header);
 int _parse_line(char *f[], void **data);
 
 job_rec_t *_find_job_record(acct_header_t header)
@@ -80,50 +81,55 @@ step_rec_t *_find_step_record(job_rec_t *job, long stepnum)
 	return step;
 }
 
-job_rec_t *_init_job_rec(acct_header_t header, int lc)
+job_rec_t *_init_job_rec(acct_header_t header)
 {
 	job_rec_t *job = xmalloc(sizeof(job_rec_t));
-
-	job->header.jobnum = header.jobnum;
-	job->header.partition = xstrdup(header.partition);
-	job->header.job_start = header.job_start;
-	job->header.timestamp = header.timestamp;
-	job->header.uid = header.uid;
-	job->header.gid = header.gid;
+	memcpy(&job->header, &header, sizeof(acct_header_t));
+	memset(&job->rusage, 0, sizeof(struct rusage));
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
 	job->jobnum_superseded = 0;
 	job->jobname = xstrdup("(unknown)");
 	job->status = JOB_PENDING;
+	job->nodes = NULL;
+	job->jobname = NULL;
+	job->exitcode = 0;
+	job->priority = 0;
+	job->ntasks = 0;
+	job->ncpus = 0;
+	job->elapsed = 0;
 	job->tot_cpu_sec = 0;
 	job->tot_cpu_usec = 0;
-	job->rusage.ru_utime.tv_sec = 0;
-	job->rusage.ru_utime.tv_usec += 0;
-	job->rusage.ru_stime.tv_sec += 0;
-	job->rusage.ru_stime.tv_usec += 0;
-	job->rusage.ru_inblock += 0;
-	job->rusage.ru_oublock += 0;
-	job->rusage.ru_msgsnd += 0;
-	job->rusage.ru_msgrcv += 0;
-	job->rusage.ru_nsignals += 0;
-	job->rusage.ru_nvcsw += 0;
-	job->rusage.ru_nivcsw += 0;
-	job->rusage.ru_maxrss = 0;
-	job->rusage.ru_ixrss = 0;
-	job->rusage.ru_idrss = 0;
-	job->rusage.ru_isrss = 0;
-	job->rusage.ru_minflt = 0;
-	job->rusage.ru_majflt = 0;
-	job->rusage.ru_nswap = 0;
 	job->vsize = 0;
-	job->psize = 0;
-	job->exitcode = 0;
+	job->psize = 0;	
 	job->steps = list_create(destroy_step);
 	job->nodes = NULL;
+	job->track_steps = 0;
+
       	return job;
 }
 
+step_rec_t *_init_step_rec(acct_header_t header)
+{
+	step_rec_t *step = xmalloc(sizeof(job_rec_t));
+	memcpy(&step->header, &header, sizeof(acct_header_t));
+	memset(&step->rusage, 0, sizeof(struct rusage));
+	step->stepnum = (uint32_t)NO_VAL;
+	step->nodes = NULL;
+	step->stepname = NULL;
+	step->status = NO_VAL;
+	step->exitcode = NO_VAL;
+	step->ntasks = (uint32_t)NO_VAL;
+	step->ncpus = (uint32_t)NO_VAL;
+	step->elapsed = (uint32_t)NO_VAL;
+	step->tot_cpu_sec = (uint32_t)NO_VAL;
+	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->vsize = (uint32_t)NO_VAL;
+	step->psize = (uint32_t)NO_VAL;
+
+	return step;
+}
 int _parse_header(char *f[], acct_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
@@ -132,6 +138,7 @@ int _parse_header(char *f[], acct_header_t *header)
 	header->timestamp = atoi(f[F_TIMESTAMP]);
 	header->uid = atoi(f[F_UID]);
 	header->gid = atoi(f[F_GID]);
+	header->blockid = xstrdup(f[F_BLOCKID]);
 	return SLURM_SUCCESS;
 }
 
@@ -140,11 +147,12 @@ int _parse_line(char *f[], void **data)
 	int i = atoi(f[F_RECTYPE]);
 	job_rec_t **job = (job_rec_t **)data;
 	step_rec_t **step = (step_rec_t **)data;
-	
+	acct_header_t header;
+	_parse_header(f, &header);
+		
 	switch(i) {
 	case JOB_START:
-		*job = xmalloc(sizeof(job_rec_t));
-		_parse_header(f, &(*job)->header);
+		*job = _init_job_rec(header);
 		(*job)->jobname = xstrdup(f[F_JOBNAME]);
 		(*job)->track_steps = atoi(f[F_TRACK_STEPS]);
 		(*job)->priority = atoi(f[F_PRIORITY]);
@@ -159,8 +167,7 @@ int _parse_line(char *f[], void **data)
 		}
 		break;
 	case JOB_STEP:
-		*step = xmalloc(sizeof(step_rec_t));
-		_parse_header(f, &(*step)->header);
+		*step = _init_step_rec(header);
 		(*step)->stepnum = atoi(f[F_JOBSTEP]);
 		(*step)->status = atoi(f[F_STATUS]);
 		(*step)->exitcode = atoi(f[F_EXITCODE]);
@@ -191,11 +198,11 @@ int _parse_line(char *f[], void **data)
 		(*step)->psize = atoi(f[F_PSIZE]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
 		(*step)->nodes = xstrdup(f[F_STEPNODES]);
+				
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:
-		*job = xmalloc(sizeof(job_rec_t));
-		_parse_header(f, &(*job)->header);
+		*job = _init_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
 		break;
@@ -223,18 +230,11 @@ void process_start(char *f[], int lc)
 		return;
 	}
 	
-	job = _init_job_rec(temp->header, lc);
+	job = temp;
+	
 	list_append(jobs, job);
 	job->job_start_seen = 1;
-	job->header.uid = temp->header.uid;
-	job->header.gid = temp->header.gid;
-	xfree(job->jobname);
-	job->jobname = xstrdup(temp->jobname);
-	job->priority = temp->priority;
-	job->track_steps = temp->track_steps;
-	job->ncpus = temp->ncpus;
-	job->nodes = xstrdup(temp->nodes);
-	destroy_job(temp);
+	
 }
 
 void process_step(char *f[], int lc)
@@ -253,7 +253,7 @@ void process_step(char *f[], int lc)
 		return;
 	}
 	if (!job) {	/* fake it for now */
-		job = _init_job_rec(temp->header, lc);
+		job = _init_job_rec(temp->header);
 		if ((params.opt_verbose > 1) 
 		    && (params.opt_jobstep_list==NULL)) 
 			fprintf(stderr, 
@@ -291,6 +291,7 @@ void process_step(char *f[], int lc)
 		step->psize = temp->psize;
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
+		destroy_step(temp);
 		goto got_step;
 	}
 	step = temp;
@@ -305,7 +306,7 @@ void process_step(char *f[], int lc)
 	}
 	
 got_step:
-	destroy_step(temp);
+	
 		
 	if (job->job_terminated_seen == 0) {	/* If the job is still running,
 						   this is the most recent
@@ -359,7 +360,7 @@ void process_suspend(char *f[], int lc)
 	_parse_line(f, (void **)&temp);
 	job = _find_job_record(temp->header);
 	if (!job)    
-		job = _init_job_rec(temp->header, lc);
+		job = _init_job_rec(temp->header);
 	
 	if (job->status == JOB_SUSPENDED) 
 		job->elapsed -= temp->elapsed;
@@ -377,7 +378,7 @@ void process_terminated(char *f[], int lc)
 	_parse_line(f, (void **)&temp);
 	job = _find_job_record(temp->header);
 	if (!job) {	/* fake it for now */
-		job = _init_job_rec(temp->header, lc);
+		job = _init_job_rec(temp->header);
 		if (params.opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
 				"%u preceded "
@@ -418,13 +419,21 @@ finished:
 	destroy_job(temp);
 }
 
+void destroy_acct_header(void *object)
+{
+	acct_header_t *header = (acct_header_t *)object;
+	if(header) {
+		xfree(header->partition);
+		xfree(header->blockid);
+	}
+}
 void destroy_job(void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	if (job) {
 		if(job->steps)
 			list_destroy(job->steps);
-		xfree(job->header.partition);
+		destroy_acct_header(&job->header);
 		xfree(job->jobname);
 		xfree(job->nodes);
 		xfree(job);
@@ -435,7 +444,7 @@ void destroy_step(void *object)
 {
 	step_rec_t *step = (step_rec_t *)object;
 	if (step) {
-		xfree(step->header.partition);
+		destroy_acct_header(&step->header);
 		xfree(step->stepname);
 		xfree(step->nodes);
 		xfree(step);

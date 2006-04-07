@@ -128,7 +128,7 @@ void _dump_header(acct_header_t header)
 	       (int)header.timestamp,
 	       header.uid,
 	       header.gid,
-	       "-",	/* reserved 2 */
+	       header.blockid,	/* block id */
 	       "-");	/* reserved 1 */
 }
 /* _open_log_file() -- find the current or specified log file, and open it
@@ -1449,7 +1449,7 @@ void do_fdump(char* f[], int lc)
 			     "timestamp", /* F_TIMESTAMP */
 			     "uid",	 /* F_UIDGID */
 			     "gid",	 /* F_UIDGID */
-			     "reserved-1",/* F_RESERVED1 */
+			     "BlockID",  /* F_BLOCKID */
 			     "reserved-2",/* F_RESERVED1 */
 			     "recordType",/* F_RECTYPE */
 			     NULL};

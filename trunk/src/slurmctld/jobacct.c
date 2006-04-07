@@ -79,24 +79,33 @@ const char *_jobstep_format =
 static int _print_record(struct job_record *job_ptr, 
 			 time_t time, char *data)
 { 
-	struct tm   *ts; /* timestamp decoder */
 	static int   rc=SLURM_SUCCESS;
+	char *block_id = NULL;
 
-	ts = xmalloc(sizeof(struct tm));
-	gmtime_r(&time, ts);
 	debug3("_print_record, job=%u, \"%s\"",
 	      job_ptr->job_id, data);
+#ifdef HAVE_BG
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_BLOCK_ID, 
+			     &block_id);
+		
+#endif
+	if(!block_id)
+		block_id = xstrdup("-");
+
 	slurm_mutex_lock( &logfile_lock );
+
 	if (fprintf(LOGFILE,
-		    "%u %s %u %u %d %d - - %s\n",
+		    "%u %s %u %u %d %d %s - %s\n",
 		    job_ptr->job_id, job_ptr->partition,
 		    (int)job_ptr->start_time, (int)time, 
-		    job_ptr->user_id, job_ptr->group_id, data)
+		    job_ptr->user_id, job_ptr->group_id, block_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
 	fdatasync(LOGFILE_FD);
 	slurm_mutex_unlock( &logfile_lock );
-	xfree(ts);
+	xfree(block_id);
+
 	return rc;
 }
 
@@ -146,6 +155,7 @@ int jobacct_job_start(struct job_record *job_ptr)
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
+
 	debug2("jobacct_job_start() called");
 	for (i=0; i < job_ptr->num_cpu_groups; i++)
 		ncpus += (job_ptr->cpus_per_node[i])
@@ -185,17 +195,39 @@ int jobacct_step_start(struct step_record *step)
 {
 	char buf[BUFFER_SIZE];
 	int cpus = 0;
+	char node_list[BUFFER_SIZE];
+#ifdef HAVE_BG
+	uint16_t quarter = (uint16_t)NO_VAL;
+	uint16_t nodecard = (uint16_t)NO_VAL;
+#endif
 
 	if(!init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
+
 #ifdef HAVE_BG
-	cpus = step->job_ptr->num_procs;
+	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
+	if(quarter != (uint16_t)NO_VAL 
+	   && nodecard != (uint16_t)NO_VAL)
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s.%d.%d", step->step_node_list, quarter, nodecard);
+	else if(quarter != (uint16_t)NO_VAL)
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s.%d", step->step_node_list, quarter);
+	else
+		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+	
 #else
 	cpus = step->num_cpus;
+	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+	block_id = xstrdup("-");
 #endif
-	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
@@ -226,8 +258,9 @@ int jobacct_step_start(struct step_record *step)
 		 0,	/* total nivcsw */
 		 0,		/* max vsize */
 		 0,		/* max psize */
-		 step->name,      	/* step exe name */
-		 step->step_node_list); /* name of nodes step running on */
+		 step->name,    /* step exe name */
+		 node_list);     /* name of nodes step running on */
+	
 	return _print_record(step->job_ptr, step->start_time, buf);	
 }
 
@@ -238,6 +271,11 @@ int jobacct_step_complete(struct step_record *step)
 	int elapsed;
 	int comp_status;
 	int cpus = 0;
+	char node_list[BUFFER_SIZE];
+#ifdef HAVE_BG
+	uint16_t quarter = (uint16_t)NO_VAL;
+	uint16_t nodecard = (uint16_t)NO_VAL;
+#endif
 
 	if(!init) {
 		debug("jobacct init was not called or it failed");
@@ -254,9 +292,26 @@ int jobacct_step_complete(struct step_record *step)
 		comp_status = JOB_COMPLETE;
 
 #ifdef HAVE_BG
-	cpus = step->job_ptr->num_procs;
+	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
+	if(quarter != (uint16_t)NO_VAL 
+	   && nodecard != (uint16_t)NO_VAL)
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s.%d.%d", step->step_node_list, quarter, nodecard);
+	else if(quarter != (uint16_t)NO_VAL)
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s.%d", step->step_node_list, quarter);
+	else
+		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+	
 #else
 	cpus = step->num_cpus;
+	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+	block_id = xstrdup("-");
 #endif
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
@@ -294,8 +349,8 @@ int jobacct_step_complete(struct step_record *step)
 		 step->max_vsize,		/* max vsize */
 		 step->max_psize,		/* max psize */
 		 step->name,      	/* step exe name */
-		 step->step_node_list); /* name of nodes step running on */
-       
+		 node_list); /* name of nodes step running on */
+
 	return _print_record(step->job_ptr, now, buf);	
 }
 

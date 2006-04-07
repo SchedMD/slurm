@@ -35,6 +35,7 @@
 #include <slurm/slurm_errno.h>
 #include <sys/stat.h>
 #include "src/common/xstring.h"
+#include "src/common/node_select.h"
 #include "slurmctld.h"
 
 int jobacct_init(char *job_acct_log);
