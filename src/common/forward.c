@@ -434,11 +434,11 @@ extern int no_resp_forwards(forward_t *forward, List *ret_list, int err)
 	ret_data_info_t *ret_data_info = NULL;
 	char name[MAX_SLURM_NAME];
 	int i=0;
+	if(!*ret_list)
+		*ret_list = list_create(destroy_ret_types);
 	if(forward->cnt == 0)
 		goto no_forward;
 	error("something bad happened");
-	if(!*ret_list)
-		*ret_list = list_create(destroy_ret_types);
 	type = xmalloc(sizeof(ret_types_t));
 	list_push(*ret_list, type);
 	type->type = REQUEST_PING;

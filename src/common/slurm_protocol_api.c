@@ -1645,10 +1645,10 @@ failed:
 		slurm_free_return_code_msg(resp.data);
 		slurm_free_cred(resp.cred);
 	}
+	
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup("localhost");
 	ret_data_info->data = NULL;
-
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		if(ret_type->msg_rc == msg_rc) {

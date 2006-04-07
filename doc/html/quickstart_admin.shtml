@@ -537,6 +537,7 @@ SlurmdPort        = 7003
 SlurmdSpoolDir    = /tmp/slurmd
 SlurmdTimeout     = 300
 TreeWidth         = 50
+JobAcctLogFile    = /tmp/jobacct.log
 SLURM_CONFIG_FILE = /etc/slurm/slurm.conf
 StateSaveLocation = /usr/local/tmp/slurm/adev
 SwitchType        = switch/elan

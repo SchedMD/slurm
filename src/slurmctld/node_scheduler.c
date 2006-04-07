@@ -1179,8 +1179,22 @@ extern void build_node_details(struct job_record *job_ptr)
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record(this_node_name);
+		     		
 		if (node_ptr) {
 			int usable_cpus = 0;
+#ifdef HAVE_BG
+			if(job_ptr->node_cnt == 1) {
+				memcpy(&job_ptr->node_addr[node_inx++],
+				       &node_ptr->slurm_addr, 
+				       sizeof(slurm_addr));
+				cpu_inx++;
+				
+				job_ptr->cpus_per_node[cpu_inx] =
+					job_ptr->num_procs;
+				job_ptr->cpu_count_reps[cpu_inx] = 1;
+				continue;
+			}
+#endif
 			if (cr_enabled) {
 				error_code = select_g_get_extra_jobinfo( 
 					node_ptr, job_ptr, 
@@ -1208,7 +1222,6 @@ extern void build_node_details(struct job_record *job_ptr)
 				cpu_inx++;
 				job_ptr->cpus_per_node[cpu_inx] =
 					usable_cpus;
-
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 			} else
 				job_ptr->cpu_count_reps[cpu_inx]++;

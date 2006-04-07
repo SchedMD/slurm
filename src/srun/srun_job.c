@@ -213,8 +213,10 @@ _job_create_structure(allocation_info_t *info)
 	
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 	opt.overcommit = true;
-#endif
+	job->nhosts = 1;
+#else
 	job->nhosts   = info->nnodes;
+#endif
 
 
 	job->select_jobinfo = info->select_jobinfo;
