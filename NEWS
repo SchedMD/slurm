@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix for job accounting logic submitted from Andy Riebs to handle issues
     with suspending jobs and such. patch file named requeue.patch
+ -- Make select/cons_res interoperate with mpi/lam plugin for task counts.
 
 * Changes in SLURM 1.0.9
 ========================
