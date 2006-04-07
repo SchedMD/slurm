@@ -739,7 +739,7 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 		rc = -1;
 		errnum = errno;
 		verbose("Error sending signal %d to %u.%u: %s", 
-			signal, job->jobid, job->stepid, 
+			SIGKILL, job->jobid, job->stepid, 
 			slurm_strerror(rc));
 	} else {
 		verbose("Sent signal %d to %u.%u", 
