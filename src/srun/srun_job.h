@@ -107,7 +107,6 @@ typedef struct srun_job {
 
 	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
-	uint32_t *hostid;	/* task id => host id mapping     */
 
 	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
 
