@@ -226,7 +226,6 @@ int jobacct_step_start(struct step_record *step)
 #else
 	cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
-	block_id = xstrdup("-");
 #endif
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -311,7 +310,6 @@ int jobacct_step_complete(struct step_record *step)
 #else
 	cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
-	block_id = xstrdup("-");
 #endif
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
