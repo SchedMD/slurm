@@ -34,6 +34,8 @@
 #include "src/common/parse_config.h"
 
 extern slurm_ctl_conf_t slurmctld_conf;
+extern char *default_slurm_config_file;
+extern char *default_plugin_path;
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_FAST_SCHEDULE       1

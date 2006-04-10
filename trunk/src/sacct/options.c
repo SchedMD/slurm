@@ -26,6 +26,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include "src/common/read_config.h"
 #include "sacct.h"
 
 typedef struct expired_rec {  /* table of expired jobs */
@@ -168,6 +169,7 @@ void _help_fields_msg(void)
 
 void _help_msg(void)
 {
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	printf("\n"
 	       "By default, sacct displays accounting data for all jobs and job\n"
 	       "steps that are present in the log.\n"
@@ -182,7 +184,7 @@ void _help_msg(void)
 	       "    * If --dump is not specified, elapsed time fields are presented\n"
 	       "      as [[days-]hours:]minutes:seconds.hundredths\n"
 	       "    * The default input file is the file named in the \"jobacct_logfile\"\n"
-	       "      parameter in " SLURM_CONFIG_FILE ".\n"
+	       "      parameter in %s.\n"
 	       "\n"
 	       "Options:\n"
 	       "\n"
@@ -272,7 +274,10 @@ void _help_msg(void)
 	       "    Pointer to this message.\n"
 	       "-v, --verbose\n"
 	       "    Primarily for debugging purposes, report the state of various\n"
-	       "    variables during processing.\n");
+	       "    variables during processing.\n", conf->slurm_conf);
+
+	slurm_conf_unlock();
+
 	return;
 }
 

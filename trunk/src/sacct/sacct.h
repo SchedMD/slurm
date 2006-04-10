@@ -70,10 +70,6 @@
 
 #define TIMESTAMP_LENGTH 15
 
-#ifndef SLURM_CONFIG_FILE
-#define SLURM_CONFIG_FILE "sacct was built with no default slurm.conf path"
-#endif
-
 /* Map field names to positions */
 
 /* Fields common to all records */
