@@ -43,7 +43,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -96,6 +95,7 @@ int main(int argc, char *argv[])
 
 	/* transmit the file */
 	_bcast_file();
+/*	slurm_free_resource_allocation_response_msg(alloc_resp); */
 
 	exit(0);
 }
@@ -164,77 +164,6 @@ static ssize_t _get_block(char *buffer, size_t buf_size)
 	return buf_used;
 }
 
-/* issue the RPC to ship the file's data */
-static void _send_rpc(file_bcast_msg_t *bcast_msg)
-{
-	/* This code will handle message fanout to multiple slurmd */
-	forward_t from, forward;
-	slurm_msg_t msg;
-	hostlist_t hl;
-	List ret_list = NULL;
-	ListIterator itr, data_itr;
-	ret_types_t *ret_type = NULL;
-	ret_data_info_t *ret_data_info = NULL;
-	int i, rc = SLURM_SUCCESS;
-
-	from.cnt	= alloc_resp->node_cnt;
-	from.name	= xmalloc(MAX_SLURM_NAME * alloc_resp->node_cnt);
-	hl = hostlist_create(alloc_resp->node_list);
-	for (i=0; i<alloc_resp->node_cnt; i++) {
-		char *host = hostlist_shift(hl);
-		strncpy(&from.name[MAX_SLURM_NAME*i], host, MAX_SLURM_NAME);
-		free(host);
-	}
-	hostlist_destroy(hl);
-	from.addr	= alloc_resp->node_addr;
-	from.node_id	= NULL;
-	from.timeout	= SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
-	i = 0;
-	forward_set(&forward, alloc_resp->node_cnt, &i, &from);
-
-	msg.msg_type	= REQUEST_FILE_BCAST;
-	msg.address	= alloc_resp->node_addr[0];
-	msg.data	= bcast_msg;
-	msg.forward	= forward;
-	msg.ret_list	= NULL;
-	msg.orig_addr.sin_addr.s_addr = 0;
-	msg.srun_node_id = 0;
-
-	ret_list = slurm_send_recv_rc_msg(&msg, 
-			SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
-	if (ret_list == NULL) {
-		error("slurm_send_recv_rc_msg: %m");
-		exit(1);
-	}
-
-	itr = list_iterator_create(ret_list);
-	while ((ret_type = list_next(itr)) != NULL) {
-		data_itr = list_iterator_create(ret_type->ret_data_list);
-		while((ret_data_info = list_next(data_itr)) != NULL) {
-			i = ret_type->msg_rc;
-			if (i != SLURM_SUCCESS) {
-				if (!strcmp(ret_data_info->node_name,
-						"localhost")) {
-					xfree(ret_data_info->node_name);
-					ret_data_info->node_name =
-						xstrdup(from.name);
-				}
-				error("REQUEST_FILE_BCAST(%s): %s",
-					ret_data_info->node_name,
-					slurm_strerror(i));
-				rc = i;
-			}
-		}
-		list_iterator_destroy(data_itr);
-	}
-	list_iterator_destroy(itr);
-	if (ret_list)
-		list_destroy(ret_list);
-	if (rc)
-		exit(1);
-//	slurm_free_resource_allocation_response_msg(alloc_resp);
-}
-
 /* read and broadcast the file */
 static void _bcast_file(void)
 {
@@ -274,14 +203,17 @@ static void _bcast_file(void)
 		for (i=0; i<FILE_BLOCKS; i++) {
 			bcast_msg.block_len[i] = 
 				_get_block(buffer[i], buf_size);
+			debug("block %d, size %u", (bcast_msg.block_no + i),
+				bcast_msg.block_len[i]);
 			size_read += bcast_msg.block_len[i];
 			if (size_read >= f_stat.st_size)
 				bcast_msg.last_block = 1;
 			size_block += bcast_msg.block_len[i];
-			if (size_block >= params.block_size)
+			if (params.block_size
+			&&  (size_block >= params.block_size))
 				break;
 		}
-		_send_rpc(&bcast_msg);
+		send_rpc(&bcast_msg, alloc_resp);
 		if (bcast_msg.last_block)
 			break;	/* end of file */
 		bcast_msg.block_no += FILE_BLOCKS;

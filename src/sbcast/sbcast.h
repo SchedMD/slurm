@@ -35,6 +35,7 @@
 
 #include <slurm/slurm.h>
 #include <src/common/macros.h>
+#include <src/common/slurm_protocol_defs.h>
 
 struct sbcast_parameters {
 	uint32_t block_size;
@@ -49,5 +50,7 @@ struct sbcast_parameters {
 extern struct sbcast_parameters params;
 
 extern void parse_command_line(int argc, char *argv[]);
+extern void send_rpc(file_bcast_msg_t *bcast_msg,
+		resource_allocation_response_msg_t *alloc_resp);
 
 #endif
