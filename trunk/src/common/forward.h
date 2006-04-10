@@ -97,13 +97,14 @@ int *span = set_span(agent_arg_ptr->node_count);
 // Fill in a local forward structure with count of threads to created
 // by this program, an array of names and addrs of hosts and node_id 
 // (if any) to be sent to along with the timeout of the message
-forward.cnt = agent_info_ptr->thread_count;
+forward.cnt  = agent_arg_ptr->node_count;
 forward.name = agent_arg_ptr->node_names;
 forward.addr = agent_arg_ptr->slurm_addr;
 forward.node_id = NULL;
 forward.timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 
-for (i = 0; i < agent_info_ptr->thread_count; i++) {
+thr_count = 0;
+for (i = 0; i < agent_arg_ptr->node_count; i++) {
 	thread_ptr[thr_count].state      = DSH_NEW;
 	thread_ptr[thr_count].slurm_addr = agent_arg_ptr->slurm_addr[i];
 	strncpy(thread_ptr[thr_count].node_name,
