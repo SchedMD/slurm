@@ -85,6 +85,8 @@ extern int forward_msg(forward_struct_t *forward_struct,
  *                                   structures
  * IN: from        - forward_t *   - information from original message
  * RET: SLURM_SUCCESS - int
+ *
+ * NOTE: Call destroy_forward() to release allocated memory
  */
 /********************************************************************
 // Code taken from slurmctld/agent.c
