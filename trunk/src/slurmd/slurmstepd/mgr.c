@@ -521,6 +521,10 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 }
 
 
+/*
+ * Send a single step completion message, which represents a single range
+ * of complete job step nodes.
+ */
 /* caller is holding step_complete.lock */
 static void
 _one_step_complete_msg(slurmd_job_t *job, int first, int last)
@@ -622,6 +626,12 @@ _bit_getrange(int start, int size, int *first, int *last)
 		return 0;
 }
 
+/*
+ * Send as many step completion messages as necessary to represent
+ * all completed nodes in the job step.  There may be nodes that have
+ * not yet signalled their completion, so there will be gaps in the
+ * completed node bitmap, requiring that more than one message be sent.
+ */
 static void
 _send_step_complete_msgs(slurmd_job_t *job)
 {
