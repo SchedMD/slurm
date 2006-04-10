@@ -135,6 +135,8 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 	list_iterator_destroy(itr);
 	if (ret_list)
 		list_destroy(ret_list);
+	xfree(from.name);
+	destroy_forward(&forward);
 	if (rc)
 		exit(1);
 }
