@@ -197,13 +197,6 @@ AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
 LIBS="$savedLIBS"
 CFLAGS="$savedCFLAGS"
 
-
-#
-# Add system directories and config files to CPPFLAGS
-#
-CPPFLAGS="$CPPFLAGS -DSLURM_CONFIG_FILE=\\\"\$(sysconfdir)/slurm.conf\\\""
-CPPFLAGS="$CPPFLAGS -DSLURM_PLUGIN_PATH=\\\"\$(pkglibdir)\\\""
-
 dnl Add LSD-Tools defines:
 AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
 AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])

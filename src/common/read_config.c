@@ -1055,7 +1055,7 @@ _init_slurm_conf(char *file_name)
 	if (file_name == NULL) {
 		file_name = getenv("SLURM_CONF");
 		if (file_name == NULL)
-			file_name = SLURM_CONFIG_FILE;
+			file_name = default_slurm_config_file;
 	}
 
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
@@ -1131,7 +1131,7 @@ slurm_conf_reinit(char *file_name)
 	if (file_name == NULL) {
 		file_name = getenv("SLURM_CONF");
 		if (file_name == NULL)
-			file_name = SLURM_CONFIG_FILE;
+			file_name = default_slurm_config_file;
 	}
 
 	if (conf_initialized) {
@@ -1318,7 +1318,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
-		conf->plugindir = xstrdup(SLURM_PLUGIN_PATH);
+		conf->plugindir = xstrdup(default_plugin_path);
 
 	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
 		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
