@@ -81,18 +81,6 @@ static s_p_hashtbl_t *default_partition_tbl;
 inline static void _normalize_debug_level(uint16_t *level);
 static void _init_slurm_conf(char *file_name);
 
-/* data structures for looking up slurmd port numbers */
-struct slurmd_port {
-	hostset_t aliases; /* NodeName */
-	uint16_t port;
-};
-
-/* Not used now
-static struct slurmd_port *slurmd_port_array;
-static int slurmd_port_array_count;
-*/
-
-
 #define NAME_HASH_LEN 512
 typedef struct names_ll_s {
 	char *alias;	/* NodeName */
@@ -107,7 +95,6 @@ typedef struct names_ll_s {
 bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
-static char *this_hostname = NULL;
 
 static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
@@ -600,7 +587,7 @@ static void _free_name_hashtbl()
 		node_to_host_hashtbl[i] = NULL;
 		host_to_node_hashtbl[i] = NULL;
 	}
-	xfree(this_hostname);
+	nodehash_initialized = false;
 }
 
 static void _init_name_hashtbl()
@@ -858,12 +845,12 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 
 /*
  * slurm_conf_get_addr - Return the slurm_addr for a given NodeName
+ * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
  */
-extern slurm_addr slurm_conf_get_addr(const char *node_name)
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address)
 {
 	int idx;
 	names_ll_t *p;
-	slurm_addr unknown;
 
 	slurm_conf_lock();
 	_init_slurmd_nodehash();
@@ -872,23 +859,19 @@ extern slurm_addr slurm_conf_get_addr(const char *node_name)
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
-			slurm_addr a;
 			if (!p->addr_initialized) {
 				slurm_set_addr(&p->addr, p->port, p->address);
 				p->addr_initialized = true;
 			}
-			a = p->addr;
+			*address = p->addr;
 			slurm_conf_unlock();
-			return a;
+			return SLURM_SUCCESS;
 		}
 		p = p->next_alias;
 	}
 	slurm_conf_unlock();
 
-	/* FIXME - needs to return a success/fail flag, and set address
-	   through a parameter */
-	memset(&unknown, 0, sizeof(slurm_addr));
-	return unknown;
+	return SLURM_FAILURE;
 }
 
 

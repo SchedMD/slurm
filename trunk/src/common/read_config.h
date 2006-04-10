@@ -31,6 +31,7 @@
 #define _READ_CONFIG_H
 
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_socket_common.h"
 #include "src/common/parse_config.h"
 
 extern slurm_ctl_conf_t slurmctld_conf;
@@ -202,11 +203,13 @@ extern char *slurm_conf_get_nodename(const char *node_hostname);
 extern uint16_t slurm_conf_get_port(const char *node_name);
 
 /*
- * slurm_conf_get_addr - Return the slurm_addr for a given NodeName
+ * slurm_conf_get_addr - Return the slurm_addr for a given NodeName in
+ *	the parameter "address".  The return code is SLURM_SUCCESS on success,
+ *	and SLURM_FAILURE if the address lookup failed.
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
-extern slurm_addr slurm_conf_get_addr(const char *node_name);
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address);
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 

@@ -243,7 +243,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
-	slurm_addr parent_addr;
+	slurm_addr parent_addr = {NULL};
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
@@ -269,10 +269,16 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
 		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
+			int rc;
 			/* Find the slurm_addr of this node's parent slurmd
 			   in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
-			parent_addr = slurm_conf_get_addr(parent_alias);
+			rc = slurm_conf_get_addr(parent_alias, &parent_addr);
+			if (rc != SLURM_SUCCESS) {
+				error("Failed looking up address for "
+				      "NodeName %s", parent_alias);
+				/* parent_rank = -1; */
+			}
 		}
 #else
 		/* In FRONT_END mode, one slurmd pretends to be all
@@ -287,13 +293,11 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		max_depth = 0;
 #endif
 	}
-	
 	debug3("slurmstepd rank %d (%s), parent rank %d (%s), "
 	       "children %d, depth %d, max_depth %d",
 	       rank, conf->node_name,
 	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
-	/* FIXME - send the reverse tree info to slurmstepd! */
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
 	safe_write(fd, &parent_rank, sizeof(int));
