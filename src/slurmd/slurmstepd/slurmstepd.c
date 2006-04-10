@@ -210,6 +210,14 @@ _init_from_slurmd(int sock, char **argv,
 	jobacct_g_init(conf->job_acct_freq);
 	switch_g_slurmd_step_init();
 
+	{
+		uint16_t port;
+		char buf[16];
+		slurm_get_ip_str(&step_complete.parent_addr, &port, buf, 16);
+		debug3("slurmstepd rank %d, parent address = %s, port = %u",
+		       step_complete.rank, buf, port);
+	}
+
 	/* receive cli from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(sizeof(char) * len);
