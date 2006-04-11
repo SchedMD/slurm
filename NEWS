@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- added step comp logic
  -- vastly changed sacct and the jobacct plugin.  Needs more documentation 
     still.
+ -- added jobacct plugin for aix and bluegene, they currently don't work, 
+    but infastructure is in place.
 
 * Changes in SLURM 1.1.0-pre4
 =============================
