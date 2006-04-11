@@ -40,6 +40,7 @@
 struct sbcast_parameters {
 	uint32_t block_size;
 	bool compress;
+	int  fanout;
 	bool force;
 	bool preserve;
 	int  verbose;

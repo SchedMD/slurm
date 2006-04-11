@@ -27,6 +27,10 @@ Compress the file being transmitted.
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file already exists, replace it.
 .TP
+\fB\-F\fR \fInumber\fR, \fB\-\-fanout\fR=\fInumber\fR
+Specify the fanout of messages used for file transfer.
+Maximum value is currently eight.
+.TP
 \fB\-p\fR, \fB\-\-preserve\fR
 Preserves modification times, access times, and modes from the 
 original file.
@@ -54,6 +58,9 @@ these settings.)
 .TP 20
 \fBSBCAST_COMPRESS\fR
 \fB\-C, \-\-compress\fR
+.TP
+\fBSBCAST_FANOUT\fR
+\fB\-F\fB \fInumber\fR, fB\-\-fanout\fR=\fInumber\fR
 .TP
 \fBSBCAST_FORCE\fR
 \fB\-f, \-\-force\fR

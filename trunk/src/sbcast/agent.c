@@ -50,7 +50,7 @@
 #include "src/sbcast/sbcast.h"
 
 #define MAX_RETRIES     10
-#define MAX_THREADS      4	/* These can be huge messages, so
+#define MAX_THREADS      8	/* These can be huge messages, so
 				 * only run MAX_THREADS at one time */
 typedef struct thd {
 	pthread_t thread;	/* thread ID */
@@ -130,7 +130,10 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 
 	if (threads_used == 0) {
 		hostlist_t hl;
-		int *span = set_span(alloc_resp->node_cnt, MAX_THREADS);
+		int *span;
+
+		i = MIN(MAX_THREADS, params.fanout);
+		span = set_span(alloc_resp->node_cnt, i);
 		from.cnt  = alloc_resp->node_cnt;
 		from.name = xmalloc(MAX_SLURM_NAME * alloc_resp->node_cnt);
 		hl = hostlist_create(alloc_resp->node_list);
