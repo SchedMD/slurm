@@ -323,13 +323,12 @@ int srun(int ac, char **av)
 
 	_run_srun_epilog(job);
 
-	log_fini();
-
 	/* 
 	 *  Let exit() clean up remaining threads.
 	 */
-
-	exit(job_rc(job));
+	exitcode = job_rc(job);
+	log_fini();
+	exit(exitcode);
 }
 
 static char *
