@@ -344,7 +344,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	int i;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
-	int *span = set_span(agent_arg_ptr->node_count);
+	int *span = set_span(agent_arg_ptr->node_count, 0);
 	int thr_count = 0;
        	forward_t forward;
 

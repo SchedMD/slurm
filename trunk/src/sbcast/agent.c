@@ -50,20 +50,10 @@
 #include "src/sbcast/sbcast.h"
 
 #define MAX_RETRIES     10
-#define MAX_THREADS      4	/* These are huge messages, so only
-				 * run MAX_THREADS at one time */
-
-typedef enum {
-	DSH_NEW,	/* Request not yet started */
-	DSH_ACTIVE,	/* Request in progress */
-	DSH_DONE,	/* Request completed normally */
-	DSH_NO_RESP,	/* Request timed out */
-	DSH_FAILED	/* Request resulted in error */
-} state_t;
-
+#define MAX_THREADS      3	/* These can be huge messages, so
+				 * only run MAX_THREADS at one time */
 typedef struct thd {
 	pthread_t thread;	/* thread ID */
-	pthread_attr_t attr;	/* thread attributes */
 	slurm_msg_t *msg;	/* message to send */
 	int rc;			/* highest return codes from RPC */
 } thd_t;
@@ -73,87 +63,6 @@ static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 
 static void *_agent_thread(void *args);
-
-/* issue the RPC to ship the file's data */
-extern void send_rpc(file_bcast_msg_t *bcast_msg, 
-		resource_allocation_response_msg_t *alloc_resp)
-{
-	/* This code will handle message fanout to multiple slurmd */
-	forward_t from, *forward;
-	hostlist_t hl;
-	int i, rc = 0, retries = 0;
-	int thr_count = 0, *span = set_span(alloc_resp->node_cnt);
-	thd_t *thread_info;
-
-	thread_info	= xmalloc(slurm_get_tree_width() * sizeof(thd_t));
-	forward         = xmalloc(slurm_get_tree_width() * sizeof(forward_t));
-	from.cnt	= alloc_resp->node_cnt;
-	from.name	= xmalloc(MAX_SLURM_NAME * alloc_resp->node_cnt);
-	hl = hostlist_create(alloc_resp->node_list);
-	for (i=0; i<alloc_resp->node_cnt; i++) {
-		char *host = hostlist_shift(hl);
-		strncpy(&from.name[MAX_SLURM_NAME*i], host, MAX_SLURM_NAME);
-		free(host);
-	}
-	hostlist_destroy(hl);
-	from.addr	= alloc_resp->node_addr;
-	from.node_id	= NULL;
-	from.timeout	= SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
-	for (i=0; i<alloc_resp->node_cnt; i++) {
-		forward_set(&forward[i], span[thr_count], &i, &from);
-		thread_info[i].msg = xmalloc(sizeof(slurm_msg_t));
-		thread_info[i].msg->msg_type	= REQUEST_FILE_BCAST;
-		thread_info[i].msg->data	= bcast_msg;
-		thread_info[i].msg->forward	= forward[i];
-		thread_info[i].msg->ret_list	= NULL;
-		thread_info[i].msg->orig_addr.sin_addr.s_addr = 0;
-		thread_info[i].msg->srun_node_id= 0;
-		thread_info[i].rc		= -1;
-		thread_info[i].msg->address	= alloc_resp->node_addr[i];
-		thr_count++;
-	}
-	xfree(span);
-	debug("spawning %d threads", thr_count);
-
-	for (i=0; i<thr_count; i++) {
-		slurm_mutex_lock(&agent_cnt_mutex);
-		while (agent_cnt >= MAX_THREADS)
-			pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
-		agent_cnt++;
-		slurm_mutex_unlock(&agent_cnt_mutex);
-
-		slurm_attr_init(&thread_info[i].attr);
-		if (pthread_attr_setdetachstate (&thread_info[i].attr,
-				PTHREAD_CREATE_JOINABLE))
-			error("pthread_attr_setdetachstate error %m");
-		while (pthread_create(&thread_info[i].thread, 
-				&thread_info[i].attr, 
-				_agent_thread,
-				(void *) &thread_info[i])) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1); 	/* sleep and again */
-		}
-	}
-
-	/* wait until pthreads complete */
-	slurm_mutex_lock(&agent_cnt_mutex);
-	while (agent_cnt)
-		pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
-	slurm_mutex_unlock(&agent_cnt_mutex);
-
-	for (i=0; i<thr_count; i++) {
-		rc = MAX(rc, thread_info[i].rc);
-		xfree(thread_info[i].msg);
-		destroy_forward(&forward[i]);
-	}
-	xfree(from.name);
-	xfree(forward);
-	xfree(thread_info);
-	if (rc)
-		exit(1);
-}
 
 static void *_agent_thread(void *args)
 {
@@ -205,3 +114,84 @@ static void *_agent_thread(void *args)
 	return NULL;
 }
 
+/* Issue the RPC to transfer the file's data */
+extern void send_rpc(file_bcast_msg_t *bcast_msg,
+		resource_allocation_response_msg_t *alloc_resp)
+{
+	/* Preserve some data structures across calls for better performance */
+	static forward_t from, forward[MAX_THREADS];
+	static int threads_used = 0;
+	static slurm_msg_t msg[MAX_THREADS];
+
+	int i, rc = SLURM_SUCCESS;
+	int retries = 0;
+	thd_t thread_info[MAX_THREADS];
+
+	if (threads_used == 0) {
+		hostlist_t hl;
+		int *span = set_span(alloc_resp->node_cnt, MAX_THREADS);
+		from.cnt  = alloc_resp->node_cnt;
+		from.name = xmalloc(MAX_SLURM_NAME * alloc_resp->node_cnt);
+		hl = hostlist_create(alloc_resp->node_list);
+		for (i=0; i<alloc_resp->node_cnt; i++) {
+			char *host = hostlist_shift(hl);
+			strncpy(&from.name[MAX_SLURM_NAME*i], host, 
+				MAX_SLURM_NAME);
+			free(host);
+		}
+		hostlist_destroy(hl);
+		from.addr	= alloc_resp->node_addr;
+		from.node_id	= NULL;
+		from.timeout	= SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+
+		for (i=0; i<alloc_resp->node_cnt; i++) {
+			int j = i;
+			forward_set(&forward[threads_used], span[threads_used],
+				&i, &from);
+			msg[threads_used].msg_type    = REQUEST_FILE_BCAST;
+			msg[threads_used].address     = alloc_resp->node_addr[j];
+			msg[threads_used].data        = bcast_msg;
+			msg[threads_used].forward     = forward[threads_used];
+			msg[threads_used].ret_list    = NULL;
+			msg[threads_used].orig_addr.sin_addr.s_addr = 0;
+			msg[threads_used].srun_node_id = 0;
+			threads_used++;
+		}
+		xfree(span);
+		debug("using %d threads", threads_used);
+	}
+
+	for (i=0; i<threads_used; i++) {
+		pthread_attr_t attr;
+		slurm_mutex_lock(&agent_cnt_mutex);
+		agent_cnt++;
+		slurm_mutex_unlock(&agent_cnt_mutex);
+
+		slurm_attr_init(&attr);
+		if (pthread_attr_setdetachstate (&attr,
+				PTHREAD_CREATE_JOINABLE))
+			error("pthread_attr_setdetachstate error %m");
+		thread_info[i].msg = &msg[i];
+		while (pthread_create(&thread_info[i].thread,
+				&attr, _agent_thread,
+				(void *) &thread_info[i])) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep(1);	/* sleep and retry */
+		}
+		pthread_attr_destroy(&attr);
+	}
+
+	/* wait until pthreads complete */
+	slurm_mutex_lock(&agent_cnt_mutex);
+	while (agent_cnt)
+		pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
+	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	for (i=0; i<threads_used; i++)
+		 rc = MAX(rc, thread_info[i].rc);
+
+	if (rc)
+		exit(1);
+}

@@ -1760,12 +1760,14 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	return ret_val;
 }
 
-extern int *set_span(int total)
+extern int *set_span(int total,  uint16_t tree_width)
 {
 	int *span;
 	int left = total;
 	int i = 0;
-	uint16_t tree_width = slurm_get_tree_width();
+
+        if (tree_width == 0)
+	        tree_width = slurm_get_tree_width();
 
 	span = xmalloc(sizeof(int) * tree_width);
 	//info("span count = %d", tree_width);

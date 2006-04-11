@@ -115,7 +115,7 @@ launch(void *arg)
 	hostlist_t hostlist = NULL;
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
-	int *span = set_span(job->step_layout->num_hosts);
+	int *span = set_span(job->step_layout->num_hosts, 0);
 	Buf buffer = NULL;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
