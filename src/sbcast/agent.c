@@ -126,6 +126,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 	int i, rc = SLURM_SUCCESS;
 	int retries = 0;
 	thd_t thread_info[MAX_THREADS];
+	pthread_attr_t attr;
 
 	if (threads_used == 0) {
 		hostlist_t hl;
@@ -161,16 +162,17 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		debug("using %d threads", threads_used);
 	}
 
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate (&attr,
+			PTHREAD_CREATE_JOINABLE))
+		error("pthread_attr_setdetachstate error %m");
+
 	for (i=0; i<threads_used; i++) {
 		pthread_attr_t attr;
 		slurm_mutex_lock(&agent_cnt_mutex);
 		agent_cnt++;
 		slurm_mutex_unlock(&agent_cnt_mutex);
 
-		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate (&attr,
-				PTHREAD_CREATE_JOINABLE))
-			error("pthread_attr_setdetachstate error %m");
 		thread_info[i].msg = &msg[i];
 		while (pthread_create(&thread_info[i].thread,
 				&attr, _agent_thread,
@@ -180,7 +182,6 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and retry */
 		}
-		pthread_attr_destroy(&attr);
 	}
 
 	/* wait until pthreads complete */
@@ -188,6 +189,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 	while (agent_cnt)
 		pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
 	slurm_mutex_unlock(&agent_cnt_mutex);
+	pthread_attr_destroy(&attr);
 
 	for (i=0; i<threads_used; i++)
 		 rc = MAX(rc, thread_info[i].rc);
