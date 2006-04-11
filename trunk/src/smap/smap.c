@@ -143,7 +143,7 @@ part_fini:
 	}
 	if(!params.commandline) {
 		
-		signal(SIGWINCH, (void *)_resize_handler);
+		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
 		
 #ifdef HAVE_BG
