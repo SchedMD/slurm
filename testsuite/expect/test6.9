@@ -10,7 +10,7 @@
 # Note:    This script generates and then deletes files in the working directory 
 #          named test6.9.input
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -81,6 +81,7 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: error on job\n"
 	exit 1
 }
+# Wait for job steps to begin
 exec $bin_sleep 2
 
 #
