@@ -43,6 +43,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/slurmd/common/stepd_api.h"
@@ -603,10 +604,8 @@ stepd_completion(int fd, step_complete_msg_t *sent)
 	safe_write(fd, &sent->range_first, sizeof(int));
 	safe_write(fd, &sent->range_last, sizeof(int));
 	safe_write(fd, &sent->step_rc, sizeof(int));
-	safe_write(fd, &sent->rusage, sizeof(struct rusage));
-	safe_write(fd, &sent->max_psize, sizeof(int));
-	safe_write(fd, &sent->max_vsize, sizeof(int));
-	
+	jobacct_g_setinfo(sent->jobacct, JOBACCT_DATA_PIPE, &fd);	
+		
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
 	safe_read(fd, &errnum, sizeof(int));

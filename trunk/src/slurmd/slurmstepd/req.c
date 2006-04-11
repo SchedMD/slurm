@@ -890,7 +890,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_suspend();
+	jobacct_g_suspendpoll();
 
 	/*
 	 * Signal the container
@@ -975,9 +975,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	int errnum = 0;
 	int first;
 	int last;
-	int psize;
-	int vsize;
-	struct rusage rusage;
+	jobacctinfo_t *jobacct = NULL;
 	int step_rc;
 
 	debug("_handle_completion for job %u.%u",
@@ -998,10 +996,9 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
-	safe_read(fd, &rusage, sizeof(struct rusage));
-	safe_read(fd, &psize, sizeof(int));
-	safe_read(fd, &vsize, sizeof(int));
-
+	jobacct = jobacct_g_alloc();
+	jobacct_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
+	
 	/*
 	 * Record the completed nodes
 	 */
@@ -1010,9 +1007,11 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 		 first - (step_complete.rank+1),
 		 last - (step_complete.rank+1));
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
-
+	
 	/************* acct stuff ********************/
-	aggregate_job_data(rusage, psize, vsize);
+	info("read it all now aggregate");
+	jobacct_g_aggregate(step_complete.jobacct, jobacct);
+	jobacct_g_free(jobacct);
 	/*********************************************/
 	
 	/* Send the return code and errno, we do this within the locked

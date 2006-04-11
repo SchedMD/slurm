@@ -108,9 +108,7 @@ step_complete_t step_complete = {
 	-1,
 	(bitstr_t *)NULL,
 	0,
-	{},
-	0,
-	0
+        NULL
 };
 
 /* 
@@ -288,39 +286,6 @@ mgr_spawn_task_setup(spawn_task_request_msg_t *msg, slurm_addr *cli,
 	job->envtp->self = self;
 	
 	return job;
-}
-
-void aggregate_job_data(struct rusage rusage, int psize, int vsize) 
-{
-	step_complete.max_psize = MAX(step_complete.max_psize, psize);
-	step_complete.max_vsize = MAX(step_complete.max_vsize, vsize);
-	/* sum up all rusage stuff */
-	step_complete.rusage.ru_utime.tv_sec	+= rusage.ru_utime.tv_sec;
-	step_complete.rusage.ru_utime.tv_usec	+= rusage.ru_utime.tv_usec;
-	while (step_complete.rusage.ru_utime.tv_usec >= 1E6) {
-		step_complete.rusage.ru_utime.tv_sec++;
-		step_complete.rusage.ru_utime.tv_usec -= 1E6;
-	}
-	step_complete.rusage.ru_stime.tv_sec	+= rusage.ru_stime.tv_sec;
-	step_complete.rusage.ru_stime.tv_usec	+= rusage.ru_stime.tv_usec;
-	while (step_complete.rusage.ru_stime.tv_usec >= 1E6) {
-		step_complete.rusage.ru_stime.tv_sec++;
-		step_complete.rusage.ru_stime.tv_usec -= 1E6;
-	}
-	step_complete.rusage.ru_maxrss		+= rusage.ru_maxrss;
-	step_complete.rusage.ru_ixrss		+= rusage.ru_ixrss;
-	step_complete.rusage.ru_idrss		+= rusage.ru_idrss;
-	step_complete.rusage.ru_isrss		+= rusage.ru_isrss;
-	step_complete.rusage.ru_minflt		+= rusage.ru_minflt;
-	step_complete.rusage.ru_majflt		+= rusage.ru_majflt;
-	step_complete.rusage.ru_nswap		+= rusage.ru_nswap;
-	step_complete.rusage.ru_inblock		+= rusage.ru_inblock;
-	step_complete.rusage.ru_oublock		+= rusage.ru_oublock;
-	step_complete.rusage.ru_msgsnd		+= rusage.ru_msgsnd;
-	step_complete.rusage.ru_msgrcv		+= rusage.ru_msgrcv;
-	step_complete.rusage.ru_nsignals	+= rusage.ru_nsignals;
-	step_complete.rusage.ru_nvcsw		+= rusage.ru_nvcsw;
-	step_complete.rusage.ru_nivcsw		+= rusage.ru_nivcsw;
 }
 
 static void
@@ -539,14 +504,15 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
-	
+	msg.jobacct = jobacct_g_alloc();
 	/************* acct stuff ********************/
-	aggregate_job_data(job->rusage, job->max_psize, job->max_vsize);
+	jobacct_g_aggregate(step_complete.jobacct, job->jobacct);
+	jobacct_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
+			  msg.jobacct);
+	/* There might be more steps that come through. we don't want to use
+	   data twice */
+	jobacct_g_init_struct(step_complete.jobacct);
 	/*********************************************/	
-	info("setting the rusage");
-	memcpy(&msg.rusage, &step_complete.rusage, sizeof(struct rusage));
-	msg.max_psize = step_complete.max_psize;
-	msg.max_vsize = step_complete.max_vsize;
 	memset(&req, 0, sizeof(req));
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
@@ -562,14 +528,14 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
 		slurm_send_recv_controller_rc_msg(&req, &rc);
-		return;
+		goto finished;
 	}
 
 	debug3("Rank %d sending complete to rank %d, range %d to %d",
 	       step_complete.rank, step_complete.parent_rank, first, last);
 	retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
 	if (retcode == SLURM_SUCCESS && rc == 0)
-		return;
+		goto finished;
 
 	/* On error, pause then try sending to parent again.
 	 * The parent slurmstepd may just not have started yet, because
@@ -580,12 +546,14 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	       step_complete.rank, step_complete.parent_rank, first, last);
 	retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
 	if (retcode == SLURM_SUCCESS && rc == 0)
-		return;
+		goto finished;
 
 	/* on error AGAIN, send to the slurmctld instead */
 	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
 	       step_complete.rank, first, last);
 	slurm_send_recv_controller_rc_msg(&req, &rc);
+finished:
+	jobacct_g_free(msg.jobacct);
 }
 
 /* Given a starting bit in the step_complete.bits bitstring, "start",
@@ -733,7 +701,7 @@ job_manager(slurmd_job_t *job)
 	_send_launch_resp(job, 0);
 
 	_wait_for_all_tasks(job);
-	jobacct_g_fini(job);
+	jobacct_g_endpoll(job);
 		
 	job->state = SLURMSTEPD_STEP_ENDING;
 
@@ -979,9 +947,10 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	int status;
 	pid_t pid;
 	int completed = 0;
-
+	jobacctinfo_t *jobacct = jobacct_g_alloc();
+	struct rusage rusage;
 	do {
-		pid = wait3(&status, waitflag ? 0 : WNOHANG, &job->rusage);
+		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {
 			if (errno == ECHILD) {
 				debug("No child processes");
@@ -999,6 +968,11 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			goto done;
 		}
 
+		/************* acct stuff ********************/
+		jobacct_g_setinfo(jobacct, JOBACCT_DATA_RUSAGE, &rusage);
+		jobacct_g_aggregate(job->jobacct, jobacct);
+		/*********************************************/	
+	
 		/* See if the pid matches that of one of the tasks */
 		for (i = 0; i < job->ntasks; i++) {
 			if (job->task[i]->pid == pid) {
@@ -1039,6 +1013,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	} while ((pid > 0) && !waitflag);
 
 done:
+	jobacct_g_free(jobacct);
 	return completed;
 }
 	

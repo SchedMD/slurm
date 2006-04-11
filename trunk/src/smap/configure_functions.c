@@ -580,7 +580,7 @@ error_message:
 		start[X],end[X]);
 #endif	
 	return 0;
-#if HAVE_BG
+#ifdef HAVE_BG
 error_message2:
 	memset(error_string,0,255);
 	sprintf(error_string, 

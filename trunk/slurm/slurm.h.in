@@ -101,6 +101,12 @@ BEGIN_C_DECLS
    typedef struct select_jobinfo *select_jobinfo_t;     /* opaque data type */
 #endif
 
+/* Define jobacctinfo_t below to avoid including extraneous slurm headers */
+#ifndef __jobacctinfo_t_defined
+#  define  __jobacctinfo_t_defined
+   typedef struct jobacctinfo *jobacctinfo_t;     /* opaque data type */
+#endif
+
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/
@@ -219,6 +225,15 @@ enum select_node_cnt {
 	SELECT_APPLY_NODE_MIN_OFFSET, /* Apply min offset to variable */
 	SELECT_APPLY_NODE_MAX_OFFSET, /* Apply max offset to variable */
 	SELECT_SET_NODE_CNT	      /* Set altered node cnt */
+};
+
+/* jobacct data types */
+enum jobacct_data_type {
+	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t */
+	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
+	JOBACCT_DATA_RUSAGE,	/* data-> struct rusage */
+	JOBACCT_DATA_PSIZE,	/* data-> uint32_t psize */
+	JOBACCT_DATA_VSIZE	/* data-> uint32_t vsize */
 };
 
 /* Possible task distributions across the nodes */

@@ -76,10 +76,9 @@
  * matures.
  */
 const char plugin_name[] =
-    "Job accounting NOT_INVOKED plugin for slurmctld and slurmd";
+    "Job accounting NOT_INVOKED plugin";
 const char plugin_type[] = "jobacct/none";
 const uint32_t plugin_version = 100;
-
 
 /*
  * The following routines are called by slurmctld
@@ -88,20 +87,99 @@ const uint32_t plugin_version = 100;
 /*
  * The following routines are called by slurmd
  */
+int jobacct_p_init_struct(struct jobacctinfo *jobacct)
+{
+	return SLURM_SUCCESS;
+}
 
-int jobacct_p_init(int frequency)
+struct jobacctinfo *jobacct_p_alloc()
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_free(struct jobacctinfo *jobacct)
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
+		      enum jobacct_data_type type, void *data)
+{
+	return SLURM_SUCCESS;
+	
+}
+
+int jobacct_p_getinfo(struct jobacctinfo *jobacct, 
+		      enum jobacct_data_type type, void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+void jobacct_p_aggregate(struct jobacctinfo *dest, struct jobacctinfo *from)
+{
+	return;
+}
+
+void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
+{
+	return;
+}
+
+int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+
+int jobacct_p_init_slurmctld(char *job_acct_log)
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_fini_slurmctld()
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_step_start_slurmctld(struct step_record *step)
+{
+	return SLURM_SUCCESS;	
+}
+
+int jobacct_p_step_complete_slurmctld(struct step_record *step)
+{
+	return SLURM_SUCCESS;	
+}
+
+int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_startpoll(int frequency)
 {
 	info("jobacct NONE plugin loaded");
 	debug3("slurmd_jobacct_init() called");
+	
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_fini(slurmd_job_t *job)
+int jobacct_p_endpoll(slurmd_job_t *job)
 {
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_suspend()
+void jobacct_p_suspendpoll()
 {
-	return SLURM_SUCCESS;
+	return;
 }

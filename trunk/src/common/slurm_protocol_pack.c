@@ -39,6 +39,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -2902,7 +2903,7 @@ _unpack_complete_batch_script_msg(
 	return SLURM_ERROR;
 }
 
-static void
+static void 
 _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
 {
 	pack32((uint32_t)msg->job_id, buffer);
@@ -2910,80 +2911,24 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
 	pack32((uint32_t)msg->step_rc, buffer);
-	pack32((uint32_t)msg->rusage.ru_utime.tv_sec, buffer);
-	pack32((uint32_t)msg->rusage.ru_utime.tv_usec, buffer);
-	pack32((uint32_t)msg->rusage.ru_stime.tv_sec, buffer);
-	pack32((uint32_t)msg->rusage.ru_stime.tv_usec, buffer);
-	pack32((uint32_t)msg->rusage.ru_maxrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_ixrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_idrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_isrss, buffer);
-	pack32((uint32_t)msg->rusage.ru_minflt, buffer);
-	pack32((uint32_t)msg->rusage.ru_majflt, buffer);
-	pack32((uint32_t)msg->rusage.ru_nswap, buffer);
-	pack32((uint32_t)msg->rusage.ru_inblock, buffer);
-	pack32((uint32_t)msg->rusage.ru_oublock, buffer);
-	pack32((uint32_t)msg->rusage.ru_msgsnd, buffer);
-	pack32((uint32_t)msg->rusage.ru_msgrcv, buffer);
-	pack32((uint32_t)msg->rusage.ru_nsignals, buffer);
-	pack32((uint32_t)msg->rusage.ru_nvcsw, buffer);
-	pack32((uint32_t)msg->rusage.ru_nivcsw, buffer);
-	pack32((uint32_t)msg->max_vsize, buffer);
-	pack32((uint32_t)msg->max_psize, buffer);	
+	jobacct_g_pack(msg->jobacct, buffer);
 }
 
 static int
 _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer)
 {
 	step_complete_msg_t *msg;
-	uint32_t uint32_tmp;
 	
 	msg = xmalloc(sizeof(step_complete_msg_t));
 	*msg_ptr = msg;
-
+	
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack32(&msg->range_first, buffer);
 	safe_unpack32(&msg->range_last, buffer);
 	safe_unpack32(&msg->step_rc, buffer);
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_utime.tv_sec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_utime.tv_usec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_stime.tv_sec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_stime.tv_usec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_maxrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_ixrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_idrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_isrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_minflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_majflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nswap = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_inblock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_oublock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_msgsnd = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_msgrcv = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nsignals = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nvcsw = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	msg->rusage.ru_nivcsw = uint32_tmp;
-	safe_unpack32(&msg->max_vsize, buffer);
-	safe_unpack32(&msg->max_psize, buffer);
+	jobacct_g_unpack(&msg->jobacct, buffer);
+
 	return SLURM_SUCCESS;
 
       unpack_error:

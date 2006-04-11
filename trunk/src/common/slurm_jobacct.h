@@ -51,12 +51,35 @@
 #include <unistd.h>
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
 
-extern int jobacct_g_init(int frequency);
-extern int jobacct_g_fini(slurmd_job_t *job);
-extern int jobacct_g_suspend();
+/* common for both slurmctld and slurmstepd */
+extern int jobacct_g_init_struct(jobacctinfo_t *jobacct);
+extern jobacctinfo_t *jobacct_g_alloc();
+extern int jobacct_g_free(jobacctinfo_t *jobacct);
+extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
+			     enum jobacct_data_type type, void *data);
+extern int jobacct_g_getinfo(jobacctinfo_t *jobacct, 
+			     enum jobacct_data_type type, void *data);
+extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
+extern void jobacct_g_pack(jobacctinfo_t *jobacct, Buf buffer);
+extern int jobacct_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
+
+/*functions used in slurmctld */
+extern int jobacct_g_init_slurmctld(char *job_acct_log);
+extern int jobacct_g_fini_slurmctld();
+extern int jobacct_g_job_start_slurmctld(struct job_record *job_ptr);
+extern int jobacct_g_job_complete_slurmctld(struct job_record *job_ptr); 
+extern int jobacct_g_step_start_slurmctld(struct step_record *step);
+extern int jobacct_g_step_complete_slurmctld(struct step_record *step);
+extern int jobacct_g_suspend_slurmctld(struct job_record *job_ptr);
+
+/*functions used in slurmstepd */
+extern int jobacct_g_startpoll(int frequency);
+extern int jobacct_g_endpoll(slurmd_job_t *job);
+extern void jobacct_g_suspendpoll();
 
 #endif /*__SLURM_JOBACCT_H__*/
 

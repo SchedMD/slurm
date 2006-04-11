@@ -32,6 +32,8 @@
 #include "src/api/node_select_info.h"
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
+#include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
 
 /*****************************************\
  * GLOBAL SELECT STATE MANGEMENT FUNCIONS *
