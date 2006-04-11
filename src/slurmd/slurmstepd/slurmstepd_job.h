@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _JOB_H
-#define _JOB_H
+#ifndef _SLURMSTEPD_JOB_H
+#define _SLURMSTEPD_JOB_H
 
 #if WITH_PTHREADS
 #include <pthread.h>
@@ -36,6 +36,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/list.h"
 #include "src/common/eio.h"
 #include "src/common/switch.h"
@@ -163,9 +164,7 @@ typedef struct slurmd_job {
 	uint32_t       cont_id;
 
 	char          *batchdir;
-	struct rusage rusage;
-	int max_psize;
-	int max_vsize;
+	jobacctinfo_t *jobacct;
 } slurmd_job_t;
 
 
@@ -187,4 +186,4 @@ slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 
 void task_info_destroy(slurmd_task_info_t *t);
 
-#endif /* !_JOB_H */
+#endif /* !_SLURMSTEPD_JOB_H */

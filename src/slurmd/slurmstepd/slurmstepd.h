@@ -45,9 +45,7 @@ typedef struct {
 	int max_depth;
 	bitstr_t *bits;
 	int step_rc;
-	struct rusage rusage;
-	int max_psize;
-	int max_vsize;
+	jobacctinfo_t *jobacct;
 } step_complete_t;
 
 extern step_complete_t step_complete;

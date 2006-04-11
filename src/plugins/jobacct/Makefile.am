@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for jobacct plugins
 
-SUBDIRS = linux none
+SUBDIRS = linux aix bluegene none

@@ -174,6 +174,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
 	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
 	step_complete.bits = bit_alloc(step_complete.children);
+	step_complete.jobacct = jobacct_g_alloc();
 	pthread_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
@@ -207,7 +208,9 @@ _init_from_slurmd(int sock, char **argv,
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
-	jobacct_g_init(conf->job_acct_freq);
+	/* acct info */
+	jobacct_g_startpoll(conf->job_acct_freq);
+	
 	switch_g_slurmd_step_init();
 
 	{
@@ -320,18 +323,19 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		break;
 	}
 	job->jmgr_pid = getpid();
-
+	job->jobacct = jobacct_g_alloc();
+	
 	return job;
 }
 
 static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
+	jobacct_g_free(job->jobacct);
 	if (job->batch)
 		mgr_launch_batch_job_cleanup(job, rc);
 	else
 		job_destroy(job);
-
 	/* 
 	 * The message cannot be freed until the jobstep is complete
 	 * because the job struct has pointers into the msg, such
@@ -351,5 +355,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
 		break;
 	}
+	jobacct_g_free(step_complete.jobacct);
+	
 	xfree(msg);
 }

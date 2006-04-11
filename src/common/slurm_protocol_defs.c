@@ -39,6 +39,7 @@
 #include <stdio.h>
 
 #include "src/common/log.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -956,6 +957,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 {
 	if (msg) {
+		jobacct_g_free(msg->jobacct);
 		xfree(msg);
 	}
 }

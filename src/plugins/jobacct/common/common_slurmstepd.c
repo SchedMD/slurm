@@ -1,11 +1,9 @@
 /*****************************************************************************\
- *  jobacct.h - process and record information about process accountablity
- *
- *  $Id: jobacct.h 7620 2006-03-29 17:42:21Z da $
+ *  jobacct_common.c - common functions for almost all jobacct plugins.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *
+ *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
+ *  Written by Danny Auble, <da@llnl.gov>
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,26 +22,31 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-#ifndef _HAVE_JOBACCT_H
-#define _HAVE_JOBACCT_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "jobacct_common.h"
 
-#include <slurm/slurm_errno.h>
-#include <sys/stat.h>
-#include "src/common/xstring.h"
-#include "src/common/node_select.h"
-#include "slurmctld.h"
+bool fini = false;
+bool suspended = false;
+struct jobacctinfo jobacct;
 
-int jobacct_init(char *job_acct_log);
-int jobacct_job_start(struct job_record *job_ptr);
-int jobacct_step_start(struct step_record *step);
-int jobacct_step_complete(struct step_record *step);
-int jobacct_job_complete(struct job_record *job_ptr);
-int jobacct_job_suspend(struct job_record *job_ptr);
+extern int common_endpoll(slurmd_job_t *job)
+{
+	fini = true;
+	struct jobacctinfo *send = (struct jobacctinfo *)job->jobacct;
 
+	send->max_psize = jobacct.max_psize;
+	send->max_vsize = jobacct.max_vsize;
+	return SLURM_SUCCESS;
+}
 
-#endif /* _HAVE_JOBACCT_H */
+extern void common_suspendpoll()
+{
+	if(suspended)
+		suspended = false;
+	else
+		suspended = true;
+}

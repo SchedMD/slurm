@@ -47,6 +47,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+
 /*
  * The following global is used by the jobacct/log plugin; it must
  * persist when the plugin is reloaded, so we define it here.
@@ -60,9 +61,29 @@ extern FILE * JOBACCT_LOGFILE;
  * at the end of the structure.
  */
 typedef struct slurm_jobacct_ops {
-	int (*jobacct_init)		(int frequency);
-	int (*jobacct_fini)		(slurmd_job_t *job);
-	int (*jobacct_suspend)	        ();
+	int (*jobacct_init_struct)    (jobacctinfo_t *jobacct);
+	jobacctinfo_t *(*jobacct_alloc)();
+	int (*jobacct_free)           (jobacctinfo_t *jobacct);
+	int (*jobacct_setinfo)        (jobacctinfo_t *jobacct, 
+				       enum jobacct_data_type type, 
+				       void *data);
+	int (*jobacct_getinfo)        (jobacctinfo_t *jobacct, 
+				       enum jobacct_data_type type, 
+				       void *data);
+	void (*jobacct_aggregate)     (jobacctinfo_t *dest, 
+				       jobacctinfo_t *from);
+	void (*jobacct_pack)          (jobacctinfo_t *jobacct, Buf buffer);
+	int (*jobacct_unpack)         (jobacctinfo_t **jobacct, Buf buffer);
+	int (*jobacct_init)	      (char *job_acct_log);
+	int (*jobacct_fini)	      ();
+	int (*jobacct_job_start)      (struct job_record *job_ptr);
+	int (*jobacct_job_complete)   (struct job_record *job_ptr); 
+	int (*jobacct_step_start)     (struct step_record *step);
+	int (*jobacct_step_complete)  (struct step_record *step);
+	int (*jobacct_suspend)        (struct job_record *job_ptr);
+	int (*jobacct_startpoll)      (int frequency);
+	int (*jobacct_endpoll)	      (slurmd_job_t *job);
+	void (*jobacct_suspendpoll)   ();
 } slurm_jobacct_ops_t;
 
 /*
@@ -70,9 +91,24 @@ typedef struct slurm_jobacct_ops {
  * for slurm_jobacct_ops_t.
  */
 static const char *syms[] = {
-	"jobacct_p_init",
-	"jobacct_p_fini",
-	"jobacct_p_suspend",
+	"jobacct_p_init_struct",
+	"jobacct_p_alloc",
+	"jobacct_p_free",
+	"jobacct_p_setinfo",
+	"jobacct_p_getinfo",
+	"jobacct_p_aggregate",
+	"jobacct_p_pack",
+	"jobacct_p_unpack",	
+	"jobacct_p_init_slurmctld",
+	"jobacct_p_fini_slurmctld",
+	"jobacct_p_job_start_slurmctld",
+	"jobacct_p_job_complete_slurmctld",
+	"jobacct_p_step_start_slurmctld",
+	"jobacct_p_step_complete_slurmctld",
+	"jobacct_p_suspend_slurmctld",
+	"jobacct_p_startpoll",
+	"jobacct_p_endpoll",
+	"jobacct_p_suspendpoll",
 };
 
 /*
@@ -88,10 +124,12 @@ struct slurm_jobacct_context {
 	slurm_jobacct_ops_t	ops;
 };
 
-static slurm_jobacct_context_t g_context = NULL;
-static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+static slurm_jobacct_context_t g_jobacct_context = NULL;
+static pthread_mutex_t      g_jobacct_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int _plugin_init(void);
+static int _slurm_jobacct_init(void);
+static int _slurm_jobacct_fini(void);
+
 static slurm_jobacct_context_t
 _slurm_jobacct_context_create( const char *jobacct_type)
 {
@@ -147,7 +185,7 @@ static slurm_jobacct_ops_t *
 _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
 {
         int n_syms = sizeof( syms ) / sizeof( char * );
-
+	int rc = 0;
         /* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
@@ -175,81 +213,280 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
         }  
 
         /* Dereference the API. */
-        if ( plugin_get_syms( c->cur_plugin,
+        if ( (rc = plugin_get_syms( c->cur_plugin,
                               n_syms,
                               syms,
-                              (void **) &c->ops ) < n_syms ) {
-                error( "incomplete jobacct plugin detected" );
+                              (void **) &c->ops )) < n_syms ) {
+                error( "incomplete jobacct plugin detected only "
+		       "got %d out of %d",
+		       rc, n_syms);
                 return NULL;
         }
 
         return &c->ops;
 }
 
-static int
-_plugin_init(void)
+static int _slurm_jobacct_init(void)
 {
-	char	*jobacct_type;
+	char	*jobacct_type = NULL;
 	int	retval=SLURM_SUCCESS;
 
-	if ( g_context )
-		_slurm_jobacct_context_destroy(g_context);
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		goto done;
 
 	jobacct_type = slurm_get_jobacct_type();
-	g_context = _slurm_jobacct_context_create( jobacct_type );
-	if ( g_context == NULL ) {
+	g_jobacct_context = _slurm_jobacct_context_create( jobacct_type );
+	if ( g_jobacct_context == NULL ) {
 		error( "cannot create a context for %s", jobacct_type );
-		xfree(jobacct_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	xfree(jobacct_type);
-
-	if ( _slurm_jobacct_get_ops( g_context ) == NULL ) {
+	
+	if ( _slurm_jobacct_get_ops( g_jobacct_context ) == NULL ) {
 		error( "cannot resolve job accounting plugin operations" );
-		_slurm_jobacct_context_destroy( g_context );
-		g_context = NULL;
+		_slurm_jobacct_context_destroy( g_jobacct_context );
+		g_jobacct_context = NULL;
 		retval = SLURM_ERROR;
 	}
 
   done:
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	xfree(jobacct_type);
+
 	return(retval);
 }
 
+static int _slurm_jobacct_fini(void)
+{
+	int rc;
 
-extern int jobacct_g_init(int frequency)
+	if (!g_jobacct_context)
+		return SLURM_SUCCESS;
+
+	rc = _slurm_jobacct_context_destroy(g_jobacct_context);
+	g_jobacct_context = NULL;
+	return rc;
+}
+
+extern int jobacct_g_init_struct(jobacctinfo_t *jobacct)
 {
 	int retval = SLURM_SUCCESS;
-	slurm_mutex_lock( &context_lock );
-	_plugin_init(); 
-
-	if ( g_context ) 
-		retval = (*(g_context->ops.jobacct_init))(frequency);
 	
-	slurm_mutex_unlock( &context_lock );
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_init_struct))
+			(jobacct);
+	
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }
 
-extern int jobacct_g_fini(slurmd_job_t *job)
+extern jobacctinfo_t *jobacct_g_alloc()
+{
+	jobacctinfo_t *jobacct = NULL;
+
+	if (_slurm_jobacct_init() < 0)
+		return jobacct;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))();
+	
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return jobacct;
+}
+
+extern int jobacct_g_free(jobacctinfo_t *jobacct)
+{
+	int retval = SLURM_SUCCESS;
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_free))(jobacct);
+	
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
+			     enum jobacct_data_type type, void *data)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		retval = (*(g_context->ops.jobacct_fini))(job);
-	slurm_mutex_unlock( &context_lock );	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_setinfo))
+			(jobacct, type, data);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }
 
-extern int jobacct_g_suspend()
+extern int jobacct_g_getinfo(jobacctinfo_t *jobacct, 
+			     enum jobacct_data_type type, void *data)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		retval = (*(g_context->ops.jobacct_suspend))();
-	slurm_mutex_unlock( &context_lock );	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_getinfo))
+			(jobacct, type, data);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }
 
+extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
+{
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_aggregate))(dest, from);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return;
+}
+
+extern void jobacct_g_pack(jobacctinfo_t *jobacct, Buf buffer)
+{
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_pack))(jobacct, buffer);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return;
+}
+
+extern int jobacct_g_unpack(jobacctinfo_t **jobacct, Buf buffer)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_unpack))
+			(jobacct, buffer);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_init_slurmctld(char *job_acct_log)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context ) 
+		retval = (*(g_jobacct_context->ops.jobacct_init))
+			(job_acct_log);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return retval;
+}
+
+extern int jobacct_g_fini_slurmctld()
+{
+	int retval = SLURM_SUCCESS;
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context ) 
+		retval = (*(g_jobacct_context->ops.jobacct_fini))();
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	
+	if (_slurm_jobacct_fini() < 0)
+		return SLURM_ERROR;
+	return retval;
+}
+
+extern int jobacct_g_job_start_slurmctld(struct job_record *job_ptr)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_job_start))
+			(job_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_job_complete_slurmctld(struct job_record *job_ptr)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_job_complete))
+			(job_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_step_start_slurmctld(struct step_record *step_ptr)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_step_start))
+			(step_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_step_complete_slurmctld(struct step_record *step_ptr)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_step_complete))
+			(step_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_suspend_slurmctld(struct job_record *job_ptr)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_suspend))
+			(job_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_startpoll(int frequency)
+{
+	int retval = SLURM_SUCCESS;
+	
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context ) 
+		retval = (*(g_jobacct_context->ops.jobacct_startpoll))
+			(frequency);
+	
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return retval;
+}
+
+extern int jobacct_g_endpoll(slurmd_job_t *job)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_endpoll))(job);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern void jobacct_g_suspendpoll()
+{
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_suspendpoll))();
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return;
+}
 

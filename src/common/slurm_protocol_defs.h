@@ -320,9 +320,7 @@ typedef struct step_complete_msg {
 	uint32_t range_first;
 	uint32_t range_last;
  	uint32_t step_rc;	/* largest task return code */
-	struct rusage rusage;
-	uint32_t max_vsize;
-	uint32_t max_psize;
+	jobacctinfo_t *jobacct;
 } step_complete_msg_t;
 
 typedef struct kill_tasks_msg {

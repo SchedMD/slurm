@@ -47,12 +47,12 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_jobacct.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/jobacct.h"
 
 #define MAX_RETRIES 10
 
@@ -77,6 +77,7 @@ create_step_record (struct job_record *job_ptr)
 	step_ptr->job_ptr = job_ptr; 
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time ( NULL ) ;
+	step_ptr->jobacct = jobacct_g_alloc();
 
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
@@ -110,6 +111,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		xfree(step_ptr->host);
 		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
+		jobacct_g_free(step_ptr->jobacct);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 		if (step_ptr->network)
@@ -137,8 +139,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 
 	xassert(job_ptr);
 	error_code = ENOENT;
-	step_iterator = list_iterator_create (job_ptr->step_list);		
-
+	step_iterator = list_iterator_create (job_ptr->step_list);
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->step_id == step_id) {
@@ -148,7 +149,8 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
  * and not upon record purging. Presently both events occur 
  * simultaneously. */
 			if (step_ptr->switch_job) {
-				switch_g_job_step_complete(step_ptr->switch_job, 
+				switch_g_job_step_complete(
+					step_ptr->switch_job, 
 					step_ptr->step_node_list);
 				switch_free_jobinfo (step_ptr->switch_job);
 			}
@@ -356,7 +358,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 	else 
-		jobacct_step_complete(step_ptr);
+		jobacct_g_step_complete_slurmctld(step_ptr);
 	
 	if ((job_ptr->kill_on_step_done)
 	&&  (list_count(job_ptr->step_list) <= 1)
@@ -379,48 +381,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	return SLURM_SUCCESS;
 }
 
-/*
- * aggregate_step_data - given a step_record, aggregate all process info
- * IN step - pointer to step record
- * IN rusage - rusage struct
- * IN psize - psize
- * IN vsize - vsize 
- * RET NONE
- */
-void aggregate_step_data(struct step_record *step,
-			 struct rusage rusage, int psize, int vsize)
-{
-	step->max_psize = MAX(step->max_psize, psize);
-	step->max_vsize = MAX(step->max_vsize, vsize);
-	/* sum up all rusage stuff */
-	step->rusage.ru_utime.tv_sec	+= rusage.ru_utime.tv_sec;
-	step->rusage.ru_utime.tv_usec	+= rusage.ru_utime.tv_usec;
-	while (step->rusage.ru_utime.tv_usec >= 1E6) {
-		step->rusage.ru_utime.tv_sec++;
-		step->rusage.ru_utime.tv_usec -= 1E6;
-	}
-	step->rusage.ru_stime.tv_sec	+= rusage.ru_stime.tv_sec;
-	step->rusage.ru_stime.tv_usec	+= rusage.ru_stime.tv_usec;
-	while (step->rusage.ru_stime.tv_usec >= 1E6) {
-		step->rusage.ru_stime.tv_sec++;
-		step->rusage.ru_stime.tv_usec -= 1E6;
-	}
-	step->rusage.ru_maxrss		+= rusage.ru_maxrss;
-	step->rusage.ru_ixrss		+= rusage.ru_ixrss;
-	step->rusage.ru_idrss		+= rusage.ru_idrss;
-	step->rusage.ru_isrss		+= rusage.ru_isrss;
-	step->rusage.ru_minflt		+= rusage.ru_minflt;
-	step->rusage.ru_majflt		+= rusage.ru_majflt;
-	step->rusage.ru_nswap		+= rusage.ru_nswap;
-	step->rusage.ru_inblock		+= rusage.ru_inblock;
-	step->rusage.ru_oublock		+= rusage.ru_oublock;
-	step->rusage.ru_msgsnd		+= rusage.ru_msgsnd;
-	step->rusage.ru_msgrcv		+= rusage.ru_msgrcv;
-	step->rusage.ru_nsignals	+= rusage.ru_nsignals;
-	step->rusage.ru_nvcsw		+= rusage.ru_nvcsw;
-	step->rusage.ru_nivcsw		+= rusage.ru_nivcsw;
-}
-
 /* 
  * _pick_step_nodes - select nodes for a job step that satify its requirements
  *	we satify the super-set of constraints.
@@ -432,7 +392,7 @@ void aggregate_step_data(struct step_record *step,
  */
 static bitstr_t *
 _pick_step_nodes (struct job_record  *job_ptr, 
-		job_step_create_request_msg_t *step_spec )
+		  job_step_create_request_msg_t *step_spec)
 {
 
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
@@ -742,7 +702,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 
 	*new_step_record = step_ptr;
-	jobacct_step_start(step_ptr);
+	jobacct_g_step_start_slurmctld(step_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -1063,8 +1023,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	if (req->range_last < req->range_first)
 		return EINVAL;
 
-	aggregate_step_data(step_ptr, 
-			    req->rusage, req->max_psize, req->max_vsize);
+	jobacct_g_aggregate(step_ptr->jobacct, req->jobacct);
 
 	if (step_ptr->exit_code == NO_VAL) {
 		/* initialize the node bitmap for exited nodes */

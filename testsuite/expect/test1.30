@@ -71,6 +71,11 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			set node_cnt 0
 			exp_continue
 		}
+		-re "Too many open files" {
+			send_user "This error is expected, no worries\n"
+			set node_cnt 0
+			exp_continue
+		}
 		-re "error" {
 			send_user "\nFAILURE: some error happened\n"
 			set exit_code   1

@@ -56,6 +56,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
@@ -341,10 +342,9 @@ int main(int argc, char *argv[])
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
-
+	
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
-	g_slurmctld_jobacct_fini();
 	g_slurm_jobcomp_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
@@ -361,6 +361,7 @@ int main(int argc, char *argv[])
 
 	info("Slurmctld shutdown completing");
 	log_fini();
+	jobacct_g_fini_slurmctld();
 
 	if (dump_core)
 		abort();

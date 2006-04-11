@@ -1,11 +1,9 @@
 /*****************************************************************************\
- *  jobacct.c - process and record information about process accountablity
- *
- *  $Id: jobacct.c 7620 2006-03-29 17:42:21Z da $
+ *  jobacct_common.c - common functions for almost all jobacct plugins.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *
+ *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
+ *  Written by Danny Auble, <da@llnl.gov>
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,13 +22,12 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "jobacct.h"
-#include <ctype.h>
-
-#define BUFFER_SIZE 4096
-#define TIMESTAMP_LENGTH 15
+#include "jobacct_common.h"
 
 static FILE *		LOGFILE;
 static int		LOGFILE_FD;
@@ -71,7 +68,6 @@ const char *_jobstep_format =
 "%s "	/* step process name */
 "%s";	/* step node names */
 
-
 /*
  * Print the record to the log file.
  */
@@ -109,12 +105,11 @@ static int _print_record(struct job_record *job_ptr,
 	return rc;
 }
 
-int jobacct_init(char *job_acct_log)
+extern int common_init_slurmctld(char *job_acct_log)
 {
 	int 		rc = SLURM_SUCCESS;
 	mode_t		prot = 0600;
 	struct stat	statbuf;
-
 
 	debug2("jobacct_init() called");
 	slurm_mutex_lock( &logfile_lock );
@@ -141,7 +136,14 @@ int jobacct_init(char *job_acct_log)
 	return rc;
 }
 
-int jobacct_job_start(struct job_record *job_ptr)
+extern int common_fini_slurmctld()
+{
+	if (LOGFILE)
+		fclose(LOGFILE);
+	return SLURM_SUCCESS;
+}
+
+extern int common_job_start_slurmctld(struct job_record *job_ptr)
 {
 	int	i,
 		ncpus=0,
@@ -191,7 +193,29 @@ int jobacct_job_start(struct job_record *job_ptr)
 	return rc;
 }
 
-int jobacct_step_start(struct step_record *step)
+extern int common_job_complete_slurmctld(struct job_record *job_ptr)
+{
+	char buf[BUFFER_SIZE];
+	if(!init) {
+		debug("jobacct init was not called or it failed");
+		return SLURM_ERROR;
+	}
+	
+	debug2("jobacct_job_complete() called");
+	if (job_ptr->end_time == 0) {
+		debug("jobacct: job %u never started", job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	
+	snprintf(buf, BUFFER_SIZE, "%d %u %d",
+		 JOB_TERMINATED,
+		 (int) (job_ptr->end_time - job_ptr->start_time),
+		 job_ptr->job_state & (~JOB_COMPLETING));
+	
+	return  _print_record(job_ptr, job_ptr->end_time, buf);
+}
+
+extern int common_step_start_slurmctld(struct step_record *step)
 {
 	char buf[BUFFER_SIZE];
 	int cpus = 0;
@@ -207,6 +231,7 @@ int jobacct_step_start(struct step_record *step)
 	}
 
 #ifdef HAVE_BG
+	cpus = step->job_ptr->num_procs;
 	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
 			     SELECT_DATA_QUARTER, 
 			     &quarter);
@@ -226,6 +251,7 @@ int jobacct_step_start(struct step_record *step)
 #else
 	cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+	block_id = xstrdup("-");
 #endif
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -260,17 +286,18 @@ int jobacct_step_start(struct step_record *step)
 		 step->name,    /* step exe name */
 		 node_list);     /* name of nodes step running on */
 	
-	return _print_record(step->job_ptr, step->start_time, buf);	
+	return _print_record(step->job_ptr, step->start_time, buf);
 }
 
-int jobacct_step_complete(struct step_record *step)
+extern int common_step_complete_slurmctld(struct step_record *step)
 {
-	char buf[BUFFER_SIZE];
+		char buf[BUFFER_SIZE];
 	time_t now;
 	int elapsed;
 	int comp_status;
 	int cpus = 0;
 	char node_list[BUFFER_SIZE];
+	struct jobacctinfo *jobacct = (struct jobacctinfo *)step->jobacct;
 #ifdef HAVE_BG
 	uint16_t quarter = (uint16_t)NO_VAL;
 	uint16_t nodecard = (uint16_t)NO_VAL;
@@ -291,6 +318,7 @@ int jobacct_step_complete(struct step_record *step)
 		comp_status = JOB_COMPLETE;
 
 #ifdef HAVE_BG
+	cpus = step->job_ptr->num_procs;
 	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
 			     SELECT_DATA_QUARTER, 
 			     &quarter);
@@ -310,6 +338,7 @@ int jobacct_step_complete(struct step_record *step)
 #else
 	cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+	block_id = xstrdup("-");
 #endif
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
@@ -321,61 +350,38 @@ int jobacct_step_complete(struct step_record *step)
 		 cpus,                  /* number of cpus */
 		 elapsed,	        /* elapsed seconds */
 		 /* total cputime seconds */
-		 step->rusage.ru_utime.tv_sec	
-		 + step->rusage.ru_stime.tv_sec,
+		 jobacct->rusage.ru_utime.tv_sec	
+		 + jobacct->rusage.ru_stime.tv_sec,
 		 /* total cputime seconds */
-		 step->rusage.ru_utime.tv_usec	
-		 + step->rusage.ru_stime.tv_usec,
-		 step->rusage.ru_utime.tv_sec,	/* user seconds */
-		 step->rusage.ru_utime.tv_usec,/* user microseconds */
-		 step->rusage.ru_stime.tv_sec,	/* system seconds */
-		 step->rusage.ru_stime.tv_usec,/* system microsecs */
-		 step->rusage.ru_maxrss,	/* max rss */
-		 step->rusage.ru_ixrss,	/* max ixrss */
-		 step->rusage.ru_idrss,	/* max idrss */
-		 step->rusage.ru_isrss,	/* max isrss */
-		 step->rusage.ru_minflt,	/* max minflt */
-		 step->rusage.ru_majflt,	/* max majflt */
-		 step->rusage.ru_nswap,	/* max nswap */
-		 step->rusage.ru_inblock,	/* total inblock */
-		 step->rusage.ru_oublock,	/* total outblock */
-		 step->rusage.ru_msgsnd,	/* total msgsnd */
-		 step->rusage.ru_msgrcv,	/* total msgrcv */
-		 step->rusage.ru_nsignals,	/* total nsignals */
-		 step->rusage.ru_nvcsw,	/* total nvcsw */
-		 step->rusage.ru_nivcsw,	/* total nivcsw */
-		 step->max_vsize,		/* max vsize */
-		 step->max_psize,		/* max psize */
+		 jobacct->rusage.ru_utime.tv_usec	
+		 + jobacct->rusage.ru_stime.tv_usec,
+		 jobacct->rusage.ru_utime.tv_sec,	/* user seconds */
+		 jobacct->rusage.ru_utime.tv_usec,/* user microseconds */
+		 jobacct->rusage.ru_stime.tv_sec,	/* system seconds */
+		 jobacct->rusage.ru_stime.tv_usec,/* system microsecs */
+		 jobacct->rusage.ru_maxrss,	/* max rss */
+		 jobacct->rusage.ru_ixrss,	/* max ixrss */
+		 jobacct->rusage.ru_idrss,	/* max idrss */
+		 jobacct->rusage.ru_isrss,	/* max isrss */
+		 jobacct->rusage.ru_minflt,	/* max minflt */
+		 jobacct->rusage.ru_majflt,	/* max majflt */
+		 jobacct->rusage.ru_nswap,	/* max nswap */
+		 jobacct->rusage.ru_inblock,	/* total inblock */
+		 jobacct->rusage.ru_oublock,	/* total outblock */
+		 jobacct->rusage.ru_msgsnd,	/* total msgsnd */
+		 jobacct->rusage.ru_msgrcv,	/* total msgrcv */
+		 jobacct->rusage.ru_nsignals,	/* total nsignals */
+		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
+		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
+		 jobacct->max_vsize,		/* max vsize */
+		 jobacct->max_psize,		/* max psize */
 		 step->name,      	/* step exe name */
 		 node_list); /* name of nodes step running on */
 
 	return _print_record(step->job_ptr, now, buf);	
 }
 
-int jobacct_job_complete(struct job_record *job_ptr) 
-{
-       	char		buf[BUFFER_SIZE];
-	
-	if(!init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
-	}
-	
-	debug2("jobacct_job_complete() called");
-	if (job_ptr->end_time == 0) {
-		debug("jobacct: job %u never started", job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-	
-	snprintf(buf, BUFFER_SIZE, "%d %u %d",
-		 JOB_TERMINATED,
-		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING));
-	
-	return  _print_record(job_ptr, job_ptr->end_time, buf);
-}
-
-int jobacct_job_suspend(struct job_record *job_ptr)
+extern int common_suspend_slurmctld(struct job_record *job_ptr)
 {
 	char buf[BUFFER_SIZE];
 	static time_t	now = 0;
@@ -404,4 +410,5 @@ int jobacct_job_suspend(struct job_record *job_ptr)
 		 job_ptr->job_state & (~JOB_COMPLETING));/* job status */
 		
 	return _print_record(job_ptr, now, buf);
+
 }
