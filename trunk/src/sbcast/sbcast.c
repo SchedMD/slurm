@@ -212,8 +212,6 @@ static void _bcast_file(void)
 			if (params.block_size
 			&&  (size_block >= params.block_size))
 				break;
-			if ((params.block_size== 0) && (i >= 4))
-				break;
 		}
 		send_rpc(&bcast_msg, alloc_resp);
 		if (bcast_msg.last_block)
