@@ -3581,9 +3581,13 @@ _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer)
 
 static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
 {
-	int i;
+	int buf_size = 1024, i;
 	xassert ( msg != NULL );
 
+	for (i=0; i<FILE_BLOCKS; i++)
+		buf_size += msg->block_len[i];
+	grow_buf(buffer, buf_size);
+	
 	pack16 ( msg->block_no, buffer );
 	pack16 ( msg->last_block, buffer );
 	pack16 ( msg->force, buffer );

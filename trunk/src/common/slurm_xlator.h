@@ -187,6 +187,7 @@
 /* pack.[ch] functions */
 #define	create_buf		slurm_create_buf
 #define	free_buf		slurm_free_buf
+#define grow_buf		slurm_grow_buf
 #define	init_buf		slurm_init_buf
 #define	xfer_buf_data		slurm_xfer_buf_data
 #define	pack_time		slurm_pack_time
