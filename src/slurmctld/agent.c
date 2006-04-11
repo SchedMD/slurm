@@ -934,7 +934,10 @@ static void *_thread_per_group_rpc(void *args)
 					_comm_err(ret_data_info->node_name);
 				}
 			list_iterator_destroy(data_itr);
-			thread_state = DSH_FAILED;
+			if (srun_agent)
+				thread_state = DSH_FAILED;
+			else	 /* Not serious error, don't DRAIN node */
+				thread_state = DSH_DONE;
 		}	
 		ret_type->msg_rc = thread_state;
 	}
