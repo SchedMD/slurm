@@ -49,6 +49,7 @@
  */
 strong_alias(create_buf,	slurm_create_buf);
 strong_alias(free_buf,		slurm_free_buf);
+strong_alias(grow_buf,		slurm_grow_buf);
 strong_alias(init_buf,		slurm_init_buf);
 strong_alias(xfer_buf_data,	slurm_xfer_buf_data);
 strong_alias(pack_time,		slurm_pack_time);
@@ -94,6 +95,13 @@ void free_buf(Buf my_buf)
 	if (my_buf->head)
 		xfree(my_buf->head);
 	xfree(my_buf);
+}
+
+/* Grow a buffer by the specified amount */
+void grow_buf (Buf buffer, int size)
+{
+	buffer->size += size;
+	xrealloc(buffer->head, buffer->size);
 }
 
 /* init_buf - create an empty buffer of the given size */

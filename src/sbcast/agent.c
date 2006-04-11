@@ -50,7 +50,7 @@
 #include "src/sbcast/sbcast.h"
 
 #define MAX_RETRIES     10
-#define MAX_THREADS      3	/* These can be huge messages, so
+#define MAX_THREADS      4	/* These can be huge messages, so
 				 * only run MAX_THREADS at one time */
 typedef struct thd {
 	pthread_t thread;	/* thread ID */

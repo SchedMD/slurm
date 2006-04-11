@@ -66,6 +66,7 @@ typedef struct slurm_buf * Buf;
 Buf	create_buf (char *data, int size);
 void	free_buf(Buf my_buf);
 Buf	init_buf(int size);
+void    grow_buf (Buf my_buf, int size);
 void	*xfer_buf_data(Buf my_buf);
 
 void	pack_time(time_t val, Buf buffer);
