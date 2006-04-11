@@ -1558,8 +1558,9 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 		debug("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 }
 
-/* _slurm_rpc_step_complete - process step completion RPC to note the completion of 
- *	a job step on at least some nodes. If the job step is complete, it may 
+/* _slurm_rpc_step_complete - process step completion RPC to note the 
+ *      completion of a job step on at least some nodes.
+ *	If the job step is complete, it may 
  *	represent the termination of an entire job */
 static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
@@ -1604,7 +1605,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	if (req->job_step_id == SLURM_BATCH_SCRIPT) {
 		/* FIXME: test for error, possibly cause batch job requeue */
 		error_code = job_complete(req->job_id, uid, job_requeue, 
-				step_rc);
+					  step_rc);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 
