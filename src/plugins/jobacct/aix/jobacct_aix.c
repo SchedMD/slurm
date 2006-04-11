@@ -182,7 +182,10 @@ int jobacct_p_startpoll(int frequency)
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
 	
-	debug("jobacct LINUX plugin loaded");
+	debug("jobacct AIX plugin loaded");
+	return rc;
+	/* FIXME!!!!!!!!!!!!!!!!!!!!
+	   This was written for linux systems doesn't to anything on AIX */
 
 	/* Parse the JobAcctParameters */
 
