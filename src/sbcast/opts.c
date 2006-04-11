@@ -66,6 +66,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"compress",  no_argument,       0, 'C'},
+		{"fanout",    required_argument, 0, 'F'},
 		{"force",     no_argument,       0, 'f'},
 		{"preserve",  no_argument,       0, 'p'},
 		{"size",      required_argument, 0, 's'},
@@ -78,6 +79,8 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if (getenv("SBCAST_COMPRESS"))
 		params.compress = true;
+	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
+		params.fanout = atoi(env_val);
 	if (getenv("SBCAST_FORCE"))
 		params.force = true;
 	if (getenv("SBCAST_PRESERVE"))
@@ -87,7 +90,7 @@ extern void parse_command_line(int argc, char *argv[])
 		
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "Cfps:vV",
+	while((opt_char = getopt_long(argc, argv, "CfF:ps:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -100,6 +103,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'f':
 			params.force = true;
+			break;
+		case (int)'F':
+			params.fanout = atoi(optarg);
 			break;
 		case (int)'p':
 			params.preserve = true;
@@ -172,6 +178,7 @@ static void _print_options( void )
 	info("block_size = %u", params.block_size);
 	info("compress   = %s", params.compress ? "true" : "false");
 	info("force      = %s", params.force ? "true" : "false");
+	info("fanout     = %d", params.fanout);
 	info("preserve   = %s", params.preserve ? "true" : "false");
 	info("verbose    = %d", params.verbose);
 	info("source     = %s", params.src_fname);
@@ -187,7 +194,7 @@ static void _print_version(void)
 
 static void _usage( void )
 {
-	printf("Usage: sbcast [-CfpvV] SOURCE DEST\n");
+	printf("Usage: sbcast [-CfFpvV] SOURCE DEST\n");
 }
 
 static void _help( void )
@@ -196,8 +203,9 @@ static void _help( void )
 Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress      compress the file being transmitted\n\
   -f, --force         replace destination file as required\n\
+  -F, --fanout=num    specify message fanout\n\
   -p, --preserve      preserve modes and times of source file\n\
-  -s, --size          block size in bytes (rounded off)\n\
+  -s, --size=num      block size in bytes (rounded off)\n\
   -v, --verbose       provide detailed event logging\n\
   -V, --version       print version information and exit\n\
 \nHelp options:\n\
