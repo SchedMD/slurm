@@ -243,7 +243,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
-	slurm_addr parent_addr = {NULL};
+	slurm_addr parent_addr = {0};
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
