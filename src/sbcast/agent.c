@@ -162,13 +162,14 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		debug("using %d threads", threads_used);
 	}
 
-	slurm_attr_init(&attr);
+	pthread_attr_init(&attr);
+	if (pthread_attr_setstacksize(&attr, 3 * 1024*1024))
+		error("pthread_attr_setstacksize: %m");
 	if (pthread_attr_setdetachstate (&attr,
 			PTHREAD_CREATE_JOINABLE))
 		error("pthread_attr_setdetachstate error %m");
 
 	for (i=0; i<threads_used; i++) {
-		pthread_attr_t attr;
 		slurm_mutex_lock(&agent_cnt_mutex);
 		agent_cnt++;
 		slurm_mutex_unlock(&agent_cnt_mutex);
