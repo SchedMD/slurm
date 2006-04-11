@@ -123,10 +123,12 @@ extern void parse_command_line(int argc, char *argv[])
 	}
 
 	if ((argc - optind) != 2) {
-		fprintf(stderr, "Missing file arguments\n");
+		fprintf(stderr, "Need two file names, have %d names\n", 
+			(argc - optind));
 		fprintf(stderr, "Try \"sbcast --help\" for more information\n");
 		exit(1);
 	}
+	
 	params.src_fname = xstrdup(argv[optind]);
 	params.dst_fname = xstrdup(argv[optind+1]);
 

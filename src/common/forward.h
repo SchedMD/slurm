@@ -94,7 +94,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 // a message that could be forwarded.
 
 // Set the span with total count of hosts to send to
-int *span = set_span(agent_arg_ptr->node_count);
+int *span = set_span(agent_arg_ptr->node_count, 0);
 
 // Fill in a local forward structure with count of threads to created
 // by this program, an array of names and addrs of hosts and node_id 
@@ -154,7 +154,7 @@ Code taken from srun/launch.c
 This function should be used sending a launch message that could be forwarded.
 
 //set the span with total count of hosts to send to
-int *span = set_span(job->step_layout->num_hosts);
+int *span = set_span(job->step_layout->num_hosts, 0);
 	
 //set up hostlist off the nodelist of the job
 hostlist = hostlist_create(job->nodelist); 		

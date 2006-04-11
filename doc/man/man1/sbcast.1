@@ -17,8 +17,7 @@ allocation.
 file copy to be created on each node. 
 \fBDEST\fR should be on a file system local to that node.
 Note that parallel file systems may provide better performance 
-than \fBsbcast\fR can provide, particularly for larger files
-(over one megabyte).
+than \fBsbcast\fR can provide.
 
 .SH "OPTIONS"
 .TP
@@ -37,7 +36,8 @@ Specify the block size used for file broadcast.
 The size can have a suffix of \fIk\fR or \fIm\fR for kilobytes 
 or megabytes respecitively (defaults to bytes).
 This size subject to rounding and range limits to maintain 
-good performance.
+good performance. This value may need to be set on systems 
+with very limited memory.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Provide detailed event logging through program execution.

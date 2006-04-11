@@ -227,7 +227,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	int retries = 0;
 	forward_msg_t *forward_msg;
 	int thr_count = 0;
-	int *span = set_span(header->forward.cnt);
+	int *span = set_span(header->forward.cnt, 0);
 	
 	slurm_mutex_init(&forward_struct->forward_mutex);
 	pthread_cond_init(&forward_struct->notify, NULL);
