@@ -316,4 +316,6 @@ test14.4   Test sbcast file overwrite (--force option).
 test14.5   Test sbcast time preservation (--preserve option).
 test14.6   Test sbcast logging (--verbose option).
 test14.7   Test sbcast security issues.
+test14.8   Test sbcast transmission buffer options (--size and 
+           --fanout options).
 
