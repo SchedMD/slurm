@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     but infastructure is in place.
  -- Add support for srun option --ctrl-comm-ifhn to set PMI communications
     address (Hongjia Cao, National University of Defense Technology).
+ -- Add new command to launch different executables for each task based upon
+    configuration file (Hongjia Cao, National University of Defense Technology).
 
 * Changes in SLURM 1.1.0-pre4
 =============================
