@@ -127,7 +127,7 @@ reverse_tree_info(int rank, int num_nodes, int width,
 	*depth = 0;
 	search_tree(rank, 0, max_children, width, &p, &c, depth);
 	
-	if ((rank + c) > num_nodes)
+	if ((rank + c) >= num_nodes)
 		c = num_nodes - rank - 1;
 
 	*parent = p;
