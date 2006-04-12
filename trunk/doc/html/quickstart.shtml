@@ -205,10 +205,11 @@ $ lamhalt
 $ exit             # exits shell spawned by initial srun command
 </pre>
 Note that any direct use of <span class="commandline">srun</span> 
-will only launch one task per node when the LAM/MPI plugin is used.
-To launch more than one task per node usng the 
+will only launch one task per node when the LAM/MPI plugin is configured
+as the default plugin.  To launch more than one task per node usng the 
 <span class="commandline">srun</span> command, the <i>--mpi=none</i>
-option will be required to explicitly disable the LAM/MPI plugin.</p>
+option would be required to explicitly disable the LAM/MPI plugin
+if that is the system default.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -250,6 +251,6 @@ the base partition count.
 See <a href="bluegene.html">BlueGene User and Administrator Guide</a> 
 for more information.</p>
 
-<p style="text-align:center;">Last modified 5 April 2006</p>
+<p style="text-align:center;">Last modified 11 April 2006</p>
 
 <!--#include virtual="footer.txt"-->
