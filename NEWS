@@ -77,6 +77,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for job accounting logic submitted from Andy Riebs to handle issues
     with suspending jobs and such. patch file named requeue.patch
  -- Make select/cons_res interoperate with mpi/lam plugin for task counts.
+ -- Fix race condition where srun could seg-fault due to use of logging functions
+    within pthread after calling log_fini.
 
 * Changes in SLURM 1.0.9
 ========================
