@@ -175,28 +175,23 @@ slurm.conf.</p>
 <a href="http://www.hp.com/go/mpi">HP-MPI</a>.</p>
 
 <p>A good open-source MPI for use with SLURM is 
-<a href="http://www.lam-mpi.org/">LAM/MPI</a>. LAM/MPI uses the command 
+<a href="http://www.lam-mpi.org/">LAM MPI</a>. LAM MPI uses the command 
 <i>lamboot</i> to initiate job-specific daemons on each node using SLURM's 
 <span class="commandline">srun</span> 
 command. This places all MPI processes in a process-tree under the control of 
 the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
 SLURM. 
-Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf.
-Note that any direct use of <span class="commandline">srun</span> 
-will only launch one task per node when the LAM/MPI plugin is used.
-To launch more than one task per node usng the
-<span class="commandline">srun</span> command, the <i>--mpi=none</i>
-option will be required to explicitly disable the LAM/MPI plugin.</p>
+Set the <b>MpiDefault=none</b> configuration parameters in slurm.conf.
+LAM MPI will explicitly set the mpi plugin type to "lam" on the  
+<span class="commandline">srun</span> execute line as needed.</p>
 
 <p>Another good open-source MPI for use with SLURM is
-<a href="http://www.open-mpi.org/">Open MPI</a>.
-Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf 
-for use of Open MPI.
-Note that any direct use of <span class="commandline">srun</span> 
-will only launch one task per node when the LAM/MPI plugin is used.
-To launch more than one task per node usng the
-<span class="commandline">srun</span> command, the <i>--mpi=none</i>
-option will be required to explicitly disable the LAM/MPI plugin.</p>
+<a href="http://www.open-mpi.org/">Open MPI</a>. Open MPI initiates its 
+processes using SLURM's <span class="commandline">srun</span> 
+command. 
+Set the <b>MpiDefault=none</b> configuration parameters in slurm.conf.
+Open MPI will explicitly set the mpi plugin type to "lam" on the
+<span class="commandline">srun</span> execute line as needed.</p>
 
 <p>Note that the ordering of tasks within an job's allocation matches that of 
 nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
@@ -581,6 +576,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 April 2006</p>
+<p style="text-align:center;">Last modified 11 April 2006</p>
 
 <!--#include virtual="footer.txt"-->
