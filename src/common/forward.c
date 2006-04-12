@@ -446,7 +446,8 @@ extern int no_resp_forwards(forward_t *forward, List *ret_list, int err)
 	type->err = err;
 	type->ret_data_list = list_create(destroy_data_info);
 	for(i=0; i<forward->cnt; i++) {
-		strncpy(name, &forward->name[i * MAX_SLURM_NAME], MAX_SLURM_NAME);
+		strncpy(name, 
+			&forward->name[i * MAX_SLURM_NAME], MAX_SLURM_NAME);
 		ret_data_info = xmalloc(sizeof(ret_data_info_t));
 		list_push(type->ret_data_list, ret_data_info);
 		ret_data_info->node_name = xstrdup(name);
@@ -470,8 +471,6 @@ void destroy_data_info(void *object)
 
 void destroy_forward(forward_t *forward) 
 {
-	//return;
-	//forward_t *forward = (forward_t *)object;
 	if(forward->cnt > 0) {
 		xfree(forward->addr);
 		xfree(forward->name);
@@ -482,11 +481,11 @@ void destroy_forward(forward_t *forward)
 
 void destroy_forward_struct(forward_struct_t *forward_struct)
 {
-	//forward_msg_t *forward_msg = (forward_msg_t *)object;
 	if(forward_struct) {
 		xfree(forward_struct->buf);
 		xfree(forward_struct->forward_msg);
 		slurm_mutex_destroy(&forward_struct->forward_mutex);
+		pthread_cond_destroy(&forward_struct->notify);
 		xfree(forward_struct);
 	}
 }

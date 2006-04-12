@@ -192,11 +192,6 @@ typedef struct forward {
 	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
 } forward_t;
 
-typedef struct slurm_protocol_config {
-	slurm_addr primary_controller;
-	slurm_addr secondary_controller;
-} slurm_protocol_config_t;
-
 /*core api protocol message structures */
 typedef struct slurm_protocol_header {
 	uint16_t version;
@@ -210,6 +205,34 @@ typedef struct slurm_protocol_header {
 	List ret_list;
 } header_t;
 
+typedef struct forward_message {
+	header_t header;
+	char *buf;
+	int buf_len;
+	slurm_addr addr;
+	int timeout;
+	List ret_list;
+	pthread_mutex_t *forward_mutex;
+	pthread_cond_t *notify;
+	char node_name[MAX_SLURM_NAME];
+} forward_msg_t;
+
+typedef struct forward_struct {
+	int timeout;
+	uint16_t fwd_cnt;
+	pthread_mutex_t forward_mutex;
+	pthread_cond_t notify;
+	forward_msg_t *forward_msg;
+	char *buf;
+	int buf_len;
+	List ret_list;
+} forward_struct_t;
+
+typedef struct slurm_protocol_config {
+	slurm_addr primary_controller;
+	slurm_addr secondary_controller;
+} slurm_protocol_config_t;
+
 typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
 	slurm_addr address;       
@@ -219,6 +242,8 @@ typedef struct slurm_msg {
 	uint32_t data_size;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
+	forward_struct_t *forward_struct;
+	uint16_t   forward_struct_init;
 	slurm_addr orig_addr;       
 	List ret_list;
 	Buf buffer;
@@ -236,28 +261,6 @@ typedef struct ret_types {
 	uint32_t type;
 	List ret_data_list;
 } ret_types_t;
-
-typedef struct forward_message {
-	header_t header;
-	char *buf;
-	int buf_len;
-	slurm_addr addr;
-	int timeout;
-	List ret_list;
-	pthread_mutex_t *forward_mutex;
-	pthread_cond_t *notify;
-	char node_name[MAX_SLURM_NAME];
-} forward_msg_t;
-
-typedef struct forward_struct {
-	int timeout;
-	pthread_mutex_t forward_mutex;
-	pthread_cond_t notify;
-	forward_msg_t *forward_msg;
-	char *buf;
-	int buf_len;
-	List ret_list;
-} forward_struct_t;
 
 /*****************************************************************************\
  * Slurm Protocol Data Structures
