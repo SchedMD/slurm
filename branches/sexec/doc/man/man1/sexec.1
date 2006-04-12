@@ -1,0 +1,74 @@
+.TH SBCAST "1" "April 2006" "sexec 1.1" "Slurm components"
+
+.SH "NAME"
+sexec \- Execute programs with arguments that are controlled by 
+a configuration file. The program and argument executed will 
+depend upon the SLURM task ID. 
+
+.SH "SYNOPSIS"
+\fBsexec\fR CONFIG
+
+.SH "DESCRIPTION"
+\fBsexec\fR is used to execute different programs with different 
+arguments for each SLURM task.
+\fBCONFIG\fR is the name of a file containing \fBsexec\fR
+configuration specifications.
+
+.SH "CONFIGURATION FILE"
+
+Comments in the configuration file must have a "#" in collumn one.
+The configuration file contains the following fields separated by white
+space:
+.TP
+Task rank
+One or more task ranks to use this configuration. 
+Multiple values may be comma separated.
+Ranges may be indicated with two numbers separated with a '\-'.
+.TP
+Executable
+The name of the program to execute.
+May be fully qualified pathname if desired.
+.TP
+Arguments
+Program arguments. 
+The expression "%t" will be replaced with the task's number.
+The expression "%o" will be replaced with the task's offset within 
+this range (e.g. a configured task rank value of "1-5" would 
+have offset values of "0-4").
+Single quotes may be used to avoid having the enclosed values interpretted.
+This field is optional.
+
+.SH "EXAMPLE"
+
+.nf
+###################################################################
+# sexec configuration file
+# Run master as task 0
+# Run slaves as tasks 1-16 with their relative rank as the argument
+#
+# srun -n17 sexec sexec.conf
+###################################################################
+0          master
+1-16       slave    %o
+.fi
+
+.SH "COPYING"
+Copyright (C) 2006 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-217948.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsrun\fR(1)
