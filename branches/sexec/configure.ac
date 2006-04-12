@@ -210,6 +210,7 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile 
 		 src/common/Makefile
 		 src/sacct/Makefile
+		 src/sexec/Makefile
 		 src/srun/Makefile 
 		 src/slurmd/Makefile 
 		 src/slurmd/slurmd/Makefile 
