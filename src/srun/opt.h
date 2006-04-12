@@ -172,6 +172,7 @@ typedef struct srun_options {
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
+	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 } opt_t;
 
 opt_t opt;

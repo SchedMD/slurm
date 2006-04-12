@@ -116,6 +116,7 @@
 #define LONG_OPT_NICE        0x11e
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
+#define LONG_OPT_CTRL_COMM_IFHN 0x121
 
 /*---- forward declarations of static functions  ----*/
 
@@ -647,6 +648,7 @@ static void _opt_default()
 	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
 	int i;
+	char hostname[64];
 
 	if ((pw = getpwuid(getuid())) != NULL) {
 		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
@@ -748,6 +750,9 @@ static void _opt_default()
 
 	mode	= MODE_NORMAL;
 
+	getnodename(hostname, sizeof(hostname));
+	opt.ctrl_comm_ifhn  = xstrdup(hostname);
+
 	/*
 	 * Reset some default values if running under a parallel debugger
 	 */
@@ -805,6 +810,8 @@ env_vars_t env_vars[] = {
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
   {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
+  {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
+
   {NULL, 0, NULL, NULL}
 };
 
@@ -1028,6 +1035,7 @@ void set_options(const int argc, char **argv, int first)
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
+		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1458,7 +1466,11 @@ void set_options(const int argc, char **argv, int first)
 				exit(1);
 			}
 			break;
-		} 
+		case LONG_OPT_CTRL_COMM_IFHN:
+			xfree(opt.ctrl_comm_ifhn);
+			opt.ctrl_comm_ifhn = xstrdup(optarg);
+			break;
+		}
 	}
 
 	if (!first) {
@@ -1934,6 +1946,7 @@ static void _opt_list()
 	info("mail_user      : %s", opt.mail_user);
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
+	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1965,6 +1978,7 @@ static void _usage(void)
 "            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
+"            [--ctrl-comm-ifhn=addr]"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2021,6 +2035,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
+"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slurmctld"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"
