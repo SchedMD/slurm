@@ -1434,10 +1434,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->wait_time, "WaitTime", hashtbl))
 		conf->wait_time = DEFAULT_WAIT_TIME;
 	
-	if (s_p_get_uint16(&conf->schedport, "TreeWidth", hashtbl)) {
+	if (s_p_get_uint16(&conf->tree_width, "TreeWidth", hashtbl)) {
 		if (conf->tree_width == 0) {
 			error("TreeWidth=0 is invalid");
-			conf->tree_width = 50; /* default? */
+			conf->tree_width = DEFAULT_TREE_WIDTH; /* default? */
 		}
 	} else {
 		conf->tree_width = DEFAULT_TREE_WIDTH;
