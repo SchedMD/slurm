@@ -2799,6 +2799,7 @@ int port_tar;
 	int i, i2;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
+	int ports_to_try2[2] = {2,4};
 	
 	ListIterator itr;
 	List path = NULL;
@@ -3021,7 +3022,6 @@ int port_tar;
 
 	list_destroy(best_path);
 	best_path = list_create(_delete_path_list);
-	int ports_to_try2[2] = {2,4};
 	
 	_find_next_free_using_port_2(curr_switch, 
 			0, 
