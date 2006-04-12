@@ -108,6 +108,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	char hostname[64];
 	uint16_t port;
 	kvs_get_msg_t data;
+	char *env_pmi_ifhn;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -130,7 +131,11 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	/* hostname is not set here, so slurm_get_addr fails
 	slurm_get_addr(&slurm_addr, &port, hostname, sizeof(hostname)); */
 	port = ntohs(slurm_addr.sin_port); 
-	getnodename(hostname, sizeof(hostname));
+	if ((env_pmi_ifhn = getenv("SLURM_PMI_RESP_IFHN"))) {
+		strncpy(hostname, env_pmi_ifhn, sizeof(hostname));
+		hostname[sizeof(hostname)-1] = 0;
+	} else
+		getnodename(hostname, sizeof(hostname));
 
 	data.task_id = pmi_rank;
 	data.size = pmi_size;

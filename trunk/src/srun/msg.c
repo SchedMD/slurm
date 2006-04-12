@@ -1305,7 +1305,6 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 extern slurm_fd slurmctld_msg_init(void)
 {
 	slurm_addr slurm_address;
-	char hostname[64];
 	uint16_t port;
 
 	if (slurmctld_fd)	/* May set early for queued job allocation */
@@ -1326,8 +1325,7 @@ extern slurm_fd slurmctld_msg_init(void)
 	/* hostname is not set,  so slurm_get_addr fails
 	slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
 	port = ntohs(slurm_address.sin_port);
-	getnodename(hostname, sizeof(hostname));
-	slurmctld_comm_addr.hostname = xstrdup(hostname);
+	slurmctld_comm_addr.hostname = xstrdup(opt.ctrl_comm_ifhn);
 	slurmctld_comm_addr.port     = port;
 	debug2("slurmctld messages to host=%s,port=%u", 
 			slurmctld_comm_addr.hostname, 

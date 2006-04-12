@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "March 2006" "srun 1.1" "slurm components"
+.TH SRUN "1" "April 2006" "srun 1.1" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -233,6 +233,11 @@ For use with Infiniband.
 No special MPI processing. This is the default and works with 
 many other versions of MPI.
 .RE
+.TP
+\fB\-\-ctrl\-comm\-ifhn\fR=\fIaddr\fR
+Specify the address or hostname to be used for PMI communications only
+(task communication and synchronization primitives for MPCIH2).
+Defaults to hostnameme (response from getnodename function).
 .TP
 \fB\-\-jobid\fR=\fIid\fR
 Initiate a job step under an already allocated job with job id \fIid\fR.
@@ -817,7 +822,7 @@ Some
 options may be set via environment variables. These environment
 variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
-.TP 20
+.TP 22
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 .TP
@@ -871,6 +876,9 @@ The location of the SLURM configuration file.
 .TP
 \fBSLURM_REMOTE_CWD\fR
 \fB\-D, --chdir=\fR=\fIdir\fR
+.TP
+\fBSLURM_SRUN_COMM_IFHN\fR
+\fB\-\-ctrl\-comm\-ifhn\fR=\fIaddr\fR
 .TP
 \fBSLURM_STDERRMODE\fR
 \fB\-e, \-\-error\fR=\fImode\fR

@@ -3,11 +3,13 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.0-pre5
 =============================
- -- added step comp logic
- -- vastly changed sacct and the jobacct plugin.  Needs more documentation 
+ -- Added step completion RPC logic
+ -- Vastly changed sacct and the jobacct plugin.  Needs more documentation 
     still.
- -- added jobacct plugin for aix and bluegene, they currently don't work, 
+ -- Added jobacct plugin for AIX and BlueGene, they currently don't work, 
     but infastructure is in place.
+ -- Add support for srun option --ctrl-comm-ifhn to set PMI communications
+    address (Hongjia Cao, National University of Defense Technology).
 
 * Changes in SLURM 1.1.0-pre4
 =============================
