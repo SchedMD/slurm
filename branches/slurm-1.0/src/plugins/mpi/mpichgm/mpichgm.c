@@ -58,14 +58,11 @@ typedef struct {
 #define GMPI_RECV_BUF_LEN 65536
 
 
-static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
-				     gm_slave_t *slave_data);
-
 static int gmpi_fd = -1;
 static int gmpi_port = -1;
 
 static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
-				     gm_slave_t *slave_data)
+				     gm_slave_t *slave_data, int *ii)
 {
 	unsigned int magic, id, port_board_id, unique_high_id,
 		unique_low_id, numanode, remote_pid, remote_port;
@@ -75,6 +72,7 @@ static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 	got = sscanf(rbuf, "<<<%u:%u:%u:%u:%u:%u:%u::%u>>>",
 		     &magic, &id, &port_board_id, &unique_high_id,
 		     &unique_low_id, &numanode, &remote_pid, &remote_port);
+	*ii = id;
 	if (got != 8) {
 		error("GMPI master received invalid init message");
 		return -1;
@@ -112,8 +110,9 @@ static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 static int _gmpi_establish_map(srun_job_t *job)
 {
 	struct sockaddr_in addr;
+	in_addr_t *iaddrs;
 	socklen_t addrlen;
-	int accfd, newfd, rlen, nprocs, i, j;
+	int accfd, newfd, rlen, nprocs, i, j, id;
 	size_t gmaplen, lmaplen, maplen;
 	char *p, *rbuf = NULL, *gmap = NULL, *lmap = NULL, *map = NULL;
 	char tmp[128];
@@ -126,6 +125,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 	accfd = gmpi_fd;
 	addrlen = sizeof(addr);
 	nprocs = opt.nprocs;
+	iaddrs = (in_addr_t *)xmalloc(sizeof(*iaddrs)*nprocs);
 	slave_data = (gm_slave_t *)xmalloc(sizeof(*slave_data)*nprocs);
 	for (i=0; i<nprocs; i++)
 		slave_data[i].defined = 0;
@@ -146,8 +146,11 @@ static int _gmpi_establish_map(srun_job_t *job)
 		} else {
 			rbuf[rlen] = 0;
 		}
-		if (_gmpi_parse_init_recv_msg(job, rbuf, slave_data) == 0)
+		if (_gmpi_parse_init_recv_msg(job, rbuf, slave_data,
+					      &id) == 0) {
 			i++;
+			iaddrs[id] = ntohl(addr.sin_addr.s_addr);
+		}
 		close(newfd);
 	}
 	xfree(rbuf);
@@ -183,9 +186,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 		dp = &slave_data[i];
 		p = lmap;
 		for (j=0; j<nprocs; j++) {
-			int jhostid = step_layout_host_id (job->step_layout, j);
-
-			if ((ihostid == jhostid) && 
+			if (iaddrs[i] == iaddrs[j] &&
 			    (dp->numanode == slave_data[j].numanode)) {
 				sprintf(tmp, "<%u>", j);
 				strcpy(p, tmp);
@@ -211,8 +212,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 			error("setsockopt in GMPI master: %m");
 		bzero(&addr, sizeof(addr));
 		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr
-			= job->slurmd_addr[ihostid].sin_addr.s_addr;
+		addr.sin_addr.s_addr = htonl(iaddrs[i]);
 		addr.sin_port = htons(dp->remote_port);
 		if (connect(newfd, (struct sockaddr *)&addr, sizeof(addr)))
 			fatal("GMPI master failed to connect");
@@ -223,6 +223,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 	xfree(slave_data);
 	xfree(lmap);
 	xfree(gmap);
+	xfree(iaddrs);
 
 	debug2("GMPI master responded to all GMPI processes");
 	return 0;
