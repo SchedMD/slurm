@@ -180,7 +180,6 @@ static int _gmpi_establish_map(srun_job_t *job)
 	 */
 	lmap = (char *)xmalloc(128*nprocs);
 	for (i=0; i<nprocs; i++) {
-		int ihostid = step_layout_host_id(job->step_layout, i);
 		/*
 		 * Compose the string to send.
 		 */
