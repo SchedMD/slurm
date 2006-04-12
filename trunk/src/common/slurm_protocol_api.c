@@ -765,7 +765,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		msg->forward_struct->timeout = timeout-header.forward.timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
-		debug("forwarding messages to %d nodes!!!!", 
+		debug3("forwarding messages to %d nodes!!!!", 
 		       msg->forward_struct->fwd_cnt);
 		
 		if(forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
@@ -978,7 +978,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	
 	/* wait for all the other messages on the tree under us */
 	if(msg->forward_struct_init == FORWARD_INIT && msg->forward_struct) {
-		debug("looking for %d", msg->forward_struct->fwd_cnt);
+		debug3("looking for %d", msg->forward_struct->fwd_cnt);
 		slurm_mutex_lock(&msg->forward_struct->forward_mutex);
 		count = 0;
 		itr = list_iterator_create(msg->ret_list);
@@ -987,7 +987,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 			count += list_count(ret_type->ret_data_list);
 		}
 		list_iterator_destroy(itr);
-		debug("Got back %d", count);
+		debug3("Got back %d", count);
 		while((count < msg->forward_struct->fwd_cnt)) {
 			pthread_cond_wait(&msg->forward_struct->notify, 
 					  &msg->forward_struct->forward_mutex);
@@ -998,10 +998,10 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 				count += list_count(ret_type->ret_data_list);
 			}
 			list_iterator_destroy(itr);
-			debug("Got back %d", count);
+			debug3("Got back %d", count);
 				
 		}
-		debug("Got them all");
+		debug3("Got them all");
 		slurm_mutex_unlock(&msg->forward_struct->forward_mutex);
 		destroy_forward_struct(msg->forward_struct);
 	}

@@ -71,7 +71,7 @@ extern int common_setinfo(struct jobacctinfo *jobacct,
 			  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
-	int *temp = (int *)data;
+	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
 	struct rusage *rusage = (struct rusage *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
@@ -81,7 +81,7 @@ extern int common_setinfo(struct jobacctinfo *jobacct,
 		memcpy(jobacct, send, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		safe_write((int)*temp, jobacct, sizeof(struct jobacctinfo));
+		safe_write(*fd, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_RUSAGE:
 		memcpy(&jobacct->rusage, rusage, sizeof(struct rusage));
@@ -107,7 +107,7 @@ extern int common_getinfo(struct jobacctinfo *jobacct,
 			  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
-	int *temp = (int *)data;
+	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
 	struct rusage *rusage = (struct rusage *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
@@ -117,7 +117,7 @@ extern int common_getinfo(struct jobacctinfo *jobacct,
 		memcpy(send, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		safe_read((int)*temp, jobacct, sizeof(struct jobacctinfo));
+		safe_read(*fd, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_RUSAGE:
 		memcpy(rusage, &jobacct->rusage, sizeof(struct rusage));
