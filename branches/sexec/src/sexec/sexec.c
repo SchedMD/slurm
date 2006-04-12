@@ -29,21 +29,32 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "src/common/log.h"
+#include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
 #define BUF_SIZE 256
 
-/* Return 1 if the specified rank is included in the supplied task range 
- * specification */
+/*
+ * Test if the specified rank is included in the supplied task range 
+ * IN rank    - this task's rank
+ * IN spec    - a line from the configuration file
+ * OUT offset - the task's offset within rank range of the configuration file
+ * RET 1 if within range, 0 otherwise
+ */
 static int
-_in_range(int rank, char* spec)
+_in_range(int rank, char* spec, int *offset)
 {
 	char* range;
 	char* p;
 	char* upper;
+	int low_num;
+
+	xassert(offset);
 	
-	if (spec[0] == '*' && spec[1] == '\0')
+	if (spec[0] == '*' && spec[1] == '\0') {
+		*offset = rank;
 		return 1;
+	}
 
 	for (range = strtok (spec, ","); range != NULL; 
 			range = strtok (NULL, ",")) {
@@ -51,8 +62,10 @@ _in_range(int rank, char* spec)
 		while (*p != '\0' && isdigit (*p))
 			p ++;
 		if (*p == '\0') { /* single rank */
-			if (rank == atoi (range))
+			if (rank == atoi (range)) {
+				*offset = 0;
 				return 1;
+			}
 		} else if (*p == '-') { /* lower-upper */
 			upper = ++ p;
 			while (isdigit (*p))
@@ -62,8 +75,11 @@ _in_range(int rank, char* spec)
 					"ignored.", range);
 				continue;
 			};
-			if (rank >= atoi (range) && rank <= atoi (upper))
+			low_num = atoi (range);
+			if (rank >= low_num && rank <= atoi (upper)) {
+				*offset = rank - low_num;
 				return 1;
+			}
 		} else {
 			error ("Invalid task range specification (%s) ignored.",
 				range);
@@ -72,14 +88,31 @@ _in_range(int rank, char* spec)
 	return 0;
 }
 
-	 
+/* substitute "%t" or "%o" in argument with task number or range offset */
+static void
+_sub_expression(char *args_spec, int task_rank, int task_offset)
+{
+	char tmp[BUF_SIZE];
+
+	if (args_spec[1] == 't') {
+		/* task rank */
+		strcpy(tmp, &args_spec[2]);
+		sprintf(args_spec, "%d%s", task_rank, tmp);
+
+	} else if (args_spec[1] == 'o') {
+		/* task offset */
+		strcpy(tmp, &args_spec[2]);
+		sprintf(args_spec, "%d%s", task_offset, tmp);
+	}
+}
+ 
 int
 main(int argc, char** argv)
 {
 	FILE* conf_file;
 	char line[BUF_SIZE];
 	int line_num = 0;
-	int task_rank;
+	int task_rank, task_offset;
 	char* p, *s;
 	char* rank_spec, *prog_spec, *args_spec;
 	int prog_argc;
@@ -138,7 +171,7 @@ main(int argc, char** argv)
 		}
 		*p ++ = '\0';
 
-		if (!_in_range (task_rank, rank_spec))
+		if (!_in_range (task_rank, rank_spec, &task_offset))
 			continue;
 
 		while(*p != '\0' && isspace (*p))
@@ -165,11 +198,19 @@ main(int argc, char** argv)
 			/* Only simple quote and escape supported */
 			prog_argv[prog_argc ++] = args_spec;
 		CONT:	while (*args_spec != '\0' && *args_spec != '\\'
+			&&     *args_spec != '%'
 			&&     *args_spec != '\'' && !isspace (*args_spec)) {
 			        args_spec ++;
 		        }
-			if (*args_spec == '\0') { /* the last argument */
+			if (*args_spec == '\0') {
+				/* the last argument */
 				break;
+
+			} else if (*args_spec == '%') {
+				_sub_expression(args_spec, task_rank, 
+					task_offset);
+				args_spec ++;
+				goto CONT;
 
 			} else if (*args_spec == '\\') {
 				/* escape, just remove the backslash */
@@ -202,7 +243,8 @@ main(int argc, char** argv)
 				} while (*p ++ != '\0');
 				goto CONT;
 				
-			} else { /* space */
+			} else {
+				/* space */
 				*args_spec ++ = '\0';
 				while (*args_spec != '\0' 
 				&& isspace (*args_spec))
