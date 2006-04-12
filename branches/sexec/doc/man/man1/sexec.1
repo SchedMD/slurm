@@ -43,25 +43,24 @@ This field is optional.
 .nf
 ###################################################################
 # sexec configuration file
-# Run master as task 0
-# Run slaves as tasks 1-16 with their relative rank as the argument
-#
-# srun -n17 sexec sexec.conf
-###################################################################
-0          master
-1-16       slave    %o
-.fi
-
-.nf
-###################################################################
-# sexec configuration file
 # A silly example of a configuration file
 #
 # srun -n8 -l sexec silly.conf
 ###################################################################
-0,4-6     hostname
+4-6       hostname
 1,7       echo  task:%t
-2-3       echo  offset:%o
+0,2-3     echo  offset:%o
+
+$ srun -n8 -l sexec silly.conf
+0: offset:0
+1: task:1
+2: offset:1
+3: offset:2
+4: linux15.llnl.gov
+5: linux16.llnl.gov
+6: linux17.llnl.gov
+7: task:7
+
 .fi
 
 
