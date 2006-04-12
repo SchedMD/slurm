@@ -38,7 +38,7 @@ have offset values of "0-4").
 Single quotes may be used to avoid having the enclosed values interpretted.
 This field is optional.
 
-.SH "EXAMPLE"
+.SH "EXAMPLES"
 
 .nf
 ###################################################################
@@ -51,6 +51,19 @@ This field is optional.
 0          master
 1-16       slave    %o
 .fi
+
+.nf
+###################################################################
+# sexec configuration file
+# A silly example of a configuration file
+#
+# srun -n8 -l sexec silly.conf
+###################################################################
+0,4-6     hostname
+1,7       echo  task:%t
+2-3       echo  offset:%o
+.fi
+
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
