@@ -47,7 +47,7 @@ _in_range(int rank, char* spec, int *offset)
 	char* range;
 	char* p;
 	char* upper;
-	int low_num;
+	int high_num, low_num, passed = 0;
 
 	xassert(offset);
 	
@@ -66,6 +66,8 @@ _in_range(int rank, char* spec, int *offset)
 				*offset = 0;
 				return 1;
 			}
+			passed ++;
+
 		} else if (*p == '-') { /* lower-upper */
 			upper = ++ p;
 			while (isdigit (*p))
@@ -75,11 +77,14 @@ _in_range(int rank, char* spec, int *offset)
 					"ignored.", range);
 				continue;
 			};
-			low_num = atoi (range);
-			if (rank >= low_num && rank <= atoi (upper)) {
-				*offset = rank - low_num;
+			low_num  = atoi (range);
+			high_num = atoi (upper);
+			if ((rank >= low_num) && (rank <= high_num)) {
+				*offset = passed + (rank - low_num);
 				return 1;
-			}
+			} else
+				passed += (1 + high_num - low_num);
+
 		} else {
 			error ("Invalid task range specification (%s) ignored.",
 				range);
