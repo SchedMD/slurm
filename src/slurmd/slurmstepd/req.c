@@ -1009,7 +1009,6 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
 	
 	/************* acct stuff ********************/
-	info("read it all now aggregate");
 	jobacct_g_aggregate(step_complete.jobacct, jobacct);
 	jobacct_g_free(jobacct);
 	/*********************************************/

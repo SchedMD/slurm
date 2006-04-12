@@ -108,27 +108,6 @@ static void     _node_fail_handler(char *nodelist, srun_job_t *job);
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
-#undef safe_read
-#define safe_read(fd, ptr, size) do {					\
-		if (read(fd, ptr, size) != size) {			\
-			debug("%s:%d: %s: read (%d bytes) failed: %m",	\
-			      __FILE__, __LINE__, __CURRENT_FUNC__,	\
-			      (int)size);				\
-			goto rwfail;					\
-		}							\
-	} while (0)
-
-#undef safe_write
-#define safe_write(fd, ptr, size) do {					\
-		if (write(fd, ptr, size) != size) {			\
-			debug("%s:%d: %s: write (%d bytes) failed: %m",	\
-			      __FILE__, __LINE__, __CURRENT_FUNC__,	\
-			      (int)size);				\
-			goto rwfail;					\
-		}							\
-	} while (0)
-
-
 /* fd is job->forked_msg->par_msg->msg_pipe[1] */
 static void _update_mpir_proctable(int fd, srun_job_t *job,
 				   int nodeid, int ntasks, uint32_t *pid,

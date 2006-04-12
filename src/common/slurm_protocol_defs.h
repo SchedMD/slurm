@@ -683,4 +683,53 @@ extern char *job_state_string_compact(enum job_states inx);
 extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
 
+#define safe_read(fd, buf, size) do {					\
+		int remaining = size;					\
+		void *ptr = buf;					\
+		int rc;							\
+		while (remaining > 0) {					\
+                        rc = read(fd, ptr, remaining);			\
+                        if (rc == 0) {					\
+				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
+				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      remaining, (int)size);		\
+				goto rwfail;				\
+			} else if (rc < 0) {				\
+				debug("%s:%d: %s: safe_read (%d of %d) failed: %m", \
+				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      remaining, (int)size);		\
+				goto rwfail;				\
+			} else {					\
+				ptr += rc;				\
+				remaining -= rc;			\
+				if (remaining > 0)			\
+					debug3("%s:%d: %s: safe_read (%d of %d) partial read", \
+					       __FILE__, __LINE__, __CURRENT_FUNC__, \
+					       remaining, (int)size);	\
+			}						\
+		}							\
+	} while (0)
+
+#define safe_write(fd, buf, size) do {					\
+		int remaining = size;					\
+		void *ptr = buf;					\
+		int rc;							\
+		while(remaining > 0) {					\
+                        rc = write(fd, ptr, remaining);			\
+ 			if (rc < 0) {					\
+				debug("%s:%d: %s: safe_write (%d of %d) failed: %m", \
+				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      remaining, (int)size);		\
+				goto rwfail;				\
+			} else {					\
+				ptr += rc;				\
+				remaining -= rc;			\
+				if (remaining > 0)			\
+					debug3("%s:%d: %s: safe_write (%d of %d) partial write", \
+					       __FILE__, __LINE__, __CURRENT_FUNC__, \
+					       remaining, (int)size);	\
+			}						\
+		}							\
+	} while (0)
+
 #endif

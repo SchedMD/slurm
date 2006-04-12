@@ -204,7 +204,7 @@ _init_from_slurmd(int sock, char **argv,
 		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (conf->logfile)
 			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
-	} else 
+	} else
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);

@@ -346,6 +346,7 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
+	jobacct_g_fini_slurmctld();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
@@ -361,8 +362,7 @@ int main(int argc, char *argv[])
 
 	info("Slurmctld shutdown completing");
 	log_fini();
-	jobacct_g_fini_slurmctld();
-
+	
 	if (dump_core)
 		abort();
 	else
