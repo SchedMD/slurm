@@ -79,6 +79,10 @@ documents those changes that are of interest to users and admins.
  -- Make select/cons_res interoperate with mpi/lam plugin for task counts.
  -- Fix race condition where srun could seg-fault due to use of logging functions
     within pthread after calling log_fini.
+ -- Code changes for clean build with gcc 2.96 (gcc_2_96.patch, Takao Hatazaki, HP).
+ -- Add CacheGroups configuration support in configurator.html (configurator.patch,
+    Takao Hatazaki, HP).
+ -- Fix bug preventing use of mpich-gm plugin (mpichgm.patch, Takao Hatazaki, HP).
 
 * Changes in SLURM 1.0.9
 ========================
