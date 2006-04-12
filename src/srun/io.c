@@ -728,9 +728,9 @@ again:
 			list_enqueue(server->msg_queue, msg);
 		}
 	} else if (header.type == SLURM_IO_STDIN) {
-		debug("SLURM_IO_STDIN");
 		int nodeid;
 		struct server_io_info *server;
+		debug("SLURM_IO_STDIN");
 		msg->ref_count = 1;
 		nodeid = step_layout_host_id(info->job->step_layout, 
 				             header.gtaskid);

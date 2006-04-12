@@ -278,8 +278,8 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->cpu_bind_type) {
-		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
 		int setstat = 0;
+		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
 		if (env->cpu_bind_type & CPU_BIND_VERBOSE) {
 			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "verbose");
 		} else {
@@ -320,9 +320,9 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 	} else {
+		int setstat = 0;
 		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
 		/* set SLURM_CPU_BIND_* env vars to defaults */
-		int setstat = 0;
 		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "quiet");
 		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "");
 		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", "");
