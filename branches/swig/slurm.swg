@@ -6,6 +6,13 @@
 %{
 /* Includes the header in the wrapper code */
 #include <slurm/slurm.h>
+
+/* Header files for perl wrappers */
+#ifdef SWIGPERL
+#include "EXTERN.h"
+#include "perl.h"
+#include "XSUB.h"
+#endif
 %}
 
 typedef unsigned long time_t;
