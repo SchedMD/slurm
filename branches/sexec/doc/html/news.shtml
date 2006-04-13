@@ -53,7 +53,9 @@ Major enhancements include:
 <li>Communications enhancements, validated up to 16,384 node clusters.</li>
 <li>More complete support for resource management down to the core level
 on a node.</li>
-<li>File broadcast support.</li>
+<li>File broadcast support with new command <i>sbcast</i>.</li>
+<li>Ability to launch different programs with different arguments 
+for each task using new command <i>sexec</i>.</li>
 <li>The configuration parameter <i>HeartBeatInterval</i> is defunct.
 Half the values of configuration parameters <i>SlurmdTimeout</i> and 
 <i>SlurmctldTimeout</i> are used as the commununication frequency for 
@@ -77,6 +79,6 @@ to coordinate activies. Future development plans includes:
 </ul>
 
 
-<p style="text-align:center;">Last modified 30 January 2006</p>
+<p style="text-align:center;">Last modified 12 April 2006</p>
 
 <!--#include virtual="footer.txt"-->

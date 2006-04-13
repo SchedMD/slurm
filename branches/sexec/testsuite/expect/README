@@ -239,7 +239,7 @@ test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and
 test7.2    Test of PMI functions available via API library. 
 test7.3    Test of slurm_spawn API (needed on IBM SP systems).
 test7.4    Test of TotalView operation with SLURM
-
+test7.5    Test of sexec command.
 
 test8.#    Test of Blue Gene specific functionality.
 =================================================

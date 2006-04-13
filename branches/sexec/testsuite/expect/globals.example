@@ -25,7 +25,7 @@
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 
-global sacct sbcast scancel scontrol sinfo smap squeue srun
+global sacct sbcast scancel scontrol sexec sinfo smap squeue srun
 
 #
 # Specify the slurm install directory.
@@ -36,6 +36,7 @@ set sacct       "${slurm_dir}/bin/sacct"
 set sbcast      "${slurm_dir}/bin/sbcast"
 set scancel     "${slurm_dir}/bin/scancel"
 set scontrol    "${slurm_dir}/bin/scontrol"
+set sexec       "${slurm_dir}/bin/sexec"
 set sinfo       "${slurm_dir}/bin/sinfo"
 set smap        "${slurm_dir}/bin/smap"
 set squeue      "${slurm_dir}/bin/squeue"

@@ -1,8 +1,11 @@
 /*****************************************************************************\
- *   sexec.c - execute program according to task rank
+ *  sexec.c - execute program according to task rank
+ *
+ *  NOTE: This logic could be moved directly into slurmstepd if desired to 
+ *  eliminate an extra exec() call, but could be more confusing to users.
  *****************************************************************************
  *  Produced at National University of Defense Technology (China)
- *  Written by Hongjia Cao <hjcao@nudt.edu.cn>, et. al.
+ *  Written by Hongjia Cao <hjcao@nudt.edu.cn>
  *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
@@ -63,7 +66,7 @@ _in_range(int rank, char* spec, int *offset)
 			p ++;
 		if (*p == '\0') { /* single rank */
 			if (rank == atoi (range)) {
-				*offset = 0;
+				*offset = passed;
 				return 1;
 			}
 			passed ++;
@@ -129,7 +132,7 @@ main(int argc, char** argv)
 	if (argc != 2) {
 		fatal ("Usage: sexec config_file\n");
 		exit (-1);
-	};
+	}
 
 	p = getenv ("SLURM_PROCID");
         if (p == NULL)
