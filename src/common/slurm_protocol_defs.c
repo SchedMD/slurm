@@ -678,28 +678,6 @@ void slurm_free_resource_allocation_response_msg (
 
 
 /*
- * slurm_free_resource_allocation_and_run_response_msg - free slurm 
- *	resource allocation and run job step response message
- * IN msg - pointer to allocation and run job step response message
- * NOTE: buffer is loaded by slurm_allocate_resources_and_run
- */
-void slurm_free_resource_allocation_and_run_response_msg ( 
-			resource_allocation_and_run_response_msg_t * msg)
-{
-	if (msg) {
-		xfree(msg->node_list);
-		xfree(msg->cpus_per_node);
-		xfree(msg->cpu_count_reps);
-		xfree(msg->node_addr);
-		slurm_cred_destroy(msg->cred);
-		if (msg->switch_job)
-			switch_free_jobinfo(msg->switch_job);
-		xfree(msg);
-	}
-}
-
-
-/*
  * slurm_free_job_step_create_response_msg - free slurm 
  *	job step create response message
  * IN msg - pointer to job step create response message

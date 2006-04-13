@@ -121,8 +121,6 @@ typedef enum {
 	RESPONSE_JOB_ATTACH,
 	REQUEST_JOB_WILL_RUN,
 	RESPONSE_JOB_WILL_RUN,
-	REQUEST_ALLOCATION_AND_RUN_JOB_STEP,
-	RESPONSE_ALLOCATION_AND_RUN_JOB_STEP,
 	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
 	REQUEST_UPDATE_JOB_TIME,
 	REQUEST_JOB_READY,
@@ -662,8 +660,6 @@ void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
-void slurm_free_resource_allocation_and_run_response_msg (
-		resource_allocation_and_run_response_msg_t * msg);
 void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg);
 void slurm_free_submit_response_response_msg(submit_response_msg_t * msg);

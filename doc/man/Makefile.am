@@ -16,7 +16,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_hostlist_destroy.3 \
 	man3/slurm_hostlist_shift.3 \
 	man3/slurm_allocate_resources.3 \
-	man3/slurm_allocate_resources_and_run.3 \
 	man3/slurm_allocation_lookup.3 \
 	man3/slurm_api_version.3 \
 	man3/slurm_checkpoint_able.3 \
@@ -37,7 +36,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_free_job_step_info_response_msg.3 \
 	man3/slurm_free_node_info.3 \
 	man3/slurm_free_partition_info.3 \
-	man3/slurm_free_resource_allocation_and_run_response_msg.3 \
 	man3/slurm_free_resource_allocation_response_msg.3 \
 	man3/slurm_free_submit_response_response_msg.3 \
 	man3/slurm_get_end_time.3 \

@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for srun option --ctrl-comm-ifhn to set PMI communications
     address (Hongjia Cao, National University of Defense Technology).
  -- Moved safe_read/write to slurm_protocol_defs.h removing multiple copies.
+ -- Remove vestigial functions slurm_allocate_resources_and_run() and 
+    slurm_free_resource_allocation_and_run_response_msg().
 
 * Changes in SLURM 1.1.0-pre4
 =============================

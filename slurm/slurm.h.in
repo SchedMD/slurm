@@ -342,8 +342,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
 				 * 0 otherwise */
-	uint16_t task_dist;	/* see enum task_dist_state, used only for
-				 * slurm_allocate_resources_and_run() */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
@@ -352,9 +350,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job, 
 				 * default=0 */
-	uint32_t num_tasks;	/* number of tasks required by job, 
-				 * default=0, used only by 
-				 * slurm_allocate_resources_and_run() */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	char *script;		/* the actual job script, default NONE */
 	char **argv;		/* arguments to the script */
@@ -697,27 +692,6 @@ extern int slurm_allocate_resources PARAMS((
 extern void slurm_free_resource_allocation_response_msg PARAMS((
 	resource_allocation_response_msg_t * msg));
 
-/*
- * slurm_allocate_resources_and_run - allocate resources for a job request and 
- *	initiate a job step
- * IN job_desc_msg - description of resource allocation request
- * OUT slurm_alloc_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the response using 
- *	slurm_free_resource_allocation_and_run_response_msg
- */
-extern int slurm_allocate_resources_and_run PARAMS((
-	job_desc_msg_t * job_desc_msg,
-	resource_allocation_and_run_response_msg_t ** slurm_alloc_msg));
-
-/*
- * slurm_free_resource_allocation_and_run_response_msg - free slurm 
- *	resource allocation and run job step response message
- * IN msg - pointer to allocation and run job step response message
- * NOTE: buffer is loaded by slurm_allocate_resources_and_run
- */
-extern void slurm_free_resource_allocation_and_run_response_msg PARAMS((
-	resource_allocation_and_run_response_msg_t * msg));
 
 /*
  * OBSOLETE! This function, along with the old_job_alloc_msg_t

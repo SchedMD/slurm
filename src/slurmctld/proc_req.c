@@ -75,7 +75,6 @@ static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 static int          _make_step_cred(struct step_record *step_rec, 
 				    slurm_cred_t *slurm_cred);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
-inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
@@ -150,10 +149,6 @@ void slurmctld_req (slurm_msg_t * msg)
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg);
-		slurm_free_job_desc_msg(msg->data);
-		break;
-	case REQUEST_ALLOCATION_AND_RUN_JOB_STEP:
-		_slurm_rpc_allocate_and_run(msg);
 		slurm_free_job_desc_msg(msg->data);
 		break;
 	case REQUEST_BUILD_INFO:
@@ -514,120 +509,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		info("_slurm_rpc_allocate_resources: %s ", 
 		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
-	}
-}
-
-/* _slurm_rpc_allocate_and_run: process RPC to allocate resources for a job 
- *	and initiate a job step */
-static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
-{
-	/* init */
-	int error_code = SLURM_SUCCESS;
-	slurm_msg_t response_msg;
-	DEF_TIMERS;
-	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
-	resource_allocation_and_run_response_msg_t alloc_msg;
-	struct step_record *step_rec;
-	struct job_record *job_ptr;
-	slurm_cred_t slurm_cred;
-	job_step_create_request_msg_t req_step_msg;
-	/* Locks: Write job, write node, read partition */
-	slurmctld_lock_t job_write_lock = { 
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	uid_t uid;
-	int immediate = true;   /* implicit job_desc_msg->immediate == true */
-
-	START_TIMER;
-	debug2("Processing RPC: REQUEST_ALLOCATE_AND_RUN_JOB_STEP");
-
-	/* do RPC call */
-	dump_job_desc(job_desc_msg);
-	uid = g_slurm_auth_get_uid(msg->cred);
-	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
-		error("Security violation, ALLOCATE_AND_RUN RPC from uid=%u",
-		      (unsigned int) uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
-#ifdef HAVE_FRONT_END	/* Limited job step support */
-	/* Non-super users not permitted to run job steps on front-end.
-	 * A single slurmd can not handle a heavy load. */
-	if (!_is_super_user(uid)) {
-		info("Attempt to execute job step by uid=%u", 
-			(unsigned int) uid);
-		slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
-		return;
-	}
-#endif
-
-	lock_slurmctld(job_write_lock);
-	error_code = job_allocate(job_desc_msg, 
-				  immediate, false, true, uid, &job_ptr);
-
-	/* return result */
-	if (error_code) {
-		unlock_slurmctld(job_write_lock);
-		info("_slurm_rpc_allocate_and_run: %s", 
-		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-		return;
-	}
-
-	req_step_msg.job_id     = job_ptr->job_id;
-	req_step_msg.user_id    = job_desc_msg->user_id;
-#ifdef HAVE_FRONT_END		/* Execute only on front-end */
-	req_step_msg.node_count = 1;
-	req_step_msg.cpu_count  = NO_VAL;
-#else
-	req_step_msg.node_count = INFINITE;
-	req_step_msg.cpu_count  = job_desc_msg->num_procs;
-#endif
-	req_step_msg.name	= job_ptr->name;
-	req_step_msg.network	= job_ptr->network;
-	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
-	req_step_msg.task_dist  = job_desc_msg->task_dist;
-	error_code = step_create(&req_step_msg, &step_rec, true, false);
-	if (error_code == SLURM_SUCCESS) {
-		error_code = _make_step_cred(step_rec, &slurm_cred);
-		END_TIMER;
-	}
-
-	/* note: no need to free step_rec, pointer to global job step record */
-	if (error_code) {
-		job_complete(job_ptr->job_id, job_desc_msg->user_id, false, 0);
-		unlock_slurmctld(job_write_lock);
-		info("_slurm_rpc_allocate_and_run creating job step: %s",
-			slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-
-		info("_slurm_rpc_allocate_and_run JobId=%u NodeList=%s %s", 
-			job_ptr->job_id, job_ptr->nodes, TIME_STR);
-
-		/* send job_ID  and node_name_ptr */
-		alloc_msg.job_id         = job_ptr->job_id;
-		alloc_msg.node_list      = job_ptr->nodes;
-		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
-		alloc_msg.cpus_per_node  = job_ptr->cpus_per_node;
-		alloc_msg.cpu_count_reps = job_ptr->cpu_count_reps;
-		alloc_msg.job_step_id    = step_rec->step_id;
-		alloc_msg.node_cnt       = job_ptr->node_cnt;
-		alloc_msg.node_addr      = job_ptr->node_addr;
-		alloc_msg.cred           = slurm_cred;
-		alloc_msg.switch_job     = switch_copy_jobinfo(
-						step_rec->switch_job);
-		unlock_slurmctld(job_write_lock);
-		response_msg.msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
-		response_msg.data = &alloc_msg;
-		forward_init(&response_msg.forward, NULL);
-		response_msg.ret_list = NULL;
-		
-		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
-			_kill_job_on_msg_fail(job_ptr->job_id);
-		slurm_cred_destroy(slurm_cred);
-		switch_free_jobinfo(alloc_msg.switch_job);
-		schedule_job_save();	/* has own locks */
-		schedule_node_save();	/* has own locks */
 	}
 }
 
