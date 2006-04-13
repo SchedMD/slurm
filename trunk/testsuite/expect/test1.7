@@ -10,7 +10,7 @@
 # Note:    This script generates and then deletes files in the working directory 
 #          named test1.7.input, test1.7.output, and test1.7.error
 ############################################################################
-# Copyright (C) 2002-6 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -49,11 +49,16 @@ print_header $test_id
 #
 # Make sure sleep time is no larger than InactiveLimit
 set inactive_limit  $sleep_time
+set kill_wait       $sleep_time
 log_user 0
 spawn $scontrol show config
 expect {
 	-re "InactiveLimit.*= ($number)" {
 		set inactive_limit $expect_out(1,string)
+		exp_continue
+	}
+	-re "KillWait.*= ($number)" {
+		set kill_wait $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -70,6 +75,10 @@ if {$inactive_limit == 0} {
 }
 if {$inactive_limit < 120} {
 	send_user "\nWARNING: Inactive limit is too low for this test\n"
+	exit 0
+}
+if {$kill_wait > 60} {
+	send_user "\nWARNING: KillWait configured too high for this test\n"
 	exit 0
 }
 if {$inactive_limit < $sleep_time} {
