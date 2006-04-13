@@ -89,7 +89,6 @@
 
 
 typedef resource_allocation_response_msg_t         allocation_resp;
-typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
 
 /*
  * forward declaration of static funcs
