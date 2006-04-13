@@ -1146,7 +1146,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
-	long kill_on_node_fail, shared, task_dist, immediate, dependency;
+	long kill_on_node_fail, shared, immediate, dependency;
 	long cpus_per_task;
 	char buf[100];
 
@@ -1195,14 +1195,12 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	kill_on_node_fail = (job_specs->kill_on_node_fail != 
 			     (uint16_t) NO_VAL) ? 
 			(long) job_specs->kill_on_node_fail : -1L;
-	task_dist = (job_specs->task_dist != (uint16_t) NO_VAL) ? 
-			(long) job_specs->task_dist : -1L;
 	if (job_specs->script)	/* log has problem with string len & null */
-		debug3("   kill_on_node_fail=%ld task_dist=%ld script=%.40s...",
-			kill_on_node_fail, task_dist, job_specs->script);
+		debug3("   kill_on_node_fail=%ld script=%.40s...",
+			kill_on_node_fail, job_specs->script);
 	else
-		debug3("   kill_on_node_fail=%ld task_dist=%ld script=%s",
-			kill_on_node_fail, task_dist, job_specs->script);
+		debug3("   kill_on_node_fail=%ld script=%s",
+			kill_on_node_fail, job_specs->script);
 
 	if (job_specs->argc == 1)
 		debug3("   argv=\"%s\"", 
@@ -2284,7 +2282,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->argv   = (char **) NULL; /* nothing left */
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
-	detail_ptr->req_tasks = job_desc->num_tasks;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes = 
 				_copy_nodelist_no_dup(job_desc->req_nodes);

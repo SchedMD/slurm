@@ -142,67 +142,6 @@ int slurm_job_will_run (job_desc_msg_t *req)
 }
 
 /*
- * slurm_allocate_resources_and_run - allocate resources for a job request and 
- *	initiate a job step
- * IN job_desc_msg - description of resource allocation request
- * OUT slurm_alloc_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the response using 
- *	slurm_free_resource_allocation_and_run_response_msg
- */
-int
-slurm_allocate_resources_and_run (job_desc_msg_t *req, 
-      resource_allocation_and_run_response_msg_t **resp)
-{
-	int rc;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	bool host_set = false;
-	char host[64];
-
-	if (req->alloc_sid == NO_VAL)
-		req->alloc_sid = getsid(0);
-
-	if ( (req->alloc_node == NULL) 
-	    && (getnodename(host, sizeof(host)) == 0) ) {
-		req->alloc_node = host;
-		host_set = true;
-	}
-
-	req_msg.msg_type = REQUEST_ALLOCATION_AND_RUN_JOB_STEP;
-	req_msg.data     = req; 
-	forward_init(&req_msg.forward, NULL);
-	req_msg.ret_list = NULL;
-	forward_init(&resp_msg.forward, NULL);
-	resp_msg.ret_list = NULL;
-		
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
-
-	if (host_set)	/* reset (clear) alloc_node */
-		req->alloc_node = NULL;
-
-	if (rc == SLURM_SOCKET_ERROR) 
-		return SLURM_SOCKET_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
-		*resp = NULL;
-		break ;
-	case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
-		*resp = (resource_allocation_and_run_response_msg_t *) 
-			resp_msg.data;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
-}
-
-/*
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request

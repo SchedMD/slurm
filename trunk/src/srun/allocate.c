@@ -112,7 +112,7 @@ allocate_nodes(void)
 		char *hostfile = getenv("SLURM_HOSTFILE");
 
 		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, j->num_tasks);
+			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
 			if (nodelist == NULL) {
 				error("Failure getting NodeNames from hostfile");
 				/* FIXME - need to fail somehow */
@@ -120,7 +120,6 @@ allocate_nodes(void)
 			} else {
 				j->req_nodes = xstrdup(nodelist);
 				free(nodelist);
-				j->task_dist = SLURM_DIST_ARBITRARY;
 			}
 		}
 	}
@@ -415,7 +414,6 @@ job_desc_msg_create_from_opts (char *script)
 	j->exc_nodes      = opt.exc_nodes;
 	j->partition      = opt.partition;
 	j->min_nodes      = opt.min_nodes;
-	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
 	if (opt.nice)

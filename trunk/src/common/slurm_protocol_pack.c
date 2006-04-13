@@ -76,13 +76,6 @@ static int
  _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 					  ** msg, Buf buffer);
 
-static void
- _pack_resource_allocation_and_run_response_msg
-    (resource_allocation_and_run_response_msg_t * msg, Buf buffer);
-static int
- _unpack_resource_allocation_and_run_response_msg
-    (resource_allocation_and_run_response_msg_t ** msg, Buf buffer);
-
 static void _pack_submit_response_msg(submit_response_msg_t * msg,
 				      Buf buffer);
 static int _unpack_submit_response_msg(submit_response_msg_t ** msg,
@@ -431,7 +424,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case REQUEST_RESOURCE_ALLOCATION:
 	 case REQUEST_SUBMIT_BATCH_JOB:
 	 case REQUEST_JOB_WILL_RUN:
-	 case REQUEST_ALLOCATION_AND_RUN_JOB_STEP:
 	 case REQUEST_UPDATE_JOB:
 		 _pack_job_desc_msg((job_desc_msg_t *)
 				    msg->data, buffer);
@@ -460,11 +452,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_resource_allocation_response_msg
 		     ((resource_allocation_response_msg_t *) msg->data,
 		      buffer);
-		 break;
-	 case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
-		 _pack_resource_allocation_and_run_response_msg(
-			(resource_allocation_and_run_response_msg_t *) 
-			msg->data, buffer);
 		 break;
 	 case REQUEST_UPDATE_NODE:
 		 _pack_update_node_msg((update_node_msg_t *) msg->data,
@@ -703,7 +690,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case REQUEST_RESOURCE_ALLOCATION:
 	 case REQUEST_SUBMIT_BATCH_JOB:
 	 case REQUEST_JOB_WILL_RUN:
-	 case REQUEST_ALLOCATION_AND_RUN_JOB_STEP:
 	 case REQUEST_UPDATE_JOB:
 		 rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
 					   buffer);
@@ -733,11 +719,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_resource_allocation_response_msg(
 				(resource_allocation_response_msg_t **)
 				& (msg->data), buffer);
-		 break;
-	 case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
-		 rc = _unpack_resource_allocation_and_run_response_msg(
-				(resource_allocation_and_run_response_msg_t **)
-				&(msg->data), buffer);
 		 break;
 	 case REQUEST_UPDATE_NODE:
 		 rc = _unpack_update_node_msg((update_node_msg_t **) &
@@ -1134,93 +1115,6 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 
       unpack_error:
 	select_g_free_jobinfo(&tmp_ptr->select_jobinfo);
-	xfree(tmp_ptr->node_list);
-	xfree(tmp_ptr->cpus_per_node);
-	xfree(tmp_ptr->cpu_count_reps);
-	xfree(tmp_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
- _pack_resource_allocation_and_run_response_msg
-    (resource_allocation_and_run_response_msg_t * msg, Buf buffer) {
-	xassert(msg != NULL);
-
-	pack32((uint32_t)msg->job_id, buffer);
-	packstr(msg->node_list, buffer);
-	pack16((uint16_t)msg->num_cpu_groups, buffer);
-	if (msg->num_cpu_groups > 0) {
-		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
-		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
-	}
-	pack32((uint32_t)msg->job_step_id, buffer);
-
-	pack16((uint16_t)msg->node_cnt, buffer);
-	if (msg->node_cnt)
-		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
-
-	slurm_cred_pack(msg->cred, buffer);
-	switch_pack_jobinfo(msg->switch_job, buffer);
-}
-
-static int
- _unpack_resource_allocation_and_run_response_msg
-    (resource_allocation_and_run_response_msg_t ** msg, Buf buffer) {
-	uint16_t uint16_tmp;
-	uint32_t uint32_tmp;
-	resource_allocation_and_run_response_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	xassert(msg != NULL);
-	tmp_ptr = xmalloc(sizeof(resource_allocation_and_run_response_msg_t));
-	*msg = tmp_ptr;
-
-	/* load the data values */
-	safe_unpack32(&tmp_ptr->job_id, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint16_tmp, buffer);
-	safe_unpack16(&tmp_ptr->num_cpu_groups, buffer);
-
-	if (tmp_ptr->num_cpu_groups > 0) {
-		tmp_ptr->cpus_per_node = (uint32_t *)
-		    xmalloc(sizeof(uint32_t) * tmp_ptr->num_cpu_groups);
-		tmp_ptr->cpu_count_reps = (uint32_t *)
-		    xmalloc(sizeof(uint32_t) * tmp_ptr->num_cpu_groups);
-		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpus_per_node), 
-				    &uint32_tmp, buffer);
-		if (tmp_ptr->num_cpu_groups != uint32_tmp)
-			goto unpack_error;
-		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpu_count_reps), 
-				    &uint32_tmp, buffer);
-		if (tmp_ptr->num_cpu_groups != uint32_tmp)
-			goto unpack_error;
-	}
-
-	safe_unpack32(&tmp_ptr->job_step_id, buffer);
-	safe_unpack16(&tmp_ptr->node_cnt, buffer);
-	if (tmp_ptr->node_cnt > 0) {
-		if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
-					     &uint16_tmp, buffer))
-			goto unpack_error;
-		if (uint16_tmp != tmp_ptr->node_cnt)
-			goto unpack_error;
-	} else
-		tmp_ptr->node_addr = NULL;
-
-	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
-		goto unpack_error;
-
-	switch_alloc_jobinfo(&tmp_ptr->switch_job);
-	if (switch_unpack_jobinfo(tmp_ptr->switch_job, buffer) < 0) {
-		error("switch_unpack_jobinfo: %m");
-		switch_free_jobinfo(tmp_ptr->switch_job);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-      unpack_error:
 	xfree(tmp_ptr->node_list);
 	xfree(tmp_ptr->cpus_per_node);
 	xfree(tmp_ptr->cpu_count_reps);
@@ -2217,13 +2111,11 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack16((uint16_t)job_desc_ptr->immediate, buffer);
 	pack16((uint16_t)job_desc_ptr->shared, buffer);
 	pack16((uint16_t)job_desc_ptr->cpus_per_task, buffer);
-	pack16((uint16_t)job_desc_ptr->task_dist, buffer);
 	pack32((uint32_t)job_desc_ptr->time_limit, buffer);
 
 	pack32((uint32_t)job_desc_ptr->num_procs, buffer);
 	pack32((uint32_t)job_desc_ptr->min_nodes, buffer);
 	pack32((uint32_t)job_desc_ptr->max_nodes, buffer);
-	pack32((uint32_t)job_desc_ptr->num_tasks, buffer);
 	pack32((uint32_t)job_desc_ptr->user_id, buffer);
 	pack32((uint32_t)job_desc_ptr->group_id, buffer);
 
@@ -2288,13 +2180,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
 	safe_unpack16(&job_desc_ptr->shared, buffer);
 	safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
-	safe_unpack16(&job_desc_ptr->task_dist, buffer);
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
 	safe_unpack32(&job_desc_ptr->min_nodes, buffer);
 	safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-	safe_unpack32(&job_desc_ptr->num_tasks, buffer);
 	safe_unpack32(&job_desc_ptr->user_id, buffer);
 	safe_unpack32(&job_desc_ptr->group_id, buffer);
 
