@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     but infastructure is in place.
  -- Add support for srun option --ctrl-comm-ifhn to set PMI communications
     address (Hongjia Cao, National University of Defense Technology).
+ -- Moved safe_read/write to slurm_protocol_defs.h removing multiple copies.
 
 * Changes in SLURM 1.1.0-pre4
 =============================
