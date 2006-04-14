@@ -220,7 +220,7 @@ task_exec(char *config_data, char **prog_env)
 		if (strlen (line) >= (BUF_SIZE - 1)) {
 			error ("Line %d of configuration file too long", 
 				line_num);
-			exit (-1);
+			return -1;
 		}
 		
 		p = line;
