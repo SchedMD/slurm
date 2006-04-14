@@ -260,7 +260,10 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 	
 #else
-	cpus = step->num_cpus;
+	if(!step->num_cpus)
+		cpus = step->job_ptr->num_procs;
+	else
+		cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 #endif
 	
@@ -360,7 +363,10 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 	
 #else
-	cpus = step->num_cpus;
+	if(!step->num_cpus)
+		cpus = step->job_ptr->num_procs;
+	else
+		cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 #endif
 	/* figure out the ave of the totals sent */

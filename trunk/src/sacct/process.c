@@ -87,6 +87,7 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	memcpy(&job->header, &header, sizeof(acct_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->sacct, 0, sizeof(sacct_t));
+	job->sacct.min_cpu = NO_VAL;
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
@@ -128,6 +129,7 @@ step_rec_t *_init_step_rec(acct_header_t header)
 	
 	return step;
 }
+
 int _parse_header(char *f[], acct_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
@@ -356,6 +358,30 @@ got_step:
 				   step->rusage.ru_nswap);
 
 	/* get the max for all the sacct_t struct */
+	if(job->sacct.max_vsize < step->sacct.max_vsize) {
+		job->sacct.max_vsize = step->sacct.max_vsize;
+		job->sacct.max_vsize_task = step->sacct.max_vsize_task;
+	}
+	job->sacct.ave_vsize += step->sacct.ave_vsize;
+	
+	if(job->sacct.max_rss < step->sacct.max_rss) {
+		job->sacct.max_rss = step->sacct.max_rss;
+		job->sacct.max_rss_task = step->sacct.max_rss_task;
+	}
+	job->sacct.ave_rss += step->sacct.ave_rss;
+	
+	if(job->sacct.max_pages < step->sacct.max_pages) {
+		job->sacct.max_pages = step->sacct.max_pages;
+		job->sacct.max_pages_task = step->sacct.max_pages_task;
+	}
+	job->sacct.ave_pages += step->sacct.ave_pages;
+	
+	if((job->sacct.min_cpu > step->sacct.min_cpu) 
+	   || (job->sacct.min_cpu == NO_VAL)) {
+		job->sacct.min_cpu = step->sacct.min_cpu;
+		job->sacct.min_cpu_task = step->sacct.min_cpu_task;
+	}
+	job->sacct.ave_cpu += step->sacct.ave_cpu;
 	/* job->psize = MAX(job->psize, step->psize); */
 /* 	job->vsize = MAX(job->vsize, step->vsize); */
 	job->ncpus = MAX(job->ncpus, step->ncpus);
@@ -426,6 +452,18 @@ void process_terminated(char *f[], int lc)
 		job->track_steps = 1;
 finished:
 	destroy_job(temp);
+}
+
+void convert_num(float num, char *buf)
+{
+	char *unit = "\0KMGP";
+	int count = 0;
+
+	while(num>1024) {
+		num /= 1024;
+		count++;
+	}
+	snprintf(buf, 20, "%.2f%c", num, unit[count]);
 }
 
 void destroy_acct_header(void *object)

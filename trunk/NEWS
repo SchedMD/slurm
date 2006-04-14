@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     work by Hongjia Cao, National University of Defense Technology).
  -- moved the way forward logic waited for fanout logic mostly eliminating 
     problems with scalability issues.
+ -- changed -l option in sacct to display different params see sacct/sacct.h
+    for details.
 
 * Changes in SLURM 1.1.0-pre4
 =============================
