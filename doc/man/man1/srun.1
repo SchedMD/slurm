@@ -84,6 +84,14 @@ a negative adjustment. NOTE: This option is presently
 ignored if \fISchedulerType=sched/maui\fR.
 
 .TP
+\fB\-\-multi\-prog\fR
+Run a job with different programs and different arguments for 
+each task. In this case, the executable program specified is 
+actually a configuration file specifying the executable and 
+arguments for each task. See \fBMULTIPLE PROGRAM CONFIGURATION\fR
+below for details on the configuration file contents.
+
+.TP
 \fB\-\-begin\fR=\fItime\fR
 Defer initiation of this job until the specified time.
 It accepts times of the form \fIHH:MM:SS\fR to run a job at 
@@ -1016,6 +1024,53 @@ number of processors to run on
 list of computers on which to execute. This list can be constructed 
 executing the command \fBsrun /bin/hostname\fR and writing its standard 
 output to the desired file. Execute \fBmpirun \-\-help\fR for more options.
+
+.SH "MULTIPLE PROGRAM CONFIGURATION"
+Comments in the configuration file must have a "#" in collumn one.
+The configuration file contains the following fields separated by white
+space:
+.TP
+Task rank
+One or more task ranks to use this configuration.
+Multiple values may be comma separated.
+Ranges may be indicated with two numbers separated with a '\-'.
+.TP
+Executable
+The name of the program to execute.
+May be fully qualified pathname if desired.
+.TP
+Arguments
+Program arguments.
+The expression "%t" will be replaced with the task's number.
+The expression "%o" will be replaced with the task's offset within
+this range (e.g. a configured task rank value of "1-5" would
+have offset values of "0-4").
+Single quotes may be used to avoid having the enclosed values interpretted.
+This field is optional.
+.PP
+For example:
+.nf
+###################################################################
+# srun multiple program configuration file
+#
+# srun -n8 -l --multi-prog silly.conf
+###################################################################
+4-6       hostname
+1,7       echo  task:%t
+0,2-3     echo  offset:%o
+
+$ srun -n8 -l --multi-prog silly.conf
+0: offset:0
+1: task:1
+2: offset:1
+3: offset:2
+4: linux15.llnl.gov
+5: linux16.llnl.gov
+6: linux17.llnl.gov
+7: task:7
+
+.fi
+
 
 .SH "EXAMPLES"
 This simple example demonstrates the execution of the command \fBhostname\fR
