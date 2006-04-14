@@ -65,6 +65,7 @@
 #include "src/srun/sigstr.h"
 #include "src/srun/attach.h"
 #include "src/srun/allocate.h"
+#include "src/srun/multi_prog.h"
 
 #include "src/common/xstring.h"
 
@@ -193,6 +194,8 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 	/* if all tasks are now accounted for, set the debug state and
 	   call the Breakpoint */
 	if (tasks_recorded == job->step_layout->num_tasks) {
+		if (opt.multi_prog)
+			set_multi_name(ntasks);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint();
 		if (opt.debugger_test)

@@ -89,7 +89,7 @@ Run a job with different programs and different arguments for
 each task. In this case, the executable program specified is 
 actually a configuration file specifying the executable and 
 arguments for each task. See \fBMULTIPLE PROGRAM CONFIGURATION\fR
-below for details on the configuration file contents.
+below for details on the configuration file contents. 
 
 .TP
 \fB\-\-begin\fR=\fItime\fR
@@ -1034,6 +1034,8 @@ Task rank
 One or more task ranks to use this configuration.
 Multiple values may be comma separated.
 Ranges may be indicated with two numbers separated with a '\-'.
+To indicate all tasks, specify a rank of '*' (in which case you probably 
+should not be using this option).
 .TP
 Executable
 The name of the program to execute.
