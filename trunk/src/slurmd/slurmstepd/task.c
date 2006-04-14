@@ -341,7 +341,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	log_fini();
 
 	if (job->multi_prog)
-		task_exec(job->argv[0], job->env);
+		task_exec(job->argv[1], job->env);
 	else
 		execve(job->argv[0], job->argv, job->env);
 

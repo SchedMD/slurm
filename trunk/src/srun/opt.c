@@ -1529,10 +1529,10 @@ static void _load_multi(int *argc, char **argv)
 			data_read += i;
 	}
 	close(config_fd);
-	for (i=0; i<*argc; i++)
+	for (i=1; i<*argc; i++)
 		xfree(argv[i]);
-	argv[0] = data_buf;
-	*argc = 1;
+	argv[1] = data_buf;
+	*argc = 2;
 }
 
 /*
