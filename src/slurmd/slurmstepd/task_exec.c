@@ -2,12 +2,9 @@
  *  task_exec.c - execute program according to task rank
  *
  *  NOTE: This code could be moved to srun if desired. That would mean the 
- *  logic would be executed once per job instead of once per task. It would 
- *  also eliminate the need for the configurate file on every compute node.
- *  This would also permit running a debugger on a heterogeneous collection 
- *  of programs (if it can handle this). 
- *  Doing so would necessite modifying the task launch RPC to send not one 
- *  executable name and argument list, but a set of them. 
+ *  logic would be executed once per job instead of once per task. This would
+ *  require substantial modifications to the srun, slurmd, slurmstepd, and
+ *  communications logic; so we'll stick with the simple solution for now. 
  *****************************************************************************
  *  Produced at National University of Defense Technology (China)
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>
