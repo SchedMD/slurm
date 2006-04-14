@@ -996,7 +996,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
-	jobacct = jobacct_g_alloc();
+	jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
 	jobacct_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
 	
 	/*

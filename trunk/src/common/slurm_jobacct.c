@@ -61,9 +61,9 @@ extern FILE * JOBACCT_LOGFILE;
  * at the end of the structure.
  */
 typedef struct slurm_jobacct_ops {
-	int (*jobacct_init_struct)    (jobacctinfo_t *jobacct);
-	jobacctinfo_t *(*jobacct_alloc)();
-	int (*jobacct_free)           (jobacctinfo_t *jobacct);
+	int (*jobacct_init_struct)    (jobacctinfo_t *jobacct, uint16_t tid);
+	jobacctinfo_t *(*jobacct_alloc)(uint16_t tid);
+	void (*jobacct_free)          (jobacctinfo_t *jobacct);
 	int (*jobacct_setinfo)        (jobacctinfo_t *jobacct, 
 				       enum jobacct_data_type type, 
 				       void *data);
@@ -82,7 +82,10 @@ typedef struct slurm_jobacct_ops {
 	int (*jobacct_step_complete)  (struct step_record *step);
 	int (*jobacct_suspend)        (struct job_record *job_ptr);
 	int (*jobacct_startpoll)      (int frequency);
-	int (*jobacct_endpoll)	      (slurmd_job_t *job);
+	int (*jobacct_endpoll)	      ();
+	int (*jobacct_add_task)       (pid_t pid, uint16_t tid);
+	jobacctinfo_t *(*jobacct_stat_task)(pid_t pid);
+	int (*jobacct_remove_task)    (pid_t pid);
 	void (*jobacct_suspendpoll)   ();
 } slurm_jobacct_ops_t;
 
@@ -181,6 +184,9 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
 		"jobacct_p_suspend_slurmctld",
 		"jobacct_p_startpoll",
 		"jobacct_p_endpoll",
+		"jobacct_p_add_task",
+		"jobacct_p_stat_task",
+		"jobacct_p_remove_task",
 		"jobacct_p_suspendpoll"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -268,7 +274,7 @@ static int _slurm_jobacct_fini(void)
 	return rc;
 }
 
-extern int jobacct_g_init_struct(jobacctinfo_t *jobacct)
+extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid)
 {
 	int retval = SLURM_SUCCESS;
 	
@@ -278,13 +284,12 @@ extern int jobacct_g_init_struct(jobacctinfo_t *jobacct)
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
 		retval = (*(g_jobacct_context->ops.jobacct_init_struct))
-			(jobacct);
-	
+			(jobacct, tid);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }
 
-extern jobacctinfo_t *jobacct_g_alloc()
+extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid)
 {
 	jobacctinfo_t *jobacct = NULL;
 
@@ -293,25 +298,21 @@ extern jobacctinfo_t *jobacct_g_alloc()
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))();
-	
+		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))(tid);	
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return jobacct;
 }
 
-extern int jobacct_g_free(jobacctinfo_t *jobacct)
+extern void jobacct_g_free(jobacctinfo_t *jobacct)
 {
-	int retval = SLURM_SUCCESS;
-	
 	if (_slurm_jobacct_init() < 0)
-		return SLURM_ERROR;
+		return;
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		retval = (*(g_jobacct_context->ops.jobacct_free))(jobacct);
-	
+		(*(g_jobacct_context->ops.jobacct_free))(jobacct);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
-	return retval;
+	return;
 }
 
 extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
@@ -503,7 +504,7 @@ extern int jobacct_g_startpoll(int frequency)
 	return retval;
 }
 
-extern int jobacct_g_endpoll(slurmd_job_t *job)
+extern int jobacct_g_endpoll()
 {
 	int retval = SLURM_SUCCESS;
 	if (_slurm_jobacct_init() < 0)
@@ -511,7 +512,47 @@ extern int jobacct_g_endpoll(slurmd_job_t *job)
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		retval = (*(g_jobacct_context->ops.jobacct_endpoll))(job);
+		retval = (*(g_jobacct_context->ops.jobacct_endpoll))();
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern int jobacct_g_add_task(pid_t pid, uint16_t tid)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_add_task))
+			(pid, tid);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+}
+
+extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	if (_slurm_jobacct_init() < 0)
+		return jobacct;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		jobacct = (*(g_jobacct_context->ops.jobacct_stat_task))(pid);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return jobacct;
+}
+
+extern int jobacct_g_remove_task(pid_t pid)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_remove_task))(pid);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }

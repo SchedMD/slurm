@@ -87,19 +87,19 @@ const uint32_t plugin_version = 100;
 /*
  * The following routines are called by slurmd
  */
-int jobacct_p_init_struct(struct jobacctinfo *jobacct)
+int jobacct_p_init_struct(struct jobacctinfo *jobacct, uint16_t tid)
 {
 	return SLURM_SUCCESS;
 }
 
 struct jobacctinfo *jobacct_p_alloc()
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
-int jobacct_p_free(struct jobacctinfo *jobacct)
+void jobacct_p_free(struct jobacctinfo *jobacct)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
@@ -148,7 +148,7 @@ int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 
 int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
 {
-	return SLURM_SUCCESS;
+	return  SLURM_SUCCESS;
 }
 
 int jobacct_p_step_start_slurmctld(struct step_record *step)
@@ -174,7 +174,22 @@ int jobacct_p_startpoll(int frequency)
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_endpoll(slurmd_job_t *job)
+int jobacct_p_endpoll()
+{
+	return SLURM_SUCCESS;
+}
+
+int jobacct_p_add_task(pid_t pid, uint16_t tid)
+{
+	return SLURM_SUCCESS;
+}
+
+struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
+{
+	return NULL;
+}
+
+int jobacct_p_remove_task(pid_t pid)
 {
 	return SLURM_SUCCESS;
 }

@@ -673,23 +673,23 @@ void print_blockid(type_t type, void *object)
 	} 
 }
 
-void print_psize(type_t type, void *object)
+void print_pages(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
-		printf("%10s", "Psize");
+		printf("%10s", "Pages");
 		break;
 	case UNDERSCORE:
 		printf("%10s", "------");
 		break;
 	case JOB:
-		printf("%10.d", job->psize);
+		printf("%10.d", job->sacct.max_pages);
 		break;
 	case JOBSTEP:
-		printf("%10d", step->psize);
+		printf("%10d", step->sacct.max_pages);
 		break;
 	} 
 }
@@ -872,10 +872,31 @@ void print_vsize(type_t type, void *object)
 		printf("%10s", "------");
 		break;
 	case JOB:
-		printf("%10d", job->vsize);
+		printf("%10d", job->sacct.max_vsize);
 		break;
 	case JOBSTEP:
-		printf("%10d", step->vsize);
+		printf("%10d", step->sacct.max_vsize);
+		break;
+	} 
+}
+
+void print_cputime(type_t type, void *object)
+{ 
+	job_rec_t *job = (job_rec_t *)object;
+	step_rec_t *step = (step_rec_t *)object;
+
+	switch(type) {
+	case HEADLINE:
+		printf("%10s", "SystemTime");
+		break;
+	case UNDERSCORE:
+		printf("%10s", "------");
+		break;
+	case JOB:
+		printf("%10.2f", job->sacct.min_cpu);
+		break;
+	case JOBSTEP:
+		printf("%10.2f", step->sacct.min_cpu);
 		break;
 	} 
 }

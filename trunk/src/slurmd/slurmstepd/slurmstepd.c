@@ -174,7 +174,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
 	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
 	step_complete.bits = bit_alloc(step_complete.children);
-	step_complete.jobacct = jobacct_g_alloc();
+	step_complete.jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
 	pthread_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
@@ -323,7 +323,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		break;
 	}
 	job->jmgr_pid = getpid();
-	job->jobacct = jobacct_g_alloc();
+	job->jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
 	
 	return job;
 }

@@ -504,14 +504,11 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
-	msg.jobacct = jobacct_g_alloc();
+	msg.jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
 	/************* acct stuff ********************/
 	jobacct_g_aggregate(step_complete.jobacct, job->jobacct);
 	jobacct_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
 			  msg.jobacct);
-	/* There might be more steps that come through. we don't want to use
-	   data twice */
-	jobacct_g_init_struct(step_complete.jobacct);
 	/*********************************************/	
 	memset(&req, 0, sizeof(req));
 	req.msg_type = REQUEST_STEP_COMPLETE;
@@ -701,7 +698,7 @@ job_manager(slurmd_job_t *job)
 	_send_launch_resp(job, 0);
 
 	_wait_for_all_tasks(job);
-	jobacct_g_endpoll(job);
+	jobacct_g_endpoll();
 		
 	job->state = SLURMSTEPD_STEP_ENDING;
 
@@ -837,6 +834,8 @@ _fork_all_tasks(slurmd_job_t *job)
 			(unsigned long) job->task[i]->gtid, 
 			(unsigned long) pid); 
 
+		jobacct_g_add_task(pid, job->task[i]->gtid);
+
 		job->task[i]->pid = pid;
 		if (i == 0)
 			job->pgid = pid;
@@ -947,7 +946,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	int status;
 	pid_t pid;
 	int completed = 0;
-	jobacctinfo_t *jobacct = jobacct_g_alloc();
+	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
 	do {
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
@@ -969,8 +968,10 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		}
 
 		/************* acct stuff ********************/
+		jobacct = jobacct_g_stat_task(pid);
 		jobacct_g_setinfo(jobacct, JOBACCT_DATA_RUSAGE, &rusage);
 		jobacct_g_aggregate(job->jobacct, jobacct);
+		jobacct_g_remove_task(pid);
 		/*********************************************/	
 	
 		/* See if the pid matches that of one of the tasks */
@@ -1013,7 +1014,6 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	} while ((pid > 0) && !waitflag);
 
 done:
-	jobacct_g_free(jobacct);
 	return completed;
 }
 	

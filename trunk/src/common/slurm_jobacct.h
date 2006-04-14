@@ -56,9 +56,9 @@
 typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
 
 /* common for both slurmctld and slurmstepd */
-extern int jobacct_g_init_struct(jobacctinfo_t *jobacct);
-extern jobacctinfo_t *jobacct_g_alloc();
-extern int jobacct_g_free(jobacctinfo_t *jobacct);
+extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid);
+extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid);
+extern void jobacct_g_free(jobacctinfo_t *jobacct);
 extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
 			     enum jobacct_data_type type, void *data);
 extern int jobacct_g_getinfo(jobacctinfo_t *jobacct, 
@@ -78,7 +78,10 @@ extern int jobacct_g_suspend_slurmctld(struct job_record *job_ptr);
 
 /*functions used in slurmstepd */
 extern int jobacct_g_startpoll(int frequency);
-extern int jobacct_g_endpoll(slurmd_job_t *job);
+extern int jobacct_g_endpoll();
+extern int jobacct_g_add_task(pid_t pid, uint16_t tid);
+extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid);
+extern int jobacct_g_remove_task(pid_t pid);
 extern void jobacct_g_suspendpoll();
 
 #endif /*__SLURM_JOBACCT_H__*/

@@ -166,8 +166,8 @@ fields_t fields[] = {{"cpu", print_cpu},
 		     {"outblocks", print_outblocks}, 
 		     {"partition", print_partition}, 
 		     {"blockid", print_blockid}, 
-		     {"psize", print_psize}, 
 		     {"rss", print_rss}, 
+		     {"pages", print_pages}, 
 		     {"status", print_status}, 
 		     {"submitted", print_submitted}, 
 		     {"systemcpu", print_systemcpu}, 
@@ -175,6 +175,7 @@ fields_t fields[] = {{"cpu", print_cpu},
 		     {"user", print_user}, 
 		     {"usercpu", print_usercpu}, 
 		     {"vsize", print_vsize}, 
+		     {"cputime", print_cputime}, 
 		     {NULL, NULL}};
 
 long input_error = 0;		/* Muddle through bad data, but complain! */

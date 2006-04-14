@@ -121,8 +121,18 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_NSIGNALS,
 	F_NVCSW,
 	F_NIVCSW,
-	F_VSIZE,
-	F_PSIZE,
+	F_MAX_VSIZE,
+	F_MAX_VSIZE_TASK,
+	F_AVE_VSIZE,
+	F_MAX_RSS,
+	F_MAX_RSS_TASK,
+	F_AVE_RSS,
+	F_MAX_PAGES,
+	F_MAX_PAGES_TASK,
+	F_AVE_PAGES,
+	F_MIN_CPU,
+	F_MIN_CPU_TASK,
+	F_AVE_CPU,
 	F_STEPNAME,
 	F_STEPNODES,
 	JOB_STEP_LENGTH
@@ -163,6 +173,21 @@ typedef struct header {
 	uint16_t rec_type;
 } acct_header_t;
 
+typedef struct sacct_struct {
+       uint32_t max_vsize; 
+       uint16_t max_vsize_task;
+       float ave_vsize;
+       uint32_t max_rss;
+       uint16_t max_rss_task;
+       float ave_rss;
+       uint32_t max_pages;
+       uint16_t max_pages_task;
+       float ave_pages;
+       float min_cpu;
+       uint16_t min_cpu_task;
+       float ave_cpu;	
+} sacct_t;
+
 typedef struct job_rec {
 	uint32_t	job_start_seen,		/* useful flags */
 		job_step_seen,
@@ -180,9 +205,8 @@ typedef struct job_rec {
 	uint32_t elapsed;
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
-	uint32_t vsize;
-	uint32_t psize;
 	struct rusage rusage;
+	sacct_t sacct;
 	List    steps;
 } job_rec_t;
 
@@ -198,9 +222,8 @@ typedef struct step_rec {
 	uint32_t	elapsed;
 	uint32_t	tot_cpu_sec;
 	uint32_t        tot_cpu_usec;
-	uint32_t	vsize;
-	uint32_t        psize;
 	struct rusage rusage;
+	sacct_t sacct;
 } step_rec_t;
 
 typedef struct selected_step_t {
@@ -284,7 +307,7 @@ void print_nvcsw(type_t type, void *object);
 void print_outblocks(type_t type, void *object);
 void print_partition(type_t type, void *object);
 void print_blockid(type_t type, void *object);
-void print_psize(type_t type, void *object);
+void print_pages(type_t type, void *object);
 void print_rss(type_t type, void *object);
 void print_status(type_t type, void *object);
 void print_submitted(type_t type, void *object);
@@ -293,6 +316,7 @@ void print_uid(type_t type, void *object);
 void print_user(type_t type, void *object);
 void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
+void print_cputime(type_t type, void *object);
 
 /* options.c */
 int decode_status_char(char *status);
