@@ -1024,6 +1024,8 @@ void do_dump(void)
 		if (params.opt_uid>=0)
 			if (job->header.uid != params.opt_uid)
 				continue;
+		if(job->sacct.min_cpu == NO_VAL)
+			job->sacct.min_cpu = 0;
 		/* JOB_START */
 		if (params.opt_jobstep_list == NULL) {
 			if (!job->job_start_seen && job->job_step_seen) {
@@ -1656,6 +1658,8 @@ void do_list(void)
 			continue;
 		if (params.opt_gid >= 0 && (job->header.gid != params.opt_gid))
 			continue;
+		if(job->sacct.min_cpu == NO_VAL)
+			job->sacct.min_cpu = 0;
 		if (do_jobs) {
 			if (params.opt_state_list) {
 				if(!selected_status[job->status])

@@ -55,7 +55,7 @@
 
 #define BRIEF_FIELDS "jobstep,status,exitcode"
 #define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,exitcode"
-#define LONG_FIELDS "jobstep,jobname,partition,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,exitcode"
+#define LONG_FIELDS "jobstep,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
@@ -275,6 +275,7 @@ void process_start(char *f[], int lc);
 void process_step(char *f[], int lc);
 void process_suspend(char *f[], int lc);
 void process_terminated(char *f[], int lc);
+void convert_num(float num, char *buf);
 void destroy_acct_header(void *object);
 void destroy_job(void *object);
 void destroy_step(void *object);

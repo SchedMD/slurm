@@ -30,11 +30,10 @@
 #define FORMAT_STRING_SIZE 32
 
 char *_decode_status(int status);
-char *_elapsed_time(long secs, long usecs);
+void _elapsed_time(long secs, long usecs, char *str);
 
-char *_elapsed_time(long secs, long usecs)
+void _elapsed_time(long secs, long usecs, char *str)
 {
-	static char str[FORMAT_STRING_SIZE];
 	long	days, hours, minutes, seconds;
 	
 	while (usecs >= 1E6) {
@@ -59,8 +58,6 @@ char *_elapsed_time(long secs, long usecs)
 		snprintf(str, FORMAT_STRING_SIZE,
 			 "%ld:%2.2ld",
 		         minutes, seconds);
-
-	return str;
 }
 
 void print_fields(type_t type, void *object)
@@ -81,7 +78,8 @@ void print_cpu(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char str[FORMAT_STRING_SIZE];
+	
 	switch(type) {
 	case HEADLINE:
 		printf("%15s", "Cpu");
@@ -90,14 +88,12 @@ void print_cpu(type_t type, void *object)
 		printf("%15s", "---------------");
 		break;
 	case JOB:
-		printf("%15s",
-		       _elapsed_time(job->tot_cpu_sec,
-				     job->tot_cpu_usec));
+		_elapsed_time(job->tot_cpu_sec, job->tot_cpu_usec, str);
+		printf("%15s", str);
 		break;
 	case JOBSTEP:
-		printf("%15s",
-		       _elapsed_time(step->tot_cpu_sec,
-				     step->tot_cpu_usec));
+		_elapsed_time(step->tot_cpu_sec, step->tot_cpu_usec, str);
+		printf("%15s", str);
 		break;
 	} 
 }
@@ -106,6 +102,7 @@ void print_elapsed(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
+	char str[FORMAT_STRING_SIZE];
 
 	switch(type) {
 	case HEADLINE:
@@ -115,10 +112,12 @@ void print_elapsed(type_t type, void *object)
 		printf("%15s", "---------------");
 		break;
 	case JOB:
-		printf("%15s", _elapsed_time(job->elapsed,0));
+		_elapsed_time(job->elapsed, 0, str);
+		printf("%15s", str);
 		break;
 	case JOBSTEP:
-		printf("%15s", _elapsed_time(step->elapsed,0));
+		_elapsed_time(step->elapsed, 0, str);
+		printf("%15s", str);
 		break;
 	} 
 }
@@ -198,7 +197,9 @@ void print_idrss(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	struct rusage rusage;
+	char outbuf[FORMAT_STRING_SIZE];
+	
 	switch(type) {
 	case HEADLINE:
 		printf("%8s", "Idrss");
@@ -207,12 +208,14 @@ void print_idrss(type_t type, void *object)
 		printf("%8s", "------");
 		break;
 	case JOB:
-		printf("%8ld", job->rusage.ru_idrss);
+		rusage = job->rusage;
 		break;
 	case JOBSTEP:
-		printf("%8ld", step->rusage.ru_idrss);
+		rusage = step->rusage;
 		break;
 	} 
+	convert_num((float)rusage.ru_idrss, outbuf);
+	printf("%8s", outbuf);
 }
 
 void print_inblocks(type_t type, void *object)
@@ -668,19 +671,41 @@ void print_pages(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char outbuf[FORMAT_STRING_SIZE];
+	char buf1[FORMAT_STRING_SIZE];
+	char buf2[FORMAT_STRING_SIZE];
+	sacct_t sacct;
+	
 	switch(type) {
 	case HEADLINE:
-		printf("%10s", "Pages");
+		printf("%-22s", "MaxPages/Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%10s", "------");
+		printf("%-22s", "----------------------");
 		break;
 	case JOB:
-		printf("%10.d", job->sacct.max_pages);
+		sacct = job->sacct;
+		convert_num((float)sacct.max_pages, buf1);
+		if(job->track_steps)
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
+		else {
+			convert_num((float)sacct.ave_pages, buf2);
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+				 buf1,
+				 sacct.max_pages_task, 
+				 buf2);
+		}
+		printf("%-22s", outbuf);
 		break;
 	case JOBSTEP:
-		printf("%10d", step->sacct.max_pages);
+		sacct = step->sacct;
+		convert_num((float)sacct.max_pages, buf1);
+		convert_num((float)sacct.ave_pages, buf2);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+			 buf1,
+			 sacct.max_pages_task, 
+			 buf2);
+		printf("%-22s", outbuf);
 		break;
 	} 
 }
@@ -689,19 +714,41 @@ void print_rss(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char outbuf[FORMAT_STRING_SIZE];
+	char buf1[FORMAT_STRING_SIZE];
+	char buf2[FORMAT_STRING_SIZE];
+	sacct_t sacct;
+	
 	switch(type) {
 	case HEADLINE:
-		printf("%22s", "MAX_RSS/Task - AVE");
+		printf("%-22s", "MaxRSS/Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%22s", "----------------------");
+		printf("%-22s", "----------------------");
 		break;
 	case JOB:
-		printf("%8ld", job->rusage.ru_maxrss);
+		sacct = job->sacct;
+		convert_num((float)sacct.max_rss, buf1);
+		if(job->track_steps)
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
+		else {
+			convert_num((float)sacct.ave_rss, buf2);
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+				 buf1,
+				 sacct.max_rss_task, 
+				 buf2);
+		}
+		printf("%-22s", outbuf);
 		break;
 	case JOBSTEP:
-		printf("%8ld", step->rusage.ru_maxrss);
+		sacct = step->sacct;
+		convert_num((float)sacct.max_rss, buf1);
+		convert_num((float)sacct.ave_rss, buf2);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+			 buf1,
+			 sacct.max_rss_task, 
+			 buf2);
+		printf("%-22s", outbuf);
 		break;
 	} 
 }
@@ -752,6 +799,7 @@ void print_systemcpu(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
+	char str[FORMAT_STRING_SIZE];
 
 	switch(type) {
 	case HEADLINE:
@@ -761,14 +809,14 @@ void print_systemcpu(type_t type, void *object)
 		printf("%15s", "---------------");
 		break;
 	case JOB:
-		printf("%15s",
-		       _elapsed_time(job->rusage.ru_stime.tv_sec,
-				     job->rusage.ru_stime.tv_usec));
+		_elapsed_time(job->rusage.ru_stime.tv_sec,
+			      job->rusage.ru_stime.tv_usec, str);
+		printf("%15s", str);
 		break;
 	case JOBSTEP:
-		printf("%15s",
-		       _elapsed_time(step->rusage.ru_stime.tv_sec,
-				     step->rusage.ru_stime.tv_usec));
+		_elapsed_time(step->rusage.ru_stime.tv_sec,
+			      step->rusage.ru_stime.tv_usec, str);
+		printf("%15s", str);
 		break;
 	} 
 
@@ -828,7 +876,8 @@ void print_usercpu(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char str[FORMAT_STRING_SIZE];
+	
 	switch(type) {
 	case HEADLINE:
 		printf("%15s", "UserCpu");
@@ -837,14 +886,14 @@ void print_usercpu(type_t type, void *object)
 		printf("%15s", "---------------");
 		break;
 	case JOB:
-		printf("%15s",
-		       _elapsed_time(job->rusage.ru_utime.tv_sec,
-				     job->rusage.ru_utime.tv_usec));
+		_elapsed_time(job->rusage.ru_utime.tv_sec,
+			      job->rusage.ru_utime.tv_usec, str);
+		printf("%15s", str);
 		break;
 	case JOBSTEP:
-		printf("%15s",
-		       _elapsed_time(step->rusage.ru_utime.tv_sec,
-				     step->rusage.ru_utime.tv_usec));
+		_elapsed_time(step->rusage.ru_utime.tv_sec,
+			      step->rusage.ru_utime.tv_usec, str);
+		printf("%15s", str);
 		break;
 	} 
 
@@ -854,19 +903,41 @@ void print_vsize(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char outbuf[FORMAT_STRING_SIZE];
+	char buf1[FORMAT_STRING_SIZE];
+	char buf2[FORMAT_STRING_SIZE];
+	sacct_t sacct;
+	
 	switch(type) {
 	case HEADLINE:
-		printf("%10s", "Vsize");
+		printf("%-22s", "MaxVSIZE/Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%10s", "------");
+		printf("%-22s", "----------------------");
 		break;
 	case JOB:
-		printf("%10d", job->sacct.max_vsize);
+		sacct = job->sacct;
+		convert_num((float)sacct.max_vsize, buf1);
+		if(job->track_steps)
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
+		else {
+			convert_num((float)sacct.ave_vsize, buf2);
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+				 buf1,
+				 sacct.max_vsize_task, 
+				 buf2);
+		}
+		printf("%-22s", outbuf);
 		break;
 	case JOBSTEP:
-		printf("%10d", step->sacct.max_vsize);
+		sacct = step->sacct;
+		convert_num((float)sacct.max_vsize, buf1);
+		convert_num((float)sacct.ave_vsize, buf2);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+			 buf1,
+			 sacct.max_vsize_task, 
+			 buf2);
+		printf("%-22s", outbuf);
 		break;
 	} 
 }
@@ -875,21 +946,44 @@ void print_cputime(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char outbuf[FORMAT_STRING_SIZE];
+	char buf1[FORMAT_STRING_SIZE];
+	char buf2[FORMAT_STRING_SIZE];
+	sacct_t sacct;
+	
 	switch(type) {
 	case HEADLINE:
-		printf("%15s", "SystemTime");
+		printf("%-22s", "MinCPUtime/Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%15s", "----------");
+		printf("%-22s", "----------------------");
 		break;
 	case JOB:
-		printf("%15s",
-		       _elapsed_time((int)job->sacct.min_cpu, 0));
+		sacct = job->sacct;
+		_elapsed_time((int)sacct.min_cpu, 0, buf1);
+		if(job->track_steps)
+			snprintf(outbuf, FORMAT_STRING_SIZE, 
+				 "%s/- - -", buf1);
+		else {
+			_elapsed_time((int)sacct.ave_cpu, 0, buf2);
+			snprintf(outbuf, FORMAT_STRING_SIZE, 
+				 "%s/%u - %s", 
+				 buf1,
+				 sacct.min_cpu_task, 
+				 buf2);
+		}
+		printf("%-22s", outbuf);
 		break;
 	case JOBSTEP:
-		printf("%15s",
-		       _elapsed_time((int)step->sacct.min_cpu, 0));
+		sacct = step->sacct;
+		_elapsed_time((int)sacct.min_cpu, 0, buf1);
+		_elapsed_time((int)sacct.ave_cpu, 0, buf2);
+		snprintf(outbuf, FORMAT_STRING_SIZE, 
+			 "%s/%u - %s", 
+			 buf1,
+			 sacct.min_cpu_task, 
+			 buf2);
+		printf("%-22s", outbuf);
 		break;
 	} 
 }
