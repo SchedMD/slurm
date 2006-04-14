@@ -160,6 +160,7 @@ typedef struct slurmd_job {
 	pid_t          pgid;         /* process group id for tasks          */
 
 	uint16_t       task_flags; 
+	uint16_t       multi_prog;
 	env_t          *envtp;
 	uint32_t       cont_id;
 

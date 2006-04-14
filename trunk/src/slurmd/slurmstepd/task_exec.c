@@ -197,14 +197,13 @@ _build_path(char* fname, char **prog_env)
 }
 
 extern int
-task_exec(char *fname, char **prog_env)
+task_exec(char *config_data, char **prog_env)
 {
-	FILE* conf_file;
-	char line[BUF_SIZE];
+	char *line;
 	int line_num = 0;
 	int task_rank, task_offset;
-	char* p, *s;
-	char* rank_spec, *prog_spec, *args_spec;
+	char* p, *s, *ptrptr;
+	char* rank_spec, *prog_spec = NULL, *args_spec;
 	int prog_argc;
 	char* prog_argv[(BUF_SIZE - 4)/ 2];
 
@@ -212,18 +211,18 @@ task_exec(char *fname, char **prog_env)
 	if (task_rank < 0)
 		return -1;
 
-	conf_file = fopen (fname, "r");
-	if (conf_file == NULL) {
-		error("Unable to open config_file \"%s\": %m", fname);
-		return -1;
-	}
-	
-	while (fgets (line, BUF_SIZE, conf_file) != NULL) {
+	line = strtok_r(config_data, "\n", &ptrptr);
+	while (line) {
+		if (line_num > 0)
+			line = strtok_r(NULL, "\n", &ptrptr);
+		if (line == NULL) {
+			error("Could not identify executable program for this task");
+			return -1;
+		}
 		line_num ++;
 		if (strlen (line) >= (BUF_SIZE - 1)) {
-			error ("Line %d of configuration file %s too long", 
-				line_num, fname);
-			fclose (conf_file);
+			error ("Line %d of configuration file too long", 
+				line_num);
 			exit (-1);
 		}
 		
@@ -335,7 +334,6 @@ task_exec(char *fname, char **prog_env)
 		}
 	}
 
-	fclose (conf_file);
 	error("Program for task rank %d not specified.", task_rank);
 	return -1;
 }

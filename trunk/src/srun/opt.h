@@ -80,7 +80,9 @@ enum io_t {
 
 typedef struct srun_options {
 
-	char *progname;		/* argv[0] of this program 	*/
+	char *progname;		/* argv[0] of this program or 
+				 * configuration file if multi_prog */
+	bool multi_prog;	/* multiple programs to execute */
 	char user[MAX_USERNAME];/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/

@@ -72,6 +72,7 @@
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
+#include "src/slurmd/slurmstepd/task_exec.h"
 
 /*
  * Static prototype definitions.
@@ -338,8 +339,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 
 	log_fini();
-	
-	execve(job->argv[0], job->argv, job->env);
+
+	if (job->multi_prog)
+		task_exec(job->argv[0], job->env);
+	else
+		execve(job->argv[0], job->argv, job->env);
 
 	/* 
 	 * error() and clean up if execve() returns:

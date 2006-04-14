@@ -356,6 +356,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  *tasks_to_launch;
 	uint16_t  envc;
 	uint16_t  argc;
+	uint16_t  multi_prog;
 	uint32_t  *cpus_allocated;
 	char    **env;
 	char    **argv;
@@ -406,6 +407,7 @@ typedef struct spawn_task_request_msg {
 	uint16_t  envc;
 	uint16_t  argc;
 	uint16_t  cpus_allocated;
+	uint16_t  multi_prog;
 	char    **env;
 	char    **argv;
 	char     *cwd;
