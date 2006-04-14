@@ -88,6 +88,18 @@ typedef enum {
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;
 
+/* For Message thread */
+typedef struct forked_msg_pipe {
+	int msg_pipe[2];
+	int pid;
+} forked_msg_pipe_t;
+
+typedef struct forked_message {
+	forked_msg_pipe_t *          par_msg;
+	forked_msg_pipe_t *          msg_par;
+	enum job_states	*	     job_state;
+} forked_msg_t;
+
 typedef struct srun_job {
 	slurm_step_layout_t *step_layout; /* holds info about how the task is 
 					     laid out */

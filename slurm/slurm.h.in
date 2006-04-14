@@ -232,8 +232,18 @@ enum jobacct_data_type {
 	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t */
 	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
 	JOBACCT_DATA_RUSAGE,	/* data-> struct rusage */
-	JOBACCT_DATA_PSIZE,	/* data-> uint32_t psize */
-	JOBACCT_DATA_VSIZE	/* data-> uint32_t vsize */
+	JOBACCT_DATA_MAX_VSIZE,	/* data-> uint32_t vsize */
+	JOBACCT_DATA_MAX_VSIZE_TASK,	/* data-> uint32_t vsize */
+	JOBACCT_DATA_TOT_VSIZE,	/* data-> uint32_t vsize */
+	JOBACCT_DATA_MAX_RSS,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MAX_RSS_TASK,	/* data-> uint32_t psize */
+	JOBACCT_DATA_TOT_RSS,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MAX_PAGES,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MAX_PAGES_TASK,	/* data-> uint32_t psize */
+	JOBACCT_DATA_TOT_PAGES,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MIN_CPU_TASK,	/* data-> uint32_t psize */
+	JOBACCT_DATA_TOT_CPU	/* data-> uint32_t psize */
 };
 
 /* Possible task distributions across the nodes */
@@ -384,18 +394,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* SLURM internal use only */
 } job_desc_msg_t;
-
-/* For Message thread */
-typedef struct forked_msg_pipe {
-	int msg_pipe[2];
-	int pid;	
-} forked_msg_pipe_t;
-
-typedef struct forked_message {
-	forked_msg_pipe_t *          par_msg;
-	forked_msg_pipe_t *          msg_par;
-	enum job_states	*	     job_state;	
-} forked_msg_t;
 
 typedef struct job_info {
 	uint32_t job_id;	/* job ID */

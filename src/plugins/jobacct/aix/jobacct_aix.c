@@ -31,8 +31,6 @@
 #include "src/plugins/jobacct/common/jobacct_common.h"
 
 
-#define BUFFER_SIZE 4096
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -68,7 +66,7 @@ const char plugin_type[] = "jobacct/linux";
 const uint32_t plugin_version = 100;
 
 /* Other useful declarations */
-
+#if 0
 typedef struct prec {	/* process record */
 	pid_t	pid;
 	pid_t	ppid;
@@ -85,24 +83,24 @@ static void _get_process_data(pid_t pid);
 static int _get_process_data_line(FILE *in, prec_t *prec);
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
-
+#endif
 /*
  * The following routine is called by the slurmd mainline
  */
 
-int jobacct_p_init_struct(struct jobacctinfo *jobacct)
+int jobacct_p_init_struct(struct jobacctinfo *jobacct, uint16_t tid)
 {
-	return common_init_struct(jobacct);
+	return common_init_struct(jobacct, tid);
 }
 
 struct jobacctinfo *jobacct_p_alloc()
 {
-	return common_alloc();
+	return common_alloc_jobacct();
 }
 
-int jobacct_p_free(struct jobacctinfo *jobacct)
+void jobacct_p_free(struct jobacctinfo *jobacct)
 {
-	return common_free(jobacct);
+	common_free_jobacct(jobacct);
 }
 
 int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
@@ -168,7 +166,6 @@ int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
 {
 	return common_suspend_slurmctld(job_ptr);
 }
-
 /*
  * jobacct_startpoll() is called when the plugin is loaded by
  * slurmd, before any other functions are called.  Put global
@@ -179,11 +176,13 @@ int jobacct_p_startpoll(int frequency)
 {
 	int rc = SLURM_SUCCESS;
 	
+#if 0
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
-	
+#endif	
 	debug("jobacct AIX plugin loaded");
 	return rc;
+#if 0
 	/* FIXME!!!!!!!!!!!!!!!!!!!!
 	   This was written for linux systems doesn't to anything on AIX */
 
@@ -215,13 +214,28 @@ int jobacct_p_startpoll(int frequency)
 	else 
 		debug3("jobacct LINUX dynamic logging enabled");
 	pthread_attr_destroy(&attr);
-	
+#endif
 	return rc;
 }
 
-int jobacct_p_endpoll(slurmd_job_t *job)
+int jobacct_p_endpoll()
 {
-	return common_endpoll(job);
+	return common_endpoll();
+}
+
+int jobacct_p_add_task(pid_t pid, uint16_t tid)
+{
+	return common_add_task(pid, tid);
+}
+
+struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
+{
+	return common_stat_task(pid);
+}
+
+int jobacct_p_remove_task(pid_t pid)
+{
+	return common_remove_task(pid);
 }
 
 void jobacct_p_suspendpoll()
@@ -229,6 +243,7 @@ void jobacct_p_suspendpoll()
 	common_suspendpoll();
 }
 
+#if 0
 /* 
  * _get_offspring_data() -- collect memory usage data for the offspring
  *
@@ -249,21 +264,9 @@ void jobacct_p_suspendpoll()
  *
  * THREADSAFE! Only one thread ever gets here.
  */
-static void
-_get_offspring_data(prec_t *ancestor, pid_t pid) {
-	
-	ListIterator itr;
-	prec_t *prec = NULL;
+static void _get_offspring_data(prec_t *ancestor, pid_t pid)
+{
 
-	itr = list_iterator_create(prec_list);
-	while((prec = list_next(itr))) {
-		if (prec->ppid == pid) {
-			_get_offspring_data(ancestor, prec->pid);
-			ancestor->psize += prec->psize;
-			ancestor->vsize += prec->vsize;
-		}
-	}
-	list_iterator_destroy(itr);
 	return;
 }
 
@@ -281,100 +284,9 @@ _get_offspring_data(prec_t *ancestor, pid_t pid) {
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-static void _get_process_data(pid_t pid) {
-	static	DIR	*SlashProc;		/* For /proc */ 
-	static	int	SlashProcOpen = 0;
+static void _get_process_data(pid_t pid) 
+{
 
-	struct		dirent *SlashProcEntry;
-	FILE		*statFile;
-	char		*iptr, *optr;
-	char		statFileName[256];	/* Allow ~20x extra length */
-	
-	int		i;
-	long		psize, vsize;
-	ListIterator itr;
-	prec_t *prec = NULL;
-
-	prec_list = list_create(_destroy_prec);
-
-	if (SlashProcOpen) {
-		rewinddir(SlashProc);
-	} else {
-		SlashProc=opendir("/proc");
-		if (SlashProc == NULL) {
-			perror("opening /proc");
-			goto finished;
-		}
-		SlashProcOpen=1;
-	}
-	strcpy(statFileName, "/proc/");
-
-	while ((SlashProcEntry=readdir(SlashProc))) {
-
-		/* Save a few cyles by simulating
-		   strcat(statFileName, SlashProcEntry->d_name);
-		   strcat(statFileName, "/stat");
-		   while checking for a numeric filename (which really
-		   should be a pid).
-		*/
-		optr = statFileName+sizeof("/proc");
-		iptr = SlashProcEntry->d_name;
-		i = 0;
-		do {
-			if((*iptr < '0') 
-			   || ((*optr++ = *iptr++) > '9')) {
-				i = -1;
-				break;
-			}
-		} while (*iptr);
-
-		if(i == -1)
-			continue;
-		iptr = (char*)"/stat";
-
-		do { *optr++ = *iptr++; } while (*iptr);
-		*optr = 0;
-
-		if ((statFile=fopen(statFileName,"r"))==NULL)
-			continue;	/* Assume the process went away */
-
-		prec = xmalloc(sizeof(prec_t));
-		if (_get_process_data_line(statFile, prec)) 
-			list_append(prec_list, prec);
-		else 
-			xfree(prec);
-		fclose(statFile);
-	}
-	
-	if (!list_count(prec_list))
-		goto finished;	/* We have no business being here! */
-
-	psize = 0;
-	vsize = 0;
-
-	itr = list_iterator_create(prec_list);
-	while((prec = list_next(itr))) {
-		if (prec->ppid == pid) {
-			/* find all my descendents */
-			_get_offspring_data(prec, prec->pid);
-			/* tally their memory usage */
-			psize += prec->psize;
-			vsize += prec->vsize;
-			/* Flag to let us know we found it,
-			   though it is already finished */
-			if (vsize==0)
-				vsize=1; 
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	
-	jobacct.max_psize = MAX(jobacct.max_psize, psize);
-	jobacct.max_vsize = MAX(jobacct.max_vsize, vsize);
-	debug2("got info for %d size now %d %d", 
-	      pid, jobacct.max_psize, jobacct.max_vsize);	
-finished:
-	list_destroy(prec_list);
 	return;
 }
 
@@ -391,42 +303,10 @@ finished:
  *       but they help to ensure that we really are looking at the
  *       expected type of record.
  */
-static int _get_process_data_line(FILE *in, prec_t *prec) {
+static int _get_process_data_line(FILE *in, prec_t *prec) 
+{
 	/* discardable data */
-	int		d;
-	char		c;
-	char		*s;
-	uint32_t	tmpu32;
-	int max_path_len = pathconf("/", _PC_NAME_MAX);
 
-	/* useful datum */
-	int		nvals;
-
-	s = xmalloc(max_path_len + 1);
-	nvals=fscanf(in,
-		     "%d %s %c %d %d "
-		     "%d %d %d %d %d "
-		     "%d %d %d %d %d "
-		     "%d %d %d %d %d "
-		     "%d %d %d %d %d", 
-		     &prec->pid, s, &c, &prec->ppid, &d,
-		     &d, &d, &d, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &tmpu32, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &tmpu32, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &prec->vsize, &prec->psize, &tmpu32);
-	/* The fields in the record are
-	 *	pid, command, state, ppid, pgrp,
-	 *	session, tty_nr, tpgid, flags, minflt,
-	 *	cminflt, majflt, cmajflt, utime, stime,
-	 *	cutime, cstime, priority, nice, lit_0,
-	 *	itrealvalue, starttime, vsize, rss, rlim
-	 */
-	xfree(s);
-	if (nvals != 25)	/* Is it what we expected? */
-		return 0;	/* No! */
-	prec->psize *= getpagesize();	/* convert pages to bytes */
-	prec->psize /= 1024;		/* now convert psize to kibibytes */
-	prec->vsize /= 1024;		/* and convert vsize to kibibytes */
 	return 1;
 }
 
@@ -435,7 +315,8 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
  * IN, OUT:	Irrelevant; this is invoked by pthread_create()
  */
 
-static void *_watch_tasks(void *arg) {
+static void *_watch_tasks(void *arg) 
+{
 
 	pid_t pid = getpid();
 	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
@@ -454,3 +335,5 @@ static void _destroy_prec(void *object)
 	xfree(prec);
 	return;
 }
+
+#endif

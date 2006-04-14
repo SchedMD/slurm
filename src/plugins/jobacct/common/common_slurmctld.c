@@ -64,7 +64,17 @@ const char *_jobstep_format =
 "%u "	/* total nvcsw */
 "%u "	/* total nivcsw */
 "%u "	/* max vsize */
-"%u "	/* max psize */
+"%u "	/* max vsize task */
+"%.2f "	/* ave vsize */
+"%u "	/* max rss */
+"%u "	/* max rss task */
+"%.2f "	/* ave rss */
+"%u "	/* max pages */
+"%u "	/* max pages task */
+"%.2f "	/* ave pages */
+"%.2f "	/* min cpu */
+"%u "	/* min cpu task */
+"%.2f "	/* ave cpu */
 "%s "	/* step process name */
 "%s";	/* step node names */
 
@@ -78,8 +88,8 @@ static int _print_record(struct job_record *job_ptr,
 	static int   rc=SLURM_SUCCESS;
 	char *block_id = NULL;
 
-	debug3("_print_record, job=%u, \"%s\"",
-	      job_ptr->job_id, data);
+	debug2("_print_record, job=%u, \"%s\"",
+	       job_ptr->job_id, data);
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_BLOCK_ID, 
@@ -224,7 +234,8 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	uint16_t quarter = (uint16_t)NO_VAL;
 	uint16_t nodecard = (uint16_t)NO_VAL;
 #endif
-
+	float float_tmp = 0;
+	
 	if(!init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
@@ -252,6 +263,8 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 #endif
+	
+	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
@@ -280,8 +293,18 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* total nsignals */
 		 0,	/* total nvcsw */
 		 0,	/* total nivcsw */
-		 0,		/* max vsize */
-		 0,		/* max psize */
+		 0,	/* max vsize */
+		 0,	/* max vsize task */
+		 float_tmp,	/* ave vsize */
+		 0,	/* max rss */
+		 0,	/* max rss task */
+		 float_tmp,	/* ave rss */
+		 0,	/* max pages */
+		 0,	/* max pages task */
+		 float_tmp,	/* ave pages */
+		 float_tmp,	/* min cpu */
+		 0,	/* min cpu task */
+		 float_tmp,	/* ave cpu */
 		 step->name,    /* step exe name */
 		 node_list);     /* name of nodes step running on */
 	
@@ -301,6 +324,8 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	uint16_t quarter = (uint16_t)NO_VAL;
 	uint16_t nodecard = (uint16_t)NO_VAL;
 #endif
+	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
+	float ave_cpu = 0, ave_cpu2 = 0;
 
 	if(!init) {
 		debug("jobacct init was not called or it failed");
@@ -338,6 +363,15 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 #endif
+	/* figure out the ave of the totals sent */
+	if(step->num_tasks > 0) {
+		ave_vsize = jobacct->tot_vsize/step->num_tasks;
+		ave_rss = jobacct->tot_rss/step->num_tasks;
+		ave_pages = jobacct->tot_pages/step->num_tasks;
+		ave_cpu = jobacct->tot_cpu/step->num_tasks;	
+		ave_cpu /= 100;
+	} 
+	ave_cpu2 = jobacct->min_cpu/100;
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -371,8 +405,18 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->rusage.ru_nsignals,	/* total nsignals */
 		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
 		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
-		 jobacct->max_vsize,		/* max vsize */
-		 jobacct->max_psize,		/* max psize */
+		 jobacct->max_vsize,	/* max vsize */
+		 jobacct->max_vsize_task,	/* max vsize task */
+		 ave_vsize,	/* ave vsize */
+		 jobacct->max_rss,	/* max rss */
+		 jobacct->max_rss_task,	/* max rss task */
+		 ave_rss,	/* ave rss */
+		 jobacct->max_pages,	/* max pages */
+		 jobacct->max_pages_task,	/* max pages task */
+		 ave_pages,	/* ave pages */
+		 ave_cpu2,	/* min cpu */
+		 jobacct->min_cpu_task,	/* min cpu task */
+		 ave_cpu,	/* ave cpu */
 		 step->name,      	/* step exe name */
 		 node_list); /* name of nodes step running on */
 

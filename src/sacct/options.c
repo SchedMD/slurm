@@ -1069,7 +1069,7 @@ void do_dump(void)
 			       (int)step->rusage.ru_stime.tv_sec,
 			       (int)step->rusage.ru_stime.tv_usec);
 			printf("%d %d %d %d %d %d %d %d %d "
-			       "%d %d %d %d %d %d %d\n",
+			       "%d %d %d %d %d ",
 			       (int)step->rusage.ru_maxrss,
 			       (int)step->rusage.ru_ixrss,
 			       (int)step->rusage.ru_idrss,
@@ -1083,9 +1083,21 @@ void do_dump(void)
 			       (int)step->rusage.ru_msgrcv,
 			       (int)step->rusage.ru_nsignals,
 			       (int)step->rusage.ru_nvcsw,
-			       (int)step->rusage.ru_nivcsw,
-			       step->vsize,
-			       step->psize);
+			       (int)step->rusage.ru_nivcsw);
+			printf("%d %d %.2f %d %d %.2f "
+			       "%d %d %.2f %.2f %d %.2f\n",
+			       step->sacct.max_vsize, 
+			       step->sacct.max_vsize_task,
+			       step->sacct.ave_vsize,
+			       step->sacct.max_rss,
+			       step->sacct.max_rss_task,
+			       step->sacct.ave_rss,
+			       step->sacct.max_pages,
+			       step->sacct.max_pages_task,
+			       step->sacct.ave_pages,
+			       step->sacct.min_cpu,
+			       step->sacct.min_cpu_task,
+			       step->sacct.ave_cpu);
 		}
 		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
@@ -1113,7 +1125,7 @@ void do_dump(void)
 			       (int)job->rusage.ru_isrss,
 			       (int)job->rusage.ru_minflt,
 			       (int)job->rusage.ru_majflt);
-			printf("%d %d %d %d %d %d %d %d %d %d\n", 
+			printf("%d %d %d %d %d %d %d %d ", 
 			       (int)job->rusage.ru_nswap,
 			       (int)job->rusage.ru_inblock,
 			       (int)job->rusage.ru_oublock,
@@ -1121,9 +1133,21 @@ void do_dump(void)
 			       (int)job->rusage.ru_msgrcv,
 			       (int)job->rusage.ru_nsignals,
 			       (int)job->rusage.ru_nvcsw,
-			       (int)job->rusage.ru_nivcsw,
-			       job->vsize,
-			       job->psize);
+			       (int)job->rusage.ru_nivcsw);
+			printf("%d %d %.2f %d %d %.2f "
+			       "%d %d %.2f %.2f %d %.2f\n",
+			       job->sacct.max_vsize, 
+			       job->sacct.max_vsize_task,
+			       job->sacct.ave_vsize,
+			       job->sacct.max_rss,
+			       job->sacct.max_rss_task,
+			       job->sacct.ave_rss,
+			       job->sacct.max_pages,
+			       job->sacct.max_pages_task,
+			       job->sacct.ave_pages,
+			       job->sacct.min_cpu,
+			       job->sacct.min_cpu_task,
+			       job->sacct.ave_cpu);
 		}
 	}
 	list_iterator_destroy(itr);		
@@ -1492,8 +1516,18 @@ void do_fdump(char* f[], int lc)
 			   "nsignals",	 /* F_NSIGNALS */
 			   "nvcsw",	 /* F_VCSW */
 			   "nivcsw",	 /* F_NIVCSW */
-			   "vsize",	 /* F_VSIZE */
-			   "psize",      /* F_PSIZE */
+			   "max_vsize",	 /* F_MAX_VSIZE */
+			   "max_vsize_task",	 /* F_MAX_VSIZE_TASK */
+			   "ave_vsize",	 /* F_AVE_VSIZE */
+			   "max_rss",	 /* F_MAX_RSS */
+			   "max_rss_task",	 /* F_MAX_RSS_TASK */
+			   "ave_rss",	 /* F_AVE_RSS */
+			   "max_pages",	 /* F_MAX_PAGES */
+			   "max_pages_task",	 /* F_MAX_PAGES_TASK */
+			   "ave_pages",	 /* F_AVE_PAGES */
+			   "min_cputime",	 /* F_MIN_CPU */
+			   "min_cputime_task",	 /* F_MIN_CPU_TASK */
+			   "ave_cputime",	 /* F_AVE_RSS */
 			   "StepName",	 /* F_STEPNAME */
 			   "StepNodes",	 /* F_STEPNODES */
 			   NULL};

@@ -86,6 +86,7 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	job_rec_t *job = xmalloc(sizeof(job_rec_t));
 	memcpy(&job->header, &header, sizeof(acct_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
+	memset(&job->sacct, 0, sizeof(sacct_t));
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
@@ -101,8 +102,6 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	job->elapsed = 0;
 	job->tot_cpu_sec = 0;
 	job->tot_cpu_usec = 0;
-	job->vsize = 0;
-	job->psize = 0;	
 	job->steps = list_create(destroy_step);
 	job->nodes = NULL;
 	job->track_steps = 0;
@@ -115,6 +114,7 @@ step_rec_t *_init_step_rec(acct_header_t header)
 	step_rec_t *step = xmalloc(sizeof(job_rec_t));
 	memcpy(&step->header, &header, sizeof(acct_header_t));
 	memset(&step->rusage, 0, sizeof(struct rusage));
+	memset(&step->sacct, 0, sizeof(sacct_t));
 	step->stepnum = (uint32_t)NO_VAL;
 	step->nodes = NULL;
 	step->stepname = NULL;
@@ -125,9 +125,7 @@ step_rec_t *_init_step_rec(acct_header_t header)
 	step->elapsed = (uint32_t)NO_VAL;
 	step->tot_cpu_sec = (uint32_t)NO_VAL;
 	step->tot_cpu_usec = (uint32_t)NO_VAL;
-	step->vsize = (uint32_t)NO_VAL;
-	step->psize = (uint32_t)NO_VAL;
-
+	
 	return step;
 }
 int _parse_header(char *f[], acct_header_t *header)
@@ -194,8 +192,18 @@ int _parse_line(char *f[], void **data)
 		(*step)->rusage.ru_nsignals = atoi(f[F_NSIGNALS]);
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
-		(*step)->vsize = atoi(f[F_VSIZE]);
-		(*step)->psize = atoi(f[F_PSIZE]);
+		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]);
+		(*step)->sacct.max_vsize_task = atoi(f[F_MAX_VSIZE_TASK]);
+		(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]);
+		(*step)->sacct.max_rss = atoi(f[F_MAX_RSS]);
+		(*step)->sacct.max_rss_task = atoi(f[F_MAX_RSS_TASK]);
+		(*step)->sacct.ave_rss = atof(f[F_AVE_RSS]);
+		(*step)->sacct.max_pages = atoi(f[F_MAX_PAGES]);
+		(*step)->sacct.max_pages_task = atoi(f[F_MAX_PAGES_TASK]);
+		(*step)->sacct.ave_pages = atof(f[F_AVE_PAGES]);
+		(*step)->sacct.min_cpu = atoi(f[F_MIN_CPU]);
+		(*step)->sacct.min_cpu_task = atoi(f[F_MIN_CPU_TASK]);
+		(*step)->sacct.ave_cpu = atof(f[F_AVE_CPU]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
 		(*step)->nodes = xstrdup(f[F_STEPNODES]);
 				
@@ -287,8 +295,7 @@ void process_step(char *f[], int lc)
 		step->tot_cpu_sec = temp->tot_cpu_sec;
 		step->tot_cpu_usec = temp->tot_cpu_usec;
 		memcpy(&step->rusage, &temp->rusage, sizeof(struct rusage));
-		step->vsize = temp->vsize;
-		step->psize = temp->psize;
+		memcpy(&step->sacct, &temp->sacct, sizeof(sacct_t));
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
 		destroy_step(temp);
@@ -347,8 +354,10 @@ got_step:
 				    step->rusage.ru_majflt);
 	job->rusage.ru_nswap = MAX(job->rusage.ru_nswap,
 				   step->rusage.ru_nswap);
-	job->psize = MAX(job->psize, step->psize);
-	job->vsize = MAX(job->vsize, step->vsize);
+
+	/* get the max for all the sacct_t struct */
+	/* job->psize = MAX(job->psize, step->psize); */
+/* 	job->vsize = MAX(job->vsize, step->vsize); */
 	job->ncpus = MAX(job->ncpus, step->ncpus);
 }
 

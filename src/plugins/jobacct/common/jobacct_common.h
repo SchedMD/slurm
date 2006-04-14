@@ -46,6 +46,7 @@
 
 #include "src/common/slurm_jobacct.h"
 #include "src/common/xmalloc.h"
+#include "src/common/list.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
 #include <ctype.h>
@@ -53,9 +54,24 @@
 #define BUFFER_SIZE 4096
 
 struct jobacctinfo {
-	struct rusage rusage;
-	uint32_t max_vsize;
-	uint32_t max_psize;
+	pid_t pid;
+	struct rusage rusage; /* returned by wait3 */
+	uint32_t max_vsize; /* max size of virtual memory */
+	uint16_t max_vsize_task; /* contains which task number it was on */
+	uint32_t tot_vsize; /* total virtual memory 
+			       (used to figure out ave later) */
+	uint32_t max_rss; /* max Resident Set Size */
+	uint16_t max_rss_task; /* contains which task it was on */
+	uint32_t tot_rss; /* total rss 
+			     (used to figure out ave later) */
+	uint32_t max_pages; /* max pages */
+	uint16_t max_pages_task; /* contains which task it was on */
+	uint32_t tot_pages; /* total pages
+			     (used to figure out ave later) */ 
+	uint32_t min_cpu; /* min cpu time */
+	uint16_t min_cpu_task; /* contains which task it was on */
+	uint32_t tot_cpu; /* total cpu time 
+				 (used to figure out ave later) */
 };
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
@@ -66,9 +82,9 @@ struct jobacctinfo {
 
 
 /* in jobacct_common.c */
-extern int common_init_struct(struct jobacctinfo *jobacct);
-extern struct jobacctinfo *common_alloc();
-extern int common_free(struct jobacctinfo *jobacct);
+extern int common_init_struct(struct jobacctinfo *jobacct, uint16_t tid);
+extern struct jobacctinfo *common_alloc_jobacct();
+extern void common_free_jobacct(void *object);
 extern int common_setinfo(struct jobacctinfo *jobacct, 
 			  enum jobacct_data_type type, void *data);
 extern int common_getinfo(struct jobacctinfo *jobacct, 
@@ -88,11 +104,15 @@ extern int common_step_complete_slurmctld(struct step_record *step);
 extern int common_suspend_slurmctld(struct job_record *job_ptr);
 
 /*in common slurmstepd.c */
-extern int common_endpoll(slurmd_job_t *job);
+extern int common_endpoll();
+extern int common_add_task(pid_t pid, uint16_t tid);
+extern struct jobacctinfo *common_stat_task(pid_t pid);
+extern int common_remove_task(pid_t pid);
 extern void common_suspendpoll();
 
 extern bool fini;
 extern bool suspended;
-extern struct jobacctinfo jobacct;
+extern List task_list;
+extern pthread_mutex_t jobacct_lock;
 
 #endif

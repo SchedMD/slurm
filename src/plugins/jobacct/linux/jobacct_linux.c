@@ -30,9 +30,6 @@
 
 #include "src/plugins/jobacct/common/jobacct_common.h"
 
-
-#define BUFFER_SIZE 4096
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -72,8 +69,11 @@ const uint32_t plugin_version = 100;
 typedef struct prec {	/* process record */
 	pid_t	pid;
 	pid_t	ppid;
-	int	psize;	/* maxrss */
-	int	vsize;	/* max virtual size */
+	int     usec;   /* user cpu time */
+	int     ssec;   /* system cpu time */
+	int     pages;  /* pages */
+	int	rss;	/* rss */
+	int	vsize;	/* virtual size */
 } prec_t;
 
 static int freq = 0;
@@ -81,7 +81,7 @@ static List prec_list = NULL;
 /* Finally, pre-define all the routines. */
 
 static void _get_offspring_data(prec_t *ancestor, pid_t pid);
-static void _get_process_data(pid_t pid);
+static void _get_process_data();
 static int _get_process_data_line(FILE *in, prec_t *prec);
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
@@ -90,19 +90,19 @@ static void _destroy_prec(void *object);
  * The following routine is called by the slurmd mainline
  */
 
-int jobacct_p_init_struct(struct jobacctinfo *jobacct)
+int jobacct_p_init_struct(struct jobacctinfo *jobacct, uint16_t tid)
 {
-	return common_init_struct(jobacct);
+	return common_init_struct(jobacct, tid);
 }
 
 struct jobacctinfo *jobacct_p_alloc()
 {
-	return common_alloc();
+	return common_alloc_jobacct();
 }
 
-int jobacct_p_free(struct jobacctinfo *jobacct)
+void jobacct_p_free(struct jobacctinfo *jobacct)
 {
-	return common_free(jobacct);
+	common_free_jobacct(jobacct);
 }
 
 int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
@@ -197,6 +197,7 @@ int jobacct_p_startpoll(int frequency)
 	}
 
 	freq = frequency;
+	task_list = list_create(common_free_jobacct);
 	
 	/* create polling thread */
 	slurm_attr_init(&attr);
@@ -216,9 +217,26 @@ int jobacct_p_startpoll(int frequency)
 	return rc;
 }
 
-int jobacct_p_endpoll(slurmd_job_t *job)
+int jobacct_p_endpoll()
 {
-	return common_endpoll(job);
+	if(task_list)
+		list_destroy(task_list);
+	return common_endpoll();
+}
+
+int jobacct_p_add_task(pid_t pid, uint16_t tid)
+{
+	return common_add_task(pid, tid);
+}
+
+struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
+{
+	return common_stat_task(pid);
+}
+
+int jobacct_p_remove_task(pid_t pid)
+{
+	return common_remove_task(pid);
 }
 
 void jobacct_p_suspendpoll()
@@ -256,7 +274,10 @@ _get_offspring_data(prec_t *ancestor, pid_t pid) {
 	while((prec = list_next(itr))) {
 		if (prec->ppid == pid) {
 			_get_offspring_data(ancestor, prec->pid);
-			ancestor->psize += prec->psize;
+			ancestor->usec += prec->usec;
+			ancestor->ssec += prec->ssec;
+			ancestor->pages += prec->pages;
+			ancestor->rss += prec->rss;
 			ancestor->vsize += prec->vsize;
 		}
 	}
@@ -278,7 +299,7 @@ _get_offspring_data(prec_t *ancestor, pid_t pid) {
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-static void _get_process_data(pid_t pid) {
+static void _get_process_data() {
 	static	DIR	*SlashProc;		/* For /proc */ 
 	static	int	SlashProcOpen = 0;
 
@@ -288,9 +309,10 @@ static void _get_process_data(pid_t pid) {
 	char		statFileName[256];	/* Allow ~20x extra length */
 	
 	int		i;
-	long		psize, vsize;
 	ListIterator itr;
+	ListIterator itr2;
 	prec_t *prec = NULL;
+	struct jobacctinfo *jobacct = NULL;
 
 	prec_list = list_create(_destroy_prec);
 
@@ -343,33 +365,38 @@ static void _get_process_data(pid_t pid) {
 		fclose(statFile);
 	}
 	
-	if (!list_count(prec_list))
+	if (!list_count(prec_list) || !task_list || !list_count(task_list))
 		goto finished;	/* We have no business being here! */
 
-	psize = 0;
-	vsize = 0;
-
-	itr = list_iterator_create(prec_list);
-	while((prec = list_next(itr))) {
-		if (prec->ppid == pid) {
-			/* find all my descendents */
-			_get_offspring_data(prec, prec->pid);
-			/* tally their memory usage */
-			psize += prec->psize;
-			vsize += prec->vsize;
-			/* Flag to let us know we found it,
-			   though it is already finished */
-			if (vsize==0)
-				vsize=1; 
-			break;
+	slurm_mutex_lock(&jobacct_lock);
+	itr = list_iterator_create(task_list);
+	while((jobacct = list_next(itr))) {
+		itr2 = list_iterator_create(prec_list);
+		while((prec = list_next(itr2))) {
+			if (prec->ppid == jobacct->pid) {
+				/* find all my descendents */
+				_get_offspring_data(prec, prec->pid);
+				/* tally their usage */
+				jobacct->max_rss = jobacct->tot_rss = 
+					MAX(jobacct->max_rss, prec->rss);
+				jobacct->max_vsize = jobacct->tot_vsize = 
+					MAX(jobacct->max_vsize, prec->vsize);
+				jobacct->max_pages = jobacct->tot_pages 
+					= prec->pages;
+				jobacct->min_cpu = jobacct->tot_cpu = 
+					prec->usec + prec->ssec;
+				debug2("%d size now %d %d time %d",
+				      jobacct->pid, jobacct->max_rss, 
+				      jobacct->max_vsize, jobacct->tot_cpu);
+				
+				break;
+			}
 		}
+		list_iterator_destroy(itr2);
 	}
-	list_iterator_destroy(itr);
-	
-	jobacct.max_psize = MAX(jobacct.max_psize, psize);
-	jobacct.max_vsize = MAX(jobacct.max_vsize, vsize);
-	debug2("got info for %d size now %d %d", 
-	      pid, jobacct.max_psize, jobacct.max_vsize);	
+	list_iterator_destroy(itr);	
+	slurm_mutex_unlock(&jobacct_lock);
+
 finished:
 	list_destroy(prec_list);
 	return;
@@ -408,9 +435,9 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 		     "%d %d %d %d %d", 
 		     &prec->pid, s, &c, &prec->ppid, &d,
 		     &d, &d, &d, &tmpu32, &tmpu32,
+		     &tmpu32, &prec->pages, &tmpu32, &prec->usec, &prec->ssec,
 		     &tmpu32, &tmpu32, &tmpu32, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &tmpu32, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &prec->vsize, &prec->psize, &tmpu32);
+		     &tmpu32, &tmpu32, &prec->vsize, &prec->rss, &tmpu32);
 	/* The fields in the record are
 	 *	pid, command, state, ppid, pgrp,
 	 *	session, tty_nr, tpgid, flags, minflt,
@@ -421,8 +448,9 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 	xfree(s);
 	if (nvals != 25)	/* Is it what we expected? */
 		return 0;	/* No! */
-	prec->psize *= getpagesize();	/* convert pages to bytes */
-	prec->psize /= 1024;		/* now convert psize to kibibytes */
+	
+	prec->rss *= getpagesize();	/* convert rss from pages to bytes */
+	prec->rss /= 1024;      	/* convert rss to kibibytes */
 	prec->vsize /= 1024;		/* and convert vsize to kibibytes */
 	return 1;
 }
@@ -434,10 +462,9 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg) {
 
-	pid_t pid = getpid();
 	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
 		if(!suspended) {
-			_get_process_data(pid);	/* Update the data */ 
+			_get_process_data();	/* Update the data */ 
 		}
 		sleep(freq);
 	} 

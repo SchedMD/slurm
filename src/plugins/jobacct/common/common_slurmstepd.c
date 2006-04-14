@@ -31,16 +31,86 @@
 
 bool fini = false;
 bool suspended = false;
-struct jobacctinfo jobacct;
+List task_list = NULL;
+pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 
-extern int common_endpoll(slurmd_job_t *job)
+extern int common_endpoll()
 {
 	fini = true;
-	struct jobacctinfo *send = (struct jobacctinfo *)job->jobacct;
-
-	send->max_psize = jobacct.max_psize;
-	send->max_vsize = jobacct.max_vsize;
+	
 	return SLURM_SUCCESS;
+}
+extern int common_add_task(pid_t pid, uint16_t tid)
+{
+	struct jobacctinfo *jobacct = common_alloc_jobacct(tid);
+	if(pid <= 0) {
+		error("invalid pid given (%d) for task acct", pid);
+		goto error;
+	} else if (!task_list) {
+		error("no task list created!");
+		goto error;
+	}
+
+	jobacct->pid = pid;
+
+	slurm_mutex_lock(&jobacct_lock);
+	list_push(task_list, jobacct);
+	slurm_mutex_unlock(&jobacct_lock);
+
+	return SLURM_SUCCESS;
+error:
+	common_free_jobacct(jobacct);
+	return SLURM_ERROR;
+}
+
+extern struct jobacctinfo *common_stat_task(pid_t pid)
+{
+	struct jobacctinfo *jobacct = NULL;
+	ListIterator itr = NULL;
+	if (!task_list) {
+		error("no task list created!");
+		goto error;
+	}
+
+	slurm_mutex_lock(&jobacct_lock);
+	itr = list_iterator_create(task_list);
+	while((jobacct = list_next(itr))) { 
+		if(jobacct->pid == pid)
+			break;
+	}
+	slurm_mutex_unlock(&jobacct_lock);
+	list_iterator_destroy(itr);
+	
+	return jobacct;
+error:
+	return NULL;
+}
+
+extern int common_remove_task(pid_t pid)
+{
+	struct jobacctinfo *jobacct = NULL;
+	ListIterator itr = NULL;
+
+	if (!task_list) {
+		error("no task list created!");
+		goto error;
+	}
+
+	slurm_mutex_lock(&jobacct_lock);
+	itr = list_iterator_create(task_list);
+	while((jobacct = list_next(itr))) { 
+		if(jobacct->pid == pid) {
+			list_remove(itr);
+			common_free_jobacct(jobacct);
+			break;
+		}
+	}
+	slurm_mutex_unlock(&jobacct_lock);
+	list_iterator_destroy(itr);
+	
+	return SLURM_SUCCESS;
+error:
+	return SLURM_ERROR;
 }
 
 extern void common_suspendpoll()
