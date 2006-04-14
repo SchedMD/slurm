@@ -27,6 +27,8 @@
 #ifndef _SLURMD_TASK_EXEC_H
 #define _SLURMD_TASK_EXEC_H
 
-extern int task_exec(char *fname, char **prog_env);
+/* Execute a program based upon the config_data (contents of config_file)
+ * and the environment variables supplied */
+extern int task_exec(char *config_data, char **prog_env);
 
 #endif /* !_SLURMD_TASK_EXEC_H */

@@ -2496,6 +2496,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr(msg->mem_bind, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
 	pack16((uint16_t)msg->task_flags, buffer);
+	pack16((uint16_t)msg->multi_prog, buffer);
 	packstr(msg->ofname, buffer);
 	packstr(msg->efname, buffer);
 	packstr(msg->ifname, buffer);
@@ -2554,6 +2555,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_xmalloc(&msg->mem_bind, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
+	safe_unpack16(&msg->multi_prog, buffer);
 	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
@@ -2594,6 +2596,7 @@ _pack_spawn_task_request_msg(spawn_task_request_msg_t * msg, Buf buffer)
 	pack16((uint16_t)msg->io_port, buffer);
 	pack16((uint16_t)msg->task_flags, buffer);
 	pack16((uint16_t)msg->cpus_allocated, buffer);
+	pack16((uint16_t)msg->multi_prog, buffer);
 	pack32((uint32_t)msg->slurmd_debug, buffer);
 	pack32((uint32_t)msg->global_task_id, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
@@ -2625,6 +2628,7 @@ _unpack_spawn_task_request_msg(spawn_task_request_msg_t **
 	safe_unpack16(&msg->io_port, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->cpus_allocated, buffer);
+	safe_unpack16(&msg->multi_prog, buffer);
 	safe_unpack32(&msg->slurmd_debug, buffer);
 	safe_unpack32(&msg->global_task_id, buffer);
 

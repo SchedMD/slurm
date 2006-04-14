@@ -216,6 +216,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->nodeid  = msg->srun_node_id;
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->cpus_allocated[msg->srun_node_id];
+	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
 	job->switch_job = msg->switch_job;
@@ -287,6 +288,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->nodeid  = msg->srun_node_id;
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->cpus_allocated;
+	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
 	job->switch_job = msg->switch_job;

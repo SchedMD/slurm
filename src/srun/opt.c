@@ -45,13 +45,16 @@
 #  include "src/common/getopt.h"
 #endif
 
+#include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
+#include <stdio.h>
 #include <stdlib.h>		/* getenv     */
 #include <pwd.h>		/* getpwuid   */
 #include <ctype.h>		/* isdigit    */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 
@@ -82,7 +85,8 @@
 #define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
-#define OPT_MEM_BIND	0x0e
+#define OPT_MEM_BIND    0x0e
+#define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -117,6 +121,7 @@
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
+#define LONG_OPT_MULTI       0x122
 
 /*---- forward declarations of static functions  ----*/
 
@@ -131,6 +136,9 @@ static List  _create_path_list(void);
 static int  _get_int(const char *arg, const char *what);
 
 static void  _help(void);
+
+/* load a multi-program configuration file */
+static void _load_multi(int *argc, char **argv);
 
 /* fill in default options  */
 static void _opt_default(void);
@@ -811,6 +819,7 @@ env_vars_t env_vars[] = {
   {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
   {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
   {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
+  {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
 
   {NULL, 0, NULL, NULL}
 };
@@ -1036,6 +1045,7 @@ void set_options(const int argc, char **argv, int first)
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
+		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1470,6 +1480,9 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.ctrl_comm_ifhn);
 			opt.ctrl_comm_ifhn = xstrdup(optarg);
 			break;
+		case LONG_OPT_MULTI:
+			opt.multi_prog = true;
+			break;
 		}
 	}
 
@@ -1479,6 +1492,47 @@ void set_options(const int argc, char **argv, int first)
 		if (_verbose > 3)
 			_opt_list();
 	}
+}
+
+/* Load the multi_prog config file into argv, pass the  entire file contents 
+ * in order to avoid having to read the file on every node. We could parse
+ * the infomration here too for loading the MPIR records for TotalView */
+static void _load_multi(int *argc, char **argv)
+{
+	int config_fd, data_read = 0, i;
+	struct stat stat_buf;
+	char *data_buf;
+
+	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
+		error("Could not open multi_prog config file %s",
+			argv[0]);
+		exit(1);
+	}
+	if (fstat(config_fd, &stat_buf) == -1) {
+		error("Could not stat multi_prog config file %s",
+			argv[0]);
+		exit(1);
+	}
+	if (stat_buf.st_size > 60000) {
+		error("Multi_prog config file %s is too large",
+			argv[0]);
+		exit(1);
+	}
+	data_buf = xmalloc(stat_buf.st_size);
+	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
+			- data_read)) != 0) {
+		if (i < 0) {
+			error("Error reading multi_prog config file %s", 
+				argv[0]);
+			exit(1);
+		} else
+			data_read += i;
+	}
+	close(config_fd);
+	for (i=0; i<*argc; i++)
+		xfree(argv[i]);
+	argv[0] = data_buf;
+	*argc = 1;
 }
 
 /*
@@ -1509,7 +1563,15 @@ static void _opt_args(int argc, char **argv)
 		remote_argv[i] = xstrdup(rest[i]);
 	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
-	if (remote_argc > 0) {
+	if (opt.multi_prog) {
+		if (remote_argc < 1) {
+			error("configuration file not specified");
+			exit(1);
+		}
+		_load_multi(&remote_argc, remote_argv);
+
+	}
+	else if (remote_argc > 0) {
 		char *fullpath;
 		char *cmd       = remote_argv[0];
 		bool search_cwd = (opt.batch || opt.allocate);
@@ -1929,10 +1991,7 @@ static void _opt_list()
 	str = print_geometry();
 	info("geometry       : %s", str);
 	xfree(str);
-	if (opt.no_rotate)
-		info("rotate         : no");
-	else
-		info("rotate         : yes");
+	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
@@ -1947,6 +2006,7 @@ static void _opt_list()
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
+	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1978,7 +2038,7 @@ static void _usage(void)
 "            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
-"            [--ctrl-comm-ifhn=addr]"
+"            [--ctrl-comm-ifhn=addr] [--multi-prog]"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2035,7 +2095,9 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slurmctld"
+"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun"
+"     --multi-prog             if set the program name specified is the\n"
+"                              configuration specificaiton for multiple programs\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"

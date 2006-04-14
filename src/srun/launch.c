@@ -148,6 +148,7 @@ launch(void *arg)
 	r.cpu_bind        = opt.cpu_bind;
 	r.mem_bind_type   = opt.mem_bind_type;
 	r.mem_bind        = opt.mem_bind;
+	r.multi_prog      = opt.multi_prog;
 
 	r.ofname  = fname_remote_string (job->ofname);
 	r.efname  = fname_remote_string (job->efname);
