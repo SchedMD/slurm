@@ -21,7 +21,7 @@ is best avoided.</p>
 
 <h2>Job Accounting Plugin (JobAcctType)</h2>
 
-<p>Job accounting relies upon the <i>slurmd</i> daemon on each compute 
+<p>Job accounting relies upon the <i>slurmstepd</i> daemon on each compute 
 node periodically sampling data.
 This data collection will take compute cycles away from the application
 inducing what is known as <i>system noise</i>.
@@ -32,7 +32,7 @@ is best (<i>jobacct/none</i>).
 Consider use of job completion records (<i>JobCompType</i>) for accounting 
 purposes as this entails far less overhead.
 If job accounting is required, configure the sampling interval 
-to a relatively large size (e.g. <i>JobAcctParameters="Frequency=300"</i>).
+to a relatively large size (e.g. <i>JobAcctFrequency=300</i>).
 Some experimentation may also be required to deal with collisions 
 on data transmission.</p>
 

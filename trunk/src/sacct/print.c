@@ -27,49 +27,40 @@
 \*****************************************************************************/
 
 #include "sacct.h"
+#define FORMAT_STRING_SIZE 32
 
 char *_decode_status(int status);
 char *_elapsed_time(long secs, long usecs);
 
 char *_elapsed_time(long secs, long usecs)
 {
-	int	days, hours, minutes, seconds;
-	char	daybuf[10],
-		hourbuf[4],
-		minbuf[4];
-	static char	outbuf[20];  /* this holds LOTS of time! */
-	div_t	res;
+	static char str[FORMAT_STRING_SIZE];
+	long	days, hours, minutes, seconds;
+	
+	while (usecs >= 1E6) {
+		secs++;
+		usecs -= 1E6;
+	}
 
-	daybuf[0] = 0;
-	hourbuf[0] = 0;
-	minbuf[0] = 0;
+	seconds =  secs % 60;
+	minutes = (secs / 60)   % 60;
+	hours   = (secs / 3600) % 24;
+	days    =  secs / 86400;
 
-	res = div(usecs+5000, 1e6);	/* round up the usecs, then */
-	usecs /= 1e4;			/* truncate to .00's */
-
-	res = div(secs+res.quot, 60*60*24);	/* 1 day is 24 hours of 60
-						   minutes of 60 seconds */
-	days = res.quot;
-	res = div(res.rem, 60*60);
-	hours = res.quot;
-	res = div(res.rem, 60);
-	minutes = res.quot;
-	seconds = res.rem;
-	if (days) {
-		snprintf(daybuf, sizeof(daybuf), "%d-", days);
-		snprintf(hourbuf, sizeof(hourbuf), "%02d:", hours);
-	} else if (hours)
-		snprintf(hourbuf, sizeof(hourbuf), "%2d:", hours);
-	if (days || hours)
-		snprintf(minbuf, sizeof(minbuf), "%02d:", minutes);
-	else if (minutes)
-		snprintf(minbuf, sizeof(minbuf), "%2d:", minutes);
-	if (days || hours || minutes)
-		snprintf(outbuf, sizeof(outbuf), "%s%s%s%02d.%02ld",
-			 daybuf, hourbuf, minbuf, seconds, usecs);
+	if (days) 
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%ld-%2.2ld:%2.2ld:%2.2ld",
+		         days, hours, minutes, seconds);
+	else if (hours)
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%ld:%2.2ld:%2.2ld",
+		         hours, minutes, seconds);
 	else
-		snprintf(outbuf, sizeof(outbuf), "%2d.%02ld", seconds, usecs);
-	return(outbuf);
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%ld:%2.2ld",
+		         minutes, seconds);
+
+	return str;
 }
 
 void print_fields(type_t type, void *object)
@@ -701,10 +692,10 @@ void print_rss(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%8s", "Rss");
+		printf("%22s", "MAX_RSS/Task - AVE");
 		break;
 	case UNDERSCORE:
-		printf("%8s", "------");
+		printf("%22s", "----------------------");
 		break;
 	case JOB:
 		printf("%8ld", job->rusage.ru_maxrss);
@@ -887,16 +878,18 @@ void print_cputime(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%10s", "SystemTime");
+		printf("%15s", "SystemTime");
 		break;
 	case UNDERSCORE:
-		printf("%10s", "------");
+		printf("%15s", "----------");
 		break;
 	case JOB:
-		printf("%10.2f", job->sacct.min_cpu);
+		printf("%15s",
+		       _elapsed_time((int)job->sacct.min_cpu, 0));
 		break;
 	case JOBSTEP:
-		printf("%10.2f", step->sacct.min_cpu);
+		printf("%15s",
+		       _elapsed_time((int)step->sacct.min_cpu, 0));
 		break;
 	} 
 }

@@ -55,7 +55,7 @@
 
 typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
 
-/* common for both slurmctld and slurmstepd */
+/* common */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid);
 extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid);
 extern void jobacct_g_free(jobacctinfo_t *jobacct);

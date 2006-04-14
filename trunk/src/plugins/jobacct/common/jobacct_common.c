@@ -239,7 +239,15 @@ extern void common_aggregate(struct jobacctinfo *dest,
 	}
 	dest->tot_pages += from->tot_pages;
 	
-	
+	if((dest->min_cpu > from->min_cpu) 
+	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
+		if(from->min_cpu == (uint32_t)NO_VAL)
+			from->min_cpu = 0;
+		dest->min_cpu = from->min_cpu;
+		dest->min_cpu_task = from->min_cpu_task;
+	}
+	dest->tot_cpu += from->tot_cpu;
+		
 	if(dest->max_vsize_task == (uint16_t)NO_VAL)
 		dest->max_vsize_task = from->max_vsize_task;
 
@@ -266,15 +274,6 @@ extern void common_aggregate(struct jobacctinfo *dest,
 		dest->rusage.ru_stime.tv_usec -= 1E6;
 	}
 
-	if((dest->min_cpu > from->min_cpu) 
-	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
-		if(from->min_cpu == (uint32_t)NO_VAL)
-			from->min_cpu = 0;
-		dest->min_cpu = from->min_cpu;
-		dest->min_cpu_task = from->min_cpu_task;
-	}
-	dest->tot_cpu += from->tot_cpu;
-		
 	dest->rusage.ru_maxrss		+= from->rusage.ru_maxrss;
 	dest->rusage.ru_ixrss		+= from->rusage.ru_ixrss;
 	dest->rusage.ru_idrss		+= from->rusage.ru_idrss;
