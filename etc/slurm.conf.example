@@ -270,9 +270,9 @@
 #
 # o Define the job accounting mechanism to use.
 #
-#   "jobacct/linux"    : Instigates a polling thread to gather information 
+#   "jobacct/linux"    : Job accouting information 
 #                        from the linux proc table
-#   "jobacct/none"     : Do not have polling thread.
+#   "jobacct/none"     : No job accouting information.
 #
 
 JobAcctType=jobacct/none
@@ -285,9 +285,8 @@ JobAcctType=jobacct/none
 #
 # o Define the log file for job accounting this will be written on the
 #   same node the slurmctld is being ran on.  
-#   This log is kept even if JobAcctType=jobacct/none
 #
-JobAcctLogFile=/var/log/slurm_accounting.log
+#JobAcctLogFile=/var/log/slurm_jobacct.log
 
 #
 # o Define the places to look for SLURM plugins.  This is a

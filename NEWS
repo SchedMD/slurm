@@ -4,15 +4,17 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.0-pre5
 =============================
  -- Added step completion RPC logic
- -- Vastly changed sacct and the jobacct plugin.  Needs more documentation 
-    still.
+ -- Vastly changed sacct and the jobacct plugin.  Read documentation for full
+    details.
  -- Added jobacct plugin for AIX and BlueGene, they currently don't work, 
-    but infastructure is in place.
+    but infrastructure is in place.
  -- Add support for srun option --ctrl-comm-ifhn to set PMI communications
     address (Hongjia Cao, National University of Defense Technology).
  -- Moved safe_read/write to slurm_protocol_defs.h removing multiple copies.
  -- Remove vestigial functions slurm_allocate_resources_and_run() and 
     slurm_free_resource_allocation_and_run_response_msg().
+ -- moved the way forward logic waited for fanout logic mostly eliminating 
+    problems with scalability issues.
 
 * Changes in SLURM 1.1.0-pre4
 =============================

@@ -37,7 +37,7 @@ pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 extern int common_endpoll()
 {
 	fini = true;
-	
+       
 	return SLURM_SUCCESS;
 }
 extern int common_add_task(pid_t pid, uint16_t tid)
