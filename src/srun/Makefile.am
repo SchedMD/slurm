@@ -29,6 +29,7 @@ srun_SOURCES = \
 	allocate.h  \
 	core-format.c \
 	core-format.h \
+	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
 convenience_libs =  \

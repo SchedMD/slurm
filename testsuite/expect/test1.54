@@ -90,11 +90,64 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 4} {
 	send_user "\nFAILURE: Did not get expected multi-program output\n"
 	set exit_code 1
 }
+if {$exit_code != 0} {
+	exit $exit_code
+}
+
+#
+# Submit a slurm job that will execute different executables and check debug info
+#
+# Timeout is max_job_delay (to spawn task) + 
+#       60 (job time limit) +
+#       60 (slurmctld time limit check poll interval) +
+#       KillWait
+#
+set timeout [expr $max_job_delay + 60 + 60 + 60]
+
+exec $bin_rm -f $file_in
+set file [open $file_in "w"]
+puts $file "# multi-program configuration file
+1-2   /bin/hostname
+0,3   /bin/date
+"
+close $file
+exec $bin_chmod 700 $file_in
+
+set matches   0
+set timed_out 0
+spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test $file_in
+expect {
+	-re "executable:(/bin/)($alpha)" {
+		if {[string compare $expect_out(2,string) "date"] != 0} {
+			incr matches
+		}
+		if {[string compare $expect_out(2,string) "hostname"] != 0} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 1} {
+	send_user "\nEarly termination is expected, no worries.\n"
+}
+if {$matches != 4} {
+	send_user "\nFAILURE: did not generate full list of executables.\n"
+	set exit_code 1
+}
+
 if {$exit_code == 0} {
 	exec $bin_rm $file_in
 	send_user "\nSUCCESS\n"

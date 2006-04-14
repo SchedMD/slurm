@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
  -- Moved safe_read/write to slurm_protocol_defs.h removing multiple copies.
  -- Remove vestigial functions slurm_allocate_resources_and_run() and 
     slurm_free_resource_allocation_and_run_response_msg().
+ -- Added support for different executable files and arguments by task based
+    upon a configuration file. See srun's --multi-prog option (based upon 
+    work by Hongjia Cao, National University of Defense Technology).
  -- moved the way forward logic waited for fanout logic mostly eliminating 
     problems with scalability issues.
 
