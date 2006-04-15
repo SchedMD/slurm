@@ -79,7 +79,6 @@ resource_allocation_response_msg_t *my_alloc(job_desc_msg_t *job_desc_msg)
 
 	rc = slurm_allocate_resources(job_desc_msg, &a);
 	if (rc == 0) {
-		printf("RC was zero\n");
 		return a;
 	} else {
 		return NULL;
@@ -108,7 +107,6 @@ job_step_create_response_msg_t *my_job_step_create(job_step_create_request_msg_t
 
 	rc = slurm_job_step_create(slurm_step_alloc_req_msg, &s);
 	if (rc == 0) {
-		printf("RC was zero\n");
 		return s;
 	} else {
 		return NULL;
