@@ -361,12 +361,16 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job, 
 				 * default=0 */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
+
+	/********** BEGIN Batch script parameters **********/
 	char *script;		/* the actual job script, default NONE */
 	char **argv;		/* arguments to the script */
 	uint16_t argc;		/* number of arguments to the script */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
+	/**********  END  Batch script parameters **********/
+
 	uint32_t user_id;	/* set only if different from current UID, 
 				 * can only be explicitly set by user root */
 	uint32_t group_id;	/* group to assume, if run as root. */ 
@@ -666,6 +670,23 @@ extern void slurm_init_job_desc_msg PARAMS((job_desc_msg_t * job_desc_msg));
 extern int slurm_allocate_resources PARAMS((
 	job_desc_msg_t * job_desc_msg , 
 	resource_allocation_response_msg_t ** job_alloc_resp_msg));
+
+/*
+ * slurm_allocate_resources_blocking
+ *	allocate resources for a job request.  This call will block until
+ *	the allocation is granted, or the specified timeout limit is reached.
+ * IN req - description of resource allocation request
+ * IN timeout - amount of time to wait for a response before giving up.
+ *	A timeout of zero will wait indefinitely.
+ * 
+ * RET allocation structure on success, NULL on error set errno to
+ *	indicate the error
+ * NOTE: free the allocation structure using
+ *	slurm_free_resource_allocation_response_msg
+ */
+extern resource_allocation_response_msg_t *
+slurm_allocate_resources_blocking PARAMS((const job_desc_msg_t *user_req,
+					time_t timeout));
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
