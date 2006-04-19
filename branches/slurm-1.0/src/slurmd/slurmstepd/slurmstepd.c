@@ -86,6 +86,8 @@ main (int argc, char *argv[])
 	job->ngids = ngids;
 	job->gids = gids;
 
+	list_install_fork_handlers();
+
 	/* sets job->msg_handle and job->msgid */
 	if (msg_thr_create(job) == SLURM_ERROR) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
