@@ -109,14 +109,11 @@ void *_forward_thread(void *arg)
 		for(i=0; i<fwd_msg->header.forward.cnt; i++) {
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
 			list_push(type->ret_data_list, ret_data_info);
-			if(fwd_msg->header.forward.name) {
-				strncpy(name,
-					&fwd_msg->header.
-					forward.name[i * MAX_SLURM_NAME],
-					MAX_SLURM_NAME);
-				ret_data_info->node_name = xstrdup(name);
-			} else 
-				ret_data_info->node_name = NULL;
+			strncpy(name,
+				&fwd_msg->header.forward.
+				name[i * MAX_SLURM_NAME],
+				MAX_SLURM_NAME);
+			ret_data_info->node_name = xstrdup(name);
 			ret_data_info->nodeid = 
 				fwd_msg->header.forward.node_id[i];
 		}
@@ -270,13 +267,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		memcpy(&forward_msg->addr, 
 		       &header->forward.addr[i], 
 		       sizeof(slurm_addr));
-		if(header->forward.name) {
-			strncpy(forward_msg->node_name,
-				&header->forward.name[i * MAX_SLURM_NAME],
-				MAX_SLURM_NAME);
-	        } else 
-			memset(forward_msg->node_name, 0, MAX_SLURM_NAME);
-
+		strncpy(forward_msg->node_name,
+			&header->forward.name[i * MAX_SLURM_NAME],
+			MAX_SLURM_NAME);
+       
 		forward_set(&forward_msg->header.forward,
 			    span[thr_count],
 			    &i,
@@ -321,12 +315,9 @@ extern int forward_set(forward_t *forward,
 	
 	if(span > 0) {
 		forward->addr = xmalloc(sizeof(slurm_addr) * span);
-		if(from->name)
-			forward->name = xmalloc(sizeof(char) 
-						* (MAX_SLURM_NAME * span));
-		else
-			forward->name = NULL;
-
+		forward->name = xmalloc(sizeof(char) 
+					* (MAX_SLURM_NAME * span));
+		
 		forward->node_id = xmalloc(sizeof(int32_t) * span);
 		forward->timeout = from->timeout;
 		forward->init = FORWARD_INIT;
@@ -336,10 +327,9 @@ extern int forward_set(forward_t *forward,
 			       &from->addr[*pos+j],
 			       sizeof(slurm_addr));
 			//forward->addr[j-1] = forward_addr[*pos+j];
-			if(from->name)
-				strncpy(&forward->name[(j-1) * MAX_SLURM_NAME],
-					&from->name[(*pos+j) * MAX_SLURM_NAME],
-					MAX_SLURM_NAME);
+			strncpy(&forward->name[(j-1) * MAX_SLURM_NAME],
+				&from->name[(*pos+j) * MAX_SLURM_NAME],
+				MAX_SLURM_NAME);
 
 			if(from->node_id)
 				forward->node_id[j-1] = from->node_id[*pos+j];
@@ -398,12 +388,8 @@ extern int forward_set_launch(forward_t *forward,
 	
 	if(span > 0) {
 		forward->addr = xmalloc(sizeof(slurm_addr) * span);
-		if(step_layout->host)
-			forward->name = 
-				xmalloc(sizeof(char) 
-					* (MAX_SLURM_NAME * span));
-		else
-			forward->name = NULL;
+		forward->name = 
+			xmalloc(sizeof(char) * (MAX_SLURM_NAME * span));
 		forward->node_id = xmalloc(sizeof(int32_t) * span);
 		forward->timeout = timeout;
 		forward->init = FORWARD_INIT;
@@ -424,10 +410,9 @@ extern int forward_set_launch(forward_t *forward,
 			       &slurmd_addr[i], 
 			       sizeof(slurm_addr));
 			//forward->addr[j-1] = slurmd_addr[i];
-			if(step_layout->host)
-				strncpy(&forward->name[(j-1) * MAX_SLURM_NAME],
-					step_layout->host[*pos+j], 
-					MAX_SLURM_NAME);
+			strncpy(&forward->name[(j-1) * MAX_SLURM_NAME],
+				step_layout->host[*pos+j], 
+				MAX_SLURM_NAME);
 			forward->node_id[j-1] = (*pos+j);
 			/* strncpy(name, */
 /* 				step_layout->host[*pos+j], */
@@ -467,14 +452,10 @@ extern int no_resp_forwards(forward_t *forward, List *ret_list, int err)
 	for(i=0; i<forward->cnt; i++) {
 		ret_data_info = xmalloc(sizeof(ret_data_info_t));
 		list_push(type->ret_data_list, ret_data_info);
-		if(forward->name) {
-			strncpy(name, 
-				&forward->name[i * MAX_SLURM_NAME], 
-				MAX_SLURM_NAME);
-			ret_data_info->node_name = xstrdup(name);
-		} else 
-			ret_data_info->node_name = NULL;
-	      	
+		strncpy(name, 
+			&forward->name[i * MAX_SLURM_NAME], 
+			MAX_SLURM_NAME);
+		ret_data_info->node_name = xstrdup(name);
 		ret_data_info->nodeid = forward->node_id[i];
 	}
 no_forward:
