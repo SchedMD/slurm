@@ -50,6 +50,7 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -102,6 +103,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr);
+static int  _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
@@ -218,6 +220,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_STEP_COMPLETE:
 		rc = _rpc_step_complete(msg, cli);
 		slurm_free_step_complete_msg(msg->data);
+		break;
+	case MESSAGE_STAT_JOBACCT:
+		rc = _rpc_stat_jobacct(msg, cli);
+		slurm_free_stat_jobacct_msg(msg->data);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -1128,6 +1134,68 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
+static int
+_rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
+{
+	stat_jobacct_msg_t *req = (stat_jobacct_msg_t *)msg->data;
+	slurm_msg_t        resp_msg;
+	stat_jobacct_msg_t *resp = NULL;
+	int fd;
+	uid_t req_uid;
+	uid_t job_uid;
+	
+	debug3("Entering _rpc_stat_jobacct");
+	/* step completion messages are only allowed from other slurmstepd,
+	   so only root or SlurmUser is allowed here */
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	
+	job_uid = _get_job_uid(req->job_id);
+	/* 
+	 * check that requesting user ID is the SLURM UID or root
+	 */
+	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+		error("stat_jobacct from uid %ld for job %u "
+		      "owned by uid %ld",
+		      (long) req_uid, req->job_id, 
+		      (long) job_uid);       
+		
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return ESLURM_USER_ID_MISSING;/* or bad in this case */
+		}
+	} 
+	resp = xmalloc(sizeof(stat_jobacct_msg_t));
+	resp->job_id = req->job_id;
+	resp->step_id = req->step_id;
+	
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->step_id);
+	if (fd == -1) {
+		error("stepd_connect to %u.%u failed: %m", 
+		      req->job_id, req->step_id);
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		slurm_free_stat_jobacct_msg(resp);
+		return	ESLURM_INVALID_JOB_ID;
+		
+	}
+	if (stepd_stat_jobacct(fd, req, resp) == SLURM_ERROR) {
+		debug("kill for nonexistent job %u.%u requested",
+		      req->job_id, req->step_id);
+	} 
+	close(fd);
+	debug("job %u.%u found", resp->job_id, resp->step_id);
+	resp_msg.address      = msg->address;
+	resp_msg.msg_type     = MESSAGE_STAT_JOBACCT;
+	resp_msg.data         = resp;
+	resp_msg.forward = msg->forward;
+	resp_msg.ret_list = msg->ret_list;
+	
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_free_stat_jobacct_msg(resp);
+	return SLURM_SUCCESS;
+}
+
+
 /* 
  *  For the specified job_id: reply to slurmctld, 
  *   sleep(configured kill_wait), then send SIGKILL 
@@ -1685,7 +1753,7 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t job_uid;
 	List steps;
 	ListIterator i;
-	step_loc_t *stepd;
+	step_loc_t *stepd = NULL;
 	int step_cnt  = 0;  
 	int fd;
 

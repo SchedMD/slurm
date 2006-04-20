@@ -120,6 +120,11 @@ void jobacct_p_aggregate(struct jobacctinfo *dest, struct jobacctinfo *from)
 	return;
 }
 
+void jobacct_p_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
+{
+	return;
+}
+
 void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
 {
 	return;

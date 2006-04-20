@@ -67,6 +67,7 @@ static int _handle_suspend(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_terminate(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_completion(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -465,6 +466,10 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		debug("Handling REQUEST_STEP_COMPLETION");
 		rc = _handle_completion(fd, job, uid);
 		break;
+	case MESSAGE_STAT_JOBACCT:
+		debug("Handling MESSAGE_STAT_JOBACCT");
+		rc = _handle_stat_jobacct(fd, job, uid);
+		break;
 	default:
 		error("Unrecognized request: %d", req);
 		rc = SLURM_FAILURE;
@@ -504,7 +509,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int signal;
 
-	debug("_handle_signal_process_group for job %u.%u",
+	debug3("_handle_signal_process_group for job %u.%u",
 	      job->jobid, job->stepid);
 
 	safe_read(fd, &signal, sizeof(int));
@@ -939,6 +944,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	jobacct_g_suspendpoll();
 	/*
 	 * Signal the container
 	 */
@@ -1024,4 +1030,43 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
+}
+
+static int
+_handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	jobacctinfo_t *temp_jobacct = NULL;
+	int i = 0;
+	int num_tasks = 0;
+	debug("_handle_stat_jobacct for job %u.%u",
+	      job->jobid, job->stepid);
+
+	debug3("  uid = %d", uid);
+	if (uid != job->uid && !_slurm_authorized_user(uid)) {
+		debug("stat jobacct from uid %ld for job %u.%u "
+		      "owned by uid %ld",
+		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		/* Send NULL */
+		jobacct_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
+		return SLURM_ERROR;
+	}
+	
+	jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	debug3("num tasks = %d", job->ntasks);
+	
+	for (i = 0; i < job->ntasks; i++) {
+		temp_jobacct = jobacct_g_stat_task(job->task[i]->pid);
+		if(temp_jobacct) {
+			jobacct_g_aggregate(jobacct, temp_jobacct);
+			num_tasks++;
+		}
+	}
+	debug3("got %d");
+	jobacct_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+	safe_write(fd, &num_tasks, sizeof(int));
+	jobacct_g_free(jobacct);
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
 }

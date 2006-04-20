@@ -707,7 +707,7 @@ static inline void _comm_err(char *node_name)
  */
 static void *_thread_per_group_rpc(void *args)
 {
-	int rc = SLURM_SUCCESS, timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+	int rc = SLURM_SUCCESS;
 	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	/* we cache some pointers from task_info_t because we need 
@@ -802,7 +802,8 @@ static void *_thread_per_group_rpc(void *args)
 	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
-		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
+		if ((ret_list = slurm_send_recv_rc_msg(&msg, 
+						       msg.forward.timeout)) 
 		    == NULL) {
 			if (!srun_agent)
 				_comm_err(thread_ptr->node_name);
