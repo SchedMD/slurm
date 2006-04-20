@@ -371,10 +371,12 @@ static void _get_process_data() {
 		fclose(statFile);
 	}
 	
-	if (!list_count(prec_list) || !task_list || !list_count(task_list))
-		goto finished;	/* We have no business being here! */
-
 	slurm_mutex_lock(&jobacct_lock);
+	if (!list_count(prec_list) || !task_list || !list_count(task_list)) {
+		slurm_mutex_unlock(&jobacct_lock);
+		goto finished;	/* We have no business being here! */
+	}
+
 	itr = list_iterator_create(task_list);
 	while((jobacct = list_next(itr))) {
 		itr2 = list_iterator_create(prec_list);
