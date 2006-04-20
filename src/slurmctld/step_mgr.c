@@ -461,7 +461,8 @@ try_again:
 		if ((nodes_picked == NULL) || (nodes_idle == NULL))
 			fatal("bit_alloc malloc failure");
 		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_p = (struct step_record *) list_next (step_iterator)))
+		while ((step_p = (struct step_record *)
+			list_next(step_iterator)))
 			bit_or (nodes_idle, step_p->step_node_bitmap); 
 		list_iterator_destroy (step_iterator);
 		bit_not(nodes_idle);

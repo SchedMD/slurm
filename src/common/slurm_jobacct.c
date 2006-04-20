@@ -72,6 +72,8 @@ typedef struct slurm_jobacct_ops {
 				       void *data);
 	void (*jobacct_aggregate)     (jobacctinfo_t *dest, 
 				       jobacctinfo_t *from);
+	void (*jobacct_2_sacct)       (sacct_t *sacct, 
+				       jobacctinfo_t *jobacct);
 	void (*jobacct_pack)          (jobacctinfo_t *jobacct, Buf buffer);
 	int (*jobacct_unpack)         (jobacctinfo_t **jobacct, Buf buffer);
 	int (*jobacct_init)	      (char *job_acct_log);
@@ -173,6 +175,7 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
 		"jobacct_p_setinfo",
 		"jobacct_p_getinfo",
 		"jobacct_p_aggregate",
+		"jobacct_p_2_sacct",
 		"jobacct_p_pack",
 		"jobacct_p_unpack",	
 		"jobacct_p_init_slurmctld",
@@ -355,6 +358,18 @@ extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
 		(*(g_jobacct_context->ops.jobacct_aggregate))(dest, from);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return;
+}
+
+extern void jobacct_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct)
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_2_sacct))(sacct, jobacct);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return;
 }

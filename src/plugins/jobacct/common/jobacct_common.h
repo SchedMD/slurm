@@ -49,6 +49,7 @@
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+
 #include <ctype.h>
 
 #define BUFFER_SIZE 4096
@@ -91,6 +92,7 @@ extern int common_getinfo(struct jobacctinfo *jobacct,
 			  enum jobacct_data_type type, void *data);
 extern void common_aggregate(struct jobacctinfo *dest, 
 			     struct jobacctinfo *from);
+extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
 extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
 

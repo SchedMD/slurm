@@ -12,7 +12,7 @@ sacct_LDADD =					\
 	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = sacct.c 
-sacct_SOURCES = sacct.c process.c print.c options.c
+sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c
 
 force:
 $(sacct_LDADD) : force

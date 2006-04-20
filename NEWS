@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.0-pre6
+=============================
+ -- Added logic to "stat" a running job with sacct option -S use -j to specify
+    job.step 
 * Changes in SLURM 1.1.0-pre5
 =============================
  -- Added step completion RPC logic

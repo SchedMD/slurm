@@ -52,8 +52,9 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/sacct/sacct_stat.h"
 
-typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
+typedef struct slurm_jobacct_context *slurm_jobacct_context_t;
 
 /* common */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid);
@@ -64,6 +65,7 @@ extern int jobacct_g_setinfo(jobacctinfo_t *jobacct,
 extern int jobacct_g_getinfo(jobacctinfo_t *jobacct, 
 			     enum jobacct_data_type type, void *data);
 extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
+extern void jobacct_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct);
 extern void jobacct_g_pack(jobacctinfo_t *jobacct, Buf buffer);
 extern int jobacct_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
 

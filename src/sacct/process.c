@@ -223,7 +223,7 @@ int _parse_line(char *f[], void **data)
 	return SLURM_SUCCESS;
 }
 
-void process_start(char *f[], int lc)
+void process_start(char *f[], int lc, int show_full)
 {
 	job_rec_t *job = NULL;
 	job_rec_t *temp = NULL;
@@ -241,13 +241,13 @@ void process_start(char *f[], int lc)
 	}
 	
 	job = temp;
-	
+	job->show_full = show_full;
 	list_append(jobs, job);
 	job->job_start_seen = 1;
 	
 }
 
-void process_step(char *f[], int lc)
+void process_step(char *f[], int lc, int show_full)
 {
 	job_rec_t *job = NULL;
 	
@@ -264,13 +264,14 @@ void process_step(char *f[], int lc)
 	}
 	if (!job) {	/* fake it for now */
 		job = _init_job_rec(temp->header);
-		if ((params.opt_verbose > 1) 
-		    && (params.opt_jobstep_list==NULL)) 
+		if (params.opt_verbose > 1) 
 			fprintf(stderr, 
 				"Note: JOB_STEP record %u.%u preceded "
 				"JOB_START record at line %d\n",
 				temp->header.jobnum, temp->stepnum, lc);
 	}
+	job->show_full = show_full;
+	
 	if ((step = _find_step_record(job, temp->stepnum))) {
 		
 		if (temp->status == JOB_RUNNING) {
@@ -358,36 +359,14 @@ got_step:
 				   step->rusage.ru_nswap);
 
 	/* get the max for all the sacct_t struct */
-	if(job->sacct.max_vsize < step->sacct.max_vsize) {
-		job->sacct.max_vsize = step->sacct.max_vsize;
-		job->sacct.max_vsize_task = step->sacct.max_vsize_task;
-	}
-	job->sacct.ave_vsize += step->sacct.ave_vsize;
+	aggregate_sacct(&job->sacct, &step->sacct);
 	
-	if(job->sacct.max_rss < step->sacct.max_rss) {
-		job->sacct.max_rss = step->sacct.max_rss;
-		job->sacct.max_rss_task = step->sacct.max_rss_task;
-	}
-	job->sacct.ave_rss += step->sacct.ave_rss;
-	
-	if(job->sacct.max_pages < step->sacct.max_pages) {
-		job->sacct.max_pages = step->sacct.max_pages;
-		job->sacct.max_pages_task = step->sacct.max_pages_task;
-	}
-	job->sacct.ave_pages += step->sacct.ave_pages;
-	
-	if((job->sacct.min_cpu > step->sacct.min_cpu) 
-	   || (job->sacct.min_cpu == NO_VAL)) {
-		job->sacct.min_cpu = step->sacct.min_cpu;
-		job->sacct.min_cpu_task = step->sacct.min_cpu_task;
-	}
-	job->sacct.ave_cpu += step->sacct.ave_cpu;
 	/* job->psize = MAX(job->psize, step->psize); */
 /* 	job->vsize = MAX(job->vsize, step->vsize); */
 	job->ncpus = MAX(job->ncpus, step->ncpus);
 }
 
-void process_suspend(char *f[], int lc)
+void process_suspend(char *f[], int lc, int show_full)
 {
 	job_rec_t *job = NULL;
 	job_rec_t *temp = NULL;
@@ -397,6 +376,7 @@ void process_suspend(char *f[], int lc)
 	if (!job)    
 		job = _init_job_rec(temp->header);
 	
+	job->show_full = show_full;
 	if (job->status == JOB_SUSPENDED) 
 		job->elapsed -= temp->elapsed;
 
@@ -405,7 +385,7 @@ void process_suspend(char *f[], int lc)
 	destroy_job(temp);
 }
 	
-void process_terminated(char *f[], int lc)
+void process_terminated(char *f[], int lc, int show_full)
 {
 	job_rec_t *job = NULL;
 	job_rec_t *temp = NULL;
@@ -450,6 +430,8 @@ void process_terminated(char *f[], int lc)
 	job->status = temp->status;
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;
+	job->show_full = show_full;
+	
 finished:
 	destroy_job(temp);
 }
@@ -464,6 +446,34 @@ void convert_num(float num, char *buf)
 		count++;
 	}
 	snprintf(buf, 20, "%.2f%c", num, unit[count]);
+}
+
+void aggregate_sacct(sacct_t *dest, sacct_t *from)
+{
+	if(dest->max_vsize < from->max_vsize) {
+		dest->max_vsize = from->max_vsize;
+		dest->max_vsize_task = from->max_vsize_task;
+	}
+	dest->ave_vsize += from->ave_vsize;
+	
+	if(dest->max_rss < from->max_rss) {
+		dest->max_rss = from->max_rss;
+		dest->max_rss_task = from->max_rss_task;
+	}
+	dest->ave_rss += from->ave_rss;
+	
+	if(dest->max_pages < from->max_pages) {
+		dest->max_pages = from->max_pages;
+		dest->max_pages_task = from->max_pages_task;
+	}
+	dest->ave_pages += from->ave_pages;
+	
+	if((dest->min_cpu > from->min_cpu) 
+	   || (dest->min_cpu == NO_VAL)) {
+		dest->min_cpu = from->min_cpu;
+		dest->min_cpu_task = from->min_cpu_task;
+	}
+	dest->ave_cpu += from->ave_cpu;
 }
 
 void destroy_acct_header(void *object)

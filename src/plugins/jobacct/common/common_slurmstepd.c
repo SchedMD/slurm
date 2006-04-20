@@ -78,12 +78,10 @@ extern struct jobacctinfo *common_stat_task(pid_t pid)
 		if(jobacct->pid == pid)
 			break;
 	}
-	slurm_mutex_unlock(&jobacct_lock);
 	list_iterator_destroy(itr);
-	
-	return jobacct;
+	slurm_mutex_unlock(&jobacct_lock);
 error:
-	return NULL;
+	return jobacct;
 }
 
 extern int common_remove_task(pid_t pid)
