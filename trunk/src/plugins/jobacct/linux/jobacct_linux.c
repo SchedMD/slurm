@@ -320,6 +320,7 @@ static void _get_process_data() {
 	prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
 
+	slurm_mutex_lock(&jobacct_lock);
 	prec_list = list_create(_destroy_prec);
 
 	if (SlashProcOpen) {
@@ -364,17 +365,19 @@ static void _get_process_data() {
 			continue;	/* Assume the process went away */
 
 		prec = xmalloc(sizeof(prec_t));
-		if (_get_process_data_line(statFile, prec)) 
+		if (_get_process_data_line(statFile, prec)) {
 			list_append(prec_list, prec);
-		else 
+		} else 
 			xfree(prec);
 		fclose(statFile);
 	}
 	
-	slurm_mutex_lock(&jobacct_lock);
-	if (!list_count(prec_list) || !task_list || !list_count(task_list)) {
-		slurm_mutex_unlock(&jobacct_lock);
+	if (!list_count(prec_list)) {
 		goto finished;	/* We have no business being here! */
+	}
+	
+	if(!task_list || !list_count(task_list)) {
+		goto finished;
 	}
 
 	itr = list_iterator_create(task_list);
@@ -403,9 +406,9 @@ static void _get_process_data() {
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);	
-	slurm_mutex_unlock(&jobacct_lock);
 
 finished:
+	slurm_mutex_unlock(&jobacct_lock);
 	list_destroy(prec_list);
 	return;
 }
