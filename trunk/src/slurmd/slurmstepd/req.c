@@ -1059,6 +1059,7 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		temp_jobacct = jobacct_g_stat_task(job->task[i]->pid);
 		if(temp_jobacct) {
 			jobacct_g_aggregate(jobacct, temp_jobacct);
+			jobacct_g_free(temp_jobacct);
 			num_tasks++;
 		}
 	}

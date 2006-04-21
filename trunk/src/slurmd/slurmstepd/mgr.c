@@ -969,9 +969,13 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 
 		/************* acct stuff ********************/
 		jobacct = jobacct_g_stat_task(pid);
-		jobacct_g_setinfo(jobacct, JOBACCT_DATA_RUSAGE, &rusage);
-		jobacct_g_aggregate(job->jobacct, jobacct);
-		jobacct_g_remove_task(pid);
+		if(jobacct) {
+			jobacct_g_setinfo(jobacct, 
+					  JOBACCT_DATA_RUSAGE, &rusage);
+			jobacct_g_aggregate(job->jobacct, jobacct);
+			jobacct_g_remove_task(pid);
+			jobacct_g_free(jobacct);
+		} 		
 		/*********************************************/	
 	
 		/* See if the pid matches that of one of the tasks */
