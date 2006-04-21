@@ -279,6 +279,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 						/* sleep and retry */
 						usleep(1000);	
 					}
+					slurm_attr_destroy(&attr_agent);
 					num_block_to_free++;
 				}
 			}		
@@ -553,6 +554,7 @@ static void _block_op(bg_update_t *bg_update_ptr)
 			fatal("Can't create pthread");
 		usleep(1000);	/* sleep and retry */
 	}
+	slurm_attr_destroy(&attr_agent);
 }
 
 

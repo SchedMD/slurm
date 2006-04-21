@@ -250,6 +250,7 @@ void ping_nodes (void)
 				fatal("Can't create pthread");
 			sleep (1); /* sleep and try again */
 		}
+		slurm_attr_destroy (&ping_attr_agent);
 	}
 
 	if (reg_agent_args->node_count == 0)
@@ -271,6 +272,7 @@ void ping_nodes (void)
 				fatal("Can't create pthread");
 			sleep (1); /* sleep and try again */
 		}
+		slurm_attr_destroy (&reg_attr_agent);
 	}
 
 	if (down_hostlist) {

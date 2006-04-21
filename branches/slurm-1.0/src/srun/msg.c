@@ -1221,6 +1221,7 @@ msg_thr_create(srun_job_t *job)
 				fatal("Can't create pthread");
 			sleep(1);
 		}
+		slurm_attr_destroy(&attr);
 		debug("Started msg to parent server thread (%lu)", 
 		      (unsigned long) job->jtid);
 		
@@ -1255,6 +1256,7 @@ msg_thr_create(srun_job_t *job)
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and try again */
 		}
+		slurm_attr_destroy(&attr);
 
 		debug("Started parent to msg server thread (%lu)", 
 		      (unsigned long) job->jtid);

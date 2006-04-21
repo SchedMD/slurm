@@ -218,6 +218,7 @@ void *agent(void *args)
 			fatal("Can't create pthread");
 		sleep(1);	/* sleep and again */
 	}
+	slurm_attr_destroy(&attr_wdog);
 #if 	AGENT_THREAD_COUNT < 1
 	fatal("AGENT_THREAD_COUNT value is invalid");
 #endif
@@ -258,6 +259,7 @@ void *agent(void *args)
 						   thread_mutex);
 			}
 		}
+		slurm_attr_destroy(&thread_ptr[i].attr);
 
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
@@ -891,12 +893,15 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if (agent_cnt < MAX_AGENT_CNT) {	/* execute now */
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
+		int rc;
 		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate
 				(&attr_agent, PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
-		if (pthread_create(&thread_agent, &attr_agent,
-					agent, (void *) agent_arg_ptr) == 0)
+		rc = pthread_create(&thread_agent, &attr_agent,
+				    agent, (void *) agent_arg_ptr);
+		slurm_attr_destroy(&attr_agent);
+		if (rc == 0)
 			return;
 	}
 
@@ -937,6 +942,7 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 			fatal("Can't create pthread");
 		sleep(1);	/* sleep and try again */
 	}
+	slurm_attr_destroy(&attr_agent);
 }
 
 /* _slurmctld_free_job_launch_msg is a variant of slurm_free_job_launch_msg

@@ -205,8 +205,10 @@ msg_thr_create(slurmd_job_t *job)
 	if (pthread_create(&job->msgid, &attr,
 			   &_msg_thr_internal, (void *)job) != 0) {
 		error("pthread_create: %m");
+		slurm_attr_destroy(&attr);
 		return SLURM_ERROR;
 	}
+	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
@@ -260,8 +262,9 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 
 	slurm_attr_init(&attr);
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
-		close(fd);
 		error("Unable to set detachstate on attr: %m");
+		slurm_attr_destroy(&attr);
+		close(fd);
 		return SLURM_ERROR;
 	}
 
@@ -272,6 +275,7 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 		error("stepd_api message engine pthread_create: %m");
 		_handle_accept((void *)param);
 	}
+	slurm_attr_destroy(&attr);
 	param = NULL;
 
 	debug3("Leaving _msg_socket_accept");

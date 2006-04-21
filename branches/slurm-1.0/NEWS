@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix for slurmstepd hang when launching a task. (Needed to install
     list library's atfork handlers).
+ -- Fix memory leak on AIX (and possibly other architectures) due to
+    missing pthread_attr_destroy() calls.
 
 * Changes in SLURM 1.0.10
 =========================

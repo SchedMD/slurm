@@ -1695,6 +1695,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and try again */
 		}
+		slurm_attr_destroy (&kill_attr_agent);
 	}
 }
 

@@ -177,6 +177,7 @@ static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job)
 			error ("pthread_create failed");
 			_p_signal_task((void *) tinfo);
 		}
+		slurm_attr_destroy(&thd[i].attr);
 	}
 
 

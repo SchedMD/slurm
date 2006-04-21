@@ -69,13 +69,16 @@ int
 agent_t::start( void )
 {
 	pthread_attr_t attr;
+	int rc;
 
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	return pthread_create( &m_thread,
-			       &attr,
-			       agent_t::thread_entry,
-			       this );
+	rc = pthread_create( &m_thread,
+			     &attr,
+			     agent_t::thread_entry,
+			     this );
+	slurm_attr_destroy( &attr );
+	return rc;
 }
 
 

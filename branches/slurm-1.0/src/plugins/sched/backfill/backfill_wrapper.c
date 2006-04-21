@@ -73,8 +73,10 @@ int init( void )
 
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	pthread_create( &backfill_thread, &attr, backfill_agent, NULL);
+	if (pthread_create( &backfill_thread, &attr, backfill_agent, NULL))
+		error("Unable to start backfill thread: %m");
 	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_attr_destroy( &attr );
 #endif
 	return SLURM_SUCCESS;
 }

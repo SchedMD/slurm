@@ -768,6 +768,8 @@ io_thread_start(slurmd_job_t *job)
 	if (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job) != 0)
 		fatal("pthread_create: %m");
 	
+	slurm_attr_destroy(&attr);
+	
 	/*fatal_add_cleanup(&_fatal_cleanup, (void *) job);*/
 
 	return 0;

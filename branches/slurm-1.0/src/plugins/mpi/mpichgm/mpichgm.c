@@ -318,9 +318,11 @@ extern int gmpi_thr_create(srun_job_t *job)
 	 */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&gtid, &attr, &_gmpi_thr, (void *)job))
+	if (pthread_create(&gtid, &attr, &_gmpi_thr, (void *)job)) {
+		slurm_attr_destroy(&attr);
 		return -1;
-
+	}
+	slurm_attr_destroy(&attr);
 	setenvf (NULL, "GMPI_PORT",  "%u", ntohs (port));
 	setenvf (NULL, "GMPI_MAGIC", "%u", job->jobid);
 	setenvf (NULL, "GMPI_NP",    "%d", opt.nprocs);

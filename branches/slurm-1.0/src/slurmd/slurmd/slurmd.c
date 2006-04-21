@@ -331,6 +331,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 
 	_increment_thd_count();
 	rc = pthread_create(&id, &attr, &_service_connection, (void *) arg);
+	slurm_attr_destroy(&attr);
 	if (rc != 0) {
 		error("msg_engine: pthread_create: %s", slurm_strerror(rc));
 		_service_connection((void *) arg);
