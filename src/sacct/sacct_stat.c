@@ -199,7 +199,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 			error("pthread_create error %m");
 			exit(0);
 		}
-		pthread_attr_destroy(&attr);
+		slurm_attr_destroy(&attr);
 		thr_count++;
 	}
 	xfree(span);

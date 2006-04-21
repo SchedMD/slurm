@@ -820,10 +820,12 @@ io_thr_create(srun_job_t *job)
 				      &_io_thr_internal, (void *) job))) {
 		if (++retries > MAX_RETRIES) {
 			error ("pthread_create error %m");
+			slurm_attr_destroy(&attr);
 			return SLURM_ERROR;
 		}
 		sleep(1);	/* sleep and try again */
 	}
+	slurm_attr_destroy(&attr);
 	debug("Started IO server thread (%lu)", (unsigned long) job->ioid);
 
 	return SLURM_SUCCESS;

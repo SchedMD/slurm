@@ -218,7 +218,7 @@ int jobacct_p_startpoll(int frequency)
 	}
 	else 
 		debug3("jobacct LINUX dynamic logging enabled");
-	pthread_attr_destroy(&attr);
+	slurm_attr_destroy(&attr);
 #endif
 	return rc;
 }

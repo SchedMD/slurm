@@ -108,10 +108,13 @@ sig_thr_create(srun_job_t *job)
 	slurm_attr_init(&attr);
 
 	while ((e = pthread_create(&job->sigid, &attr, &_sig_thr, job))) {
-		if (++retries > MAX_RETRIES)
+		if (++retries > MAX_RETRIES) {
+			slurm_attr_destroy(&attr);
 			slurm_seterrno_ret(e);
+		}
 		sleep(1);	/* sleep and try again */
 	}
+	slurm_attr_destroy(&attr);
 
 	debug("Started signals thread (%lu)", (unsigned long) job->sigid);
 

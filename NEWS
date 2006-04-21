@@ -91,6 +91,15 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.11
+=========================
+ -- Fix for slurmstepd hang when launching a task. (Needed to install
+    list library's atfork handlers).
+ -- Fix memory leak on AIX (and possibly other architectures) due to
+    missing pthread_attr_destroy() calls.
+ -- Fix rare task standard I/O setup bug.  When the bug hit, stdin, stdout,
+    or stderr could be an invalide file descriptor.
+
 * Changes in SLURM 1.0.10
 =========================
  -- Fix for job accounting logic submitted from Andy Riebs to handle issues

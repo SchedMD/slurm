@@ -328,6 +328,7 @@ _p_send_recv_rc_msg(int messages, slurm_msg_t msg[],
 			_thr_send_recv_rc_msg((void *)args);
 		}
 	}
+	slurm_attr_destroy(&attr);
 
 	/* Wait for pthreads to finish */
 	slurm_mutex_lock(&active_mutex);
