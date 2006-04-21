@@ -387,7 +387,6 @@ static void _get_process_data() {
 	}
 	
 	if(!task_list || !list_count(task_list)) {
-		//slurm_mutex_unlock(&jobacct_lock);
 		goto finished;
 	}
 
