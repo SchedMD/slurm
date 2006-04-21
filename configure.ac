@@ -232,7 +232,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct/Makefile
 		 src/plugins/jobacct/linux/Makefile
 		 src/plugins/jobacct/aix/Makefile
-		 src/plugins/jobacct/bluegene/Makefile
 		 src/plugins/jobacct/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile

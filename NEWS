@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Added logic to "stat" a running job with sacct option -S use -j to specify
     job.step 
+ -- removed jobacct/bluegene (no real need for this) meaning, I don't think 
+    there is a way to gather the data yet.
+ 
 * Changes in SLURM 1.1.0-pre5
 =============================
  -- Added step completion RPC logic

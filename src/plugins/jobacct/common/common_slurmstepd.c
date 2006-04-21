@@ -90,9 +90,10 @@ error:
 	return ret_jobacct;
 }
 
-extern int common_remove_task(pid_t pid)
+extern struct jobacctinfo *common_remove_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
+	struct jobacctinfo *ret_jobacct = NULL;
 	ListIterator itr = NULL;
 
 	slurm_mutex_lock(&jobacct_lock);
@@ -105,17 +106,20 @@ extern int common_remove_task(pid_t pid)
 	while((jobacct = list_next(itr))) { 
 		if(jobacct->pid == pid) {
 			list_remove(itr);
-			common_free_jobacct(jobacct);
 			break;
 		}
 	}
 	list_iterator_destroy(itr);
-	
-	slurm_mutex_unlock(&jobacct_lock);
-	return SLURM_SUCCESS;
+	if(jobacct) {
+		ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
+		memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
+		common_free_jobacct(jobacct);
+	} else {
+		error("pid(%d) not being watched in jobacct!", pid);
+	}
 error:
 	slurm_mutex_unlock(&jobacct_lock);
-	return SLURM_ERROR;
+	return ret_jobacct;
 }
 
 extern void common_suspendpoll()
