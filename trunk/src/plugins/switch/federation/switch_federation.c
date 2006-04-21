@@ -632,4 +632,6 @@ static void _spawn_state_save_thread(char *dir)
 
 	if (pthread_create(&id, &attr, &_state_save_thread, (void *)dir) != 0)
 		error("Could not start federation state saving pthread");
+
+	slurm_attr_destroy(&attr);
 }

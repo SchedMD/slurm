@@ -163,7 +163,7 @@ static int _init_status_pthread(void)
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	pthread_create( &xcpu_thread, &attr, xcpu_agent, NULL);
 	slurm_mutex_unlock( &thread_flag_mutex );
-	pthread_attr_destroy( &attr );
+	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
 }

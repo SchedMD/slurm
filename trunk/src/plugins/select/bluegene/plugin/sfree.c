@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 			/* sleep and retry */
 			usleep(1000);	
 		}
-		pthread_attr_destroy(&attr_agent);
+		slurm_attr_destroy(&attr_agent);
 		num_block_to_free++;
 	} else {
 		if ((rc = rm_get_partitions_info(block_state, &block_list))
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 				/* sleep and retry */
 				usleep(1000);	
 			}
-			pthread_attr_destroy(&attr_agent);
+			slurm_attr_destroy(&attr_agent);
 			num_block_to_free++;
 		}
 		if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {

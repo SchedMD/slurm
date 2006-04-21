@@ -449,8 +449,10 @@ int switch_p_node_init ( void )
 
 	if (pthread_create(&neterr_tid, &attr, _neterr_thr, NULL)) {
 		error("pthread_create: %m");
+		slurm_attr_destroy(&attr);
 		return SLURM_ERROR;
 	}
+	slurm_attr_destroy(&attr);
 
 	/*
 	 *  Wait for successful startup of neterr thread before
