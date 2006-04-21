@@ -1102,6 +1102,15 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 int
 io_dup_stdio(slurmd_task_info_t *t)
 {
+	/*
+	 * These close() calls must come before the dup2, just in case
+	 * any of these file descriptors happen to be the same as
+	 * STDIN_FILENO, STDOUT_FILENO, or STDERR_FILENO
+	 */
+	close(t->to_stdin);
+	close(t->from_stdout);
+	close(t->from_stderr);
+
 	if (dup2(t->stdin_fd, STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
 		return SLURM_FAILURE;
@@ -1117,10 +1126,6 @@ io_dup_stdio(slurmd_task_info_t *t)
 		return SLURM_FAILURE;
 	}
 
-	/* ignore errors on close */
-	close(t->to_stdin );
-	close(t->from_stdout);
-	close(t->from_stderr);
 	return SLURM_SUCCESS;
 }
 
