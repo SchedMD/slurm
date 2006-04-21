@@ -130,7 +130,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	slurm_msg_t *msg_array_ptr;
 	stat_jobacct_msg_t r;
 	int i;
-	int *span = set_span(job->node_cnt, 0);
+	int *span = set_span(job->node_cnt, 4000);
 	forward_t forward;
 	int thr_count = 0;
 	float tempf = 0;
@@ -156,7 +156,13 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 
 	thr_count = 0;
 	forward.cnt = job->node_cnt;
-	forward.name = NULL;
+	/* we need this for forwarding, but not really anything else, so 
+	   this can be set to any sting as long as there are the same 
+	   number as hosts we are going to */
+	forward.name = xmalloc(sizeof(char) * (MAX_SLURM_NAME * forward.cnt));
+	for(i=0; i < forward.cnt; i++) {
+		strncpy(&forward.name[i*MAX_SLURM_NAME], "-", MAX_SLURM_NAME);
+	}
 	forward.addr = job->node_addr;
 	forward.node_id = NULL;
 	forward.timeout = 5000;
@@ -197,7 +203,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 		thr_count++;
 	}
 	xfree(span);
-	
+	xfree(forward.name);
 	if (!thr_count) {
 		fatal("No threads created!! exiting");
 	}
