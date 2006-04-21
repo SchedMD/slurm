@@ -54,7 +54,7 @@ extern int common_add_task(pid_t pid, uint16_t tid)
 	}
 
 	jobacct->pid = pid;
-	debug("adding task %u pid %d to jobacct", tid, pid);
+	debug2("adding task %u pid %d to jobacct", tid, pid);
 	list_push(task_list, jobacct);
 	slurm_mutex_unlock(&jobacct_lock);
 
@@ -111,6 +111,8 @@ extern struct jobacctinfo *common_remove_task(pid_t pid)
 	}
 	list_iterator_destroy(itr);
 	if(jobacct) {
+		debug2("removing task %u pid %d to jobacct", 
+		       jobacct->max_vsize_task, jobacct->pid);
 		ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
 		memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
 		common_free_jobacct(jobacct);
