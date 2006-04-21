@@ -95,6 +95,7 @@ void run_backup(void)
 	if (pthread_create(&slurmctld_config.thread_id_rpc, 
 			&thread_attr_rpc, _background_rpc_mgr, NULL))
 		fatal("pthread_create error %m");
+	slurm_attr_destroy(&thread_attr_rpc);
 
 	/*
 	 * create attached thread for signal handling
@@ -103,6 +104,7 @@ void run_backup(void)
 	if (pthread_create(&slurmctld_config.thread_id_sig,
 			&thread_attr_sig, _background_signal_hand, NULL))
 		fatal("pthread_create %m");
+	slurm_attr_destroy(&thread_attr_sig);
 
 	sleep(5);       /* Give the primary slurmctld set-up time */
 	/* repeatedly ping ControlMachine */

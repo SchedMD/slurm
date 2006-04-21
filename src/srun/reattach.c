@@ -360,6 +360,7 @@ _p_reattach(slurm_msg_t *msg, srun_job_t *job)
 			error("pthread_create: %m");
 			_p_reattach_task((void *) &thd[i]);
 		}
+		slurm_attr_destroy(&thd[i].attr);
 
 	}
 

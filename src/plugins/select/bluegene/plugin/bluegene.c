@@ -1410,6 +1410,7 @@ static int _delete_old_blocks(void)
 					/* sleep and retry */
 					usleep(1000);	
 				}
+				slurm_attr_destroy(&attr_agent);
 				num_block_to_free++;
 			}
 			list_iterator_destroy(itr_curr);
@@ -1472,6 +1473,7 @@ static int _delete_old_blocks(void)
 						/* sleep and retry */
 						usleep(1000);	
 					}
+					slurm_attr_destroy(&attr_agent);
 					num_block_to_free++;
 				}
 			}		

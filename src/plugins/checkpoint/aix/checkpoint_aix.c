@@ -139,6 +139,7 @@ extern int init ( void )
 		error("pthread_create: %m");
 		return SLURM_ERROR;
 	}
+	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
