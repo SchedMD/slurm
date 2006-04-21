@@ -43,6 +43,8 @@ extern int common_endpoll()
 extern int common_add_task(pid_t pid, uint16_t tid)
 {
 	struct jobacctinfo *jobacct = common_alloc_jobacct(tid);
+	
+	slurm_mutex_lock(&jobacct_lock);
 	if(pid <= 0) {
 		error("invalid pid given (%d) for task acct", pid);
 		goto error;
@@ -53,12 +55,12 @@ extern int common_add_task(pid_t pid, uint16_t tid)
 
 	jobacct->pid = pid;
 
-	slurm_mutex_lock(&jobacct_lock);
 	list_push(task_list, jobacct);
 	slurm_mutex_unlock(&jobacct_lock);
 
 	return SLURM_SUCCESS;
 error:
+	slurm_mutex_unlock(&jobacct_lock);
 	common_free_jobacct(jobacct);
 	return SLURM_ERROR;
 }
@@ -66,22 +68,26 @@ error:
 extern struct jobacctinfo *common_stat_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
+	struct jobacctinfo *ret_jobacct = NULL;
 	ListIterator itr = NULL;
+	
+	slurm_mutex_lock(&jobacct_lock);
 	if (!task_list) {
 		error("no task list created!");
 		goto error;
 	}
 
-	slurm_mutex_lock(&jobacct_lock);
 	itr = list_iterator_create(task_list);
 	while((jobacct = list_next(itr))) { 
 		if(jobacct->pid == pid)
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&jobacct_lock);
+	ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
+	memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
 error:
-	return jobacct;
+	slurm_mutex_unlock(&jobacct_lock);
+	return ret_jobacct;
 }
 
 extern int common_remove_task(pid_t pid)
@@ -89,12 +95,12 @@ extern int common_remove_task(pid_t pid)
 	struct jobacctinfo *jobacct = NULL;
 	ListIterator itr = NULL;
 
+	slurm_mutex_lock(&jobacct_lock);
 	if (!task_list) {
 		error("no task list created!");
 		goto error;
 	}
 
-	slurm_mutex_lock(&jobacct_lock);
 	itr = list_iterator_create(task_list);
 	while((jobacct = list_next(itr))) { 
 		if(jobacct->pid == pid) {
@@ -103,11 +109,12 @@ extern int common_remove_task(pid_t pid)
 			break;
 		}
 	}
-	slurm_mutex_unlock(&jobacct_lock);
 	list_iterator_destroy(itr);
 	
+	slurm_mutex_unlock(&jobacct_lock);
 	return SLURM_SUCCESS;
 error:
+	slurm_mutex_unlock(&jobacct_lock);
 	return SLURM_ERROR;
 }
 

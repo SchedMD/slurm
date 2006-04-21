@@ -78,6 +78,7 @@ typedef struct prec {	/* process record */
 
 static int freq = 0;
 static List prec_list = NULL;
+static int processing = 0;
 /* Finally, pre-define all the routines. */
 
 static void _get_offspring_data(prec_t *ancestor, pid_t pid);
@@ -224,8 +225,12 @@ int jobacct_p_startpoll(int frequency)
 
 int jobacct_p_endpoll()
 {
+	slurm_mutex_lock(&jobacct_lock);
 	if(task_list)
 		list_destroy(task_list);
+	task_list = NULL;
+	slurm_mutex_unlock(&jobacct_lock);
+	
 	return common_endpoll();
 }
 
@@ -320,7 +325,10 @@ static void _get_process_data() {
 	prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
 
+	if(processing)
+		return;
 	slurm_mutex_lock(&jobacct_lock);
+	processing = 1;
 	prec_list = list_create(_destroy_prec);
 
 	if (SlashProcOpen) {
@@ -377,6 +385,7 @@ static void _get_process_data() {
 	}
 	
 	if(!task_list || !list_count(task_list)) {
+		//slurm_mutex_unlock(&jobacct_lock);
 		goto finished;
 	}
 
@@ -406,10 +415,11 @@ static void _get_process_data() {
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);	
-
+	
 finished:
-	slurm_mutex_unlock(&jobacct_lock);
 	list_destroy(prec_list);
+	processing = 0;	
+	slurm_mutex_unlock(&jobacct_lock);
 	return;
 }
 
