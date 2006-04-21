@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     list library's atfork handlers).
  -- Fix memory leak on AIX (and possibly other architectures) due to
     missing pthread_attr_destroy() calls.
+ -- Fix rare task standard I/O setup bug.  When the bug hit, stdin, stdout,
+    or stderr could be an invalide file descriptor.
 
 * Changes in SLURM 1.0.10
 =========================
