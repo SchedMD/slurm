@@ -245,7 +245,7 @@ struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
 	return common_stat_task(pid);
 }
 
-int jobacct_p_remove_task(pid_t pid)
+struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 {
 	return common_remove_task(pid);
 }
@@ -325,8 +325,10 @@ static void _get_process_data() {
 	prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
 
-	if(processing)
+	if(processing) {
+		debug("already running, returning");
 		return;
+	}
 	slurm_mutex_lock(&jobacct_lock);
 	processing = 1;
 	prec_list = list_create(_destroy_prec);

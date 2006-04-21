@@ -109,7 +109,7 @@ extern int common_suspend_slurmctld(struct job_record *job_ptr);
 extern int common_endpoll();
 extern int common_add_task(pid_t pid, uint16_t tid);
 extern struct jobacctinfo *common_stat_task(pid_t pid);
-extern int common_remove_task(pid_t pid);
+extern struct jobacctinfo *common_remove_task(pid_t pid);
 extern void common_suspendpoll();
 
 extern bool fini;

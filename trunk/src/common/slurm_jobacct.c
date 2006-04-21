@@ -87,7 +87,7 @@ typedef struct slurm_jobacct_ops {
 	int (*jobacct_endpoll)	      ();
 	int (*jobacct_add_task)       (pid_t pid, uint16_t tid);
 	jobacctinfo_t *(*jobacct_stat_task)(pid_t pid);
-	int (*jobacct_remove_task)    (pid_t pid);
+	jobacctinfo_t *(*jobacct_remove_task)(pid_t pid);
 	void (*jobacct_suspendpoll)   ();
 } slurm_jobacct_ops_t;
 
@@ -559,17 +559,17 @@ extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid)
 	return jobacct;
 }
 
-extern int jobacct_g_remove_task(pid_t pid)
+extern jobacctinfo_t *jobacct_g_remove_task(pid_t pid)
 {
-	int retval = SLURM_SUCCESS;
+	jobacctinfo_t *jobacct = NULL;
 	if (_slurm_jobacct_init() < 0)
-		return SLURM_ERROR;
+		return jobacct;
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		retval = (*(g_jobacct_context->ops.jobacct_remove_task))(pid);
+		jobacct = (*(g_jobacct_context->ops.jobacct_remove_task))(pid);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
-	return retval;
+	return jobacct;
 }
 
 extern void jobacct_g_suspendpoll()

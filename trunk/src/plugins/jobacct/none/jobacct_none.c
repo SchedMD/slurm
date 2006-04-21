@@ -194,9 +194,9 @@ struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
 	return NULL;
 }
 
-int jobacct_p_remove_task(pid_t pid)
+struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 void jobacct_p_suspendpoll()
