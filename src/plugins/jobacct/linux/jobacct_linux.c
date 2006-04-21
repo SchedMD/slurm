@@ -77,11 +77,9 @@ typedef struct prec {	/* process record */
 } prec_t;
 
 static int freq = 0;
-static List prec_list = NULL;
-static int processing = 0;
 /* Finally, pre-define all the routines. */
 
-static void _get_offspring_data(prec_t *ancestor, pid_t pid);
+static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
 static int _get_process_data_line(FILE *in, prec_t *prec);
 static void *_watch_tasks(void *arg);
@@ -262,7 +260,8 @@ void jobacct_p_suspendpoll()
  * usage data to the ancestor's <prec> record. Recurse to gather data
  * for *all* subsequent generations.
  *
- * IN:	ancestor	The entry in precTable[] to which the data
+ * IN:	prec_list       list of prec's
+ *      ancestor	The entry in precTable[] to which the data
  * 			should be added. Even as we recurse, this will
  * 			always be the prec for the base of the family
  * 			tree.
@@ -276,7 +275,7 @@ void jobacct_p_suspendpoll()
  * THREADSAFE! Only one thread ever gets here.
  */
 static void
-_get_offspring_data(prec_t *ancestor, pid_t pid) {
+_get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
 	
 	ListIterator itr;
 	prec_t *prec = NULL;
@@ -284,7 +283,7 @@ _get_offspring_data(prec_t *ancestor, pid_t pid) {
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
 		if (prec->ppid == pid) {
-			_get_offspring_data(ancestor, prec->pid);
+			_get_offspring_data(prec_list, ancestor, prec->pid);
 			ancestor->usec += prec->usec;
 			ancestor->ssec += prec->ssec;
 			ancestor->pages += prec->pages;
@@ -318,18 +317,20 @@ static void _get_process_data() {
 	FILE		*statFile;
 	char		*iptr, *optr;
 	char		statFileName[256];	/* Allow ~20x extra length */
-	
+	List prec_list = NULL;
+
 	int		i;
 	ListIterator itr;
 	ListIterator itr2;
 	prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
+	static int processing = 0;
 
 	if(processing) {
 		debug("already running, returning");
 		return;
 	}
-	slurm_mutex_lock(&jobacct_lock);
+	
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
 
@@ -386,7 +387,9 @@ static void _get_process_data() {
 		goto finished;	/* We have no business being here! */
 	}
 	
+	slurm_mutex_lock(&jobacct_lock);
 	if(!task_list || !list_count(task_list)) {
+		slurm_mutex_unlock(&jobacct_lock);
 		goto finished;
 	}
 
@@ -396,7 +399,8 @@ static void _get_process_data() {
 		while((prec = list_next(itr2))) {
 			if (prec->ppid == jobacct->pid) {
 				/* find all my descendents */
-				_get_offspring_data(prec, prec->pid);
+				_get_offspring_data(prec_list, 
+						    prec, prec->pid);
 				/* tally their usage */
 				jobacct->max_rss = jobacct->tot_rss = 
 					MAX(jobacct->max_rss, prec->rss);
@@ -416,11 +420,11 @@ static void _get_process_data() {
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);	
+	slurm_mutex_unlock(&jobacct_lock);
 	
 finished:
 	list_destroy(prec_list);
 	processing = 0;	
-	slurm_mutex_unlock(&jobacct_lock);
 	return;
 }
 
