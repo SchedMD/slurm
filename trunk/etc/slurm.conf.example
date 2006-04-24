@@ -124,8 +124,9 @@
 #                         (If a logfile is set for slurmctld, logging via
 #                          syslog will be turned off)
 #
-#    "SlurmdLogFile"    : fully qualified pathname to slurmd logfile
-#                         (same caveat as SlurmctldLogfile above)
+#    "SlurmdLogFile"    : fully qualified pathname to slurmd logfile,
+#                         may contain "%h" for hostname substitution
+#                         (same caveat as SlurmctldLogFile above)
 #
 # Example:
 #
@@ -133,7 +134,7 @@
 # SlurmdDebug=4		# default is `3'
 #
 # SlurmctldLogFile=/var/log/slurmctld.log  # default is to log via syslog()
-# SlurmdLogFile=/var/log/slurmd.log        # default is to log via syslog()
+# SlurmdLogFile=/var/log/slurmd.log.%h     # substitute hostname for "%h"
 
 
 # o Define an alternate location for slurmd and slurmctld pid files, 
