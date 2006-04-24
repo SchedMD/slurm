@@ -377,6 +377,8 @@ The default value is 3.
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's 
 logs are written.
 The default value is none (performs logging via syslog).
+Any "%h" within the name is replaced with the hostname on which the 
+\fBslurmd\fR is running.
 .TP
 \fBSlurmdPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write 

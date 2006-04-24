@@ -141,6 +141,7 @@ main (int argc, char *argv[])
 
 	init_setproctitle(argc, argv);
 
+	/* NOTE: conf->logfile always NULL at this point */
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
 	xsignal(SIGTERM, &_term_handler);
@@ -486,6 +487,25 @@ _free_and_set(char **confvar, char *newval)
 		return 0;
 }
 
+/* Replace any "%h" in logfile name with actual hostname */
+static void
+_massage_logfile(void)
+{
+	char *ptr, *new_fname;
+	int new_len;
+
+	if ((ptr = strstr(conf->logfile, "%h")) == NULL)
+		return;
+
+	new_len = strlen(conf->logfile) + strlen(conf->hostname);
+	new_fname = xmalloc(new_len);
+	*ptr = '\0';
+	snprintf(new_fname, new_len, "%s%s%s", conf->logfile, conf->hostname, 
+		&ptr[2]);
+	xfree(conf->logfile);
+	conf->logfile = new_fname;
+}
+
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
@@ -510,6 +530,7 @@ _read_config()
 
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
+	_massage_logfile();	
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
