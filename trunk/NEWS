@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     job.step 
  -- removed jobacct/bluegene (no real need for this) meaning, I don't think 
     there is a way to gather the data yet.
+ -- Added support for mapping "%h" in configured SlurmdLog to the hostname.
  
 * Changes in SLURM 1.1.0-pre5
 =============================
