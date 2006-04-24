@@ -75,7 +75,6 @@
  */
 static void  _make_tmpdir(slurmd_job_t *job);
 static char *_signame(int signo);
-static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static void  _setup_spawn_io(slurmd_job_t *job);
 static int   _run_script(const char *name, const char *path, 
 		slurmd_job_t *job);
@@ -109,23 +108,6 @@ static void _setup_spawn_io(slurmd_job_t *job)
 		
 	if (fd > 2)
 		(void) close(fd);
-}
-
-/* Close write end of stdin (at the very least)
- */
-static void
-_cleanup_file_descriptors(slurmd_job_t *j)
-{
-	int i;
-	for (i = 0; i < j->ntasks; i++) {
-		slurmd_task_info_t *t = j->task[i];
-		/*
-		 * Ignore errors on close()
-		 */
-		close(t->to_stdin); 
-		close(t->from_stdout);
-		close(t->from_stdout);
-	}
 }
 
 /* Search for "export NAME=value" records in buf and 
@@ -274,8 +256,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit(1);
 	}
 	close(waitfd);
-
-	_cleanup_file_descriptors(job);
 
 	job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;

@@ -650,6 +650,11 @@ _local_filename (char *fname, int taskid)
 	return (NULL);
 }
 
+/*
+ * This function sets the close-on-exec flag on all opened file descriptors.
+ * io_dup_stdio will will remove the close-on-exec flags for just one task's
+ * file descriptors.
+ */
 static int
 _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 {
@@ -668,6 +673,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdin file: %m");
 			return SLURM_ERROR;
 		}
+		fd_set_close_on_exec(task->stdin_fd);
 		task->to_stdin = -1;  /* not used */
 	} else {
 		/* create pipe and eio object */
@@ -678,6 +684,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		task->stdin_fd = pin[0];
+		fd_set_close_on_exec(task->stdin_fd);
 		task->to_stdin = pin[1];
 		fd_set_close_on_exec(task->to_stdin);
 		fd_set_nonblocking(task->to_stdin);
@@ -697,6 +704,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdout file: %m");
 			return SLURM_ERROR;
 		}
+		fd_set_close_on_exec(task->stdout_fd);
 		task->from_stdout == -1; /* not used */
 	} else {
 		/* create pipe and eio object */
@@ -707,6 +715,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		task->stdout_fd = pout[1];
+		fd_set_close_on_exec(task->stdout_fd);
 		task->from_stdout = pout[0];
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
@@ -728,6 +737,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stderr file: %m");
 			return SLURM_ERROR;
 		}
+		fd_set_close_on_exec(task->stderr_fd);
 		task->from_stderr == -1; /* not used */
 	} else {
 		/* create pipe and eio object */
@@ -738,6 +748,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		task->stderr_fd = perr[1];
+		fd_set_close_on_exec(task->stderr_fd);
 		task->from_stderr = perr[0];
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
@@ -1102,29 +1113,23 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 int
 io_dup_stdio(slurmd_task_info_t *t)
 {
-	/*
-	 * These close() calls must come before the dup2, just in case
-	 * any of these file descriptors happen to be the same as
-	 * STDIN_FILENO, STDOUT_FILENO, or STDERR_FILENO
-	 */
-	close(t->to_stdin);
-	close(t->from_stdout);
-	close(t->from_stderr);
-
 	if (dup2(t->stdin_fd, STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
 		return SLURM_FAILURE;
 	}
+	fd_set_noclose_on_exec(STDIN_FILENO);
 
 	if (dup2(t->stdout_fd, STDOUT_FILENO) < 0) {
 		error("dup2(stdout): %m");
 		return SLURM_FAILURE;
 	}
+	fd_set_noclose_on_exec(STDOUT_FILENO);
 
 	if (dup2(t->stderr_fd, STDERR_FILENO) < 0) {
 		error("dup2(stderr): %m");
 		return SLURM_FAILURE;
 	}
+	fd_set_noclose_on_exec(STDERR_FILENO);
 
 	return SLURM_SUCCESS;
 }

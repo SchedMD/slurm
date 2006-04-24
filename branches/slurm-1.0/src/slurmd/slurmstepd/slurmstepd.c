@@ -80,7 +80,11 @@ main (int argc, char *argv[])
 
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
 			  &ngids, &gids);
-	close(STDIN_FILENO);
+
+	/* Fancy way of closing stdin that keeps STDIN_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDIN_FILENO);
 
 	job = _step_setup(cli, self, msg);
 	job->ngids = ngids;
@@ -95,7 +99,11 @@ main (int argc, char *argv[])
 	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
-	close(STDOUT_FILENO);
+
+	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDOUT_FILENO);
 
 	rc = job_manager(job); /* blocks until step is complete */
 

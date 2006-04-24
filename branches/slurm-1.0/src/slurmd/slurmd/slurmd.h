@@ -53,6 +53,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 extern pid_t getpgid(pid_t pid);
 #endif
 
+extern int devnull;
 
 /*
  * Global config type

@@ -441,10 +441,18 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("dup2 over STDIN_FILENO: %m");
 			exit(1);
 		}
+		fd_set_close_on_exec(to_stepd[0]);
 		if (dup2(to_slurmd[1], STDOUT_FILENO) == -1) {
 			error("dup2 over STDOUT_FILENO: %m");
 			exit(1);
 		}
+		fd_set_close_on_exec(to_slurmd[1]);
+		if (dup2(devnull, STDERR_FILENO) == -1) {
+			error("dup2 /dev/null to STDERR_FILENO: %m");
+			exit(1);
+		}
+		fd_set_noclose_on_exec(STDERR_FILENO);
+		log_fini();
 		argv = xmalloc(2 * sizeof(char *));
 		argv[0] = SLURMD_STEP_PATH;
 		argv[1] = NULL;
