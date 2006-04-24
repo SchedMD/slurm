@@ -20,7 +20,7 @@ command displays job accounting data stored in the job accounting log
 file in a variety of forms for your analysis.
 The 
 .BR "sacct "
-command displays information on jobs, job steps, status, and errors by 
+command displays information on jobs, job steps, status, and exitcodes by 
 default.
 You can tailor the output with the use of the 
 \f3--fields=\fP 
@@ -64,13 +64,13 @@ Displays a brief listing, which includes the following data:
 .RS 
 .TP "3"
 \(bu
-\f3jobstep\fP 
+\f3jobid\fP 
 .TP "3"
 \(bu
 \f3status\fP 
 .TP "3"
 \(bu
-\f3error\fP 
+\f3exitcode\fP 
 .RE 
 .IP 
 This option has no effect when the 
@@ -130,8 +130,8 @@ Thus, the following two commands display the same data but in different order:
 .PP
 .nf 
 .ft 3
-# sacct --fields=jobstep,status
-Jobstep    Status
+# sacct --fields=jobid,status
+Jobid    Status
 ---------- ----------
 3          COMPLETED
 3.0        COMPLETED
@@ -143,8 +143,8 @@ Jobstep    Status
 .PP
 .nf 
 .ft 3
-# sacct --fields=status,jobstep
-Status     Jobstep
+# sacct --fields=status,jobid
+Status     Jobid
 ---------- ----------
 COMPLETED  3
 COMPLETED  3.0
@@ -156,7 +156,7 @@ COMPLETED  3.0
 The default value for the 
 \f2field_list\fP 
 operand is 
-\f3"jobstep,partition,process,ncpus,status,error"\fP\c
+\f3"jobid,partition,process,ncpus,status,exitcode"\fP\c
 \&.
 .IP 
 This option has no effect when the 
@@ -198,15 +198,16 @@ option.
 .nf 
 .ft 3
 Fields available:
-   cpu         elapsed     error       finished
+   cpu         elapsed     exitcode    blockid
    gid         group       idrss       inblocks
    isrss       ixrss       job         jobname
-   jobstep     majflt      minflt      msgrcv
+   jobid     majflt      minflt      msgrcv
    msgsnd      ncpus       nivcsw      nodes
-   nprocs      nsignals    nswap       ntasks
+   nprocs      ntasks      nsignals    nswap
    nvcsw       outblocks   partition   psize
    rss         status      submitted   systemcpu
    uid         user        usercpu     vsize 
+   cputime
 
 .ft 1
 .fi 
@@ -214,17 +215,17 @@ Fields available:
 .IP 
 The section titled "Job Accounting Fields" describes these fields.
 .TP 
-\f3\-j \fP\f2job_list\fP \f3,\fP  \f3--jobs\fP\f3=\fP\f2job_list\fP
-Displays information about the specified job or list of jobs.
+\f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3--jobs\fP\f3=\fP\f2job(.step)\fP
+Displays information about the specified job(.step) or list of job(.step)s.
 .IP 
 The 
-\f2job_list\fP 
+\f2job(.step)\fP 
 parameter is a comma-separated list of jobs.
 Space characters are not permitted in this list.
 .IP 
 The default is to display information on all jobs.
 .TP 
-\f3\-J \fP\f2job.step\fP \f3,\fP  \f3--jobstep\fP\f3=\fP\f2job.step\fP
+\f3\-J \fP\f2job.step\fP \f3,\fP  \f3--jobid\fP\f3=\fP\f2job.step\fP
 Displays data only for the job steps specified by the 
 \f2job.step\fP 
 operand, which is a comma-separated list.
@@ -240,19 +241,25 @@ Displays a long listing, which includes the following data:
 \f3jobstep\fP 
 .TP "3"
 \(bu
-\f3usercpu\fP 
+\f3jobname\fP 
 .TP "3"
 \(bu
-\f3systemcpu\fP 
+\f3partition\fP 
 .TP "3"
 \(bu
-\f3minflt\fP 
+\f3vsize\fP 
 .TP "3"
 \(bu
-\f3majflt\fP 
+\f3rss\fP 
 .TP "3"
 \(bu
-\f3nprocs\fP 
+\f3pages\fP 
+.TP "3"
+\(bu
+\f3cputime\fP 
+.TP "3"
+\(bu
+\f3ntasks\fP 
 .TP "3"
 \(bu
 \f3ncpus\fP 
@@ -264,7 +271,7 @@ Displays a long listing, which includes the following data:
 \f3status\fP 
 .TP "3"
 \(bu
-\f3error\fP 
+\f3exitcode\fP 
 .RE 
 .TP 
 \f3--noheader\fP
@@ -379,7 +386,7 @@ seconds
 hundredths of seconds
 .RE 
 .TP 
-\f3error\fP 
+\f3exitcode\fP 
 The first non-zero error code returned by any job step.
 .TP 
 \f3finished\fP 
@@ -715,7 +722,7 @@ Timed out
 .RE 
 .TP 
 13
-\f3error\fP 
+\f3exitcode\fP 
 .TP 
 14
 \f3nprocs\fP 
@@ -876,7 +883,7 @@ Timed out
 .RE 
 .TP 
 13
-\f3error\fP 
+\f3exitcode\fP 
 .TP 
 14
 \f3nprocs\fP 
@@ -965,7 +972,7 @@ command:
 .nf 
 .ft 3
 # sacct
-Jobstep    Jobname    Partition    Ncpus Status     Error
+Jobstep    Jobname    Partition    Ncpus Status     Exitcode
 ---------- ---------- ---------- ------- ---------- -----
 2          script01   srun             1 RUNNING        0
 3          script02   srun             1 RUNNING        0
@@ -984,7 +991,7 @@ option.
 .nf 
 .ft 3
 # sacct --brief
-Jobstep    Status     Error
+Jobstep    Status     Exitcode
 ---------- ---------- -----
 2          RUNNING        0
 3          RUNNING        0
@@ -999,7 +1006,7 @@ Jobstep    Status     Error
 .nf 
 .ft 3
 # sacct --total
-Jobstep    Jobname    Partition    Ncpus Status     Error
+Jobstep    Jobname    Partition    Ncpus Status     Exitcode
 ---------- ---------- ---------- ------- ---------- -----
 3          sja_init   andy             1 COMPLETED      0
 4          sjaload    andy             2 COMPLETED      0

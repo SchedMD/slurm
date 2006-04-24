@@ -54,9 +54,10 @@
  * which have no logical jobsteps. */
 #define BATCH_JOB_TIMESTAMP 0
 
-#define BRIEF_FIELDS "jobstep,status,exitcode"
-#define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,exitcode"
-#define LONG_FIELDS "jobstep,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
+#define BRIEF_FIELDS "jobid,status,exitcode"
+#define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,status,exitcode"
+#define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,status"
+#define LONG_FIELDS "jobid,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
@@ -281,7 +282,7 @@ void print_isrss(type_t type, void *object);
 void print_ixrss(type_t type, void *object);
 void print_job(type_t type, void *object);
 void print_name(type_t type, void *object);
-void print_step(type_t type, void *object);
+void print_jobid(type_t type, void *object);
 void print_majflt(type_t type, void *object);
 void print_minflt(type_t type, void *object);
 void print_msgrcv(type_t type, void *object);

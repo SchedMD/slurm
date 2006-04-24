@@ -1189,6 +1189,8 @@ _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
 	resp_msg.data         = resp;
 	resp_msg.forward = msg->forward;
 	resp_msg.ret_list = msg->ret_list;
+	resp_msg.forward_struct_init = msg->forward_struct_init;
+	resp_msg.forward_struct = msg->forward_struct;
 	
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_stat_jobacct_msg(resp);
@@ -1269,7 +1271,9 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 		resp_msg.data         = &resp;
 		resp_msg.forward = msg->forward;
 		resp_msg.ret_list = msg->ret_list;
-
+		resp_msg.forward_struct_init = msg->forward_struct_init;
+		resp_msg.forward_struct = msg->forward_struct;
+	
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);

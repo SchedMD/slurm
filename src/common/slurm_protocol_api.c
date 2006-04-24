@@ -1005,7 +1005,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 		slurm_mutex_unlock(&msg->forward_struct->forward_mutex);
 		destroy_forward_struct(msg->forward_struct);
 	}
-
+	
 	init_header(&header, msg, SLURM_PROTOCOL_NO_FLAGS);
 
 	/*
@@ -1800,7 +1800,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 
 extern int *set_span(int total,  uint16_t tree_width)
 {
-	int *span;
+	int *span = NULL;
 	int left = total;
 	int i = 0;
 

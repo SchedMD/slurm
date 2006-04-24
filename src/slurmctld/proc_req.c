@@ -1539,7 +1539,8 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
  *	represent the termination of an entire job */
 static void  _slurm_rpc_stat_jobacct(slurm_msg_t * msg)
 {
-	int error_code = SLURM_SUCCESS, i=0;
+	int error_code = SLURM_SUCCESS, i = 0, i2 = 0, i3 = 0;
+	int count = 0, count2 = 0;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	stat_jobacct_msg_t *req = (stat_jobacct_msg_t *)msg->data;
@@ -1584,15 +1585,33 @@ static void  _slurm_rpc_stat_jobacct(slurm_msg_t * msg)
 
 		bit_fmt(bitstring, BUFFER_SIZE, step_ptr->step_node_bitmap);
 		node_pos = bitfmt2int(bitstring);
-
-		for(i=0; i < node_cnt; i++) {
-			if(node_pos[i] == -1) {
-				error("error with bitfmt2int");
-				break;
+		count = 0;
+		count2 = 0;
+		i = node_pos[count++];
+		i2 = node_pos[count++];
+		while(i != -1) {
+			if(i2 == -1) {
+				memcpy(&resp.node_addr[count2++], 
+				       &node_record_table_ptr[i].slurm_addr, 
+				       sizeof(slurm_addr));
+			       
+				
+			} else {
+				for(i3=i; i3 <= i2; i3++) {
+					if(i3 == -1) {
+						error("error with bitfmt2int "
+						      "on the %d one",
+						      i3);
+						break;
+					}
+					memcpy(&resp.node_addr[count2++], 
+					       &node_record_table_ptr[i3].
+					       slurm_addr, 
+					       sizeof(slurm_addr));
+				}
 			}
-			memcpy(&resp.node_addr[i], 
-			       &job_ptr->node_addr[node_pos[i]], 
-			       sizeof(slurm_addr));			
+			i = node_pos[count++];
+			i2 = node_pos[count++];	
 		}
 		resp.node_list = xstrdup(step_ptr->step_node_list);
 		resp.node_cnt = node_cnt;
