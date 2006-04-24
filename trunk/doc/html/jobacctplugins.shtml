@@ -90,21 +90,23 @@ jobacct_p_add_task() used to add a task to the poller.
 <p class="commandline">jobacctinfo_t *jobacct_p_stat_task(pid_t pid) 
 <p style="margin-left:.2in"><b>Description</b>:
 jobacct_p_stat_task() used to get most recent information about task.
-DO NOT FREE the information returned by this function!
+You need to FREE the information returned by this function!
 <p style="margin-left:.2in"><b>Arguments</b>: 
 <span class="commandline"> pid</span> (input) Process id  
 <p style="margin-left:.2in"><b>Returns</b>: 
 <span class="commandline">jobacctinfo structure pointer</span> on success, or
 <span class="commandline">NULL</span> on failure.
 
-<p class="commandline">int jobacct_p_remove_task(pid_t pid) 
+<p class="commandline">jobacctinfo_t *jobacct_p_remove_task(pid_t pid) 
 <p style="margin-left:.2in"><b>Description</b>:
 jobacct_p_remove_task() used to remove a task from the poller.
+You need to FREE the information returned by this function!
 <p style="margin-left:.2in"><b>Arguments</b>: 
 <span class="commandline"> pid</span> (input) Process id  
 <p style="margin-left:.2in"><b>Returns</b>: 
-<span class="commandline">SLURM_SUCCESS</span> on success, or
-<span class="commandline">SLURM_FAILURE</span> on failure.
+<span class="commandline">Pointer to removed jobacctinfo_t structure</span> 
+on success, or 
+<span class="commandline">NULL</span> on failure.
 
 <p class="footer"><a href="#top">top</a>
 
@@ -276,6 +278,19 @@ different jobacctinfo structures.
 (input/output) initial structure to be applied to.
 <span class="commandline">from</span> 
 (input) new info to apply to dest.
+<p style="margin-left:.2in"><b>Returns</b>: 
+<span class="commandline">none</span>
+
+<p class="commandline">
+void jobacct_p_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct) 
+<p style="margin-left:.2in"><b>Description</b>:
+jobacct_p_2_sacct() is called to transfer information from data structure 
+jobacct to structure sacct.
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">sacct</span> 
+(input/output) initial structure to be applied to.
+<span class="commandline">jobacct</span> 
+(input) jobacctinfo_t structure containing information to apply to sacct.
 <p style="margin-left:.2in"><b>Returns</b>: 
 <span class="commandline">none</span>
 

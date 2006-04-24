@@ -336,7 +336,7 @@ void print_name(type_t type, void *object)
 	} 
 }
 
-void print_step(type_t type, void *object)
+void print_jobid(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;

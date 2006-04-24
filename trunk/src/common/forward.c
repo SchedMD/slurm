@@ -150,9 +150,10 @@ nothing_sent:
 	while((returned_type = list_pop(ret_list)) != NULL) {
 		itr = list_iterator_create(fwd_msg->ret_list);	
 		while((type = (ret_types_t *) list_next(itr)) != NULL) {
-			if(type->msg_rc == returned_type->msg_rc) {
+			if(type->msg_rc == returned_type->msg_rc){
 				while((ret_data_info = 
-				      list_pop(returned_type->ret_data_list))) {
+				       list_pop(returned_type->
+						ret_data_list))) {
 					list_push(type->ret_data_list, 
 						  ret_data_info);
 				}
@@ -467,9 +468,12 @@ void destroy_data_info(void *object)
 	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
 	if(ret_data_info) {
 		xfree(ret_data_info->node_name);
-		/*FIXME: needs to probably be something for all 
-		  types or messages */
-		xfree(ret_data_info->data);
+		/*
+		  FIXME: needs to probably be something for all 
+		  types or messages --
+		  Handle deletion of data inside of call not here
+		  xfree(ret_data_info->data);
+		*/
 		xfree(ret_data_info);
 	}
 }

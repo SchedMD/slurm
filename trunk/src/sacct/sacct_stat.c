@@ -57,9 +57,9 @@ void *_stat_thread(void *args)
 	int ntasks = 0;
 
 	memset(&temp_sacct, 0, sizeof(sacct_t));
-	temp_sacct.min_cpu = NO_VAL;
+	temp_sacct.min_cpu = (float)NO_VAL;
 	memset(&temp_sacct2, 0, sizeof(sacct_t));
-	temp_sacct2.min_cpu = NO_VAL;
+	temp_sacct2.min_cpu = (float)NO_VAL;
 	
 	ret_list = slurm_send_recv_node_msg(msg, 
 					    &resp_msg, 
@@ -73,45 +73,66 @@ void *_stat_thread(void *args)
 	switch (resp_msg.msg_type) {
 	case MESSAGE_STAT_JOBACCT:
 		jobacct_msg = (stat_jobacct_msg_t *)resp_msg.data;
+		if(jobacct_msg) {
+			debug2("got it back for job %d %d tasks", 
+			     jobacct_msg->job_id,
+			     jobacct_msg->num_tasks);
+			jobacct_g_2_sacct(&temp_sacct, jobacct_msg->jobacct);
+			ntasks = jobacct_msg->num_tasks;
+			slurm_free_stat_jobacct_msg(jobacct_msg);
+		} else {
+			error("No Jobacct message returned!");
+		}
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);	
-		error("there was an error with the request rc = %d", rc);
-		goto cleanup;
+		error("there was an error with the request rc = %s", 
+		      slurm_strerror(rc));
 		break;
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		break;
 	}
 
-	if(jobacct_msg) {
-		info("got it back for job %d %d tasks", jobacct_msg->job_id,
-		     jobacct_msg->num_tasks);
-		jobacct_g_2_sacct(&temp_sacct, jobacct_msg->jobacct);
-		ntasks = jobacct_msg->num_tasks;
-		slurm_free_stat_jobacct_msg(jobacct_msg);
-	} else {
-		error("2 there was an error with the request rc = %d", rc);
-		goto cleanup;
-	}
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
-		data_itr = list_iterator_create(ret_type->ret_data_list);
-		while((ret_data_info = list_next(data_itr)) != NULL) {
-			jobacct_msg = 
-				(stat_jobacct_msg_t *)ret_data_info->data;
-			if(jobacct_msg) {
-				info("got it back for job %d", 
-				     jobacct_msg->job_id);
-				jobacct_g_2_sacct(&temp_sacct2, 
-						  jobacct_msg->jobacct);
-				ntasks += jobacct_msg->num_tasks;
-				slurm_free_stat_jobacct_msg(jobacct_msg);
-				aggregate_sacct(&temp_sacct, &temp_sacct2);
-			}	
+		switch (ret_type->type) {
+		case MESSAGE_STAT_JOBACCT:
+			data_itr = 
+				list_iterator_create(ret_type->ret_data_list);
+			while((ret_data_info = list_next(data_itr)) != NULL) {
+				jobacct_msg = (stat_jobacct_msg_t *)
+					ret_data_info->data;
+				if(jobacct_msg) {
+					debug2("got it back for job %d", 
+					       jobacct_msg->job_id);
+					jobacct_g_2_sacct(
+						&temp_sacct2, 
+						jobacct_msg->jobacct);
+					ntasks += jobacct_msg->num_tasks;
+					slurm_free_stat_jobacct_msg(
+						jobacct_msg);
+					aggregate_sacct(&temp_sacct, 
+							&temp_sacct2);
+				}
+			}
+			break;
+		case RESPONSE_SLURM_RC:
+			rc = ret_type->msg_rc;
+			error("there was an error with the request rc = %s", 
+			      slurm_strerror(rc));
+			break;
+		default:
+			rc = ret_type->msg_rc;
+			error("unknown return given %d rc = %s", 
+			      ret_type->type, slurm_strerror(rc));
+			break;
 		}
 	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);
+
 	pthread_mutex_lock(&stat_mutex);
 	aggregate_sacct(&step.sacct, &temp_sacct);
 	step.ntasks += ntasks;		
@@ -130,15 +151,16 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	slurm_msg_t *msg_array_ptr;
 	stat_jobacct_msg_t r;
 	int i;
-	int *span = set_span(job->node_cnt, 4000);
+	int *span = set_span(job->node_cnt, 0);
 	forward_t forward;
 	int thr_count = 0;
 	float tempf = 0;
 
-	debug("getting the stat of job %d", job->job_id);
+	debug("getting the stat of job %d on %d nodes", 
+	      job->job_id, job->node_cnt);
 
 	memset(&step.sacct, 0, sizeof(sacct_t));
-	step.sacct.min_cpu = NO_VAL;
+	step.sacct.min_cpu = (float)NO_VAL;
 	step.header.jobnum = job->job_id;
 	step.header.partition = NULL;
 	step.header.blockid = NULL;
@@ -154,7 +176,6 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	r.step_id     = step_id;
 	r.jobacct     = jobacct_g_alloc((uint16_t)NO_VAL);
 
-	thr_count = 0;
 	forward.cnt = job->node_cnt;
 	/* we need this for forwarding, but not really anything else, so 
 	   this can be set to any sting as long as there are the same 
@@ -166,13 +187,14 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	forward.addr = job->node_addr;
 	forward.node_id = NULL;
 	forward.timeout = 5000;
-
+	
+	thr_count = 0;
 	for (i = 0; i < job->node_cnt; i++) {
 		pthread_attr_t attr;
 		pthread_t threadid;
-		slurm_msg_t *m = &msg_array_ptr[i];
+		slurm_msg_t *m = &msg_array_ptr[thr_count];
 		
-		m->srun_node_id    = (uint32_t)i;			
+		m->srun_node_id    = 0;
 		m->msg_type        = MESSAGE_STAT_JOBACCT;
 		m->data            = &r;
 		m->ret_list = NULL;
@@ -183,7 +205,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 		       sizeof(slurm_addr));
 		
 		forward_set(&m->forward,
-			    span[i],
+			    span[thr_count],
 			    &i,
 			    &forward);
 		
@@ -210,7 +232,6 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	slurm_mutex_lock(&stat_mutex);
 	while(thr_count > thr_finished) {
 		pthread_cond_wait(&stat_cond, &stat_mutex);
-		info("got %d", thr_finished);
 	}
 	slurm_mutex_unlock(&stat_mutex);
 	
@@ -226,7 +247,6 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 		tempf = step.sacct.ave_pages/step.ntasks;
 		step.sacct.ave_pages = (uint32_t)tempf;
 	}
-	info(" done");
 	xfree(msg_array_ptr);
 	jobacct_g_free(r.jobacct);	
 	return SLURM_SUCCESS;
@@ -276,7 +296,7 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	}
 		
 	if(!job) {
-		error("didn't get the job record rc = %d", rc);
+		error("didn't get the job record rc = %s", slurm_strerror(rc));
 		return rc;
 	}
 

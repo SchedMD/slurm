@@ -87,7 +87,7 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	memcpy(&job->header, &header, sizeof(acct_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->sacct, 0, sizeof(sacct_t));
-	job->sacct.min_cpu = NO_VAL;
+	job->sacct.min_cpu = (float)NO_VAL;
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
@@ -467,9 +467,9 @@ void aggregate_sacct(sacct_t *dest, sacct_t *from)
 		dest->max_pages_task = from->max_pages_task;
 	}
 	dest->ave_pages += from->ave_pages;
-	
-	if((dest->min_cpu > from->min_cpu) 
-	   || (dest->min_cpu == NO_VAL)) {
+
+	if((dest->min_cpu > from->min_cpu)
+	   || (dest->min_cpu == (float)NO_VAL)) {
 		dest->min_cpu = from->min_cpu;
 		dest->min_cpu_task = from->min_cpu_task;
 	}

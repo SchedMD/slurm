@@ -743,6 +743,13 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'S':
+			params.opt_field_list =
+				xrealloc(params.opt_field_list,
+					 (params.opt_field_list==NULL? 0 :
+					  sizeof(params.opt_field_list)) +
+					 sizeof(STAT_FIELDS)+1);
+			strcat(params.opt_field_list, STAT_FIELDS);
+			strcat(params.opt_field_list, ",");
 			params.opt_stat = 1;
 			break;
 
