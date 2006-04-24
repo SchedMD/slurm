@@ -75,6 +75,8 @@ eio_handle_t *eio_handle_create(void)
 	}
 
 	fd_set_nonblocking(eio->fds[0]);
+	fd_set_close_on_exec(eio->fds[0]);
+	fd_set_close_on_exec(eio->fds[1]);
 
 	xassert(eio->magic = EIO_MAGIC);
 

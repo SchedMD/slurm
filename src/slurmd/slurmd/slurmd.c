@@ -75,6 +75,9 @@
 
 #define MAX_THREADS		130
 
+/* global, copied to STDERR_FILENO in tasks before the exec */
+int devnull = -1;
+
 typedef struct connection {
 	slurm_fd fd;
 	slurm_addr *cli_addr;
@@ -208,6 +211,7 @@ main (int argc, char *argv[])
 
 	conf->pid = getpid();
 	pidfd = create_pidfile(conf->pidfile);
+	fd_set_close_on_exec(pidfd);
 
 	info("%s started on %T", xbasename(argv[0]));
 
@@ -737,11 +741,16 @@ _slurmd_init()
 	 */
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
-
 	/*
 	 * Cache the group access list
 	 */
 	init_gids_cache(conf->cf.cache_groups);
+
+	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+		error("Unable to open /dev/null: %m");
+		return SLURM_FAILURE;
+	}
+	fd_set_close_on_exec(devnull);
 
 	return SLURM_SUCCESS;
 }
