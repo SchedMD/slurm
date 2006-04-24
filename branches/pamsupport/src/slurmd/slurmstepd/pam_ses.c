@@ -25,9 +25,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-
-/* #define SLURM_SERVICE_PAM "slurmstepd"   */
-#define SLURM_SERVICE_PAM "tbsshep"
+/*
+ * A stack for slurmstepd must be set up in /etc/pam.d
+ */
+#define SLURM_SERVICE_PAM "slurmstepd"
 
 #if (HAVE_PAM)
 
@@ -49,10 +50,10 @@ static struct pam_conv conv = {
 };
 
 /*
- * As these functions are currently written, the PAM initialization (pam_start)
- * and cleanup (pam_end) are included.  If other aspects of PAM are to be used
- * sometime in the future, these calls should be moved out, as they should only
- * be done once.
+ * As these functions are currently written, PAM initialization (pam_start)
+ * and cleanup (pam_end) are included. If other aspects of PAM are to be used
+ * sometime in the future, these calls should be moved because they should only
+ * be called once.
  */ 
 
 int
@@ -85,7 +86,7 @@ pam_setup (pam_handle_t **pam_h, char *user, char *host)
         } else if ((rc = pam_set_item (*pam_h, PAM_RHOST, host))
 			!= PAM_SUCCESS) {
                 error ("pam_set_item HOST: %s", pam_strerror(*pam_h, rc));
-                return SLURM_ERROR;
+              return SLURM_ERROR;
         } else if ((rc = pam_setcred (*pam_h, PAM_ESTABLISH_CRED))
 			!= PAM_SUCCESS) {
                 error ("pam_setcred: %s", pam_strerror(*pam_h, rc));
@@ -101,21 +102,16 @@ pam_setup (pam_handle_t **pam_h, char *user, char *host)
 }
 
 
-
 void
 pam_finish (pam_handle_t *pam_h)
 {
         int             rc = 0;
 
-/*     FIX FIOR SLURM
- *      Close the pam session and end the connection to pam. Because the pam
- *      handle is opaque data this is the place where this is done, although
- *      it might be preferred (for user tracking reasons) if this were done
- *      when the user's job terminates.
- */
+	/* 
+	 * Allow PAM to clean up its state by closing the user session and
+	 * ending the association with PAM.
+	 */
 
-	debug ("in pam_finish pam_h = %d, &pam_h = %d \n",
-                pam_h, &pam_h);
         if (pam_h != NULL) {
 		/*
 		 * Log any errors, but there's no need to return a SLURM error.
@@ -127,6 +123,5 @@ pam_finish (pam_handle_t *pam_h)
                 }
         }
 }
-
 
 #endif  /* HAVE_PAM */

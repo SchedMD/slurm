@@ -29,8 +29,6 @@
 #  include "config.h"
 #endif
 
-#define HAVE_PAM 1
-
 #if HAVE_SYS_TYPES_H
 #  include <sys/types.h>
 #endif
@@ -59,6 +57,7 @@
 #if (HAVE_PAM)
 #  include <security/pam_appl.h>
 #  include <security/pam_misc.h>
+#  include "pam_ses.h"
 #endif
 
 #include <slurm/slurm_errno.h>
@@ -707,8 +706,6 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
-	debug ("after task forks &pam_h = %d, pam_h = %d \n",
-		&pam_h, pam_h);
 	io_close_task_fds(job);
 
 	xsignal_block(mgr_sigarray);
@@ -726,8 +723,8 @@ job_manager(slurmd_job_t *job)
 
 #if (HAVE_PAM)
 	/* 
-	 * This just cleans up all of the PAM state, and errors are logged
-	 * below, so there's really nothing else to do.
+	 * This just cleans up all of the PAM state and errors are logged
+	 * below, so there's no need for error handling.
 	 */
 	pam_finish (pam_h);
 #endif
@@ -836,7 +833,9 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 
 #if (HAVE_PAM)
-	/* do pam_setcred here while the privs are still dropped */
+	/*
+	 * Set up the PAM session for the user while the privs are still dropped.
+	 */
 	if (pam_setup (pam_h, job->pwd->pw_name, conf->hostname)
 						 != SLURM_SUCCESS){
 		error ("error in pam_setup");
@@ -964,8 +963,6 @@ _fork_all_tasks(slurmd_job_t *job)
 	}
 	xfree(writefds);
 	xfree(readfds);
-	debug ("before return in fork-all  pam_h = %d, *pam_h = %d \n",
-		pam_h, *pam_h);
 
 	return rc;
 }
