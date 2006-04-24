@@ -64,7 +64,8 @@ documents those changes that are of interest to users and admins.
  
 * Changes in SLURM 1.1.0-pre2
 =============================
- -- Added basic "sbcast" support, still needs message fanout logic.
+ -- Added "bcast" command to transmit copies of a file to compute nodes
+    with message fanout.
  -- Bluegene specific - Added support for overlapping partitions and 
     dynamic partitioning. 
  -- Bluegene specific - Added support for nodecard sized blocks.
