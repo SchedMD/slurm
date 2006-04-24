@@ -371,6 +371,22 @@ JobAcctType=jobacct/none
 
 
 #
+# o Define Process Priority Propagation Configuration
+#
+#    "PropagatePrioProcess"
+#                       : if set to `1', the priority (aka nice value) of the
+#                         process that launched the job on the submit node,
+#                         (typically the users shell), will be propagated to
+#                         the compute nodes and set for the users job.  If set
+#                         to `0', or left unset, the users job will inherit the
+#                         scheduling priority from the slurm daemon.
+#
+# Example:
+#
+# PropagatePrioProcess=1       # default is `0'
+
+
+#
 # o Define the Resource Limit Propagation Configuration
 #
 #   These two parameters can be used to specify which resource limits to

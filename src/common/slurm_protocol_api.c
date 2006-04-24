@@ -215,6 +215,20 @@ char *slurm_get_auth_type(void)
 	return auth_type;
 }
 
+/* slurm_get_propagate_prio_process
+ * return the PropagatePrioProcess flag from slurmctld_conf object
+ */
+extern uint16_t slurm_get_propagate_prio_process(void)
+{
+        uint16_t propagate_prio;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        propagate_prio = conf->propagate_prio_process;
+        slurm_conf_unlock();
+        return propagate_prio;
+}
+
 /* slurm_get_fast_schedule
  * returns the value of fast_schedule in slurmctld_conf object
  */

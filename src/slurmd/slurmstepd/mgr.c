@@ -57,6 +57,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/cbuf.h"
+#include "src/common/env.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -122,6 +123,7 @@ static void _send_launch_failure(launch_tasks_request_msg_t *,
                                  slurm_addr *, int);
 static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job);
+static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
 static int  _setup_spawn_io(slurmd_job_t *job);
@@ -142,6 +144,7 @@ static void _setargs(slurmd_job_t *job);
 
 static void _random_sleep(slurmd_job_t *job);
 static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
+
 /*
  * Batch job mangement prototypes:
  */
@@ -756,6 +759,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	int *writefds; /* array of write file descriptors */
 	int *readfds; /* array of read file descriptors */
 	int fdpair[2];
+	uint16_t propagate_prio = slurm_get_propagate_prio_process();
 
 	xassert(job != NULL);
 
@@ -813,6 +817,9 @@ _fork_all_tasks(slurmd_job_t *job)
 				if (j > i)
 					close(readfds[j]);
 			}
+
+			if (propagate_prio == 1)
+				_set_prio_process(job);
 
  			if (_become_user(job) < 0) {
  				error("_become_user failed: %m");
@@ -1416,6 +1423,35 @@ _setargs(slurmd_job_t *job)
 	return;
 }
 
+/*
+ * Set the priority of the job to be the same as the priority of
+ * the process that launched the job on the submit node.
+ * In support of the "PropagatePrioProcess" config keyword.
+ */
+static void _set_prio_process (slurmd_job_t *job)
+{
+	char *env_name = "SLURM_PRIO_PROCESS";
+	char *env_val;
+
+	int prio_process;
+
+	if (!(env_val = getenvp( job->env, env_name ))) {
+		error( "Couldn't find %s in environment", env_name );
+		return;
+	}
+
+	/*
+	 * Users shouldn't get this in their environ
+	 */
+	unsetenvp( job->env, env_name );
+
+	prio_process = atoi( env_val );
+
+	if (setpriority( PRIO_PROCESS, 0, prio_process ))
+		error( "setpriority(PRIO_PROCESS): %m" );
+
+	debug2( "_set_prio_process: setpriority %d succeeded", prio_process);
+}
 
 static int
 _become_user(slurmd_job_t *job)
