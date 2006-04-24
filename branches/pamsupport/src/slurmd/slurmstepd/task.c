@@ -248,15 +248,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	int rc;
 	slurmd_task_info_t *t = NULL;
 
-	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to `%s': %m: going to /tmp instead",
-		      job->cwd);
-		if (chdir("/tmp") < 0) {
-			error("couldn't chdir to /tmp either. dying.");
-			log_fini();
-			exit(4);
-		}
-	}
 
 	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
 		debug("Unable to set user limits");
