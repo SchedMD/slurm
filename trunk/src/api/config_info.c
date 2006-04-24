@@ -115,6 +115,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->proctrack_type);
 	fprintf(out, "Prolog            = %s\n", 
 		slurm_ctl_conf_ptr->prolog);
+	fprintf(out, "PropagatePrioProcess = %u\n",
+		slurm_ctl_conf_ptr->propagate_prio_process);
         fprintf(out, "PropagateResourceLimits = %s\n",
                 slurm_ctl_conf_ptr->propagate_rlimits);
         fprintf(out, "PropagateResourceLimitsExcept = %s\n", 

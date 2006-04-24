@@ -144,6 +144,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PluginDir", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
+	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
 	{"ReturnToService", S_P_UINT16},
@@ -989,6 +990,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
+	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
@@ -1318,6 +1320,14 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
+
+	if (!s_p_get_uint16(&conf->propagate_prio_process,
+			"PropagatePrioProcess", hashtbl)) {
+		conf->propagate_prio_process = DEFAULT_PROPAGATE_PRIO_PROCESS;
+	} else if (conf->propagate_prio_process > 1) {
+		fatal("Bad PropagatePrioProcess: %u",
+			conf->propagate_prio_process);
+	}
 
         if (s_p_get_string(&conf->propagate_rlimits_except,
 			   "PropagateResourceLimitsExcept", hashtbl)) {

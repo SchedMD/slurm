@@ -325,6 +325,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
+	conf_ptr->propagate_prio_process = 
+					slurmctld_conf.propagate_prio_process;
         conf_ptr->propagate_rlimits   = xstrdup(conf->propagate_rlimits);
         conf_ptr->propagate_rlimits_except = xstrdup(conf->
 						     propagate_rlimits_except);
