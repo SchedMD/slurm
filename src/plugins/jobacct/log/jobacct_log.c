@@ -355,6 +355,7 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 				rc);
 		slurm_free_cred(retmsg->cred);
 	}
+	xfree(retmsg);
 	xfree(jmsg);
 	xfree(msg);
 	debug2("jobacct(%d): leaving _send_msg_to_slurmctld, rc=%d",
@@ -1213,8 +1214,12 @@ static void _process_mynode_msg_taskdata(_jrec_t *inrec){
 		return;
 	}
 	_aggregate_job_data(jrec, inrec);
-	if (--jrec->ntasks == 0)	/* All tasks have reported */
+	if (--jrec->ntasks == 0) {	/* All tasks have reported */
 		_send_data_to_node_0(jrec);
+		_remove_jrec_from_list(jobsteps_active, inrec->jobid,
+				inrec->stepid);
+		xfree(jrec);
+	}
 	slurm_mutex_unlock(&jobsteps_active_lock);
 }
 

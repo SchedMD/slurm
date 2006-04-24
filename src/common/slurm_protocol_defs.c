@@ -479,6 +479,7 @@ extern char *job_reason_string(enum job_wait_reason inx)
 
 void inline slurm_free_jobacct_msg(jobacct_msg_t *msg)
 {
+	xfree(msg->data);
 	xfree(msg);
 }
 
