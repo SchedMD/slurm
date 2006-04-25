@@ -25,10 +25,9 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-/*
- * A stack for slurmstepd must be set up in /etc/pam.d
- */
-#define SLURM_SERVICE_PAM "slurmstepd"
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #ifdef HAVE_PAM
 
@@ -37,6 +36,11 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
+
+/*
+ * A stack for slurmstepd must be set up in /etc/pam.d
+ */
+#define SLURM_SERVICE_PAM "slurmstepd"
 
 /*
  * Any application using PAM must provide a conversion function, which is used
@@ -56,7 +60,7 @@ static struct pam_conv conv = {
  * be called once.
  */ 
 
-extern int
+int
 pam_setup (pam_handle_t **pam_h, char *user, char *host)
 {
         int             rc = 0;
@@ -102,7 +106,7 @@ pam_setup (pam_handle_t **pam_h, char *user, char *host)
 }
 
 
-extern void
+void
 pam_finish (pam_handle_t *pam_h)
 {
         int             rc = 0;
