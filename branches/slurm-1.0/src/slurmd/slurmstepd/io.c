@@ -705,7 +705,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stdout_fd);
-		task->from_stdout == -1; /* not used */
+		task->from_stdout = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
@@ -738,7 +738,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stderr_fd);
-		task->from_stderr == -1; /* not used */
+		task->from_stderr = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
 		int perr[2];
