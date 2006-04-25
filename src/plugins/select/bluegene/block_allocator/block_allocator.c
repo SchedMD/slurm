@@ -1329,7 +1329,10 @@ extern int load_block_wiring(char *bg_block_id)
 		} 
 
 		geo = find_bp_loc(switchid);
-
+		if(!geo) {
+			error("find_bp_loc: bpid %s not known", switchid);
+			return SLURM_ERROR;
+		}
 		if ((rc = rm_get_data(curr_switch, RM_SwitchConnNum, &cnt))
 		    != STATUS_OK) { 
 			error("rm_get_data: RM_SwitchBPID: %s",
@@ -1375,6 +1378,7 @@ extern int load_block_wiring(char *bg_block_id)
 			default:
 				error("1 unknown port %d", 
 				      _port_enum(curr_conn.p1));
+				return SLURM_ERROR;
 			}
 			
 			switch(curr_conn.p2) {
@@ -1390,20 +1394,24 @@ extern int load_block_wiring(char *bg_block_id)
 			default:
 				error("2 unknown port %d", 
 				      _port_enum(curr_conn.p2));
+				return SLURM_ERROR;
 			}
 			debug("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
 			if(curr_conn.p1 == 1) {
 				if(ba_system_ptr->
-				   grid[geo[X]][geo[Y]][geo[Z]].used)
+				   grid[geo[X]][geo[Y]][geo[Z]].used) {
 					error("%d%d%d is already in use",
 					      geo[X],
 					      geo[Y],
 					      geo[Z]);
+					return SLURM_ERROR;
+				}
 				ba_system_ptr->
 					grid[geo[X]][geo[Y]][geo[Z]].used = 1;
 			}
-			if(ba_switch->int_wire[curr_conn.p1].used)
+
+			if(ba_switch->int_wire[curr_conn.p1].used) {
 				error("%d%d%d dim %d port %d "
 				      "is already in use",
 				      geo[X],
@@ -1411,12 +1419,13 @@ extern int load_block_wiring(char *bg_block_id)
 				      geo[Z],
 				      dim,
 				      curr_conn.p1);
-				
+				return SLURM_ERROR;
+			}
 			ba_switch->int_wire[curr_conn.p1].used = 1;
 			ba_switch->int_wire[curr_conn.p1].port_tar 
 				= curr_conn.p2;
 
-			if(ba_switch->int_wire[curr_conn.p2].used)
+			if(ba_switch->int_wire[curr_conn.p2].used) {
 				error("%d%d%d dim %d port %d "
 				      "is already in use",
 				      geo[X],
@@ -1424,7 +1433,8 @@ extern int load_block_wiring(char *bg_block_id)
 				      geo[Z],
 				      dim,
 				      curr_conn.p2);
-		
+				return SLURM_ERROR;
+			}
 			ba_switch->int_wire[curr_conn.p2].used = 1;
 			ba_switch->int_wire[curr_conn.p2].port_tar 
 				= curr_conn.p1;
@@ -2524,6 +2534,11 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		}
 
 		coord = find_bp_loc(from_node);
+		if(!coord) {
+			error("1 find_bp_loc: bpid %s not known", from_node);
+			continue;
+		}
+		
 		if(coord[X]>=DIM_SIZE[X] 
 		   || coord[Y]>=DIM_SIZE[Y]
 		   || coord[Z]>=DIM_SIZE[Z]) {
@@ -2540,6 +2555,10 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		source = &ba_system_ptr->
 			grid[coord[X]][coord[Y]][coord[Z]];
 		coord = find_bp_loc(to_node);
+		if(!coord) {
+			error("2 find_bp_loc: bpid %s not known", to_node);
+			continue;
+		}
 		if(coord[X]>=DIM_SIZE[X] 
 		   || coord[Y]>=DIM_SIZE[Y]
 		   || coord[Z]>=DIM_SIZE[Z]) {
