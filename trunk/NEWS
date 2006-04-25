@@ -102,7 +102,8 @@ documents those changes that are of interest to users and admins.
  -- Fix memory leak on AIX (and possibly other architectures) due to
     missing pthread_attr_destroy() calls.
  -- Fix rare task standard I/O setup bug.  When the bug hit, stdin, stdout,
-    or stderr could be an invalide file descriptor.
+    or stderr could be an invalid file descriptor.
+ -- General slurmstepd file descriptor cleanup.
  -- Fix memory leak in job accounting logic (Andy Riebs, HP, memory_leak.patch).
 
 * Changes in SLURM 1.0.10
