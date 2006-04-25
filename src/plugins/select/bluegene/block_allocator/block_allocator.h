@@ -47,6 +47,7 @@
 #  endif
 #endif
 
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
@@ -327,6 +328,12 @@ extern char *set_bg_block(List results, int *start,
 extern int reset_ba_system();
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bg_err_str(status_t inx);
 
 /**
  * Set up the map for resolving
