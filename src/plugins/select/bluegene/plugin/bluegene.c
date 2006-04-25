@@ -925,18 +925,27 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				       bg_record->start[Z],
 				       geo[X],
 				       geo[Y],
-				       geo[Z]);		
-				name = set_bg_block(NULL,
-						    bg_record->start, 
-						    geo, 
-						    bg_record->conn_type);
-				if(!name) {				
-					debug("I was unable to make the "
-					      "requested block.");
-					slurm_mutex_unlock(&block_state_mutex);
-					return SLURM_ERROR;
+				       geo[Z]);	
+				if(bg_record->bg_block_id) {
+					rc = SLURM_ERROR;
+					rc = load_block_wiring(
+						bg_record->bg_block_id);
 				}
-				xfree(name);
+				if(rc != SLURM_SUCCESS) {
+					name = set_bg_block(NULL,
+							    bg_record->start, 
+							    geo, 
+							    bg_record->
+							    conn_type);
+					if(!name) {			
+						debug("I was unable to make "
+						      "the requested block.");
+						slurm_mutex_unlock(
+							&block_state_mutex);
+						return SLURM_ERROR;
+					}
+					xfree(name);
+				}
 			}
 			if(found_record == NULL) {
 				if((rc = configure_block(bg_record)) 
@@ -1055,19 +1064,29 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				       geo[X],
 				       geo[Y],
 				       geo[Z]);
-				name = set_bg_block(NULL,
-						    bg_record->start, 
-						    geo, 
-						    bg_record->conn_type);
-				if(!name) {
-					debug("I was unable to make the "
-					       "requested block.");
-					bit_free(my_bitmap);
-					slurm_mutex_unlock(&block_state_mutex);
-					return SLURM_ERROR;
+
+				if(bg_record->bg_block_id) {
+					rc = SLURM_ERROR;
+					rc = load_block_wiring(
+						bg_record->bg_block_id);
 				}
-				xfree(name);
-			} 
+				if(rc != SLURM_SUCCESS) {
+					name = set_bg_block(NULL,
+							    bg_record->start, 
+							    geo, 
+							    bg_record->
+							    conn_type);
+					if(!name) {
+						debug("I was unable to make "
+						      "the requested block.");
+						bit_free(my_bitmap);
+						slurm_mutex_unlock(
+							&block_state_mutex);
+						return SLURM_ERROR;
+					}
+					xfree(name);
+				} 
+			}
 		}
 		list_iterator_destroy(itr);
 		if(my_bitmap)
