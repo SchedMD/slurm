@@ -47,7 +47,6 @@
 #  endif
 #endif
 
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
@@ -57,6 +56,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include <dlfcn.h>
 
 #ifdef WITH_PTHREADS
