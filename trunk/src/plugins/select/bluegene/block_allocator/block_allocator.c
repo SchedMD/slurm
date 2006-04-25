@@ -1393,12 +1393,38 @@ extern int load_block_wiring(char *bg_block_id)
 			}
 			debug("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
-			if(curr_conn.p1 == 1)
+			if(curr_conn.p1 == 1) {
+				if(ba_system_ptr->
+				   grid[geo[X]][geo[Y]][geo[Z]].used)
+					error("%d%d%d is already in use",
+					      geo[X],
+					      geo[Y],
+					      geo[Z]);
 				ba_system_ptr->
 					grid[geo[X]][geo[Y]][geo[Z]].used = 1;
+			}
+			if(ba_switch->int_wire[curr_conn.p1].used)
+				error("%d%d%d dim %d port %d "
+				      "is already in use",
+				      geo[X],
+				      geo[Y],
+				      geo[Z],
+				      dim,
+				      curr_conn.p1);
+				
 			ba_switch->int_wire[curr_conn.p1].used = 1;
 			ba_switch->int_wire[curr_conn.p1].port_tar 
 				= curr_conn.p2;
+
+			if(ba_switch->int_wire[curr_conn.p2].used)
+				error("%d%d%d dim %d port %d "
+				      "is already in use",
+				      geo[X],
+				      geo[Y],
+				      geo[Z],
+				      dim,
+				      curr_conn.p2);
+		
 			ba_switch->int_wire[curr_conn.p2].used = 1;
 			ba_switch->int_wire[curr_conn.p2].port_tar 
 				= curr_conn.p1;
