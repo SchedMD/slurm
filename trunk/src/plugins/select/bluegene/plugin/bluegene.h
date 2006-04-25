@@ -43,7 +43,6 @@
 #include "src/common/node_select.h"
 #include "src/slurmctld/slurmctld.h"
 #include "../block_allocator/block_allocator.h"
-#include "../wrap_rm_api.h"
 
 typedef int lifecycle_type_t;
 
@@ -195,13 +194,6 @@ extern void sort_bg_record_inc_size(List records);
 /* bluegene_agent - detached thread periodically tests status of bluegene 
  * nodes and switches */
 extern void *bluegene_agent(void *args);
-
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern char *bg_err_str(status_t inx);
 
 /*
  * create_*_block(s) - functions for creating blocks that will be used

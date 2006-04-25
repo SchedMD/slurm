@@ -34,10 +34,6 @@
 #include <math.h>
 #include "block_allocator.h"
 
-#ifdef HAVE_BG_FILES
-# include "src/plugins/select/bluegene/wrap_rm_api.h"
-#endif
-
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
 
@@ -90,6 +86,7 @@ s_p_options_t bg_conf_file_options[] = {
 #ifdef HAVE_BG_FILES
 /** */
 static void _bp_map_list_del(void *object);
+static int _port_enum(int port);
 #endif
 /* */
 static int _check_for_options(ba_request_t* ba_request); 
@@ -1267,13 +1264,12 @@ extern char *find_bp_rack_mid(char* xyz)
 extern int load_block_wiring(char *bg_block_id)
 {
 #ifdef HAVE_BG_FILES
-	int rc, i, j, k;
+	int rc, i, j;
 	rm_partition_t *block_ptr = NULL;
 	int cnt = 0;
 	int switch_cnt = 0;
 	rm_switch_t *curr_switch = NULL;
 	char *switchid = NULL;
-	rm_BP_t *curr_bp = NULL;
 	rm_connection_t curr_conn;
 	int dim;
 	ba_switch_t *ba_switch = NULL; 
@@ -1284,13 +1280,10 @@ extern int load_block_wiring(char *bg_block_id)
 	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		slurm_mutex_unlock(&api_file_mutex);
-		if(rc == INCONSISTENT_DATA)
-			return REMOVE_USER_FOUND;
-			
 		error("rm_get_partition(%s): %s", 
 		      bg_block_id, 
 		      bg_err_str(rc));
-		return REMOVE_USER_ERR;
+		return SLURM_ERROR;
 	}	
 	slurm_mutex_unlock(&api_file_mutex);
 	
@@ -1379,6 +1372,9 @@ extern int load_block_wiring(char *bg_block_id)
 			case RM_PORT_S4:
 				curr_conn.p1 = 4;
 				break;
+			default:
+				error("1 unknown port %d", 
+				      _port_enum(curr_conn.p1));
 			}
 			
 			switch(curr_conn.p2) {
@@ -1391,6 +1387,9 @@ extern int load_block_wiring(char *bg_block_id)
 			case RM_PORT_S5:
 				curr_conn.p2 = 5;
 				break;
+			default:
+				error("2 unknown port %d", 
+				      _port_enum(curr_conn.p2));
 			}
 			debug("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
@@ -1427,6 +1426,33 @@ static void _bp_map_list_del(void *object)
 		xfree(bp_map);		
 	}
 }
+
+static int _port_enum(int port)
+{
+	switch(port) {
+	case RM_PORT_S0:
+		return 0;
+		break;
+	case RM_PORT_S1:
+		return 1;
+		break;
+	case RM_PORT_S2:
+		return 2;
+		break;
+	case RM_PORT_S3:
+		return 3;
+		break;
+	case RM_PORT_S4:
+		return 4;
+		break;
+	case RM_PORT_S5:
+		return 5;
+		break;
+	default:
+		return -1;
+	}
+}
+
 #endif
 
 static int _check_for_options(ba_request_t* ba_request) 
@@ -1932,30 +1958,41 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	return 1;
 }
 
-int _port_enum(int port)
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bg_err_str(status_t inx)
 {
-	switch(port) {
-	case 6:
-		return 0;
-		break;
-	case 7:
-		return 1;
-		break;
-	case 8:
-		return 2;
-		break;
-	case 9:
-		return 3;
-		break;
-	case 10:
-		return 4;
-		break;
-	case 11:
-		return 5;
-		break;
-	default:
-		return -1;
+#ifdef HAVE_BG_FILES
+	switch (inx) {
+	case STATUS_OK:
+		return "Status OK";
+	case PARTITION_NOT_FOUND:
+		return "Partition not found";
+	case JOB_NOT_FOUND:
+		return "Job not found";
+	case BP_NOT_FOUND:
+		return "Base partition not found";
+	case SWITCH_NOT_FOUND:
+		return "Switch not found";
+	case JOB_ALREADY_DEFINED:
+		return "Job already defined";
+	case CONNECTION_ERROR:
+		return "Connection error";
+	case INTERNAL_ERROR:
+		return "Internal error";
+	case INVALID_INPUT:
+		return "Invalid input";
+	case INCOMPATIBLE_STATE:
+		return "Incompatible state";
+	case INCONSISTENT_DATA:
+		return "Inconsistent data";
 	}
+#endif
+
+	return "?";
 }
 
 /** */
