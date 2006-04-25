@@ -100,8 +100,6 @@ int main(int argc, char *argv[])
 
 		if(!mapset)
 			mapset = set_bp_map();
-		if(params.partition[0] == 'r')
-			params.partition[0] = 'R';
 		if(params.partition[0] != 'R') {
 			i = strlen(params.partition);
 			i -= 3;

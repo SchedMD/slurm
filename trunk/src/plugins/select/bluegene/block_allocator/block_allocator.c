@@ -1212,7 +1212,7 @@ extern int *find_bp_loc(char* bp_id)
 	}
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)) != NULL)
-		if (!strcmp(bp_map->bp_id, bp_id)) 
+		if (!strcasecmp(bp_map->bp_id, bp_id)) 
 			break;	/* we found it */
 	
 	list_iterator_destroy(itr);
@@ -1262,6 +1262,155 @@ extern char *find_bp_rack_mid(char* xyz)
 #else
 	return NULL;
 #endif
+}
+
+extern int load_block_wiring(char *bg_block_id)
+{
+#ifdef HAVE_BG_FILES
+	int rc, i, j, k;
+	rm_partition_t *block_ptr = NULL;
+	int cnt = 0;
+	int switch_cnt = 0;
+	rm_switch_t *curr_switch = NULL;
+	char *switchid = NULL;
+	rm_BP_t *curr_bp = NULL;
+	rm_connection_t curr_conn;
+	int dim;
+	ba_switch_t *ba_switch = NULL; 
+	int *geo = NULL;
+	
+	debug("getting info for block %s\n", bg_block_id);
+	
+	slurm_mutex_lock(&api_file_mutex);
+	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
+		if(rc == INCONSISTENT_DATA)
+			return REMOVE_USER_FOUND;
+			
+		error("rm_get_partition(%s): %s", 
+		      bg_block_id, 
+		      bg_err_str(rc));
+		return REMOVE_USER_ERR;
+	}	
+	slurm_mutex_unlock(&api_file_mutex);
+	
+	if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
+			      &switch_cnt)) != STATUS_OK) {
+		error("rm_get_data(RM_PartitionSwitchNum): %s",
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	} 
+	for (i=0; i<switch_cnt; i++) {
+		if(i) {
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionNextSwitch, 
+					      &curr_switch)) 
+			    != STATUS_OK) {
+				error("rm_get_data: "
+				      "RM_PartitionNextSwitch: %s",
+				      bg_err_str(rc));
+				return SLURM_ERROR;
+			}
+		} else {
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionFirstSwitch, 
+					      &curr_switch)) 
+			    != STATUS_OK) {
+				error("rm_get_data: "
+				      "RM_PartitionFirstSwitch: %s",
+				      bg_err_str(rc));
+				return SLURM_ERROR;
+			}
+		}
+		if ((rc = rm_get_data(curr_switch, RM_SwitchDim, &dim))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchDim: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		} 
+		if ((rc = rm_get_data(curr_switch, RM_SwitchBPID, &switchid))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchBPID: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		} 
+
+		geo = find_bp_loc(switchid);
+
+		if ((rc = rm_get_data(curr_switch, RM_SwitchConnNum, &cnt))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchBPID: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		}
+		debug("switch id = %s dim %d conns = %d", 
+		       switchid, dim, cnt);
+		ba_switch = &ba_system_ptr->
+			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];	
+		for (j=0; j<cnt; j++) {
+			if(j) {
+				if ((rc = rm_get_data(curr_switch, 
+						      RM_SwitchNextConnection, 
+						      &curr_conn)) 
+				    != STATUS_OK) {
+					error("rm_get_data: "
+					      "RM_SwitchNextConnection: %s",
+					       bg_err_str(rc));
+					return SLURM_ERROR;
+				}
+			} else {
+				if ((rc = rm_get_data(curr_switch, 
+						      RM_SwitchFirstConnection,
+						      &curr_conn)) 
+				    != STATUS_OK) {
+					error("rm_get_data: "
+					      "RM_SwitchFirstConnection: %s",
+					      bg_err_str(rc));
+					return SLURM_ERROR;
+				}
+			}
+			switch(curr_conn.p1) {
+			case RM_PORT_S1:
+				curr_conn.p1 = 1;
+				break;
+			case RM_PORT_S2:
+				curr_conn.p1 = 2;
+				break;
+			case RM_PORT_S4:
+				curr_conn.p1 = 4;
+				break;
+			}
+			
+			switch(curr_conn.p2) {
+			case RM_PORT_S0:
+				curr_conn.p2 = 0;
+				break;
+			case RM_PORT_S3:
+				curr_conn.p2 = 3;
+				break;
+			case RM_PORT_S5:
+				curr_conn.p2 = 5;
+				break;
+			}
+			debug("connection going from %d -> %d",
+			      curr_conn.p1, curr_conn.p2);
+			if(curr_conn.p1 == 1)
+				ba_system_ptr->
+					grid[geo[X]][geo[Y]][geo[Z]].used = 1;
+			ba_switch->int_wire[curr_conn.p1].used = 1;
+			ba_switch->int_wire[curr_conn.p1].port_tar 
+				= curr_conn.p2;
+			ba_switch->int_wire[curr_conn.p2].used = 1;
+			ba_switch->int_wire[curr_conn.p2].port_tar 
+				= curr_conn.p1;
+		}		
+	}
+	return SLURM_SUCCESS;
+
+#else
+	return SLURM_ERROR;
+#endif
+	
 }
 
 /********************* Local Functions *********************/
@@ -2375,56 +2524,17 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		
 	
 #ifdef HAVE_BG
-#if 0
-	/* this is here for the second half of bg system.
-	   if used it should be changed to #if 1
-	*/
-	if(count == 0) {
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4->3 of next */
-		_switch_config(source, target, dim, 4, 3);
-		/* 2 not in use */
-		_switch_config(source, source, dim, 2, 2);
-		target = &ba_system_ptr->grid[DIM_SIZE[X]-1]
-			[source->coord[Y]]
-			[source->coord[Z]];
-		
-		/* 5->2 of last */
-		_switch_config(source, target, dim, 5, 2);
-		
-	} else if (count == 1) {
-		/* 2->5 of next */
-		_switch_config(source, target, dim, 2, 5);
-		/* 5 not in use */
-		_switch_config(source, source, dim, 5, 5);
-	} else if (count == 2) {
-		/* 2->5 of next */
-		_switch_config(source, target, dim, 2, 5);
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4 not in use */
-		_switch_config(source, source, dim, 4, 4);
-	} else if(count == 3) {
-		/* 2->5 of first */
-		_switch_config(source, target, dim, 2, 5);
-		/* 3 not in use */
-		_switch_config(source, source, dim, 3, 3);
-	}
-      
-	return 1;
-#endif
 	_switch_config(source, target, dim, 2, 5);
 	if(count == 0 || count==4) {
 		/* 0 and 4th Node */
 		/* 3->4 of next */
 		_switch_config(source, target, dim, 3, 4);
 		/* 4 is not in use */
-		_switch_config(source, source, dim, 4, 4);
+		//_switch_config(source, source, dim, 4, 4);
 	} else if( count == 1 || count == 5) {
 		/* 1st and 5th Node */
 		/* 3 is not in use */
-		_switch_config(source, source, dim, 3, 3);
+		//_switch_config(source, source, dim, 3, 3);
 	} else if(count == 2) {
 		/* 2nd Node */
 		/* make sure target is the last node */

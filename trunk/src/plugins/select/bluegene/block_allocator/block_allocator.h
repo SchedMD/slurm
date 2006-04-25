@@ -343,4 +343,9 @@ extern int *find_bp_loc(char* bp_id);
  */
 extern char *find_bp_rack_mid(char* xyz);
 
+/**
+ * set the used wires for a block out of the database 
+ */
+extern int load_block_wiring(char *bg_block_id);
+
 #endif /* _BLOCK_ALLOCATOR_H_ */

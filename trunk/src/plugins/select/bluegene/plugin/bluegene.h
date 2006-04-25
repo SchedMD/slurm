@@ -228,6 +228,7 @@ extern int read_bg_blocks();
 /*****************************************************/
 extern int configure_small_block(bg_record_t *bg_record);
 extern int configure_block_switches(bg_record_t * bg_conf_record);
+extern int load_current_system();
 
 
 #endif /* _BLUEGENE_H_ */

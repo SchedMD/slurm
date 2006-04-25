@@ -460,12 +460,8 @@ int read_bg_blocks()
 				
 		if(bp_cnt==0)
 			goto clean_up;
-
-		if ((rc = rm_get_data(block_ptr, RM_PartitionBPNum,
-				&bg_record->bp_count)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionBPNum): %s",
-			      bg_err_str(rc));
-		} 
+		bg_record->bp_count = bp_cnt;
+		
 		debug3("has %d BPs",
 		       bg_record->bp_count);
 				
