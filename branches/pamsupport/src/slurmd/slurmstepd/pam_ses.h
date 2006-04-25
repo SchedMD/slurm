@@ -3,7 +3,7 @@
  *                                    pam sessions
  *  $Id: pam_ses.h $
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Donna Mecozzi <dmecozzi@llnl.gov>.
  *  UCRL-CODE-217948.

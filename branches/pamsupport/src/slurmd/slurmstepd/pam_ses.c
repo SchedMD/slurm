@@ -2,7 +2,7 @@
  *  src/slurmd/slurmstepd/pam_ses.c - functions to manage pam session
  *  $Id: pam_ses.c $
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Donna Mecozzi <dmecozzi@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -30,19 +30,19 @@
  */
 #define SLURM_SERVICE_PAM "slurmstepd"
 
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 
 #include "slurm/slurm_errno.h"
-
+#include "src/slurmd/slurmstepd/pam_ses.h"
 
 /*
- *  Any application using PAM must provide a conversion function, which is used for
- *  direct communication between a loaded module and the application. In this case,
- *  SLURM does need a communication mechanism, so the default (or null) conversation
- *  function may be used.
+ * Any application using PAM must provide a conversion function, which is used
+ * for direct communication between a loaded module and the application. In
+ * this case, SLURM does need a communication mechanism, so the default
+ * (or null) conversation function may be used.
  */
 static struct pam_conv conv = {
         misc_conv,
@@ -56,7 +56,7 @@ static struct pam_conv conv = {
  * be called once.
  */ 
 
-int
+extern int
 pam_setup (pam_handle_t **pam_h, char *user, char *host)
 {
         int             rc = 0;
@@ -102,7 +102,7 @@ pam_setup (pam_handle_t **pam_h, char *user, char *host)
 }
 
 
-void
+extern void
 pam_finish (pam_handle_t *pam_h)
 {
         int             rc = 0;

@@ -54,10 +54,10 @@
 #  include <stdlib.h>
 #endif
 
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 #  include <security/pam_appl.h>
 #  include <security/pam_misc.h>
-#  include "pam_ses.h"
+#  include "src/slurmd/slurmstepd/pam_ses.h"
 #endif
 
 #include <slurm/slurm_errno.h>
@@ -135,7 +135,7 @@ step_complete_t step_complete = {
  */
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
                                  slurm_addr *, int);
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 static int  _fork_all_tasks(slurmd_job_t *job, pam_handle_t **pam_h);
 #else
 static int  _fork_all_tasks(slurmd_job_t *job);
@@ -662,7 +662,7 @@ job_manager(slurmd_job_t *job)
 {
 	int  rc = 0;
 	bool io_initialized = false;
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 	pam_handle_t *pam_h = NULL;
 #endif
 
@@ -695,7 +695,7 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
-#if (HAVE_PAM)	
+#ifdef HAVE_PAM	
 	if (_fork_all_tasks(job, &pam_h) < 0) {
 #else
 	if (_fork_all_tasks(job) < 0) {
@@ -721,7 +721,7 @@ job_manager(slurmd_job_t *job)
 		
 	job->state = SLURMSTEPD_STEP_ENDING;
 
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 	/* 
 	 * This just cleans up all of the PAM state and errors are logged
 	 * below, so there's no need for error handling.
@@ -776,7 +776,7 @@ job_manager(slurmd_job_t *job)
 /* fork and exec N tasks
  */ 
 static int
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 _fork_all_tasks(slurmd_job_t *job, pam_handle_t **pam_h)
 #else
 _fork_all_tasks(slurmd_job_t *job)
@@ -826,15 +826,16 @@ _fork_all_tasks(slurmd_job_t *job)
 		writefds[i] = fdpair[1];
 	}
 
-	/* Drop privileges here and do chdir() so we don't have to
-	*  do it ntask times in exec_task
-	*/
+	/* Temporarily drop effective privileges, except for the euid.
+	 * We need to wait until after pam_setup() to drop euid.
+	 */
 	if (_drop_privileges (job, false, &sprivs) < 0)
 		return SLURM_ERROR;
 
-#if (HAVE_PAM)
+#ifdef HAVE_PAM
 	/*
-	 * Set up the PAM session for the user while the privs are still dropped.
+	 * Set up the PAM session for the user while the privs
+	 * are still dropped.
 	 */
 	if (pam_setup (pam_h, job->pwd->pw_name, conf->hostname)
 						 != SLURM_SUCCESS){
@@ -879,7 +880,6 @@ _fork_all_tasks(slurmd_job_t *job)
 				if (j > i)
 					close(readfds[j]);
 			}
-
 
  			if (_become_user(job) < 0) {
  				error("_become_user failed: %m");
