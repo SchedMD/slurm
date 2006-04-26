@@ -60,6 +60,7 @@
 #include "src/common/util-net.h"
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
+#include "src/common/fd.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
@@ -1140,6 +1141,7 @@ done2:
 	close(fd);
 done:
 	slurm_send_rc_msg(msg, rc);
+	return SLURM_SUCCESS;
 }
 
 static int
