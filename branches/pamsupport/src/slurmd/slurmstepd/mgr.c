@@ -54,12 +54,6 @@
 #  include <stdlib.h>
 #endif
 
-#ifdef HAVE_PAM
-#  include <security/pam_appl.h>
-#  include <security/pam_misc.h>
-#  include "src/slurmd/slurmstepd/pam_ses.h"
-#endif
-
 #include <slurm/slurm_errno.h>
 
 #include "src/common/cbuf.h"
@@ -90,6 +84,7 @@
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/req.h"
+#include "src/slurmd/slurmstepd/pam_ses.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -135,11 +130,7 @@ step_complete_t step_complete = {
  */
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
                                  slurm_addr *, int);
-#ifdef HAVE_PAM
-static int  _fork_all_tasks(slurmd_job_t *job, pam_handle_t **pam_h);
-#else
 static int  _fork_all_tasks(slurmd_job_t *job);
-#endif
 static int  _become_user(slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
@@ -662,9 +653,6 @@ job_manager(slurmd_job_t *job)
 {
 	int  rc = 0;
 	bool io_initialized = false;
-#ifdef HAVE_PAM
-	pam_handle_t *pam_h = NULL;
-#endif
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
@@ -695,11 +683,8 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
-#ifdef HAVE_PAM	
-	if (_fork_all_tasks(job, &pam_h) < 0) {
-#else
+	/* calls pam_setup() and requires pam_finish() if successful */
 	if (_fork_all_tasks(job) < 0) {
-#endif
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
 		io_close_task_fds(job);
@@ -721,13 +706,11 @@ job_manager(slurmd_job_t *job)
 		
 	job->state = SLURMSTEPD_STEP_ENDING;
 
-#ifdef HAVE_PAM
 	/* 
 	 * This just cleans up all of the PAM state and errors are logged
 	 * below, so there's no need for error handling.
 	 */
-	pam_finish (pam_h);
-#endif
+	pam_finish();
 
 	if (!job->batch && 
 	    (interconnect_fini(job->switch_job) < 0)) {
@@ -776,11 +759,7 @@ job_manager(slurmd_job_t *job)
 /* fork and exec N tasks
  */ 
 static int
-#ifdef HAVE_PAM
-_fork_all_tasks(slurmd_job_t *job, pam_handle_t **pam_h)
-#else
 _fork_all_tasks(slurmd_job_t *job)
-#endif
 {
 	int rc = SLURM_SUCCESS;
 	int i;
@@ -832,21 +811,15 @@ _fork_all_tasks(slurmd_job_t *job)
 	if (_drop_privileges (job, false, &sprivs) < 0)
 		return SLURM_ERROR;
 
-#ifdef HAVE_PAM
-	/*
-	 * Set up the PAM session for the user while the privs
-	 * are still dropped.
-	 */
-	if (pam_setup (pam_h, job->pwd->pw_name, conf->hostname)
-						 != SLURM_SUCCESS){
+	if (pam_setup(job->pwd->pw_name, conf->hostname)
+	    != SLURM_SUCCESS){
 		error ("error in pam_setup");
-		return SLURM_ERROR;
+		goto fail1;
 	}
-#endif
 
 	if (seteuid (job->pwd->pw_uid) < 0) {
 		error ("seteuid: %m");
-		return SLURM_ERROR;
+		goto fail2;
 	}
 
 	if (chdir(job->cwd) < 0) {
@@ -854,7 +827,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		      job->cwd);
 		if (chdir("/tmp") < 0) {
 			error("couldn't chdir to /tmp either. dying.");
-			return SLURM_ERROR;
+			goto fail2;
 		}
 	}
 
@@ -867,7 +840,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		if ((pid = fork ()) < 0) {
 			error("fork: %m");
-			return SLURM_ERROR;
+			goto fail2;
 		} else if (pid == 0)  { /* child */
 			int j;
 
@@ -883,6 +856,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
  			if (_become_user(job) < 0) {
  				error("_become_user failed: %m");
+				/* FIXME - child process, probably want to exit()
+				   not return */
  				return SLURM_ERROR;
  			}
 
@@ -936,7 +911,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
                 if (slurm_container_add(job, job->task[i]->pid) == SLURM_ERROR) {
                         error("slurm_container_create: %m");
-                        return SLURM_ERROR;
+			goto fail1;
                 }
 	}
 
@@ -965,6 +940,12 @@ _fork_all_tasks(slurmd_job_t *job)
 	xfree(readfds);
 
 	return rc;
+
+fail2:
+	_reclaim_privileges (&sprivs);
+fail1:
+	pam_finish();
+	return SLURM_ERROR;
 }
 
 

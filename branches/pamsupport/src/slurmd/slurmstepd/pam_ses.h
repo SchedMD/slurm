@@ -29,11 +29,16 @@
 #ifndef _SLURMD_PAMSES_H
 #define _SLURMD_PAMSES_H
 
+#ifdef HAVE_PAM
+#  include <security/pam_appl.h>
+#  include <security/pam_misc.h>
+#endif
+
 /*
  * Define the functions that are called to setup a PAM session and to close
  * it when finished.
  */
-int pam_setup (pam_handle_t **pam_h, char *user, char *host);
-void pam_finish (pam_handle_t *pam_h);
+int pam_setup (char *user, char *host);
+void pam_finish ();
 
 #endif /* !_SLURMD_PAMSES_H */

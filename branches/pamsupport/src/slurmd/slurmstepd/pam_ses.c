@@ -37,21 +37,12 @@
 #include "slurm/slurm_errno.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
 
+static pam_handle_t *pam_h = NULL;
+
 /*
  * A stack for slurmstepd must be set up in /etc/pam.d
  */
 #define SLURM_SERVICE_PAM "slurmstepd"
-
-/*
- * Any application using PAM must provide a conversion function, which is used
- * for direct communication between a loaded module and the application. In
- * this case, SLURM does need a communication mechanism, so the default
- * (or null) conversation function may be used.
- */
-static struct pam_conv conv = {
-        misc_conv,
-        NULL
-};
 
 /*
  * As these functions are currently written, PAM initialization (pam_start)
@@ -61,8 +52,15 @@ static struct pam_conv conv = {
  */ 
 
 int
-pam_setup (pam_handle_t **pam_h, char *user, char *host)
+pam_setup (char *user, char *host)
 {
+	/*
+	 * Any application using PAM must provide a conversion function, which
+	 * is used for direct communication between a loaded module and the
+	 * application. In this case, SLURM does need a communication mechanism,
+	 * so the default (or null) conversation function may be used.
+	 */
+	static struct pam_conv conv = {misc_conv, NULL};
         int             rc = 0;
 
 	/*
@@ -75,29 +73,29 @@ pam_setup (pam_handle_t **pam_h, char *user, char *host)
 	 * all PAM calls.) It's also necessary to have the users PAM credentials
 	 * to open a user session.
  	 */
-        if ((rc = pam_start (SLURM_SERVICE_PAM, user, &conv, pam_h))
+        if ((rc = pam_start (SLURM_SERVICE_PAM, user, &conv, &pam_h))
 			!= PAM_SUCCESS) {
-                error ("pam_start: %s", pam_strerror(*pam_h, rc));
+                error ("pam_start: %s", pam_strerror(pam_h, rc));
                 return SLURM_ERROR;
-        } else if ((rc = pam_set_item (*pam_h, PAM_USER, user))
+        } else if ((rc = pam_set_item (pam_h, PAM_USER, user))
 			!= PAM_SUCCESS) {
-                error ("pam_set_item USER: %s", pam_strerror(*pam_h, rc));
+                error ("pam_set_item USER: %s", pam_strerror(pam_h, rc));
                 return SLURM_ERROR;
-        } else if ((rc = pam_set_item (*pam_h, PAM_RUSER, user))
+        } else if ((rc = pam_set_item (pam_h, PAM_RUSER, user))
 			!= PAM_SUCCESS) {
-                error ("pam_set_item RUSER: %s", pam_strerror(*pam_h, rc));
+                error ("pam_set_item RUSER: %s", pam_strerror(pam_h, rc));
                 return SLURM_ERROR;
-        } else if ((rc = pam_set_item (*pam_h, PAM_RHOST, host))
+        } else if ((rc = pam_set_item (pam_h, PAM_RHOST, host))
 			!= PAM_SUCCESS) {
-                error ("pam_set_item HOST: %s", pam_strerror(*pam_h, rc));
+                error ("pam_set_item HOST: %s", pam_strerror(pam_h, rc));
               return SLURM_ERROR;
-        } else if ((rc = pam_setcred (*pam_h, PAM_ESTABLISH_CRED))
+        } else if ((rc = pam_setcred (pam_h, PAM_ESTABLISH_CRED))
 			!= PAM_SUCCESS) {
-                error ("pam_setcred: %s", pam_strerror(*pam_h, rc));
+                error ("pam_setcred: %s", pam_strerror(pam_h, rc));
                 return SLURM_ERROR;
         } else
-                 if ((rc = pam_open_session (*pam_h, 0)) != PAM_SUCCESS) {
-                        error("pam_open_session: %s", pam_strerror(*pam_h, rc));
+                 if ((rc = pam_open_session (pam_h, 0)) != PAM_SUCCESS) {
+                        error("pam_open_session: %s", pam_strerror(pam_h, rc));
                         return SLURM_ERROR;
         }
 
@@ -107,7 +105,7 @@ pam_setup (pam_handle_t **pam_h, char *user, char *host)
 
 
 void
-pam_finish (pam_handle_t *pam_h)
+pam_finish ()
 {
         int             rc = 0;
 
@@ -128,4 +126,17 @@ pam_finish (pam_handle_t *pam_h)
         }
 }
 
-#endif  /* HAVE_PAM */
+#else  /* HAVE_PAM */
+
+int pam_setup (char *user, char *host)
+{
+	/* Don't have PAM support, do nothing. */
+	return SLURM_SUCCESS;
+}
+
+void pam_finish ()
+{
+	/* Don't have PAM support, do nothing. */
+}
+
+#endif /* HAVE_PAM */
