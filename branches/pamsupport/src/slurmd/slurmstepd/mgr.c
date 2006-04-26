@@ -856,9 +856,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
  			if (_become_user(job) < 0) {
  				error("_become_user failed: %m");
-				/* FIXME - child process, probably want to exit()
-				   not return */
- 				return SLURM_ERROR;
+				/* child process, should not return */
+				exit(1);
  			}
 
 			/* log_fini(); */ /* note: moved into exec_task() */
@@ -1501,14 +1500,15 @@ _become_user(slurmd_job_t *job)
 
 	if (setregid(job->pwd->pw_gid, job->pwd->pw_gid) < 0) {
 		error("setregid: %m");
+		return SLURM_ERROR;
 	}
 
 	if (setreuid(job->pwd->pw_uid, job->pwd->pw_uid) < 0) {
 		error("setreuid: %m");
-	return SLURM_ERROR;
+		return SLURM_ERROR;
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }	
 
 
