@@ -205,7 +205,8 @@ main (int argc, char *argv[])
 
 	conf->pid = getpid();
 	pidfd = create_pidfile(conf->pidfile);
-	fd_set_close_on_exec(pidfd);
+	if (pidfd >= 0)
+		fd_set_close_on_exec(pidfd);
 
 	info("%s started on %T", xbasename(argv[0]));
 
