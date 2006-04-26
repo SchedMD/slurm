@@ -85,6 +85,7 @@
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/req.h"
+#include "src/slurmd/slurmstepd/pam_ses.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -96,6 +97,14 @@ static int mgr_sigarray[] = {
 	SIGINT,  SIGTERM, SIGTSTP,
 	SIGQUIT, SIGPIPE, SIGUSR1,
 	SIGUSR2, SIGALRM, SIGHUP, 0
+};
+
+struct priv_state {
+	uid_t           saved_uid;
+	gid_t           saved_gid;
+	gid_t *         gid_list;
+	int             ngids;
+	char            saved_cwd [4096];
 };
 
 step_complete_t step_complete = {
@@ -112,6 +121,7 @@ step_complete_t step_complete = {
         NULL
 };
 
+
 /* 
  * Prototypes
  */
@@ -127,9 +137,9 @@ static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
 static int  _setup_spawn_io(slurmd_job_t *job);
-static int  _drop_privileges(slurmd_job_t *job,
-			     int *n_old_gids, gid_t **old_gids);
-static int  _reclaim_privileges(struct passwd *pwd, int, gid_t *);
+static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
+				struct priv_state *state);
+static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
@@ -311,32 +321,25 @@ static int
 _setup_io(slurmd_job_t *job)
 {
 	int            rc   = 0;
-	struct passwd *spwd = NULL;
-	gid_t *old_gids;
-	int n_old_gids;
+	struct priv_state sprivs;
 
 	debug2("Entering _setup_io");
 
-	/* Save current UID/GID */
-	if (!(spwd = getpwuid(geteuid()))) {
-		error("getpwuid: %m");
-		return ESLURMD_IO_ERROR;
-	}
 
 	/*
 	 * Temporarily drop permissions, initialize task stdio file
 	 * decriptors (which may be connected to files), then
 	 * reclaim privileges.
 	 */
-	if (_drop_privileges(job, &n_old_gids, &old_gids) < 0)
+	if (_drop_privileges(job, true, &sprivs) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	/* FIXME - need to check a return code for failures */
 	io_init_tasks_stdio(job);
 
-	if (_reclaim_privileges(spwd, n_old_gids, old_gids) < 0)
+	if (_reclaim_privileges(&sprivs) < 0)
 		error("sete{u/g}id(%lu/%lu): %m", 
-		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
+		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
 
 	/*
 	 * MUST create the initial client object before starting
@@ -651,7 +654,7 @@ _send_step_complete_msgs(slurmd_job_t *job)
 int 
 job_manager(slurmd_job_t *job)
 {
-	int rc = 0;
+	int  rc = 0;
 	bool io_initialized = false;
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
@@ -682,7 +685,8 @@ job_manager(slurmd_job_t *job)
 		io_close_task_fds(job);
 		goto fail2;
 	}
-	
+
+	/* calls pam_setup() and requires pam_finish() if successful */
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
@@ -704,6 +708,12 @@ job_manager(slurmd_job_t *job)
 	jobacct_g_endpoll();
 		
 	job->state = SLURMSTEPD_STEP_ENDING;
+
+	/* 
+	 * This just cleans up all of the PAM state and errors are logged
+	 * below, so there's no need for error handling.
+	 */
+	pam_finish();
 
 	if (!job->batch && 
 	    (interconnect_fini(job->switch_job) < 0)) {
@@ -760,6 +770,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	int *readfds; /* array of read file descriptors */
 	int fdpair[2];
 	uint16_t propagate_prio = slurm_get_propagate_prio_process();
+	struct priv_state sprivs;
 
 	xassert(job != NULL);
 
@@ -782,6 +793,8 @@ _fork_all_tasks(slurmd_job_t *job)
 		error("readfds xmalloc failed!");
 		return SLURM_ERROR;
 	}
+
+
 	for (i = 0; i < job->ntasks; i++) {
 		fdpair[0] = -1; fdpair[1] = -1;
 		if (pipe (fdpair) < 0) {
@@ -796,6 +809,33 @@ _fork_all_tasks(slurmd_job_t *job)
 		writefds[i] = fdpair[1];
 	}
 
+	/* Temporarily drop effective privileges, except for the euid.
+	 * We need to wait until after pam_setup() to drop euid.
+	 */
+	if (_drop_privileges (job, false, &sprivs) < 0)
+		return SLURM_ERROR;
+
+	if (pam_setup(job->pwd->pw_name, conf->hostname)
+	    != SLURM_SUCCESS){
+		error ("error in pam_setup");
+		goto fail1;
+	}
+
+	if (seteuid (job->pwd->pw_uid) < 0) {
+		error ("seteuid: %m");
+		goto fail2;
+	}
+
+	if (chdir(job->cwd) < 0) {
+		error("couldn't chdir to `%s': %m: going to /tmp instead",
+		      job->cwd);
+		if (chdir("/tmp") < 0) {
+			error("couldn't chdir to /tmp either. dying.");
+			goto fail2;
+		}
+	}
+
+
 	/*
 	 * Fork all of the task processes.
 	 */
@@ -804,7 +844,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		if ((pid = fork ()) < 0) {
 			error("fork: %m");
-			return SLURM_ERROR;
+			goto fail2;
 		} else if (pid == 0)  { /* child */
 			int j;
 
@@ -823,7 +863,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
  			if (_become_user(job) < 0) {
  				error("_become_user failed: %m");
- 				return SLURM_ERROR;
+				/* child process, should not return */
+				exit(1);
  			}
 
 			/* log_fini(); */ /* note: moved into exec_task() */
@@ -836,6 +877,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		/*
 		 * Parent continues: 
 		 */
+
 		close(readfds[i]);
 		verbose ("task %lu (%lu) started %M", 
 			(unsigned long) job->task[i]->gtid, 
@@ -846,23 +888,38 @@ _fork_all_tasks(slurmd_job_t *job)
 		job->task[i]->pid = pid;
 		if (i == 0)
 			job->pgid = pid;
-		/*
-		 * Put this task in the step process group
-		 */
-		if (setpgid (pid, job->pgid) < 0)
-			error ("Unable to put task %d (pid %ld) into pgrp %ld",
-			       i, pid, job->pgid);
-
-		if (slurm_container_add(job, pid) == SLURM_ERROR) {
-			error("slurm_container_create: %m");
-			return SLURM_ERROR;
-		}
 	}
 
 	/*
 	 * All tasks are now forked and running as the user, but
 	 * will wait for our signal before calling exec.
 	 */
+
+	/*
+	 * Reclaim privileges
+	 */
+	if (_reclaim_privileges (&sprivs) < 0) {
+		error ("Unable to reclaim privileges");
+		/* Don't bother erroring out here */
+	}
+
+	if (chdir (sprivs.saved_cwd) < 0) {
+		error ("Unable to return to working directory");
+	}
+
+	for (i = 0; i < job->ntasks; i++) {
+		/*
+                 * Put this task in the step process group
+                 */
+                if (setpgid (job->task[i]->pid, job->pgid) < 0)
+                        error ("Unable to put task %d (pid %ld) into pgrp %ld",
+                               i, job->task[i]->pid, job->pgid);
+
+                if (slurm_container_add(job, job->task[i]->pid) == SLURM_ERROR) {
+                        error("slurm_container_create: %m");
+			goto fail1;
+                }
+	}
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
@@ -889,6 +946,12 @@ _fork_all_tasks(slurmd_job_t *job)
 	xfree(readfds);
 
 	return rc;
+
+fail2:
+	_reclaim_privileges (&sprivs);
+fail1:
+	pam_finish();
+	return SLURM_ERROR;
 }
 
 
@@ -1315,17 +1378,27 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 
 
 static int
-_drop_privileges(slurmd_job_t *job, int *n_old_gids, gid_t **old_gids)
+_drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 {
+	ps->saved_uid = getuid();
+	ps->saved_gid = getgid();
+
+	if (!getcwd (ps->saved_cwd, sizeof (ps->saved_cwd))) {
+		error ("Unable to get current working directory: %m");
+		strncpy (ps->saved_cwd, "/tmp", sizeof (ps->saved_cwd));
+	}
+
+	ps->ngids = getgroups(0, NULL);
+
+	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
+
+	getgroups(ps->ngids, ps->gid_list);
+
 	/*
 	 * No need to drop privileges if we're not running as root
 	 */
 	if (getuid() != (uid_t) 0)
 		return SLURM_SUCCESS;
-
-	*n_old_gids = getgroups(0, NULL);
-	*old_gids = (gid_t *)xmalloc(*n_old_gids * sizeof(gid_t));
-	getgroups(*n_old_gids, *old_gids);
 
 	if (setegid(job->pwd->pw_gid) < 0) {
 		error("setegid: %m");
@@ -1336,7 +1409,7 @@ _drop_privileges(slurmd_job_t *job, int *n_old_gids, gid_t **old_gids)
 		error("_initgroups: %m"); 
 	}
 
-	if (seteuid(job->pwd->pw_uid) < 0) {
+	if (do_setuid && seteuid(job->pwd->pw_uid) < 0) {
 		error("seteuid: %m");
 		return -1;
 	}
@@ -1345,26 +1418,27 @@ _drop_privileges(slurmd_job_t *job, int *n_old_gids, gid_t **old_gids)
 }
 
 static int
-_reclaim_privileges(struct passwd *pwd, int n_old_gids, gid_t *old_gids)
+_reclaim_privileges(struct priv_state *ps)
 {
 	/* 
 	 * No need to reclaim privileges if our uid == pwd->pw_uid
 	 */
-	if (geteuid() == pwd->pw_uid)
+	if (geteuid() == ps->saved_uid)
 		return SLURM_SUCCESS;
 
-	if (seteuid(pwd->pw_uid) < 0) {
+	if (seteuid(ps->saved_uid) < 0) {
 		error("seteuid: %m");
 		return -1;
 	}
 
-	if (setegid(pwd->pw_gid) < 0) {
+	if (setegid(ps->saved_gid) < 0) {
 		error("setegid: %m");
 		return -1;
 	}
 
-	setgroups(n_old_gids, old_gids);
-	xfree(old_gids);
+	setgroups(ps->ngids, ps->gid_list);
+
+	xfree(ps->gid_list);
 
 	return SLURM_SUCCESS;
 }
@@ -1456,22 +1530,21 @@ static void _set_prio_process (slurmd_job_t *job)
 static int
 _become_user(slurmd_job_t *job)
 {
-	if (setgid(job->gid) < 0) {
-		error("setgid: %m");
-		return -1;
+	/*
+	 * Drop real and saved uid/gid in case they are still root
+	 */
+
+	if (setregid(job->pwd->pw_gid, job->pwd->pw_gid) < 0) {
+		error("setregid: %m");
+		return SLURM_ERROR;
 	}
 
-	if (_initgroups(job) < 0) {
-		;
-		/* error("_initgroups: %m"); */
+	if (setreuid(job->pwd->pw_uid, job->pwd->pw_uid) < 0) {
+		error("setreuid: %m");
+		return SLURM_ERROR;
 	}
 
-	if (setuid(job->pwd->pw_uid) < 0) {
-		error("setuid: %m");
-		return -1;
-	}
-
-	return 0;
+	return SLURM_SUCCESS;
 }	
 
 
