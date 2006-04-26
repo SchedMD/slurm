@@ -90,5 +90,8 @@ int fed_libstate_restore(Buf buffer);
 int fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl);
 int fed_job_step_allocated(fed_jobinfo_t *jp, hostlist_t hl);
 int fed_libstate_clear(void);
+int fed_slurmctld_init(void);
+int fed_slurmd_init(void);
+int fed_slurmd_step_init(void);
 
 #endif /* _FEDERATION_INCLUDED */
