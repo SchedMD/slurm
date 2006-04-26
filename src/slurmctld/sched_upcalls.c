@@ -139,7 +139,7 @@ static void * sched_get_node_mod_time( 	sched_obj_list_t, int32_t, char * );
 /* ************************************************************************ */
 /*  TAG(                         sched_get_port                          )  */
 /* ************************************************************************ */
-const u_int16_t
+u_int16_t
 sched_get_port( void )
 {
 	u_int16_t port;
@@ -157,7 +157,7 @@ sched_get_port( void )
 /* ************************************************************************ */
 /*  TAG(                         sched_get_auth                          )  */
 /* ************************************************************************ */
-const char * const
+const char *
 sched_get_auth( void )
 {
 	static char auth[128];
@@ -179,7 +179,7 @@ sched_get_auth( void )
 /* ************************************************************************ */
 /*  TAG(                     sched_get_root_filter                       )  */
 /* ************************************************************************ */
-const u_int16_t
+u_int16_t
 sched_get_root_filter( void )
 {
 	u_int16_t root_filter;
