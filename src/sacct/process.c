@@ -194,12 +194,12 @@ int _parse_line(char *f[], void **data)
 		(*step)->rusage.ru_nsignals = atoi(f[F_NSIGNALS]);
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
-		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]);
+		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]) * 1024;
 		(*step)->sacct.max_vsize_task = atoi(f[F_MAX_VSIZE_TASK]);
-		(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]);
-		(*step)->sacct.max_rss = atoi(f[F_MAX_RSS]);
+		(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]) * 1024;
+		(*step)->sacct.max_rss = atoi(f[F_MAX_RSS]) * 1024;
 		(*step)->sacct.max_rss_task = atoi(f[F_MAX_RSS_TASK]);
-		(*step)->sacct.ave_rss = atof(f[F_AVE_RSS]);
+		(*step)->sacct.ave_rss = atof(f[F_AVE_RSS]) * 1024;
 		(*step)->sacct.max_pages = atoi(f[F_MAX_PAGES]);
 		(*step)->sacct.max_pages_task = atoi(f[F_MAX_PAGES_TASK]);
 		(*step)->sacct.ave_pages = atof(f[F_AVE_PAGES]);
