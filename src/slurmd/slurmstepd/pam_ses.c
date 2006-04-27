@@ -32,7 +32,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
 
-#ifdef HAVE_PAM
+#ifdef conf->use_pam
 
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
@@ -42,7 +42,7 @@ static pam_handle_t *pam_h = NULL;
 /*
  * A stack for slurmstepd must be set up in /etc/pam.d
  */
-#define SLURM_SERVICE_PAM "slurmstepd"
+#define SLURM_SERVICE_PAM "slurm"
 
 /*
  * As these functions are currently written, PAM initialization (pam_start)
@@ -126,7 +126,7 @@ pam_finish ()
         }
 }
 
-#else  /* HAVE_PAM */
+#else  /*  use_pam */
 
 int pam_setup (char *user, char *host)
 {
@@ -139,4 +139,4 @@ void pam_finish ()
 	/* Don't have PAM support, do nothing. */
 }
 
-#endif /* HAVE_PAM */
+#endif /*  use_pam */

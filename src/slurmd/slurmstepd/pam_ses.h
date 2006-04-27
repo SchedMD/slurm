@@ -29,14 +29,9 @@
 #ifndef _SLURMD_PAMSES_H
 #define _SLURMD_PAMSES_H
 
-#ifdef HAVE_PAM
-#  include <security/pam_appl.h>
-#  include <security/pam_misc.h>
-#endif
-
 /*
- * Define the functions that are called to setup a PAM session and to close
- * it when finished.
+ * Define the functions that are called to setup a PAM session and close it
+ * when finished.
  */
 int pam_setup (char *user, char *host);
 void pam_finish ();
