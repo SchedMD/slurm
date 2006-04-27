@@ -480,7 +480,7 @@ extern char *job_reason_string(enum job_wait_reason inx)
 			return "Priority";
 		case WAIT_DEPENDENCY:
 			return "Dependency";
-		case WAIT_RESOUCES:
+		case WAIT_RESOURCES:
 			return "Resources";
 		case WAIT_PART_NODE_LIMIT:
 			return "PartitionNodeLimit";
