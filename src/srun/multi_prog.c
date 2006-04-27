@@ -31,6 +31,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -38,6 +42,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include "src/common/log.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
