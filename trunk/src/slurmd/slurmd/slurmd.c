@@ -576,6 +576,8 @@ _read_config()
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 
+	conf->use_pam = cf->use_pam;
+
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
 }
@@ -660,6 +662,7 @@ _init_conf()
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
+	conf->use_pam	  =  0;
 
 	slurm_mutex_init(&conf->config_mutex);
 	return;

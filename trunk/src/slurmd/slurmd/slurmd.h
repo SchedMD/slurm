@@ -90,6 +90,7 @@ typedef struct slurmd_config {
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_freq;
+	uint16_t	use_pam;
 } slurmd_conf_t;
 
 slurmd_conf_t * conf;

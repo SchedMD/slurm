@@ -174,6 +174,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskPlugin", S_P_STRING},
 	{"TmpFS", S_P_STRING},
 	{"TreeWidth", S_P_UINT16},
+	{"UsePAM", S_P_BOOLEAN},
 	{"WaitTime", S_P_UINT16},
 
 	{"NodeName", S_P_ARRAY, parse_nodename, destroy_nodename},
@@ -1023,6 +1024,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->node_prefix);
 	ctl_conf_ptr->tree_width       		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->use_pam			= 0;
 	
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -1192,6 +1194,8 @@ static void _normalize_debug_level(uint16_t *level)
 static void
 validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
+	bool truth;
+
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
 			   hashtbl)
 	    && strcasecmp("localhost", conf->backup_controller) == 0) {
@@ -1451,6 +1455,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	} else {
 		conf->tree_width = DEFAULT_TREE_WIDTH;
+	}
+
+	if (s_p_get_boolean(&truth, "UsePAM", hashtbl) && truth) {
+		conf->use_pam = 1;
+	} else {
+		conf->use_pam = 0;
 	}
 }
 

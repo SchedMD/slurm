@@ -31,6 +31,8 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
+#include "src/common/log.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #ifdef conf->use_pam
 
@@ -113,6 +115,9 @@ pam_finish ()
 	 * Allow PAM to clean up its state by closing the user session and
 	 * ending the association with PAM.
 	 */
+
+	if (!conf->use_pam)
+		return;
 
         if (pam_h != NULL) {
 		/*
