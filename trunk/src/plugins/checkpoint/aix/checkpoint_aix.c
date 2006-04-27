@@ -412,7 +412,7 @@ static void *_ckpt_agent_thr(void *arg)
 		iter = list_iterator_create(ckpt_timeout_list);
 		slurm_mutex_lock(&ckpt_agent_mutex);
 		/* look for and process any timeouts */
-		while (rec = list_next(iter)) {
+		while ((rec = list_next(iter))) {
 			if (rec->end_time > now)
 				continue;
 			info("checkpoint timeout for %u.%u", 
@@ -479,7 +479,7 @@ static void _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 	if (!ckpt_timeout_list)
 		goto fini;
 	iter = list_iterator_create(ckpt_timeout_list);
-	while (rec = list_next(iter)) {
+	while ((rec = list_next(iter))) {
 		if ((rec->job_id != job_id) || (rec->step_id != step_id)
 		||  (start_time && (rec->start_time != start_time)))
 			continue;

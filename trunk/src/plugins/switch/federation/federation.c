@@ -1454,10 +1454,10 @@ static int
 _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		  char *hostname, int task_id, enum NTBL_RC state)
 {
-	fed_nodeinfo_t *node;
+	fed_nodeinfo_t *node = NULL;
 	fed_adapter_t *adapter = NULL;
-	fed_window_t *window;
-	NTBL *table;
+	fed_window_t *window = NULL;
+	NTBL *table = NULL;
 	int i, j;
 	bool adapter_found;
 	
@@ -1668,7 +1668,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 {
 	int nnodes;
 	hostlist_iterator_t hi;
-	char *host;
+	char *host = NULL;
 	int proc_cnt = 0;
 	int i, j;
 	fed_nodeinfo_t *node;

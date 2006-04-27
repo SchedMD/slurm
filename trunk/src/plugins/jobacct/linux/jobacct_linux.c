@@ -397,7 +397,7 @@ static void _get_process_data() {
 	while((jobacct = list_next(itr))) {
 		itr2 = list_iterator_create(prec_list);
 		while((prec = list_next(itr2))) {
-			if (prec->ppid == jobacct->pid) {
+			if (prec->pid == jobacct->pid) {
 				/* find all my descendents */
 				_get_offspring_data(prec_list, 
 						    prec, prec->pid);

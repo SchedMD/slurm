@@ -269,7 +269,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		strncpy(time_str, "None", sizeof(time_str));
 	}
 	fprintf ( out, "SuspendTime=%s PreSusTime=%ld", 
-		time_str, job_ptr->pre_sus_time);
+		  time_str, (long int)job_ptr->pre_sus_time);
 
 	/****** Line 13 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,

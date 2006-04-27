@@ -239,7 +239,10 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	slurm_mutex_destroy(&stat_mutex);
 	if(step.ntasks) {
 		tempf = step.sacct.ave_cpu/step.ntasks;
+		tempf /= 100;
 		step.sacct.ave_cpu = (uint32_t)tempf;
+		tempf = step.sacct.min_cpu/100;
+		step.sacct.min_cpu = (uint32_t)tempf;
 		tempf = step.sacct.ave_rss/step.ntasks;
 		step.sacct.ave_rss = (uint32_t)tempf;
 		tempf = step.sacct.ave_vsize/step.ntasks;

@@ -2738,13 +2738,13 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
 	
-	int port_tar;
+	int port_tar = 0;
 	int source_port=0;
 	int target_port=0;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {3,5};
 	int *node_tar = NULL;
-	int i;
+	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
 	int highest_phys_x = geometry[X] - start[X];
@@ -3054,7 +3054,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {3,5};
 	int *node_tar = NULL;
-	int i;
+	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
 	

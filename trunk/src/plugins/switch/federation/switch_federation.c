@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <stdlib.h>
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
@@ -222,7 +223,7 @@ int switch_p_libstate_restore ( char * dir_name, bool recover )
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read (state_fd, &data[data_size],
- 					FED_BUF_SIZE);
+					  FED_BUF_SIZE);
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {

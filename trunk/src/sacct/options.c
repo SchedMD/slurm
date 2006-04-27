@@ -28,6 +28,7 @@
 
 #include "src/common/read_config.h"
 #include "sacct.h"
+#include <time.h>
 
 typedef struct expired_rec {  /* table of expired jobs */
 	uint32_t job;
@@ -122,13 +123,18 @@ int _cmp_jrec(const void *a1, const void *a2) {
  */
 void _dump_header(acct_header_t header)
 {
-	printf("%u %s %d %d %d %d %s %s ",
+	struct tm ts;
+	gmtime_r(&header.timestamp, &ts);
+	printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
 	       header.jobnum,
 	       header.partition,
+	       1900+(ts.tm_year),
+	          1+(ts.tm_mon),
+		  ts.tm_mday,
+	          ts.tm_hour,
+		  ts.tm_min,
+		  ts.tm_sec,
 	       (int)header.job_start,
-	       (int)header.timestamp,
-	       header.uid,
-	       header.gid,
 	       header.blockid,	/* block id */
 	       "-");	/* reserved 1 */
 }
@@ -364,7 +370,7 @@ int decode_status_char(char *status)
 
 char *decode_status_int(int status)
 {
-	switch(status) {
+	switch(status & ~JOB_COMPLETING) {
 	case JOB_PENDING:
 		return "PENDING"; 	/* we should never see this */
 	case JOB_RUNNING:
@@ -386,23 +392,33 @@ char *decode_status_int(int status)
 	default:
 		return "UNKNOWN";
 	}
-	/* if (!strcasecmp(cs, "ca"))  */
-/* 		return "CANCELLED"; */
-/* 	else if (strcasecmp(cs, "cd")==0)  */
-/* 		return "COMPLETED"; */
-/* 	else if (strcasecmp(cs, "cg")==0)  */
-/* 		return "COMPLETING";	/\* we should never see this *\/ */
-/* 	else if (strcasecmp(cs, "f")==0)  */
-/* 		return "FAILED"; */
-/* 	else if (strcasecmp(cs, "nf")==0) */
-/* 		return "NODEFAILED"; */
-/* 	else if (strcasecmp(cs, "p")==0) */
-/* 		return "PENDING"; 	/\* we should never see this *\/ */
-/* 	else if (strcasecmp(cs, "r")==0) */
-/* 		return "RUNNING";  */
-/* 	else if (strcasecmp(cs, "to")==0) */
-/* 		return "TIMEDOUT"; */
-} 
+}
+
+char *decode_status_int_abbrev(int status)
+{
+	switch(status & ~JOB_COMPLETING) {
+	case JOB_PENDING:
+		return "PD"; 	/* we should never see this */
+	case JOB_RUNNING:
+		return "R";
+	case JOB_SUSPENDED:
+		return "S";
+	case JOB_COMPLETE:
+		return "CD";
+	case JOB_CANCELLED:
+		return "CA";
+	case JOB_FAILED:
+		return "F";
+	case JOB_TIMEOUT:
+		return "TO";
+	case JOB_NODE_FAIL:
+		return "NF";
+	case JOB_END:
+		return "JOB_END";
+	default:
+		return "UNKNOWN";
+	}
+}
 
 int get_data(void)
 {
@@ -986,14 +1002,29 @@ endopt:
 	return;
 }
 
+/* Note: do_dump() strives to present data in an upward-compatible
+ * manner so that apps written to use data from `sacct -d` in slurm
+ * v1.0 will continue to work in v1.1 and later.
+ *
+ * To help ensure this compatibility,
+ * a. The meaning of an existing field never changes
+ * b. New fields are appended to the end of a record
+ *
+ * The "numfields" field of the record can be used as a sub-version
+ * number, as it will never decrease for the life of the current
+ * record version number (currently 1). For example, if your app needs
+ * to use field 28, a record with numfields<28 is too old a version
+ * for you, while numfields>=28 will provide what you are expecting.
+ */ 
 void do_dump(void)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 	job_rec_t *job = NULL;
 	step_rec_t *step = NULL;
-	float tempf;
-
+	struct tm ts;
+	time_t finished;
+	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if (!params.opt_dup)
@@ -1009,18 +1040,14 @@ void do_dump(void)
 		if (params.opt_uid>=0)
 			if (job->header.uid != params.opt_uid)
 				continue;
-		if(job->sacct.min_cpu == NO_VAL)
+		if(job->sacct.min_cpu == (float)NO_VAL)
 			job->sacct.min_cpu = 0;
-
+		
 		if(list_count(job->steps)) {
-			tempf = job->sacct.ave_cpu/list_count(job->steps);
-			job->sacct.ave_cpu = (uint32_t)tempf;
-			tempf = job->sacct.ave_rss/list_count(job->steps);
-			job->sacct.ave_rss = (uint32_t)tempf;
-			tempf = job->sacct.ave_vsize/list_count(job->steps);
-			job->sacct.ave_vsize = (uint32_t)tempf;
-			tempf = job->sacct.ave_pages/list_count(job->steps);
-			job->sacct.ave_pages = (uint32_t)tempf;
+			job->sacct.ave_cpu /= list_count(job->steps);
+			job->sacct.ave_rss /= list_count(job->steps);
+			job->sacct.ave_vsize /= list_count(job->steps);
+			job->sacct.ave_pages /= list_count(job->steps);
 		}
 
 		/* JOB_START */
@@ -1034,7 +1061,9 @@ void do_dump(void)
 					job->header.jobnum);
 			}
 			_dump_header(job->header);
-			printf("JOB_START %s %d %d %d %s\n", 
+			printf("JOB_START 1 16 %d %d %s %d %d %d %s\n", 
+			       job->header.uid,
+			       job->header.gid,
 			       job->jobname,
 			       job->track_steps,
 			       job->priority,
@@ -1050,12 +1079,14 @@ void do_dump(void)
 				step->exitcode=1;
 			}
 			_dump_header(step->header);
-			printf("JOB_STEP %u %s %s ",
+			finished=step->header.job_start+step->elapsed;
+			gmtime_r(&finished, &ts);
+			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
 			       step->stepnum,
-			       step->stepname,
-			       step->nodes); 
+			       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
+			            ts.tm_hour, ts.tm_min, ts.tm_sec);
 			printf("%s %d %d %d %d ",
-			       decode_status_int(step->status),
+			       decode_status_int_abbrev(step->status),
 			       step->exitcode,
 			       step->ntasks,
 			       step->ncpus,
@@ -1068,7 +1099,7 @@ void do_dump(void)
 			       (int)step->rusage.ru_stime.tv_sec,
 			       (int)step->rusage.ru_stime.tv_usec);
 			printf("%d %d %d %d %d %d %d %d %d "
-			       "%d %d %d %d %d ",
+			       "%d %d %d %d %d %d %d ",
 			       (int)step->rusage.ru_maxrss,
 			       (int)step->rusage.ru_ixrss,
 			       (int)step->rusage.ru_idrss,
@@ -1082,13 +1113,14 @@ void do_dump(void)
 			       (int)step->rusage.ru_msgrcv,
 			       (int)step->rusage.ru_nsignals,
 			       (int)step->rusage.ru_nvcsw,
-			       (int)step->rusage.ru_nivcsw);
-			printf("%d %d %.2f %d %d %.2f "
-			       "%d %d %.2f %.2f %d %.2f\n",
+			       (int)step->rusage.ru_nivcsw,
 			       step->sacct.max_vsize, 
+			       step->sacct.max_rss);
+			/* Data added in Slurm v1.1 */
+			printf("%d %.2f %d %.2f %d %d %.2f "
+			       "%.2f %d %.2f %s %s\n",
 			       step->sacct.max_vsize_task,
 			       step->sacct.ave_vsize,
-			       step->sacct.max_rss,
 			       step->sacct.max_rss_task,
 			       step->sacct.ave_rss,
 			       step->sacct.max_pages,
@@ -1096,16 +1128,23 @@ void do_dump(void)
 			       step->sacct.ave_pages,
 			       step->sacct.min_cpu,
 			       step->sacct.min_cpu_task,
-			       step->sacct.ave_cpu);
+			       step->sacct.ave_cpu,
+			       step->stepname,
+			       step->nodes);
 		}
 		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
 		if (job->show_full) {
 			_dump_header(job->header);
-			printf("JOB_TERMINATED %d ",
+			finished=job->header.job_start+job->elapsed;
+			gmtime_r(&finished, &ts);
+			printf("JOB_TERMINATED 1 50 %d ",
 			       job->elapsed);
+			printf("%04d%02d%02d%02d%02d%02d ",
+			1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
+			      ts.tm_hour, ts.tm_min, ts.tm_sec); 
 			printf("%s %d %d %d %d ",
-			       decode_status_int(job->status),
+			       decode_status_int_abbrev(job->status),
 			       job->exitcode,
 			       job->ntasks,
 			       job->ncpus,
@@ -1117,14 +1156,14 @@ void do_dump(void)
 			       (int)job->rusage.ru_utime.tv_usec,
 			       (int)job->rusage.ru_stime.tv_sec,
 			       (int)job->rusage.ru_stime.tv_usec);
-			printf("%d %d %d %d %d %d ",
+			printf("%d %d %d %d %d %d %d %d %d "
+			       "%d %d %d %d %d %d %d ",
 			       (int)job->rusage.ru_maxrss,
 			       (int)job->rusage.ru_ixrss,
 			       (int)job->rusage.ru_idrss,
 			       (int)job->rusage.ru_isrss,
 			       (int)job->rusage.ru_minflt,
-			       (int)job->rusage.ru_majflt);
-			printf("%d %d %d %d %d %d %d %d ", 
+			       (int)job->rusage.ru_majflt,
 			       (int)job->rusage.ru_nswap,
 			       (int)job->rusage.ru_inblock,
 			       (int)job->rusage.ru_oublock,
@@ -1132,13 +1171,14 @@ void do_dump(void)
 			       (int)job->rusage.ru_msgrcv,
 			       (int)job->rusage.ru_nsignals,
 			       (int)job->rusage.ru_nvcsw,
-			       (int)job->rusage.ru_nivcsw);
-			printf("%d %d %.2f %d %d %.2f "
-			       "%d %d %.2f %.2f %d %.2f\n",
+			       (int)job->rusage.ru_nivcsw,
 			       job->sacct.max_vsize, 
+			       job->sacct.max_rss);
+			/* Data added in Slurm v1.1 */
+			printf("%d %.2f %d %.2f %d %d %.2f "
+			       "%.2f %d %.2f %s %s\n",
 			       job->sacct.max_vsize_task,
 			       job->sacct.ave_vsize,
-			       job->sacct.max_rss,
 			       job->sacct.max_rss_task,
 			       job->sacct.ave_rss,
 			       job->sacct.max_pages,
@@ -1146,7 +1186,9 @@ void do_dump(void)
 			       job->sacct.ave_pages,
 			       job->sacct.min_cpu,
 			       job->sacct.min_cpu_task,
-			       job->sacct.ave_cpu);
+			       job->sacct.ave_cpu,
+			       "-",
+			       job->nodes);
 		}
 	}
 	list_iterator_destroy(itr);		
@@ -1607,8 +1649,7 @@ void do_list(void)
 	ListIterator itr_step = NULL;
 	job_rec_t *job = NULL;
 	step_rec_t *step = NULL;
-	float tempf;
-
+	
 	if (params.opt_total)
 		do_jobsteps = 0;
 
@@ -1658,14 +1699,10 @@ void do_list(void)
 			job->sacct.min_cpu = 0;
 		
 		if(list_count(job->steps)) {
-			tempf = job->sacct.ave_cpu/list_count(job->steps);
-			job->sacct.ave_cpu = (uint32_t)tempf;
-			tempf = job->sacct.ave_rss/list_count(job->steps);
-			job->sacct.ave_rss = (uint32_t)tempf;
-			tempf = job->sacct.ave_vsize/list_count(job->steps);
-			job->sacct.ave_vsize = (uint32_t)tempf;
-			tempf = job->sacct.ave_pages/list_count(job->steps);
-			job->sacct.ave_pages = (uint32_t)tempf;
+			job->sacct.ave_cpu /= list_count(job->steps);
+			job->sacct.ave_rss /= list_count(job->steps);
+			job->sacct.ave_vsize /= list_count(job->steps);
+			job->sacct.ave_pages /= list_count(job->steps);
 		}
 
 		if (job->show_full) {
