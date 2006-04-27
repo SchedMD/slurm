@@ -1114,15 +1114,15 @@ void do_dump(void)
 			       (int)step->rusage.ru_nsignals,
 			       (int)step->rusage.ru_nvcsw,
 			       (int)step->rusage.ru_nivcsw,
-			       step->sacct.max_vsize, 
-			       step->sacct.max_rss);
+			       step->sacct.max_vsize/1024, 
+			       step->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%d %.2f %d %.2f %d %d %.2f "
 			       "%.2f %d %.2f %s %s\n",
 			       step->sacct.max_vsize_task,
-			       step->sacct.ave_vsize,
+			       step->sacct.ave_vsize/1024,
 			       step->sacct.max_rss_task,
-			       step->sacct.ave_rss,
+			       step->sacct.ave_rss/1024,
 			       step->sacct.max_pages,
 			       step->sacct.max_pages_task,
 			       step->sacct.ave_pages,
@@ -1172,15 +1172,15 @@ void do_dump(void)
 			       (int)job->rusage.ru_nsignals,
 			       (int)job->rusage.ru_nvcsw,
 			       (int)job->rusage.ru_nivcsw,
-			       job->sacct.max_vsize, 
-			       job->sacct.max_rss);
+			       job->sacct.max_vsize/1024, 
+			       job->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%d %.2f %d %.2f %d %d %.2f "
 			       "%.2f %d %.2f %s %s\n",
 			       job->sacct.max_vsize_task,
-			       job->sacct.ave_vsize,
+			       job->sacct.ave_vsize/1024,
 			       job->sacct.max_rss_task,
-			       job->sacct.ave_rss,
+			       job->sacct.ave_rss/1024,
 			       job->sacct.max_pages,
 			       job->sacct.max_pages_task,
 			       job->sacct.ave_pages,
