@@ -34,7 +34,7 @@
 #include "src/common/log.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-#ifdef conf->use_pam
+#ifdef HAVE_PAM
 
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
@@ -65,6 +65,8 @@ pam_setup (char *user, char *host)
 	struct pam_conv conv = {misc_conv, NULL};
         int             rc = 0;
 
+	if (!conf->use_pam)
+		return SLURM_SUCCESS;
 	/*
 	 * SLURM uses PAM to obtain resource limits established by the system
 	 * administrator. PAM's session management library is responsible for
