@@ -133,7 +133,7 @@ pam_finish ()
         }
 }
 
-#else  /*  use_pam */
+#else  /* HAVE_PAM */
 
 int pam_setup (char *user, char *host)
 {
@@ -146,4 +146,4 @@ void pam_finish ()
 	/* Don't have PAM support, do nothing. */
 }
 
-#endif /*  use_pam */
+#endif /* HAVE_PAM */
