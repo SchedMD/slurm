@@ -4,7 +4,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -884,7 +884,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 				      shared, part_node_limit);
 	if (error_code) {
 		if (detail_ptr)
-			detail_ptr->wait_reason = WAIT_RESOUCES;
+			detail_ptr->wait_reason = WAIT_RESOURCES;
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Required nodes are down or 
 			 * too many nodes requested */
