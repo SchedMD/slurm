@@ -499,7 +499,8 @@ _massage_logfile(void)
 	char *ptr, *new_fname;
 	int new_len;
 
-	if ((ptr = strstr(conf->logfile, "%h")) == NULL)
+	if ((conf->logfile == NULL)
+	||  (ptr = strstr(conf->logfile, "%h")) == NULL)
 		return;
 
 	new_len = strlen(conf->logfile) + strlen(conf->hostname);
