@@ -29,13 +29,13 @@
 #  include "config.h"
 #endif
 
+#include "slurm/slurm_errno.h"
+#include "src/slurmd/slurmstepd/pam_ses.h"
+
 #ifdef HAVE_PAM
 
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
-
-#include "slurm/slurm_errno.h"
-#include "src/slurmd/slurmstepd/pam_ses.h"
 
 static pam_handle_t *pam_h = NULL;
 
@@ -60,7 +60,7 @@ pam_setup (char *user, char *host)
 	 * application. In this case, SLURM does need a communication mechanism,
 	 * so the default (or null) conversation function may be used.
 	 */
-	static struct pam_conv conv = {misc_conv, NULL};
+	struct pam_conv conv = {misc_conv, NULL};
         int             rc = 0;
 
 	/*
