@@ -59,7 +59,7 @@ extern int common_init_struct(struct jobacctinfo *jobacct, uint16_t tid)
 	jobacct->max_pages = 0;
 	jobacct->max_pages_task = tid;
 	jobacct->tot_pages = 0;
-	jobacct->min_cpu = 0;
+	jobacct->min_cpu = (uint32_t)NO_VAL;
 	jobacct->min_cpu_task = tid;
 	jobacct->tot_cpu = 0;
 	
@@ -241,8 +241,10 @@ extern void common_aggregate(struct jobacctinfo *dest,
 		dest->max_pages_task = from->max_pages_task;
 	}
 	dest->tot_pages += from->tot_pages;
-	
-	if((dest->min_cpu > from->min_cpu)) {
+	if((dest->min_cpu > from->min_cpu) 
+	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
+		if(from->min_cpu == (uint32_t)NO_VAL)
+			from->min_cpu = 0;
 		dest->min_cpu = from->min_cpu;
 		dest->min_cpu_task = from->min_cpu_task;
 	}

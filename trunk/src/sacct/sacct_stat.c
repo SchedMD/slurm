@@ -154,8 +154,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	int *span = set_span(job->node_cnt, 0);
 	forward_t forward;
 	int thr_count = 0;
-	float tempf = 0;
-
+	
 	debug("getting the stat of job %d on %d nodes", 
 	      job->job_id, job->node_cnt);
 
@@ -242,17 +241,13 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 		step.sacct.max_rss *= 1024;
 		step.sacct.ave_vsize *= 1024;
 		step.sacct.max_vsize *= 1024;
-		tempf = step.sacct.ave_cpu/step.ntasks;
-		tempf /= 100;
-		step.sacct.ave_cpu = (uint32_t)tempf;
-		tempf = step.sacct.min_cpu/100;
-		step.sacct.min_cpu = (uint32_t)tempf;
-		tempf = step.sacct.ave_rss/step.ntasks;
-		step.sacct.ave_rss = (uint32_t)tempf;
-		tempf = step.sacct.ave_vsize/step.ntasks;
-		step.sacct.ave_vsize = (uint32_t)tempf;
-		tempf = step.sacct.ave_pages/step.ntasks;
-		step.sacct.ave_pages = (uint32_t)tempf;
+
+		step.sacct.ave_cpu /= step.ntasks;
+		step.sacct.ave_cpu /= 100;
+		step.sacct.min_cpu /= 100;
+		step.sacct.ave_rss /= step.ntasks;
+		step.sacct.ave_vsize /= step.ntasks;
+		step.sacct.ave_pages /= step.ntasks;
 	}
 	xfree(msg_array_ptr);
 	jobacct_g_free(r.jobacct);	
