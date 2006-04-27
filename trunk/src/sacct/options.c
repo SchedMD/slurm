@@ -481,6 +481,8 @@ int get_data(void)
 			}
 			list_iterator_destroy(itr);
 			continue;	/* no match */
+		} else {
+			show_full = 1;
 		}
 	foundjob:
 		
@@ -501,7 +503,7 @@ int get_data(void)
 			do_fdump(f, lc);
 			continue;
 		}
-		    
+		
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
@@ -1652,7 +1654,7 @@ void do_list(void)
 	
 	if (params.opt_total)
 		do_jobsteps = 0;
-
+	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if (!params.opt_dup)
@@ -1712,6 +1714,7 @@ void do_list(void)
 			}
 			print_fields(JOB, job);
 		}
+		
 		if (do_jobsteps && job->track_steps) {
 			itr_step = list_iterator_create(job->steps);
 			while((step = list_next(itr_step))) {
