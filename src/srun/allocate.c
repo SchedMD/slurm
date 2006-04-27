@@ -486,6 +486,9 @@ job_desc_msg_create_from_opts (char *script)
 		 */
 		xassert (opt.batch);
 
+		if (opt.overcommit)
+			putenv("SLURM_OVERCOMMIT=1");
+
 		j->environment = environ;
 		j->env_size = envcount (environ);
 		j->script = script;
