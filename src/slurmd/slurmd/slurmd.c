@@ -336,7 +336,6 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 		_service_connection((void *) arg);
 		return;
 	}
-	slurm_attr_destroy(&attr);
 	return;
 }
 

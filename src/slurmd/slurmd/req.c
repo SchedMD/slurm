@@ -1141,7 +1141,8 @@ done2:
 	close(fd);
 done:
 	slurm_send_rc_msg(msg, rc);
-	return SLURM_SUCCESS;
+
+	return rc;
 }
 
 static int

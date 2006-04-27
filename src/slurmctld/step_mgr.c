@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 
 #include <slurm/slurm_errno.h>

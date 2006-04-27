@@ -371,13 +371,18 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 #endif
 	/* figure out the ave of the totals sent */
 	if(step->num_tasks > 0) {
-		ave_vsize = jobacct->tot_vsize/step->num_tasks;
-		ave_rss = jobacct->tot_rss/step->num_tasks;
-		ave_pages = jobacct->tot_pages/step->num_tasks;
-		ave_cpu = jobacct->tot_cpu/step->num_tasks;	
+		ave_vsize = jobacct->tot_vsize;
+		ave_vsize /= step->num_tasks;
+		ave_rss = jobacct->tot_rss;
+		ave_rss /= step->num_tasks;
+		ave_pages = jobacct->tot_pages;
+		ave_pages /= step->num_tasks;
+		ave_cpu = jobacct->tot_cpu;
+		ave_cpu /= step->num_tasks;	
 		ave_cpu /= 100;
 	} 
-	ave_cpu2 = jobacct->min_cpu/100;
+	ave_cpu2 = jobacct->min_cpu;
+	ave_cpu2 /= 100;
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,

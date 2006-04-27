@@ -37,6 +37,14 @@
 #  include <sys/prctl.h>
 #endif
 
+#ifdef HAVE_AIX
+#  undef HAVE_UNSETENV
+#  include <sys/checkpnt.h>
+#endif
+#ifndef HAVE_UNSETENV
+#  include "src/common/unsetenv.h"
+#endif
+
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>

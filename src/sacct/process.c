@@ -203,7 +203,7 @@ int _parse_line(char *f[], void **data)
 		(*step)->sacct.max_pages = atoi(f[F_MAX_PAGES]);
 		(*step)->sacct.max_pages_task = atoi(f[F_MAX_PAGES_TASK]);
 		(*step)->sacct.ave_pages = atof(f[F_AVE_PAGES]);
-		(*step)->sacct.min_cpu = atoi(f[F_MIN_CPU]);
+		(*step)->sacct.min_cpu = atof(f[F_MIN_CPU]);
 		(*step)->sacct.min_cpu_task = atoi(f[F_MIN_CPU_TASK]);
 		(*step)->sacct.ave_cpu = atof(f[F_AVE_CPU]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
@@ -328,6 +328,9 @@ got_step:
 		job->elapsed = time(NULL) - job->header.timestamp;
 	}
 	/* now aggregate the aggregatable */
+	job->ncpus = MAX(job->ncpus, step->ncpus);
+	if(step->status < JOB_COMPLETE)
+		return;
 	job->tot_cpu_sec += step->tot_cpu_sec;
 	job->tot_cpu_usec += step->tot_cpu_usec;
 	job->rusage.ru_utime.tv_sec += step->rusage.ru_utime.tv_sec;
@@ -360,10 +363,6 @@ got_step:
 
 	/* get the max for all the sacct_t struct */
 	aggregate_sacct(&job->sacct, &step->sacct);
-	
-	/* job->psize = MAX(job->psize, step->psize); */
-/* 	job->vsize = MAX(job->vsize, step->vsize); */
-	job->ncpus = MAX(job->ncpus, step->ncpus);
 }
 
 void process_suspend(char *f[], int lc, int show_full)
