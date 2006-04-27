@@ -196,6 +196,7 @@ int jobacct_p_startpoll(int frequency)
 {
 	int rc = SLURM_SUCCESS;
 	
+#ifdef HAVE_AIX
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
 
@@ -227,6 +228,9 @@ int jobacct_p_startpoll(int frequency)
 	else 
 		debug3("jobacct AIX dynamic logging enabled");
 	slurm_attr_destroy(&attr);
+#else
+	error("jobacct AIX not loaded, not an aix system, check slurm.conf");
+#endif
 	return rc;
 }
 
