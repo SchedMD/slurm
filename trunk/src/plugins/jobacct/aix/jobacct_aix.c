@@ -350,10 +350,10 @@ static void _get_process_data()
 			proc.pi_ru.ru_stime.tv_usec * 1e-6;
 		prec->pages = proc.pi_majflt;
 		prec->rss = (proc.pi_trss + proc.pi_drss) * 4;
-		prec->rss *= 1024;
+		//prec->rss *= 1024;
 		prec->vsize = (proc.pi_tsize / 1024);
 		prec->vsize += (proc.pi_dvm * 4);
-		prec->vsize *= 1024;
+		//prec->vsize *= 1024;
 		/*  debug("vsize = %f = %d/1024+%d",  */
 /*  		      prec->vsize, proc.pi_tsize, proc.pi_dvm * 4); */
 	}
@@ -381,10 +381,11 @@ static void _get_process_data()
 				jobacct->max_vsize = jobacct->tot_vsize = 
 					MAX(jobacct->max_vsize, 
 					    (int)prec->vsize);
-				jobacct->max_pages = jobacct->tot_pages 
-					= MAX(jobacct->max_pages, prec->pages);
+				jobacct->max_pages = jobacct->tot_pages =
+					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu = 
-					(prec->usec + prec->ssec);
+					MAX(jobacct->min_cpu,
+					    (prec->usec + prec->ssec));
 				debug2("%d size now %d %d time %d",
 				      jobacct->pid, jobacct->max_rss, 
 				      jobacct->max_vsize, jobacct->tot_cpu);

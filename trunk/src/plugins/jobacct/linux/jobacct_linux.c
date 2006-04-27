@@ -406,10 +406,11 @@ static void _get_process_data() {
 					MAX(jobacct->max_rss, prec->rss);
 				jobacct->max_vsize = jobacct->tot_vsize = 
 					MAX(jobacct->max_vsize, prec->vsize);
-				jobacct->max_pages = jobacct->tot_pages 
-					= prec->pages;
+				jobacct->max_pages = jobacct->tot_pages =
+					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu = 
-					prec->usec + prec->ssec;
+					MAX(jobacct->min_cpu, 
+					    (prec->usec + prec->ssec));
 				debug2("%d size now %d %d time %d",
 				      jobacct->pid, jobacct->max_rss, 
 				      jobacct->max_vsize, jobacct->tot_cpu);
