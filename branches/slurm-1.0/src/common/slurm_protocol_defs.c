@@ -553,11 +553,6 @@ char *node_state_string(enum node_states inx)
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
-	if (inx == NODE_STATE_DOWN) {
-		if (no_resp_flag)
-			return "DOWN*";
-		return "DOWN";
-	}
 	if (drain_flag) {
 		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
@@ -568,6 +563,11 @@ char *node_state_string(enum node_states inx)
 				return "DRAINED*";
 			return "DRAINED";
 		}
+	}
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
 	}
 	if (inx == NODE_STATE_ALLOCATED) {
 		if (no_resp_flag)
@@ -602,11 +602,6 @@ char *node_state_string_compact(enum node_states inx)
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
-	if (inx == NODE_STATE_DOWN) {
-		if (no_resp_flag)
-			return "DOWN*";
-		return "DOWN";
-	}
 	if (drain_flag) {
 		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
@@ -617,6 +612,11 @@ char *node_state_string_compact(enum node_states inx)
 				return "DRAIN*";
 			return "DRAIN";
 		}
+	}
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
 	}
 	if (inx == NODE_STATE_ALLOCATED) {
 		if (no_resp_flag)
