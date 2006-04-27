@@ -821,7 +821,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
 	if (_drop_privileges (job, false, &sprivs) < 0)
-		return SLURM_ERROR;
+		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (pam_setup(job->pwd->pw_name, conf->hostname)
 	    != SLURM_SUCCESS){
