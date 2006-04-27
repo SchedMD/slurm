@@ -466,8 +466,8 @@ void aggregate_sacct(sacct_t *dest, sacct_t *from)
 		dest->max_pages_task = from->max_pages_task;
 	}
 	dest->ave_pages += from->ave_pages;
-
-	if((dest->min_cpu > from->min_cpu)
+	
+	if((dest->min_cpu > from->min_cpu) 
 	   || (dest->min_cpu == (float)NO_VAL)) {
 		dest->min_cpu = from->min_cpu;
 		dest->min_cpu_task = from->min_cpu_task;
