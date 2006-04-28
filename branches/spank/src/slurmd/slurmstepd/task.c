@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 #include "src/common/mpi.h"
 #include "src/common/xmalloc.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/proctrack.h"
@@ -296,7 +297,14 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		io_dup_stdio(job->task[i]);
 
 	/* task-specific pre-launch activities */
+
+	if (spank_user_task (job, i) < 0) {
+		error ("Failed to invoke task plugin stack\n");
+		exit (1);
+	}
+
 	pre_launch(job);
+
 	if (conf->task_prolog) {
 		char *my_prolog;
 		slurm_mutex_lock(&conf->config_mutex);

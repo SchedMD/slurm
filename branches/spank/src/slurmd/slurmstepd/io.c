@@ -893,6 +893,7 @@ io_close_task_fds(slurmd_job_t *job)
 void 
 io_close_all(slurmd_job_t *job)
 {
+	int devnull;
 #if 0
 	int i;
 	for (i = 0; i < job->ntasks; i++)
@@ -902,7 +903,16 @@ io_close_all(slurmd_job_t *job)
 	/* No more debug info will be received by client after this point
 	 */
 	debug("Closing debug channel");
-	close(STDERR_FILENO);
+
+	/*
+	 * Send stderr to /dev/null
+	 */
+	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+		error("Unable to open /dev/null: %m");
+	} else {
+		if (dup2(devnull, STDERR_FILENO) < 0)
+			error("Unable to dup /dev/null onto stderr\n");
+	}
 
 	/* Signal IO thread to close appropriate 
 	 * client connections
