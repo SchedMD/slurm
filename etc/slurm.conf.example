@@ -434,6 +434,26 @@ JobAcctType=jobacct/none
 #
 
 
+#
+# o Define whether PAM (Pluggable Authentication Modules for Linux) will be
+#   used.
+#
+# PAM is a set of shared libraries that enables system administrators to select
+# the mechanism individual applications use to authenticate users. PAM also
+# provides services for account managment, credential management, session 
+# management and authentication-token (password changing) management. SLURM
+# uses PAM to obtain resource limits. This allows the system adminisrator to
+# dynamically configure resource limits without causing an interruption to
+# the service provided by SLURM.
+#
+# Also, for PAM to work properly with SLURM, a configuration file for SLURM
+# must be created and installed. See the slurm.conf man page for details about
+# this file.
+#
+# Example:
+#
+# UsePAM=1 or UsePAM=Yes   # default is not to use PAM
+
 
 #
 # o Define an epilog and a prolog
