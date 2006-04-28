@@ -103,6 +103,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.12
 =========================
  -- Report node state of DRAIN rather than DOWN if DOWN with DRAIN flag set.
+ -- Initialize job->mail_type to 0 (NONE) for job submission.
 
 * Changes in SLURM 1.0.11
 =========================
