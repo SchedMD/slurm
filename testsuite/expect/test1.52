@@ -47,15 +47,13 @@ print_header $test_id
 
 exec $bin_rm -f $hostfile
 
-if { ![file exists $poe] } {
-	send_user "WARNING: poe must be installed on the\
-	    system to run this test.\n"
-	exit $exit_code
-}
-
 #find out if we have enough nodes to test functionality
-spawn $scontrol show partition $poe_partition
+spawn $scontrol show partition $partition
 expect {
+	-re "not found" {
+		send_user "\nFAILURE: partition $partition doesn't exist\n"
+		exit 1
+	}
 	-re "TotalNodes=($number)" {
 		set node_count $expect_out(1,string)
 		if { $node_count < 2 } {
@@ -81,7 +79,7 @@ for {set i 0} {$i<2} {incr i} {
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 } {
 			send_user "\nFAILURE: node names not set from \
-				previous poe run\n"
+				previous srun\n"
 			exit 1
 		}
 		set env(SLURM_HOSTFILE) $hostfile
@@ -92,7 +90,7 @@ for {set i 0} {$i<2} {incr i} {
 		close $file
 	}
 	#
-	# execute poe with a specific node count
+	# execute srun with a specific node count
 	#
 	spawn $srun -N2 -l $bin_hostname
 	expect {
@@ -109,7 +107,7 @@ for {set i 0} {$i<2} {incr i} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: poe not responding\n"
+			send_user "\nFAILURE: srun not responding\n"
 			exec $scancel --quiet $job_id
 			set exit_code 1
 		}
@@ -120,8 +118,7 @@ for {set i 0} {$i<2} {incr i} {
 if { [string compare $node0 $1node1] } {
 	send_user "\nFAILURE: tasks not distributed by hostfile\n"
 	set exit_code 1
-}
-if { [string compare $node1 $1node0] } {
+} elseif { [string compare $node1 $1node0] } {
 	send_user "\nFAILURE: tasks not distributed by hostfile\n"
 	set exit_code 1
 }

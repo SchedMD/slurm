@@ -33,6 +33,7 @@ source ./globals
 
 set test_id     "1.30"
 set exit_code   0
+set error 0
 
 print_header $test_id
 
@@ -59,6 +60,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		-re "Immediate execution impossible" {
 			send_user "This error is expected, no worries\n"
 			set node_cnt 0
+			set error 0
 			exp_continue
 		}
 		-re "Unable to contact" {
@@ -69,6 +71,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		-re "Unable to allocate resources" {
 			send_user "This error is expected, no worries\n"
 			set node_cnt 0
+			set error 0
 			exp_continue
 		}
 		-re "Too many open files" {
@@ -77,8 +80,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: some error happened\n"
-			set exit_code   1
+			set error 1
 			exp_continue
 		}
 		timeout {
@@ -91,6 +93,11 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			wait
 		}
 	}
+}
+
+if {$error == 1} {
+	send_user "\nFAILURE: some error happened\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
