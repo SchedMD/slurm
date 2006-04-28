@@ -476,9 +476,11 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
 				destroy_partitionname(p);
+				xfree(tmp);
 				return -1;
 			}
 		}
+		xfree(tmp);
 
 		if (!s_p_get_boolean(&p->state_up_flag, "State", tbl)
 		    && !s_p_get_boolean(&p->state_up_flag, "State", dflt))
