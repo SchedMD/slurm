@@ -70,8 +70,7 @@ typedef unsigned short uint16_t;
 /* Add new slurm_allocate_resources function that returns answer
  * instead of returning via an output parameter */
 %rename(slurm_allocate_resources) my_alloc;
-resource_allocation_response_msg_t *my_alloc(job_desc_msg_t *job_desc_msg);
-%{
+%inline %{
 resource_allocation_response_msg_t *my_alloc(job_desc_msg_t *job_desc_msg)
 {
 	resource_allocation_response_msg_t *a;
@@ -98,8 +97,7 @@ resource_allocation_response_msg_t *my_alloc(job_desc_msg_t *job_desc_msg)
 /* Add new slurm_job_step_create function that returns answer
  * instead of returning via an output parameter */
 %rename(slurm_job_step_create) my_job_step_create;
-job_step_create_response_msg_t *my_job_step_create(job_step_create_request_msg_t * slurm_step_alloc_req_msg);
-%{
+%inline %{
 job_step_create_response_msg_t *my_job_step_create(job_step_create_request_msg_t * slurm_step_alloc_req_msg)
 {
 	job_step_create_response_msg_t *s;
@@ -130,9 +128,7 @@ job_step_create_response_msg_t *my_job_step_create(job_step_create_request_msg_t
 }
 
 %rename(slurm_get_job_steps) my_get_job_steps;
-job_step_info_response_msg_t *my_get_job_steps(time_t update_time,
-	uint32_t job_id, uint32_t step_id, uint16_t show_flags);
-%{
+%inline %{
 job_step_info_response_msg_t *my_get_job_steps(time_t update_time,
 		uint32_t job_id, uint32_t step_id, uint16_t show_flags)
 {
@@ -164,8 +160,7 @@ job_step_info_response_msg_t *my_get_job_steps(time_t update_time,
 }
 
 %rename(slurm_load_jobs) my_load_jobs;
-job_info_msg_t *my_load_jobs (time_t update_time, uint16_t show_flags);
-%{
+%inline %{
 job_info_msg_t *my_load_jobs (time_t update_time, uint16_t show_flags)
 {
 	job_info_msg_t *j;
@@ -196,8 +191,7 @@ job_info_msg_t *my_load_jobs (time_t update_time, uint16_t show_flags)
 }
 
 %rename (slurm_load_node) my_load_node;
-node_info_msg_t *my_load_node(time_t update_time, uint16_t show_flags);
-%{
+%inline %{
 node_info_msg_t *my_load_node(time_t update_time, uint16_t show_flags)
 {
 	node_info_msg_t *n;
@@ -228,8 +222,7 @@ node_info_msg_t *my_load_node(time_t update_time, uint16_t show_flags)
 }
 
 %rename (slurm_load_partitions) my_load_partitions;
-partition_info_msg_t *my_load_partitions(time_t update_time, uint16_t show_flags);
-%{
+%inline %{
 partition_info_msg_t *my_load_partitions(time_t update_time, uint16_t show_flags)
 {
 	partition_info_msg_t *p;
