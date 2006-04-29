@@ -1202,6 +1202,8 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
 		if (avail >= MAX_MSG_LEN)
 			must_truncate = true;
+		else if (avail == 0 && cbuf_used(cbuf) >= MAX_MSG_LEN)
+			must_truncate = true;
 	}
 
 	debug5("  buffered_stdio is %s", job->buffered_stdio ? "true" : "false");
