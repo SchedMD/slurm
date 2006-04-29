@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Report node state of DRAIN rather than DOWN if DOWN with DRAIN flag set.
  -- Initialize job->mail_type to 0 (NONE) for job submission.
+ -- Fix for stalled task stdout/stderr when buffered I/O is used, and
+    a single line exceeds 4096 bytes.
 
 * Changes in SLURM 1.0.11
 =========================
