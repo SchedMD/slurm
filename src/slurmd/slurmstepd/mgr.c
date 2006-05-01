@@ -78,6 +78,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
 #include "src/common/forward.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -749,6 +750,11 @@ job_manager(slurmd_job_t *job)
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
+
+	if (spank_fini (job)  < 0) {
+		error ("spank_fini failed\n");
+	}
+
     fail1:
 	/* If interactive job startup was abnormal, 
 	 * be sure to notify client.
@@ -784,6 +790,11 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	if (slurm_container_create(job) == SLURM_ERROR) {
 		error("slurm_container_create: %m");
+		return SLURM_ERROR;
+	}
+
+	if (spank_init (job) < 0) {
+		error ("Plugin stack initialization failed.\n");
 		return SLURM_ERROR;
 	}
 
@@ -843,6 +854,10 @@ _fork_all_tasks(slurmd_job_t *job)
 		}
 	}
 
+	if (spank_user (job) < 0) {
+		error("spank_user failed.");
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * Fork all of the task processes.
@@ -927,6 +942,11 @@ _fork_all_tasks(slurmd_job_t *job)
                         error("slurm_container_create: %m");
 			goto fail1;
                 }
+
+		if (spank_task_post_fork (job, i) < 0) {
+			error ("spank task %d post-fork failed", i);
+			return SLURM_ERROR;
+		}
 	}
 
 	/*
@@ -1089,6 +1109,10 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				xfree(my_epilog);
 			}
 			job->envtp->procid = i;
+
+			if (spank_task_exit (job, i) < 0)
+				error ("Unable to spank task %d at exit", i);
+
 			post_term(job);
 		}
 

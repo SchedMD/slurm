@@ -37,6 +37,7 @@
 extern slurm_ctl_conf_t slurmctld_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
+extern char *default_plugstack;
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_CACHE_GROUPS        0

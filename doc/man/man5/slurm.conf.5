@@ -222,6 +222,12 @@ This is a colon-separated list of directories, like the PATH
 environment variable. 
 The default value is "/usr/local/lib/slurm".
 .TP
+\fBPlugStackConfig\fR
+Location of the config file for SLURM stackable plug-ins that
+use the Stackable Plug-in Architecture for Node job Kontrol
+(SPANK). Default location is plugstack.conf in the same
+directory as the system slurm.conf.
+.TP
 \fBProctrackType\fR
 Identifies the plugin to be used for process tracking. 
 The slurmd daemon uses this mechanism to identify all processes 

@@ -26,7 +26,8 @@ EXTRA_DIST =			\
 pkginclude_HEADERS =		\
 	slurm/pmi.h		\
 	slurm/slurm.h 		\
-	slurm/slurm_errno.h
+	slurm/slurm_errno.h	\
+	slurm/spank.h
 
 MAINTAINERCLEANFILES = 					\
 	aclocal.m4 config.guess config.xml		\

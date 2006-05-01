@@ -16,7 +16,8 @@ INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS)
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
-	libeio.la  	
+	libeio.la  			\
+	libspank.la
 
 libcommon_la_SOURCES = 			\
 	xmalloc.c xmalloc.h 		\
@@ -90,6 +91,9 @@ libeio_la_SOURCES = 	   		\
 	eio.c eio.h	   		\
 	io_hdr.c io_hdr.h
 
+libspank_la_SOURCES = \
+	plugstack.c plugstack.h
+
 libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
@@ -99,4 +103,5 @@ global_defaults.c : $(top_builddir)/config.h Makefile
 	   echo	"char *default_plugin_path = \"$(pkglibdir)\";"; \
 	   echo \
 	   "char *default_slurm_config_file = \"$(sysconfdir)/slurm.conf\";"; \
+	   echo "char *default_plugstack = \"$(sysconfdir)/plugstack.conf\";";\
 	 ) > global_defaults.c
