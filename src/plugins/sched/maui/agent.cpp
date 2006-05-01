@@ -154,6 +154,7 @@ agent_t::spin( void )
 		it = in_bag->iterator();
 		if ( it == NULL ) {
 			debug2( "agent_t::spin: warning - empty packet" );
+			delete in_bag;
 			continue;
 		}
 
@@ -205,6 +206,8 @@ agent_t::spin( void )
 		delete in_bag;
 	}
 
+	delete out_bag;
+	
 #if 0	
 	// * Attempt to send any pending messages.	
 	if ( out_bag->num_items() > 0 ) {
