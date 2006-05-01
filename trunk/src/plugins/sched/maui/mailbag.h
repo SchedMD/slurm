@@ -72,7 +72,11 @@ public:
 	mailbag_t( char *buf, size_t len )
 	{
 	}
-    
+
+	virtual ~mailbag_t()
+	{
+	}
+	
 	const int num_items( void ) const { return m_num_items; }
     
 	// **************************************************************
