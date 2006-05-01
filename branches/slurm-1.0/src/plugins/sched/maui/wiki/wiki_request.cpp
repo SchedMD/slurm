@@ -100,6 +100,7 @@ wiki_request_t::wiki_request_t( char			*data,
 									 arg ) );
 		arg = (char *) list_next( i );
 	}
+	list_iterator_destroy( i );
 }
 
 

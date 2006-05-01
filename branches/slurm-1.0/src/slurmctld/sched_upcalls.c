@@ -296,6 +296,7 @@ sched_obj_cache_entry_destructor( void *ent )
 	struct sched_obj_cache_entry *e =
 		(struct sched_obj_cache_entry *) ent;
 	xfree( e->data );
+	xfree( e );
 }
 
 
@@ -416,6 +417,7 @@ sched_get_job_list( void )
 		}
 	}
 	unlock_slurmctld( job_read_lock );
+	list_iterator_destroy( it );
 	
 	return objlist;
 }
