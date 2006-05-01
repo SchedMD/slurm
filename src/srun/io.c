@@ -289,10 +289,11 @@ _server_read(eio_obj_t *obj, List objs)
 		if ((n = read(obj->fd, buf, s->in_remaining)) < 0) {
 			if (errno == EINTR)
 				goto again;
-			/* FIXME handle error */
-			return SLURM_ERROR;
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return SLURM_SUCCESS;
+			debug3("_server_read error: %m");
 		}
-		if (n == 0) { /* got eof  */
+		if (n <= 0) { /* got eof or unhandled error */
 			debug3(  "got eof on _server_read body");
 			s->in_eof = true;
 			list_enqueue(s->job->free_outgoing, s->in_msg);
@@ -441,16 +442,34 @@ create_file_write_eio_obj(int fd, srun_job_t *job)
 	return eio;
 }
 
-static void _write_label(int fd, int taskid)
+static int _write_label(int fd, int taskid)
 {
+	int n;
+	int left = fmt_width + 2;
 	char buf[16];
+	void *ptr = buf;
 
 	snprintf(buf, 16, "%0*d: ", fmt_width, taskid);
-	/* FIXME - Need to handle return code */
-	write(fd, buf, fmt_width+2);
+	while (left > 0) {
+	again:
+		if ((n = write(fd, ptr, fmt_width+2)) < 0) {
+			if (errno == EINTR)
+				goto again;
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				debug3("  got EAGAIN in _write_label");
+				goto again;
+			}
+			error("In _write_label: %m");
+			return SLURM_ERROR;
+		}
+		left -= n;
+		ptr += n;
+	}
+
+	return SLURM_SUCCESS;
 }
 
-static void _write_newline(int fd)
+static int _write_newline(int fd)
 {
 	int n;
 
@@ -462,8 +481,11 @@ again:
 		    || errno == EWOULDBLOCK) {
 			goto again;
 		}
-		/* FIXME handle error */
+		error("In _write_newline: %m");
+		return SLURM_ERROR;
 	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -474,11 +496,12 @@ static int _write_line(int fd, void *buf, int len)
 {
 	int n;
 	int left = len;
+	void *ptr = buf;
 
 	debug2("Called _write_line");
 	while (left > 0) {
 	again:
-		if ((n = write(fd, buf, left)) < 0) {
+		if ((n = write(fd, ptr, left)) < 0) {
 			if (errno == EINTR)
 				goto again;
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -489,6 +512,7 @@ static int _write_line(int fd, void *buf, int len)
 			return -1;
 		}
 		left -= n;
+		ptr += n;
 	}
 	
 	return len;
@@ -520,22 +544,30 @@ static int _write_msg(int fd, void *buf, int len, int taskid)
 		start = buf + written;
 		end = memchr(start, '\n', remaining);
 		if (opt.labelio)
-			_write_label(fd, taskid);
+			if (_write_label(fd, taskid) != SLURM_SUCCESS)
+				goto done;
 		if (end == NULL) { /* no newline found */
 			rc = _write_line(fd, start, remaining);
+			if (rc <= 0) {
+				goto done;
+			} else {
+				remaining -= rc;
+				written += rc;
+			}
 			if (opt.labelio)
-				_write_newline(fd);
+				if (_write_newline(fd) != SLURM_SUCCESS)
+					goto done;
 		} else {
 			line_len = (int)(end - start) + 1;
 			rc = _write_line(fd, start, line_len);
+			if (rc <= 0) {
+				goto done;
+			} else {
+				remaining -= rc;
+				written += rc;
+			}
 		}
 
-		if (rc <= 0) {
-			goto done;
-		} else {
-			remaining -= rc;
-			written += rc;
-		}
 	}
 done:
 	if (written > 0)
@@ -810,8 +842,6 @@ io_thr_create(srun_job_t *job)
 		obj = _create_listensock_eio(job->listensock[i], job);
 		eio_new_initial_obj(job->eio, obj);
 	}
-
-	/* FIXME - Need to open files here (or perhaps earlier) */
 
 	xsignal(SIGTTIN, SIG_IGN);
 
