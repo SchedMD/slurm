@@ -90,7 +90,8 @@ wiki_startjob_t::action( void )
 			node_list += ",";
 			node_list += node;
 		}
-
+		list_iterator_destroy( i );
+		
 		if ( sched_set_nodelist( id, node_list.s() ) == SLURM_ERROR ) {
 			error( "Wiki cannot assign nodes to job %d", id );
 		}

@@ -62,6 +62,7 @@ wiki_response_t::wiki_response_t( wiki_request_t	*request,
         }
 
 	sched_free_obj_list( obj_data );
+	delete [] matches;
 	
 	// * Do the Wiki checksumming.
         prefix_with_checksum();
