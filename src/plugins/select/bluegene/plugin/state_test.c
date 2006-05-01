@@ -208,7 +208,7 @@ static void _test_down_nodes(rm_BGL_t *bg)
 			continue;
 
 		debug("_test_down_nodes: %s in state %s", 
-		      bg_down_node, _convert_bp_state(RM_BPState));
+		      bg_down_node, _convert_bp_state(bp_state));
 		
 		if ((strlen(down_node_list) + strlen(bg_down_node) 
 		     + 2) 
