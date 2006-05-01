@@ -246,7 +246,9 @@ int jobacct_p_add_task(pid_t pid, uint16_t tid)
 
 struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
 {
+#ifdef HAVE_AIX
 	_get_process_data();
+#endif
 	return common_stat_task(pid);
 }
 
