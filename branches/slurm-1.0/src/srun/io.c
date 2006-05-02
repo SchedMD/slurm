@@ -324,7 +324,11 @@ _server_read(eio_obj_t *obj, List objs)
 		else
 			obj = s->job->stderr_obj;
 		info = (struct file_write_info *) obj->arg;
-		list_enqueue(info->msg_queue, s->in_msg);
+		if (info->eof)
+			/* this output is closed, discard message */
+			list_enqueue(s->job->free_outgoing, s->in_msg);
+		else
+			list_enqueue(info->msg_queue, s->in_msg);
 
 		s->in_msg = NULL;
 	}
@@ -508,7 +512,6 @@ static int _write_line(int fd, void *buf, int len)
 				debug3("  got EAGAIN in _write_line");
 				goto again;
 			}
-			/* FIXME handle error */
 			return -1;
 		}
 		left -= n;
@@ -619,6 +622,8 @@ static int _file_write(eio_obj_t *obj, List objs)
 		if ((n = _write_msg(obj->fd, ptr,
 				    info->out_remaining,
 				    info->out_msg->header.gtaskid)) < 0) {
+			list_enqueue(info->job->free_outgoing, info->out_msg);
+			info->eof = true;
 			return SLURM_ERROR;
 		}
 		debug3("  wrote %d bytes", n);
