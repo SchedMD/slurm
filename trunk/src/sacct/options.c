@@ -472,12 +472,12 @@ int get_data(void)
 					show_full = 1;
 					list_iterator_destroy(itr);
 					goto foundjob;
-				} else if (rec_type == JOB_STEP 
+				} else if (rec_type != JOB_STEP 
 					   || !strcmp(f[F_JOBSTEP], 
 						      selected_step->step)) {
 					list_iterator_destroy(itr);
 					goto foundjob;
-				}
+				} 
 			}
 			list_iterator_destroy(itr);
 			continue;	/* no match */
@@ -914,7 +914,6 @@ void parse_command_line(int argc, char **argv)
 			selected_step = xmalloc(sizeof(selected_step_t));
 			list_append(selected_steps, selected_step);
 			
-			selected_step->job = xstrdup(start);
 			dot = strstr(start, ".");
 			if (dot == NULL) {
 				debug2("No jobstep requested");
@@ -923,6 +922,7 @@ void parse_command_line(int argc, char **argv)
 				*dot++ = 0;
 				selected_step->step = xstrdup(dot);
 			}
+			selected_step->job = xstrdup(start);
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
@@ -1715,7 +1715,7 @@ void do_list(void)
 			print_fields(JOB, job);
 		}
 		
-		if (do_jobsteps && job->track_steps) {
+		if (do_jobsteps && (job->track_steps || !job->show_full)) {
 			itr_step = list_iterator_create(job->steps);
 			while((step = list_next(itr_step))) {
 				if (step->status == JOB_RUNNING 

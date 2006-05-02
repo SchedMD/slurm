@@ -118,7 +118,12 @@ if {[wait_for_file $file_err] == 0} {
 			incr matches
 			exp_continue
 		}
-		-re "No such file" | "does not exist" {
+		-re "No such file" {
+			send_user "These errors are expected, no worries\n"
+			incr matches
+			exp_continue
+		}
+		-re "does not exist" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue

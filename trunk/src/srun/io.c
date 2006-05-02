@@ -380,7 +380,8 @@ _server_write(eio_obj_t *obj, List objs)
 			debug3("_server_write: nothing in the queue");
 			return SLURM_SUCCESS;
 		}
-		debug3("  dequeue successful, s->out_msg->length = %d", s->out_msg->length);
+		debug3("  dequeue successful, s->out_msg->length = %d", 
+		       s->out_msg->length);
 		s->out_remaining = s->out_msg->length;
 	}
 
@@ -420,7 +421,6 @@ again:
 	s->out_msg = NULL;
 
 	return SLURM_SUCCESS;
-
 }
 
 /**********************************************************************
@@ -451,7 +451,10 @@ static void _write_label(int fd, int taskid)
 
 	snprintf(buf, 16, "%0*d: ", fmt_width, taskid);
 	/* FIXME - Need to handle return code */
-	write(fd, buf, fmt_width+2);
+	safe_write(fd, buf, fmt_width+2);
+	return;
+rwfail:
+	error("_write_label: write from io process failed");
 }
 
 static void _write_newline(int fd)
@@ -468,6 +471,7 @@ again:
 		}
 		/* FIXME handle error */
 	}
+	return;
 }
 
 /*
