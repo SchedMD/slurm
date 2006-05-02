@@ -521,6 +521,15 @@ The default value is "/tmp".
 \fBTreeWidth\fR specifies the width of the tree (i.e. the fanout).
 The defautl value is 50.
 .TP
+\fBUsePAM\fR
+If set to 1, PAM (Pluggable Authentication Modules for Linux) will be enabled.
+PAM is used to establish the upper bounds for resource limits. With PAM support
+enabled, local system administrators can dynamically configure system resource
+limits. Changing the upper bound of a resource limit does not alter the limits
+of running jobs, only jobs started after a change has been made will pick up
+the new limits.
+The default value is 0 (not to use PAM).
+.TP
 \fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after 
 the first task terminates before terminating all remaining tasks. The 
