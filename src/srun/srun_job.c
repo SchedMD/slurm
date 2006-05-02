@@ -304,15 +304,21 @@ update_job_state(srun_job_t *job, srun_job_state_t state)
 	if (job->state < state) {
 		job->state = state;
 		if(message_thread) {
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&job->state,sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &pipe_enum, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &job->state, sizeof(int));
 		}
 		pthread_cond_signal(&job->state_cond);
 		
 	}
 	pthread_mutex_unlock(&job->state_mutex);
+	return;
+rwfail:
+	pthread_mutex_unlock(&job->state_mutex);
+	error("update_job_state: "
+	      "write from srun message-handler process failed");
+
 }
 
 srun_job_state_t 

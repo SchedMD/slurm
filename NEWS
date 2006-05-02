@@ -1,10 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 1.1.0-pre6
+* Changes in SLURM 1.1.0-pre7
 =============================
  -- Accounting works for aix systems, use jobacct/aix
  -- Support large (over 2GB) files on 32-bit linux systems
+ -- changed all writes to safe_write in srun
+ -- added $float to globals.example in the testsuite
 
 * Changes in SLURM 1.1.0-pre6
 =============================

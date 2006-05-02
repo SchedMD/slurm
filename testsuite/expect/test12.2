@@ -39,7 +39,7 @@ set matches     0
 
 # job paramters
 set mem_size    100000
-set sleep_time  25 
+set sleep_time  5 
 set ret_code    42
 
 print_header $test_id
@@ -51,7 +51,11 @@ set supported 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "jobacct/log" {
+	-re "jobacct/linux" {
+		set supported 1
+		exp_continue
+	}
+	-re "jobacct/aix" {
 		set supported 1
 		exp_continue
 	}
@@ -103,7 +107,7 @@ exec $bin_sleep 5
 # Report basic sacct info
 #
  
-spawn $sacct --noheader --jobstep=$job_id.0 --fields jobstep,jobname,status,error
+spawn $sacct --noheader --job=$job_id.0 --fields jobid,jobname,status,exitcode
 expect {
 	-re "$job_id\.0" {
 		incr matches
@@ -138,16 +142,12 @@ if {$matches != 4} {
 # Report the sacct accouting info
 #
 set elapsed_time 0
-spawn $sacct --noheader  --jobstep=$job_id.0 --fields elapsed
+spawn $sacct --noheader  --job=$job_id.0 --fields elapsed
 expect {
-	-re "($number):($number)\.($number)" {
+	-re "($number):($number)" {
 		set mins $expect_out(1,string)
 		set secs $expect_out(2,string)
 		set elapsed_time [expr $mins * 60 + $secs]
-	}
-	-re "($number)\.($number)" {
-		set elapsed_time $expect_out(1,string)
-		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: sacct not responding\n"
@@ -167,11 +167,15 @@ if {$error_time > 5} {
 	send_user "\nSUCCESS: sacct elapsed time error of $error_time\n"
 }
 
-set mem_used 0
-spawn $sacct --noheader  --jobstep=$job_id.0 --fields vsize
+set mem_used -1
+set mem_task -1
+set ave_used -1
+spawn $sacct --noheader  --job=$job_id.0 --fields vsize
 expect {
-	-re "($number)" {
+	-re "($float).*/($number) - ($float)" {
 		set mem_used  $expect_out(1,string)
+		set mem_task  $expect_out(2,string)
+		set ave_used  $expect_out(3,string)
 		exp_continue
 	}
 	timeout {
@@ -182,6 +186,19 @@ expect {
 		wait
 	}
 }
+
+if { $mem_used == -1 } {
+	send_user "\nFAILURE: sacct memory not found\n"
+	set exit_code 1
+} elseif { $mem_task != 0 } {
+	send_user "\nFAILURE: sacct memory task not found\n"
+	set exit_code 1	
+} elseif { $ave_used != $mem_used } {
+	send_user "\nFAILURE: sacct memory task not equal to ave memory\n"
+	set exit_code 1	
+}
+
+set mem_used [expr $mem_used * 1024]
 
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
