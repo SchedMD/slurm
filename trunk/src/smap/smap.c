@@ -125,8 +125,6 @@ int main(int argc, char *argv[])
 			if(coord)
 				printf("%s resolves to X=%d Y=%d Z=%d\n",
 				       params.partition,
-				       coord[X], coord[Y], coord[Z],
-				       slurmctld_conf.node_prefix,
 				       coord[X], coord[Y], coord[Z]);
 			else
 				printf("%s has no resolve.\n", 
