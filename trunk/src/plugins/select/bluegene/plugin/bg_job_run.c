@@ -103,9 +103,9 @@ static int _remove_job(db_job_id_t job_id)
 		slurm_mutex_lock(&api_file_mutex);
 		/* Find the job */
 		if ((rc = rm_get_job(job_id, &job_rec)) != STATUS_OK) {
+			slurm_mutex_unlock(&api_file_mutex);
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
-				slurm_mutex_unlock(&api_file_mutex);
 				return STATUS_OK;
 			} 
 
@@ -283,7 +283,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 	
 		/* wait for all necessary blocks to be freed */
-		while(num_block_to_free != num_block_freed) {
+		while(num_block_to_free > num_block_freed) {
 			sleep(1);
 			debug("got %d of %d freed",
 			       num_block_freed, 
@@ -686,9 +686,9 @@ extern int start_job(struct job_record *job_ptr)
 	bg_record = 
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if (bg_record) {
+		slurm_mutex_lock(&block_state_mutex);
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 			bg_record->bp_count);
-		slurm_mutex_lock(&block_state_mutex);
 		bg_record->job_running = bg_update_ptr->job_id;
 		if(!block_exist_in_list(bg_job_block_list, bg_record))
 			list_push(bg_job_block_list, bg_record);

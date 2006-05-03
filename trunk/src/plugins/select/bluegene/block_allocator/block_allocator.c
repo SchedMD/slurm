@@ -1269,6 +1269,7 @@ extern int load_block_wiring(char *bg_block_id)
 	int cnt = 0;
 	int switch_cnt = 0;
 	rm_switch_t *curr_switch = NULL;
+	rm_BP_t *curr_bp = NULL;
 	char *switchid = NULL;
 	rm_connection_t curr_conn;
 	int dim;
@@ -1293,6 +1294,32 @@ extern int load_block_wiring(char *bg_block_id)
 		      bg_err_str(rc));
 		return SLURM_ERROR;
 	} 
+	if(!switch_cnt) {
+		debug("no switch_cnt");
+		if ((rc = rm_get_data(block_ptr, 
+				      RM_PartitionFirstBP, 
+				      &curr_bp)) 
+			    != STATUS_OK) {
+				error("rm_get_data: "
+				      "RM_PartitionFirstBP: %s",
+				      bg_err_str(rc));
+				return SLURM_ERROR;
+			}
+		if ((rc = rm_get_data(curr_bp, RM_BPID, &switchid))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchBPID: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		} 
+
+		geo = find_bp_loc(switchid);	
+		if(!geo) {
+			error("find_bp_loc: bpid %s not known", switchid);
+			return SLURM_ERROR;
+		}
+		ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].used = true;
+		return SLURM_SUCCESS;
+	}
 	for (i=0; i<switch_cnt; i++) {
 		if(i) {
 			if ((rc = rm_get_data(block_ptr, 
@@ -1333,6 +1360,7 @@ extern int load_block_wiring(char *bg_block_id)
 			error("find_bp_loc: bpid %s not known", switchid);
 			return SLURM_ERROR;
 		}
+		
 		if ((rc = rm_get_data(curr_switch, RM_SwitchConnNum, &cnt))
 		    != STATUS_OK) { 
 			error("rm_get_data: RM_SwitchBPID: %s",
@@ -1342,7 +1370,8 @@ extern int load_block_wiring(char *bg_block_id)
 		debug("switch id = %s dim %d conns = %d", 
 		       switchid, dim, cnt);
 		ba_switch = &ba_system_ptr->
-			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];	
+			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
+		ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].used = true;
 		for (j=0; j<cnt; j++) {
 			if(j) {
 				if ((rc = rm_get_data(curr_switch, 
@@ -1398,19 +1427,7 @@ extern int load_block_wiring(char *bg_block_id)
 			}
 			debug("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
-			if(curr_conn.p1 == 1) {
-				if(ba_system_ptr->
-				   grid[geo[X]][geo[Y]][geo[Z]].used) {
-					error("%d%d%d is already in use",
-					      geo[X],
-					      geo[Y],
-					      geo[Z]);
-					return SLURM_ERROR;
-				}
-				ba_system_ptr->
-					grid[geo[X]][geo[Y]][geo[Z]].used = 1;
-			}
-
+			
 			if(ba_switch->int_wire[curr_conn.p1].used) {
 				error("%d%d%d dim %d port %d "
 				      "is already in use",
@@ -1424,7 +1441,7 @@ extern int load_block_wiring(char *bg_block_id)
 			ba_switch->int_wire[curr_conn.p1].used = 1;
 			ba_switch->int_wire[curr_conn.p1].port_tar 
 				= curr_conn.p2;
-
+		
 			if(ba_switch->int_wire[curr_conn.p2].used) {
 				error("%d%d%d dim %d port %d "
 				      "is already in use",
@@ -1438,7 +1455,7 @@ extern int load_block_wiring(char *bg_block_id)
 			ba_switch->int_wire[curr_conn.p2].used = 1;
 			ba_switch->int_wire[curr_conn.p2].port_tar 
 				= curr_conn.p1;
-		}		
+		}
 	}
 	return SLURM_SUCCESS;
 
@@ -2249,6 +2266,7 @@ static int _find_match(ba_request_t *ba_request, List results)
 	ba_node_t *ba_node = NULL;
 	char *name=NULL;
 	int startx = (start[X]-1);
+	
 	if(startx == -1)
 		startx = DIM_SIZE[X]-1;
 	if(ba_request->start_req) {
@@ -2311,15 +2329,23 @@ start_again:
 			;
 
 		if (!_node_used(ba_node, ba_request->geometry)) {
+			info("trying this node %d%d%d %d%d%d %d",
+			      start[X], start[Y], start[Z],
+			      ba_request->geometry[X],
+			      ba_request->geometry[Y],
+			      ba_request->geometry[Z], 
+			      ba_request->conn_type);
 			name = set_bg_block(results,
 					    start, 
 					    ba_request->geometry, 
 					    ba_request->conn_type);
 			if(name) {
+				info("yes");
 				ba_request->save_name = xstrdup(name);
 				xfree(name);
 				return 1;
 			}
+			info("nope");
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
@@ -2328,6 +2354,7 @@ start_again:
 			list_destroy(results);
 			results = list_create(NULL);
 		}
+		info("got here");
 #ifdef HAVE_BG
 		
 		if((DIM_SIZE[Z]-start[Z]-1)
@@ -2344,6 +2371,8 @@ start_again:
 				    >= ba_request->geometry[X])
 					start[X]++;
 				else {
+					if(ba_request->size == 1)
+						goto requested_end;
 					if(!_check_for_options(ba_request))
 						return 0;
 					else {
@@ -2359,7 +2388,7 @@ start_again:
 #endif
 	}							
 requested_end:
-	debug("can't allocate");
+	info("can't allocate");
 	
 	return 0;
 }
