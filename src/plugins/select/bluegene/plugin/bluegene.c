@@ -645,8 +645,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 					      RM_PartitionNextUser, 
 					      &user)) 
 			    != STATUS_OK) {
-				error("rm_get_partition(%s): %s", 
-				      bg_block_id, 
+				error("rm_get_data(RM_PartitionNextUser): %s", 
 				      bg_err_str(rc));
 				returnc = REMOVE_USER_ERR;
 				break;
@@ -656,8 +655,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 					      RM_PartitionFirstUser, 
 					      &user)) 
 			    != STATUS_OK) {
-				error("rm_get_data(%s): %s", 
-				      bg_block_id, 
+				error("rm_get_data(RM_PartitionFirstUser): %s",
 				      bg_err_str(rc));
 				returnc = REMOVE_USER_ERR;
 				break;
@@ -1104,15 +1102,15 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		       || (bg_record->quarter == 0 
 			   && (bg_record->nodecard == (uint16_t) NO_VAL
 			       || bg_record->nodecard == 0)))) {
+			
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+				request->start[i] = bg_record->start[i];
 			debug2("allocating %d%d%d %d",
 			       bg_record->nodes,
 			       request->start[X],
 			       request->start[Y],
 			       request->start[Z],
 			       request->size);
-			
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-				request->start[i] = bg_record->start[i];
 			request->start_req = 1;
 			rc = SLURM_SUCCESS;
 			if (!allocate_block(request, results)){
@@ -1341,7 +1339,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES
-			debug2("pm_destroy %s",bg_record->bg_block_id);
+			debug("pm_destroy %s",bg_record->bg_block_id);
 			
 			slurm_mutex_lock(&api_file_mutex);
 			rc = pm_destroy_partition(bg_record->bg_block_id);
@@ -1352,17 +1350,19 @@ extern int bg_free_block(bg_record_t *bg_record)
 					      bg_record->bg_block_id);
 					break;
 				} else if(rc == INCOMPATIBLE_STATE) {
-					debug2("pm_destroy_partition(%s): %s "
-					       "State = %d",
-					       bg_record->bg_block_id, 
-					       bg_err_str(rc), 
-					       bg_record->state);
-					continue;
+					debug("pm_destroy_partition(%s): %s "
+					      "State = %d",
+					      bg_record->bg_block_id, 
+					      bg_err_str(rc), 
+					      bg_record->state);
+					break;
+				} else {
+					error("pm_destroy_partition(%s): %s "
+					      "State = %d",
+					      bg_record->bg_block_id, 
+					      bg_err_str(rc), 
+					      bg_record->state);
 				}
-				error("pm_destroy_partition(%s): %s "
-				      "State = %d",
-				      bg_record->bg_block_id, 
-				      bg_err_str(rc), bg_record->state);
 			}
 #else
 			bg_record->state = RM_PARTITION_FREE;	
@@ -1472,9 +1472,12 @@ extern void *mult_destroy_block(void *args)
 		      bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
 		
-		debug2("destroying %s", (char *)bg_record->bg_block_id);
-		if(bg_free_block(bg_record) == SLURM_ERROR)
+		debug("destroying %s", (char *)bg_record->bg_block_id);
+		if(bg_free_block(bg_record) == SLURM_ERROR) {
+			debug("there was an error");
 			goto already_here;
+		}
+		debug("done destroying");
 		remove_from_bg_list(bg_list, bg_record);
 		
 #ifdef HAVE_BG_FILES
@@ -1493,7 +1496,7 @@ extern void *mult_destroy_block(void *args)
 				      bg_err_str(rc));
 			}
 		} else
-			debug("done\n");
+			debug("done");
 		slurm_mutex_unlock(&api_file_mutex);	
 #endif
 		slurm_mutex_lock(&block_state_mutex);

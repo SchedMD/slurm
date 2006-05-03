@@ -131,7 +131,6 @@ static int _find_best_block_match(struct job_record* job_ptr,
 
 	*found_bg_record = NULL;
 try_again:	
-	debug("got here");
 	slurm_mutex_lock(&block_state_mutex);
 	debug("number of blocks to check: %d state %d", 
 	      list_count(bg_list),
@@ -326,7 +325,7 @@ try_again:
 		
 	if(!found && test_only && bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		slurm_mutex_unlock(&block_state_mutex);
-		
+	
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 			request.start[i] = 0;
 			
@@ -376,8 +375,13 @@ try_again:
 		slurm_mutex_unlock(&block_state_mutex);
 		lists_of_lists = list_create(NULL);
 		list_append(lists_of_lists, bg_list);
-		list_append(lists_of_lists, bg_booted_block_list);
-		list_append(lists_of_lists, bg_job_block_list);
+		if(list_count(bg_list)
+		   != list_count(bg_booted_block_list)) 
+			list_append(lists_of_lists, bg_booted_block_list);
+		if(list_count(bg_booted_block_list) 
+		   != list_count(bg_job_block_list)) 
+			list_append(lists_of_lists, bg_job_block_list);
+		
 		itr = list_iterator_create(lists_of_lists);
 		while ((temp_list = (List)list_next(itr)) != NULL) {
 			created++;
@@ -454,6 +458,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	
+	if(!test_only && (list_count(bg_list) > 0)
+	   && (list_count(bg_list) == list_count(bg_job_block_list)))
+		return SLURM_ERROR;
+		
 	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
@@ -475,7 +483,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     "unassigned");
 			if(job_ptr->num_procs < bluegene_bp_node_cnt) {
 				i = procs_per_node/job_ptr->num_procs;
-				info("divide by %d",i);
+				debug2("divide by %d", i);
 			} else 
 				i = 1;
 			min_nodes *= bluegene_bp_node_cnt/i;
@@ -490,6 +498,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     &geo);
 			
 		} else {
+			slurm_mutex_lock(&block_state_mutex);
 			/* set the block id and info about block */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID, 
@@ -510,6 +519,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
 					     &tmp16);
+			slurm_mutex_unlock(&block_state_mutex);
 		}
 		if(test_only) {
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
