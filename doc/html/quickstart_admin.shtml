@@ -554,9 +554,9 @@ There are about 150 tests which will execute on the order of 1000 jobs
 and 2000 job steps. 
 Depending upon your system configuration and performance, this test 
 suite will take roughly 40 minutes to complete.
-You must copy the file <i>testsuite/expect/globals.examples</i>
-to <i>testsuite/expect/globals</i> and modify pathnames depending 
-upon where SLURM and other tools are installed.
+The file <i>testsuite/expect/globals</i> contains default paths and
+procedures for all of the individual tests.  You will need to edit this
+file to specify where SLURM and other tools are installed.
 Set your working directory to <i>testsuite/expect</i> before 
 starting these tests.
 Tests may be executed individually by name (e.g.  <i>test1.1</i>) 
