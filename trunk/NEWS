@@ -110,6 +110,10 @@ documents those changes that are of interest to users and admins.
  -- Initialize job->mail_type to 0 (NONE) for job submission.
  -- Fix for stalled task stdout/stderr when buffered I/O is used, and
     a single line exceeds 4096 bytes.
+ -- Fix for spinning srun when the terminal to which srun is talking
+    goes away.
+ -- Don't set avail_node_bitmap for DRAINED nodes on slurmctld reconfig
+    (can schedule a job on drained node after reconfig).
 
 * Changes in SLURM 1.0.11
 =========================
