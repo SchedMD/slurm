@@ -908,6 +908,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
 	msg->conn_fd = fd;
+	msg->forward_struct_init = 0;
 	
 	/* multiple jobs (easily induced via no_alloc) sometimes result
 	 * in slow message responses and timeouts. Raise the timeout

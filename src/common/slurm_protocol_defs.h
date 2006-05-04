@@ -52,7 +52,7 @@
 #include "src/common/xassert.h"
 
 #define MAX_SLURM_NAME 64
-#define FORWARD_INIT 0xffff
+#define FORWARD_INIT 0xfffe
 
 /* used to define flags of the launch_tasks_request_msg_t.and
  * spawn task_request_msg_t task_flags
