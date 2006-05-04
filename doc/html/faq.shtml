@@ -27,6 +27,8 @@ has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
 <li><a href="#inc_plugin">When the SLURM daemon starts, it prints
 &quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
+<li><a href="#sigpipe">Why are user tasks intermittently dying at launch with SIGPIPE
+error messages?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -272,6 +274,15 @@ plugin was built or installed improperly or the configuration
 file is telling the plugin to use an old plugin (say from the 
 previous version of SLURM). Restart the daemon in verbose mode 
 for more information (e.g. &quot;slurmctld -Dvvvvv&quot;). 
+
+<p><a name="sigpipe"><b>7. Why are user tasks intermittently dying
+at launch with SIGPIPE error messages?</b></a><br>
+If you are using ldap or some other remote name service for
+username and groups lookup, chances are that the underlying
+libc library functions are triggering the SIGPIPE.  You can likely
+work around this problem by setting CacheGroups=1 in your slurm.conf
+file.  However, be aware that you will need to run &quot;scontrol
+reconfigure &quot; any time your groups database is updated.
 
 <p class="footer"><a href="#top">top</a></p>
 
