@@ -110,14 +110,14 @@ for {set inx 0} {$inx < $windows_interations} {incr inx} {
                 }
                 -re $prompt
         }
-
+	send_user "got $inx\n"
 	send "$srun -N1 -O -n$windows_used true\n"
 }
 
 # wait for initial job step to complete
 expect -re $prompt
 send_user "(sleeping for $step_delay seconds) "
-sleep $step_delay
+#sleep $step_delay
 send "exit\n"
 
 expect {

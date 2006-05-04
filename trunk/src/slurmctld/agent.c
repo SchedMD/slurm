@@ -800,6 +800,7 @@ static void *_thread_per_group_rpc(void *args)
 	msg.ret_list = NULL;
 	msg.orig_addr.sin_addr.s_addr = 0;
 	msg.srun_node_id = 0;
+	msg.forward_struct_init = 0;
 
 	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;

@@ -110,7 +110,10 @@ allocate_nodes(void)
 		if (destroy_job)
 			goto done;
 	} 
-		
+
+	if(!resp)
+		goto done;
+
 	if ((rc == 0) && (resp->node_list == NULL)) {
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
@@ -120,6 +123,7 @@ allocate_nodes(void)
 		xfree(resp->node_list);
 		resp->node_list = xstrdup(j->req_nodes);
 	}
+	
     done:
 	xsignal_set_mask(&oset);
 	xsignal(SIGINT,  ointf);
@@ -277,6 +281,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
 	msg->conn_fd = fd;
+	msg->forward_struct_init = 0;
 	
   again:
 	ret_list = slurm_receive_msg(fd, msg, 0);

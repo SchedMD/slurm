@@ -1322,7 +1322,8 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
 	resp_msg.orig_addr.sin_addr.s_addr = 0;
-
+	resp_msg.forward_struct_init = 0;
+	
 	resp.node_name     = conf->node_name;
 	resp.srun_node_id  = msg->srun_node_id;
 	resp.return_code   = rc ? rc : -1;
@@ -1352,7 +1353,8 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
 	resp_msg.orig_addr.sin_addr.s_addr = 0;
-
+	resp_msg.forward_struct_init = 0;
+	
 	resp.node_name        = conf->node_name;
 	resp.srun_node_id     = job->nodeid;
 	resp.return_code      = rc;
@@ -1384,6 +1386,7 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	req_msg.data	= &req;	
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
+	req_msg.forward_struct_init = 0;
 	
 	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
 

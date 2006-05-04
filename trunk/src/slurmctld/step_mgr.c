@@ -48,6 +48,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 #include "src/common/slurm_jobacct.h"
 
 #include "src/slurmctld/agent.h"
@@ -864,9 +865,10 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
 
-	resp_msg.forward.cnt = 0;
+	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
-
+	resp_msg.forward_struct_init = 0;
+	
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
 	if (job_ptr == NULL) {
@@ -958,9 +960,10 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	
-	resp_msg.forward.cnt = 0;
+	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
-
+	resp_msg.forward_struct_init = 0;
+		
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
 	if (job_ptr == NULL) {

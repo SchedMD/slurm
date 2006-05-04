@@ -717,7 +717,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	
 	List ret_list = list_create(destroy_ret_types);
 	msg->forward_struct = NULL;
-	
+	msg->forward_struct_init = 0;
+
 	xassert(fd >= 0);
 	
 	if ((timeout*=1000) == 0)
@@ -766,6 +767,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	/* Forward message to other nodes */
 	if(header.forward.cnt > 0) {
+		debug("forwarding to %d", header.forward.cnt);
 		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
 		msg->forward_struct_init = FORWARD_INIT;
 		msg->forward_struct->buf_len = remaining_buf(buffer);
@@ -857,6 +859,7 @@ total_return:
 	if(rc != SLURM_SUCCESS) {
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
+	//debug("struct init? %d", msg->forward_struct_init);
 	//info("rc= %d count of ret is %d",rc, list_count(ret_list));
 	errno = rc;
 	return ret_list;
@@ -1441,6 +1444,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
 	req->orig_addr.sin_addr.s_addr = 0; 
+	req->forward_struct_init = 0;
 	//info("here 2");
 	
 	conf = slurm_conf_lock();

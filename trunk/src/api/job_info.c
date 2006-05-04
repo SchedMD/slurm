@@ -379,6 +379,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
 	req_msg.orig_addr.sin_addr.s_addr = 0; 
+	req_msg.forward_struct_init = 0;
 	
 	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 

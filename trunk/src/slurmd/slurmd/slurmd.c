@@ -389,8 +389,10 @@ send_registration_msg(uint32_t status, bool startup)
 	
 	forward_init(&req.forward, NULL);
 	req.ret_list = NULL;
+	req.forward_struct_init = 0;
 	forward_init(&req.forward, NULL);
 	resp.ret_list = NULL;
+	resp.forward_struct_init = 0;
 	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
@@ -499,7 +501,7 @@ _massage_logfile(void)
 	int new_len;
 
 	if ((conf->logfile == NULL)
-	||  (ptr = strstr(conf->logfile, "%h")) == NULL)
+	    ||  (ptr = strstr(conf->logfile, "%h")) == NULL)
 		return;
 
 	new_len = strlen(conf->logfile) + strlen(conf->hostname);

@@ -75,6 +75,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	msg_send.data = (void *) kvs_set_ptr;
 	forward_init(&msg_send.forward, NULL);
 	msg_send.ret_list = NULL;
+	msg_send.forward_struct_init = 0;
 	
 	/* Send the RPC to the local srun communcation manager */
 	slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0);
@@ -148,6 +149,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	/* Send the RPC to the srun communcation manager */
 	forward_init(&msg_send.forward, NULL);
 	msg_send.ret_list = NULL;
+	msg_send.forward_struct_init = 0;
 	
 	/* Send the RPC to the local srun communcation manager */
 	slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0);
