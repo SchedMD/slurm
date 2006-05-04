@@ -505,8 +505,15 @@ again:
 	if ((n = write(obj->fd, buf, in->remaining)) < 0) {
 		if (errno == EINTR)
 			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
+		else if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return SLURM_SUCCESS;
+		else {
+			close(obj->fd);
+			obj->fd = -1;
+			_free_incoming_msg(in->msg, in->job);
+			in->msg = NULL;
+			return SLURM_ERROR;
+		}
 	}
 	in->remaining -= n;
 	if (in->remaining > 0)
