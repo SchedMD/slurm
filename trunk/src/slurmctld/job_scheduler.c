@@ -174,12 +174,20 @@ int schedule(void)
 		job_ptr = job_queue[i].job_ptr;
 		if (job_ptr->priority == 0)	/* held */
 			continue;
+#ifdef HAVE_BG
+		/* Dynamic partitioning on BGL is slow, so we don't 
+		 * want to try scheduling too many jobs or the 
+		 * slurmctld will stop responding for too long. */
+		if (i >= 100)
+			break;
+#else
 		for (j = 0; j < failed_part_cnt; j++) {
 			if (failed_parts[j] == job_ptr->part_ptr)
 				break;
 		}
 		if (j < failed_part_cnt)
 			continue;
+#endif
 		error_code = select_nodes(job_ptr, false);
 		if (error_code == ESLURM_NODES_BUSY) {
 #ifndef HAVE_BG 	/* keep trying to schedule jobs in partition */
