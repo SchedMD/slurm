@@ -679,8 +679,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	xassert(bitmap);
 
 	debug3(" cons_res plug-in: Job_id %u min %d max nodes %d "
-		"test_only %d host %s ", job_ptr->job_id, min_nodes, 
-		max_nodes, (int) test_only, bitmap2node_name(bitmap));
+		"test_only %d", job_ptr->job_id, min_nodes, 
+		max_nodes, (int) test_only);
 
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of 
@@ -1293,8 +1293,6 @@ extern int select_p_get_info_from_plugin(enum select_data_info info,
 						 * Remember to free bitmap 
 						 * using FREE_NULL_BITMAP(bitmap);*/
 			tmp_bitmap = 0;
-			debug3(" cons_res synchronized CR bitmap %s ",
-			       bitmap2node_name(*bitmap));
 			break;
 		}
 	case SELECT_CR_PLUGIN:
