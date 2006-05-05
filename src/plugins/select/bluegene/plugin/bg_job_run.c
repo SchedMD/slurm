@@ -194,8 +194,10 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	}
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record->job_running = bg_update_ptr->job_id;
-	if(!block_exist_in_list(bg_job_block_list, bg_record))
+	if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 		list_push(bg_job_block_list, bg_record);
+		num_unused_cpus -= bg_record->bp_count*bg_record->cpus_per_bp;
+	}
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if(bg_record->state == RM_PARTITION_READY) {
@@ -303,7 +305,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   is a no-op if issued prior 
 			   to the script initiation */
 			(void) slurm_fail_job(bg_update_ptr->job_id);
-			remove_from_bg_list(bg_job_block_list, bg_record);
+			if (remove_from_bg_list(bg_job_block_list, bg_record)
+			    == SLURM_SUCCESS) {
+				slurm_mutex_lock(&block_state_mutex);
+				num_unused_cpus += bg_record->bp_count
+					*bg_record->cpus_per_bp;
+				slurm_mutex_unlock(&block_state_mutex);
+			}
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}
@@ -480,8 +488,14 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		
 		last_bg_update = time(NULL);
 		slurm_mutex_unlock(&block_state_mutex);
-		remove_from_bg_list(bg_job_block_list, bg_record);
-	} 
+		if(remove_from_bg_list(bg_job_block_list, bg_record) 
+		   == SLURM_SUCCESS) {
+			slurm_mutex_lock(&block_state_mutex);
+			num_unused_cpus += 
+				bg_record->bp_count*bg_record->cpus_per_bp;
+			slurm_mutex_unlock(&block_state_mutex);
+		} 
+	}
 #ifdef HAVE_BG_FILES
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bg_err_str(rc));
@@ -690,8 +704,11 @@ extern int start_job(struct job_record *job_ptr)
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 			bg_record->bp_count);
 		bg_record->job_running = bg_update_ptr->job_id;
-		if(!block_exist_in_list(bg_job_block_list, bg_record))
+		if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 			list_push(bg_job_block_list, bg_record);
+			num_unused_cpus -= 
+				bg_record->bp_count*bg_record->cpus_per_bp;
+		}
 		if(!block_exist_in_list(bg_booted_block_list, bg_record))
 			list_push(bg_booted_block_list, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);

@@ -138,6 +138,7 @@ extern int num_block_to_free;
 extern int num_block_freed;
 extern int blocks_are_created;
 extern int procs_per_node;
+extern int num_unused_cpus;
 
 #define MAX_PTHREAD_RETRIES  1
 #define MAX_AGENT_COUNT      30
@@ -220,8 +221,6 @@ extern int read_bg_blocks();
 /*****************************************************/
 extern int configure_small_block(bg_record_t *bg_record);
 extern int configure_block_switches(bg_record_t * bg_conf_record);
-extern int load_current_system();
-
 
 #endif /* _BLUEGENE_H_ */
  

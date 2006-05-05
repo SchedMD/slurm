@@ -62,6 +62,7 @@ pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_block_to_free = 0;
 int num_block_freed = 0;
 int blocks_are_created = 0;
+int num_unused_cpus = 0;
 
 pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 List bg_free_block_list = NULL;  	/* blocks to be deleted */
@@ -131,7 +132,6 @@ extern int init_bg(void)
 	DIM_SIZE[Z]=bp_size.Z;
 #endif
 	ba_init(NULL);
-
 	info("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;
@@ -160,6 +160,7 @@ extern void fini_bg(void)
 	if (bg_job_block_list) {
 		list_destroy(bg_job_block_list);
 		bg_job_block_list = NULL;
+		num_unused_cpus = 0;
 	}
 	if (bg_booted_block_list) {
 		list_destroy(bg_booted_block_list);
@@ -532,7 +533,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 
 	/* small blocks */
 	if(bg_record->cpus_per_bp != procs_per_node) {
-		info("small block");
+		debug2("small block");
 		while(bg_record->job_running > -1) 
 			sleep(1);
 		slurm_mutex_lock(&block_state_mutex);
@@ -584,7 +585,14 @@ extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;
-	
+	int rc;
+	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
+		reset_ba_system();
+		load_block_wiring(rec_a->bg_block_id);
+		rc = load_block_wiring(rec_b->bg_block_id);
+		if(rc == SLURM_ERROR)
+			return true;
+	}
 	my_bitmap = bit_copy(rec_a->bitmap);
 	bit_and(my_bitmap, rec_b->bitmap);
 	if (bit_ffs(my_bitmap) == -1) {
@@ -606,6 +614,7 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 				return false;
 		}				
 	}
+	
 	return true;
 }
 
@@ -892,7 +901,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 					rc = load_block_wiring(
 						bg_record->bg_block_id);
 				}
-				if(rc != SLURM_SUCCESS) {
+				if(rc == -1) {
 					name = set_bg_block(NULL,
 							    bg_record->start, 
 							    geo, 
@@ -906,6 +915,13 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 						return SLURM_ERROR;
 					}
 					xfree(name);
+				} else if (rc == SLURM_ERROR) {
+					debug("something happened in the "
+					      "load of %s", 
+					      bg_record->bg_block_id);
+					slurm_mutex_unlock(
+						&block_state_mutex);
+					return SLURM_ERROR;
 				}
 			}
 			if(found_record == NULL) {
@@ -1031,7 +1047,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					rc = load_block_wiring(
 						bg_record->bg_block_id);
 				}
-				if(rc != SLURM_SUCCESS) {
+				if(rc == -1) {
 					name = set_bg_block(NULL,
 							    bg_record->start, 
 							    geo, 
@@ -1046,7 +1062,14 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 						return SLURM_ERROR;
 					}
 					xfree(name);
-				} 
+				} else if (rc == SLURM_ERROR) {
+					debug("something happened in the "
+					      "load of %s", 
+					      bg_record->bg_block_id);
+					slurm_mutex_unlock(
+						&block_state_mutex);
+					return SLURM_ERROR;
+				}
 			}
 		}
 		list_iterator_destroy(itr);
@@ -1335,11 +1358,13 @@ extern int bg_free_block(bg_record_t *bg_record)
 			error("bg_free_block: there was no bg_record");
 			return SLURM_ERROR;
 		}
+		
+		slurm_mutex_lock(&block_state_mutex);			
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES
-			debug("pm_destroy %s",bg_record->bg_block_id);
+			debug2("pm_destroy %s",bg_record->bg_block_id);
 			
 			slurm_mutex_lock(&api_file_mutex);
 			rc = pm_destroy_partition(bg_record->bg_block_id);
@@ -1350,12 +1375,11 @@ extern int bg_free_block(bg_record_t *bg_record)
 					      bg_record->bg_block_id);
 					break;
 				} else if(rc == INCOMPATIBLE_STATE) {
-					debug("pm_destroy_partition(%s): %s "
+					debug2("pm_destroy_partition(%s): %s "
 					      "State = %d",
 					      bg_record->bg_block_id, 
 					      bg_err_str(rc), 
 					      bg_record->state);
-					break;
 				} else {
 					error("pm_destroy_partition(%s): %s "
 					      "State = %d",
@@ -1373,10 +1397,12 @@ extern int bg_free_block(bg_record_t *bg_record)
 		    ||  (bg_record->state == RM_PARTITION_ERROR)) {
 			break;
 		}
+		slurm_mutex_unlock(&block_state_mutex);			
 		sleep(3);
 	}
+	slurm_mutex_unlock(&block_state_mutex);			
 	remove_from_bg_list(bg_booted_block_list, bg_record);
-	
+		
 	return SLURM_SUCCESS;
 }
 
@@ -1468,20 +1494,20 @@ extern void *mult_destroy_block(void *args)
 		list_push(bg_freeing_list, found_record);
 		slurm_mutex_unlock(&freed_cnt_mutex);
 
-		debug("removing the jobs on block %s\n",
+		debug2("removing the jobs on block %s\n",
 		      bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
 		
-		debug("destroying %s", (char *)bg_record->bg_block_id);
+		debug2("destroying %s", (char *)bg_record->bg_block_id);
 		if(bg_free_block(bg_record) == SLURM_ERROR) {
 			debug("there was an error");
 			goto already_here;
 		}
-		debug("done destroying");
+		debug2("done destroying");
 		remove_from_bg_list(bg_list, bg_record);
 		
 #ifdef HAVE_BG_FILES
-		debug("removing from database %s", 
+		debug2("removing from database %s", 
 		       (char *)found_record->bg_block_id);
 
 		slurm_mutex_lock(&api_file_mutex);
@@ -1491,12 +1517,12 @@ extern void *mult_destroy_block(void *args)
 				debug("block %s is not found",
 				      found_record->bg_block_id);
 			} else {
-				error("rm_remove_partition(%s): %s",
+				error("1 rm_remove_partition(%s): %s",
 				      found_record->bg_block_id,
 				      bg_err_str(rc));
 			}
 		} else
-			debug("done");
+			debug2("done");
 		slurm_mutex_unlock(&api_file_mutex);	
 #endif
 		slurm_mutex_lock(&block_state_mutex);
@@ -1896,6 +1922,8 @@ static void _set_bg_lists()
 	if (bg_job_block_list) 
 		list_destroy(bg_job_block_list);
 	bg_job_block_list = list_create(NULL);	
+	num_unused_cpus = 
+		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * procs_per_node;
 	if (bg_curr_block_list)
 		list_destroy(bg_curr_block_list);	
 	bg_curr_block_list = list_create(destroy_bg_record);

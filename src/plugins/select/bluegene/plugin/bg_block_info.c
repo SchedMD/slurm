@@ -86,9 +86,15 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				if(bg_record->job_running > -1)
 					slurm_fail_job(bg_record->job_running);
 				slurm_mutex_unlock(&block_state_mutex);
-				remove_from_bg_list(bg_job_block_list, 
-						    bg_record);
-				slurm_mutex_lock(&block_state_mutex);
+				if(remove_from_bg_list(bg_job_block_list, 
+						       bg_record) 
+				   == SLURM_SUCCESS) {
+					slurm_mutex_lock(&block_state_mutex);
+					num_unused_cpus += bg_record->bp_count
+						*bg_record->cpus_per_bp;
+				} else {
+					slurm_mutex_lock(&block_state_mutex);
+				}
 			} else {
 				debug("Block %s was in a ready state "
 				      "but is being freed. No job running.",

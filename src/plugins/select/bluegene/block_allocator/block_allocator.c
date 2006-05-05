@@ -1276,7 +1276,7 @@ extern int load_block_wiring(char *bg_block_id)
 	ba_switch_t *ba_switch = NULL; 
 	int *geo = NULL;
 	
-	debug("getting info for block %s\n", bg_block_id);
+	debug2("getting info for block %s\n", bg_block_id);
 	
 	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
@@ -1295,7 +1295,7 @@ extern int load_block_wiring(char *bg_block_id)
 		return SLURM_ERROR;
 	} 
 	if(!switch_cnt) {
-		debug("no switch_cnt");
+		debug3("no switch_cnt");
 		if ((rc = rm_get_data(block_ptr, 
 				      RM_PartitionFirstBP, 
 				      &curr_bp)) 
@@ -1367,11 +1367,10 @@ extern int load_block_wiring(char *bg_block_id)
 			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
-		debug("switch id = %s dim %d conns = %d", 
+		debug2("switch id = %s dim %d conns = %d", 
 		       switchid, dim, cnt);
 		ba_switch = &ba_system_ptr->
 			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
-		ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].used = true;
 		for (j=0; j<cnt; j++) {
 			if(j) {
 				if ((rc = rm_get_data(curr_switch, 
@@ -1425,11 +1424,24 @@ extern int load_block_wiring(char *bg_block_id)
 				      _port_enum(curr_conn.p2));
 				return SLURM_ERROR;
 			}
-			debug("connection going from %d -> %d",
+
+			if(curr_conn.p1 == 1 && dim == X) {
+				if(ba_system_ptr->
+				   grid[geo[X]][geo[Y]][geo[Z]].used) {
+					debug("I have already been to "
+					      "this node %d%d%d",
+					      geo[X], geo[Y], geo[Z]);
+			
+					return SLURM_ERROR;
+				}
+				ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].
+					used = true;		
+			}
+			debug2("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
 			
 			if(ba_switch->int_wire[curr_conn.p1].used) {
-				error("%d%d%d dim %d port %d "
+				debug("%d%d%d dim %d port %d "
 				      "is already in use",
 				      geo[X],
 				      geo[Y],
@@ -1443,7 +1455,7 @@ extern int load_block_wiring(char *bg_block_id)
 				= curr_conn.p2;
 		
 			if(ba_switch->int_wire[curr_conn.p2].used) {
-				error("%d%d%d dim %d port %d "
+				debug("%d%d%d dim %d port %d "
 				      "is already in use",
 				      geo[X],
 				      geo[Y],
@@ -1460,7 +1472,7 @@ extern int load_block_wiring(char *bg_block_id)
 	return SLURM_SUCCESS;
 
 #else
-	return SLURM_ERROR;
+	return -1;
 #endif
 	
 }
@@ -2329,23 +2341,22 @@ start_again:
 			;
 
 		if (!_node_used(ba_node, ba_request->geometry)) {
-			info("trying this node %d%d%d %d%d%d %d",
-			      start[X], start[Y], start[Z],
-			      ba_request->geometry[X],
-			      ba_request->geometry[Y],
-			      ba_request->geometry[Z], 
-			      ba_request->conn_type);
+			debug3("trying this node %d%d%d %d%d%d %d",
+			       start[X], start[Y], start[Z],
+			       ba_request->geometry[X],
+			       ba_request->geometry[Y],
+			       ba_request->geometry[Z], 
+			       ba_request->conn_type);
 			name = set_bg_block(results,
 					    start, 
 					    ba_request->geometry, 
 					    ba_request->conn_type);
 			if(name) {
-				info("yes");
 				ba_request->save_name = xstrdup(name);
 				xfree(name);
 				return 1;
 			}
-			info("nope");
+			
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
@@ -2354,7 +2365,7 @@ start_again:
 			list_destroy(results);
 			results = list_create(NULL);
 		}
-		info("got here");
+		
 #ifdef HAVE_BG
 		
 		if((DIM_SIZE[Z]-start[Z]-1)
@@ -2388,7 +2399,7 @@ start_again:
 #endif
 	}							
 requested_end:
-	info("can't allocate");
+	debug("can't allocate");
 	
 	return 0;
 }
