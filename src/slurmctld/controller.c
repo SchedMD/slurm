@@ -90,15 +90,18 @@
  * To test for memory leaks, set MEM_LEAK_TEST to 1 then execute
  * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 
  *    --leak-resolution=med slurmctld -D
- * then exercise the slurmctld functionality before executing
+ *
+ * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
  *
  * The OpenSSL code produces a bunch of errors related to use of 
- * non-initialized memory use. 
+ *    non-initialized memory use. 
  * The switch/elan plugin orphans 640 bytes at shutdown.
+ * The list functions will report memory "possibly lost". The memory is 
+ *    used for a cache, which is really OK.
  * Otherwise the report should be free of errors. Remember to reset 
- * MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
- * backup controller use).
+ *    MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
+ *    backup controller use).
 \**************************************************************************/
 #define MEM_LEAK_TEST     0	/* Running memory leak test if set */
 
