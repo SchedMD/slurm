@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
     settings with a new file 'testsuite/expect/globals.local'.
  -- Job suspend now sends SIGTSTP, sleep(1), sends SIGSTOP for better
     MPI support.
+ -- Plug a bunch of memory leaks in various places.
 
 * Changes in SLURM 1.1.0-pre6
 =============================
