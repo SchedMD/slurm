@@ -508,6 +508,12 @@ static void *_wdog(void *args)
 					thd_comp.no_resp_cnt, 
 					thd_comp.retry_cnt);
 	}
+
+	for (i = 0; i < agent_ptr->thread_count; i++) {
+		if (thread_ptr[i].ret_list)
+			list_destroy(thread_ptr[i].ret_list);
+	}
+
 	if (thd_comp.max_delay)
 		debug2("agent maximum delay %d seconds", thd_comp.max_delay);
 	
@@ -672,7 +678,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				goto finished;
 		}
 		list_iterator_destroy(itr);
-		list_destroy(thread_ptr[i].ret_list);
 	}
 finished:
 	unlock_slurmctld(node_write_lock);
