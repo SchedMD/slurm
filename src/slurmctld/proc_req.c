@@ -858,7 +858,6 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	};
 	uid_t uid;
 	bool job_requeue = false;
-	bool dump_job = false, dump_node = false;
 
 	/* init */
 	START_TIMER;
@@ -884,12 +883,9 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 		debug2("_slurm_rpc_complete_job_allocation JobId=%u %s",
 		       comp_msg->job_id, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		dump_job = true;
-	}
-	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
-	if (dump_node)
 		(void) schedule_node_save();	/* Has own locking */
+	}
 }
 
 /* _slurm_rpc_complete_batch - process RPC from slurmstepd to note the
