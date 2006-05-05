@@ -102,6 +102,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	char tmp_char[256];
 	bitstr_t* tmp_bitmap = NULL;
 
+	slurm_mutex_lock(&block_state_mutex);
+	if(!test_only && req_procs > num_unused_cpus) {
+		debug2("asking for %d I only got %d", 
+		       req_procs, num_unused_cpus);
+		slurm_mutex_unlock(&block_state_mutex);
+		return SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&block_state_mutex);
 	if(!bg_list) {
 		error("_find_best_block_match: There is no bg_list");
 		return SLURM_ERROR;
@@ -128,7 +136,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	}
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
-
+		
 	*found_bg_record = NULL;
 try_again:	
 	slurm_mutex_lock(&block_state_mutex);
@@ -376,12 +384,15 @@ try_again:
 		lists_of_lists = list_create(NULL);
 		list_append(lists_of_lists, bg_list);
 		if(list_count(bg_list)
-		   != list_count(bg_booted_block_list)) 
+		   != list_count(bg_booted_block_list)) {
 			list_append(lists_of_lists, bg_booted_block_list);
-		if(list_count(bg_booted_block_list) 
-		   != list_count(bg_job_block_list)) 
+			if(list_count(bg_booted_block_list) 
+			   != list_count(bg_job_block_list)) 
+				list_append(lists_of_lists, bg_job_block_list);
+		} else if(list_count(bg_list) 
+			  != list_count(bg_job_block_list)) 
 			list_append(lists_of_lists, bg_job_block_list);
-		
+	
 		itr = list_iterator_create(lists_of_lists);
 		while ((temp_list = (List)list_next(itr)) != NULL) {
 			created++;
@@ -458,10 +469,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	
-	if(!test_only && (list_count(bg_list) > 0)
-	   && (list_count(bg_list) == list_count(bg_job_block_list)))
-		return SLURM_ERROR;
-		
 	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);

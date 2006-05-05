@@ -472,9 +472,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
 		
 		/* this means it is greater or equal to one bp */
-		if(tmp > 0) 
+		if(tmp > 0) {
 			job_desc->min_nodes = tmp;
-		else { 
+			job_desc->num_procs = procs_per_node * tmp;
+		} else { 
 			/* this means it is either a quarter or smaller */
 			tmp = job_desc->min_nodes % bluegene_nodecard_node_cnt;
 			if(tmp > 0)
