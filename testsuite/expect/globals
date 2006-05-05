@@ -1,6 +1,15 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Establish global state information for SLURM test suite
+#
+# To define site-specific state information, set the values in a file
+# named 'globals.local'. Those values will override any specified here.
+# for example:
+#
+# $ cat globals.local
+# set slurm_dir "/usr/local"
+# set mpicc     "/usr/local/bin/mpicc"
+#
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
