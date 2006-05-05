@@ -214,17 +214,14 @@ static void * _p_signal_task(void *args)
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		rc = ret_type->msg_rc;
-		if(!ret_type->ret_data_list)
-			host = job->step_layout->host[info->host_inx];
-		else 
-			host = NULL;
+		
 		/*
 		 *  Report error unless it is "Invalid job id" which 
 		 *    probably just means the tasks exited in the meanwhile.
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
 		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			if(!host) {
+			if(ret_type->ret_data_list) {
 				while((ret_data_info 
 				      = list_pop(ret_type->ret_data_list))) {
 					error("%s: signal: %s", 
@@ -234,7 +231,7 @@ static void * _p_signal_task(void *args)
 				}
 			} else {
 				error("%s: signal: %s", 
-				      host, 
+				      job->step_layout->host[info->host_inx], 
 				      slurm_strerror(rc));
 			}
 		}
