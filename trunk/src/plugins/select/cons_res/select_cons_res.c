@@ -996,10 +996,13 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 		if (job->job_id != job_ptr->job_id)
 			continue;
 		for (i=0; i<job->nhosts; i++)
-			cnt += job->cpus[i];
-		debug2("cons_res: reset num_procs for %u from %u to %u",
+			cnt += MIN(job->cpus[i], job->ntask[i]);
+		if (job_ptr->num_procs != cnt) {
+			debug2("cons_res: reset num_procs for %u from "
+				"%u to %u", 
 				job_ptr->job_id, job_ptr->num_procs, cnt);
-		job_ptr->num_procs = cnt;
+			job_ptr->num_procs = cnt;
+		}
 		break; 
 	}
 	list_iterator_destroy(job_iterator);

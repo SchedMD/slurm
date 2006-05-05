@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- added $float to globals.example in the testsuite
  -- Limit attempted BGL jobs scheduled at once to 100 (too slow with
     dynamic scheduling to handle hundreds of jobs at once).
+ -- Set job's num_proc correctly for jobs that do not have exclusive use 
+    of it's allocated nodes.
 
 * Changes in SLURM 1.1.0-pre6
 =============================
