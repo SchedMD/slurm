@@ -67,7 +67,7 @@ extern void srun_allocate (uint32_t job_id)
 	struct job_record *job_ptr = find_job_record (job_id);
 
 	xassert(job_ptr);
-	if (job_ptr->port && job_ptr->host && job_ptr->host[0]) {
+	if (job_ptr && job_ptr->port && job_ptr->host && job_ptr->host[0]) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
 
@@ -115,9 +115,9 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 
 	xassert(job_ptr);
 	xassert(node_name);
-	if (job_ptr->job_state != JOB_RUNNING)
+	if (!job_ptr || job_ptr->job_state != JOB_RUNNING)
 		return;
-	if ((node_ptr = find_node_record(node_name)) == NULL)
+	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
 		return;
 	bit_position = node_ptr - node_record_table_ptr;
 

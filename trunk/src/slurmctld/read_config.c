@@ -671,7 +671,8 @@ int read_slurm_conf(int recover)
 	jobacct_g_init_slurmctld(slurmctld_conf.job_acct_logfile);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
-	switch_init();
+	if (switch_init() < 0)
+		error("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");

@@ -199,8 +199,10 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	else
 		n->conn_type = SELECT_SMALL;
 	
-	s_p_get_uint16(&n->nodecards, "Nodecards", tbl);
-	s_p_get_uint16(&n->quarters, "Quarters", tbl);
+	if (!s_p_get_uint16(&n->nodecards, "Nodecards", tbl))
+		n->nodecards = 0;
+	if (!s_p_get_uint16(&n->quarters, "Quarters", tbl))
+		n->quarters = 0;
 
 	s_p_hashtbl_destroy(tbl);
 
@@ -963,11 +965,10 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 {
        	ba_node_t* ba_node;
 	char *name = NULL;
-	ListIterator itr;		
 
-	itr = list_iterator_create(nodes);
-	ba_node = list_next(itr);
-	list_iterator_destroy(itr);
+	ba_node = list_peek(nodes);
+	if(!ba_node)
+		return SLURM_ERROR;
 
 	remove_block(nodes, new_count);
 	list_destroy(nodes);

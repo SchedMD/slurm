@@ -366,11 +366,13 @@ int setup_env(env_t *env)
 
 		setstat = 0;
 		if (env->mem_bind) {
-			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST", env->mem_bind);
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST",
+					   env->mem_bind);
 		} else {
-			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST", "");
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST",
+					   "");
 		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_LIST", env->mem_bind)) {
+		if (setstat) {
 			error("Unable to set SLURM_MEM_BIND_LIST");
 			rc = SLURM_FAILURE;
 		}

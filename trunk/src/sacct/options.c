@@ -423,7 +423,7 @@ char *decode_status_int_abbrev(int status)
 int get_data(void)
 {
 	char line[BUFFER_SIZE];
-	char *f[MAX_RECORD_FIELDS];    /* End list with null entry and,
+	char *f[MAX_RECORD_FIELDS+1];    /* End list with null entry and,
 					    possibly, more data than we
 					    expected */
 	char *fptr;
@@ -945,8 +945,12 @@ void parse_command_line(int argc, char **argv)
 	if (params.opt_state_list) {
 		start = params.opt_state_list;
 		while ((end = strstr(start, ","))) {
+			int c;
 			*end = 0;
-			selected_status[decode_status_char(start)] = 1;
+			c = decode_status_char(start);
+			if (c == -1)
+				fatal("unrecognized job state value");
+			selected_status[c] = 1;
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
@@ -1500,8 +1504,11 @@ void do_expire(void)
 	printf("%d jobs expired.\n", list_count(exp_list));
 finished2:
 	fclose(new_logfile);
-	if (!file_err)
-		unlink(old_logfile_name);	
+	if (!file_err) {
+		if (unlink(old_logfile_name) == -1)
+			error("Unable to unlink old logfile %s: %m",
+			      old_logfile_name);
+	}
 finished:
 	fclose(fd);
 	list_destroy(exp_list);

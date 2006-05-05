@@ -180,6 +180,7 @@ set_multi_name(int ntasks)
 		if (strlen (line) >= (sizeof(line) - 1)) {
 			error ("Line %d of configuration file too long", 
 				line_num);
+			fclose(config_fd);
 			return -1;
 		} 
 		p = line;
@@ -196,9 +197,11 @@ set_multi_name(int ntasks)
 		exec_name = strtok_r(NULL, " \t\n", &ptrptr);
 		if (!ranks || !exec_name) {
 			error("Line %d is invalid", line_num);
+			fclose(config_fd);
 			return -1;
 		}
 		_set_exec_names(ranks, exec_name, ntasks);
 	}
+	fclose(config_fd);
 	return 0;
 }

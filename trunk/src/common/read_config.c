@@ -310,11 +310,13 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (s_p_get_string(&tmp, "NodeHostname", tbl)) {
 			error("NodeHostname not allowed with NodeName=DEFAULT");
 			xfree(tmp);
+			s_p_hashtbl_destroy(tbl);
 			return -1;
 		}
 		if (s_p_get_string(&tmp, "NodeAddr", tbl)) {
 			error("NodeAddr not allowed with NodeName=DEFAULT");
 			xfree(tmp);
+			s_p_hashtbl_destroy(tbl);
 			return -1;
 		}
 
@@ -477,6 +479,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
 				destroy_partitionname(p);
+				s_p_hashtbl_destroy(tbl);
 				xfree(tmp);
 				return -1;
 			}
