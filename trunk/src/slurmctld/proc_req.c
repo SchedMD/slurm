@@ -323,6 +323,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
+	conf_ptr->plugstack           = xstrdup(conf->plugstack);
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
 	conf_ptr->propagate_prio_process = 
@@ -2275,7 +2276,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	req_step_msg.node_list = NULL;
 
 	error_code = step_create(&req_step_msg, &step_rec, false, true);
-	
+	xfree(req_step_msg.node_list);	/* may be set by step_create */
+
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 	

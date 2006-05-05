@@ -931,6 +931,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
@@ -992,6 +993,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
