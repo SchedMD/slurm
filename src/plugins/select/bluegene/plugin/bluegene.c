@@ -1116,10 +1116,6 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		request->rotate_count = 0;
 		request->elongate_count = 1;
 		
-		if(!my_bitmap) {
-			my_bitmap = bit_alloc(bit_size(bg_record->bitmap));
-		}
-		
 		if(bg_record->job_running == -1 
 		   && (bg_record->quarter == (uint16_t) NO_VAL
 		       || (bg_record->quarter == 0 

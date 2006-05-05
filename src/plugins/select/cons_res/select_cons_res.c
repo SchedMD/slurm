@@ -1206,7 +1206,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 	        this_cr_node = _find_cr_node_record (node_ptr->name);
 		if (this_cr_node == NULL) {
 		        error(" cons_res: could not find node %s",
-				 this_cr_node->node_ptr->name);
+			      node_ptr->name);
 			rc = SLURM_ERROR;
 			return rc;
 		}

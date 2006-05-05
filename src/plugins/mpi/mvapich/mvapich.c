@@ -233,14 +233,16 @@ static void mvapich_barrier (void)
 	for (i = 0; i < nprocs; i++) {
 		int j;
 		m = mvarray[i];
-		fd_read_n (m->fd, &j, sizeof (j));
+		if (fd_read_n (m->fd, &j, sizeof (j)) == -1)
+			error("mvapich read on barrier");
 	}
 
 	debug ("mvapich: completed barrier for all tasks");
 
 	for (i = 0; i < nprocs; i++) {
 		m = mvarray[i];
-		fd_write_n (m->fd, &i, sizeof (i));
+		if (fd_write_n (m->fd, &i, sizeof (i)) == -1)
+			error("mvapich write on barrier");
 		close (m->fd);
 		m->fd = -1;
 	}

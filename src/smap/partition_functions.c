@@ -670,7 +670,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 			i++;
 		}
-		if((params.display == BGPART) 
+		if((params.display == BGPART) && db2_info_ptr
 		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
 			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL) {
 				mvwprintw(ba_system_ptr->text_win, 
@@ -738,7 +738,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		else
 			nodes = part_ptr->nodes;
 		
-		if((params.display == BGPART) 
+		if((params.display == BGPART) && db2_info_ptr
 		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
 			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL)
 				printf("%s.%d.%d\n", nodes, 

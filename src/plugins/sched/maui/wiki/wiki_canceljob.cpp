@@ -54,9 +54,9 @@ wiki_canceljob_t::wiki_canceljob_t( char *data, size_t len ) :
 
 	reason = (char *) list_next( j );
 	list_iterator_destroy( j );
-	if ( strcmp( reason, "ADMIN" ) == 0 ) {
+	if ( reason && strcmp( reason, "ADMIN" ) == 0 ) {
 		m_reason = ADMIN;
-	} else if ( strcmp( reason, "WALLCLOCK" ) == 0 ) {
+	} else if ( reason && strcmp( reason, "WALLCLOCK" ) == 0 ) {
 		m_reason = WALLCLOCK;
 	} else {
 		throw "unknown cancel mode";

@@ -248,11 +248,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	hostlist_ranged_string(hl, 1024, buf);
 	
 	if (!(job = job_batch_job_create(msg))) {
-		/*
-		 *  Set "job" status to returned errno and cleanup job.
-		 */
-		status = errno;
-		_batch_cleanup(job, 0, status);
+		error("job_batch_job_create() failed: %m");
 		return NULL;
 	}
 
@@ -408,7 +404,8 @@ _random_sleep(slurmd_job_t *job)
 
 	delay = lrand48() % ( max + 1 );
 	debug3("delaying %dms", delay);
-	poll(NULL, 0, delay);
+	if (poll(NULL, 0, delay) == -1)
+		return;
 }
 
 /*
@@ -539,7 +536,10 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 		/* this is the base of the tree, its parent is slurmctld */
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
-		slurm_send_recv_controller_rc_msg(&req, &rc);
+		if (slurm_send_recv_controller_rc_msg(&req, &rc)
+		    != SLURM_SUCCESS)
+			error("Rank %d failed sending step completion message"
+			      " to slurmctld (parent)", step_complete.rank);
 		goto finished;
 	}
 
@@ -563,7 +563,9 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	/* on error AGAIN, send to the slurmctld instead */
 	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
 	       step_complete.rank, first, last);
-	slurm_send_recv_controller_rc_msg(&req, &rc);
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) != SLURM_SUCCESS)
+		error("Rank %d failed sending step completion message"
+		      " directly to slurmctld", step_complete.rank);
 finished:
 	jobacct_g_free(msg.jobacct);
 }
@@ -1600,7 +1602,7 @@ _initgroups(slurmd_job_t *job)
 	gid = job->pwd->pw_gid;
 	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
 	if ((rc = initgroups(username, gid))) {
-		if ((errno == EPERM) && (getuid != (uid_t) 0)) {
+		if ((errno == EPERM) && (getuid() != (uid_t) 0)) {
 			debug("Error in initgroups(%s, %ld): %m",
 				username, (long)gid);
 		} else {

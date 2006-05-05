@@ -998,10 +998,12 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 		debug3("looking for %d", msg->forward_struct->fwd_cnt);
 		slurm_mutex_lock(&msg->forward_struct->forward_mutex);
 		count = 0;
-		itr = list_iterator_create(msg->ret_list);
-		while((ret_type = (ret_types_t *) list_next(itr)) 
-		      != NULL) {
-			count += list_count(ret_type->ret_data_list);
+		if (msg->ret_list != NULL) {
+			itr = list_iterator_create(msg->ret_list);
+			while((ret_type = (ret_types_t *) list_next(itr)) 
+			      != NULL) {
+				count += list_count(ret_type->ret_data_list);
+			}
 		}
 		list_iterator_destroy(itr);
 		debug3("Got back %d", count);
@@ -1009,10 +1011,12 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 			pthread_cond_wait(&msg->forward_struct->notify, 
 					  &msg->forward_struct->forward_mutex);
 			count = 0;
-			itr = list_iterator_create(msg->ret_list);
-			while((ret_type = (ret_types_t *) list_next(itr)) 
-			      != NULL) {
-				count += list_count(ret_type->ret_data_list);
+			if (msg->ret_list != NULL) {
+				itr = list_iterator_create(msg->ret_list);
+				while((ret_type = (ret_types_t *) list_next(itr)) 
+				      != NULL) {
+					count += list_count(ret_type->ret_data_list);
+				}
 			}
 			list_iterator_destroy(itr);
 			debug3("Got back %d", count);

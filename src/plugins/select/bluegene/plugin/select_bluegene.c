@@ -124,7 +124,9 @@ static int _init_status_pthread(void)
 
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
+	if (pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL)
+	    != 0)
+		error("Failed to create bluegene_agent thread");
 	pthread_mutex_unlock( &thread_flag_mutex );
 	slurm_attr_destroy( &attr );
 

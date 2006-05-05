@@ -81,7 +81,8 @@ daemon(int nochdir, int noclose)
 	 */
 	if (!noclose) {
 		closeall(0);
-		open("/dev/null", O_RDWR);
+		if (open("/dev/null", O_RDWR) != 0)
+			error("Unable to open /dev/null on stdin: %m");
 		dup2(0, STDOUT_FILENO);
 		dup2(0, STDERR_FILENO);
 	} else {
