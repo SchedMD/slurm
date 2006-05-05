@@ -2214,6 +2214,32 @@ _xduparray(uint16_t size, char ** array)
 	return result;
 }
 
+/* like _xduparray(), but performs a single xmalloc() */
+static char **
+_xduparray2(uint16_t size, char ** array) 
+{
+	int i, len = 0;
+	char *ptr, ** result;
+
+	if (size == 0)
+		return (char **) NULL;
+
+	for (i=0; i<size; i++)
+		len += (strlen(array[i]) + 1);
+	ptr = xmalloc(sizeof(char *) * size + len);
+	result = (char **) ptr;
+
+	ptr += (sizeof(char *) * size);
+	for (i=0; i<size; i++) {
+		len = strlen(array[i]);
+		strcpy(ptr, array[i]);
+		ptr += (len + 1);
+	}
+
+	return result;
+}
+
+
 
 int _max_nprocs(struct job_record  *job_ptr)
 {
@@ -2329,7 +2355,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->argv = _xduparray(job_desc_msg->argc,
 					job_desc_msg->argv);
 	launch_msg_ptr->script = xstrdup(job_desc_msg->script);
-	launch_msg_ptr->environment = _xduparray(job_desc_msg->env_size,
+	launch_msg_ptr->environment = _xduparray2(job_desc_msg->env_size,
 						 job_desc_msg->environment);
 	launch_msg_ptr->envc = job_desc_msg->env_size;
 
