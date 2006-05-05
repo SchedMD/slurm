@@ -416,10 +416,13 @@ static int _make_step_cred(struct step_record *step_rec,
                 cred_arg.ntask = xmalloc(cred_arg.ntask_cnt * sizeof(int));
                 memcpy(cred_arg.ntask, step_rec->job_ptr->ntask, 
                        cred_arg.ntask_cnt*sizeof(int));
-        }
+        } else
+		cred_arg.ntask = NULL;
 
-	if ( (*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
-			&cred_arg)) == NULL) {
+	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
+			&cred_arg);
+	xfree(cred_arg.ntask);
+	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;
 	}
