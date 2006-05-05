@@ -7,8 +7,6 @@ documents those changes that are of interest to users and admins.
  -- Support large (over 2GB) files on 32-bit linux systems
  -- changed all writes to safe_write in srun
  -- added $float to globals.example in the testsuite
- -- Limit attempted BGL jobs scheduled at once to 100 (too slow with
-    dynamic scheduling to handle hundreds of jobs at once).
  -- Set job's num_proc correctly for jobs that do not have exclusive use 
     of it's allocated nodes.
  -- Change in support for test suite: 'testsuite/expect/globals.example'

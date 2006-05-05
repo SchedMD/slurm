@@ -143,7 +143,7 @@ extern bool job_is_completing(void)
 int schedule(void)
 {
 	struct job_queue *job_queue;
-	int i, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
+	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts;
 	/* Locks: Read config, write job, write node, read partition */
@@ -153,8 +153,6 @@ int schedule(void)
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
 	char tmp_char[256];
-#else
-	int j;
 #endif
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */
@@ -176,20 +174,13 @@ int schedule(void)
 		job_ptr = job_queue[i].job_ptr;
 		if (job_ptr->priority == 0)	/* held */
 			continue;
-#ifdef HAVE_BG
-		/* Dynamic partitioning on BGL is slow, so we don't 
-		 * want to try scheduling too many jobs or the 
-		 * slurmctld will stop responding for too long. */
-		if (i >= 100)
-			break;
-#else
 		for (j = 0; j < failed_part_cnt; j++) {
 			if (failed_parts[j] == job_ptr->part_ptr)
 				break;
 		}
 		if (j < failed_part_cnt)
 			continue;
-#endif
+
 		error_code = select_nodes(job_ptr, false);
 		if (error_code == ESLURM_NODES_BUSY) {
 #ifndef HAVE_BG 	/* keep trying to schedule jobs in partition */
