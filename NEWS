@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Change in support for test suite: 'testsuite/expect/globals.example'
     is now 'testsuite/expect/globals' and you can override variable 
     settings with a new file 'testsuite/expect/globals.local'.
+ -- Job suspend now sends SIGTSTP, sleep(1), sends SIGSTOP for better
+    MPI support.
 
 * Changes in SLURM 1.1.0-pre6
 =============================
