@@ -544,13 +544,9 @@ slurm_cred_destroy(slurm_cred_t cred)
 	xassert(cred->magic == CRED_MAGIC);
 
 	slurm_mutex_lock(&cred->mutex);
-	if (cred->nodes)
-		xfree(cred->nodes);
-        if (cred->ntask)
-                xfree(cred->ntask);
-        cred->ntask = NULL;
-	if (cred->signature)
-		xfree(cred->signature);
+	xfree(cred->nodes);
+	xfree(cred->ntask);
+	xfree(cred->signature);
 	xassert(cred->magic = ~CRED_MAGIC);
 
 	slurm_mutex_unlock(&cred->mutex);
