@@ -140,7 +140,7 @@ are very limited in scope.</p>
 
 <p>We also have a set of Expect SLURM tests available under the <b>testsuite/expect</b>
 directory.  These tests are executed after SLURM has been installed 
-and the daemons initiated. About 110 test scripts exercise all SLURM commands 
+and the daemons initiated. About 160 test scripts exercise all SLURM commands 
 and options including stress tests.  The file <b>testsuite/expect/globals</b>
 contains default paths and procedures for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
@@ -209,6 +209,6 @@ host1> slurmd -N foo21 -P 17003
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 March 2006</p>
+<p style="text-align:center;">Last modified 5 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
