@@ -911,8 +911,16 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
+		/* SIGTSTP is sent first to let MPI daemons stop their
+		 * tasks, then we send SIGSTOP to stop everything else */
+		if (slurm_container_signal(job->cont_id, SIGTSTP) < 0) {
+			verbose("Error suspending %u.%u (SIGTSTP): %m",
+				job->jobid, job->stepid);
+		} else
+			sleep(1);
+
 		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
-			verbose("Error suspending %u.%u: %m", 
+			verbose("Error suspending %u.%u (SIGSTOP): %m", 
 			        job->jobid, job->stepid);
 		} else {
 			verbose("Suspended %u.%u", job->jobid, job->stepid);
