@@ -143,7 +143,7 @@ extern bool job_is_completing(void)
 int schedule(void)
 {
 	struct job_queue *job_queue;
-	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
+	int i, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts;
 	/* Locks: Read config, write job, write node, read partition */
@@ -153,6 +153,8 @@ int schedule(void)
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
 	char tmp_char[256];
+#else
+	int j;
 #endif
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */
