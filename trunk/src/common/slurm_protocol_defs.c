@@ -129,9 +129,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	if (msg) {
 		select_g_free_jobinfo(&msg->select_jobinfo);
 		xfree(msg->alloc_node);
-		for (i = 0; i < msg->env_size; i++) {
+		for (i = 0; i < msg->env_size; i++)
 			xfree(msg->environment[i]);
-		}
 		xfree(msg->environment);
 		xfree(msg->features);
 		xfree(msg->mail_user);
@@ -140,6 +139,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->req_nodes);
 		xfree(msg->exc_nodes);
 		xfree(msg->script);
+		for (i = 0; i < msg->argc; i++)
+			xfree(msg->argv[i]);
 		xfree(msg->argv);
 		xfree(msg->err);
 		xfree(msg->in);
@@ -166,15 +167,13 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->out);
 		xfree(msg->work_dir);
 
-		for (i = 0; i < msg->argc; i++) {
+		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
-		}
 		xfree(msg->argv);
 
 		if (msg->environment) {
-			for (i = 0; i < msg->envc; i++) {
+			for (i = 0; i < msg->envc; i++)
 				xfree(msg->environment[i]);
-			}
 			xfree(msg->environment);
 		}
 
