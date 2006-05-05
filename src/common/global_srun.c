@@ -197,7 +197,7 @@ static void * _p_signal_task(void *args)
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
-	char        *host = NULL;
+	char        *host = job->step_layout->host[info->host_inx];
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
@@ -231,7 +231,7 @@ static void * _p_signal_task(void *args)
 				}
 			} else {
 				error("%s: signal: %s", 
-				      job->step_layout->host[info->host_inx], 
+				      host, 
 				      slurm_strerror(rc));
 			}
 		}
