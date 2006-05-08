@@ -474,7 +474,8 @@ try_again:
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
 	 * a node count */
-	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
+	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)
+	&&  job_ptr->cpus_per_node[0]) {
 		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
 				/ job_ptr->cpus_per_node[0];
 		step_spec->node_count = (i > step_spec->node_count) ? 
