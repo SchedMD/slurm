@@ -1192,7 +1192,7 @@ extern void build_node_details(struct job_record *job_ptr)
 				job_ptr->cpus_per_node[cpu_inx] =
 					job_ptr->num_procs;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
-				continue;
+				goto cleanup;
 			}
 #endif
 			if (cr_enabled) {
@@ -1213,7 +1213,7 @@ extern void build_node_details(struct job_record *job_ptr)
 			}
 			
 			if (usable_cpus <= 0)
-				continue;
+					goto cleanup;
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr));
 			if ((cpu_inx == -1) ||
@@ -1230,7 +1230,7 @@ extern void build_node_details(struct job_record *job_ptr)
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
-		free(this_node_name);
+ cleanup:	free(this_node_name);
 	}
 	hostlist_destroy(host_list);
 	if (job_ptr->node_cnt != node_inx) {
