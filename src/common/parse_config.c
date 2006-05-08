@@ -128,8 +128,8 @@ s_p_hashtbl_t *s_p_hashtbl_create(
 	s_p_options_t options[])
 {
 	s_p_options_t *op = NULL;
-	s_p_values_t *value;
-	s_p_hashtbl_t *hashtbl;
+	s_p_values_t *value = NULL;
+	s_p_hashtbl_t *hashtbl = NULL;
 	int len;
 
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);

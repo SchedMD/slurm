@@ -285,8 +285,12 @@ init_setproctitle(int argc, char *argv[])
 	 * Duplicate and move the environment out of the way
 	 */
 	new_environ = malloc(sizeof(char *) * (i + 1));
-	for (i = 0; environ[i] != NULL; i++)
+	for (i = 0; environ[i] != NULL; i++) {
 		new_environ[i] = strdup(environ[i]);
+		//free(environ[i]);
+	}
+	/* if(environ) */
+/* 		free(environ); */
 	new_environ[i] = NULL;
 	environ = new_environ;
 #endif /* PS_USE_CLOBBER_ARGV */

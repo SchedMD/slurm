@@ -61,7 +61,7 @@
 slurm_ctl_conf_t slurmctld_conf;
 
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
-static s_p_hashtbl_t *conf_hashtbl;
+static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
 
@@ -754,7 +754,9 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
-	_init_slurm_conf(NULL);
+	if(!conf_initialized) 
+		_init_slurm_conf(NULL);
+
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0) {
 		return;
@@ -1052,7 +1054,9 @@ _init_slurm_conf(char *file_name)
 		if (file_name == NULL)
 			file_name = default_slurm_config_file;
 	}
-
+       	if(conf_initialized) {
+		error("the conf_hashtbl is already inited");	
+	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
 	if(s_p_parse_file(conf_hashtbl, file_name) == SLURM_ERROR)
@@ -1076,6 +1080,8 @@ _destroy_slurm_conf()
 		default_partition_tbl = NULL;
 	}
 	free_slurm_conf(conf_ptr);
+	conf_initialized = false;
+	
 	/* xfree(conf_ptr); */
 }
 
@@ -1154,7 +1160,6 @@ slurm_conf_destroy(void)
 
 	_destroy_slurm_conf();
 
-	conf_initialized = false;
 	pthread_mutex_unlock(&conf_lock);
 
 	return SLURM_SUCCESS;

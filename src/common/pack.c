@@ -114,7 +114,7 @@ Buf init_buf(int size)
 	my_buf->size = size;
 	my_buf->processed = 0;
 	my_buf->head = xmalloc(sizeof(char)*size);
-
+	memset(my_buf->head, 0, size);
 	return my_buf;
 }
 

@@ -96,24 +96,24 @@ typedef struct slurm_jobacct_ops {
  * only one, with static bindings.  We don't export it.
  */
 
-struct slurm_jobacct_context {
-	char *			jobacct_type;
+typedef struct slurm_jobacct_context {
+	char 			*jobacct_type;
 	plugrack_t		plugin_list;
 	plugin_handle_t		cur_plugin;
 	int			jobacct_errno;
 	slurm_jobacct_ops_t	ops;
-};
+} slurm_jobacct_context_t;
 
-static slurm_jobacct_context_t g_jobacct_context = NULL;
+static slurm_jobacct_context_t *g_jobacct_context = NULL;
 static pthread_mutex_t      g_jobacct_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int _slurm_jobacct_init(void);
 static int _slurm_jobacct_fini(void);
 
-static slurm_jobacct_context_t
+static slurm_jobacct_context_t *
 _slurm_jobacct_context_create( const char *jobacct_type)
 {
-	slurm_jobacct_context_t c;
+	slurm_jobacct_context_t *c;
 
 	if ( jobacct_type == NULL ) {
 		error( "_slurm_jobacct_context_create: no jobacct type" );
@@ -135,12 +135,13 @@ _slurm_jobacct_context_create( const char *jobacct_type)
 	/* Plugin rack is demand-loaded on first reference. */
 	c->plugin_list = NULL; 
 	c->cur_plugin = PLUGIN_INVALID_HANDLE; 
+	c->jobacct_errno	= SLURM_SUCCESS;
 
 	return c;
 }
 
 static int
-_slurm_jobacct_context_destroy( slurm_jobacct_context_t c )
+_slurm_jobacct_context_destroy( slurm_jobacct_context_t *c )
 {
 	/*
 	 * Must check return code here because plugins might still
@@ -162,7 +163,7 @@ _slurm_jobacct_context_destroy( slurm_jobacct_context_t c )
  * Resolve the operations from the plugin.
  */
 static slurm_jobacct_ops_t *
-_slurm_jobacct_get_ops( slurm_jobacct_context_t c )
+_slurm_jobacct_get_ops( slurm_jobacct_context_t *c )
 {
 	/*
 	 * These strings must be in the same order as the fields declared
@@ -222,9 +223,9 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
 
         /* Dereference the API. */
         if ( (rc = plugin_get_syms( c->cur_plugin,
-                              n_syms,
-                              syms,
-                              (void **) &c->ops )) < n_syms ) {
+				    n_syms,
+				    syms,
+				    (void **) &c->ops )) < n_syms ) {
                 error( "incomplete jobacct plugin detected only "
 		       "got %d out of %d",
 		       rc, n_syms);
@@ -301,7 +302,8 @@ extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid)
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))(tid);	
+		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))(tid);
+	
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return jobacct;
 }

@@ -54,8 +54,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/sacct/sacct_stat.h"
 
-typedef struct slurm_jobacct_context *slurm_jobacct_context_t;
-
 /* common */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid);
 /* must free jobacctinfo_t if not NULL */

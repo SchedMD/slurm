@@ -160,6 +160,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
+			jobacct_g_free(step_ptr->jobacct);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
