@@ -683,6 +683,8 @@ void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
+void inline slurm_free_node_select_msg(
+		node_info_select_request_msg_t *msg);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);
