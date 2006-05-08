@@ -271,7 +271,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_NODE_SELECT_INFO:
 		_slurm_rpc_node_select_info(msg);
-		/* Note: No data to free */
+		 slurm_free_node_select_msg(msg->data);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		_slurm_rpc_step_complete(msg);

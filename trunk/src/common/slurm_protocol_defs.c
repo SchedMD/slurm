@@ -946,3 +946,9 @@ extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
 		xfree(msg);
 	}
 }
+
+void inline slurm_free_node_select_msg(
+                node_info_select_request_msg_t *msg)
+{
+	xfree(msg);
+}
