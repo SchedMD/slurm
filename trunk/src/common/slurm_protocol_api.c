@@ -1004,8 +1004,8 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 			      != NULL) {
 				count += list_count(ret_type->ret_data_list);
 			}
+                        list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
 		debug3("Got back %d", count);
 		while((count < msg->forward_struct->fwd_cnt)) {
 			pthread_cond_wait(&msg->forward_struct->notify, 
@@ -1017,8 +1017,8 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 				      != NULL) {
 					count += list_count(ret_type->ret_data_list);
 				}
+                                list_iterator_destroy(itr);
 			}
-			list_iterator_destroy(itr);
 			debug3("Got back %d", count);
 				
 		}
