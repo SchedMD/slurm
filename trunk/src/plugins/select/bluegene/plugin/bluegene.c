@@ -1436,8 +1436,10 @@ extern void *mult_free_block(void *args)
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
 	free_cnt--;
-	if(bg_freeing_list)
+	if(bg_freeing_list) {
 		list_destroy(bg_freeing_list);
+		bg_freeing_list = NULL;
+	}
 	slurm_mutex_unlock(&freed_cnt_mutex);	
 	return NULL;
 }
@@ -1537,8 +1539,10 @@ extern void *mult_destroy_block(void *args)
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
 	destroy_cnt--;
-	if(bg_freeing_list)
+	if(bg_freeing_list) {
 		list_destroy(bg_freeing_list);
+		bg_freeing_list = NULL;
+	}
 	slurm_mutex_unlock(&freed_cnt_mutex);	
 	return NULL;
 }
@@ -1747,7 +1751,7 @@ extern int read_bg_conf(void)
 	list_destroy(bg_curr_block_list);
 	bg_curr_block_list = NULL;
 	list_destroy(bg_found_block_list);
-	bg_curr_block_list = NULL;
+	bg_found_block_list = NULL;
 	last_bg_update = time(NULL);
 	blocks_are_created = 1;
 	slurm_mutex_unlock(&block_state_mutex);
@@ -1909,7 +1913,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 static void _set_bg_lists()
 {
 	slurm_mutex_lock(&block_state_mutex);
-	if (bg_found_block_list) 
+	if (bg_found_block_list)
 		list_destroy(bg_found_block_list);
 	bg_found_block_list = list_create(NULL);
 	if (bg_booted_block_list) 
