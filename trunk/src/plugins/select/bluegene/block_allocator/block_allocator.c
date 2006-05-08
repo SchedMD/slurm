@@ -182,7 +182,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		{NULL}
 	};
 	s_p_hashtbl_t *tbl;
-	char *tmp=NULL;
+	char *tmp = NULL;
 	blockreq_t *n = NULL;
 
 	tbl = s_p_hashtbl_create(block_options);
@@ -198,6 +198,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		n->conn_type = SELECT_MESH;
 	else
 		n->conn_type = SELECT_SMALL;
+	xfree(tmp);
 	
 	if (!s_p_get_uint16(&n->nodecards, "Nodecards", tbl))
 		n->nodecards = 0;
