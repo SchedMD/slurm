@@ -109,6 +109,7 @@ static void      _msg_engine();
 static int       _slurmd_init();
 static int       _slurmd_fini();
 static void      _init_conf();
+static void      _destroy_conf();
 static void      _print_conf();
 static void      _read_config();
 static void 	 _kill_old_slurmd();
@@ -232,8 +233,8 @@ main (int argc, char *argv[])
 	interconnect_node_fini();
 
 	_slurmd_fini();
-
-	return 0;
+	_destroy_conf();
+       	return 0;
 }
 
 
@@ -520,8 +521,8 @@ _massage_logfile(void)
 static void
 _read_config()
 {
-        char *path_pubkey;
-	slurm_ctl_conf_t *cf;
+        char *path_pubkey = NULL;
+	slurm_ctl_conf_t *cf = NULL;
 
 	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
@@ -567,6 +568,7 @@ _read_config()
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
+	
 	conf->job_acct_freq = cf->job_acct_freq;
 
 	if ( (conf->node_name == NULL) ||
@@ -667,6 +669,29 @@ _init_conf()
 	conf->use_pam	  =  0;
 
 	slurm_mutex_init(&conf->config_mutex);
+	return;
+}
+
+static void
+_destroy_conf()
+{
+	if(conf) {
+		xfree(conf->hostname);
+		xfree(conf->node_name);
+		xfree(conf->conffile);
+		xfree(conf->prolog);
+		xfree(conf->epilog);
+		xfree(conf->logfile);
+		xfree(conf->pubkey);
+		xfree(conf->task_prolog);
+		xfree(conf->task_epilog);
+		xfree(conf->pidfile);
+		xfree(conf->spooldir);
+		xfree(conf->tmpfs);
+		slurm_mutex_destroy(&conf->config_mutex);
+		slurm_cred_ctx_destroy(conf->vctx);
+		xfree(conf);
+	}
 	return;
 }
 
@@ -864,6 +889,8 @@ _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
 	slurmd_task_fini(); 
+	slurm_conf_destroy();
+	
 	return SLURM_SUCCESS;
 }
 

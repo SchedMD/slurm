@@ -83,6 +83,7 @@ typedef struct {
 
 static int  _abort_job(uint32_t job_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
+static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
@@ -555,6 +556,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 			if ((hset = hostset_create(arg.hostlist)))
 				*step_hset = hset;
 			xfree(arg.hostlist);
+			xfree(arg.ntask);
 		}
 		return SLURM_SUCCESS;
 	}
@@ -2212,6 +2214,21 @@ _build_env(uint32_t jobid, uid_t uid, char *bg_part_id)
 	return env;
 }
 
+static void
+_destroy_env(char **env)
+{
+	int i=0;
+
+	if(env) {
+		for(i=0; env[i]; i++) {
+			xfree(env[i]);
+		}
+		xfree(env);
+	}
+	
+	return;
+}
+
 static int 
 _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id)
 {
@@ -2226,7 +2243,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id)
 	error_code = run_script("prolog", my_prolog, jobid, uid, 
 			-1, my_env);
 	xfree(my_prolog);
-	xfree(my_env);
+	_destroy_env(my_env);
 
 	return error_code;
 }
@@ -2245,7 +2262,7 @@ _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id)
 	error_code = run_script("epilog", my_epilog, jobid, uid, 
 			-1, my_env);
 	xfree(my_epilog);
-	xfree(my_env);
+	_destroy_env(my_env);
 
 	return error_code;
 }
