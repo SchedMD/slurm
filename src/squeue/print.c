@@ -469,13 +469,15 @@ long job_time_used(job_info_t * job_ptr)
 {
 	time_t end_time;
 
-	if (job_ptr->start_time == 0)
+	if ((job_ptr->start_time == 0)
+	||   (job_ptr->job_state == JOB_PENDING))
 		return 0L;
 
 	if (job_ptr->job_state == JOB_SUSPENDED)
 		return (long) job_ptr->pre_sus_time;
 
-	if (job_ptr->job_state == JOB_RUNNING)
+	if ((job_ptr->job_state == JOB_RUNNING)
+	||  (job_ptr->end_time == 0))
 		end_time = time(NULL);
 	else
 		end_time = job_ptr->end_time;
