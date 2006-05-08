@@ -684,12 +684,15 @@ plugrack_use_by_type( plugrack_t rack,
         ListIterator it;
         plugrack_entry_t *e;
   
-        if ( ! rack ) return PLUGIN_INVALID_HANDLE;
-        if ( ! full_type ) return PLUGIN_INVALID_HANDLE;
+        if ( ! rack )
+		return PLUGIN_INVALID_HANDLE;
+        if ( ! full_type )
+		return PLUGIN_INVALID_HANDLE;
 
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
-		if ( strcmp( full_type, e->full_type ) != 0 ) continue;
+		if ( strcmp( full_type, e->full_type ) != 0 )
+			continue;
 		
                 /* See if plugin is loaded. */
                 if ( e->plug == PLUGIN_INVALID_HANDLE ) 

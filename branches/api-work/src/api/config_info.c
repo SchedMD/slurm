@@ -89,7 +89,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->inactive_limit);
 	fprintf(out, "JobAcctLogFile    = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_logfile);
-	fprintf(out, "JobAcctFrequency = %d\n",
+	fprintf(out, "JobAcctFrequency  = %d\n",
 		slurm_ctl_conf_ptr->job_acct_freq);
 	fprintf(out, "JobAcctType       = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_type);
@@ -115,6 +115,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->proctrack_type);
 	fprintf(out, "Prolog            = %s\n", 
 		slurm_ctl_conf_ptr->prolog);
+	fprintf(out, "PropagatePrioProcess = %u\n",
+		slurm_ctl_conf_ptr->propagate_prio_process);
         fprintf(out, "PropagateResourceLimits = %s\n",
                 slurm_ctl_conf_ptr->propagate_rlimits);
         fprintf(out, "PropagateResourceLimitsExcept = %s\n", 
@@ -158,8 +160,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout     = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
-	fprintf(out, "TreeWidth         = %u\n", 
-		slurm_ctl_conf_ptr->tree_width);
 	fprintf(out, "SLURM_CONFIG_FILE = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION     = %s\n", SLURM_VERSION);
@@ -179,6 +179,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->task_prolog);
 	fprintf(out, "TmpFS             = %s\n", 
 		slurm_ctl_conf_ptr->tmp_fs);
+	fprintf(out, "TreeWidth         = %u\n",
+		slurm_ctl_conf_ptr->tree_width);
 	fprintf(out, "WaitTime          = %u\n", 
 		slurm_ctl_conf_ptr->wait_time);
 }

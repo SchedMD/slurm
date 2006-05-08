@@ -452,9 +452,10 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
 
 	if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
-		read(fd, cred->signature, cred->siglen);
+		if (read(fd, cred->signature, cred->siglen) == -1)
+			error("reading fake signature from /dev/urandom: %m");
 		if (close(fd) < 0)
-		error ("close(/dev/urandom): %m");
+			error("close(/dev/urandom): %m");
 	} else {	/* Note: some systems lack this file */
 		unsigned int i;
 		struct timeval tv;
@@ -544,13 +545,9 @@ slurm_cred_destroy(slurm_cred_t cred)
 	xassert(cred->magic == CRED_MAGIC);
 
 	slurm_mutex_lock(&cred->mutex);
-	if (cred->nodes)
-		xfree(cred->nodes);
-        if (cred->ntask)
-                xfree(cred->ntask);
-        cred->ntask = NULL;
-	if (cred->signature)
-		xfree(cred->signature);
+	xfree(cred->nodes);
+	xfree(cred->ntask);
+	xfree(cred->signature);
 	xassert(cred->magic = ~CRED_MAGIC);
 
 	slurm_mutex_unlock(&cred->mutex);

@@ -61,7 +61,7 @@
 slurm_ctl_conf_t slurmctld_conf;
 
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
-static s_p_hashtbl_t *conf_hashtbl;
+static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
 
@@ -142,8 +142,10 @@ s_p_options_t slurm_conf_options[] = {
 	{"MpichGmDirectSupport", S_P_LONG},
 	{"MpiDefault", S_P_STRING},
 	{"PluginDir", S_P_STRING},
+	{"PlugStackConfig", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
+	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
 	{"ReturnToService", S_P_UINT16},
@@ -173,6 +175,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskPlugin", S_P_STRING},
 	{"TmpFS", S_P_STRING},
 	{"TreeWidth", S_P_UINT16},
+	{"UsePAM", S_P_BOOLEAN},
 	{"WaitTime", S_P_UINT16},
 
 	{"NodeName", S_P_ARRAY, parse_nodename, destroy_nodename},
@@ -307,11 +310,13 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (s_p_get_string(&tmp, "NodeHostname", tbl)) {
 			error("NodeHostname not allowed with NodeName=DEFAULT");
 			xfree(tmp);
+			s_p_hashtbl_destroy(tbl);
 			return -1;
 		}
 		if (s_p_get_string(&tmp, "NodeAddr", tbl)) {
 			error("NodeAddr not allowed with NodeName=DEFAULT");
 			xfree(tmp);
+			s_p_hashtbl_destroy(tbl);
 			return -1;
 		}
 
@@ -474,9 +479,12 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
 				destroy_partitionname(p);
+				s_p_hashtbl_destroy(tbl);
+				xfree(tmp);
 				return -1;
 			}
 		}
+		xfree(tmp);
 
 		if (!s_p_get_boolean(&p->state_up_flag, "State", tbl)
 		    && !s_p_get_boolean(&p->state_up_flag, "State", dflt))
@@ -746,7 +754,9 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
-	_init_slurm_conf(NULL);
+	if(!conf_initialized) 
+		_init_slurm_conf(NULL);
+
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0) {
 		return;
@@ -926,6 +936,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
@@ -987,8 +998,10 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
+	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
@@ -1021,6 +1034,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->node_prefix);
 	ctl_conf_ptr->tree_width       		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->use_pam			= 0;
 	
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -1040,7 +1054,9 @@ _init_slurm_conf(char *file_name)
 		if (file_name == NULL)
 			file_name = default_slurm_config_file;
 	}
-
+       	if(conf_initialized) {
+		error("the conf_hashtbl is already inited");	
+	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
 	if(s_p_parse_file(conf_hashtbl, file_name) == SLURM_ERROR)
@@ -1064,6 +1080,8 @@ _destroy_slurm_conf()
 		default_partition_tbl = NULL;
 	}
 	free_slurm_conf(conf_ptr);
+	conf_initialized = false;
+	
 	/* xfree(conf_ptr); */
 }
 
@@ -1142,7 +1160,6 @@ slurm_conf_destroy(void)
 
 	_destroy_slurm_conf();
 
-	conf_initialized = false;
 	pthread_mutex_unlock(&conf_lock);
 
 	return SLURM_SUCCESS;
@@ -1190,6 +1207,8 @@ static void _normalize_debug_level(uint16_t *level)
 static void
 validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
+	bool truth;
+
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
 			   hashtbl)
 	    && strcasecmp("localhost", conf->backup_controller) == 0) {
@@ -1303,6 +1322,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);
 
+	if (!s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl))
+		conf->plugstack = xstrdup(default_plugstack);
+
 	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
 		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
@@ -1318,6 +1340,14 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
+
+	if (!s_p_get_uint16(&conf->propagate_prio_process,
+			"PropagatePrioProcess", hashtbl)) {
+		conf->propagate_prio_process = DEFAULT_PROPAGATE_PRIO_PROCESS;
+	} else if (conf->propagate_prio_process > 1) {
+		fatal("Bad PropagatePrioProcess: %u",
+			conf->propagate_prio_process);
+	}
 
         if (s_p_get_string(&conf->propagate_rlimits_except,
 			   "PropagateResourceLimitsExcept", hashtbl)) {
@@ -1441,6 +1471,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	} else {
 		conf->tree_width = DEFAULT_TREE_WIDTH;
+	}
+
+	if (s_p_get_boolean(&truth, "UsePAM", hashtbl) && truth) {
+		conf->use_pam = 1;
+	} else {
+		conf->use_pam = 0;
 	}
 }
 

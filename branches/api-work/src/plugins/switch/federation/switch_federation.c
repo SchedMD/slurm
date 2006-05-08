@@ -30,16 +30,18 @@
 #  include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <stdlib.h>
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/switch/federation/federation.h"
 
-#define BUF_SIZE 1024
+#define FED_BUF_SIZE 4096
 
 bool fed_need_state_save = false;
 
@@ -150,7 +152,6 @@ int switch_p_slurmd_step_init( void )
  */
 int switch_p_libstate_save ( char * dir_name )
 {
-	int err;
 	Buf buffer;
 	char *file_name;
 	int ret = SLURM_SUCCESS;
@@ -218,11 +219,11 @@ int switch_p_libstate_restore ( char * dir_name, bool recover )
 	xstrcat(file_name, "/fed_state");
 	state_fd = open (file_name, O_RDONLY);
 	if (state_fd >= 0) {
-		data_allocated = BUF_SIZE;
+		data_allocated = FED_BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read (state_fd, &data[data_size],
- 					BUF_SIZE);
+					  FED_BUF_SIZE);
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {
@@ -395,7 +396,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			   || strstr(network, "SN_SINGLE")) {
 			debug3("Found sn_single in network string");
 			sn_all = false;
-		} else if (adapter_name = adapter_name_check(network)) {
+		} else if ((adapter_name = adapter_name_check(network))) {
 			debug3("Found adapter %s in network string",
 			       adapter_name);
 			sn_all = false;
@@ -632,4 +633,6 @@ static void _spawn_state_save_thread(char *dir)
 
 	if (pthread_create(&id, &attr, &_state_save_thread, (void *)dir) != 0)
 		error("Could not start federation state saving pthread");
+
+	slurm_attr_destroy(&attr);
 }

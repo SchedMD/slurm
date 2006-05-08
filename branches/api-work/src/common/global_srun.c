@@ -178,6 +178,7 @@ static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job)
 			error ("pthread_create failed");
 			_p_signal_task((void *) tinfo);
 		}
+		slurm_attr_destroy(&thd[i].attr);
 	}
 
 
@@ -196,7 +197,7 @@ static void * _p_signal_task(void *args)
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
-	char        *host = NULL;
+	char        *host = job->step_layout->host[info->host_inx];
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
@@ -213,17 +214,14 @@ static void * _p_signal_task(void *args)
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		rc = ret_type->msg_rc;
-		if(!ret_type->ret_data_list)
-			host = job->step_layout->host[info->host_inx];
-		else 
-			host = NULL;
+		
 		/*
 		 *  Report error unless it is "Invalid job id" which 
 		 *    probably just means the tasks exited in the meanwhile.
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
 		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			if(!host) {
+			if(ret_type->ret_data_list) {
 				while((ret_data_info 
 				      = list_pop(ret_type->ret_data_list))) {
 					error("%s: signal: %s", 

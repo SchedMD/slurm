@@ -81,7 +81,7 @@ expect {
 set timeout $max_job_delay
 spawn $srun -N1 -t1 --unbuffered $file_prog
 set srun_pid [exp_pid]
-exec $bin_sleep 1
+exec $bin_sleep 5
 exec $bin_kill -USR1 $srun_pid
 #exec $bin_pkill -USR1 -n -u $uid srun
 exec $bin_kill -USR2 $srun_pid

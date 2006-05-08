@@ -505,8 +505,15 @@ again:
 	if ((n = write(obj->fd, buf, in->remaining)) < 0) {
 		if (errno == EINTR)
 			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
+		else if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return SLURM_SUCCESS;
+		else {
+			close(obj->fd);
+			obj->fd = -1;
+			_free_incoming_msg(in->msg, in->job);
+			in->msg = NULL;
+			return SLURM_ERROR;
+		}
 	}
 	in->remaining -= n;
 	if (in->remaining > 0)
@@ -627,6 +634,11 @@ again:
  * General fuctions
  **********************************************************************/
 
+/*
+ * This function sets the close-on-exec flag on all opened file descriptors.
+ * io_dup_stdio will will remove the close-on-exec flags for just one task's
+ * file descriptors.
+ */
 static int
 _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 {
@@ -640,6 +652,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdin file: %m");
 			return SLURM_ERROR;
 		}
+		fd_set_close_on_exec(task->stdin_fd);
 		task->to_stdin = -1;  /* not used */
 	} else {
 		/* create pipe and eio object */
@@ -650,6 +663,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		task->stdin_fd = pin[0];
+		fd_set_close_on_exec(task->stdin_fd);
 		task->to_stdin = pin[1];
 		fd_set_close_on_exec(task->to_stdin);
 		fd_set_nonblocking(task->to_stdin);
@@ -669,6 +683,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdout file: %m");
 			return SLURM_ERROR;
 		}
+		fd_set_close_on_exec(task->stdout_fd);
 		task->from_stdout = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
@@ -679,6 +694,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		task->stdout_fd = pout[1];
+		fd_set_close_on_exec(task->stdout_fd);
 		task->from_stdout = pout[0];
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
@@ -700,6 +716,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stderr file: %m");
 			return SLURM_ERROR;
 		}
+		fd_set_close_on_exec(task->stderr_fd);
 		task->from_stderr = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
@@ -710,6 +727,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 		task->stderr_fd = perr[1];
+		fd_set_close_on_exec(task->stderr_fd);
 		task->from_stderr = perr[0];
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
@@ -743,6 +761,8 @@ io_thread_start(slurmd_job_t *job)
 
 	if (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job) != 0)
 		fatal("pthread_create: %m");
+	
+	slurm_attr_destroy(&attr);
 	
 	/*fatal_add_cleanup(&_fatal_cleanup, (void *) job);*/
 
@@ -880,6 +900,7 @@ io_close_task_fds(slurmd_job_t *job)
 void 
 io_close_all(slurmd_job_t *job)
 {
+	int devnull;
 #if 0
 	int i;
 	for (i = 0; i < job->ntasks; i++)
@@ -889,7 +910,17 @@ io_close_all(slurmd_job_t *job)
 	/* No more debug info will be received by client after this point
 	 */
 	debug("Closing debug channel");
-	close(STDERR_FILENO);
+
+	/*
+	 * Send stderr to /dev/null since debug channel is closing
+	 *  and log facility may still try to write to stderr.
+	 */
+	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+		error("Unable to open /dev/null: %m");
+	} else {
+		if (dup2(devnull, STDERR_FILENO) < 0)
+			error("Unable to dup /dev/null onto stderr\n");
+	}
 
 	/* Signal IO thread to close appropriate 
 	 * client connections
@@ -1066,21 +1097,20 @@ io_dup_stdio(slurmd_task_info_t *t)
 		error("dup2(stdin): %m");
 		return SLURM_FAILURE;
 	}
+	fd_set_noclose_on_exec(STDIN_FILENO);
 
 	if (dup2(t->stdout_fd, STDOUT_FILENO) < 0) {
 		error("dup2(stdout): %m");
 		return SLURM_FAILURE;
 	}
+	fd_set_noclose_on_exec(STDOUT_FILENO);
 
 	if (dup2(t->stderr_fd, STDERR_FILENO) < 0) {
 		error("dup2(stderr): %m");
 		return SLURM_FAILURE;
 	}
+	fd_set_noclose_on_exec(STDERR_FILENO);
 
-	/* ignore errors on close */
-	close(t->to_stdin );
-	close(t->from_stdout);
-	close(t->from_stderr);
 	return SLURM_SUCCESS;
 }
 
@@ -1151,6 +1181,8 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	if (job->buffered_stdio) {
 		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
 		if (avail >= MAX_MSG_LEN)
+			must_truncate = true;
+		else if (avail == 0 && cbuf_used(cbuf) >= MAX_MSG_LEN)
 			must_truncate = true;
 	}
 

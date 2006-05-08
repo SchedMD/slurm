@@ -72,6 +72,8 @@ typedef struct slurm_jobacct_ops {
 				       void *data);
 	void (*jobacct_aggregate)     (jobacctinfo_t *dest, 
 				       jobacctinfo_t *from);
+	void (*jobacct_2_sacct)       (sacct_t *sacct, 
+				       jobacctinfo_t *jobacct);
 	void (*jobacct_pack)          (jobacctinfo_t *jobacct, Buf buffer);
 	int (*jobacct_unpack)         (jobacctinfo_t **jobacct, Buf buffer);
 	int (*jobacct_init)	      (char *job_acct_log);
@@ -85,7 +87,7 @@ typedef struct slurm_jobacct_ops {
 	int (*jobacct_endpoll)	      ();
 	int (*jobacct_add_task)       (pid_t pid, uint16_t tid);
 	jobacctinfo_t *(*jobacct_stat_task)(pid_t pid);
-	int (*jobacct_remove_task)    (pid_t pid);
+	jobacctinfo_t *(*jobacct_remove_task)(pid_t pid);
 	void (*jobacct_suspendpoll)   ();
 } slurm_jobacct_ops_t;
 
@@ -94,24 +96,24 @@ typedef struct slurm_jobacct_ops {
  * only one, with static bindings.  We don't export it.
  */
 
-struct slurm_jobacct_context {
-	char *			jobacct_type;
+typedef struct slurm_jobacct_context {
+	char 			*jobacct_type;
 	plugrack_t		plugin_list;
 	plugin_handle_t		cur_plugin;
 	int			jobacct_errno;
 	slurm_jobacct_ops_t	ops;
-};
+} slurm_jobacct_context_t;
 
-static slurm_jobacct_context_t g_jobacct_context = NULL;
+static slurm_jobacct_context_t *g_jobacct_context = NULL;
 static pthread_mutex_t      g_jobacct_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int _slurm_jobacct_init(void);
 static int _slurm_jobacct_fini(void);
 
-static slurm_jobacct_context_t
+static slurm_jobacct_context_t *
 _slurm_jobacct_context_create( const char *jobacct_type)
 {
-	slurm_jobacct_context_t c;
+	slurm_jobacct_context_t *c;
 
 	if ( jobacct_type == NULL ) {
 		error( "_slurm_jobacct_context_create: no jobacct type" );
@@ -133,12 +135,13 @@ _slurm_jobacct_context_create( const char *jobacct_type)
 	/* Plugin rack is demand-loaded on first reference. */
 	c->plugin_list = NULL; 
 	c->cur_plugin = PLUGIN_INVALID_HANDLE; 
+	c->jobacct_errno	= SLURM_SUCCESS;
 
 	return c;
 }
 
 static int
-_slurm_jobacct_context_destroy( slurm_jobacct_context_t c )
+_slurm_jobacct_context_destroy( slurm_jobacct_context_t *c )
 {
 	/*
 	 * Must check return code here because plugins might still
@@ -160,7 +163,7 @@ _slurm_jobacct_context_destroy( slurm_jobacct_context_t c )
  * Resolve the operations from the plugin.
  */
 static slurm_jobacct_ops_t *
-_slurm_jobacct_get_ops( slurm_jobacct_context_t c )
+_slurm_jobacct_get_ops( slurm_jobacct_context_t *c )
 {
 	/*
 	 * These strings must be in the same order as the fields declared
@@ -173,6 +176,7 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
 		"jobacct_p_setinfo",
 		"jobacct_p_getinfo",
 		"jobacct_p_aggregate",
+		"jobacct_p_2_sacct",
 		"jobacct_p_pack",
 		"jobacct_p_unpack",	
 		"jobacct_p_init_slurmctld",
@@ -219,9 +223,9 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t c )
 
         /* Dereference the API. */
         if ( (rc = plugin_get_syms( c->cur_plugin,
-                              n_syms,
-                              syms,
-                              (void **) &c->ops )) < n_syms ) {
+				    n_syms,
+				    syms,
+				    (void **) &c->ops )) < n_syms ) {
                 error( "incomplete jobacct plugin detected only "
 		       "got %d out of %d",
 		       rc, n_syms);
@@ -298,7 +302,8 @@ extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid)
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))(tid);	
+		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))(tid);
+	
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return jobacct;
 }
@@ -355,6 +360,18 @@ extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
 		(*(g_jobacct_context->ops.jobacct_aggregate))(dest, from);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return;
+}
+
+extern void jobacct_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct)
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_2_sacct))(sacct, jobacct);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return;
 }
@@ -544,17 +561,17 @@ extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid)
 	return jobacct;
 }
 
-extern int jobacct_g_remove_task(pid_t pid)
+extern jobacctinfo_t *jobacct_g_remove_task(pid_t pid)
 {
-	int retval = SLURM_SUCCESS;
+	jobacctinfo_t *jobacct = NULL;
 	if (_slurm_jobacct_init() < 0)
-		return SLURM_ERROR;
+		return jobacct;
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		retval = (*(g_jobacct_context->ops.jobacct_remove_task))(pid);
+		jobacct = (*(g_jobacct_context->ops.jobacct_remove_task))(pid);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
-	return retval;
+	return jobacct;
 }
 
 extern void jobacct_g_suspendpoll()

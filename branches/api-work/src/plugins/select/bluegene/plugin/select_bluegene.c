@@ -124,9 +124,11 @@ static int _init_status_pthread(void)
 
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
+	if (pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL)
+	    != 0)
+		error("Failed to create bluegene_agent thread");
 	pthread_mutex_unlock( &thread_flag_mutex );
-	pthread_attr_destroy( &attr );
+	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
 }
@@ -472,9 +474,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
 		
 		/* this means it is greater or equal to one bp */
-		if(tmp > 0) 
+		if(tmp > 0) {
 			job_desc->min_nodes = tmp;
-		else { 
+			job_desc->num_procs = procs_per_node * tmp;
+		} else { 
 			/* this means it is either a quarter or smaller */
 			tmp = job_desc->min_nodes % bluegene_nodecard_node_cnt;
 			if(tmp > 0)

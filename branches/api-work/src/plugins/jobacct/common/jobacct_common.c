@@ -220,6 +220,9 @@ rwfail:
 extern void common_aggregate(struct jobacctinfo *dest, 
 			     struct jobacctinfo *from)
 {
+	xassert(dest);
+	xassert(from);
+
 	slurm_mutex_lock(&jobacct_lock);
 	if(dest->max_vsize < from->max_vsize) {
 		dest->max_vsize = from->max_vsize;
@@ -238,7 +241,6 @@ extern void common_aggregate(struct jobacctinfo *dest,
 		dest->max_pages_task = from->max_pages_task;
 	}
 	dest->tot_pages += from->tot_pages;
-	
 	if((dest->min_cpu > from->min_cpu) 
 	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
 		if(from->min_cpu == (uint32_t)NO_VAL)
@@ -291,8 +293,37 @@ extern void common_aggregate(struct jobacctinfo *dest,
 	slurm_mutex_unlock(&jobacct_lock);	
 }
 
+extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
+{
+	xassert(jobacct);
+	xassert(sacct);
+	slurm_mutex_lock(&jobacct_lock);
+	sacct->max_vsize = jobacct->max_vsize;
+	sacct->max_vsize_task = jobacct->max_vsize_task;
+	sacct->ave_vsize = jobacct->tot_vsize;
+	sacct->max_rss = jobacct->max_rss;
+	sacct->max_rss_task = jobacct->max_rss_task;
+	sacct->ave_rss = jobacct->tot_rss;
+	sacct->max_pages = jobacct->max_pages;
+	sacct->max_pages_task = jobacct->max_pages_task;
+	sacct->ave_pages = jobacct->tot_pages;
+	sacct->min_cpu = jobacct->min_cpu;
+	sacct->min_cpu_task = jobacct->min_cpu_task;
+	sacct->ave_cpu = jobacct->tot_cpu;
+	slurm_mutex_unlock(&jobacct_lock);
+}
+
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer)
 {
+	int i=0;
+
+	if(!jobacct) {
+		for(i=0; i<26; i++)
+			pack32((uint32_t) 0, buffer);
+		for(i=0; i<4; i++)
+			pack16((uint16_t) 0, buffer);
+		return;
+	} 
 	slurm_mutex_lock(&jobacct_lock);
 	pack32((uint32_t)jobacct->rusage.ru_utime.tv_sec, buffer);
 	pack32((uint32_t)jobacct->rusage.ru_utime.tv_usec, buffer);
@@ -313,17 +344,17 @@ extern void common_pack(struct jobacctinfo *jobacct, Buf buffer)
 	pack32((uint32_t)jobacct->rusage.ru_nvcsw, buffer);
 	pack32((uint32_t)jobacct->rusage.ru_nivcsw, buffer);
 	pack32((uint32_t)jobacct->max_vsize, buffer);
-	pack16((uint16_t)jobacct->max_vsize_task, buffer);
 	pack32((uint32_t)jobacct->tot_vsize, buffer);
 	pack32((uint32_t)jobacct->max_rss, buffer);
-	pack16((uint16_t)jobacct->max_rss_task, buffer);
 	pack32((uint32_t)jobacct->tot_rss, buffer);
 	pack32((uint32_t)jobacct->max_pages, buffer);
-	pack16((uint16_t)jobacct->max_pages_task, buffer);
 	pack32((uint32_t)jobacct->tot_pages, buffer);
 	pack32((uint32_t)jobacct->min_cpu, buffer);
-	pack16((uint16_t)jobacct->min_cpu_task, buffer);
 	pack32((uint32_t)jobacct->tot_cpu, buffer);
+	pack16((uint16_t)jobacct->max_vsize_task, buffer);
+	pack16((uint16_t)jobacct->max_rss_task, buffer);
+	pack16((uint16_t)jobacct->max_pages_task, buffer);
+	pack16((uint16_t)jobacct->min_cpu_task, buffer);
 	slurm_mutex_unlock(&jobacct_lock);
 }
 
@@ -369,17 +400,17 @@ extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer)
 	safe_unpack32(&uint32_tmp, buffer);
 	(*jobacct)->rusage.ru_nivcsw = uint32_tmp;
 	safe_unpack32(&(*jobacct)->max_vsize, buffer);
-	safe_unpack16(&(*jobacct)->max_vsize_task, buffer);
 	safe_unpack32(&(*jobacct)->tot_vsize, buffer);
 	safe_unpack32(&(*jobacct)->max_rss, buffer);
-	safe_unpack16(&(*jobacct)->max_rss_task, buffer);
 	safe_unpack32(&(*jobacct)->tot_rss, buffer);
 	safe_unpack32(&(*jobacct)->max_pages, buffer);
-	safe_unpack16(&(*jobacct)->max_pages_task, buffer);
 	safe_unpack32(&(*jobacct)->tot_pages, buffer);
 	safe_unpack32(&(*jobacct)->min_cpu, buffer);
-	safe_unpack16(&(*jobacct)->min_cpu_task, buffer);
 	safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+	safe_unpack16(&(*jobacct)->max_vsize_task, buffer);
+	safe_unpack16(&(*jobacct)->max_rss_task, buffer);
+	safe_unpack16(&(*jobacct)->max_pages_task, buffer);
+	safe_unpack16(&(*jobacct)->min_cpu_task, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

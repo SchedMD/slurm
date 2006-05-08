@@ -66,6 +66,9 @@ enum {
 #define FED_MAXADAPTERS 2
 #define FED_LIBSTATE_LEN (1024 * 1024 * 1)
 
+int fed_slurmctld_init(void);
+int fed_slurmd_init(void);
+int fed_slurmd_step_init(void);
 int fed_alloc_nodeinfo(fed_nodeinfo_t **nh);
 int fed_build_nodeinfo(fed_nodeinfo_t *np, char *hostname);
 char *fed_print_nodeinfo(fed_nodeinfo_t *np, char *buf, size_t size);
@@ -90,5 +93,8 @@ int fed_libstate_restore(Buf buffer);
 int fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl);
 int fed_job_step_allocated(fed_jobinfo_t *jp, hostlist_t hl);
 int fed_libstate_clear(void);
+int fed_slurmctld_init(void);
+int fed_slurmd_init(void);
+int fed_slurmd_step_init(void);
 
 #endif /* _FEDERATION_INCLUDED */

@@ -81,6 +81,7 @@ function displayfile()
    "#FirstJobId= <br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
    "#MaxJobCount= <br>" +
+   "#PropagatePrioProcess= <br>" +
    "#PropagateResourceLimits= <br>" +
    "#PropagateResourceLimitsExcept= <br>" +
    "#Prolog= <br>" +
@@ -369,7 +370,8 @@ pathnames for the files.
 <P>
 <input type="text" name="slurmd_debug" value="3"> <B>SlurmdDebug</B> (0 to 7)
 <P>
-<input type="text" name="slurmd_logfile" value=""> <B>SlurmdLogFile</B> (default is none, log goes to syslog)
+<input type="text" name="slurmd_logfile" value=""> <B>SlurmdLogFile</B> (default is none, 
+log goes to syslog, string "%h" in name gets replaced with hostname)
 <P>
 
 <H2>Job Completion Logging</H2>
@@ -399,8 +401,8 @@ Linux proc table information gathered, use with Linux systems only<BR>
 polling interval in seconds.<BR>
 <input type="text" name="job_acct_logfile" value=""> <B>JobAcctLogFile</B>:
 Location specification.
-This is the location of the text file to be written to (used by Log only).Use a fully 
-qualified pathname.
+This is the location of the text file to be written to (used by Log only).
+Use a fully qualified pathname.
 <P>
 
 <H2>Process ID Logging</H2>
@@ -456,6 +458,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-217616<br>
-Last modified 11 April 2006</p>
+Last modified 23 April 2006</p>
 </BODY>
 

@@ -4,7 +4,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <da@llnl.gov>.
+ *  Written by Danny Auble <da@llnl.gov> 
+ *  and Christopher Morrone <morrone2@llnl.gov>.
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -85,11 +86,17 @@ main (int argc, char *argv[])
 
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
 			  &ngids, &gids);
-	close(STDIN_FILENO);
+
+	/* Fancy way of closing stdin that keeps STDIN_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDIN_FILENO);
 
 	job = _step_setup(cli, self, msg);
 	job->ngids = ngids;
 	job->gids = gids;
+
+	list_install_fork_handlers();
 
 	/* sets job->msg_handle and job->msgid */
 	if (msg_thr_create(job) == SLURM_ERROR) {
@@ -98,7 +105,11 @@ main (int argc, char *argv[])
 	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
-	close(STDOUT_FILENO);
+
+	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDOUT_FILENO);
 
 	rc = job_manager(job); /* blocks until step is complete */
 

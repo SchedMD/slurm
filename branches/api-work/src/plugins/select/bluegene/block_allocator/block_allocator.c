@@ -34,10 +34,6 @@
 #include <math.h>
 #include "block_allocator.h"
 
-#ifdef HAVE_BG_FILES
-# include "src/plugins/select/bluegene/wrap_rm_api.h"
-#endif
-
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
 
@@ -90,6 +86,7 @@ s_p_options_t bg_conf_file_options[] = {
 #ifdef HAVE_BG_FILES
 /** */
 static void _bp_map_list_del(void *object);
+static int _port_enum(int port);
 #endif
 /* */
 static int _check_for_options(ba_request_t* ba_request); 
@@ -185,7 +182,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		{NULL}
 	};
 	s_p_hashtbl_t *tbl;
-	char *tmp=NULL;
+	char *tmp = NULL;
 	blockreq_t *n = NULL;
 
 	tbl = s_p_hashtbl_create(block_options);
@@ -201,9 +198,12 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		n->conn_type = SELECT_MESH;
 	else
 		n->conn_type = SELECT_SMALL;
+	xfree(tmp);
 	
-	s_p_get_uint16(&n->nodecards, "Nodecards", tbl);
-	s_p_get_uint16(&n->quarters, "Quarters", tbl);
+	if (!s_p_get_uint16(&n->nodecards, "Nodecards", tbl))
+		n->nodecards = 0;
+	if (!s_p_get_uint16(&n->quarters, "Quarters", tbl))
+		n->quarters = 0;
 
 	s_p_hashtbl_destroy(tbl);
 
@@ -966,11 +966,10 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 {
        	ba_node_t* ba_node;
 	char *name = NULL;
-	ListIterator itr;		
 
-	itr = list_iterator_create(nodes);
-	ba_node = list_next(itr);
-	list_iterator_destroy(itr);
+	ba_node = list_peek(nodes);
+	if(!ba_node)
+		return SLURM_ERROR;
 
 	remove_block(nodes, new_count);
 	list_destroy(nodes);
@@ -1212,7 +1211,7 @@ extern int *find_bp_loc(char* bp_id)
 	}
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)) != NULL)
-		if (!strcmp(bp_map->bp_id, bp_id)) 
+		if (!strcasecmp(bp_map->bp_id, bp_id)) 
 			break;	/* we found it */
 	
 	list_iterator_destroy(itr);
@@ -1264,6 +1263,222 @@ extern char *find_bp_rack_mid(char* xyz)
 #endif
 }
 
+extern int load_block_wiring(char *bg_block_id)
+{
+#ifdef HAVE_BG_FILES
+	int rc, i, j;
+	rm_partition_t *block_ptr = NULL;
+	int cnt = 0;
+	int switch_cnt = 0;
+	rm_switch_t *curr_switch = NULL;
+	rm_BP_t *curr_bp = NULL;
+	char *switchid = NULL;
+	rm_connection_t curr_conn;
+	int dim;
+	ba_switch_t *ba_switch = NULL; 
+	int *geo = NULL;
+	
+	debug2("getting info for block %s\n", bg_block_id);
+	
+	slurm_mutex_lock(&api_file_mutex);
+	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
+		error("rm_get_partition(%s): %s", 
+		      bg_block_id, 
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	}	
+	slurm_mutex_unlock(&api_file_mutex);
+	
+	if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
+			      &switch_cnt)) != STATUS_OK) {
+		error("rm_get_data(RM_PartitionSwitchNum): %s",
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	} 
+	if(!switch_cnt) {
+		debug3("no switch_cnt");
+		if ((rc = rm_get_data(block_ptr, 
+				      RM_PartitionFirstBP, 
+				      &curr_bp)) 
+			    != STATUS_OK) {
+				error("rm_get_data: "
+				      "RM_PartitionFirstBP: %s",
+				      bg_err_str(rc));
+				return SLURM_ERROR;
+			}
+		if ((rc = rm_get_data(curr_bp, RM_BPID, &switchid))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchBPID: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		} 
+
+		geo = find_bp_loc(switchid);	
+		if(!geo) {
+			error("find_bp_loc: bpid %s not known", switchid);
+			return SLURM_ERROR;
+		}
+		ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].used = true;
+		return SLURM_SUCCESS;
+	}
+	for (i=0; i<switch_cnt; i++) {
+		if(i) {
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionNextSwitch, 
+					      &curr_switch)) 
+			    != STATUS_OK) {
+				error("rm_get_data: "
+				      "RM_PartitionNextSwitch: %s",
+				      bg_err_str(rc));
+				return SLURM_ERROR;
+			}
+		} else {
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionFirstSwitch, 
+					      &curr_switch)) 
+			    != STATUS_OK) {
+				error("rm_get_data: "
+				      "RM_PartitionFirstSwitch: %s",
+				      bg_err_str(rc));
+				return SLURM_ERROR;
+			}
+		}
+		if ((rc = rm_get_data(curr_switch, RM_SwitchDim, &dim))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchDim: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		} 
+		if ((rc = rm_get_data(curr_switch, RM_SwitchBPID, &switchid))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchBPID: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		} 
+
+		geo = find_bp_loc(switchid);
+		if(!geo) {
+			error("find_bp_loc: bpid %s not known", switchid);
+			return SLURM_ERROR;
+		}
+		
+		if ((rc = rm_get_data(curr_switch, RM_SwitchConnNum, &cnt))
+		    != STATUS_OK) { 
+			error("rm_get_data: RM_SwitchBPID: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		}
+		debug2("switch id = %s dim %d conns = %d", 
+		       switchid, dim, cnt);
+		ba_switch = &ba_system_ptr->
+			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
+		for (j=0; j<cnt; j++) {
+			if(j) {
+				if ((rc = rm_get_data(curr_switch, 
+						      RM_SwitchNextConnection, 
+						      &curr_conn)) 
+				    != STATUS_OK) {
+					error("rm_get_data: "
+					      "RM_SwitchNextConnection: %s",
+					       bg_err_str(rc));
+					return SLURM_ERROR;
+				}
+			} else {
+				if ((rc = rm_get_data(curr_switch, 
+						      RM_SwitchFirstConnection,
+						      &curr_conn)) 
+				    != STATUS_OK) {
+					error("rm_get_data: "
+					      "RM_SwitchFirstConnection: %s",
+					      bg_err_str(rc));
+					return SLURM_ERROR;
+				}
+			}
+			switch(curr_conn.p1) {
+			case RM_PORT_S1:
+				curr_conn.p1 = 1;
+				break;
+			case RM_PORT_S2:
+				curr_conn.p1 = 2;
+				break;
+			case RM_PORT_S4:
+				curr_conn.p1 = 4;
+				break;
+			default:
+				error("1 unknown port %d", 
+				      _port_enum(curr_conn.p1));
+				return SLURM_ERROR;
+			}
+			
+			switch(curr_conn.p2) {
+			case RM_PORT_S0:
+				curr_conn.p2 = 0;
+				break;
+			case RM_PORT_S3:
+				curr_conn.p2 = 3;
+				break;
+			case RM_PORT_S5:
+				curr_conn.p2 = 5;
+				break;
+			default:
+				error("2 unknown port %d", 
+				      _port_enum(curr_conn.p2));
+				return SLURM_ERROR;
+			}
+
+			if(curr_conn.p1 == 1 && dim == X) {
+				if(ba_system_ptr->
+				   grid[geo[X]][geo[Y]][geo[Z]].used) {
+					debug("I have already been to "
+					      "this node %d%d%d",
+					      geo[X], geo[Y], geo[Z]);
+			
+					return SLURM_ERROR;
+				}
+				ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].
+					used = true;		
+			}
+			debug2("connection going from %d -> %d",
+			      curr_conn.p1, curr_conn.p2);
+			
+			if(ba_switch->int_wire[curr_conn.p1].used) {
+				debug("%d%d%d dim %d port %d "
+				      "is already in use",
+				      geo[X],
+				      geo[Y],
+				      geo[Z],
+				      dim,
+				      curr_conn.p1);
+				return SLURM_ERROR;
+			}
+			ba_switch->int_wire[curr_conn.p1].used = 1;
+			ba_switch->int_wire[curr_conn.p1].port_tar 
+				= curr_conn.p2;
+		
+			if(ba_switch->int_wire[curr_conn.p2].used) {
+				debug("%d%d%d dim %d port %d "
+				      "is already in use",
+				      geo[X],
+				      geo[Y],
+				      geo[Z],
+				      dim,
+				      curr_conn.p2);
+				return SLURM_ERROR;
+			}
+			ba_switch->int_wire[curr_conn.p2].used = 1;
+			ba_switch->int_wire[curr_conn.p2].port_tar 
+				= curr_conn.p1;
+		}
+	}
+	return SLURM_SUCCESS;
+
+#else
+	return -1;
+#endif
+	
+}
+
 /********************* Local Functions *********************/
 
 #ifdef HAVE_BG
@@ -1278,6 +1493,33 @@ static void _bp_map_list_del(void *object)
 		xfree(bp_map);		
 	}
 }
+
+static int _port_enum(int port)
+{
+	switch(port) {
+	case RM_PORT_S0:
+		return 0;
+		break;
+	case RM_PORT_S1:
+		return 1;
+		break;
+	case RM_PORT_S2:
+		return 2;
+		break;
+	case RM_PORT_S3:
+		return 3;
+		break;
+	case RM_PORT_S4:
+		return 4;
+		break;
+	case RM_PORT_S5:
+		return 5;
+		break;
+	default:
+		return -1;
+	}
+}
+
 #endif
 
 static int _check_for_options(ba_request_t* ba_request) 
@@ -1783,30 +2025,41 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	return 1;
 }
 
-int _port_enum(int port)
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bg_err_str(status_t inx)
 {
-	switch(port) {
-	case 6:
-		return 0;
-		break;
-	case 7:
-		return 1;
-		break;
-	case 8:
-		return 2;
-		break;
-	case 9:
-		return 3;
-		break;
-	case 10:
-		return 4;
-		break;
-	case 11:
-		return 5;
-		break;
-	default:
-		return -1;
+#ifdef HAVE_BG_FILES
+	switch (inx) {
+	case STATUS_OK:
+		return "Status OK";
+	case PARTITION_NOT_FOUND:
+		return "Partition not found";
+	case JOB_NOT_FOUND:
+		return "Job not found";
+	case BP_NOT_FOUND:
+		return "Base partition not found";
+	case SWITCH_NOT_FOUND:
+		return "Switch not found";
+	case JOB_ALREADY_DEFINED:
+		return "Job already defined";
+	case CONNECTION_ERROR:
+		return "Connection error";
+	case INTERNAL_ERROR:
+		return "Internal error";
+	case INVALID_INPUT:
+		return "Invalid input";
+	case INCOMPATIBLE_STATE:
+		return "Incompatible state";
+	case INCONSISTENT_DATA:
+		return "Inconsistent data";
 	}
+#endif
+
+	return "?";
 }
 
 /** */
@@ -2027,6 +2280,7 @@ static int _find_match(ba_request_t *ba_request, List results)
 	ba_node_t *ba_node = NULL;
 	char *name=NULL;
 	int startx = (start[X]-1);
+	
 	if(startx == -1)
 		startx = DIM_SIZE[X]-1;
 	if(ba_request->start_req) {
@@ -2089,6 +2343,12 @@ start_again:
 			;
 
 		if (!_node_used(ba_node, ba_request->geometry)) {
+			debug3("trying this node %d%d%d %d%d%d %d",
+			       start[X], start[Y], start[Z],
+			       ba_request->geometry[X],
+			       ba_request->geometry[Y],
+			       ba_request->geometry[Z], 
+			       ba_request->conn_type);
 			name = set_bg_block(results,
 					    start, 
 					    ba_request->geometry, 
@@ -2098,6 +2358,7 @@ start_again:
 				xfree(name);
 				return 1;
 			}
+			
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
@@ -2106,6 +2367,7 @@ start_again:
 			list_destroy(results);
 			results = list_create(NULL);
 		}
+		
 #ifdef HAVE_BG
 		
 		if((DIM_SIZE[Z]-start[Z]-1)
@@ -2122,6 +2384,8 @@ start_again:
 				    >= ba_request->geometry[X])
 					start[X]++;
 				else {
+					if(ba_request->size == 1)
+						goto requested_end;
 					if(!_check_for_options(ba_request))
 						return 0;
 					else {
@@ -2312,6 +2576,11 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		}
 
 		coord = find_bp_loc(from_node);
+		if(!coord) {
+			error("1 find_bp_loc: bpid %s not known", from_node);
+			continue;
+		}
+		
 		if(coord[X]>=DIM_SIZE[X] 
 		   || coord[Y]>=DIM_SIZE[Y]
 		   || coord[Z]>=DIM_SIZE[Z]) {
@@ -2328,6 +2597,10 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		source = &ba_system_ptr->
 			grid[coord[X]][coord[Y]][coord[Z]];
 		coord = find_bp_loc(to_node);
+		if(!coord) {
+			error("2 find_bp_loc: bpid %s not known", to_node);
+			continue;
+		}
 		if(coord[X]>=DIM_SIZE[X] 
 		   || coord[Y]>=DIM_SIZE[Y]
 		   || coord[Z]>=DIM_SIZE[Z]) {
@@ -2375,56 +2648,17 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		
 	
 #ifdef HAVE_BG
-#if 0
-	/* this is here for the second half of bg system.
-	   if used it should be changed to #if 1
-	*/
-	if(count == 0) {
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4->3 of next */
-		_switch_config(source, target, dim, 4, 3);
-		/* 2 not in use */
-		_switch_config(source, source, dim, 2, 2);
-		target = &ba_system_ptr->grid[DIM_SIZE[X]-1]
-			[source->coord[Y]]
-			[source->coord[Z]];
-		
-		/* 5->2 of last */
-		_switch_config(source, target, dim, 5, 2);
-		
-	} else if (count == 1) {
-		/* 2->5 of next */
-		_switch_config(source, target, dim, 2, 5);
-		/* 5 not in use */
-		_switch_config(source, source, dim, 5, 5);
-	} else if (count == 2) {
-		/* 2->5 of next */
-		_switch_config(source, target, dim, 2, 5);
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4 not in use */
-		_switch_config(source, source, dim, 4, 4);
-	} else if(count == 3) {
-		/* 2->5 of first */
-		_switch_config(source, target, dim, 2, 5);
-		/* 3 not in use */
-		_switch_config(source, source, dim, 3, 3);
-	}
-      
-	return 1;
-#endif
 	_switch_config(source, target, dim, 2, 5);
 	if(count == 0 || count==4) {
 		/* 0 and 4th Node */
 		/* 3->4 of next */
 		_switch_config(source, target, dim, 3, 4);
 		/* 4 is not in use */
-		_switch_config(source, source, dim, 4, 4);
+		//_switch_config(source, source, dim, 4, 4);
 	} else if( count == 1 || count == 5) {
 		/* 1st and 5th Node */
 		/* 3 is not in use */
-		_switch_config(source, source, dim, 3, 3);
+		//_switch_config(source, source, dim, 3, 3);
 	} else if(count == 2) {
 		/* 2nd Node */
 		/* make sure target is the last node */
@@ -2546,13 +2780,13 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
 	
-	int port_tar;
+	int port_tar = 0;
 	int source_port=0;
 	int target_port=0;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {3,5};
 	int *node_tar = NULL;
-	int i;
+	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
 	int highest_phys_x = geometry[X] - start[X];
@@ -2862,7 +3096,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {3,5};
 	int *node_tar = NULL;
-	int i;
+	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
 	

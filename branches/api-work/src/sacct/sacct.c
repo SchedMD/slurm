@@ -150,7 +150,7 @@ fields_t fields[] = {{"cpu", print_cpu},
 		     {"ixrss", print_ixrss}, 
 		     {"job", print_job}, 
 		     {"jobname", print_name}, 
-		     {"jobstep", print_step}, 
+		     {"jobid", print_jobid}, 
 		     {"majflt", print_majflt}, 
 		     {"minflt", print_minflt}, 
 		     {"msgrcv", print_msgrcv}, 
@@ -192,6 +192,7 @@ int main(int argc, char **argv)
 		EXPIRE,
 		FDUMP,
 		LIST,
+		STAT,
 		HELP,
 		USAGE
 	} op;
@@ -227,13 +228,14 @@ int main(int argc, char **argv)
 		}
 	} else if (params.opt_fdump) {
 		op = FDUMP;
+	} else if (params.opt_stat) {
+		op = STAT;
 	} else if (params.opt_expire) {
 		op = EXPIRE;
 		if (params.opt_long || params.opt_total 
 		    || params.opt_field_list || 
 		    (params.opt_gid>=0) || (params.opt_uid>=0) ||
-		    params.opt_job_list || params.opt_jobstep_list ||
-		    params.opt_state_list ) {
+		    params.opt_job_list || params.opt_state_list ) {
 			if (params.opt_verbose)
 				fprintf(stderr,
 					"Switch conflict,\n"
@@ -243,7 +245,6 @@ int main(int argc, char **argv)
 					"\topt_gid=%d\n"
 					"\topt_uid=%d\n"
 					"\topt_job_list=%s\n"
-					"\topt_jobstep_list=%s\n"
 					"\topt_state_list=%s\n",
 					params.opt_long, 
 					params.opt_total, 
@@ -251,12 +252,11 @@ int main(int argc, char **argv)
 					params.opt_gid, 
 					params.opt_uid, 
 					params.opt_job_list,
-					params.opt_jobstep_list, 
 					params.opt_state_list);
 			invalidSwitchCombo("--expire",
 					   "--brief, --long, --fields, "
 					   "--total, --gid, --uid, --jobs, "
-					   "--jobstep, --state");
+					   "--state");
 			rc = 1;
 			goto finished;
 		}
@@ -280,6 +280,11 @@ int main(int argc, char **argv)
 			_print_header();/* at while we think...        */
 		get_data();
 		do_list();
+		break;
+	case STAT:
+		if (params.opt_header) 	/* give them something to look */
+			_print_header();/* at while we think...        */
+		do_stat();
 		break;
 	case HELP:
 		do_help();

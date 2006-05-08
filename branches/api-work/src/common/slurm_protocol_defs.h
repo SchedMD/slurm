@@ -52,7 +52,7 @@
 #include "src/common/xassert.h"
 
 #define MAX_SLURM_NAME 64
-#define FORWARD_INIT 0xffff
+#define FORWARD_INIT 0xfffe
 
 /* used to define flags of the launch_tasks_request_msg_t.and
  * spawn task_request_msg_t task_flags
@@ -144,7 +144,8 @@ typedef enum {
 	REQUEST_STEP_COMPLETE,
 	REQUEST_COMPLETE_JOB_ALLOCATION,
 	REQUEST_COMPLETE_BATCH_SCRIPT,
-
+	MESSAGE_STAT_JOBACCT,
+	
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
 	MESSAGE_TASK_EXIT,
@@ -323,6 +324,13 @@ typedef struct step_complete_msg {
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
 } step_complete_msg_t;
+
+typedef struct stat_jobacct_msg {
+	uint32_t job_id;
+	uint32_t step_id;
+	uint32_t num_tasks;
+	jobacctinfo_t *jobacct;
+} stat_jobacct_msg_t;
 
 typedef struct kill_tasks_msg {
 	uint32_t job_id;
@@ -674,6 +682,9 @@ void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
+void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
+void inline slurm_free_node_select_msg(
+		node_info_select_request_msg_t *msg);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);

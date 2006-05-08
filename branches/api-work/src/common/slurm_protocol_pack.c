@@ -206,6 +206,10 @@ static void _pack_complete_batch_script_msg(
 	complete_batch_script_msg_t * msg, Buf buffer);
 static int _unpack_complete_batch_script_msg(
 	complete_batch_script_msg_t ** msg_ptr, Buf buffer);
+
+static void _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer);
+static int _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer);
+
 static void _pack_step_complete_msg(step_complete_msg_t * msg,
 				    Buf buffer);
 static int _unpack_step_complete_msg(step_complete_msg_t **
@@ -516,6 +520,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_step_complete_msg((step_complete_msg_t *)msg->data,
 					 buffer);
 		 break;
+	 case MESSAGE_STAT_JOBACCT:
+		 _pack_stat_jobacct_msg((stat_jobacct_msg_t *) msg->data, 
+					buffer);
+		 break;
 	 case REQUEST_SIGNAL_JOB:
 		 _pack_signal_job_msg((signal_job_msg_t *) msg->data, buffer);
 		 break;
@@ -788,6 +796,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_step_complete_msg((step_complete_msg_t
 						 **) & (msg->data),
 						buffer);
+		 break;
+	 case MESSAGE_STAT_JOBACCT:
+		 rc = _unpack_stat_jobacct_msg(
+			 (stat_jobacct_msg_t **) &(msg->data), buffer);
 		 break;
 	 case REQUEST_SIGNAL_JOB:
 		 rc = _unpack_signal_job_msg((signal_job_msg_t **)&(msg->data),
@@ -1890,6 +1902,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
+	pack16(build_ptr->propagate_prio_process, buffer);
         packstr(build_ptr->propagate_rlimits, buffer);
         packstr(build_ptr->propagate_rlimits_except, buffer);
 	pack16((uint16_t)build_ptr->ret2service, buffer);
@@ -1928,6 +1941,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->srun_epilog, buffer);
 	packstr(build_ptr->node_prefix, buffer);
 	pack16((uint16_t)build_ptr->tree_width, buffer);
+	pack16(build_ptr->use_pam, buffer);
 }
 
 static int
@@ -1972,6 +1986,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, 
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->propagate_prio_process, buffer);
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits,
                                &uint16_tmp, buffer);
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits_except,
@@ -2021,6 +2036,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->node_prefix, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->tree_width, buffer);
+	safe_unpack16(&build_ptr->use_pam, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -2795,6 +2811,38 @@ _unpack_complete_batch_script_msg(
 	xfree(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
+}
+
+static void 
+_pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer)
+{
+	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->step_id, buffer);
+	pack32((uint32_t)msg->num_tasks, buffer);
+	jobacct_g_pack(msg->jobacct, buffer);	
+}
+
+
+static int 
+_unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer)
+{
+	stat_jobacct_msg_t *msg;
+	
+	msg = xmalloc(sizeof(stat_jobacct_msg_t));
+	*msg_ptr = msg;	
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->step_id, buffer);
+	safe_unpack32(&msg->num_tasks, buffer);
+	jobacct_g_unpack(&msg->jobacct, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+
 }
 
 static void 

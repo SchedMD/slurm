@@ -43,7 +43,6 @@
 #include "src/common/node_select.h"
 #include "src/slurmctld/slurmctld.h"
 #include "../block_allocator/block_allocator.h"
-#include "../wrap_rm_api.h"
 
 typedef int lifecycle_type_t;
 
@@ -139,6 +138,7 @@ extern int num_block_to_free;
 extern int num_block_freed;
 extern int blocks_are_created;
 extern int procs_per_node;
+extern int num_unused_cpus;
 
 #define MAX_PTHREAD_RETRIES  1
 #define MAX_AGENT_COUNT      30
@@ -197,13 +197,6 @@ extern void sort_bg_record_inc_size(List records);
 extern void *bluegene_agent(void *args);
 
 /*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern char *bg_err_str(status_t inx);
-
-/*
  * create_*_block(s) - functions for creating blocks that will be used
  *   for scheduling.
  * RET - success of fitting all configurations
@@ -228,7 +221,6 @@ extern int read_bg_blocks();
 /*****************************************************/
 extern int configure_small_block(bg_record_t *bg_record);
 extern int configure_block_switches(bg_record_t * bg_conf_record);
-
 
 #endif /* _BLUEGENE_H_ */
  

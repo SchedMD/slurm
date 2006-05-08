@@ -52,6 +52,14 @@ void fd_set_close_on_exec(int fd)
     return;
 }
 
+void fd_set_noclose_on_exec(int fd)
+{
+    assert(fd >= 0);
+
+    if (fcntl(fd, F_SETFD, 0) < 0)
+        error("fcntl(F_SETFD) failed: %m");
+    return;
+}
 
 void fd_set_nonblocking(int fd)
 {

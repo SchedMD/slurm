@@ -31,6 +31,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
+AC_SYS_LARGEFILE
 
 AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
 
@@ -232,7 +233,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct/Makefile
 		 src/plugins/jobacct/linux/Makefile
 		 src/plugins/jobacct/aix/Makefile
-		 src/plugins/jobacct/bluegene/Makefile
 		 src/plugins/jobacct/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile

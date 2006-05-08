@@ -105,36 +105,25 @@ allocate_nodes(void)
 		info("WARNING: You are attempting to initiate a second job");
 		j->job_id = NO_VAL;
 	}
-
-	/* FIXME - this is an ugly place to check SLURM_HOSTFILE */
-	if (j->req_nodes == NULL) {
-		char *nodelist = NULL;
-		char *hostfile = getenv("SLURM_HOSTFILE");
-
-		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
-			if (nodelist == NULL) {
-				error("Failure getting NodeNames from hostfile");
-				/* FIXME - need to fail somehow */
-				goto done;
-			} else {
-				j->req_nodes = xstrdup(nodelist);
-				free(nodelist);
-			}
-		}
-	}
-
+	
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
 		if (destroy_job)
 			goto done;
 	} 
-		
+
+	if(!resp)
+		goto done;
+
 	if ((rc == 0) && (resp->node_list == NULL)) {
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
 		_wait_for_resources(&resp);
 	}
-
+	if(resp->node_list && j->req_nodes) {
+		xfree(resp->node_list);
+		resp->node_list = xstrdup(j->req_nodes);
+	}
+	
     done:
 	xsignal_set_mask(&oset);
 	xsignal(SIGINT,  ointf);
@@ -292,6 +281,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
 	msg->conn_fd = fd;
+	msg->forward_struct_init = 0;
 	
   again:
 	ret_list = slurm_receive_msg(fd, msg, 0);
@@ -411,6 +401,24 @@ job_desc_msg_create_from_opts (char *script)
 	j->immediate      = opt.immediate;
 	j->name           = opt.job_name;
 	j->req_nodes      = opt.nodelist;
+	if (j->req_nodes == NULL) {
+		char *nodelist = NULL;
+		char *hostfile = getenv("SLURM_HOSTFILE");
+		
+		if (hostfile != NULL) {
+			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
+			if (nodelist == NULL) {
+				error("Failure getting NodeNames from "
+				      "hostfile");
+				/* FIXME - need to fail somehow */
+			} else {
+				debug("loading nodes from hostfile %s",
+				      hostfile);
+				j->req_nodes = xstrdup(nodelist);
+				free(nodelist);
+			}
+		}
+	}
 	j->exc_nodes      = opt.exc_nodes;
 	j->partition      = opt.partition;
 	j->min_nodes      = opt.min_nodes;
@@ -486,6 +494,9 @@ job_desc_msg_create_from_opts (char *script)
 		 */
 		xassert (opt.batch);
 
+		if (opt.overcommit)
+			putenv("SLURM_OVERCOMMIT=1");
+
 		j->environment = environ;
 		j->env_size = envcount (environ);
 		j->script = script;
@@ -558,31 +569,11 @@ create_job_step(srun_job_t *job,
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
-
+	
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
 		return -1;
 	}
-
-	/* FIXME - this is also an ugly place to check SLURM_HOSTFILE, 
-	 *	and does not quite work.
-	 */
-	if (req->node_list == NULL) {
-		char *nodelist = NULL;
-		char *hostfile = getenv("SLURM_HOSTFILE");
-
-		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, req->num_tasks);
-			if (nodelist == NULL) {
-				error("Error reading SLURM hostfile");
-				return -1;
-			}
-			req->node_list = xstrdup(nodelist);
-			free(nodelist);
-			req->task_dist = SLURM_DIST_ARBITRARY;
-		}
-	}
-
 
 	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) {
 		error ("Unable to create job step: %m");

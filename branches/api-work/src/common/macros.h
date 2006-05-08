@@ -218,6 +218,12 @@ typedef enum {false, true} bool;
      } _STMT_END
 #  endif
 
+#  define slurm_attr_destroy(attr)					      \
+     _STMT_START {                                                            \
+        if (pthread_attr_destroy(attr))                                       \
+             error("pthread_attr_destroy failed, possible memory leak!: %m"); \
+     } _STMT_END
+
 #else /* !WITH_PTHREADS */
 
 #  define slurm_mutex_init(mutex)
@@ -225,6 +231,7 @@ typedef enum {false, true} bool;
 #  define slurm_mutex_lock(mutex)
 #  define slurm_mutex_unlock(mutex)
 #  define slurm_attr_init(attr)
+#  define slurm_attr_destroy(attr)
 
 #endif /* WITH_PTHREADS */
 

@@ -110,6 +110,7 @@ static void _kvs_xmit_tasks(void)
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if (pthread_create(&agent_id, &attr, _agent, (void *) args))
 		fatal("pthread_create");
+	slurm_attr_destroy(&attr);
 }
 
 static void *_msg_thread(void *x)
@@ -205,6 +206,7 @@ static void *_agent(void *x)
 					(void *) msg_args)) {
 				fatal("pthread_create: %m");
 			}
+			slurm_attr_destroy(&attr);
 		}
 		while (agent_cnt > 0)
 			pthread_cond_wait(&agent_cond, &agent_mutex);

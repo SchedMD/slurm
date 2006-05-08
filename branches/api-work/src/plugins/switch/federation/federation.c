@@ -339,7 +339,7 @@ _fill_in_adapter_cache(void)
 	int i;
 	
 	adapters = hostlist_iterator_create(adapter_list);
-	for (i = 0; adapter_name = hostlist_next(adapters); i++) {
+	for (i = 0; (adapter_name = hostlist_next(adapters)); i++) {
 		rc = ntbl_adapter_resources(NTBL_VERSION, adapter_name, &res);
 		if (rc != NTBL_SUCCESS)
 			return SLURM_ERROR;
@@ -535,7 +535,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 	assert(adapter_list != NULL);
 		
 	adapter_iter = hostlist_iterator_create(adapter_list);
-	for (i = 0; adapter = hostlist_next(adapter_iter); i++) {
+	for (i = 0; (adapter = hostlist_next(adapter_iter)); i++) {
 		if(_set_up_adapter(list + i, adapter) == SLURM_ERROR)
 			fatal("Failed to set up adapter %s.", adapter);
 		free(adapter);
@@ -1034,7 +1034,7 @@ static fed_nodeinfo_t *
 _alloc_node(fed_libstate_t *lp, char *name)
 {
 	fed_nodeinfo_t *n = NULL;
-	int old_bufsize, new_bufsize;
+	int new_bufsize;
 	bool need_hash_rebuild = false;
 
 	assert(lp);
@@ -1298,23 +1298,6 @@ _next_key(void)
 	return key;
 }
 
-/* Given an index into a node's adapter list, return the lid of the 
- * corresponding adapter.
- *
- * Used by: slurmctld
- */
-static int
-_get_lid(fed_nodeinfo_t *np, int index)
-{
-	fed_adapter_t *ap = np->adapter_list;
-
-	assert(np);
-	assert(index >= 0);
-
-	return ap[index].lid;
-}
-
-
 /* FIXME - this could be a little smarter than walking the whole list each time */
 static fed_window_t *
 _find_free_window(fed_adapter_t *adapter) {
@@ -1471,10 +1454,10 @@ static int
 _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		  char *hostname, int task_id, enum NTBL_RC state)
 {
-	fed_nodeinfo_t *node;
-	fed_adapter_t *adapter;
-	fed_window_t *window;
-	NTBL *table;
+	fed_nodeinfo_t *node = NULL;
+	fed_adapter_t *adapter = NULL;
+	fed_window_t *window = NULL;
+	NTBL *table = NULL;
 	int i, j;
 	bool adapter_found;
 	
@@ -1685,9 +1668,8 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 {
 	int nnodes;
 	hostlist_iterator_t hi;
-	char *host;
+	char *host = NULL;
 	int proc_cnt = 0;
-	char *cur_idx;
 	int i, j;
 	fed_nodeinfo_t *node;
 	int rc;
@@ -1798,7 +1780,7 @@ fail:
 void
 _pack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 {
-	int i, j;
+	int i;
 
 	pack32(tableinfo->table_length, buf);
 	for (i = 0; i < tableinfo->table_length; i++) {
@@ -1813,7 +1795,7 @@ _pack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 int
 fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 {
-	int i, k;
+	int i;
 
 	assert(j);
 	assert(j->magic == FED_JOBINFO_MAGIC);
@@ -2314,34 +2296,6 @@ _alloc_libstate(void)
 	return tmp;
 }
 
-/* Used by: slurmctld */
-static void
-_copy_libstate(fed_libstate_t *dest, fed_libstate_t *src)
-{
-	int i;
-	int err;
-	fed_nodeinfo_t *tmp;
-	
-	assert(dest);
-	assert(src);
-	assert(dest->magic == FED_LIBSTATE_MAGIC);
-	assert(src->magic == FED_LIBSTATE_MAGIC);
-	assert(dest->node_count == 0);
-
-	_lock();	
-	/* note:  dest->node_count set by _alloc_node */
-	for(i = 0; i < src->node_count; i++) {
-		tmp = _alloc_node(dest, NULL); 
-		err = _copy_node(tmp, &src->node_list[i]);
-		if(err != SLURM_SUCCESS) {
-			error("_copy_libstate: %m");
-			break;
-		}
-	}
-	dest->key_index = src->key_index;
-	_unlock();
-}
-
 /* Allocate and initialize memory for the persistent libstate.
  *
  * Used by: slurmctld
@@ -2368,24 +2322,6 @@ fed_fini(void)
 	xfree(fed_conf);
 	return SLURM_SUCCESS;
 }
-
-static void
-_free_libstate(fed_libstate_t *lp)
-{
-	int i;
-	
-	if (!lp)
-		return;
-	if (lp->node_list != NULL) {
-		for (i = 0; i < lp->node_count; i++)
-			fed_free_nodeinfo(&lp->node_list[i], true);
-		free(lp->node_list);
-	}
-	if (lp->hash_table != NULL)
-		xfree(lp->hash_table);
-	xfree(lp);
-}
-
 
 /* Used by: slurmctld */
 static int
@@ -2449,8 +2385,6 @@ unpack_error:
 int
 fed_libstate_restore(Buf buffer)
 {
-	int err;
-
 	_lock();
 	assert(!fed_state);
 

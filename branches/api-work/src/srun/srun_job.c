@@ -25,6 +25,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <netdb.h>
 #include <string.h>
 #include <stdlib.h>
@@ -300,15 +304,21 @@ update_job_state(srun_job_t *job, srun_job_state_t state)
 	if (job->state < state) {
 		job->state = state;
 		if(message_thread) {
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&job->state,sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &pipe_enum, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &job->state, sizeof(int));
 		}
 		pthread_cond_signal(&job->state_cond);
 		
 	}
 	pthread_mutex_unlock(&job->state_mutex);
+	return;
+rwfail:
+	pthread_mutex_unlock(&job->state_mutex);
+	error("update_job_state: "
+	      "write from srun message-handler process failed");
+
 }
 
 srun_job_state_t 

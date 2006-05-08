@@ -1,6 +1,15 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Establish global state information for SLURM test suite
+#
+# To define site-specific state information, set the values in a file
+# named 'globals.local'. Those values will override any specified here.
+# for example:
+#
+# $ cat globals.local
+# set slurm_dir "/usr/local"
+# set mpicc     "/usr/local/bin/mpicc"
+#
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -27,86 +36,97 @@
 
 global sacct sbcast scancel scontrol sinfo smap squeue srun
 
+# Conditional set.  Only set variable if variable does not yet exist.
+proc cset {name value} {
+    if {![uplevel 1 info exists $name]} {
+	uplevel 1 "set $name \"$value\""
+    }
+}
+
+if [file exists globals.local] {
+    source globals.local
+}
+
 #
 # Specify the slurm install directory.
 # Used to locate binaries, libraries, and header files.
 #
-set slurm_dir   "/usr"
-set sacct       "${slurm_dir}/bin/sacct"
-set sbcast      "${slurm_dir}/bin/sbcast"
-set scancel     "${slurm_dir}/bin/scancel"
-set scontrol    "${slurm_dir}/bin/scontrol"
-set sinfo       "${slurm_dir}/bin/sinfo"
-set smap        "${slurm_dir}/bin/smap"
-set squeue      "${slurm_dir}/bin/squeue"
-set srun        "${slurm_dir}/bin/srun"
+cset slurm_dir   "/usr"
+cset sacct       "${slurm_dir}/bin/sacct"
+cset sbcast      "${slurm_dir}/bin/sbcast"
+cset scancel     "${slurm_dir}/bin/scancel"
+cset scontrol    "${slurm_dir}/bin/scontrol"
+cset sinfo       "${slurm_dir}/bin/sinfo"
+cset smap        "${slurm_dir}/bin/smap"
+cset squeue      "${slurm_dir}/bin/squeue"
+cset srun        "${slurm_dir}/bin/srun"
 
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
-#set mpicc	"/home/jette/mpich2-install/bin/mpicc"
-#set use_pmi	1
+#cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
+#cset use_pmi	1
 # OR for other versions of MPICH, use this
-set mpicc       "/usr/local/bin/mpicc"
-set use_pmi	0
+cset mpicc       "/usr/local/bin/mpicc"
+cset use_pmi	0
 
 # If using XCPU job launch, specify directory location as needed
-set xcpu_dir	"/mnt/xcpu"
+cset xcpu_dir	"/mnt/xcpu"
 
-set poe		"/usr/bin/poe"
-set poe_partition "pdebug"
-set mpirun	"mpirun"
-set totalviewcli	"/usr/local/bin/totalviewcli"
+cset poe		"/usr/bin/poe"
+cset poe_partition "pdebug"
+cset mpirun	"mpirun"
+cset totalviewcli	"/usr/local/bin/totalviewcli"
 
 # Pattern to match your shell prompt
-set prompt "(%|#|\\\$) $"
+cset prompt "(%|#|\\\$) $"
 
 #
 # Specify locations of other executable files used
 # Only the shell names (e.g. bin_bash) must be full pathnames
 #
-set bin_awk 	"awk"
-set bin_bash	"/bin/bash"
-set bin_cat	"cat"
-set bin_cc	"gcc"
-set bin_chmod	"chmod"
-set bin_cp	"cp"
-set bin_diff	"diff"
-set bin_echo	"echo"
-set bin_env	"env"
-set bin_file	"file"
-set bin_id	"id"
-set bin_grep    "grep"
-set bin_hostname "hostname"
-set bin_kill	"kill"
-set bin_make	"make"
-set bin_pkill	"pkill"
-set bin_ps	"ps"
-set bin_pwd	"pwd"
-set bin_rm	"rm"
-set bin_sleep   "sleep"
-set bin_sort    "sort"
-set bin_touch   "touch"
-set bin_uname	"uname"
-set bin_usleep  "usleep"
-set bin_wc	"wc"
+cset bin_awk 	"awk"
+cset bin_bash	"/bin/bash"
+cset bin_cat	"cat"
+cset bin_cc	"gcc"
+cset bin_chmod	"chmod"
+cset bin_cp	"cp"
+cset bin_diff	"diff"
+cset bin_echo	"echo"
+cset bin_env	"env"
+cset bin_file	"file"
+cset bin_id	"id"
+cset bin_grep    "grep"
+cset bin_hostname "hostname"
+cset bin_kill	"kill"
+cset bin_make	"make"
+cset bin_pkill	"pkill"
+cset bin_ps	"ps"
+cset bin_pwd	"pwd"
+cset bin_rm	"rm"
+cset bin_sleep   "sleep"
+cset bin_sort    "sort"
+cset bin_touch   "touch"
+cset bin_uname	"uname"
+cset bin_usleep  "usleep"
+cset bin_wc	"wc"
 
 #
 # Let the commands complete without expect timing out waiting for a 
 # response. Single node jobs submitted to the default partition should 
 # be initiated within this number of seconds.
-# for interactive slurm jobs: set timeout $max_job_delay
+# for interactive slurm jobs: cset timeout $max_job_delay
 #
-set max_job_delay 120
+cset max_job_delay 120
 
 #
 # Files must be propogated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
-set max_file_delay 60
+cset max_file_delay 60
 
 #
 # Specify the maximum number of tasks to use in the stress tests.
 #
-set max_stress_tasks 4
+cset max_stress_tasks 4
 
 # Other common variables
 set alpha                "\[a-zA-Z\]+"
@@ -116,12 +136,13 @@ set alpha_numeric_under  "\[a-zA-Z0-9_\]+"
 set alpha_under          "\[A-Z_\]+"
 set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
+set float                "\[0-9\]+\\.?\[0-9\]+"
 
 #
 # Cache SlurmUser to check for SuperUser requests
 #
-set super_user     0
-set super_user_set 0
+cset super_user     0
+cset super_user_set 0
 
 ################################################################
 #

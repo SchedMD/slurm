@@ -100,8 +100,6 @@ int main(int argc, char *argv[])
 
 		if(!mapset)
 			mapset = set_bp_map();
-		if(params.partition[0] == 'r')
-			params.partition[0] = 'R';
 		if(params.partition[0] != 'R') {
 			i = strlen(params.partition);
 			i -= 3;
@@ -127,8 +125,6 @@ int main(int argc, char *argv[])
 			if(coord)
 				printf("%s resolves to X=%d Y=%d Z=%d\n",
 				       params.partition,
-				       coord[X], coord[Y], coord[Z],
-				       slurmctld_conf.node_prefix,
 				       coord[X], coord[Y], coord[Z]);
 			else
 				printf("%s has no resolve.\n", 

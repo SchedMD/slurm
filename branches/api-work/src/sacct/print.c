@@ -317,14 +317,18 @@ void print_name(type_t type, void *object)
 		printf("%-18s", "------------------");
 		break;
 	case JOB:
-		if(strlen(job->jobname)<19)
+		if(!job->jobname)
+			printf("%-18s", "unknown");			     
+		else if(strlen(job->jobname)<19)
 			printf("%-18s", job->jobname);
 		else
 			printf("%-15.15s...", job->jobname);
 			
 		break;
 	case JOBSTEP:
-		if(strlen(step->stepname)<19)
+		if(!step->stepname)
+			printf("%-18s", "unknown");			     
+		else if(strlen(step->stepname)<19)
 			printf("%-18s", step->stepname);
 		else
 			printf("%-15.15s...", step->stepname);
@@ -332,7 +336,7 @@ void print_name(type_t type, void *object)
 	} 
 }
 
-void print_step(type_t type, void *object)
+void print_jobid(type_t type, void *object)
 {
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
@@ -622,14 +626,18 @@ void print_partition(type_t type, void *object)
 		printf("%-10s", "----------");
 		break;
 	case JOB:
-		if(strlen(job->header.partition)<11)
+		if(!job->header.partition)
+			printf("%-10s", "unknown");			     
+		else if(strlen(job->header.partition)<11)
 			printf("%-10s", job->header.partition);
 		else
 			printf("%-7.7s...", job->header.partition);
 		
 		break;
 	case JOBSTEP:
-		if(strlen(step->header.partition)<11)
+		if(!step->header.partition)
+			printf("%-10s", "unknown");			     
+		else if(strlen(step->header.partition)<11)
 			printf("%-10s", step->header.partition);
 		else
 			printf("%-7.7s...", step->header.partition);
@@ -651,14 +659,18 @@ void print_blockid(type_t type, void *object)
 		printf("%-16s", "----------------");
 		break;
 	case JOB:
-		if(strlen(job->header.partition)<17)
-			printf("%-16s", job->header.partition);
+		if(!job->header.blockid)
+			printf("%-16s", "unknown");			     
+		else if(strlen(job->header.blockid)<17)
+			printf("%-16s", job->header.blockid);
 		else
-			printf("%-13.13s...", job->header.partition);
+			printf("%-13.13s...", job->header.blockid);
 		
 		break;
 	case JOBSTEP:
-		if(strlen(step->header.partition)<17)
+		if(!step->header.blockid)
+			printf("%-16s", "unknown");			     
+		else if(strlen(step->header.blockid)<17)
 			printf("%-16s", step->header.blockid);
 		else
 			printf("%-13.13s...", step->header.blockid);

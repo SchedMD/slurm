@@ -180,6 +180,7 @@ int schedule(void)
 		}
 		if (j < failed_part_cnt)
 			continue;
+
 		error_code = select_nodes(job_ptr, false);
 		if (error_code == ESLURM_NODES_BUSY) {
 #ifndef HAVE_BG 	/* keep trying to schedule jobs in partition */

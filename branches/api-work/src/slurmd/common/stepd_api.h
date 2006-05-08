@@ -177,4 +177,12 @@ int stepd_resume(int fd);
  */
 int stepd_completion(int fd, step_complete_msg_t *sent);
 
+/*
+ *
+ * Returns SLURM_SUCCESS on success or SLURM_ERROR on error.  
+ * resp recieves a jobacctinfo_t which must be freed if SUCCESS.
+ */
+int stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, 
+		       stat_jobacct_msg_t *resp);
+
 #endif /* _STEPD_API_H */

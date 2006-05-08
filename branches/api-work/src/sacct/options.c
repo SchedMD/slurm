@@ -28,6 +28,7 @@
 
 #include "src/common/read_config.h"
 #include "sacct.h"
+#include <time.h>
 
 typedef struct expired_rec {  /* table of expired jobs */
 	uint32_t job;
@@ -122,13 +123,18 @@ int _cmp_jrec(const void *a1, const void *a2) {
  */
 void _dump_header(acct_header_t header)
 {
-	printf("%u %s %d %d %d %d %s %s ",
+	struct tm ts;
+	gmtime_r(&header.timestamp, &ts);
+	printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
 	       header.jobnum,
 	       header.partition,
+	       1900+(ts.tm_year),
+	          1+(ts.tm_mon),
+		  ts.tm_mday,
+	          ts.tm_hour,
+		  ts.tm_min,
+		  ts.tm_sec,
 	       (int)header.job_start,
-	       (int)header.timestamp,
-	       header.uid,
-	       header.gid,
 	       header.blockid,	/* block id */
 	       "-");	/* reserved 1 */
 }
@@ -204,13 +210,13 @@ void _help_msg(void)
 	       "    accounting log file to refer to different jobs; such jobs\n"
 	       "    can be distinguished by the \"job_start\" time stamp in the\n"
 	       "    data records.\n"
-	       "      When data for specific jobs or jobsteps are requested with\n"
-	       "    the --jobs or --jobsteps options, we assume that the user\n"
+	       "      When data for specific jobs are requested with\n"
+	       "    the --jobs option, we assume that the user\n"
 	       "    wants to see only the most recent job with that number. This\n"
 	       "    behavior can be overridden by specifying --duplicates, in\n"
 	       "    which case all records that match the selection criteria\n"
 	       "    will be returned.\n"
-	       "      When neither --jobs or --jobsteps is specified, we report\n"
+	       "      When --jobs is not specified, we report\n"
 	       "    data for all jobs that match the selection criteria, even if\n"
 	       "    some of the job numbers are reused. Specify that you only\n"
 	       "    want the most recent job for each selected job number with\n"
@@ -245,11 +251,10 @@ void _help_msg(void)
 	       "--help-fields\n"
 	       "    Print a list of fields that can be specified with the\n"
 	       "    \"--fields\" option\n"
-	       "-j <job_list>, --jobs=<job_list>\n"
+	       "-j <job(.step)>, --jobs=<job(.step)>\n"
 	       "    Display information about this job or comma-separated\n"
-	       "    list of jobs. The default is all jobs.\n"
-	       "-J <job.step>, --jobstep=<job.step>\n"
-	       "    Show data only for the specified step of the specified job.\n"
+	       "    list of jobs. The default is all jobs. Adding .step will\n"
+	       "    display the specfic job step of that job.\n"
 	       "--noduplicates\n"
 	       "    See the discussion under --duplicates.\n"
 	       "--noheader\n"
@@ -264,6 +269,9 @@ void _help_msg(void)
 	       "-s <state-list>, --state=<state-list>\n"
 	       "    Select jobs based on their current status: running (r),\n"
 	       "    completed (cd), failed (f), timeout (to), and node_fail (nf).\n"
+	       "-S, --stat\n"
+	       "    Get real time status of a jobstep supplied by the -j\n"
+	       "    option\n" 
 	       "-t, --total\n"
 	       "    Only show cumulative statistics for each job, not the\n"
 	       "    intermediate steps\n"
@@ -291,6 +299,7 @@ void _init_params()
 	params.opt_dump = 0;		/* --dump */
 	params.opt_dup = -1;		/* --duplicates; +1 = explicitly set */
 	params.opt_fdump = 0;		/* --formattted_dump */
+	params.opt_stat = 0;		/* --stat */
 	params.opt_gid = -1;		/* --gid (-1=wildcard, 0=root) */
 	params.opt_header = 1;		/* can only be cleared */
 	params.opt_help = 0;		/* --help */
@@ -304,7 +313,6 @@ void _init_params()
 	params.opt_field_list = NULL;	/* --fields= */
 	params.opt_filein = NULL;	/* --file */
 	params.opt_job_list = NULL;	/* --jobs */
-	params.opt_jobstep_list = NULL;	/* --jobstep */
 	params.opt_partition_list = NULL;/* --partitions */
 	params.opt_state_list = NULL;	/* --states */
 }
@@ -362,7 +370,7 @@ int decode_status_char(char *status)
 
 char *decode_status_int(int status)
 {
-	switch(status) {
+	switch(status & ~JOB_COMPLETING) {
 	case JOB_PENDING:
 		return "PENDING"; 	/* we should never see this */
 	case JOB_RUNNING:
@@ -384,28 +392,38 @@ char *decode_status_int(int status)
 	default:
 		return "UNKNOWN";
 	}
-	/* if (!strcasecmp(cs, "ca"))  */
-/* 		return "CANCELLED"; */
-/* 	else if (strcasecmp(cs, "cd")==0)  */
-/* 		return "COMPLETED"; */
-/* 	else if (strcasecmp(cs, "cg")==0)  */
-/* 		return "COMPLETING";	/\* we should never see this *\/ */
-/* 	else if (strcasecmp(cs, "f")==0)  */
-/* 		return "FAILED"; */
-/* 	else if (strcasecmp(cs, "nf")==0) */
-/* 		return "NODEFAILED"; */
-/* 	else if (strcasecmp(cs, "p")==0) */
-/* 		return "PENDING"; 	/\* we should never see this *\/ */
-/* 	else if (strcasecmp(cs, "r")==0) */
-/* 		return "RUNNING";  */
-/* 	else if (strcasecmp(cs, "to")==0) */
-/* 		return "TIMEDOUT"; */
-} 
+}
+
+char *decode_status_int_abbrev(int status)
+{
+	switch(status & ~JOB_COMPLETING) {
+	case JOB_PENDING:
+		return "PD"; 	/* we should never see this */
+	case JOB_RUNNING:
+		return "R";
+	case JOB_SUSPENDED:
+		return "S";
+	case JOB_COMPLETE:
+		return "CD";
+	case JOB_CANCELLED:
+		return "CA";
+	case JOB_FAILED:
+		return "F";
+	case JOB_TIMEOUT:
+		return "TO";
+	case JOB_NODE_FAIL:
+		return "NF";
+	case JOB_END:
+		return "JOB_END";
+	default:
+		return "UNKNOWN";
+	}
+}
 
 int get_data(void)
 {
 	char line[BUFFER_SIZE];
-	char *f[MAX_RECORD_FIELDS];    /* End list with null entry and,
+	char *f[MAX_RECORD_FIELDS+1];    /* End list with null entry and,
 					    possibly, more data than we
 					    expected */
 	char *fptr;
@@ -416,6 +434,7 @@ int get_data(void)
 	selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
 	ListIterator itr = NULL;
+	int show_full = 0;
 
 	fd = _open_log_file();
 	
@@ -448,17 +467,22 @@ int get_data(void)
 			while((selected_step = list_next(itr))) {
 				if (strcmp(selected_step->job, f[F_JOB]))
 					continue;
-				/* job matches; does the step> */
-				if (selected_step->step == NULL
-				    || rec_type == JOB_STEP 
-				    || !strcmp(f[F_JOBSTEP], 
-					       selected_step->step)) {
+				/* job matches; does the step? */
+				if(selected_step->step == NULL) {
+					show_full = 1;
 					list_iterator_destroy(itr);
 					goto foundjob;
-				}
+				} else if (rec_type != JOB_STEP 
+					   || !strcmp(f[F_JOBSTEP], 
+						      selected_step->step)) {
+					list_iterator_destroy(itr);
+					goto foundjob;
+				} 
 			}
 			list_iterator_destroy(itr);
 			continue;	/* no match */
+		} else {
+			show_full = 1;
 		}
 	foundjob:
 		
@@ -479,7 +503,7 @@ int get_data(void)
 			do_fdump(f, lc);
 			continue;
 		}
-		    
+		
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
@@ -487,28 +511,28 @@ int get_data(void)
 				printf("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else 
-				process_start(f, lc);
+				process_start(f, lc, show_full);
 			break;
 		case JOB_STEP:
 			if(i < JOB_STEP_LENGTH) {
 				printf("Bad data on a Step entry\n");
 				_show_rec(f);
 			} else
-				process_step(f, lc);
+				process_step(f, lc, show_full);
 			break;
 		case JOB_SUSPEND:
 			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Suspend entry\n");
 				_show_rec(f);
 			} else
-				process_suspend(f, lc);
+				process_suspend(f, lc, show_full);
 			break;
 		case JOB_TERMINATED:
 			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Job Term\n");
 				_show_rec(f);
 			} else
-				process_terminated(f, lc);
+				process_terminated(f, lc, show_full);
 			break;
 		default:
 			if (params.opt_verbose > 1)
@@ -536,10 +560,12 @@ void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
 	int c, i, optionIndex = 0;
-	char *end, *start, *acct_type;
+	char *end = NULL, *start = NULL, *acct_type = NULL;
 	selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	struct stat stat_buf;
+	char *dot = NULL;
+
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
@@ -549,12 +575,12 @@ void parse_command_line(int argc, char **argv)
 		{"fields", 1, 0, 'F'},
 		{"file", 1, 0, 'f'},
 		{"formatted_dump", 0, 0, 'O'},
+		{"stat", 0, 0, 'S'},
 		{"gid", 1, 0, 'g'},
 		{"group", 1, 0, 'g'},
 		{"help", 0, &params.opt_help, 1},
 		{"help-fields", 0, &params.opt_help, 2},
 		{"jobs", 1, 0, 'j'},
-		{"jobstep", 1, 0, 'J'},
 		{"long", 0, 0, 'l'},
 		{"big_logfile", 0, &params.opt_lowmem, 1},
 		{"noduplicates", 0, &params.opt_dup, 0},
@@ -578,7 +604,7 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "abde:F:f:g:hj:J:lOPp:s:tUu:Vv",
+		c = getopt_long(argc, argv, "abde:F:f:g:hj:J:lOPp:s:StUu:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -683,7 +709,9 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'j':
-			if (strspn(optarg, "0123456789, ") < strlen(optarg)) {
+			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
+			    && (strspn(optarg, ".0123456789, ") 
+				< strlen(optarg))) {
 				fprintf(stderr, "Invalid jobs list: %s\n",
 					optarg);
 				exit(1);
@@ -695,21 +723,6 @@ void parse_command_line(int argc, char **argv)
 					 strlen(optarg) + 1);
 			strcat(params.opt_job_list, optarg);
 			strcat(params.opt_job_list, ",");
-			break;
-
-		case 'J':
-			if (strspn(optarg, ".0123456789, ") < strlen(optarg)) {
-				fprintf(stderr, "Invalid jobstep list: %s\n",
-					optarg);
-				exit(1);
-			}
-			params.opt_jobstep_list =
-				xrealloc(params.opt_jobstep_list,
-					 (params.opt_jobstep_list==NULL? 0 :
-					  strlen(params.opt_jobstep_list)) +
-					 strlen(optarg) + 1);
-			strcat(params.opt_jobstep_list, optarg);
-			strcat(params.opt_jobstep_list, ",");
 			break;
 
 		case 'l':
@@ -748,6 +761,17 @@ void parse_command_line(int argc, char **argv)
 					 strlen(optarg) + 1);
 			strcat(params.opt_state_list, optarg);
 			strcat(params.opt_state_list, ",");
+			break;
+
+		case 'S':
+			params.opt_field_list =
+				xrealloc(params.opt_field_list,
+					 (params.opt_field_list==NULL? 0 :
+					  sizeof(params.opt_field_list)) +
+					 sizeof(STAT_FIELDS)+1);
+			strcat(params.opt_field_list, STAT_FIELDS);
+			strcat(params.opt_field_list, ",");
+			params.opt_stat = 1;
 			break;
 
 		case 't':
@@ -805,7 +829,7 @@ void parse_command_line(int argc, char **argv)
 
 	/* Now set params.opt_dup, unless they've already done so */
 	if (params.opt_dup < 0)	/* not already set explicitly */
-		if (params.opt_job_list || params.opt_jobstep_list)
+		if (params.opt_job_list)
 			/* They probably want the most recent job N if
 			 * they requested specific jobs or steps. */
 			params.opt_dup = 0;
@@ -816,12 +840,12 @@ void parse_command_line(int argc, char **argv)
 			"\topt_dup=%d\n"
 			"\topt_expire=%s (%lu seconds)\n"
 			"\topt_fdump=%d\n"
+			"\topt_stat=%d\n"
 			"\topt_field_list=%s\n"
 			"\topt_filein=%s\n"
 			"\topt_header=%d\n"
 			"\topt_help=%d\n"
 			"\topt_job_list=%s\n"
-			"\topt_jobstep_list=%s\n"
 			"\topt_long=%d\n"
 			"\topt_lowmem=%d\n"
 			"\topt_partition_list=%s\n"
@@ -834,12 +858,12 @@ void parse_command_line(int argc, char **argv)
 			params.opt_dup,
 			params.opt_expire_timespec, params.opt_expire,
 			params.opt_fdump,
+			params.opt_stat,
 			params.opt_field_list,
 			params.opt_filein,
 			params.opt_header,
 			params.opt_help,
 			params.opt_job_list,
-			params.opt_jobstep_list,
 			params.opt_long,
 			params.opt_lowmem,
 			params.opt_partition_list,
@@ -880,61 +904,39 @@ void parse_command_line(int argc, char **argv)
 		}
 	}
 
-	/* specific jobsteps requested? */
-	if (params.opt_jobstep_list) {
-		char *dot;
-
-		start = params.opt_jobstep_list;
-		while ((end = strstr(start, ","))) {
-			*end = 0;;
-			while (isspace(*start))
-				start++;	/* discard whitespace */
-			dot = strstr(start, ".");
-			if (dot == NULL) {
-				fprintf(stderr, "Invalid jobstep: %s\n",
-					start);
-				exit(1);
-			}
-			*dot++ = 0;
-			selected_step = xmalloc(sizeof(selected_step_t));
-			list_append(selected_steps, selected_step);
-			
-			selected_step->job = xstrdup(start);
-			selected_step->step = xstrdup(dot);
-			start = end + 1;
-		}
-		if (params.opt_verbose) {
-			fprintf(stderr, "Job steps requested:\n");
-			itr = list_iterator_create(selected_steps);
-			while((selected_step = list_next(itr))) 
-				fprintf(stderr, "\t: %s.%s\n",
-					selected_step->job,
-					selected_step->step);
-			list_iterator_destroy(itr);
-			
-		}
-	}
-
 	/* specific jobs requested? */
 	if (params.opt_job_list) { 
 		start = params.opt_job_list;
 		while ((end = strstr(start, ","))) {
+			*end = 0;
 			while (isspace(*start))
 				start++;	/* discard whitespace */
-			*end = 0;
 			selected_step = xmalloc(sizeof(selected_step_t));
 			list_append(selected_steps, selected_step);
 			
+			dot = strstr(start, ".");
+			if (dot == NULL) {
+				debug2("No jobstep requested");
+				selected_step->step = NULL;
+			} else {
+				*dot++ = 0;
+				selected_step->step = xstrdup(dot);
+			}
 			selected_step->job = xstrdup(start);
-			selected_step->step = NULL;
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
 			fprintf(stderr, "Jobs requested:\n");
 			itr = list_iterator_create(selected_steps);
-			while((selected_step = list_next(itr))) 
-				fprintf(stderr, "\t: %s\n", 
-					selected_step->job);
+			while((selected_step = list_next(itr))) {
+				if(selected_step->step) 
+					fprintf(stderr, "\t: %s.%s\n",
+						selected_step->job,
+						selected_step->step);
+				else	
+					fprintf(stderr, "\t: %s\n", 
+						selected_step->job);
+			}
 			list_iterator_destroy(itr);
 		}
 	}
@@ -943,8 +945,12 @@ void parse_command_line(int argc, char **argv)
 	if (params.opt_state_list) {
 		start = params.opt_state_list;
 		while ((end = strstr(start, ","))) {
+			int c;
 			*end = 0;
-			selected_status[decode_status_char(start)] = 1;
+			c = decode_status_char(start);
+			if (c == -1)
+				fatal("unrecognized job state value");
+			selected_status[c] = 1;
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
@@ -1002,13 +1008,29 @@ endopt:
 	return;
 }
 
+/* Note: do_dump() strives to present data in an upward-compatible
+ * manner so that apps written to use data from `sacct -d` in slurm
+ * v1.0 will continue to work in v1.1 and later.
+ *
+ * To help ensure this compatibility,
+ * a. The meaning of an existing field never changes
+ * b. New fields are appended to the end of a record
+ *
+ * The "numfields" field of the record can be used as a sub-version
+ * number, as it will never decrease for the life of the current
+ * record version number (currently 1). For example, if your app needs
+ * to use field 28, a record with numfields<28 is too old a version
+ * for you, while numfields>=28 will provide what you are expecting.
+ */ 
 void do_dump(void)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 	job_rec_t *job = NULL;
 	step_rec_t *step = NULL;
-
+	struct tm ts;
+	time_t finished;
+	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if (!params.opt_dup)
@@ -1024,10 +1046,18 @@ void do_dump(void)
 		if (params.opt_uid>=0)
 			if (job->header.uid != params.opt_uid)
 				continue;
-		if(job->sacct.min_cpu == NO_VAL)
+		if(job->sacct.min_cpu == (float)NO_VAL)
 			job->sacct.min_cpu = 0;
+		
+		if(list_count(job->steps)) {
+			job->sacct.ave_cpu /= list_count(job->steps);
+			job->sacct.ave_rss /= list_count(job->steps);
+			job->sacct.ave_vsize /= list_count(job->steps);
+			job->sacct.ave_pages /= list_count(job->steps);
+		}
+
 		/* JOB_START */
-		if (params.opt_jobstep_list == NULL) {
+		if (job->show_full) {
 			if (!job->job_start_seen && job->job_step_seen) {
 				/* If we only saw JOB_TERMINATED, the
 				 * job was probably canceled. */ 
@@ -1037,7 +1067,9 @@ void do_dump(void)
 					job->header.jobnum);
 			}
 			_dump_header(job->header);
-			printf("JOB_START %s %d %d %d %s\n", 
+			printf("JOB_START 1 16 %d %d %s %d %d %d %s\n", 
+			       job->header.uid,
+			       job->header.gid,
 			       job->jobname,
 			       job->track_steps,
 			       job->priority,
@@ -1053,12 +1085,14 @@ void do_dump(void)
 				step->exitcode=1;
 			}
 			_dump_header(step->header);
-			printf("JOB_STEP %u %s %s ",
+			finished=step->header.job_start+step->elapsed;
+			gmtime_r(&finished, &ts);
+			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
 			       step->stepnum,
-			       step->stepname,
-			       step->nodes); 
+			       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
+			            ts.tm_hour, ts.tm_min, ts.tm_sec);
 			printf("%s %d %d %d %d ",
-			       decode_status_int(step->status),
+			       decode_status_int_abbrev(step->status),
 			       step->exitcode,
 			       step->ntasks,
 			       step->ncpus,
@@ -1071,7 +1105,7 @@ void do_dump(void)
 			       (int)step->rusage.ru_stime.tv_sec,
 			       (int)step->rusage.ru_stime.tv_usec);
 			printf("%d %d %d %d %d %d %d %d %d "
-			       "%d %d %d %d %d ",
+			       "%d %d %d %d %d %d %d ",
 			       (int)step->rusage.ru_maxrss,
 			       (int)step->rusage.ru_ixrss,
 			       (int)step->rusage.ru_idrss,
@@ -1085,30 +1119,38 @@ void do_dump(void)
 			       (int)step->rusage.ru_msgrcv,
 			       (int)step->rusage.ru_nsignals,
 			       (int)step->rusage.ru_nvcsw,
-			       (int)step->rusage.ru_nivcsw);
-			printf("%d %d %.2f %d %d %.2f "
-			       "%d %d %.2f %.2f %d %.2f\n",
-			       step->sacct.max_vsize, 
+			       (int)step->rusage.ru_nivcsw,
+			       step->sacct.max_vsize/1024, 
+			       step->sacct.max_rss/1024);
+			/* Data added in Slurm v1.1 */
+			printf("%d %.2f %d %.2f %d %d %.2f "
+			       "%.2f %d %.2f %s %s\n",
 			       step->sacct.max_vsize_task,
-			       step->sacct.ave_vsize,
-			       step->sacct.max_rss,
+			       step->sacct.ave_vsize/1024,
 			       step->sacct.max_rss_task,
-			       step->sacct.ave_rss,
+			       step->sacct.ave_rss/1024,
 			       step->sacct.max_pages,
 			       step->sacct.max_pages_task,
 			       step->sacct.ave_pages,
 			       step->sacct.min_cpu,
 			       step->sacct.min_cpu_task,
-			       step->sacct.ave_cpu);
+			       step->sacct.ave_cpu,
+			       step->stepname,
+			       step->nodes);
 		}
 		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
-		if (params.opt_jobstep_list == NULL) {
+		if (job->show_full) {
 			_dump_header(job->header);
-			printf("JOB_TERMINATED %d ",
+			finished=job->header.job_start+job->elapsed;
+			gmtime_r(&finished, &ts);
+			printf("JOB_TERMINATED 1 50 %d ",
 			       job->elapsed);
+			printf("%04d%02d%02d%02d%02d%02d ",
+			1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
+			      ts.tm_hour, ts.tm_min, ts.tm_sec); 
 			printf("%s %d %d %d %d ",
-			       decode_status_int(job->status),
+			       decode_status_int_abbrev(job->status),
 			       job->exitcode,
 			       job->ntasks,
 			       job->ncpus,
@@ -1120,14 +1162,14 @@ void do_dump(void)
 			       (int)job->rusage.ru_utime.tv_usec,
 			       (int)job->rusage.ru_stime.tv_sec,
 			       (int)job->rusage.ru_stime.tv_usec);
-			printf("%d %d %d %d %d %d ",
+			printf("%d %d %d %d %d %d %d %d %d "
+			       "%d %d %d %d %d %d %d ",
 			       (int)job->rusage.ru_maxrss,
 			       (int)job->rusage.ru_ixrss,
 			       (int)job->rusage.ru_idrss,
 			       (int)job->rusage.ru_isrss,
 			       (int)job->rusage.ru_minflt,
-			       (int)job->rusage.ru_majflt);
-			printf("%d %d %d %d %d %d %d %d ", 
+			       (int)job->rusage.ru_majflt,
 			       (int)job->rusage.ru_nswap,
 			       (int)job->rusage.ru_inblock,
 			       (int)job->rusage.ru_oublock,
@@ -1135,21 +1177,24 @@ void do_dump(void)
 			       (int)job->rusage.ru_msgrcv,
 			       (int)job->rusage.ru_nsignals,
 			       (int)job->rusage.ru_nvcsw,
-			       (int)job->rusage.ru_nivcsw);
-			printf("%d %d %.2f %d %d %.2f "
-			       "%d %d %.2f %.2f %d %.2f\n",
-			       job->sacct.max_vsize, 
+			       (int)job->rusage.ru_nivcsw,
+			       job->sacct.max_vsize/1024, 
+			       job->sacct.max_rss/1024);
+			/* Data added in Slurm v1.1 */
+			printf("%d %.2f %d %.2f %d %d %.2f "
+			       "%.2f %d %.2f %s %s\n",
 			       job->sacct.max_vsize_task,
-			       job->sacct.ave_vsize,
-			       job->sacct.max_rss,
+			       job->sacct.ave_vsize/1024,
 			       job->sacct.max_rss_task,
-			       job->sacct.ave_rss,
+			       job->sacct.ave_rss/1024,
 			       job->sacct.max_pages,
 			       job->sacct.max_pages_task,
 			       job->sacct.ave_pages,
 			       job->sacct.min_cpu,
 			       job->sacct.min_cpu_task,
-			       job->sacct.ave_cpu);
+			       job->sacct.ave_cpu,
+			       "-",
+			       job->nodes);
 		}
 	}
 	list_iterator_destroy(itr);		
@@ -1459,8 +1504,11 @@ void do_expire(void)
 	printf("%d jobs expired.\n", list_count(exp_list));
 finished2:
 	fclose(new_logfile);
-	if (!file_err)
-		unlink(old_logfile_name);	
+	if (!file_err) {
+		if (unlink(old_logfile_name) == -1)
+			error("Unable to unlink old logfile %s: %m",
+			      old_logfile_name);
+	}
 finished:
 	fclose(fd);
 	list_destroy(exp_list);
@@ -1603,19 +1651,17 @@ void do_help(void)
  */
 void do_list(void)
 {
-	int	do_jobs=1,
-		do_jobsteps=1;
+	int do_jobsteps = 1;
 	int rc = 0;
 	
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 	job_rec_t *job = NULL;
 	step_rec_t *step = NULL;
-
+	
 	if (params.opt_total)
 		do_jobsteps = 0;
-	else if (params.opt_jobstep_list)
-		do_jobs = 0;
+	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if (!params.opt_dup)
@@ -1660,14 +1706,23 @@ void do_list(void)
 			continue;
 		if(job->sacct.min_cpu == NO_VAL)
 			job->sacct.min_cpu = 0;
-		if (do_jobs) {
+		
+		if(list_count(job->steps)) {
+			job->sacct.ave_cpu /= list_count(job->steps);
+			job->sacct.ave_rss /= list_count(job->steps);
+			job->sacct.ave_vsize /= list_count(job->steps);
+			job->sacct.ave_pages /= list_count(job->steps);
+		}
+
+		if (job->show_full) {
 			if (params.opt_state_list) {
 				if(!selected_status[job->status])
 					continue;
 			}
 			print_fields(JOB, job);
 		}
-		if (do_jobsteps && job->track_steps) {
+		
+		if (do_jobsteps && (job->track_steps || !job->show_full)) {
 			itr_step = list_iterator_create(job->steps);
 			while((step = list_next(itr_step))) {
 				if (step->status == JOB_RUNNING 
@@ -1686,6 +1741,24 @@ void do_list(void)
 	list_iterator_destroy(itr);
 }
 
+void do_stat()
+{
+	ListIterator itr = NULL;
+	uint32_t jobid = 0;
+	uint32_t stepid = 0;
+	selected_step_t *selected_step = NULL;
+	
+	itr = list_iterator_create(selected_steps);
+	while((selected_step = list_next(itr))) {
+		jobid = atoi(selected_step->job);
+		if(selected_step->step)
+			stepid = atoi(selected_step->step);
+		else
+			stepid = 0;
+		sacct_stat(jobid, stepid);
+	}
+	list_iterator_destroy(itr);
+}
 void sacct_init()
 {
 	int i=0;

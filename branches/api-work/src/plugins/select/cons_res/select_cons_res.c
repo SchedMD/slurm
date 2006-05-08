@@ -679,8 +679,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	xassert(bitmap);
 
 	debug3(" cons_res plug-in: Job_id %u min %d max nodes %d "
-		"test_only %d host %s ", job_ptr->job_id, min_nodes, 
-		max_nodes, (int) test_only, bitmap2node_name(bitmap));
+		"test_only %d", job_ptr->job_id, min_nodes, 
+		max_nodes, (int) test_only);
 
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of 
@@ -996,10 +996,13 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 		if (job->job_id != job_ptr->job_id)
 			continue;
 		for (i=0; i<job->nhosts; i++)
-			cnt += job->cpus[i];
-		debug2("cons_res: reset num_procs for %u from %u to %u",
+			cnt += MIN(job->cpus[i], job->ntask[i]);
+		if (job_ptr->num_procs != cnt) {
+			debug2("cons_res: reset num_procs for %u from "
+				"%u to %u", 
 				job_ptr->job_id, job_ptr->num_procs, cnt);
-		job_ptr->num_procs = cnt;
+			job_ptr->num_procs = cnt;
+		}
 		break; 
 	}
 	list_iterator_destroy(job_iterator);
@@ -1203,7 +1206,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 	        this_cr_node = _find_cr_node_record (node_ptr->name);
 		if (this_cr_node == NULL) {
 		        error(" cons_res: could not find node %s",
-				 this_cr_node->node_ptr->name);
+			      node_ptr->name);
 			rc = SLURM_ERROR;
 			return rc;
 		}
@@ -1290,8 +1293,6 @@ extern int select_p_get_info_from_plugin(enum select_data_info info,
 						 * Remember to free bitmap 
 						 * using FREE_NULL_BITMAP(bitmap);*/
 			tmp_bitmap = 0;
-			debug3(" cons_res synchronized CR bitmap %s ",
-			       bitmap2node_name(*bitmap));
 			break;
 		}
 	case SELECT_CR_PLUGIN:

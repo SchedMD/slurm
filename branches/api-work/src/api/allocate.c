@@ -104,6 +104,8 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	forward_init(&resp_msg.forward, NULL);
 	req_msg.ret_list = NULL;
 	resp_msg.ret_list = NULL;
+	req_msg.forward_struct_init = 0;
+	resp_msg.forward_struct_init = 0;
 		
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
@@ -267,6 +269,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
 	req_msg.data     = req; 
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
+	req_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_SOCKET_ERROR;
@@ -295,8 +298,10 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	req_msg.data     = req; 
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
+	req_msg.forward_struct_init = 0;
 	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
+	resp_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -339,8 +344,10 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
 	req_msg.data     = req; 
 	forward_init(&req_msg.forward, NULL);
 	req_msg.ret_list = NULL;
+	req_msg.forward_struct_init = 0;
 	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
+	resp_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

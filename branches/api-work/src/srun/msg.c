@@ -140,8 +140,7 @@ static void _update_mpir_proctable(int fd, srun_job_t *job,
 	return;
 
 rwfail:
-	error("write to srun main process failed");
-	return;
+	error("_update_mpir_proctable: write to srun main process failed");
 }
 
 static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
@@ -205,11 +204,12 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 	return;
 
 rwfail:
-	error("read from srun message-handler process failed");
-	return;
+	error("_handle_update_mpir_proctable: "
+	      "read from srun message-handler process failed");
 }
 
-static void _update_step_layout(int fd, slurm_step_layout_t *layout, int nodeid)
+static void _update_step_layout(int fd, slurm_step_layout_t *layout, 
+				int nodeid)
 {
 	int msg_type = PIPE_UPDATE_STEP_LAYOUT;
 	int dummy = 0xdeadbeef;
@@ -234,8 +234,7 @@ static void _update_step_layout(int fd, slurm_step_layout_t *layout, int nodeid)
 	return;
 
 rwfail:
-	error("write to srun main process failed");
-	return;
+	error("_update_step_layout: write to srun main process failed");
 }
 
 static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
@@ -270,8 +269,8 @@ static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
 	return;
 
 rwfail:
-	error("read from srun message-handler process failed");
-	return;
+	error("_handle_update_step_layout: "
+	      "read from srun message-handler process failed");
 }
 
 static void _dump_proctable(srun_job_t *job)
@@ -302,15 +301,20 @@ void debugger_launch_failure(srun_job_t *job)
 	if (opt.parallel_debug) {
 		if(message_thread && job) {
 			i = MPIR_DEBUG_ABORTING;
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &pipe_enum,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &i,sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &pipe_enum, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &i, sizeof(int));
 		} else if(!job) {
 			error("Hey I don't have a job to write to on the "
 			      "failure of the debugger launch.");
 		}
 	}
+	return;
+rwfail:
+	error("debugger_launch_failure: "
+	      "write from srun message-handler process failed");
+
 }
 
 /*
@@ -328,7 +332,7 @@ static void _timeout_handler(time_t timeout)
 	if (timeout != last_timeout) {
 		last_timeout = timeout;
 		verbose("job time limit to be reached at %s", 
-				ctime(&timeout));
+			ctime(&timeout));
 	}
 }
 
@@ -374,12 +378,12 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 	pthread_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &pipe_enum, sizeof(int));
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &msg->srun_node_id, sizeof(int));
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &job->host_state[msg->srun_node_id], sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &pipe_enum, sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &msg->srun_node_id, sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &job->host_state[msg->srun_node_id], sizeof(int));
 		
 	}
 	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
@@ -387,6 +391,10 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 			       msg->local_pids, remote_argv[0]);
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
 			 msg->local_pids, remote_argv[0]     );
+	return;
+rwfail:
+	error("_process_launch_resp: "
+	      "write from srun message-handler process failed");
 	
 }
 
@@ -396,21 +404,27 @@ update_tasks_state(srun_job_t *job, uint32_t nodeid)
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	debug2("updating %d running tasks for node %d", 
-			job->step_layout->tasks[nodeid], nodeid);
+	       job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
 		uint32_t tid = job->step_layout->tids[nodeid][i];
 
 		if(message_thread) {
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &pipe_enum,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &tid,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &job->task_state[tid],sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &pipe_enum,sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &tid,sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &job->task_state[tid],sizeof(int));
 		}
 	}
 	slurm_mutex_unlock(&job->task_mutex);
+	return;
+rwfail:
+	slurm_mutex_unlock(&job->task_mutex);
+	error("update_tasks_state: "
+	      "write from srun message-handler process failed");
+
 }
 
 static void
@@ -419,22 +433,28 @@ update_running_tasks(srun_job_t *job, uint32_t nodeid)
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	debug2("updating %d running tasks for node %d", 
-			job->step_layout->tasks[nodeid], nodeid);
+	       job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
 		uint32_t tid = job->step_layout->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_RUNNING;
 
 		if(message_thread) {
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&tid,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &job->task_state[tid],sizeof(int));
+			safe_write(job->forked_msg->
+				   par_msg->msg_pipe[1],
+				   &pipe_enum,sizeof(int));
+			safe_write(job->forked_msg->
+				   par_msg->msg_pipe[1],&tid, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &job->task_state[tid], sizeof(int));
 		}
 	}
 	slurm_mutex_unlock(&job->task_mutex);
+	return;
+rwfail:
+	slurm_mutex_unlock(&job->task_mutex);
+	error("update_running_tasks: "
+	      "write from srun message-handler process failed");
 }
 
 static void
@@ -449,12 +469,12 @@ update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 		job->task_state[tid] = SRUN_TASK_FAILED;
 
 		if(message_thread) {
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &pipe_enum,sizeof(int));
-			write(job->forked_msg->
-			      par_msg->msg_pipe[1],&tid,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &job->task_state[tid],sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &pipe_enum, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1], 
+				   &tid, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &job->task_state[tid], sizeof(int));
 		}
 		tasks_exited++;
 	}
@@ -464,6 +484,11 @@ update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 		debug2("all tasks exited");
 		update_job_state(job, SRUN_JOB_TERMINATED);
 	}
+rwfail:
+	slurm_mutex_unlock(&job->task_mutex);
+	error("update_failed_tasks: "
+	      "write from srun message-handler process failed");
+
 }
 
 static void
@@ -479,28 +504,29 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 	if (msg->return_code != 0)  {
 
 		error("%s: launch failed: %s", 
-		       msg->node_name, slurm_strerror(msg->return_code));
+		      msg->node_name, slurm_strerror(msg->return_code));
 
 		slurm_mutex_lock(&job->task_mutex);
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
 		
 		if(message_thread) {
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &pipe_enum,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &msg->srun_node_id,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &job->host_state[msg->srun_node_id],sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &pipe_enum, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &msg->srun_node_id, sizeof(int));
+			safe_write(job->forked_msg->par_msg->msg_pipe[1],
+				   &job->host_state[msg->srun_node_id],
+				   sizeof(int));
 		}
 		update_failed_tasks(job, msg->srun_node_id);
 
 		/*
-		if (!opt.no_kill) {
-			job->rc = 124;
-			update_job_state(job, SRUN_JOB_WAITING_ON_IO);
-		} else 
-			update_failed_tasks(job, msg->srun_node_id);
+		  if (!opt.no_kill) {
+		  job->rc = 124;
+		  update_job_state(job, SRUN_JOB_WAITING_ON_IO);
+		  } else 
+		  update_failed_tasks(job, msg->srun_node_id);
 		*/
 		debugger_launch_failure(job);
 		return;
@@ -508,6 +534,11 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		_process_launch_resp(job, msg);
 		update_running_tasks(job, msg->srun_node_id);
 	}
+	return;
+rwfail:
+	error("_launch_handler: "
+	      "write from srun message-handler process failed");
+
 }
 
 /* _confirm_launch_complete
@@ -555,12 +586,12 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 
 	if(message_thread) {
 		pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &pipe_enum, sizeof(int));
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &resp->srun_node_id, sizeof(int));
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &job->host_state[resp->srun_node_id], sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &pipe_enum, sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &resp->srun_node_id, sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &job->host_state[resp->srun_node_id], sizeof(int));
 	}
 
 	if (resp->return_code != 0) {
@@ -589,8 +620,9 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 
 	for (i = 0; i < resp->ntasks; i++) {
 		job->step_layout->tids[resp->srun_node_id][i] = resp->gtids[i];
-		job->step_layout->hostids[resp->gtids[i]]  = resp->srun_node_id;
-		info ("setting task%d on hostid %d\n", resp->gtids[i], resp->srun_node_id);
+		job->step_layout->hostids[resp->gtids[i]] = resp->srun_node_id;
+		info ("setting task%d on hostid %d\n", 
+		      resp->gtids[i], resp->srun_node_id);
 	}
 	_update_step_layout(job->forked_msg->par_msg->msg_pipe[1],
 			    job->step_layout, resp->srun_node_id);
@@ -612,7 +644,10 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 			remote_argv[0]);
 
 	update_running_tasks(job, resp->srun_node_id);
-
+	return;
+rwfail:
+	error("_reattach_handler: "
+	      "write from srun message-handler process failed");
 }
 
 
@@ -679,13 +714,17 @@ _update_task_exitcode(srun_job_t *job, int taskid)
 	pipe_enum_t pipe_enum = PIPE_TASK_EXITCODE;
 
 	if(message_thread) {
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &pipe_enum, sizeof(int));
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &taskid, sizeof(int));
-		write(job->forked_msg->par_msg->msg_pipe[1],
-		      &job->tstatus[taskid], sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &pipe_enum, sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &taskid, sizeof(int));
+		safe_write(job->forked_msg->par_msg->msg_pipe[1],
+			   &job->tstatus[taskid], sizeof(int));
 	}
+	return;
+rwfail:
+	error("_update_task_exitcode: "
+	      "write from srun message-handler process failed");
 }
 
 static void 
@@ -729,7 +768,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 
 		tasks_exited++;
 		if ((tasks_exited == opt.nprocs) 
-		  || (slurm_mpi_single_task_per_node () 
+		    || (slurm_mpi_single_task_per_node () 
 			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
 			eio_signal_shutdown(job->eio);
@@ -782,56 +821,56 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 
 	switch (msg->msg_type)
 	{
-		case RESPONSE_LAUNCH_TASKS:
-			_launch_handler(job, msg);
-			slurm_free_launch_tasks_response_msg(msg->data);
-			break;
-		case MESSAGE_TASK_EXIT:
-			_exit_handler(job, msg);
-			slurm_free_task_exit_msg(msg->data);
-			break;
-		case RESPONSE_REATTACH_TASKS:
-			debug2("recvd reattach response");
-			_reattach_handler(job, msg);
-			slurm_free_reattach_tasks_response_msg(msg->data);
-			break;
-		case SRUN_PING:
-			debug3("slurmctld ping received");
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			slurm_free_srun_ping_msg(msg->data);
-			break;
-		case SRUN_TIMEOUT:
-			to = msg->data;
-			_timeout_handler(to->timeout);
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			slurm_free_srun_timeout_msg(msg->data);
-			break;
-		case SRUN_NODE_FAIL:
-			nf = msg->data;
-			_node_fail_handler(nf->nodelist, job);
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			slurm_free_srun_node_fail_msg(msg->data);
-			break;
-		case RESPONSE_RESOURCE_ALLOCATION:
-			debug3("resource allocation response received");
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			slurm_free_resource_allocation_response_msg(msg->data);
-			break;
-		case PMI_KVS_PUT_REQ:
-			debug3("PMI_KVS_PUT_REQ received");
-			rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
-			slurm_send_rc_msg(msg, rc);
-			break;
-		case PMI_KVS_GET_REQ:
-			debug3("PMI_KVS_GET_REQ received");
-			rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
-			slurm_send_rc_msg(msg, rc);
-			slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
-			break;
-		default:
-			error("received spurious message type: %d\n",
-			      msg->msg_type);
-			break;
+	case RESPONSE_LAUNCH_TASKS:
+		_launch_handler(job, msg);
+		slurm_free_launch_tasks_response_msg(msg->data);
+		break;
+	case MESSAGE_TASK_EXIT:
+		_exit_handler(job, msg);
+		slurm_free_task_exit_msg(msg->data);
+		break;
+	case RESPONSE_REATTACH_TASKS:
+		debug2("recvd reattach response");
+		_reattach_handler(job, msg);
+		slurm_free_reattach_tasks_response_msg(msg->data);
+		break;
+	case SRUN_PING:
+		debug3("slurmctld ping received");
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_srun_ping_msg(msg->data);
+		break;
+	case SRUN_TIMEOUT:
+		to = msg->data;
+		_timeout_handler(to->timeout);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_srun_timeout_msg(msg->data);
+		break;
+	case SRUN_NODE_FAIL:
+		nf = msg->data;
+		_node_fail_handler(nf->nodelist, job);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_srun_node_fail_msg(msg->data);
+		break;
+	case RESPONSE_RESOURCE_ALLOCATION:
+		debug3("resource allocation response received");
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_resource_allocation_response_msg(msg->data);
+		break;
+	case PMI_KVS_PUT_REQ:
+		debug3("PMI_KVS_PUT_REQ received");
+		rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
+		slurm_send_rc_msg(msg, rc);
+		break;
+	case PMI_KVS_GET_REQ:
+		debug3("PMI_KVS_GET_REQ received");
+		rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
+		slurm_send_rc_msg(msg, rc);
+		slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
+		break;
+	default:
+		error("received spurious message type: %d\n",
+		      msg->msg_type);
+		break;
 	}
 	return;
 }
@@ -869,13 +908,14 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
 	msg->conn_fd = fd;
+	msg->forward_struct_init = 0;
 	
 	/* multiple jobs (easily induced via no_alloc) sometimes result
 	 * in slow message responses and timeouts. Raise the timeout
 	 * to 5 seconds for no_alloc option only */
 	if (opt.no_alloc)
 		timeout = 5;
-  again:
+again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
@@ -935,7 +975,7 @@ _do_poll(srun_job_t *job, struct pollfd *fds, int timeout)
 		case EINVAL:
 		case EFAULT: fatal("poll: %m");
 		default:     error("poll: %m. Continuing...");
-			     continue;
+			continue;
 		}
 	}
 
@@ -960,8 +1000,8 @@ _get_next_timeout(srun_job_t *job)
 		timeout = job->ltimeout - time(NULL);
 	else 
 		timeout = job->ltimeout < job->etimeout ? 
-			  job->ltimeout - time(NULL) : 
-			  job->etimeout - time(NULL);
+			job->ltimeout - time(NULL) : 
+			job->etimeout - time(NULL);
 
 	return timeout;
 }
@@ -1064,7 +1104,8 @@ par_thr(void *arg)
 	//slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	close(msg_par->msg_pipe[0]); // close read end of pipe
 	close(par_msg->msg_pipe[1]); // close write end of pipe 
-	while(read(par_msg->msg_pipe[0], &c, sizeof(int)) == sizeof(int)) {
+	while(read(par_msg->msg_pipe[0], &c, sizeof(int)) 
+	      == sizeof(int)) {
 		// getting info from msg thread
 		if(type == PIPE_NONE) {
 			debug2("got type %d\n",c);
@@ -1216,11 +1257,12 @@ msg_thr_create(srun_job_t *job)
 		slurm_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 		while ((errno = pthread_create(&job->jtid, &attr, &msg_thr,
-					    (void *)job))) {
+					       (void *)job))) {
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");
 			sleep(1);
 		}
+		slurm_attr_destroy(&attr);
 		debug("Started msg to parent server thread (%lu)", 
 		      (unsigned long) job->jtid);
 		
@@ -1230,8 +1272,7 @@ msg_thr_create(srun_job_t *job)
 		 * close.
 		 */
 		while(read(job->forked_msg->msg_par->msg_pipe[0],
-			   &c, sizeof(int))
-		      > 0)
+			   &c, sizeof(int)) > 0)
 			; /* do nothing */
 		
 		close(job->forked_msg->msg_par->msg_pipe[0]);
@@ -1250,11 +1291,12 @@ msg_thr_create(srun_job_t *job)
 		slurm_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 		while ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
-					    (void *)job))) {
+					       (void *)job))) {
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and try again */
 		}
+		slurm_attr_destroy(&attr);
 
 		debug("Started parent to msg server thread (%lu)", 
 		      (unsigned long) job->jtid);
@@ -1305,13 +1347,13 @@ extern slurm_fd slurmctld_msg_init(void)
 		fatal("slurm_get_stream_addr error %m");
 	fd_set_nonblocking(slurmctld_fd);
 	/* hostname is not set,  so slurm_get_addr fails
-	slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
+	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
 	port = ntohs(slurm_address.sin_port);
 	slurmctld_comm_addr.hostname = xstrdup(opt.ctrl_comm_ifhn);
 	slurmctld_comm_addr.port     = port;
 	debug2("slurmctld messages to host=%s,port=%u", 
-			slurmctld_comm_addr.hostname, 
-			slurmctld_comm_addr.port);
+	       slurmctld_comm_addr.hostname, 
+	       slurmctld_comm_addr.port);
 
 	return slurmctld_fd;
 }

@@ -37,8 +37,10 @@
 extern slurm_ctl_conf_t slurmctld_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
+extern char *default_plugstack;
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
+#define DEFAULT_CACHE_GROUPS        0
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
@@ -52,7 +54,6 @@ extern char *default_plugin_path;
 #define DEFAULT_MAX_JOB_COUNT       2000
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
-#define DEFAULT_CACHE_GROUPS        0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
@@ -60,6 +61,7 @@ extern char *default_plugin_path;
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
 #endif
+#define DEFAULT_PROPAGATE_PRIO_PROCESS 0
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1

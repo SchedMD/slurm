@@ -75,6 +75,9 @@
 
 #define MAX_THREADS		130
 
+/* global, copied to STDERR_FILENO in tasks before the exec */
+int devnull = -1;
+
 typedef struct connection {
 	slurm_fd fd;
 	slurm_addr *cli_addr;
@@ -106,6 +109,7 @@ static void      _msg_engine();
 static int       _slurmd_init();
 static int       _slurmd_fini();
 static void      _init_conf();
+static void      _destroy_conf();
 static void      _print_conf();
 static void      _read_config();
 static void 	 _kill_old_slurmd();
@@ -141,6 +145,7 @@ main (int argc, char *argv[])
 
 	init_setproctitle(argc, argv);
 
+	/* NOTE: conf->logfile always NULL at this point */
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
 	xsignal(SIGTERM, &_term_handler);
@@ -201,6 +206,8 @@ main (int argc, char *argv[])
 
 	conf->pid = getpid();
 	pidfd = create_pidfile(conf->pidfile);
+	if (pidfd >= 0)
+		fd_set_close_on_exec(pidfd);
 
 	info("%s started on %T", xbasename(argv[0]));
 
@@ -226,8 +233,8 @@ main (int argc, char *argv[])
 	interconnect_node_fini();
 
 	_slurmd_fini();
-
-	return 0;
+	_destroy_conf();
+       	return 0;
 }
 
 
@@ -324,12 +331,12 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 
 	_increment_thd_count();
 	rc = pthread_create(&id, &attr, &_service_connection, (void *) arg);
+	slurm_attr_destroy(&attr);
 	if (rc != 0) {
 		error("msg_engine: pthread_create: %s", slurm_strerror(rc));
 		_service_connection((void *) arg);
 		return;
 	}
-	pthread_attr_destroy(&attr);
 	return;
 }
 
@@ -383,8 +390,10 @@ send_registration_msg(uint32_t status, bool startup)
 	
 	forward_init(&req.forward, NULL);
 	req.ret_list = NULL;
+	req.forward_struct_init = 0;
 	forward_init(&req.forward, NULL);
 	resp.ret_list = NULL;
+	resp.forward_struct_init = 0;
 	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
@@ -485,6 +494,26 @@ _free_and_set(char **confvar, char *newval)
 		return 0;
 }
 
+/* Replace any "%h" in logfile name with actual hostname */
+static void
+_massage_logfile(void)
+{
+	char *ptr, *new_fname;
+	int new_len;
+
+	if ((conf->logfile == NULL)
+	    ||  (ptr = strstr(conf->logfile, "%h")) == NULL)
+		return;
+
+	new_len = strlen(conf->logfile) + strlen(conf->hostname);
+	new_fname = xmalloc(new_len);
+	*ptr = '\0';
+	snprintf(new_fname, new_len, "%s%s%s", conf->logfile, conf->hostname, 
+		&ptr[2]);
+	xfree(conf->logfile);
+	conf->logfile = new_fname;
+}
+
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
@@ -492,8 +521,8 @@ _free_and_set(char **confvar, char *newval)
 static void
 _read_config()
 {
-        char *path_pubkey;
-	slurm_ctl_conf_t *cf;
+        char *path_pubkey = NULL;
+	slurm_ctl_conf_t *cf = NULL;
 
 	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
@@ -509,6 +538,7 @@ _read_config()
 
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
+	_massage_logfile();	
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
@@ -538,6 +568,7 @@ _read_config()
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
+	
 	conf->job_acct_freq = cf->job_acct_freq;
 
 	if ( (conf->node_name == NULL) ||
@@ -548,6 +579,8 @@ _read_config()
 		fatal("Unable to establish controller machine");
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
+
+	conf->use_pam = cf->use_pam;
 
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
@@ -633,8 +666,32 @@ _init_conf()
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
+	conf->use_pam	  =  0;
 
 	slurm_mutex_init(&conf->config_mutex);
+	return;
+}
+
+static void
+_destroy_conf()
+{
+	if(conf) {
+		xfree(conf->hostname);
+		xfree(conf->node_name);
+		xfree(conf->conffile);
+		xfree(conf->prolog);
+		xfree(conf->epilog);
+		xfree(conf->logfile);
+		xfree(conf->pubkey);
+		xfree(conf->task_prolog);
+		xfree(conf->task_epilog);
+		xfree(conf->pidfile);
+		xfree(conf->spooldir);
+		xfree(conf->tmpfs);
+		slurm_mutex_destroy(&conf->config_mutex);
+		slurm_cred_ctx_destroy(conf->vctx);
+		xfree(conf);
+	}
 	return;
 }
 
@@ -779,6 +836,12 @@ _slurmd_init()
 	init_gids_cache(cf->cache_groups);
 	slurm_conf_unlock();
 
+	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+		error("Unable to open /dev/null: %m");
+		return SLURM_FAILURE;
+	}
+	fd_set_close_on_exec(devnull);
+
 	return SLURM_SUCCESS;
 }
 
@@ -826,6 +889,8 @@ _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
 	slurmd_task_fini(); 
+	slurm_conf_destroy();
+	
 	return SLURM_SUCCESS;
 }
 

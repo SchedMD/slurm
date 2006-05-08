@@ -142,7 +142,8 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		slurm_mutex_lock(&api_file_mutex);
 		if(firstconnect) {
 			if ((rc = rm_set_data(curr_switch, 
-					RM_SwitchFirstConnection, &conn)) 
+					      RM_SwitchFirstConnection, 
+					      &conn)) 
 					!= STATUS_OK) {
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&api_file_mutex);
@@ -153,7 +154,8 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			firstconnect=0;
 		} else {
 			if ((rc = rm_set_data(curr_switch, 
-					RM_SwitchNextConnection, &conn)) 
+					      RM_SwitchNextConnection,
+					      &conn)) 
 					!= STATUS_OK) {
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&api_file_mutex);
@@ -486,16 +488,16 @@ extern int configure_block_switches(bg_record_t * bg_record)
 {
 	int i, rc = SLURM_SUCCESS;
 	ListIterator itr, switch_itr, bg_itr;
-	ba_node_t* ba_node;
-	rm_BP_t *curr_bp;
+	ba_node_t* ba_node = NULL;
+	rm_BP_t *curr_bp = NULL;
 	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
-	rm_switch_t *curr_switch;
-	ba_switch_t *ba_switch;
-	char *bpid, *curr_bpid;
+	rm_switch_t *curr_switch = NULL;
+	ba_switch_t *ba_switch = NULL;
+	char *bpid = NULL, *curr_bpid = NULL;
 	int found_bpid = 0;
 	int switch_count;
-	bg_bp_t *bg_bp;
-	bg_switch_t *bg_switch;
+	bg_bp_t *bg_bp = NULL;
+	bg_switch_t *bg_switch = NULL;
 	int first_bp=1;
 	int first_switch=1;
 	
@@ -748,6 +750,5 @@ cleanup:
 	
 	return rc;	
 }
-
 
 #endif

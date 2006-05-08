@@ -42,10 +42,11 @@
 #include <unistd.h>
 
 #include "src/common/getopt.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
+
+#include "src/sacct/sacct_stat.h"
 
 #define ERROR 2
 
@@ -53,9 +54,10 @@
  * which have no logical jobsteps. */
 #define BATCH_JOB_TIMESTAMP 0
 
-#define BRIEF_FIELDS "jobstep,status,exitcode"
-#define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,exitcode"
-#define LONG_FIELDS "jobstep,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
+#define BRIEF_FIELDS "jobid,status,exitcode"
+#define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,status,exitcode"
+#define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,status"
+#define LONG_FIELDS "jobid,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
@@ -173,27 +175,13 @@ typedef struct header {
 	uint16_t rec_type;
 } acct_header_t;
 
-typedef struct sacct_struct {
-       uint32_t max_vsize; 
-       uint16_t max_vsize_task;
-       float ave_vsize;
-       uint32_t max_rss;
-       uint16_t max_rss_task;
-       float ave_rss;
-       uint32_t max_pages;
-       uint16_t max_pages_task;
-       float ave_pages;
-       float min_cpu;
-       uint16_t min_cpu_task;
-       float ave_cpu;	
-} sacct_t;
-
 typedef struct job_rec {
 	uint32_t	job_start_seen,		/* useful flags */
 		job_step_seen,
 		job_terminated_seen,
 		jobnum_superseded;	/* older jobnum was reused */
 	acct_header_t header;
+	uint16_t show_full;
 	char	*nodes;
 	char	*jobname;
 	uint16_t track_steps;
@@ -241,6 +229,7 @@ typedef struct sacct_parameters {
 	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
 	int opt_fdump;		/* --formattted_dump */
+	int opt_stat;		/* --stat */
 	int opt_gid;		/* --gid (-1=wildcard, 0=root) */
 	int opt_header;		/* can only be cleared */
 	int opt_help;		/* --help */
@@ -255,7 +244,6 @@ typedef struct sacct_parameters {
 	char *opt_field_list;	/* --fields= */
 	char *opt_filein;	/* --file */
 	char *opt_job_list;	/* --jobs */
-	char *opt_jobstep_list;	/* --jobstep */
 	char *opt_partition_list;/* --partitions */
 	char *opt_state_list;	/* --states */
 } sacct_parameters_t;
@@ -271,11 +259,12 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;
 
 /* process.c */
-void process_start(char *f[], int lc);
-void process_step(char *f[], int lc);
-void process_suspend(char *f[], int lc);
-void process_terminated(char *f[], int lc);
+void process_start(char *f[], int lc, int show_full);
+void process_step(char *f[], int lc, int show_full);
+void process_suspend(char *f[], int lc, int show_full);
+void process_terminated(char *f[], int lc, int show_full);
 void convert_num(float num, char *buf);
+void aggregate_sacct(sacct_t *dest, sacct_t *from);
 void destroy_acct_header(void *object);
 void destroy_job(void *object);
 void destroy_step(void *object);
@@ -293,7 +282,7 @@ void print_isrss(type_t type, void *object);
 void print_ixrss(type_t type, void *object);
 void print_job(type_t type, void *object);
 void print_name(type_t type, void *object);
-void print_step(type_t type, void *object);
+void print_jobid(type_t type, void *object);
 void print_majflt(type_t type, void *object);
 void print_minflt(type_t type, void *object);
 void print_msgrcv(type_t type, void *object);
@@ -329,6 +318,7 @@ void do_expire(void);
 void do_fdump(char* fields[], int lc);
 void do_help(void);
 void do_list(void);
+void do_stat(void);
 void sacct_init();
 void sacct_fini();
 

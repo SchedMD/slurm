@@ -30,6 +30,12 @@
 
 #include "src/plugins/jobacct/common/jobacct_common.h"
 
+#ifdef HAVE_AIX
+#include <procinfo.h>
+#include <sys/types.h>
+#define NPROCS 5000
+#endif
+
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -61,28 +67,37 @@
  * matures.
  */
 const char plugin_name[] =
-"Job accounting LINUX plugin";
-const char plugin_type[] = "jobacct/linux";
+"Job accounting AIX plugin";
+const char plugin_type[] = "jobacct/aix";
 const uint32_t plugin_version = 100;
 
 /* Other useful declarations */
-#if 0
+#ifdef HAVE_AIX
 typedef struct prec {	/* process record */
-	pid_t	pid;
-	pid_t	ppid;
-	int	psize;	/* maxrss */
-	int	vsize;	/* max virtual size */
+	pid_t   pid;
+	pid_t   ppid;
+	int     usec;   /* user cpu time */
+	int     ssec;   /* system cpu time */
+	int     pages;  /* pages */
+	float	rss;	/* maxrss */
+	float	vsize;	/* max virtual size */
 } prec_t;
 
 static int freq = 0;
-static List prec_list = NULL;
 /* Finally, pre-define all the routines. */
 
-static void _get_offspring_data(prec_t *ancestor, pid_t pid);
-static void _get_process_data(pid_t pid);
-static int _get_process_data_line(FILE *in, prec_t *prec);
+static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
+static void _get_process_data();
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
+
+/* system call to get process table */
+extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *, 
+		    int, pid_t *, int);
+    /* procinfo:   pointer to array of procinfo struct */
+    /* nproc:      number of user procinfo struct */
+    /* sizproc:    size of expected procinfo structure */
+
 #endif
 /*
  * The following routine is called by the slurmd mainline
@@ -119,6 +134,11 @@ int jobacct_p_getinfo(struct jobacctinfo *jobacct,
 void jobacct_p_aggregate(struct jobacctinfo *dest, struct jobacctinfo *from)
 {
 	common_aggregate(dest, from);
+}
+
+void jobacct_p_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
+{
+	common_2_sacct(sacct, jobacct);
 }
 
 void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
@@ -176,29 +196,23 @@ int jobacct_p_startpoll(int frequency)
 {
 	int rc = SLURM_SUCCESS;
 	
-#if 0
+#ifdef HAVE_AIX
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
-#endif	
+
 	debug("jobacct AIX plugin loaded");
-	return rc;
-#if 0
-	/* FIXME!!!!!!!!!!!!!!!!!!!!
-	   This was written for linux systems doesn't to anything on AIX */
-
-	/* Parse the JobAcctParameters */
-
 	
 	debug("jobacct: frequency = %d", frequency);
 		
 	fini = false;
 	
 	if (frequency == 0) {	/* don't want dynamic monitoring? */
-		debug2("jobacct LINUX dynamic logging disabled");
+		debug2("jobacct AIX dynamic logging disabled");
 		return rc;
 	}
 
 	freq = frequency;
+	task_list = list_create(common_free_jobacct);
 	
 	/* create polling thread */
 	slurm_attr_init(&attr);
@@ -212,8 +226,10 @@ int jobacct_p_startpoll(int frequency)
 		frequency = 0;
 	}
 	else 
-		debug3("jobacct LINUX dynamic logging enabled");
-	pthread_attr_destroy(&attr);
+		debug3("jobacct AIX dynamic logging enabled");
+	slurm_attr_destroy(&attr);
+#else
+	error("jobacct AIX not loaded, not an aix system, check slurm.conf");
 #endif
 	return rc;
 }
@@ -230,10 +246,13 @@ int jobacct_p_add_task(pid_t pid, uint16_t tid)
 
 struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
 {
+#ifdef HAVE_AIX
+	_get_process_data();
+#endif
 	return common_stat_task(pid);
 }
 
-int jobacct_p_remove_task(pid_t pid)
+struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 {
 	return common_remove_task(pid);
 }
@@ -243,7 +262,8 @@ void jobacct_p_suspendpoll()
 	common_suspendpoll();
 }
 
-#if 0
+#ifdef HAVE_AIX
+
 /* 
  * _get_offspring_data() -- collect memory usage data for the offspring
  *
@@ -251,7 +271,8 @@ void jobacct_p_suspendpoll()
  * usage data to the ancestor's <prec> record. Recurse to gather data
  * for *all* subsequent generations.
  *
- * IN:	ancestor	The entry in precTable[] to which the data
+ * IN:	prec_list       list of prec's
+ * 	ancestor	The entry in prec_list to which the data
  * 			should be added. Even as we recurse, this will
  * 			always be the prec for the base of the family
  * 			tree.
@@ -264,9 +285,27 @@ void jobacct_p_suspendpoll()
  *
  * THREADSAFE! Only one thread ever gets here.
  */
-static void _get_offspring_data(prec_t *ancestor, pid_t pid)
+static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
 {
-
+	ListIterator itr;
+	prec_t *prec = NULL;
+	
+	itr = list_iterator_create(prec_list);
+	while((prec = list_next(itr))) {
+		if (prec->ppid == pid) {
+			_get_offspring_data(prec_list, ancestor, prec->pid);
+			debug2("adding %d to %d rss = %f vsize = %f", 
+			      prec->pid, ancestor->pid, 
+			      prec->rss, prec->vsize);
+			ancestor->usec += prec->usec;
+			ancestor->ssec += prec->ssec;
+			ancestor->pages += prec->pages;
+			ancestor->rss += prec->rss;
+			ancestor->vsize += prec->vsize;
+		}
+	}
+	list_iterator_destroy(itr);
+	
 	return;
 }
 
@@ -284,31 +323,90 @@ static void _get_offspring_data(prec_t *ancestor, pid_t pid)
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-static void _get_process_data(pid_t pid) 
+static void _get_process_data() 
 {
+	struct procsinfo proc;
+	int pid = 0;
+	static int processing = 0;
+	prec_t *prec = NULL;
+	struct jobacctinfo *jobacct = NULL;
+	List prec_list = NULL;
+	ListIterator itr;
+	ListIterator itr2;
+	
+	if(processing) {
+		debug("already running, returning");
+		return;
+	}
+	
+	processing = 1;
+	prec_list = list_create(_destroy_prec);
+	/* get the whole process table */
+	while(getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
+		prec = xmalloc(sizeof(prec_t));
+		list_append(prec_list, prec);
+		prec->pid = proc.pi_pid;
+		prec->ppid = proc.pi_ppid;		
+		prec->usec = proc.pi_ru.ru_utime.tv_sec +
+			proc.pi_ru.ru_utime.tv_usec * 1e-6;
+		prec->ssec = proc.pi_ru.ru_stime.tv_sec +
+			proc.pi_ru.ru_stime.tv_usec * 1e-6;
+		prec->pages = proc.pi_majflt;
+		prec->rss = (proc.pi_trss + proc.pi_drss) * 4;
+		//prec->rss *= 1024;
+		prec->vsize = (proc.pi_tsize / 1024);
+		prec->vsize += (proc.pi_dvm * 4);
+		//prec->vsize *= 1024;
+		/*  debug("vsize = %f = %d/1024+%d",  */
+/*  		      prec->vsize, proc.pi_tsize, proc.pi_dvm * 4); */
+	}
+	if(!list_count(prec_list))
+		goto finished;
+	
+	slurm_mutex_lock(&jobacct_lock);
+	if(!task_list || !list_count(task_list)) {
+		slurm_mutex_unlock(&jobacct_lock);
+		goto finished;
+	}
+	itr = list_iterator_create(task_list);
+	while((jobacct = list_next(itr))) {
+		itr2 = list_iterator_create(prec_list);
+		while((prec = list_next(itr2))) {
+			//debug2("pid %d ? %d", prec->ppid, jobacct->pid);
+			if (prec->pid == jobacct->pid) {
+				/* find all my descendents */
+				_get_offspring_data(prec_list, prec, 
+						    prec->pid);
+						
+				/* tally their usage */
+				jobacct->max_rss = jobacct->tot_rss = 
+					MAX(jobacct->max_rss, (int)prec->rss);
+				jobacct->max_vsize = jobacct->tot_vsize = 
+					MAX(jobacct->max_vsize, 
+					    (int)prec->vsize);
+				jobacct->max_pages = jobacct->tot_pages =
+					MAX(jobacct->max_pages, prec->pages);
+				jobacct->min_cpu = jobacct->tot_cpu = 
+					MAX(jobacct->min_cpu,
+					    (prec->usec + prec->ssec));
+				debug2("%d size now %d %d time %d",
+				      jobacct->pid, jobacct->max_rss, 
+				      jobacct->max_vsize, jobacct->tot_cpu);
+				
+				break;
+			}
+		}
+		list_iterator_destroy(itr2);
+	}
+	list_iterator_destroy(itr);	
+	slurm_mutex_unlock(&jobacct_lock);
+finished:
+	list_destroy(prec_list);
+	processing = 0;	
 
 	return;
 }
 
-/* _get_process_data_line() - get line of data from /proc/<pid>/stat
- *
- * IN:	in - input file channel
- * OUT:	prec - the destination for the data
- *
- * RETVAL:	==0 - no valid data
- * 		!=0 - data are valid
- *
- * Note: It seems a bit wasteful to do all those atoi() and
- *       atol() conversions that are implicit in the scanf(),
- *       but they help to ensure that we really are looking at the
- *       expected type of record.
- */
-static int _get_process_data_line(FILE *in, prec_t *prec) 
-{
-	/* discardable data */
-
-	return 1;
-}
 
 /* _watch_tasks() -- monitor slurm jobs and track their memory usage
  *
@@ -318,10 +416,9 @@ static int _get_process_data_line(FILE *in, prec_t *prec)
 static void *_watch_tasks(void *arg) 
 {
 
-	pid_t pid = getpid();
 	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
 		if(!suspended) {
-			_get_process_data(pid);	/* Update the data */ 
+			_get_process_data();	/* Update the data */ 
 		}
 		sleep(freq);
 	} 

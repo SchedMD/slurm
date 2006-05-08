@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -40,7 +40,7 @@ print_header $test_id
 # Report the slurm network and use it to establish window parameters
 # 
 # windows_per_node    - switch windows available per node
-# windows_interations - job steps to run after initial switch window allocation
+# windows_iterations - job steps to run after initial switch window allocation
 #                       for a persistent job step
 # windows_used        - switch windows to use per job step
 # step_delay          - run time of persistent job step (seconds)
@@ -51,21 +51,21 @@ spawn $scontrol show config
 expect {
 	-re "switch/elan" {
 		set windows_per_node 2048
-		set windows_interations 50
+		set windows_iterations 50
 		set windows_used 48
 		set step_delay 10
 		exp_continue
 	}
 	-re "switch/federation" {
 		set windows_per_node 16
-		set windows_interations 32
+		set windows_iterations 32
 		set windows_used 2
 		set step_delay 10
 		exp_continue
 	}
 	-re "switch/none" {
 		set windows_per_node 0
-		set windows_interations 5
+		set windows_iterations 5
 		set windows_used 4
 		set step_delay 5
 		exp_continue
@@ -101,23 +101,34 @@ expect -re $prompt
 send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\n"
 
 # start more job steps to check see if any switch window conflicts occur
-for {set inx 0} {$inx < $windows_interations} {incr inx} {
+for {set inx 0} {$inx < $windows_iterations} {incr inx} {
         expect {
                 -re "error" {
                         send_user "\nFAILURE: some error occurred\n"
                         set exit_code 1
                         exp_continue
                 }
-                -re $prompt
-        }
-
-	send "$srun -N1 -O -n$windows_used true\n"
+		-re $prompt {
+			send_user "spawning step $inx\n"
+			send "$srun -N1 -O -n$windows_used true\n"
+		}
+		timeout {
+			send_user "\nFAILURE: srun (from --allocate) not responding\n"
+			kill_srun
+			set exit_code 1
+		}
+		eof {
+			send_user "\nFAILURE: srun aborted\n"
+			set exit_code 1
+			wait
+		}
+	}
 }
 
 # wait for initial job step to complete
 expect -re $prompt
-send_user "(sleeping for $step_delay seconds) "
-sleep $step_delay
+send_user "(sleeping for $step_delay seconds, for job step zero to complete) "
+exec $bin_sleep $step_delay
 send "exit\n"
 
 expect {

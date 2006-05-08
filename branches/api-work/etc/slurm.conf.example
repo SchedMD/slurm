@@ -124,8 +124,9 @@
 #                         (If a logfile is set for slurmctld, logging via
 #                          syslog will be turned off)
 #
-#    "SlurmdLogFile"    : fully qualified pathname to slurmd logfile
-#                         (same caveat as SlurmctldLogfile above)
+#    "SlurmdLogFile"    : fully qualified pathname to slurmd logfile,
+#                         may contain "%h" for hostname substitution
+#                         (same caveat as SlurmctldLogFile above)
 #
 # Example:
 #
@@ -133,7 +134,7 @@
 # SlurmdDebug=4		# default is `3'
 #
 # SlurmctldLogFile=/var/log/slurmctld.log  # default is to log via syslog()
-# SlurmdLogFile=/var/log/slurmd.log        # default is to log via syslog()
+# SlurmdLogFile=/var/log/slurmd.log.%h     # substitute hostname for "%h"
 
 
 # o Define an alternate location for slurmd and slurmctld pid files, 
@@ -370,6 +371,22 @@ JobAcctType=jobacct/none
 
 
 #
+# o Define Process Priority Propagation Configuration
+#
+#    "PropagatePrioProcess"
+#                       : if set to `1', the priority (aka nice value) of the
+#                         process that launched the job on the submit node,
+#                         (typically the users shell), will be propagated to
+#                         the compute nodes and set for the users job.  If set
+#                         to `0', or left unset, the users job will inherit the
+#                         scheduling priority from the slurm daemon.
+#
+# Example:
+#
+# PropagatePrioProcess=1       # default is `0'
+
+
+#
 # o Define the Resource Limit Propagation Configuration
 #
 #   These two parameters can be used to specify which resource limits to
@@ -416,6 +433,26 @@ JobAcctType=jobacct/none
 #                                                 # MEMLOCK, are propagated.
 #
 
+
+#
+# o Define whether PAM (Pluggable Authentication Modules for Linux) will be
+#   used.
+#
+# PAM is a set of shared libraries that enables system administrators to select
+# the mechanism individual applications use to authenticate users. PAM also
+# provides services for account managment, credential management, session 
+# management and authentication-token (password changing) management. SLURM
+# uses PAM to obtain resource limits. This allows the system adminisrator to
+# dynamically configure resource limits without causing an interruption to
+# the service provided by SLURM.
+#
+# Also, for PAM to work properly with SLURM, a configuration file for SLURM
+# must be created and installed. See the slurm.conf man page for details about
+# this file.
+#
+# Example:
+#
+# UsePAM=1 or UsePAM=Yes   # default is not to use PAM
 
 
 #

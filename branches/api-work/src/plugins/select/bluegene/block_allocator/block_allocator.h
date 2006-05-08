@@ -56,6 +56,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include <dlfcn.h>
 
 #ifdef WITH_PTHREADS
@@ -327,6 +328,12 @@ extern char *set_bg_block(List results, int *start,
 extern int reset_ba_system();
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bg_err_str(status_t inx);
 
 /**
  * Set up the map for resolving
@@ -342,5 +349,10 @@ extern int *find_bp_loc(char* bp_id);
  * find a rack/midplace location 
  */
 extern char *find_bp_rack_mid(char* xyz);
+
+/**
+ * set the used wires for a block out of the database 
+ */
+extern int load_block_wiring(char *bg_block_id);
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

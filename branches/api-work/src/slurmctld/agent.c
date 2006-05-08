@@ -235,6 +235,7 @@ void *agent(void *args)
 			fatal("Can't create pthread");
 		sleep(1);	/* sleep and again */
 	}
+	slurm_attr_destroy(&attr_wdog);
 #if 	AGENT_THREAD_COUNT < 1
 	fatal("AGENT_THREAD_COUNT value is invalid");
 #endif
@@ -276,6 +277,7 @@ void *agent(void *args)
 						   thread_mutex);
 			}
 		}
+		slurm_attr_destroy(&thread_ptr[i].attr);
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
@@ -506,6 +508,12 @@ static void *_wdog(void *args)
 					thd_comp.no_resp_cnt, 
 					thd_comp.retry_cnt);
 	}
+
+	for (i = 0; i < agent_ptr->thread_count; i++) {
+		if (thread_ptr[i].ret_list)
+			list_destroy(thread_ptr[i].ret_list);
+	}
+
 	if (thd_comp.max_delay)
 		debug2("agent maximum delay %d seconds", thd_comp.max_delay);
 	
@@ -670,7 +678,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				goto finished;
 		}
 		list_iterator_destroy(itr);
-		list_destroy(thread_ptr[i].ret_list);
 	}
 finished:
 	unlock_slurmctld(node_write_lock);
@@ -707,7 +714,7 @@ static inline void _comm_err(char *node_name)
  */
 static void *_thread_per_group_rpc(void *args)
 {
-	int rc = SLURM_SUCCESS, timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+	int rc = SLURM_SUCCESS;
 	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	/* we cache some pointers from task_info_t because we need 
@@ -798,11 +805,13 @@ static void *_thread_per_group_rpc(void *args)
 	msg.ret_list = NULL;
 	msg.orig_addr.sin_addr.s_addr = 0;
 	msg.srun_node_id = 0;
+	msg.forward_struct_init = 0;
 
 	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
-		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
+		if ((ret_list = slurm_send_recv_rc_msg(&msg, 
+						       msg.forward.timeout)) 
 		    == NULL) {
 			if (!srun_agent)
 				_comm_err(thread_ptr->node_name);
@@ -1109,12 +1118,15 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if (agent_cnt < MAX_AGENT_CNT) {	/* execute now */
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
+		int rc;
 		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate
 				(&attr_agent, PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
-		if (pthread_create(&thread_agent, &attr_agent,
-					agent, (void *) agent_arg_ptr) == 0)
+		rc = pthread_create(&thread_agent, &attr_agent,
+				    agent, (void *) agent_arg_ptr);
+		slurm_attr_destroy(&attr_agent);
+		if (rc == 0)
 			return;
 	}
 
@@ -1155,6 +1167,7 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 			fatal("Can't create pthread");
 		sleep(1);	/* sleep and try again */
 	}
+	slurm_attr_destroy(&attr_agent);
 }
 
 /* _slurmctld_free_job_launch_msg is a variant of slurm_free_job_launch_msg

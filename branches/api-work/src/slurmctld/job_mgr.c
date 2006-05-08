@@ -2280,6 +2280,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->argc = job_desc->argc;
 	detail_ptr->argv = job_desc->argv;
 	job_desc->argv   = (char **) NULL; /* nothing left */
+	job_desc->argc   = 0;		   /* nothing left */
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
 	if (job_desc->req_nodes) {
@@ -4169,6 +4170,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	resp_msg.data      = &rc_msg;
 	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
+	resp_msg.forward_struct_init = 0;
 	slurm_send_node_msg(conn_fd, &resp_msg);
 	return rc;
 }

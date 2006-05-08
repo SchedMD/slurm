@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 
 #include <slurm/slurm_errno.h>
@@ -47,6 +48,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/forward.h"
 #include "src/common/slurm_jobacct.h"
 
 #include "src/slurmctld/agent.h"
@@ -158,6 +160,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
+			jobacct_g_free(step_ptr->jobacct);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
@@ -461,7 +464,8 @@ try_again:
 		if ((nodes_picked == NULL) || (nodes_idle == NULL))
 			fatal("bit_alloc malloc failure");
 		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_p = (struct step_record *) list_next (step_iterator)))
+		while ((step_p = (struct step_record *)
+			list_next(step_iterator)))
 			bit_or (nodes_idle, step_p->step_node_bitmap); 
 		list_iterator_destroy (step_iterator);
 		bit_not(nodes_idle);
@@ -471,7 +475,8 @@ try_again:
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
 	 * a node count */
-	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
+	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)
+	&&  job_ptr->cpus_per_node[0]) {
 		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
 				/ job_ptr->cpus_per_node[0];
 		step_spec->node_count = (i > step_spec->node_count) ? 
@@ -636,6 +641,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	||  (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE))) {
 		error("step has invalid task count: %u", 
 		      step_specs->num_tasks);
+		bit_free(nodeset);
 		return ESLURM_BAD_TASK_COUNT;
 	}
 
@@ -862,9 +868,10 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
 
-	resp_msg.forward.cnt = 0;
+	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
-
+	resp_msg.forward_struct_init = 0;
+	
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
 	if (job_ptr == NULL) {
@@ -956,9 +963,10 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	
-	resp_msg.forward.cnt = 0;
+	forward_init(&resp_msg.forward, NULL);
 	resp_msg.ret_list = NULL;
-
+	resp_msg.forward_struct_init = 0;
+		
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
 	if (job_ptr == NULL) {

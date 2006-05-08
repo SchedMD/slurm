@@ -156,6 +156,11 @@ char *slurm_get_jobacct_type(void);
  */
 char *slurm_get_jobcomp_type(void);
 
+/* slurm_get_propagate_prio_process
+ * return the PropagatePrioProcess flag from slurmctld_conf object
+ */
+extern uint16_t slurm_get_propagate_prio_process(void);
+
 /* slurm_get_proctrack_type
  * get ProctrackType from slurmctld_conf object
  * RET char *   - proctrack type, MUST be xfreed by caller

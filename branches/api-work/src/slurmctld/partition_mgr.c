@@ -876,15 +876,15 @@ int update_part(update_part_msg_t * part_desc)
  */
 extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 {
-	int i;
+	int i = 0;
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
 	if ((run_uid == 0) || (run_uid == getuid()))
 		return 1;	/* super-user can run anywhere */
-
 	if (part_ptr->allow_uids == NULL)
 		return 0;	/* no non-super-users in the list */
+	
 	for (i = 0; part_ptr->allow_uids[i]; i++) {
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
@@ -939,15 +939,15 @@ uid_t *_get_groups_members(char *group_names)
 	if (group_names == NULL)
 		return NULL;
 	tmp_names = xstrdup(group_names);
-
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
 		temp_uids = _get_group_members(one_group_name);
 		if (temp_uids == NULL)
 			;
-		else if (group_uids == NULL)
+		else if (group_uids == NULL) {
 			group_uids = temp_uids;
-		else {	/* concatenate the uid_lists and free the new one */
+		} else {
+			/* concatenate the uid_lists and free the new one */
 			i = _uid_list_size(group_uids);
 			j = _uid_list_size(temp_uids);
 			xrealloc(group_uids, sizeof(uid_t) * (i + j + 1));
@@ -990,9 +990,24 @@ uid_t *_get_group_members(char *group_name)
 			break;
 	}
 	uid_cnt = i;
-	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
-	memset(group_uids, 0, (sizeof(uid_t) * (uid_cnt + 1)));
 
+	/* 
+	   if uid_cnt is 0 we will add the gid as a uid 
+	   this seems to be a problem with standard linux systems
+	   if a user is added to the system it will not be added to 
+	   the /etc/group file as a user inside it's own group
+	*/
+	if(uid_cnt)
+		j = uid_cnt;
+	else
+		j = 1;
+
+	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (j + 1));
+	memset(group_uids, 0, (sizeof(uid_t) * (j + 1)));
+	
+	if(!uid_cnt) {
+		group_uids[0] = group_struct_ptr->gr_gid;
+	}
 	j = 0;
 	for (i = 0; i < uid_cnt; i++) {
 		user_pw_ptr = getpwnam(group_struct_ptr->gr_mem[i]);

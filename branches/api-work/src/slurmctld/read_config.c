@@ -165,12 +165,14 @@ static int _build_bitmaps(void)
 	/* scan all nodes and identify which are up, idle and 
 	 * their configuration, resync DRAINED vs. DRAINING state */
 	for (i = 0; i < node_record_count; i++) {
-		uint16_t base_state, no_resp_flag, job_cnt;
+		uint16_t base_state, drain_flag, no_resp_flag, job_cnt;
 
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;	/* defunct */
 		base_state = node_record_table_ptr[i].node_state & 
-				NODE_STATE_BASE; 
+				NODE_STATE_BASE;
+		drain_flag = node_record_table_ptr[i].node_state &
+				NODE_STATE_DRAIN; 
 		no_resp_flag = node_record_table_ptr[i].node_state & 
 				NODE_STATE_NO_RESPOND;
 		job_cnt = node_record_table_ptr[i].run_job_cnt +
@@ -179,9 +181,10 @@ static int _build_bitmaps(void)
 		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
 		||  (base_state == NODE_STATE_DOWN))
 			bit_set(idle_node_bitmap, i);
-		if ((  (base_state == NODE_STATE_IDLE)
-		    || (base_state == NODE_STATE_ALLOCATED) )
-		   && (no_resp_flag == 0))
+		if (((base_state == NODE_STATE_IDLE)
+		||   (base_state == NODE_STATE_ALLOCATED))
+		&&  (drain_flag == 0)
+		&&  (no_resp_flag == 0))
 			bit_set(avail_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set(node_record_table_ptr[i].config_ptr->
@@ -668,7 +671,8 @@ int read_slurm_conf(int recover)
 	jobacct_g_init_slurmctld(slurmctld_conf.job_acct_logfile);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
-	switch_init();
+	if (switch_init() < 0)
+		error("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");

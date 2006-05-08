@@ -52,11 +52,11 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmctld/slurmctld.h"
-
-typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
+#include "src/sacct/sacct_stat.h"
 
 /* common */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid);
+/* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid);
 extern void jobacct_g_free(jobacctinfo_t *jobacct);
 extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
@@ -64,6 +64,7 @@ extern int jobacct_g_setinfo(jobacctinfo_t *jobacct,
 extern int jobacct_g_getinfo(jobacctinfo_t *jobacct, 
 			     enum jobacct_data_type type, void *data);
 extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
+extern void jobacct_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct);
 extern void jobacct_g_pack(jobacctinfo_t *jobacct, Buf buffer);
 extern int jobacct_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
 
@@ -80,8 +81,10 @@ extern int jobacct_g_suspend_slurmctld(struct job_record *job_ptr);
 extern int jobacct_g_startpoll(int frequency);
 extern int jobacct_g_endpoll();
 extern int jobacct_g_add_task(pid_t pid, uint16_t tid);
+/* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid);
-extern int jobacct_g_remove_task(pid_t pid);
+/* must free jobacctinfo_t if not NULL */
+extern jobacctinfo_t *jobacct_g_remove_task(pid_t pid);
 extern void jobacct_g_suspendpoll();
 
 #endif /*__SLURM_JOBACCT_H__*/

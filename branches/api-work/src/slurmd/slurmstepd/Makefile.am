@@ -12,8 +12,8 @@ slurmstepd_LDADD = 				   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
+	$(top_builddir)/src/common/libspank.la     \
 	$(SSL_LIBS) $(PAM_LIBS) 
-
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\
@@ -24,6 +24,7 @@ slurmstepd_SOURCES = 	        	\
 	fname.c fname.h			\
 	ulimits.c ulimits.h     	\
 	pdebug.c pdebug.h		\
+	pam_ses.c pam_ses.h		\
 	req.c req.h			\
 	task_exec.c task_exec.h		\
 	$(top_builddir)/src/slurmd/common/proctrack.c \

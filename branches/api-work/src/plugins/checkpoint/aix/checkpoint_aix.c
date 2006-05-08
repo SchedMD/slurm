@@ -64,8 +64,6 @@ struct check_job_info {
 	char    *error_msg;
 };
 
-static void _comp_msg(struct step_record *step_ptr, 
-		struct check_job_info *check_ptr);
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		char *node_name, slurm_addr node_addr);
 static int  _step_sig(struct step_record * step_ptr, uint16_t wait, 
@@ -139,6 +137,7 @@ extern int init ( void )
 		error("pthread_create: %m");
 		return SLURM_ERROR;
 	}
+	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
@@ -260,9 +259,12 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 	/* We need an error-free reply from each compute node, 
 	 * plus POE itself to note completion */
 	if (check_ptr->reply_cnt++ == check_ptr->node_cnt) {
-		info("Checkpoint complete for job %u.%u",
-			step_ptr->job_ptr->job_id, step_ptr->step_id);
-		check_ptr->time_stamp = time(NULL);
+		time_t now = time(NULL);
+		long delay = (long) difftime(now, check_ptr->time_stamp);
+		info("Checkpoint complete for job %u.%u in %ld seconds",
+			step_ptr->job_ptr->job_id, step_ptr->step_id,
+			delay);
+		check_ptr->time_stamp = now;
 		_ckpt_dequeue_timeout(step_ptr->job_ptr->job_id,
 			step_ptr->step_id, event_time);
 	}
@@ -393,15 +395,6 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 	return SLURM_SUCCESS;
 }
 
-static void _comp_msg(struct step_record *step_ptr, 
-		struct check_job_info *check_ptr)
-{
-	long delay = (long) difftime(time(NULL), check_ptr->time_stamp);
-	info("checkpoint done for job %u.%u, secs %ld errno %d", 
-		step_ptr->job_ptr->job_id, step_ptr->step_id, 
-		delay, check_ptr->error_code);
-}
-
 /* Checkpoint processing pthread
  * Never returns, but is cancelled on plugin termiantion */
 static void *_ckpt_agent_thr(void *arg)
@@ -419,7 +412,7 @@ static void *_ckpt_agent_thr(void *arg)
 		iter = list_iterator_create(ckpt_timeout_list);
 		slurm_mutex_lock(&ckpt_agent_mutex);
 		/* look for and process any timeouts */
-		while (rec = list_next(iter)) {
+		while ((rec = list_next(iter))) {
 			if (rec->end_time > now)
 				continue;
 			info("checkpoint timeout for %u.%u", 
@@ -486,7 +479,7 @@ static void _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 	if (!ckpt_timeout_list)
 		goto fini;
 	iter = list_iterator_create(ckpt_timeout_list);
-	while (rec = list_next(iter)) {
+	while ((rec = list_next(iter))) {
 		if ((rec->job_id != job_id) || (rec->step_id != step_id)
 		||  (start_time && (rec->start_time != start_time)))
 			continue;

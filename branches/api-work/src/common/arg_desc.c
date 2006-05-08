@@ -35,7 +35,7 @@ strong_alias(arg_count,		slurm_arg_count);
 strong_alias(arg_idx_by_name,	slurm_arg_idx_by_name);
 strong_alias(arg_name_by_idx,	slurm_arg_name_by_idx);
 
-const int
+int
 arg_count( const arg_desc_t *desc )
 {
 	int i;
@@ -49,7 +49,7 @@ arg_count( const arg_desc_t *desc )
 }
 
 
-const int
+int
 arg_idx_by_name( const arg_desc_t *desc, const char *name )
 {
 	int i;

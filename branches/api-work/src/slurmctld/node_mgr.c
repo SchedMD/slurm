@@ -792,9 +792,9 @@ void set_slurmd_addr (void)
  */
 int update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int error_code = 0, base_state, node_inx;
-	struct node_record *node_ptr;
-	char  *this_node_name ;
+	int error_code = 0, base_state = 0, node_inx;
+	struct node_record *node_ptr = NULL;
+	char  *this_node_name = NULL;
 	hostlist_t host_list;
 	uint16_t node_flags = 0, state_val;
 
@@ -1662,6 +1662,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and try again */
 		}
+		slurm_attr_destroy (&kill_attr_agent);
 	}
 }
 

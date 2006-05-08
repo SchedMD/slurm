@@ -615,3 +615,33 @@ rwfail:
 	return -1;
 }
 
+/*
+ *
+ * Returns jobacctinfo_t struct on success, NULL if error.  
+ * jobacctinfo_t must be freed after calling this function.
+ */
+int 
+stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
+{
+	int req = MESSAGE_STAT_JOBACCT;
+	int rc = SLURM_SUCCESS;
+	//jobacctinfo_t *jobacct = NULL;
+	int tasks = 0;
+	debug("Entering stepd_stat_jobacct for job %u.%u", 
+	      sent->job_id, sent->step_id);
+	safe_write(fd, &req, sizeof(int));
+	
+	/* Receive the jobacct struct and return */
+	resp->jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	
+	rc = jobacct_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);	
+	safe_read(fd, &tasks, sizeof(int));
+	resp->num_tasks = tasks;
+	return rc;
+rwfail:
+	error("an error occured %d", rc);
+	jobacct_g_free(resp->jobacct);
+	resp->jobacct = NULL;
+	return rc;
+}
+

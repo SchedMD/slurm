@@ -77,14 +77,14 @@ typedef struct _arg_desc {
 /*
  * Return the number of argument names in the descriptor.
  */
-const int arg_count( const arg_desc_t *desc );
+int arg_count( const arg_desc_t *desc );
 
 /*
  * Return the index in the descriptor corresponding to the name.
  *
  * Returns -1 if the name can't be found.
  */
-const int arg_idx_by_name( const arg_desc_t *desc, const char *name );
+int arg_idx_by_name( const arg_desc_t *desc, const char *name );
 
 /*
  * Return the name of the argument for the given index, or NULL if

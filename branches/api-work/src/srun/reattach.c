@@ -327,7 +327,8 @@ _attach_to_job(srun_job_t *job)
 		m->msg_type        = REQUEST_REATTACH_TASKS;
 		forward_init(&m->forward, NULL);
 		m->ret_list = NULL;
-
+		msg->forward_struct_init = 0;
+	
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
@@ -364,6 +365,7 @@ _p_reattach(slurm_msg_t *msg, srun_job_t *job)
 			error("pthread_create: %m");
 			_p_reattach_task((void *) &thd[i]);
 		}
+		slurm_attr_destroy(&thd[i].attr);
 
 	}
 

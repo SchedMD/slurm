@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 #include "src/common/mpi.h"
 #include "src/common/xmalloc.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/proctrack.h"
@@ -78,7 +79,6 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
-static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static void  _setup_spawn_io(slurmd_job_t *job);
 static int   _run_script(const char *name, const char *path, 
 		slurmd_job_t *job);
@@ -112,23 +112,6 @@ static void _setup_spawn_io(slurmd_job_t *job)
 		
 	if (fd > 2)
 		(void) close(fd);
-}
-
-/* Close write end of stdin (at the very least)
- */
-static void
-_cleanup_file_descriptors(slurmd_job_t *j)
-{
-	int i;
-	for (i = 0; i < j->ntasks; i++) {
-		slurmd_task_info_t *t = j->task[i];
-		/*
-		 * Ignore errors on close()
-		 */
-		close(t->to_stdin); 
-		close(t->from_stdout);
-		close(t->from_stdout);
-	}
 }
 
 /* Search for "export NAME=value" records in buf and 
@@ -248,15 +231,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	int rc;
 	slurmd_task_info_t *t = NULL;
 
-	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to `%s': %m: going to /tmp instead",
-		      job->cwd);
-		if (chdir("/tmp") < 0) {
-			error("couldn't chdir to /tmp either. dying.");
-			log_fini();
-			exit(4);
-		}
-	}
 
 	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
 		debug("Unable to set user limits");
@@ -277,8 +251,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit(1);
 	}
 	close(waitfd);
-
-	_cleanup_file_descriptors(job);
 
 	job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;
@@ -325,7 +297,14 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		io_dup_stdio(job->task[i]);
 
 	/* task-specific pre-launch activities */
+
+	if (spank_user_task (job, i) < 0) {
+		error ("Failed to invoke task plugin stack\n");
+		exit (1);
+	}
+
 	pre_launch(job);
+
 	if (conf->task_prolog) {
 		char *my_prolog;
 		slurm_mutex_lock(&conf->config_mutex);

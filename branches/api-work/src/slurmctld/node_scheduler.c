@@ -4,7 +4,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -884,7 +884,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 				      shared, part_node_limit);
 	if (error_code) {
 		if (detail_ptr)
-			detail_ptr->wait_reason = WAIT_RESOUCES;
+			detail_ptr->wait_reason = WAIT_RESOURCES;
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Required nodes are down or 
 			 * too many nodes requested */
@@ -1192,7 +1192,7 @@ extern void build_node_details(struct job_record *job_ptr)
 				job_ptr->cpus_per_node[cpu_inx] =
 					job_ptr->num_procs;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
-				continue;
+				goto cleanup;
 			}
 #endif
 			if (cr_enabled) {
@@ -1213,7 +1213,7 @@ extern void build_node_details(struct job_record *job_ptr)
 			}
 			
 			if (usable_cpus <= 0)
-				continue;
+					goto cleanup;
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr));
 			if ((cpu_inx == -1) ||
@@ -1230,7 +1230,7 @@ extern void build_node_details(struct job_record *job_ptr)
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
-		free(this_node_name);
+ cleanup:	free(this_node_name);
 	}
 	hostlist_destroy(host_list);
 	if (job_ptr->node_cnt != node_inx) {

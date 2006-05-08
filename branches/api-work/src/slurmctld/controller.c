@@ -90,15 +90,18 @@
  * To test for memory leaks, set MEM_LEAK_TEST to 1 then execute
  * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 
  *    --leak-resolution=med slurmctld -D
- * then exercise the slurmctld functionality before executing
+ *
+ * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
  *
  * The OpenSSL code produces a bunch of errors related to use of 
- * non-initialized memory use. 
+ *    non-initialized memory use. 
  * The switch/elan plugin orphans 640 bytes at shutdown.
+ * The list functions will report memory "possibly lost". The memory is 
+ *    used for a cache, which is really OK.
  * Otherwise the report should be free of errors. Remember to reset 
- * MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
- * backup controller use).
+ *    MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
+ *    backup controller use).
 \**************************************************************************/
 #define MEM_LEAK_TEST     0	/* Running memory leak test if set */
 
@@ -287,6 +290,7 @@ int main(int argc, char *argv[])
 		if (pthread_create(&slurmctld_config.thread_id_rpc, 
 				&thread_attr_rpc,_slurmctld_rpc_mgr, NULL))
 			fatal("pthread_create error %m");
+		slurm_attr_destroy(&thread_attr_rpc);
 
 		/*
 		 * create attached thread for signal handling
@@ -296,6 +300,7 @@ int main(int argc, char *argv[])
 				 &thread_attr_sig, _slurmctld_signal_hand,
 				 NULL))
 			fatal("pthread_create %m");
+		slurm_attr_destroy(&thread_attr_sig);
 
 		/*
 		 * create attached thread for state save
@@ -305,6 +310,7 @@ int main(int argc, char *argv[])
 				&thread_attr_save, slurmctld_state_save,
 				NULL))
 			fatal("pthread_create %m");
+		slurm_attr_destroy(&thread_attr_save);
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -346,7 +352,7 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	jobacct_g_fini_slurmctld();
+	//jobacct_g_fini_slurmctld();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
@@ -583,6 +589,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	}
 
 	debug3("_slurmctld_rpc_mgr shutting down");
+	slurm_attr_destroy(&thread_attr_rpc_req);
 	(void) slurm_shutdown_msg_engine(sockfd);
 	_free_server_thread();
 	pthread_exit((void *) 0);

@@ -222,6 +222,12 @@ This is a colon-separated list of directories, like the PATH
 environment variable. 
 The default value is "/usr/local/lib/slurm".
 .TP
+\fBPlugStackConfig\fR
+Location of the config file for SLURM stackable plug-ins that
+use the Stackable Plug-in Architecture for Node job Kontrol
+(SPANK). Default location is plugstack.conf in the same
+directory as the system slurm.conf.
+.TP
 \fBProctrackType\fR
 Identifies the plugin to be used for process tracking. 
 The slurmd daemon uses this mechanism to identify all processes 
@@ -242,6 +248,13 @@ Fully qualified pathname of a script to execute as user root on every
 node when a user's job begins execution (e.g. "/usr/local/slurm/prolog"). 
 This may be used to purge files, enable user login, etc. By default there 
 is no prolog.
+.TP
+\fBPropagatePrioProcess\fR
+Setting \fBPropagatePrioProcess\fR to "1", will cause a users job to run
+with the same priority (aka nice value) as the users process which
+launched the job on the submit node.
+If set to "0", or left unset, the users job will inherit the
+scheduling priority from the slurm daemon.
 .TP
 \fBPropagateResourceLimits\fR
 A list of comma separated resource limit names.
@@ -377,6 +390,8 @@ The default value is 3.
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's 
 logs are written.
 The default value is none (performs logging via syslog).
+Any "%h" within the name is replaced with the hostname on which the 
+\fBslurmd\fR is running.
 .TP
 \fBSlurmdPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write 
@@ -505,6 +520,15 @@ The default value is "/tmp".
 \fBSlurmd\fR daemons use a virtual tree network for communications.
 \fBTreeWidth\fR specifies the width of the tree (i.e. the fanout).
 The defautl value is 50.
+.TP
+\fBUsePAM\fR
+If set to 1, PAM (Pluggable Authentication Modules for Linux) will be enabled.
+PAM is used to establish the upper bounds for resource limits. With PAM support
+enabled, local system administrators can dynamically configure system resource
+limits. Changing the upper bound of a resource limit does not alter the limits
+of running jobs, only jobs started after a change has been made will pick up
+the new limits.
+The default value is 0 (not to use PAM).
 .TP
 \fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after 

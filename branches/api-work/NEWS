@@ -1,6 +1,31 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.0-pre7
+=============================
+ -- Accounting works for aix systems, use jobacct/aix
+ -- Support large (over 2GB) files on 32-bit linux systems
+ -- changed all writes to safe_write in srun
+ -- added $float to globals.example in the testsuite
+ -- Set job's num_proc correctly for jobs that do not have exclusive use 
+    of it's allocated nodes.
+ -- Change in support for test suite: 'testsuite/expect/globals.example'
+    is now 'testsuite/expect/globals' and you can override variable 
+    settings with a new file 'testsuite/expect/globals.local'.
+ -- Job suspend now sends SIGTSTP, sleep(1), sends SIGSTOP for better
+    MPI support.
+ -- Plug a bunch of memory leaks in various places.
+
+* Changes in SLURM 1.1.0-pre6
+=============================
+ -- Added logic to "stat" a running job with sacct option -S use -j to specify
+    job.step 
+ -- removed jobacct/bluegene (no real need for this) meaning, I don't think 
+    there is a way to gather the data yet.
+ -- Added support for mapping "%h" in configured SlurmdLog to the hostname.
+ -- Add PropagatePrioProcess to control propagation of a user's nice value 
+    to spawned tasks (based upon work by Daniel Christians, HP).
+ 
 * Changes in SLURM 1.1.0-pre5
 =============================
  -- Added step completion RPC logic
@@ -56,7 +81,8 @@ documents those changes that are of interest to users and admins.
  
 * Changes in SLURM 1.1.0-pre2
 =============================
- -- Added basic "sbcast" support, still needs message fanout logic.
+ -- Added "bcast" command to transmit copies of a file to compute nodes
+    with message fanout.
  -- Bluegene specific - Added support for overlapping partitions and 
     dynamic partitioning. 
  -- Bluegene specific - Added support for nodecard sized blocks.
@@ -83,6 +109,28 @@ documents those changes that are of interest to users and admins.
     patch_02222006).
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
+
+* Changes in SLURM 1.0.12
+=========================
+ -- Report node state of DRAIN rather than DOWN if DOWN with DRAIN flag set.
+ -- Initialize job->mail_type to 0 (NONE) for job submission.
+ -- Fix for stalled task stdout/stderr when buffered I/O is used, and
+    a single line exceeds 4096 bytes.
+ -- Fix for spinning srun when the terminal to which srun is talking
+    goes away.
+ -- Don't set avail_node_bitmap for DRAINED nodes on slurmctld reconfig
+    (can schedule a job on drained node after reconfig).
+
+* Changes in SLURM 1.0.11
+=========================
+ -- Fix for slurmstepd hang when launching a task. (Needed to install
+    list library's atfork handlers).
+ -- Fix memory leak on AIX (and possibly other architectures) due to
+    missing pthread_attr_destroy() calls.
+ -- Fix rare task standard I/O setup bug.  When the bug hit, stdin, stdout,
+    or stderr could be an invalid file descriptor.
+ -- General slurmstepd file descriptor cleanup.
+ -- Fix memory leak in job accounting logic (Andy Riebs, HP, memory_leak.patch).
 
 * Changes in SLURM 1.0.10
 =========================

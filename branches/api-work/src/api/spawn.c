@@ -818,6 +818,7 @@ static int _p_launch(slurm_msg_t *req, slurm_step_ctx ctx)
 				slurm_mutex_lock(&thread_mutex);
 			}
 		}
+		slurm_attr_destroy(&thd[i].attr);
 
 		threads_active++;
 		slurm_mutex_unlock(&thread_mutex);

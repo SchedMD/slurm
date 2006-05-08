@@ -648,33 +648,35 @@ static int _remove_allocation(char *com, List allocated_blocks)
 
 static int _alter_allocation(char *com, List allocated_blocks)
 {
-	int torus=SELECT_TORUS, i=5, i2=0;
-	int len = strlen(com);
-	bool rotate = false;
-	bool elongate = false;
+	/* this doesn't do anything yet. */
+
+	/* int torus=SELECT_TORUS, i=5, i2=0; */
+/* 	int len = strlen(com); */
+/* 	bool rotate = false; */
+/* 	bool elongate = false; */
 		
-	while(i<len) {
+/* 	while(i<len) { */
 		
-		while(com[i-1]!=' ' && i<len) {
-			i++;
-		}
-		if(!strncasecmp(com+i, "mesh", 4)) {
-			torus=SELECT_MESH;
-			i+=4;
-		} else if(!strncasecmp(com+i, "rotate", 6)) {
-			rotate=true;
-			i+=6;
-		} else if(!strncasecmp(com+i, "elongate", 8)) {
-			elongate=true;
-			i+=8;
-		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
-			i2=i;
-			i++;
-		} else {
-			i++;
-		}
+/* 		while(com[i-1]!=' ' && i<len) { */
+/* 			i++; */
+/* 		} */
+/* 		if(!strncasecmp(com+i, "mesh", 4)) { */
+/* 			torus=SELECT_MESH; */
+/* 			i+=4; */
+/* 		} else if(!strncasecmp(com+i, "rotate", 6)) { */
+/* 			rotate=true; */
+/* 			i+=6; */
+/* 		} else if(!strncasecmp(com+i, "elongate", 8)) { */
+/* 			elongate=true; */
+/* 			i+=8; */
+/* 		} else if(com[i] < 58 && com[i] > 47) { */
+/* 			i2=i; */
+/* 			i++; */
+/* 		} else { */
+/* 			i++; */
+/* 		} */
 		
-	}
+/* 	} */
 	return 1;
 }
 

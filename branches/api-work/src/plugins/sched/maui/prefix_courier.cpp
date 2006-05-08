@@ -55,6 +55,7 @@ prefix_courier_t::receive( void )
 	char header[ 10 ];    
 	uint32_t size;
 	char *buf;
+	mailbag_t *bag;
 
 	// * Read the packet size.
 	if ( courier_t::read_bytes( header, 9 ) != 9 ) {
@@ -82,7 +83,9 @@ prefix_courier_t::receive( void )
 	}
 
 	// * Invoke the factory to return the proper concrete object.
-	return m_factory->mailbag( buf, size );
+	bag = m_factory->mailbag( buf, size );
+	delete [] buf;
+	return bag;
 }
 
 

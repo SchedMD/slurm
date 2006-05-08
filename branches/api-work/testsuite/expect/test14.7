@@ -123,13 +123,18 @@ if {[wait_for_file $file_err] == 0} {
 			incr matches
 			exp_continue
 		}
+		-re "does not exist" {
+			send_user "These errors are expected, no worries\n"
+			incr matches
+			exp_continue
+		}
 		eof {
 			wait
 		}
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: sbcast wrote into root file system without root access\n"
+	send_user "\nFAILURE: sbcast wrote into root file system without root access ($matches)\n"
 	set exit_code 1
 }
 

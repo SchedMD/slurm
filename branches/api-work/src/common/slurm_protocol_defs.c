@@ -129,9 +129,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	if (msg) {
 		select_g_free_jobinfo(&msg->select_jobinfo);
 		xfree(msg->alloc_node);
-		for (i = 0; i < msg->env_size; i++) {
+		for (i = 0; i < msg->env_size; i++)
 			xfree(msg->environment[i]);
-		}
 		xfree(msg->environment);
 		xfree(msg->features);
 		xfree(msg->mail_user);
@@ -140,6 +139,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->req_nodes);
 		xfree(msg->exc_nodes);
 		xfree(msg->script);
+		for (i = 0; i < msg->argc; i++)
+			xfree(msg->argv[i]);
 		xfree(msg->argv);
 		xfree(msg->err);
 		xfree(msg->in);
@@ -166,15 +167,13 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->out);
 		xfree(msg->work_dir);
 
-		for (i = 0; i < msg->argc; i++) {
+		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
-		}
 		xfree(msg->argv);
 
 		if (msg->environment) {
-			for (i = 0; i < msg->envc; i++) {
+			for (i = 0; i < msg->envc; i++)
 				xfree(msg->environment[i]);
-			}
 			xfree(msg->environment);
 		}
 
@@ -480,7 +479,7 @@ extern char *job_reason_string(enum job_wait_reason inx)
 			return "Priority";
 		case WAIT_DEPENDENCY:
 			return "Dependency";
-		case WAIT_RESOUCES:
+		case WAIT_RESOURCES:
 			return "Resources";
 		case WAIT_PART_NODE_LIMIT:
 			return "PartitionNodeLimit";
@@ -567,11 +566,6 @@ char *node_state_string(enum node_states inx)
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
-	if (inx == NODE_STATE_DOWN) {
-		if (no_resp_flag)
-			return "DOWN*";
-		return "DOWN";
-	}
 	if (drain_flag) {
 		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
@@ -582,6 +576,11 @@ char *node_state_string(enum node_states inx)
 				return "DRAINED*";
 			return "DRAINED";
 		}
+	}
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
 	}
 	if (inx == NODE_STATE_ALLOCATED) {
 		if (no_resp_flag)
@@ -616,11 +615,6 @@ char *node_state_string_compact(enum node_states inx)
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
-	if (inx == NODE_STATE_DOWN) {
-		if (no_resp_flag)
-			return "DOWN*";
-		return "DOWN";
-	}
 	if (drain_flag) {
 		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
@@ -631,6 +625,11 @@ char *node_state_string_compact(enum node_states inx)
 				return "DRAIN*";
 			return "DRAIN";
 		}
+	}
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
 	}
 	if (inx == NODE_STATE_ALLOCATED) {
 		if (no_resp_flag)
@@ -938,4 +937,18 @@ extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 		jobacct_g_free(msg->jobacct);
 		xfree(msg);
 	}
+}
+
+extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
+{
+	if (msg) {
+		jobacct_g_free(msg->jobacct);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_node_select_msg(
+                node_info_select_request_msg_t *msg)
+{
+	xfree(msg);
 }
