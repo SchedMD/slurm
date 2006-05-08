@@ -326,6 +326,7 @@ slurm_auth_fini( void )
 		return SLURM_SUCCESS;
 
 	rc = _slurm_auth_context_destroy( g_context );
+	g_context = NULL;
 	return rc;
 }
 
