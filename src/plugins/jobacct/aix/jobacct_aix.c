@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobacct_linux.c - slurm job accounting plugin.
+ *  jobacct_aix.c - slurm job accounting plugin for AIX.
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.

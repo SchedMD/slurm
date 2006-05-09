@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "April 2006" "slurm.conf 1.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "May 2006" "slurm.conf 1.1" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -139,9 +139,12 @@ May not exceed 65533.
 .TP
 \fBJobAcctType\fR
 Define the job accounting mechanism type.
-Acceptable values at present include "jobacct/linux" and "jobacct/none".
+Acceptable values at present include "jobacct/aix" (for AIX operating
+system), "jobacct/linux" (for Linux operating system) and "jobacct/none"
+(no accounting data collected).
 The default value is "jobacct/none".
-In order to use the \fBsacct\fR tool, "jobacct/linux" must be configured.
+In order to use the \fBsacct\fR tool, "jobacct/aix" or "jobacct/linux" 
+must be configured.
 .TP
 \fBJobAcctLogFile\fR
 Define the location where job accounting logs are to be written.

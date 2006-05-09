@@ -271,6 +271,8 @@
 #
 # o Define the job accounting mechanism to use.
 #
+#   "jobacct/aix"      : Job accounting information
+#                        from the AIX proc table
 #   "jobacct/linux"    : Job accouting information 
 #                        from the linux proc table
 #   "jobacct/none"     : No job accouting information.
