@@ -1395,7 +1395,7 @@ static void
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
 	reattach_tasks_request_msg_t  *req = msg->data;
-	reattach_tasks_response_msg_t *resp;
+	reattach_tasks_response_msg_t *resp = NULL;
 	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
@@ -1405,7 +1405,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	int          len;
 	int               fd;
 	uid_t             req_uid;
-	slurmstepd_info_t *step;
+	slurmstepd_info_t *step = NULL;
 
 	resp = xmalloc(sizeof(reattach_tasks_response_msg_t));
 	memset(&resp_msg, 0, sizeof(slurm_msg_t));
@@ -1479,12 +1479,7 @@ done:
 	resp->return_code     = rc;
 
 	slurm_send_only_node_msg(&resp_msg);
-
-	if (resp->gtids)
-		xfree(resp->gtids);
-	if (resp->local_pids)
-		xfree(resp->local_pids);
-	xfree(resp);
+	slurm_free_reattach_tasks_response_msg(resp);
 }
 
 static uid_t 

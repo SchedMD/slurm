@@ -909,6 +909,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 					if(!name) {			
 						debug("I was unable to make "
 						      "the requested block.");
+						list_iterator_destroy(itr);
 						slurm_mutex_unlock(
 							&block_state_mutex);
 						return SLURM_ERROR;
@@ -918,6 +919,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 					debug("something happened in the "
 					      "load of %s", 
 					      bg_record->bg_block_id);
+					list_iterator_destroy(itr);
 					slurm_mutex_unlock(
 						&block_state_mutex);
 					return SLURM_ERROR;
@@ -1091,7 +1093,10 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			num_quarter=4;
 		}
 		if(_breakup_blocks(request, my_block_list, &block_inx) 
-		   == SLURM_SUCCESS)
+		   != SLURM_SUCCESS) {
+			debug2("small block not able to be placed");
+			//rc = SLURM_ERROR;
+		} else 
 			goto finished;
 	}
 	
@@ -1443,7 +1448,9 @@ extern void *mult_free_block(void *args)
 		list_destroy(bg_freeing_list);
 		bg_freeing_list = NULL;
 	}
-	slurm_mutex_unlock(&freed_cnt_mutex);	
+	slurm_mutex_unlock(&freed_cnt_mutex);
+	if(free_cnt == 0)
+		list_destroy(bg_free_block_list);
 	return NULL;
 }
 
@@ -1547,6 +1554,9 @@ extern void *mult_destroy_block(void *args)
 		bg_freeing_list = NULL;
 	}
 	slurm_mutex_unlock(&freed_cnt_mutex);	
+	if(destroy_cnt == 0)
+		list_destroy(bg_destroy_block_list);
+	
 	return NULL;
 }
 

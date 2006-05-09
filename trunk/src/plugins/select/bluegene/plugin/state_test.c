@@ -336,3 +336,116 @@ extern void test_mmcs_failures(void)
 #endif
 }
 
+extern int check_block_bp_states(char *bg_block_id)
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BG_FILES
+	rm_partition_t *block_ptr = NULL;
+	rm_BP_t *bp_ptr = NULL;
+	char *bpid = NULL;
+	int bp_cnt = 0;
+	int i = 0;
+	int *coord = NULL;
+	rm_BP_state_t bp_state;
+	char bg_down_node[128], reason[128];
+	char down_node_list[BUFSIZE];
+	time_t now = time(NULL);
+	struct tm * time_ptr = localtime(&now);
+	
+	down_node_list[0] = '\0';
+	slurm_mutex_lock(&api_file_mutex);
+	if ((rc = rm_get_partition(bg_block_id, &block_ptr)) != STATUS_OK) {
+		error("Partition %s doesn't exist.", bg_block_id);
+		rc = SLURM_ERROR;
+		slurm_mutex_unlock(&api_file_mutex);
+		goto done;
+	}
+	slurm_mutex_unlock(&api_file_mutex);
+	
+	if ((rc = rm_get_data(block_ptr, RM_PartitionBPNum, &bp_cnt)) 
+	    != STATUS_OK) {
+		error("rm_get_data(RM_BPNum): %s", bg_err_str(rc));
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	
+	for(i=0; i<bp_cnt; i++) {
+		if(i) {
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionNextBP, 
+					      &bp_ptr))
+			    != STATUS_OK) {
+				error("rm_get_data(RM_NextBP): %s",
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(block_ptr, 
+					      RM_PartitionFirstBP, 
+					      &bp_ptr))
+			    != STATUS_OK) {
+				error("rm_get_data(RM_FirstBP): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				break;
+			}	
+		}
+		if ((rc = rm_get_data(bp_ptr, RM_BPState, &bp_state))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_BPLoc): %s",
+			      bg_err_str(rc));
+			rc = SLURM_ERROR;
+			break;
+		}
+		if(bp_state == RM_BP_UP)
+			continue;
+		rc = SLURM_ERROR;
+		if ((rc = rm_get_data(bp_ptr, RM_BPID, &bpid))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_BPID): %s",
+			      bg_err_str(rc));
+			break;
+		}
+		coord = find_bp_loc(bpid);
+		
+		if(!coord) {
+			fatal("Could not find coordinates for "
+			      "BP ID %s", (char *) bpid);
+		}
+		free(bpid);
+		slurm_conf_lock();
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%d%d%d", 
+			 slurmctld_conf.node_prefix,
+			 coord[X], coord[Y], coord[Z]);
+		slurm_conf_unlock();
+	
+		if (node_already_down(bg_down_node))
+			continue;
+
+		debug("check_block_bp_states: %s in state %s", 
+		      bg_down_node, _convert_bp_state(bp_state));
+		if ((strlen(down_node_list) + strlen(bg_down_node) + 2) 
+		    < BUFSIZE) {
+			if (down_node_list[0] != '\0')
+				strcat(down_node_list,",");
+			strcat(down_node_list, bg_down_node);
+		} else
+			error("down_node_list overflow");
+	}
+	
+cleanup:
+	rm_free_partition(block_ptr);
+done:
+	if (down_node_list[0]) {
+		strftime(reason, sizeof(reason), 
+			 "select_bluegene: MMCS state not UP "
+			 "[SLURM@%b %d %H:%M]", 
+			 time_ptr);
+		slurm_drain_nodes(down_node_list, reason);
+	}
+#endif
+	return rc;
+
+}
+

@@ -2359,13 +2359,14 @@ start_again:
 				return 1;
 			}
 			
+			remove_block(results, color_count);
+			list_destroy(results);
+			results = list_create(NULL);
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
 			debug2("trying something else");
-			remove_block(results, color_count);
-			list_destroy(results);
-			results = list_create(NULL);
+			
 		}
 		
 #ifdef HAVE_BG

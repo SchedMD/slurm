@@ -467,6 +467,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			bg_record->job_running = -1;
 		
 		/*remove user from list */
+		
 		slurm_conf_lock();
 		if(bg_record->target_name) {
 			if(strcmp(bg_record->target_name, 

@@ -63,18 +63,21 @@ static int  _block_is_deallocating(bg_record_t *bg_record);
 
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
+	int jobid = bg_record->job_running;
+	char *user_name = NULL;
 	slurm_conf_lock();
+	user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
 		      "users from partition %s", 
 		      bg_record->bg_block_id);
 	} 
+	slurm_conf_unlock();
 	
 	if(bg_record->target_name 
 	   && bg_record->user_name) {
-		if(!strcmp(bg_record->target_name, 
-			   slurmctld_conf.slurm_user_name)) {
+		if(!strcmp(bg_record->target_name, user_name)) {
 			if(strcmp(bg_record->target_name, 
 				  bg_record->user_name)) {
 				error("Block %s was in a ready state "
@@ -82,10 +85,10 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				      "Job %d was lost.",
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
-				      bg_record->job_running);
-				if(bg_record->job_running > -1)
-					slurm_fail_job(bg_record->job_running);
+				      jobid);
 				slurm_mutex_unlock(&block_state_mutex);
+				if(jobid > -1)
+					slurm_fail_job(jobid);
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
@@ -118,12 +121,12 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		error("Target Name and User Name are "
 		      "not set for partition %s.",
 		      bg_record->bg_block_id);
-		bg_record->user_name = 
-			xstrdup(slurmctld_conf.slurm_user_name);
+		bg_record->user_name = xstrdup(user_name);
 		bg_record->target_name = 
 			xstrdup(bg_record->user_name);
 	}
-	slurm_conf_unlock();
+
+	xfree(user_name);
 			
 	return SLURM_SUCCESS;
 }
