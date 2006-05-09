@@ -1094,10 +1094,11 @@ extern int agent_retry (int min_wait)
 			_spawn_retry_agent(agent_arg_ptr);
 		else
 			error("agent_retry found record with no agent_args");
-	} else if (mail_list) {
-		mail_info_t *mi;
+	} else {
+		mail_info_t *mi = NULL;
 		slurm_mutex_lock(&mail_mutex);
-		mi = (mail_info_t *) list_dequeue(mail_list);
+		if (mail_list)
+			mi = (mail_info_t *) list_dequeue(mail_list);
 		slurm_mutex_unlock(&mail_mutex);
 		if (mi)
 			_mail_proc(mi);
@@ -1189,16 +1190,18 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 /* agent_purge - purge all pending RPC requests */
 void agent_purge(void)
 {
-	if (retry_list == NULL)
-		return;
-
-	slurm_mutex_lock(&retry_mutex);
-	list_destroy(retry_list);
-	retry_list = NULL;
-	if (mail_list)
+	if (retry_list) {
+		slurm_mutex_lock(&retry_mutex);
+		list_destroy(retry_list);
+		retry_list = NULL;
+		slurm_mutex_unlock(&retry_mutex);
+	}
+	if (mail_list) {
+		slurm_mutex_lock(&mail_mutex);
 		list_destroy(mail_list);
-	mail_list = NULL;
-	slurm_mutex_unlock(&retry_mutex);
+		mail_list = NULL;
+		slurm_mutex_unlock(&mail_mutex);
+	}
 }
 
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
