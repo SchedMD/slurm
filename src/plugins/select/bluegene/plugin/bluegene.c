@@ -1059,6 +1059,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 						bit_free(my_bitmap);
 						slurm_mutex_unlock(
 							&block_state_mutex);
+						list_iterator_destroy(itr);
+						list_destroy(results);
 						return SLURM_ERROR;
 					}
 					xfree(name);
@@ -1068,6 +1070,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					      bg_record->bg_block_id);
 					slurm_mutex_unlock(
 						&block_state_mutex);
+					list_iterator_destroy(itr);
+					list_destroy(results);
 					return SLURM_ERROR;
 				}
 			}
@@ -2116,6 +2120,7 @@ static int _delete_old_blocks(void)
 		} else {
 			error("_delete_old_blocks: "
 			      "no bg_curr_block_list 1");
+			list_destroy(bg_destroy_list);
 			return SLURM_ERROR;
 		}
 	} else {
@@ -2143,6 +2148,8 @@ static int _delete_old_blocks(void)
 				} else {
 					error("_delete_old_blocks: "
 					      "no bg_found_block_list");
+					list_iterator_destroy(itr_curr);
+					list_destroy(bg_destroy_list);
 					return SLURM_ERROR;
 				}
 				if(found_record == NULL) {
@@ -2154,6 +2161,7 @@ static int _delete_old_blocks(void)
 		} else {
 			error("_delete_old_blocks: "
 			      "no bg_curr_block_list 2");
+			list_destroy(bg_destroy_list);
 			return SLURM_ERROR;
 		}
 	}
