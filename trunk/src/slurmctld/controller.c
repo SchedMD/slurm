@@ -94,14 +94,19 @@
  * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
  *
- * The OpenSSL code produces a bunch of errors related to use of 
- *    non-initialized memory use. 
- * The switch/elan plugin orphans 640 bytes at shutdown.
- * The list functions will report memory "possibly lost". The memory is 
- *    used for a cache, which is really OK. Set MEM_LEAK_TEST to 1 in
- *    src/common/list.c to disable the cache.
  * It may be necessary to increase SLURM_MESSAGE_TIMEOUT_MSEC_STATIC as
  *    defined in src/common/slurm_protocol_interface.h.
+ * The OpenSSL code produces a bunch of errors related to use of 
+ *    non-initialized memory use. 
+ * The list functions will report memory "possibly lost". The memory is 
+ *    used for a cache and not really leaking. Set MEM_LEAK_TEST to 1 in
+ *    src/common/list.c to disable the cache for testing purposes only.
+ * The switch/elan functions will report two blocks "possibly lost" 
+ *    (56 and 640 bytes), they are really not lost.
+ * The _keyvalue_regex_init() function will generate two blocks "definitely
+ *    lost", both of size zero. We haven't bothered to address this.
+ * On some systems, pthread_create() will generated a small number of 
+ *    "possibly lost" blocks.
  * Otherwise the report should be free of errors. Remember to reset 
  *    MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
  *    backup controller use).
