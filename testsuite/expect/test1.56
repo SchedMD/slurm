@@ -51,7 +51,7 @@ exec $bin_rm -f $file_in $file_out
 set file [open $file_in "w"]
 puts $file $really_big_string
 for {set i 0} {$i < 100} {incr i} {
-  puts $file $short_string
+	puts $file $short_string
 }
 close $file
 
@@ -60,36 +60,28 @@ close $file
 #
 spawn $srun -v -n1 --input=$file_in --output=$file_out --error=- cat
 
-set timeout 30
+set timeout $max_job_delay
 expect {
-    -re {launching (([0-9]+)\.[0-9]+)} {
-	set stepid $expect_out(1,string)
-	set jobid $expect_out(2,string)
-    }
-    timeout {
-	send_user "\nFAILURE: Failed to launch test program through srun\n"
-	catch {exec $scancel $jobid}
-	exit 1
-    }
-}
-
-#send_user "job id: $jobid, step id: $stepid\n"
-
-expect {
-    eof {}
-    timeout {
-	send_user "\nFAILURE: srun is hung\n"
-	catch {exec $scancel $jobid}
-	exit 1
-    }
+	-re {launching ($number)\.($number)} {
+		set jobid $expect_out(1,string)
+		set stepid $expect_out(2,string)
+	}
+	timeout {
+		send_user "\nFAILURE: srun launch failed\n"
+		catch {exec $scancel $jobid}
+		exit 1
+    	}
+	eof {
+		wait
+	}
 }
 
 #
 # Make sure that the contents of the input and output files are the same
 #
 if {[catch {exec diff $file_in $file_out}]} {
-    send_user "\nFAILURE: File $file_out does not match file $file_in\n"
-    exit 1
+	send_user "\nFAILURE: File $file_out does not match file $file_in\n"
+	exit 1
 }
 
 send_user "\nSUCCESS\n"
