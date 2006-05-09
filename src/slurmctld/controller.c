@@ -100,6 +100,8 @@
  * The list functions will report memory "possibly lost". The memory is 
  *    used for a cache, which is really OK. Set MEM_LEAK_TEST to 1 in
  *    src/common/list.c to disable the cache.
+ * It may be necessary to increase SLURM_MESSAGE_TIMEOUT_MSEC_STATIC as
+ *    defined in src/common/slurm_protocol_interface.h.
  * Otherwise the report should be free of errors. Remember to reset 
  *    MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
  *    backup controller use).
@@ -353,7 +355,7 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	//jobacct_g_fini_slurmctld();
+	jobacct_g_fini_slurmctld();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
