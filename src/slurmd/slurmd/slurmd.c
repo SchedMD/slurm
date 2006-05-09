@@ -324,6 +324,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 		errno = rc;
 		xfree(arg);
 		error("Unable to set detachstate on attr: %m");
+		slurm_attr_destroy(&attr);
 		return;
 	}
 

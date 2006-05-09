@@ -434,6 +434,16 @@ try_again:
 	
 	/* set the bitmap and do other allocation activities */
 	if (*found_bg_record) {
+		if(!test_only) {
+			if(check_block_bp_states(
+				   (*found_bg_record)->bg_block_id) 
+			   == SLURM_ERROR) {
+				(*found_bg_record)->job_running = -3;
+				(*found_bg_record)->state = RM_PARTITION_ERROR;
+				slurm_mutex_unlock(&block_state_mutex);
+				goto try_again;
+			}
+		}
 		format_node_name(*found_bg_record, tmp_char);
 	
 		debug("_find_best_block_match %s <%s>", 
