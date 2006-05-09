@@ -1996,15 +1996,15 @@ _write_data_array_to_file(char *file_name, char **data, uint16_t size)
 		return ESLURM_WRITING_TO_FILE;
 	}
 
-	if (data == NULL)
-		return SLURM_SUCCESS;
-
 	amount = write(fd, &size, sizeof(uint16_t));
 	if (amount < sizeof(uint16_t)) {
 		error("Error writing file %s, %m", file_name);
 		close(fd);
 		return ESLURM_WRITING_TO_FILE;
 	}
+
+	if (data == NULL)
+		return SLURM_SUCCESS;
 
 	for (i = 0; i < size; i++) {
 		nwrite = strlen(data[i]) + 1;
@@ -2137,6 +2137,12 @@ _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
 		else 
 			verbose("File %s has zero size", file_name); 
 		close(fd);
+		return;
+	}
+
+	if (rec_cnt == 0) {
+		*data = NULL;
+		*size = 0;
 		return;
 	}
 
