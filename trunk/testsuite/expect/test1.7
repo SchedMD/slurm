@@ -53,11 +53,11 @@ set kill_wait       $sleep_time
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "InactiveLimit.*= ($number)" {
+	-re "InactiveLimit *= ($number)" {
 		set inactive_limit $expect_out(1,string)
 		exp_continue
 	}
-	-re "KillWait.*= ($number)" {
+	-re "KillWait *= ($number)" {
 		set kill_wait $expect_out(1,string)
 		exp_continue
 	}
@@ -74,11 +74,11 @@ if {$inactive_limit == 0} {
 	set inactive_limit $sleep_time
 }
 if {$inactive_limit < 120} {
-	send_user "\nWARNING: Inactive limit is too low for this test\n"
+	send_user "\nWARNING: InactiveLimit ($inactive_limit) is too low for this test\n"
 	exit 0
 }
 if {$kill_wait > 60} {
-	send_user "\nWARNING: KillWait configured too high for this test\n"
+	send_user "\nWARNING: KillWait ($kill_wait) is too high for this test\n"
 	exit 0
 }
 if {$inactive_limit < $sleep_time} {
