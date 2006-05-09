@@ -111,7 +111,27 @@ strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
  *  Constants  *
  ***************/
 
-#define LIST_ALLOC 32
+/**************************************************************************\
+ * To test for memory leaks associated with the use of list functions (not 
+ * necessarily within the list module), set MEM_LEAK_TEST to 1 then execute
+ * > valgrind --tool=memcheck --leak-check=yes --num-callers=6
+ *    --leak-resolution=med [slurmctld | slurmd] -D
+ *
+ * Do not leave MEM_LEAK_TEST set for production use
+ *
+ * When MEM_LEAK_TEST is set to 1, the cache is disabled. Each memory 
+ * request will be satisified with a separate xmalloc request. When the 
+ * memory is no longer required, it is immeditately freed. This means 
+ * valgrind can identify where exactly any leak associated with the use 
+ * of the list functions originates.
+\**************************************************************************/
+#define MEM_LEAK_TEST 0		/* Running memory leak test if set */
+
+#if MEM_LEAK_TEST
+#  define LIST_ALLOC 1
+#else
+#  define LIST_ALLOC 128
+#endif
 #define LIST_MAGIC 0xDEADBEEF
 
 
@@ -837,6 +857,9 @@ list_free_aux (void *x, void *pfreelist)
 {
 /*  Frees the object [x], returning it to the freelist [*pfreelist].
  */
+#if MEM_LEAK_TEST
+    xfree(x);
+#else
     void **px = x;
     void **pfree = pfreelist;
 
@@ -846,6 +869,7 @@ list_free_aux (void *x, void *pfreelist)
     *px = *pfree;
     *pfree = px;
     list_mutex_unlock(&list_free_lock);
+#endif
     return;
 }
 
