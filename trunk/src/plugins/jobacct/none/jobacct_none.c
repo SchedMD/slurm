@@ -75,10 +75,24 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] =
-    "Job accounting NOT_INVOKED plugin";
+const char plugin_name[] = "Job accounting NOT_INVOKED plugin";
 const char plugin_type[] = "jobacct/none";
 const uint32_t plugin_version = 100;
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+extern int fini ( void )
+{
+	return SLURM_SUCCESS;
+}
 
 /*
  * The following routines are called by slurmctld

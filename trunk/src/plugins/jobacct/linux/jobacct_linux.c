@@ -59,8 +59,7 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] =
-"Job accounting LINUX plugin";
+const char plugin_name[] = "Job accounting LINUX plugin";
 const char plugin_type[] = "jobacct/linux";
 const uint32_t plugin_version = 100;
 
@@ -77,13 +76,28 @@ typedef struct prec {	/* process record */
 } prec_t;
 
 static int freq = 0;
-/* Finally, pre-define all the routines. */
+/* Finally, pre-define all local routines. */
 
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
 static int _get_process_data_line(FILE *in, prec_t *prec);
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+extern int fini ( void )
+{
+	return SLURM_SUCCESS;
+}
 
 /*
  * The following routine is called by the slurmd mainline
@@ -193,7 +207,7 @@ int jobacct_p_startpoll(int frequency)
 	
 	debug("jobacct: frequency = %d", frequency);
 		
-	fini = false;
+	jobacct_shutdown = false;
 	
 	if (frequency == 0) {	/* don't want dynamic monitoring? */
 		debug2("jobacct LINUX dynamic logging disabled");
@@ -489,7 +503,7 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg) {
 
-	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
+	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 
 		}
