@@ -532,6 +532,10 @@ static void *_block_agent(void *args)
 	}
 	slurm_mutex_lock(&agent_cnt_mutex);
 	agent_cnt--;
+	if (agent_cnt == 0) {
+		list_destroy(bg_update_list);
+		bg_update_list = NULL;
+	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	return NULL;
 }
@@ -825,6 +829,7 @@ extern int sync_jobs(List job_list)
 		list_iterator_destroy(job_iterator);
 	} else {
 		error("sync_jobs: no job_list");
+		list_destroy(block_list);
 		return SLURM_ERROR;
 	}
 	/* Insure that all other blocks are free of users */
@@ -843,6 +848,8 @@ extern int sync_jobs(List job_list)
 		list_iterator_destroy(block_iterator);
 		list_destroy(block_list);
 	} else {
+		/* this should never happen, 
+		 * vestigial logic */
 		error("sync_jobs: no block_list");
 		return SLURM_ERROR;
 	}
