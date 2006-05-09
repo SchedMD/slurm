@@ -171,7 +171,6 @@ extern void fini_bg(void)
 	xfree(bluegene_mloader);
 	xfree(bluegene_ramdisk);
 	xfree(bridge_api_file);
-	xfree(bluegene_layout_mode);
 	xfree(bg_conf);
 	
 #ifdef HAVE_BG_FILES
