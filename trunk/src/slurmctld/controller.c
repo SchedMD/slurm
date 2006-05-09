@@ -98,7 +98,8 @@
  *    non-initialized memory use. 
  * The switch/elan plugin orphans 640 bytes at shutdown.
  * The list functions will report memory "possibly lost". The memory is 
- *    used for a cache, which is really OK.
+ *    used for a cache, which is really OK. Set MEM_LEAK_TEST to 1 in
+ *    src/common/list.c to disable the cache.
  * Otherwise the report should be free of errors. Remember to reset 
  *    MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
  *    backup controller use).
