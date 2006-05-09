@@ -29,14 +29,14 @@
 
 #include "jobacct_common.h"
 
-bool fini = false;
+bool jobacct_shutdown = false;
 bool suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 
 extern int common_endpoll()
 {
-	fini = true;
+	jobacct_shutdown = true;
        
 	return SLURM_SUCCESS;
 }
