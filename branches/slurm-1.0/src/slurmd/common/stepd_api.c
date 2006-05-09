@@ -46,6 +46,45 @@
 #include "src/common/list.h"
 #include "src/slurmd/common/stepd_api.h"
 
+/*
+ * Should be called when a connect() to a socket returns ECONNREFUSED.
+ * Presumably the ECONNREFUSED means that nothing is attached to the listening
+ * side of the unix domain socket.
+ * If the socket is at least five minutes old, go ahead an unlink it.
+ */
+static void
+_handle_stray_socket(const char *socket_name)
+{
+	struct stat buf;
+	uid_t uid;
+	time_t now;
+
+	if (stat(socket_name, &buf) == -1) {
+		debug3("_handle_stray_socket: unable to stat %s: %m",
+			socket_name);
+		return;
+	}
+
+	if ((uid = getuid()) != buf.st_uid) {
+		debug3("_handle_stray_socket: socket %s is not owned by uid %d",
+		       uid);
+		return;
+	}
+
+	now = time(NULL);
+	if ((now-buf.st_mtime) > 300) {
+		/* remove the socket */
+		if (unlink(socket_name) == -1) {
+			if (errno != ENOENT) {
+				error("_handle_stray_socket: unable to clean up"
+				      " stray socket %s: %m", socket_name);
+			}
+		} else {
+			debug("Cleaned up stray socket %s", socket_name);
+		}
+	}
+}
+
 static int
 _step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 {
@@ -66,7 +105,11 @@ _step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
-		debug("_step_connect: connect: %m");
+		if (errno == ECONNREFUSED) {
+			_handle_stray_socket(name);
+		} else {
+			debug("_step_connect: connect: %m");
+		}
 		xfree(name);
 		close(fd);
 		return -1;
