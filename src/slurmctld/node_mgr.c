@@ -511,7 +511,7 @@ int init_node_conf (void)
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();
 	else {
-		config_list = list_create (&_list_delete_config);
+		config_list = list_create (_list_delete_config);
 		if (config_list == NULL)
 			fatal("list_create malloc failure");
 	}
