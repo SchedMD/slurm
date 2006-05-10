@@ -528,10 +528,21 @@ The defautl value is 50.
 If set to 1, PAM (Pluggable Authentication Modules for Linux) will be enabled.
 PAM is used to establish the upper bounds for resource limits. With PAM support
 enabled, local system administrators can dynamically configure system resource
-limits. Changing the upper bound of a resource limit does not alter the limits
+limits. Changing the upper bound of a resource limit will not alter the limits
 of running jobs, only jobs started after a change has been made will pick up
 the new limits.
-The default value is 0 (not to use PAM).
+The default value is 0 (not to enable PAM support).
+Remember that PAM also needs to be configured to support SLURM as a service.
+For sites using PAM's directory based configuration option, a configuration
+file named \fBslurm\fR should be created. The module-type, control-flags, and
+module-path names that should be included in the file are:
+auth		required	pam_localuser.so
+auth		required	pam_shells.so
+account		required	pam_unix.so
+account		required	pam_access.so
+session		required	pam_unix.so
+For sites configuring PAM with a general configuration file, the appropriate
+lines (see above), where \fBslurm\fR is the service-name, should be added.
 .TP
 \fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after 
