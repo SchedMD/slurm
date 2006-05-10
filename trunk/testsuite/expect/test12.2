@@ -78,12 +78,17 @@ exec $bin_chmod 700 $file_prog
 
 #
 # Run a simple job
+# Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
 #
 set timeout [expr $max_job_delay + $sleep_time]
 spawn $srun --output=none --error=none -v -t2 -N1 $file_prog $ret_code $sleep_time $mem_size
 expect {
 	-re "launching ($number)\.0" {
 		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Exited with exit code" {
+		send_user "This error was expected, no worries\n\n"
 		exp_continue
 	}
 	timeout {
@@ -176,10 +181,26 @@ set mem_task -1
 set ave_used -1
 spawn $sacct --noheader  --job=$job_id.0 --fields vsize
 expect {
-	-re "($float).*/($number) - ($float)" {
+	-re "($float)(\[KM\]*)/($number) - ($float)(\[KM\]*)" {
 		set mem_used  $expect_out(1,string)
-		set mem_task  $expect_out(2,string)
-		set ave_used  $expect_out(3,string)
+		set scale1    $expect_out(2,string)
+		set mem_task  $expect_out(3,string)
+		set ave_used  $expect_out(4,string)
+		set scale2    $expect_out(5,string)
+		if {[string compare $scale1 "M"] == 0} {
+			set mem_used [expr $mem_used * 1024]
+		} elseif {[string compare $scale1 "K"] == 0} {
+			set mem_used [expr $mem_used * 1]
+		} else {
+			 set mem_used [expr $mem_used / 1024]
+		}
+		if {[string compare $scale2 "M"] == 0} {
+			set ave_used [expr $ave_used * 1024]
+		} elseif {[string compare $scale2 "K"] == 0} {
+                        set ave_used [expr $ave_used * 1]
+		} else {
+			set ave_used [expr $ave_used / 1024]
+		}
 		exp_continue
 	}
 	timeout {
@@ -202,17 +223,16 @@ if { $mem_used == -1 } {
 	set exit_code 1	
 }
 
-set mem_used [expr $mem_used * 1024]
-
+# Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
 if {$error_mem > 4000} {
-	send_user "\nFAILURE: sacct memory use error of $error_mem\n"
+	send_user "\nFAILURE: sacct memory use error of $error_mem KB\n"
+	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct memory use error of $error_mem\n"
+	send_user "\nSUCCESS: sacct memory use error of $error_mem KB\n"
 }
-
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog
