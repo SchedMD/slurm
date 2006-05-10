@@ -191,159 +191,159 @@ cleanup:
 
 int _destroy_data_info_data(ret_data_info_t *ret_data_info)
 {
-	switch(ret_data_info->type) {
-	case REQUEST_RESOURCE_ALLOCATION:
-		slurm_free_job_desc_msg(ret_data_info->data);
-		break;
-	case REQUEST_BUILD_INFO:
-		slurm_free_last_update_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_INFO:
-		slurm_free_job_info_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_END_TIME:
-		slurm_free_old_job_alloc_msg(ret_data_info->data);
-		break;
-	case REQUEST_NODE_INFO:
-		slurm_free_node_info_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_PARTITION_INFO:
-		slurm_free_part_info_request_msg(ret_data_info->data);
-		break;
-	case MESSAGE_EPILOG_COMPLETE:
-		slurm_free_epilog_complete_msg(ret_data_info->data);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		slurm_free_job_step_kill_msg(ret_data_info->data);
-		break;
-	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		slurm_free_complete_job_allocation_msg(ret_data_info->data);
-		break;
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		slurm_free_complete_batch_script_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		slurm_free_job_step_create_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		slurm_free_job_step_info_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_WILL_RUN:
-		slurm_free_job_desc_msg(ret_data_info->data);
-		break;
-	case MESSAGE_NODE_REGISTRATION_STATUS:
-		slurm_free_node_registration_status_msg(ret_data_info->data);
-		break;
-	case REQUEST_OLD_JOB_RESOURCE_ALLOCATION:
-		slurm_free_old_job_alloc_msg(ret_data_info->data);
-		break;
-	case REQUEST_PING:		
-		/* No body to free */
-		break;
-	case REQUEST_RECONFIGURE:
-		/* No body to free */
-		break;
-	case REQUEST_CONTROL:
-		/* No body to free */
-		break;
-	case REQUEST_SHUTDOWN:
-		slurm_free_shutdown_msg(ret_data_info->data);
-		break;
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-		/* No body to free */
-		break;
-	case REQUEST_SUBMIT_BATCH_JOB:
-		slurm_free_job_desc_msg(ret_data_info->data);
-		break;
-	case REQUEST_UPDATE_JOB:
-		slurm_free_job_desc_msg(ret_data_info->data);
-		break;
-	case REQUEST_UPDATE_NODE:
-		slurm_free_update_node_msg(ret_data_info->data);
-		break;
-	case REQUEST_UPDATE_PARTITION:
-		slurm_free_update_part_msg(ret_data_info->data);
-		break;
-	case REQUEST_DELETE_PARTITION:		
-		slurm_free_delete_part_msg(ret_data_info->data);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		slurm_free_node_registration_status_msg(ret_data_info->data);
-		break;
-	case REQUEST_CHECKPOINT:
-		slurm_free_checkpoint_msg(ret_data_info->data);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		slurm_free_checkpoint_comp_msg(ret_data_info->data);
-		break;
-	case REQUEST_SUSPEND:
-		slurm_free_suspend_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_READY:
-		slurm_free_job_id_msg(ret_data_info->data);
-		break;
-	case REQUEST_NODE_SELECT_INFO:
-		slurm_free_node_select_msg(ret_data_info->data);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		slurm_free_step_complete_msg(ret_data_info->data);
-		break;
-	case MESSAGE_STAT_JOBACCT:
-		slurm_free_stat_jobacct_msg(ret_data_info->data);
-		break;
-	case REQUEST_BATCH_JOB_LAUNCH:
-		slurm_free_job_launch_msg(ret_data_info->data);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		slurm_free_launch_tasks_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_SPAWN_TASK:
-		slurm_free_spawn_task_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_SIGNAL_TASKS:
-		slurm_free_kill_tasks_msg(ret_data_info->data);
-		break;
-	case REQUEST_TERMINATE_TASKS:
-		slurm_free_kill_tasks_msg(ret_data_info->data);
-		break;
-	case REQUEST_KILL_TIMELIMIT:
-		slurm_free_timelimit_msg(ret_data_info->data);
-		break; 
-	case REQUEST_REATTACH_TASKS:
-		slurm_free_reattach_tasks_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_SIGNAL_JOB:
-		slurm_free_signal_job_msg(ret_data_info->data);
-		break;
-	case REQUEST_SUSPEND:
-		slurm_free_suspend_msg(ret_data_info->data);
-		break;
-	case REQUEST_TERMINATE_JOB:
-		slurm_free_kill_job_msg(ret_data_info->data);
-		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		slurm_free_update_job_time_msg(ret_data_info->data);
-		break;
-	case REQUEST_JOB_ID:
-		slurm_free_job_id_request_msg(ret_data_info->data);
-		break;
-	case REQUEST_FILE_BCAST:
-		slurm_free_file_bcast_msg(ret_data_info->data);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		slurm_free_step_complete_msg(ret_data_info->data);
-		break;
-	case MESSAGE_STAT_JOBACCT:
-		slurm_free_stat_jobacct_msg(ret_data_info->data);
-		break;
-	case RESPONSE_SLURM_RC:
-		slurm_free_return_code_msg(ret_data_info->data);
-		break;
-	default:
-		error("invalid RPC msg_type=%d", ret_data_info->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
-		break; 
-	}
+/* 	switch(ret_data_info->type) { */
+/* 	case REQUEST_RESOURCE_ALLOCATION: */
+/* 		slurm_free_job_desc_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_BUILD_INFO: */
+/* 		slurm_free_last_update_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_INFO: */
+/* 		slurm_free_job_info_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_END_TIME: */
+/* 		slurm_free_old_job_alloc_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_NODE_INFO: */
+/* 		slurm_free_node_info_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_PARTITION_INFO: */
+/* 		slurm_free_part_info_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case MESSAGE_EPILOG_COMPLETE: */
+/* 		slurm_free_epilog_complete_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_CANCEL_JOB_STEP: */
+/* 		slurm_free_job_step_kill_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_COMPLETE_JOB_ALLOCATION: */
+/* 		slurm_free_complete_job_allocation_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_COMPLETE_BATCH_SCRIPT: */
+/* 		slurm_free_complete_batch_script_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_STEP_CREATE: */
+/* 		slurm_free_job_step_create_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_STEP_INFO: */
+/* 		slurm_free_job_step_info_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_WILL_RUN: */
+/* 		slurm_free_job_desc_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case MESSAGE_NODE_REGISTRATION_STATUS: */
+/* 		slurm_free_node_registration_status_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_OLD_JOB_RESOURCE_ALLOCATION: */
+/* 		slurm_free_old_job_alloc_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_PING:		 */
+/* 		/\* No body to free *\/ */
+/* 		break; */
+/* 	case REQUEST_RECONFIGURE: */
+/* 		/\* No body to free *\/ */
+/* 		break; */
+/* 	case REQUEST_CONTROL: */
+/* 		/\* No body to free *\/ */
+/* 		break; */
+/* 	case REQUEST_SHUTDOWN: */
+/* 		slurm_free_shutdown_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_SHUTDOWN_IMMEDIATE: */
+/* 		/\* No body to free *\/ */
+/* 		break; */
+/* 	case REQUEST_SUBMIT_BATCH_JOB: */
+/* 		slurm_free_job_desc_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_UPDATE_JOB: */
+/* 		slurm_free_job_desc_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_UPDATE_NODE: */
+/* 		slurm_free_update_node_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_UPDATE_PARTITION: */
+/* 		slurm_free_update_part_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_DELETE_PARTITION:		 */
+/* 		slurm_free_delete_part_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_NODE_REGISTRATION_STATUS: */
+/* 		slurm_free_node_registration_status_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_CHECKPOINT: */
+/* 		slurm_free_checkpoint_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_CHECKPOINT_COMP: */
+/* 		slurm_free_checkpoint_comp_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_SUSPEND: */
+/* 		slurm_free_suspend_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_READY: */
+/* 		slurm_free_job_id_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_NODE_SELECT_INFO: */
+/* 		slurm_free_node_select_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_STEP_COMPLETE: */
+/* 		slurm_free_step_complete_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case MESSAGE_STAT_JOBACCT: */
+/* 		slurm_free_stat_jobacct_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_BATCH_JOB_LAUNCH: */
+/* 		slurm_free_job_launch_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_LAUNCH_TASKS: */
+/* 		slurm_free_launch_tasks_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_SPAWN_TASK: */
+/* 		slurm_free_spawn_task_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_SIGNAL_TASKS: */
+/* 		slurm_free_kill_tasks_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_TERMINATE_TASKS: */
+/* 		slurm_free_kill_tasks_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_KILL_TIMELIMIT: */
+/* 		slurm_free_timelimit_msg(ret_data_info->data); */
+/* 		break;  */
+/* 	case REQUEST_REATTACH_TASKS: */
+/* 		slurm_free_reattach_tasks_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_SIGNAL_JOB: */
+/* 		slurm_free_signal_job_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_SUSPEND: */
+/* 		slurm_free_suspend_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_TERMINATE_JOB: */
+/* 		slurm_free_kill_job_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_UPDATE_JOB_TIME: */
+/* 		slurm_free_update_job_time_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_JOB_ID: */
+/* 		slurm_free_job_id_request_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_FILE_BCAST: */
+/* 		slurm_free_file_bcast_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case REQUEST_STEP_COMPLETE: */
+/* 		slurm_free_step_complete_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case MESSAGE_STAT_JOBACCT: */
+/* 		slurm_free_stat_jobacct_msg(ret_data_info->data); */
+/* 		break; */
+/* 	case RESPONSE_SLURM_RC: */
+/* 		slurm_free_return_code_msg(ret_data_info->data); */
+/* 		break; */
+/* 	default: */
+/* 		error("invalid RPC msg_type=%d", ret_data_info->msg_type); */
+/* 		slurm_send_rc_msg(msg, EINVAL); */
+/* 		break;  */
+/* 	} */
 	return SLURM_SUCCESS;
 }
 
