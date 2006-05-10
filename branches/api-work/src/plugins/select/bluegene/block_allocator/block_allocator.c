@@ -2359,13 +2359,14 @@ start_again:
 				return 1;
 			}
 			
+			remove_block(results, color_count);
+			list_destroy(results);
+			results = list_create(NULL);
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
 			debug2("trying something else");
-			remove_block(results, color_count);
-			list_destroy(results);
-			results = list_create(NULL);
+			
 		}
 		
 #ifdef HAVE_BG
@@ -3605,6 +3606,7 @@ static int _find_passthrough(ba_switch_t *curr_switch, int source_port,
 	path_add->in = source_port;
 	
 	if(count>=best_count) {
+		xfree(path_add);
 		return 0;
 	}
 
@@ -3793,9 +3795,10 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 	path_add->dim = dim;
 	path_add->in = source_port;
 
-	if(count>=best_count)
+	if(count>=best_count) {
+		xfree(path_add);
 		return 0;
-		
+	}
 	if(node_tar[X] == start[X] 
 #ifdef HAVE_BG
 	    && node_tar[Y] == start[Y] 

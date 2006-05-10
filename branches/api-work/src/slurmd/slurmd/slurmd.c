@@ -324,6 +324,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 		errno = rc;
 		xfree(arg);
 		error("Unable to set detachstate on attr: %m");
+		slurm_attr_destroy(&attr);
 		return;
 	}
 
@@ -406,7 +407,7 @@ send_registration_msg(uint32_t status, bool startup)
 		error("Unable to register: %m");
 		retval = SLURM_FAILURE;
 	}
-
+	slurm_free_return_code_msg(resp.data);	
 	slurm_free_node_registration_status_msg (msg);
 
 	/* XXX look at response msg

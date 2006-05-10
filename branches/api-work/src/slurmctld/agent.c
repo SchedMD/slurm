@@ -1026,7 +1026,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	queued_req_ptr->last_attempt  = time(NULL);
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL) {
-		retry_list = list_create(&_list_delete_retry);
+		retry_list = list_create(_list_delete_retry);
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
@@ -1094,10 +1094,11 @@ extern int agent_retry (int min_wait)
 			_spawn_retry_agent(agent_arg_ptr);
 		else
 			error("agent_retry found record with no agent_args");
-	} else if (mail_list) {
-		mail_info_t *mi;
+	} else {
+		mail_info_t *mi = NULL;
 		slurm_mutex_lock(&mail_mutex);
-		mi = (mail_info_t *) list_dequeue(mail_list);
+		if (mail_list)
+			mi = (mail_info_t *) list_dequeue(mail_list);
 		slurm_mutex_unlock(&mail_mutex);
 		if (mi)
 			_mail_proc(mi);
@@ -1136,7 +1137,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL) {
-		retry_list = list_create(&_list_delete_retry);
+		retry_list = list_create(_list_delete_retry);
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
@@ -1189,16 +1190,18 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 /* agent_purge - purge all pending RPC requests */
 void agent_purge(void)
 {
-	if (retry_list == NULL)
-		return;
-
-	slurm_mutex_lock(&retry_mutex);
-	list_destroy(retry_list);
-	retry_list = NULL;
-	if (mail_list)
+	if (retry_list) {
+		slurm_mutex_lock(&retry_mutex);
+		list_destroy(retry_list);
+		retry_list = NULL;
+		slurm_mutex_unlock(&retry_mutex);
+	}
+	if (mail_list) {
+		slurm_mutex_lock(&mail_mutex);
 		list_destroy(mail_list);
-	mail_list = NULL;
-	slurm_mutex_unlock(&retry_mutex);
+		mail_list = NULL;
+		slurm_mutex_unlock(&mail_mutex);
+	}
 }
 
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
@@ -1318,7 +1321,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 
 	slurm_mutex_lock(&mail_mutex);
 	if (!mail_list) {
-		mail_list = list_create(&_mail_free);
+		mail_list = list_create(_mail_free);
 		if (!mail_list)
 			fatal("list_create failed");
 	}

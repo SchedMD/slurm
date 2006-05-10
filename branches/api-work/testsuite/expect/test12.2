@@ -39,7 +39,7 @@ set matches     0
 
 # job paramters
 set mem_size    100000
-set sleep_time  5 
+set sleep_time  31
 set ret_code    42
 
 print_header $test_id
@@ -47,15 +47,20 @@ print_header $test_id
 #
 # Check if accounting is enabled
 #
+set frequency 9999
 set supported 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "jobacct/linux" {
+	-re "JobAcctFrequency *= ($number)" {
+		set frequency $expect_out(1,string)
+		exp_continue
+	}
+	-re "JobAcctType *= jobacct/linux" {
 		set supported 1
 		exp_continue
 	}
-	-re "jobacct/aix" {
+	-re "JobAcctType *= jobacct/aix" {
 		set supported 1
 		exp_continue
 	}
@@ -78,12 +83,17 @@ exec $bin_chmod 700 $file_prog
 
 #
 # Run a simple job
+# Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
 #
 set timeout [expr $max_job_delay + $sleep_time]
 spawn $srun --output=none --error=none -v -t2 -N1 $file_prog $ret_code $sleep_time $mem_size
 expect {
 	-re "launching ($number)\.0" {
 		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Exited with exit code" {
+		send_user "This error was expected, no worries\n\n"
 		exp_continue
 	}
 	timeout {
@@ -140,14 +150,19 @@ if {$matches != 4} {
 
 #
 # Report the sacct accouting info
+# Note we load each digit of seconds individually to avoid this error:
+#   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
 spawn $sacct --noheader  --job=$job_id.0 --fields elapsed
 expect {
-	-re "($number):($number)" {
+	-re "($number):(\[0-9\])(\[0-9\])" {
 		set mins $expect_out(1,string)
-		set secs $expect_out(2,string)
+		set sec_ten $expect_out(2,string)
+		set sec_one $expect_out(3,string)
+		set secs [expr $sec_ten * 10 + $sec_one]
 		set elapsed_time [expr $mins * 60 + $secs]
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: sacct not responding\n"
@@ -157,14 +172,14 @@ expect {
 		wait
 	}
 }
-
 set diff_time [expr $elapsed_time - $sleep_time]
 set error_time [expr abs($diff_time)]
 if {$error_time > 5} {
-	send_user "\nFAILURE: sacct elapsed time error of $error_time\n"
+	send_user "\nFAILURE: sacct elapsed time error of $error_time secs\n"
+	send_user "  Wanted $sleep_time secs, got $error_time secs\n"
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct elapsed time error of $error_time\n"
+	send_user "\nSUCCESS: sacct elapsed time error of $error_time secs\n"
 }
 
 set mem_used -1
@@ -172,10 +187,26 @@ set mem_task -1
 set ave_used -1
 spawn $sacct --noheader  --job=$job_id.0 --fields vsize
 expect {
-	-re "($float).*/($number) - ($float)" {
+	-re "($float)(\[KM\]*)/($number) - ($float)(\[KM\]*)" {
 		set mem_used  $expect_out(1,string)
-		set mem_task  $expect_out(2,string)
-		set ave_used  $expect_out(3,string)
+		set scale1    $expect_out(2,string)
+		set mem_task  $expect_out(3,string)
+		set ave_used  $expect_out(4,string)
+		set scale2    $expect_out(5,string)
+		if {[string compare $scale1 "M"] == 0} {
+			set mem_used [expr $mem_used * 1024]
+		} elseif {[string compare $scale1 "K"] == 0} {
+			set mem_used [expr $mem_used * 1]
+		} else {
+			 set mem_used [expr $mem_used / 1024]
+		}
+		if {[string compare $scale2 "M"] == 0} {
+			set ave_used [expr $ave_used * 1024]
+		} elseif {[string compare $scale2 "K"] == 0} {
+                        set ave_used [expr $ave_used * 1]
+		} else {
+			set ave_used [expr $ave_used / 1024]
+		}
 		exp_continue
 	}
 	timeout {
@@ -198,17 +229,18 @@ if { $mem_used == -1 } {
 	set exit_code 1	
 }
 
-set mem_used [expr $mem_used * 1024]
-
+# Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
-if {$error_mem > 4000} {
-	send_user "\nFAILURE: sacct memory use error of $error_mem\n"
+if {$frequency >= $sleep_time} {
+	send_user "\nWARNING: JobAcctFrequency ($frequency) is too large for validating memory use\n"
+} elseif {$error_mem > 4000} {
+	send_user "\nFAILURE: sacct memory use error of $error_mem KB\n"
+	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct memory use error of $error_mem\n"
+	send_user "\nSUCCESS: sacct memory use error of $error_mem KB\n"
 }
-
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog

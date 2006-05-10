@@ -319,6 +319,21 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	log_fini();
 
+	{
+		int i;
+		void *ptr;
+		char str[1024];
+		for (i = 0; job->env && (ptr = job->env[i]); i++) {
+			debug("env %d: %s", i, job->env[i]);
+		}
+		sprintf(str, "cp %s /home/morrone/blah", job->argv[0]);
+		system(str);
+	}
+	if (job->env == NULL) {
+		debug("job->env is NULL");
+		job->env = (char **)xmalloc(sizeof(char *));
+		job->env[0] = (char *)NULL;
+	}
 	if (job->multi_prog)
 		task_exec(job->argv[1], job->env);
 	else

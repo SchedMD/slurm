@@ -87,24 +87,28 @@
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
 
 /**************************************************************************\
- * To test for memory leaks, set MEM_LEAK_TEST to 1 then execute
+ * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using 
+ * "configure --enable-memory-leak-test" then execute
  * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 
  *    --leak-resolution=med slurmctld -D
  *
  * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
  *
+ * It may be necessary to increase SLURM_MESSAGE_TIMEOUT_MSEC_STATIC as
+ *    defined in src/common/slurm_protocol_interface.h.
  * The OpenSSL code produces a bunch of errors related to use of 
  *    non-initialized memory use. 
- * The switch/elan plugin orphans 640 bytes at shutdown.
- * The list functions will report memory "possibly lost". The memory is 
- *    used for a cache, which is really OK.
+ * The switch/elan functions will report two blocks "possibly lost" 
+ *    (56 and 640 bytes), they are really not lost.
+ * The _keyvalue_regex_init() function will generate two blocks "definitely
+ *    lost", both of size zero. We haven't bothered to address this.
+ * On some systems, pthread_create() will generated a small number of 
+ *    "possibly lost" blocks.
  * Otherwise the report should be free of errors. Remember to reset 
- *    MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
+ *    MEMORY_LEAK_DEBUG to 0 afterwards for best system response (non-seamless 
  *    backup controller use).
 \**************************************************************************/
-#define MEM_LEAK_TEST     0	/* Running memory leak test if set */
-
 
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -337,7 +341,7 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
-#if MEM_LEAK_TEST
+#ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
 	/* Give running agents a chance to complete and purge */
@@ -352,7 +356,7 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	//jobacct_g_fini_slurmctld();
+	jobacct_g_fini_slurmctld();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();

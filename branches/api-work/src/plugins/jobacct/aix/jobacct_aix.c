@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobacct_linux.c - slurm job accounting plugin.
+ *  jobacct_aix.c - slurm job accounting plugin for AIX.
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -66,8 +66,7 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] =
-"Job accounting AIX plugin";
+const char plugin_name[] = "Job accounting AIX plugin";
 const char plugin_type[] = "jobacct/aix";
 const uint32_t plugin_version = 100;
 
@@ -99,6 +98,22 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
     /* sizproc:    size of expected procinfo structure */
 
 #endif
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+extern int fini ( void )
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following routine is called by the slurmd mainline
  */
@@ -204,7 +219,7 @@ int jobacct_p_startpoll(int frequency)
 	
 	debug("jobacct: frequency = %d", frequency);
 		
-	fini = false;
+	jobacct_shutdown = false;
 	
 	if (frequency == 0) {	/* don't want dynamic monitoring? */
 		debug2("jobacct AIX dynamic logging disabled");
@@ -416,7 +431,7 @@ finished:
 static void *_watch_tasks(void *arg) 
 {
 
-	while(!fini) {	/* Do this until slurm_jobacct_task_exit() stops us */
+	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 
 		}

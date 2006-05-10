@@ -1794,7 +1794,7 @@ _freeF(void *data)
 static List
 _create_path_list(void)
 {
-	List l = list_create(&_freeF);
+	List l = list_create(_freeF);
 	char *path = xstrdup(getenv("PATH"));
 	char *c, *lc;
 

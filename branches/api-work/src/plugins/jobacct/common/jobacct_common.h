@@ -112,7 +112,7 @@ extern struct jobacctinfo *common_stat_task(pid_t pid);
 extern struct jobacctinfo *common_remove_task(pid_t pid);
 extern void common_suspendpoll();
 
-extern bool fini;
+extern bool jobacct_shutdown;
 extern bool suspended;
 extern List task_list;
 extern pthread_mutex_t jobacct_lock;

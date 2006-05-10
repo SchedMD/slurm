@@ -397,6 +397,7 @@ void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 		xfree(msg->ofname);
 		xfree(msg->efname);
 		xfree(msg->ifname);
+		slurm_free_cred(msg->cred);
 		xfree(msg);
 	}
 }

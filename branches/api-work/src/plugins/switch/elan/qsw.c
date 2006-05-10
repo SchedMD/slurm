@@ -188,7 +188,7 @@ qsw_alloc_libstate(qsw_libstate_t *lsp)
 	qsw_libstate_t new;
 
 	assert(lsp != NULL);
-	new = (qsw_libstate_t)malloc(sizeof(struct qsw_libstate));
+	new = (qsw_libstate_t)xmalloc(sizeof(struct qsw_libstate));
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->ls_magic = QSW_LIBSTATE_MAGIC;
@@ -212,7 +212,7 @@ qsw_free_libstate(qsw_libstate_t ls)
 	if (ls->step_ctx_list)
 		list_destroy(ls->step_ctx_list);
 	ls->ls_magic = 0;
-	free(ls);
+	xfree(ls);
 }
 
 static inline void _dump_step_ctx(const char *head, struct step_ctx *step_ctx_p)
@@ -443,7 +443,7 @@ qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 	qsw_jobinfo_t new; 
 
 	assert(jp != NULL);
-	new = (qsw_jobinfo_t)malloc(sizeof(struct qsw_jobinfo));
+	new = (qsw_jobinfo_t)xmalloc(sizeof(struct qsw_jobinfo));
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->j_magic = QSW_JOBINFO_MAGIC;
@@ -479,7 +479,7 @@ qsw_free_jobinfo(qsw_jobinfo_t j)
 		return;
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 	j->j_magic = 0;
-	free(j);
+	xfree(j);
 }
 
 /*

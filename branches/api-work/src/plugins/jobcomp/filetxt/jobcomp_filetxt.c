@@ -170,7 +170,8 @@ _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 }
 
 /*
- * make_time_str - convert time_t to string with "month/date hour:min:sec" 
+ * make_time_str - convert time_t to string with "YYYY-MM-DDTHH:MM:SS"
+ *                 Note this is the ISO8601 standard format 
  * IN time     - a time stamp
  * IN str_size - size of string buffer
  * OUT string  - pointer user defined buffer
@@ -181,8 +182,8 @@ _make_time_str (time_t *time, char *string, int str_size)
 	struct tm time_tm;
 
 	localtime_r (time, &time_tm);
-	snprintf ( string, str_size, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
-		(time_tm.tm_mon+1), time_tm.tm_mday,
+	snprintf ( string, str_size, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
+		(time_tm.tm_year + 1900), (time_tm.tm_mon+1), time_tm.tm_mday,
 		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
 }
 

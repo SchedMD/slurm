@@ -908,8 +908,6 @@ _fork_all_tasks(slurmd_job_t *job)
 			(unsigned long) job->task[i]->gtid, 
 			(unsigned long) pid); 
 
-		jobacct_g_add_task(pid, job->task[i]->gtid);
-
 		job->task[i]->pid = pid;
 		if (i == 0)
 			job->pgid = pid;
@@ -944,6 +942,8 @@ _fork_all_tasks(slurmd_job_t *job)
                         error("slurm_container_create: %m");
 			goto fail1;
                 }
+
+		jobacct_g_add_task(job->task[i]->pid, job->task[i]->gtid);
 
 		if (spank_task_post_fork (job, i) < 0) {
 			error ("spank task %d post-fork failed", i);

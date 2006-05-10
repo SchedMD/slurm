@@ -59,9 +59,9 @@ exec $bin_chmod 700 $test_script
 #
 set srun_pid [spawn $srun -u -v -n1 $test_script]
 
-set timeout 30
+set timeout $max_job_delay
 expect {
-    -re "launching ((\[0-9\]+)\.0)" {
+    -re "launching (($number)\.0)" {
 	set stepid $expect_out(1,string)
 	set jobid $expect_out(2,string)
 	exp_continue

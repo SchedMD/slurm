@@ -564,7 +564,7 @@ int read_bg_blocks()
 			}
 			if ((rc = rm_get_data(bp_ptr, RM_BPID, &bpid))
 			    != STATUS_OK) {
-				error("rm_get_data(RM_BPLoc): %s",
+				error("rm_get_data(RM_BPID): %s",
 				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				break;

@@ -15,7 +15,12 @@ documents those changes that are of interest to users and admins.
  -- Job suspend now sends SIGTSTP, sleep(1), sends SIGSTOP for better
     MPI support.
  -- Plug a bunch of memory leaks in various places.
-
+ -- Bluegene - before assigning a job to a block the plugin will check the bps
+    to make sure they aren't in error state.
+ -- Change time format in job completion logging (JobCompType=jobcomp/filetxt)
+    from "MM/DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SS", conforming with the ISO8601 
+    standard format.
+ 
 * Changes in SLURM 1.1.0-pre6
 =============================
  -- Added logic to "stat" a running job with sacct option -S use -j to specify
@@ -110,16 +115,24 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.13
+=========================
+ -- Fix for AllowGroups option to work when the /etc/group file doesn't 
+    contain all users in group by adding the uids of the names in /etc/passwd
+    that have a gid of that which we are looking for.
+
 * Changes in SLURM 1.0.12
 =========================
  -- Report node state of DRAIN rather than DOWN if DOWN with DRAIN flag set.
  -- Initialize job->mail_type to 0 (NONE) for job submission.
  -- Fix for stalled task stdout/stderr when buffered I/O is used, and
     a single line exceeds 4096 bytes.
+ -- Memory leak fixes for maui plugin (hjcao@nudt.edu.cn)
  -- Fix for spinning srun when the terminal to which srun is talking
     goes away.
  -- Don't set avail_node_bitmap for DRAINED nodes on slurmctld reconfig
     (can schedule a job on drained node after reconfig).
+ 
 
 * Changes in SLURM 1.0.11
 =========================
