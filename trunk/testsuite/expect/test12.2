@@ -39,7 +39,7 @@ set matches     0
 
 # job paramters
 set mem_size    100000
-set sleep_time  5 
+set sleep_time  31
 set ret_code    42
 
 print_header $test_id
@@ -47,15 +47,20 @@ print_header $test_id
 #
 # Check if accounting is enabled
 #
+set frequency 9999
 set supported 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "jobacct/linux" {
+	-re "JobAcctFrequency *= ($number)" {
+		set frequency $expect_out(1,string)
+		exp_continue
+	}
+	-re "JobAcctType *= jobacct/linux" {
 		set supported 1
 		exp_continue
 	}
-	-re "jobacct/aix" {
+	-re "JobAcctType *= jobacct/aix" {
 		set supported 1
 		exp_continue
 	}
@@ -151,12 +156,13 @@ if {$matches != 4} {
 set elapsed_time 0
 spawn $sacct --noheader  --job=$job_id.0 --fields elapsed
 expect {
-	-re "($number):(\[0-9\])(\0-9\])" {
+	-re "($number):(\[0-9\])(\[0-9\])" {
 		set mins $expect_out(1,string)
 		set sec_ten $expect_out(2,string)
 		set sec_one $expect_out(3,string)
 		set secs [expr $sec_ten * 10 + $sec_one]
 		set elapsed_time [expr $mins * 60 + $secs]
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: sacct not responding\n"
@@ -166,7 +172,6 @@ expect {
 		wait
 	}
 }
-
 set diff_time [expr $elapsed_time - $sleep_time]
 set error_time [expr abs($diff_time)]
 if {$error_time > 5} {
@@ -227,7 +232,9 @@ if { $mem_used == -1 } {
 # Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
-if {$error_mem > 4000} {
+if {$frequency >= $sleep_time} {
+	send_user "\nWARNING: JobAcctFrequency ($frequency) is too large for validating memory use\n"
+} elseif {$error_mem > 4000} {
 	send_user "\nFAILURE: sacct memory use error of $error_mem KB\n"
 	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1
