@@ -973,7 +973,7 @@ uid_t *_get_group_members(char *group_name)
 {
 	struct group *group_struct_ptr;
 	struct passwd *user_pw_ptr;
-	int i, j, offset = 1;
+	int i, j;
 	uid_t *group_uids = NULL;
 	int uid_cnt = 0;
 
