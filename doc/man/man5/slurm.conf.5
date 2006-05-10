@@ -536,11 +536,17 @@ Remember that PAM also needs to be configured to support SLURM as a service.
 For sites using PAM's directory based configuration option, a configuration
 file named \fBslurm\fR should be created. The module-type, control-flags, and
 module-path names that should be included in the file are:
-auth		required	pam_localuser.so
-auth		required	pam_shells.so
-account		required	pam_unix.so
-account		required	pam_access.so
-session		required	pam_unix.so
+.br
+auth        required      pam_localuser.so
+.br
+auth        required      pam_shells.so
+.br
+account     required      pam_unix.so
+.br
+account     required      pam_access.so
+.br
+session     required      pam_unix.so
+.br
 For sites configuring PAM with a general configuration file, the appropriate
 lines (see above), where \fBslurm\fR is the service-name, should be added.
 .TP
