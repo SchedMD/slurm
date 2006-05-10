@@ -1026,7 +1026,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	queued_req_ptr->last_attempt  = time(NULL);
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL) {
-		retry_list = list_create(&_list_delete_retry);
+		retry_list = list_create(_list_delete_retry);
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
@@ -1137,7 +1137,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL) {
-		retry_list = list_create(&_list_delete_retry);
+		retry_list = list_create(_list_delete_retry);
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
@@ -1321,7 +1321,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 
 	slurm_mutex_lock(&mail_mutex);
 	if (!mail_list) {
-		mail_list = list_create(&_mail_free);
+		mail_list = list_create(_mail_free);
 		if (!mail_list)
 			fatal("list_create failed");
 	}

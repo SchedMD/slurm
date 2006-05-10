@@ -1287,7 +1287,7 @@ int init_job_conf(void)
 {
 	if (job_list == NULL) {
 		job_count = 0;
-		job_list = list_create(&_list_delete_job);
+		job_list = list_create(_list_delete_job);
 		if (job_list == NULL)
 			fatal ("Memory allocation failure");
 	}
