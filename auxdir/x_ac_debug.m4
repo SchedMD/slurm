@@ -8,7 +8,8 @@
 #    X_AC_DEBUG
 #
 #  DESCRIPTION:
-#    Add support for the "--enable-debug" configure script option.
+#    Add support for the "--enable-debug" and "--enable-memory-leak-debug"
+#    configure script options.
 #    If debugging is enabled, CFLAGS will be prepended with the debug flags.
 #    The NDEBUG macro (used by assert) will also be set accordingly.
 #
@@ -37,5 +38,24 @@ AC_DEFUN([X_AC_DEBUG], [
     )
   fi
   AC_MSG_RESULT([${x_ac_debug=no}])
+
+  AC_MSG_CHECKING([whether memory leak debugging is enabled])
+  AC_ARG_ENABLE(
+    [memory-leak-debug],
+    AC_HELP_STRING([--enable-memory-leak-debug], 
+                   [enable memory leak debugging code for development]),
+    [ case "$enableval" in
+        yes) x_ac_memory_debug=yes ;;
+         no) x_ac_memory_debug=no ;;
+          *) AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$enableval" for --enable-memory-leak-debug]) ;;
+      esac
+    ]
+  )
+  if test "$x_ac_memory_debug" = yes; then
+    AC_DEFINE(MEMORY_LEAK_DEBUG, 1, [Define to 1 for memory leak debugging.])
+  fi
+  AC_MSG_RESULT([${x_ac_memory_debug=no}])
+
   ]
 )
