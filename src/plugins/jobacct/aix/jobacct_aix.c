@@ -269,6 +269,9 @@ struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
 
 struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 {
+#ifdef HAVE_AIX
+	_get_process_data();
+#endif
 	return common_remove_task(pid);
 }
 
