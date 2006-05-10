@@ -259,7 +259,6 @@ struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
 
 struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 {
-	_get_process_data();
 	return common_remove_task(pid);
 }
 
