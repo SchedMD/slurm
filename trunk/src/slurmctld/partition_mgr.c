@@ -535,7 +535,7 @@ int init_part_conf(void)
 	if (part_list)		/* delete defunct partitions */
 		(void) _delete_part_record(NULL);
 	else
-		part_list = list_create(&_list_delete_part);
+		part_list = list_create(_list_delete_part);
 
 	if (part_list == NULL)
 		fatal ("memory allocation failure");

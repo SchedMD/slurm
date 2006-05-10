@@ -403,7 +403,7 @@ stepd_available(const char *directory, const char *nodename)
 	regex_t re;
 	struct stat stat_buf;
 
-	l = list_create((ListDelF) &_free_step_loc_t);
+	l = list_create((ListDelF) _free_step_loc_t);
 	_sockname_regex_init(&re, nodename);
 
 	/*
