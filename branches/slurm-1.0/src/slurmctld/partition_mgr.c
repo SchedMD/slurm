@@ -874,7 +874,6 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	if (part_ptr->allow_uids == NULL)
 		return 0;	/* no non-super-users in the list */
 	for (i = 0; part_ptr->allow_uids[i]; i++) {
-		info("is %d == %d", part_ptr->allow_uids[i], run_uid);
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
 	}
