@@ -407,7 +407,7 @@ send_registration_msg(uint32_t status, bool startup)
 		error("Unable to register: %m");
 		retval = SLURM_FAILURE;
 	}
-	slurm_free_return_code_msg(resp->data);	
+	slurm_free_return_code_msg(resp.data);	
 	slurm_free_node_registration_status_msg (msg);
 
 	/* XXX look at response msg
