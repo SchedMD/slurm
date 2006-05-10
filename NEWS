@@ -18,7 +18,7 @@ documents those changes that are of interest to users and admins.
  -- Bluegene - before assigning a job to a block the plugin will check the bps
     to make sure they aren't in error state.
  -- Change time format in job completion logging (JobCompType=jobcomp/filetxt)
-    from "MM/DD HH:MM:SS" to "YYYY-MM-DD HH:MM:SS", conforming with the ISO8601 
+    from "MM/DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SS", conforming with the ISO8601 
     standard format.
  
 * Changes in SLURM 1.1.0-pre6
