@@ -140,13 +140,17 @@ if {$matches != 4} {
 
 #
 # Report the sacct accouting info
+# Note we load each digit of seconds individually to avoid this error:
+#   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
 spawn $sacct --noheader  --job=$job_id.0 --fields elapsed
 expect {
-	-re "($number):($number)" {
+	-re "($number):(\[0-9\])(\0-9\])" {
 		set mins $expect_out(1,string)
-		set secs $expect_out(2,string)
+		set sec_ten $expect_out(2,string)
+		set sec_one $expect_out(3,string)
+		set secs [expr $sec_ten * 10 + $sec_one]
 		set elapsed_time [expr $mins * 60 + $secs]
 	}
 	timeout {
