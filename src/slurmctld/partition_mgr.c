@@ -874,6 +874,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	if (part_ptr->allow_uids == NULL)
 		return 0;	/* no non-super-users in the list */
 	for (i = 0; part_ptr->allow_uids[i]; i++) {
+		info("is %d == %d", part_ptr->allow_uids[i], run_uid);
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
 	}
@@ -961,7 +962,7 @@ uid_t *_get_group_members(char *group_name)
 {
 	struct group *group_struct_ptr;
 	struct passwd *user_pw_ptr;
-	int i, j;
+	int i, j, offset = 1;
 	uid_t *group_uids = NULL;
 	int uid_cnt = 0;
 
@@ -977,6 +978,7 @@ uid_t *_get_group_members(char *group_name)
 		if (group_struct_ptr->gr_mem[i] == NULL)
 			break;
 	}
+
 	uid_cnt = i;
 	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
 	memset(group_uids, 0, (sizeof(uid_t) * (uid_cnt + 1)));
@@ -988,12 +990,19 @@ uid_t *_get_group_members(char *group_name)
 			if (user_pw_ptr->pw_uid)
 				group_uids[j++] = user_pw_ptr->pw_uid;
 		} else
-			error
-			    ("Could not find user %s in configured group %s",
-			     group_struct_ptr->gr_mem[i], group_name);
+			error("Could not find user %s in configured group %s",
+			      group_struct_ptr->gr_mem[i], group_name);
 		setpwent();
 	}
-
+	
+	while((user_pw_ptr = getpwent())) {
+		if(user_pw_ptr->pw_gid != group_struct_ptr->gr_gid)
+			continue;
+		j++;
+		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
+		group_uids[j-1] = user_pw_ptr->pw_uid;		
+	}
+	setpwent();
 	setgrent();
 	return group_uids;
 }
