@@ -406,8 +406,8 @@ send_registration_msg(uint32_t status, bool startup)
 	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
 		error("Unable to register: %m");
 		retval = SLURM_FAILURE;
-	}
-	slurm_free_return_code_msg(resp.data);	
+	} else
+		slurm_free_return_code_msg(resp.data);	
 	slurm_free_node_registration_status_msg (msg);
 
 	/* XXX look at response msg
