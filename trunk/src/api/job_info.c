@@ -47,6 +47,7 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
+#include "src/common/slurm_auth.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
@@ -394,7 +395,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		      list_count(ret_list));
 	}
 	list_destroy(ret_list);
-	slurm_free_cred(resp_msg.cred);
+	g_slurm_auth_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
 		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;
