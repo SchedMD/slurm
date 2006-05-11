@@ -1057,6 +1057,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 						list_iterator_destroy(itr);
 						slurm_mutex_unlock(
 							&block_state_mutex);
+						if(my_bitmap)
+							bit_free(my_bitmap);
 						return SLURM_ERROR;
 					}
 				} 
@@ -1072,6 +1074,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(
 						&block_state_mutex);
+					if(my_bitmap)
+						bit_free(my_bitmap);
 					return SLURM_ERROR;
 				}
 				xfree(name);

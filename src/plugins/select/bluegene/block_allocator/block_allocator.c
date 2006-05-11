@@ -1595,7 +1595,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	int *geo = NULL;
 	int temp_geo;
 	int i, j;
-	geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	
 	if(rotate) {
 		for (i = (BA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
 			for (j = 1; j <= i; j++) {
@@ -1618,6 +1618,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	list_iterator_destroy(itr);
 	
 	if(geo_ptr == NULL) { 
+		geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
 		geo[X] = geometry[X];
 		geo[Y] = geometry[Y];
 		geo[Z] = geometry[Z];
