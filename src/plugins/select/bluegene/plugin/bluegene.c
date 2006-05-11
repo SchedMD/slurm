@@ -584,6 +584,8 @@ extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;
+
+#ifdef HAVE_BG_FILES
 	int rc;
 	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
 		reset_ba_system();
@@ -592,6 +594,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		if(rc == SLURM_ERROR)
 			return true;
 	}
+#endif
+
 	my_bitmap = bit_copy(rec_a->bitmap);
 	bit_and(my_bitmap, rec_b->bitmap);
 	if (bit_ffs(my_bitmap) == -1) {
@@ -895,35 +899,36 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				       geo[X],
 				       geo[Y],
 				       geo[Z]);	
+#ifdef HAVE_BG_FILES
 				if(bg_record->bg_block_id) {
-					rc = SLURM_ERROR;
-					rc = load_block_wiring(
-						bg_record->bg_block_id);
-				}
-				if(rc == -1) {
-					name = set_bg_block(NULL,
-							    bg_record->start, 
-							    geo, 
-							    bg_record->
-							    conn_type);
-					if(!name) {			
-						debug("I was unable to make "
-						      "the requested block.");
+					if(load_block_wiring(
+						   bg_record->bg_block_id)
+					   == SLURM_ERROR) {
+						debug("something happened in "
+						      "the load of %s", 
+						      bg_record->bg_block_id);
 						list_iterator_destroy(itr);
 						slurm_mutex_unlock(
 							&block_state_mutex);
 						return SLURM_ERROR;
 					}
-					xfree(name);
-				} else if (rc == SLURM_ERROR) {
-					debug("something happened in the "
-					      "load of %s", 
-					      bg_record->bg_block_id);
+				} 
+#else
+				name = set_bg_block(NULL,
+						    bg_record->start, 
+						    geo, 
+						    bg_record->
+						    conn_type);
+				if(!name) {			
+					debug("I was unable to make "
+					      "the requested block.");
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(
 						&block_state_mutex);
 					return SLURM_ERROR;
 				}
+				xfree(name);
+#endif	
 			}
 			if(found_record == NULL) {
 				if((rc = configure_block(bg_record)) 
@@ -1009,7 +1014,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
-	List results = list_create(NULL);
+	List results = NULL;
 	uint16_t num_quarter=0, num_nodecard=0;
 	char *name = NULL;
 	bitstr_t *my_bitmap = NULL;
@@ -1031,7 +1036,6 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			if(bg_record->job_running != -2 
 			   && !bit_super_set(bg_record->bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->bitmap);
-	
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
 				debug2("adding %s %d%d%d %d%d%d",
@@ -1042,39 +1046,36 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				       geo[X],
 				       geo[Y],
 				       geo[Z]);
-
+#ifdef HAVE_BG_FILES
 				if(bg_record->bg_block_id) {
-					rc = SLURM_ERROR;
-					rc = load_block_wiring(
-						bg_record->bg_block_id);
-				}
-				if(rc == -1) {
-					name = set_bg_block(NULL,
-							    bg_record->start, 
-							    geo, 
-							    bg_record->
-							    conn_type);
-					if(!name) {
-						debug("I was unable to make "
-						      "the requested block.");
-						bit_free(my_bitmap);
+					if(load_block_wiring(
+						   bg_record->bg_block_id)
+					   == SLURM_ERROR) {
+						debug("something happened in "
+						      "the load of %s", 
+						      bg_record->bg_block_id);
+						list_iterator_destroy(itr);
 						slurm_mutex_unlock(
 							&block_state_mutex);
-						list_iterator_destroy(itr);
-						list_destroy(results);
 						return SLURM_ERROR;
 					}
-					xfree(name);
-				} else if (rc == SLURM_ERROR) {
-					debug("something happened in the "
-					      "load of %s", 
-					      bg_record->bg_block_id);
+				} 
+#else
+				name = set_bg_block(NULL,
+						    bg_record->start, 
+						    geo, 
+						    bg_record->
+						    conn_type);
+				if(!name) {			
+					debug("I was unable to make "
+					      "the requested block.");
+					list_iterator_destroy(itr);
 					slurm_mutex_unlock(
 						&block_state_mutex);
-					list_iterator_destroy(itr);
-					list_destroy(results);
 					return SLURM_ERROR;
 				}
+				xfree(name);
+#endif	
 			}
 		}
 		list_iterator_destroy(itr);
@@ -1083,7 +1084,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	} else {
 		debug("No list was given");
 	}
-	
+	info("done adding list");
 	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
 		request->conn_type = SELECT_SMALL;
 		if(request->procs == (procs_per_node/16)) {
@@ -1115,6 +1116,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	
 	if(!list_count(bg_list) || !my_block_list) {
 		bg_record = NULL;
+		info("going to no list");
 		goto no_list;
 	}
 
@@ -1140,7 +1142,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			       request->size);
 			request->start_req = 1;
 			rc = SLURM_SUCCESS;
-			if (!allocate_block(request, results)){
+			if (!allocate_block(request, NULL)){
 				debug2("allocate failure for size %d "
 				       "base partitions", 
 				       request->size);
@@ -1155,18 +1157,18 @@ no_list:
 	if(!bg_record) {
 		request->start_req = 0;
 		rc = SLURM_SUCCESS;
-		if (!allocate_block(request, results)){
+		if (!allocate_block(request, NULL)){
 			debug("allocate failure for size %d base partitions", 
 			      request->size);
 			rc = SLURM_ERROR;
 		}
+		info("done trying to allocate");
 	}
 
 	if(rc == SLURM_ERROR || !my_block_list) {
 		goto finished;
 	}
 	/*set up bg_record(s) here */
-	list_destroy(results);
 	results = list_create(destroy_bg_record);
 	
 	blockreq.block = request->save_name;
@@ -1194,7 +1196,7 @@ finished:
 		list_destroy(request->elongate_geos);
 	if(results)
 		list_destroy(results);
-	
+	info("returning");
 	slurm_mutex_unlock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
 	
