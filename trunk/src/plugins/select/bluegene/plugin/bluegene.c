@@ -1084,7 +1084,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	} else {
 		debug("No list was given");
 	}
-	info("done adding list");
+
 	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
 		request->conn_type = SELECT_SMALL;
 		if(request->procs == (procs_per_node/16)) {
@@ -1116,7 +1116,6 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	
 	if(!list_count(bg_list) || !my_block_list) {
 		bg_record = NULL;
-		info("going to no list");
 		goto no_list;
 	}
 
@@ -1162,7 +1161,6 @@ no_list:
 			      request->size);
 			rc = SLURM_ERROR;
 		}
-		info("done trying to allocate");
 	}
 
 	if(rc == SLURM_ERROR || !my_block_list) {
@@ -1196,7 +1194,7 @@ finished:
 		list_destroy(request->elongate_geos);
 	if(results)
 		list_destroy(results);
-	info("returning");
+	
 	slurm_mutex_unlock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
 	
