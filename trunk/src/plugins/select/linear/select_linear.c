@@ -333,10 +333,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 	rem_cpus = job_ptr->num_procs;
+#if 0
+	/* FIXME: We need a separate target node count here for "srun -N1-4 ..."	 * to give 4 nodes if possible instead of always 1 */
 	if (max_nodes)
 		rem_nodes = max_nodes;
 	else
-		rem_nodes = min_nodes;
+#endif
+	rem_nodes = min_nodes;
 	for (index = 0; index < select_node_cnt; index++) {
 		if (bit_test(bitmap, index)) {
 			if (consec_nodes[consec_index] == 0)
