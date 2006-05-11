@@ -1900,6 +1900,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16((uint16_t)build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
 	packstr(build_ptr->plugindir, buffer);
+	packstr(build_ptr->plugstack, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->propagate_prio_process, buffer);
@@ -1983,6 +1984,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, 
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
@@ -2055,6 +2057,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
 	xfree(build_ptr->plugindir);
+	xfree(build_ptr->plugstack);
 	xfree(build_ptr->proctrack_type);
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->propagate_rlimits);
