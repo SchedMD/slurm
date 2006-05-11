@@ -111,6 +111,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->mpi_default);
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
+	fprintf(out, "PlugStackConfig   = %s\n",
+		slurm_ctl_conf_ptr->plugstack);
 	fprintf(out, "ProctrackType     = %s\n",
 		slurm_ctl_conf_ptr->proctrack_type);
 	fprintf(out, "Prolog            = %s\n", 
@@ -181,6 +183,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->tmp_fs);
 	fprintf(out, "TreeWidth         = %u\n",
 		slurm_ctl_conf_ptr->tree_width);
+	fprintf(out, "UsePam            = %u\n",
+		slurm_ctl_conf_ptr->use_pam);
 	fprintf(out, "WaitTime          = %u\n", 
 		slurm_ctl_conf_ptr->wait_time);
 }

@@ -362,6 +362,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);
 	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 	conf_ptr->tree_width          = conf->tree_width;
+	conf_ptr->use_pam             = conf->use_pam;
 
 	slurm_conf_unlock();
 	return;
