@@ -5,7 +5,7 @@
 SLURM source can be downloaded from <br>
 <a href="ftp://ftp.llnl.gov/pub/linux/slurm/">
 ftp://ftp.llnl.gov/pub/linux/slurm</a><br>
-The latest stable release is version 1.0.</p>
+The latest stable release is version 1.1.</p>
 
 <p><b>NOTE:</b> This server will only download files to computers 
 on which it can perform a reverse DNS lookup for the IP address 
@@ -71,6 +71,6 @@ Moab Cluster Suite</a></li>
 </ul>
 </ul>
 
-<p style="text-align:center;">Last modified 21 December 2005</p>
+<p style="text-align:center;">Last modified 11 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
