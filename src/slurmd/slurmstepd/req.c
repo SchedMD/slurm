@@ -358,7 +358,7 @@ _handle_accept(void *arg)
 	if (rc != SLURM_SUCCESS) {
 		error("Verifying authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
-		(void) slurm_free_cred(auth_cred);
+		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
 		goto fail;
 	}
@@ -367,7 +367,7 @@ _handle_accept(void *arg)
 	uid = g_slurm_auth_get_uid(auth_cred);
 	gid = g_slurm_auth_get_gid(auth_cred);
 	debug3("  Identity: uid=%d, gid=%d", uid, gid);
-	slurm_free_cred(auth_cred);
+	g_slurm_auth_destroy(auth_cred);
 	free_buf(buffer);
 
 	rc = SLURM_SUCCESS;

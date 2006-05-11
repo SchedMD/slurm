@@ -1696,9 +1696,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
-#if SYSTEM_DIMENSIONS
-	uint16_t geo[SYSTEM_DIMENSIONS];
-#endif
 	uint32_t total_nodes;
 
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
@@ -1795,14 +1792,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
 #if SYSTEM_DIMENSIONS
-	select_g_get_jobinfo(job_desc->select_jobinfo,
-			     SELECT_DATA_GEOMETRY,
-			     &geo);
-	if ((geo[0] != (uint16_t) NO_VAL) && (geo[0] != 0)) {
+	if ((job_desc->geometry[0] != (uint16_t) NO_VAL)
+	&&  (job_desc->geometry[0] != 0)) {
 		int i, tot = 1;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			tot *= geo[i];
-		}
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			tot *= job_desc->geometry[i];
 		if (job_desc->min_nodes > tot) {
 			info("MinNodes(%d) > GeometryNodes(%d)", 
 				job_desc->min_nodes, tot);
@@ -1812,6 +1806,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_desc->min_nodes = tot;
 	}
 #endif
+
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
@@ -2322,9 +2317,22 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	detail_ptr->begin_time = job_desc->begin_time;
-	job_ptr->select_jobinfo = 
-		select_g_copy_jobinfo(job_desc->select_jobinfo);
-
+	if (select_g_alloc_jobinfo(&job_ptr->select_jobinfo))
+		return SLURM_ERROR;
+#if SYSTEM_DIMENSIONS
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_GEOMETRY, 
+			     job_desc->geometry);
+#endif
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CONN_TYPE, 
+			     &job_desc->conn_type);
+	if (job_desc->conn_type == (uint16_t) NO_VAL)
+		job_desc->conn_type = SELECT_NAV;
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_ROTATE, 
+		&job_desc->rotate);
+	
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
 }
@@ -2517,7 +2525,18 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
-	
+#if SYSTEM_DIMENSIONS
+	if (job_desc_msg->geometry[0] == (uint16_t) NO_VAL) {
+		int i;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			job_desc_msg->geometry[i] = 0;
+	}
+#endif
+	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
+		job_desc_msg->conn_type = SELECT_NAV;/* try TORUS, then MESH */
+	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
+		job_desc_msg->rotate = true;    /* default to allow rotate */
+
 	return SLURM_SUCCESS;
 }
 
@@ -3352,6 +3371,39 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else
 			error_code = ESLURM_DISABLED;
 	}
+#if SYSTEM_DIMENSIONS
+	if (job_specs->geometry[0] != (uint16_t) NO_VAL) {
+		int i, tot = 1;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			tot *= job_specs->geometry[i];
+		detail_ptr->min_nodes = tot;
+		detail_ptr->max_nodes = tot;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_GEOMETRY,
+			job_specs->geometry);
+		 info("update_job: setting geometry to %ux%ux%u for job_id %u",
+			job_specs->geometry[0], job_specs->geometry[1], 
+			job_specs->geometry[2], job_ptr->job_id);
+	}
+#endif
+
+#ifdef HAVE_BG
+	if (job_specs->conn_type != (uint16_t) NO_VAL) {
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_CONN_TYPE,
+			&job_specs->conn_type);
+		info("update_job: setting conn_type to %u for job_id %u",
+			job_specs->conn_type, job_ptr->job_id);
+	}
+
+	if (job_specs->rotate != (uint16_t) NO_VAL) {
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_ROTATE,
+			&job_specs->rotate);
+		info("update_job: setting rotate to %u for job_id %u",
+			job_specs->rotate, job_ptr->job_id);
+	}
+#endif
 
 	return error_code;
 }

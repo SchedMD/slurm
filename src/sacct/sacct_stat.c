@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include "src/common/slurm_jobacct.h"
 #include "src/common/forward.h"
+#include "src/common/slurm_auth.h"
 
 pthread_mutex_t stat_mutex = PTHREAD_MUTEX_INITIALIZER;	
 pthread_cond_t stat_cond = PTHREAD_COND_INITIALIZER;
@@ -68,7 +69,7 @@ void *_stat_thread(void *args)
 		error("got an error");
 		goto cleanup;
 	}
-	slurm_free_cred(resp_msg.cred);
+	g_slurm_auth_destroy(resp_msg.auth_cred);
 
 	switch (resp_msg.msg_type) {
 	case MESSAGE_STAT_JOBACCT:

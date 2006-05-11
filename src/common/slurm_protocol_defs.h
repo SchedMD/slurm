@@ -236,7 +236,7 @@ typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
 	slurm_addr address;       
 	slurm_fd conn_fd;
-	void *cred;
+	void *auth_cred;
 	void *data;
 	uint32_t data_size;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
