@@ -448,8 +448,9 @@ job_desc_msg_create_from_opts (char *script)
 	}
 #endif
 
-	if (opt.conn_type > -1)
+	if (opt.conn_type != -1)
 		j->conn_type = opt.conn_type;
+			
 	if (opt.no_rotate)
 		j->rotate = 0;
 

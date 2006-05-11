@@ -2145,7 +2145,22 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	pack16((uint16_t)job_desc_ptr->mail_type, buffer);
 	packstr(job_desc_ptr->mail_user, buffer);
-	select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
+	if (select_g_alloc_jobinfo(&job_desc_ptr->select_jobinfo) 
+	    == SLURM_SUCCESS) {
+#if SYSTEM_DIMENSIONS
+		select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
+				     SELECT_DATA_GEOMETRY, 
+				     job_desc_ptr->geometry);
+#endif
+		select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
+				     SELECT_DATA_CONN_TYPE, 
+				     &(job_desc_ptr->conn_type));
+		select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
+				     SELECT_DATA_ROTATE, 
+				     &(job_desc_ptr->rotate));
+		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
+		select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
+	}
 }
 
 /* _unpack_job_desc_msg
@@ -2218,7 +2233,14 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
 		goto unpack_error;
-	
+#if SYSTEM_DIMENSIONS
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_GEOMETRY, job_desc_ptr->geometry);
+#endif
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_CONN_TYPE, &job_desc_ptr->conn_type);
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_ROTATE, &job_desc_ptr->rotate);	
 	return SLURM_SUCCESS;
 
       unpack_error:

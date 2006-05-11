@@ -119,12 +119,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_GEOMETRY, &req_geometry);
+		
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_ROTATE, &rotate);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 
 	if(req_geometry[0] != (uint16_t)NO_VAL) {
+		target_size = 1;
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 			target_size *= (uint16_t)req_geometry[i];
 		if(!max_nodes)
@@ -134,6 +136,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		target_size = min_nodes;
 		req_geometry[X] = (uint16_t)NO_VAL;
 	}
+	
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 		
@@ -303,7 +306,7 @@ try_again:
 		else {	/* match requested geometry */
 			bool match = false;
 			rot_cnt = 0;	/* attempt six rotations  */
-
+			
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {		
 				if ((record->geo[X] >= req_geometry[X])
 				&&  (record->geo[Y] >= req_geometry[Y])
@@ -311,8 +314,9 @@ try_again:
 					match = true;
 					break;
 				}
-				if (!rotate)
+				if (!rotate) {
 					break;
+				}
 				_rotate_geo(req_geometry, rot_cnt);
 			}
 
