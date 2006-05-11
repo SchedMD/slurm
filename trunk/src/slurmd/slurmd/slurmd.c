@@ -627,6 +627,7 @@ _print_conf()
 	debug3("Debug       = %d",       cf->slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
+	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);

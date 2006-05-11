@@ -1474,7 +1474,7 @@ done:
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
 	resp_msg.forward      = msg->forward;
 	resp_msg.ret_list     = msg->ret_list;
-	resp->node_name       = conf->node_name;
+	resp->node_name       = xstrdup(conf->node_name);
 	resp->srun_node_id    = req->srun_node_id;
 	resp->return_code     = rc;
 
