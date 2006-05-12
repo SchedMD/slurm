@@ -41,21 +41,6 @@ set test_out    "test$test_id.out"
 
 print_header $test_id
 
-#
-# Determine if this is AIX for appropriate build line
-# or front-end system (e.g. Blue Gene, to forgo test)
-#
-set aix 0
-spawn $bin_uname
-expect {
-	-re "AIX" {
-		set aix 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
 if {[test_front_end] != 0} {
         send_user "\nWARNING: This test is incompatable with front-end systems\n"
         exit 0
@@ -69,7 +54,7 @@ exec $bin_rm -f $io_prog $test_prog $test_out
 exec $bin_make -f /dev/null $io_prog
 exec $bin_chmod 700 $io_prog
 
-if {$aix == 0} {
+if {![test_aix]} {
 	exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
 } else {
 	exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm

@@ -46,22 +46,7 @@ set task_cnt    0
 set can_not_run 0
 set timeout $max_job_delay
 
-#
-# Determine if this is AIX (for appropriate build line)
-#
-set aix 0
-spawn $bin_uname
-expect {
-        -re "AIX" {
-                set aix 1
-                exp_continue
-        }
-        eof {
-                wait
-        }
-}
-
-if {$aix == 0} {
+if {![test_aix]} {
 	set hostname_arg "--short"
 	set have_arg 1
 } else {
