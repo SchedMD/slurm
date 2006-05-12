@@ -866,17 +866,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		min_nodes = MAX(job_ptr->details->min_nodes, 
 				part_ptr->min_nodes);
 	}
-	if (super_user)
-		max_nodes = INFINITE; 
-	else if (job_ptr->details->max_nodes == 0)
-		max_nodes = part_ptr->max_nodes;
-	else
+	if (job_ptr->details->max_nodes == 0) {
+		if (super_user)
+			max_nodes = INFINITE;
+		else
+			max_nodes = part_ptr->max_nodes;
+	} else
 		max_nodes = MIN(job_ptr->details->max_nodes, 
 				part_ptr->max_nodes);
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-	if (super_user)
-		req_nodes = MAX(job_ptr->details->max_nodes, min_nodes);
-	else if (job_ptr->details->max_nodes)
+	if (job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;
