@@ -46,14 +46,12 @@ if {[test_front_end] != 0} {
 }
 
 #
-# Delete left-over input script file
 # Build input script file
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                >$file_in
-exec echo "export PS1=\"$prompt\"  "  >>$file_in
-exec echo "$bin_bash -norc"           >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  export PS1=\"$prompt\"
+  $bin_bash -norc
+"
 
 #
 # Submit a 4 node job

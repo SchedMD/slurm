@@ -45,17 +45,14 @@ if {[test_front_end] != 0} {
 }
 
 #
-# Delete left-over input scripts
 # Build input script files
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"       >$file_in
-exec echo "umask"            >>$file_in
+make_bash_script $file_in "umask"
 
-exec echo "#!$bin_bash"               >$file_script
-exec echo "umask 0123"               >>$file_script
-exec echo "$srun -N1 -t1 ./$file_in" >>$file_script
-exec $bin_chmod 700 $file_in $file_script
+make_bash_script $file_script "
+  umask 0123
+  $srun -N1 -t1 ./$file_in
+"
 
 #
 # Set umask and confirm it is propagated

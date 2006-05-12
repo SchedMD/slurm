@@ -620,3 +620,33 @@ proc default_partition {} {
 }
 
 
+################################################################
+#
+# Proc: make_bash_script
+#
+# Purpose: Create a bash script of name "script_name", and
+#          make the body of the script "script_contents".
+#          make_bash_script removes the file if it already exists,
+#          then generates the #! line, and then dumps "script_contents"
+#          to the file.  Finally, it makes certain that the script
+#          is executable.
+#
+# Returns: Nothing.
+#
+# Input: script_name - file name for the bash script
+#        script_contents - body of the script, not including the
+#                          initial #! line.
+#
+################################################################
+
+proc make_bash_script { script_name script_contents } {
+    global bin_bash bin_chmod
+
+    file delete $script_name
+    set fd [open $script_name "w"]
+    puts $fd "#!$bin_bash"
+    puts $fd $script_contents
+    close $fd
+    exec $bin_chmod 700 $script_name
+}
+

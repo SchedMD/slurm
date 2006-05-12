@@ -52,9 +52,7 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"          >$file_in
-exec echo "$bin_echo \$1,\$2"   >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$bin_echo \$1,\$2"
 
 #
 # Spawn a srun batch job with arguments

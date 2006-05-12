@@ -41,18 +41,15 @@ print_header $test_id
 # Create a test script to be launch by srun
 #
 exec $bin_rm -f $test_script
-set file [open $test_script "w"]
-puts $file "#!$bin_bash
+make_bash_script $test_script {
+    echo "Running"
 
-echo \"Running\"
+    sleep 5
 
-sleep 5
-
-for ((i = 0; i < 100; i++)); do
-  cat /etc/hosts
-done"
-close $file
-exec $bin_chmod 700 $test_script
+    for ((i = 0; i < 100; i++)); do
+        cat /etc/hosts
+    done
+}
 
 #
 # Launch the test script

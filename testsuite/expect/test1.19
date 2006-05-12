@@ -261,10 +261,10 @@ if {$file_cnt != 1} {
 #  file name and confirm it is created. Use two step batch job.
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                                      >$file_in
-exec echo "$srun -n4 -O --output=$file_out_s $bin_hostname" >>$file_in
-exec echo "$srun -n4 -O --output=$file_out_s $bin_hostname" >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  $srun -n4 -O --output=$file_out_s $bin_hostname
+  $srun -n4 -O --output=$file_out_s $bin_hostname
+"
 
 for {set step_id 0} {$step_id < 4} {incr step_id} {
 	set file_out_s_glob  "test$test_id.s.$step_id.output"

@@ -46,12 +46,12 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                >$file_in
-exec echo "if ((\$SLURM_PROCID== 1))" >>$file_in
-exec echo "   then exit"              >>$file_in
-exec echo "fi"                        >>$file_in
-exec echo "$bin_sleep 300"            >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+    if ((\$SLURM_PROCID== 1))
+        then exit
+    fi
+    $bin_sleep 300
+"
 
 #
 # Spawn a shell via srun and send exit command to task 1 only

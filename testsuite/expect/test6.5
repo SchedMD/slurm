@@ -41,13 +41,9 @@ set matches      0
 print_header $test_id
 
 #
-# Delete left-over input script
 # Build input script file
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"          >$file_in
-exec echo "$srun $bin_sleep 10" >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$srun $bin_sleep 10"
 
 #
 # Submit a couple of jobs so we have something to work with

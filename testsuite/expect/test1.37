@@ -82,9 +82,7 @@ if {[test_front_end] != 0} {
 # Build input script file
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"         >$file_in
-exec echo "$srun $bin_sleep 5" >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$srun $bin_sleep 5"
 
 #
 # Submit two jobs to the same node, one with no sharing, the other 

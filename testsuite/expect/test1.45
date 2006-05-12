@@ -44,13 +44,14 @@ set job_id_2     0
 print_header $test_id
 
 #
-# Delete left-over input script plus stdout/err files
+# Delete left-over stdout/err files
+#
+file delete none
+
+#
 # Build input script file
 #
-exec $bin_rm -f $file_in none
-exec echo "#!$bin_bash"            >$file_in
-exec echo "$bin_hostname"         >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$bin_hostname"
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
