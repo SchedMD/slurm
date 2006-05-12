@@ -119,6 +119,11 @@ if {[wait_for_file $file_err] == 0} {
 			incr matches
 			exp_continue
 		}
+		-re "REQUEST_FILE_BCAST.* File exists" {
+			send_user "Vestigial file should be removed\n"
+			incr matches
+			exp_continue
+		}
 		-re "No such file" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
