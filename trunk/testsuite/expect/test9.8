@@ -151,6 +151,8 @@ while { $unresponsive } {
 		}
 	}
 }
+if {[test_aix]} {sleep 5}
+
 log_user 1
 if {$matches < $desired_tasks} {
 	send_user "\nFAILURE: only started $matches job steps\n"
