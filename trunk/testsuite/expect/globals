@@ -61,6 +61,8 @@ cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
 
+cset partition "pdebug"
+
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
 #cset use_pmi	1
@@ -72,7 +74,6 @@ cset use_pmi	0
 cset xcpu_dir	"/mnt/xcpu"
 
 cset poe		"/usr/bin/poe"
-cset poe_partition "pdebug"
 cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
@@ -557,4 +558,65 @@ proc dec2hex16 {value} {
 		return "7FFF"
 	}
 }
+
+
+################################################################
+#
+# Proc: available_nodes
+#
+# Purpose: Check to see if a given partition has a at least
+#          "num_nodes" number of nodes in the alloc, idle, or comp
+#          state.  This can be used to avoid launching a job that
+#          will never run because nodes are in the "drained" state
+#          or otherwise unavailable.
+#
+# Returns: Returns the number of available nodes in the partition, or
+#          -1 on failure.
+#
+# Input: partition - name of a partition
+#
+################################################################
+
+proc available_nodes { partition } {
+    global sinfo
+
+    set available -1
+    set fd [open "|$sinfo --noheader --partition pdebug --state idle,alloc,comp --format %D"]
+    gets $fd line
+    close $fd
+    regexp {\d+} $line available
+    return $available
+}
+
+
+################################################################
+#
+# Proc: default_partition
+#
+# Purpose: Use scontrol to determine the name of the default partition
+#
+# Returns: Name of the current default partition
+#
+################################################################
+
+proc default_partition {} {
+    global scontrol
+
+    set name ""
+    set fd [open "|$scontrol --all --oneliner show partition"]
+    while {[gets $fd line] != -1} {
+	if {[regexp {^PartitionName=(\w+).*Default=YES} $line name]
+	    == 1} {
+	    break
+	}
+    }
+    close $fd
+
+    if {[string length $name] == 0} {
+	send_user "ERROR: could not identify the default partition"
+    }
+
+    return $name
+}
+
 

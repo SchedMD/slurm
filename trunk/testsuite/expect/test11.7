@@ -54,7 +54,7 @@ if { ![file exists $poe] } {
 }
 
 #find out if we have enough nodes to test functionality
-spawn $scontrol show partition $poe_partition
+spawn $scontrol show partition $partition
 expect {
 	-re "TotalNodes=($number)" {
 		set node_count $expect_out(1,string)
@@ -89,14 +89,14 @@ for {set i 0} {$i<2} {incr i} {
 		set file [open $hostfile "w"]
 		puts $file "$node1\n$node0"
 		close $file
-		spawn $poe $bin_hostname -rmpool $poe_partition -procs \
+		spawn $poe $bin_hostname -rmpool $partition -procs \
 				$num_tasks -nodes $num_nodes -retry wait \
 				-hostfile $hostfile
 	} else {
 		#
 		# execute poe with a specific node count
 		#
-		spawn $poe $bin_hostname -rmpool $poe_partition -procs \
+		spawn $poe $bin_hostname -rmpool $partition -procs \
 				$num_tasks -nodes $num_nodes -retry wait
 	}
 	expect {
