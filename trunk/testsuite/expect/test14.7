@@ -52,7 +52,7 @@ if {[test_front_end] != 0} {
 set uid 0
 spawn $bin_id
 expect {
-	-re "(uid=.*\n)" {
+	-re "uid=($number)" {
 		set uid $expect_out(1,string)
 		exp_continue
 	}
