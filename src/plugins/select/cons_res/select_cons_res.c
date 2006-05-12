@@ -645,6 +645,7 @@ extern int select_p_block_init(List part_list)
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
+ * IN req_nodes - requested (or desired) count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
  * IN test_only - if true, only test if ever could run, not necessarily now,
  *	not used in this implementation
@@ -660,7 +661,8 @@ extern int select_p_block_init(List part_list)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
-			     int min_nodes, int max_nodes, bool test_only)
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes, bool test_only)
 {
 	int i, index, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this 
@@ -695,10 +697,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 	rem_cpus = job_ptr->num_procs;
-	if (max_nodes)
-		rem_nodes = max_nodes;
-	else
-		rem_nodes = min_nodes;
+	rem_nodes = req_nodes;
 	for (index = 0; index < select_node_cnt; index++) {
 		if (bit_test(bitmap, index)) {
 			int allocated_cpus;

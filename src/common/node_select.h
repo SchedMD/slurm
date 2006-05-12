@@ -3,7 +3,7 @@
  *
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -135,10 +135,12 @@ extern int select_g_block_init(List part_list);
  *                 map of nodes actually to be assigned on output
  * IN min_nodes - minimum number of nodes to allocate to job
  * IN max_nodes - maximum number of nodes to allocate to job
+ * IN req_nodes - requested (or desired) count of nodes
  * IN test_only - if true, only test if ever could run, not necessarily now
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     int min_nodes, int max_nodes, bool test_only);
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes, bool test_only);
 
 /*
  * Note initiation of job is about to begin. Called immediately 

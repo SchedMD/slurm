@@ -67,8 +67,9 @@ typedef struct slurm_select_ops {
 	int 		(*block_init)	       (List block_list);
 	int		(*job_test)	       (struct job_record *job_ptr,
 						bitstr_t *bitmap, 
-						int min_nodes, 
-						int max_nodes,
+						uint32_t min_nodes, 
+						uint32_t max_nodes,
+						uint32_t req_nodes,
 						bool test_only);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
@@ -460,17 +461,19 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
  *                 map of nodes actually to be assigned on output
  * IN min_nodes - minimum number of nodes to allocate to job
  * IN max_nodes - maximum number of nodes to allocate to job
+ * IN req_nodes - requested (or desired) count of nodes
  * IN test_only - if true, only test if ever could run, not necessarily now 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-        int min_nodes, int max_nodes, bool test_only)
+		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
+		bool test_only)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
 						   min_nodes, max_nodes, 
-						   test_only);
+						   req_nodes, test_only);
 }
 
 /*
