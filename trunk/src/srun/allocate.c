@@ -119,11 +119,18 @@ allocate_nodes(void)
 			info("Warning: %s", slurm_strerror(resp->error_code));
 		_wait_for_resources(&resp);
 	}
+	/* For diagnosing a node problem, administrators need to sometimes
+	 * run a job on N nodes one of which must be the node believed to 
+	 * have a problem (e.g. "srun -N4 -w bad_node diagnostic"). The 
+	 * below logic prevents this from working and necessiates the 
+	 * admin identify four specific nodes to use for the above test
+	 * instead of just the one bad node. Otherwise only the one 
+	 * bad node is used in the job's allocation. */
 	if(resp->node_list && j->req_nodes) {
 		xfree(resp->node_list);
 		resp->node_list = xstrdup(j->req_nodes);
 	}
-	
+
     done:
 	xsignal_set_mask(&oset);
 	xsignal(SIGINT,  ointf);
