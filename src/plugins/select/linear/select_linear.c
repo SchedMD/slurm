@@ -422,8 +422,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (i = 0; i < consec_index; i++) {
 			if (consec_nodes[i] == 0)
 				continue;
-			sufficient = ((consec_nodes[i] >= rem_nodes)
-				      && (consec_cpus[i] >= rem_cpus));
+			sufficient = (consec_cpus[i] >= rem_cpus)
+			&& _enough_nodes(consec_nodes[i], rem_nodes,
+					 min_nodes, req_nodes);
 
 			/* if first possibility OR */
 			/* contains required nodes OR */
