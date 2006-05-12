@@ -672,7 +672,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 				  req->tasks_to_launch[req->srun_node_id],
 				  &step_hset) 
 	    < 0) {
-		errnum = errno;
+		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
 		goto done;
@@ -759,7 +759,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid, 
 				  spawn_tasks_to_launch, &step_hset) < 0) {
-		errnum = errno;
+		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
 		goto done;
