@@ -40,7 +40,7 @@ set exit_code   0
 print_header $test_id
 
 #
-# Check if we are SlurmUser or root, as required to run this test
+# Check if we are SlurmUser as required to run this test
 #
 log_user 0
 set user_name "nobody"
