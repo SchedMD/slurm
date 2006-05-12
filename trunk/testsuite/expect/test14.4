@@ -50,23 +50,21 @@ if {[test_front_end] != 0} {
 }
 
 #
-# Delete left-over input script plus stdout/err files
+# Delete left-over stdout/err files
 # Build input script file that broacasts a file
 #
-exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"					 >$file_in
-#
-exec echo "$srun $bin_touch /tmp/test1.$test_id"	>>$file_in
-exec echo "$sbcast $sbcast /tmp/test1.$test_id"		>>$file_in
-exec echo "$srun $bin_diff $sbcast /tmp/test1.$test_id" >>$file_in
-exec echo "$srun $bin_rm -f /tmp/test1.$test_id"	>>$file_in
-#
-exec echo "$srun $bin_touch /tmp/test2.$test_id"	>>$file_in
-exec echo "$sbcast $sbcast --force /tmp/test2.$test_id" >>$file_in
-exec echo "$srun $bin_diff $sbcast /tmp/test2.$test_id"	>>$file_in
-exec echo "$srun $bin_rm -f /tmp/test2.$test_id"	>>$file_in
-#
-exec $bin_chmod 700 $file_in
+exec $bin_rm -f $file_out $file_err
+make_bash_script $file_in "
+  $srun $bin_touch /tmp/test1.$test_id
+  $sbcast $sbcast /tmp/test1.$test_id
+  $srun $bin_diff $sbcast /tmp/test1.$test_id
+  $srun $bin_rm -f /tmp/test1.$test_id
+
+  $srun $bin_touch /tmp/test2.$test_id
+  $sbcast $sbcast --force /tmp/test2.$test_id
+  $srun $bin_diff $sbcast /tmp/test2.$test_id
+  $srun $bin_rm -f /tmp/test2.$test_id
+"
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents

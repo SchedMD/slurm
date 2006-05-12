@@ -41,16 +41,16 @@ print_header $test_id
 # Delete left-over scripts and build new ones
 #
 exec $bin_rm -f $exit_script $test_script
-exec echo "#!$bin_bash"                                    >$exit_script
-exec echo "RC=`expr \$SLURM_PROCID + 10`"                  >>$exit_script
-exec echo "exit \$RC"                                      >>$exit_script
+make_bash_script $exit_script "
+RC=`expr \$SLURM_PROCID + 10`
+exit \$RC
+"
 
-
-exec echo "#!$bin_bash"                                    >$test_script
-exec echo "$srun -N1 -n2 -O $exit_script"                 >>$test_script
-#exec echo "RC=\$?"                                        >>$test_script
-exec echo "echo srun_exit_code_\$?"                       >>$test_script
-exec $bin_chmod 700 $exit_script $test_script
+make_bash_script $test_script "
+$srun -N1 -n2 -O $exit_script
+#RC=\$?
+echo srun_exit_code_\$?
+"
 
 #
 # Spawn program and check for exit code messages from srun

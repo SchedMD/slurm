@@ -86,15 +86,16 @@ if {$inactive_limit < $sleep_time} {
 	send_user "\nReset job sleep time to $sleep_time seconds\n"
 }
 
+# Delete left-over stdout/err files
+file delete $file_out $file_err
+
 #
-# Delete left-over input script plus stdout/err files
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"                    >$file_in
-exec echo "$srun $bin_sleep $sleep_time"  >>$file_in
-exec echo "$bin_echo FINI"                >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  $srun $bin_sleep $sleep_time
+  $bin_echo FINI
+"
 
 #
 # Execute a couple of three minute jobs; one with a one minute time  

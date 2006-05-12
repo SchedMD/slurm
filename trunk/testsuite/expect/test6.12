@@ -52,14 +52,12 @@ if { [test_xcpu] } {
 #
 # Delete left-over input script plus stdout/err files
 #
-exec $bin_rm -f $file_in $file_out $file_err
+file delete $file_out $file_err
 
 #
 # Build input script file
 #
-set file [open $file_in "w"]
-puts $file "#!$bin_bash
-
+make_bash_script $file_in "
 $srun $bin_sleep 500 &
 
 trap /bin/true SIGINT
@@ -71,8 +69,8 @@ while /bin/true; do
     else
 	break
     fi
-done"
-close $file
+done
+"
 
 #
 # Spawn a srun batch job with arguments
@@ -156,12 +154,8 @@ exec $scancel --quiet $job_id
 #
 # Build and run second test script
 #
-exec $bin_rm -f $file_in $file_out $file_err
-set file [open $file_in "w"]
-puts $file "#!$bin_bash"
-puts $file "$bin_sleep 500"
-close $file
-exec $bin_chmod 700 $file_in
+file delete $file_out $file_err
+make_bash_script $file_in "$bin_sleep 500"
 
 set job_id 0
 spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
@@ -239,13 +233,8 @@ if {$exit_code != 0} {
 # Submit another job to be signalled with steps
 #
 set job_id      0
-exec $bin_rm -f $file_in $file_out $file_err
-set file [open $file_in "w"]
-puts $file "#!$bin_bash"
-puts $file "$srun $bin_sleep 500"
-#puts $file "wait"
-close $file
-exec $bin_chmod 700 $file_in
+file delete $file_out $file_err
+make_bash_script $file_in "$srun $bin_sleep 500"
 
 spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
 expect {

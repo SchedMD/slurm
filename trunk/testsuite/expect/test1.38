@@ -44,14 +44,12 @@ if { [test_xcpu] } {
 }
 
 #
-# Delete left-over input script
 # Build input script file
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"             >$file_in
-exec echo "$bin_echo WAITING"      >>$file_in
-exec echo "$bin_sleep 1000"        >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  $bin_echo WAITING
+  $bin_sleep 1000
+"
 
 #
 # Get uid

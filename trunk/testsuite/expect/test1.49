@@ -47,24 +47,25 @@ print_header $test_id
 # Delete left-over scripts and rebuild, 
 # The sleep command just forces slurmd to kill the user's (long running) epilog
 #
-exec $bin_rm -f $task_prolog $task_epilog $file_in
-exec $bin_rm -f $file_out_pre $file_out_post
+file delete $task_prolog $task_epilog
+file delete $file_out_pre $file_out_post
 exec $bin_touch $file_out_pre
 exec $bin_touch $file_out_post
 
-exec echo "#!$bin_bash"                  >$task_prolog
-exec echo "$bin_id >> $file_out_pre"    >>$task_prolog
-exec echo "echo export TEST=prolog_qa"  >>$task_prolog
+make_bash_script $task_prolog "
+  $bin_id >> $file_out_pre
+  echo export TEST=prolog_qa
+"
 
-exec echo "#!$bin_bash"                  >$task_epilog
-exec echo "$bin_id >> $file_out_post"   >>$task_epilog
-exec echo "$bin_sleep 200"              >>$task_epilog
+make_bash_script $task_epilog "
+  $bin_id >> $file_out_post
+  $bin_sleep 200
+"
 
-exec echo "#!$bin_bash"                  >$file_in
-exec echo "echo TEST==\$TEST"           >>$file_in
-#exec echo "env"                        >>$file_in
-
-exec $bin_chmod 700 $task_prolog $task_epilog $file_in
+make_bash_script $file_in "
+  echo TEST==\$TEST
+  #env
+"
 
 #
 # Submit a slurm job that will execute $tasks tasks

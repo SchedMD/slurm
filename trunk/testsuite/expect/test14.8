@@ -49,24 +49,23 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
+# Delete left-over stdout file
+file delete $file_out
+
 #
-# Delete left-over input script plus stdout file
 # Build input script file that broacasts a file
 #
-exec $bin_rm -f $file_in $file_out
-exec echo "#!$bin_bash"					 >$file_in
-#
-exec echo "$srun $bin_rm -f /tmp/test1.$test_id"		>>$file_in
-exec echo "$sbcast $sbcast --fanout=2 /tmp/test1.$test_id"	>>$file_in
-exec echo "$srun $bin_diff $sbcast /tmp/test1.$test_id" 	>>$file_in
-exec echo "$srun $bin_rm -f /tmp/test1.$test_id"		>>$file_in
-#
-exec echo "$srun $bin_rm -f /tmp/test2.$test_id"		>>$file_in
-exec echo "$sbcast $sbcast --size=16k  /tmp/test2.$test_id"	>>$file_in
-exec echo "$srun $bin_diff $sbcast /tmp/test2.$test_id"		>>$file_in
-exec echo "$srun $bin_rm -f /tmp/test2.$test_id"		>>$file_in
-#
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  $srun $bin_rm -f /tmp/test1.$test_id
+  $sbcast $sbcast --fanout=2 /tmp/test1.$test_id
+  $srun $bin_diff $sbcast /tmp/test1.$test_id
+  $srun $bin_rm -f /tmp/test1.$test_id
+
+  $srun $bin_rm -f /tmp/test2.$test_id
+  $sbcast $sbcast --size=16k  /tmp/test2.$test_id
+  $srun $bin_diff $sbcast /tmp/test2.$test_id
+  $srun $bin_rm -f /tmp/test2.$test_id
+"
 
 #
 # Spawn a srun batch job that uses stdout and confirm its contents
