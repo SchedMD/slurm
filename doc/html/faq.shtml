@@ -13,8 +13,6 @@ to run on nodes?</a></li>
 <li><a href="#cred">Why are &quot;Invalid job credential&quot; errors generated?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
 job?</a></li>
-<li><a href="#share">How can I control the execution of multiple jobs per node?</a></l
-i>
 <li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
 </ol>
 <h2>For Administrators</h2>
@@ -25,10 +23,15 @@ found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
 has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
+<li><a href="#multi_job">How can I control the execution of multiple 
+jobs per node?</a></li>
 <li><a href="#inc_plugin">When the SLURM daemon starts, it prints
 &quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
 <li><a href="#sigpipe">Why are user tasks intermittently dying at launch with SIGPIPE
 error messages?</a></li>
+<li><a href="#maint_time">How can I dry up the workload for a maintenance 
+period?</a></li>
+
 </ol>
 
 <h2>For Users</h2>
@@ -168,21 +171,7 @@ satisfy the request, no lower priority job in that partition's queue
 will be considered as a backfill candidate. Any programmer wishing 
 to augment the existing code is welcome to do so. 
 
-<p><a name="share"><b>9. How can I control the execution of multiple
-jobs per node?</b></a><br>
-There are two mechanism to control this.
-If you want to allocate individual processors on a node to jobs,
-configure <i>SelectType=select/cons_res</i>.
-See <a href="cons_res.html">Consumable Resources in SLURM</a>
-for details about this configuration.
-If you want to allocate whole nodes to jobs, configure
-configure <i>SelectType=select/linear</i>.
-Each partition also has a configuration parameter <i>Shared</i>
-that enables more than one job to execute on each node.
-See <i>man slurm.conf</i> for more information about these
-configuration paramters.</p>
-
-<p><a name="steps"><b>10. How can I run multiple jobs from within a 
+<p><a name="steps"><b>9. How can I run multiple jobs from within a 
 single script?</b></a><br>
 A SLURM job is just a resource allocation. You can execute many 
 job steps within that allocation, either in parallel or sequentially. 
@@ -251,7 +240,7 @@ with the srun option <i>--no-kill</i>.
 Any active job step on that node will be killed. 
 See the slurm.conf and srun man pages for more information.</p>
  
-<p><a name="share"><b>5. How can I control the execution of multiple 
+<p><a name="multi_job"><b>5. How can I control the execution of multiple 
 jobs per node?</b></a><br>
 There are two mechanism to control this. 
 If you want to allocate individual processors on a node to jobs, 
@@ -280,12 +269,20 @@ at launch with SIGPIPE error messages?</b></a><br>
 If you are using ldap or some other remote name service for
 username and groups lookup, chances are that the underlying
 libc library functions are triggering the SIGPIPE.  You can likely
-work around this problem by setting CacheGroups=1 in your slurm.conf
+work around this problem by setting <i>CacheGroups=1</i> in your slurm.conf
 file.  However, be aware that you will need to run &quot;scontrol
 reconfigure &quot; any time your groups database is updated.
 
+<p><a name="maint_time"><b>8. How can I dry up the workload for a 
+maintenance period?</b></a><br>
+There isn't a mechanism to tell SLURM that all jobs should be 
+completed by a specific time. The best way to address this is 
+to shorten the <i>MaxTime</i> associated with the partitions so 
+as to avoid initiating jobs that will not have completed by 
+the maintenance period.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 April 2006</p>
+<p style="text-align:center;">Last modified 11 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
