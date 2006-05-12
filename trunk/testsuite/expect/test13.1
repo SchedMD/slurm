@@ -119,7 +119,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 		}
 		eof {
 			send_user "\nFAILURE: srun aborted\n"
-			set exit_code 1
+			exit 1
 			wait
 		}
 	}
@@ -135,12 +135,12 @@ expect {
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"
 		set exit_code 1
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		kill_srun
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
