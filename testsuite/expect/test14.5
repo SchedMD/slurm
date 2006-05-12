@@ -55,7 +55,7 @@ file delete $file_out $file_err
 #
 # Build input script file that broacasts a file
 #
-make_batch_script $file_in "
+make_bash_script $file_in "
   $srun $bin_rm /tmp/test1.$test_id
   $sbcast --preserve $sbcast /tmp/test1.$test_id
   ls -l $sbcast
