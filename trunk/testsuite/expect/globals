@@ -473,6 +473,27 @@ proc test_bluegene { } {
 
 ################################################################
 #
+# Proc: test_aix
+#
+# Purpose: Determine if the system is AIX
+#
+# Returns 1 if the system is AIX, 0 otherwise
+#
+################################################################
+
+proc test_aix {} {
+    set fd [open "|uname"]
+    gets $fd line
+    close $fd
+    if {[string compare $line AIX] == 0} {
+	return 1
+    } else {
+	return 0
+    }
+}
+
+################################################################
+#
 # Proc: test_super_user
 #
 # Purpose: Determine if user is a SLURM super user (i.e. user 
@@ -649,4 +670,3 @@ proc make_bash_script { script_name script_contents } {
     close $fd
     exec $bin_chmod 700 $script_name
 }
-

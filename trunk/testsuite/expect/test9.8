@@ -125,18 +125,9 @@ expect {
 # Determine if this is AIX (for task count, federation switch 
 # prevents each node from running more than 16 tasks)
 #
-spawn $bin_uname
 set desired_tasks [expr $task_cnt * 2 / 3]
-expect {
-	-re "AIX" {
-		if {$desired_tasks > 15} {
-			set desired_tasks 15
-		}
-		exp_continue
-	}
-	eof {
-		wait
-	}
+if {[test_aix]} {
+	set desired_tasks 15
 }
 
 set unresponsive 1
