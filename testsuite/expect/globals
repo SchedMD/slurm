@@ -316,7 +316,7 @@ proc wait_for_file { file_name } {
 ################################################################
 
 proc wait_for_job { job_id state } {
-	global bin_sleep max_job_delay
+	global max_job_delay
 	global scontrol
 	set is_done     0
 	set is_running  0
@@ -366,7 +366,7 @@ proc wait_for_job { job_id state } {
 		log_user 1
 	
 		if {[string compare $state "DONE"] == 0    && $is_done == 1 } {
-			exec $bin_sleep  2
+			sleep  2
 			return 0
 		}
 		if {[string compare $state "RUNNING"] == 0 && $is_running == 1 } {
@@ -376,7 +376,7 @@ proc wait_for_job { job_id state } {
 			return 1
 		}
 
-		exec $bin_sleep $sleep_time
+		sleep $sleep_time
 		set sleep_time  [expr $sleep_time * 2]
 		if { $sleep_time > 10 } {
 			set sleep_time 10
