@@ -649,4 +649,3 @@ void destroy_ret_types(void *object)
 		xfree(ret_type);
 	}
 }
-
