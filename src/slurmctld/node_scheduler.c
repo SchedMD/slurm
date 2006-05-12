@@ -858,8 +858,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	}
 
 	/* enforce both user's and partition's node limits */
-info("req: %u-%u, %u", job_ptr->details->min_nodes,
-job_ptr->details->max_nodes, part_ptr->max_nodes);
+	/* info("req: %u-%u, %u", job_ptr->details->min_nodes,
+	   job_ptr->details->max_nodes, part_ptr->max_nodes); */
 	if (super_user) {
 		min_nodes = job_ptr->details->min_nodes;
 	} else {
@@ -873,11 +873,12 @@ job_ptr->details->max_nodes, part_ptr->max_nodes);
 	else
 		max_nodes = MIN(job_ptr->details->max_nodes, 
 				part_ptr->max_nodes);
+	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
 	if (job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;
-info("nodes:%u:%u:%u", min_nodes, req_nodes, max_nodes);
+	/* info("nodes:%u:%u:%u", min_nodes, req_nodes, max_nodes); */
 
  	if (part_ptr->shared == SHARED_FORCE)	/* shared=force */
  		shared = 1;
