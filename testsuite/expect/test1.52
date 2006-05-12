@@ -34,7 +34,6 @@
 source ./globals
 
 set test_id     "1.52"
-set partition   "debug"
 set exit_code   0
 set num_nodes   2
 set num_tasks   2

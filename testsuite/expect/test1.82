@@ -58,6 +58,12 @@ if { [test_bluegene] } {
 	set node_cnt 3
 }
 
+set available [available_nodes [default_partition]]
+if {$available < $node_cnt} {
+    send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
+    exit $exit_code
+}
+
 spawn $srun -N$node_cnt -l -t1 $bin_hostname  
 expect {
 	-re "More ($alpha) requested than permitted" {

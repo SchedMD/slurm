@@ -56,7 +56,7 @@ foreach proto $protocols {
 	#
 	incr protos
 	set found 0
-	spawn $poe hostname -rmpool $poe_partition -msg_api $proto\
+	spawn $poe hostname -rmpool $partition -msg_api $proto\
 	    -euilib us -retry wait
 	expect {
 		-re "LL_AdapterUsageProtocol = ($alpha_numeric_under)" {
