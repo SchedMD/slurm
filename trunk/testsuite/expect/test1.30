@@ -93,6 +93,9 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			wait
 		}
 	}
+	if {$node_cnt > 30000} {
+		break
+	}
 }
 
 if {$error == 1} {

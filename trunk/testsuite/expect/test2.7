@@ -111,7 +111,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$rem_time > 60} {
-	send_user "\nFAILURE: job remaining time is wrong\n"
+	send_user "\nFAILURE: job remaining time is wrong $rem_time\n"
 	set exit_code 1
 }
 if {$rem_time < 59} {
