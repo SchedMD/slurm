@@ -2239,7 +2239,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
 		goto unpack_error;
+#if SYSTEM_DIMENSIONS
 	job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
+#endif
 	job_desc_ptr->conn_type = (uint16_t)NO_VAL;
 	job_desc_ptr->rotate = (uint16_t)NO_VAL;
 	return SLURM_SUCCESS;
