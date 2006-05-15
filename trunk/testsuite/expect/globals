@@ -661,3 +661,44 @@ proc make_bash_script { script_name script_contents } {
     close $fd
     exec $bin_chmod 700 $script_name
 }
+
+################################################################
+# Check if we are user root or SlurmUser
+#
+# Return 1 if true, 0 if false
+################################################################
+
+proc is_super_user { } {
+	global alpha_numeric bin_id scontrol
+
+	log_user 0
+	set user_name "nobody"
+	spawn $bin_id -u -n
+	expect {
+		-re "($alpha_numeric)" {
+			set user_name $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {[string compare $user_name "root"] == 0} {
+		log_user 1
+		return 1
+	}
+
+	set found_user 0
+	spawn $scontrol show config
+	expect {
+		-re "SlurmUser *= $user_name" {
+			set found_user 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $found_user
+}
