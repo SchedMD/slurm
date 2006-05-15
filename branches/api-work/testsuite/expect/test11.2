@@ -55,7 +55,7 @@ if { ![file exists $poe] } {
 #
 # execute poe with a specific node count
 #
-spawn $poe hostname -rmpool $poe_partition\
+spawn $poe hostname -rmpool $partition\
     -euidevice $device -retry wait
 
 expect {
@@ -86,7 +86,7 @@ got '$found_device'\n"
 #
 # execute poe with a specific node count
 #
-spawn $poe hostname -rmpool $poe_partition -euilib $mode -retry wait
+spawn $poe hostname -rmpool $partition -euilib $mode -retry wait
 
 expect {
 	-re "LL_AdapterUsageMode = ($alpha_numeric)" {
@@ -117,7 +117,7 @@ set found_device ""
 #
 # execute poe with a specific node count
 #
-spawn $poe hostname -rmpool $poe_partition -euilib $mode\
+spawn $poe hostname -rmpool $partition -euilib $mode\
     -euidevice $device -retry wait
 
 expect {

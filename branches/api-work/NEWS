@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.0-pre8
+=============================
+ -- Fix bug in enforcement of partition's MaxNodes limit.
+ -- BLUEGENE - added support for srun -w option also fixed the geometry option
+    for srun.
+
 * Changes in SLURM 1.1.0-pre7
 =============================
  -- Accounting works for aix systems, use jobacct/aix

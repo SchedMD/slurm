@@ -67,8 +67,9 @@ typedef struct slurm_select_ops {
 	int 		(*block_init)	       (List block_list);
 	int		(*job_test)	       (struct job_record *job_ptr,
 						bitstr_t *bitmap, 
-						int min_nodes, 
-						int max_nodes,
+						uint32_t min_nodes, 
+						uint32_t max_nodes,
+						uint32_t req_nodes,
 						bool test_only);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
@@ -109,6 +110,8 @@ static pthread_mutex_t		g_select_context_lock =
 #ifdef HAVE_BG			/* node selection specific logic */
 #  define JOBINFO_MAGIC 0x83ac
 struct select_jobinfo {
+	uint16_t start[SYSTEM_DIMENSIONS];	/* start position of block
+						 *  e.g. XYZ */
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. XYZ */
 	uint16_t conn_type;	/* see enum connection_type */
@@ -460,17 +463,19 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
  *                 map of nodes actually to be assigned on output
  * IN min_nodes - minimum number of nodes to allocate to job
  * IN max_nodes - maximum number of nodes to allocate to job
+ * IN req_nodes - requested (or desired) count of nodes
  * IN test_only - if true, only test if ever could run, not necessarily now 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-        int min_nodes, int max_nodes, bool test_only)
+		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
+		bool test_only)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
 						   min_nodes, max_nodes, 
-						   test_only);
+						   req_nodes, test_only);
 }
 
 /*
@@ -579,6 +584,8 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	
 	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			(*jobinfo)->start[i] = (uint16_t) NO_VAL;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			(*jobinfo)->geometry[i] = 0;
 	(*jobinfo)->conn_type = SELECT_NAV;
 	(*jobinfo)->rotate = 1;
@@ -612,6 +619,10 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	}
 
 	switch (data_type) {
+	case SELECT_DATA_START:
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
+			jobinfo->start[i] = uint16[i];
+		break;
 	case SELECT_DATA_GEOMETRY:
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
 			jobinfo->geometry[i] = uint16[i];
@@ -673,6 +684,11 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	}
 
 	switch (data_type) {
+	case SELECT_DATA_START:
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			uint16[i] = jobinfo->start[i];
+		}
+		break;
 	case SELECT_DATA_GEOMETRY:
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			uint16[i] = jobinfo->geometry[i];
@@ -734,6 +750,9 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 	else {
 		rc = xmalloc(sizeof(struct select_jobinfo));
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			rc->start[i] = (uint16_t)jobinfo->start[i];
+		}
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			rc->geometry[i] = (uint16_t)jobinfo->geometry[i];
 		}
 		rc->conn_type = jobinfo->conn_type;
@@ -785,6 +804,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		/* NOTE: If new elements are added here, make sure to 
 		 * add equivalant pack of zeros below for NULL pointer */
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			pack16((uint16_t)jobinfo->start[i], buffer);
 			pack16((uint16_t)jobinfo->geometry[i], buffer);
 		}
 		pack16((uint16_t)jobinfo->conn_type, buffer);
@@ -795,7 +815,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack32((uint32_t)jobinfo->max_procs, buffer);
 		packstr(jobinfo->bg_block_id, buffer);
 	} else {
-		for (i=0; i<(SYSTEM_DIMENSIONS+4); i++)
+		for (i=0; i<((SYSTEM_DIMENSIONS*2)+4); i++)
 			pack16((uint16_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
@@ -817,6 +837,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	uint16_t uint16_tmp;
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		safe_unpack16(&(jobinfo->start[i]), buffer);
 		safe_unpack16(&(jobinfo->geometry[i]), buffer);
 	}
 	safe_unpack16(&(jobinfo->conn_type), buffer);
@@ -873,27 +894,31 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		snprintf(buf, size,
-			 "CONNECT ROTATE MAX_PROCS GEOMETRY BLOCK_ID");
+			 "CONNECT ROTATE MAX_PROCS GEOMETRY START BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
 		convert_to_kilo(jobinfo->max_procs, tmp_char);
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %9s    %1ux%1ux%1u %-16s",
+			 "%7.7s %6.6s %9s    %1ux%1ux%1u %1ux%1ux%1u %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 tmp_char,
 			 geometry[0], geometry[1], geometry[2],
+			 jobinfo->start[0], jobinfo->start[1], 
+			 jobinfo->start[2],
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
 		convert_to_kilo(jobinfo->max_procs, tmp_char);
 		snprintf(buf, size, 
 			 "Connection=%s Rotate=%s MaxProcs=%s "
-			 "Geometry=%ux%ux%u Block_ID=%s",
+			 "Geometry=%ux%ux%u Start=%ux%ux%u Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 tmp_char,
 			 geometry[0], geometry[1], geometry[2],
+			 jobinfo->start[0], jobinfo->start[1], 
+			 jobinfo->start[2],
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:

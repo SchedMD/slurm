@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ############################################################################
 # This shell processes pkill commands as required by the test scripts 
 # on systems lacking the pkill commands (e.g. AIX). It does not 

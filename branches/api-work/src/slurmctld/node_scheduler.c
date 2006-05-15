@@ -82,12 +82,13 @@ static void _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 			       bitstr_t ** light_load_bit, 
 			       bitstr_t ** heavy_load_bit);
 static int _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
-			   int min_nodes, int max_nodes, bool test_only);
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes, bool test_only);
 static int _pick_best_nodes(struct node_set *node_set_ptr, 
 			    int node_set_size, bitstr_t ** select_bitmap, 
 			    struct job_record *job_ptr, uint32_t min_nodes, 
-			    uint32_t max_nodes, int shared, 
-			    uint32_t node_lim);
+			    uint32_t max_nodes, uint32_t req_nodes, 
+			    int shared);
 static int _valid_features(char *requested, char *available);
 
 
@@ -264,6 +265,7 @@ static int _match_feature(char *seek, char *available)
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN req_nodes - requested (or desired) count of nodes
  * RET zero on success, EINVAL otherwise
  * globals: node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
@@ -272,7 +274,8 @@ static int _match_feature(char *seek, char *available)
  */
 static int
 _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
-		int min_nodes, int max_nodes, bool test_only)
+		uint32_t min_nodes, uint32_t max_nodes, 
+		uint32_t req_nodes, bool test_only)
 {
 	bitstr_t *no_load_bit, *light_load_bit, *heavy_load_bit;
 	int error_code;
@@ -291,14 +294,14 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	
 	error_code = select_g_job_test(job_ptr, bitmap, 
 				       min_nodes, max_nodes, 
-				       test_only);
+				       req_nodes, test_only);
 
 	/* now try to use idle and lightly loaded nodes */
 	if (error_code) {
 		bit_or(bitmap, light_load_bit);
 		error_code = select_g_job_test(job_ptr, bitmap, 
 					       min_nodes, max_nodes, 
-					       test_only);
+					       req_nodes, test_only);
 	} 
 	FREE_NULL_BITMAP(light_load_bit);
 
@@ -307,7 +310,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 		bit_or(bitmap, heavy_load_bit);
 		error_code = select_g_job_test(job_ptr, bitmap, 
 					       min_nodes, max_nodes, 
-					       test_only);
+					       req_nodes, test_only);
 	}
 	FREE_NULL_BITMAP(heavy_load_bit);
 
@@ -363,9 +366,8 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
  * IN job_ptr - pointer to job being scheduled
  * IN min_nodes - minimum count of nodes required by the job
  * IN max_nodes - maximum count of nodes required by the job (0==no limit)
+ * IN req_nodes - requested (or desired) count of nodes
  * IN shared - set to 1 if nodes may be shared, 0 otherwise
- * IN node_lim - maximum number of nodes permitted for job, 
- *	INFINITE for no limit (partition limit)
  * RET SLURM_SUCCESS on success, 
  *	ESLURM_NODES_BUSY if request can not be satisfied now, 
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never 
@@ -392,8 +394,8 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 static int
 _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t ** select_bitmap, struct job_record *job_ptr,
-		 uint32_t min_nodes, uint32_t max_nodes,
-		 int shared, uint32_t node_lim)
+		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+		 int shared)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, total_cpus = 0;	/* total resources configured 
@@ -432,7 +434,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		} else {
 			/* Update partially_idle_node_bitmap to reflect the
 			 * idle and partially idle nodes */
-			error_code = select_g_get_info_from_plugin (SELECT_CR_BITMAP, 
+			error_code = select_g_get_info_from_plugin (
+					SELECT_CR_BITMAP, 
 					&partially_idle_node_bitmap);
 		}
 
@@ -464,15 +467,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                         total_cpus = count_cpus(
 				job_ptr->details->req_node_bitmap);
                 }
-		if ((max_nodes != 0) &&
-		    (total_nodes > max_nodes)) {
+		if (total_nodes > req_nodes) {
 			info("_pick_best_nodes: required nodes exceed limit");
                         if (cr_enabled) 
                                 FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
-		if ((node_lim != INFINITE) && (total_nodes > node_lim)) {
-			/* exceed partition node limit */
+		if (total_nodes > max_nodes) {
+			/* exceeds node limit */
                         if (cr_enabled) 
                                 FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
@@ -596,8 +598,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					avail_bitmap)))
 				continue;
 			if ((avail_nodes  < min_nodes) ||
-			    ((max_nodes   > min_nodes) && 
-			     (avail_nodes < max_nodes)))
+			    ((req_nodes   > min_nodes) && 
+			     (avail_nodes < req_nodes)))
 				continue;	/* Keep accumulating nodes */
 			if (slurmctld_conf.fast_schedule
 			&&  (avail_cpus   < job_ptr->num_procs))
@@ -607,17 +609,18 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							    avail_bitmap, 
 							    min_nodes, 
 							    max_nodes,
+							    req_nodes,
 							    false);
 			} else {
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
 							      max_nodes,
+							      req_nodes,
 							      false);
 			}
 			if (pick_code == SLURM_SUCCESS) {
-				if ((node_lim != INFINITE) && 
-				    (bit_set_count(avail_bitmap) > node_lim)) {
+				if (bit_set_count(avail_bitmap) > max_nodes) {
 					/* end of tests for this feature */
 					avail_nodes = 0; 
 					break;
@@ -631,16 +634,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 		}
 
-		/* try to get max_nodes now for this feature */
-		if ((max_nodes   >  min_nodes) && 
+		/* try to get req_nodes now for this feature */
+		if ((req_nodes   >  min_nodes) && 
 		    (avail_nodes >= min_nodes) &&
-		    (avail_nodes <  max_nodes)) {
+		    (avail_nodes <  req_nodes)) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						      min_nodes, max_nodes,
-						      false);
+						      req_nodes, false);
 			if ((pick_code == SLURM_SUCCESS) &&
-			    ((node_lim == INFINITE) ||
-			     (bit_set_count(avail_bitmap) <= node_lim))) {
+			     (bit_set_count(avail_bitmap) <= max_nodes)) {
 				FREE_NULL_BITMAP(total_bitmap);
                                 if (cr_enabled) 
 					FREE_NULL_BITMAP(
@@ -670,14 +672,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      avail_bitmap, 
 							      min_nodes, 
 							      max_nodes,
+							      req_nodes,
 							      true);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
-					if ((node_lim == INFINITE) ||
-					    (bit_set_count(avail_bitmap) <=
-					     node_lim))
+					if (bit_set_count(avail_bitmap) <=
+					     max_nodes)
 						runable_avail = true;
 				}
 			}
@@ -686,6 +688,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      total_bitmap, 
 							      min_nodes, 
 							      max_nodes,
+							      req_nodes, 
 							      true);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
@@ -795,7 +798,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	struct job_details *detail_ptr = job_ptr->details;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
-	uint32_t min_nodes, max_nodes, part_node_limit;
+	uint32_t min_nodes, max_nodes, req_nodes;
 	int super_user = false;
 	enum job_wait_reason fail_reason;
 
@@ -855,21 +858,28 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	}
 
 	/* enforce both user's and partition's node limits */
+	/* info("req: %u-%u, %u", job_ptr->details->min_nodes,
+	   job_ptr->details->max_nodes, part_ptr->max_nodes); */
 	if (super_user) {
 		min_nodes = job_ptr->details->min_nodes;
-		part_node_limit = INFINITE;
 	} else {
 		min_nodes = MAX(job_ptr->details->min_nodes, 
 				part_ptr->min_nodes);
-		part_node_limit = part_ptr->max_nodes;
 	}
-	if (super_user || (part_ptr->max_nodes == INFINITE))
-		max_nodes = job_ptr->details->max_nodes;
-	else if (job_ptr->details->max_nodes == 0)
-		max_nodes = part_ptr->max_nodes;
-	else
+	if (job_ptr->details->max_nodes == 0) {
+		if (super_user)
+			max_nodes = INFINITE;
+		else
+			max_nodes = part_ptr->max_nodes;
+	} else
 		max_nodes = MIN(job_ptr->details->max_nodes, 
 				part_ptr->max_nodes);
+	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
+	if (job_ptr->details->max_nodes)
+		req_nodes = max_nodes;
+	else
+		req_nodes = min_nodes;
+	/* info("nodes:%u:%u:%u", min_nodes, req_nodes, max_nodes); */
 
  	if (part_ptr->shared == SHARED_FORCE)	/* shared=force */
  		shared = 1;
@@ -880,8 +890,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	
 	error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				      &select_bitmap, job_ptr,
-				      min_nodes, max_nodes,
-				      shared, part_node_limit);
+				      min_nodes, max_nodes, req_nodes,
+				      shared);
 	if (error_code) {
 		if (detail_ptr)
 			detail_ptr->wait_reason = WAIT_RESOURCES;

@@ -40,6 +40,7 @@
 #include "src/common/forward.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_interface.h"
 
 #ifdef WITH_PTHREADS
@@ -145,7 +146,7 @@ nothing_sent:
 		type->type = msg.msg_type;
 		type->msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 		ret_data_info->data = msg.data;
-		slurm_free_cred(msg.cred);
+		g_slurm_auth_destroy(msg.auth_cred);
 	}
 	slurm_mutex_lock(fwd_msg->forward_mutex);
 	while((returned_type = list_pop(ret_list)) != NULL) {
@@ -648,4 +649,3 @@ void destroy_ret_types(void *object)
 		xfree(ret_type);
 	}
 }
-

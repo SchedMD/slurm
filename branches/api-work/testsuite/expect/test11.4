@@ -56,7 +56,7 @@ if { ![file exists mpi-testscripts/allred] } {
 #
 # execute poe with a an mpi script
 #
-spawn $poe $script -rmpool $poe_partition -nodes 2 -procs 2\
+spawn $poe $script -rmpool $partition -nodes 2 -procs 2\
     -euilib us -retry wait
 expect {
 	-nocase "passed" {

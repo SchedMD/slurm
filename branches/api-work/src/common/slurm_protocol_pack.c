@@ -1900,6 +1900,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16((uint16_t)build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
 	packstr(build_ptr->plugindir, buffer);
+	packstr(build_ptr->plugstack, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->propagate_prio_process, buffer);
@@ -1983,6 +1984,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, 
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
@@ -2055,6 +2057,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
 	xfree(build_ptr->plugindir);
+	xfree(build_ptr->plugstack);
 	xfree(build_ptr->proctrack_type);
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->propagate_rlimits);
@@ -2142,7 +2145,28 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	pack16((uint16_t)job_desc_ptr->mail_type, buffer);
 	packstr(job_desc_ptr->mail_user, buffer);
-	select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
+	if(job_desc_ptr->select_jobinfo)
+		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
+	else if (select_g_alloc_jobinfo(&job_desc_ptr->select_jobinfo) 
+	    == SLURM_SUCCESS) {
+#if SYSTEM_DIMENSIONS
+		if(job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
+			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
+					     SELECT_DATA_GEOMETRY, 
+					     job_desc_ptr->geometry);
+#endif
+		
+		if (job_desc_ptr->conn_type != (uint16_t) NO_VAL)
+			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
+					     SELECT_DATA_CONN_TYPE, 
+					     &(job_desc_ptr->conn_type));
+		if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
+			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
+					     SELECT_DATA_ROTATE, 
+					     &(job_desc_ptr->rotate));
+		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
+		select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
+	}
 }
 
 /* _unpack_job_desc_msg
@@ -2215,7 +2239,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
 		goto unpack_error;
-	
+#if SYSTEM_DIMENSIONS
+	job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
+#endif
+	job_desc_ptr->conn_type = (uint16_t)NO_VAL;
+	job_desc_ptr->rotate = (uint16_t)NO_VAL;
 	return SLURM_SUCCESS;
 
       unpack_error:

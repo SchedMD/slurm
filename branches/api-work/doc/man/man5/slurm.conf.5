@@ -226,10 +226,15 @@ environment variable.
 The default value is "/usr/local/lib/slurm".
 .TP
 \fBPlugStackConfig\fR
-Location of the config file for SLURM stackable plug-ins that
-use the Stackable Plug-in Architecture for Node job Kontrol
-(SPANK). Default location is plugstack.conf in the same
-directory as the system slurm.conf.
+Location of the config file for SLURM stackable plugins that
+use the Stackable Plugin Architecture for Node job Kontrol
+(SPANK).
+This provides support for a highly configurable set of plugins 
+to be called before and/or after execution of each task 
+spawned as part of a user's job step. 
+More detailed documentation will be provided soon. 
+Default location is "plugstack.conf" in the same directory 
+as the system slurm.conf.
 .TP
 \fBProctrackType\fR
 Identifies the plugin to be used for process tracking. 
@@ -536,11 +541,17 @@ Remember that PAM also needs to be configured to support SLURM as a service.
 For sites using PAM's directory based configuration option, a configuration
 file named \fBslurm\fR should be created. The module-type, control-flags, and
 module-path names that should be included in the file are:
-auth		required	pam_localuser.so
-auth		required	pam_shells.so
-account		required	pam_unix.so
-account		required	pam_access.so
-session		required	pam_unix.so
+.br
+auth        required      pam_localuser.so
+.br
+auth        required      pam_shells.so
+.br
+account     required      pam_unix.so
+.br
+account     required      pam_access.so
+.br
+session     required      pam_unix.so
+.br
 For sites configuring PAM with a general configuration file, the appropriate
 lines (see above), where \fBslurm\fR is the service-name, should be added.
 .TP

@@ -141,7 +141,7 @@ step_complete_t step_complete = {
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
                                  slurm_addr *, int);
 static int  _fork_all_tasks(slurmd_job_t *job);
-static int  _become_user(slurmd_job_t *job);
+static int  _become_user(slurmd_job_t *job, struct priv_state *ps);
 static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
@@ -511,6 +511,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	int rc = -1;
 	int retcode;
 
+	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
 	msg.job_id = job->jobid;
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;
@@ -886,7 +887,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			if (propagate_prio == 1)
 				_set_prio_process(job);
 
- 			if (_become_user(job) < 0) {
+ 			if (_become_user(job, &sprivs) < 0) {
  				error("_become_user failed: %m");
 				/* child process, should not return */
 				exit(1);
@@ -1565,12 +1566,27 @@ static void _set_prio_process (slurmd_job_t *job)
 }
 
 static int
-_become_user(slurmd_job_t *job)
+_become_user(slurmd_job_t *job, struct priv_state *ps)
 {
 	/*
-	 * Drop real and saved uid/gid in case they are still root
+	 * First reclaim the effective uid and gid
 	 */
+	if (geteuid() == ps->saved_uid)
+		return SLURM_SUCCESS;
 
+	if (seteuid(ps->saved_uid) < 0) {
+		error("_become_user seteuid: %m");
+		return SLURM_ERROR;
+	}
+
+	if (setegid(ps->saved_gid) < 0) {
+		error("_become_user setegid: %m");
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Now drop real, effective, and saved uid/gid
+	 */
 	if (setregid(job->pwd->pw_gid, job->pwd->pw_gid) < 0) {
 		error("setregid: %m");
 		return SLURM_ERROR;

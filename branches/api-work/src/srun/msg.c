@@ -807,7 +807,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 static void
 _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 {
-	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	uid_t uid     = getuid();
 	int rc;
 	srun_timeout_msg_t *to;

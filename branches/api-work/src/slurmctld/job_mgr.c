@@ -1696,13 +1696,23 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
+	uint32_t total_nodes;
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
 #endif
-	uint32_t total_nodes;
 
+	info("before alteration Asking for nodes %d-%d procs %d", 
+		     job_desc->min_nodes, job_desc->max_nodes,
+		     job_desc->num_procs);
+	
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
-
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_MAX_PROCS, &i);
+	
+	info("after alteration Asking for nodes %d-%d procs %d-%d", 
+		     job_desc->min_nodes, job_desc->max_nodes,
+		     job_desc->num_procs, i);
+	
 	*job_pptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
@@ -1794,6 +1804,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
+
 #if SYSTEM_DIMENSIONS
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_GEOMETRY,
@@ -1812,6 +1823,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_desc->min_nodes = tot;
 	}
 #endif
+
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
@@ -2329,7 +2341,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
-		select_g_copy_jobinfo(job_desc->select_jobinfo);
+		select_g_copy_jobinfo(job_desc->select_jobinfo);	
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2523,7 +2535,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
-	
+
 	return SLURM_SUCCESS;
 }
 

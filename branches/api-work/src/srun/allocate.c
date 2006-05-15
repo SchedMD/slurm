@@ -119,11 +119,18 @@ allocate_nodes(void)
 			info("Warning: %s", slurm_strerror(resp->error_code));
 		_wait_for_resources(&resp);
 	}
+	/* For diagnosing a node problem, administrators need to sometimes
+	 * run a job on N nodes one of which must be the node believed to 
+	 * have a problem (e.g. "srun -N4 -w bad_node diagnostic"). The 
+	 * below logic prevents this from working and necessiates the 
+	 * admin identify four specific nodes to use for the above test
+	 * instead of just the one bad node. Otherwise only the one 
+	 * bad node is used in the job's allocation. */
 	if(resp->node_list && j->req_nodes) {
 		xfree(resp->node_list);
 		resp->node_list = xstrdup(j->req_nodes);
 	}
-	
+
     done:
 	xsignal_set_mask(&oset);
 	xsignal(SIGINT,  ointf);
@@ -319,7 +326,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 static int
 _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 {
-	uid_t req_uid   = g_slurm_auth_get_uid(msg->cred);
+	uid_t req_uid   = g_slurm_auth_get_uid(msg->auth_cred);
 	uid_t uid       = getuid();
 	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	int rc = 0;
@@ -391,11 +398,9 @@ job_desc_msg_create_from_opts (char *script)
 {
 	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
-	uint16_t tmp = 0;
-
+	
 	slurm_init_job_desc_msg(j);
-	select_g_alloc_jobinfo (&j->select_jobinfo);
-
+	
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
 	j->immediate      = opt.immediate;
@@ -442,21 +447,20 @@ job_desc_msg_create_from_opts (char *script)
 		j->priority     = 0;
 	if (opt.jobid != NO_VAL)
 		j->job_id	= opt.jobid;
-
-	if (opt.geometry[0] > 0) 
-		select_g_set_jobinfo(j->select_jobinfo,
-				     SELECT_DATA_GEOMETRY,
-				     opt.geometry);
-	if (opt.conn_type != -1) 
-		select_g_set_jobinfo(j->select_jobinfo,
-				     SELECT_DATA_CONN_TYPE,
-				     &opt.conn_type);
-	if (opt.no_rotate) {
-		tmp = 0;
-		select_g_set_jobinfo(j->select_jobinfo,
-				     SELECT_DATA_ROTATE,
-				     &tmp);	
+#if SYSTEM_DIMENSIONS
+	if (opt.geometry[0] > 0) {
+		int i;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			j->geometry[i] = opt.geometry[i];
 	}
+#endif
+
+	if (opt.conn_type != -1)
+		j->conn_type = opt.conn_type;
+			
+	if (opt.no_rotate)
+		j->rotate = 0;
+
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
 	if (opt.mincpus > -1)

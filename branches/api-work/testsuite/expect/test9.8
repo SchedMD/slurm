@@ -53,25 +53,18 @@ if {[test_front_end] != 0} {
 }
 
 #
-# Delete left-over input script
 # Build input script file
 # NOTE: The initial sleep is so that all of the submissions have time 
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
 #
-exec $bin_rm -f $file_in
-
-set file [open $file_in "w"]
-puts $file "#!$bin_bash
-
+make_bash_script $file_in "
 $bin_sleep $delay
 for ((inx=0; inx < $task_cnt; inx++)) ; do
         $srun $bin_sleep $sleep_time &
 done
 $srun $bin_sleep $sleep_time
 "
-close $file
-exec $bin_chmod 700 $file_in
 
 #
 # Initiate $job_cnt batch jobs
@@ -132,18 +125,9 @@ expect {
 # Determine if this is AIX (for task count, federation switch 
 # prevents each node from running more than 16 tasks)
 #
-spawn $bin_uname
 set desired_tasks [expr $task_cnt * 2 / 3]
-expect {
-	-re "AIX" {
-		if {$desired_tasks > 15} {
-			set desired_tasks 15
-		}
-		exp_continue
-	}
-	eof {
-		wait
-	}
+if {[test_aix]} {
+	set desired_tasks 15
 }
 
 set unresponsive 1
@@ -167,6 +151,8 @@ while { $unresponsive } {
 		}
 	}
 }
+if {[test_aix]} {sleep 5}
+
 log_user 1
 if {$matches < $desired_tasks} {
 	send_user "\nFAILURE: only started $matches job steps\n"

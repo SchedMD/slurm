@@ -34,7 +34,6 @@
 source ./globals
 
 set test_id     "1.52"
-set partition   "debug"
 set exit_code   0
 set num_nodes   2
 set num_tasks   2
@@ -46,7 +45,10 @@ set hostfile    "test$test_id.hostfile"
 print_header $test_id
 
 exec $bin_rm -f $hostfile
-
+if { [test_front_end] } {
+	send_user "\nWARNING: This test incompatable with front-end Systems\n"
+	exit $exit_code
+} 
 #find out if we have enough nodes to test functionality
 spawn $scontrol show partition $partition
 expect {

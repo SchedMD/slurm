@@ -1474,7 +1474,7 @@ extern int load_block_wiring(char *bg_block_id)
 	return SLURM_SUCCESS;
 
 #else
-	return -1;
+	return SLURM_ERROR;
 #endif
 	
 }
@@ -1595,7 +1595,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	int *geo = NULL;
 	int temp_geo;
 	int i, j;
-	geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	
 	if(rotate) {
 		for (i = (BA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
 			for (j = 1; j <= i; j++) {
@@ -1618,6 +1618,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	list_iterator_destroy(itr);
 	
 	if(geo_ptr == NULL) { 
+		geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
 		geo[X] = geometry[X];
 		geo[Y] = geometry[Y];
 		geo[Z] = geometry[Z];
@@ -1746,7 +1747,7 @@ static int _copy_the_path(ba_switch_t *curr_switch, ba_switch_t *mark_switch,
 	if(node_curr[X] == node_tar[X]
 	   && node_curr[Y] == node_tar[Y]
 	   && node_curr[Z] == node_tar[Z]) {
-		debug2("something bad happened!!");
+		debug4("something bad happened!!");
 		return 0;
 	}
 	next_switch = &ba_system_ptr->
@@ -2010,7 +2011,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	if(node_curr[X] == node_tar[X]
 	   && node_curr[Y] == node_tar[Y]
 	   && node_curr[Z] == node_tar[Z]) {
-		debug2("%d something bad happened!!", dim);
+		debug4("%d something bad happened!!", dim);
 		return 0;
 	}
 	next_switch = &ba_system_ptr->
@@ -2359,9 +2360,11 @@ start_again:
 				return 1;
 			}
 			
-			remove_block(results, color_count);
-			list_destroy(results);
-			results = list_create(NULL);
+			if(results) {
+				remove_block(results, color_count);
+				list_destroy(results);
+				results = list_create(NULL);
+			}
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);

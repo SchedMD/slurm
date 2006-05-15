@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test basic sacct functionality and accuracy.
+#          Test sacct functionality and accuracy.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -33,13 +33,16 @@ source ./globals
 
 set test_id     "12.2"
 set exit_code   0
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
 set file_prog   "test$test_id.prog"
 set job_id      0
 set matches     0
 
 # job paramters
 set mem_size    100000
-set sleep_time  31
+set sleep_time  10
 set ret_code    42
 
 print_header $test_id
@@ -47,15 +50,10 @@ print_header $test_id
 #
 # Check if accounting is enabled
 #
-set frequency 9999
 set supported 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "JobAcctFrequency *= ($number)" {
-		set frequency $expect_out(1,string)
-		exp_continue
-	}
 	-re "JobAcctType *= jobacct/linux" {
 		set supported 1
 		exp_continue
@@ -74,26 +72,31 @@ if {$supported == 0} {
 	exit 0
 }
 
+
+
+
 #
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $file_prog
+exec $bin_rm -f $file_in $file_out $file_err
 exec $bin_make -f /dev/null $file_prog
 exec $bin_chmod 700 $file_prog
+
+make_bash_script $file_in "
+    $srun $file_prog $ret_code $sleep_time $mem_size
+"
+
 
 #
 # Run a simple job
 # Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
 #
 set timeout [expr $max_job_delay + $sleep_time]
-spawn $srun --output=none --error=none -v -t2 -N1 $file_prog $ret_code $sleep_time $mem_size
+spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
 expect {
-	-re "launching ($number)\.0" {
+	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "Exited with exit code" {
-		send_user "This error was expected, no worries\n\n"
 		exp_continue
 	}
 	timeout {
@@ -106,12 +109,87 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
+	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
+}
+
+#
+# Wait for job to run
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to run\n"
+	set exit_code 1
 }
 
 # Wait for data to get logged
 exec $bin_sleep 5
+
+
+set mem_used -1
+set mem_task -1
+set ave_used -1
+spawn $sacct --noheader --stat --job=$job_id.0 --fields vsize
+expect {
+	-re "($float)(\[KM\]*)/($number) - ($float)(\[KM\]*)" {
+		set mem_used  $expect_out(1,string)
+		set scale1    $expect_out(2,string)
+		set mem_task  $expect_out(3,string)
+		set ave_used  $expect_out(4,string)
+		set scale2    $expect_out(5,string)
+		if {[string compare $scale1 "M"] == 0} {
+			set mem_used [expr $mem_used * 1024]
+		} elseif {[string compare $scale1 "K"] == 0} {
+			set mem_used [expr $mem_used * 1]
+		} else {
+			 set mem_used [expr $mem_used / 1024]
+		}
+		if {[string compare $scale2 "M"] == 0} {
+			set ave_used [expr $ave_used * 1024]
+		} elseif {[string compare $scale2 "K"] == 0} {
+                        set ave_used [expr $ave_used * 1]
+		} else {
+			set ave_used [expr $ave_used / 1024]
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if { $mem_used == -1 } {
+	send_user "\nFAILURE: sacct stat memory not found\n"
+	set exit_code 1
+} elseif { $mem_task != 0 } {
+	send_user "\nFAILURE: sacct stat memory task not found\n"
+	set exit_code 1	
+} elseif { $ave_used != $mem_used } {
+	send_user "\nFAILURE: sacct stat memory task not equal to ave memory\n"
+	set exit_code 1	
+}
+# Compute error in KB
+set diff_mem [expr $mem_used - $mem_size]
+set error_mem [expr abs($diff_mem)]
+if {$error_mem > 4000} {
+	send_user "\nFAILURE: sacct memory use error of $error_mem KB\n"
+	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
+	set exit_code 1
+} else {
+	send_user "\nSUCCESS: sacct memory use error of $error_mem KB\n"
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
 
 #
 # Report basic sacct info
@@ -232,9 +310,7 @@ if { $mem_used == -1 } {
 # Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
-if {$frequency >= $sleep_time} {
-	send_user "\nWARNING: JobAcctFrequency ($frequency) is too large for validating memory use\n"
-} elseif {$error_mem > 4000} {
+if {$error_mem > 4000} {
 	send_user "\nFAILURE: sacct memory use error of $error_mem KB\n"
 	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1

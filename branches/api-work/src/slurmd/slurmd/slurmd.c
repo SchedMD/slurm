@@ -406,8 +406,8 @@ send_registration_msg(uint32_t status, bool startup)
 	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
 		error("Unable to register: %m");
 		retval = SLURM_FAILURE;
-	}
-	slurm_free_return_code_msg(resp.data);	
+	} else
+		slurm_free_return_code_msg(resp.data);	
 	slurm_free_node_registration_status_msg (msg);
 
 	/* XXX look at response msg
@@ -627,6 +627,7 @@ _print_conf()
 	debug3("Debug       = %d",       cf->slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
+	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);

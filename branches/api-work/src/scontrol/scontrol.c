@@ -1380,6 +1380,9 @@ _update_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
+#ifdef HAVE_BG
+		fprintf(stderr, "\"BlockName\", ");
+#endif
 		fprintf(stderr, "\"PartitionName\", or \"JobId\"\n");
 	}
 	else if (error_code) {
@@ -1994,7 +1997,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-           or \"step\".                                                    \n\
+           \"block\" or \"step\".                                          \n\
                                                                            \n\
   <ID> may be a configuration parameter name , job id, node name, partition\n\
        name or job step id.                                                \n\

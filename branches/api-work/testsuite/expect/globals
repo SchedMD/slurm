@@ -39,7 +39,8 @@ global sacct sbcast scancel scontrol sinfo smap squeue srun
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
     if {![uplevel 1 info exists $name]} {
-	uplevel 1 "set $name \"$value\""
+	upvar $name tmp
+	set tmp $value
     }
 }
 
@@ -61,6 +62,8 @@ cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
 
+cset partition "pdebug"
+
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
 #cset use_pmi	1
@@ -72,12 +75,11 @@ cset use_pmi	0
 cset xcpu_dir	"/mnt/xcpu"
 
 cset poe		"/usr/bin/poe"
-cset poe_partition "pdebug"
 cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
 # Pattern to match your shell prompt
-cset prompt "(%|#|\\\$) $"
+cset prompt {(%|#|\$) *$}
 
 #
 # Specify locations of other executable files used
@@ -304,83 +306,74 @@ proc wait_for_file { file_name } {
 #
 # Input: job_id   -- The SLURM job id of a job we want to
 #                    wait for.
-#        state    -- The state you want the job to attain before
-#                    returning.  Currently supports:
-#                        DONE any terminated state
-#                        RUNNING job is running
+#        desired_state -- The state you want the job to attain before
+#                         returning.  Currently supports:
+#                            DONE any terminated state
+#                            RUNNING job is running
 #
 # NOTE: We sleep for two seconds before replying that a job is 
 # done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
 
-proc wait_for_job { job_id state } {
-	global bin_sleep max_job_delay
-	global scontrol
-	set is_done     0
-	set is_running  0
-	set sleep_time  1
+proc wait_for_job { job_id desired_state } {
+    global scontrol
 
-	log_user 0
-	while { 1 == 1 } {
-		spawn -noecho $scontrol -o show job $job_id
-		expect {
-			-re "Job \[0-9]* not found" {
-				set is_done 1 
-				exp_continue
-			}
-			-re "JobState=CANCELLED" {
-				set is_done 1 
-				exp_continue
-			}
-			-re "JobState=COMPLETE" {
-				set is_done 1 
-				exp_continue
-			}
-			-re "JobState=FAILED" {
-				set is_done 1 
-				exp_continue
-			}
-			-re "JobState=TIMEOUT" {
-				set is_done 1 
-				exp_continue
-			}
-			-re "JobState=NODE_FAIL" {
-				set is_done 1 
-				exp_continue
-			}
-			-re "JobState=RUNNING" {
-				set is_running 1 
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: scontrol not responding\n"
-				log_user 1
-				return 1
-			}
-			eof {
-				wait
-			}
-		}
-		log_user 1
-	
-		if {[string compare $state "DONE"] == 0    && $is_done == 1 } {
-			exec $bin_sleep  2
-			return 0
-		}
-		if {[string compare $state "RUNNING"] == 0 && $is_running == 1 } {
-			return 0
-		}
-		if {                                          $is_done == 1 } {
-			return 1
-		}
-
-		exec $bin_sleep $sleep_time
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+    # First verify that desired_state is supported
+    switch $desired_state {
+	"DONE" {}
+	"RUNNING" {}
+	default {
+	    send_user "Unsupported desired state: $desired_state\n"
+	    return 1
 	}
+    }
+
+    set sleep_time  1
+    while 1 {
+	set fd [open "|$scontrol -o show job $job_id"]
+	gets $fd line
+	close $fd
+	if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
+	    set state "NOT_FOUND"
+	}
+
+	switch $state {
+	    "NOT_FOUND" -
+	    "CANCELLED" -
+	    "FAILED" -
+	    "TIMEOUT" -
+	    "NODE_FAIL" -
+	    "COMPLETED" {
+		if {[string compare $desired_state "DONE"] == 0} {
+		    send_user "Job $job_id is DONE\n"
+		    sleep 2
+		    return 0
+		} else {
+		    if {[string compare $desired_state "RUNNING"] == 0} {
+			send_user "Job $job_id is $state, but we wanted RUNNING\n"
+		    }
+		    return 1
+		}
+	    }
+	    "RUNNING" {
+		if {[string compare $desired_state "RUNNING"] == 0} {
+		    send_user "Job $job_id is RUNNING\n"
+		    return 0
+		}
+		send_user "Job $job_id is in state $state, desire $desired_state\n"
+	    }
+	    default {
+		send_user "Job $job_id is in state $state, desire $desired_state\n"
+	    }
+	}
+
+	sleep $sleep_time
+	set sleep_time  [expr $sleep_time * 2]
+	if { $sleep_time > 10 } {
+	    set sleep_time 10
+	}
+    }
 }
 
 ################################################################
@@ -472,6 +465,27 @@ proc test_bluegene { } {
 
 ################################################################
 #
+# Proc: test_aix
+#
+# Purpose: Determine if the system is AIX
+#
+# Returns 1 if the system is AIX, 0 otherwise
+#
+################################################################
+
+proc test_aix {} {
+    set fd [open "|uname"]
+    gets $fd line
+    close $fd
+    if {[string compare $line AIX] == 0} {
+	return 1
+    } else {
+	return 0
+    }
+}
+
+################################################################
+#
 # Proc: test_super_user
 #
 # Purpose: Determine if user is a SLURM super user (i.e. user 
@@ -558,3 +572,134 @@ proc dec2hex16 {value} {
 	}
 }
 
+
+################################################################
+#
+# Proc: available_nodes
+#
+# Purpose: Check to see if a given partition has a at least
+#          "num_nodes" number of nodes in the alloc, idle, or comp
+#          state.  This can be used to avoid launching a job that
+#          will never run because nodes are in the "drained" state
+#          or otherwise unavailable.
+#
+# Returns: Returns the number of available nodes in the partition, or
+#          -1 on failure.
+#
+# Input: partition - name of a partition
+#
+################################################################
+
+proc available_nodes { partition } {
+    global sinfo
+
+    set available -1
+    set fd [open "|$sinfo --noheader --partition pdebug --state idle,alloc,comp --format %D"]
+    gets $fd line
+    close $fd
+    regexp {\d+} $line available
+    return $available
+}
+
+
+################################################################
+#
+# Proc: default_partition
+#
+# Purpose: Use scontrol to determine the name of the default partition
+#
+# Returns: Name of the current default partition
+#
+################################################################
+
+proc default_partition {} {
+    global scontrol
+
+    set name ""
+    set fd [open "|$scontrol --all --oneliner show partition"]
+    while {[gets $fd line] != -1} {
+	if {[regexp {^PartitionName=(\w+).*Default=YES} $line name]
+	    == 1} {
+	    break
+	}
+    }
+    close $fd
+
+    if {[string length $name] == 0} {
+	send_user "ERROR: could not identify the default partition"
+    }
+
+    return $name
+}
+
+
+################################################################
+#
+# Proc: make_bash_script
+#
+# Purpose: Create a bash script of name "script_name", and
+#          make the body of the script "script_contents".
+#          make_bash_script removes the file if it already exists,
+#          then generates the #! line, and then dumps "script_contents"
+#          to the file.  Finally, it makes certain that the script
+#          is executable.
+#
+# Returns: Nothing.
+#
+# Input: script_name - file name for the bash script
+#        script_contents - body of the script, not including the
+#                          initial #! line.
+#
+################################################################
+
+proc make_bash_script { script_name script_contents } {
+    global bin_bash bin_chmod
+
+    file delete $script_name
+    set fd [open $script_name "w"]
+    puts $fd "#!$bin_bash"
+    puts $fd $script_contents
+    close $fd
+    exec $bin_chmod 700 $script_name
+}
+
+################################################################
+# Check if we are user root or SlurmUser
+#
+# Return 1 if true, 0 if false
+################################################################
+
+proc is_super_user { } {
+	global alpha_numeric bin_id scontrol
+
+	log_user 0
+	set user_name "nobody"
+	spawn $bin_id -u -n
+	expect {
+		-re "($alpha_numeric)" {
+			set user_name $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {[string compare $user_name "root"] == 0} {
+		log_user 1
+		return 1
+	}
+
+	set found_user 0
+	spawn $scontrol show config
+	expect {
+		-re "SlurmUser *= $user_name" {
+			set found_user 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $found_user
+}

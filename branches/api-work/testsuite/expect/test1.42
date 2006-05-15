@@ -48,13 +48,9 @@ global env
 set env(SLURM_ACCOUNT) QA_ACCT
 
 #
-# Delete left-over input script plus stdout/err files
 # Build input script file
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"     >$file_in
-exec echo "$bin_sleep 5"   >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$bin_sleep 5"
 
 #
 # Spawn a srun batch job that just sleeps for a while

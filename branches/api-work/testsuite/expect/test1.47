@@ -44,14 +44,11 @@ set delay       1
 
 print_header $test_id
 
-#
-# Delete left-over input script
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                   >$file_in
-exec echo "#SLURM --job-name=$job_name"  >>$file_in
-exec echo "#SLURM --account=$job_acct"   >>$file_in
-exec echo "$bin_sleep $delay"            >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  #SLURM --job-name=$job_name
+  #SLURM --account=$job_acct
+  $bin_sleep $delay
+"
 
 set timeout $max_job_delay
 set job_id 0
@@ -101,17 +98,15 @@ if {$matches != 2} {
 }
 
 #
-# Delete left-over input script
 # Build input script file
 # NOTE: The initial sleep is so that all of the submissions have time 
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"              >$file_in
-exec echo "#SLURM -N1000000k"          >>$file_in
-exec echo "$bin_sleep $delay"       >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  #SLURM -N1000000k
+  $bin_sleep $delay
+"
 
 set matches 0
 spawn $srun -o $file_out -b $file_in
@@ -136,11 +131,10 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"              >$file_in
-exec echo "#SLURM -N650000"         >>$file_in
-exec echo "$bin_sleep $delay"       >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  #SLURM -N650000
+  $bin_sleep $delay
+"
 
 spawn $srun -N1 -o $file_out -b $file_in
 expect {

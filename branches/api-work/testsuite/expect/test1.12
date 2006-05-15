@@ -54,9 +54,9 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"          >$file_in
-exec echo "$srun $bin_sleep 10" >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "
+  $srun $bin_sleep 10
+"
 
 #
 # Spawn a srun batch job with constraints and stdout/err

@@ -5,6 +5,8 @@
 <h2>SLURM Users</h2>
 <ul>
 <li><a href="quickstart.shtml">Quick Start User Guide</a></li>
+<li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM,
+(Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 <li><a href="http://www.llnl.gov/LCdocs/slurm">SLURM Reference Manual</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
@@ -13,6 +15,8 @@
 <h2>SLURM Administrators</h2>
 <ul>
 <li><a href="quickstart_admin.shtml">Quick Start Administrator Guide</a></li>
+<li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM, 
+(Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 <li><a href="big_sys.shtml">Large Cluster Administration Guide</a></li>
 <li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
@@ -36,6 +40,6 @@
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 20 March 2006</p>
+<p style="text-align:center;">Last modified 11 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
