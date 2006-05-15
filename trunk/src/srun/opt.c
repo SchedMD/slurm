@@ -1308,6 +1308,12 @@ void set_options(const int argc, char **argv, int first)
 			opt.nodelist = xstrdup(optarg);
 			if (!_valid_node_list(&opt.nodelist))
 				exit(1);
+#ifdef HAVE_BG
+			info("\tThis option should only be used if the block\n"
+			     "\tyou are asking for can be created.\n"
+			     "\tPlease consult smap before using this option\n"
+			     "\tor your job may be stuck with no way to run.");
+#endif
 			break;
 		case (int)'W':
 			opt.max_wait = _get_int(optarg, "wait");
