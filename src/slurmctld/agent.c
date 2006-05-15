@@ -678,8 +678,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				goto finished;
 		}
 		list_iterator_destroy(itr);
+finished:	;
 	}
-finished:
 	unlock_slurmctld(node_write_lock);
 	if (run_scheduler) {
 		run_scheduler = false;
