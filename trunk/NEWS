@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.0-pre9
+=============================
+ -- Fix bug that could temporariy make nodes DOWN when they are really 
+    responding. 
+
 * Changes in SLURM 1.1.0-pre8
 =============================
  -- Fix bug in enforcement of partition's MaxNodes limit.
