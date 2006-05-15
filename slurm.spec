@@ -208,6 +208,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc AUTHORS
 %doc NEWS
 %doc README
+%doc RELEASE_NOTES
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
