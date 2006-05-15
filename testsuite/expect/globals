@@ -39,7 +39,8 @@ global sacct sbcast scancel scontrol sinfo smap squeue srun
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
     if {![uplevel 1 info exists $name]} {
-	uplevel 1 "set $name \"$value\""
+	upvar $name tmp
+	set tmp $value
     }
 }
 
@@ -78,7 +79,7 @@ cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
 # Pattern to match your shell prompt
-cset prompt "(%|#|\\\$) *$"
+cset prompt {(%|#|\$) *$}
 
 #
 # Specify locations of other executable files used
