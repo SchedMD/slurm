@@ -134,9 +134,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_ROTATE, &rotate);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
-	info("Asking for nodes %s, %d-%d %d procs %d-%d req_geometry = %d", 
-	     job_ptr->details->req_nodes, min_nodes, req_nodes, max_nodes,
-	     req_procs, max_procs, req_geometry[0]);
+	
 	if(req_geometry[0] != 0 && req_geometry[0] != (uint16_t)NO_VAL) {
 		target_size = 1;
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
