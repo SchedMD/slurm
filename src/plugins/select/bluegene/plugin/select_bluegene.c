@@ -269,7 +269,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * as the SLURM block logic will handle access rights.
 	 */
 
-	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, test_only);
+	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, 
+			  req_nodes, test_only);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)
