@@ -14,6 +14,7 @@ EXTRA_DIST =			\
 	autogen.sh		\
 	slurm.spec		\
 	README			\
+	RELEASE_NOTES		\
 	DISCLAIMER		\
 	COPYING			\
 	AUTHORS			\
