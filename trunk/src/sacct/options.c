@@ -674,6 +674,9 @@ void parse_command_line(int argc, char **argv)
 		break;
 
 		case 'F':
+			if(params.opt_stat)
+				xfree(params.opt_field_list);
+			
 			params.opt_field_list =
 				xrealloc(params.opt_field_list,
 					 (params.opt_field_list==NULL? 0 :
@@ -764,13 +767,12 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'S':
-			params.opt_field_list =
-				xrealloc(params.opt_field_list,
-					 (params.opt_field_list==NULL? 0 :
-					  sizeof(params.opt_field_list)) +
-					 sizeof(STAT_FIELDS)+1);
-			strcat(params.opt_field_list, STAT_FIELDS);
-			strcat(params.opt_field_list, ",");
+			if(!params.opt_field_list) {
+				params.opt_field_list = 
+					xmalloc(sizeof(STAT_FIELDS)+1);
+				strcat(params.opt_field_list, STAT_FIELDS);
+				strcat(params.opt_field_list, ",");
+			}
 			params.opt_stat = 1;
 			break;
 
@@ -889,8 +891,12 @@ void parse_command_line(int argc, char **argv)
 	if (params.opt_partition_list) {
 
 		start = params.opt_partition_list;
-		while ((end = strstr(start, ","))) {
+		while ((end = strstr(start, ",")) && start) {
 			*end = 0;
+			while (isspace(*start))
+				start++;	/* discard whitespace */
+			if(!(int)*start)
+				continue;
 			acct_type = xstrdup(start);
 			list_append(selected_parts, acct_type);
 			start = end + 1;
@@ -907,10 +913,12 @@ void parse_command_line(int argc, char **argv)
 	/* specific jobs requested? */
 	if (params.opt_job_list) { 
 		start = params.opt_job_list;
-		while ((end = strstr(start, ","))) {
+		while ((end = strstr(start, ",")) && start) {
 			*end = 0;
 			while (isspace(*start))
 				start++;	/* discard whitespace */
+			if(!(int)*start)
+				continue;
 			selected_step = xmalloc(sizeof(selected_step_t));
 			list_append(selected_steps, selected_step);
 			
@@ -944,9 +952,13 @@ void parse_command_line(int argc, char **argv)
 	/* specific states (completion status) requested? */
 	if (params.opt_state_list) {
 		start = params.opt_state_list;
-		while ((end = strstr(start, ","))) {
+		while ((end = strstr(start, ",")) && start) {
 			int c;
 			*end = 0;
+			while (isspace(*start))
+				start++;	/* discard whitespace */
+			if(!(int)*start)
+				continue;
 			c = decode_status_char(start);
 			if (c == -1)
 				fatal("unrecognized job state value");
@@ -976,6 +988,10 @@ void parse_command_line(int argc, char **argv)
 	start = params.opt_field_list;
 	while ((end = strstr(start, ","))) {
 		*end = 0;
+		while (isspace(*start))
+			start++;	/* discard whitespace */
+		if(!(int)*start)
+			continue;
 		for (i = 0; fields[i].name; i++) {
 			if (!strcasecmp(fields[i].name, start))
 				goto foundfield;
