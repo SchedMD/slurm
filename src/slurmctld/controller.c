@@ -95,8 +95,6 @@
  * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
  *
- * It may be necessary to increase SLURM_MESSAGE_TIMEOUT_MSEC_STATIC as
- *    defined in src/common/slurm_protocol_interface.h.
  * The OpenSSL code produces a bunch of errors related to use of 
  *    non-initialized memory use. 
  * The switch/elan functions will report two blocks "possibly lost" 
@@ -106,8 +104,8 @@
  * On some systems, pthread_create() will generated a small number of 
  *    "possibly lost" blocks.
  * Otherwise the report should be free of errors. Remember to reset 
- *    MEMORY_LEAK_DEBUG to 0 afterwards for best system response (non-seamless 
- *    backup controller use).
+ *    MEMORY_LEAK_DEBUG to 0 for production use (non-seamless backup 
+ *    controller use).
 \**************************************************************************/
 
 /* Log to stderr and syslog until becomes a daemon */

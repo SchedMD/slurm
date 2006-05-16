@@ -65,7 +65,11 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 
+#ifdef MEMORY_LEAK_DEBUG
+#define SLURM_MESSAGE_TIMEOUT_MSEC_STATIC 15000
+#else
 #define SLURM_MESSAGE_TIMEOUT_MSEC_STATIC 5000
+#endif
 
 /****************\
  **  Data Types  **
