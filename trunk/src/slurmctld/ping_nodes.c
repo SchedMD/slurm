@@ -172,9 +172,6 @@ void ping_nodes (void)
 		struct node_record *node_ptr;
 
 		node_ptr = &node_record_table_ptr[i];
-		if (node_ptr->last_response >= still_live_time)
-			continue;
-		//info("need to ping %s",node_ptr->name);
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		if ((slurmctld_conf.slurmd_timeout == 0)
@@ -229,6 +226,9 @@ void ping_nodes (void)
 			reg_agent_args->node_count++;
 			continue;
 		}
+
+		if (node_ptr->last_response >= still_live_time)
+			continue;
 
 		(void) hostlist_push_host(ping_hostlist, node_ptr->name);
 		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
