@@ -48,6 +48,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -104,7 +105,6 @@ static void *xcpu_agent(void *args)
 	char reason[12], clone_path[128], down_node_list[512];
 	struct stat buf;
 	time_t now;
-	struct tm * time_ptr;
 
 	last_xcpu_test = time(NULL) + XCPU_POLL_TIME;
 	while (!agent_fini) {
@@ -112,7 +112,6 @@ static void *xcpu_agent(void *args)
 
 		if (difftime(now, last_xcpu_test) >= XCPU_POLL_TIME) {
 			debug3("Running XCPU node state test");
-			time_ptr = localtime(&now);
 			down_node_list[0] = '\0';
 
 			for (i=0; i<select_node_cnt; i++) {
@@ -133,10 +132,12 @@ static void *xcpu_agent(void *args)
 					error("down_node_list overflow");
 			}
 			if (down_node_list[0]) {
-				strftime(reason, sizeof(reason),
+				char time_str[32];
+				slurm_make_time_str(&now, time_str, 	
+					sizeof(time_str));
+				snprintf(reason, sizeof(reason),
 					"select_linear: Can not stat XCPU "
-					"[SLURM@%b %d %H:%M]",
-					time_ptr);
+					"[SLURM@%s]", time_str);
 				slurm_drain_nodes(down_node_list, reason);
 			}
 			last_xcpu_test = now;

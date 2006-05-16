@@ -31,13 +31,6 @@
 
 #include <stdint.h>
 
-/*
- * slurm_make_time_str - convert time_t to string "month/date hour:min:sec" 
- * IN time - a time stamp
- * OUT string - pointer user defined buffer
- */
-extern void slurm_make_time_str (time_t *time, char *string);
-
 #define READY_JOB_FATAL  -2
 #define READY_JOB_ERROR  -1
 #define READY_NODE_STATE 0x01

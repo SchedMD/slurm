@@ -2,7 +2,7 @@
  *  src/common/parse_time.c - time parsing utility functions
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -376,4 +376,42 @@ int main(int argc, char *argv[])
 	}
 }
 #endif
+
+/*
+ * slurm_make_time_str - convert time_t to string with a format of
+ *	"month/date hour:min:sec" for use in user command output
+ *
+ * IN time - a time stamp
+ * OUT string - pointer user defined buffer
+ * IN size - length of string buffer, we recommend a size of 32 bytes to 
+ *	easily support different site-specific formats
+ */
+extern void
+slurm_make_time_str (time_t *time, char *string, int size)
+{
+	struct tm time_tm;
+
+	localtime_r(time, &time_tm);
+	if ( *time == (time_t) 0 ) {
+		snprintf(string, size, "Unknown");
+	} else {
+#ifdef ISO8601
+		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
+		 * NOTE: This is expected to break Maui, Moab and LSF
+		 * schedulers management of SLURM. */
+		snprintf(string, size,
+			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
+			(time_tm.tm_year + 1900), (time_tm.tm_mon+1), 
+			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min, 
+			time_tm.tm_sec);
+#else
+		/* Format MM/DD-HH:MM:SS */
+		snprintf(string, size,
+			"%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
+			(time_tm.tm_mon+1), time_tm.tm_mday,
+			time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+
+#endif
+	}
+}
 

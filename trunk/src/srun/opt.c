@@ -2002,8 +2002,9 @@ static void _opt_list()
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	if (opt.begin) {
-		info("begin          : %s", 
-			asctime(localtime(&opt.begin)));
+		char time_str[32];
+		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
+		info("begin          : %s", time_str);
 	}
 	info("prolog         : %s", opt.prolog);
 	info("epilog         : %s", opt.epilog);
