@@ -53,7 +53,7 @@ make_bash_script $file_in "
   for ((i = 0; i < 10; i++)); do
     $srun $bin_sleep 15 &
   done
-  $bin_sleep 6
+  $bin_sleep 7
   $squeue -s
   wait
 "
