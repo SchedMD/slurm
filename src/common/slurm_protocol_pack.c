@@ -1926,7 +1926,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack32((uint32_t)build_ptr->slurmd_port, buffer);
 #endif
 	packstr(build_ptr->slurmd_spooldir, buffer);
-	debug2("Packing string %s", build_ptr->slurmd_spooldir);
 	pack16((uint16_t)build_ptr->slurmd_timeout, buffer);
 	packstr(build_ptr->slurm_conf, buffer);
 	packstr(build_ptr->state_save_location, buffer);
