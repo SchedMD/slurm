@@ -1716,8 +1716,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		}
 
 		lock_slurmctld(job_write_lock);
-		error_code = job_allocate(job_desc_msg, false, false,
-					  false, uid, &job_ptr);
+		error_code = job_allocate(job_desc_msg, 
+				job_desc_msg->immediate, false,
+				false, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 	}
