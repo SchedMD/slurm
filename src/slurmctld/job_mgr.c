@@ -1701,7 +1701,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t geo[SYSTEM_DIMENSIONS];
 #endif
 
-	info("before alteration Asking for nodes %d-%d procs %d", 
+	debug2("before alteration asking for nodes %d-%d procs %d", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs);
 	
@@ -1709,7 +1709,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &i);
 	
-	info("after alteration Asking for nodes %d-%d procs %d-%d", 
+	debug2("after alteration asking for nodes %d-%d procs %d-%d", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs, i);
 	
