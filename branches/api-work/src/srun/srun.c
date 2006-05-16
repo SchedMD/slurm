@@ -478,8 +478,16 @@ _run_batch_job(void)
 		else
 			info ("jobid %u.%u submitted",resp->job_id,
 							resp->step_id);
-		if (resp->error_code)
-			info("Warning: %s", slurm_strerror(resp->error_code));
+		if (resp->error_code) {
+			if (opt.immediate) {
+				error("Job failed: %s", 
+					slurm_strerror(resp->error_code));
+				rc = resp->error_code;
+			} else {
+				info("Warning: %s", 
+					slurm_strerror(resp->error_code));
+			}
+		}
 		slurm_free_submit_response_response_msg (resp);
 	}
 

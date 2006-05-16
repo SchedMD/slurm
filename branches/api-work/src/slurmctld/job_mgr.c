@@ -5,7 +5,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-5 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -48,6 +48,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
@@ -115,7 +116,6 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
 static int  _load_step_state(struct job_record *job_ptr, Buf buffer);
-static void _make_time_str (time_t *time, char *string);
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_lost_batch_jobs(int node_inx, time_t now);
@@ -1245,7 +1245,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		job_specs->mail_type, job_specs->mail_user,
 		(int)job_specs->nice - NICE_OFFSET);
 
-	_make_time_str(&job_specs->begin_time, buf);
+	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
 			(long) job_specs->cpus_per_task : -1L;
 	debug3("   network=%s begin=%s cpus_per_task=%ld", 
@@ -1256,21 +1256,6 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	if (buf[0] != '\0')
 		debug3("   %s", buf);
 }
-
-static void _make_time_str (time_t *time, char *string)
-{
-	struct tm time_tm;
-
-	localtime_r (time, &time_tm);
-	if ( *time == (time_t) 0 ) {
-		sprintf( string, "N/A" );
-	} else {
-		sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_mon+1), time_tm.tm_mday,
-			time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
-	}
-}
-
 
 
 /* 
@@ -1701,7 +1686,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t geo[SYSTEM_DIMENSIONS];
 #endif
 
-	info("before alteration Asking for nodes %d-%d procs %d", 
+	debug2("before alteration asking for nodes %d-%d procs %d", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs);
 	
@@ -1709,7 +1694,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &i);
 	
-	info("after alteration Asking for nodes %d-%d procs %d-%d", 
+	debug2("after alteration asking for nodes %d-%d procs %d-%d", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs, i);
 	

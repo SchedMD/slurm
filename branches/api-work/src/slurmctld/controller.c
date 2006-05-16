@@ -95,8 +95,6 @@
  * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
  *
- * It may be necessary to increase SLURM_MESSAGE_TIMEOUT_MSEC_STATIC as
- *    defined in src/common/slurm_protocol_interface.h.
  * The OpenSSL code produces a bunch of errors related to use of 
  *    non-initialized memory use. 
  * The switch/elan functions will report two blocks "possibly lost" 
@@ -106,8 +104,8 @@
  * On some systems, pthread_create() will generated a small number of 
  *    "possibly lost" blocks.
  * Otherwise the report should be free of errors. Remember to reset 
- *    MEMORY_LEAK_DEBUG to 0 afterwards for best system response (non-seamless 
- *    backup controller use).
+ *    MEMORY_LEAK_DEBUG to 0 for production use (non-seamless backup 
+ *    controller use).
 \**************************************************************************/
 
 /* Log to stderr and syslog until becomes a daemon */
@@ -732,10 +730,13 @@ static void *_slurmctld_background(void *no_data)
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
-	if (slurmctld_conf.slurmd_timeout)
-		ping_interval = slurmctld_conf.slurmd_timeout / 2;
-	else
-		ping_interval = 60;
+	if (slurmctld_conf.slurmd_timeout) {
+		/* We ping nodes that haven't responded in SlurmdTimeout/2,
+		 * but need to do the test at a higher frequency or we might
+		 * DOWN nodes with times that fall in the gap. */
+		ping_interval = slurmctld_conf.slurmd_timeout / 3;
+	} else
+		ping_interval = 60 * 60 * 24 * 356;	/* one year */
 	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME - ping_interval;
 	last_ping_srun_time = now;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -785,7 +786,7 @@ static void *_slurmctld_background(void *no_data)
 
 		if (slurmctld_conf.inactive_limit &&
 		    (difftime(now, last_ping_srun_time) >=
-		     (slurmctld_conf.inactive_limit / 2))) {
+		     (slurmctld_conf.inactive_limit / 3))) {
 			last_ping_srun_time = now;
 			debug2("Performing srun ping");
 			lock_slurmctld(job_read_lock);
