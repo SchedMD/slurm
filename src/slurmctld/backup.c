@@ -307,18 +307,16 @@ static void *_background_rpc_mgr(void *no_data)
 		if(ret_list) {
 			if(list_count(ret_list)>0) 
 				error("Got %d, expecting 0 from "
-				      "message recieving",
+				      "message received",
 				      list_count(ret_list));
+			error_code = _background_process_msg(msg);
+			if ((error_code == SLURM_SUCCESS)
+			&&  (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
+			&&  (slurmctld_config.shutdown_time == 0))
+				slurmctld_config.shutdown_time = time(NULL);
 			list_destroy(ret_list);
 		} else if(errno != SLURM_SUCCESS) 
 			error("slurm_receive_msg: %m");
-		else {
-			error_code = _background_process_msg(msg);
-			if ((error_code == SLURM_SUCCESS) &&
-			    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE) &&
-			    (slurmctld_config.shutdown_time == 0))
-				 slurmctld_config.shutdown_time = time(NULL);
-		}
 		slurm_free_msg(msg);
 
 		/* close should only be called when the socket 
