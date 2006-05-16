@@ -127,31 +127,6 @@ typedef struct srun_job {
 	pthread_t jtid;		/* job control thread id 	  */
 	slurm_fd *jfd;		/* job control info fd   	  */
 	
-	pthread_t ioid;		/* stdio thread id 		  */
-	int *listensock;	/* Array of stdio listen sockets  */
-	eio_handle_t *eio;      /* Event IO handle                */
-	int ioservers_ready;    /* Number of servers that established contact */
-	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
-	eio_obj_t *stdin_obj;   /* stdin eio_obj_t                */
-	eio_obj_t *stdout_obj;  /* stdout eio_obj_t               */
-	eio_obj_t *stderr_obj;  /* stderr eio_obj_t               */
-	List free_incoming;     /* List of free struct io_buf * for incoming
-				 * traffic. "incoming" means traffic from srun
-				 * to the tasks.
-				 */
-	List free_outgoing;     /* List of free struct io_buf * for outgoing
-				 * traffic "outgoing" means traffic from the
-				 * tasks to srun.
-				 */
-	int incoming_count;     /* Count of total incoming message buffers
-			         * including free_incoming buffers and
-			         * buffers in use.
-			         */
-	int outgoing_count;     /* Count of total incoming message buffers
-			         * including free_incoming buffers and
-			         * buffers in use.
-			         */
-
 	pthread_t lid;		  /* launch thread id */
 
 	time_t    ltimeout;       /* Time by which all tasks must be running */
@@ -172,8 +147,6 @@ typedef struct srun_job {
 	pthread_mutex_t task_mutex;
 	int njfds;		/* number of job control info fds */
 	slurm_addr *jaddr;	/* job control info ports 	  */
-	int num_listen;		/* Number of stdio listen sockets */
-	int *listenport;	/* Array of stdio listen ports 	  */
 	int thr_count;  	/* count of threads in job launch */
 
 	/* Output streams and stdin fileno */
