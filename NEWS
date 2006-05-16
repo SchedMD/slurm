@@ -135,7 +135,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for AllowGroups option to work when the /etc/group file doesn't 
     contain all users in group by adding the uids of the names in /etc/passwd
     that have a gid of that which we are looking for.
-
+ -- Fix bug in InactiveLimit support that can potentially purge active jobs.
+ 
 * Changes in SLURM 1.0.12
 =========================
  -- Report node state of DRAIN rather than DOWN if DOWN with DRAIN flag set.
