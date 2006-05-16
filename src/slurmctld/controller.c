@@ -766,7 +766,7 @@ static void *_slurmctld_background(void *no_data)
 
 		if (slurmctld_conf.inactive_limit &&
 		    (difftime(now, last_ping_srun_time) >=
-		     (slurmctld_conf.inactive_limit / 2))) {
+		     (slurmctld_conf.inactive_limit / 3))) {
 			last_ping_srun_time = now;
 			debug2("Performing srun ping");
 			lock_slurmctld(job_read_lock);
