@@ -736,9 +736,9 @@ _print_job (char * job_id_str)
 	}
 	
 	if (quiet_flag == -1) {
-		char time_str[16];
+		char time_str[32];
 		slurm_make_time_str ((time_t *)&job_buffer_ptr->last_update, 
-				     time_str);
+				     time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, job_buffer_ptr->record_count);
 	}
@@ -839,9 +839,9 @@ _print_node_list (char *node_list)
 	}
 
 	if (quiet_flag == -1) {
-		char time_str[16];
+		char time_str[32];
 		slurm_make_time_str ((time_t *)&node_info_ptr->last_update, 
-			             time_str);
+			             time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, node_info_ptr->record_count);
 	}
@@ -898,9 +898,9 @@ _print_part (char *partition_name)
 	}
 
 	if (quiet_flag == -1) {
-		char time_str[16];
+		char time_str[32];
 		slurm_make_time_str ((time_t *)&part_info_ptr->last_update, 
-			       time_str);
+			       time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, part_info_ptr->record_count);
 	}
@@ -999,9 +999,9 @@ _print_step (char *job_step_id_str)
 	last_step_id = step_id;
 
 	if (quiet_flag == -1) {
-		char time_str[16];
+		char time_str[32];
 		slurm_make_time_str ((time_t *)&job_step_info_ptr->last_update, 
-			             time_str);
+			             time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, job_step_info_ptr->job_step_count);
 	}
@@ -1636,9 +1636,6 @@ _update_node (int argc, char *argv[])
 	update_node_msg_t node_msg;
 	char *reason_str = NULL;
 	char *user_name;
-	char time_buf[64];
-	struct tm *time_ptr;
-	time_t now;
 
 	node_msg.node_names = NULL;
 	node_msg.reason = NULL;
@@ -1647,6 +1644,8 @@ _update_node (int argc, char *argv[])
 		if (strncasecmp(argv[i], "NodeName=", 9) == 0)
 			node_msg.node_names = &argv[i][9];
 		else if (strncasecmp(argv[i], "Reason=", 7) == 0) {
+			char time_buf[64], time_str[32];
+			time_t now;
 			int len = strlen(&argv[i][7]);
 			reason_str = xmalloc(len+1);
 			if (argv[i][7] == '"')
@@ -1668,9 +1667,8 @@ _update_node (int argc, char *argv[])
 				xstrcat(reason_str, time_buf);
 			}
 			now = time(NULL);
-			time_ptr = localtime(&now);
-			strftime(time_buf, sizeof(time_buf), "@%b %d %H:%M]", 
-				time_ptr);
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			snprintf(time_buf, sizeof(time_buf), "@%s]", time_str); 
 			xstrcat(reason_str, time_buf);
 				
 			node_msg.reason = reason_str;
@@ -2057,10 +2055,11 @@ static int _checkpoint(char *op, char *job_step_id_str)
 		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
 		if (rc == SLURM_SUCCESS) {
 			if (start_time) {
-				char time_str[128];
-				strftime(time_str, sizeof(time_str), 
-					"Began at %H:%M:%S\n", 
-					localtime(&start_time));
+				char buf[128], time_str[32];
+				slurm_make_time_str(&start_time, time_str,
+					sizeof(time_str));
+				snprintf(buf, sizeof(buf), 
+					"Began at %s\n", time_str); 
 				printf(time_str);
 			} else
 				printf("Yes\n");

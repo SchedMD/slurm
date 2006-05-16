@@ -41,6 +41,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/slurmctld/slurmctld.h"
 #include "../block_allocator/block_allocator.h"
 

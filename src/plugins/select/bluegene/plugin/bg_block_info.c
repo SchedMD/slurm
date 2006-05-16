@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -203,8 +203,6 @@ extern int update_block_list()
 	rm_partition_list_t *block_list = NULL;
 	bg_record_t *bg_record = NULL;
 	time_t now;
-	struct tm *time_ptr;
-	char reason[128];
 	int skipped_dealloc = 0;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -398,6 +396,8 @@ extern int update_block_list()
 					      bg_record->boot_count);
 					bg_record->boot_count++;
 				} else {
+					char reason[128], time_str[32];
+
 					error("Couldn't boot Block %s "
 					      "for user %s",
 					      bg_record->bg_block_id, 
@@ -405,12 +405,12 @@ extern int update_block_list()
 					slurm_mutex_unlock(&block_state_mutex);
 					
 					now = time(NULL);
-					time_ptr = localtime(&now);
-					strftime(reason, sizeof(reason),
+					slurm_make_time_str(&now, time_str,
+						sizeof(time_str));
+					snprintf(reason, sizeof(reason),
 						"update_block_list: "
-						"Boot fails "
-						"[SLURM@%b %d %H:%M]",
-						time_ptr);
+						"Boot fails [SLURM@%s]", 
+						time_str);
 					drain_as_needed(bg_record, reason);
 					slurm_mutex_lock(&block_state_mutex);
 					bg_record->boot_state = 0;

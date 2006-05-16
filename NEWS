@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that could temporariy make nodes DOWN when they are really 
     responding. 
  -- Fix bug preventing backup slurmctld from responding to PING RPCs.
+ -- Set "CFLAGS=-DISO8601" before configuration to get ISO8601 format 
+    times for all SLURM commands. NOTE: This may break Moab, Maui, and/or 
+    LSF schedulers.
 
 * Changes in SLURM 1.1.0-pre8
 =============================

@@ -4,7 +4,7 @@
  *
  *  $Id$ 
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  
@@ -349,7 +349,6 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 {
 	bg_record_t *bg_record = NULL;
 	time_t now;
-	struct tm *time_ptr;
 	char reason[128];
 	int job_remove_failed = 0;
 	
@@ -448,12 +447,11 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		      bg_record->user_name);
 
 		if(job_remove_failed) {
-			time_ptr = localtime(&now);
-			strftime(reason, sizeof(reason),
-				 "_term_agent: "
-				 "Couldn't remove job "
-				 "[SLURM@%b %d %H:%M]",
-				 time_ptr);
+			char time_str[32];
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			snprintf(reason, sizeof(reason),
+				 "_term_agent: Couldn't remove job "
+				 "[SLURM@%s]", time_str);
 			if(bg_record->nodes)
 				slurm_drain_nodes(bg_record->nodes, 
 						  reason);
@@ -466,7 +464,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		if(bg_record->job_running != -2)
 			bg_record->job_running = -1;
 		
-		/*remove user from list */
+		/* remove user from list */
 		
 		slurm_conf_lock();
 		if(bg_record->target_name) {

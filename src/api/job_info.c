@@ -43,6 +43,7 @@
 
 #include "src/api/job_info.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -60,9 +61,10 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 {
 	int i;
 	job_info_t *job_ptr = jinfo->job_array;
-	char time_str[16];
+	char time_str[32];
 
-	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str);
+	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str, 
+		sizeof(time_str));
 	fprintf( out, "Job data as of %s, record count %d\n",
 		 time_str, jinfo->record_count);
 
@@ -81,7 +83,7 @@ extern void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	int j;
-	char time_str[16], select_buf[128];
+	char time_str[32], select_buf[128];
 	struct group *group_info = NULL;
 	char tmp1[7], tmp2[7];
 	uint16_t quarter = (uint16_t) NO_VAL;
@@ -145,14 +147,16 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 5 ******/
-	slurm_make_time_str ((time_t *)&job_ptr->start_time, time_str);
+	slurm_make_time_str ((time_t *)&job_ptr->start_time, time_str,
+		sizeof(time_str));
 	fprintf ( out, "JobState=%s StartTime=%s EndTime=",
 		  job_state_string(job_ptr->job_state), time_str);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
 		fprintf ( out, "NONE");
 	else {
-		slurm_make_time_str ((time_t *)&job_ptr->end_time, time_str);
+		slurm_make_time_str ((time_t *)&job_ptr->end_time, time_str,
+			sizeof(time_str));
 		fprintf ( out, "%s", time_str);
 	}
 	if (one_liner)
@@ -260,11 +264,12 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 12 ******/
-	slurm_make_time_str ((time_t *)&job_ptr->submit_time, time_str);
+	slurm_make_time_str ((time_t *)&job_ptr->submit_time, time_str, 
+		sizeof(time_str));
 	fprintf ( out, "SubmitTime=%s ", time_str);
 	if (job_ptr->suspend_time) {
 		slurm_make_time_str ((time_t *)&job_ptr->suspend_time, 
-			time_str);
+			time_str, sizeof(time_str));
 	} else {
 		strncpy(time_str, "None", sizeof(time_str));
 	}
@@ -284,27 +289,6 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	fprintf( out, "\n\n");
 }
-
-/*
- * make_time_str - convert time_t to string with "month/date hour:min:sec" 
- * IN time - a time stamp
- * OUT string - pointer user defined buffer
- */
-extern void
-slurm_make_time_str (time_t *time, char *string)
-{
-	struct tm time_tm;
-
-	localtime_r (time, &time_tm);
-	if ( *time == (time_t) 0 ) {
-		sprintf( string, "Unknown" );
-	} else {
-		sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", 
-			  (time_tm.tm_mon+1), time_tm.tm_mday, 
-			  time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
-	}
-}
-
 
 /*
  * slurm_load_jobs - issue RPC to get slurm all job configuration  

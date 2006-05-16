@@ -37,6 +37,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -222,24 +223,10 @@ int _print_secs(long time, int width, bool right, bool cut_output)
 
 int _print_time(time_t t, int level, int width, bool right)
 {
-	struct tm time;
-	char str[FORMAT_STRING_SIZE];
-
 	if (t) {
-		localtime_r(&t, &time);
-
-		switch (level) {
-		case 1:
-		case 2:
-		default:
-			snprintf(str, FORMAT_STRING_SIZE,
-				 "%2.2u/%2.2u-%2.2u:%2.2u",
-				 (time.tm_mon + 1), time.tm_mday,
-				 time.tm_hour, time.tm_min);
-			break;
-		}
-
-		_print_str(str, width, right, true);
+		char time_str[32];
+		slurm_make_time_str(&t, time_str, sizeof(time_str));
+		_print_str(time_str, width, right, true);
 	} else
 		_print_str("N/A", width, right, true);
 

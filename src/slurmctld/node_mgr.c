@@ -6,7 +6,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -46,6 +46,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/parse_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -1505,13 +1506,12 @@ void set_node_down (char *name, char *reason)
 	if ((node_ptr->reason == NULL)
 	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		time_t now;
-		struct tm *time_ptr;
-		char time_buf[64];
+		char time_buf[64], time_str[32];
 
 		now = time (NULL);
-		time_ptr = localtime(&now);
-		strftime(time_buf, sizeof(time_buf), " [slurm@%b %d %H:%M]",
-			time_ptr);
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+		snprintf(time_buf, sizeof(time_buf), " [slurm@%s]",
+			time_str);
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup(reason);
 		xstrcat(node_ptr->reason, time_buf);

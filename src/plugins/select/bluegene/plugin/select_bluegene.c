@@ -3,7 +3,7 @@
  * 
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  UCRL-CODE-217948.
@@ -368,24 +368,19 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 	time_t now;
-	struct tm *time_ptr;
-	char reason[128];
-	char time_str[64];
+	char reason[128], tmp[64], time_str[32];
 
 	bg_record = find_bg_record_in_list(bg_list, part_desc_ptr->name);
 	if(!bg_record)
 		return SLURM_ERROR;
 	now = time(NULL);
-	time_ptr = localtime(&now);
-	strftime(time_str, sizeof(time_str),
-		 "[SLURM@%b %d %H:%M]",
-		 time_ptr);
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
 	snprintf(reason, sizeof(reason),
 		 "update_block: "
 		 "Admin set block %s state to %s %s",
 		 bg_record->bg_block_id, 
-		 _block_state_str(part_desc_ptr->state_up), 
-		 time_str);
+		 _block_state_str(part_desc_ptr->state_up), tmp); 
 	if(bg_record->job_running > -1) {
 		slurm_fail_job(bg_record->job_running);	
 		while(bg_record->job_running > -1) 

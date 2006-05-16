@@ -2,7 +2,7 @@
  *  src/common/parse_time.h - time parsing utility functions
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -41,5 +41,17 @@
  * Invalid input results in message to stderr and return value of zero
  */
 extern time_t parse_time(char *time_str);
+
+/*
+ * slurm_make_time_str - convert time_t to string with a format of
+ *	"month/date hour:min:sec"
+ *
+ * IN time - a time stamp
+ * OUT string - pointer user defined buffer
+ * IN size - length of string buffer, we recommend a size of 32 bytes to
+ *	easily support different site-specific formats
+ */
+extern void
+slurm_make_time_str (time_t *time, char *string, int size);
 
 #endif

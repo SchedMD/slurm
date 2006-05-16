@@ -35,6 +35,7 @@
 #include <slurm/slurm.h>
 
 #include "src/api/job_info.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
@@ -57,13 +58,13 @@ extern long slurm_api_version (void)
 void slurm_print_ctl_conf ( FILE* out, 
                             slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
-	char time_str[16];
+	char time_str[32];
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
 
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
-			     time_str);
+			     time_str, sizeof(time_str));
 	fprintf(out, "Configuration data as of %s\n", time_str);
 	fprintf(out, "AuthType          = %s\n", 
 		slurm_ctl_conf_ptr->authtype);

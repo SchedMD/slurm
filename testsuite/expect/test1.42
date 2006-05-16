@@ -184,6 +184,10 @@ expect {
 		incr match
 		exp_continue
 	}
+	-re "StartTime=($number)-($number)-($number)T12:00:00" {
+		incr match
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1

@@ -40,6 +40,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
@@ -55,10 +56,10 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 {
 	int i;
 	node_info_t * node_ptr = node_info_msg_ptr -> node_array ;
-	char time_str[16];
+	char time_str[32];
 
 	slurm_make_time_str ((time_t *)&node_info_msg_ptr->last_update, 
-			     time_str);
+			     time_str, sizeof(time_str));
 	fprintf( out, "Node data as of %s, record count %d\n",
 		time_str, node_info_msg_ptr->record_count);
 

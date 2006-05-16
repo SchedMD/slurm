@@ -22,6 +22,9 @@ See the file NEWS for more details.
 * Change time format in job completion logging (JobCompType=jobcomp/filetxt)
   from "MM/DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SS", conforming with the ISO8601
   standard format
+* Add support for ISO8601 time format for all SLURM commands by defining
+  "CFLAGS=-DISO8601" before configuration. NOTE: This may break Moab, 
+  Maui, and/or LSF schedulers.
 * Sacct can get accounting information about currently running jobs and 
   job steps (see "man sacct")
 * Added support for mapping "%h" in configured SlurmdLog to the hostname

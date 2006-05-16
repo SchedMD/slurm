@@ -4,7 +4,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
  *  
@@ -51,9 +51,8 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bg)
 	rm_BP_t *my_bp;
 	rm_location_t bp_loc;
 	rm_BP_state_t bp_state;
-	char bg_down_node[128], reason[128];
+	char bg_down_node[128], reason[128], time_str[32];
 	time_t now = time(NULL);
-	struct tm *time_ptr = localtime(&now);
 
 	if ((rc = rm_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bg_err_str(rc));
@@ -116,10 +115,10 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bg)
 			break;
 
 		error("switch for node %s is bad", bg_down_node);
-		strftime(reason, sizeof(reason),
-			 "select_bluegene: MMCS switch not UP "
-			 "[SLURM@%b %d %H:%M]",
-			 time_ptr);
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+		snprintf(reason, sizeof(reason),
+			"select_bluegene: MMCS switch not UP [SLURM@%s]", 
+			time_str);
 		slurm_drain_nodes(bg_down_node, reason);
 		break;
 	}
@@ -156,9 +155,8 @@ static void _test_down_nodes(rm_BGL_t *bg)
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bg_down_node[128];
-	char reason[128];
+	char reason[128], time_str[32];
 	time_t now = time(NULL);
-	struct tm * time_ptr = localtime(&now);
 		
 	debug2("Running _test_down_nodes");
 	down_node_list[0] = '\0';
@@ -220,10 +218,10 @@ static void _test_down_nodes(rm_BGL_t *bg)
 			error("down_node_list overflow");
 	}
 	if (down_node_list[0]) {
-		strftime(reason, sizeof(reason), 
-			 "select_bluegene: MMCS state not UP "
-			 "[SLURM@%b %d %H:%M]", 
-			 time_ptr);
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+		snprintf(reason, sizeof(reason), 
+			"select_bluegene: MMCS state not UP [SLURM@%s]", 
+			time_str); 
 		slurm_drain_nodes(down_node_list, reason);
 	}
 	
@@ -347,10 +345,9 @@ extern int check_block_bp_states(char *bg_block_id)
 	int i = 0;
 	int *coord = NULL;
 	rm_BP_state_t bp_state;
-	char bg_down_node[128], reason[128];
+	char bg_down_node[128], reason[128], time_str[32];
 	char down_node_list[BUFSIZE];
 	time_t now = time(NULL);
-	struct tm * time_ptr = localtime(&now);
 	
 	down_node_list[0] = '\0';
 	slurm_mutex_lock(&api_file_mutex);
@@ -438,10 +435,10 @@ cleanup:
 	rm_free_partition(block_ptr);
 done:
 	if (down_node_list[0]) {
-		strftime(reason, sizeof(reason), 
-			 "select_bluegene: MMCS state not UP "
-			 "[SLURM@%b %d %H:%M]", 
-			 time_ptr);
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+		snprintf(reason, sizeof(reason), 
+			"select_bluegene: MMCS state not UP [SLURM@%s]", 
+			time_str); 
 		slurm_drain_nodes(down_node_list, reason);
 	}
 #endif
