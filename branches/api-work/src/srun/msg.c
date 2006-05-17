@@ -345,8 +345,7 @@ static void _timeout_handler(time_t timeout)
  */
 static void _node_fail_handler(char *nodelist, srun_job_t *job)
 {
-	if ( (opt.no_kill) &&
-	     (io_node_fail(nodelist, job) == SLURM_SUCCESS) ) {
+	if ( (opt.no_kill) ) {
 		error("Node failure on %s, eliminated that node", nodelist);
 		return;
 	}

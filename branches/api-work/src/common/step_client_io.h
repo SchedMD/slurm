@@ -27,9 +27,23 @@
 #ifndef _HAVE_CLIENT_IO_H
 #define _HAVE_CLIENT_IO_H
 
+#include "src/common/eio.h"
 #include "src/common/list.h"
+#include "src/common/dist_tasks.h"
 
 typedef struct client_io {
+	/* input parameters - set (indirectly) by user */
+	int num_tasks;
+	int num_nodes;
+	int *nodeids;		/* array of node IDs of length num_tasks */
+	bool label;
+	int label_width;
+	char *signature;
+	char *filename_in;
+	char *filename_out;
+	char *filename_err;
+
+	/* internal variables */
 	pthread_t ioid;		/* stdio thread id 		  */
 	int num_listen;		/* Number of stdio listen sockets */
 	int *listensock;	/* Array of stdio listen sockets  */
@@ -57,10 +71,19 @@ typedef struct client_io {
 			         * including free_incoming buffers and
 			         * buffers in use.
 			         */
-
 } client_io_t;
 
-client_io_t *client_io_handler_create(infd, outfd, errfd);
+client_io_t *
+client_io_handler_create(int infd, int outfd, int errfd,
+			 int intaskid, int outtaskid, int errtaskid,
+			 int num_tasks,
+			 int num_nodes,
+			 int *nodeids,
+			 char *signature,
+			 int signature_len,
+			 bool label);
+void
+client_io_handler_destroy(client_io_t *cio);
 
 /* int   client_io_node_fail(char *nodelist, slurm_client_io_t *client_io); */
 /* int   client_io_thr_create(slurm_client_io_t *client_io); */

@@ -293,8 +293,24 @@ int srun(int ac, char **av)
 	if (slurm_mpi_thr_create(job) < 0)
 		job_fatal (job, "Failed to initialize MPI");
 
-	if (io_thr_create(job) < 0) 
-		job_fatal(job, "failed to initialize IO");
+	{
+		int siglen;
+		char *sig;
+		client_io_t *cio;
+		if (slurm_cred_get_signature(cio->cred, &sig, &siglen) < 0) {
+			job_fatal("Couldn't get cred signature");
+		}
+		
+		cio = client_io_handler_create(0, 1, 2,
+					       job->step_layout->num_tasks,
+					       job->step_layout->num_hosts,
+					       job->step_layout->hostids,
+					       sig,
+					       siglen,
+					       opt.labelio);
+		if (io_thr_create(job) < 0) 
+			job_fatal(job, "failed to initialize IO");
+	}
 
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
