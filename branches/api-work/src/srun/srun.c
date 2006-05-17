@@ -71,7 +71,6 @@
 #include "src/common/slurm_rlimits_info.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/io.h"
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/msg.h"
@@ -79,6 +78,8 @@
 #include "src/srun/sigstr.h"
 #include "src/srun/reattach.h"
 #include "src/srun/attach.h"
+
+#include "src/api/step_client_io.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
@@ -296,20 +297,22 @@ int srun(int ac, char **av)
 	{
 		int siglen;
 		char *sig;
-		client_io_t *cio;
-		if (slurm_cred_get_signature(cio->cred, &sig, &siglen) < 0) {
-			job_fatal("Couldn't get cred signature");
+		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
+		    < 0) {
+			job_fatal(job, "Couldn't get cred signature");
 		}
 		
-		cio = client_io_handler_create(0, 1, 2,
-					       job->step_layout->num_tasks,
-					       job->step_layout->num_hosts,
-					       job->step_layout->hostids,
-					       sig,
-					       siglen,
-					       opt.labelio);
-		if (io_thr_create(job) < 0) 
-			job_fatal(job, "failed to initialize IO");
+		/* FIXME - need to use the correct fds and taskids */
+		job->client_io = client_io_handler_create(
+			0, 1, 2, -1, -1, -1,
+			job->step_layout->num_tasks,
+			job->step_layout->num_hosts,
+			job->step_layout->hostids,
+			sig, siglen,
+			opt.labelio);
+		if (!job->client_io
+		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
+			job_fatal(job, "failed to start IO handler");
 	}
 
 	if (sig_thr_create(job) < 0)
@@ -350,9 +353,9 @@ int srun(int ac, char **av)
 	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	eio_signal_shutdown(job->eio);
-	if (pthread_join(job->ioid, NULL) < 0)
-		error ("Waiting on IO: %m");
+	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
+		error ("IO handler did not finish correctly: %m");
+	client_io_handler_destroy(job->client_io);
 
 	if (slurm_mpi_exit () < 0)
 		; /* eh, ignore errors here */

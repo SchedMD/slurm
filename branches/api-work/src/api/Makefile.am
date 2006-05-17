@@ -59,11 +59,11 @@ libslurm_la_SOURCES =    \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
+	step_client_io.c step_client_io.h \
 	submit.c         \
 	suspend.c        \
 	reconfigure.c    \
-	update_config.c  \
-	step_client_io.c step_client_io.h
+	update_config.c
 
 libpmi_la_SOURCES = pmi.c
 
@@ -72,8 +72,12 @@ BUILT_SOURCES = 	\
 
 common_dir = $(top_builddir)/src/common
 
-libslurm_la_LIBADD	= $(common_dir)/libcommon.la -lpthread
-libpmi_la_LIBADD	= libslurm.la
+libslurm_la_LIBADD	= 		\
+	$(common_dir)/libcommon.la	\
+	$(common_dir)/libeio.la		\
+	-lpthread
+
+libpmi_la_LIBADD	= libslurm.la 
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \

@@ -59,7 +59,6 @@
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
-#include "src/srun/io.h"
 #include "src/srun/msg.h"
 #include "src/srun/pmi.h"
 #include "src/srun/sigstr.h"
@@ -354,8 +353,6 @@ static void _node_fail_handler(char *nodelist, srun_job_t *job)
 	update_job_state(job, SRUN_JOB_FORCETERM);
 	info("sending Ctrl-C to remaining tasks");
 	fwd_signal(job, SIGINT);
-	if (job->ioid)
-		eio_signal_wakeup(job->eio);
 }
 
 static bool _job_msg_done(srun_job_t *job)
@@ -770,7 +767,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		    || (slurm_mpi_single_task_per_node () 
 			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
-			eio_signal_shutdown(job->eio);
+			client_io_handler_finish(job->client_io);
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}

@@ -41,7 +41,7 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/dist_tasks.h"
-//#include "src/common/global_srun.h"
+#include "src/api/step_client_io.h"
 
 #include "src/srun/signals.h"
 #include "src/srun/fname.h"
@@ -129,6 +129,7 @@ typedef struct srun_job {
 	
 	pthread_t lid;		  /* launch thread id */
 
+	client_io_t *client_io;
 	time_t    ltimeout;       /* Time by which all tasks must be running */
 	time_t    etimeout;       /* exit timeout (see opt.max_wait          */
 

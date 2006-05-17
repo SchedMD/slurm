@@ -50,7 +50,6 @@
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
-#include "src/srun/io.h"
 #include "src/srun/msg.h"
 
 
@@ -308,8 +307,8 @@ _attach_to_job(srun_job_t *job)
 		r->job_step_id     = job->stepid;
 		r->srun_node_id    = (uint32_t) i;
 		r->io_port         = 
-			ntohs(job->
-			      listenport[i%job->num_listen]);
+			ntohs(job->client_io->
+			      listenport[i%job->client_io->num_listen]);
 		r->resp_port       = 
 			ntohs(job->
 			      jaddr[i%job->njfds].sin_port);
@@ -492,9 +491,9 @@ int reattach()
 	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	eio_signal_shutdown(job->eio);
-	if (pthread_join(job->ioid, NULL) < 0)
-		error ("Waiting on IO: %m");
+	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
+		error ("IO handler did not finish correctly (reattach): %m");
+	client_io_handler_destroy(job->client_io);
 
 	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGHUP);

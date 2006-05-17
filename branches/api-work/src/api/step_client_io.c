@@ -54,10 +54,11 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/eio.h"
 #include "src/common/io_hdr.h"
 #include "src/common/net.h"
 #include "src/common/dist_tasks.h"
-#include "src/common/step_client_io.h"
+#include "src/api/step_client_io.h"
 
 #define MAX_RETRIES 3
 #define STDIO_MAX_FREE_BUF 1024
@@ -790,12 +791,12 @@ again:
 			list_enqueue(server->msg_queue, msg);
 		}
 	} else if (header.type == SLURM_IO_STDIN) {
-		int nodeid;
+		uint32_t nodeid;
 		struct server_io_info *server;
 		debug("SLURM_IO_STDIN");
 		msg->ref_count = 1;
 		nodeid = info->cio->nodeids[header.gtaskid];
-		debug3("  taskid %d maps to nodeid %d", header.gtaskid, nodeid);
+		debug3("  taskid %d maps to nodeid %ud", header.gtaskid, nodeid);
 		server = info->cio->ioserver[nodeid]->arg;
 		list_enqueue(server->msg_queue, msg);
 	} else {
@@ -845,30 +846,6 @@ _create_listensock_eio(int fd, client_io_t *cio)
 	eio = eio_obj_create(fd, &listening_socket_ops, (void *)cio);
 
 	return eio;
-}
-
-int
-client_io_thr_create(client_io_t *cio)
-{
-	int retries = 0;
-	pthread_attr_t attr;
-
-	xsignal(SIGTTIN, SIG_IGN);
-
-	slurm_attr_init(&attr);
-	while ((errno = pthread_create(&cio->ioid, &attr,
-				      &_io_thr_internal, (void *) cio))) {
-		if (++retries > MAX_RETRIES) {
-			error ("pthread_create error %m");
-			slurm_attr_destroy(&attr);
-			return SLURM_ERROR;
-		}
-		sleep(1);	/* sleep and try again */
-	}
-	slurm_attr_destroy(&attr);
-	debug("Started IO server thread (%lu)", (unsigned long) cio->ioid);
-
-	return SLURM_SUCCESS;
 }
 
 static int
@@ -1119,7 +1096,7 @@ client_io_handler_create(int infd, int outfd, int errfd,
 			 int intaskid, int outtaskid, int errtaskid,
 			 int num_tasks,
 			 int num_nodes,
-			 int *nodeids,
+			 uint32_t *nodeids,
 			 char *signature,
 			 int signature_len,
 			 bool label)
@@ -1141,8 +1118,8 @@ client_io_handler_create(int infd, int outfd, int errfd,
 	else
 		cio->label_width = 0;
 
-	len = sizeof(int) * num_tasks;
-	cio->nodeids = (int *)xmalloc(len);
+	len = sizeof(uint32_t) * num_tasks;
+	cio->nodeids = (uint32_t *)xmalloc(len);
 	memcpy(cio->nodeids, nodeids, len);
 
 	if (signature_len != SLURM_CRED_SIGLEN) {
@@ -1153,6 +1130,8 @@ client_io_handler_create(int infd, int outfd, int errfd,
 	cio->signature = (char *)xmalloc(signature_len);
 	memcpy(cio->signature, signature, signature_len);
 
+	cio->eio = eio_handle_create();
+
 	/* Compute number of listening sockets needed to allow
 	 * all of the slurmds to establish IO streams with srun, without
 	 * overstressing the TCP/IP backoff/retry algorithm
@@ -1160,6 +1139,9 @@ client_io_handler_create(int infd, int outfd, int errfd,
 	cio->num_listen = _estimate_nports(num_nodes, 64);
 	cio->listensock = (int *) xmalloc(cio->num_listen * sizeof(int));
 	cio->listenport = (int *) xmalloc(cio->num_listen * sizeof(int));
+
+	cio->ioserver = (eio_obj_t **)xmalloc(num_nodes*sizeof(eio_obj_t *));
+	cio->ioservers_ready = 0;
 
 	_init_stdio_eio_objs(infd, intaskid, outfd, outtaskid,
 			     errfd, errtaskid, cio);
@@ -1177,9 +1159,54 @@ client_io_handler_create(int infd, int outfd, int errfd,
 		eio_new_initial_obj(cio->eio, obj);
 	}
 
-
+	cio->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	cio->incoming_count = 0;
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(cio->free_incoming, _alloc_io_buf());
+	}
+	cio->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	cio->outgoing_count = 0;
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(cio->free_outgoing, _alloc_io_buf());
+	}
 
 	return cio;
+}
+
+int
+client_io_handler_start(client_io_t *cio)
+{
+	int retries = 0;
+	pthread_attr_t attr;
+
+	xsignal(SIGTTIN, SIG_IGN);
+
+	slurm_attr_init(&attr);
+	while ((errno = pthread_create(&cio->ioid, &attr,
+				      &_io_thr_internal, (void *) cio))) {
+		if (++retries > MAX_RETRIES) {
+			error ("pthread_create error %m");
+			slurm_attr_destroy(&attr);
+			return SLURM_ERROR;
+		}
+		sleep(1);	/* sleep and try again */
+	}
+	slurm_attr_destroy(&attr);
+	debug("Started IO server thread (%lu)", (unsigned long) cio->ioid);
+
+	return SLURM_SUCCESS;
+}
+
+int
+client_io_handler_finish(client_io_t *cio)
+{
+	eio_signal_shutdown(cio->eio);
+	if (pthread_join(cio->ioid, NULL) < 0) {
+		error("Waiting for client io pthread: %m");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 void

@@ -35,7 +35,7 @@ typedef struct client_io {
 	/* input parameters - set (indirectly) by user */
 	int num_tasks;
 	int num_nodes;
-	int *nodeids;		/* array of node IDs of length num_tasks */
+	uint32_t *nodeids;	/* array of node IDs of length num_tasks */
 	bool label;
 	int label_width;
 	char *signature;
@@ -78,12 +78,13 @@ client_io_handler_create(int infd, int outfd, int errfd,
 			 int intaskid, int outtaskid, int errtaskid,
 			 int num_tasks,
 			 int num_nodes,
-			 int *nodeids,
+			 uint32_t *nodeids,
 			 char *signature,
 			 int signature_len,
 			 bool label);
-void
-client_io_handler_destroy(client_io_t *cio);
+int client_io_handler_start(client_io_t *cio);
+int client_io_handler_finish(client_io_t *cio);
+void client_io_handler_destroy(client_io_t *cio);
 
 /* int   client_io_node_fail(char *nodelist, slurm_client_io_t *client_io); */
 /* int   client_io_thr_create(slurm_client_io_t *client_io); */

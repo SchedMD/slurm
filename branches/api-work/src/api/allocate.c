@@ -578,7 +578,7 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 static int
 _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 {
-	uid_t req_uid   = g_slurm_auth_get_uid(msg->cred);
+	uid_t req_uid   = g_slurm_auth_get_uid(msg->auth_cred);
 	uid_t uid       = getuid();
 	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	int rc = 0;
@@ -671,7 +671,7 @@ _accept_msg_connection(int listen_fd, resource_allocation_response_msg_t **resp)
  * OUT resp: resource allocation response message
  * RET 1 if resp is filled in, 0 otherwise */
 static int
-_wait_for_alloc_rpc(listen_t *listen, int sleep_time,
+_wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 		    resource_allocation_response_msg_t **resp)
 {
 	struct pollfd fds[1];

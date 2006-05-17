@@ -46,6 +46,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 #include "src/common/mpi.h"
+#include "src/api/step_client_io.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
@@ -174,8 +175,9 @@ launch(void *arg)
 	r.resp_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
 	
 	for (i = 0; i < job->step_layout->num_hosts; i++) {
-		r.io_port[i]      = ntohs(job->listenport[i%job->num_listen]);
-		r.resp_port[i]    = ntohs(job->jaddr[i%job->njfds].sin_port);
+		r.io_port[i] =
+		  ntohs(job->client_io->listenport[i%job->client_io->num_listen]);
+		r.resp_port[i] = ntohs(job->jaddr[i%job->njfds].sin_port);
 	}
 
 	msg_array_ptr[0].msg_type = REQUEST_LAUNCH_TASKS;
