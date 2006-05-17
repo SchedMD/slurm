@@ -62,7 +62,8 @@ libslurm_la_SOURCES =    \
 	submit.c         \
 	suspend.c        \
 	reconfigure.c    \
-	update_config.c  
+	update_config.c  \
+	step_client_io.c step_client_io.h
 
 libpmi_la_SOURCES = pmi.c
 

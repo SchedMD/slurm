@@ -49,6 +49,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/fd.h"
 #include "src/common/slurm_auth.h"

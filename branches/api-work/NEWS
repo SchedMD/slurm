@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Set "CFLAGS=-DISO8601" before configuration to get ISO8601 format 
     times for all SLURM commands. NOTE: This may break Moab, Maui, and/or 
     LSF schedulers.
+ -- Fix for srun -n and -O options when paired with -b.
 
 * Changes in SLURM 1.1.0-pre8
 =============================

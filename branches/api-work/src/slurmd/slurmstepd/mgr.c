@@ -510,6 +510,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	step_complete_msg_t msg;
 	int rc = -1;
 	int retcode;
+	int i;
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
 	msg.job_id = job->jobid;
@@ -546,21 +547,17 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 
 	debug3("Rank %d sending complete to rank %d, range %d to %d",
 	       step_complete.rank, step_complete.parent_rank, first, last);
-	retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
-	if (retcode == SLURM_SUCCESS && rc == 0)
-		goto finished;
-
 	/* On error, pause then try sending to parent again.
 	 * The parent slurmstepd may just not have started yet, because
 	 * of the way that the launch message forwarding works.
 	 */
-	sleep(REVERSE_TREE_PARENT_RETRY);
-	debug3("Rank %d retry sending complete to rank %d, range %d to %d",
-	       step_complete.rank, step_complete.parent_rank, first, last);
-	retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
-	if (retcode == SLURM_SUCCESS && rc == 0)
-		goto finished;
-
+	for (i = 0; i < REVERSE_TREE_PARENT_RETRY; i++) {
+		if (i)
+			sleep(1);
+		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
+		if (retcode == SLURM_SUCCESS && rc == 0)
+			goto finished;
+	}
 	/* on error AGAIN, send to the slurmctld instead */
 	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
 	       step_complete.rank, first, last);

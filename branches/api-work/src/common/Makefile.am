@@ -77,8 +77,7 @@ libcommon_la_SOURCES = 			\
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
 	global_defaults.c		\
-	slurm_xlator.h			\
-	step_client_io.c step_client_io.h
+	slurm_xlator.h			
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_unsetenv_src)
