@@ -167,7 +167,13 @@ if {[wait_for_file $file_out] == 0} {
 			wait
                 }
         }
-	if {$matches != [expr 6 + 6 + 4 + 4 + 4]} {
+	if {$matches == 0} {
+		send_user "\nFAILURE: No MPI communications occured\n"
+		send_user "  The version of MPI you are using may be incompatible "
+		send_user "with the configured switch\n"
+		send_user "  Core files may be present from failed MPI tasks\n\n"
+		set exit_code 1
+	} elseif {$matches != [expr 6 + 6 + 4 + 4 + 4]} {
 		send_user "\nFAILURE: unexpected output $matches\n"
 		set exit_code 1
 	} elseif {$complete == 0} {
