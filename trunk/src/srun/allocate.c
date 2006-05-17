@@ -492,6 +492,7 @@ job_desc_msg_create_from_opts (char *script)
 		j->host = NULL;
 
 	if (script) {
+		char *buf = NULL;
 		/*
 		 * If script is set then we are building a request for
 		 *  a batch job
@@ -500,6 +501,8 @@ job_desc_msg_create_from_opts (char *script)
 
 		if (opt.overcommit)
 			putenv("SLURM_OVERCOMMIT=1");
+		xstrfmtcat(buf, "SLURM_NPROCS=%d", opt.nprocs);
+		putenv(buf);
 
 		j->environment = environ;
 		j->env_size = envcount (environ);
