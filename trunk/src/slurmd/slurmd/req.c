@@ -958,7 +958,8 @@ static void
 _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-
+	
+	forward_wait(msg);
 	if (!_slurm_authorized_user(req_uid))
 		error("Security violation, shutdown RPC from uid %u",
 		      (unsigned int) req_uid);
@@ -966,7 +967,6 @@ _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
 		if (kill(conf->pid, SIGTERM) != 0)
 			error("kill(%u,SIGTERM): %m", conf->pid);
 	}
-	forward_wait(msg);
 	
 	/* Never return a message, slurmctld does not expect one */
 }
