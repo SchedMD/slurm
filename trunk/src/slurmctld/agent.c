@@ -845,11 +845,12 @@ static void *_thread_per_group_rpc(void *args)
 	} else {
 	send_node_again:
 		if (slurm_send_only_node_msg(&msg) < 0) {
-			if (!srun_agent)
-				_comm_err(thread_ptr->node_name);
+			if(!tmp_ret_list)
+				tmp_ret_list = list_create(destroy_ret_types);
+			
 			fwd_msg.header.srun_node_id = msg.srun_node_id;
 			fwd_msg.header.forward = msg.forward;
-			fwd_msg.ret_list = NULL;
+			fwd_msg.ret_list = tmp_ret_list;
 			strncpy(fwd_msg.node_name,
 				thread_ptr->node_name,
 				MAX_SLURM_NAME);
@@ -864,6 +865,11 @@ static void *_thread_per_group_rpc(void *args)
 				goto send_node_again;
 			}
 		} 
+
+		if(!tmp_ret_list) {
+			thread_state = DSH_DONE;
+			goto cleanup;
+		}
 	}
 	
 	if(tmp_ret_list) {
@@ -874,7 +880,7 @@ static void *_thread_per_group_rpc(void *args)
 				list_push(ret_list, ret_type);
 			list_destroy(tmp_ret_list);
 		}
-	}
+	} 
 	
 	//info("got %d states back from the send", list_count(ret_list));
 	found = 0;
