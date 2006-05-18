@@ -464,9 +464,25 @@ int reattach()
 		exit(1);
 	}
 
-	if (io_thr_create(job) < 0) {
-		error("Unable to create IO thread: %m");
-		exit(1);
+	{
+		int siglen;
+		char *sig;
+		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
+		    < 0) {
+			job_fatal(job, "Couldn't get cred signature");
+		}
+		
+		/* FIXME - need to use the correct fds and taskids */
+		job->client_io = client_io_handler_create(
+			0, 1, 2, -1, -1, -1,
+			job->step_layout->num_tasks,
+			job->step_layout->num_hosts,
+			job->step_layout->hostids,
+			sig, siglen,
+			opt.labelio);
+		if (!job->client_io
+		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
+			job_fatal(job, "failed to start IO handler");
 	}
 
 	if (opt.join && sig_thr_create(job) < 0) {

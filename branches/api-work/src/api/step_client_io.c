@@ -71,7 +71,9 @@ struct io_buf {
 };
 
 static struct io_buf *_alloc_io_buf(void);
+#if 0
 static void     _free_io_buf(struct io_buf *buf);
+#endif
 static void	_init_stdio_eio_objs(int infd, int intaskid,
 				     int outfd, int outtaskid,
 				     int errfd, int errtaskid,
@@ -990,6 +992,7 @@ _alloc_io_buf(void)
 	return buf;
 }
 
+#if 0
 static void
 _free_io_buf(struct io_buf *buf)
 {
@@ -999,6 +1002,7 @@ _free_io_buf(struct io_buf *buf)
 		xfree(buf);
 	}
 }
+#endif
 
 static void
 _init_stdio_eio_objs(int infd, int intaskid, int outfd, int outtaskid,
