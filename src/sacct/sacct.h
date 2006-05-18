@@ -77,7 +77,7 @@
 /* Fields common to all records */
 enum {	F_JOB =	0,
 	F_PARTITION,	
-	F_JOB_START,	
+	F_JOB_SUBMIT,	
 	F_TIMESTAMP,	
 	F_UID,	
 	F_GID,	
@@ -168,7 +168,7 @@ typedef struct header {
 	uint32_t jobnum;
 	char	*partition;
 	char	*blockid;
-	time_t 	job_start;
+	time_t 	job_submit;
 	time_t	timestamp;
 	uint32_t uid;
 	uint32_t gid;
@@ -191,6 +191,7 @@ typedef struct job_rec {
 	int32_t	status;
 	int32_t	exitcode;
 	uint32_t elapsed;
+	time_t end;
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	struct rusage rusage;
@@ -208,6 +209,7 @@ typedef struct step_rec {
 	uint32_t	ntasks; 
 	uint32_t        ncpus;
 	uint32_t	elapsed;
+	time_t          end;
 	uint32_t	tot_cpu_sec;
 	uint32_t        tot_cpu_usec;
 	struct rusage rusage;
@@ -300,7 +302,9 @@ void print_blockid(type_t type, void *object);
 void print_pages(type_t type, void *object);
 void print_rss(type_t type, void *object);
 void print_status(type_t type, void *object);
-void print_submitted(type_t type, void *object);
+void print_submit(type_t type, void *object);
+void print_start(type_t type, void *object);
+void print_end(type_t type, void *object);
 void print_systemcpu(type_t type, void *object);
 void print_uid(type_t type, void *object);
 void print_user(type_t type, void *object);

@@ -27,6 +27,7 @@
 \*****************************************************************************/
 
 #include "sacct.h"
+#include "src/common/parse_time.h"
 #define FORMAT_STRING_SIZE 32
 
 char *_decode_status(int status);
@@ -786,23 +787,86 @@ void print_status(type_t type, void *object)
 	} 
 }
 
-void print_submitted(type_t type, void *object)
+void print_submit(type_t type, void *object)
 { 
 	job_rec_t *job = (job_rec_t *)object;
 	step_rec_t *step = (step_rec_t *)object;
-
+	char time_str[32];
+		
 	switch(type) {
 	case HEADLINE:
-		printf("%-14s", "Submitted");
+		printf("%-14s", "Submit Time");
 		break;
 	case UNDERSCORE:
 		printf("%-14s", "--------------");
 		break;
 	case JOB:
-		printf("%-14d", (int)job->header.job_start);
+		slurm_make_time_str(&job->header.job_submit, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
 		break;
 	case JOBSTEP:
-		printf("%-14d", (int)step->header.job_start);
+		slurm_make_time_str(&step->header.timestamp, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
+		break;
+	} 
+}
+
+void print_start(type_t type, void *object)
+{ 
+	job_rec_t *job = (job_rec_t *)object;
+	step_rec_t *step = (step_rec_t *)object;
+	char time_str[32];
+	
+	switch(type) {
+	case HEADLINE:
+		printf("%-14s", "Start Time");
+		break;
+	case UNDERSCORE:
+		printf("%-14s", "--------------");
+		break;
+	case JOB:
+		slurm_make_time_str(&job->header.timestamp, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
+		break;
+	case JOBSTEP:
+		slurm_make_time_str(&step->header.timestamp, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
+		break;
+	} 
+}
+
+void print_end(type_t type, void *object)
+{ 
+	job_rec_t *job = (job_rec_t *)object;
+	step_rec_t *step = (step_rec_t *)object;
+	char time_str[32];
+	
+	switch(type) {
+	case HEADLINE:
+		printf("%-14s", "End Time");
+		break;
+	case UNDERSCORE:
+		printf("%-14s", "--------------");
+		break;
+	case JOB:
+		slurm_make_time_str(&job->end, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
+		break;
+	case JOBSTEP:
+		slurm_make_time_str(&step->end, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
 		break;
 	} 
 }
