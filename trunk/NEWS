@@ -3,7 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.0-pre9
 =============================
- -- Fix bug that could temporariy make nodes DOWN when they are really 
+ -- Fix bug that could temporarily make nodes DOWN when they are really 
     responding. 
  -- Fix bug preventing backup slurmctld from responding to PING RPCs.
  -- Set "CFLAGS=-DISO8601" before configuration to get ISO8601 format 
