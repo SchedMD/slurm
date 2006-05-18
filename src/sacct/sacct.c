@@ -140,7 +140,8 @@ void _print_header(void);
  */
 sacct_parameters_t params;
 fields_t fields[] = {{"cpu", print_cpu}, 
-		     {"elapsed", print_elapsed}, 
+		     {"elapsed", print_elapsed},
+		     {"end", print_end}, 
 		     {"exitcode", print_exitcode}, 
 		     {"gid", print_gid}, 
 		     {"group", print_group}, 
@@ -171,7 +172,6 @@ fields_t fields[] = {{"cpu", print_cpu},
 		     {"status", print_status}, 
 		     {"submit", print_submit}, 
 		     {"start", print_start}, 
-		     {"end", print_end}, 
 		     {"systemcpu", print_systemcpu}, 
 		     {"uid", print_uid}, 
 		     {"user", print_user}, 
