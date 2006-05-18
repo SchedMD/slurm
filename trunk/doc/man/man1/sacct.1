@@ -230,15 +230,16 @@ option.
 .nf 
 .ft 3
 Fields available:
-   cpu         elapsed     exitcode    blockid
-   gid         group       idrss       inblocks
-   isrss       ixrss       job         jobname
-   jobid       majflt      minflt      msgrcv
-   msgsnd      ncpus       nivcsw      nodes
-   ntasks      nsignals    nswap       cputime
-   nvcsw       outblocks   partition   vsize
-   rss         status      submitted   systemcpu
-   uid         user        usercpu      
+cpu         elapsed     exitcode    gid       
+group       idrss       inblocks    isrss     
+ixrss       job         jobname     jobid     
+majflt      minflt      msgrcv      msgsnd    
+ncpus       nivcsw      nodes       nprocs    
+ntasks      nsignals    nswap       nvcsw     
+outblocks   partition   blockid     rss       
+pages       status      submit      start     
+end         systemcpu   uid         user      
+usercpu     vsize       cputime   
 
 .ft 1
 .fi 
@@ -511,7 +512,7 @@ Output can be
 The time and date stamp (in Universal Time Coordinated, UTC) the job was 
 submitted.
 The format of the output is identical to that of the 
-\f3finished\fP 
+\f3end\fP 
 field.
 .TP 
 \f3systemcpu\fP 
@@ -681,7 +682,7 @@ The number of fields in the record (38)
 \f3jobid\fP 
 .TP 
 11
-\f3finished\fP 
+\f3end\fP 
 .TP 
 12
 Completion Status;
@@ -843,7 +844,7 @@ command aggregates the remainder.
 The total elapsed time in seconds for the job.
 .TP 
 11
-\f3finished\fP 
+\f3end\fP 
 .TP 
 12
 Completion Status;

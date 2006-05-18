@@ -41,12 +41,12 @@ job_rec_t *_find_job_record(acct_header_t header)
 
 	while((job = (job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == header.jobnum) {
-			if(job->header.job_start == BATCH_JOB_TIMESTAMP) {
-				job->header.job_start = header.job_start;
+			if(job->header.job_submit == BATCH_JOB_TIMESTAMP) {
+				job->header.job_submit = header.job_submit;
 				break;
 			}
 			
-			if(job->header.job_start == header.job_start)
+			if(job->header.job_submit == header.job_submit)
 				break;
 			else {
 				/* If we're looking for a later
@@ -134,7 +134,7 @@ int _parse_header(char *f[], acct_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
 	header->partition = xstrdup(f[F_PARTITION]);
-	header->job_start = atoi(f[F_JOB_START]);
+	header->job_submit = atoi(f[F_JOB_SUBMIT]);
 	header->timestamp = atoi(f[F_TIMESTAMP]);
 	header->uid = atoi(f[F_UID]);
 	header->gid = atoi(f[F_GID]);
@@ -301,6 +301,7 @@ void process_step(char *f[], int lc, int show_full)
 		memcpy(&step->sacct, &temp->sacct, sizeof(sacct_t));
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
+		step->end = temp->header.timestamp;
 		destroy_step(temp);
 		goto got_step;
 	}
@@ -323,9 +324,8 @@ got_step:
 						   status */
 		if ( job->exitcode == 0 )
 			job->exitcode = step->exitcode;
-		job->header.timestamp = step->header.timestamp;
 		job->status = JOB_RUNNING;
-		job->elapsed = time(NULL) - job->header.timestamp;
+		job->elapsed = step->header.timestamp - job->header.timestamp;
 	}
 	/* now aggregate the aggregatable */
 	job->ncpus = MAX(job->ncpus, step->ncpus);
@@ -379,7 +379,7 @@ void process_suspend(char *f[], int lc, int show_full)
 	if (job->status == JOB_SUSPENDED) 
 		job->elapsed -= temp->elapsed;
 
-	job->header.timestamp = temp->header.timestamp;
+	//job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
 	destroy_job(temp);
 }
@@ -425,7 +425,7 @@ void process_terminated(char *f[], int lc, int show_full)
 	}
 	job->job_terminated_seen = 1;
 	job->elapsed = temp->elapsed;
-	job->header.timestamp = temp->header.timestamp;
+	job->end = temp->header.timestamp;
 	job->status = temp->status;
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;
