@@ -472,6 +472,7 @@ int reattach()
 			job_fatal(job, "Couldn't get cred signature");
 		}
 		
+	        verbose("siglen = %d, SLURM_CRED_SIGLEN = %d", siglen, SLURM_CRED_SIGLEN);
 		/* FIXME - need to use the correct fds and taskids */
 		job->client_io = client_io_handler_create(
 			0, 1, 2, -1, -1, -1,
