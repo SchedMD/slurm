@@ -1139,8 +1139,9 @@ slurm_conf_reinit(char *file_name)
 		/* could check modified time on slurm.conf here */
 		_destroy_slurm_conf();
 	}
-
+	
 	_init_slurm_conf(file_name);
+	
 	conf_initialized = true;
 
 	pthread_mutex_unlock(&conf_lock);

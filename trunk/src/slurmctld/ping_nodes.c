@@ -136,7 +136,7 @@ void ping_nodes (void)
 	agent_arg_t *reg_agent_args;
 	pthread_attr_t reg_attr_agent;
 	pthread_t reg_thread_agent;
-
+	
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
 	ping_agent_args->retry = 0;
@@ -159,7 +159,7 @@ void ping_nodes (void)
 	     (last_ping_time == (time_t) 0) )
 		node_dead_time = (time_t) 0;
 	else
-		node_dead_time = last_ping_time - slurmctld_conf.slurmd_timeout;
+		node_dead_time = last_ping_time-slurmctld_conf.slurmd_timeout;
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 2);
 	last_ping_time  = now;
 
@@ -170,10 +170,11 @@ void ping_nodes (void)
 
 	for (i = 0; i < node_record_count; i++) {
 		struct node_record *node_ptr;
-
+		
 		node_ptr = &node_record_table_ptr[i];
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+		
 		if ((slurmctld_conf.slurmd_timeout == 0)
 		&&  (base_state != NODE_STATE_UNKNOWN))
 			continue;
@@ -218,8 +219,8 @@ void ping_nodes (void)
 				xrealloc ((reg_agent_args->node_names), 
 				          (MAX_SLURM_NAME * reg_buf_rec_size));
 			}
-			reg_agent_args->slurm_addr[reg_agent_args->node_count] = 
-					node_ptr->slurm_addr;
+			reg_agent_args->slurm_addr[reg_agent_args->node_count] 
+				= node_ptr->slurm_addr;
 			pos = MAX_SLURM_NAME * reg_agent_args->node_count;
 			strncpy (&reg_agent_args->node_names[pos],
 			         node_ptr->name, MAX_SLURM_NAME);
@@ -253,7 +254,7 @@ void ping_nodes (void)
 		hostlist_uniq(ping_hostlist);
 		hostlist_ranged_string(ping_hostlist, 
 			sizeof(host_str), host_str);
-		debug2 ("Spawning ping agent for %s", host_str);
+		info("Spawning ping agent for %s", host_str);
 		ping_begin();
 		slurm_attr_init (&ping_attr_agent);
 		if (pthread_attr_setdetachstate (&ping_attr_agent, 

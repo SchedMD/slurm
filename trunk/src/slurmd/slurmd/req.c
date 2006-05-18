@@ -287,6 +287,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 				      "NodeName %s", parent_alias);
 				/* parent_rank = -1; */
 			}
+			free(parent_alias);
 		}
 #else
 		/* In FRONT_END mode, one slurmd pretends to be all
@@ -949,7 +950,7 @@ _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr)
 		      (unsigned int) req_uid);
 	else
 		kill(conf->pid, SIGHUP);
-
+	forward_wait(msg);
 	/* Never return a message, slurmctld does not expect one */
 }
 
@@ -965,7 +966,8 @@ _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
 		if (kill(conf->pid, SIGTERM) != 0)
 			error("kill(%u,SIGTERM): %m", conf->pid);
 	}
-
+	forward_wait(msg);
+	
 	/* Never return a message, slurmctld does not expect one */
 }
 

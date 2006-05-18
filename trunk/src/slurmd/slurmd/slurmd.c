@@ -524,10 +524,9 @@ _read_config()
 {
         char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
-
 	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
-
+	
 	slurm_mutex_lock(&conf->config_mutex);
 
 	if (conf->conffile == NULL)
@@ -591,14 +590,13 @@ static void
 _reconfigure(void)
 {
 	slurm_ctl_conf_t *cf;
-
+	
 	_reconfig = 0;
-
 	_read_config();
-
+	
 	_update_logging();
 	_print_conf();
-
+	
 	/*
 	 * Make best effort at changing to new public key
 	 */
@@ -961,8 +959,9 @@ _term_handler(int signum)
 static void 
 _hup_handler(int signum)
 {
-	if (signum == SIGHUP)
+	if (signum == SIGHUP) {
 		_reconfig = 1;
+	}
 }
 
 

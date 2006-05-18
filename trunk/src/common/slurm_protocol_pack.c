@@ -335,7 +335,8 @@ unpack_header(header_t * header, Buf buffer)
 
 	forward_init(&header->forward, NULL);
 	header->ret_list = NULL;
-
+	/* There is no forward_struct_init here so no need to init */
+	
 	safe_unpack16(&header->version, buffer);
 	safe_unpack16(&header->flags, buffer);
 	safe_unpack16(&uint16_tmp, buffer);
