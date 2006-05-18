@@ -1100,6 +1100,9 @@ void do_dump(void)
 				step->exitcode=1;
 			}
 			_dump_header(step->header);
+			if(step->end == 0)
+				step->end = job->end;
+				
 			gmtime_r(&step->end, &ts);
 			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
 			       step->stepnum,
@@ -1746,6 +1749,8 @@ void do_list(void)
 					if(!selected_status[step->status])
 						continue;
 				}
+				if(step->end == 0)
+					step->end = job->end;
 				print_fields(JOBSTEP, step);
 			} 
 			list_iterator_destroy(itr_step);

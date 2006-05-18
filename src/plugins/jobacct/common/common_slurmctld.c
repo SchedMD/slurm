@@ -87,7 +87,10 @@ static int _print_record(struct job_record *job_ptr,
 { 
 	static int   rc=SLURM_SUCCESS;
 	char *block_id = NULL;
-
+	if(!job_ptr->details) {
+		error("job_acct: job=%u doesn't exist", job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 	debug2("_print_record, job=%u, \"%s\"",
 	       job_ptr->job_id, data);
 #ifdef HAVE_BG
@@ -104,7 +107,7 @@ static int _print_record(struct job_record *job_ptr,
 	if (fprintf(LOGFILE,
 		    "%u %s %u %u %d %d %s - %s\n",
 		    job_ptr->job_id, job_ptr->partition,
-		    (int)job_ptr->start_time, (int)time, 
+		    (int)job_ptr->details->submit_time, (int)time, 
 		    job_ptr->user_id, job_ptr->group_id, block_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
