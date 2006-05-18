@@ -362,8 +362,6 @@ int decode_status_char(char *status)
 		return JOB_TIMEOUT;
 	else if (!strcasecmp(status, "nf"))
 		return JOB_NODE_FAIL;
-	else if (!strcasecmp(status, "je"))
-		return JOB_END;
 	else
 		return -1; // unknown
 } 
@@ -387,8 +385,6 @@ char *decode_status_int(int status)
 		return "TIMEOUT";
 	case JOB_NODE_FAIL:
 		return "NODE_FAILED";
-	case JOB_END:
-		return "JOB_END";
 	default:
 		return "UNKNOWN";
 	}
