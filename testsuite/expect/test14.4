@@ -53,17 +53,20 @@ if {[test_front_end] != 0} {
 # Delete left-over stdout/err files
 # Build input script file that broacasts a file
 #
+set pid         [pid]
+set file1       "/tmp/test.$pid.1.$test_id"
+set file2       "/tmp/test.$pid.2.$test_id"
 exec $bin_rm -f $file_out $file_err
 make_bash_script $file_in "
-  $srun $bin_touch /tmp/test1.$test_id
-  $sbcast $sbcast /tmp/test1.$test_id
-  $srun $bin_diff $sbcast /tmp/test1.$test_id
-  $srun $bin_rm -f /tmp/test1.$test_id
+  $srun $bin_touch $file1
+  $sbcast $sbcast $file1
+  $srun $bin_diff $sbcast $file1
+  $srun $bin_rm -f $file1
 
-  $srun $bin_touch /tmp/test2.$test_id
-  $sbcast $sbcast --force /tmp/test2.$test_id
-  $srun $bin_diff $sbcast /tmp/test2.$test_id
-  $srun $bin_rm -f /tmp/test2.$test_id
+  $srun $bin_touch $file2
+  $sbcast $sbcast --force $file2
+  $srun $bin_diff $sbcast $file2
+  $srun $bin_rm -f $file2
 "
 
 #
@@ -104,11 +107,11 @@ set differ_found 0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "/tmp/test1.$test_id differ" {
+		-re "$file1 differ" {
 			set differ_found 1
 			exp_continue
 		}
-		-re "/tmp/test2.$test_id differ" {
+		-re "$file2 differ" {
 			send_user "\nFAILURE: sbcast failed to overwrite file with --force option\n"
 			set exit_code 1
 			exp_continue
