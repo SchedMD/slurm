@@ -78,6 +78,24 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		       header_t *header);
 
 /*
+ * forward_msg_to_next- logic to change the address and forward structure of a
+ *                      message to the next one in the queue and mark the  
+ *                      current node as having an error adding it to the return
+ *                      list of the fwd_msg.
+ *
+ * IN: fwd_msg        - forward_msg_t *      - holds information about message
+ *                                             and the childern it was suppose 
+ *                                             to forward to
+ * IN: err            - int                  - error message from attempt
+ *
+ * RET: 0/1           - int                  - if 1 more to forward to 0 if 
+ *                                             no one left to forward to.
+ * you need to slurm_mutex_lock(fwd_msg->forward_mutex);
+ * before coming in here
+ */
+extern int forward_msg_to_next(forward_msg_t *fwd_msg, int err);
+
+/*
  * forward_set     - divide a mesage up into components for forwarding
  * IN: forward     - forward_t *   - struct to store forward info
  * IN: span        - int           - count of forwards to do
@@ -210,6 +228,9 @@ extern int forward_set_launch (forward_t *forward,
 			       slurm_addr *slurmd_addr,
 			       hostlist_iterator_t itr,
 			       int32_t timeout);
+
+
+extern void forward_wait(slurm_msg_t *msg);
 
 /*
  * no_resp_forward - Used to respond for nodes not able to respond since 

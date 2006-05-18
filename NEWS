@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     times for all SLURM commands. NOTE: This may break Moab, Maui, and/or 
     LSF schedulers.
  -- Fix for srun -n and -O options when paired with -b.
+ -- Added logic for fanout to failover to forward list if main node is 
+    unreachable 
 
 * Changes in SLURM 1.1.0-pre8
 =============================

@@ -43,6 +43,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
@@ -198,19 +199,50 @@ static void * _p_signal_task(void *args)
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
 	char        *host = job->step_layout->host[info->host_inx];
+	char        *tmpchar = NULL;
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
+	List tmp_ret_list = NULL;
+	forward_msg_t fwd_msg;
 
+send_rc_again:
 	debug3("sending signal to host %s", host);
 	
 	if ((ret_list = slurm_send_recv_rc_msg(req, 0)) == NULL) { 
 		errno = SLURM_SOCKET_ERROR;
 		error("%s: signal: %m", host);
-		goto done;
+		if(!tmp_ret_list)
+			tmp_ret_list = list_create(destroy_ret_types);
+		
+		fwd_msg.header.srun_node_id = req->srun_node_id;
+		fwd_msg.header.forward = req->forward;
+		fwd_msg.ret_list = tmp_ret_list;
+		strncpy(fwd_msg.node_name, host, MAX_SLURM_NAME);
+		fwd_msg.forward_mutex = NULL;
+		if(forward_msg_to_next(&fwd_msg, errno)) {
+			req->address = fwd_msg.addr;
+			req->forward = fwd_msg.header.forward;
+			req->srun_node_id = fwd_msg.header.srun_node_id;
+			xfree(tmpchar);
+			tmpchar = xstrdup(fwd_msg.node_name);
+			host = tmpchar;
+			goto send_rc_again;
+		}
 	}
-
+	if(tmp_ret_list) {
+		if(!ret_list)
+			ret_list = tmp_ret_list;
+		else {
+			while((ret_type  = list_pop(tmp_ret_list))) 
+				list_push(ret_list, ret_type);
+			list_destroy(tmp_ret_list);
+		}
+	}
+	xfree(tmpchar);
+	if(!ret_list)
+		goto done;
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		rc = ret_type->msg_rc;
@@ -238,8 +270,7 @@ static void * _p_signal_task(void *args)
 	}
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);
-
-    done:
+done:
 	slurm_mutex_lock(&active_mutex);
 	active--;
 	pthread_cond_signal(&active_cond);

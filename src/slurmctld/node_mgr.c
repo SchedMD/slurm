@@ -815,7 +815,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
-		state_val = update_node_msg -> node_state;
+		state_val = update_node_msg->node_state;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
 		if (node_ptr == NULL) {
@@ -1379,7 +1379,7 @@ void node_did_resp (char *name)
 		_node_did_resp(node_ptr);
 	}
 #else
-	debug3("updating %s",name);
+	debug2("updating %s",name);
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
