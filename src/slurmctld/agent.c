@@ -863,9 +863,7 @@ static void *_thread_per_group_rpc(void *args)
 					MAX_SLURM_NAME);
 				goto send_node_again;
 			}
-		}
-		thread_state = DSH_DONE;
-		goto cleanup;
+		} 
 	}
 	
 	if(tmp_ret_list) {
