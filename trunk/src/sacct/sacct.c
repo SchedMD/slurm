@@ -144,8 +144,8 @@ fields_t fields[] = {{"blockid", print_blockid},
 		     {"cputime", print_cputime}, 
 		     {"elapsed", print_elapsed},
 		     {"end", print_end}, 
-		     {"exitcode", print_exitcode}, 
-		     {"finished", print_end}, //vestigial
+		     {"exitcode", print_exitcode},
+		     {"finished", print_end},		/* Defunct name */ 
 		     {"gid", print_gid}, 
 		     {"group", print_group}, 
 		     {"idrss", print_idrss}, 
@@ -174,7 +174,7 @@ fields_t fields[] = {{"blockid", print_blockid},
 		     {"start", print_start}, 
 		     {"status", print_status}, 
 		     {"submit", print_submit}, 
-		     {"submitted", print_submit},  //vestigial
+		     {"submitted", print_submit},	/* Defunct name */
 		     {"systemcpu", print_systemcpu}, 
 		     {"uid", print_uid}, 
 		     {"user", print_user}, 
