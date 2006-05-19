@@ -79,6 +79,10 @@ typedef struct client_io_fds {
 	} in, out, err;
 } client_io_fds_t;
 
+#define CLIENT_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},\
+                                   {1, (uint32_t)-1, (uint32_t)-1},\
+                                   {2, (uint32_t)-1, (uint32_t)-1}}
+
 client_io_t *
 client_io_handler_create(client_io_fds_t fds,
 			 int num_tasks,

@@ -297,9 +297,7 @@ int srun(int ac, char **av)
 	{
 		int siglen;
 		char *sig;
-		client_io_fds_t fds = {{0, (uint32_t)-1, (uint32_t)-1},
-				       {1, (uint32_t)-1, (uint32_t)-1},
-				       {2, (uint32_t)-1, (uint32_t)-1}};
+		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
 
 		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
 		    < 0) {
