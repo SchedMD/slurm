@@ -467,6 +467,10 @@ int reattach()
 	{
 		int siglen;
 		char *sig;
+		client_io_fds_t fds = {{0, (uint32_t)-1, (uint32_t)-1},
+				       {1, (uint32_t)-1, (uint32_t)-1},
+				       {2, (uint32_t)-1, (uint32_t)-1}};
+
 		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
 		    < 0) {
 			job_fatal(job, "Couldn't get cred signature");
@@ -474,10 +478,9 @@ int reattach()
 		
 		/* FIXME - need to use the correct fds and taskids */
 		job->client_io = client_io_handler_create(
-			0, 1, 2, -1, -1, -1,
+			fds,
 			job->step_layout->num_tasks,
 			job->step_layout->num_hosts,
-			job->step_layout->hostids,
 			sig, SLURM_CRED_SIGLEN,
 			opt.labelio);
 		if (!job->client_io

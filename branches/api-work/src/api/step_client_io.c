@@ -74,9 +74,7 @@ static struct io_buf *_alloc_io_buf(void);
 #if 0
 static void     _free_io_buf(struct io_buf *buf);
 #endif
-static void	_init_stdio_eio_objs(int infd, int intaskid,
-				     int outfd, int outtaskid,
-				     int errfd, int errtaskid,
+static void	_init_stdio_eio_objs(client_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
 static int      _read_io_init_msg(int fd, client_io_t *cio, char *host);
@@ -146,9 +144,10 @@ struct file_write_info {
 	List msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
-	int taskid; /* if greater than -1, only output from this
-		       specific task are written, all other data
-		       is discarded */
+	/* If taskid is (uint32_t)-1, output from all tasks is accepted,
+	   otherwise only output from the specified task is accepted. */
+	uint32_t taskid;
+	uint32_t nodeid;
 	bool eof;
 };
 
@@ -168,6 +167,7 @@ struct file_read_info {
 
 	/* header contains destination of file input */
 	struct slurm_io_header header;
+	uint32_t nodeid;
 
 	bool eof;
 };
@@ -448,7 +448,8 @@ again:
  * File write functions
  **********************************************************************/
 static eio_obj_t *
-create_file_write_eio_obj(int fd, int taskid, client_io_t *cio)
+create_file_write_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
+			  client_io_t *cio)
 {
 	struct file_write_info *info = NULL;
 	eio_obj_t *eio = NULL;
@@ -461,6 +462,7 @@ create_file_write_eio_obj(int fd, int taskid, client_io_t *cio)
 	info->out_remaining = 0;
 	info->eof = false;
 	info->taskid = taskid;
+	info->nodeid = nodeid;
 
 	eio = eio_obj_create(fd, &file_write_ops, (void *)info);
 
@@ -672,7 +674,8 @@ static int _file_write(eio_obj_t *obj, List objs)
  * File read functions
  **********************************************************************/
 static eio_obj_t *
-create_file_read_eio_obj(int fd, int taskid, client_io_t *cio)
+create_file_read_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
+			 client_io_t *cio)
 {
 	struct file_read_info *info = NULL;
 	eio_obj_t *eio = NULL;
@@ -680,13 +683,14 @@ create_file_read_eio_obj(int fd, int taskid, client_io_t *cio)
 	info = (struct file_read_info *)
 		xmalloc(sizeof(struct file_read_info));
 	info->cio = cio;
-	if (taskid > -1) {
-		info->header.type = SLURM_IO_STDIN;
-		info->header.gtaskid = (uint16_t)taskid;
-	} else {
+	if (taskid == (uint32_t)-1) {
 		info->header.type = SLURM_IO_ALLSTDIN;
 		info->header.gtaskid = (uint16_t)-1;
+	} else {
+		info->header.type = SLURM_IO_STDIN;
+		info->header.gtaskid = (uint16_t)taskid;
 	}
+	info->nodeid = nodeid;
 	/* FIXME!  Need to set ltaskid based on gtaskid */
 	info->header.ltaskid = (uint16_t)-1;
 	info->eof = false;
@@ -797,7 +801,7 @@ again:
 		struct server_io_info *server;
 		debug("SLURM_IO_STDIN");
 		msg->ref_count = 1;
-		nodeid = info->cio->nodeids[header.gtaskid];
+		nodeid = info->nodeid;
 		debug3("  taskid %d maps to nodeid %ud", header.gtaskid, nodeid);
 		server = info->cio->ioserver[nodeid]->arg;
 		list_enqueue(server->msg_queue, msg);
@@ -1005,31 +1009,25 @@ _free_io_buf(struct io_buf *buf)
 #endif
 
 static void
-_init_stdio_eio_objs(int infd, int intaskid, int outfd, int outtaskid,
-		     int errfd, int errtaskid, client_io_t *cio)
+_init_stdio_eio_objs(client_io_fds_t fds, client_io_t *cio)
 {
 	/*
 	 * build stdin eio_obj_t
 	 */
-	if (infd > -1) {
-		uint16_t type;
-		fd_set_nonblocking(infd);
-		fd_set_close_on_exec(infd);
-		if (intaskid > -1) {
-			type = SLURM_IO_ALLSTDIN;
-		} else {
-			type = SLURM_IO_STDIN;
-		}
-		cio->stdin_obj = create_file_read_eio_obj(infd, intaskid, cio);
+	if (fds.in.fd > -1) {
+		fd_set_nonblocking(fds.in.fd);
+		fd_set_close_on_exec(fds.in.fd);
+		cio->stdin_obj = create_file_read_eio_obj(
+			fds.in.fd, fds.in.taskid, fds.in.nodeid, cio);
 		eio_new_initial_obj(cio->eio, cio->stdin_obj);
 	}
 
 	/*
 	 * build stdout eio_obj_t
 	 */
-	if (outfd > -1) {
+	if (fds.out.fd > -1) {
 		cio->stdout_obj = create_file_write_eio_obj(
-			outfd, outtaskid, cio);
+			fds.out.fd, fds.out.taskid, fds.out.nodeid, cio);
 		eio_new_initial_obj(cio->eio, cio->stdout_obj);
 	}
 
@@ -1037,15 +1035,17 @@ _init_stdio_eio_objs(int infd, int intaskid, int outfd, int outtaskid,
 	 * build a seperate stderr eio_obj_t only if stderr is not sharing
 	 * the stdout file descriptor and task filtering option.
 	 */
-	if (errfd != outfd || errtaskid != outtaskid) {
-		if (errfd > -1) {
-			cio->stderr_obj = create_file_write_eio_obj(
-				errfd, errtaskid, cio);
-			eio_new_initial_obj(cio->eio, cio->stderr_obj);
-		}
-	} else {
+	if (fds.err.fd == fds.out.fd
+	    && fds.err.taskid == fds.out.taskid
+	    && fds.err.nodeid == fds.out.nodeid) {
 		debug3("stdout and stderr sharing a file");
 		cio->stderr_obj = cio->stdout_obj;
+	} else {
+		if (fds.err.fd > -1) {
+			cio->stderr_obj = create_file_write_eio_obj(
+				fds.err.fd, fds.err.taskid, fds.err.nodeid, cio);
+			eio_new_initial_obj(cio->eio, cio->stderr_obj);
+		}
 	}
 }
 
@@ -1096,11 +1096,9 @@ _estimate_nports(int nclients, int cli_per_port)
 }
 
 client_io_t *
-client_io_handler_create(int infd, int outfd, int errfd,
-			 int intaskid, int outtaskid, int errtaskid,
+client_io_handler_create(client_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 uint32_t *nodeids,
 			 char *signature,
 			 int signature_len,
 			 bool label)
@@ -1123,12 +1121,9 @@ client_io_handler_create(int infd, int outfd, int errfd,
 		cio->label_width = 0;
 
 	len = sizeof(uint32_t) * num_tasks;
-	cio->nodeids = (uint32_t *)xmalloc(len);
-	memcpy(cio->nodeids, nodeids, len);
 
 	if (signature_len != SLURM_CRED_SIGLEN) {
 		error("signature length does not match SLURM_CRED_SIGLEN");
-		xfree(cio->nodeids);
 		return NULL;
 	}
 	cio->signature = (char *)xmalloc(signature_len);
@@ -1147,8 +1142,7 @@ client_io_handler_create(int infd, int outfd, int errfd,
 	cio->ioserver = (eio_obj_t **)xmalloc(num_nodes*sizeof(eio_obj_t *));
 	cio->ioservers_ready = 0;
 
-	_init_stdio_eio_objs(infd, intaskid, outfd, outtaskid,
-			     errfd, errtaskid, cio);
+	_init_stdio_eio_objs(fds, cio);
 
 	for (i = 0; i < cio->num_listen; i++) {
 		eio_obj_t *obj;
@@ -1221,7 +1215,6 @@ client_io_handler_destroy(client_io_t *cio)
 	/* FIXME - need to make certain that IO engine is shutdown before
 	   freeing anything */
 
-	xfree(cio->nodeids);
 	xfree(cio->signature);
 }
 

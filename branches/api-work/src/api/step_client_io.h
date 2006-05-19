@@ -27,6 +27,8 @@
 #ifndef _HAVE_CLIENT_IO_H
 #define _HAVE_CLIENT_IO_H
 
+#include <stdint.h>
+
 #include "src/common/eio.h"
 #include "src/common/list.h"
 #include "src/common/dist_tasks.h"
@@ -35,13 +37,9 @@ typedef struct client_io {
 	/* input parameters - set (indirectly) by user */
 	int num_tasks;
 	int num_nodes;
-	uint32_t *nodeids;	/* array of node IDs of length num_tasks */
 	bool label;
 	int label_width;
 	char *signature;
-	char *filename_in;
-	char *filename_out;
-	char *filename_err;
 
 	/* internal variables */
 	pthread_t ioid;		/* stdio thread id 		  */
@@ -73,23 +71,23 @@ typedef struct client_io {
 			         */
 } client_io_t;
 
+typedef struct client_io_fds {
+	struct {
+		int fd;
+		uint32_t taskid;
+		uint32_t nodeid;
+	} in, out, err;
+} client_io_fds_t;
+
 client_io_t *
-client_io_handler_create(int infd, int outfd, int errfd,
-			 int intaskid, int outtaskid, int errtaskid,
+client_io_handler_create(client_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 uint32_t *nodeids,
 			 char *signature,
 			 int signature_len,
 			 bool label);
 int client_io_handler_start(client_io_t *cio);
 int client_io_handler_finish(client_io_t *cio);
 void client_io_handler_destroy(client_io_t *cio);
-
-/* int   client_io_node_fail(char *nodelist, slurm_client_io_t *client_io); */
-/* int   client_io_thr_create(slurm_client_io_t *client_io); */
-/* eio_obj_t *create_file_write_eio_obj(int fd, slurm_client_io_t *client_io); */
-/* eio_obj_t *create_file_read_eio_obj(int fd, slurm_client_io_t *client_io, */
-/* 				    uint16_t type, uint16_t gtaskid); */
 
 #endif /* !_HAVE_CLIENT_IO_H */
