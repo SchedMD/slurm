@@ -1973,8 +1973,9 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *   then exit this thread.
 	 */
 	if (_waiter_init(req->job_id) == SLURM_ERROR) {
-		if (msg->conn_fd >= 0)
+		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
+		}
 		return;
 	}
 
@@ -2000,7 +2001,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 		 * If the job step is currently suspended, we don't
 		 * bother with a "nice" termination.
 		 */
-		debug2("Job is currently suspened, terminating");
+		debug2("Job is currently suspended, terminating");
 		nsteps = xcpu_signal(SIGKILL, req->nodes) +
 			_terminate_all_steps(req->job_id, true);
 	} else {
@@ -2017,6 +2018,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 #ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
+		debug4("sent ALREADY_COMPLETE");
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
@@ -2031,6 +2033,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
 	if (msg->conn_fd >= 0) {
+		debug4("sent SUCCESS");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
@@ -2051,7 +2054,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 		 */
 		_pause_for_job_completion (req->job_id, req->nodes, 0);
 	}
-
+			
 	/*
 	 *  Begin expiration period for cached information about job.
 	 *   If expiration period has already begun, then do not run
@@ -2068,6 +2071,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 		&bg_part_id);
 	rc = _run_epilog(req->job_id, req->job_uid, bg_part_id);
 	xfree(bg_part_id);
+	
 	if (rc != 0) {
 		error ("[job %u] epilog failed", req->job_id);
 		rc = ESLURMD_EPILOG_FAILED;

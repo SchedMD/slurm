@@ -1202,9 +1202,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
-			delete_job_details(job_ptr);
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 			job_completion_logger(job_ptr);
+			delete_job_details(job_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -1771,7 +1771,6 @@ void make_node_idle(struct node_record *node_ptr,
 	uint16_t node_flags, base_state;
 
 	xassert(node_ptr);
-
 	if (job_ptr			/* Specific job completed */
 	&&  (job_ptr->job_state & JOB_COMPLETING)	/* Not a replay */
 	&&  (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
