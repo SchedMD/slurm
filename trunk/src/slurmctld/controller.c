@@ -706,7 +706,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	time_t now;
-	int i, ping_interval;
+	int cnt, i, ping_interval;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -844,11 +844,12 @@ static void *_slurmctld_background(void *no_data)
 	}
 
 	for (i=0; i<20; i++) {
-		if (agent_retry(0) == 0)
+		cnt = agent_retry(0);
+		if (cnt == 0)
 			break;
 		usleep(1000);
 	}
-	if (agent_retry(0))
+	if (cnt)
 		error("terminating with %d pending message agent requests", cnt);
 	debug3("_slurmctld_background shutting down");
 
