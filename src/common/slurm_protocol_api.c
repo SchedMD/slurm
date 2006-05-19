@@ -1559,10 +1559,14 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup("localhost");
 	ret_data_info->data = NULL;
-
+	debug3("got reply for %s rc %d %d", 
+	       ret_data_info->node_name, 
+	       msg_rc, 
+	       errno);
+	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
-		if(ret_type->err == err) {
+		if(ret_type->msg_rc == msg_rc) {
 			list_push(ret_type->ret_data_list, ret_data_info);
 			set = 1;
 			break;

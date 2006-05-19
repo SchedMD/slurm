@@ -177,6 +177,8 @@ start_again:
 		ret_data_info->data = msg.data;
 		g_slurm_auth_destroy(msg.auth_cred);
 	}
+	debug3("got reply for %s rc %d", 
+	       ret_data_info->node_name, type->msg_rc);
 	slurm_mutex_lock(fwd_msg->forward_mutex);
 	while((returned_type = list_pop(ret_list)) != NULL) {
 		itr = list_iterator_create(fwd_msg->ret_list);	
@@ -270,7 +272,7 @@ int _destroy_data_info_data(uint32_t type, ret_data_info_t *ret_data_info)
 	case REQUEST_OLD_JOB_RESOURCE_ALLOCATION:
 		slurm_free_old_job_alloc_msg(ret_data_info->data);
 		break;
-	case 0:		
+	case SLURM_SUCCESS:		
 	case REQUEST_PING:		
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:

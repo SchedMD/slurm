@@ -505,7 +505,7 @@ static void *_wdog(void *args)
 	if (srun_agent) {
 	        _notify_slurmctld_jobs(agent_ptr);
 	} else {
-	        _notify_slurmctld_nodes(agent_ptr, 
+		_notify_slurmctld_nodes(agent_ptr, 
 					thd_comp.no_resp_cnt, 
 					thd_comp.retry_cnt);
 	}
@@ -557,6 +557,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	if  (thread_ptr[0].state == DSH_DONE) {
 		srun_response(job_id, step_id);
 	}
+
 	unlock_slurmctld(job_write_lock);
 #else
 	fatal("Code development needed here if agent is not thread");
@@ -914,6 +915,7 @@ static void *_thread_per_group_rpc(void *args)
 				kill_job = (kill_job_msg_t *) 
 					task_ptr->msg_args_ptr;
 				rc = SLURM_SUCCESS;
+				
 				lock_slurmctld(job_write_lock);
 				if (job_epilog_complete(kill_job->job_id, 
 							ret_data_info->
@@ -1266,6 +1268,10 @@ void agent_purge(void)
 		mail_list = NULL;
 		slurm_mutex_unlock(&mail_mutex);
 	}
+}
+extern int get_agent_count(void)
+{
+	return agent_cnt;
 }
 
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)

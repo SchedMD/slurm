@@ -843,14 +843,21 @@ static void *_slurmctld_background(void *no_data)
 			info("_slurmctld_background loop %s", TIME_STR);
 	}
 
-	for (i=0; i<20; i++) {
-		cnt = agent_retry(0);
+	/*
+	  if using hierarchical fanout we need to make sure all the messages
+	  were completely sent to the nodes.  If there are down nodes that are 
+	  the main one send out we need to wait for the timeout of the bad 
+	  nodes until we find one that can be sent to
+	*/
+	for (i=0; i<30; i++) {
+		cnt = get_agent_count();
 		if (cnt == 0)
 			break;
-		usleep(1000);
+		sleep(1);
 	}
 	if (cnt)
-		error("terminating with %d pending message agent requests", cnt);
+		error("terminating with %d running message agent requests", 
+		      cnt);
 	debug3("_slurmctld_background shutting down");
 
 	return NULL;
