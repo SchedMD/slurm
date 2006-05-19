@@ -1857,4 +1857,5 @@ void node_fini(void)
 
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
+	node_record_count = 0;
 }
