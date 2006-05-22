@@ -69,7 +69,7 @@
 const char plugin_name[] = "Job accounting AIX plugin";
 const char plugin_type[] = "jobacct/aix";
 const uint32_t plugin_version = 100;
-
+	
 /* Other useful declarations */
 #ifdef HAVE_AIX
 typedef struct prec {	/* process record */
@@ -83,6 +83,7 @@ typedef struct prec {	/* process record */
 } prec_t;
 
 static int freq = 0;
+static int pagesize = 0;
 /* Finally, pre-define all the routines. */
 
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
@@ -227,6 +228,7 @@ int jobacct_p_startpoll(int frequency)
 	}
 
 	freq = frequency;
+	pagesize = getpagesize()/1024;
 	task_list = list_create(common_free_jobacct);
 	
 	/* create polling thread */
@@ -367,13 +369,13 @@ static void _get_process_data()
 		prec->ssec = proc.pi_ru.ru_stime.tv_sec +
 			proc.pi_ru.ru_stime.tv_usec * 1e-6;
 		prec->pages = proc.pi_majflt;
-		prec->rss = (proc.pi_trss + proc.pi_drss) * 4;
+		prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
 		//prec->rss *= 1024;
 		prec->vsize = (proc.pi_tsize / 1024);
-		prec->vsize += (proc.pi_dvm * 4);
+		prec->vsize += (proc.pi_dvm * pagesize);
 		//prec->vsize *= 1024;
-		/*  debug("vsize = %f = %d/1024+%d",  */
-/*  		      prec->vsize, proc.pi_tsize, proc.pi_dvm * 4); */
+		/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
+/*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
 	}
 	if(!list_count(prec_list))
 		goto finished;

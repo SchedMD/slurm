@@ -150,6 +150,7 @@ extern int slurm_conf_init(char *file_name);
  */
 extern int slurm_conf_reinit(char *file_name);
 
+extern void slurm_conf_mutex_init(void);
 /*
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
