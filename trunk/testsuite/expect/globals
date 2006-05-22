@@ -1,4 +1,4 @@
-#!/usr/local/bin/expect
+#!/usr/bin/expect
 ############################################################################
 # Purpose: Establish global state information for SLURM test suite
 #
