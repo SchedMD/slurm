@@ -1464,6 +1464,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	bool super_user;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1471,9 +1472,16 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+	super_user = ((uid == 0) || (uid == getuid()));
+	if ((job_ptr->user_id != uid) && (!super_user)) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
 		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+	if ((!super_user) && job_ptr->part_ptr
+	&&  (job_ptr->part_ptr->root_only)) {
+		info("Attempt to cancel job in RootOnly partition from uid %d",
+			uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
