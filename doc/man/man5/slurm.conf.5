@@ -226,15 +226,13 @@ environment variable.
 The default value is "/usr/local/lib/slurm".
 .TP
 \fBPlugStackConfig\fR
-Location of the config file for SLURM stackable plugins that
-use the Stackable Plugin Architecture for Node job Kontrol
-(SPANK).
-This provides support for a highly configurable set of plugins 
-to be called before and/or after execution of each task 
-spawned as part of a user's job step. 
-More detailed documentation will be provided soon. 
-Default location is "plugstack.conf" in the same directory 
-as the system slurm.conf.
+Location of the config file for SLURM stackable plugins that use
+the Stackable Plugin Architecture for Node job (K)control (SPANK).
+This provides support for a highly configurable set of plugins to
+be called before and/or after execution of each task spawned as
+part of a user's job step.  Default location is "plugstack.conf"
+in the same directory as the system slurm.conf. For more information
+on SPANK plugins, see the \fBspank\fR(8) manual.
 .TP
 \fBProctrackType\fR
 Identifies the plugin to be used for process tracking. 
@@ -974,5 +972,5 @@ details.
 .SH "SEE ALSO"
 .LP
 \fBgethostbyname\fR(3), \fBgroup\fR(5), \fBhostname\fR(1), 
-\fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8),
+\fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), \fBspank(8)\fR,
 \fBsyslog\fR(2)
