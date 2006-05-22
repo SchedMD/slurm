@@ -706,7 +706,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	time_t now;
-	int cnt, i, ping_interval;
+	int ping_interval;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -843,21 +843,6 @@ static void *_slurmctld_background(void *no_data)
 			info("_slurmctld_background loop %s", TIME_STR);
 	}
 
-	/*
-	  if using hierarchical fanout we need to make sure all the messages
-	  were completely sent to the nodes.  If there are down nodes that are 
-	  the main one send out we need to wait for the timeout of the bad 
-	  nodes until we find one that can be sent to
-	*/
-	for (i=0; i<30; i++) {
-		cnt = get_agent_count();
-		if (cnt == 0)
-			break;
-		sleep(1);
-	}
-	if (cnt)
-		error("terminating with %d running message agent requests", 
-		      cnt);
 	debug3("_slurmctld_background shutting down");
 
 	return NULL;

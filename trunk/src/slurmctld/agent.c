@@ -346,7 +346,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	int i;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
-	int *span = set_span(agent_arg_ptr->node_count, 0);
+	int *span = NULL;
 	int thr_count = 0;
        	forward_t forward;
 
@@ -363,9 +363,13 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	
 	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
-	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
+	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)) {
 		agent_info_ptr->get_reply = true;
-
+		span = set_span(agent_arg_ptr->node_count, 0);
+	} else {
+		span = set_span(agent_arg_ptr->node_count, 
+				agent_arg_ptr->node_count);
+	}
 	forward_init(&forward, NULL);
 	forward.cnt = agent_info_ptr->thread_count;
 	forward.name = agent_arg_ptr->node_names;
