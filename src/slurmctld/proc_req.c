@@ -1415,7 +1415,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 			slurmctld_shutdown();
 		}
 	}
-	info("thread count is %d", slurmctld_config.server_thread_count);
+	
 	if (msg->msg_type == REQUEST_CONTROL) {
 		/* Wait for workload to dry up before sending reply.
 		 * One thread should remain, this one. */
@@ -1429,7 +1429,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 				slurmctld_config.server_thread_count);
 		/* save_all_state();	performed by _slurmctld_background */
 	}
-	info("thread count is %d", slurmctld_config.server_thread_count);
+	
 	
 	slurm_send_rc_msg(msg, error_code);
 	if ((error_code == SLURM_SUCCESS) && core_arg &&
