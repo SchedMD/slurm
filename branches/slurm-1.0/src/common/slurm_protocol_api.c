@@ -76,6 +76,10 @@ static void _remap_slurmctld_errno(void);
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
+void slurm_conf_mutex_init()
+{
+	pthread_mutex_init(&config_lock, NULL); 
+}
 /* slurm_set_api_config
  * sets the slurm_protocol_config object
  * NOT THREAD SAFE

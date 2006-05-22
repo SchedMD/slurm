@@ -62,6 +62,10 @@ enum controller_id {
 /**********************************************************************\
  * protocol configuration functions                
 \**********************************************************************/
+/* slurm_conf_mutex_init
+ * inits the mutex protecting the conf pointer
+ */
+void slurm_conf_mutex_init();
 
 /* slurm_set_api_config
  * sets the slurm_protocol_config object
