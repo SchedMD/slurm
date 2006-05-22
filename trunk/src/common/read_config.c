@@ -1149,6 +1149,12 @@ slurm_conf_reinit(char *file_name)
 
 }
 
+extern void
+slurm_conf_mutex_init(void)
+{
+	pthread_mutex_init(&conf_lock, NULL);
+}
+
 extern int
 slurm_conf_destroy(void)
 {

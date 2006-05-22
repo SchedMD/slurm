@@ -1075,7 +1075,6 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 			num_tasks++;
 		}
 	}
-	debug3("got %d");
 	jobacct_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 	safe_write(fd, &num_tasks, sizeof(int));
 	jobacct_g_free(jobacct);

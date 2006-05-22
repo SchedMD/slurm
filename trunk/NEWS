@@ -13,7 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Added logic for fanout to failover to forward list if main node is 
     unreachable 
  -- sacct also now keeps track of submitted, started and ending times of jobs
-
+ -- reinit config file mutex at beginning of slurmstepd to avoid fork issues
+ 
 * Changes in SLURM 1.1.0-pre8
 =============================
  -- Fix bug in enforcement of partition's MaxNodes limit.
