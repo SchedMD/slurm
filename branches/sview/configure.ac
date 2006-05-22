@@ -116,6 +116,9 @@ X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
 AC_SUBST(HAVE_SOME_CURSES)
 
+X_AC_GTK
+AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
+
 dnl checks for system services.
 dnl
 
@@ -221,6 +224,7 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 src/smap/Makefile
+		 src/sview/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
