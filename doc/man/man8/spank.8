@@ -1,4 +1,4 @@
-.TH "SPANK" "5" "May 2006" "SPANK" "SLURM plug-in architecture for Node and job (K)control"
+.TH "SPANK" "8" "May 2006" "SPANK" "SLURM plug-in architecture for Node and job (K)control"
 .SH "NAME"
 \fBSPANK\fR \- SLURM Plug-in Architecture for Node and job (K)control 
 .SH "DESCRIPTION"
@@ -53,7 +53,7 @@ SLURM when the plugin calls functions like \fBspank_get_item\fR and
 below) are passed in the argument vector \fBargv\fR with argument
 count \fBac\fR.
 .LP
-\fBSPANK\fR plugins do not have direct access to internally definied SLURM 
+\fBSPANK\fR plugins do not have direct access to internally defined SLURM 
 data structures. Instead, information about the currently executing
 job is obtained via the \fBspank_get_item\fR function call.
 .nf
@@ -208,7 +208,7 @@ int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
 .fi
 
 .SH "COPYING"
-Copyright (C) 2002-2006 The Regents of the University of California.
+Copyright (C) 2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL-CODE-217948.
 .LP
