@@ -469,7 +469,7 @@ _pid_info(pid_t job_pid)
 		return;
 	}
 	for (i=0; i<10000; i++)
-		rem_time = slurm_get_rem_time(0);
+		rem_time = slurm_get_rem_time(job_id);
 
 	printf("Slurm job id %u ends at %s\n", job_id, ctime(&end_time));
 	printf("slurm_get_rem_time is %ld\n", rem_time);
