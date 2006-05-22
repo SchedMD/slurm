@@ -20,9 +20,8 @@ force:
 $(sview_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) 
+sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(GTK2_LIBS)
 sview_CFLAGS = $(GTK2_CFLAGS)
-#sview_LIBS = $(GTK2_LIBS)
 
 else
 

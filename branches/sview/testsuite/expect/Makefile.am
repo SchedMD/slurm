@@ -10,7 +10,7 @@ EXTRA_DIST = \
 	mpi-testscripts/barrier_timed.c	\
 	mpi-testscripts/Makefile	\
 	mpi-testscripts/script.slurm.sh	\
-	globals.example				\
+	globals				\
 	pkill				\
 	README				\
 	regression			\
