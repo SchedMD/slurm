@@ -85,7 +85,8 @@ man5_MANS = man5/bluegene.conf.5 \
 	man5/slurm.conf.5
 
 man8_MANS = man8/slurmctld.8 \
-	man8/slurmd.8
+	man8/slurmd.8 \
+	man8/spank.8
 
 dist-hook:
 	-rm -rf `find $(distdir) -name CVS`
