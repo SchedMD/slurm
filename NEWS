@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     that have a gid of that which we are looking for.
  -- Fix bug in InactiveLimit support that can potentially purge active jobs.
     NOTE: This is highly unlikely except on very large AIX clusters.
+ -- Fix bug for reiniting the config_lock around the control_file in 
+    slurm_protocol_api.c logic has changed in 1.1 so no need to merge
  
 * Changes in SLURM 1.0.12
 =========================
