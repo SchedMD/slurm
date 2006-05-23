@@ -39,7 +39,7 @@ typedef struct client_io {
 	int num_nodes;
 	bool label;
 	int label_width;
-	char *signature;
+	char *io_key;
 
 	/* internal variables */
 	pthread_t ioid;		/* stdio thread id 		  */
@@ -87,8 +87,7 @@ client_io_t *
 client_io_handler_create(client_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 char *signature,
-			 int signature_len,
+			 char *io_key,
 			 bool label);
 int client_io_handler_start(client_io_t *cio);
 int client_io_handler_finish(client_io_t *cio);

@@ -1453,7 +1453,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 * this to prove its identity when it connects back to srun.
 	 */
 	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
-	xassert(len == SLURM_CRED_SIGLEN);
+	xassert(len == SLURM_IO_KEY_SIZE);
 
 	resp->gtids = NULL;
 	resp->local_pids = NULL;

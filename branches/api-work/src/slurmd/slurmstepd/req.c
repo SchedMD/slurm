@@ -774,13 +774,13 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 
 	srun       = xmalloc(sizeof(srun_info_t));
-	srun->key  = (srun_key_t *)xmalloc(SLURM_CRED_SIGLEN);
+	srun->key  = (srun_key_t *)xmalloc(SLURM_IO_KEY_SIZE);
 
 	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr) = %d",
 	      sizeof(srun_info_t), sizeof(slurm_addr));
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr));
-	safe_read(fd, srun->key, SLURM_CRED_SIGLEN);
+	safe_read(fd, srun->key, SLURM_IO_KEY_SIZE);
 
 	/*
 	 * Check if jobstep is actually running.

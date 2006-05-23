@@ -469,6 +469,8 @@ int reattach()
 		char *sig;
 		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
 
+		srun_set_stdio_fds(job, &fds);
+
 		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
 		    < 0) {
 			job_fatal(job, "Couldn't get cred signature");
@@ -479,7 +481,7 @@ int reattach()
 			fds,
 			job->step_layout->num_tasks,
 			job->step_layout->num_hosts,
-			sig, SLURM_CRED_SIGLEN,
+			sig,
 			opt.labelio);
 		if (!job->client_io
 		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)

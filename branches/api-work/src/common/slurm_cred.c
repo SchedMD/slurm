@@ -53,6 +53,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/common/io_hdr.h"
 
 #include "src/common/slurm_cred.h"
 
@@ -447,7 +448,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
                  memcpy(cred->ntask, arg->ntask, cred->ntask_cnt * sizeof(int));
         }
 	cred->ctime  = time(NULL);
-	cred->siglen = SLURM_CRED_SIGLEN;
+	cred->siglen = SLURM_IO_KEY_SIZE;
 
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
 

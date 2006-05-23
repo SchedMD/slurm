@@ -1064,7 +1064,7 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 {
 	struct slurm_io_init_msg msg;
 
-	memcpy(msg.cred_signature, key->data, SLURM_CRED_SIGLEN);
+	memcpy(msg.cred_signature, key->data, SLURM_IO_KEY_SIZE);
 	msg.nodeid = job->nodeid;
 	if (job->stdout_eio_objs == NULL)
 		msg.stdout_objs = 0;

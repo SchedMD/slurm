@@ -863,7 +863,7 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 		error("failed reading io init message");
 		goto fail;
 	}
-	if (io_init_msg_validate(&msg, cio->signature) < 0) {
+	if (io_init_msg_validate(&msg, cio->io_key) < 0) {
 		goto fail; 
 	}
 	if (msg.nodeid >= cio->num_nodes) {
@@ -1099,8 +1099,7 @@ client_io_t *
 client_io_handler_create(client_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 char *signature,
-			 int signature_len,
+			 char *io_key,
 			 bool label)
 {
 	client_io_t *cio;
@@ -1122,12 +1121,8 @@ client_io_handler_create(client_io_fds_t fds,
 
 	len = sizeof(uint32_t) * num_tasks;
 
-	if (signature_len != SLURM_CRED_SIGLEN) {
-		error("signature length does not match SLURM_CRED_SIGLEN");
-		return NULL;
-	}
-	cio->signature = (char *)xmalloc(signature_len);
-	memcpy(cio->signature, signature, signature_len);
+	cio->io_key = (char *)xmalloc(SLURM_IO_KEY_SIZE);
+	memcpy(cio->io_key, io_key, SLURM_IO_KEY_SIZE);
 
 	cio->eio = eio_handle_create();
 
@@ -1215,6 +1210,6 @@ client_io_handler_destroy(client_io_t *cio)
 	/* FIXME - need to make certain that IO engine is shutdown before
 	   freeing anything */
 
-	xfree(cio->signature);
+	xfree(cio->io_key);
 }
 
