@@ -98,13 +98,13 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 	}
 }
 
-extern void get_slurm_part(GtkWidget *widget, gpointer data)
+extern void get_slurm_part(GtkWidget *table)
 {
 	int error_code, i, j, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
-	GtkWidget *table = (GtkWidget *)data;
+	//GtkWidget *table = NULL;
 	
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -136,7 +136,7 @@ extern void get_slurm_part(GtkWidget *widget, gpointer data)
 	if(recs) {
 		gtk_table_resize(GTK_TABLE(table), recs, 1);
 		gtk_container_set_border_width(GTK_CONTAINER(table), 10);
-	
+		gtk_widget_show(table);		
 	}
 	
 	for (i = 0; i < recs; i++) {

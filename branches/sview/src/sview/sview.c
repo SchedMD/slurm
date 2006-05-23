@@ -31,19 +31,28 @@ sview_parameters_t params;
 int frequency = 5;
 
 
-static void _print_hi(GtkWidget *object,
-		      gboolean arg1,
-		      gpointer data)
-{
-	g_print("hey I was clicked");
-}
-
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
 			   gpointer         user_data)
 {
-	g_print("hey I switched %d\n", page_num);
+	GtkScrolledWindow *window = GTK_SCROLLED_WINDOW(gtk_notebook_get_nth_page(notebook, page_num));
+	GtkBin *bin = GTK_BIN(&window->container);
+	GtkViewport *view = GTK_BIN(bin->child);
+	GtkBin *bin2 = GTK_BIN(&view->bin);
+	GtkTable *table = GTK_TABLE(bin2->child);
+	if(!window)
+		return;
+	if(GTK_IS_TABLE(table))
+		g_print("hey I switched %d\n", page_num);
+	switch(page_num) {
+	case 0:
+		get_slurm_part(table);
+		break;
+	default:
+		break;
+	}
+	
 }
 
 static void _tab_pos(gpointer   callback_data,
@@ -235,7 +244,7 @@ int main( int argc,
 	notebook = gtk_notebook_new();
 	g_signal_connect(G_OBJECT(notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
-			 (gpointer)scrolltable);
+			 NULL);
 	
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), GTK_POS_TOP);
@@ -251,17 +260,7 @@ int main( int argc,
 
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
 	
-	/* for (j = 0; j < 10; j++) { */
-/* 		sprintf (bufferl, "Partition (%d)\n", j); */
-/* 		button = gtk_toggle_button_new_with_label (bufferl); */
-/* 		gtk_table_attach_defaults (GTK_TABLE(scrolltable),  */
-/* 					   button, */
-/* 					   0, 1, j, j+1); */
-/* 		gtk_widget_show (button); */
-/* 	} */
-	g_signal_connect (G_OBJECT(notebook), "select_page",
-			  G_CALLBACK(_print_hi),
-			  (gpointer)scrolltable);
+	
 	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
     
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
