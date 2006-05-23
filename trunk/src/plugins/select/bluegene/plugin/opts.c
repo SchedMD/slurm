@@ -44,6 +44,7 @@ void parse_command_line(int argc, char *argv[])
 		{"all",       no_argument,       0, 'a'},
 		{"bgblock",  required_argument, 0, 'b'},
 		{"partition", required_argument, 0, 'p'},
+		{"wait",      no_argument,       0, 'w'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, 'h'},
 		{"usage",     no_argument,       0, 'u'},
@@ -51,7 +52,7 @@ void parse_command_line(int argc, char *argv[])
 	};
 
 	while ((opt_char =
-		getopt_long(argc, argv, "ab:hup:V",
+		getopt_long(argc, argv, "ab:hup:wV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
@@ -68,6 +69,9 @@ void parse_command_line(int argc, char *argv[])
 		case (int) 'b':
 		case (int) 'p':
 			bg_block_id = optarg;
+			break;
+		case (int) 'w':
+			wait_full = true;
 			break;
 		case (int) 'h':
 		case (int) OPT_LONG_HELP:
@@ -114,7 +118,7 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: sfree [-huVa] [-b]\n");
+	printf("Usage: sfree [-huwVa] [-b]\n");
 }
 
 static void _help(void)
@@ -125,9 +129,13 @@ static void _help(void)
 	printf("\
 Usage: sfree [OPTIONS]\n\
   -b, --bgblock             free specific bgblock named\n\
-  -a, --all                  free all bgblocks\n\
-  -V, --version              output version information and exit\n\
+  -a, --all                 free all bgblocks\n\
+  -w, --wait                wait to make sure all blocks have been freed\n\
+                            (Otherwise sfree will start the free and once\n\
+                             sure the block(s) have started to free will\n\
+                             exit)\n\
+  -V, --version             output version information and exit\n\
 \nHelp options:\n\
-  --help                     show this help message\n\
-  --usage                    display brief usage message\n");
+  --help                    show this help message\n\
+  --usage                   display brief usage message\n");
 }
