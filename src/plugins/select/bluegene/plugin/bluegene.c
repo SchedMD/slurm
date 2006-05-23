@@ -842,11 +842,12 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 
 #ifdef HAVE_BG_FILES
 	bg_record_t *found_record = NULL;
-	char *name = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
 	ListIterator itr_found;
 	init_wires();
+#else
+	char *name = NULL;
 #endif
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
@@ -1016,12 +1017,14 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	bg_record_t *bg_record = NULL;
 	List results = NULL;
 	uint16_t num_quarter=0, num_nodecard=0;
-	char *name = NULL;
 	bitstr_t *my_bitmap = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
-			
+#ifndef HAVE_BG_FILES
+	char *name = NULL;
+#endif
+
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
 		

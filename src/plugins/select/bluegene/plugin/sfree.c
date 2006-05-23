@@ -36,6 +36,7 @@
 
 int all_blocks = 0;
 char *bg_block_id = NULL;
+bool wait_full = false;
 
 #ifdef HAVE_BG_FILES
 
@@ -222,7 +223,15 @@ int main(int argc, char *argv[])
 			
 			free(bg_block_id);
 			
-			delete_record->state = NO_VAL;
+			if ((rc = rm_get_data(block_ptr,
+					      RM_PartitionState,
+					      &delete_record->state))
+			    != STATUS_OK) {
+				error("rm_get_data"
+				      "(RM_PartitionState): %s",
+				      _bg_err_str(rc));
+			} 
+			
 			list_push(delete_record_list, delete_record);
 
 			slurm_attr_init(&attr_agent);
@@ -272,7 +281,7 @@ static int _free_block(delete_record_t *delete_record)
 	info("freeing bgblock %s", delete_record->bg_block_id);
 	_term_jobs_on_block(delete_record->bg_block_id);
 	while (1) {
-		if (delete_record->state != NO_VAL
+		if (delete_record->state != (rm_partition_state_t)NO_VAL
 		    && delete_record->state != RM_PARTITION_FREE 
 		    && delete_record->state != RM_PARTITION_DEALLOCATING) {
 			info("pm_destroy %s",delete_record->bg_block_id);
@@ -289,10 +298,13 @@ static int _free_block(delete_record_t *delete_record)
 			}
 		}
 		
-		if(i>5)
-			delete_record->state = RM_PARTITION_FREE;
-		i++;
-		
+		if(!wait_full) {
+			if(i>5)
+				delete_record->state = RM_PARTITION_FREE;
+			
+			i++;
+		}
+
 		if ((delete_record->state == RM_PARTITION_FREE)
 		    ||  (delete_record->state == RM_PARTITION_ERROR))
 			break;
@@ -312,7 +324,8 @@ static int _update_bg_record_state()
 	rm_partition_t *block_ptr = NULL;
 	delete_record_t *delete_record = NULL;
 	ListIterator itr;
-	
+	int found = 0;
+
 	if ((rc = rm_get_partitions_info(block_state, &block_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions_info(): %s", _bg_err_str(rc));
@@ -322,7 +335,7 @@ static int _update_bg_record_state()
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", _bg_err_str(rc));
-		state = NO_VAL;
+		state = -1;
 		num_blocks = 0;
 	}
 	
@@ -334,7 +347,7 @@ static int _update_bg_record_state()
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 				      _bg_err_str(rc));
-				state = NO_VAL;
+				state = -1;
 				break;
 			}
 		} else {
@@ -344,7 +357,7 @@ static int _update_bg_record_state()
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      _bg_err_str(rc));
-				state = NO_VAL;
+				state = -1;
 				break;
 			}
 		}
@@ -354,7 +367,7 @@ static int _update_bg_record_state()
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s",
 			      _bg_err_str(rc));
-			state = NO_VAL;
+			state = -1;
 			break;
 		}
 		
@@ -362,7 +375,6 @@ static int _update_bg_record_state()
 			error("No Partition ID was returned from database");
 			continue;
 		}
-
 		itr = list_iterator_create(delete_record_list);
 		while ((delete_record = 
 			(delete_record_t*) list_next(itr))) {	
@@ -371,17 +383,8 @@ static int _update_bg_record_state()
 			if(strcmp(delete_record->bg_block_id, name)) {
 				continue;
 			}
+			state = 1;
 		
-			if(state == NO_VAL)
-				goto clean_up;
-			else if(j>=num_blocks) {
-				error("This bgblock, %s, "
-				      "doesn't exist in MMCS",
-				      bg_block_id);
-				state = NO_VAL;
-				goto clean_up;
-			}
-			
 			if ((rc = rm_get_data(block_ptr,
 					      RM_PartitionState,
 					      &delete_record->state))
@@ -395,7 +398,11 @@ static int _update_bg_record_state()
 		list_iterator_destroy(itr);
 		free(name);
 	}
-clean_up:
+	if(state != 1) {
+		error("The requested block %s was not found in system.",
+		      bg_block_id);
+		num_block_to_free = num_block_freed;
+	}
 	if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", _bg_err_str(rc));
 	}
