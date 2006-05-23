@@ -10,21 +10,20 @@ if HAVE_GTK
 bin_PROGRAMS = sview
 
 sview_LDADD =					  \
-	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/api/libslurm.la
+	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
 
 noinst_HEADERS = sview.h
-sview_SOURCES = sview.c
+sview_SOURCES = sview.c part_info.c
 
 force:
 $(sview_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(GTK2_LIBS)
+sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK2_LIBS) 
 sview_CFLAGS = $(GTK2_CFLAGS)
 
 else
 
-EXTRA_sview_SOURCES = sview.h sview.c
+EXTRA_sview_SOURCES = sview.h sview.c part_info.c
 
 endif
