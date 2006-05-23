@@ -1,8 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 1.1.0-pre9
-=============================
+* Changes in SLURM 1.1.1
+========================
+ -- Fix bug in packing job suspend/resume RPC.
+
+* Changes in SLURM 1.1.0
+========================
  -- Fix bug that could temporarily make nodes DOWN when they are really 
     responding. 
  -- Fix bug preventing backup slurmctld from responding to PING RPCs.
