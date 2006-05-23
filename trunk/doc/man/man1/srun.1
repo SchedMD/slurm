@@ -245,7 +245,9 @@ many other versions of MPI.
 \fB\-\-ctrl\-comm\-ifhn\fR=\fIaddr\fR
 Specify the address or hostname to be used for PMI communications only
 (task communication and synchronization primitives for MPCIH2).
-Defaults to hostnameme (response from getnodename function).
+Defaults to hostname (response from getnodename function).
+Use of this is required if a DNS lookup can not be performed on 
+the hostname or if that address is blocked from the compute nodes.
 .TP
 \fB\-\-jobid\fR=\fIid\fR
 Initiate a job step under an already allocated job with job id \fIid\fR.
