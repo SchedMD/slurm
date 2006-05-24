@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_AIX],
       *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl"  # permit run time linking
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
-            if test $OBJECT_MODE = "64"; then
+            if test "$OBJECT_MODE" = "64"; then
                 CFLAGS="-maix64 $CFLAGS"
                 CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull" # keep all common functions
             else
