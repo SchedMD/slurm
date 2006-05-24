@@ -88,10 +88,13 @@ if [ -e config.log    ]; then
    rm -f config.log
 fi
 
+# NOTE: No longer needed thanks to "AM_MAINTER_MODE" in configure.ac
+#
 # touch slurm/slurm.h.in to avoid re-running autoheader
 # after aclocal.m4 is generated, which can fail on some 
 # systems lacking the proper libtools. Note slurm/slurm.h
 # should be static (not build by autogen.sh).
-touch slurm/slurm.h.in
+#
+# touch slurm/slurm.h.in
 
 echo "now run ./configure to configure slurm for your environment."

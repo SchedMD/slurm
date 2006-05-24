@@ -20,6 +20,7 @@ X_AC_SLURM_VERSION
 dnl Initialize Automake
 dnl
 AM_INIT_AUTOMAKE(slurm, $VERSION)
+AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
 
