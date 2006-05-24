@@ -72,6 +72,18 @@
 #define OPT_LONG_HIDE	0x102
 
 enum { JOBS, SLURMPART, BGPART, COMMANDS };
+enum { COL_PARTITION, 
+       COL_YEAR_BORN 
+};
+
+
+enum { SORTID_PARTITION, 
+       SORTID_AVAIL, 
+       SORTID_TIMELIMIT, 
+       SORTID_NODES, 
+       SORTID_NODELIST, 
+       SORTID_PARTITION_CNT
+};
 
 //typedef void (*sighandler_t) (int);
 

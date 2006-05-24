@@ -60,11 +60,13 @@ static char* _convert_node_use(enum node_use_type node_use);
 #ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count);
 #endif
-static void _print_header_part(GtkTable *table);
+static void _print_header_part(GtkTreeView *tree_view);
 static char *_part_state_str(rm_partition_state_t state);
-static int _make_text_part(partition_info_t *part_ptr, 
-			   db2_block_info_t *db2_info_ptr,
-			   GtkTable *table, int line);
+static int _append_part_record(partition_info_t *part_ptr, 
+			       db2_block_info_t *db2_info_ptr,
+			       GtkListStore *liststore, GtkTreeIter *iter);
+static void _switch_sort(GtkRadioButton *button, gpointer data);
+
 #ifdef HAVE_BG
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
@@ -99,14 +101,104 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 	}
 }
 
+gint sort_iter_compare_func (GtkTreeModel *model,
+			     GtkTreeIter  *a,
+			     GtkTreeIter  *b,
+			     gpointer      userdata)
+{
+	gint sortcol = GPOINTER_TO_INT(userdata);
+	gint ret = 0;
+	gchar *name1, *name2;
+	g_print("sorting\n");
+
+	gtk_tree_model_get(model, a, sortcol, &name1, -1);
+	gtk_tree_model_get(model, b, sortcol, &name2, -1);
+	
+	if (name1 == NULL || name2 == NULL)
+	{
+		if (name1 == NULL && name2 == NULL)
+			goto cleanup; /* both equal => ret = 0 */
+		
+		ret = (name1 == NULL) ? -1 : 1;
+	}
+	else
+	{
+		ret = g_utf8_collate(name1,name2);
+	}
+cleanup:
+	g_free(name1);
+	g_free(name2);
+	
+	return ret;
+}
+
+extern void add_col(GtkTreeView *tree_view, int id, char *name)
+{
+	GtkTreeViewColumn   *col;
+	GtkCellRenderer     *renderer;
+  
+	renderer = gtk_cell_renderer_text_new();
+	col = gtk_tree_view_column_new();	
+	gtk_tree_view_column_pack_start (col, renderer, TRUE);
+	gtk_tree_view_column_add_attribute (col, renderer, 
+					    "text", id);
+	gtk_tree_view_column_set_title (col, name);
+	if(GTK_IS_TREE_VIEW(tree_view))
+		g_print("Got here\n");
+	gtk_tree_view_append_column(tree_view, col);
+	gtk_tree_view_column_set_sort_column_id(col, id);
+
+}
+
 extern void get_slurm_part(GtkTable *table)
 {
 	int error_code, i, j, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
-	//GtkWidget *table = NULL;
-	//GtkWidget *label = NULL;
+	GtkTreeIter iter;
+
+	GtkTreeView *tree_view = gtk_tree_view_new();
+	gtk_table_attach_defaults(GTK_TABLE(table), 
+				  tree_view, 0, 1, 0, 1);
+	gtk_widget_show(tree_view);
+	GtkListStore *liststore = gtk_list_store_new(5, 
+						     G_TYPE_STRING, 
+						     G_TYPE_STRING, 
+						     G_TYPE_STRING, 
+						     G_TYPE_STRING, 
+						     G_TYPE_STRING);
+
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_PARTITION, 
+					sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_PARTITION), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_AVAIL, 
+					sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_AVAIL), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_TIMELIMIT, 
+					sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_TIMELIMIT), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_NODES, 
+					sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_NODES), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_NODELIST, 
+					sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_NODELIST), 
+					NULL);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
+					     SORTID_PARTITION, 
+					     GTK_SORT_ASCENDING);
+
+
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -133,12 +225,8 @@ extern void get_slurm_part(GtkTable *table)
 	else
 		recs = 0;
 	
-	gtk_table_resize(GTK_TABLE(table), recs+1, 5);
-	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
-	gtk_widget_show(GTK_WIDGET(table));		
-
-	_print_header_part(table);
-	
+	_print_header_part(tree_view);
+	g_print("rec number is %d\n ",recs);
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
@@ -152,14 +240,8 @@ extern void get_slurm_part(GtkTable *table)
 /* 				 part.node_inx[j + 1], count); */
 			j += 2;
 		}
-		for(i=0; i<10; i++)
-			_make_text_part(&part, NULL, table, i+1);
-		/* label = gtk_label_new (data); */
-/* 		gtk_table_attach_defaults(GTK_TABLE(table),  */
-/* 					  label, */
-/* 					  0, 1, i, i+1); */
-/* 		gtk_widget_show (label); */
-/* 		xfree(data); */
+		for (j = 0; j < 10; j++) 
+		_append_part_record(&part, NULL, liststore, &iter);
 		count++;
 			
 	}
@@ -167,7 +249,8 @@ extern void get_slurm_part(GtkTable *table)
 		count=0;
 	if (params.commandline && params.iterate)
 		printf("\n");
-	
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
+	g_object_unref(GTK_TREE_MODEL(liststore));
 	part_info_ptr = new_part_ptr;
 	return;
 }
@@ -408,27 +491,17 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 }
 #endif
 
-static void _print_header_part(GtkTable *table)
+static void _print_header_part(GtkTreeView *tree_view)
 {
-	int col = 0;
+	//int col = 0;
 	GtkWidget *button = NULL;
+	GSList *group = NULL;
+	
+	add_col(tree_view, SORTID_PARTITION, "PARTITION");
 
-	button = gtk_toggle_button_new_with_label ("PARTITION");
-	gtk_table_attach_defaults(table, 
-				  button,
-				  col, col+1, 0, 1);
-	col++;
 	if (params.display != BGPART) {
-		button = gtk_toggle_button_new_with_label ("AVAIL");
-		gtk_table_attach_defaults(table, 
-					  button,
-					  col, col+1, 0, 1);
-		col++;
-		button = gtk_toggle_button_new_with_label ("TIMELIMIT");
-		gtk_table_attach_defaults(table, 
-					  button,
-					  col, col+1, 0, 1);
-		col++;
+		add_col(tree_view, SORTID_AVAIL, "AVAIL");
+		add_col(tree_view, SORTID_TIMELIMIT, "TIMELIMIT");
 	} else {
 		printf("        BG_BLOCK ");
 		printf("STATE ");
@@ -437,20 +510,12 @@ static void _print_header_part(GtkTable *table)
 		printf(" NODE_USE ");
 	}
 
-	button = gtk_toggle_button_new_with_label ("NODES");
-	gtk_table_attach_defaults(table, 
-				  button,
-				  col, col+1, 0, 1);
-	col++;
+	add_col(tree_view, SORTID_NODES, "NODES");
+	
 #ifdef HAVE_BG
 	printf("BP_LIST\n");
 #else
-	button = gtk_toggle_button_new_with_label ("NODELIST");
-	gtk_table_attach_defaults(table, 
-				  button,
-				  col, col+1, 0, 1);
-	col++;
-	
+	add_col(tree_view, SORTID_NODELIST, "NODELIST");	
 #endif
 		
 }
@@ -482,9 +547,9 @@ static char *_part_state_str(rm_partition_state_t state)
 	return tmp;
 }
 
-static int _make_text_part(partition_info_t *part_ptr, 
-			     db2_block_info_t *db2_info_ptr,
-			     GtkTable *table, int line)
+static int _append_part_record(partition_info_t *part_ptr, 
+			       db2_block_info_t *db2_info_ptr,
+			       GtkListStore *liststore, GtkTreeIter *iter)
 {
 	int printed = 0;
 	int tempxcord;
@@ -493,51 +558,39 @@ static int _make_text_part(partition_info_t *part_ptr,
 	char tmp_cnt[7];
 	char data[20];
 	int col = 0;
+	char *temp[SORTID_PARTITION_CNT];
 	GtkWidget *label = NULL;
 	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
-
+	gtk_list_store_append(liststore, iter);
+		
 	if (part_ptr->name) {
-		label = gtk_label_new(part_ptr->name);
-		gtk_table_attach_defaults(table, 
-					  label,
-					  col, col+1, line, line+1);
-		col++;
+		temp[SORTID_PARTITION] = part_ptr->name;
 		if (params.display != BGPART) {
 			if (part_ptr->state_up)
-				label = gtk_label_new("up");
+				temp[SORTID_AVAIL] = "up";
 			else
-				label = gtk_label_new("down");
-			gtk_table_attach_defaults(table, 
-						  label,
-						  col, col+1, line, line+1);
-			col++;
-		
-							
+				temp[SORTID_AVAIL] = "down";
+								
 			if (part_ptr->max_time == INFINITE)
-				snprintf(time_buf, sizeof(time_buf), 
+				snprintf(time_buf, sizeof(time_buf),
 					 "infinite");
 			else {
-				snprint_time(time_buf, 
-					     sizeof(time_buf), 
-					     (part_ptr->max_time 
+				snprint_time(time_buf,
+					     sizeof(time_buf),
+					     (part_ptr->max_time
 					      * 60));
 			}
 			
 			width = strlen(time_buf);
-			label = gtk_label_new(time_buf);
-			gtk_table_attach_defaults(table, 
-						  label,
-						  col, col+1, line, line+1);
-			col++;
-		
-		} 
+			temp[SORTID_TIMELIMIT] = time_buf;		
+		}
 	}
 
 	if (params.display == BGPART) {
 		if (db2_info_ptr) {
 			printf("%16.16s ",
 			       db2_info_ptr->bg_block_name);
-			printf("%5.5s ", 
+			printf("%5.5s ",
 			       _part_state_str(db2_info_ptr->state));
 				
 			printf("%8.8s ", db2_info_ptr->bg_user_name);
@@ -546,14 +599,11 @@ static int _make_text_part(partition_info_t *part_ptr,
 				       db2_info_ptr->bg_conn_type));
 			printf("%9.9s ",  _convert_node_use(
 				       db2_info_ptr->bg_node_use));
-		} 
+		}
 	}
 		
-       	label = gtk_label_new(tmp_cnt);
-	gtk_table_attach_defaults(table, 
-				  label,
-				  col, col+1, line, line+1);
-	col++;	
+       	temp[SORTID_NODES] = tmp_cnt;
+		
 	tempxcord = ba_system_ptr->xcord;
 		
 	if (params.display == BGPART)
@@ -564,20 +614,32 @@ static int _make_text_part(partition_info_t *part_ptr,
 	if((params.display == BGPART) && db2_info_ptr
 	   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
 		if(db2_info_ptr->nodecard != (uint16_t) NO_VAL)
-			printf("%s.%d.%d\n", nodes, 
+			printf("%s.%d.%d\n", nodes,
 			       db2_info_ptr->quarter,
 			       db2_info_ptr->nodecard);
-		else 
-			printf("%s.%d\n", nodes, 
+		else
+			printf("%s.%d\n", nodes,
 			       db2_info_ptr->quarter);
 	} else {
-		label = gtk_label_new(nodes);
-		gtk_table_attach_defaults(table, 
-					  label,
-					  col, col+1, line, line+1);
-		col++;		
+		temp[SORTID_NODELIST] = nodes;
 	}
+	g_print("partition name is %s\n", temp[SORTID_PARTITION]);
+	gtk_list_store_set(liststore, iter,
+			   SORTID_PARTITION, temp[SORTID_PARTITION],
+			   SORTID_AVAIL, temp[SORTID_AVAIL],
+			   SORTID_TIMELIMIT, temp[SORTID_TIMELIMIT],
+			   SORTID_NODES, temp[SORTID_NODES],
+			   SORTID_NODELIST, temp[SORTID_NODELIST],
+			   -1);
+		
+
+
 	return printed;
+}
+
+static void _switch_sort(GtkRadioButton *button, gpointer data)
+{
+	g_print("I toggled!\n");
 }
 
 #ifdef HAVE_BG
@@ -607,7 +669,6 @@ static void _nodelist_del(void *object)
 
 static int _list_match_all(void *object, void *key)
 {
-	
 	return 1;
 }
 

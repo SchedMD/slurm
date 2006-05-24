@@ -30,7 +30,6 @@ GtkWidget *notebook = NULL;
 sview_parameters_t params;
 int frequency = 5;
 
-
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
@@ -40,13 +39,22 @@ static void _page_switched(GtkNotebook     *notebook,
 	if(!window)
 		return;
 	GtkBin *bin = GTK_BIN(&window->container);
-	GtkViewport *view = GTK_BIN(bin->child);
+	GtkViewport *view = GTK_VIEWPORT(bin->child);
 	GtkBin *bin2 = GTK_BIN(&view->bin);
-	GtkTable *table = GTK_TABLE(bin2->child);
-	if(GTK_IS_TABLE(table))
-		g_print("hey I switched %d\n", page_num);
+	GtkTable *table;
+	GtkTreeView *tree_view;
+
 	switch(page_num) {
 	case 0:
+		
+		//table = GTK_TABLE(bin2->child);
+		//get_slurm_part(table);
+		break;
+	case 2:
+		table = GTK_TABLE(bin2->child);
+		//tree_view = GTK_TREE_VIEW(bin2->child);
+		if(GTK_IS_TABLE(table))
+			g_print("hey it is a table!\n");
 		get_slurm_part(table);
 		break;
 	default:
@@ -82,6 +90,8 @@ static void _set_freq(gpointer   callback_data,
 {
 	frequency++;
 }
+
+
 
 /* Our menu, an array of GtkItemFactoryEntry structures that defines each menu item */
 static GtkItemFactoryEntry menu_items[] = {
@@ -213,6 +223,8 @@ int main( int argc,
 	GtkWidget *label;
 	GtkWidget *checkbutton;
 	GtkWidget *scrolled_window;
+	GtkWidget *view;
+	
 	int j;
 	char bufferl[32];
     
@@ -258,9 +270,7 @@ int main( int argc,
 	gtk_container_set_border_width(GTK_CONTAINER(scrolltable), 10);
 	
 
-	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-	
-	
+	scrolled_window = gtk_scrolled_window_new(NULL, NULL);	
 	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
     
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
@@ -309,18 +319,34 @@ int main( int argc,
 	label = gtk_label_new("Jobs");
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
 				 scrolled_window, label);
+	gtk_widget_show(label);
+	
 	/* Node info */
+	
+	scrolltable = gtk_table_new(1, 1, FALSE);
 
-	frame = gtk_frame_new("Node info");
-	gtk_container_set_border_width(GTK_CONTAINER(frame), 10);
-	gtk_widget_show(frame);
+	gtk_container_set_border_width(GTK_CONTAINER(scrolltable), 10);
 	
-	label = gtk_label_new ("Node info here");
-	gtk_container_add (GTK_CONTAINER (frame), label);
-	gtk_widget_show (label);
 	
-	label = gtk_label_new ("Nodes");
-	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), frame, label);
+    
+	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
+    
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+				       GTK_POLICY_AUTOMATIC,
+				       GTK_POLICY_AUTOMATIC);
+    
+	gtk_widget_show(scrolled_window);
+	gtk_scrolled_window_add_with_viewport (
+		GTK_SCROLLED_WINDOW (scrolled_window), scrolltable);
+	gtk_widget_show(scrolltable);
+	
+
+	label = gtk_label_new("Partitions 2");
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
+				 scrolled_window, label);
+	gtk_widget_show(label);
+		
 	
 	/* Admin */
 	frame = gtk_frame_new ("Administration");
