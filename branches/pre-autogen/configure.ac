@@ -4,7 +4,7 @@
 dnl Prologue
 dnl
 AC_INIT
-AC_PREREQ(2.52)
+AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([auxdir])
 AC_CANONICAL_TARGET([])
@@ -20,8 +20,8 @@ X_AC_SLURM_VERSION
 dnl Initialize Automake
 dnl
 AM_INIT_AUTOMAKE(slurm, $VERSION)
-AM_CONFIG_HEADER(config.h)
-AM_CONFIG_HEADER(slurm/slurm.h)
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([slurm/slurm.h])
 
 X_AC_AIX
 
@@ -170,7 +170,7 @@ dnl if it is.
 dnl
 AC_MSG_CHECKING(whether to enable multiple-slurmd support)
 AC_ARG_ENABLE([multiple-slurmd],
-  AC_HELP_STRING([--enable-multiple-slurmd], [enable multiple-slurmd support]),
+  AS_HELP_STRING(--enable-multiple-slurmd,enable multiple-slurmd support),
     [ case "$enableval" in
       yes) multiple_slurmd=yes ;;
       no)  multiple_slurmd=no ;;

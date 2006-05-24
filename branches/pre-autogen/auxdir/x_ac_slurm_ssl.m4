@@ -27,7 +27,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   SSL_LIBS="-lcrypto"
   
   AC_ARG_WITH(ssl,
-    AC_HELP_STRING([--with-ssl=PATH],[Specify path to OpenSSL installation]),
+    AS_HELP_STRING(--with-ssl=PATH,Specify path to OpenSSL installation),
     [
   	tryssldir=$withval
 
@@ -84,8 +84,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		fi
   
   		# Basic test to check for compatible version and correct linking
-  		AC_TRY_RUN(
-  			[
+  		AC_RUN_IFELSE([AC_LANG_SOURCE([[
   #include <stdlib.h>
   #include <openssl/rand.h>
   #define SIZE 8
@@ -97,12 +96,11 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	RAND_add(a, sizeof(a), sizeof(a));
   	return(RAND_status() <= 0);
   }
-  			],
-  			[
+  			]])],[
   				found_crypto=1
   				break;
-  			], []
-  		)
+  			],[
+  		],[])
   
   		if test ! -z "$found_crypto" ; then
   			break;
@@ -140,10 +138,8 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	fi
   fi
   
-  AC_TRY_LINK([#include <openssl/evp.h>], 
-     [EVP_MD_CTX_cleanup(NULL);],
-     [AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
-               [Define to 1 if function EVP_MD_CTX_cleanup exists.])])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <openssl/evp.h>]], [[EVP_MD_CTX_cleanup(NULL);]])],[AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
+               [Define to 1 if function EVP_MD_CTX_cleanup exists.])],[])
   
   LIBS="$saved_LIBS"
   CPPFLAGS="$saved_CPPFLAGS"

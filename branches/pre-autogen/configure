@@ -1052,10 +1052,10 @@ Optional Packages:
   --with-tags[=TAGS]
                           include additional configurations [automatic]
   --with-db2-dir=PATH     Specify path to DB2 library's parent directory
-  --with-bg-serial=NAME   set BG_SERIAL value [BGL]
+  --with-bg-serial=NAME   set BG_SERIAL value BGL
   --with-xcpu=PATH        specify path to XCPU directory
-  --with-slurmctld-port=N set slurmctld default port [6817]
-  --with-slurmd-port=N    set slurmd default port [6818]
+  --with-slurmctld-port=N set slurmctld default port 6817
+  --with-slurmd-port=N    set slurmd default port 6818
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -23032,7 +23032,6 @@ else
   HAVE_UNSETENV_TRUE='#'
   HAVE_UNSETENV_FALSE=
 fi
-
 
 
 
