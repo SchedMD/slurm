@@ -839,18 +839,20 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
-
-#ifdef HAVE_BG_FILES
+	ListIterator itr_found;
+	int i;
 	bg_record_t *found_record = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
-	int i;
-	ListIterator itr_found;
+
+#ifdef HAVE_BG_FILES
 	init_wires();
+#else
+	static int block_inx = 0;
+	char *name = NULL;
 #endif
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
 	
-#ifdef HAVE_BG_FILES
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) 
@@ -898,6 +900,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				       geo[X],
 				       geo[Y],
 				       geo[Z]);	
+#ifdef HAVE_BG_FILES
 				if(bg_record->bg_block_id) {
 					if(load_block_wiring(
 						   bg_record->bg_block_id)
@@ -911,14 +914,40 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 						return SLURM_ERROR;
 					}
 				} 
+#else
+				name = set_bg_block(NULL,
+						    bg_record->start, 
+						    geo, 
+						    bg_record->
+						    conn_type);
+				if(!name) {			
+					debug("I was unable to make "
+					      "the requested block.");
+					list_iterator_destroy(itr);
+					slurm_mutex_unlock(
+						&block_state_mutex);
+					return SLURM_ERROR;
+				}
+				xfree(name);
+#endif	
 			}
 			if(found_record == NULL) {
+#ifdef HAVE_BG_FILES
 				if((rc = configure_block(bg_record)) 
 				   == SLURM_ERROR) {
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
 					return rc;
 				}
+#else
+				if (!bg_record->bg_block_id) { 
+					bg_record->bg_block_id = 
+						xmalloc(sizeof(char)*8);
+					snprintf(bg_record->bg_block_id, 8, 
+						 "RMP%d", 
+						 block_inx++);
+				}
+#endif
 				print_bg_record(bg_record);
 			}
 		}
@@ -928,39 +957,38 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
-#endif
 	slurm_mutex_unlock(&block_state_mutex);
-	create_full_system_block();
+	create_full_system_block(&block_inx);
 
 	sort_bg_record_inc_size(bg_list);
 
 	
-#ifndef HAVE_BG_FILES
-	char tmp_char[256];
-	static int block_inx = 0;
-	if(bg_list) {
-		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(bg_list);
-		while ((bg_record = (bg_record_t*) list_next(itr))) {
-			if (bg_record->bg_block_id)
-				continue;
-			bg_record->bg_block_id = xmalloc(sizeof(char)*8);
-			snprintf(bg_record->bg_block_id, 8, "RMP%d", 
-				 block_inx++);
-			format_node_name(bg_record, tmp_char);
-			info("Record: BlockID:%s Nodes:%s Conn:%s",
-			     bg_record->bg_block_id, tmp_char,
-			     convert_conn_type(bg_record->conn_type));
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&block_state_mutex);
-	} else {
-		error("create_defined_blocks: no bg_list 4");
-		return SLURM_ERROR;
-	}
+/* #ifndef HAVE_BG_FILES */
+/* 	char tmp_char[256]; */
+/* 	static int block_inx = 0; */
+/* 	if(bg_list) { */
+/* 		slurm_mutex_lock(&block_state_mutex); */
+/* 		itr = list_iterator_create(bg_list); */
+/* 		while ((bg_record = (bg_record_t*) list_next(itr))) { */
+/* 			if (bg_record->bg_block_id) */
+/* 				continue; */
+/* 			bg_record->bg_block_id = xmalloc(sizeof(char)*8); */
+/* 			snprintf(bg_record->bg_block_id, 8, "RMP%d",  */
+/* 				 block_inx++); */
+/* 			format_node_name(bg_record, tmp_char); */
+/* 			info("Record: BlockID:%s Nodes:%s Conn:%s", */
+/* 			     bg_record->bg_block_id, tmp_char, */
+/* 			     convert_conn_type(bg_record->conn_type)); */
+/* 		} */
+/* 		list_iterator_destroy(itr); */
+/* 		slurm_mutex_unlock(&block_state_mutex); */
+/* 	} else { */
+/* 		error("create_defined_blocks: no bg_list 4"); */
+/* 		return SLURM_ERROR; */
+/* 	} */
 	
 	
-#endif	/* not have HAVE_BG_FILES */
+/* #endif	/\* not have HAVE_BG_FILES *\/ */
 	
 
 #ifdef _PRINT_BLOCKS_AND_EXIT
@@ -1189,7 +1217,7 @@ finished:
 	return rc;
 }
 
-extern int create_full_system_block()
+extern int create_full_system_block(int *block_inx)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
@@ -1303,7 +1331,14 @@ extern int create_full_system_block()
 		destroy_bg_record(bg_record);
 		goto no_total;
 	}
+#else
+	if (!bg_record->bg_block_id) { 
+		bg_record->bg_block_id = 
+			xmalloc(sizeof(char)*8);
+		snprintf(bg_record->bg_block_id, 8, "RMP%d", (*block_inx)++);
+	}
 #endif	/* HAVE_BG_FILES */
+	print_bg_record(bg_record);
 	list_push(bg_list, bg_record);
 
 no_total:
@@ -1719,7 +1754,8 @@ extern int read_bg_conf(void)
 				   &count, "BPs", tbl)) {
 			info("WARNING: no blocks defined in bluegene.conf, "
 			     "only making full system block");
-			create_full_system_block();
+			i = 0;
+			create_full_system_block(&i);
 		}
 		
 		for (i = 0; i < count; i++) {
