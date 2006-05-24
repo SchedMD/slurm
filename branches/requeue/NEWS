@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.2.0-pre1
+=============================
+ -- Fix bug that could run a job's prolog more than once
+
 * Changes in SLURM 1.1.1
 ========================
  -- Fix bug in packing job suspend/resume RPC.

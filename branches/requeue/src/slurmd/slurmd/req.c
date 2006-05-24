@@ -683,8 +683,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
-
-	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
+	if (run_prolog)
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
@@ -770,8 +770,8 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
-
-	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
+	if (run_prolog)
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
@@ -893,15 +893,12 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * running (especially on BlueGene, which can wait  minutes
 	 * for partition booting). Test if the credential has since
 	 * been revoked and exit as needed. */
-#if 0
-//FIXME: Temporary patch for batch requeue testing
 	if (slurm_cred_revoked(conf->vctx, req->job_id)) {
 		info("Job %u already killed, do not launch tasks",  
 			req->job_id);
 		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;
 	}
-#endif
 
 	slurm_mutex_lock(&launch_mutex);
 	if (req->step_id == SLURM_BATCH_SCRIPT)
