@@ -846,8 +846,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	int i;
 	ListIterator itr_found;
 	init_wires();
-#else
-	char *name = NULL;
 #endif
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
@@ -900,7 +898,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				       geo[X],
 				       geo[Y],
 				       geo[Z]);	
-#ifdef HAVE_BG_FILES
 				if(bg_record->bg_block_id) {
 					if(load_block_wiring(
 						   bg_record->bg_block_id)
@@ -914,22 +911,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 						return SLURM_ERROR;
 					}
 				} 
-#else
-				name = set_bg_block(NULL,
-						    bg_record->start, 
-						    geo, 
-						    bg_record->
-						    conn_type);
-				if(!name) {			
-					debug("I was unable to make "
-					      "the requested block.");
-					list_iterator_destroy(itr);
-					slurm_mutex_unlock(
-						&block_state_mutex);
-					return SLURM_ERROR;
-				}
-				xfree(name);
-#endif	
 			}
 			if(found_record == NULL) {
 				if((rc = configure_block(bg_record)) 
