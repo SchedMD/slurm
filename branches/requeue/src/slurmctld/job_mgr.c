@@ -3523,6 +3523,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
+	kill_req->time          = time(NULL);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo = 
 			select_g_copy_jobinfo(job_ptr->select_jobinfo);
@@ -3906,10 +3907,7 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	int i, buf_rec_size = 0;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	if (signal == SIGKILL)
-		agent_args->msg_type = REQUEST_TERMINATE_JOB;
-	else
-		agent_args->msg_type = REQUEST_SIGNAL_JOB;
+	agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;

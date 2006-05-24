@@ -1983,7 +1983,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
+	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time) < 0) {
 		debug("revoking cred for job %u: %m", req->job_id);
 	} else {
 		save_cred_state(conf->vctx);

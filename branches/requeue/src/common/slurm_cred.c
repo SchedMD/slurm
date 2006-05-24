@@ -1,8 +1,8 @@
 /*****************************************************************************\
- * src/common/slurm_cred.c - SLURM job credential functions
- * $Id$
+ *  src/common/slurm_cred.c - SLURM job credential functions
+ *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -80,9 +80,9 @@ typedef struct {
  */
 typedef struct {
 	uint32_t jobid;         
-	bool     revoked;       /* True if all creds for jobid are revoked  */
+	time_t   revoked;       /* Time at which credentials were revoked   */
 	time_t   ctime;         /* Time that this entry was created         */
-	time_t   expiration;    /* Time at which credentials were revoked   */
+	time_t   expiration;    /* Time at which credentials can be purged  */
 } job_state_t;
 
 
@@ -617,7 +617,7 @@ slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 }
 
 int
-slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
+slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time)
 {
 	job_state_t  *j = NULL;
 
@@ -639,12 +639,12 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 		j = _insert_job_state(ctx, jobid);
 	}
 
-	if (j->revoked == true) {
+	if (j->revoked) {
 		slurm_seterrno(EEXIST);
 		goto error;
 	}
 
-	j->revoked = true;
+	j->revoked = time;
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
@@ -1219,7 +1219,7 @@ _job_state_create(uint32_t jobid)
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	j->jobid      = jobid;
-	j->revoked    = false;
+	j->revoked    = (time_t) 0;
 	j->ctime      = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
 
@@ -1334,7 +1334,7 @@ static void
 _job_state_pack_one(job_state_t *j, Buf buffer)
 {
 	pack32(j->jobid, buffer);
-	pack16((uint16_t) j->revoked, buffer);
+	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
 }
@@ -1344,25 +1344,24 @@ static job_state_t *
 _job_state_unpack_one(Buf buffer)
 {
 	char         buf1[64], buf2[64];
-	uint16_t     revoked = 0;
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	safe_unpack32(    &j->jobid,      buffer);
-	safe_unpack16(    &revoked,       buffer);
+	safe_unpack_time( &j->revoked,    buffer);
 	safe_unpack_time( &j->ctime,      buffer);
 	safe_unpack_time( &j->expiration, buffer);
 
 	debug3("cred_unpack:job %d ctime:%s%s%s",
                j->jobid, 
 	       timestr (&j->ctime, buf1, 64), 
-	       (revoked ? " revoked:" : " expires:"),
-	       revoked ? timestr (&j->expiration, buf2, 64) : "");
+	       (j->revoked ? " revoked:" : " expires:"),
+	       j->revoked ? timestr (&j->expiration, buf2, 64) : "");
 
-	if (revoked) {
-		j->revoked = true;
+	if (j->revoked) {
 		if (j->expiration == (time_t) MAX_TIME) {
 			info ("Warning: revoke on job %d has no expiration", 
 			      j->jobid);
+			j->expiration = j->revoked + 600;
 		}
 	}
 

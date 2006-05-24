@@ -453,6 +453,7 @@ typedef struct return_code_msg {
 typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint32_t job_uid;
+	time_t   time;		/* slurmctld's time of request */
 	char *nodes;
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
 } kill_job_msg_t;
