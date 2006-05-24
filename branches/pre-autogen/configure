@@ -3285,7 +3285,7 @@ fi
       *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl"  # permit run time linking
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
-            if test $OBJECT_MODE = "64"; then
+            if test "$OBJECT_MODE" = "64"; then
                 CFLAGS="-maix64 $CFLAGS"
                 CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull" # keep all common functions
             else
@@ -24462,7 +24462,7 @@ echo $ECHO_N "checking whether to enable AIX Federation switch support... $ECHO_
          continue;
       fi
 
-      if test $OBJECT_MODE = "64"; then
+      if test "$OBJECT_MODE" = "64"; then
 	 libntbl="ntbl_64"
       else
          libntbl="ntbl"

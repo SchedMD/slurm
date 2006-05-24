@@ -21,7 +21,7 @@ dnl Initialize Automake
 dnl
 AM_INIT_AUTOMAKE(slurm, $VERSION)
 AC_CONFIG_HEADERS([config.h])
-dnl AC_CONFIG_HEADERS([slurm/slurm.h])
+AC_CONFIG_HEADERS([slurm/slurm.h])
 
 X_AC_AIX
 
