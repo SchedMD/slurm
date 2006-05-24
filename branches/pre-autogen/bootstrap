@@ -1,0 +1,13 @@
+#!/bin/sh
+##
+# $Id$
+##
+
+set -x
+aclocal -I auxdir || exit 1
+libtoolize --automake --copy --force || exit 1
+autoheader || exit 1
+automake --add-missing --copy --force-missing --gnu || exit 1
+autoconf --force --warnings=all || exit 1
+rm -fr autom4te*.cache
+exit 0
