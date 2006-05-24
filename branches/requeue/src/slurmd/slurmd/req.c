@@ -642,7 +642,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	launch_tasks_request_msg_t *req = msg->data;
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
-	bool     super_user = false, run_prolog = false;
+	bool     super_user = false;
 	slurm_addr self;
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
@@ -664,11 +664,6 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	info("launch task %u.%u request from %u.%u@%s", req->job_id, 
 	     req->job_step_id, req->uid, req->gid, host);
 
-#ifndef HAVE_FRONT_END
-	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
-		run_prolog = true;
-#endif
-
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
 				  req->tasks_to_launch[req->srun_node_id],
 				  &step_hset) 
@@ -683,15 +678,17 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
-	if (run_prolog)
-		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
-	/* Run job prolog if necessary */
-	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
-		error("[job %u] prolog failed", req->job_id);
-		errnum = ESLURMD_PROLOG_FAILED;
-		goto done;
+#ifndef HAVE_FRONT_END
+	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
+			error("[job %u] prolog failed", req->job_id);
+			errnum = ESLURMD_PROLOG_FAILED;
+			goto done;
+		}
 	}
+#endif
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
 
@@ -732,7 +729,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	spawn_task_request_msg_t *req = msg->data;
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
-	bool     super_user = false, run_prolog = false;
+	bool     super_user = false;
 	slurm_addr self;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
@@ -753,11 +750,6 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	info("spawn task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
-#ifndef HAVE_FRONT_END
-	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
-		run_prolog = true;
-#endif
-
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid, 
 				  spawn_tasks_to_launch, &step_hset) < 0) {
 		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
@@ -770,15 +762,17 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
-	if (run_prolog)
-		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
-	/* Run job prolog if necessary */
-	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
-		error("[job %u] prolog failed", req->job_id);
-		errnum = ESLURMD_PROLOG_FAILED;
-		goto done;
+#ifndef HAVE_FRONT_END
+	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
+			error("[job %u] prolog failed", req->job_id);
+			errnum = ESLURMD_PROLOG_FAILED;
+			goto done;
+		}
 	}
+#endif
 
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
