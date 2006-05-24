@@ -174,7 +174,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DEPENDENCY,
 	  "Immediate execution impossible, job dependency problem"},
  	{ ESLURM_BATCH_ONLY,
-	  "Only batch jobs are accepted"			},
+	  "Only batch jobs are accepted or processed"		},
 
 	/* slurmd error codes */
 

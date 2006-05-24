@@ -712,6 +712,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16((uint16_t) detail_ptr->shared, buffer);
 	pack16((uint16_t) detail_ptr->contiguous, buffer);
 	pack16((uint16_t) detail_ptr->cpus_per_task, buffer);
+	pack16((uint16_t) detail_ptr->no_requeue, buffer);
 
 	pack32((uint32_t) detail_ptr->min_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_memory, buffer);
@@ -739,7 +740,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes, min_procs;
 	uint16_t argc = 0, req_tasks, shared, contiguous;
-	uint16_t cpus_per_task, name_len;
+	uint16_t cpus_per_task, name_len, no_requeue;
 	uint32_t min_memory, min_tmp_disk, total_procs;
 	time_t begin_time, submit_time;
 	int i;
@@ -753,6 +754,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&shared, buffer);
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
+	safe_unpack16(&no_requeue, buffer);
 
 	safe_unpack32(&min_procs, buffer);
 	safe_unpack32(&min_memory, buffer);
@@ -772,9 +774,10 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_array(&argv, &argc, buffer);
 
 	/* validity test as possible */
-	if ((shared > 1) || (contiguous > 1)) {
-		error("Invalid data for job %u: shared=%u contiguous=%u",
-		      job_ptr->job_id, shared, contiguous);
+	if ((shared > 1) || (contiguous > 1) || (no_requeue > 1)) {
+		error("Invalid data for job %u: "
+			"shared=%u contiguous=%u no_requeue=%u",
+			job_ptr->job_id, shared, contiguous, no_requeue);
 		goto unpack_error;
 	}
 
@@ -802,6 +805,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->min_procs = min_procs;
 	job_ptr->details->min_memory = min_memory;
 	job_ptr->details->min_tmp_disk = min_tmp_disk;
+	job_ptr->details->no_requeue = no_requeue;
 	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->req_nodes = req_nodes;
@@ -1147,7 +1151,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
 	long kill_on_node_fail, shared, immediate, dependency;
-	long cpus_per_task;
+	long cpus_per_task, no_requeue;
 	char buf[100];
 
 	if (job_specs == NULL)
@@ -1248,8 +1252,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
 			(long) job_specs->cpus_per_task : -1L;
-	debug3("   network=%s begin=%s cpus_per_task=%ld", 
-		job_specs->network, buf, cpus_per_task);
+	no_requeue = (job_specs->no_requeue != (uint16_t) NO_VAL) ?
+			(long) job_specs->no_requeue : -1L;
+	debug3("   network=%s begin=%s cpus_per_task=%ld no_requeue=%ld", 
+		job_specs->network, buf, cpus_per_task, no_requeue);
 
 	select_g_sprint_jobinfo(job_specs->select_jobinfo, 
 		buf, sizeof(buf), SELECT_PRINT_MIXED);
@@ -1607,7 +1613,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		      uid);
 		return ESLURM_USER_ID_MISSING;
 	}
-
 	if (job_ptr->job_state & JOB_COMPLETING)
 		return SLURM_SUCCESS;	/* avoid replay */
 
@@ -2309,6 +2314,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
                 detail_ptr->exclusive = job_desc->exclusive;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
 		detail_ptr->cpus_per_task = job_desc->cpus_per_task;
+	if (job_desc->no_requeue != (uint16_t) NO_VAL)
+		detail_ptr->no_requeue = job_desc->no_requeue;
 	if (job_desc->min_procs != NO_VAL)
 		detail_ptr->min_procs = job_desc->min_procs;
 	detail_ptr->min_procs = MAX(detail_ptr->min_procs,
@@ -3434,7 +3441,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		else if (job_ptr->job_state == JOB_PENDING) {
 			error("Registered PENDING job %u.%u on node %s ",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
-			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
@@ -3747,7 +3753,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	 * a new job arrives and the job_id is reused, we 
 	 * could try to note the termination of a job that 
 	 * hasn't really started. Very rare obviously. */
-	if ((job_ptr == JOB_PENDING)
+	if ((job_ptr->job_state == JOB_PENDING)
 	||  (job_ptr->node_bitmap == NULL)) {
 		error("Epilog complete request for non-running job %u, "
 			"slurmctld and slurmd out of sync", job_id);
@@ -3783,9 +3789,20 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	}
 #endif
 
-	if (!(job_ptr->job_state & JOB_COMPLETING))	/* COMPLETED */
+	if (!(job_ptr->job_state & JOB_COMPLETING)) {	/* COMPLETED */
+		if ((job_ptr->job_state == JOB_PENDING)
+		&&  (job_ptr->batch_flag)) {
+			info("requeue batch job %u",
+				job_ptr->job_id);
+			if (job_ptr->details) {
+				job_ptr->details->begin_time = time(NULL) +
+					600; /* DEFAULT_EXPIRATION_WINDOW */
+			}
+//FIXME: slurmd fails to launch job due to use of revoked cred for this job_id
+// So hold the job until the window times out
+		}
 		return true;
-	else
+	} else
 		return false;
 }
 
@@ -4169,6 +4186,99 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
     reply:
 	jobacct_g_suspend_slurmctld(job_ptr);
 
+	rc_msg.return_code = rc;
+	resp_msg.msg_type  = RESPONSE_SLURM_RC;
+	resp_msg.data      = &rc_msg;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
+	resp_msg.forward_struct_init = 0;
+	slurm_send_node_msg(conn_fd, &resp_msg);
+	return rc;
+}
+
+/*
+ * job_requeue - Requeue a running or pending batch job
+ * IN uid - user id of user issuing the RPC
+ * IN job_id - id of the job to be requeued
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr = NULL;
+	bool super_user = false, suspended = false;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+	time_t now = time(NULL);
+
+	/* find the job */
+	job_ptr = find_job_record (job_id);
+	if (job_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+
+	/* validate the request */
+	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
+		super_user = 1;
+	if ((uid != job_ptr->user_id) && (!super_user)) {
+		rc = ESLURM_ACCESS_DENIED;
+		goto reply;
+	}
+	if (IS_JOB_FINISHED(job_ptr)) {
+		rc = ESLURM_ALREADY_DONE;
+		goto reply;
+	}
+	if (job_ptr->details && job_ptr->details->no_requeue) {
+		rc = ESLURM_DISABLED;
+		goto reply;
+	}
+	if (job_ptr->job_state & JOB_COMPLETING) {
+		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
+		goto reply;
+	}
+
+	/* if pending, just reset the priority */
+	if (job_ptr->job_state == JOB_PENDING) {
+		/* just reset the priority */
+		if ((job_ptr->priority == 0)
+		&&  (!super_user)) {
+			rc = ESLURM_ACCESS_DENIED;
+			goto reply;
+		}
+		_set_job_prio(job_ptr);
+		last_job_update = now;
+		goto reply;
+	}
+
+	if (job_ptr->batch_flag == 0) {
+		rc = ESLURM_BATCH_ONLY;
+		goto reply;
+	}
+
+	if ((job_ptr->job_state != JOB_SUSPENDED)
+	&&  (job_ptr->job_state != JOB_RUNNING)) {
+		error("job_requeue job %u state is bad %s", job_id,
+			job_state_string(job_ptr->job_state));
+		rc = EINVAL;
+		goto reply;
+	}
+
+	if (job_ptr->job_state == JOB_SUSPENDED)
+		suspended = true;
+	last_job_update            = now;
+	job_ptr->time_last_active  = now;
+	job_ptr->job_state         = JOB_PENDING | JOB_COMPLETING;
+	if (suspended)
+		job_ptr->end_time = job_ptr->suspend_time;
+	else
+		job_ptr->end_time = now;
+	deallocate_nodes(job_ptr, false, suspended);
+	job_completion_logger(job_ptr);
+//FIXME: Test accounting
+
+    reply:
 	rc_msg.return_code = rc;
 	resp_msg.msg_type  = RESPONSE_SLURM_RC;
 	resp_msg.data      = &rc_msg;

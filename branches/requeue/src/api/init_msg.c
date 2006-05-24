@@ -2,7 +2,7 @@
  *  init_msg.c - initialize RPC messages contents
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -83,6 +83,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->mail_user   = NULL;
 	job_desc_msg->port        = 0;
 	job_desc_msg->begin_time  = 0;
+	job_desc_msg->no_requeue  = (uint16_t) NO_VAL;
 #if SYSTEM_DIMENSIONS
 {
 	int i;

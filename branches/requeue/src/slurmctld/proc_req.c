@@ -95,6 +95,7 @@ inline static void  _slurm_rpc_node_select_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_old_job_alloc(slurm_msg_t * msg);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
+inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
@@ -264,6 +265,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_SUSPEND:
 		_slurm_rpc_suspend(msg);
 		slurm_free_suspend_msg(msg->data);
+		break;
+	case REQUEST_JOB_REQUEUE:
+		_slurm_rpc_requeue(msg);
+		slurm_free_job_id_msg(msg->data);
 		break;
 	case REQUEST_JOB_READY:
 		_slurm_rpc_job_ready(msg);
@@ -2099,6 +2104,37 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 		/* Functions below provide their own locking */
 		if (sus_ptr->op == SUSPEND_JOB)
 			(void) schedule();
+		schedule_job_save();
+	}
+}
+
+inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	job_id_msg_t *requeue_ptr = (job_id_msg_t *) msg->data;
+	/* Locks: write job and node */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	uid_t uid;
+
+	START_TIMER;
+	info("Processing RPC: REQUEST_REQUEUE");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	lock_slurmctld(job_write_lock);
+	error_code = job_requeue(uid, requeue_ptr->job_id, 
+		msg->conn_fd);
+	unlock_slurmctld(job_write_lock);
+	END_TIMER;
+
+	if (error_code) {
+		info("_slurm_rpc_requeue %u: %s", requeue_ptr->job_id,
+			slurm_strerror(error_code));
+	} else {
+		info("_slurm_rpc_requeue %u: %s", requeue_ptr->job_id,
+			TIME_STR);
+		/* Functions below provide their own locking */
 		schedule_job_save();
 	}
 }

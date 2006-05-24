@@ -617,8 +617,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 
 	 case REQUEST_JOB_READY:
+	 case REQUEST_JOB_REQUEUE:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
 		break;
+
 	 case REQUEST_NODE_SELECT_INFO:
 		_pack_node_select_info_req_msg(
 			(node_info_select_request_msg_t *) msg->data, buffer);
@@ -905,6 +907,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 
 	 case REQUEST_JOB_READY:
+	 case REQUEST_JOB_REQUEUE:
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
 				& msg->data, buffer);
 		break;
@@ -2128,6 +2131,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->work_dir, buffer);
 
 	pack16((uint16_t)job_desc_ptr->immediate, buffer);
+	pack16((uint16_t)job_desc_ptr->no_requeue, buffer);
 	pack16((uint16_t)job_desc_ptr->shared, buffer);
 	pack16((uint16_t)job_desc_ptr->cpus_per_task, buffer);
 	pack32((uint32_t)job_desc_ptr->time_limit, buffer);
@@ -2218,6 +2222,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->work_dir, &uint16_tmp, buffer);
 
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
+	safe_unpack16(&job_desc_ptr->no_requeue, buffer);
 	safe_unpack16(&job_desc_ptr->shared, buffer);
 	safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
@@ -3449,6 +3454,7 @@ static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer)
 	xfree(msg);
 	return SLURM_ERROR;
 }
+
 
 static void
 _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer)
