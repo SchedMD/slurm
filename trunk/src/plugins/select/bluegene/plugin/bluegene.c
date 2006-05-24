@@ -963,34 +963,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	sort_bg_record_inc_size(bg_list);
 
 	
-/* #ifndef HAVE_BG_FILES */
-/* 	char tmp_char[256]; */
-/* 	static int block_inx = 0; */
-/* 	if(bg_list) { */
-/* 		slurm_mutex_lock(&block_state_mutex); */
-/* 		itr = list_iterator_create(bg_list); */
-/* 		while ((bg_record = (bg_record_t*) list_next(itr))) { */
-/* 			if (bg_record->bg_block_id) */
-/* 				continue; */
-/* 			bg_record->bg_block_id = xmalloc(sizeof(char)*8); */
-/* 			snprintf(bg_record->bg_block_id, 8, "RMP%d",  */
-/* 				 block_inx++); */
-/* 			format_node_name(bg_record, tmp_char); */
-/* 			info("Record: BlockID:%s Nodes:%s Conn:%s", */
-/* 			     bg_record->bg_block_id, tmp_char, */
-/* 			     convert_conn_type(bg_record->conn_type)); */
-/* 		} */
-/* 		list_iterator_destroy(itr); */
-/* 		slurm_mutex_unlock(&block_state_mutex); */
-/* 	} else { */
-/* 		error("create_defined_blocks: no bg_list 4"); */
-/* 		return SLURM_ERROR; */
-/* 	} */
-	
-	
-/* #endif	/\* not have HAVE_BG_FILES *\/ */
-	
-
 #ifdef _PRINT_BLOCKS_AND_EXIT
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
