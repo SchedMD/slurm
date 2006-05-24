@@ -88,16 +88,14 @@ mkdir auxdir 2>/dev/null
 # Remove config.h.in to make sure it is rebuilt
 rm -f config.h.in
 
-echo "running aclocal $ACLOCAL_FLAGS ... "
-aclocal -I auxdir $ACLOCAL_FLAGS
-echo "running libtoolize --automake --copy ..."
-libtoolize --automake --copy
-echo "running autoheader ... "
-autoheader
-echo "running automake --copy --add-missing ... "
-automake --force --copy --add-missing
-echo "running autoconf ... "
-autoconf
+set -x
+aclocal -I auxdir $ACLOCAL_FLAGS || exit 1
+libtoolize --automake --copy --force || exit 1
+autoheader || exit 1
+automake --add-missing --copy --force-missing || exit 1
+autoconf --force --warnings=all || exit 1
+set +x
+
 if [ -e config.status ]; then
    echo "removing stale config.status."
    rm -f config.status 
