@@ -12,18 +12,22 @@
 
 DIE=0
 
-# minimum required versions of autoconf/automake:
+# minimum required versions of autoconf/automake/libtool:
 ACMAJOR=2
-ACMINOR=52
+ACMINOR=59
 
 AMMAJOR=1
-AMMINOR=6
-AMPATCH=2
+AMMINOR=9
+AMPATCH=0
+
+LTMAJOR=1
+LTMINOR=5
+LTPATCH=8
 
 (autoconf --version 2>&1 | \
  perl -n0e "(/(\d+)\.(\d+)/ && \$1>=$ACMAJOR && \$2>=$ACMINOR) || exit 1") || {
     echo
-    echo "Error: You must have \`autoconf' version $ACMAJOR.$ACMINOR or greater"
+    echo "Error: You must have 'autoconf' version $ACMAJOR.$ACMINOR or greater"
     echo "installed to run $0. Get the latest version from"
     echo "ftp://ftp.gnu.org/pub/gnu/autoconf/"
     echo
@@ -38,14 +42,29 @@ amtest="
     exit 1 if (\$5 < $AMPATCH); 
 }"
 
-
 (automake --version 2>&1 | perl -n0e "$amtest" ) || {
     echo
-    echo "Error: You must have \`automake' version $AMMAJOR.$AMMINOR.$AMPATCH or greater"
+    echo "Error: You must have 'automake' version $AMMAJOR.$AMMINOR.$AMPATCH or greater"
     echo "installed to run $0. Get the latest version from"
     echo "ftp://ftp.gnu.org/pub/gnu/automake/"
     echo
     NO_AUTOCONF=yes
+    DIE=1
+}
+
+lttest="
+    if (/(\d+)\.(\d+)((-p|\.)(\d+))*/) { 
+    exit 1 if (\$1 < $LTMAJOR);
+    exit 1 if (\$1 == $LTMAJOR && \$2 < $LTMINOR); 
+    exit 1 if (\$1 == $LTMAJOR && \$2 == $LTMINOR && \$5 < $LTPATCH);
+}"
+
+(libtool --version 2>&1 | perl -n0e "$lttest" ) || {
+    echo
+    echo "Error: You must have 'libtool' version $LTMAJOR.$LTMINOR.$LTPATCH or greater"
+    echo "installed to run $0. Get the latest version from"
+    echo "ftp://ftp.gnu.org/pub/gnu/libtool/"
+    echo
     DIE=1
 }
 
@@ -88,13 +107,8 @@ if [ -e config.log    ]; then
    rm -f config.log
 fi
 
-# NOTE: No longer needed thanks to "AM_MAINTER_MODE" in configure.ac
-#
-# touch slurm/slurm.h.in to avoid re-running autoheader
-# after aclocal.m4 is generated, which can fail on some 
-# systems lacking the proper libtools. Note slurm/slurm.h
-# should be static (not build by autogen.sh).
-#
-# touch slurm/slurm.h.in
-
 echo "now run ./configure to configure slurm for your environment."
+echo
+echo "NOTE: This script has most likely just modified files that are under"
+echo "      version control.  Make sure that you really want these changes"
+echo "      applied to the repository before you run \"svn commit\"."
