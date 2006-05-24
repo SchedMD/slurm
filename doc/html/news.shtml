@@ -48,7 +48,7 @@ in support of the Native Posix Thread Library.</li>
 </ul>
 
 <h2><a name="11">Major Updates in SLURM Version 1.1</a></h2>
-<p>We expect to make SLURM Version 1.1 available in May 2006.
+<p>SLURM Version 1.1 became available in May 2006.
 Major enhancements include:
 <ul>
 <li>Communications enhancements, validated up to 16,384 node clusters.</li>
@@ -92,6 +92,6 @@ to coordinate activies. Future development plans includes:
 </ul>
 
 
-<p style="text-align:center;">Last modified 11 May 2006</p>
+<p style="text-align:center;">Last modified 24 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
