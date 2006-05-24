@@ -233,7 +233,7 @@ $MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
 
 <p><a href="http://www-unix.mcs.anl.gov/mpi/mpich2/"><b>MPICH2</b></a> jobs 
 are launched using the <b>srun</b> command. Just link your program with 
-SLURM's implementation of the PMI library so that tasks can communication 
+SLURM's implementation of the PMI library so that tasks can communicate
 host and port information at startup. For example:
 <pre>
 $ mpicc -lXlinker "-lpmi" ...
