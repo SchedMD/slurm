@@ -118,7 +118,7 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time);
 extern void print_date();
 extern void clear_window(WINDOW *win);
 
-extern void get_slurm_part(GtkWidget *widget);
+extern void get_slurm_part(GtkTable *table);
 extern void get_bg_part();
 extern void get_job();
 extern void get_command();

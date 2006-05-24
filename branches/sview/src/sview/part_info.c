@@ -60,10 +60,11 @@ static char* _convert_node_use(enum node_use_type node_use);
 #ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count);
 #endif
-static void _print_header_part(void);
+static void _print_header_part(GtkTable *table);
 static char *_part_state_str(rm_partition_state_t state);
-static int  _print_text_part(partition_info_t *part_ptr, 
-			     db2_block_info_t *db2_info_ptr);
+static int _make_text_part(partition_info_t *part_ptr, 
+			   db2_block_info_t *db2_info_ptr,
+			   GtkTable *table, int line);
 #ifdef HAVE_BG
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
@@ -98,14 +99,15 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 	}
 }
 
-extern void get_slurm_part(GtkWidget *table)
+extern void get_slurm_part(GtkTable *table)
 {
 	int error_code, i, j, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
 	//GtkWidget *table = NULL;
-	
+	//GtkWidget *label = NULL;
+
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
 						   &new_part_ptr, SHOW_ALL);
@@ -125,19 +127,17 @@ extern void get_slurm_part(GtkWidget *table)
 		return;
 	}
 	
-	if (!params.no_header)
-		_print_header_part();
 	
 	if (new_part_ptr)
 		recs = new_part_ptr->record_count;
 	else
 		recs = 0;
 	
-	if(recs) {
-		gtk_table_resize(GTK_TABLE(table), recs, 1);
-		gtk_container_set_border_width(GTK_CONTAINER(table), 10);
-		gtk_widget_show(table);		
-	}
+	gtk_table_resize(GTK_TABLE(table), recs+1, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	gtk_widget_show(GTK_WIDGET(table));		
+
+	_print_header_part(table);
 	
 	for (i = 0; i < recs; i++) {
 		j = 0;
@@ -152,7 +152,14 @@ extern void get_slurm_part(GtkWidget *table)
 /* 				 part.node_inx[j + 1], count); */
 			j += 2;
 		}
-		_print_text_part(&part, NULL);
+		for(i=0; i<10; i++)
+			_make_text_part(&part, NULL, table, i+1);
+		/* label = gtk_label_new (data); */
+/* 		gtk_table_attach_defaults(GTK_TABLE(table),  */
+/* 					  label, */
+/* 					  0, 1, i, i+1); */
+/* 		gtk_widget_show (label); */
+/* 		xfree(data); */
 		count++;
 			
 	}
@@ -401,13 +408,27 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 }
 #endif
 
-static void _print_header_part(void)
+static void _print_header_part(GtkTable *table)
 {
-	
-	printf("PARTITION ");
+	int col = 0;
+	GtkWidget *button = NULL;
+
+	button = gtk_toggle_button_new_with_label ("PARTITION");
+	gtk_table_attach_defaults(table, 
+				  button,
+				  col, col+1, 0, 1);
+	col++;
 	if (params.display != BGPART) {
-		printf("AVAIL ");
-		printf("TIMELIMIT ");
+		button = gtk_toggle_button_new_with_label ("AVAIL");
+		gtk_table_attach_defaults(table, 
+					  button,
+					  col, col+1, 0, 1);
+		col++;
+		button = gtk_toggle_button_new_with_label ("TIMELIMIT");
+		gtk_table_attach_defaults(table, 
+					  button,
+					  col, col+1, 0, 1);
+		col++;
 	} else {
 		printf("        BG_BLOCK ");
 		printf("STATE ");
@@ -416,11 +437,20 @@ static void _print_header_part(void)
 		printf(" NODE_USE ");
 	}
 
-	printf("NODES ");
+	button = gtk_toggle_button_new_with_label ("NODES");
+	gtk_table_attach_defaults(table, 
+				  button,
+				  col, col+1, 0, 1);
+	col++;
 #ifdef HAVE_BG
 	printf("BP_LIST\n");
 #else
-	printf("NODELIST\n");	
+	button = gtk_toggle_button_new_with_label ("NODELIST");
+	gtk_table_attach_defaults(table, 
+				  button,
+				  col, col+1, 0, 1);
+	col++;
+	
 #endif
 		
 }
@@ -452,25 +482,36 @@ static char *_part_state_str(rm_partition_state_t state)
 	return tmp;
 }
 
-static int _print_text_part(partition_info_t *part_ptr, 
-			    db2_block_info_t *db2_info_ptr)
+static int _make_text_part(partition_info_t *part_ptr, 
+			     db2_block_info_t *db2_info_ptr,
+			     GtkTable *table, int line)
 {
 	int printed = 0;
 	int tempxcord;
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[7];
-
+	char data[20];
+	int col = 0;
+	GtkWidget *label = NULL;
 	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
 
 	if (part_ptr->name) {
-		printf("%9.9s ", part_ptr->name);
-			
+		label = gtk_label_new(part_ptr->name);
+		gtk_table_attach_defaults(table, 
+					  label,
+					  col, col+1, line, line+1);
+		col++;
 		if (params.display != BGPART) {
 			if (part_ptr->state_up)
-				printf("   up ");
+				label = gtk_label_new("up");
 			else
-				printf(" down ");
+				label = gtk_label_new("down");
+			gtk_table_attach_defaults(table, 
+						  label,
+						  col, col+1, line, line+1);
+			col++;
+		
 							
 			if (part_ptr->max_time == INFINITE)
 				snprintf(time_buf, sizeof(time_buf), 
@@ -483,7 +524,12 @@ static int _print_text_part(partition_info_t *part_ptr,
 			}
 			
 			width = strlen(time_buf);
-			printf("%9.9s ", time_buf);		
+			label = gtk_label_new(time_buf);
+			gtk_table_attach_defaults(table, 
+						  label,
+						  col, col+1, line, line+1);
+			col++;
+		
 		} 
 	}
 
@@ -503,8 +549,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 		} 
 	}
 		
-	printf("%5s ", tmp_cnt);
-		
+       	label = gtk_label_new(tmp_cnt);
+	gtk_table_attach_defaults(table, 
+				  label,
+				  col, col+1, line, line+1);
+	col++;	
 	tempxcord = ba_system_ptr->xcord;
 		
 	if (params.display == BGPART)
@@ -521,9 +570,13 @@ static int _print_text_part(partition_info_t *part_ptr,
 		else 
 			printf("%s.%d\n", nodes, 
 			       db2_info_ptr->quarter);
-	} else
-		printf("%s\n",nodes);
-	
+	} else {
+		label = gtk_label_new(nodes);
+		gtk_table_attach_defaults(table, 
+					  label,
+					  col, col+1, line, line+1);
+		col++;		
+	}
 	return printed;
 }
 

@@ -37,12 +37,12 @@ static void _page_switched(GtkNotebook     *notebook,
 			   gpointer         user_data)
 {
 	GtkScrolledWindow *window = GTK_SCROLLED_WINDOW(gtk_notebook_get_nth_page(notebook, page_num));
+	if(!window)
+		return;
 	GtkBin *bin = GTK_BIN(&window->container);
 	GtkViewport *view = GTK_BIN(bin->child);
 	GtkBin *bin2 = GTK_BIN(&view->bin);
 	GtkTable *table = GTK_TABLE(bin2->child);
-	if(!window)
-		return;
 	if(GTK_IS_TABLE(table))
 		g_print("hey I switched %d\n", page_num);
 	switch(page_num) {
@@ -298,12 +298,12 @@ int main( int argc,
 	
 
 	for (j = 0; j < 10; j++) {
-		sprintf (bufferl, "Job (%d)\n", j);
+		sprintf(bufferl, "Job (%d)\n", j);
 		button = gtk_toggle_button_new_with_label (bufferl);
-		gtk_table_attach_defaults (GTK_TABLE (scrolltable), 
-					   button,
-					   0, 1, j, j+1);
-		gtk_widget_show (button);
+		gtk_table_attach_defaults(GTK_TABLE (scrolltable), 
+					  button,
+					  0, 1, j, j+1);
+		gtk_widget_show(button);
 	}
 
 	label = gtk_label_new("Jobs");
@@ -311,9 +311,9 @@ int main( int argc,
 				 scrolled_window, label);
 	/* Node info */
 
-	frame = gtk_frame_new ("Node info");
-	gtk_container_set_border_width (GTK_CONTAINER (frame), 10);
-	gtk_widget_show (frame);
+	frame = gtk_frame_new("Node info");
+	gtk_container_set_border_width(GTK_CONTAINER(frame), 10);
+	gtk_widget_show(frame);
 	
 	label = gtk_label_new ("Node info here");
 	gtk_container_add (GTK_CONTAINER (frame), label);
