@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 7914 2006-05-01 18:28:51Z grondo $
+# $Id: Makefile.am 8097 2006-05-17 20:44:18Z morrone $
 # Makefile for common library 
 
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) $(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) $(libspank_la_SOURCES)
@@ -378,7 +378,7 @@ libcommon_la_SOURCES = \
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
 	global_defaults.c		\
-	slurm_xlator.h
+	slurm_xlator.h			
 
 EXTRA_libcommon_la_SOURCES = \
 	$(extra_unsetenv_src)
