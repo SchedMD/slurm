@@ -537,7 +537,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
  * for the response, then closes the connections
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * RET List 		- return list from multiple nodes
+ * RET List 		- return list from multiple nodes (type ret_type_t)
  */
 List slurm_send_recv_node_msg(slurm_msg_t * request_msg, 
 			      slurm_msg_t * response_msg, 
@@ -546,7 +546,7 @@ List slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 /*
  *  Open a connection to req->address, send message (forward if told), 
  *  req must contain the message already packed in it's buffer variable,
- *  and receive List of "return codes" from all nodes
+ *  and receive List of ret_type_t from all nodes
  */
 List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
 
