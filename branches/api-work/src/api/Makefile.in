@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8100 2006-05-18 00:19:05Z morrone $
+# $Id: Makefile.am 8196 2006-05-25 01:05:24Z morrone $
 #
 # Makefile for slurm API library
 
@@ -352,6 +352,9 @@ libslurm_la_LDFLAGS = \
 	$(OTHER_FLAGS)
 
 libpmi_la_LBFLAGS = $(LIB_LDFLAGS)
+CLEANFILES = \
+	$(VERSION_SCRIPT)
+
 DISTCLEANFILES = \
 	$(VERSION_SCRIPT)
 
@@ -580,6 +583,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
