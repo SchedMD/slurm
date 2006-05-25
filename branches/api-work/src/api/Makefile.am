@@ -98,5 +98,8 @@ $(VERSION_SCRIPT) :
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
+CLEANFILES = \
+	$(VERSION_SCRIPT)
+
 DISTCLEANFILES = \
 	$(VERSION_SCRIPT)
