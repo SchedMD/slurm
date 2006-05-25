@@ -113,6 +113,43 @@ enum spank_err {
 
 typedef enum spank_err spank_err_t;
 
+/*
+ *  SPANK plugin options
+ */
+
+/*
+ *  SPANK option callback. `val' is an integer value provided by
+ *   the plugin to distinguish between plugin-local options, `optarg'
+ *   is an argument passed by the user (if applicable), and `remote'
+ *   specifies whether this call is being made locally (e.g. in srun)
+ *   or remotely (e.g. in slurmd).
+ */
+typedef int (*spank_opt_cb_f) (int val, const char *optarg, int remote);
+
+struct spank_option {
+    char *         name;    /* long option provided by plugin               */
+    char *         arginfo; /* one word description of argument if required */  
+    char *         usage;   /* Usage text                                   */
+    int            has_arg; /* Does option require argument?                */
+    int            val;     /* value to return using callback               */
+    spank_opt_cb_f cb;      /* Callback function to check option value      */
+};
+
+/*
+ *  Plugin may declare spank_options option table:
+ */
+extern struct spank_option spank_options [];
+
+/*
+ *  SPANK plugin option table must end with the following entry:
+ */
+#define SPANK_OPTIONS_TABLE_END { NULL, NULL, NULL, 0, 0, NULL }
+
+/*
+ *  Maximum allowed length of SPANK option name:
+ */
+#define SPANK_OPTION_MAXLEN      75
+
 
 /*  SPANK interface prototypes
  */
@@ -169,8 +206,8 @@ END_C_DECLS
  *   loader.
  */
 #define SPANK_PLUGIN(__name, __ver) \
-    const char plugin_name [] = "__name"; \
-    const char plugin_type [] = "spank/__name"; \
+    const char plugin_name [] = #__name; \
+    const char plugin_type [] = "spank"; \
     const unsigned int plugin_version = __ver;
 
 

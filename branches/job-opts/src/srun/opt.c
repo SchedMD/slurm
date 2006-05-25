@@ -66,6 +66,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/plugstack.h"
+#include "src/common/optz.h"
 
 #include "src/srun/opt.h"
 #include "src/srun/attach.h"
@@ -183,6 +185,8 @@ static int   _verify_conn_type(const char *arg);
 
 int initialize_and_process_args(int argc, char *argv[])
 {
+	if (spank_load () < 0)
+		return (-1);
 	/* initialize option defaults */
 	_opt_default();
 
@@ -1050,6 +1054,14 @@ void set_options(const int argc, char **argv, int first)
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
+
+	struct option *optz = spank_option_table_create (long_options);
+
+	if (!optz) {
+		error ("Unable to create option table");
+		exit (1);
+	}
+
 	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
 	else if(!first)
@@ -1058,7 +1070,7 @@ void set_options(const int argc, char **argv, int first)
 		error("opt.progname is set but it is the first time through.");
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
-				      long_options, &option_index)) != -1) {
+				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 			
 		case (int)'?':
@@ -1489,6 +1501,10 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
 			break;
+		default:
+			if (spank_process_option (opt_char, optarg) < 0) {
+				exit (1);
+			}
 		}
 	}
 
@@ -1498,6 +1514,8 @@ void set_options(const int argc, char **argv, int first)
 		if (_verbose > 3)
 			_opt_list();
 	}
+
+	spank_option_table_destroy (optz);
 }
 
 /* Load the multi_prog config file into argv, pass the  entire file contents 
@@ -2148,9 +2166,11 @@ static void _help(void)
 "             map_mem:<list>     bind by mapping memory of CPU IDs to tasks as specified\n"
 "                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
 "             mask_mem:<list>    bind by setting menory of CPU masks on tasks as specified\n"
-"                                where <list> is <mask1>,<mask2>,...<maskN>\n"
-"\n"
+"                                where <list> is <mask1>,<mask2>,...<maskN>\n");
 
+	spank_print_options (stdout, 6, 30);
+
+        printf(
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
   "AIX related options:\n"
   "  --network=type              communication protocol to be used\n"

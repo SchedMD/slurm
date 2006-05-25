@@ -36,6 +36,8 @@
 #include "src/common/safeopen.h"
 #include "src/common/strlcpy.h"
 #include "src/common/read_config.h"
+#include "src/common/plugstack.h"
+#include "src/common/optz.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -64,23 +66,53 @@ const char * spank_syms [] = {
 };
 
 struct spank_plugin {
+    const char *name;
     char *fq_path;
     plugin_handle_t plugin;
     bool required;
     int ac;
     char **argv;
     struct spank_plugin_operations ops;
+    struct spank_option *opts;
 };
 
+/*
+ *  SPANK Plugin options 
+ */
+struct spank_plugin_opt {
+    struct spank_option * opt;       /* Copy of plugin option info           */
+    struct spank_plugin * plugin;    /* Link back to plugin structure        */
+    int                   optval;    /* Globally unique value                */
+    int                   found:1;   /* 1 if option was found, 0 otherwise   */
+    int                   disabled:1;/* 1 if option is cached but disabled   */
+    char *                optarg;    /* Option argument.                     */
+};
 
-#define SPANK_MAGIC 0x00a5a500
+/*
+ *  Initial value for global optvals for SPANK plugin options
+ */
+static int spank_optval = 0xfff;
 
+/*
+ *  Cache of options provided by spank plugins
+ */
+static List option_cache = NULL;
+
+
+/*
+ *  SPANK handle for plugins
+ */
 struct spank_handle {
+#   define SPANK_MAGIC 0x00a5a500
     int magic;
     slurmd_job_t *job;
     slurmd_task_info_t *task;
 };
 
+
+/*
+ *  SPANK plugin hook types:
+ */
 typedef enum step_fn {
     STEP_INIT = 0,
     STEP_USER_INIT,
@@ -90,8 +122,19 @@ typedef enum step_fn {
     STEP_EXIT
 } step_fn_t;
 
-
+/*
+ *  SPANK plugins stack
+ */
 static List spank_stack = NULL;
+
+static pthread_mutex_t spank_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
+/*
+ *  Forward declarations
+ */
+static int _spank_plugin_options_cache (struct spank_plugin *p);
+
 
 static void _argv_append (char ***argv, int ac, const char *newarg)
 {
@@ -168,12 +211,15 @@ _spank_plugin_create (char *path, int ac, char **av, bool required)
 
     plugin = xmalloc (sizeof (struct spank_plugin));
 
-    plugin->fq_path =  path;
+    plugin->fq_path =  path; /* fq_path is xstrdup'd in *process_line */
     plugin->plugin =   p;
+    plugin->name =     plugin_get_name (p); /* no need to dup */
     plugin->required = required;
     plugin->ac =       ac;
     plugin->argv =     av;
     plugin->ops =      ops;
+
+    plugin->opts =     plugin_get_sym (p, "spank_options");
 
     return (plugin);
 }
@@ -182,6 +228,11 @@ void _spank_plugin_destroy (struct spank_plugin *sp)
 {
     if (sp == NULL)
         return;
+
+    xfree (sp->fq_path);
+
+    /* No need to free "name" it was defined within plugin */
+    sp->name = NULL;
 
     plugin_unload (sp->plugin);
     sp->plugin = NULL;
@@ -237,6 +288,8 @@ _spank_stack_create (const char *path, List *listp)
 
     *listp = NULL;
 
+    verbose ("spank: opening plugin stack %s\n", path);
+
     if (!(fp = safeopen (path, "r", SAFEOPEN_NOCREATE)))
         return -1;
 
@@ -253,8 +306,10 @@ _spank_stack_create (const char *path, List *listp)
         if (*listp == NULL)
             *listp = list_create ((ListDelF) _spank_plugin_destroy);
 
-        debug ("spank: loaded plugin %s\n", xbasename (p->fq_path));
+        verbose ("spank: loaded plugin %s\n", xbasename (p->fq_path));
         list_append (*listp, p);
+
+        _spank_plugin_options_cache (p);
 
         line++;
     }
@@ -292,7 +347,7 @@ _step_fn_name (step_fn_t type)
             return ("task_init");
         case STEP_TASK_POST_FORK:
             return ("task_post_fork");
-	case STEP_TASK_EXIT:
+    case STEP_TASK_EXIT:
             return ("task_exit");
         case STEP_EXIT:
             return ("exit");
@@ -368,7 +423,7 @@ _do_call_stack (step_fn_t type, slurmd_job_t *job, int taskid)
             error ("spank: required plugin %s: %s() failed with rc=%d", 
                     name, fn_name, rc);
             break;
-	} else
+    } else
             rc = 0;
     }
 
@@ -377,7 +432,7 @@ _do_call_stack (step_fn_t type, slurmd_job_t *job, int taskid)
     return (rc);
 }
 
-int spank_init (slurmd_job_t *job)
+int spank_load (void)
 {
     slurm_ctl_conf_t *conf = slurm_conf_lock ();
     const char *path = conf->plugstack;
@@ -389,6 +444,24 @@ int spank_init (slurmd_job_t *job)
         error ("spank: failed to create plugin stack: %m");
         return (-1);
     }
+
+    return (0);
+}
+
+int spank_unload (void)
+{
+    if (spank_stack)
+        list_destroy (spank_stack);
+    if (option_cache)
+        list_destroy (option_cache);
+
+    return (0);
+}
+
+int spank_init (slurmd_job_t *job)
+{
+    if ((spank_stack == NULL) && (spank_load () < 0))
+        return (-1);
 
     return (_do_call_stack (STEP_INIT, job, -1));
 }
@@ -417,16 +490,347 @@ int spank_fini (slurmd_job_t *job)
 {
     int rc = _do_call_stack (STEP_EXIT, job, -1);
 
-    if (spank_stack)
-        list_destroy (spank_stack);
+    spank_unload ();
 
     return (rc);
 }
 
-
-/*  Global functions for SPANK plugins
+/*
+ *  SPANK options functions
  */
 
+static int
+_spank_next_option_val (void)
+{
+    int optval;
+    slurm_mutex_lock (&spank_mutex);
+    optval = spank_optval++;
+    slurm_mutex_unlock (&spank_mutex);
+    return (optval);
+}
+
+static struct spank_plugin_opt *
+_spank_plugin_opt_create (struct spank_plugin *p, struct spank_option *opt,
+        int disabled)
+{
+    struct spank_plugin_opt *spopt = xmalloc (sizeof (*spopt));
+    spopt->opt =    opt;
+    spopt->plugin = p;
+    spopt->optval = _spank_next_option_val ();
+    spopt->found =  0;
+    spopt->optarg = NULL;
+
+    spopt->disabled = disabled;
+
+    return (spopt);
+}
+
+void
+_spank_plugin_opt_destroy (struct spank_plugin_opt *spopt)
+{
+    xfree (spopt->optarg);
+    xfree (spopt);
+}
+
+static int 
+_opt_by_val (struct spank_plugin_opt *opt, int *optvalp)
+{
+    return (opt->optval == *optvalp);
+}
+
+static int 
+_opt_by_name (struct spank_plugin_opt *opt, char *optname)
+{
+    return (strcmp (opt->opt->name, optname) == 0);
+}
+
+static int
+_spank_plugin_options_cache (struct spank_plugin *p)
+{
+    int disabled = 0;
+    struct spank_option *opt = p->opts;
+
+    if ((opt == NULL) || opt->name == NULL)
+        return (0);
+
+    if (!option_cache) {
+        option_cache = list_create ((ListDelF) _spank_plugin_opt_destroy);
+    } 
+
+    for (; opt && opt->name != NULL; opt++) {
+        struct spank_plugin_opt *spopt;
+        
+        spopt = list_find_first (option_cache, (ListFindF) _opt_by_name, 
+                                opt->name);
+        if (spopt) {
+            struct spank_plugin *q = spopt->plugin;
+            info ("spank: option \"%s\" provided by both %s and %s", 
+                   opt->name, xbasename (p->fq_path), xbasename (q->fq_path));
+            /*
+             *  Disable this option, but still cache it, in case
+             *    options are loaded in a different order on the remote
+             *    side.
+             */
+            disabled = 1;
+        }
+
+        if ((strlen (opt->name) > SPANK_OPTION_MAXLEN)) {
+            error ("spank: option \"%s\" provided by %s too long. Ignoring.",
+                   opt->name, p->name); 
+            continue;
+        }
+
+        verbose ("SPANK: appending plugin option \"%s\"\n", opt->name);
+        list_append (option_cache, _spank_plugin_opt_create (p, opt, disabled));
+    }
+
+    return (0);
+}
+
+struct option *
+spank_option_table_create (const struct option *orig)
+{
+    struct spank_plugin_opt *spopt;
+    struct option *opts = NULL;
+    ListIterator i = NULL;
+
+    opts = optz_create ();
+
+    /*
+     *  Start with original options:
+     */
+    if ((orig != NULL) && (optz_append (&opts, orig) < 0)) {
+        optz_destroy (opts);
+        return (NULL);
+    }
+
+    if (option_cache == NULL || (list_count (option_cache) == 0)) 
+        return (opts);
+
+    i = list_iterator_create (option_cache);
+    while ((spopt = list_next (i))) {
+        struct option opt;
+
+        if (spopt->disabled)
+            continue;
+
+        opt.name = spopt->opt->name;
+        opt.has_arg = spopt->opt->has_arg;
+        opt.flag = NULL;
+        opt.val = spopt->optval;
+
+        if (optz_add (&opts, &opt) < 0) {
+            if (errno == EEXIST) {
+                error ("Ingoring conflicting option \"%s\" in plugin \"%s\"", 
+                        opt.name, spopt->plugin->name);
+            }
+            else {
+                error ("Unable to add option \"%s\" from plugin \"%s\"",
+                        opt.name, spopt->plugin->name);
+            }
+            spopt->disabled = 1;
+            continue;
+        }
+
+    }
+
+    list_iterator_destroy (i);
+
+    return (opts);
+}
+
+void 
+spank_option_table_destroy (struct option *optz)
+{
+    optz_destroy (optz);
+}
+
+int 
+spank_process_option (int optval, const char *arg)
+{
+    struct spank_plugin_opt *opt;
+    int rc = 0;
+
+    opt = list_find_first (option_cache, (ListFindF) _opt_by_val, &optval);
+
+    if (!opt)
+        return (-1);
+
+    /*
+     *  Call plugin callback if such a one exists
+     */
+    if (opt->opt->cb && (rc = ((*opt->opt->cb) (opt->opt->val, arg, 0))) < 0)
+        return (rc);
+
+    /*
+     *  Set optarg and "found" so that option will be forwarded to remote side.
+     */
+    if (opt->opt->has_arg)
+        opt->optarg = xstrdup (arg);
+    opt->found = 1;
+
+    return (0);
+}
+
+static void
+_spank_opt_print (struct spank_option *opt, FILE *fp, int left_pad, int width)
+{
+    int    n;
+    char * equals =    "";
+    char * arginfo =   "";
+    char   buf [81];
+
+
+    if (opt->arginfo) {
+        equals = "=";
+        arginfo = opt->arginfo;
+    }
+
+    n = snprintf (buf, sizeof (buf), "%*s--%s%s%s", 
+            left_pad, "", opt->name, equals, arginfo);
+
+    if ((n < 0) || (n > sizeof (buf))) {
+        const char trunc [] = "+";
+        int len = strlen (trunc);
+        char *p = buf + sizeof (buf) - len - 1;
+
+        snprintf (p, len + 1, "%s", trunc);
+    }
+
+    if (n < width)
+        fprintf (fp, "%-*s%s\n", width, buf, opt->usage); 
+    else
+        fprintf (fp, "\n%s\n%*s%s\n", buf, width, "", opt->usage);
+
+    return;
+}
+
+int
+spank_print_options (FILE *fp, int left_pad, int width)
+{
+    struct spank_plugin_opt *p;
+    ListIterator i;
+
+    if ((option_cache == NULL) || (list_count (option_cache) == 0))
+        return (0);
+
+    i = list_iterator_create (option_cache);
+    while ((p = list_next (i))) {
+        if (p->disabled)
+            continue;
+        _spank_opt_print (p->opt, fp, left_pad, width);
+    }
+    list_iterator_destroy (i);
+
+    return (0);
+}
+
+#define OPT_TYPE_SPANK 0x4400
+
+int 
+spank_set_remote_options (job_options_t opts)
+{
+    struct spank_plugin_opt *p;
+    ListIterator i;
+
+    if ((option_cache == NULL) || (list_count (option_cache) == 0))
+        return (0);
+
+    i = list_iterator_create (option_cache);
+    while ((p = list_next (i))) {
+        char optstr [1024];
+
+        if (!p->found)
+            continue;
+
+        snprintf (optstr, sizeof (optstr), "%s:%s", 
+                  p->opt->name, p->plugin->name);
+
+        job_options_append (opts, OPT_TYPE_SPANK, optstr, p->optarg);
+    }
+    list_iterator_destroy (i);
+    return (0);
+}
+
+struct opt_find_args {
+    const char *optname;
+    const char *plugin_name;
+};
+
+static int _opt_find (struct spank_plugin_opt *p, struct opt_find_args *args)
+{
+    if (strcmp (p->plugin->name, args->plugin_name) != 0)
+        return (0);
+    if (strcmp (p->opt->name, args->optname) != 0)
+        return (0);
+    return (1);
+}
+
+static struct spank_plugin_opt *
+_find_remote_option_by_name (const char *str)
+{
+    struct spank_plugin_opt *opt;
+    struct opt_find_args args;
+    char buf [256];
+    char *name;
+
+    if (strlcpy (buf, str, sizeof (buf)) >= sizeof (buf)) {
+        error ("plugin option \"%s\" too big. Ignoring.", str);
+        return (NULL);
+    }
+
+    if (!(name = strchr (buf, ':'))) {
+        error ("Malformed plugin option \"%s\" recieved. Ignoring", str);
+        return (NULL);
+    }
+
+    *(name++) = '\0';
+
+    args.optname = buf;
+    args.plugin_name = name;
+
+    opt = list_find_first (option_cache, (ListFindF) _opt_find, &args);
+
+    if (opt == NULL) {
+        error ("warning: plugin \"%s\" option \"%s\" not found.", name, buf);
+        return (NULL);
+    }
+
+    return (opt);
+}
+
+int
+spank_get_remote_options (job_options_t opts)
+{
+    const struct job_option_info *j;
+
+    job_options_iterator_reset (opts);
+    while ((j = job_options_next (opts))) {
+        struct spank_plugin_opt *opt;
+        struct spank_option     *p;
+
+        if (j->type != OPT_TYPE_SPANK)
+            continue;
+
+        if (!(opt = _find_remote_option_by_name (j->option)))
+            continue;
+
+        p = opt->opt;
+
+        if (p->cb && (((*p->cb) (p->val, j->optarg, 1)) < 0)) {
+            error ("spank: failed to process option %s=%s", 
+                    p->name, j->optarg);
+        }
+    }
+
+    return (0);
+}
+
+
+
+/*
+ *  Global functions for SPANK plugins
+ */
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...)
 {
     int        *p2int;
@@ -571,3 +975,7 @@ spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
 
     return (ESPANK_SUCCESS);
 }
+
+/*
+ * vi: ts=4 sw=4 expandtab
+ */
