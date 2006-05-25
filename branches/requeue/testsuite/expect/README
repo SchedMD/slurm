@@ -181,6 +181,7 @@ test3.4    Validate scontrol update command for jobs.
 test3.5    Validate scontrol create, delete, and update of partition.
 test3.6    Testing of hidden partitions.
 test3.7    Test of job suspend/resume.
+test3.8    Test of batch job requeue.
 UNTESTED   "scontrol abort"    would stop slurm 
 UNTESTED   "scontrol shutdown" would stop slurm
 
