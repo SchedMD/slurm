@@ -1414,14 +1414,15 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 			list_destroy(ret_list);
 		}
 		
-		if((rc == SLURM_SUCCESS) &&
-		   (resp->msg_type == RESPONSE_SLURM_RC) &&
-		   ((((return_code_msg_t *) resp->data)->return_code) 
-		    == ESLURM_IN_STANDBY_MODE) &&
-		   (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) && 
-		   (backup_controller_flag) &&
-		   (difftime(time(NULL), start_time) < 
-		    (slurmctld_timeout + (slurmctld_timeout / 2)))) {
+		if ((rc == SLURM_SUCCESS)
+		    && (resp->msg_type == RESPONSE_SLURM_RC)
+		    && ((((return_code_msg_t *) resp->data)->return_code) 
+			== ESLURM_IN_STANDBY_MODE)
+		    && (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS)
+		    && (backup_controller_flag)
+		    && (difftime(time(NULL), start_time)
+			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
+
 			debug("Neither primary nor backup controller "
 			      "responding, sleep and retry");
 			slurm_free_return_code_msg(resp->data);
