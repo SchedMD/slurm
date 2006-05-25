@@ -10,7 +10,7 @@ EXTRA_DIST = \
 	mpi-testscripts/barrier_timed.c	\
 	mpi-testscripts/Makefile	\
 	mpi-testscripts/script.slurm.sh	\
-	globals.example				\
+	globals.example			\
 	pkill				\
 	README				\
 	regression			\
@@ -69,6 +69,11 @@ EXTRA_DIST = \
 	test1.49			\
 	test1.50			\
 	test1.51			\
+	test1.52			\
+	test1.53			\
+	test1.54			\
+	test1.55			\
+	test1.56			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
@@ -81,6 +86,8 @@ EXTRA_DIST = \
 	test1.88.prog.c			\
 	test1.89			\
 	test1.89.prog.c			\
+	test1.90			\
+	test1.90.prog.c			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
@@ -97,6 +104,8 @@ EXTRA_DIST = \
 	test3.4				\
 	test3.5				\
 	test3.6				\
+	test3.7				\
+	test3.7.prog.c			\
 	test4.1				\
 	test4.2				\
 	test4.3				\
@@ -169,10 +178,20 @@ EXTRA_DIST = \
 	test11.3			\
 	test11.4			\
 	test11.5			\
+	test11.6			\
+	test11.7			\
 	test12.1			\
 	test12.2			\
 	test12.2.prog.c			\
 	test13.1			\
+	test14.1			\
+	test14.2			\
+	test14.3			\
+	test14.4			\
+	test14.5			\
+	test14.6			\
+	test14.7			\
+	test14.8			\
 	usleep
 
 distclean-local:
