@@ -19,10 +19,15 @@ AC_DEFUN([X_AC_AIX],
 [
    case "$host" in
       *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl"  # permit run time linking
- 	    CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull -Wl,-bmaxdata:0x70000000" # keep all common functions
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
-            CFLAGS="-maix32 $CFLAGS"
+            if test "$OBJECT_MODE" = "64"; then
+                CFLAGS="-maix64 $CFLAGS"
+                CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull" # keep all common functions
+            else
+                CFLAGS="-maix32 $CFLAGS"
+                CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull -Wl,-bmaxdata:0x70000000" # keep all common functions
+            fi
             ac_have_aix="yes"
             ac_with_readline="no"
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
@@ -41,8 +46,7 @@ AC_DEFUN([X_AC_AIX],
 
    if test "x$ac_have_aix" = "xyes"; then
       AC_ARG_WITH(proctrack,
-         AC_HELP_STRING([--with-proctrack=PATH],
-                        [Specify path to proctrack sources]),
+         AS_HELP_STRING(--with-proctrack=PATH,Specify path to proctrack sources),
          [ PROCTRACKDIR="$withval" ]
       )
       if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then

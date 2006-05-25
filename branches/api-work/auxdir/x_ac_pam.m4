@@ -18,7 +18,7 @@ AC_DEFUN([X_AC_PAM], [
   AC_MSG_CHECKING([whether to enable PAM support])
   AC_ARG_ENABLE(
     [pam],
-    AC_HELP_STRING([--enable-pam], [enable PAM (Pluggable Authentication Modules) support]),
+    AS_HELP_STRING(--enable-pam,enable PAM (Pluggable Authentication Modules) support),
     [ case "$enableval" in
         yes) x_ac_pam=yes ;;
          no) x_ac_pam=no ;;

@@ -887,11 +887,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		shared = 0;
 	else
 		shared = job_ptr->details->shared;
-	
-	error_code = _pick_best_nodes(node_set_ptr, node_set_size,
+
+	if (max_nodes < min_nodes) {
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	} else {
+		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				      &select_bitmap, job_ptr,
 				      min_nodes, max_nodes, req_nodes,
 				      shared);
+	}
+
 	if (error_code) {
 		if (detail_ptr)
 			detail_ptr->wait_reason = WAIT_RESOURCES;

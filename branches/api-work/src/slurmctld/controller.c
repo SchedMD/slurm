@@ -842,6 +842,7 @@ static void *_slurmctld_background(void *no_data)
 		if (DELTA_TIMER > 1000000)	/* more than one second */ 
 			info("_slurmctld_background loop %s", TIME_STR);
 	}
+
 	debug3("_slurmctld_background shutting down");
 
 	return NULL;

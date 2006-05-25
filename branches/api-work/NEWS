@@ -1,16 +1,24 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 1.1.0-pre9
-=============================
- -- Fix bug that could temporariy make nodes DOWN when they are really 
+* Changes in SLURM 1.1.1
+========================
+ -- Fix bug in packing job suspend/resume RPC.
+
+* Changes in SLURM 1.1.0
+========================
+ -- Fix bug that could temporarily make nodes DOWN when they are really 
     responding. 
  -- Fix bug preventing backup slurmctld from responding to PING RPCs.
  -- Set "CFLAGS=-DISO8601" before configuration to get ISO8601 format 
     times for all SLURM commands. NOTE: This may break Moab, Maui, and/or 
     LSF schedulers.
  -- Fix for srun -n and -O options when paired with -b.
-
+ -- Added logic for fanout to failover to forward list if main node is 
+    unreachable 
+ -- sacct also now keeps track of submitted, started and ending times of jobs
+ -- reinit config file mutex at beginning of slurmstepd to avoid fork issues
+ 
 * Changes in SLURM 1.1.0-pre8
 =============================
  -- Fix bug in enforcement of partition's MaxNodes limit.
@@ -137,6 +145,7 @@ documents those changes that are of interest to users and admins.
     contain all users in group by adding the uids of the names in /etc/passwd
     that have a gid of that which we are looking for.
  -- Fix bug in InactiveLimit support that can potentially purge active jobs.
+    NOTE: This is highly unlikely except on very large AIX clusters.
  
 * Changes in SLURM 1.0.12
 =========================

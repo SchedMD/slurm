@@ -32,7 +32,7 @@
 
 typedef struct expired_rec {  /* table of expired jobs */
 	uint32_t job;
-	time_t job_start;
+	time_t job_submit;
 	char *line;
 } expired_rec_t;
 
@@ -108,7 +108,7 @@ int _cmp_jrec(const void *a1, const void *a2) {
 	if (j1->job <  j2->job)
 		return -1;
 	else if (j1->job == j2->job) {
-		if(j1->job_start == j2->job_start)
+		if(j1->job_submit == j2->job_submit)
 			return 0;
 		else 
 			return 1;
@@ -134,7 +134,7 @@ void _dump_header(acct_header_t header)
 	          ts.tm_hour,
 		  ts.tm_min,
 		  ts.tm_sec,
-	       (int)header.job_start,
+	       (int)header.job_submit,
 	       header.blockid,	/* block id */
 	       "-");	/* reserved 1 */
 }
@@ -208,7 +208,7 @@ void _help_msg(void)
 	       "    isn't reset at the same time (with -e, for example), some\n"
 	       "    job numbers will probably appear more than once in the\n"
 	       "    accounting log file to refer to different jobs; such jobs\n"
-	       "    can be distinguished by the \"job_start\" time stamp in the\n"
+	       "    can be distinguished by the \"job_submit\" time stamp in the\n"
 	       "    data records.\n"
 	       "      When data for specific jobs are requested with\n"
 	       "    the --jobs option, we assume that the user\n"
@@ -362,8 +362,6 @@ int decode_status_char(char *status)
 		return JOB_TIMEOUT;
 	else if (!strcasecmp(status, "nf"))
 		return JOB_NODE_FAIL;
-	else if (!strcasecmp(status, "je"))
-		return JOB_END;
 	else
 		return -1; // unknown
 } 
@@ -387,8 +385,6 @@ char *decode_status_int(int status)
 		return "TIMEOUT";
 	case JOB_NODE_FAIL:
 		return "NODE_FAILED";
-	case JOB_END:
-		return "JOB_END";
 	default:
 		return "UNKNOWN";
 	}
@@ -1045,7 +1041,6 @@ void do_dump(void)
 	job_rec_t *job = NULL;
 	step_rec_t *step = NULL;
 	struct tm ts;
-	time_t finished;
 	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
@@ -1056,7 +1051,7 @@ void do_dump(void)
 						"Note: Skipping older"
 						" job %u dated %d\n",
 						job->header.jobnum,
-						(int)job->header.job_start);
+						(int)job->header.job_submit);
 				continue;
 			}
 		if (params.opt_uid>=0)
@@ -1101,8 +1096,10 @@ void do_dump(void)
 				step->exitcode=1;
 			}
 			_dump_header(step->header);
-			finished=step->header.job_start+step->elapsed;
-			gmtime_r(&finished, &ts);
+			if(step->end == 0)
+				step->end = job->end;
+				
+			gmtime_r(&step->end, &ts);
 			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
 			       step->stepnum,
 			       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
@@ -1158,8 +1155,7 @@ void do_dump(void)
 		/* JOB_TERMINATED */
 		if (job->show_full) {
 			_dump_header(job->header);
-			finished=job->header.job_start+job->elapsed;
-			gmtime_r(&finished, &ts);
+			gmtime_r(&job->end, &ts);
 			printf("JOB_TERMINATED 1 50 %d ",
 			       job->elapsed);
 			printf("%04d%02d%02d%02d%02d%02d ",
@@ -1330,7 +1326,7 @@ void do_expire(void)
 		}
 		
 		exp_rec->job = atoi(f[F_JOB]);
-		exp_rec->job_start = atoi(f[F_JOB_START]);
+		exp_rec->job_submit = atoi(f[F_JOB_SUBMIT]);
 		
 		rec_type = atoi(f[F_RECTYPE]);
 		/* Odd, but complain some other time */
@@ -1354,7 +1350,7 @@ void do_expire(void)
 			if (params.opt_verbose > 2)
 				fprintf(stderr, "Selected: %8d %d\n",
 					exp_rec->job,
-					(int)exp_rec->job_start);
+					(int)exp_rec->job_submit);
 		} else {
 			list_append(other_list, exp_rec);
 		}
@@ -1420,7 +1416,7 @@ void do_expire(void)
 		itr2 = list_iterator_create(other_list);
 		while((exp_rec2 = list_next(itr2))) {
 			if((exp_rec2->job != exp_rec->job) 
-			   || (exp_rec2->job_start != exp_rec->job_start))
+			   || (exp_rec2->job_submit != exp_rec->job_submit))
 				continue;
 			if (fputs(exp_rec2->line, expired_logfile)<0) {
 				perror("writing expired_logfile");
@@ -1540,7 +1536,7 @@ void do_fdump(char* f[], int lc)
 	char **type;
 	char    *header[] = {"job",       /* F_JOB */
 			     "partition", /* F_PARTITION */
-			     "job_start", /* F_JOB_START */
+			     "job_submit", /* F_JOB_SUBMIT */
 			     "timestamp", /* F_TIMESTAMP */
 			     "uid",	 /* F_UIDGID */
 			     "gid",	 /* F_UIDGID */
@@ -1687,7 +1683,7 @@ void do_list(void)
 						"Note: Skipping older"
 						" job %u dated %d\n",
 						job->header.jobnum,
-						(int)job->header.job_start);
+						(int)job->header.job_submit);
 				continue;
 			}
 		if (!job->job_start_seen && job->job_step_seen) {
@@ -1749,6 +1745,8 @@ void do_list(void)
 					if(!selected_status[step->status])
 						continue;
 				}
+				if(step->end == 0)
+					step->end = job->end;
 				print_fields(JOBSTEP, step);
 			} 
 			list_iterator_destroy(itr_step);

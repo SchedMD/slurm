@@ -730,6 +730,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	 */
 	if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		forward_init(&header.forward, NULL);
+		/* no need to init forward_struct_init here */
 		rc = errno;		
 		goto total_return;
 	}
@@ -776,6 +777,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		memcpy(msg->forward_struct->buf, 
 		       &buffer->head[buffer->processed], 
 		       msg->forward_struct->buf_len);
+		
 		msg->forward_struct->ret_list = ret_list;
 
 		msg->forward_struct->timeout = timeout-header.forward.timeout;
@@ -945,9 +947,6 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	Buf      buffer;
 	int      rc;
 	void *   auth_cred;
-	int count = 0;
-	ret_types_t *ret_type = NULL;
-	ListIterator itr;
 	
 	/* 
 	 * Initialize header with Auth credential and message type.
@@ -961,42 +960,10 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 
 	if(msg->forward.init != FORWARD_INIT) {
 		forward_init(&msg->forward, NULL);
+		/* no need to init forward_struct_init here */
 		msg->ret_list = NULL;
 	}
-	
-	/* wait for all the other messages on the tree under us */
-	if(msg->forward_struct_init == FORWARD_INIT && msg->forward_struct) {
-		debug3("looking for %d", msg->forward_struct->fwd_cnt);
-		slurm_mutex_lock(&msg->forward_struct->forward_mutex);
-		count = 0;
-		if (msg->ret_list != NULL) {
-			itr = list_iterator_create(msg->ret_list);
-			while((ret_type = (ret_types_t *) list_next(itr)) 
-			      != NULL) {
-				count += list_count(ret_type->ret_data_list);
-			}
-                        list_iterator_destroy(itr);
-		}
-		debug3("Got back %d", count);
-		while((count < msg->forward_struct->fwd_cnt)) {
-			pthread_cond_wait(&msg->forward_struct->notify, 
-					  &msg->forward_struct->forward_mutex);
-			count = 0;
-			if (msg->ret_list != NULL) {
-				itr = list_iterator_create(msg->ret_list);
-				while((ret_type = (ret_types_t *) list_next(itr)) 
-				      != NULL) {
-					count += list_count(ret_type->ret_data_list);
-				}
-                                list_iterator_destroy(itr);
-			}
-			debug3("Got back %d", count);
-				
-		}
-		debug3("Got them all");
-		slurm_mutex_unlock(&msg->forward_struct->forward_mutex);
-		destroy_forward_struct(msg->forward_struct);
-	}
+	forward_wait(msg);
 	
 	init_header(&header, msg, SLURM_PROTOCOL_NO_FLAGS);
 
@@ -1374,9 +1341,9 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		ret_list = slurm_receive_msg(fd, resp, timeout);
 	}
 	
-	if(!ret_list || list_count(ret_list) == 0) {
-		no_resp_forwards(&req->forward, &ret_list, errno);
-	}
+	/* if(!ret_list || list_count(ret_list) == 0) { */
+/* 		no_resp_forwards(&req->forward, &ret_list, errno); */
+/* 	} */
 
 	/* 
 	 *  Attempt to close an open connection
@@ -1412,14 +1379,14 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	bool backup_controller_flag;
 	uint16_t slurmctld_timeout;
 
-	if ((fd = slurm_open_controller_conn()) < 0) {
-		rc = SLURM_SOCKET_ERROR;
-		goto cleanup;
-	}
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
 	req->orig_addr.sin_addr.s_addr = 0; 
 	req->forward_struct_init = 0;
+	if ((fd = slurm_open_controller_conn()) < 0) {
+		rc = SLURM_SOCKET_ERROR;
+		goto cleanup;
+	}
 	//info("here 2");
 	
 	conf = slurm_conf_lock();
@@ -1487,8 +1454,7 @@ List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 	slurm_fd fd = -1;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
-		return NULL; //SLURM_SOCKET_ERROR;
-	//info("here 3");
+		return NULL; 
 	
 	return _send_and_recv_msg(fd, req, resp, timeout);
 
@@ -1593,10 +1559,14 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup("localhost");
 	ret_data_info->data = NULL;
-
+	debug3("got reply for %s rc %d %d", 
+	       ret_data_info->node_name, 
+	       msg_rc, 
+	       errno);
+	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
-		if(ret_type->err == err) {
+		if(ret_type->msg_rc == msg_rc) {
 			list_push(ret_type->ret_data_list, ret_data_info);
 			set = 1;
 			break;
@@ -1729,14 +1699,16 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	ret_types_t *ret_type = NULL;
 	int ret_c = SLURM_SUCCESS;
 
+	forward_init(&req->forward, NULL);
+	req->ret_list = NULL;
+	req->orig_addr.sin_addr.s_addr = 0;
+	/* no need to init forward_struct_init here */
+		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return SLURM_SOCKET_ERROR;
 	}
 
-	forward_init(&req->forward, NULL);
-	req->ret_list = NULL;
-	req->orig_addr.sin_addr.s_addr = 0;
-		
+			
 	ret_list = _send_recv_rc_msg(fd, req, timeout);
 	if(ret_list) {
 		if(list_count(ret_list)>1) 
@@ -1769,7 +1741,8 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
 	req->orig_addr.sin_addr.s_addr = 0; 
-	
+	/* no need to init forward_struct_init here */
+		
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return SLURM_SOCKET_ERROR;
 	ret_list = _send_recv_rc_msg(fd, req, 0);

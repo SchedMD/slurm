@@ -129,17 +129,18 @@ expect {
 # Make sure we have two records in both prolog and epilog output (one for each task)
 # Wait a few seconds for various delays
 #
-exec $bin_sleep 5
-set timeout 5
 set matches 0
-spawn $bin_cat $file_out_pre
-expect {
-	"uid=$my_uid" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
+if {[wait_for_file $file_out_pre] == 0} {
+	set timeout 5
+	spawn $bin_cat $file_out_pre
+	expect {
+		"uid=$my_uid" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
 }
 if {$matches != $tasks} {

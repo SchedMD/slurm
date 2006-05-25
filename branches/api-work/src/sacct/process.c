@@ -28,25 +28,33 @@
 
 #include "sacct.h"
 
-job_rec_t *_find_job_record(acct_header_t header);
+job_rec_t *_find_job_record(acct_header_t header, int type);
+int _remove_job_record(uint32_t jobnum);
 step_rec_t *_find_step_record(job_rec_t *job, long jobstep);
 job_rec_t *_init_job_rec(acct_header_t header);
 step_rec_t *_init_step_rec(acct_header_t header);
 int _parse_line(char *f[], void **data);
 
-job_rec_t *_find_job_record(acct_header_t header)
+job_rec_t *_find_job_record(acct_header_t header, int type)
 {
 	job_rec_t *job = NULL;
 	ListIterator itr = list_iterator_create(jobs);
 
 	while((job = (job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == header.jobnum) {
-			if(job->header.job_start == BATCH_JOB_TIMESTAMP) {
-				job->header.job_start = header.job_start;
+			if(job->header.job_submit == 0 && type == JOB_START) {
+				list_remove(itr);
+				destroy_job(job);
+				job = NULL;
+				break;
+			}
+		
+			if(job->header.job_submit == BATCH_JOB_TIMESTAMP) {
+				job->header.job_submit = header.job_submit;
 				break;
 			}
 			
-			if(job->header.job_start == header.job_start)
+			if(job->header.job_submit == header.job_submit)
 				break;
 			else {
 				/* If we're looking for a later
@@ -62,6 +70,23 @@ job_rec_t *_find_job_record(acct_header_t header)
 	}
 	list_iterator_destroy(itr);
 	return job;
+}
+
+int _remove_job_record(uint32_t jobnum)
+{
+	job_rec_t *job = NULL;
+	int rc = SLURM_ERROR;
+	ListIterator itr = list_iterator_create(jobs);
+
+	while((job = (job_rec_t *)list_next(itr)) != NULL) {
+		if (job->header.jobnum == jobnum) {
+			list_remove(itr);
+			destroy_job(job);
+			rc = SLURM_SUCCESS;
+		}
+	}
+	list_iterator_destroy(itr);
+	return rc;
 }
 
 step_rec_t *_find_step_record(job_rec_t *job, long stepnum)
@@ -134,7 +159,7 @@ int _parse_header(char *f[], acct_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
 	header->partition = xstrdup(f[F_PARTITION]);
-	header->job_start = atoi(f[F_JOB_START]);
+	header->job_submit = atoi(f[F_JOB_SUBMIT]);
 	header->timestamp = atoi(f[F_TIMESTAMP]);
 	header->uid = atoi(f[F_UID]);
 	header->gid = atoi(f[F_GID]);
@@ -229,15 +254,20 @@ void process_start(char *f[], int lc, int show_full)
 	job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp);
-	job = _find_job_record(temp->header);
+	job = _find_job_record(temp->header, JOB_START);
 	if (job) {	/* Hmmm... that's odd */
-		fprintf(stderr,
-			"Conflicting JOB_START for job %u at"
-			" line %d -- ignoring it\n",
-			job->header.jobnum, lc);
-		input_error++;
-		destroy_job(temp);
-		return;
+		printf("job->header.job_submit = %d", (int)job->header.job_submit);
+		if(job->header.job_submit == 0)
+			_remove_job_record(job->header.jobnum);
+		else {
+			fprintf(stderr,
+				"Conflicting JOB_START for job %u at"
+				" line %d -- ignoring it\n",
+				job->header.jobnum, lc);
+			input_error++;
+			destroy_job(temp);
+			return;
+		}
 	}
 	
 	job = temp;
@@ -256,7 +286,7 @@ void process_step(char *f[], int lc, int show_full)
 
 	_parse_line(f, (void **)&temp);
 
-	job = _find_job_record(temp->header);
+	job = _find_job_record(temp->header, JOB_STEP);
 	
 	if (temp->stepnum == -2) {
 		destroy_step(temp);
@@ -301,13 +331,15 @@ void process_step(char *f[], int lc, int show_full)
 		memcpy(&step->sacct, &temp->sacct, sizeof(sacct_t));
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
+		step->end = temp->header.timestamp;
 		destroy_step(temp);
 		goto got_step;
 	}
 	step = temp;
 	temp = NULL;
 	list_append(job->steps, step);
-	
+	if(job->header.timestamp == 0)
+		job->header.timestamp = step->header.timestamp;
 	job->job_step_seen = 1;
 	job->ntasks += step->ntasks;
 	if(!job->nodes || !strcmp(job->nodes, "(unknown)")) {
@@ -323,9 +355,8 @@ got_step:
 						   status */
 		if ( job->exitcode == 0 )
 			job->exitcode = step->exitcode;
-		job->header.timestamp = step->header.timestamp;
 		job->status = JOB_RUNNING;
-		job->elapsed = time(NULL) - job->header.timestamp;
+		job->elapsed = step->header.timestamp - job->header.timestamp;
 	}
 	/* now aggregate the aggregatable */
 	job->ncpus = MAX(job->ncpus, step->ncpus);
@@ -371,7 +402,7 @@ void process_suspend(char *f[], int lc, int show_full)
 	job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp);
-	job = _find_job_record(temp->header);
+	job = _find_job_record(temp->header, JOB_SUSPEND);
 	if (!job)    
 		job = _init_job_rec(temp->header);
 	
@@ -379,7 +410,7 @@ void process_suspend(char *f[], int lc, int show_full)
 	if (job->status == JOB_SUSPENDED) 
 		job->elapsed -= temp->elapsed;
 
-	job->header.timestamp = temp->header.timestamp;
+	//job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
 	destroy_job(temp);
 }
@@ -390,7 +421,7 @@ void process_terminated(char *f[], int lc, int show_full)
 	job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp);
-	job = _find_job_record(temp->header);
+	job = _find_job_record(temp->header, JOB_TERMINATED);
 	if (!job) {	/* fake it for now */
 		job = _init_job_rec(temp->header);
 		if (params.opt_verbose > 1) 
@@ -425,7 +456,7 @@ void process_terminated(char *f[], int lc, int show_full)
 	}
 	job->job_terminated_seen = 1;
 	job->elapsed = temp->elapsed;
-	job->header.timestamp = temp->header.timestamp;
+	job->end = temp->header.timestamp;
 	job->status = temp->status;
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;

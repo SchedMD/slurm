@@ -152,7 +152,7 @@ typedef struct mail_info {
 } mail_info_t;
 
 static void _alarm_handler(int dummy);
-static inline void _comm_err(char *node_name);
+static inline int _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
 static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx);
@@ -346,7 +346,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	int i;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
-	int *span = set_span(agent_arg_ptr->node_count, 0);
+	int *span = NULL;
 	int thr_count = 0;
        	forward_t forward;
 
@@ -363,9 +363,14 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	
 	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
-	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
+	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)) {
 		agent_info_ptr->get_reply = true;
-
+		span = set_span(agent_arg_ptr->node_count, 0);
+	} else {
+		span = set_span(agent_arg_ptr->node_count, 
+				agent_arg_ptr->node_count);
+	}
+	forward_init(&forward, NULL);
 	forward.cnt = agent_info_ptr->thread_count;
 	forward.name = agent_arg_ptr->node_names;
 	forward.addr = agent_arg_ptr->slurm_addr;
@@ -504,7 +509,7 @@ static void *_wdog(void *args)
 	if (srun_agent) {
 	        _notify_slurmctld_jobs(agent_ptr);
 	} else {
-	        _notify_slurmctld_nodes(agent_ptr, 
+		_notify_slurmctld_nodes(agent_ptr, 
 					thd_comp.no_resp_cnt, 
 					thd_comp.retry_cnt);
 	}
@@ -556,6 +561,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	if  (thread_ptr[0].state == DSH_DONE) {
 		srun_response(job_id, step_id);
 	}
+
 	unlock_slurmctld(job_write_lock);
 #else
 	fatal("Code development needed here if agent is not thread");
@@ -698,12 +704,14 @@ finished:	;
 }
 
 /* Report a communications error for specified node */
-static inline void _comm_err(char *node_name)
+static inline int _comm_err(char *node_name)
 {
+	int rc = 1;
 #if AGENT_IS_THREAD
-	if (is_node_resp (node_name))
+	if ((rc = is_node_resp (node_name)))
 #endif
 		error("agent/send_recv_msg: %s: %m", node_name);
+	return rc;
 }
 
 /*
@@ -730,12 +738,14 @@ static void *_thread_per_group_rpc(void *args)
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent;
 	List ret_list = NULL;
+	List tmp_ret_list = NULL;
 	ListIterator itr;
 	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int found = 0;
-
+	forward_msg_t fwd_msg;
+			
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -801,7 +811,7 @@ static void *_thread_per_group_rpc(void *args)
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-	msg.forward  = thread_ptr->forward;
+	forward_init(&msg.forward, &thread_ptr->forward);
 	msg.ret_list = NULL;
 	msg.orig_addr.sin_addr.s_addr = 0;
 	msg.srun_node_id = 0;
@@ -810,22 +820,73 @@ static void *_thread_per_group_rpc(void *args)
 	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
+	send_rc_again:
 		if ((ret_list = slurm_send_recv_rc_msg(&msg, 
 						       msg.forward.timeout)) 
 		    == NULL) {
-			if (!srun_agent)
-				_comm_err(thread_ptr->node_name);
-			goto cleanup;
+			if(!tmp_ret_list)
+				tmp_ret_list = list_create(destroy_ret_types);
+			
+			fwd_msg.header.srun_node_id = msg.srun_node_id;
+			forward_init(&fwd_msg.header.forward, &msg.forward);
+			//destroy_forward(&msg.forward);
+			fwd_msg.ret_list = tmp_ret_list;
+			strncpy(fwd_msg.node_name,
+				thread_ptr->node_name,
+				MAX_SLURM_NAME);
+			fwd_msg.forward_mutex = NULL;
+			if(forward_msg_to_next(&fwd_msg, errno)) {
+				msg.address = fwd_msg.addr;
+				forward_init(&msg.forward, 
+					     &fwd_msg.header.forward);
+				//destroy_forward(&fwd_msg.header.forward);
+				msg.srun_node_id = fwd_msg.header.srun_node_id;
+				strncpy(thread_ptr->node_name,
+					fwd_msg.node_name,
+					MAX_SLURM_NAME);
+				goto send_rc_again;
+			}
 		}
 	} else {
+	send_node_again:
 		if (slurm_send_only_node_msg(&msg) < 0) {
-			if (!srun_agent)
-				_comm_err(thread_ptr->node_name);
-		} else
-			thread_state = DSH_DONE;
-		goto cleanup;
-	}
+			if(!tmp_ret_list)
+				tmp_ret_list = list_create(destroy_ret_types);
+			
+			fwd_msg.header.srun_node_id = msg.srun_node_id;
+			fwd_msg.header.forward = msg.forward;
+			fwd_msg.ret_list = tmp_ret_list;
+			strncpy(fwd_msg.node_name,
+				thread_ptr->node_name,
+				MAX_SLURM_NAME);
+			fwd_msg.forward_mutex = NULL;
+			if(forward_msg_to_next(&fwd_msg, errno)) {
+				msg.address = fwd_msg.addr;
+				msg.forward = fwd_msg.header.forward;
+				msg.srun_node_id = fwd_msg.header.srun_node_id;
+				strncpy(thread_ptr->node_name,
+					fwd_msg.node_name,
+					MAX_SLURM_NAME);
+				goto send_node_again;
+			}
+		} 
 
+		if(!tmp_ret_list) {
+			thread_state = DSH_DONE;
+			goto cleanup;
+		}
+	}
+	
+	if(tmp_ret_list) {
+		if(!ret_list)
+			ret_list = tmp_ret_list;
+		else {
+			while((ret_type  = list_pop(tmp_ret_list))) 
+				list_push(ret_list, ret_type);
+			list_destroy(tmp_ret_list);
+		}
+	} 
+	
 	//info("got %d states back from the send", list_count(ret_list));
 	found = 0;
 	itr = list_iterator_create(ret_list);		
@@ -841,7 +902,7 @@ static void *_thread_per_group_rpc(void *args)
 					xstrdup(thread_ptr->node_name);
 				found = 1;
 			}
-			/* info("response for %s rc = %d", */
+/* 			info("response for %s rc = %d", */
 /* 			     ret_data_info->node_name, */
 /* 			     ret_type->msg_rc); */
 			if(rc == SLURM_ERROR) {
@@ -858,6 +919,7 @@ static void *_thread_per_group_rpc(void *args)
 				kill_job = (kill_job_msg_t *) 
 					task_ptr->msg_args_ptr;
 				rc = SLURM_SUCCESS;
+				
 				lock_slurmctld(job_write_lock);
 				if (job_epilog_complete(kill_job->job_id, 
 							ret_data_info->
@@ -940,12 +1002,20 @@ static void *_thread_per_group_rpc(void *args)
 			while((ret_data_info = list_next(data_itr)) != NULL) 
 				if (!srun_agent) {
 					errno = ret_type->err;
-					_comm_err(ret_data_info->node_name);
+					rc = _comm_err(
+						ret_data_info->node_name);
 				}
 			list_iterator_destroy(data_itr);
 			if (srun_agent)
 				thread_state = DSH_FAILED;
-			else	 /* Not serious error, don't DRAIN node */
+			else if(ret_type->type == REQUEST_PING)
+				/* check if a forward failed */
+				thread_state = DSH_NO_RESP;
+			else /* some will fail that don't mean anything went 
+				bad like a job term request on a job that is
+				already finished, we will just exit on those
+				cases
+			     */
 				thread_state = DSH_DONE;
 		}	
 		ret_type->msg_rc = thread_state;
@@ -954,7 +1024,7 @@ static void *_thread_per_group_rpc(void *args)
 
 cleanup:
 	xfree(args);
-	destroy_forward(&thread_ptr->forward);
+	destroy_forward(&msg.forward);
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->ret_list = ret_list;
 	thread_ptr->state = thread_state;
@@ -1202,6 +1272,10 @@ void agent_purge(void)
 		mail_list = NULL;
 		slurm_mutex_unlock(&mail_mutex);
 	}
+}
+extern int get_agent_count(void)
+{
+	return agent_cnt;
 }
 
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)

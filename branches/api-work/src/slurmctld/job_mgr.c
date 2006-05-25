@@ -1393,7 +1393,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) {
 				error_code = SLURM_SUCCESS;
-				jobacct_g_job_start_slurmctld(job_ptr);
 			}
 		return error_code;
 	}
@@ -1408,9 +1407,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-	} else {
-		jobacct_g_job_start_slurmctld(job_ptr);
-	}
+	} 
 	return SLURM_SUCCESS;
 }
 
@@ -1467,6 +1464,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	bool super_user;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1474,9 +1472,16 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+	super_user = ((uid == 0) || (uid == getuid()));
+	if ((job_ptr->user_id != uid) && (!super_user)) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
 		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+	if ((!super_user) && job_ptr->part_ptr
+	&&  (job_ptr->part_ptr->root_only)) {
+		info("Attempt to cancel job in RootOnly partition from uid %d",
+			uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -1489,8 +1494,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->job_state	= JOB_CANCELLED;
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
-		delete_job_details(job_ptr);
 		job_completion_logger(job_ptr);
+		delete_job_details(job_ptr);
 		verbose("job_signal of pending job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
@@ -1839,7 +1844,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
-
+	
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       part_ptr,
@@ -1848,6 +1853,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup;
 	}
+	
 	job_ptr = *job_pptr;
 	if (job_ptr->dependency == job_ptr->job_id) {
 		info("User specified self as dependent job");
@@ -1900,7 +1906,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		 if (detail_ptr)
 			detail_ptr->wait_reason = fail_reason;
 	}
-
+	jobacct_g_job_start_slurmctld(job_ptr);
+	
       cleanup:
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
@@ -3437,9 +3444,9 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
-			delete_job_details(job_ptr);
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 			job_completion_logger(job_ptr);
+			delete_job_details(job_ptr);
 		}
 
 		else {		/* else job is supposed to be done */

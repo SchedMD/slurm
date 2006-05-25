@@ -27,7 +27,7 @@ AC_DEFUN([X_AC_XCPU],
    xcpu_default_dirs="/mnt"
 
    AC_ARG_WITH([xcpu],
-    AC_HELP_STRING([--with-xcpu=PATH], [specify path to XCPU directory]),
+    AS_HELP_STRING(--with-xcpu=PATH,specify path to XCPU directory),
     [ try_path=$withval ]
    )
 

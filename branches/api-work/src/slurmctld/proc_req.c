@@ -1415,7 +1415,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 			slurmctld_shutdown();
 		}
 	}
-
+	
 	if (msg->msg_type == REQUEST_CONTROL) {
 		/* Wait for workload to dry up before sending reply.
 		 * One thread should remain, this one. */
@@ -1429,6 +1429,8 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 				slurmctld_config.server_thread_count);
 		/* save_all_state();	performed by _slurmctld_background */
 	}
+	
+	
 	slurm_send_rc_msg(msg, error_code);
 	if ((error_code == SLURM_SUCCESS) && core_arg &&
 	    (slurmctld_config.thread_id_sig))
@@ -1526,7 +1528,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_step_complete StepId=%u.%u %s",
+			info("_slurm_rpc_step_complete 1 StepId=%u.%u %s",
 				req->job_id, req->job_step_id,
 				slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);

@@ -230,15 +230,16 @@ option.
 .nf 
 .ft 3
 Fields available:
-   cpu         elapsed     exitcode    blockid
-   gid         group       idrss       inblocks
-   isrss       ixrss       job         jobname
-   jobid       majflt      minflt      msgrcv
-   msgsnd      ncpus       nivcsw      nodes
-   ntasks      nsignals    nswap       cputime
-   nvcsw       outblocks   partition   vsize
-   rss         status      submitted   systemcpu
-   uid         user        usercpu      
+blockid     cpu         cputime     elapsed
+end         exitcode    gid         group
+idrss       inblock     isrss       ixrss
+job         jobid       jobname     majflt
+minflt      msgrcv      msgsnd      ncpus
+nivcsw      nodes       nprocs      nsignals
+nswap       ntasks      nvcsw       outblocks
+pages       partition   rss         start
+status      submit      systemcpu   uid
+user        usercpu     vsize
 
 .ft 1
 .fi 
@@ -376,8 +377,18 @@ This option is primarily used for debugging.
 The following describes each job accounting field:
 .RS 
 .TP "10"
+\f3blockid\fP
+Block ID, applicable to BlueGene computers only
+
+.TP
 \f3cpu\fP 
 The sum of the system time (systemcpu) and user time (usercpu) in seconds 
+
+.TP
+\f3cputime\fP
+Minimum CPU time of any process followed by its task id along with
+the average of all processes running in the step.
+
 .TP 
 \f3elapsed\fP 
 The jobs elapsed time.
@@ -405,90 +416,151 @@ minutes
 \f2ss\fP 
 seconds
 .RE 
+
+.TP
+\f3end\fP
+Termination time of the job. Format output is as follows:
+.RS
+.PD "0"
+.HP
+\f2MM/DD-hh:mm:ss\fP
+.PD
+.RE
+.IP
+as defined by the following:
+.RS
+.TP "10"
+\f2MM\fP
+month
+.TP
+\f2DD\fP
+day
+.TP
+\f2hh\fP
+hours
+.TP
+\f2mm\fP
+minutes
+.TP
+\f2ss\fP
+seconds
+.RE
+
 .TP 
 \f3exitcode\fP 
 The first non-zero error code returned by any job step.
+
 .TP 
 \f3gid\fP 
 The group identifier of the user who ran the job.
+
+.TP
+\f3group\fP
+The group name of the user who ran the job.
+
 .TP 
 \f3idrss\fP 
 Maximum unshared data size (in KB) of any process.
+
 .TP 
 \f3inblocks\fP 
 Total block input operations for all processes.
+
 .TP 
 \f3isrss\fP 
 Maximum unshared stack space size (in KB) of any process.
+
 .TP 
 \f3ixrss\fP 
 Maximum shared memory (in KB) of any process.
+
 .TP 
 \f3job\fP 
 The SLURM job identifier of the job.
+
 .TP 
 \f3jobid\fP 
-The number of the job step.
+The number of the job or job step.
 It is in the form: 
 \f2job.jobstep\fP\c
 \&.
+
+.TP
+\f3jobname\fP
+The name of the job or job step.
+
 .TP 
 \f3majflt\fP 
 Maximum number of major page faults for any process.
+
 .TP 
 \f3minflt\fP 
 Maximum number of minor page faults (page reclaims) for any process.
+
 .TP 
 \f3msgrcv\fP 
 Total number of messages received for all processes.
+
 .TP 
 \f3msgsnd\fP 
 Total number of messages sent for all processes.
+
 .TP 
 \f3ncpus\fP 
 Total number of CPUs allocated to the job.
+
 .TP 
 \f3nivcsw\fP 
 Total number of involuntary context switches for all processes.
+
 .TP 
 \f3nodes\fP 
 A list of nodes allocated to the job.
+
+.TP
+\f3nprocs\fP
+Total number of tasks in job. Identical to \f3ntasks\fP.
+
 .TP 
+\f3nsignals\fP
+Total number of signals received for all processes.
+
+.TP
+\f3nswap\fP
+Maximum number of swap operations of any process.
+
+.TP
 \f3ntasks\fP 
 Total number of tasks in job.
-.TP 
-\f3nsignals\fP 
-Total number of signals received for all processes.
-.TP 
-\f3nswap\fP 
-Maximum number of swap operations of any process.
+
 .TP 
 \f3nvcsw\fP 
 Total number of voluntary context switches for all processes.
+
 .TP 
 \f3outblocks\fP 
 Total block output operations for all processes.
+
+.TP
+\f3pages\fP
+Maximum page faults of any process followed by its task id along with
+the average of all processes running in the step.
+
 .TP 
 \f3partition\fP 
 Identifies the partition on which the job ran.
+
 .TP 
 \f3rss\fP 
 Maximum resident set size of any process followed by its task id along with
 the average of all processes running in the step.
-.TP 
-\f3pages\fP 
-Maximum page faults of any process followed by its task id along with
-the average of all processes running in the step.
-.TP 
-\f3vsize\fP 
-Maximum Virtual Memory size of any process followed by its task id along with
-the average of all processes running in the step.
-.TP 
-\f3cputime\fP 
-Minimum CPU time of any process followed by its task id along with
-the average of all processes running in the step.
-.TP 
-\f3status\fP 
+
+.TP
+\f3start\fP
+Initiation time of the job in the same format as \f3end\fP.
+
+.TP
+\f3status\fP
 Displays the job status, or state.
 .IP 
 Output can be 
@@ -502,40 +574,49 @@ Output can be
 \&, 
 \f3FAILED\fP\c
 \&, 
-\f3TIMED OUT\fP\c
+\f3TIMEOUT\fP\c
 \&, or 
-\f3NODE FAIL\fP\c
+\f3NODE_FAIL\fP\c
 \&.
+
 .TP 
-\f3submitted\fP 
+\f3submit\fP 
 The time and date stamp (in Universal Time Coordinated, UTC) the job was 
 submitted.
-The format of the output is identical to that of the 
-\f3finished\fP 
-field.
+The format of the output is identical to that of the \f3end\fP field.
+
 .TP 
 \f3systemcpu\fP 
 The amount of system CPU time.
 The format of the output is identical to that of the 
 \f3elapsed\fP 
 field.
+
 .TP 
 \f3uid\fP 
 The user identifier of the user who ran the job.
+
 .TP 
 \f3uid.gid\fP 
 The user and group identifiers of the user who ran the job. (This
 field is used in record headers, and simply concatenates the
-\f3uid\fP
-and
-\f3gid\fP
-fields.)
+\f3uid\fP and \f3gid\fP fields.)
+
+.TP
+\f3user\fP
+The user name of the user who ran the job.
+
 .TP 
 \f3usercpu\fP 
 The amount of user CPU time.
 The format of the output is identical to that of the 
-\f3elapsed\fP 
-field.
+\f3elapsed\fP field.
+
+.TP
+\f3vsize\fP
+Maximum Virtual Memory size of any process followed by its task id along with
+the average of all processes running in the step.
+
 .RE 
 .SH "INTERPRETING THE -DUMP OPTION OUTPUT"
 The 
@@ -681,7 +762,7 @@ The number of fields in the record (38)
 \f3jobid\fP 
 .TP 
 11
-\f3finished\fP 
+\f3end\fP 
 .TP 
 12
 Completion Status;
@@ -843,7 +924,7 @@ command aggregates the remainder.
 The total elapsed time in seconds for the job.
 .TP 
 11
-\f3finished\fP 
+\f3end\fP 
 .TP 
 12
 Completion Status;

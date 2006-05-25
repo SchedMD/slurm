@@ -18,6 +18,7 @@
 
 AC_DEFUN([X_AC_FEDERATION],
 [
+   AC_MSG_CHECKING([whether to enable AIX Federation switch support])
    ntbl_default_dirs="/usr/lib"
    for ntbl_dir in $ntbl_default_dirs; do
       # skip dirs that don't exist
@@ -25,21 +26,27 @@ AC_DEFUN([X_AC_FEDERATION],
          continue;
       fi
 
+      if test "$OBJECT_MODE" = "64"; then
+	 libntbl="ntbl_64"
+      else
+         libntbl="ntbl"
+      fi
+
       # search for required NTBL API libraries
-      if test -f "$ntbl_dir/libntbl.a"; then
+      if test -f "$ntbl_dir/lib${libntbl}.so"; then
          ac_have_federation="yes"
-         FEDERATION_LDFLAGS="$ntbl_dir/libntbl.a -lntbl"
-         echo "checking for libntbl.a in $ntbl_dir... yes"
+         FEDERATION_LDFLAGS="-l$libntbl"
          break;
       fi
 
-      echo "checking for libntbl.a in $ntbl_dir... no"
    done
 
    if test "x$ac_have_federation" != "xyes" ; then
       AC_MSG_NOTICE([Cannot support Federation without libntbl])        
+      AC_MSG_RESULT([no])
    else
       AC_DEFINE(HAVE_LIBNTBL, 1, [define if you have libntbl.])
+      AC_MSG_RESULT([yes])
    fi
 
    AC_SUBST(FEDERATION_LDFLAGS)

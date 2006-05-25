@@ -55,10 +55,12 @@ file delete $file_out $file_err
 #
 # Build input script file that broacasts a file
 #
+set pid         [pid]
+set file1       "/tmp/test.$pid.1.$test_id"
 make_bash_script $file_in "
-  $srun $bin_rm -f /tmp/test1.$test_id
-  $sbcast -vvvv $sbcast /tmp/test1.$test_id
-  $srun $bin_rm -f /tmp/test1.$test_id
+  $srun $bin_rm -f $file1
+  $sbcast -vvvv $sbcast $file1
+  $srun $bin_rm -f $file1
 "
 
 #

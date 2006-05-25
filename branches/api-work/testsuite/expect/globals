@@ -86,7 +86,7 @@ cset prompt {(%|#|\$) *$}
 # Only the shell names (e.g. bin_bash) must be full pathnames
 #
 cset bin_awk 	"awk"
-cset bin_bash	"/bin/bash"
+if {![info exists bin_bash]} {set bin_bash [exec which bash]}
 cset bin_cat	"cat"
 cset bin_cc	"gcc"
 cset bin_chmod	"chmod"

@@ -43,7 +43,7 @@ static int _suspend_op (uint16_t op, uint32_t job_id);
 static int _suspend_op (uint16_t op, uint32_t job_id)
 {
 	int rc;
-	checkpoint_msg_t sus_req;
+	suspend_msg_t sus_req;
 	slurm_msg_t req_msg;
 
 	sus_req.op       = op;

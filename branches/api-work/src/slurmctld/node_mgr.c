@@ -815,7 +815,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
-		state_val = update_node_msg -> node_state;
+		state_val = update_node_msg->node_state;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
 		if (node_ptr == NULL) {
@@ -1202,9 +1202,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
-			delete_job_details(job_ptr);
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 			job_completion_logger(job_ptr);
+			delete_job_details(job_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -1379,7 +1379,7 @@ void node_did_resp (char *name)
 		_node_did_resp(node_ptr);
 	}
 #else
-	debug3("updating %s",name);
+	debug2("updating %s",name);
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
@@ -1771,7 +1771,6 @@ void make_node_idle(struct node_record *node_ptr,
 	uint16_t node_flags, base_state;
 
 	xassert(node_ptr);
-
 	if (job_ptr			/* Specific job completed */
 	&&  (job_ptr->job_state & JOB_COMPLETING)	/* Not a replay */
 	&&  (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
@@ -1857,4 +1856,5 @@ void node_fini(void)
 
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
+	node_record_count = 0;
 }

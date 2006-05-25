@@ -1139,13 +1139,20 @@ slurm_conf_reinit(char *file_name)
 		/* could check modified time on slurm.conf here */
 		_destroy_slurm_conf();
 	}
-
+	
 	_init_slurm_conf(file_name);
+	
 	conf_initialized = true;
 
 	pthread_mutex_unlock(&conf_lock);
 	return SLURM_SUCCESS;
 
+}
+
+extern void
+slurm_conf_mutex_init(void)
+{
+	pthread_mutex_init(&conf_lock, NULL);
 }
 
 extern int

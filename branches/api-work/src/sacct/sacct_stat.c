@@ -66,7 +66,7 @@ void *_stat_thread(void *args)
 					    &resp_msg, 
 					    msg->forward.timeout);
 	if (!ret_list) {
-		error("got an error");
+		error("got an error no list returned");
 		goto cleanup;
 	}
 	g_slurm_auth_destroy(resp_msg.auth_cred);
