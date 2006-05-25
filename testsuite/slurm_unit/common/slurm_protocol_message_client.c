@@ -12,6 +12,7 @@ int main ( int argc , char * argv[] )
 	slurm_msg_t resp;
 	int16_t port = 0;
 	update_node_msg_t *in_msg, out_msg;
+	List ret_list = NULL;
 	
 	/* init address sturctures */
 	if (argc > 1)
@@ -32,9 +33,16 @@ int main ( int argc , char * argv[] )
 	slurm_send_node_msg( worker_socket , &msg ) ;
 
 	printf("Sending message=%s\n", out_msg.node_names);
-	if (slurm_receive_msg (worker_socket, &resp, 0) < 0) {
+	if ((ret_list = slurm_receive_msg(worker_socket, &resp, 0)) == NULL) {
 		printf("Error reading slurm_receive_msg %m\n");
 		exit(1);
+	} else {
+		if(list_count(ret_list)>0) {
+			error("We didn't do things correctly "
+			      "got %d responses didn't expect any",
+			      list_count(ret_list));
+		}
+		list_destroy(ret_list);
 	}
 	if (resp.msg_type != REQUEST_UPDATE_NODE) {
 		printf("Got wrong message type: %u\n", resp.msg_type);

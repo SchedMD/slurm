@@ -697,11 +697,13 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
 \**********************************************************************/
 
 /*
- * NOTE: memory is allocated for the returned msg and must be freed at 
- *	some point using the slurm_free_functions
+ * NOTE: memory is allocated for the returned msg and the returned list
+ *       both must be freed at some point using the slurm_free_functions 
+ *       and list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
  * OUT msg	- a slurm_msg struct to be filled in by the function
- * RET int	- size of msg received in bytes before being unpacked
+ * RET List	- List containing the responses of the childern (if any) we 
+ *                forwarded the message to.
  */
 List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 {
@@ -1316,6 +1318,8 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
+ * with a list containing the responses of the childern (if any) we 
+ * forwarded the message to.
  */
 static List 
 _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, 
@@ -1408,7 +1412,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		if(ret_list) {
 			if(list_count(ret_list)>0) {
 				error("We didn't do things correctly "
-				      "missed %d responses",
+				      "got %d responses didn't expect any",
 				      list_count(ret_list));
 			}
 			list_destroy(ret_list);

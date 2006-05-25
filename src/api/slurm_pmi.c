@@ -110,6 +110,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
+	List ret_list = NULL;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -183,11 +184,19 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		error("slurm_accept_msg_conn: %m");
 		return errno;
 	}
-	while (slurm_receive_msg(srun_fd, &msg_rcv, 0) < 0) {
+	while ((ret_list = slurm_receive_msg(srun_fd, &msg_rcv, 0)) == NULL) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
 		return errno;
+	}
+	if(ret_list) {
+		if(list_count(ret_list)>0) {
+			error("We didn't do things correctly "
+			      "got %d responses didn't expect any",
+			      list_count(ret_list));
+		}
+		list_destroy(ret_list);
 	}
 	msg_rcv.conn_fd = srun_fd;
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {

@@ -277,8 +277,9 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
  *    (msg->data) is allocated from within this function, and must be
  *    freed at some point using one of the slurm_free* functions.
  *
- *  Returns SLURM_SUCCESS if an entire message is successfully 
- *    received. Otherwise SLURM_ERROR is returned.
+ *  Returns List containing the responses of the childern (if any) we 
+ *  forwarded the message to if an entire message is successfully 
+ *  received. Otherwise NULL is returned.
  */
 List slurm_receive_msg(slurm_fd fd, slurm_msg_t *resp, int timeout);
 
