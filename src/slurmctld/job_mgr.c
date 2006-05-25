@@ -1631,9 +1631,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
 	} else if (job_ptr->job_state == JOB_PENDING) {
-		job_ptr->job_state  = JOB_COMPLETE;
-		job_ptr->start_time = 0;
-		job_ptr->end_time   = 0;
+		job_ptr->job_state  = JOB_CANCELLED;
+		job_ptr->start_time = now;
+		job_ptr->end_time   = now;
 		job_completion_logger(job_ptr);
 	} else {
 		if (job_return_code)
