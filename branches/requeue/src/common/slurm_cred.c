@@ -1158,11 +1158,22 @@ static char * timestr (const time_t *tp, char *buf, size_t n)
 }
 
 extern bool
-slurm_cred_revoked(slurm_cred_ctx_t ctx, uint32_t jobid)
+slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
-	job_state_t  *j = _find_job_state(ctx, jobid);
-	if (j && j->revoked)
+	 job_state_t  *j = _find_job_state(ctx, cred->jobid);
+
+	if ((j == NULL) || (j->revoked == (time_t)0))
+		return false;
+
+	if (cred->ctime <= j->revoked)
 		return true;
+
+	/* if we are re-running the job, the new job credential is newer
+	 * than the revoke time (see "scontrol requeue"), purge the old 
+	 * job record so this looks like a new job */
+	info("re-creating job credential records for job %u", j->jobid);
+	j->expiration = 0;
+	_clear_expired_job_states(ctx);
 	return false;
 }
 

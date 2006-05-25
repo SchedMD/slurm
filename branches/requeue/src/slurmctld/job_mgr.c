@@ -3793,14 +3793,14 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if (!(job_ptr->job_state & JOB_COMPLETING)) {	/* COMPLETED */
 		if ((job_ptr->job_state == JOB_PENDING)
 		&&  (job_ptr->batch_flag)) {
-			info("requeue batch job %u",
-				job_ptr->job_id);
+			info("requeue batch job %u", job_ptr->job_id);
 			if (job_ptr->details) {
-				job_ptr->details->begin_time = time(NULL) +
-					600; /* DEFAULT_EXPIRATION_WINDOW */
+				/* the time stamp on the new batch launch 
+				 * credential must be larger than the time 
+				 * stamp on the revoke request, so delay 
+				 * for at least one second. */
+				job_ptr->details->begin_time = time(NULL) + 1;
 			}
-//FIXME: slurmd fails to launch job due to use of revoked cred for this job_id
-// So hold the job until the window times out
 		}
 		return true;
 	} else

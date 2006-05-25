@@ -666,14 +666,13 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
 				  req->tasks_to_launch[req->srun_node_id],
-				  &step_hset) 
-	    < 0) {
+				  &step_hset) < 0) {
 		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
 		goto done;
 	}
-	if (slurm_cred_revoked(conf->vctx, jobid)) {
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job credential revoked for %u", jobid);
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
@@ -757,7 +756,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		      (long) req_uid, host);
 		goto done;
 	}
-	if (slurm_cred_revoked(conf->vctx, jobid)) {
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job credential revoked for %u", jobid);
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
@@ -846,7 +845,12 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
-	} 
+	}
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		error("Job %u already killed, do not launch batch job",
+			req->job_id);
+		 rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
+	}
 
 	if (req->step_id != SLURM_BATCH_SCRIPT && req->step_id != 0)
 		first_job_run = false;
@@ -884,11 +888,11 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	/* Since job could have been killed while the prolog was 
-	 * running (especially on BlueGene, which can wait  minutes
+	 * running (especially on BlueGene, which can take minutes
 	 * for partition booting). Test if the credential has since
 	 * been revoked and exit as needed. */
-	if (slurm_cred_revoked(conf->vctx, req->job_id)) {
-		info("Job %u already killed, do not launch tasks",  
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		info("Job %u already killed, do not launch batch job",  
 			req->job_id);
 		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;

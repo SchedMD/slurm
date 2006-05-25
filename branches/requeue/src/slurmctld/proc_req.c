@@ -2390,6 +2390,16 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+
+	if (make_batch_job_cred(launch_msg_ptr)) {
+		error("aborting batch step %u.%u", job_ptr->job_id,
+			job_ptr->group_id);
+		xfree(launch_msg_ptr->nodes);
+		xfree(launch_msg_ptr);
+		delete_step_record(job_ptr, step_rec->step_id);
+		return SLURM_ERROR;
+	}
+
 	launch_msg_ptr->err = xstrdup(job_desc_msg->err);
 	launch_msg_ptr->in = xstrdup(job_desc_msg->in);
 	launch_msg_ptr->out = xstrdup(job_desc_msg->out);

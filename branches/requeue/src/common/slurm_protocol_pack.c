@@ -3186,6 +3186,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	pack16((uint16_t)msg->envc, buffer);
 	packstr_array(msg->environment, msg->envc, buffer);
 
+	slurm_cred_pack(msg->cred, buffer);
+
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
 
@@ -3235,6 +3237,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_array(&launch_msg_ptr->environment,
 			     &launch_msg_ptr->envc, buffer);
 
+	if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer)))
+		goto unpack_error;
+
 	if (select_g_alloc_jobinfo (&launch_msg_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(launch_msg_ptr->select_jobinfo, buffer))
 		goto unpack_error;
@@ -3242,18 +3247,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(launch_msg_ptr->nodes);
-	xfree(launch_msg_ptr->script);
-	xfree(launch_msg_ptr->work_dir);
-	xfree(launch_msg_ptr->err);
-	xfree(launch_msg_ptr->in);
-	xfree(launch_msg_ptr->out);
-	xfree(launch_msg_ptr->argv);
-	xfree(launch_msg_ptr->environment);
-	xfree(launch_msg_ptr->cpus_per_node);
-	xfree(launch_msg_ptr->cpu_count_reps);
-	select_g_free_jobinfo(&launch_msg_ptr->select_jobinfo);
-	xfree(launch_msg_ptr);
+	slurm_free_job_launch_msg(launch_msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

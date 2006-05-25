@@ -511,6 +511,7 @@ typedef struct batch_job_launch_msg {
 	char **environment;	/* environment variables to set for job, 
 				 *   name=value pairs, one per line */
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
+	slurm_cred_t cred;
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
