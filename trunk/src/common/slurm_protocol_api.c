@@ -703,7 +703,7 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  * IN open_fd	- file descriptor to receive msg on
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to.
+ *                forwarded the message to. List containing type (ret_types_t).
  */
 List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 {
@@ -1319,7 +1319,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
  * with a list containing the responses of the childern (if any) we 
- * forwarded the message to.
+ * forwarded the message to. List containing type (ret_types_t).
  */
 static List 
 _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, 
@@ -1453,6 +1453,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
  * RET List		- return list from multiple nodes
+ *                        List containing type (ret_types_t).
  */
 List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
@@ -1534,7 +1535,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 
 /*
  *  Send message and recv "return code" message on an already open
- *    slurm file descriptor
+ *  slurm file descriptor return List containing type (ret_types_t).
  */
 static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 {
@@ -1591,6 +1592,11 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	return ret_list;
 }
 
+/*
+ *  Open a connection to req->address, send message (forward if told), 
+ *  req must contain the message already packed in it's buffer variable,
+ *  and receive List of type ret_types_t from all childern nodes
+ */
 List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 {
 	slurm_fd fd = -1;
@@ -1679,8 +1685,8 @@ failed:
 
 /*
  *  Open a connection to the "address" specified in the the slurm msg "req"
- *    Then read back an "rc" message returning the "return_code" specified
- *    in the response in the "rc" parameter.
+ *    Then read back an "rc" message returning List containing 
+ *    type (ret_types_t).
  */
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 {
