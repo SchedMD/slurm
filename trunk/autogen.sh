@@ -12,18 +12,22 @@
 
 DIE=0
 
-# minimum required versions of autoconf/automake:
+# minimum required versions of autoconf/automake/libtool:
 ACMAJOR=2
-ACMINOR=52
+ACMINOR=59
 
 AMMAJOR=1
-AMMINOR=6
-AMPATCH=2
+AMMINOR=9
+AMPATCH=0
+
+LTMAJOR=1
+LTMINOR=5
+LTPATCH=8
 
 (autoconf --version 2>&1 | \
  perl -n0e "(/(\d+)\.(\d+)/ && \$1>=$ACMAJOR && \$2>=$ACMINOR) || exit 1") || {
     echo
-    echo "Error: You must have \`autoconf' version $ACMAJOR.$ACMINOR or greater"
+    echo "Error: You must have 'autoconf' version $ACMAJOR.$ACMINOR or greater"
     echo "installed to run $0. Get the latest version from"
     echo "ftp://ftp.gnu.org/pub/gnu/autoconf/"
     echo
@@ -38,14 +42,29 @@ amtest="
     exit 1 if (\$5 < $AMPATCH); 
 }"
 
-
 (automake --version 2>&1 | perl -n0e "$amtest" ) || {
     echo
-    echo "Error: You must have \`automake' version $AMMAJOR.$AMMINOR.$AMPATCH or greater"
+    echo "Error: You must have 'automake' version $AMMAJOR.$AMMINOR.$AMPATCH or greater"
     echo "installed to run $0. Get the latest version from"
     echo "ftp://ftp.gnu.org/pub/gnu/automake/"
     echo
     NO_AUTOCONF=yes
+    DIE=1
+}
+
+lttest="
+    if (/(\d+)\.(\d+)((-p|\.)(\d+))*/) { 
+    exit 1 if (\$1 < $LTMAJOR);
+    exit 1 if (\$1 == $LTMAJOR && \$2 < $LTMINOR); 
+    exit 1 if (\$1 == $LTMAJOR && \$2 == $LTMINOR && \$5 < $LTPATCH);
+}"
+
+(libtool --version 2>&1 | perl -n0e "$lttest" ) || {
+    echo
+    echo "Error: You must have 'libtool' version $LTMAJOR.$LTMINOR.$LTPATCH or greater"
+    echo "installed to run $0. Get the latest version from"
+    echo "ftp://ftp.gnu.org/pub/gnu/libtool/"
+    echo
     DIE=1
 }
 
@@ -69,16 +88,16 @@ mkdir auxdir 2>/dev/null
 # Remove config.h.in to make sure it is rebuilt
 rm -f config.h.in
 
-echo "running aclocal $ACLOCAL_FLAGS ... "
-aclocal -I auxdir $ACLOCAL_FLAGS
-echo "running libtoolize --automake --copy ..."
-libtoolize --automake --copy
-echo "running autoheader ... "
-autoheader
-echo "running automake --copy --add-missing ... "
-automake --force --copy --add-missing
-echo "running autoconf ... "
-autoconf
+set -x
+rm -fr autom4te*.cache
+aclocal -I auxdir $ACLOCAL_FLAGS || exit 1
+libtoolize --automake --copy --force || exit 1
+autoheader || exit 1
+automake --add-missing --copy --force-missing || exit 1
+#autoconf --force --warnings=all || exit 1
+autoconf --force --warnings=no-obsolete || exit 1
+set +x
+
 if [ -e config.status ]; then
    echo "removing stale config.status."
    rm -f config.status 
@@ -88,10 +107,8 @@ if [ -e config.log    ]; then
    rm -f config.log
 fi
 
-# touch slurm/slurm.h.in to avoid re-running autoheader
-# after aclocal.m4 is generated, which can fail on some 
-# systems lacking the proper libtools. Note slurm/slurm.h
-# should be static (not build by autogen.sh).
-touch slurm/slurm.h.in
-
 echo "now run ./configure to configure slurm for your environment."
+echo
+echo "NOTE: This script has most likely just modified files that are under"
+echo "      version control.  Make sure that you really want these changes"
+echo "      applied to the repository before you run \"svn commit\"."

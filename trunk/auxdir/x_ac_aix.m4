@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_AIX],
       *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl"  # permit run time linking
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
-            if test $OBJECT_MODE = "64"; then
+            if test "$OBJECT_MODE" = "64"; then
                 CFLAGS="-maix64 $CFLAGS"
                 CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull" # keep all common functions
             else
@@ -46,8 +46,7 @@ AC_DEFUN([X_AC_AIX],
 
    if test "x$ac_have_aix" = "xyes"; then
       AC_ARG_WITH(proctrack,
-         AC_HELP_STRING([--with-proctrack=PATH],
-                        [Specify path to proctrack sources]),
+         AS_HELP_STRING(--with-proctrack=PATH,Specify path to proctrack sources),
          [ PROCTRACKDIR="$withval" ]
       )
       if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then

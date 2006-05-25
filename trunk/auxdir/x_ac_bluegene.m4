@@ -16,8 +16,7 @@
 AC_DEFUN([X_AC_BLUEGENE],
 [
    AC_ARG_WITH(db2,
-      AC_HELP_STRING([--with-db2-dir=PATH],
-                     [Specify path to DB2 library's parent directory]),
+      AS_HELP_STRING(--with-db2-dir=PATH,Specify path to DB2 library's parent directory),
       [ trydb2dir=$withval ]
    )
 
@@ -64,10 +63,7 @@ AC_DEFUN([X_AC_BLUEGENE],
 
       saved_LDFLAGS="$LDFLAGS"
       LDFLAGS="$saved_LDFLAGS $bg_ldflags"
-      AC_TRY_LINK(
-	[ int rm_set_serial(char *); ],
-	[ rm_set_serial(""); ],
-	have_bg_files=yes, [])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[])
       LDFLAGS="$saved_LDFLAGS"
    fi
    if test ! -z "$have_bg_files" ; then
@@ -78,8 +74,7 @@ AC_DEFUN([X_AC_BLUEGENE],
       AC_MSG_CHECKING(for BG serial value)
       bg_serial="BGL"
       AC_ARG_WITH(bg-serial,
-         AC_HELP_STRING([--with-bg-serial=NAME],
-            [set BG_SERIAL value [[BGL]]]),
+         AS_HELP_STRING(--with-bg-serial=NAME,set BG_SERIAL value [[BGL]]),
          [bg_serial="$withval"]
       )
      AC_MSG_RESULT($bg_serial)
