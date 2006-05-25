@@ -31,7 +31,8 @@ jobs per node?</a></li>
 error messages?</a></li>
 <li><a href="#maint_time">How can I dry up the workload for a maintenance 
 period?</a></li>
-
+<li><a href="#pam">How can PAM be used to control a user's limits on or 
+access to compute nodes?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -281,8 +282,38 @@ to shorten the <i>MaxTime</i> associated with the partitions so
 as to avoid initiating jobs that will not have completed by 
 the maintenance period.
 
+<p><a name="pam"><b>9. How can PAM be used to control a user's limits on 
+or access to compute nodes?</b></a><br>
+First, enable SLURM's use of PAM by setting <i>UsePAM=1</i> in 
+<i>slurm.conf</i>.<br>
+Second, establish a PAM configuration file for slurm in <i>/etc/pam.d/slurm</i>.
+A basic configuration you might use is:<br>
+<pre>
+auth     required  pam_localuser.so
+account  required  pam_unix.so
+session  required  pam_limits.so
+</pre>
+Third, set the desired limits in <i>/etc/security/limits.conf</i>.
+For example, to set the locked memory limit to unlimited for all users:<br>
+<pre>
+*   hard   memlock   unlimited
+*   soft   memlock   unlimited
+</pre>
+Finally, you need to disable SLURM's forwarding of the limits from the 
+session from which the <i>srun</i> initiating the job ran. By default 
+all resource limits are propogated from that session. For example, adding 
+the following line to <i>slurm.conf</i> will prevent the locked memory 
+limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.
+
+<p>We also have a PAM module for SLURM that prevents users from 
+logging into nodes that they have not been allocated (except for user 
+root, which can always login. pam_slurm is available for download from
+<a href="ftp://ftp.llnl.gov/pub/linux/pam_slurm/">ftp://ftp.llnl.gov/pub/linux/pam_slurm</a>
+The use of pam_slurm does not require <i>UsePAM</i> being set. The 
+two uses of PAM are independent.
+ 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 May 2006</p>
+<p style="text-align:center;">Last modified 25 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
