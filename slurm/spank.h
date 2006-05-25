@@ -169,8 +169,8 @@ END_C_DECLS
  *   loader.
  */
 #define SPANK_PLUGIN(__name, __ver) \
-    const char plugin_name [] = "__name"; \
-    const char plugin_type [] = "spank/__name"; \
+    const char plugin_name [] = #__name; \
+    const char plugin_type [] = "spank"; \
     const unsigned int plugin_version = __ver;
 
 
