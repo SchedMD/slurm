@@ -15,13 +15,10 @@
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_PTRACE], [
-  AC_TRY_COMPILE(
-   [#include <sys/reg.h>
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/reg.h>
     #include <sys/ptrace.h>
-    #include <sys/ldr.h>], 
-   [ptrace(PT_TRACE_ME,0,0,0,0);],
-   [AC_DEFINE(PTRACE_FIVE_ARGS, 1,
-             [Define to 1 if ptrace takes five arguments.])])
+    #include <sys/ldr.h>]], [[ptrace(PT_TRACE_ME,0,0,0,0);]])],[AC_DEFINE(PTRACE_FIVE_ARGS, 1,
+             [Define to 1 if ptrace takes five arguments.])],[])
 
   AC_CHECK_FUNCS(ptrace64, [], []) 
 ])

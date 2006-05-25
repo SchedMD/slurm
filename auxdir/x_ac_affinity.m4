@@ -20,21 +20,15 @@ AC_DEFUN([X_AC_AFFINITY], [
   AC_CHECK_FUNCS(sched_setaffinity, [have_sched_setaffinity=yes])
   AM_CONDITIONAL(HAVE_SCHED_SETAFFINITY, test "x$have_sched_setaffinity" = "xyes")
 
-  AC_TRY_COMPILE(
-   [#define _GNU_SOURCE
-    #include <sched.h>],
-   [cpu_set_t mask;
-    sched_getaffinity(0, sizeof(cpu_set_t), &mask);],
-   [AC_DEFINE(SCHED_GETAFFINITY_THREE_ARGS, 1,
-             [Define to 1 if sched_getaffinity takes three arguments.])])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#define _GNU_SOURCE
+    #include <sched.h>]], [[cpu_set_t mask;
+    sched_getaffinity(0, sizeof(cpu_set_t), &mask);]])],[AC_DEFINE(SCHED_GETAFFINITY_THREE_ARGS, 1,
+             [Define to 1 if sched_getaffinity takes three arguments.])],[])
 
-  AC_TRY_COMPILE(
-   [#define _GNU_SOURCE
-    #include <sched.h>],
-   [cpu_set_t mask;
-    sched_getaffinity(0, &mask);],
-   [AC_DEFINE(SCHED_GETAFFINITY_TWO_ARGS, 1,
-             [Define to 1 if sched_getaffinity takes two arguments.])])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#define _GNU_SOURCE
+    #include <sched.h>]], [[cpu_set_t mask;
+    sched_getaffinity(0, &mask);]])],[AC_DEFINE(SCHED_GETAFFINITY_TWO_ARGS, 1,
+             [Define to 1 if sched_getaffinity takes two arguments.])],[])
 
 #
 # Test for NUMA memory afffinity functions and set the definitions

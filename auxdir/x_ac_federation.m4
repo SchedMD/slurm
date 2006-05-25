@@ -26,7 +26,7 @@ AC_DEFUN([X_AC_FEDERATION],
          continue;
       fi
 
-      if test $OBJECT_MODE = "64"; then
+      if test "$OBJECT_MODE" = "64"; then
 	 libntbl="ntbl_64"
       else
          libntbl="ntbl"

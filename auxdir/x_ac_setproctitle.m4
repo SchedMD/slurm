@@ -40,10 +40,8 @@ case "$host" in
 esac
 
 AC_MSG_CHECKING([for __progname])
-AC_TRY_LINK([#include <stdio.h>], 
-  [extern char *__progname; puts(__progname);],
-  [ac_have__progname=yes]
-)
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]], [[extern char *__progname; puts(__progname);]])],[ac_have__progname=yes
+],[])
 AC_MSG_RESULT(${ac_have__progname=no})
 if test "$ac_have__progname" = "yes"; then
   AC_DEFINE([HAVE__PROGNAME], 1, [Define if you have __progname.])

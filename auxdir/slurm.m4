@@ -15,8 +15,7 @@ AC_DEFUN([X_AC_SLURM_PORTS],
   AC_MSG_CHECKING(for slurmctld default port)
 
   AC_ARG_WITH(slurmctld-port,
-    AC_HELP_STRING([--with-slurmctld-port=N],
-        [set slurmctld default port [[6817]]]),
+    AS_HELP_STRING(--with-slurmctld-port=N,set slurmctld default port [[6817]]),
         [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
             slurmctldport="$withval"
           fi
@@ -30,8 +29,7 @@ AC_DEFUN([X_AC_SLURM_PORTS],
   
   AC_MSG_CHECKING(for slurmd default port)
   AC_ARG_WITH(slurmd-port,
-    AC_HELP_STRING([--with-slurmd-port=N],
-        [set slurmd default port [[6818]]]),
+    AS_HELP_STRING(--with-slurmd-port=N,set slurmd default port [[6818]]),
         [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
             slurmdport="$withval"
           fi
@@ -52,11 +50,8 @@ AC_DEFUN([X_AC_SLURM_PROGRAM_INVOCATION_NAME],
 [
   AC_MSG_CHECKING([for program_invocation_name])
 
-  AC_TRY_LINK([extern char *program_invocation_name;],
-    [char *p; p = program_invocation_name; printf("%s\n", p);],
-    [got_program_invocation_name=yes],
-    []
-  )
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[extern char *program_invocation_name;]], [[char *p; p = program_invocation_name; printf("%s\n", p);]])],[got_program_invocation_name=yes],[
+  ])
 
   AC_MSG_RESULT(${got_program_invocation_name=no})
 
