@@ -35,26 +35,26 @@ static void _page_switched(GtkNotebook     *notebook,
 			   guint            page_num,
 			   gpointer         user_data)
 {
-	GtkScrolledWindow *window = GTK_SCROLLED_WINDOW(gtk_notebook_get_nth_page(notebook, page_num));
+	GtkScrolledWindow *window = GTK_SCROLLED_WINDOW(
+		gtk_notebook_get_nth_page(notebook, page_num));
 	if(!window)
 		return;
 	GtkBin *bin = GTK_BIN(&window->container);
 	GtkViewport *view = GTK_VIEWPORT(bin->child);
 	GtkBin *bin2 = GTK_BIN(&view->bin);
-	GtkTable *table;
-	GtkTreeView *tree_view;
+	GtkTable *table = GTK_TABLE(bin2->child);
 
 	switch(page_num) {
 	case 0:
-		
-		//table = GTK_TABLE(bin2->child);
-		//get_slurm_part(table);
+		get_slurm_part(table);
+		break;
+	case 1:
+		get_slurm_part(table);
 		break;
 	case 2:
-		table = GTK_TABLE(bin2->child);
-		//tree_view = GTK_TREE_VIEW(bin2->child);
-		if(GTK_IS_TABLE(table))
-			g_print("hey it is a table!\n");
+		get_slurm_part(table);
+		break;
+	case 3:
 		get_slurm_part(table);
 		break;
 	default:
@@ -63,147 +63,142 @@ static void _page_switched(GtkNotebook     *notebook,
 	
 }
 
-static void _tab_pos(gpointer   callback_data,
-		     guint      callback_action,
-		     GtkWidget *menu_item )
+static void _tab_pos(GtkRadioAction *action,
+		     GtkRadioAction *extra,
+		     GtkWidget *menu_item)
 {
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), callback_action);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), 
+				 gtk_radio_action_get_current_value(action));
 }
 
-static void _next_page(gpointer   callback_data,
-		       guint      callback_action,
-		       GtkWidget *menu_item )
+static void _next_page(GtkAction *action,
+		       GtkWidget *menu_item)
 {
 	gtk_notebook_next_page(GTK_NOTEBOOK(notebook));
 }
 
-static void _prev_page(gpointer   callback_data,
-		       guint      callback_action,
-		       GtkWidget *menu_item )
+static void _prev_page(GtkAction *action,
+		       GtkWidget *menu_item)
 {
 	gtk_notebook_prev_page(GTK_NOTEBOOK(notebook));
 }
 
-static void _set_freq(gpointer   callback_data,
-		      guint      callback_action,
-		      GtkWidget *menu_item )
+static void _set_freq(GtkAction *action,
+		      GtkWidget *menu_item)
 {
 	frequency++;
 }
 
+static void _create_page(char *name)
+{
+	GtkScrolledWindow *scrolled_window = NULL;
+	GtkWidget *table = NULL;
+	GtkWidget *label;
+	
+	table = gtk_table_new(1, 1, FALSE);
 
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);	
+
+	scrolled_window = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new(
+						      NULL, NULL));	
+	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
+    
+	gtk_scrolled_window_set_policy(scrolled_window,
+				       GTK_POLICY_AUTOMATIC,
+				       GTK_POLICY_AUTOMATIC);
+    
+	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
+	
+	label = gtk_label_new(name);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
+				 GTK_WIDGET(scrolled_window), 
+				 label);	
+}
 
 /* Our menu, an array of GtkItemFactoryEntry structures that defines each menu item */
-static GtkItemFactoryEntry menu_items[] = {
-	{ "/_File",         NULL,         NULL,           0, "<Branch>" },
-	{ "/File/_New",     "<control>N", NULL,    0, "<StockItem>", GTK_STOCK_NEW },
-	{ "/File/_Open",    "<control>O", NULL,    0, "<StockItem>", GTK_STOCK_OPEN },
-	{ "/File/_Save",    "<control>S", NULL,    0, "<StockItem>", GTK_STOCK_SAVE },
-	{ "/File/Save _As", NULL,         NULL,           0, "<Item>" },
-	{ "/File/sep1",     NULL,         NULL,           0, "<Separator>" },
-	{ "/File/_Quit",    "<CTRL>Q", gtk_main_quit, 0, "<StockItem>", GTK_STOCK_QUIT },
-	{ "/_Options",      NULL,         NULL,           0, "<Branch>" },
-	{ "/Options/TabPos", NULL,        NULL,          0, "<Branch>" },
-	{ "/Options/TabPos/_Top",  "<control>T",    _tab_pos,      2, "<RadioItem>" },
-	{ "/Options/TabPos/_Bottom",  "<control>B", _tab_pos,      3, "/Options/TabPos/Top" },
-	{ "/Options/TabPos/_Left",  "<control>L",   _tab_pos,      4, "/Options/TabPos/Top" },
-	{ "/Options/TabPos/_Right",  "<control>R",  _tab_pos,      1, "/Options/TabPos/Top" },
-	{ "/Options/sep",   NULL,         NULL,           0, "<Separator>" },
-	{ "/Options/_Frequency",  "<CTRL>F",    _set_freq, 0, "<Item>" },
-	{ "/Options/sep",   NULL,         NULL,           0, "<Separator>" },
-	{ "/Options/Ne_xtPage",  "<CTRL>X",    _next_page, 0, "<Item>" },
-	{ "/Options/_PrevPage",  "<CTRL>P",    _prev_page, 0, "<Item>" },
-	{ "/_Help",         NULL,         NULL,           0, "<LastBranch>" },
-	{ "/_Help/About",   NULL,         NULL,           0, "<Item>" },
+
+static const GtkActionEntry entries[] = {
+	{"Options", NULL, "_Options"},
+	{"Tab Pos", NULL, "_Tab Pos"},
+	{"Frequency", NULL, "_Frequency", 
+	 "<control>F", "Increases Frequency of polls", G_CALLBACK(_set_freq)},
+	{"NextPage", NULL, "Ne_xtPage", 
+	 "<control>X", "Moves to next page", G_CALLBACK(_next_page)},
+	{"PrevPage", NULL, "_PrevPage", 
+	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
+	{"Help", NULL, "_Help"},
+	{"About", NULL, "_About"}
 };
 
-static gint nmenu_items = sizeof (menu_items) / sizeof (menu_items[0]);
+static const GtkRadioActionEntry radio_entries[] = {
+	{"Top", NULL, "_Top", 
+	 "<control>T", "Move tabs to top", 2},
+	{"Bottom", NULL, "_Bottom", 
+	 "<control>B", "Move tabs to the bottom", 3},
+	{"Left", NULL, "_Left", 
+	 "<control>L", "Move tabs to the Left", 4},
+	{"Right", NULL, "_Right", 
+	 "<control>R", "Move tabs to the Right", 1}
+};
+
+
+static const char *ui_description =
+"<ui>"
+"  <menubar name='MainMenu'>"
+"    <menu action='Options'>"
+"      <menu action='Tab Pos'>"
+"        <menuitem action='Top'/>"
+"        <menuitem action='Bottom'/>"
+"        <menuitem action='Left'/>"
+"        <menuitem action='Right'/>"
+"      </menu>"
+"      <separator/>"
+"      <menuitem action='Frequency'/>"
+"      <separator/>"
+"      <menuitem action='NextPage'/>"
+"      <menuitem action='PrevPage'/>"
+"    </menu>"
+"    <menu action='Help'>"
+"      <menuitem action='About'/>"
+"    </menu>"
+"  </menubar>"
+"</ui>";
 
 /* Returns a menubar widget made from the above menu */
-static GtkWidget *get_menubar_menu( GtkWidget  *window )
+static GtkWidget *get_menubar_menu(GtkWidget *window)
 {
-	GtkItemFactory *item_factory;
-	GtkAccelGroup *accel_group;
-
+	GtkActionGroup *action_group = NULL;
+	GtkUIManager *ui_manager = NULL;
+	GtkAccelGroup *accel_group = NULL;
+	GError *error = NULL;
+	
 	/* Make an accelerator group (shortcut keys) */
-	accel_group = gtk_accel_group_new ();
+	action_group = gtk_action_group_new ("MenuActions");
+	gtk_action_group_add_actions(action_group, entries, G_N_ELEMENTS(entries), window);
+	gtk_action_group_add_radio_actions(action_group, radio_entries, 
+					   G_N_ELEMENTS(radio_entries), 
+					   0, G_CALLBACK(_tab_pos), window);
+	ui_manager = gtk_ui_manager_new ();
+	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
 
-	/* Make an ItemFactory (that makes a menubar) */
-	item_factory = gtk_item_factory_new (GTK_TYPE_MENU_BAR, "<main>",
-					     accel_group);
-
-	/* This function generates the menu items. Pass the item factory,
-	   the number of items in the array, the array itself, and any
-	   callback data for the the menu items. */
-	gtk_item_factory_create_items (item_factory, nmenu_items, menu_items, NULL);
-
-	/* Attach the new accelerator group to the window. */
+	accel_group = gtk_ui_manager_get_accel_group (ui_manager);
 	gtk_window_add_accel_group (GTK_WINDOW (window), accel_group);
 
+	if (!gtk_ui_manager_add_ui_from_string (ui_manager, ui_description, 
+						-1, &error))
+	{
+		g_message ("building menus failed: %s", error->message);
+		g_error_free (error);
+		exit (0);
+	}
+
 	/* Finally, return the actual menu bar created by the item factory. */
-	return gtk_item_factory_get_widget (item_factory, "<main>");
+	return gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
 }
 
-/* Popup the menu when the popup button is pressed */
-static gboolean popup_cb( GtkWidget *widget,
-                          GdkEvent *event,
-                          GtkWidget *menu )
-{
-	GdkEventButton *bevent = (GdkEventButton *)event;
-  
-	/* Only take button presses */
-	if (event->type != GDK_BUTTON_PRESS)
-		return FALSE;
-  
-	/* Show the menu */
-	gtk_menu_popup (GTK_MENU(menu), NULL, NULL,
-			NULL, NULL, bevent->button, bevent->time);
-  
-	return TRUE;
-}
-
-/* Same as with get_menubar_menu() but just return a button with a signal to
-   call a popup menu */
-GtkWidget *get_popup_menu( void )
-{
-	GtkItemFactory *item_factory;
-	GtkWidget *button, *menu;
-  
-	/* Same as before but don't bother with the accelerators */
-	item_factory = gtk_item_factory_new (GTK_TYPE_MENU, "<main>",
-					     NULL);
-	gtk_item_factory_create_items (item_factory, nmenu_items, menu_items, NULL);
-	menu = gtk_item_factory_get_widget (item_factory, "<main>");
-  
-	/* Make a button to activate the popup menu */
-	button = gtk_button_new_with_label ("Popup");
-	/* Make the menu popup when clicked */
-	g_signal_connect (G_OBJECT(button),
-			  "event",
-			  G_CALLBACK(popup_cb),
-			  (gpointer) menu);
-
-	return button;
-}
-
-/* Same again but return an option menu */
-GtkWidget *get_option_menu( void )
-{
-	GtkItemFactory *item_factory;
-	GtkWidget *option_menu;
-  
-	/* Same again, not bothering with the accelerators */
-	item_factory = gtk_item_factory_new (GTK_TYPE_OPTION_MENU, "<main>",
-					     NULL);
-	gtk_item_factory_create_items (item_factory, nmenu_items, menu_items, NULL);
-	option_menu = gtk_item_factory_get_widget (item_factory, "<main>");
-
-	return option_menu;
-}
-
-static gboolean delete( GtkWidget *widget,
+static gboolean _delete(GtkWidget *widget,
                         GtkWidget *event,
-                        gpointer   data )
+                        gpointer data)
 {
 	gtk_main_quit ();
 	return FALSE;
@@ -214,44 +209,22 @@ int main( int argc,
           char *argv[] )
 {
 	GtkWidget *window;
-	GtkWidget *button;
-	GtkWidget *menubar, *option_menu, *popup_button;
-	GtkWidget *table;
-	GtkWidget *scrolltable;
-	GtkWidget *scrollwindow;
-	GtkWidget *frame;
-	GtkWidget *label;
-	GtkWidget *checkbutton;
-	GtkWidget *scrolled_window;
-	GtkWidget *view;
+	GtkWidget *menubar;
 	
-	int j;
-	char bufferl[32];
-    
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
  
 	/* Make a window */
 	window = gtk_dialog_new();
 	g_signal_connect(G_OBJECT(window), "delete_event",
-			 G_CALLBACK(delete), NULL);
+			 G_CALLBACK(_delete), NULL);
 	gtk_window_set_title(GTK_WINDOW(window), "Sview");
-	
+	gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
 	gtk_container_set_border_width(GTK_CONTAINER(GTK_DIALOG(window)->vbox),
 				       1);
 	
-	/* Get the three types of menu */
+	/* Create a menu */
 	menubar = get_menubar_menu(window);
-	
-	table = gtk_table_new(1, 6, FALSE);
-	gtk_widget_set_size_request(GTK_WIDGET(table), 600, 400);
-
-	/* Pack it all together */
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
-			   menubar, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(window)->vbox), 
-			 table, TRUE, TRUE, 0);	
-	
 	/* Create a new notebook, place the position of the tabs */
 	notebook = gtk_notebook_new();
 	g_signal_connect(G_OBJECT(notebook), "switch_page",
@@ -260,111 +233,29 @@ int main( int argc,
 	
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), GTK_POS_TOP);
-	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(notebook),
-				  0, 6, 0, 1);
-	gtk_widget_show(GTK_WIDGET(notebook));
-  
+	
+	/* Pack it all together */
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
+			   menubar, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(window)->vbox), 
+			 notebook, TRUE, TRUE, 0);	
+	
 	/* Partition info */
-	scrolltable = gtk_table_new(1, 1, FALSE);
 
-	gtk_container_set_border_width(GTK_CONTAINER(scrolltable), 10);
-	
-
-	scrolled_window = gtk_scrolled_window_new(NULL, NULL);	
-	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
-    
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-				       GTK_POLICY_AUTOMATIC,
-				       GTK_POLICY_AUTOMATIC);
-    
-	gtk_widget_show(scrolled_window);
-	gtk_scrolled_window_add_with_viewport (
-		GTK_SCROLLED_WINDOW (scrolled_window), scrolltable);
-	gtk_widget_show(scrolltable);
-	
-
-	label = gtk_label_new("Partitions");
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
-				 scrolled_window, label);
+	_create_page("Partitions");
 	
 	/* Job info */
-	scrolltable = gtk_table_new(10, 1, FALSE);
+	_create_page("Jobs");	
 
-	gtk_container_set_border_width(GTK_CONTAINER(scrolltable), 10);
-	
-
-	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-    
-	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
-    
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-				       GTK_POLICY_AUTOMATIC,
-				       GTK_POLICY_AUTOMATIC);
-    
-	gtk_widget_show(scrolled_window);
-	gtk_scrolled_window_add_with_viewport (
-		GTK_SCROLLED_WINDOW (scrolled_window), scrolltable);
-	gtk_widget_show(scrolltable);
-	
-
-	for (j = 0; j < 10; j++) {
-		sprintf(bufferl, "Job (%d)\n", j);
-		button = gtk_toggle_button_new_with_label (bufferl);
-		gtk_table_attach_defaults(GTK_TABLE (scrolltable), 
-					  button,
-					  0, 1, j, j+1);
-		gtk_widget_show(button);
-	}
-
-	label = gtk_label_new("Jobs");
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
-				 scrolled_window, label);
-	gtk_widget_show(label);
-	
 	/* Node info */
-	
-	scrolltable = gtk_table_new(1, 1, FALSE);
-
-	gtk_container_set_border_width(GTK_CONTAINER(scrolltable), 10);
-	
-	
-    
-	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
-    
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-				       GTK_POLICY_AUTOMATIC,
-				       GTK_POLICY_AUTOMATIC);
-    
-	gtk_widget_show(scrolled_window);
-	gtk_scrolled_window_add_with_viewport (
-		GTK_SCROLLED_WINDOW (scrolled_window), scrolltable);
-	gtk_widget_show(scrolltable);
-	
-
-	label = gtk_label_new("Partitions 2");
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
-				 scrolled_window, label);
-	gtk_widget_show(label);
-		
+	_create_page("Nodes");
 	
 	/* Admin */
-	frame = gtk_frame_new ("Administration");
-	gtk_container_set_border_width (GTK_CONTAINER (frame), 10);
-	gtk_widget_show (frame);
+	_create_page("Administration");
 	
-	label = gtk_label_new ("Admin info here");
-	gtk_container_add (GTK_CONTAINER (frame), label);
-	gtk_widget_show (label);
-	
-	label = gtk_label_new ("Admin");
-	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), frame, label);
-	
-    
 	/* Set what page to start at (page 4) */
 	gtk_notebook_set_current_page (GTK_NOTEBOOK (notebook), 0);
 
-	gtk_widget_show (table);
 	gtk_widget_show_all (window);
 
 	/* Finished! */
