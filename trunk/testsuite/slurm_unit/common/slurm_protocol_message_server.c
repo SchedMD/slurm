@@ -13,6 +13,7 @@ int main ( int argc , char * argv[] )
 	slurm_msg_t resp;
 	int16_t port = 0;
 	update_node_msg_t *in_msg, out_msg;
+	List ret_list = NULL;
 		
 	/* init address sturctures */
 	if (argc > 1)
@@ -29,9 +30,17 @@ int main ( int argc , char * argv[] )
 	printf ( "worker socket %i\n", worker_socket ) ;
 
 	while (1) {
-		if (slurm_receive_msg (worker_socket, &msg, 0) == SLURM_SOCKET_ERROR ) {
-			printf ("slurm_receive_msg error\n");
+		if ((ret_list = slurm_receive_msg(worker_socket, &resp, 0)) 
+		    == NULL) {
+			printf ("Error reading slurm_receive_msg %m\n");
 			break;
+		} else {
+			if(list_count(ret_list)>0) {
+				error("We didn't do things correctly "
+				      "got %d responses didn't expect any",
+				      list_count(ret_list));
+			}
+			list_destroy(ret_list);
 		}
 
 		if (msg.msg_type == REQUEST_SHUTDOWN_IMMEDIATE) {
