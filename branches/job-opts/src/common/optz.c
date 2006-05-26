@@ -35,74 +35,69 @@
 
 static const struct option opt_table_end = { NULL, 0, NULL, 0 };
 
-struct option * optz_create (void)
+struct option *optz_create(void)
 {
-    struct option * optz = xmalloc (sizeof (*optz));
-    optz[0] = opt_table_end;
-    return (optz);
+	struct option *optz = xmalloc(sizeof(*optz));
+	optz[0] = opt_table_end;
+	return (optz);
 }
 
-void optz_destroy (struct option *optz)
+void optz_destroy(struct option *optz)
 {
-    xfree (optz);
-    return;
+	xfree(optz);
+	return;
 }
 
-int optz_add (struct option **optz, const struct option *opt)
+int optz_add(struct option **optz, const struct option *opt)
 {
-    int len = 0;
-    struct option *op = *optz;
-    struct option *t =  *optz;
+	int len = 0;
+	struct option *op = *optz;
+	struct option *t = *optz;
 
-    for (; op->name != NULL; op++) {
-        if (strcmp (op->name, opt->name) == 0)
-            slurm_seterrno_ret (EEXIST);
-        len++;
-    }
+	for (; op->name != NULL; op++) {
+		if (strcmp(op->name, opt->name) == 0)
+			slurm_seterrno_ret(EEXIST);
+		len++;
+	}
 
-    ++len; /* Add one for incoming option */
+	++len;			/* Add one for incoming option */
 
-    t = xrealloc (t, (len + 1) * sizeof (struct option));
+	t = xrealloc(t, (len + 1) * sizeof(struct option));
 
-    t[len-1] = *opt;
-    t[len] =    opt_table_end;
+	t[len - 1] = *opt;
+	t[len] = opt_table_end;
 
-    *optz = t;
+	*optz = t;
 
-    return (0);
+	return (0);
 }
 
-int optz_append (struct option **optz, const struct option *opts)
+int optz_append(struct option **optz, const struct option *opts)
 {
-    int len1 = 0;
-    int len2 = 0;
-    int i;
-    const struct option *op;
-    struct option *t = *optz;
+	int len1 = 0;
+	int len2 = 0;
+	int i;
+	const struct option *op;
+	struct option *t = *optz;
 
-    if (opts == NULL)
-        return (0);
+	if (opts == NULL)
+		return (0);
 
-    for (op = *optz; op && op->name != NULL; op++)
-        len1++;
+	for (op = *optz; op && op->name != NULL; op++)
+		len1++;
 
-    for (op = opts; op && op->name != NULL; op++)
-        len2++;
+	for (op = opts; op && op->name != NULL; op++)
+		len2++;
 
-    t = xrealloc (t, (len1+len2+2) * sizeof (struct option));
+	t = xrealloc(t, (len1 + len2 + 2) * sizeof(struct option));
 
-    i = len1;
-    for (op = opts; op->name != NULL; op++, i++)
-        t[i] = *op;
+	i = len1;
+	for (op = opts; op->name != NULL; op++, i++)
+		t[i] = *op;
 
-    t[i] = opt_table_end;
+	t[i] = opt_table_end;
 
-    *optz = t;
+	*optz = t;
 
-    return (0);
+	return (0);
 }
-
-
-/*
- * vi: ts=4 sw=4 expandtab
- */
