@@ -62,7 +62,7 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $srun -l -N$node_cnt -n10 -O -t1 $file_prog_get
+spawn $srun -l -N$node_cnt -n6 -O -t1 $file_prog_get
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"
