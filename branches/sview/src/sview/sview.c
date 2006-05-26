@@ -97,7 +97,11 @@ static void _refresh(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkWidget *menu_item)
 {
-	g_print("refreshed\n");
+	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+	if(page == -1)
+		g_error("no pages in notebook for refresh\n");
+	_page_switched(GTK_NOTEBOOK(notebook), NULL, page, NULL);
+	
 }
 
 static void _create_page(char *name)
@@ -125,7 +129,7 @@ static void _create_page(char *name)
 	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
 				 GTK_WIDGET(scrolled_window), 
 					   label)) == -1) {
-		g_print("Couldn't add page to notebook\n");
+		g_error("Couldn't add page to notebook\n");
 	}	
 }
 

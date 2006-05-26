@@ -52,6 +52,7 @@ typedef struct {
 } db2_block_info_t;
 
 enum { 
+	SORTID_POS,
 	SORTID_PARTITION, 
 	SORTID_AVAIL, 
 	SORTID_TIMELIMIT, 
@@ -79,7 +80,8 @@ static void _print_header_part(GtkTreeView *tree_view);
 static char *_part_state_str(rm_partition_state_t state);
 static int _append_part_record(partition_info_t *part_ptr, 
 			       db2_block_info_t *db2_info_ptr,
-			       GtkListStore *liststore, GtkTreeIter *iter);
+			       GtkListStore *liststore, GtkTreeIter *iter, 
+			       int line);
 #ifdef HAVE_BG
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
@@ -144,15 +146,43 @@ cleanup:
 	return ret;
 }
 
+static void _row_clicked(GtkTreeView *tree_view,
+			 GtkTreePath *path,
+			 GtkTreeViewColumn *column,
+			 gpointer user_data)
+{
+	partition_info_msg_t *new_part_ptr = (partition_info_msg_t *)user_data;
+	partition_info_t *part_ptr = NULL;
+	GtkTreeIter iter;
+	GtkTreeModel *model = NULL;
+	model = gtk_tree_view_get_model(tree_view);
+	int line;
+	
+	if(!model) {
+		g_error("error getting the model from the tree_view");
+		return;
+	}
+		
+	if (!gtk_tree_model_get_iter(model, &iter, path)) {
+		g_error("error getting iter from model");
+		return;
+	}
+	
+	
+	gtk_tree_model_get(model, &iter, SORTID_POS, &line, -1);
+	part_ptr = &new_part_ptr->partition_array[line];
+	g_print("the name is %s\n", part_ptr->name);
+}
+
 static GtkListStore *_create_part_liststore()
 {
 	GtkListStore *liststore = NULL;
 	GType types[SORTID_PARTITION_CNT];
 	int i=0;
-	
-	for(i=0; i<SORTID_PARTITION_CNT; i++)
+	/* for the position 'unseen' var */
+	types[i] = G_TYPE_INT;
+	for(i=1; i<SORTID_PARTITION_CNT; i++)
 		types[i] = G_TYPE_STRING;
-	
 	liststore = gtk_list_store_newv(SORTID_PARTITION_CNT, 
 					types);
 	if(!liststore)
@@ -255,6 +285,9 @@ extern void get_slurm_part(GtkTable *table)
 	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 
+	g_signal_connect(G_OBJECT(tree_view), "row-activated",
+			 G_CALLBACK(_row_clicked),
+			 new_part_ptr);
 	gtk_table_attach_defaults(GTK_TABLE(table), 
 				  GTK_WIDGET(tree_view),
 				  0, 1, 0, 1); 
@@ -276,8 +309,7 @@ extern void get_slurm_part(GtkTable *table)
 /* 				 part.node_inx[j + 1], count); */
 			j += 2;
 		}
-		for (j = 0; j < 10; j++) 
-		_append_part_record(&part, NULL, liststore, &iter);
+		_append_part_record(&part, NULL, liststore, &iter, i);
 		count++;
 			
 	}
@@ -579,7 +611,8 @@ static char *_part_state_str(rm_partition_state_t state)
 
 static int _append_part_record(partition_info_t *part_ptr, 
 			       db2_block_info_t *db2_info_ptr,
-			       GtkListStore *liststore, GtkTreeIter *iter)
+			       GtkListStore *liststore, GtkTreeIter *iter,
+			       int line)
 {
 	int printed = 0;
 	int tempxcord;
@@ -650,9 +683,10 @@ static int _append_part_record(partition_info_t *part_ptr,
 	} else {
 		temp[SORTID_NODELIST] = nodes;
 	}
-
+	
 	if(params.display == BGPART)
 		gtk_list_store_set(liststore, iter,
+				   SORTID_POS, line,
 				   SORTID_PARTITION, temp[SORTID_PARTITION],
 				   SORTID_AVAIL, temp[SORTID_AVAIL],
 				   SORTID_TIMELIMIT, temp[SORTID_TIMELIMIT],
@@ -666,6 +700,7 @@ static int _append_part_record(partition_info_t *part_ptr,
 				   -1);		
 	else
 		gtk_list_store_set(liststore, iter,
+				   SORTID_POS, line,
 				   SORTID_PARTITION, temp[SORTID_PARTITION],
 				   SORTID_AVAIL, temp[SORTID_AVAIL],
 				   SORTID_TIMELIMIT, temp[SORTID_TIMELIMIT],
