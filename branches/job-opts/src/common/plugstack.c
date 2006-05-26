@@ -28,6 +28,7 @@
 #endif
 
 #include <string.h>
+#include <ctype.h>
 
 #include "src/common/plugin.h"
 #include "src/common/xmalloc.h"
@@ -139,7 +140,7 @@ static pthread_mutex_t spank_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  *  Default plugin dir
  */
-static const char * default_spank_plugindir;
+static const char * default_spank_path = NULL;
 
 /*
  *  Forward declarations
@@ -176,16 +177,23 @@ _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
 	if ((s = strchr(line, '#')))
 		*s = '\0';
 
+	/*
+	 * Remove trailing whitespace
+	 */
+	for (s = line + strlen (line) - 1; isspace (*s) || *s == '\n'; s--)
+		*s = '\0';
+
 	if (!(option = strtok_r(line, separators, &sp)))
 		return 0;
 
 	if (strncmp(option, REQUIRED, strlen(option)) == 0) {
 		*required = true;
-	} else if (strncmp(option, OPTIONAL, strlen(option)) == 0) {
+	} 
+	else if (strncmp(option, OPTIONAL, strlen(option)) == 0) {
 		*required = false;
-	} else {
-		error
-		    ("spank: Invalid option \"%s\". Must be either %s or %s",
+	} 
+	else {
+		error("spank: Invalid option \"%s\". Must be either %s or %s",
 		     option, REQUIRED, OPTIONAL);
 		return (-1);
 	}
@@ -258,6 +266,45 @@ void _spank_plugin_destroy(struct spank_plugin *sp)
 	return;
 }
 
+static char *
+_spank_plugin_find (const char *path, const char *file)
+{
+	char dir [4096]; 
+	char *p, *entry;
+	int pathlen = strlen (path);
+
+	if (strlcpy(dir, path, sizeof (dir)) > sizeof (dir))
+		return (NULL);
+
+	/*
+	 * Ensure PATH ends with a :
+	 */
+	if (dir[pathlen - 1] != ':') {
+	       dir[pathlen] = ':';
+	       dir[pathlen+1] = '\0';
+	}
+
+	entry = dir;
+	while ((p = strchr(dir, ':'))) {
+		char *fq_path;
+		*(p++) = '\0';
+
+		fq_path = xstrdup (entry);
+		if (entry [strlen(entry) - 1] != '/')
+			xstrcatchar (fq_path, '/');
+		xstrcat (fq_path, file);
+
+		if (access (fq_path, F_OK) == 0) {
+			return (fq_path);
+		}
+
+		xfree (fq_path);
+		entry = p;
+	}
+
+	return (NULL);
+}
+
 static int
 _spank_stack_process_line(const char *file, int line, char *buf,
 			  struct spank_plugin **plugin)
@@ -272,8 +319,7 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 	*plugin = NULL;
 
 	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &required) < 0) {
-		error("spank: %s: %d: Invalid line. Ignoring.", file,
-		      line);
+		error("spank: %s:%d: Invalid line. Ignoring.", file, line);
 		return (0);
 	}
 
@@ -281,17 +327,16 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 		return (0);
 
 	if (path[0] != '/') {
-		char *fq_path = xstrdup (default_spank_plugindir);
-		int len = strlen (fq_path);
-		if (fq_path[len - 1] != '/')
-			xstrcatchar(fq_path, '/');
-		xstrcat(fq_path, path);
-		xfree (path);
-		path = fq_path;
+		char *f;
+
+		if ((f = _spank_plugin_find (default_spank_path, path))) {
+			xfree (path);
+			path = f;
+		}
 	}
 
 	if (!(p = _spank_plugin_create(path, ac, argv, required))) {
-		error ("spank: %s: %d: Failed to load %s plugin from %s. %s",
+		error ("spank: %s:%d: Failed to load %s plugin from %s. %s",
 		     file, line, 
 		     required ? "required" : "optional", 
 		     path,
@@ -481,14 +526,14 @@ int spank_init(slurmd_job_t * job)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
-	default_spank_plugindir = conf->plugindir;
+	default_spank_path = conf->plugindir;
 	slurm_conf_unlock();
 
 	if (_spank_stack_create(path, &spank_stack) < 0) {
 		/* No error if spank config doesn't exist */
 		if (errno == ENOENT)
 			return (0);
-		error("spank: failed to create plugin stack: %m");
+		error("spank: failed to create plugin stack");
 		return (-1);
 	}
 
