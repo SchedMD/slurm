@@ -136,6 +136,10 @@ static List spank_stack = NULL;
 
 static pthread_mutex_t spank_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/*
+ *  Default plugin dir
+ */
+static const char * default_spank_plugindir;
 
 /*
  *  Forward declarations
@@ -267,8 +271,7 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 
 	*plugin = NULL;
 
-	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &required) <
-	    0) {
+	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &required) < 0) {
 		error("spank: %s: %d: Invalid line. Ignoring.", file,
 		      line);
 		return (0);
@@ -277,9 +280,21 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 	if (path == NULL)	/* No plugin listed on this line */
 		return (0);
 
+	if (path[0] != '/') {
+		char *fq_path = xstrdup (default_spank_plugindir);
+		int len = strlen (fq_path);
+		if (fq_path[len - 1] != '/')
+			xstrcatchar(fq_path, '/');
+		xstrcat(fq_path, path);
+		xfree (path);
+		path = fq_path;
+	}
+
 	if (!(p = _spank_plugin_create(path, ac, argv, required))) {
 		error ("spank: %s: %d: Failed to load %s plugin from %s. %s",
-		     file, line, required ? "required" : "optional", path,
+		     file, line, 
+		     required ? "required" : "optional", 
+		     path,
 		     required ? "Aborting." : "Ignoring.");
 		return (required ? -1 : 0);
 	}
@@ -466,6 +481,7 @@ int spank_init(slurmd_job_t * job)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
+	default_spank_plugindir = conf->plugindir;
 	slurm_conf_unlock();
 
 	if (_spank_stack_create(path, &spank_stack) < 0) {
@@ -612,10 +628,16 @@ static int _spank_plugin_options_cache(struct spank_plugin *p)
 	return (0);
 }
 
-static int 
-_add_one_option(struct option **optz, struct option *opt)
+static int _add_one_option(struct option **optz, struct spank_plugin_opt *spopt)
 {
-	if (optz_add(optz, opt) < 0) {
+	struct option opt;
+
+	opt.name = spopt->opt->name;
+	opt.has_arg = spopt->opt->has_arg;
+	opt.flag = NULL;
+	opt.val = spopt->optval;
+
+	if (optz_add(optz, &opt) < 0) {
 		if (errno == EEXIST) {
 			error ("Ingoring conflicting option \"%s\" "
 			       "in plugin \"%s\"", 
@@ -654,17 +676,7 @@ struct option *spank_option_table_create(const struct option *orig)
 
 	i = list_iterator_create(option_cache);
 	while ((spopt = list_next(i))) {
-		struct option opt;
-
-		if (spopt->disabled)
-			continue;
-
-		opt.name = spopt->opt->name;
-		opt.has_arg = spopt->opt->has_arg;
-		opt.flag = NULL;
-		opt.val = spopt->optval;
-
-		if (_add_one_option (&opts, &opt) < 0)
+		if (!spopt->disabled && (_add_one_option (&opts, spopt) < 0))
 			spopt->disabled = 1;
 	}
 
