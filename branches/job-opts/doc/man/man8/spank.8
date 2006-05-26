@@ -16,29 +16,44 @@ the \fBSPANK\fR infrastructure provides administrators and other developers
 a low cost, low effort ability to dynamically modify the runtime
 behavior of SLURM job launch.
 .LP
+.SH "SPANK PLUGINS"
+\fBSPANK\fR plugins are loaded in two separate contexts during a 
+\fBSLURM\fR job.  In "local" context, the plugin is loaded by \fBsrun\fR
+or other \fBSLURM\fR user interface. In local context, the plugin options
+are read by \fBSPANK\fR, and options are presented to the user. In 
+"remote" context, the plugin is running on a compute node of the job,
+in other words, the plugin is loaded by \fBslurmd\fR. Only the 
+\fBinit\fR and \fBexit\fR functions are called in local context.
+Plugins may query the context in which they are running with the
+\fBspank_remote\fR function defined in \fB<slurm/spank.h>\fR.
+.LP
 \fBSPANK\fR plugins may be called from multiple points during the SLURM job
 launch. A plugin may define the following functions:
 .TP 2
 \fBslurm_spank_init\fR 
-Called just after job step is initialized.
+Called just after plugins are loaded. In remote context, this is
+just after job step is initialized. For local context, this is before
+user options are processed.
 .TP
 \fBslurm_spank_user_init\fR 
-Called after privileges are temporarily dropped.
+Called after privileges are temporarily dropped. (remote context only)
 .TP
 \fBslurm_spank_task_init\fR 
-Called for each task just before execve(2).
+Called for each task just before execve(2). (remote context only)
 .TP
 \fBslurm_spank_task_post_fork\fR 
 Called for each task from parent process after fork(2) is complete.
 Due to the fact that \fBslurmd\fR does not exec any tasks until all
 tasks have completed fork(2), this call is guaranteed to run before
-the user task is executed.
+the user task is executed. (remote context only)
 .TP
 \fBslurm_spank_task_exit\fR
-Called for each task as its exit status is collected by SLURM.
+Called for each task as its exit status is collected by SLURM. 
+(remote context only)
 .TP
 \fBslurm_spank_exit\fR
-Called once just before \fBslurmstepd\fR exits.
+Called once just before \fBslurmstepd\fR exits in remote context.
+In local context, called before \fBsrun\fR exits.
 .LP
 All of these functions have the same prototype, for example:
 .nf
@@ -102,6 +117,84 @@ environment. The prototypes are:
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
 for \fBspank_getenv\fR usage.
+.SH "SPANK OPTIONS"
+.LP
+SPANK plugins also have an interface through which they may define
+and implement extra job options. These options are made available to
+the user through SLURM commands such as \fBsrun\fR(1), and if the
+option is specified, its value is forwarded and registered with
+the plugin on the remote side. In this way, \fBSPANK\fR plugins
+may dynamically provide new options and functionality to SLURM.
+.LP
+In order to register new options with SLURM, a plugin must 
+define symbol \fBspank_options\fR which is a pointer to the
+first element of an array of \fBstruct spank_option\fR declared
+in \fB<slurm/spank.h>\fR as
+.nf
+
+   struct spank_option {
+      char *         name;    
+      char *         arginfo;
+      char *         usage; 
+      int            has_arg;
+      int            val;    
+      spank_opt_cb_f cb;     
+   };
+
+.fi
+.LP
+Where
+.TP
+.I name
+is the name of the option. Its length is limited to \fBSPANK_OPTION_MAXLEN\fR
+defined in \fB<slurm/spank.h>\fR.
+.TP
+.I arginfo
+is a description of the argument to the option, if the option does take
+an argument.
+.TP
+.I usage
+is a short description of the option suitable for \-\-help output.
+.TP 
+.I has_arg
+0 if option takes an argument, 1 if option takes no argument, and
+2 if the option takes an optional argument. (See \fBgetopt_long\fR(3)).
+.TP
+.I val
+A plugin-local value to return to the option callback function.
+.TP
+.I cb
+A callback function that is invoked when the plugin option is
+registered with SLURM. \fBspank_opt_cb_f\fR is typedef'd in 
+\fB<slurm/spank.h>\fR as 
+.nf
+
+  typedef int (*spank_opt_cb_f) (int val, const char *optarg, 
+		                 int remote);
+
+.fi
+Where \fIval\fR is the value of the \fIval\fR field in the \fBspank_option\fR
+struct, \fIoptarg\fR is the supplied argument if applicable, and \fIremote\fR
+is 0 if the function is being called from the "local" host (e.g. srun) or
+1 from the "remote" host (slurmd).
+.LP
+The last element of the array must filled with zeros. A
+\fBSPANK_OPTIONS_TABLE_END\fR macro is defined in \fB<slurm/spank.h>\fR
+for this purpose.
+.LP
+When an option is provided by the user on the local side, \fBSLURM\fR will 
+immediately invoke the option's callback with \fIremote\fR=0. This
+is meant for the plugin to do local sanity checking of the option before
+the value is sent to the remote side during job launch. If the argument
+the user specified is invalid, the plugin should issue an error and
+issue a non-zero return code from the callback.
+.LP
+On the remote side, options and their arguments are registered just
+after \fBSPANK\fR plugins are loaded and before the \fBspank_init\fR
+handler is called. This allows plugins to modify behavior of all plugin
+functionality based on the value of user-provided options.
+(See EXAMPLES below for a plugin that registers an option with \fBSLURM\fR).
+
 .SH "CONFIGURATION"
 .LP
 The default \fBSPANK\fR plug-in stack configuration file is
@@ -151,58 +244,154 @@ Simple \fBSPANK\fR config file:
 #
 # required?       plugin                     args
 #
-optional          /usr/lib/slurm/renice.so   verbose
+optional          /usr/lib/slurm/renice.so   min_prio=-10
 required          /usr/lib/slurm/test.so     
 
 .fi
 .LP
-Simple \fBSPANK\fR plugin to modify job nice value. 
-Allows priority to be set via SLURM_RENICE environment variable, 
-though system-wide default could be set using \fBSPANK\fR plugin arguments
-in the configuration file.
+The following is a simple \fBSPANK\fR plugin to modify the nice value
+of job tasks. This plugin adds a --renice=[prio] option to srun which
+users can use to set the priority of all remote tasks. Priority may
+also be specified via a SLURM_RENICE environment variable. A minimum
+priority may be established via a "min_prio" parameter in \fBplugstack.conf\fR
+(See above for example).
 .nf
 
 #include <sys/types.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/resource.h>
 
 #include <slurm/spank.h>
 
+/*
+ * All spank plugins must define this macro for the SLURM plugin loader.
+ */
 SPANK_PLUGIN(renice, 1);
+
+#define PRIO_ENV_VAR "SLURM_RENICE"
+#define PRIO_NOT_SET 42
+
+/*
+ *  Minimum allowable value for priority. May be set globally
+ *   via plugin option min_prio=<prio>
+ */
+static int min_prio = -20;
+
+static int prio = PRIO_NOT_SET;
+
+static int _renice_opt_process (int val, const char *optarg, int remote);
+static int _str2prio (const char *str, int *p2int);
+
+/*
+ *  Provide a --renice=[prio] option to srun:
+ */
+struct spank_option spank_options[] =
+{
+    { "renice", "[prio]", "Re-nice job tasks to priority [prio].", 1, 0,
+        (spank_opt_cb_f) _renice_opt_process
+    },
+    SPANK_OPTIONS_TABLE_END
+};
+
+/*
+ *  Called from both srun and slurmd.
+ */
+int slurm_spank_init (spank_t sp, int ac, char **av)
+{
+    int i;
+
+    for (i = 0; i < ac; i++) {
+        if (strncmp ("min_prio=", av[i], 9) == 0) {
+            const char *optarg = av[i] + 9;
+            if (_str2prio (optarg, &min_prio) < 0) 
+                slurm_error ("Ignoring invalid min_prio value \"%s\"", av[i]);
+        }
+        else {
+            slurm_error ("renice: Invalid option \"%s\"", av[i]);
+        }
+    }
+
+    if (!spank_remote (sp))
+        slurm_verbose ("renice: min_prio = %d", min_prio);
+
+    return (0);
+}
+
 
 int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
 {
-        pid_t pid;
-        int taskid;
-        char buf [1024];
-        long int prio;
-        const char *var = "SLURM_RENICE";
-        char *p;
+    pid_t pid;
+    int taskid;
 
-        spank_get_item (sp, S_TASK_GLOBAL_ID, &taskid);
-        spank_get_item (sp, S_TASK_PID, &pid);
+    if (prio == PRIO_NOT_SET) {
+        /* 
+         *  See if SLURM_RENICE env var is set by user
+         */
+        char val [1024];
 
-        if (spank_getenv (sp, var, buf, 1024) != ESPANK_SUCCESS) {
-                return (0);
+        if (spank_getenv (sp, PRIO_ENV_VAR, val, 1024) != ESPANK_SUCCESS)
+            return (0);
+
+        if (_str2prio (val, &prio) < 0) {
+            slurm_error ("Bad value for %s: \"%s\"\n", PRIO_ENV_VAR, optarg);
+            return (-1);
         }
 
-        prio = strtol (buf, &p, 10);
-        if ((*p != '\0') || (prio < -20) || (prio > 20)) {
-                slurm_error ("Bad value for %s: \"%s\"\n", var, buf);
-                return (-1);
-        }
+    if (prio < min_prio)
+        slurm_error ("%s=%d not allowed, using min=%d", 
+            PRIO_ENV_VAR, prio, min_prio);
+    }
 
-        slurm_info ("re-nicing task%d pid %ld to %ld\n", 
-                    taskid, pid, prio);
+    if (prio < min_prio) 
+        prio = min_prio;
 
-        if (setpriority (PRIO_PROCESS, (int) pid, (int) prio) < 0) {
-                slurm_error ("setpriority: %m");
-                return (-1);
-        }
+    spank_get_item (sp, S_TASK_GLOBAL_ID, &taskid);
+    spank_get_item (sp, S_TASK_PID, &pid);
 
-        return (0);
+    slurm_info ("re-nicing task%d pid %ld to %ld\n", taskid, pid, prio);
+
+    if (setpriority (PRIO_PROCESS, (int) pid, (int) prio) < 0) {
+        slurm_error ("setpriority: %m");
+        return (-1);
+    }
+
+    return (0);
+}
+
+static int _str2prio (const char *str, int *p2int)
+{
+    long int l;
+    char *p;
+
+    l = strtol (str, &p, 10);
+    if ((*p != '\0') || (l < -20) || (l > 20)) 
+        return (-1);
+
+    *p2int = (int) l;
+
+    return (0);
+}
+
+static int _renice_opt_process (int val, const char *optarg, int remote)
+{
+    if (optarg == NULL) {
+        slurm_error ("renice: invalid argument!");
+        return (-1);
+    }
+        
+    if (_str2prio (optarg, &prio) < 0) {
+        slurm_error ("Bad value for --renice: \"%s\"\n", optarg);
+        return (-1);
+    }
+
+    if (prio < min_prio) 
+        slurm_error ("--renice=%d not allowed, will use min=%d", 
+                     prio, min_prio);
+
+    return (0);
 }
 
 .fi
