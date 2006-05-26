@@ -1391,8 +1391,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	req->orig_addr.sin_addr.s_addr = 0; 
 	req->forward_struct_init = 0;
 	if ((fd = slurm_open_controller_conn()) < 0) {
+		err = errno;
 		rc = -1;
-		err = SLURM_SOCKET_ERROR;
 		goto cleanup;
 	}
 	
@@ -1435,8 +1435,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 			slurm_free_return_code_msg(resp->data);
 			sleep(30);
 			if ((fd = slurm_open_controller_conn()) < 0) {
+				err = errno;
 				rc = -1;
-				err = SLURM_SOCKET_ERROR;
 			} else {
 				retry = 1;
 			}
