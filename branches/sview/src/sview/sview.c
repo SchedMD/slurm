@@ -28,7 +28,6 @@
 /* globals */
 GtkWidget *notebook = NULL;
 sview_parameters_t params;
-int frequency = 5;
 int adding = 1;
 int fini = 0;
 
@@ -87,12 +86,6 @@ static void _prev_page(GtkAction *action,
 	gtk_notebook_prev_page(GTK_NOTEBOOK(notebook));
 }
 
-static void _set_freq(GtkAction *action,
-		      GtkWidget *menu_item)
-{
-	frequency++;
-}
-
 static void _refresh(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkWidget *menu_item)
@@ -147,8 +140,6 @@ static const char *ui_description =
 "        <menuitem action='Right'/>"
 "      </menu>"
 "      <separator/>"
-"      <menuitem action='Frequency'/>"
-"      <separator/>"
 "      <menuitem action='NextPage'/>"
 "      <menuitem action='PrevPage'/>"
 "    </menu>"
@@ -161,8 +152,6 @@ static const char *ui_description =
 static GtkActionEntry entries[] = {
 	{"Options", NULL, "_Options"},
 	{"Tab Pos", NULL, "_Tab Pos"},
-	{"Frequency", NULL, "_Frequency", 
-	 "<control>F", "Increases Frequency of polls", G_CALLBACK(_set_freq)},
 	{"NextPage", NULL, "Ne_xtPage", 
 	 "<control>X", "Moves to next page", G_CALLBACK(_next_page)},
 	{"PrevPage", NULL, "_PrevPage", 
@@ -208,7 +197,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window)
 	if (!gtk_ui_manager_add_ui_from_string (ui_manager, ui_description, 
 						-1, &error))
 	{
-		g_message ("building menus failed: %s", error->message);
+		g_error("building menus failed: %s", error->message);
 		g_error_free (error);
 		exit (0);
 	}

@@ -52,7 +52,7 @@ typedef struct {
 } db2_block_info_t;
 
 enum { 
-	SORTID_POS,
+	SORTID_POS = POS_LOC,
 	SORTID_PARTITION, 
 	SORTID_AVAIL, 
 	SORTID_TIMELIMIT, 
@@ -91,61 +91,6 @@ static int _print_rest(db2_block_info_t *block_ptr);
 static int _make_nodelist(char *nodes, List nodelist);
 #endif
 
-extern void snprint_time(char *buf, size_t buf_size, time_t time)
-{
-	if (time == INFINITE) {
-		snprintf(buf, buf_size, "UNLIMITED");
-	} else {
-		long days, hours, minutes, seconds;
-		seconds = time % 60;
-		minutes = (time / 60) % 60;
-		hours = (time / 3600) % 24;
-		days = time / 86400;
-
-		if (days)
-			snprintf(buf, buf_size,
-				"%ld-%2.2ld:%2.2ld:%2.2ld",
-				days, hours, minutes, seconds);
-		else if (hours)
-			snprintf(buf, buf_size,
-				"%ld:%2.2ld:%2.2ld", 
-				hours, minutes, seconds);
-		else
-			snprintf(buf, buf_size,
-				"%ld:%2.2ld", minutes,seconds);
-	}
-}
-
-static gint _sort_iter_compare_func(GtkTreeModel *model,
-			     GtkTreeIter  *a,
-			     GtkTreeIter  *b,
-			     gpointer      userdata)
-{
-	gint sortcol = GPOINTER_TO_INT(userdata);
-	gint ret = 0;
-	gchar *name1, *name2;
-
-	gtk_tree_model_get(model, a, sortcol, &name1, -1);
-	gtk_tree_model_get(model, b, sortcol, &name2, -1);
-	
-	if (name1 == NULL || name2 == NULL)
-	{
-		if (name1 == NULL && name2 == NULL)
-			goto cleanup; /* both equal => ret = 0 */
-		
-		ret = (name1 == NULL) ? -1 : 1;
-	}
-	else
-	{
-		ret = g_utf8_collate(name1,name2);
-	}
-cleanup:
-	g_free(name1);
-	g_free(name2);
-	
-	return ret;
-}
-
 static void _row_clicked(GtkTreeView *tree_view,
 			 GtkTreePath *path,
 			 GtkTreeViewColumn *column,
@@ -153,25 +98,64 @@ static void _row_clicked(GtkTreeView *tree_view,
 {
 	partition_info_msg_t *new_part_ptr = (partition_info_msg_t *)user_data;
 	partition_info_t *part_ptr = NULL;
-	GtkTreeIter iter;
-	GtkTreeModel *model = NULL;
-	model = gtk_tree_view_get_model(tree_view);
-	int line;
-	
-	if(!model) {
-		g_error("error getting the model from the tree_view");
-		return;
-	}
-		
-	if (!gtk_tree_model_get_iter(model, &iter, path)) {
-		g_error("error getting iter from model");
+	int line = get_row_number(tree_view, path);
+	char temp_char[50];
+	GtkWidget *popup = NULL;
+	GtkWidget *label = NULL;
+
+	if(line == -1) {
+		g_error("problem getting line number");
 		return;
 	}
 	
-	
-	gtk_tree_model_get(model, &iter, SORTID_POS, &line, -1);
 	part_ptr = &new_part_ptr->partition_array[line];
-	g_print("the name is %s\n", part_ptr->name);
+	sprintf(temp_char, "the name is %s", part_ptr->name);
+	
+	popup = gtk_dialog_new();
+
+	label = gtk_label_new(temp_char);
+	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   label, TRUE, TRUE, 0);	
+	gtk_widget_show(label);
+	
+	gtk_widget_show(popup);
+	
+}
+
+/* static void _button_pressed(GtkTreeView *tree_view, */
+/* 			    GtkTreePath *path, */
+/* 			    GtkTreeViewColumn *column, */
+/* 			    gpointer user_data) */
+/* { */
+/* 	g_print("hey a button was clicked\n"); */
+/* } */
+
+void _button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
+		     gpointer user_data)
+{
+	GtkTreePath *path = NULL;
+	GtkTreeSelection *selection = NULL;
+
+        if(!gtk_tree_view_get_path_at_pos(tree_view,
+					  (gint) event->x, 
+					  (gint) event->y,
+					  &path, NULL, NULL, NULL)) {
+		g_error("problems getting path from treeview\n");
+		return;
+	}
+	selection = gtk_tree_view_get_selection(tree_view);
+	gtk_tree_selection_unselect_all(selection);
+	gtk_tree_selection_select_path(selection, path);
+             	
+	/* single click with the right mouse button? */
+	if(event->button == 3) {
+		g_print ("Single right click on the tree view.\n");
+		//view_popup_menu(treeview, event, userdata);
+	} else if(event->type==GDK_2BUTTON_PRESS ||
+		  event->type==GDK_3BUTTON_PRESS) {
+		_row_clicked(tree_view, path, NULL, user_data);
+	}
+	gtk_tree_path_free(path);
 }
 
 static GtkListStore *_create_part_liststore()
@@ -190,48 +174,33 @@ static GtkListStore *_create_part_liststore()
 
 	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
 					SORTID_PARTITION, 
-					_sort_iter_compare_func,
+					sort_iter_compare_func,
 					GINT_TO_POINTER(SORTID_PARTITION), 
 					NULL);
 	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
 					SORTID_AVAIL, 
-					_sort_iter_compare_func,
+					sort_iter_compare_func,
 					GINT_TO_POINTER(SORTID_AVAIL), 
 					NULL);
 	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
 					SORTID_TIMELIMIT, 
-					_sort_iter_compare_func,
+					sort_iter_compare_func,
 					GINT_TO_POINTER(SORTID_TIMELIMIT), 
 					NULL);
 	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
 					SORTID_NODES, 
-					_sort_iter_compare_func,
+					sort_iter_compare_func,
 					GINT_TO_POINTER(SORTID_NODES), 
 					NULL);
 	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
 					SORTID_NODELIST, 
-					_sort_iter_compare_func,
+					sort_iter_compare_func,
 					GINT_TO_POINTER(SORTID_NODELIST), 
 					NULL);
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
 					     SORTID_PARTITION, 
 					     GTK_SORT_ASCENDING);
 	return liststore;
-}
-extern void add_col(GtkTreeView *tree_view, int id, char *name)
-{
-	GtkTreeViewColumn   *col;
-	GtkCellRenderer     *renderer;
-  
-	renderer = gtk_cell_renderer_text_new();
-	col = gtk_tree_view_column_new();	
-	gtk_tree_view_column_pack_start (col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute (col, renderer, 
-					    "text", id);
-	gtk_tree_view_column_set_title (col, name);
-	gtk_tree_view_append_column(tree_view, col);
-	gtk_tree_view_column_set_sort_column_id(col, id);
-
 }
 
 extern void get_slurm_part(GtkTable *table)
@@ -243,7 +212,7 @@ extern void get_slurm_part(GtkTable *table)
 	char error_char[50];
 	GtkTreeIter iter;
 	GtkListStore *liststore = NULL;
-	GtkWidget *label;
+	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	
@@ -255,16 +224,17 @@ extern void get_slurm_part(GtkTable *table)
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_part_ptr = part_info_ptr;
+			return;
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL, 
 						   &new_part_ptr, SHOW_ALL);
 	}
-	g_print("got error %d\n", error_code);
+	
 	if(display_widget)
 		gtk_widget_destroy(display_widget);
 
-	if (error_code) {
+	if (error_code != SLURM_SUCCESS) {
 		sprintf(error_char, "slurm_load_partitions: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
@@ -288,6 +258,10 @@ extern void get_slurm_part(GtkTable *table)
 	g_signal_connect(G_OBJECT(tree_view), "row-activated",
 			 G_CALLBACK(_row_clicked),
 			 new_part_ptr);
+	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
+			 G_CALLBACK(_button_pressed),
+			 new_part_ptr);
+
 	gtk_table_attach_defaults(GTK_TABLE(table), 
 				  GTK_WIDGET(tree_view),
 				  0, 1, 0, 1); 
@@ -323,7 +297,7 @@ extern void get_slurm_part(GtkTable *table)
 	return;
 }
 
-extern void get_bg_part()
+extern void get_bg_part(GtkTable *table)
 {
 #ifdef HAVE_BG
 	int error_code, i, j, recs=0, count = 0, last_count = -1;
@@ -559,25 +533,25 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 static void _print_header_part(GtkTreeView *tree_view)
 {
 	
-	add_col(tree_view, SORTID_PARTITION, "PARTITION");
+	add_col_to_treeview(tree_view, SORTID_PARTITION, "PARTITION");
 
 	if (params.display != BGPART) {
-		add_col(tree_view, SORTID_AVAIL, "AVAIL");
-		add_col(tree_view, SORTID_TIMELIMIT, "TIMELIMIT");
+		add_col_to_treeview(tree_view, SORTID_AVAIL, "AVAIL");
+		add_col_to_treeview(tree_view, SORTID_TIMELIMIT, "TIMELIMIT");
 	} else {
-		add_col(tree_view, SORTID_BLOCK, "BG_BLOCK");
-		add_col(tree_view, SORTID_STATE, "STATE");
-		add_col(tree_view, SORTID_USER, "USER");
-		add_col(tree_view, SORTID_CONN, "CONN TYPE");
-		add_col(tree_view, SORTID_USE, "NODE USE");
+		add_col_to_treeview(tree_view, SORTID_BLOCK, "BG_BLOCK");
+		add_col_to_treeview(tree_view, SORTID_STATE, "STATE");
+		add_col_to_treeview(tree_view, SORTID_USER, "USER");
+		add_col_to_treeview(tree_view, SORTID_CONN, "CONN TYPE");
+		add_col_to_treeview(tree_view, SORTID_USE, "NODE USE");
 	}
 
-	add_col(tree_view, SORTID_NODES, "NODES");
+	add_col_to_treeview(tree_view, SORTID_NODES, "NODES");
 	
 #ifdef HAVE_BG
-	add_col(tree_view, SORTID_NODELIST, "BP_LIST");
+	add_col_to_treeview(tree_view, SORTID_NODELIST, "BP_LIST");
 #else
-	add_col(tree_view, SORTID_NODELIST, "NODELIST");	
+	add_col_to_treeview(tree_view, SORTID_NODELIST, "NODELIST");	
 #endif
 		
 }

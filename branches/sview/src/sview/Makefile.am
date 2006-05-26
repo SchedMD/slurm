@@ -13,7 +13,7 @@ sview_LDADD =					  \
 	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
 
 noinst_HEADERS = sview.h
-sview_SOURCES = sview.c part_info.c
+sview_SOURCES = sview.c part_info.c job_info.c common.c
 
 force:
 $(sview_LDADD) : force

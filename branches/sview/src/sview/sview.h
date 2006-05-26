@@ -71,6 +71,8 @@
 #define OPT_LONG_USAGE	0x101
 #define OPT_LONG_HIDE	0x102
 
+#define POS_LOC 0
+
 enum { JOBS, SLURMPART, BGPART, COMMANDS };
 
 //typedef void (*sighandler_t) (int);
@@ -114,13 +116,21 @@ extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
 extern void parse_command_line(int argc, char *argv[]);
-extern void snprint_time(char *buf, size_t buf_size, time_t time);
 extern void print_date();
 extern void clear_window(WINDOW *win);
 
+// part_info.c
 extern void get_slurm_part(GtkTable *table);
-extern void get_bg_part();
-extern void get_job();
+extern void get_bg_part(GtkTable *table);
+// job_info.c
+extern void get_job(GtkTable *table);
 extern void get_command();
+
+// common.c
+extern int sort_iter_compare_func(GtkTreeModel *model, GtkTreeIter *a,
+				  GtkTreeIter *b, gpointer userdata);
+extern void snprint_time(char *buf, size_t buf_size, time_t time);
+extern void add_col_to_treeview(GtkTreeView *tree_view, int id, char *name);
+extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 
 #endif
