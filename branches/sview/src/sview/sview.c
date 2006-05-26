@@ -29,6 +29,8 @@
 GtkWidget *notebook = NULL;
 sview_parameters_t params;
 int frequency = 5;
+int adding = 1;
+int fini = 0;
 
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
@@ -43,7 +45,10 @@ static void _page_switched(GtkNotebook     *notebook,
 	GtkViewport *view = GTK_VIEWPORT(bin->child);
 	GtkBin *bin2 = GTK_BIN(&view->bin);
 	GtkTable *table = GTK_TABLE(bin2->child);
-
+	
+	/* make sure we aren't adding the page, and really asking for info */
+	if(adding)
+		return;
 	switch(page_num) {
 	case 0:
 		get_slurm_part(table);
@@ -60,7 +65,6 @@ static void _page_switched(GtkNotebook     *notebook,
 	default:
 		break;
 	}
-	
 }
 
 static void _tab_pos(GtkRadioAction *action,
@@ -89,12 +93,20 @@ static void _set_freq(GtkAction *action,
 	frequency++;
 }
 
+static void _refresh(GtkRadioAction *action,
+		     GtkRadioAction *extra,
+		     GtkWidget *menu_item)
+{
+	g_print("refreshed\n");
+}
+
 static void _create_page(char *name)
 {
 	GtkScrolledWindow *scrolled_window = NULL;
 	GtkWidget *table = NULL;
 	GtkWidget *label;
-	
+	int err;
+
 	table = gtk_table_new(1, 1, FALSE);
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);	
@@ -108,44 +120,22 @@ static void _create_page(char *name)
 				       GTK_POLICY_AUTOMATIC);
     
 	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
-	
+
 	label = gtk_label_new(name);
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
+	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
 				 GTK_WIDGET(scrolled_window), 
-				 label);	
+					   label)) == -1) {
+		g_print("Couldn't add page to notebook\n");
+	}	
 }
 
-/* Our menu, an array of GtkItemFactoryEntry structures that defines each menu item */
-
-static const GtkActionEntry entries[] = {
-	{"Options", NULL, "_Options"},
-	{"Tab Pos", NULL, "_Tab Pos"},
-	{"Frequency", NULL, "_Frequency", 
-	 "<control>F", "Increases Frequency of polls", G_CALLBACK(_set_freq)},
-	{"NextPage", NULL, "Ne_xtPage", 
-	 "<control>X", "Moves to next page", G_CALLBACK(_next_page)},
-	{"PrevPage", NULL, "_PrevPage", 
-	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
-	{"Help", NULL, "_Help"},
-	{"About", NULL, "_About"}
-};
-
-static const GtkRadioActionEntry radio_entries[] = {
-	{"Top", NULL, "_Top", 
-	 "<control>T", "Move tabs to top", 2},
-	{"Bottom", NULL, "_Bottom", 
-	 "<control>B", "Move tabs to the bottom", 3},
-	{"Left", NULL, "_Left", 
-	 "<control>L", "Move tabs to the Left", 4},
-	{"Right", NULL, "_Right", 
-	 "<control>R", "Move tabs to the Right", 1}
-};
-
-
+/* Our menu*/
 static const char *ui_description =
 "<ui>"
 "  <menubar name='MainMenu'>"
 "    <menu action='Options'>"
+"      <menuitem action='Refresh'/>"
+"      <separator/>"
 "      <menu action='Tab Pos'>"
 "        <menuitem action='Top'/>"
 "        <menuitem action='Bottom'/>"
@@ -164,8 +154,34 @@ static const char *ui_description =
 "  </menubar>"
 "</ui>";
 
+static GtkActionEntry entries[] = {
+	{"Options", NULL, "_Options"},
+	{"Tab Pos", NULL, "_Tab Pos"},
+	{"Frequency", NULL, "_Frequency", 
+	 "<control>F", "Increases Frequency of polls", G_CALLBACK(_set_freq)},
+	{"NextPage", NULL, "Ne_xtPage", 
+	 "<control>X", "Moves to next page", G_CALLBACK(_next_page)},
+	{"PrevPage", NULL, "_PrevPage", 
+	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
+	{"Refresh", NULL, "Refresh", 
+	 "F5", "Refreshes page", G_CALLBACK(_refresh)},
+	{"Help", NULL, "_Help"},
+	{"About", NULL, "_About"}
+};
+
+static GtkRadioActionEntry radio_entries[] = {
+	{"Top", NULL, "_Top", 
+	 "<control>T", "Move tabs to top", 2},
+	{"Bottom", NULL, "_Bottom", 
+	 "<control>B", "Move tabs to the bottom", 3},
+	{"Left", NULL, "_Left", 
+	 "<control>L", "Move tabs to the Left", 4},
+	{"Right", NULL, "_Right", 
+	 "<control>R", "Move tabs to the Right", 1}
+};
+
 /* Returns a menubar widget made from the above menu */
-static GtkWidget *get_menubar_menu(GtkWidget *window)
+static GtkWidget *_get_menubar_menu(GtkWidget *window)
 {
 	GtkActionGroup *action_group = NULL;
 	GtkUIManager *ui_manager = NULL;
@@ -174,7 +190,8 @@ static GtkWidget *get_menubar_menu(GtkWidget *window)
 	
 	/* Make an accelerator group (shortcut keys) */
 	action_group = gtk_action_group_new ("MenuActions");
-	gtk_action_group_add_actions(action_group, entries, G_N_ELEMENTS(entries), window);
+	gtk_action_group_add_actions(action_group, entries, 
+				     G_N_ELEMENTS(entries), window);
 	gtk_action_group_add_radio_actions(action_group, radio_entries, 
 					   G_N_ELEMENTS(radio_entries), 
 					   0, G_CALLBACK(_tab_pos), window);
@@ -201,6 +218,7 @@ static gboolean _delete(GtkWidget *widget,
                         gpointer data)
 {
 	gtk_main_quit ();
+	fini = 1;
 	return FALSE;
 }
 
@@ -224,7 +242,7 @@ int main( int argc,
 				       1);
 	
 	/* Create a menu */
-	menubar = get_menubar_menu(window);
+	menubar = _get_menubar_menu(window);
 	/* Create a new notebook, place the position of the tabs */
 	notebook = gtk_notebook_new();
 	g_signal_connect(G_OBJECT(notebook), "switch_page",
@@ -243,7 +261,6 @@ int main( int argc,
 	/* Partition info */
 
 	_create_page("Partitions");
-	
 	/* Job info */
 	_create_page("Jobs");	
 
@@ -252,10 +269,9 @@ int main( int argc,
 	
 	/* Admin */
 	_create_page("Administration");
+	/* tell signal we are done adding */
+	adding = 0;
 	
-	/* Set what page to start at (page 4) */
-	gtk_notebook_set_current_page (GTK_NOTEBOOK (notebook), 0);
-
 	gtk_widget_show_all (window);
 
 	/* Finished! */

@@ -114,7 +114,7 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 	}
 }
 
-gint sort_iter_compare_func (GtkTreeModel *model,
+static gint _sort_iter_compare_func(GtkTreeModel *model,
 			     GtkTreeIter  *a,
 			     GtkTreeIter  *b,
 			     gpointer      userdata)
@@ -144,6 +144,50 @@ cleanup:
 	return ret;
 }
 
+static GtkListStore *_create_part_liststore()
+{
+	GtkListStore *liststore = NULL;
+	GType types[SORTID_PARTITION_CNT];
+	int i=0;
+	
+	for(i=0; i<SORTID_PARTITION_CNT; i++)
+		types[i] = G_TYPE_STRING;
+	
+	liststore = gtk_list_store_newv(SORTID_PARTITION_CNT, 
+					types);
+	if(!liststore)
+		return NULL;
+
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_PARTITION, 
+					_sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_PARTITION), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_AVAIL, 
+					_sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_AVAIL), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_TIMELIMIT, 
+					_sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_TIMELIMIT), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_NODES, 
+					_sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_NODES), 
+					NULL);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
+					SORTID_NODELIST, 
+					_sort_iter_compare_func,
+					GINT_TO_POINTER(SORTID_NODELIST), 
+					NULL);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
+					     SORTID_PARTITION, 
+					     GTK_SORT_ASCENDING);
+	return liststore;
+}
 extern void add_col(GtkTreeView *tree_view, int id, char *name)
 {
 	GtkTreeViewColumn   *col;
@@ -166,52 +210,13 @@ extern void get_slurm_part(GtkTable *table)
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
+	char error_char[50];
 	GtkTreeIter iter;
 	GtkListStore *liststore = NULL;
-	GType types[SORTID_PARTITION_CNT];
-	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
-	gtk_table_attach_defaults(GTK_TABLE(table), 
-				  GTK_WIDGET(tree_view),
-				  0, 1, 0, 1); 
-	gtk_widget_show(GTK_WIDGET(tree_view));
+	GtkWidget *label;
+	GtkTreeView *tree_view = NULL;
+	static GtkWidget *display_widget = NULL;
 	
-	for(i=0; i<SORTID_PARTITION_CNT; i++)
-		types[i] = G_TYPE_STRING;
-	
-	liststore = gtk_list_store_newv(SORTID_PARTITION_CNT, 
-					types);
-	
-	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
-					SORTID_PARTITION, 
-					sort_iter_compare_func,
-					GINT_TO_POINTER(SORTID_PARTITION), 
-					NULL);
-	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
-					SORTID_AVAIL, 
-					sort_iter_compare_func,
-					GINT_TO_POINTER(SORTID_AVAIL), 
-					NULL);
-	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
-					SORTID_TIMELIMIT, 
-					sort_iter_compare_func,
-					GINT_TO_POINTER(SORTID_TIMELIMIT), 
-					NULL);
-	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
-					SORTID_NODES, 
-					sort_iter_compare_func,
-					GINT_TO_POINTER(SORTID_NODES), 
-					NULL);
-	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(liststore), 
-					SORTID_NODELIST, 
-					sort_iter_compare_func,
-					GINT_TO_POINTER(SORTID_NODELIST), 
-					NULL);
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
-					     SORTID_PARTITION, 
-					     GTK_SORT_ASCENDING);
-
-
-
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
 						   &new_part_ptr, SHOW_ALL);
@@ -225,9 +230,19 @@ extern void get_slurm_part(GtkTable *table)
 		error_code = slurm_load_partitions((time_t) NULL, 
 						   &new_part_ptr, SHOW_ALL);
 	}
+	g_print("got error %d\n", error_code);
+	if(display_widget)
+		gtk_widget_destroy(display_widget);
+
 	if (error_code) {
-		printf("slurm_load_partitions: %s",
-			       slurm_strerror(slurm_get_errno()));
+		sprintf(error_char, "slurm_load_partitions: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(GTK_TABLE(table), 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		return;
 	}
 	
@@ -237,6 +252,16 @@ extern void get_slurm_part(GtkTable *table)
 	else
 		recs = 0;
 	
+	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
+	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+
+	gtk_table_attach_defaults(GTK_TABLE(table), 
+				  GTK_WIDGET(tree_view),
+				  0, 1, 0, 1); 
+	gtk_widget_show(GTK_WIDGET(tree_view));
+	
+	liststore = _create_part_liststore();
+
 	_print_header_part(tree_view);
 	for (i = 0; i < recs; i++) {
 		j = 0;
