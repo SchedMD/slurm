@@ -2169,6 +2169,7 @@ static void _help(void)
 "                                where <list> is <mask1>,<mask2>,...<maskN>\n");
 
 	spank_print_options (stdout, 6, 30);
+	printf("\n");
 
         printf(
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
