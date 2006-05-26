@@ -35,10 +35,6 @@
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-int spank_load (void);
-
-int spank_unload (void);
-
 int spank_init (slurmd_job_t *job);
 
 int spank_user (slurmd_job_t *job);

@@ -185,7 +185,7 @@ static int   _verify_conn_type(const char *arg);
 
 int initialize_and_process_args(int argc, char *argv[])
 {
-	if (spank_load () < 0)
+	if (spank_init (NULL) < 0)
 		return (-1);
 	/* initialize option defaults */
 	_opt_default();

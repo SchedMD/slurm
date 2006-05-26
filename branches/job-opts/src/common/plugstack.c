@@ -101,25 +101,32 @@ static List option_cache = NULL;
 
 /*
  *  SPANK handle for plugins
+ *
+ *   Handle types: local or remote.
  */
+typedef enum spank_handle_type {
+    S_TYPE_LOCAL,     /* LOCAL == srun         */
+    S_TYPE_REMOTE     /* REMOTE == slurmd      */
+} spank_handle_type_t;
+
 struct spank_handle {
 #   define SPANK_MAGIC 0x00a5a500
-    int magic;
-    slurmd_job_t *job;
-    slurmd_task_info_t *task;
+    int                  magic;
+    spank_handle_type_t  type;
+    slurmd_job_t *       job;
+    slurmd_task_info_t * task;
 };
-
 
 /*
  *  SPANK plugin hook types:
  */
 typedef enum step_fn {
-    STEP_INIT = 0,
+    SPANK_INIT = 0,
     STEP_USER_INIT,
     STEP_USER_TASK_INIT,
     STEP_TASK_POST_FORK,
     STEP_TASK_EXIT,
-    STEP_EXIT
+    SPANK_EXIT
 } step_fn_t;
 
 /*
@@ -329,9 +336,16 @@ _spank_handle_init (struct spank_handle *spank, slurmd_job_t *job, int taskid)
 {
     memset (spank, 0, sizeof (*spank));
     spank->magic = SPANK_MAGIC;
-    spank->job   = job;
-    if (taskid >= 0)
-        spank->task = job->task [taskid];
+
+    if (job != NULL) {
+        spank->type  = S_TYPE_REMOTE;
+        spank->job   = job;
+        if (taskid >= 0)
+            spank->task = job->task [taskid];
+    }
+    else {
+        spank->type = S_TYPE_LOCAL;
+    }
     return (0);
 }
 
@@ -339,7 +353,7 @@ static const char *
 _step_fn_name (step_fn_t type)
 {
     switch (type) {
-        case STEP_INIT:
+        case SPANK_INIT:
             return ("init");
         case STEP_USER_INIT:
             return ("user_init");
@@ -347,9 +361,9 @@ _step_fn_name (step_fn_t type)
             return ("task_init");
         case STEP_TASK_POST_FORK:
             return ("task_post_fork");
-    case STEP_TASK_EXIT:
+        case STEP_TASK_EXIT:
             return ("task_exit");
-        case STEP_EXIT:
+        case SPANK_EXIT:
             return ("exit");
     }
 
@@ -381,7 +395,7 @@ _do_call_stack (step_fn_t type, slurmd_job_t *job, int taskid)
         const char * name = xbasename (sp->fq_path);
 
         switch (type) {
-        case STEP_INIT:
+        case SPANK_INIT:
             if (sp->ops.init) {
                 rc = (*sp->ops.init) (spank, sp->ac, sp->argv);
                 debug2 ("spank: %s: %s = %d\n", name, fn_name, rc);
@@ -411,7 +425,7 @@ _do_call_stack (step_fn_t type, slurmd_job_t *job, int taskid)
                 debug2 ("spank: %s: %s = %d", name, fn_name, rc);
             }
             break;
-        case STEP_EXIT:
+        case SPANK_EXIT:
             if (sp->ops.exit) {
                 rc = (*sp->ops.exit) (spank, sp->ac, sp->argv);
                 debug2 ("spank: %s: %s = %d\n", name, fn_name, rc);
@@ -432,7 +446,7 @@ _do_call_stack (step_fn_t type, slurmd_job_t *job, int taskid)
     return (rc);
 }
 
-int spank_load (void)
+int spank_init (slurmd_job_t *job)
 {
     slurm_ctl_conf_t *conf = slurm_conf_lock ();
     const char *path = conf->plugstack;
@@ -445,25 +459,12 @@ int spank_load (void)
         return (-1);
     }
 
-    return (0);
-}
-
-int spank_unload (void)
-{
-    if (spank_stack)
-        list_destroy (spank_stack);
-    if (option_cache)
-        list_destroy (option_cache);
-
-    return (0);
-}
-
-int spank_init (slurmd_job_t *job)
-{
-    if ((spank_stack == NULL) && (spank_load () < 0))
+    if (job && spank_get_remote_options (job->options) < 0) {
+        error ("spank: Unable to get remote options");
         return (-1);
+    }
 
-    return (_do_call_stack (STEP_INIT, job, -1));
+    return (_do_call_stack (SPANK_INIT, job, -1));
 }
 
 int spank_user (slurmd_job_t *job)
@@ -488,9 +489,12 @@ int spank_task_exit (slurmd_job_t *job, int taskid)
 
 int spank_fini (slurmd_job_t *job)
 {
-    int rc = _do_call_stack (STEP_EXIT, job, -1);
+    int rc = _do_call_stack (SPANK_EXIT, job, -1);
 
-    spank_unload ();
+    if (option_cache)
+        list_destroy (option_cache);
+    if (spank_stack)
+        list_destroy (spank_stack);
 
     return (rc);
 }
@@ -831,6 +835,17 @@ spank_get_remote_options (job_options_t opts)
 /*
  *  Global functions for SPANK plugins
  */
+
+int spank_remote (spank_t spank)
+{
+    if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+        return (-1);
+    if (spank->type == S_TYPE_REMOTE)
+        return (1);
+    else
+        return (0);
+}
+
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...)
 {
     int        *p2int;
@@ -844,6 +859,12 @@ spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...)
     spank_err_t rc = ESPANK_SUCCESS;
 
     if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+        return (ESPANK_BAD_ARG);
+
+    if (spank->type != S_TYPE_REMOTE)
+        return (ESPANK_NOT_REMOTE);
+
+    if (spank->job == NULL)
         return (ESPANK_BAD_ARG);
 
     va_start (vargs, item);
@@ -943,6 +964,9 @@ spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len)
     if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
         return (ESPANK_BAD_ARG);
 
+    if (spank->type != S_TYPE_REMOTE)
+        return (ESPANK_NOT_REMOTE);
+
     if (spank->job == NULL)
         return (ESPANK_BAD_ARG);
 
@@ -963,6 +987,9 @@ spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
 {
     if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
         return (ESPANK_BAD_ARG);
+
+    if (spank->type != S_TYPE_REMOTE)
+        return (ESPANK_NOT_REMOTE);
 
     if (spank->job == NULL)
         return (ESPANK_BAD_ARG);

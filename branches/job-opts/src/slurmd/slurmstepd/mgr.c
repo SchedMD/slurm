@@ -797,12 +797,6 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
-	if (spank_get_remote_options (job->options) < 0) {
-		error ("Unable to get plugin options\n");
-		return SLURM_ERROR;
-	}
-
-
 	/*
 	 * Pre-allocate a pipe for each of the tasks
 	 */
