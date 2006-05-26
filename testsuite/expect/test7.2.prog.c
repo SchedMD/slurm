@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  test7.2.prog.c - Test of basic PMI library functionality
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -103,7 +103,8 @@ main (int argc, char **argv)
 	printf("PMI_KVS_Get_name_length_max = %d\n", kvs_name_len);
 	kvs_name = malloc(kvs_name_len);
 	if ((rc = PMI_KVS_Get_my_name(kvs_name, kvs_name_len)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Get_my_name: %d, task %d\n", rc, pmi_rank);
+		printf("FAILURE: PMI_KVS_Get_my_name: %d, task %d\n", rc, 
+			pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Get_my_name = %s\n", kvs_name);
@@ -150,7 +151,8 @@ main (int argc, char **argv)
 		exit(1);
 	}
 	printf("PMI_Barrier completed\n");
-	/* Tasks 0 and 1  only: Now lets get all keypairs and validate */
+
+	/* Tasks 0 and 1 only: Now lets get all keypairs and validate */
 	if (pmi_rank <= 1) {
 		for (i=0; i<pmi_size; i++) {
 			snprintf(key, key_len, "ATTR_1_%d", i);
@@ -208,6 +210,73 @@ main (int argc, char **argv)
 					rc, pmi_rank);
 				exit(1);
 			}
+		}
+	}
+
+	/* Build some more key=val pairs */
+	snprintf(key, key_len, "ATTR_3_%d", procid);
+	snprintf(val, val_len, "C%d", procid+OFFSET_1);
+	if ((rc = PMI_KVS_Put(kvs_name, key, val)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d, task %d\n",
+			kvs_name, key, val, rc, pmi_rank);
+		exit(1);
+	}
+	printf("PMI_KVS_Put(%s,%s,%s)\n", kvs_name, key, val);
+	snprintf(key, key_len, "attr_4_%d", procid);
+	snprintf(val, val_len, "D%d", procid+OFFSET_2);
+	if ((rc = PMI_KVS_Put(kvs_name, key, val)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d, task %d\n",
+			kvs_name, key, val, rc, pmi_rank);
+		exit(1);
+	}
+	printf("PMI_KVS_Put(%s,%s,%s)\n", kvs_name, key, val);
+
+	/* Sync KVS across all tasks */
+	if ((rc = PMI_KVS_Commit(kvs_name)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Commit: %d, task %d\n", rc, pmi_rank);
+		exit(1);
+	}
+	printf("PMI_KVS_Commit completed\n");
+
+	if ((rc = PMI_Barrier()) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Barrier: %d, task %d\n", rc, pmi_rank);
+		exit(1);
+	}
+	printf("PMI_Barrier completed\n");
+
+	/* Tasks 0 and 1 only: Now lets get some keypairs and validate */
+	if (pmi_rank <= 1) {
+		for (i=0; i<pmi_size; i++) {
+			snprintf(key, key_len, "ATTR_1_%d", i);
+			if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len))
+					!= PMI_SUCCESS) {
+				printf("FAILURE: PMI_KVS_Get(%s): %d, task %d\n", 
+				key, rc, pmi_rank);
+				exit(1);
+			}
+			if ((val[0] != 'A')
+			||  ((atoi(&val[1])-OFFSET_1) != i)) {
+				printf("FAILURE: Bad keypair %s=%s, task %d\n",
+					key, val, pmi_rank);
+				exit(1);
+			}
+			printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
+
+			snprintf(key, key_len, "attr_4_%d", i);
+			if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len))
+					!= PMI_SUCCESS) {
+				printf("FAILURE: PMI_KVS_Get(%s): %d, task %d\n", 
+					key, rc, pmi_rank);
+				exit(1);
+			}
+			if ((val[0] != 'D')
+			||  ((atoi(&val[1])-OFFSET_2) != i)) {
+				printf("FAILURE: Bad keypair %s=%s, task %d\n",
+					key,val, pmi_rank);
+				exit(1);
+			}
+			printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
+
 		}
 	}
 
