@@ -526,7 +526,7 @@ int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * RET int 		- return code
+ * RET int 		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				   slurm_msg_t * response_msg);
