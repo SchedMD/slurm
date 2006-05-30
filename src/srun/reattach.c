@@ -51,7 +51,7 @@
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
 #include "src/srun/msg.h"
-
+#include "src/srun/srun.h"
 
 
 /* number of active threads */
