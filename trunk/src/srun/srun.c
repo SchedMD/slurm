@@ -78,8 +78,7 @@
 #include "src/srun/sigstr.h"
 #include "src/srun/reattach.h"
 #include "src/srun/attach.h"
-
-#include "src/api/step_client_io.h"
+#include "src/srun/srun.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
@@ -113,7 +112,6 @@ static int   _print_script_exit_status(const char *argv0, int status);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
-void srun_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds);
 
 int srun(int ac, char **av)
 {
