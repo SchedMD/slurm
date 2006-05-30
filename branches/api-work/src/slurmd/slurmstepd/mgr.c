@@ -538,8 +538,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 		/* this is the base of the tree, its parent is slurmctld */
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
-		if (slurm_send_recv_controller_rc_msg(&req, &rc)
-		    != SLURM_SUCCESS)
+		if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 			error("Rank %d failed sending step completion message"
 			      " to slurmctld (parent)", step_complete.rank);
 		goto finished;
@@ -555,13 +554,13 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 		if (i)
 			sleep(1);
 		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
-		if (retcode == SLURM_SUCCESS && rc == 0)
+		if (retcode == 0 && rc == 0)
 			goto finished;
 	}
 	/* on error AGAIN, send to the slurmctld instead */
 	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
 	       step_complete.rank, first, last);
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) != SLURM_SUCCESS)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		error("Rank %d failed sending step completion message"
 		      " directly to slurmctld", step_complete.rank);
 finished:
@@ -1392,7 +1391,7 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
-		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) >= 0)
+		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) == 0)
 			break;
 		info("Retrying job complete RPC for %u.%u",
 		     job->jobid, job->stepid);

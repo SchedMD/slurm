@@ -60,9 +60,8 @@ static int _get_addr(void)
 /* Transmit PMI Keyval space data */
 int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 {
-	slurm_msg_t msg_send;//, msg_rcv;
+	slurm_msg_t msg_send;
 	int rc;
-	//List ret_list;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -78,24 +77,11 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	msg_send.forward_struct_init = 0;
 	
 	/* Send the RPC to the local srun communcation manager */
-	slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0);
-	/* ret_list = (List) slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0); */
+	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+		error("slurm_get_kvs_comm_set: %m");
+		return SLURM_ERROR;
+	}
 
-/* 	if(!ret_list || errno != SLURM_SUCCESS) { */
-/* 		error("slurm_send_kvs_comm_set: %m"); */
-/* 		return SLURM_ERROR; */
-/* 	} */
-/* 	if(list_count(ret_list)>0) { */
-/* 		error("slurm_send_kvs_comm_set: " */
-/* 		      "got %d from receive, expecting 0", */
-/* 		      list_count(ret_list)); */
-/* 	} */
-/* 	list_destroy(ret_list); */
-	
-/* 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) */
-/* 		return SLURM_UNEXPECTED_MSG_ERROR; */
-/* 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code; */
-/* 	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data); */
 	return rc;
 }
 
@@ -105,11 +91,12 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 {
 	int rc, srun_fd;
 	slurm_msg_t msg_send, msg_rcv;
-	slurm_addr slurm_addr;
+	slurm_addr slurm_addr, srun_reply_addr;
 	char hostname[64];
 	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
+	List ret_list = NULL;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -150,48 +137,43 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	forward_init(&msg_send.forward, NULL);
 	msg_send.ret_list = NULL;
 	msg_send.forward_struct_init = 0;
-	
-	/* Send the RPC to the local srun communcation manager */
-	slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0);
-	/* ret_list = (List) slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0); */
 
-/* 	if(!ret_list || errno != SLURM_SUCCESS) { */
-/* 		error("slurm_send_recv_node_msg: %m"); */
-/* 		return SLURM_ERROR; */
-/* 	} */
-/* 	if(list_count(ret_list)>0) { */
-/* 		error("slurm_send_recv_node_msg: " */
-/* 		      "got %d from receive, expecting 0", */
-/* 		      list_count(ret_list)); */
-/* 	} */
-/* 	list_destroy(ret_list); */
-	
-/* 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) { */
-/* 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type); */
-/* 		return SLURM_UNEXPECTED_MSG_ERROR; */
-/* 	} */
-/* 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code; */
-/* 	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data); */
+	/* Send the RPC to the local srun communcation manager */
+	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+		error("slurm_get_kvs_comm_set: %m");
+		return SLURM_ERROR;
+	}
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
 		return rc;
 	}
 
 	/* get the message after all tasks reach the barrier */
-	srun_fd = slurm_accept_msg_conn(pmi_fd, &srun_addr);
+	srun_fd = slurm_accept_msg_conn(pmi_fd, &srun_reply_addr);
 	if (srun_fd < 0) {
 		error("slurm_accept_msg_conn: %m");
 		return errno;
 	}
-	while (slurm_receive_msg(srun_fd, &msg_rcv, 0) < 0) {
+
+	while ((ret_list = slurm_receive_msg(srun_fd, &msg_rcv, 0)) == NULL) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
+		slurm_close_accepted_conn(srun_fd);
 		return errno;
+	}
+	if(ret_list) {
+		if(list_count(ret_list)>0) {
+			error("We didn't do things correctly "
+			      "got %d responses didn't expect any",
+			      list_count(ret_list));
+		}
+		list_destroy(ret_list);
 	}
 	msg_rcv.conn_fd = srun_fd;
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
+		slurm_close_accepted_conn(srun_fd);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)

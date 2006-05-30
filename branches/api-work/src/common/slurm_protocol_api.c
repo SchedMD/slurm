@@ -697,11 +697,13 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
 \**********************************************************************/
 
 /*
- * NOTE: memory is allocated for the returned msg and must be freed at 
- *	some point using the slurm_free_functions
+ * NOTE: memory is allocated for the returned msg and the returned list
+ *       both must be freed at some point using the slurm_free_functions 
+ *       and list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
  * OUT msg	- a slurm_msg struct to be filled in by the function
- * RET int	- size of msg received in bytes before being unpacked
+ * RET List	- List containing the responses of the childern (if any) we 
+ *                forwarded the message to. List containing type (ret_types_t).
  */
 List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 {
@@ -1316,6 +1318,8 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
+ * with a list containing the responses of the children (if any) we 
+ * forwarded the message to. List containing type (ret_types_t).
  */
 static List 
 _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, 
@@ -1339,6 +1343,8 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 			timeout += (req->forward.timeout*steps);
 		}
 		ret_list = slurm_receive_msg(fd, resp, timeout);
+		if (errno != SLURM_SUCCESS)
+			err = errno;
 	}
 	
 	/* if(!ret_list || list_count(ret_list) == 0) { */
@@ -1366,12 +1372,13 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg     - slurm_msg response
- * RET int              - return code
+ * RET int              - returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
 	slurm_fd fd = -1;
-	int rc = SLURM_SUCCESS;
+	int rc = 0;
+	int err = 0;
 	time_t start_time = time(NULL);
 	List ret_list = NULL;
 	int retry = 1;
@@ -1384,10 +1391,10 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	req->orig_addr.sin_addr.s_addr = 0; 
 	req->forward_struct_init = 0;
 	if ((fd = slurm_open_controller_conn()) < 0) {
-		rc = SLURM_SOCKET_ERROR;
+		err = errno;
+		rc = -1;
 		goto cleanup;
 	}
-	//info("here 2");
 	
 	conf = slurm_conf_lock();
 	backup_controller_flag = conf->backup_controller ? true : false;
@@ -1395,50 +1402,55 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	slurm_conf_unlock();
 
 	while(retry) {
-		retry = 0;
 		/* If the backup controller is in the process of assuming 
 		 * control, we sleep and retry later */
-		
+		retry = 0;
 		ret_list = _send_and_recv_msg(fd, req, resp, 0);
-		if(errno == SLURM_SUCCESS)
+		if (errno == SLURM_SUCCESS)
 			g_slurm_auth_destroy(resp->auth_cred);
-		
-		rc = errno;
+		else 
+			rc = -1;
+		err = errno;
 
-		if(ret_list) {
-			if(list_count(ret_list)>0) {
+		if (ret_list) {
+			if (list_count(ret_list)>0) {
 				error("We didn't do things correctly "
-				      "missed %d responses",
+				      "got %d responses didn't expect any",
 				      list_count(ret_list));
 			}
 			list_destroy(ret_list);
 		}
 		
-		if((rc == SLURM_SUCCESS) &&
-		   (resp->msg_type == RESPONSE_SLURM_RC) &&
-		   ((((return_code_msg_t *) resp->data)->return_code) 
-		    == ESLURM_IN_STANDBY_MODE) &&
-		   (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) && 
-		   (backup_controller_flag) &&
-		   (difftime(time(NULL), start_time) < 
-		    (slurmctld_timeout + (slurmctld_timeout / 2)))) {
+		if ((err == SLURM_SUCCESS)
+		    && (resp->msg_type == RESPONSE_SLURM_RC)
+		    && ((((return_code_msg_t *) resp->data)->return_code) 
+			== ESLURM_IN_STANDBY_MODE)
+		    && (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS)
+		    && (backup_controller_flag)
+		    && (difftime(time(NULL), start_time)
+			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
+
 			debug("Neither primary nor backup controller "
 			      "responding, sleep and retry");
 			slurm_free_return_code_msg(resp->data);
 			sleep(30);
-			if ((fd = slurm_open_controller_conn()) < 0) 
-				rc = SLURM_SOCKET_ERROR;
-			else 
+			if ((fd = slurm_open_controller_conn()) < 0) {
+				err = errno;
+				rc = -1;
+			} else {
 				retry = 1;
+			}
 		}
-		if(rc != SLURM_SUCCESS)
+
+		if (rc == -1)
 			break;
 	}
 			
       cleanup:
-	if (rc != SLURM_SUCCESS) 
+	if (rc != 0) 
  		_remap_slurmctld_errno(); 
 		
+	errno = err;
 	return rc;
 }
 
@@ -1448,6 +1460,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
  * RET List		- return list from multiple nodes
+ *                        List containing type (ret_types_t).
  */
 List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
@@ -1529,7 +1542,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 
 /*
  *  Send message and recv "return code" message on an already open
- *    slurm file descriptor
+ *  slurm file descriptor return List containing type (ret_types_t).
  */
 static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 {
@@ -1586,6 +1599,11 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	return ret_list;
 }
 
+/*
+ *  Open a connection to req->address, send message (forward if told), 
+ *  req must contain the message already packed in it's buffer variable,
+ *  and receive List of type ret_types_t from all childern nodes
+ */
 List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 {
 	slurm_fd fd = -1;
@@ -1674,8 +1692,8 @@ failed:
 
 /*
  *  Open a connection to the "address" specified in the the slurm msg "req"
- *    Then read back an "rc" message returning the "return_code" specified
- *    in the response in the "rc" parameter.
+ *    Then read back an "rc" message returning List containing 
+ *    type (ret_types_t).
  */
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 {
@@ -1697,7 +1715,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	slurm_fd fd = -1;
 	List ret_list = NULL;
 	ret_types_t *ret_type = NULL;
-	int ret_c = SLURM_SUCCESS;
+	int ret_c = 0;
 
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
@@ -1705,9 +1723,8 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	/* no need to init forward_struct_init here */
 		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		return SLURM_SOCKET_ERROR;
+		return -1;
 	}
-
 			
 	ret_list = _send_recv_rc_msg(fd, req, timeout);
 	if(ret_list) {
@@ -1719,12 +1736,15 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	
 		if(ret_type) {
 			*rc = ret_type->msg_rc;
-			ret_c = ret_type->err;
+			// make sure we only send 0 or -1 for an error
+			if(ret_type->err != 0) 
+				//ret_c = ret_type->err;
+				ret_c = -1;
 			destroy_ret_types(ret_type);
 		}
 		list_destroy(ret_list);
 	} else 
-		ret_c = SLURM_ERROR;
+		ret_c = -1;
 	return ret_c;
 }
 
@@ -1736,7 +1756,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	slurm_fd fd = -1;
 	List ret_list = NULL;
 	ret_types_t *ret_type = NULL;
-	int ret_val = SLURM_SUCCESS;
+	int ret_val = 0;
 
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
@@ -1744,7 +1764,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	/* no need to init forward_struct_init here */
 		
 	if ((fd = slurm_open_controller_conn()) < 0)
-		return SLURM_SOCKET_ERROR;
+		return -1;
 	ret_list = _send_recv_rc_msg(fd, req, 0);
 	
 	if(ret_list) {
@@ -1755,12 +1775,15 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 		
 		if(ret_type) {
 			*rc = ret_type->msg_rc;
-			ret_val = ret_type->err;
+			// make sure we only send 0 or -1 for an error
+			if(ret_type->err != 0) 
+				//ret_c = ret_type->err;
+				ret_val = -1;
 			destroy_ret_types(ret_type);
 		}
 		list_destroy(ret_list);
 	} else 
-		ret_val = SLURM_ERROR;
+		ret_val = -1;
 	return ret_val;
 }
 

@@ -817,15 +817,17 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	switch (msg->msg_type)
 	{
 	case RESPONSE_LAUNCH_TASKS:
+		debug("recevied task launch response");
 		_launch_handler(job, msg);
 		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
 	case MESSAGE_TASK_EXIT:
+		debug2("task_exit received");
 		_exit_handler(job, msg);
 		slurm_free_task_exit_msg(msg->data);
 		break;
 	case RESPONSE_REATTACH_TASKS:
-		debug2("recvd reattach response");
+		debug2("received reattach response");
 		_reattach_handler(job, msg);
 		slurm_free_reattach_tasks_response_msg(msg->data);
 		break;
@@ -835,12 +837,14 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		slurm_free_srun_ping_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
+		verbose("timeout received");
 		to = msg->data;
 		_timeout_handler(to->timeout);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
+		verbose("node_fail received");
 		nf = msg->data;
 		_node_fail_handler(nf->nodelist, job);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);

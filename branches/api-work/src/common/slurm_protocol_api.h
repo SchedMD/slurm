@@ -277,8 +277,9 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
  *    (msg->data) is allocated from within this function, and must be
  *    freed at some point using one of the slurm_free* functions.
  *
- *  Returns SLURM_SUCCESS if an entire message is successfully 
- *    received. Otherwise SLURM_ERROR is returned.
+ *  Returns List containing the responses of the childern (if any) we 
+ *  forwarded the message to if an entire message is successfully 
+ *  received. Otherwise NULL is returned.
  */
 List slurm_receive_msg(slurm_fd fd, slurm_msg_t *resp, int timeout);
 
@@ -525,7 +526,7 @@ int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * RET int 		- return code
+ * RET int 		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				   slurm_msg_t * response_msg);
@@ -536,7 +537,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
  * for the response, then closes the connections
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * RET List 		- return list from multiple nodes
+ * RET List 		- return list from multiple nodes (type ret_type_t)
  */
 List slurm_send_recv_node_msg(slurm_msg_t * request_msg, 
 			      slurm_msg_t * response_msg, 
@@ -545,7 +546,7 @@ List slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 /*
  *  Open a connection to req->address, send message (forward if told), 
  *  req must contain the message already packed in it's buffer variable,
- *  and receive List of "return codes" from all nodes
+ *  and receive List of ret_type_t from all nodes
  */
 List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
 
@@ -556,13 +557,15 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout);
 
 /*
- *  Same as above, but only to one node
+ *  Same as above, but only to one node 
+ *  returns 0 on success, -1 on failure and sets errno
  */
 
 int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout);
 
 /*
  *  Same as above, but send to controller
+ *  returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc);
 

@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -58,11 +58,11 @@ if { [test_bluegene] } {
 	if { [test_xcpu] } {
 		set node_cnt 1-1
 	} else {
-		set node_cnt 1-2
+		set node_cnt 1-4
 	}
 }
 
-spawn $srun -l -N$node_cnt -n10 -O -t1 $file_prog_get
+spawn $srun -l -N$node_cnt -n4 -O -t1 $file_prog_get
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"

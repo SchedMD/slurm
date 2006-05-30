@@ -4,6 +4,10 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.1
 ========================
  -- Fix bug in packing job suspend/resume RPC.
+ -- If a user breaks out of srun before the allocation takes place, mark the 
+    job as CANCELLED rather than COMPLETED and change its start and end time 
+    to that time.
+ -- Fix bug in PMI support that prevented use of second PMI_Barrier call.
 
 * Changes in SLURM 1.1.0
 ========================
