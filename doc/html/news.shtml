@@ -66,10 +66,12 @@ compute node used. See <i>UsePAM</i> configuration parameter.</li>
 <li>Add support for 1/16 midplane BlueGene blocks.</li>
 <li>Add support for overlapping BlueGene blocks.</li>
 <li>Add support for dynamic BlueGene block creation on demand.</li>
+<li>BlueGene node count specifications are now c-node counts
+rather than base partition counts.</li>
 </ul>
 
 <h2><a name="12">Major Updates in SLURM Version 1.2</a></h2>
-<p>We expect to make SLURM Version 1.1 available late in 2006.
+<p>We expect to make SLURM Version 1.2 available late in 2006.
 Major enhancements include:
 <ul>
 <li>More complete support for resource management down to the core level
@@ -92,6 +94,6 @@ to coordinate activies. Future development plans includes:
 </ul>
 
 
-<p style="text-align:center;">Last modified 24 May 2006</p>
+<p style="text-align:center;">Last modified 30 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
