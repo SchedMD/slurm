@@ -108,15 +108,64 @@ enum spank_err {
     ESPANK_NOT_TASK    = 3, /* Not in task context.                          */
     ESPANK_ENV_EXISTS  = 4, /* Environment variable exists && !overwrite     */
     ESPANK_ENV_NOEXIST = 5, /* No such environemtn variable                  */
-    ESPANK_NOSPACE     = 6  /* Buffer too small.                             */
+    ESPANK_NOSPACE     = 6, /* Buffer too small.                             */
+    ESPANK_NOT_REMOTE  = 7  /* Function only may be called in remote context */
 };
 
 typedef enum spank_err spank_err_t;
+
+/*
+ *  SPANK plugin options
+ */
+
+/*
+ *  SPANK option callback. `val' is an integer value provided by
+ *   the plugin to distinguish between plugin-local options, `optarg'
+ *   is an argument passed by the user (if applicable), and `remote'
+ *   specifies whether this call is being made locally (e.g. in srun)
+ *   or remotely (e.g. in slurmd).
+ */
+typedef int (*spank_opt_cb_f) (int val, const char *optarg, int remote);
+
+struct spank_option {
+    char *         name;    /* long option provided by plugin               */
+    char *         arginfo; /* one word description of argument if required */  
+    char *         usage;   /* Usage text                                   */
+    int            has_arg; /* Does option require argument?                */
+    int            val;     /* value to return using callback               */
+    spank_opt_cb_f cb;      /* Callback function to check option value      */
+};
+
+/*
+ *  Plugin may declare spank_options option table:
+ */
+extern struct spank_option spank_options [];
+
+/*
+ *  SPANK plugin option table must end with the following entry:
+ */
+#define SPANK_OPTIONS_TABLE_END { NULL, NULL, NULL, 0, 0, NULL }
+
+/*
+ *  Maximum allowed length of SPANK option name:
+ */
+#define SPANK_OPTION_MAXLEN      75
 
 
 /*  SPANK interface prototypes
  */
 BEGIN_C_DECLS
+
+/*
+ *  Determine whether plugin is loaded "local" or "remote."
+ * 
+ *  Returns:
+ *  = 1   remote context, i.e. plugin is loaded in slurmd.
+ *  = 0   local context, i.e. plugin loaded in srun.
+ *  < 0   spank handle was not valid.
+ */
+int spank_remote (spank_t spank);
+
 
 /*  Get the value for the current job or task item specified, 
  *   storing the result in the subsequent pointer argument(s).
@@ -126,7 +175,8 @@ BEGIN_C_DECLS
  *   
  *  Returns ESPANK_SUCCESS on success, ESPANK_NOTASK if an S_TASK*
  *   item is requested from outside a task context, ESPANK_BAD_ARG
- *   if invalid args are passed to spank_get_item.
+ *   if invalid args are passed to spank_get_item, and 
+ *   ESPANK_NOT_REMOTE if not called from slurmd context.
  */
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
 
@@ -137,6 +187,7 @@ spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
  *    ESPANK_BAD_ARG      = spank handle invalid or len < 0.
  *    ESPANK_ENV_NOEXIST  = environment variable doesn't exist in job's env.
  *    ESPANK_NOSPACE      = buffer too small, truncation occurred.
+ *    ESPANK_NOT_REMOTE   = not called in remote context (i.e. from slurmd).
  */
 spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len);
 
@@ -148,10 +199,10 @@ spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len);
  *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *     ESPANK_ENV_EXISTS  = var exists in job env and overwrite == 0.
  *     ESPANK_BAD_ARG     = spank handle invalid or var/val are NULL.
+ *     ESPANK_NOT_REMOTE  = not called from slurmd.
  */
 spank_err_t spank_setenv (spank_t spank, const char *var, const char *val, 
         int overwrite);
-
 /*
  *  SLURM logging functions which are exported to plugins.
  */

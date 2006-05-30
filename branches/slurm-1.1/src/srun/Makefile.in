@@ -78,6 +78,7 @@ am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/common/libcommon.la \
+	$(top_builddir)/src/common/libspank.la \
 	$(top_builddir)/src/common/libeio.la \
 	$(top_builddir)/src/api/libslurm.la
 srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -297,6 +298,7 @@ srun_SOURCES = \
 
 convenience_libs = \
 	$(top_builddir)/src/common/libcommon.la   \
+	$(top_builddir)/src/common/libspank.la   \
 	$(top_builddir)/src/common/libeio.la      \
 	$(top_builddir)/src/api/libslurm.la
 

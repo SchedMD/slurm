@@ -220,6 +220,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
 	job->switch_job = msg->switch_job;
+
+	job->options =    msg->options;
 	
 	list_append(job->sruns, (void *) srun);
 
