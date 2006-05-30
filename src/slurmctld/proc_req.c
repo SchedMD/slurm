@@ -95,6 +95,7 @@ inline static void  _slurm_rpc_node_select_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_old_job_alloc(slurm_msg_t * msg);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
+inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
@@ -264,6 +265,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_SUSPEND:
 		_slurm_rpc_suspend(msg);
 		slurm_free_suspend_msg(msg->data);
+		break;
+	case REQUEST_JOB_REQUEUE:
+		_slurm_rpc_requeue(msg);
+		slurm_free_job_id_msg(msg->data);
 		break;
 	case REQUEST_JOB_READY:
 		_slurm_rpc_job_ready(msg);
@@ -2103,6 +2108,37 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	}
 }
 
+inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	job_id_msg_t *requeue_ptr = (job_id_msg_t *) msg->data;
+	/* Locks: write job and node */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	uid_t uid;
+
+	START_TIMER;
+	info("Processing RPC: REQUEST_REQUEUE");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	lock_slurmctld(job_write_lock);
+	error_code = job_requeue(uid, requeue_ptr->job_id, 
+		msg->conn_fd);
+	unlock_slurmctld(job_write_lock);
+	END_TIMER;
+
+	if (error_code) {
+		info("_slurm_rpc_requeue %u: %s", requeue_ptr->job_id,
+			slurm_strerror(error_code));
+	} else {
+		info("_slurm_rpc_requeue %u: %s", requeue_ptr->job_id,
+			TIME_STR);
+		/* Functions below provide their own locking */
+		schedule_job_save();
+	}
+}
+
 /* Assorted checkpoint operations */
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 {
@@ -2354,6 +2390,16 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+
+	if (make_batch_job_cred(launch_msg_ptr)) {
+		error("aborting batch step %u.%u", job_ptr->job_id,
+			job_ptr->group_id);
+		xfree(launch_msg_ptr->nodes);
+		xfree(launch_msg_ptr);
+		delete_step_record(job_ptr, step_rec->step_id);
+		return SLURM_ERROR;
+	}
+
 	launch_msg_ptr->err = xstrdup(job_desc_msg->err);
 	launch_msg_ptr->in = xstrdup(job_desc_msg->in);
 	launch_msg_ptr->out = xstrdup(job_desc_msg->out);

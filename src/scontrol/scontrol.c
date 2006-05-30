@@ -109,6 +109,7 @@ static void	_print_ping (void);
 static void	_print_step (char *job_step_id_str);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
+static int	_requeue(char *job_step_id_str);
 static int	_suspend(char *op, char *job_id_str);
 static void	_update_it (int argc, char *argv[]);
 static int	_update_job (int argc, char *argv[]);
@@ -1176,6 +1177,29 @@ _process_command (int argc, char *argv[])
 			}
 		}
 	}
+	else if (strncasecmp (argv[0], "requeue", 3) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					argv[0]);
+		} else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					argv[0]);
+		} else {
+			error_code =_requeue(argv[1]);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_requeue error");
+			}
+		}
+				
+	}
 	else if ((strncasecmp (argv[0], "suspend", 3) == 0)
 	||       (strncasecmp (argv[0], "resume", 3) == 0)) {
 		if (argc > 2) {
@@ -1983,6 +2007,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
      reconfigure              re-read configuration files.                 \n\
+     requeue <job_id>         re-queue a batch job                         \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown                 shutdown slurm controller.                   \n\
@@ -2136,3 +2161,33 @@ static int _suspend(char *op, char *job_id_str)
 
 	return rc;
 }
+
+/*
+ * _requeue - requeue a pending or running batch job
+ * IN job_id_str - a job id
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *              error message and returns 0
+ */
+static int _requeue(char *job_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0;
+	char *next_str;
+
+	if (job_id_str) {
+		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
+	} else {
+		fprintf(stderr, "Invalid job id specified\n");
+		exit_code = 1;
+		return 0;
+	}
+
+	rc = slurm_requeue (job_id);
+	return rc;
+}
+

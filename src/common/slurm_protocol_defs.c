@@ -178,6 +178,7 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		}
 
 		select_g_free_jobinfo(&msg->select_jobinfo);
+		slurm_cred_destroy(msg->cred);
 
 		xfree(msg);
 	}

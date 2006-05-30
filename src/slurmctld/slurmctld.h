@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -270,6 +270,7 @@ struct job_details {
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
+	uint16_t no_requeue;		/* don't requeue job if set */
 };
 
 struct job_record {
@@ -769,6 +770,15 @@ extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
  */
 extern bool job_independent(struct job_record *job_ptr);
 
+/*
+ * job_requeue - Requeue a running or pending batch job
+ * IN uid - user id of user issuing the RPC
+ * IN job_id - id of the job to be requeued
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd);
+
 /* 
  * job_step_complete - note normal completion the specified job step
  * IN job_id - id of the job to be completed
@@ -878,6 +888,14 @@ extern void load_part_uid_allow_list ( int force );
  *	file data.
  */
 extern int load_all_part_state ( void );
+
+/* 
+ * make_batch_job_cred - add a job credential to the batch_job_launch_msg
+ * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id,
+ *                         uid and nodes have already been set
+ * RET 0 or error code
+ */
+extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr);
 
 /* make_node_alloc - flag specified node as allocated to a job
  * IN node_ptr - pointer to node being allocated

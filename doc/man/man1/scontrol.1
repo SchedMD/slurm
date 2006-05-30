@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2006" "scontrol 1.0" "Slurm components"
+.TH SCONTROL "1" "May 2006" "scontrol 1.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -128,6 +128,9 @@ or SlurmdPort.
 .TP
 \fIresume\fP \fIjob_id\fP
 Resume a previously suspended job.
+.TP
+\fIrequeue\fP \fIjob_id\fP
+Requeue a running or pending SLURM batch job.
 .TP
 \fIshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
@@ -433,7 +436,7 @@ details.
 \fBslurm_load_ctl_conf\fR(3), 
 \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
-\fBslurm_reconfigure\fR(3), \fBslurm_resume\fR(3),
+\fBslurm_reconfigure\fR(3),  \fBslurm_requeue\fR(3), \fBslurm_resume\fR(3),
 \fBslurm_shutdown\fR(3), \fBslurm_suspend\fR(3),
 \fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
 \fBslurm_update_partition\fR(3),

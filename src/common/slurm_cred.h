@@ -2,7 +2,7 @@
  *  src/common/slurm_cred.h  - SLURM job credential operations
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -166,14 +166,20 @@ int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 
 /*
  * Revoke all credentials for job id jobid
+ * time IN - the time the job terminiation was requested by slurmctld
+ *           (local time from slurmctld server)
  */
-int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid);
+int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time);
 
 /*
  * Report if a all credentials for a give job id have been 
  * revoked (i.e. has the job been killed)
+ * 
+ * If we are re-running the job, the new job credential is newer
+ * than the revoke time, see "scontrol requeue", purge the old 
+ * job record and make like it never existed
  */
-bool slurm_cred_revoked(slurm_cred_ctx_t ctx, uint32_t jobid);
+bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 
 /*
  * Begin expiration period for the revocation of credentials

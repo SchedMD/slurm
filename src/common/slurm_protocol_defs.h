@@ -145,6 +145,7 @@ typedef enum {
 	REQUEST_COMPLETE_JOB_ALLOCATION,
 	REQUEST_COMPLETE_BATCH_SCRIPT,
 	MESSAGE_STAT_JOBACCT,
+	REQUEST_JOB_REQUEUE,
 	
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -452,6 +453,7 @@ typedef struct return_code_msg {
 typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint32_t job_uid;
+	time_t   time;		/* slurmctld's time of request */
 	char *nodes;
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
 } kill_job_msg_t;
@@ -509,6 +511,7 @@ typedef struct batch_job_launch_msg {
 	char **environment;	/* environment variables to set for job, 
 				 *   name=value pairs, one per line */
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
+	slurm_cred_t cred;
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
