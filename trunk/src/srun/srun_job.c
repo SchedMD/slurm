@@ -55,7 +55,6 @@
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
 #include "src/srun/attach.h"
-#include "src/srun/io.h"
 #include "src/srun/msg.h"
 
 
@@ -203,7 +202,6 @@ static srun_job_t *
 _job_create_structure(allocation_info_t *info)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
-	int i;
 	
 	_set_nprocs(info);
 	debug2("creating job with %d tasks", opt.nprocs);
@@ -238,16 +236,7 @@ _job_create_structure(allocation_info_t *info)
 		xmalloc(job->njfds * sizeof(slurm_fd));
 	job->jaddr = (slurm_addr *) 
 		xmalloc(job->njfds * sizeof(slurm_addr));
-	/* Compute number of listening sockets needed to allow
-	 * all of the slurmds to establish IO streams with srun, without
-	 * overstressing the TCP/IP backoff/retry algorithm
-	 */
-	job->num_listen = _estimate_nports(opt.nprocs, 64);
-	job->listensock = (int *) 
-		xmalloc(job->num_listen * sizeof(int));
-	job->listenport = (int *) 
-		xmalloc(job->num_listen * sizeof(int));
-	
+
  	slurm_mutex_init(&job->task_mutex);
 	
 	job->old_job = false;
@@ -261,15 +250,8 @@ _job_create_structure(allocation_info_t *info)
 	job->ltimeout = 0;
 	job->etimeout = 0;
 	
-	
-	job->eio = eio_handle_create();
-	job->ioservers_ready = 0;
-	
 	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
 
-	/* "nhosts" number of IO protocol sockets */
-	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
-	
 	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
 	if (info->addrs)
 		memcpy( job->slurmd_addr, info->addrs,
@@ -278,16 +260,6 @@ _job_create_structure(allocation_info_t *info)
 	/* ntask task states and statii*/
 	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
 	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
-	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
-	job->incoming_count = 0;
-	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
-		list_enqueue(job->free_incoming, alloc_io_buf());
-	}
-	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
-	job->outgoing_count = 0;
-	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
-		list_enqueue(job->free_outgoing, alloc_io_buf());
-	}
 	
 	job_update_io_fnames(job);
 	
@@ -337,13 +309,13 @@ job_force_termination(srun_job_t *job)
 {
 	if (mode == MODE_ATTACH) {
 		info ("forcing detach");
-		update_job_state(job, SRUN_JOB_DETACHED); 	
+		update_job_state(job, SRUN_JOB_DETACHED);
 	} else {
 		info ("forcing job termination");
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	eio_signal_shutdown(job->eio);
+	client_io_handler_finish(job->client_io);
 }
 
 

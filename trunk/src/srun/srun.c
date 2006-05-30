@@ -71,7 +71,6 @@
 #include "src/common/slurm_rlimits_info.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/io.h"
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/msg.h"
@@ -79,6 +78,8 @@
 #include "src/srun/sigstr.h"
 #include "src/srun/reattach.h"
 #include "src/srun/attach.h"
+
+#include "src/api/step_client_io.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
@@ -112,6 +113,7 @@ static int   _print_script_exit_status(const char *argv0, int status);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
+void srun_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds);
 
 int srun(int ac, char **av)
 {
@@ -293,8 +295,28 @@ int srun(int ac, char **av)
 	if (slurm_mpi_thr_create(job) < 0)
 		job_fatal (job, "Failed to initialize MPI");
 
-	if (io_thr_create(job) < 0) 
-		job_fatal(job, "failed to initialize IO");
+	{
+		int siglen;
+		char *sig;
+		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
+
+		srun_set_stdio_fds(job, &fds);
+
+		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
+		    < 0) {
+			job_fatal(job, "Couldn't get cred signature");
+		}
+		
+		job->client_io = client_io_handler_create(
+			fds,
+			job->step_layout->num_tasks,
+			job->step_layout->num_hosts,
+			sig,
+			opt.labelio);
+		if (!job->client_io
+		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
+			job_fatal(job, "failed to start IO handler");
+	}
 
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
@@ -334,9 +356,9 @@ int srun(int ac, char **av)
 	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	eio_signal_shutdown(job->eio);
-	if (pthread_join(job->ioid, NULL) < 0)
-		error ("Waiting on IO: %m");
+	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
+		error ("IO handler did not finish correctly: %m");
+	client_io_handler_destroy(job->client_io);
 
 	if (slurm_mpi_exit () < 0)
 		; /* eh, ignore errors here */
@@ -993,3 +1015,77 @@ static int _run_srun_script (srun_job_t *job, char *script)
 
 	/* NOTREACHED */
 }
+
+static int
+_is_local_file (io_filename_t *fname)
+{
+	if (fname->name == NULL)
+		return 1;
+	
+	if (fname->taskid != -1)
+		return 1;
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
+void
+srun_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds)
+{
+	bool err_shares_out = false;
+
+	/*
+	 * create stdin file descriptor
+	 */
+	if (_is_local_file(job->ifname)) {
+		if (job->ifname->name == NULL || job->ifname->taskid != -1) {
+			cio_fds->in.fd = STDIN_FILENO;
+		} else {
+			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
+			if (cio_fds->in.fd == -1)
+				fatal("Could not open stdin file: %m");
+		}
+		if (job->ifname->type == IO_ONE) {
+			cio_fds->in.taskid = job->ifname->taskid;
+			cio_fds->in.nodeid = step_layout_host_id(
+				job->step_layout, job->ifname->taskid);
+		}
+	}
+
+	/*
+	 * create stdout file descriptor
+	 */
+	if (_is_local_file(job->ofname)) {
+		if (job->ofname->name == NULL) {
+			cio_fds->out.fd = STDOUT_FILENO;
+		} else {
+			cio_fds->out.fd = open(job->ofname->name,
+					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (cio_fds->out.fd == -1)
+				fatal("Could not open stdout file: %m");
+		}
+		if (job->ofname->name != NULL
+		    && job->efname->name != NULL
+		    && !strcmp(job->ofname->name, job->efname->name)) {
+			err_shares_out = true;
+		}
+	}
+
+	/*
+	 * create seperate stderr file descriptor only if stderr is not sharing
+	 * the stdout file descriptor
+	 */
+	if (err_shares_out) {
+		debug3("stdout and stderr sharing a file");
+		cio_fds->err.fd = cio_fds->out.fd;
+	} else if (_is_local_file(job->efname)) {
+		if (job->efname->name == NULL) {
+			cio_fds->err.fd = STDERR_FILENO;
+		} else {
+			cio_fds->err.fd = open(job->efname->name,
+					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (cio_fds->err.fd == -1)
+				fatal("Could not open stderr file: %m");
+		}
+	}
+}
+

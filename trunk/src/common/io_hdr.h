@@ -46,6 +46,7 @@
 #include "src/common/xmalloc.h"
 
 #define MAX_MSG_LEN 1024
+#define SLURM_IO_KEY_SIZE 8
 
 #define SLURM_IO_STDIN 0
 #define SLURM_IO_STDOUT 1
@@ -54,7 +55,7 @@
 
 struct slurm_io_init_msg {
 	uint16_t      version;
-	unsigned char cred_signature[SLURM_CRED_SIGLEN]; 
+	unsigned char cred_signature[SLURM_IO_KEY_SIZE]; 
 	uint32_t      nodeid;
 	uint32_t      stdout_objs;
 	uint32_t      stderr_objs;

@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 7811 2006-04-14 19:31:32Z jette $
+# $Id: Makefile.am 8090 2006-05-16 23:15:38Z morrone $
 #
 
 SOURCES = $(srun_SOURCES)
@@ -71,11 +71,10 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
-	msg.$(OBJEXT) pmi.$(OBJEXT) signals.$(OBJEXT) io.$(OBJEXT) \
-	launch.$(OBJEXT) attach.$(OBJEXT) reattach.$(OBJEXT) \
-	fname.$(OBJEXT) sigstr.$(OBJEXT) allocate.$(OBJEXT) \
-	core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
-	srun.wrapper.$(OBJEXT)
+	msg.$(OBJEXT) pmi.$(OBJEXT) signals.$(OBJEXT) launch.$(OBJEXT) \
+	attach.$(OBJEXT) reattach.$(OBJEXT) fname.$(OBJEXT) \
+	sigstr.$(OBJEXT) allocate.$(OBJEXT) core-format.$(OBJEXT) \
+	multi_prog.$(OBJEXT) srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libeio.la \
@@ -277,7 +276,6 @@ srun_SOURCES = \
 	msg.c msg.h \
 	pmi.c pmi.h \
 	signals.c signals.h \
-	io.c io.h   \
 	launch.c    \
 	launch.h    \
 	attach.h    \
@@ -379,7 +377,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attach.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core-format.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@

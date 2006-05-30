@@ -59,7 +59,6 @@
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
-#include "src/srun/io.h"
 #include "src/srun/msg.h"
 #include "src/srun/pmi.h"
 #include "src/srun/sigstr.h"
@@ -345,8 +344,7 @@ static void _timeout_handler(time_t timeout)
  */
 static void _node_fail_handler(char *nodelist, srun_job_t *job)
 {
-	if ( (opt.no_kill) &&
-	     (io_node_fail(nodelist, job) == SLURM_SUCCESS) ) {
+	if ( (opt.no_kill) ) {
 		error("Node failure on %s, eliminated that node", nodelist);
 		return;
 	}
@@ -355,8 +353,6 @@ static void _node_fail_handler(char *nodelist, srun_job_t *job)
 	update_job_state(job, SRUN_JOB_FORCETERM);
 	info("sending Ctrl-C to remaining tasks");
 	fwd_signal(job, SIGINT);
-	if (job->ioid)
-		eio_signal_wakeup(job->eio);
 }
 
 static bool _job_msg_done(srun_job_t *job)
@@ -403,7 +399,7 @@ update_tasks_state(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
-	debug2("updating %d running tasks for node %d", 
+	debug2("updating %d tasks state for node %d", 
 	       job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
@@ -771,7 +767,6 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		    || (slurm_mpi_single_task_per_node () 
 			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
-			eio_signal_shutdown(job->eio);
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}

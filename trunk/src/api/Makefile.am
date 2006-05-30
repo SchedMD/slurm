@@ -59,10 +59,11 @@ libslurm_la_SOURCES =    \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
+	step_client_io.c step_client_io.h \
 	submit.c         \
 	suspend.c        \
 	reconfigure.c    \
-	update_config.c  
+	update_config.c
 
 libpmi_la_SOURCES = pmi.c
 
@@ -71,8 +72,12 @@ BUILT_SOURCES = 	\
 
 common_dir = $(top_builddir)/src/common
 
-libslurm_la_LIBADD	= $(common_dir)/libcommon.la -lpthread
-libpmi_la_LIBADD	= libslurm.la
+libslurm_la_LIBADD	= 		\
+	$(common_dir)/libcommon.la	\
+	$(common_dir)/libeio.la		\
+	-lpthread
+
+libpmi_la_LIBADD	= libslurm.la 
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \
@@ -84,11 +89,17 @@ force:
 $(libslurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
+# FIXME - don't export the client_io_ symbols once srun is no longer
+#         calling them directly
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   slurm_*;"; \
+	 echo "   client_io_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
+
+CLEANFILES = \
+	$(VERSION_SCRIPT)
 
 DISTCLEANFILES = \
 	$(VERSION_SCRIPT)
