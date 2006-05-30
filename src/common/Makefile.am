@@ -76,6 +76,7 @@ libcommon_la_SOURCES = 			\
 	dist_tasks.c dist_tasks.h	\
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
+	job_options.c job_options.h	\
 	global_defaults.c		\
 	slurm_xlator.h
 
@@ -92,7 +93,8 @@ libeio_la_SOURCES = 	   		\
 	io_hdr.c io_hdr.h
 
 libspank_la_SOURCES = \
-	plugstack.c plugstack.h
+	plugstack.c plugstack.h \
+	optz.c      optz.h
 
 libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
 

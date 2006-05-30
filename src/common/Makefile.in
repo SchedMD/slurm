@@ -91,7 +91,8 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
 	getopt1.c unsetenv.c unsetenv.h hostlist.c hostlist.h \
 	dist_tasks.c dist_tasks.h checkpoint.c checkpoint.h \
-	parse_time.c parse_time.h global_defaults.c slurm_xlator.h
+	parse_time.c parse_time.h job_options.c job_options.h \
+	global_defaults.c slurm_xlator.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo global_srun.lo strlcpy.lo list.lo net.lo fd.lo \
@@ -104,7 +105,7 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	util-net.lo slurm_auth.lo slurm_jobacct.lo slurm_jobcomp.lo \
 	switch.lo arg_desc.lo malloc.lo getopt.lo getopt1.lo \
 	$(am__objects_1) hostlist.lo dist_tasks.lo checkpoint.lo \
-	parse_time.lo global_defaults.lo
+	parse_time.lo job_options.lo global_defaults.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libdaemonize_la_LIBADD =
@@ -114,7 +115,7 @@ libeio_la_LIBADD =
 am_libeio_la_OBJECTS = eio.lo io_hdr.lo
 libeio_la_OBJECTS = $(am_libeio_la_OBJECTS)
 libspank_la_LIBADD =
-am_libspank_la_OBJECTS = plugstack.lo
+am_libspank_la_OBJECTS = plugstack.lo optz.lo
 libspank_la_OBJECTS = $(am_libspank_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -377,6 +378,7 @@ libcommon_la_SOURCES = \
 	dist_tasks.c dist_tasks.h	\
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
+	job_options.c job_options.h	\
 	global_defaults.c		\
 	slurm_xlator.h
 
@@ -393,7 +395,8 @@ libeio_la_SOURCES = \
 	io_hdr.c io_hdr.h
 
 libspank_la_SOURCES = \
-	plugstack.c plugstack.h
+	plugstack.c plugstack.h \
+	optz.c      optz.h
 
 libcommon_la_LIBADD = $(SSL_LIBS) -ldl
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
@@ -470,12 +473,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_srun.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_select.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_spec.Plo@am__quote@

@@ -50,6 +50,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/forward.h"
+#include "src/common/job_options.h"
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -2549,6 +2550,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr(msg->task_epilog, buffer);
 	pack32((uint32_t)msg->slurmd_debug, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
+	job_options_pack(msg->options, buffer);
 }
 
 static int
@@ -2612,6 +2614,11 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {
 		error("switch_unpack_jobinfo: %m");
 		switch_free_jobinfo(msg->switch_job);
+		goto unpack_error;
+	}
+	msg->options = job_options_create();
+	if (job_options_unpack(msg->options, buffer) < 0) {
+		error("Unable to unpack extra job options: %m");
 		goto unpack_error;
 	}
 	return SLURM_SUCCESS;

@@ -49,6 +49,7 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/switch.h"
+#include "src/common/job_options.h"
 #include "src/common/xassert.h"
 
 #define MAX_SLURM_NAME 64
@@ -394,6 +395,7 @@ typedef struct launch_tasks_request_msg {
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
+	job_options_t options;  /* Arbitrary job options */
 } launch_tasks_request_msg_t;
 
 typedef struct launch_tasks_response_msg {

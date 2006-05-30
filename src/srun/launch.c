@@ -151,6 +151,9 @@ launch(void *arg)
 	r.mem_bind_type   = opt.mem_bind_type;
 	r.mem_bind        = opt.mem_bind;
 	r.multi_prog      = opt.multi_prog;
+	r.options         = job_options_create();
+
+	spank_set_remote_options (r.options);
 
 	r.ofname  = fname_remote_string (job->ofname);
 	r.efname  = fname_remote_string (job->efname);

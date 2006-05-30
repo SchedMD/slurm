@@ -45,6 +45,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
+#include "src/common/job_options.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
 static void _slurm_free_job_info_members (job_info_t * job);
@@ -359,6 +360,9 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
+
+	if (msg->options)
+		job_options_destroy(msg->options);
 
 	xfree(msg);
 }
