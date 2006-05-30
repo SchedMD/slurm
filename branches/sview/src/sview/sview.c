@@ -50,57 +50,27 @@ static void _page_switched(GtkNotebook     *notebook,
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
 		return;
+	//g_print("got page %d\n", page_num);
 	switch(page_num) {
-	case 0:
+	case PARTITION_PAGE:
 		get_slurm_part(table);
 		break;
-	case 1:
+	case JOB_PAGE:
 		get_slurm_part(table);
 		break;
-	case 2:
+	case NODE_PAGE:
 		get_slurm_part(table);
 		break;
-	case 3:
+	case ADMIN_PAGE:
+		get_slurm_part(table);
+		break;
+	case BG_PAGE:
 		get_slurm_part(table);
 		break;
 	default:
 		break;
 	}
 }
-
-static void _button_pressed(GtkScrolledWindow *window,
-			    GdkEventButton *event, 
-			    gpointer user_data)
-{
-
-	if(event->button == 3) {
-		GtkMenu *menu = GTK_MENU(gtk_menu_new());
-		int *page_num = (int *)user_data;
-				
-		switch(*page_num) {
-		case 0:			
-			set_fields_part(menu);
-			break;
-		case 1:
-			set_fields_part(menu);
-			break;
-		case 2:
-			set_fields_part(menu);
-			break;
-		case 3:
-			set_fields_part(menu);
-			break;
-		default:
-			break;
-		}
-		
-		gtk_widget_show_all(GTK_WIDGET(menu));
-		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
-			       (event != NULL) ? event->button : 0,
-			       gdk_event_get_time((GdkEvent*)event));
-	}
-}
-
 
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
@@ -122,7 +92,7 @@ static void _prev_page(GtkAction *action,
 	gtk_notebook_prev_page(GTK_NOTEBOOK(notebook));
 }
 
-static void _create_page(char *name)
+static void _create_page(display_data_t *display_data)
 {
 	GtkScrolledWindow *scrolled_window = NULL;
 	GtkWidget *table = NULL;
@@ -144,15 +114,15 @@ static void _create_page(char *name)
 	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
 	
 	
-	label = gtk_label_new(name);
+	label = gtk_label_new(display_data->name);
 	
 	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
-				 GTK_WIDGET(scrolled_window), 
+					   GTK_WIDGET(scrolled_window), 
 					   label)) == -1) {
 		g_error("Couldn't add page to notebook\n");
 	}
 	g_signal_connect(G_OBJECT(scrolled_window), "button-press-event",
-			 G_CALLBACK(_button_pressed),
+			 G_CALLBACK(right_button_pressed),
 			 &err);
 
 }
@@ -252,7 +222,20 @@ int main( int argc,
 {
 	GtkWidget *window;
 	GtkWidget *menubar;
-	
+	display_data_t display_data[PAGE_CNT+1] = {
+		{PARTITION_PAGE, "Partitions", TRUE},
+		{JOB_PAGE, "Jobs", TRUE},
+		{NODE_PAGE, "Nodes", TRUE},
+#ifdef HAVE_BG
+		{BG_PAGE, "Blocks", TRUE},
+#else
+		{BG_PAGE, "Blocks", FALSE},
+#endif
+		{ADMIN_PAGE, "Admin", TRUE},
+		{-1, NULL, FALSE}
+	};
+	int i=0;
+
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
  
@@ -264,7 +247,7 @@ int main( int argc,
 	gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
 	gtk_container_set_border_width(GTK_CONTAINER(GTK_DIALOG(window)->vbox),
 				       1);
-	
+
 	/* Create a menu */
 	menubar = _get_menubar_menu(window);
 	/* Create a new notebook, place the position of the tabs */
@@ -282,17 +265,13 @@ int main( int argc,
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(window)->vbox), 
 			 notebook, TRUE, TRUE, 0);	
 	
-	/* Partition info */
-
-	_create_page("Partitions");
-	/* Job info */
-	_create_page("Jobs");	
-
-	/* Node info */
-	_create_page("Nodes");
-	
-	/* Admin */
-	_create_page("Administration");
+	for(i=0; i<PAGE_CNT; i++) {
+		if(display_data[i].id == -1)
+			break;
+		else if(!display_data[i].show) 
+			continue;
+		_create_page(&display_data[i]);
+	}
 	/* tell signal we are done adding */
 	adding = 0;
 	

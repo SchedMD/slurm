@@ -113,21 +113,24 @@ static void _row_clicked(GtkTreeView *tree_view,
 	partition_info_msg_t *new_part_ptr = (partition_info_msg_t *)user_data;
 	partition_info_t *part_ptr = NULL;
 	int line = get_row_number(tree_view, path);
-	char temp_char[50];
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
-
+	char *info = NULL;
 	if(line == -1) {
 		g_error("problem getting line number");
 		return;
 	}
 	
 	part_ptr = &new_part_ptr->partition_array[line];
-	sprintf(temp_char, "the name is %s", part_ptr->name);
-	
+	if(!(info = slurm_sprint_partition_info(part_ptr, 0))) {
+		info = xmalloc(100);
+		sprintf(info, "Problem getting partition info for %s", 
+			part_ptr->name);
+	} 
+
 	popup = gtk_dialog_new();
 
-	label = gtk_label_new(temp_char);
+	label = gtk_label_new(info);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
 			   label, TRUE, TRUE, 0);	
 	gtk_widget_show(label);
@@ -136,19 +139,12 @@ static void _row_clicked(GtkTreeView *tree_view,
 	
 }
 
-/* static void _button_pressed(GtkTreeView *tree_view, */
-/* 			    GtkTreePath *path, */
-/* 			    GtkTreeViewColumn *column, */
-/* 			    gpointer user_data) */
-/* { */
-/* 	g_print("hey a button was clicked\n"); */
-/* } */
-
-void _button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
-		     gpointer user_data)
+static void _button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
+			    gpointer user_data)
 {
 	GtkTreePath *path = NULL;
 	GtkTreeSelection *selection = NULL;
+	int page = PARTITION_PAGE;
 
         if(!gtk_tree_view_get_path_at_pos(tree_view,
 					  (gint) event->x, 
@@ -162,8 +158,8 @@ void _button_pressed(GtkTreeView *tree_view, GdkEventButton *event,
              	
 	/* single click with the right mouse button? */
 	if(event->button == 3) {
-		g_print ("Single right click on the tree view.\n");
-		//view_popup_menu(treeview, event, userdata);
+		right_button_pressed(NULL, event, &page);
+//view_popup_menu(treeview, event, userdata);
 	} else if(event->type==GDK_2BUTTON_PRESS ||
 		  event->type==GDK_3BUTTON_PRESS) {
 		_row_clicked(tree_view, path, NULL, user_data);
@@ -231,7 +227,7 @@ got_toggled:
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(_button_pressed),
 			 new_part_ptr);
-	g_print("got here\n");
+	
 	gtk_table_attach_defaults(GTK_TABLE(table), 
 				  GTK_WIDGET(tree_view),
 				  0, 1, 0, 1); 

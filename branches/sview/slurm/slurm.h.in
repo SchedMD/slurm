@@ -1224,6 +1224,16 @@ extern void slurm_print_partition_info PARAMS((
 	FILE *out , partition_info_t * part_ptr, int one_liner ));
 
 /*
+ * slurm_sprint_partition_info - output information about a specific Slurm 
+ *	partition based upon message as loaded using slurm_load_partitions
+ * IN part_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * with formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+extern char *slurm_sprint_partition_info PARAMS(( 
+		partition_info_t * part_ptr, int one_liner ));
+/*
  * slurm_update_partition - issue RPC to update a partition's configuration
  *	per request, only usable by user root
  * IN part_msg - description of partition updates

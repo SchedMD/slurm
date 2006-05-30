@@ -74,8 +74,12 @@
 #define POS_LOC 0
 
 enum { JOBS, SLURMPART, BGPART, COMMANDS };
-
-//typedef void (*sighandler_t) (int);
+enum { PARTITION_PAGE, 
+       JOB_PAGE, 
+       NODE_PAGE, 
+       ADMIN_PAGE,
+       BG_PAGE, 
+       PAGE_CNT};
 
 /* Input parameters */
 typedef struct {
@@ -145,5 +149,8 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern GtkListStore *create_liststore(display_data_t *display_data, int count);
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
 extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data);
+extern void right_button_pressed(GtkWidget *widget,
+				 GdkEventButton *event, 
+				 gpointer user_data);
 
 #endif

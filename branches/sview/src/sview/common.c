@@ -162,7 +162,7 @@ extern void load_header(GtkTreeView *tree_view, display_data_t *display_data)
 	while(display_data++) {
 		if(display_data->id == -1)
 			break;
-		if(!display_data->show) 
+		else if(!display_data->show) 
 			continue;
 		_add_col_to_treeview(tree_view, display_data);
 	}
@@ -187,4 +187,37 @@ extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
     
 	}		
 
+}
+
+extern void right_button_pressed(GtkWidget *widget,
+				 GdkEventButton *event, 
+				 gpointer user_data)
+{
+
+	if(event->button == 3) {
+		GtkMenu *menu = GTK_MENU(gtk_menu_new());
+		int *page_num = (int *)user_data;
+				
+		switch(*page_num) {
+		case 0:			
+			set_fields_part(menu);
+			break;
+		case 1:
+			set_fields_part(menu);
+			break;
+		case 2:
+			set_fields_part(menu);
+			break;
+		case 3:
+			set_fields_part(menu);
+			break;
+		default:
+			break;
+		}
+		
+		gtk_widget_show_all(GTK_WIDGET(menu));
+		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
+			       (event != NULL) ? event->button : 0,
+			       gdk_event_get_time((GdkEvent*)event));
+	}
 }
