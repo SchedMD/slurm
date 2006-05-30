@@ -2,7 +2,7 @@
  *  pmi.c - Global PMI data as maintained within srun
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -116,8 +116,8 @@ static void _kvs_xmit_tasks(void)
 static void *_msg_thread(void *x)
 {
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
-	int rc, success = 0;//, task_fd;
-	slurm_msg_t msg_send;//, msg_rcv;
+	int rc, success = 0;
+	slurm_msg_t msg_send;
 	
 
 	debug2("KVS_Barrier msg to %s:%u",
@@ -129,33 +129,9 @@ static void *_msg_thread(void *x)
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
 	
-	slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0);
-	/* if ((task_fd = slurm_open_msg_conn(&msg_send.address)) < 0) { */
-/* 		error("slurm_init_msg_engine_port: %m"); */
-/* 		goto fini; */
-/* 	} */
-/* 	if ((rc = slurm_send_node_msg(task_fd, &msg_send)) < 0) { */
-/* 		error("KVS_Barrier send data fail to %s", */
-/* 			msg_arg_ptr->bar_ptr->hostname); */
-/* 		(void) slurm_shutdown_msg_conn(task_fd); */
-/* 		goto fini; */
-/* 	} */
-/* 	rc = slurm_receive_msg(task_fd, &msg_rcv, 0); */
-/* 	(void) slurm_shutdown_msg_conn(task_fd); */
-/* 	if (rc < 0) { */
-/* 		error("KVS_Barrier confirm fail from %s", */
-/* 			msg_arg_ptr->bar_ptr->hostname); */
-/* 		goto fini; */
-/* 	} */
-/* 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) { */
-/* 		error("KVS_Barrier confirm type %d from %s", */
-/* 			msg_rcv.msg_type, */
-/* 			msg_arg_ptr->bar_ptr->hostname); */
-/* 		goto fini; */
-/* 	} */
-/* 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code; */
-/* 	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data); */
-	if (rc != SLURM_SUCCESS) {
+	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+		error("slurm_send_recv_rc_msg_only_one: %m");
+	} else if (rc != SLURM_SUCCESS) {
 		error("KVS_Barrier confirm from %s, rc=%d",
 			msg_arg_ptr->bar_ptr->hostname, rc);
 	} else {
@@ -163,7 +139,6 @@ static void *_msg_thread(void *x)
 		success = 1;
 	}
 
-/* fini: */
 	slurm_mutex_lock(&agent_mutex);
 	agent_cnt--;
 	if (success)
@@ -210,6 +185,7 @@ static void *_agent(void *x)
 		}
 		while (agent_cnt > 0)
 			pthread_cond_wait(&agent_cond, &agent_mutex);
+		slurm_mutex_unlock(&agent_mutex);
 	}
 
 	/* Release allocated memory */
