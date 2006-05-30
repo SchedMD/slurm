@@ -1715,7 +1715,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	slurm_fd fd = -1;
 	List ret_list = NULL;
 	ret_types_t *ret_type = NULL;
-	int ret_c = SLURM_SUCCESS;
+	int ret_c = 0;
 
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
@@ -1723,9 +1723,8 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	/* no need to init forward_struct_init here */
 		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		return SLURM_SOCKET_ERROR;
+		return -1;
 	}
-
 			
 	ret_list = _send_recv_rc_msg(fd, req, timeout);
 	if(ret_list) {
@@ -1737,12 +1736,15 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	
 		if(ret_type) {
 			*rc = ret_type->msg_rc;
-			ret_c = ret_type->err;
+			// make sure we only send 0 or -1 for an error
+			if(ret_type->err != 0) 
+				//ret_c = ret_type->err;
+				ret_c = -1;
 			destroy_ret_types(ret_type);
 		}
 		list_destroy(ret_list);
 	} else 
-		ret_c = SLURM_ERROR;
+		ret_c = -1;
 	return ret_c;
 }
 
@@ -1754,7 +1756,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	slurm_fd fd = -1;
 	List ret_list = NULL;
 	ret_types_t *ret_type = NULL;
-	int ret_val = SLURM_SUCCESS;
+	int ret_val = 0;
 
 	forward_init(&req->forward, NULL);
 	req->ret_list = NULL;
@@ -1762,7 +1764,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	/* no need to init forward_struct_init here */
 		
 	if ((fd = slurm_open_controller_conn()) < 0)
-		return SLURM_SOCKET_ERROR;
+		return -1;
 	ret_list = _send_recv_rc_msg(fd, req, 0);
 	
 	if(ret_list) {
@@ -1773,12 +1775,15 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 		
 		if(ret_type) {
 			*rc = ret_type->msg_rc;
-			ret_val = ret_type->err;
+			// make sure we only send 0 or -1 for an error
+			if(ret_type->err != 0) 
+				//ret_c = ret_type->err;
+				ret_val = -1;
 			destroy_ret_types(ret_type);
 		}
 		list_destroy(ret_list);
 	} else 
-		ret_val = SLURM_ERROR;
+		ret_val = -1;
 	return ret_val;
 }
 

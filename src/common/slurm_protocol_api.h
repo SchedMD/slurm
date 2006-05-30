@@ -557,13 +557,15 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout);
 
 /*
- *  Same as above, but only to one node
+ *  Same as above, but only to one node 
+ *  returns 0 on success, -1 on failure and sets errno
  */
 
 int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout);
 
 /*
  *  Same as above, but send to controller
+ *  returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc);
 
