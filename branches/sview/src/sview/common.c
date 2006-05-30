@@ -27,10 +27,10 @@
 
 #include "src/sview/sview.h"
 
-extern int sort_iter_compare_func(GtkTreeModel *model,
-				  GtkTreeIter  *a,
-				  GtkTreeIter  *b,
-				  gpointer      userdata)
+static int _sort_iter_compare_func(GtkTreeModel *model,
+				   GtkTreeIter  *a,
+				   GtkTreeIter  *b,
+				   gpointer      userdata)
 {
 	int sortcol = GPOINTER_TO_INT(userdata);
 	int ret = 0;
@@ -55,6 +55,35 @@ cleanup:
 	g_free(name2);
 	
 	return ret;
+}
+
+static void _add_col_to_treeview(GtkTreeView *tree_view, 
+				 display_data_t *display_data)
+{
+	GtkTreeViewColumn   *col;
+	GtkCellRenderer     *renderer;
+  
+	renderer = gtk_cell_renderer_text_new();
+	col = gtk_tree_view_column_new();	
+	gtk_tree_view_column_pack_start (col, renderer, TRUE);
+	gtk_tree_view_column_add_attribute (col, renderer, 
+					    "text", display_data->id);
+	gtk_tree_view_column_set_title (col, display_data->name);
+	gtk_tree_view_append_column(tree_view, col);
+	gtk_tree_view_column_set_sort_column_id(col, display_data->id);
+
+}
+
+static void _toggle_state_changed(GtkCheckMenuItem *menuitem, 
+				  gpointer user_data)
+{
+	bool *checked = user_data;
+	if(*checked)
+		*checked = FALSE;
+	else
+		*checked = TRUE;
+	toggled = TRUE;
+	refresh_page(NULL, NULL, NULL);
 }
 
 extern void snprint_time(char *buf, size_t buf_size, time_t time)
@@ -82,22 +111,6 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 	}
 }
 
-extern void add_col_to_treeview(GtkTreeView *tree_view, int id, char *name)
-{
-	GtkTreeViewColumn   *col;
-	GtkCellRenderer     *renderer;
-  
-	renderer = gtk_cell_renderer_text_new();
-	col = gtk_tree_view_column_new();	
-	gtk_tree_view_column_pack_start (col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute (col, renderer, 
-					    "text", id);
-	gtk_tree_view_column_set_title (col, name);
-	gtk_tree_view_append_column(tree_view, col);
-	gtk_tree_view_column_set_sort_column_id(col, id);
-
-}
-
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
@@ -115,4 +128,63 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 	}	
 	gtk_tree_model_get(model, &iter, POS_LOC, &line, -1);
 	return line;
+}
+
+extern GtkListStore *create_liststore(display_data_t *display_data, int count)
+{
+	GtkListStore *liststore = NULL;
+	GType types[count];
+	int i=0;
+	/* for the position 'unseen' var */
+	types[i] = G_TYPE_INT;
+	for(i=1; i<count; i++)
+		types[i] = G_TYPE_STRING;
+	liststore = gtk_list_store_newv(count, types);
+	if(!liststore)
+		return NULL;
+	for(i=1; i<count; i++) {
+		if(display_data[i].show)
+			gtk_tree_sortable_set_sort_func(
+				GTK_TREE_SORTABLE(liststore), 
+				i, 
+				_sort_iter_compare_func,
+				GINT_TO_POINTER(i), 
+				NULL); 
+	}
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
+					     1, 
+					     GTK_SORT_ASCENDING);
+	return liststore;
+}
+
+extern void load_header(GtkTreeView *tree_view, display_data_t *display_data)
+{
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(!display_data->show) 
+			continue;
+		_add_col_to_treeview(tree_view, display_data);
+	}
+}
+
+extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
+{
+	GtkWidget *menuitem = NULL;
+	
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		menuitem = gtk_check_menu_item_new_with_label(
+			display_data->name); 
+		
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem),
+					       display_data->show);
+		g_signal_connect(menuitem, "toggled",
+				 G_CALLBACK(_toggle_state_changed), 
+				 &display_data->show);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+    
+	}		
+
 }

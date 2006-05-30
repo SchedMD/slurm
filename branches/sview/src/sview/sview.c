@@ -30,6 +30,8 @@ GtkWidget *notebook = NULL;
 sview_parameters_t params;
 int adding = 1;
 int fini = 0;
+bool toggled = FALSE;
+
 
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
@@ -66,6 +68,40 @@ static void _page_switched(GtkNotebook     *notebook,
 	}
 }
 
+static void _button_pressed(GtkScrolledWindow *window,
+			    GdkEventButton *event, 
+			    gpointer user_data)
+{
+
+	if(event->button == 3) {
+		GtkMenu *menu = GTK_MENU(gtk_menu_new());
+		int *page_num = (int *)user_data;
+				
+		switch(*page_num) {
+		case 0:			
+			set_fields_part(menu);
+			break;
+		case 1:
+			set_fields_part(menu);
+			break;
+		case 2:
+			set_fields_part(menu);
+			break;
+		case 3:
+			set_fields_part(menu);
+			break;
+		default:
+			break;
+		}
+		
+		gtk_widget_show_all(GTK_WIDGET(menu));
+		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
+			       (event != NULL) ? event->button : 0,
+			       gdk_event_get_time((GdkEvent*)event));
+	}
+}
+
+
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkWidget *menu_item)
@@ -84,17 +120,6 @@ static void _prev_page(GtkAction *action,
 		       GtkWidget *menu_item)
 {
 	gtk_notebook_prev_page(GTK_NOTEBOOK(notebook));
-}
-
-static void _refresh(GtkRadioAction *action,
-		     GtkRadioAction *extra,
-		     GtkWidget *menu_item)
-{
-	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
-	if(page == -1)
-		g_error("no pages in notebook for refresh\n");
-	_page_switched(GTK_NOTEBOOK(notebook), NULL, page, NULL);
-	
 }
 
 static void _create_page(char *name)
@@ -117,13 +142,19 @@ static void _create_page(char *name)
 				       GTK_POLICY_AUTOMATIC);
     
 	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
-
+	
+	
 	label = gtk_label_new(name);
+	
 	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
 				 GTK_WIDGET(scrolled_window), 
 					   label)) == -1) {
 		g_error("Couldn't add page to notebook\n");
-	}	
+	}
+	g_signal_connect(G_OBJECT(scrolled_window), "button-press-event",
+			 G_CALLBACK(_button_pressed),
+			 &err);
+
 }
 
 /* Our menu*/
@@ -157,7 +188,7 @@ static GtkActionEntry entries[] = {
 	{"PrevPage", NULL, "_PrevPage", 
 	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
 	{"Refresh", NULL, "Refresh", 
-	 "F5", "Refreshes page", G_CALLBACK(_refresh)},
+	 "F5", "Refreshes page", G_CALLBACK(refresh_page)},
 	{"Help", NULL, "_Help"},
 	{"About", NULL, "_About"}
 };
@@ -272,3 +303,15 @@ int main( int argc,
  
 	return 0;
 }
+
+extern void refresh_page(GtkRadioAction *action,
+			 GtkRadioAction *extra,
+			 GtkWidget *menu_item)
+{
+	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+	if(page == -1)
+		g_error("no pages in notebook for refresh\n");
+	_page_switched(GTK_NOTEBOOK(notebook), NULL, page, NULL);
+	toggled = FALSE;
+}
+

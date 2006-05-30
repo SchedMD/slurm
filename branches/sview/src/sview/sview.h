@@ -101,6 +101,12 @@ typedef struct {
 
 } sview_parameters_t;
 
+typedef struct {
+	int id;
+	char *name;
+	bool show;
+} display_data_t;
+
 extern sview_parameters_t params;
 extern int text_line_cnt;
 
@@ -108,6 +114,7 @@ extern void parse_command_line(int argc, char *argv[]);
 
 extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
+extern bool toggled;
 
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
@@ -119,18 +126,24 @@ extern void parse_command_line(int argc, char *argv[]);
 extern void print_date();
 extern void clear_window(WINDOW *win);
 
+//sview.c
+extern void refresh_page(GtkRadioAction *action,
+			 GtkRadioAction *extra,
+			 GtkWidget *menu_item);
+
 // part_info.c
 extern void get_slurm_part(GtkTable *table);
 extern void get_bg_part(GtkTable *table);
+extern void set_fields_part(GtkMenu *menu);
 // job_info.c
 extern void get_job(GtkTable *table);
 extern void get_command();
 
 // common.c
-extern int sort_iter_compare_func(GtkTreeModel *model, GtkTreeIter *a,
-				  GtkTreeIter *b, gpointer userdata);
 extern void snprint_time(char *buf, size_t buf_size, time_t time);
-extern void add_col_to_treeview(GtkTreeView *tree_view, int id, char *name);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
+extern GtkListStore *create_liststore(display_data_t *display_data, int count);
+extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
+extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data);
 
 #endif
