@@ -65,8 +65,6 @@ typedef enum {false, true} bool;
 #  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
-#define SLURM_CRED_SIGLEN 8
-
 /* Avoid going over 32 bits for a constant to avoid warnings on some systems */
 #  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
         (((uint64_t) (val) &                                                  \

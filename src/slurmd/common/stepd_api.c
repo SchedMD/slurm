@@ -303,7 +303,7 @@ stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
 	safe_write(fd, &req, sizeof(int));
 	safe_write(fd, ioaddr, sizeof(slurm_addr));
 	safe_write(fd, respaddr, sizeof(slurm_addr));
-	safe_write(fd, job_cred_sig, SLURM_CRED_SIGLEN);
+	safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));

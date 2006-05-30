@@ -319,6 +319,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	log_fini();
 
+	if (job->env == NULL) {
+		debug("job->env is NULL");
+		job->env = (char **)xmalloc(sizeof(char *));
+		job->env[0] = (char *)NULL;
+	}
 	if (job->multi_prog)
 		task_exec(job->argv[1], job->env);
 	else

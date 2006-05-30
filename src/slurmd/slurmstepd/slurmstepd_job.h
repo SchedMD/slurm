@@ -41,6 +41,7 @@
 #include "src/common/eio.h"
 #include "src/common/switch.h"
 #include "src/common/env.h"
+#include "src/common/io_hdr.h"
 
 #include "src/slurmd/common/stepd_api.h"
 
@@ -49,7 +50,7 @@
 #endif
 
 typedef struct srun_key {
-	unsigned char data[SLURM_CRED_SIGLEN];
+	unsigned char data[SLURM_IO_KEY_SIZE];
 } srun_key_t;
 
 typedef struct srun_info {

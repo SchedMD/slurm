@@ -512,6 +512,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	int retcode;
 	int i;
 
+	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
 	msg.job_id = job->jobid;
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;

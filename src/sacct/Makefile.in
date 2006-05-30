@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 7820 2006-04-20 21:35:46Z da $
+# $Id: Makefile.am 7973 2006-05-08 23:52:35Z morrone $
 # Makefile for sacct
 
 
