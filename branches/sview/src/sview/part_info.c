@@ -132,7 +132,8 @@ static void _row_clicked(GtkTreeView *tree_view,
 
 	label = gtk_label_new(info);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   label, TRUE, TRUE, 0);	
+			   label, TRUE, TRUE, 0);
+	xfree(info);
 	gtk_widget_show(label);
 	
 	gtk_widget_show(popup);
