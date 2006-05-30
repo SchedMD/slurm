@@ -134,7 +134,10 @@ int srun(int ac, char **av)
 	/* set default options, process commandline arguments, and
 	 * verify some basic values
 	 */
-	initialize_and_process_args(ac, av);
+	if (initialize_and_process_args(ac, av) < 0) {
+		error ("srun initialization failed");
+		exit (1);
+	}
 
 	
 	/* reinit log with new verbosity (if changed by command line)
