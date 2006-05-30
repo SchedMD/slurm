@@ -2,7 +2,7 @@
  * job_scheduler.c - manage the scheduling of pending jobs in priority order
  *	Note there is a global job list (job_list)
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -313,6 +313,19 @@ static void _launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->nprocs = job_ptr->details->req_tasks;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+
+	if (make_batch_job_cred(launch_msg_ptr)) {
+		error("aborting batch job %u", job_ptr->job_id);
+		/* FIXME: This is a kludge, but this event indicates a serious
+		 * problem with OpenSSH and should never happen. We are
+		 * too deep into the job launch to gracefully clean up. */
+		job_ptr->end_time    = time(NULL);
+		job_ptr->time_limit = 0;
+		xfree(launch_msg_ptr->nodes);
+		xfree(launch_msg_ptr);
+		return;
+	}
+
 	launch_msg_ptr->err = xstrdup(job_ptr->details->err);
 	launch_msg_ptr->in = xstrdup(job_ptr->details->in);
 	launch_msg_ptr->out = xstrdup(job_ptr->details->out);
@@ -364,4 +377,30 @@ _xduparray(uint16_t size, char ** array)
 	for (i=0; i<size; i++)
 		result[i] = xstrdup(array[i]);
 	return result;
+}
+
+/*
+ * make_batch_job_cred - add a job credential to the batch_job_launch_msg
+ * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id, 
+ *                         uid and nodes have already been set 
+ * RET 0 or error code
+ */
+extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr)
+{
+	slurm_cred_arg_t cred_arg;
+
+	cred_arg.jobid     = launch_msg_ptr->job_id;
+	cred_arg.stepid    = launch_msg_ptr->step_id;
+	cred_arg.uid       = launch_msg_ptr->uid;
+	cred_arg.hostlist  = launch_msg_ptr->nodes;
+	cred_arg.ntask_cnt = 0;
+	cred_arg.ntask     = NULL;
+
+	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
+			 &cred_arg);
+
+	if (launch_msg_ptr->cred)
+		return SLURM_SUCCESS;
+	error("slurm_cred_create failure for batch job %u", cred_arg.jobid);
+	return SLURM_ERROR;
 }

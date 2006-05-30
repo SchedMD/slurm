@@ -642,7 +642,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	launch_tasks_request_msg_t *req = msg->data;
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
-	bool     super_user = false, run_prolog = false;
+	bool     super_user = false;
 	slurm_addr self;
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
@@ -664,34 +664,30 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	info("launch task %u.%u request from %u.%u@%s", req->job_id, 
 	     req->job_step_id, req->uid, req->gid, host);
 
-#ifndef HAVE_FRONT_END
-	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
-		run_prolog = true;
-#endif
-
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
 				  req->tasks_to_launch[req->srun_node_id],
-				  &step_hset) 
-	    < 0) {
+				  &step_hset) < 0) {
 		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
 		goto done;
 	}
-	if (slurm_cred_revoked(conf->vctx, jobid)) {
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job credential revoked for %u", jobid);
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
 
-	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
-
-	/* Run job prolog if necessary */
-	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
-		error("[job %u] prolog failed", req->job_id);
-		errnum = ESLURMD_PROLOG_FAILED;
-		goto done;
+#ifndef HAVE_FRONT_END
+	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
+			error("[job %u] prolog failed", req->job_id);
+			errnum = ESLURMD_PROLOG_FAILED;
+			goto done;
+		}
 	}
+#endif
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
 
@@ -732,7 +728,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	spawn_task_request_msg_t *req = msg->data;
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
-	bool     super_user = false, run_prolog = false;
+	bool     super_user = false;
 	slurm_addr self;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
@@ -753,11 +749,6 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	info("spawn task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
-#ifndef HAVE_FRONT_END
-	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
-		run_prolog = true;
-#endif
-
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid, 
 				  spawn_tasks_to_launch, &step_hset) < 0) {
 		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
@@ -765,20 +756,22 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		      (long) req_uid, host);
 		goto done;
 	}
-	if (slurm_cred_revoked(conf->vctx, jobid)) {
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job credential revoked for %u", jobid);
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
 
-	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
-
-	/* Run job prolog if necessary */
-	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
-		error("[job %u] prolog failed", req->job_id);
-		errnum = ESLURMD_PROLOG_FAILED;
-		goto done;
+#ifndef HAVE_FRONT_END
+	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
+			error("[job %u] prolog failed", req->job_id);
+			errnum = ESLURMD_PROLOG_FAILED;
+			goto done;
+		}
 	}
+#endif
 
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
@@ -852,7 +845,12 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
-	} 
+	}
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		error("Job %u already killed, do not launch batch job",
+			req->job_id);
+		 rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
+	}
 
 	if (req->step_id != SLURM_BATCH_SCRIPT && req->step_id != 0)
 		first_job_run = false;
@@ -890,11 +888,11 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	/* Since job could have been killed while the prolog was 
-	 * running (especially on BlueGene, which can wait  minutes
+	 * running (especially on BlueGene, which can take minutes
 	 * for partition booting). Test if the credential has since
 	 * been revoked and exit as needed. */
-	if (slurm_cred_revoked(conf->vctx, req->job_id)) {
-		info("Job %u already killed, do not launch tasks",  
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		info("Job %u already killed, do not launch batch job",  
 			req->job_id);
 		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;
@@ -1983,7 +1981,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
+	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time) < 0) {
 		debug("revoking cred for job %u: %m", req->job_id);
 	} else {
 		save_cred_state(conf->vctx);

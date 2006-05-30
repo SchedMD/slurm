@@ -515,6 +515,7 @@ job_desc_msg_create_from_opts (char *script)
 		j->in   = opt.ifname;
 		j->out  = opt.ofname;
 		j->work_dir = opt.cwd;
+		j->no_requeue = opt.no_requeue;
 	}
 
 	return (j);

@@ -2,7 +2,7 @@
  *  suspend.c - job step suspend and resume functions.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -77,3 +77,26 @@ extern int slurm_resume (uint32_t job_id)
 {
 	return _suspend_op (RESUME_JOB, job_id);
 }
+
+/*
+ * slurm_requeue - re-queue a batch job, if already running 
+ *	then terminate it first
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue (uint32_t job_id)
+{
+	int rc;
+	job_id_msg_t requeue_req;
+	slurm_msg_t req_msg;
+
+	requeue_req.job_id	= job_id;
+	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
+	req_msg.data		= &requeue_req;
+
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+		return SLURM_ERROR;
+
+	slurm_seterrno(rc);
+	return rc;
+}
+

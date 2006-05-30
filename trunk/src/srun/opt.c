@@ -122,6 +122,7 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
+#define LONG_OPT_NO_REQUEUE  0x123
 
 /*---- forward declarations of static functions  ----*/
 
@@ -710,6 +711,7 @@ static void _opt_default()
 	opt.kill_bad_exit = false;
 
 	opt.immediate	= false;
+	opt.no_requeue	= false;
 
 	opt.allocate	= false;
 	opt.noshell	= false;
@@ -806,6 +808,7 @@ env_vars_t env_vars[] = {
   {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
   {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
+  {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
@@ -1046,6 +1049,7 @@ void set_options(const int argc, char **argv, int first)
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
+		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1488,6 +1492,9 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
+			break;
+		case LONG_OPT_NO_REQUEUE:
+			opt.no_requeue = true;
 			break;
 		}
 	}
@@ -1970,6 +1977,7 @@ static void _opt_list()
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	info("immediate      : %s", tf_(opt.immediate));
+	info("no-requeue     : %s", tf_(opt.no_requeue));
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));
 	info("allocate       : %s", tf_(opt.allocate));
@@ -2045,7 +2053,7 @@ static void _usage(void)
 "            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
-"            [--ctrl-comm-ifhn=addr] [--multi-prog]"
+"            [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2103,8 +2111,9 @@ static void _help(void)
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun"
-"     --multi-prog             if set the program name specified is the\n"
+"      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
+"      --no-requeue            if set, do not permit the job to be requeued\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"

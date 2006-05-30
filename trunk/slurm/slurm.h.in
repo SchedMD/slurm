@@ -392,6 +392,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
+	uint16_t no_requeue;	/* disable job requeue option */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system. Don't remove these
@@ -1283,6 +1284,13 @@ extern int slurm_suspend PARAMS(( uint32_t job_id ));
  * RET 0 or a slurm error code
  */
 extern int slurm_resume PARAMS(( uint32_t job_id ));
+
+/*
+ * slurm_requeue - re-queue a batch job, if already running
+ *	then terminate it first
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue PARAMS(( uint32_t job_id ));
 
 /*****************************************************************************\
  *      SLURM JOB CHECKPOINT FUNCTIONS

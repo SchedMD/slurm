@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "April 2006" "srun 1.1" "slurm components"
+.TH SRUN "1" "May 2006" "srun 1.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -253,6 +253,13 @@ the hostname or if that address is blocked from the compute nodes.
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOBID environment variable was set.
+.TP
+\fB\-\-no\-requeue\fR
+Specifies that the batch job is not requeue. 
+Setting this option will prevent system administrators from being able 
+to restart the job (for example, after a scheduled downtime).
+When a job is requeued, the batch script is initiated from its beginning.
+This option is only applicable to batch job submission (see \fB\-\-batch\fR).
 .TP
 \fB\-o\fR, \fB\-\-output\fR=\fImode\fR
 Specify the mode for stdout redirection. By default in interactive mode,
@@ -871,6 +878,9 @@ The location of the SLURM configuration file.
 .TP
 \fBSLURM_NNODES\fR
 \fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)
+.TP
+\fBSLURM_NO_REQUEUE\fR
+\fB\-\-no\-requeue\fR
 .TP
 \fBSLURM_NO_ROTATE\fR
 \fB\-\-no\-rotate\fR
