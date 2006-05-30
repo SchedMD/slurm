@@ -42,6 +42,7 @@
 #include "src/common/switch.h"
 #include "src/common/env.h"
 #include "src/common/io_hdr.h"
+#include "src/common/job_options.h"
 
 #include "src/slurmd/common/stepd_api.h"
 
@@ -167,6 +168,8 @@ typedef struct slurmd_job {
 
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
+
+	job_options_t  options;
 } slurmd_job_t;
 
 
