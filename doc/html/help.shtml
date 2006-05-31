@@ -7,11 +7,13 @@
 <li>For run-time problems, try running the command or daemons in verbose mode 
 (<span class="commandline">-v</span> option), and see if additional information 
 helps you resolve the problem.</li>
-<li>Customers of HP and Linux NetworX should contact their support staff.</li>
-<li>Send a detailed description of the problem and logs to 
+<li>Customers of HP, Linux NetworX and others providing commercial support 
+for SLURM should contact their support staff.</li>
+<li>Send a detailed description of the problem, the output from the command
+"scontrol show config", logs, back traces from any core files, etc. to 
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
 </ol>
 
-<p style="text-align:center;">Last modified 5 April 2006</p>
+<p style="text-align:center;">Last modified 31 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
