@@ -1164,7 +1164,6 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	if (job_specs == NULL)
 		return;
-info("over=%u nprocs=%u", job_specs->overcommit, job_specs->num_procs); 
 
 	job_id = (job_specs->job_id != NO_VAL) ? 
 			(long) job_specs->job_id : -1L;
