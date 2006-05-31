@@ -26,12 +26,30 @@
 
 #include "sview.h"
 /* globals */
-GtkWidget *notebook = NULL;
 sview_parameters_t params;
 int adding = 1;
 int fini = 0;
 bool toggled = FALSE;
-
+GtkWidget *main_notebook = NULL;
+display_data_t main_display_data[PAGE_CNT+1] = {
+	{PARTITION_PAGE, "Partitions", TRUE, -1,
+	 get_info_part, set_fields_part, row_clicked_part, NULL},
+	{JOB_PAGE, "Jobs", TRUE, -1,
+	 get_info_job, set_fields_job, row_clicked_job, NULL},
+	{NODE_PAGE, "Nodes", TRUE, -1,
+	 get_info_node, set_fields_node, row_clicked_node, NULL},
+#ifdef HAVE_BG
+	{BLOCK_PAGE, "BG Blocks", TRUE, -1,
+#else
+	 {BLOCK_PAGE, "BG Blocks", FALSE, -1,
+#endif
+	  get_info_block, set_fields_block, row_clicked_block, NULL},
+	 {JOB_SUBMIT_PAGE, "Submit Job", TRUE, -1,
+	  get_info_submit, set_fields_submit, row_clicked_submit, NULL},
+	 {ADMIN_PAGE, "Admin", TRUE, -1,
+	  get_info_admin, set_fields_admin, row_clicked_admin, NULL},
+	 {-1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}
+	};
 
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
@@ -46,85 +64,45 @@ static void _page_switched(GtkNotebook     *notebook,
 	GtkViewport *view = GTK_VIEWPORT(bin->child);
 	GtkBin *bin2 = GTK_BIN(&view->bin);
 	GtkTable *table = GTK_TABLE(bin2->child);
-	
+	int i;
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
 		return;
-	//g_print("got page %d\n", page_num);
-	switch(page_num) {
-	case PARTITION_PAGE:
-		get_slurm_part(table);
-		break;
-	case JOB_PAGE:
-		get_slurm_part(table);
-		break;
-	case NODE_PAGE:
-		get_slurm_part(table);
-		break;
-	case ADMIN_PAGE:
-		get_slurm_part(table);
-		break;
-	case BG_PAGE:
-		get_slurm_part(table);
-		break;
-	default:
-		break;
+	
+	for(i=0; i<PAGE_CNT; i++) {
+		if(main_display_data[i].id == -1)
+			break;
+		else if(!main_display_data[i].show) 
+			continue;
+		if(main_display_data[i].extra == page_num)
+			break;
 	}
+
+	if(main_display_data[i].extra != page_num) {
+		g_print("page %d not found\n", page_num);
+		return;
+	} 
+	(main_display_data[i].get_info)(table, &main_display_data[i]);
 }
 
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
-		     GtkWidget *menu_item)
+		     GtkNotebook *notebook)
 {
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), 
+	gtk_notebook_set_tab_pos(notebook, 
 				 gtk_radio_action_get_current_value(action));
 }
 
 static void _next_page(GtkAction *action,
-		       GtkWidget *menu_item)
+		       GtkNotebook *notebook)
 {
-	gtk_notebook_next_page(GTK_NOTEBOOK(notebook));
+	gtk_notebook_next_page(notebook);
 }
 
 static void _prev_page(GtkAction *action,
-		       GtkWidget *menu_item)
+		       GtkNotebook *notebook)
 {
-	gtk_notebook_prev_page(GTK_NOTEBOOK(notebook));
-}
-
-static void _create_page(display_data_t *display_data)
-{
-	GtkScrolledWindow *scrolled_window = NULL;
-	GtkWidget *table = NULL;
-	GtkWidget *label;
-	int err;
-
-	table = gtk_table_new(1, 1, FALSE);
-
-	gtk_container_set_border_width(GTK_CONTAINER(table), 10);	
-
-	scrolled_window = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new(
-						      NULL, NULL));	
-	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
-    
-	gtk_scrolled_window_set_policy(scrolled_window,
-				       GTK_POLICY_AUTOMATIC,
-				       GTK_POLICY_AUTOMATIC);
-    
-	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
-	
-	
-	label = gtk_label_new(display_data->name);
-	
-	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
-					   GTK_WIDGET(scrolled_window), 
-					   label)) == -1) {
-		g_error("Couldn't add page to notebook\n");
-	}
-	g_signal_connect(G_OBJECT(scrolled_window), "button-press-event",
-			 G_CALLBACK(right_button_pressed),
-			 &err);
-
+	gtk_notebook_prev_page(notebook);
 }
 
 /* Our menu*/
@@ -175,7 +153,7 @@ static GtkRadioActionEntry radio_entries[] = {
 };
 
 /* Returns a menubar widget made from the above menu */
-static GtkWidget *_get_menubar_menu(GtkWidget *window)
+static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 {
 	GtkActionGroup *action_group = NULL;
 	GtkUIManager *ui_manager = NULL;
@@ -185,15 +163,15 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window)
 	/* Make an accelerator group (shortcut keys) */
 	action_group = gtk_action_group_new ("MenuActions");
 	gtk_action_group_add_actions(action_group, entries, 
-				     G_N_ELEMENTS(entries), window);
+				     G_N_ELEMENTS(entries), notebook);
 	gtk_action_group_add_radio_actions(action_group, radio_entries, 
 					   G_N_ELEMENTS(radio_entries), 
-					   0, G_CALLBACK(_tab_pos), window);
+					   0, G_CALLBACK(_tab_pos), notebook);
 	ui_manager = gtk_ui_manager_new ();
 	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
 
 	accel_group = gtk_ui_manager_get_accel_group (ui_manager);
-	gtk_window_add_accel_group (GTK_WINDOW (window), accel_group);
+	gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
 	if (!gtk_ui_manager_add_ui_from_string (ui_manager, ui_description, 
 						-1, &error))
@@ -216,26 +194,12 @@ static gboolean _delete(GtkWidget *widget,
 	return FALSE;
 }
 
-/* You have to start somewhere */
-int main( int argc,
-          char *argv[] )
+int main(int argc, char *argv[])
 {
 	GtkWidget *window;
 	GtkWidget *menubar;
-	display_data_t display_data[PAGE_CNT+1] = {
-		{PARTITION_PAGE, "Partitions", TRUE},
-		{JOB_PAGE, "Jobs", TRUE},
-		{NODE_PAGE, "Nodes", TRUE},
-#ifdef HAVE_BG
-		{BG_PAGE, "Blocks", TRUE},
-#else
-		{BG_PAGE, "Blocks", FALSE},
-#endif
-		{ADMIN_PAGE, "Admin", TRUE},
-		{-1, NULL, FALSE}
-	};
 	int i=0;
-
+	
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
  
@@ -247,30 +211,31 @@ int main( int argc,
 	gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
 	gtk_container_set_border_width(GTK_CONTAINER(GTK_DIALOG(window)->vbox),
 				       1);
-
-	/* Create a menu */
-	menubar = _get_menubar_menu(window);
-	/* Create a new notebook, place the position of the tabs */
-	notebook = gtk_notebook_new();
-	g_signal_connect(G_OBJECT(notebook), "switch_page",
+	/* Create the main notebook, place the position of the tabs */
+	main_notebook = gtk_notebook_new();
+	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
 			 NULL);
 	
-	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), GTK_POS_TOP);
+	/* Create a menu */
+	menubar = _get_menubar_menu(window, main_notebook);
+	
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
 	
 	/* Pack it all together */
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
 			   menubar, FALSE, FALSE, 0);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(window)->vbox), 
-			 notebook, TRUE, TRUE, 0);	
+			 main_notebook, TRUE, TRUE, 0);	
 	
 	for(i=0; i<PAGE_CNT; i++) {
-		if(display_data[i].id == -1)
+		if(main_display_data[i].id == -1)
 			break;
-		else if(!display_data[i].show) 
+		else if(!main_display_data[i].show) 
 			continue;
-		_create_page(&display_data[i]);
+		create_page(GTK_NOTEBOOK(main_notebook), 
+			    &main_display_data[i]);
 	}
 	/* tell signal we are done adding */
 	adding = 0;
@@ -283,14 +248,13 @@ int main( int argc,
 	return 0;
 }
 
-extern void refresh_page(GtkRadioAction *action,
-			 GtkRadioAction *extra,
-			 GtkWidget *menu_item)
+extern void refresh_page(GtkAction *action,
+			 gpointer user_data)
 {
-	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook));
 	if(page == -1)
 		g_error("no pages in notebook for refresh\n");
-	_page_switched(GTK_NOTEBOOK(notebook), NULL, page, NULL);
+	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
 	toggled = FALSE;
 }
 

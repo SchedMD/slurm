@@ -83,7 +83,7 @@ static void _toggle_state_changed(GtkCheckMenuItem *menuitem,
 	else
 		*checked = TRUE;
 	toggled = TRUE;
-	refresh_page(NULL, NULL, NULL);
+	refresh_page(NULL, NULL);
 }
 
 extern void snprint_time(char *buf, size_t buf_size, time_t time)
@@ -189,35 +189,82 @@ extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
 
 }
 
+extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
+{
+	GtkScrolledWindow *scrolled_window = NULL;
+	GtkWidget *table = NULL;
+	GtkWidget *label;
+	int err;
+
+	table = gtk_table_new(1, 1, FALSE);
+
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);	
+
+	scrolled_window = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new(
+						      NULL, NULL));	
+	gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
+    
+	gtk_scrolled_window_set_policy(scrolled_window,
+				       GTK_POLICY_AUTOMATIC,
+				       GTK_POLICY_AUTOMATIC);
+    
+	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
+	
+	
+	label = gtk_label_new(display_data->name);
+	
+	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
+					   GTK_WIDGET(scrolled_window), 
+					   label)) == -1) {
+		g_error("Couldn't add page to notebook\n");
+	}
+	display_data->extra = err;
+	g_signal_connect(G_OBJECT(scrolled_window), "button-press-event",
+			 G_CALLBACK(right_button_pressed),
+			 display_data);
+
+}
+
 extern void right_button_pressed(GtkWidget *widget,
 				 GdkEventButton *event, 
-				 gpointer user_data)
+				 const display_data_t *display_data)
 {
-
 	if(event->button == 3) {
 		GtkMenu *menu = GTK_MENU(gtk_menu_new());
-		int *page_num = (int *)user_data;
+	
+		(display_data->set_fields)(menu);
 				
-		switch(*page_num) {
-		case 0:			
-			set_fields_part(menu);
-			break;
-		case 1:
-			set_fields_part(menu);
-			break;
-		case 2:
-			set_fields_part(menu);
-			break;
-		case 3:
-			set_fields_part(menu);
-			break;
-		default:
-			break;
-		}
-		
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
 			       (event != NULL) ? event->button : 0,
 			       gdk_event_get_time((GdkEvent*)event));
 	}
+}
+
+extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
+			   const display_data_t *display_data)
+{
+	GtkTreePath *path = NULL;
+	GtkTreeSelection *selection = NULL;
+	
+        if(!gtk_tree_view_get_path_at_pos(tree_view,
+					  (gint) event->x, 
+					  (gint) event->y,
+					  &path, NULL, NULL, NULL)) {
+		return;
+	}
+	selection = gtk_tree_view_get_selection(tree_view);
+	gtk_tree_selection_unselect_all(selection);
+	gtk_tree_selection_select_path(selection, path);
+             	
+	/* single click with the right mouse button? */
+	if(event->button == 3) {
+		right_button_pressed(NULL, event, display_data);
+//view_popup_menu(treeview, event, userdata);
+	} else if(event->type==GDK_2BUTTON_PRESS ||
+		  event->type==GDK_3BUTTON_PRESS) {
+		(display_data->row_clicked)(tree_view, path, 
+					    NULL, display_data->user_data);
+	}
+	gtk_tree_path_free(path);
 }
