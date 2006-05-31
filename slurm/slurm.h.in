@@ -381,7 +381,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t port;		/* port to contact initiating srun */
 	char *host;		/* host to contact initiating srun */
 	uint32_t dependency;	/* defer until specified job completes */
-	uint16_t overcommit;	/* over subscribe resources */
+	uint16_t overcommit;	/* over subscribe resources, for batch only */
+	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
 	uint16_t nice;		/* requested priority change, 
 				 * NICE_OFFSET == no change */
 	char *account;		/* charge to specified account */

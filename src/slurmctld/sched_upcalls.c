@@ -622,9 +622,9 @@ sched_get_job_num_tasks( sched_obj_list_t job_data,
 	static uint16_t one = 1;
 	struct job_details *det = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( type ) *type = 'u';
-	if ( det && det->req_tasks && 
-	     ( det->req_tasks != (uint16_t) NO_VAL ) ) {
-		return (void *) &det->req_tasks;
+	if ( det && det->num_tasks && 
+	     ( det->num_tasks != NO_VAL ) ) {
+		return (void *) &det->num_tasks;
 	} else {
 		return (void *) &one;
 	}
