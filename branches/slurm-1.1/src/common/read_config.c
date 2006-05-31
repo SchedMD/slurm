@@ -265,16 +265,17 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 	num = strtoul(value, &endptr, 0);
 	if ((num == 0 && errno == EINVAL)
 	    || (*endptr != '\0')) {
-		error("\"%s\" is not a valid number", value);
+		error("%s value (%s) is not a valid number", key, value);
 		return -1;
 	} else if (errno == ERANGE) {
-		error("\"%s\" is out of range", value);
+		error("%s value (%s) is out of range", key, value);
 		return -1;
 	} else if (num < 0) {
-		error("\"%s\" is less than zero", value);
+		error("value %s (%s) is less than zero", key, value);
 		return -1;
 	} else if (num > 0xffffffff) {
-		error("\"%s\" is greater than 4294967295", value);
+		error("%s value (%s) is greater than 4294967295", 
+			key, value);
 		return -1;
 	}
 
