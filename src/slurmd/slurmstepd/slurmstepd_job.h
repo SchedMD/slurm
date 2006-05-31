@@ -163,6 +163,7 @@ typedef struct slurmd_job {
 
 	uint16_t       task_flags; 
 	uint16_t       multi_prog;
+	uint16_t       overcommit;
 	env_t          *envtp;
 	uint32_t       cont_id;
 

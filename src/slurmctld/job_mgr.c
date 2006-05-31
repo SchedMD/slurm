@@ -713,6 +713,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16((uint16_t) detail_ptr->contiguous, buffer);
 	pack16((uint16_t) detail_ptr->cpus_per_task, buffer);
 	pack16((uint16_t) detail_ptr->no_requeue, buffer);
+	pack16((uint16_t) detail_ptr->overcommit, buffer);
 
 	pack32((uint32_t) detail_ptr->min_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_memory, buffer);
@@ -740,7 +741,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes, min_procs;
 	uint16_t argc = 0, req_tasks, shared, contiguous;
-	uint16_t cpus_per_task, name_len, no_requeue;
+	uint16_t cpus_per_task, name_len, no_requeue, overcommit;
 	uint32_t min_memory, min_tmp_disk, total_procs;
 	time_t begin_time, submit_time;
 	int i;
@@ -755,6 +756,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
 	safe_unpack16(&no_requeue, buffer);
+	safe_unpack16(&overcommit, buffer);
 
 	safe_unpack32(&min_procs, buffer);
 	safe_unpack32(&min_memory, buffer);
@@ -774,12 +776,17 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_array(&argv, &argc, buffer);
 
 	/* validity test as possible */
-	if ((shared > 1) || (contiguous > 1) || (no_requeue > 1)) {
-		error("Invalid data for job %u: "
-			"shared=%u contiguous=%u no_requeue=%u",
-			job_ptr->job_id, shared, contiguous, no_requeue);
+	if ((shared > 1) || (contiguous > 1)) {
+		error("Invalid data for job %u: shared=%u contiguous=%u",
+			job_ptr->job_id, shared, contiguous);
 		goto unpack_error;
 	}
+	if ((no_requeue > 1) || (overcommit > 1)) {
+		error("Invalid data for job %u: no_requeue=%u overcommit=%u",
+			no_requeue, overcommit);
+		goto unpack_error;
+	}
+
 
 
 	/* free any left-over detail data */
@@ -806,6 +813,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->min_memory = min_memory;
 	job_ptr->details->min_tmp_disk = min_tmp_disk;
 	job_ptr->details->no_requeue = no_requeue;
+	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->req_nodes = req_nodes;
@@ -1151,11 +1159,12 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
 	long kill_on_node_fail, shared, immediate, dependency;
-	long cpus_per_task, no_requeue;
+	long cpus_per_task, no_requeue, overcommit;
 	char buf[100];
 
 	if (job_specs == NULL)
 		return;
+info("over=%u nprocs=%u", job_specs->overcommit, job_specs->num_procs); 
 
 	job_id = (job_specs->job_id != NO_VAL) ? 
 			(long) job_specs->job_id : -1L;
@@ -1245,9 +1254,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		job_specs->host, job_specs->port,
 		dependency, job_specs->account);
 
-	debug3("   mail_type=%u mail_user=%s nice=%d",
+	overcommit = (job_specs->overcommit != (uint16_t) NO_VAL) ?
+			(long) job_specs->overcommit : -1L;
+	debug3("   mail_type=%u mail_user=%s nice=%d overcommit=%d",
 		job_specs->mail_type, job_specs->mail_user,
-		(int)job_specs->nice - NICE_OFFSET);
+		(int)job_specs->nice - NICE_OFFSET, overcommit);
 
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
@@ -2338,6 +2349,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
+	if (job_desc->overcommit != (uint16_t) NO_VAL)
+		detail_ptr->overcommit = job_desc->overcommit;
 	detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);	

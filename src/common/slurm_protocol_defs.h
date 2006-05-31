@@ -514,6 +514,7 @@ typedef struct batch_job_launch_msg {
 				 *   name=value pairs, one per line */
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
 	slurm_cred_t cred;
+	uint16_t overcommit;	/* if resources being over subscribed */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {

@@ -61,6 +61,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->min_procs   = NO_VAL;
 	job_desc_msg->min_memory  = NO_VAL;
 	job_desc_msg->min_tmp_disk= NO_VAL;
+	job_desc_msg->overcommit  = (uint16_t) NO_VAL;
 	job_desc_msg->partition   = NULL;
 	job_desc_msg->priority    = NO_VAL;
 	job_desc_msg->req_nodes   = NULL;
