@@ -475,6 +475,8 @@ job_desc_msg_create_from_opts (char *script)
 		j->overcommit	= opt.overcommit;
 	} else
 		j->num_procs    = opt.nprocs * opt.cpus_per_task;
+	if (opt.nprocs_set)
+		j->num_tasks    = opt.nprocs;
 
 	if (opt.cpus_set)
 		j->cpus_per_task = opt.cpus_per_task;
@@ -493,17 +495,11 @@ job_desc_msg_create_from_opts (char *script)
 		j->host = NULL;
 
 	if (script) {
-		char *buf = NULL;
 		/*
 		 * If script is set then we are building a request for
 		 *  a batch job
 		 */
 		xassert (opt.batch);
-
-		if (opt.nprocs_set) {
-			xstrfmtcat(buf, "SLURM_NPROCS=%d", opt.nprocs);
-			putenv(buf);
-		}
 
 		j->environment = environ;
 		j->env_size = envcount (environ);
