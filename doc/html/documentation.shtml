@@ -22,6 +22,9 @@
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
 <li><a href="configurator.html">Configuration Tool</a></li>
+<li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
+<li><a href="http://docs.hp.com/en/7446/xc_user_gd/ch05.html">Submitting 
+Jobs throuh LSF</a></li>
 </ul>
 
 <h2>SLURM Developers</h2>
@@ -36,10 +39,9 @@
 <li><a href="selectplugins.shtml">Node Selection Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.shtml">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.shtml">Switch (Interconnect) Plugin Programmer Guide</a></li>
-<li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 May 2006</p>
+<p style="text-align:center;">Last modified 31 May 2006</p>
 
 <!--#include virtual="footer.txt"-->
