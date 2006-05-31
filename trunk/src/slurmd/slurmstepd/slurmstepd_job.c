@@ -349,6 +349,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
 	job->batch   = true;
+	job->overcommit = (bool) msg->overcommit;
 
 	job->uid     = (uid_t) msg->uid;
 	job->gid     = (gid_t) msg->gid;

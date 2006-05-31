@@ -313,6 +313,7 @@ static void _launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->nprocs = job_ptr->details->req_tasks;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 
 	if (make_batch_job_cred(launch_msg_ptr)) {
 		error("aborting batch job %u", job_ptr->job_id);

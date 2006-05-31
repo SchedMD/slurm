@@ -470,9 +470,10 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.tmpdisk > -1)
 		j->min_tmp_disk = opt.tmpdisk;
 
-	if (opt.overcommit)
+	if (opt.overcommit) { 
 		j->num_procs    = opt.min_nodes;
-	else
+		j->overcommit	= opt.overcommit;
+	} else
 		j->num_procs    = opt.nprocs * opt.cpus_per_task;
 
 	if (opt.cpus_set)
@@ -499,8 +500,6 @@ job_desc_msg_create_from_opts (char *script)
 		 */
 		xassert (opt.batch);
 
-		if (opt.overcommit)
-			putenv("SLURM_OVERCOMMIT=1");
 		if (opt.nprocs_set) {
 			xstrfmtcat(buf, "SLURM_NPROCS=%d", opt.nprocs);
 			putenv(buf);

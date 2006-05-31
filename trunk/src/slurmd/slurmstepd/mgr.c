@@ -269,6 +269,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	}
 	
 	job->envtp->nprocs = msg->nprocs;
+	job->envtp->overcommit = msg->overcommit;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
 	job->envtp->nhosts = hostlist_count(hl);
 	hostlist_destroy(hl);
