@@ -32,7 +32,9 @@
 #  include "config.h"
 #endif
 
-typedef struct job_options * job_options_t;
+#include "src/common/pack.h"
+
+typedef struct job_options * job_options_t;	/* opaque data type */
 
 struct job_option_info {
 	int type;
