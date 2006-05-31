@@ -1512,6 +1512,7 @@ void set_options(const int argc, char **argv, int first)
 			if (spank_process_option (opt_char, optarg) < 0) {
 				exit (1);
 			}
+		}
 	}
 
 	if (!first) {
