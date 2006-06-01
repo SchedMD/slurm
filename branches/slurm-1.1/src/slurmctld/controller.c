@@ -937,7 +937,7 @@ static void _parse_commandline(int argc, char *argv[])
 	int c = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hL:rv")) != -1)
+	while ((c = getopt(argc, argv, "cdDf:hL:rvV")) != -1)
 		switch (c) {
 		case 'c':
 			recover = 0;
@@ -965,6 +965,10 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'v':
 			debug_level++;
+			break;
+		case 'V':
+			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			exit(0);
 			break;
 		default:
 			_usage(argv[0]);
