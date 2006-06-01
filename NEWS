@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     to that time.
  -- Fix bug in PMI support that prevented use of second PMI_Barrier call.
     This fix is needed for MVAPICH2 use.
+ -- Add "-V" options to slurmctld and slurmd to print version number and exit.
 
 * Changes in SLURM 1.1.0
 ========================
