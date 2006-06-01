@@ -220,16 +220,20 @@ int _parse_line(char *f[], void **data)
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
 		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]) * 1024;
-		(*step)->sacct.max_vsize_task = atoi(f[F_MAX_VSIZE_TASK]);
+		(*step)->sacct.max_vsize_id.nodeid = atoi(f[F_MAX_VSIZE_NODE]);
+		(*step)->sacct.max_vsize_id.taskid = atoi(f[F_MAX_VSIZE_TASK]);
 		(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]) * 1024;
 		(*step)->sacct.max_rss = atoi(f[F_MAX_RSS]) * 1024;
-		(*step)->sacct.max_rss_task = atoi(f[F_MAX_RSS_TASK]);
+		(*step)->sacct.max_rss_id.nodeid = atoi(f[F_MAX_RSS_NODE]);
+		(*step)->sacct.max_rss_id.taskid = atoi(f[F_MAX_RSS_TASK]);
 		(*step)->sacct.ave_rss = atof(f[F_AVE_RSS]) * 1024;
 		(*step)->sacct.max_pages = atoi(f[F_MAX_PAGES]);
-		(*step)->sacct.max_pages_task = atoi(f[F_MAX_PAGES_TASK]);
+		(*step)->sacct.max_pages_id.nodeid = atoi(f[F_MAX_PAGES_NODE]);
+		(*step)->sacct.max_pages_id.taskid = atoi(f[F_MAX_PAGES_TASK]);
 		(*step)->sacct.ave_pages = atof(f[F_AVE_PAGES]);
 		(*step)->sacct.min_cpu = atof(f[F_MIN_CPU]);
-		(*step)->sacct.min_cpu_task = atoi(f[F_MIN_CPU_TASK]);
+		(*step)->sacct.min_cpu_id.nodeid = atoi(f[F_MIN_CPU_NODE]);
+		(*step)->sacct.min_cpu_id.taskid = atoi(f[F_MIN_CPU_TASK]);
 		(*step)->sacct.ave_cpu = atof(f[F_AVE_CPU]);
 		(*step)->stepname = xstrdup(f[F_STEPNAME]);
 		(*step)->nodes = xstrdup(f[F_STEPNODES]);
@@ -342,7 +346,7 @@ void process_step(char *f[], int lc, int show_full)
 		job->header.timestamp = step->header.timestamp;
 	job->job_step_seen = 1;
 	job->ntasks += step->ntasks;
-	if(!job->nodes || !strcmp(job->nodes, "(unknown)")) {
+	if(!job->nodes || !strcmp(job->nodes, "unknown")) {
 		xfree(job->nodes);
 		job->nodes = xstrdup(step->nodes);
 	}
@@ -482,26 +486,26 @@ void aggregate_sacct(sacct_t *dest, sacct_t *from)
 {
 	if(dest->max_vsize < from->max_vsize) {
 		dest->max_vsize = from->max_vsize;
-		dest->max_vsize_task = from->max_vsize_task;
+		dest->max_vsize_id = from->max_vsize_id;
 	}
 	dest->ave_vsize += from->ave_vsize;
 	
 	if(dest->max_rss < from->max_rss) {
 		dest->max_rss = from->max_rss;
-		dest->max_rss_task = from->max_rss_task;
+		dest->max_rss_id = from->max_rss_id;
 	}
 	dest->ave_rss += from->ave_rss;
 	
 	if(dest->max_pages < from->max_pages) {
 		dest->max_pages = from->max_pages;
-		dest->max_pages_task = from->max_pages_task;
+		dest->max_pages_id = from->max_pages_id;
 	}
 	dest->ave_pages += from->ave_pages;
 	
 	if((dest->min_cpu > from->min_cpu) 
 	   || (dest->min_cpu == (float)NO_VAL)) {
 		dest->min_cpu = from->min_cpu;
-		dest->min_cpu_task = from->min_cpu_task;
+		dest->min_cpu_id = from->min_cpu_id;
 	}
 	dest->ave_cpu += from->ave_cpu;
 }

@@ -1014,7 +1014,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
-	jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	jobacct = jobacct_g_alloc(NULL);
 	jobacct_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
 	
 	/*
@@ -1064,7 +1064,7 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		return SLURM_ERROR;
 	}
 	
-	jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	jobacct = jobacct_g_alloc(NULL);
 	debug3("num tasks = %d", job->ntasks);
 	
 	for (i = 0; i < job->ntasks; i++) {

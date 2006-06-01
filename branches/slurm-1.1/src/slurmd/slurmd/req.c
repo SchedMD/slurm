@@ -169,6 +169,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_timelimit_msg(msg->data);
 		break; 
 	case REQUEST_REATTACH_TASKS:
+		debug2("Processing RPC: REQUEST_REATTACH_TASKS");
 		_rpc_reattach_tasks(msg, cli);
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
@@ -1159,6 +1160,8 @@ _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
 	int fd;
 	uid_t req_uid;
 	uid_t job_uid;
+	char addrbuf[INET_ADDRSTRLEN];
+
 	
 	debug3("Entering _rpc_stat_jobacct");
 	/* step completion messages are only allowed from other slurmstepd,
@@ -1200,7 +1203,12 @@ _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
 	} 
 	close(fd);
 	debug("job %u.%u found", resp->job_id, resp->step_id);
-	resp_msg.address      = msg->address;
+	slurm_print_slurm_addr(&msg->address, addrbuf, INET_ADDRSTRLEN);
+	info("job using this addr %s",addrbuf);
+	slurm_print_slurm_addr(cli_addr, addrbuf, INET_ADDRSTRLEN);
+	info("job using this addr %s",addrbuf);
+	memcpy(&resp_msg.address, &msg->orig_addr, sizeof(slurm_addr));
+	//resp_msg.address = msg->address;
 	resp_msg.msg_type     = MESSAGE_STAT_JOBACCT;
 	resp_msg.data         = resp;
 	resp_msg.forward = msg->forward;
@@ -1398,7 +1406,7 @@ static void
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
 	reattach_tasks_request_msg_t  *req = msg->data;
-	reattach_tasks_response_msg_t *resp = NULL;
+	reattach_tasks_response_msg_t resp;
 	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
@@ -1409,8 +1417,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	int               fd;
 	uid_t             req_uid;
 	slurmstepd_info_t *step = NULL;
-
-	resp = xmalloc(sizeof(reattach_tasks_response_msg_t));
+	
 	memset(&resp_msg, 0, sizeof(slurm_msg_t));
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
@@ -1436,7 +1443,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done3;
 	}
 
-	memset(resp, 0, sizeof(reattach_tasks_response_msg_t));
+	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 
 	/* 
@@ -1444,7 +1451,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
-
+	
 	/* 
 	 * Set IO address by io_port and client address
 	 */
@@ -1458,10 +1465,10 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
 	xassert(len == SLURM_CRED_SIGLEN);
 
-	resp->gtids = NULL;
-	resp->local_pids = NULL;
+	resp.gtids = NULL;
+	resp.local_pids = NULL;
 	/* Following call fills in gtids and local_pids when successful */
-	rc = stepd_attach(fd, &ioaddr, &resp_msg.address, job_cred_sig, resp);
+	rc = stepd_attach(fd, &ioaddr, &resp_msg.address, job_cred_sig, &resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done3;
@@ -1473,16 +1480,15 @@ done2:
 	close(fd);
 done:
 	debug2("update step addrs rc = %d", rc);
-	resp_msg.data         = resp;
+	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
 	resp_msg.forward      = msg->forward;
 	resp_msg.ret_list     = msg->ret_list;
-	resp->node_name       = xstrdup(conf->node_name);
-	resp->srun_node_id    = req->srun_node_id;
-	resp->return_code     = rc;
+	resp.node_name       = conf->node_name;
+	resp.srun_node_id    = req->srun_node_id;
+	resp.return_code     = rc;
 
-	slurm_send_only_node_msg(&resp_msg);
-	slurm_free_reattach_tasks_response_msg(resp);
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
 static uid_t 

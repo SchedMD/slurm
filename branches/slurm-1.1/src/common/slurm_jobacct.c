@@ -61,8 +61,9 @@ extern FILE * JOBACCT_LOGFILE;
  * at the end of the structure.
  */
 typedef struct slurm_jobacct_ops {
-	int (*jobacct_init_struct)    (jobacctinfo_t *jobacct, uint16_t tid);
-	jobacctinfo_t *(*jobacct_alloc)(uint16_t tid);
+	int (*jobacct_init_struct)    (jobacctinfo_t *jobacct, 
+				       jobacct_id_t *jobacct_id);
+	jobacctinfo_t *(*jobacct_alloc)(jobacct_id_t *jobacct_id);
 	void (*jobacct_free)          (jobacctinfo_t *jobacct);
 	int (*jobacct_setinfo)        (jobacctinfo_t *jobacct, 
 				       enum jobacct_data_type type, 
@@ -85,7 +86,7 @@ typedef struct slurm_jobacct_ops {
 	int (*jobacct_suspend)        (struct job_record *job_ptr);
 	int (*jobacct_startpoll)      (int frequency);
 	int (*jobacct_endpoll)	      ();
-	int (*jobacct_add_task)       (pid_t pid, uint16_t tid);
+	int (*jobacct_add_task)       (pid_t pid, jobacct_id_t *jobacct_id);
 	jobacctinfo_t *(*jobacct_stat_task)(pid_t pid);
 	jobacctinfo_t *(*jobacct_remove_task)(pid_t pid);
 	void (*jobacct_suspendpoll)   ();
@@ -278,7 +279,8 @@ static int _slurm_jobacct_fini(void)
 	return rc;
 }
 
-extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid)
+extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 
+				 jobacct_id_t *jobacct_id)
 {
 	int retval = SLURM_SUCCESS;
 	
@@ -288,12 +290,12 @@ extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid)
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
 		retval = (*(g_jobacct_context->ops.jobacct_init_struct))
-			(jobacct, tid);
+			(jobacct, jobacct_id);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }
 
-extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid)
+extern jobacctinfo_t *jobacct_g_alloc(jobacct_id_t *jobacct_id)
 {
 	jobacctinfo_t *jobacct = NULL;
 
@@ -302,7 +304,8 @@ extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid)
 	
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
-		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))(tid);
+		jobacct = (*(g_jobacct_context->ops.jobacct_alloc))
+			(jobacct_id);
 	
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return jobacct;
@@ -534,7 +537,7 @@ extern int jobacct_g_endpoll()
 	return retval;
 }
 
-extern int jobacct_g_add_task(pid_t pid, uint16_t tid)
+extern int jobacct_g_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	int retval = SLURM_SUCCESS;
 	if (_slurm_jobacct_init() < 0)
@@ -543,7 +546,7 @@ extern int jobacct_g_add_task(pid_t pid, uint16_t tid)
 	slurm_mutex_lock( &g_jobacct_context_lock );
 	if ( g_jobacct_context )
 		retval = (*(g_jobacct_context->ops.jobacct_add_task))
-			(pid, tid);
+			(pid, jobacct_id);
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
 }

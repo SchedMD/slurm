@@ -40,9 +40,9 @@ extern int common_endpoll()
        
 	return SLURM_SUCCESS;
 }
-extern int common_add_task(pid_t pid, uint16_t tid)
+extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	struct jobacctinfo *jobacct = common_alloc_jobacct(tid);
+	struct jobacctinfo *jobacct = common_alloc_jobacct(jobacct_id);
 	
 	slurm_mutex_lock(&jobacct_lock);
 	if(pid <= 0) {
@@ -55,7 +55,8 @@ extern int common_add_task(pid_t pid, uint16_t tid)
 
 	jobacct->pid = pid;
 	jobacct->min_cpu = 0;
-	debug2("adding task %u pid %d to jobacct", tid, pid);
+	debug2("adding task %u pid %d on node %uto jobacct", 
+	       jobacct_id->taskid, pid, jobacct_id->nodeid);
 	list_push(task_list, jobacct);
 	slurm_mutex_unlock(&jobacct_lock);
 
@@ -112,8 +113,8 @@ extern struct jobacctinfo *common_remove_task(pid_t pid)
 	}
 	list_iterator_destroy(itr);
 	if(jobacct) {
-		debug2("removing task %u pid %d to jobacct", 
-		       jobacct->max_vsize_task, jobacct->pid);
+		debug2("removing task %u pid %d from jobacct", 
+		       jobacct->max_vsize_id.taskid, jobacct->pid);
 		ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
 		memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
 		common_free_jobacct(jobacct);

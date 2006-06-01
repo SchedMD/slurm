@@ -348,6 +348,7 @@ _service_connection(void *arg)
 	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
+	
 	debug3("in the service_connection");
 	msg->conn_fd = con->fd;
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
@@ -359,7 +360,7 @@ _service_connection(void *arg)
 		error("service_connection: slurm_receive_msg: %m");
 		goto cleanup;
 	}
-	
+
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */

@@ -101,12 +101,13 @@ extern int fini ( void )
 /*
  * The following routines are called by slurmd
  */
-int jobacct_p_init_struct(struct jobacctinfo *jobacct, uint16_t tid)
+int jobacct_p_init_struct(struct jobacctinfo *jobacct, 
+			  jobacct_id_t *jobacct_id)
 {
 	return SLURM_SUCCESS;
 }
 
-struct jobacctinfo *jobacct_p_alloc()
+struct jobacctinfo *jobacct_p_alloc(jobacct_id_t *jobacct_id)
 {
 	return NULL;
 }
@@ -198,7 +199,7 @@ int jobacct_p_endpoll()
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_add_task(pid_t pid, uint16_t tid)
+int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	return SLURM_SUCCESS;
 }
