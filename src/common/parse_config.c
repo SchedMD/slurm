@@ -449,17 +449,18 @@ static int _handle_uint16(s_p_values_t *v,
 			    || strcasecmp(value, "INFINITE") == 0) {
 				num = (uint16_t)-1;
 			} else {
-				error("\"%s\" is not a valid number", value);
+				error("%s value \"%s\" is not a valid number", 
+					v->key, value);
 				return -1;
 			}
 		} else if (errno == ERANGE) {
-			error("\"%s\" is out of range", value);
+			error("%s value (%s) is out of range", v->key, value);
 			return -1;
 		} else if (num < 0) {
-			error("\"%s\" is less than zero", value);
+			error("%s value (%s) is less than zero", v->key, value);
 			return -1;
 		} else if (num > 0xffff) {
-			error("\"%s\" is greater than 65535", value);
+			error("%s value (%s) is greater than 65535", v->key, value);
 			return -1;
 		}
 		v->data = xmalloc(sizeof(uint16_t));
@@ -496,17 +497,19 @@ static int _handle_uint32(s_p_values_t *v,
 			    || strcasecmp(value, "INFINITE") == 0) {
 				num = (uint32_t)-1;
 			} else {
-				error("\"%s\" is not a valid number", value);
+				error("%s value (%s) is not a valid number", 
+					v->key, value);
 				return -1;
 			}
 		} else if (errno == ERANGE) {
-			error("\"%s\" is out of range", value);
+			error("%s value (%s) is out of range", v->key, value);
 			return -1;
 		} else if (num < 0) {
-			error("\"%s\" is less than zero", value);
+			error("%s value (%s) is less than zero", v->key, value);
 			return -1;
 		} else if (num > 0xffffffff) {
-			error("\"%s\" is greater than 4294967295", value);
+			error("%s value (%s) is greater than 4294967295", 
+				v->key, value);
 			return -1;
 		}
 		v->data = xmalloc(sizeof(uint32_t));

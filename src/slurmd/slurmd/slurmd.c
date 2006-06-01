@@ -67,7 +67,7 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 
-#define GETOPT_ARGS	"L:Dvhcf:MN:"
+#define GETOPT_ARGS	"L:Dvhcf:MN:V"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -728,6 +728,10 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'N':
 			conf->node_name = xstrdup(optarg);
+			break;
+		case 'V':
+			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			exit(0);
 			break;
 		default:
 			_usage(c);
