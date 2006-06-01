@@ -781,8 +781,9 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		       msg->forward_struct->buf_len);
 		
 		msg->forward_struct->ret_list = ret_list;
-
-		msg->forward_struct->timeout = timeout-header.forward.timeout;
+		/* convert back to milliseconds */ 
+		msg->forward_struct->timeout = 
+			(timeout - header.forward.timeout)/1000;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		debug3("forwarding messages to %d nodes!!!!", 
@@ -1334,8 +1335,8 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		err = errno;
 			
 	if(err == SLURM_SUCCESS) {
-		if ((timeout*=1000) == 0)
-			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+		if (!timeout)
+			timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;
 		
 		if(req->forward.cnt>0) {
 			steps = req->forward.cnt/slurm_get_tree_width();
@@ -1629,8 +1630,8 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 	}
 
 	if(slurm_add_header_and_send(fd, msg) >= 0) {
-		if ((timeout*=1000) == 0)
-			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+		if (!timeout)
+			timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;
 		
 		if(msg->forward.cnt>0) {
 			steps = msg->forward.cnt/slurm_get_tree_width();

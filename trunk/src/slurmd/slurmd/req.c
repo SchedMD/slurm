@@ -307,6 +307,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	       rank, conf->node_name,
 	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
+
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
 	safe_write(fd, &parent_rank, sizeof(int));

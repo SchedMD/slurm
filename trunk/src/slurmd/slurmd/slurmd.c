@@ -367,7 +367,7 @@ _service_connection(void *arg)
 	debug2("got this type of message %d with %d other responses",
 	     msg->msg_type, list_count(ret_list));
 	msg->ret_list = ret_list;
-	slurmd_req(msg, con->cli_addr);
+	slurmd_req(msg, &msg->orig_addr);
 	
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
