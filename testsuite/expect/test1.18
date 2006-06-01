@@ -53,7 +53,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-spawn $srun -N1 -v -t5 $file_prog
+spawn $srun -N1-4 -v -t5 $file_prog
 set init_id $spawn_id
 expect {
         -i $init_id

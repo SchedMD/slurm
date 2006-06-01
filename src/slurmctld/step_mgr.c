@@ -79,7 +79,7 @@ create_step_record (struct job_record *job_ptr)
 	step_ptr->job_ptr = job_ptr; 
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time ( NULL ) ;
-	step_ptr->jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	step_ptr->jobacct = jobacct_g_alloc(NULL);
 	
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
