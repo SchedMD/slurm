@@ -34,8 +34,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "src/srun/fname.h"
-#include "src/srun/srun_job.h"
+#include "src/slaunch/fname.h"
+#include "src/slaunch/srun_job.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

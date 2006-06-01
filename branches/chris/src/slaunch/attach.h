@@ -29,7 +29,7 @@
 #define VOLATILE
 #endif
 #endif
-#include "src/srun/srun_job.h"
+#include "src/slaunch/srun_job.h"
 /*****************************************************************************
 *                                DEBUGGING SUPPORT                           *
 *****************************************************************************/

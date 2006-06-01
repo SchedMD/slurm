@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/srun/msg.h - message traffic between srun and slurmd routines
+ * src/slaunch/msg.h - message traffic between srun and slurmd routines
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -25,7 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include "src/srun/srun_job.h"
+#include "src/slaunch/srun_job.h"
 
 #ifndef _HAVE_MSG_H
 #define _HAVE_MSG_H

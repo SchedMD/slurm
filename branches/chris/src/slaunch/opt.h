@@ -37,7 +37,7 @@
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */
-#include "src/srun/core-format.h"
+#include "src/slaunch/core-format.h"
 #include "src/common/env.h"
 //#include "src/common/mpi.h"
 
@@ -55,9 +55,6 @@ enum modes {
 	MODE_UNKNOWN	= 0,
 	MODE_NORMAL	= 1,
 	MODE_IMMEDIATE	= 2,
-	MODE_ATTACH	= 3,
-	MODE_ALLOCATE	= 4,
-	MODE_BATCH	= 5
 };
 
 enum modes mode;
@@ -132,10 +129,7 @@ typedef struct srun_options {
 	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
-	bool allocate;		/* --allocate, 	   -A		*/
-	bool noshell;		/* --noshell                    */
 	bool overcommit;	/* --overcommit,   -O		*/
-	bool batch;		/* --batch,   -b		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	bool no_requeue;	/* --no-requeue			*/
@@ -146,7 +140,6 @@ typedef struct srun_options {
 	int  quiet;
 	bool parallel_debug;	/* srun controlled by debugger	*/
 	bool debugger_test;	/* --debugger-test		*/
-	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/

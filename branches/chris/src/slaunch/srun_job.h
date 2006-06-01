@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/srun/srun_job.h - specification of an srun "job"
+ *  src/slaunch/srun_job.h - specification of an srun "job"
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -43,8 +43,8 @@
 #include "src/common/dist_tasks.h"
 #include "src/api/step_client_io.h"
 
-#include "src/srun/signals.h"
-#include "src/srun/fname.h"
+#include "src/slaunch/signals.h"
+#include "src/slaunch/fname.h"
 
 typedef enum { 
 	PIPE_NONE = 0, 

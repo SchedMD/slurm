@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/srun/srun.h - header for external functions in srun.c
+ *  src/srun/slaunch.h - header for external functions in slaunch.c
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -24,16 +24,16 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SRUN_H
-#define _HAVE_SRUN_H
+#ifndef _HAVE_SLAUNCH_H
+#define _HAVE_SLAUNCH_H
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
 #include "src/api/step_client_io.h"
-#include "src/srun/srun_job.h"
+#include "src/slaunch/srun_job.h"
 
-void srun_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds);
+void slaunch_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds);
 
-#endif /* !_HAVE_SRUN_H */
+#endif /* !_HAVE_SLAUNCH_H */

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/srun/fname.c - IO filename type implementation (srun specific)
+ * fname.c - IO filename type implementation (srun specific)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,7 +31,7 @@
 # include "config.h"
 #endif 
 
-#include "src/srun/opt.h"
+#include "src/slaunch/opt.h"
 
 typedef struct io_filename {
 	char      *name;

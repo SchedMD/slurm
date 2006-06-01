@@ -46,7 +46,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/global_srun.h"
 
-#include "src/srun/srun_job.h"
+#include "src/slaunch/srun_job.h"
 
 #define MAX_RETRIES 3
 

@@ -57,14 +57,13 @@
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
 
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
-#include "src/srun/msg.h"
-#include "src/srun/pmi.h"
-#include "src/srun/sigstr.h"
-#include "src/srun/attach.h"
-#include "src/srun/allocate.h"
-#include "src/srun/multi_prog.h"
+#include "src/slaunch/srun_job.h"
+#include "src/slaunch/opt.h"
+#include "src/slaunch/msg.h"
+#include "src/slaunch/pmi.h"
+#include "src/slaunch/sigstr.h"
+#include "src/slaunch/attach.h"
+#include "src/slaunch/multi_prog.h"
 
 #include "src/common/xstring.h"
 
@@ -1209,8 +1208,6 @@ msg_thr_create(srun_job_t *job)
 	job->forked_msg->par_msg = xmalloc(sizeof(forked_msg_pipe_t));
 	job->forked_msg->msg_par = xmalloc(sizeof(forked_msg_pipe_t));
 	
-	set_allocate_job(job);
-
 	for (i = 0; i < job->njfds; i++) {
 		if ((job->jfd[i] = slurm_init_msg_engine_port(0)) < 0)
 			fatal("init_msg_engine_port: %m");

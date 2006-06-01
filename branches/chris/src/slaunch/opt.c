@@ -69,8 +69,8 @@
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
 
-#include "src/srun/opt.h"
-#include "src/srun/attach.h"
+#include "src/slaunch/opt.h"
+#include "src/slaunch/attach.h"
 #include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
@@ -105,10 +105,8 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
-#define LONG_OPT_NOSHELL     0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
-#define LONG_OPT_TEST_ONLY   0x113
 #define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
 #define LONG_OPT_PROPAGATE   0x116
@@ -188,6 +186,7 @@ int initialize_and_process_args(int argc, char *argv[])
 {
 	if (spank_init (NULL) < 0)
 		return (-1);
+
 	/* initialize option defaults */
 	_opt_default();
 
@@ -199,6 +198,9 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	if (_verbose > 3)
 		_opt_list();
+	info("opt.no_alloc = %x", opt.no_alloc);
+	info("intialize_and_process no_alloc is %s", opt.no_alloc ? "TRUE" : "FALSE");
+	info ("initialize_and_process opt = %x", opt);
 
 	return 1;
 
@@ -709,7 +711,6 @@ static void _opt_default()
 	opt.labelio = false;
 	opt.unbuffered = false;
 	opt.overcommit = false;
-	opt.batch = false;
 	opt.share = false;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
@@ -717,15 +718,12 @@ static void _opt_default()
 	opt.immediate	= false;
 	opt.no_requeue	= false;
 
-	opt.allocate	= false;
-	opt.noshell	= false;
 	opt.attach	= NULL;
 	opt.join	= false;
 	opt.max_wait	= slurm_get_wait_time();
 
 	opt.quit_on_intr = false;
 	opt.disable_status = false;
-	opt.test_only   = false;
 
 	opt.quiet = 0;
 	_verbose = 0;
@@ -776,6 +774,8 @@ static void _opt_default()
 		opt.msg_timeout     = 15;
 	}
 
+	opt.no_alloc = false;
+	info("_opt_default no_alloc is %s", opt.no_alloc ? "TRUE" : "FALSE");
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -808,7 +808,7 @@ env_vars_t env_vars[] = {
   {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
   {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
-  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
+  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         &opt.jobid_set },
   {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
   {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
@@ -980,9 +980,6 @@ void set_options(const int argc, char **argv, int first)
 	static bool set_cwd=false, set_name=false;
 	struct utsname name;
 	static struct option long_options[] = {
-		{"attach",        required_argument, 0, 'a'},
-		{"allocate",      no_argument,       0, 'A'},
-		{"batch",         no_argument,       0, 'b'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
@@ -1028,7 +1025,6 @@ void set_options(const int argc, char **argv, int first)
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
-		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -1040,7 +1036,6 @@ void set_options(const int argc, char **argv, int first)
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
@@ -1056,7 +1051,7 @@ void set_options(const int argc, char **argv, int first)
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
+	char *opt_string = "+c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1083,48 +1078,6 @@ void set_options(const int argc, char **argv, int first)
 					"information\n");
 				exit(1);
 			} 
-			break;
-		case (int)'a':
-			if(first) {
-				if (opt.allocate || opt.batch) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_ATTACH;
-				opt.attach = strdup(optarg);
-			} else {
-				error("Option '%c' can only be set "
-				      "from srun commandline.", opt_char);
-			}
-			break;
-		case (int)'A':
-			if(first) {
-				if (opt.attach || opt.batch) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_ALLOCATE;
-				opt.allocate = true;
-			} else {
-				error("Option '%c' can only be set "
-				      "from srun commandline.", opt_char);
-			}
-			break;
-		case (int)'b':
-			if(first) {
-				if (opt.allocate || opt.attach) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_BATCH;
-				opt.batch = true;
-			} else {
-				error("Option '%c' can only be set "
-				      "from srun commandline.", opt_char);
-			}
 			break;
 		case (int)'c':
 			if(!first && opt.cpus_set)
@@ -1389,9 +1342,6 @@ void set_options(const int argc, char **argv, int first)
 				      optarg);
 			}
 			break;
-		case LONG_OPT_NOSHELL:
-			opt.noshell = true;
-			break;
 		case LONG_OPT_TMP:
 			opt.tmpdisk = _to_bytes(optarg);
 			if (opt.tmpdisk < 0) {
@@ -1443,9 +1393,6 @@ void set_options(const int argc, char **argv, int first)
 			exit(0);
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = _verify_conn_type(optarg);
-			break;
-		case LONG_OPT_TEST_ONLY:
-			opt.test_only = true;
 			break;
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
@@ -1605,7 +1552,7 @@ static void _opt_args(int argc, char **argv)
 	else if (remote_argc > 0) {
 		char *fullpath;
 		char *cmd       = remote_argv[0];
-		bool search_cwd = (opt.batch || opt.allocate);
+		bool search_cwd = false; /* was: (opt.batch || opt.allocate); */
 		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
 		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
@@ -1667,23 +1614,9 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (remote_argc > 0))
 		opt.job_name = _base_name(remote_argv[0]);
 
-	if (mode == MODE_ATTACH) {	/* attach to a running job */
-		if (opt.nodes_set || opt.cpus_set || opt.nprocs_set) {
-			error("do not specific a node allocation "
-			      "with --attach (-a)");
-			verified = false;
-		}
+	{ /* FIXME - was: mode != MODE_ATTACH */
 
-		/* if (constraints_given()) {
-		 *	error("do not specify any constraints with "
-		 *	      "--attach (-a)");
-		 *	verified = false;
-		 *}
-		 */
-
-	} else { /* mode != MODE_ATTACH */
-
-		if ((remote_argc == 0) && (mode != MODE_ALLOCATE)) {
+		if (remote_argc == 0) {
 			error("must supply remote command");
 			verified = false;
 		}
@@ -1769,11 +1702,6 @@ static bool _opt_verify(void)
 
         if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 	        opt.gid = opt.egid;
-
-	if (opt.noshell && !opt.allocate) {
-		error ("--no-shell only valid with -A (--allocate)");
-		verified = false;
-	}
 
 	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
 		error( "--propagate=%s is not valid.", opt.propagate );
@@ -1998,10 +1926,7 @@ static void _opt_list()
 	info("no-requeue     : %s", tf_(opt.no_requeue));
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));
-	info("allocate       : %s", tf_(opt.allocate));
-	info("attach         : `%s'", opt.attach);
 	info("overcommit     : %s", tf_(opt.overcommit));
-	info("batch          : %s", tf_(opt.batch));
 	info("threads        : %d", opt.max_threads);
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");

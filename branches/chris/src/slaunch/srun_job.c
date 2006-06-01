@@ -51,11 +51,11 @@
 #include "src/common/io_hdr.h"
 #include "src/common/global_srun.h"
 
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
-#include "src/srun/fname.h"
-#include "src/srun/attach.h"
-#include "src/srun/msg.h"
+#include "src/slaunch/srun_job.h"
+#include "src/slaunch/opt.h"
+#include "src/slaunch/fname.h"
+#include "src/slaunch/attach.h"
+#include "src/slaunch/msg.h"
 
 
 /*
