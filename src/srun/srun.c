@@ -69,6 +69,7 @@
 #include "src/common/net.h"
 #include "src/common/mpi.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/plugstack.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
@@ -130,6 +131,16 @@ int srun(int ac, char **av)
 	env->env = NULL;
 	
 	log_init(xbasename(av[0]), logopt, 0, NULL);
+
+	/* Initialize plugin stack, read options from plugins, etc.
+	 */
+	if (spank_init(NULL) < 0)
+		fatal("Plug-in initialization failed");
+
+	/* Be sure to call spank_fini when srun exits.
+	 */
+	if (atexit((void (*) (void)) spank_fini) < 0)
+		error("Failed to register atexit handler for plugins: %m");
 		
 	/* set default options, process commandline arguments, and
 	 * verify some basic values
