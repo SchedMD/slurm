@@ -32,7 +32,7 @@
 #endif
 
 #include "src/api/step_client_io.h"
-#include "src/slaunch/srun_job.h"
+#include "src/common/global_srun.h"
 
 void slaunch_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds);
 

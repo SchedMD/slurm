@@ -31,8 +31,7 @@
 # include "config.h"
 #endif 
 
-#include "src/srun/opt.h"
-#include "src/srun/srun_job.h"
+#include "src/common/global_srun.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_mpi_context *slurm_mpi_context_t;

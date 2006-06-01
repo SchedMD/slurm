@@ -10,7 +10,7 @@ bin_PROGRAMS = slaunch
 slaunch_SOURCES = \
 	slaunch.c slaunch.h \
 	opt.c opt.h \
-	srun_job.c srun_job.h \
+	srun_job.c  \
 	msg.c msg.h \
 	pmi.c pmi.h \
 	signals.c signals.h \

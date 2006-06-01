@@ -24,8 +24,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_LAUNCH_H
-#define _HAVE_LAUNCH_H
+#ifndef _HAVE_SLAUNCH_LAUNCH_H
+#define _HAVE_SLAUNCH_LAUNCH_H
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -38,8 +38,8 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 
-#include "src/srun/opt.h"
-#include "src/srun/srun_job.h"
+#include "src/slaunch/opt.h"
+#include "src/common/global_srun.h"
 
 typedef struct launch_thr {
 	pthread_t	thread;
@@ -53,4 +53,4 @@ typedef struct launch_thr {
 int    launch_thr_create(srun_job_t *job);
 void * launch(void *arg);
 
-#endif /* !_HAVE_LAUNCH_H */
+#endif /* !_HAVE_SLAUNCH_LAUNCH_H */

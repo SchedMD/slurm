@@ -39,6 +39,7 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/srun/core-format.h"
 #include "src/common/env.h"
+#include "src/srun/fname.h"
 //#include "src/common/mpi.h"
 
 #define MAX_THREADS	64
@@ -66,13 +67,6 @@ enum modes mode;
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
-
-enum io_t {
-	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
-	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
-	IO_PER_TASK	= 2, /* separate output/input file per task          */
-	IO_NONE		= 3, /* close output/close stdin                     */
-};
 
 #define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
                                                      "all" : "per task"

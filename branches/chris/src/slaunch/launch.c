@@ -49,11 +49,13 @@
 #include "src/common/mpi.h"
 #include "src/api/step_client_io.h"
 
-#include "src/slaunch/srun_job.h"
 #include "src/slaunch/launch.h"
 #include "src/slaunch/opt.h"
 
 #define MAX_RETRIES 3
+
+/* FIXME remove message_thread */
+extern int message_thread;
 
 extern char **environ;
 

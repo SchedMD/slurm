@@ -24,8 +24,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _SIGNALS_H
-#define _SIGNALS_H
+#ifndef _SLAUNCH_SIGNALS_H
+#define _SLAUNCH_SIGNALS_H
 
 typedef struct srun_job signal_job_t;
 
@@ -33,4 +33,4 @@ int sig_setup_sigmask(void);
 int  sig_unblock_signals(void);
 int  sig_thr_create(signal_job_t *job);
 
-#endif /* !_SIGNALS_H */
+#endif /* !_SLAUNCH_SIGNALS_H */

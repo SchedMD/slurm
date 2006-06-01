@@ -19,8 +19,8 @@
  * Nov 27 1996 jcownie@dolphinics.com: Added the executable_name to MPIR_PROCDESC
  */
 
-#ifndef _ATTACH_INCLUDE
-#define _ATTACH_INCLUDE
+#ifndef _SLAUNCH_ATTACH_INCLUDE
+#define _SLAUNCH_ATTACH_INCLUDE
 
 #ifndef VOLATILE
 #if defined(__STDC__) || defined(__cplusplus)
@@ -29,7 +29,8 @@
 #define VOLATILE
 #endif
 #endif
-#include "src/slaunch/srun_job.h"
+#include "src/common/global_srun.h"
+
 /*****************************************************************************
 *                                DEBUGGING SUPPORT                           *
 *****************************************************************************/

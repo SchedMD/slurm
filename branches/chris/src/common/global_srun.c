@@ -160,7 +160,7 @@ static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job)
 			continue;	/* inactive task */
 
 		slurm_mutex_lock(&active_mutex);
-		while (active >= opt.max_threads) {
+		while (active >= FWD_SIGNAL_MAX_THREADS) {
 			pthread_cond_wait(&active_cond, &active_mutex);
 		}
 		active++;

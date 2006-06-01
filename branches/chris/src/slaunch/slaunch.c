@@ -69,14 +69,15 @@
 #include "src/common/net.h"
 #include "src/common/mpi.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/global_srun.h"
 
-#include "src/slaunch/srun_job.h"
 #include "src/slaunch/launch.h"
 #include "src/slaunch/msg.h"
 #include "src/slaunch/opt.h"
 #include "src/slaunch/sigstr.h"
 #include "src/slaunch/attach.h"
 #include "src/slaunch/slaunch.h"
+#include "src/slaunch/fname.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
@@ -91,7 +92,7 @@ typedef resource_allocation_response_msg_t         allocation_resp;
 /*
  * forward declaration of static funcs
  */
-static resource_allocation_response_msg_t *_existing_allocation(void);
+static resource_allocation_response_msg_t *_existing_allocation(uint32_t jobid);
 static int   _create_job_step(srun_job_t *job,
 			      resource_allocation_response_msg_t *alloc_resp);
 static void  _set_prio_process_env(void);
@@ -129,9 +130,6 @@ int slaunch(int ac, char **av)
 		error ("srun initialization failed");
 		exit (1);
 	}
-	info("slaunch opt                = %x", opt);
-	info("slaunch after init no_alloc is %s", opt.no_alloc ? "TRUE" : "FALSE");
-	info("opt.no_alloc = %x", opt.no_alloc);
 	
 	/* reinit log with new verbosity (if changed by command line)
 	 */
@@ -142,11 +140,10 @@ int slaunch(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (!opt.allocate) {
-		(void) _set_rlimit_env();
-		_set_prio_process_env();
-		(void) _set_umask_env();
-	}
+	(void) _set_rlimit_env();
+	_set_prio_process_env();
+	(void) _set_umask_env();
+
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 	
@@ -159,12 +156,7 @@ int slaunch(int ac, char **av)
 		job = job_create_noalloc(); 
 		_switch_standalone(job);
 
-	} else if ( (resp = _existing_allocation()) ) {
-		if (opt.allocate) {
-			error("job %u already has an allocation",
-				resp->job_id);
-			exit(1);
-		}
+	} else if (opt.jobid_set && (resp = _existing_allocation(opt.jobid)) ) {
 		if (job_resp_hack_for_step(resp))	/* FIXME */
 			exit(1);
 		
@@ -303,19 +295,18 @@ int slaunch(int ac, char **av)
 }
 
 static resource_allocation_response_msg_t *
-_existing_allocation(void)
+_existing_allocation(uint32_t jobid)
 {
-	old_job_alloc_msg_t job;
 	resource_allocation_response_msg_t *resp = NULL;
 
-	if (slurm_confirm_allocation(&job, &resp) < 0) {
+	if (slurm_allocation_lookup(jobid, &resp) < 0) {
 		if (opt.parallel_debug)
 			return NULL;	/* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE) 
-			error ("SLURM job %u has expired.", job.job_id); 
+			error ("SLURM job %u has expired.", jobid); 
 		else
 			error ("Unable to confirm allocation for job %u: %m",
-			      job.job_id);
+			      jobid);
 		info ("Check SLURM_JOBID environment variable " 
 		      "for expired or invalid job.");
 		exit(1);

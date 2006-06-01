@@ -26,8 +26,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _SRUN_MULTI_PROG_H
-#define _SRUN_MULTI_PROG_H
+#ifndef _SLAUNCH_MULTI_PROG_H
+#define _SLAUNCH_MULTI_PROG_H
 
 /* set global MPIR_PROCDESC executable names based upon multi-program 
  * configuration file */

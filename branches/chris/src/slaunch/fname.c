@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "src/slaunch/fname.h"
-#include "src/slaunch/srun_job.h"
+#include "src/slaunch/opt.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

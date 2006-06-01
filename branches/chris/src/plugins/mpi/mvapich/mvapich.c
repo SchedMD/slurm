@@ -340,7 +340,7 @@ extern int mvapich_thr_create(srun_job_t *job)
 	pthread_attr_t attr;
 	pthread_t tid;
 
-	nprocs = opt.nprocs;
+	nprocs = job->ntasks;
 
 	if (net_stream_listen(&mvapich_fd, &port) < 0)
 		error ("Unable to create ib listen port: %m");

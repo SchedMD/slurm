@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _SRUN_PMI_H
-#define _SRUN_PMI_H
+#ifndef _SLAUNCH_PMI_H
+#define _SLAUNCH_PMI_H
 
 #include "src/api/slurm_pmi.h"
 

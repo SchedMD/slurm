@@ -57,7 +57,6 @@
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
 
-#include "src/slaunch/srun_job.h"
 #include "src/slaunch/opt.h"
 #include "src/slaunch/msg.h"
 #include "src/slaunch/pmi.h"
@@ -69,6 +68,9 @@
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
 #define MAX_RETRIES 3		/* pthread_create retries */
+
+/* FIXME remove message_thread */
+extern int message_thread;
 
 static int    tasks_exited     = 0;
 static uid_t  slurm_uid;
@@ -1329,9 +1331,6 @@ extern slurm_fd slurmctld_msg_init(void)
 
 	if (slurmctld_fd)	/* May set early for queued job allocation */
 		return slurmctld_fd;
-
-	if (opt.allocate && opt.noshell)
-		return -1;
 
 	slurmctld_fd = -1;
 	slurmctld_comm_addr.hostname = NULL;

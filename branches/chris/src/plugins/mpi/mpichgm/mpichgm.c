@@ -82,7 +82,7 @@ static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 		error("GMPI master received invalid magic number");
 		return -1;
 	}
-	if (id >= opt.nprocs)
+	if (id >= job->ntasks)
 		fatal("GMPI id is out of range");
 	if (port_board_id == 0)
 		fatal("MPI id=%d was unable to open a GM port", id);
@@ -125,7 +125,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 	 */
 	accfd = gmpi_fd;
 	addrlen = sizeof(addr);
-	nprocs = opt.nprocs;
+	nprocs = job->ntasks;
 	iaddrs = (in_addr_t *)xmalloc(sizeof(*iaddrs)*nprocs);
 	slave_data = (gm_slave_t *)xmalloc(sizeof(*slave_data)*nprocs);
 	for (i=0; i<nprocs; i++)
@@ -325,7 +325,7 @@ extern int gmpi_thr_create(srun_job_t *job)
 	slurm_attr_destroy(&attr);
 	setenvf (NULL, "GMPI_PORT",  "%u", ntohs (port));
 	setenvf (NULL, "GMPI_MAGIC", "%u", job->jobid);
-	setenvf (NULL, "GMPI_NP",    "%d", opt.nprocs);
+	setenvf (NULL, "GMPI_NP",    "%d", job->ntasks);
 	setenvf (NULL, "GMPI_SHMEM", "1");
 	/* FIXME for multi-board config. */
 	setenvf (NULL, "GMPI_BOARD", "-1");

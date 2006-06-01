@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  opt.h - definitions for srun option processing
+ *  opt.h - definitions for slaunch option processing
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_OPT_H
-#define _HAVE_OPT_H
+#ifndef _HAVE_SLAUNCH_OPT_H
+#define _HAVE_SLAUNCH_OPT_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -37,8 +37,8 @@
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */
-#include "src/slaunch/core-format.h"
 #include "src/common/env.h"
+#include "src/slaunch/core-format.h"
 //#include "src/common/mpi.h"
 
 #define MAX_THREADS	64
@@ -50,26 +50,10 @@ char **remote_argv;
 int remote_argc;
 int _verbose;
 
-/* mutually exclusive modes for srun */
-enum modes {
-	MODE_UNKNOWN	= 0,
-	MODE_NORMAL	= 1,
-	MODE_IMMEDIATE	= 2,
-};
-
-enum modes mode;
-
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
-
-enum io_t {
-	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
-	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
-	IO_PER_TASK	= 2, /* separate output/input file per task          */
-	IO_NONE		= 3, /* close output/close stdin                     */
-};
 
 #define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
                                                      "all" : "per task"
@@ -192,4 +176,4 @@ int initialize_and_process_args(int argc, char *argv[]);
 void set_options(const int argc, char **argv, int first);
 
 
-#endif	/* _HAVE_OPT_H */
+#endif	/* _HAVE_SLAUNCH_OPT_H */

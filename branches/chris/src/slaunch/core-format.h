@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_CORE_FORMAT_H
-#define _HAVE_CORE_FORMAT_H
+#ifndef _HAVE_SLAUNCH_CORE_FORMAT_H
+#define _HAVE_SLAUNCH_CORE_FORMAT_H
 
 typedef int core_format_t;
 
@@ -39,4 +39,4 @@ const char * core_format_name (core_format_t type);
 
 int core_format_enable (core_format_t type);
 
-#endif /* !_HAVE_CORE_FORMAT_H */
+#endif /* !_HAVE_SLAUNCH_CORE_FORMAT_H */

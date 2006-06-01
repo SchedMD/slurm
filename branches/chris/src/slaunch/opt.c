@@ -58,6 +58,8 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "src/slaunch/opt.h"
+
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
@@ -69,7 +71,6 @@
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
 
-#include "src/slaunch/opt.h"
 #include "src/slaunch/attach.h"
 #include "src/common/mpi.h"
 
@@ -198,9 +199,6 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	if (_verbose > 3)
 		_opt_list();
-	info("opt.no_alloc = %x", opt.no_alloc);
-	info("intialize_and_process no_alloc is %s", opt.no_alloc ? "TRUE" : "FALSE");
-	info ("initialize_and_process opt = %x", opt);
 
 	return 1;
 
@@ -760,8 +758,6 @@ static void _opt_default()
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
 
-	mode	= MODE_NORMAL;
-
 	getnodename(hostname, sizeof(hostname));
 	opt.ctrl_comm_ifhn  = xstrdup(hostname);
 
@@ -775,7 +771,6 @@ static void _opt_default()
 	}
 
 	opt.no_alloc = false;
-	info("_opt_default no_alloc is %s", opt.no_alloc ? "TRUE" : "FALSE");
 }
 
 /*---[ env var processing ]-----------------------------------------------*/

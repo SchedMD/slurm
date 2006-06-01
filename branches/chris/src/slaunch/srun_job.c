@@ -51,12 +51,13 @@
 #include "src/common/io_hdr.h"
 #include "src/common/global_srun.h"
 
-#include "src/slaunch/srun_job.h"
 #include "src/slaunch/opt.h"
 #include "src/slaunch/fname.h"
 #include "src/slaunch/attach.h"
 #include "src/slaunch/msg.h"
 
+/* FIXME remove message_thread */
+extern int message_thread;
 
 /*
  * allocation information structure used to store general information
@@ -97,6 +98,9 @@ static void       _job_resp_hack(resource_allocation_response_msg_t *resp,
 static char *     _task_state_name(srun_task_state_t state_inx);
 static char *     _host_state_name(srun_host_state_t state_inx);
 static char *     _normalize_hostlist(const char *hostlist);
+
+void job_update_io_fnames(srun_job_t *job);
+void srun_job_destroy(srun_job_t *job, int error);
 
 
 /* 
@@ -307,13 +311,8 @@ job_state(srun_job_t *job)
 void 
 job_force_termination(srun_job_t *job)
 {
-	if (mode == MODE_ATTACH) {
-		info ("forcing detach");
-		update_job_state(job, SRUN_JOB_DETACHED);
-	} else {
-		info ("forcing job termination");
-		update_job_state(job, SRUN_JOB_FORCETERM);
-	}
+	info ("forcing job termination");
+	update_job_state(job, SRUN_JOB_FORCETERM);
 
 	client_io_handler_finish(job->client_io);
 }

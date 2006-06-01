@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _SIGSTR_H
-#define _SIGSTR_H
+#ifndef _SLAUNCH_SIGSTR_H
+#define _SLAUNCH_SIGSTR_H
 
 /*
  * Returns a descriptive string regarding the signal given in the
@@ -36,4 +36,4 @@
  */
 char *sigstr(int status);
 
-#endif /* !_SIGSTR_H */
+#endif /* !_SLAUNCH_SIGSTR_H */

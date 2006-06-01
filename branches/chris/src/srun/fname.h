@@ -31,14 +31,20 @@
 # include "config.h"
 #endif 
 
-#include "src/srun/opt.h"
+#include "src/common/global_srun.h"
 
-typedef struct io_filename {
+enum io_t {
+	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
+	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
+	IO_PER_TASK	= 2, /* separate output/input file per task          */
+	IO_NONE		= 3, /* close output/close stdin                     */
+};
+
+struct io_filename {
 	char      *name;
 	enum io_t  type;
 	int        taskid;  /* taskid for IO if IO_ONE */
-} io_filename_t;
-
+};
 
 /*
  * Create an filename from a (probably user supplied) filename format.

@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 
 //#include "src/common/env.h" 
-#include "src/srun/core-format.h"
+#include "src/slaunch/core-format.h"
 #include "src/common/log.h"
 #include "src/common/env.h"
 
