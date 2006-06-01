@@ -189,7 +189,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 		       slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
-	
+
 	if (!(job = job_create(msg, cli))) {
 		_send_launch_failure (msg, cli, errno);
 		return NULL;
