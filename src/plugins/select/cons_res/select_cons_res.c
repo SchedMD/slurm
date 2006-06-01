@@ -841,17 +841,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
-				int allocated_cpus;
+				int allocated_cpus, avail_cpus;
 				if ((max_nodes <= 0)
 				||  ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
 				if (bit_test(bitmap, i)) 
-				   continue;
-				bit_set(bitmap, i);
-				rem_nodes--;
-				max_nodes--;
+					continue;
 
-				allocated_cpus = 0;
 				if (!test_only) {
 					rc = select_g_get_select_nodeinfo
 					    (select_node_ptr[i].node_ptr,
@@ -859,32 +855,37 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 					     &allocated_cpus);
 					if (rc != SLURM_SUCCESS)
 						goto cleanup;
+				} else {
+					allocated_cpus = 0;
 				}
 
-				if (select_fast_schedule)
-					rem_cpus -=
+				if (select_fast_schedule) {
+					avail_cpus =
 					    select_node_ptr[i].node_ptr->
 					    config_ptr->cpus -
 					    allocated_cpus;
-				else
-					rem_cpus -=
+				} else {
+					avail_cpus =
 					    select_node_ptr[i].node_ptr->
 					    cpus - allocated_cpus;
+				}
+				if (avail_cpus <= 0)
+					continue;
+				rem_cpus -= avail_cpus;
+				bit_set(bitmap, i);
+				rem_nodes--;
+				max_nodes--;
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
 			     i <= consec_end[best_fit_location]; i++) {
-				int allocated_cpus;
+				int allocated_cpus, avail_cpus;
 				if ((max_nodes <= 0)
 				|| ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
 				if (bit_test(bitmap, i))
 					continue;
-				bit_set(bitmap, i);
-				rem_nodes--;
-				max_nodes--;
 
-				allocated_cpus = 0;
 				if (!test_only) {
 					rc = select_g_get_select_nodeinfo
 					    (select_node_ptr[i].node_ptr,
@@ -892,17 +893,26 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 					     &allocated_cpus);
 					if (rc != SLURM_SUCCESS)
 						goto cleanup;
+				} else {
+					allocated_cpus = 0;
 				}
 
-				if (select_fast_schedule)
-					rem_cpus -=
+				if (select_fast_schedule) {
+					avail_cpus =
 					    select_node_ptr[i].node_ptr->
 					    config_ptr->cpus -
 					    allocated_cpus;
-				else
-					rem_cpus -=
+				} else {
+					avail_cpus =
 					    select_node_ptr[i].node_ptr->
 					    cpus - allocated_cpus;
+				}
+				if (avail_cpus <= 0)
+					continue;
+				rem_cpus -= avail_cpus;
+				bit_set(bitmap, i);
+				rem_nodes--;
+				max_nodes--;
 			}
 		}
 
