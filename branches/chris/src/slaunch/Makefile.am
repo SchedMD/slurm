@@ -5,10 +5,10 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) 
 
-bin_PROGRAMS = srun
+bin_PROGRAMS = slaunch
 
-srun_SOURCES = \
-	srun.c srun.h \
+slaunch_SOURCES = \
+	slaunch.c slaunch.h \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
 	msg.c msg.h \
@@ -25,7 +25,7 @@ srun_SOURCES = \
 	core-format.c \
 	core-format.h \
 	multi_prog.c multi_prog.h \
-	srun.wrapper.c
+	slaunch.wrapper.c
 
 convenience_libs =  \
 	$(top_builddir)/src/common/libcommon.la   \
@@ -33,10 +33,10 @@ convenience_libs =  \
 	$(top_builddir)/src/common/libeio.la      \
 	$(top_builddir)/src/api/libslurm.la
 
-srun_LDADD = \
+slaunch_LDADD = \
 	$(convenience_libs) 
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+slaunch_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 
 force:
 $(convenience_libs) : force
@@ -50,7 +50,7 @@ install-exec-local:
 	if [ -x /usr/lib/rpm/debugedit ]; then \
 	  srcdir=`cd $(top_srcdir) && pwd`; \
 	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
-	                         $(DESTDIR)$(bindir)/srun; fi; \
-	$(INSTALL) -D -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
-	                       $(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
+	                         $(DESTDIR)$(bindir)/slaunch; fi; \
+	$(INSTALL) -D -m 644 $(top_srcdir)/src/slaunch/slaunch.wrapper.c \
+	                       $(DESTDIR)$(pkglibdir)/src/slaunch/slaunch.wrapper.c
 
