@@ -122,7 +122,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 	static int threads_used = 0;
 	static slurm_msg_t msg[MAX_THREADS];
 
-	int i, rc = SLURM_SUCCESS;
+	int i, fanout, rc = SLURM_SUCCESS;
 	int retries = 0;
 	thd_t thread_info[MAX_THREADS];
 	pthread_attr_t attr;
@@ -131,8 +131,11 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		hostlist_t hl;
 		int *span;
 
-		i = MIN(MAX_THREADS, params.fanout);
-		span = set_span(alloc_resp->node_cnt, i);
+		if (params.fanout)
+			fanout = MIN(MAX_THREADS, params.fanout);
+		else
+			fanout = MAX_THREADS;
+		span = set_span(alloc_resp->node_cnt, fanout);
 		from.cnt  = alloc_resp->node_cnt;
 		from.name = xmalloc(MAX_SLURM_NAME * alloc_resp->node_cnt);
 		hl = hostlist_create(alloc_resp->node_list);
