@@ -65,8 +65,12 @@ void *_stat_thread(void *args)
 	ret_list = slurm_send_recv_node_msg(msg, 
 					    &resp_msg, 
 					    msg->forward.timeout);
-	if (!ret_list) {
-		error("got an error no list returned");
+	if (!ret_list || !resp_msg.auth_cred) {
+		if(ret_list)
+			list_destroy(ret_list);
+		if(resp_msg.auth_cred)
+			slurm_auth_cred_destroy(resp_msg.auth_cred);
+		error("got an error no list returned or no auth_cred");
 		goto cleanup;
 	}
 	g_slurm_auth_destroy(resp_msg.auth_cred);

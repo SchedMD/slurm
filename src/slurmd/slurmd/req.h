@@ -30,9 +30,9 @@
 #include "src/common/slurm_protocol_defs.h"
 
 /* Process request contained in slurm message `msg' from client at
- * "*client_addr"
+ * msg->orig_addr
  */
-void slurmd_req(slurm_msg_t *msg, slurm_addr *client_addr);
+void slurmd_req(slurm_msg_t *msg);
 
 int init_gids_cache(int cache);
 
