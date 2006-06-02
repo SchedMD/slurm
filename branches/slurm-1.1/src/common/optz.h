@@ -31,7 +31,12 @@
 #endif
 
 #define _GNU_SOURCE
-#include <getopt.h>
+
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
 
 struct option * optz_create (void);
 
