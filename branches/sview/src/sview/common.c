@@ -193,9 +193,11 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 {
 	GtkScrolledWindow *scrolled_window = NULL;
 	GtkWidget *table = NULL;
-	GtkWidget *label;
+	GtkWidget *event_box = NULL;
+	GtkWidget *label = NULL;
 	int err;
-
+	GtkWidget *menu = gtk_menu_new();
+	
 	table = gtk_table_new(1, 1, FALSE);
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);	
@@ -210,18 +212,23 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
     
 	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
 	
+	event_box = gtk_event_box_new();
+	gtk_event_box_set_above_child(GTK_EVENT_BOX(event_box), FALSE);
+	g_signal_connect(G_OBJECT(event_box), "button-press-event",
+			 G_CALLBACK(tab_pressed),
+			 display_data);
 	
 	label = gtk_label_new(display_data->name);
-	
+	gtk_container_add(GTK_CONTAINER(event_box), label);
+	gtk_widget_show(label);
+	(display_data->set_fields)(GTK_MENU(menu));
 	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
 					   GTK_WIDGET(scrolled_window), 
-					   label)) == -1) {
+					   event_box)) == -1) {
 		g_error("Couldn't add page to notebook\n");
 	}
+	
 	display_data->extra = err;
-	g_signal_connect(G_OBJECT(scrolled_window), "button-press-event",
-			 G_CALLBACK(right_button_pressed),
-			 display_data);
 
 }
 
@@ -260,11 +267,37 @@ extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event,
 	/* single click with the right mouse button? */
 	if(event->button == 3) {
 		right_button_pressed(NULL, event, display_data);
-//view_popup_menu(treeview, event, userdata);
 	} else if(event->type==GDK_2BUTTON_PRESS ||
 		  event->type==GDK_3BUTTON_PRESS) {
 		(display_data->row_clicked)(tree_view, path, 
 					    NULL, display_data->user_data);
 	}
 	gtk_tree_path_free(path);
+}
+
+extern void tab_focus(GtkNotebook *notebook, GdkEventFocus *event, 
+		      const display_data_t *display_data)
+{
+	int page = gtk_notebook_get_current_page(notebook);
+	g_print("page number is %d type %d, send_event %d, in %d\n",
+		page, event->type, event->send_event, event->in);
+	return;
+	/* single click with the right mouse button? */
+/* 	if(event->button == 3) { */
+/* 		right_button_pressed(NULL, event, display_data); */
+/* //view_popup_menu(treeview, event, userdata); */
+/* 	} else if(event->type==GDK_2BUTTON_PRESS || */
+/* 		  event->type==GDK_3BUTTON_PRESS) { */
+/* 		/\* (display_data->row_clicked)(tree_view, path,  *\/ */
+/* /\* 					    NULL, display_data->user_data); *\/ */
+/* 	} */
+	//gtk_tree_path_free(path);
+}
+
+extern GtkMenu *make_menu(const display_data_t *display_data)
+{
+	GtkMenu *menu = GTK_MENU(gtk_menu_new());
+	
+	(display_data->set_fields)(menu);
+	return menu;
 }

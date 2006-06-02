@@ -96,13 +96,30 @@ static void _tab_pos(GtkRadioAction *action,
 static void _next_page(GtkAction *action,
 		       GtkNotebook *notebook)
 {
-	gtk_notebook_next_page(notebook);
+	int page = gtk_notebook_get_current_page(notebook);
+	int cnt = gtk_notebook_get_n_pages(notebook);
+	
+	cnt--;
+	
+	if(page < cnt)
+		gtk_notebook_next_page(notebook);
+	else
+		gtk_notebook_set_current_page(notebook, 0);
 }
 
 static void _prev_page(GtkAction *action,
 		       GtkNotebook *notebook)
 {
-	gtk_notebook_prev_page(notebook);
+	int page = gtk_notebook_get_current_page(notebook);
+	int cnt = gtk_notebook_get_n_pages(notebook);
+
+	cnt--;
+
+	if(page != 0)
+		gtk_notebook_prev_page(notebook);
+	else
+		gtk_notebook_set_current_page(notebook, cnt);
+	//gtk_notebook_prev_page(notebook);
 }
 
 /* Our menu*/
@@ -131,8 +148,8 @@ static const char *ui_description =
 static GtkActionEntry entries[] = {
 	{"Options", NULL, "_Options"},
 	{"Tab Pos", NULL, "_Tab Pos"},
-	{"NextPage", NULL, "Ne_xtPage", 
-	 "<control>X", "Moves to next page", G_CALLBACK(_next_page)},
+	{"NextPage", NULL, "_NextPage", 
+	 "<control>N", "Moves to next page", G_CALLBACK(_next_page)},
 	{"PrevPage", NULL, "_PrevPage", 
 	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
 	{"Refresh", NULL, "Refresh", 
@@ -213,13 +230,21 @@ int main(int argc, char *argv[])
 				       1);
 	/* Create the main notebook, place the position of the tabs */
 	main_notebook = gtk_notebook_new();
+	/* g_signal_connect(G_OBJECT(main_notebook), "button-press-event", */
+/* 			 G_CALLBACK(tab_pressed), */
+/* 			 NULL); */
 	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
 			 NULL);
+
+	/* g_signal_connect(G_OBJECT(main_notebook), "client-event", */
+/* 			 G_CALLBACK(tab_focus), */
+/* 			 NULL); */
 	
 	/* Create a menu */
 	menubar = _get_menubar_menu(window, main_notebook);
 	
+	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
 	
@@ -258,3 +283,13 @@ extern void refresh_page(GtkAction *action,
 	toggled = FALSE;
 }
 
+extern void tab_pressed(GtkWidget *widget, GdkEventButton *event, 
+			const display_data_t *display_data)
+{
+	/* single click with the right mouse button? */
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
+					      display_data->extra);
+	if(event->button == 3) {
+		right_button_pressed(NULL, event, display_data);
+	} 
+}

@@ -142,6 +142,8 @@ extern void clear_window(WINDOW *win);
 //sview.c
 extern void refresh_page(GtkAction *action,
 			 gpointer user_data);
+extern void tab_pressed(GtkWidget *widget, GdkEventButton *event, 
+			const display_data_t *display_data);
 
 // part_info.c
 extern void get_info_part(GtkTable *table, display_data_t *display_data);
@@ -202,5 +204,4 @@ extern void right_button_pressed(GtkWidget *widget, GdkEventButton *event,
 				 const display_data_t *display_data);
 extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
 			   const display_data_t *display_data);
-
 #endif
