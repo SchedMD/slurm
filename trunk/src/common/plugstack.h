@@ -30,7 +30,12 @@
 #endif
 
 #define _GNU_SOURCE
-#include <getopt.h>
+
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
 
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

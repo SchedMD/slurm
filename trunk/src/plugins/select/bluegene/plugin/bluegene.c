@@ -843,11 +843,11 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	int i;
 	bg_record_t *found_record = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
+	static int block_inx = 0;
 
 #ifdef HAVE_BG_FILES
 	init_wires();
 #else
-	static int block_inx = 0;
 	char *name = NULL;
 #endif
 	slurm_mutex_lock(&block_state_mutex);
