@@ -353,8 +353,6 @@ _service_connection(void *arg)
 	msg->conn_fd = con->fd;
 	/* this could change if being forwarded to */
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
-	/* this always is the connection */
-	memcpy(&msg->address, con->cli_addr, sizeof(slurm_addr));
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
 	
@@ -367,6 +365,8 @@ _service_connection(void *arg)
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
+	/* this always is the connection */
+	memcpy(&msg->address, con->cli_addr, sizeof(slurm_addr));
 
 	debug2("got this type of message %d with %d other responses",
 	     msg->msg_type, list_count(ret_list));
