@@ -507,28 +507,28 @@ int get_data(void)
 				printf("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else 
-				process_start(f, lc, show_full);
+				process_start(f, lc, show_full, i);
 			break;
 		case JOB_STEP:
-			if(i < JOB_STEP_LENGTH) {
+			if(i < F_MAX_VSIZE) {
 				printf("Bad data on a Step entry\n");
 				_show_rec(f);
 			} else
-				process_step(f, lc, show_full);
+				process_step(f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
 			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Suspend entry\n");
 				_show_rec(f);
 			} else
-				process_suspend(f, lc, show_full);
+				process_suspend(f, lc, show_full, i);
 			break;
 		case JOB_TERMINATED:
 			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Job Term\n");
 				_show_rec(f);
 			} else
-				process_terminated(f, lc, show_full);
+				process_terminated(f, lc, show_full, i);
 			break;
 		default:
 			if (params.opt_verbose > 1)

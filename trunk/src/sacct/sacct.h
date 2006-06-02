@@ -45,6 +45,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
+#include "src/common/hostlist.h"
 
 #include "src/sacct/sacct_stat.h"
 
@@ -124,23 +125,23 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_NVCSW,
 	F_NIVCSW,
 	F_MAX_VSIZE,
-	F_MAX_VSIZE_NODE,
 	F_MAX_VSIZE_TASK,
 	F_AVE_VSIZE,
 	F_MAX_RSS,
-	F_MAX_RSS_NODE,
 	F_MAX_RSS_TASK,
 	F_AVE_RSS,
 	F_MAX_PAGES,
-	F_MAX_PAGES_NODE,
 	F_MAX_PAGES_TASK,
 	F_AVE_PAGES,
 	F_MIN_CPU,
-	F_MIN_CPU_NODE,
 	F_MIN_CPU_TASK,
 	F_AVE_CPU,
 	F_STEPNAME,
 	F_STEPNODES,
+	F_MAX_VSIZE_NODE,
+	F_MAX_RSS_NODE,
+	F_MAX_PAGES_NODE,
+	F_MIN_CPU_NODE,
 	JOB_STEP_LENGTH
 };
 
@@ -265,11 +266,12 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;
 
 /* process.c */
-void process_start(char *f[], int lc, int show_full);
-void process_step(char *f[], int lc, int show_full);
-void process_suspend(char *f[], int lc, int show_full);
-void process_terminated(char *f[], int lc, int show_full);
+void process_start(char *f[], int lc, int show_full, int len);
+void process_step(char *f[], int lc, int show_full, int len);
+void process_suspend(char *f[], int lc, int show_full, int len);
+void process_terminated(char *f[], int lc, int show_full, int len);
 void convert_num(float num, char *buf);
+void find_hostname(uint32_t pos, char *hosts, char *host);
 void aggregate_sacct(sacct_t *dest, sacct_t *from);
 void destroy_acct_header(void *object);
 void destroy_job(void *object);
