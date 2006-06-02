@@ -324,7 +324,6 @@ static int _update_bg_record_state()
 	rm_partition_t *block_ptr = NULL;
 	delete_record_t *delete_record = NULL;
 	ListIterator itr;
-	int found = 0;
 
 	if ((rc = rm_get_partitions_info(block_state, &block_list))
 	    != STATUS_OK) {
