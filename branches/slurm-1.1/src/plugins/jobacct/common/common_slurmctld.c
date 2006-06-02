@@ -65,22 +65,22 @@ const char *_jobstep_format =
 "%u "	/* total nivcsw */
 "%u "	/* max vsize */
 "%u "	/* max vsize task */
-"%u "	/* max vsize node */
 "%.2f "	/* ave vsize */
 "%u "	/* max rss */
 "%u "	/* max rss task */
-"%u "	/* max rss node */
 "%.2f "	/* ave rss */
 "%u "	/* max pages */
 "%u "	/* max pages task */
-"%u "	/* max pages node */
 "%.2f "	/* ave pages */
 "%.2f "	/* min cpu */
 "%u "	/* min cpu task */
-"%u "	/* min cpu node */
 "%.2f "	/* ave cpu */
 "%s "	/* step process name */
-"%s";	/* step node names */
+"%s "	/* step node names */
+"%u "	/* max vsize node */
+"%u "	/* max rss node */
+"%u "	/* max pages node */
+"%u";	/* min cpu node */
 
 /*
  * Print the record to the log file.
@@ -305,23 +305,23 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* total nivcsw */
 		 0,	/* max vsize */
 		 0,	/* max vsize task */
-		 0,	/* max vsize node */
 		 float_tmp,	/* ave vsize */
 		 0,	/* max rss */
 		 0,	/* max rss task */
-		 0,	/* max rss node */
 		 float_tmp,	/* ave rss */
 		 0,	/* max pages */
 		 0,	/* max pages task */
-		 0,	/* max pages node */
 		 float_tmp,	/* ave pages */
 		 float_tmp,	/* min cpu */
 		 0,	/* min cpu task */
-		 0,	/* min cpu node */
 		 float_tmp,	/* ave cpu */
 		 step->name,    /* step exe name */
-		 node_list);     /* name of nodes step running on */
-	
+		 node_list,     /* name of nodes step running on */
+		 0,	/* max vsize node */
+		 0,	/* max rss node */
+		 0,	/* max pages node */
+		 0);	/* min cpu node */
+		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
 
@@ -428,24 +428,24 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
 		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
 		 jobacct->max_vsize,	/* max vsize */
-		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
 		 jobacct->max_vsize_id.taskid,	/* max vsize node */
 		 ave_vsize,	/* ave vsize */
 		 jobacct->max_rss,	/* max vsize */
-		 jobacct->max_rss_id.nodeid,	/* max rss task */
 		 jobacct->max_rss_id.taskid,	/* max rss node */
 		 ave_rss,	/* ave rss */
 		 jobacct->max_pages,	/* max pages */
-		 jobacct->max_pages_id.nodeid,	/* max pages task */
 		 jobacct->max_pages_id.taskid,	/* max pages node */
 		 ave_pages,	/* ave pages */
 		 ave_cpu2,	/* min cpu */
-		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
 		 jobacct->min_cpu_id.taskid,	/* min cpu node */
 		 ave_cpu,	/* ave cpu */
 		 step->name,      	/* step exe name */
-		 node_list); /* name of nodes step running on */
-
+		 node_list, /* name of nodes step running on */
+		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
+		 jobacct->max_rss_id.nodeid,	/* max rss task */
+		 jobacct->max_pages_id.nodeid,	/* max pages task */
+		 jobacct->min_cpu_id.nodeid);	/* min cpu task */
+		 
 	return _print_record(step->job_ptr, now, buf);	
 }
 
