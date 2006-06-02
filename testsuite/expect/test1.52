@@ -9,7 +9,7 @@
 #          anything else indicates a failure mode that must be investigated.
 #
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # UCRL-CODE-217948.
@@ -96,12 +96,13 @@ for {set i 0} {$i<2} {incr i} {
 	#
 	spawn $srun -N2 -l $bin_hostname
 	expect {
-		-re "0: ($alpha_numeric)" {
-			set node0 $expect_out(1,string)
-			exp_continue
-		}
-		-re "1: ($alpha_numeric)" {
-			set node1 $expect_out(1,string)
+		-re "($number): ($alpha_numeric)" {
+			set task_id $expect_out(1,string)
+			if {$task_id == 0} {
+				set node0 $expect_out(2,string)
+			} else {
+				set node1 $expect_out(2,string)
+			}
 			exp_continue
 		}
 		-re "slurm job ($number)" {
