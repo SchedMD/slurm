@@ -1476,7 +1476,7 @@ done2:
 	close(fd);
 done:
 	debug2("update step addrs rc = %d", rc);
-	resp_msg.data         = &resp;
+	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
 	resp_msg.forward      = msg->forward;
 	resp_msg.ret_list     = msg->ret_list;
