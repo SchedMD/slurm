@@ -55,9 +55,10 @@
 #include "src/sacct/sacct_stat.h"
 
 /* common */
-extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, uint16_t tid);
+extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 
+				 jobacct_id_t *jobacct_id);
 /* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_g_alloc(uint16_t tid);
+extern jobacctinfo_t *jobacct_g_alloc(jobacct_id_t *jobacct_id);
 extern void jobacct_g_free(jobacctinfo_t *jobacct);
 extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
 			     enum jobacct_data_type type, void *data);
@@ -80,7 +81,7 @@ extern int jobacct_g_suspend_slurmctld(struct job_record *job_ptr);
 /*functions used in slurmstepd */
 extern int jobacct_g_startpoll(int frequency);
 extern int jobacct_g_endpoll();
-extern int jobacct_g_add_task(pid_t pid, uint16_t tid);
+extern int jobacct_g_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid);
 /* must free jobacctinfo_t if not NULL */

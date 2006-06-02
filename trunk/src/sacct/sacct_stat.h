@@ -30,19 +30,24 @@
 
 #include "src/common/slurm_protocol_api.h"
 
+typedef struct {
+	uint16_t taskid; /* contains which task number it was on */
+	uint32_t nodeid; /* contains which node number it was on */	
+} jobacct_id_t;
+
 typedef struct sacct_struct {
-       uint32_t max_vsize; 
-       uint16_t max_vsize_task;
-       float ave_vsize;
-       uint32_t max_rss;
-       uint16_t max_rss_task;
-       float ave_rss;
-       uint32_t max_pages;
-       uint16_t max_pages_task;
-       float ave_pages;
-       float min_cpu;
-       uint16_t min_cpu_task;
-       float ave_cpu;	
+	uint32_t max_vsize; 
+	jobacct_id_t max_vsize_id;
+	float ave_vsize;
+	uint32_t max_rss;
+	jobacct_id_t max_rss_id;
+	float ave_rss;
+	uint32_t max_pages;
+	jobacct_id_t max_pages_id;
+	float ave_pages;
+	float min_cpu;
+	jobacct_id_t min_cpu_id;
+	float ave_cpu;	
 } sacct_t;
 
 extern int sacct_stat(uint32_t jobid, uint32_t stepid);

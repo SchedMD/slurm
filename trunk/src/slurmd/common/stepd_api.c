@@ -675,7 +675,7 @@ stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
 	safe_write(fd, &req, sizeof(int));
 	
 	/* Receive the jobacct struct and return */
-	resp->jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	resp->jobacct = jobacct_g_alloc(NULL);
 	
 	rc = jobacct_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);	
 	safe_read(fd, &tasks, sizeof(int));
