@@ -431,6 +431,7 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
 		 jobacct->max_vsize_id.taskid,	/* max vsize node */
 		 ave_vsize,	/* ave vsize */
+		 jobacct->max_rss,	/* max vsize */
 		 jobacct->max_rss_id.nodeid,	/* max rss task */
 		 jobacct->max_rss_id.taskid,	/* max rss node */
 		 ave_rss,	/* ave rss */
