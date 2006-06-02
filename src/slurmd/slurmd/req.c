@@ -1401,9 +1401,12 @@ static void
 _rpc_reattach_tasks(slurm_msg_t *msg)
 {
 	reattach_tasks_request_msg_t  *req = msg->data;
-	reattach_tasks_response_msg_t resp;
+	reattach_tasks_response_msg_t *resp = 
+		xmalloc(sizeof(reattach_tasks_response_msg_t));
 	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
+	uint16_t     port = 0;
+	char         host[MAXHOSTNAMELEN];
 	slurm_addr   ioaddr;
 	void        *job_cred_sig;
 	int          len;
@@ -1437,8 +1440,9 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		goto done3;
 	}
 
-	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
-	
+	memset(resp, 0, sizeof(reattach_tasks_response_msg_t));
+	slurm_get_ip_str(cli, &port, host, sizeof(host));
+
 	/* 
 	 * Set response address by resp_port and client address
 	 */
@@ -1458,15 +1462,14 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
 	xassert(len == SLURM_CRED_SIGLEN);
 
-	resp.gtids = NULL;
-	resp.local_pids = NULL;
+	resp->gtids = NULL;
+	resp->local_pids = NULL;
 	/* Following call fills in gtids and local_pids when successful */
-	rc = stepd_attach(fd, &ioaddr, &resp_msg.address, job_cred_sig, &resp);
+	rc = stepd_attach(fd, &ioaddr, &resp_msg.address, job_cred_sig, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done3;
 	}
-
 done3:
 	xfree(step);
 done2:
@@ -1477,11 +1480,13 @@ done:
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
 	resp_msg.forward      = msg->forward;
 	resp_msg.ret_list     = msg->ret_list;
-	resp.node_name       = conf->node_name;
-	resp.srun_node_id    = req->srun_node_id;
-	resp.return_code     = rc;
+	resp->node_name       = xstrdup(conf->node_name);
+	resp->srun_node_id    = req->srun_node_id;
+	resp->return_code     = rc;
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	//slurm_send_only_node_msg(&resp_msg);
+	slurm_free_reattach_tasks_response_msg(resp);
 }
 
 static uid_t 
