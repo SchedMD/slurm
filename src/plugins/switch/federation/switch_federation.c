@@ -384,10 +384,6 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 		       "no network tables allocated");
 		return SLURM_SUCCESS;
 	} else {
-		list = hostlist_create(nodelist);
-		if(!list)
-			fatal("hostlist_create(%s): %m", nodelist);
-
 		if (strstr(network, "sn_all")
 		    || strstr(network, "SN_ALL")) {
 			debug3("Found sn_all in network string");
@@ -404,6 +400,10 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			sn_all = true;
 			return SLURM_ERROR;
 		}
+
+		list = hostlist_create(nodelist);
+		if(!list)
+			fatal("hostlist_create(%s): %m", nodelist);
 		for (i = 0; i < hostlist_count(list); i++)
 			nprocs += tasks_per_node[i];
 
