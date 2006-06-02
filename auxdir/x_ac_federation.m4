@@ -42,11 +42,11 @@ AC_DEFUN([X_AC_FEDERATION],
    done
 
    if test "x$ac_have_federation" != "xyes" ; then
-      AC_MSG_NOTICE([Cannot support Federation without libntbl])        
       AC_MSG_RESULT([no])
+      AC_MSG_NOTICE([Cannot support Federation without libntbl])        
    else
-      AC_DEFINE(HAVE_LIBNTBL, 1, [define if you have libntbl.])
       AC_MSG_RESULT([yes])
+      AC_DEFINE(HAVE_LIBNTBL, 1, [define if you have libntbl.])
    fi
 
    AC_SUBST(FEDERATION_LDFLAGS)

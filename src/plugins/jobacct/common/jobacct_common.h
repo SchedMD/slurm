@@ -58,19 +58,19 @@ struct jobacctinfo {
 	pid_t pid;
 	struct rusage rusage; /* returned by wait3 */
 	uint32_t max_vsize; /* max size of virtual memory */
-	uint16_t max_vsize_task; /* contains which task number it was on */
+	jobacct_id_t max_vsize_id; /* contains which task number it was on */
 	uint32_t tot_vsize; /* total virtual memory 
 			       (used to figure out ave later) */
 	uint32_t max_rss; /* max Resident Set Size */
-	uint16_t max_rss_task; /* contains which task it was on */
+	jobacct_id_t max_rss_id; /* contains which task it was on */
 	uint32_t tot_rss; /* total rss 
 			     (used to figure out ave later) */
 	uint32_t max_pages; /* max pages */
-	uint16_t max_pages_task; /* contains which task it was on */
+	jobacct_id_t max_pages_id; /* contains which task it was on */
 	uint32_t tot_pages; /* total pages
 			     (used to figure out ave later) */ 
 	uint32_t min_cpu; /* min cpu time */
-	uint16_t min_cpu_task; /* contains which task it was on */
+	jobacct_id_t min_cpu_id; /* contains which task it was on */
 	uint32_t tot_cpu; /* total cpu time 
 				 (used to figure out ave later) */
 };
@@ -83,8 +83,9 @@ struct jobacctinfo {
 
 
 /* in jobacct_common.c */
-extern int common_init_struct(struct jobacctinfo *jobacct, uint16_t tid);
-extern struct jobacctinfo *common_alloc_jobacct();
+extern int common_init_struct(struct jobacctinfo *jobacct, 
+			      jobacct_id_t *jobacct_id);
+extern struct jobacctinfo *common_alloc_jobacct(jobacct_id_t *jobacct_id);
 extern void common_free_jobacct(void *object);
 extern int common_setinfo(struct jobacctinfo *jobacct, 
 			  enum jobacct_data_type type, void *data);
@@ -107,7 +108,7 @@ extern int common_suspend_slurmctld(struct job_record *job_ptr);
 
 /*in common slurmstepd.c */
 extern int common_endpoll();
-extern int common_add_task(pid_t pid, uint16_t tid);
+extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 extern struct jobacctinfo *common_stat_task(pid_t pid);
 extern struct jobacctinfo *common_remove_task(pid_t pid);
 extern void common_suspendpoll();

@@ -127,7 +127,7 @@ set mem_task -1
 set ave_used -1
 spawn $sacct --noheader --stat --job=$job_id.0 --fields vsize
 expect {
-	-re "($float)(\[KM\]*)/($number) - ($float)(\[KM\]*)" {
+	-re "($float)(\[KM\]*)/.*($number) - ($float)(\[KM\]*)" {
 		set mem_used  $expect_out(1,string)
 		set scale1    $expect_out(2,string)
 		set mem_task  $expect_out(3,string)
@@ -219,7 +219,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: sacct reporting failed\n"
+	send_user "\nFAILURE: sacct reporting failed $matches\n"
 	set exit_code 1
 }
 
@@ -262,7 +262,7 @@ set mem_task -1
 set ave_used -1
 spawn $sacct --noheader  --job=$job_id.0 --fields vsize
 expect {
-	-re "($float)(\[KM\]*)/($number) - ($float)(\[KM\]*)" {
+	-re "($float)(\[KM\]*)/.*($number) - ($float)(\[KM\]*)" {
 		set mem_used  $expect_out(1,string)
 		set scale1    $expect_out(2,string)
 		set mem_task  $expect_out(3,string)
