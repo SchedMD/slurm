@@ -24621,18 +24621,18 @@ echo $ECHO_N "checking whether to enable AIX Federation switch support... $ECHO_
    done
 
    if test "x$ac_have_federation" != "xyes" ; then
-      { echo "$as_me:$LINENO: Cannot support Federation without libntbl" >&5
-echo "$as_me: Cannot support Federation without libntbl" >&6;}
       echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
+      { echo "$as_me:$LINENO: Cannot support Federation without libntbl" >&5
+echo "$as_me: Cannot support Federation without libntbl" >&6;}
    else
+      echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBNTBL 1
 _ACEOF
 
-      echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
    fi
 
 
