@@ -188,7 +188,7 @@ int _parse_line(char *f[], void **data)
 				(*job)->nodes[i] = 0;
 		if (!strcmp((*job)->nodes, "(null)")) {
 			xfree((*job)->nodes);
-			(*job)->nodes = xstrdup("unknown");
+			(*job)->nodes = xstrdup("(unknown)");
 		}
 		break;
 	case JOB_STEP:
@@ -346,7 +346,7 @@ void process_step(char *f[], int lc, int show_full)
 		job->header.timestamp = step->header.timestamp;
 	job->job_step_seen = 1;
 	job->ntasks += step->ntasks;
-	if(!job->nodes || !strcmp(job->nodes, "unknown")) {
+	if(!job->nodes || !strcmp(job->nodes, "(unknown)")) {
 		xfree(job->nodes);
 		job->nodes = xstrdup(step->nodes);
 	}
