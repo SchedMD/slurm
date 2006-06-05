@@ -613,8 +613,11 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	node_info_t *node_ptr = NULL;
 	int start, temp;
 	char *numeric = NULL;
-	int i;
-
+	int i, j=0;
+	slurm_conf_node_t *node = NULL, **ptr_array;
+	int count, number;
+	int end[BA_SYSTEM_DIMENSIONS];
+	
 #ifdef HAVE_BG_FILES
 	rm_BGL_t *bg = NULL;
 	rm_size3D_t bp_size;
@@ -735,11 +738,46 @@ node_info_error:
 	}
 #endif
 
-	if ((DIM_SIZE[X]==0) || (DIM_SIZE[X]==0) || (DIM_SIZE[X]==0)) {
-		debug("Setting default system dimensions");
-		DIM_SIZE[X]=8;
-		DIM_SIZE[Y]=4;
-		DIM_SIZE[Z]=4;
+	if ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
+		debug("Setting dimensions from slurm.conf file");
+		count = slurm_conf_nodename_array(&ptr_array);
+		if (count == 0)
+			fatal("No NodeName information available!");
+		
+		for (i = 0; i < count; i++) {
+			node = ptr_array[i];
+			j = 0;
+			while (node->nodenames[j] != '\0') {
+				if ((node->nodenames[j] == '['
+				     || node->nodenames[j] == ',')
+				    && (node->nodenames[j+8] == ']' 
+					|| node->nodenames[j+8] == ',')
+				    && (node->nodenames[j+4] == 'x'
+					|| node->nodenames[j+4] == '-')) {
+					j+=5;
+				} else if((node->nodenames[j] < 58 
+					   && node->nodenames[j] > 47)) {
+				} else {
+					j++;
+					continue;
+				}
+				number = atoi(node->nodenames + j);
+				end[X] = number / 100;
+				end[Y] = (number % 100) / 10;
+				end[Z] = (number % 10);
+				DIM_SIZE[X] = MAX(DIM_SIZE[X], end[X]);
+				DIM_SIZE[Y] = MAX(DIM_SIZE[Y], end[Y]);
+				DIM_SIZE[Z] = MAX(DIM_SIZE[Z], end[Z]);
+				break;
+			}
+				
+		}
+		if ((DIM_SIZE[X]==0) && (DIM_SIZE[Y]==0) && (DIM_SIZE[Z]==0)) 
+			info("are you sure you only have 1 midplane? %s",
+			      node->nodenames);
+		DIM_SIZE[X]++;
+		DIM_SIZE[Y]++;
+		DIM_SIZE[Z]++;
 	}
 	debug("DIM_SIZE = %d%d%d", DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
 	
