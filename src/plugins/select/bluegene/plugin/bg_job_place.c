@@ -39,8 +39,8 @@ _STMT_START {		\
 } _STMT_END
 
 static int  _find_best_block_match(struct job_record* job_ptr,
-				   bitstr_t* slurm_block_bitmap,
-				   int min_nodes, int max_nodes, int req_nodes,
+				   bitstr_t* slurm_block_bitmap, uint32_t min_nodes, 
+				   uint32_t max_nodes, uint32_t req_nodes,
 				   int spec, bg_record_t** found_bg_record,
 				   bool test_only);
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
@@ -78,8 +78,8 @@ pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
  * 
  */
 static int _find_best_block_match(struct job_record* job_ptr, 
-				  bitstr_t* slurm_block_bitmap, 
-				  int min_nodes, int max_nodes, int req_nodes,
+				  bitstr_t* slurm_block_bitmap, uint32_t min_nodes,
+				  uint32_t max_nodes, uint32_t req_nodes,
 				  int spec, bg_record_t** found_bg_record, 
 				  bool test_only)
 {
@@ -105,14 +105,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	int start_req = 0;
 
 	if(req_nodes > max_nodes) {
-		error("can't run this job max bps is %d asking for %d",
+		error("can't run this job max bps is %u asking for %u",
 		      max_nodes, req_nodes);
 		return SLURM_ERROR;
 	}
 
 	slurm_mutex_lock(&block_state_mutex);
 	if(!test_only && req_procs > num_unused_cpus) {
-		debug2("asking for %d I only got %d", 
+		debug2("asking for %u I only got %d", 
 		       req_procs, num_unused_cpus);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
@@ -140,7 +140,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 			target_size *= (uint16_t)req_geometry[i];
 		if(target_size != min_nodes)
-			error("min_nodes not set correctly %d should be %d",
+			error("min_nodes not set correctly %u should be %d",
 			      min_nodes, target_size);
 		if(!req_nodes)
 			req_nodes = req_nodes;
@@ -246,7 +246,7 @@ try_again:
 		/*
 		 * check that the number of nodes is suitable
 		 */
- 		debug3("asking for %d-%d bps looking at %d", 
+ 		debug3("asking for %u-%u bps looking at %d", 
 		      min_nodes, req_nodes, record->bp_count);
 		if ((record->bp_count < min_nodes)
 		    ||  (req_nodes != 0 && record->bp_count > req_nodes)
@@ -538,7 +538,7 @@ try_again:
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
-		      int min_nodes, int max_nodes, int req_nodes, 
+		      uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
 		      bool test_only)
 {
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
@@ -551,10 +551,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %s nodes=%d-%d", 
-	      buf, 
-	      min_nodes, 
-	      req_nodes);
+	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
+	      buf, min_nodes, req_nodes, max_nodes);
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
 	
