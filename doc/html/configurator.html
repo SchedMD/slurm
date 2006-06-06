@@ -347,6 +347,9 @@ parent process ID records, required for MPICH-GM use, processes can escape
 from SLURM control<BR>
 <input type="radio" name="proctrack_type" value="rms"> <B>RMS</B>: Use Quadrics
 kernel infrastructure, recommended for systems where this is available<BR>
+<input type="radio" name="proctrack_type" value="sgi_job"> <B>SGI's PAGG
+module</B>: Use <A HREF="http://oss.sgi.com/projects/pagg/">SGI's Process 
+Aggregates (PAGG) kernel module</A>, recommended where available<BR>
 <P>
 
 <H2>Resource Selection</H2>
@@ -460,6 +463,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-217616<br>
-Last modified 23 April 2006</p>
+Last modified 6 June 2006</p>
 </BODY>
 

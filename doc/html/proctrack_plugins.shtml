@@ -32,7 +32,11 @@ not entirely reliable for process tracking.</li>
 <li><b>rms</b>&#151;Use a Quadrics RMS kernel patch to 
 establish what processes are members of a SLURM job.
 NOTE: This requires a kernel patch that records
-ever process creation and termination.</li>
+every process creation and termination.</li>
+<li><b>sgj_job</b>&#151;Use <a href="http://oss.sgi.com/projects/pagg/">
+SGI's Process Aggregates (PAGG) kernel module</a>. 
+NOTE: This kernel module records every process creation 
+and termination.</li>
 </ul>
 
 <p>The <span class="commandline">plugin_name</span> and 
@@ -108,7 +112,8 @@ its errno to an appropriate value to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_container_destroy (uint32_t id);</p>
-<p style="margin-left:.2in"><b>Description</b>: Destroy a job container.
+<p style="margin-left:.2in"><b>Description</b>: Destroy or  otherwise
+invalidate a job container.
 This does not imply the container is empty, just that it is no longer 
 needed.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: 
@@ -135,6 +140,6 @@ mechanism outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 March 2006</p>
+<p style="text-align:center;">Last modified 6 June 2006</p>
 
 <!--#include virtual="footer.txt"-->

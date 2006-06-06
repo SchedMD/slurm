@@ -113,7 +113,6 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 fail1:
 	if (rc) {
 		slurm_seterrno_ret(rc);
-		return SLURM_FAILURE;
 	} else {
 		return SLURM_SUCCESS;
 	}
@@ -180,8 +179,10 @@ fail:
 /*
  * Retrieve the host address from the "allocation" structure for each
  * node in the specified "step".
+ *
+ * Returns 0 on success, -1 on error.
  */
-static void
+static int
 _get_step_addresses(const job_step_info_t *step,
 		    const resource_allocation_response_msg_t *allocation,
 		    slurm_addr **address, int *num_addresses)
@@ -195,7 +196,11 @@ _get_step_addresses(const job_step_info_t *step,
 	int i;
 	
 	alloc_nodes = hostset_create(allocation->node_list);
+	if (alloc_nodes == NULL)
+		return -1;
 	step_nodes = hostset_create(step->nodes);
+	if (step_nodes == NULL)
+		return -1;
 	step_nodes_it = hostset_iterator_create(step_nodes);
 
 	num_nodes = hostset_count(step_nodes);
@@ -212,6 +217,8 @@ _get_step_addresses(const job_step_info_t *step,
 
 	*address = addrs;
 	*num_addresses = num_nodes;
+
+	return 0;
 }
 
 static int
@@ -227,8 +234,9 @@ _signal_job_step(const job_step_info_t *step,
 	int rc = SLURM_SUCCESS;
 	int i;
 
-	_get_step_addresses(step, allocation,
-			    &address, &num_nodes);
+	if (_get_step_addresses(step, allocation,
+				&address, &num_nodes) == -1)
+		return SLURM_ERROR;
 
 	/* same remote procedure call for each node */
 	rpc.job_id = step->job_id;
@@ -502,8 +510,9 @@ _terminate_job_step(const job_step_info_t *step,
 	int rc = SLURM_SUCCESS;
 	int i;
 
-	_get_step_addresses(step, allocation,
-			    &address, &num_nodes);
+	if (_get_step_addresses(step, allocation,
+				&address, &num_nodes) == -1)
+		return SLURM_ERROR;
 
 	/*
 	 *  Send REQUEST_TERMINATE_TASKS to all nodes of the step

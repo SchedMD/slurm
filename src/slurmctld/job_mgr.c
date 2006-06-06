@@ -1044,8 +1044,8 @@ extern int kill_job_by_part_name(char *part_name)
 				job_ptr->end_time = job_ptr->suspend_time;
 			else
 				job_ptr->end_time = time(NULL);
-			deallocate_nodes(job_ptr, false, suspended);
 			job_completion_logger(job_ptr);
+			deallocate_nodes(job_ptr, false, suspended);
 		}
 
 	}
@@ -1118,8 +1118,8 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 					job_ptr->end_time = job_ptr->suspend_time;
 				else
 					job_ptr->end_time = time(NULL);
-				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr);
+				deallocate_nodes(job_ptr, false, suspended);
 			} else {
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);

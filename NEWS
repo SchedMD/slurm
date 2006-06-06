@@ -8,6 +8,11 @@ documents those changes that are of interest to users and admins.
  -- Send overcommit flag from srun in RPCs and have slurmd set SLURM_OVERCOMMIT
     flag at batch job launch time.
 
+* Changes in SLURM 1.1.2
+========================
+ -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
+    fails due to a node failure.
+
 * Changes in SLURM 1.1.1
 ========================
  -- Fix bug in packing job suspend/resume RPC.

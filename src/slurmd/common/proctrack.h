@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  proctrack.h - Define process tracking plugin functions.
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -83,7 +83,8 @@ extern int slurm_container_signal(uint32_t cont_id, int signal);
 
 
 /* 
- * Destroy a container, any processes within the container are not effected
+ * Destroy or otherwise invalidate a container, 
+ *	any processes within the container are not affected
  * cont_id IN - container ID as returned by slurm_container_create()
  *
  * Returns a SLURM errno.
@@ -93,7 +94,7 @@ extern int slurm_container_destroy(uint32_t cont_id);
 /*
  * Get container ID for give process ID
  *
- * Returns a SLURM errno.
+ * Returns zero if no container found for the given pid.
  */
 extern uint32_t slurm_container_find(pid_t pid);
 

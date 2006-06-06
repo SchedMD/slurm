@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "May 2006" "slurm.conf 1.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "June 2006" "slurm.conf 1.1" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -238,16 +238,29 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 Identifies the plugin to be used for process tracking. 
 The slurmd daemon uses this mechanism to identify all processes 
 which are children of processes it spawns for a user job. 
-Acceptable values at present include 
-"proctrack/aix" (which uses an AIX kernel extenstion and is 
-the default for AIX systems),
-"proctrack/linuxproc" (which uses linux process tree),
-"proctrack/rms" (which uses Quadrics kernel patch and is the 
-default if "SwitchType=switch/elan") and 
-"proctrack/pgid" (which is the default for all other systems).
-The slurmd daemon must be restarted for a change in ProctrackType 
+The slurmd daemon must be restarted for a change in ProctrackType
 to take effect.
 NOTE: "proctrack/linuxproc" is not compatable with "swich/elan."
+Acceptable values at present include:
+.RS
+.TP 
+\fBproctrack/aix\fR which uses an AIX kernel extenstion and is 
+the default for AIX systems
+.TP
+\fBproctrack/linuxproc\fR which uses linux process tree using 
+parent process IDs
+.TP
+\fBproctrack/rms\fR which uses Quadrics kernel patch and is the 
+default if "SwitchType=switch/elan" 
+.TP
+\fBproctrack/sgi_job\fR which uses SGI's Process Aggregates (PAGG)
+kernel module, see \fIhttp://oss.sgi.comm/projects/pagg/\fR 
+for more information 
+.TP
+\fBproctrack/pgid\fR which uses process group IDs and is the 
+default for all other systems
+.RE
+
 .TP
 \fBProlog\fR
 Fully qualified pathname of a script to execute as user root on every 
