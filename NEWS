@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.2
+========================
+ -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
+    fails due to a node failure.
+
 * Changes in SLURM 1.1.1
 ========================
  -- Fix bug in packing job suspend/resume RPC.
