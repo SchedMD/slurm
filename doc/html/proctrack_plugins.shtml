@@ -108,7 +108,8 @@ its errno to an appropriate value to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_container_destroy (uint32_t id);</p>
-<p style="margin-left:.2in"><b>Description</b>: Destroy a job container.
+<p style="margin-left:.2in"><b>Description</b>: Destroy or  otherwise
+invalidate a job container.
 This does not imply the container is empty, just that it is no longer 
 needed.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: 
@@ -135,6 +136,6 @@ mechanism outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 March 2006</p>
+<p style="text-align:center;">Last modified 6 June 2006</p>
 
 <!--#include virtual="footer.txt"-->
