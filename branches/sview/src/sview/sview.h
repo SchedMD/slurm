@@ -106,19 +106,21 @@ typedef struct {
 
 } sview_parameters_t;
 
-typedef struct {
+typedef struct display_data display_data_t;
+
+struct display_data {
 	int id;
 	char *name;
 	bool show;
 	int extra;
-	void (*get_info)    (GtkTable *table, void *display_data);
+	void (*get_info)    (GtkTable *table, display_data_t *display_data);
 	void (*set_fields)  (GtkMenu *menu);
 	void (*row_clicked) (GtkTreeView *tree_view,
 			     GtkTreePath *path,
 			     GtkTreeViewColumn *column,
 			     gpointer user_data);
 	gpointer user_data;
-} display_data_t;
+};
 
 extern sview_parameters_t params;
 extern int text_line_cnt;

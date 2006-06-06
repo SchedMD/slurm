@@ -77,88 +77,9 @@ void slurm_print_partition_info_msg ( FILE* out,
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr, 
 				  int one_liner )
 {
-	int j;
-	char tmp1[7];
-
-	/****** Line 1 ******/
-	fprintf ( out, "PartitionName=%s ", part_ptr->name);
-
-	convert_to_kilo(part_ptr->total_nodes, tmp1);
-	fprintf ( out, "TotalNodes=%s ", tmp1);
-
-	convert_to_kilo(part_ptr->total_cpus, tmp1);
-	fprintf ( out, "TotalCPUs=%s ", tmp1);
-	if (part_ptr->root_only)
-		fprintf ( out, "RootOnly=YES");
-	else
-		fprintf ( out, "RootOnly=NO");
-	if (one_liner)
-		fprintf ( out, " ");
-	else
-		fprintf ( out, "\n   ");
-
-	/****** Line 2 ******/
-	if (part_ptr->default_part)
-		fprintf ( out, "Default=YES ");
-	else
-		fprintf ( out, "Default=NO ");
-	if (part_ptr->shared == SHARED_NO)
-		fprintf ( out, "Shared=NO ");
-	else if (part_ptr->shared == SHARED_YES)
-		fprintf ( out, "Shared=YES ");
-	else
-		fprintf ( out, "Shared=FORCE ");
-	if (part_ptr->state_up)
-		fprintf ( out, "State=UP ");
-	else
-		fprintf ( out, "State=DOWN ");
-	if (part_ptr->max_time == INFINITE)
-		fprintf ( out, "MaxTime=UNLIMITED ");
-	else
-		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
-	if (part_ptr->hidden)
-		fprintf ( out, "Hidden=YES");
-	else
-		fprintf ( out, "Hidden=NO");
-	if (one_liner)
-		fprintf ( out, " ");
-	else
-		fprintf ( out, "\n   ");
-
-	/****** Line 3 ******/
-	convert_to_kilo(part_ptr->min_nodes, tmp1);
-	fprintf ( out, "MinNodes=%s ", tmp1);
-	if (part_ptr->max_nodes == INFINITE)
-		fprintf ( out, "MaxNodes=UNLIMITED ");
-	else {
-		convert_to_kilo(part_ptr->max_nodes, tmp1);
-		fprintf ( out, "MaxNodes=%s ", tmp1);
-	}
-	if ((part_ptr->allow_groups == NULL) || 
-	    (part_ptr->allow_groups[0] == '\0'))
-		fprintf ( out, "AllowGroups=ALL");
-	else
-		fprintf ( out, "AllowGroups=%s", part_ptr->allow_groups);
-	if (one_liner)
-		fprintf ( out, " ");
-	else
-		fprintf ( out, "\n   ");
-
-	/****** Line 4 ******/
-#ifdef HAVE_BG
-	fprintf ( out, "BasePartitions=%s BPIndices=", part_ptr->nodes);
-#else
-	fprintf ( out, "Nodes=%s NodeIndices=", part_ptr->nodes);
-#endif
-	for (j = 0; part_ptr->node_inx; j++) {
-		if (j > 0)
-			fprintf( out, ",%d", part_ptr->node_inx[j]);
-		else
-			fprintf( out, "%d", part_ptr->node_inx[j]);
-		if (part_ptr->node_inx[j] == -1)
-			break;
-	}
-	fprintf( out, "\n\n");
+	char *print_this = slurm_sprint_partition_info(part_ptr, one_liner);
+	fprintf ( out, "%s", print_this);
+	xfree(print_this);
 }
 
 

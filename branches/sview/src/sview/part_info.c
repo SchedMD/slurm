@@ -52,7 +52,8 @@ static display_data_t display_data_path[] = {
 #else
 	{SORTID_NODELIST, "NODELIST", TRUE, -1, NULL, NULL, NULL, NULL},
 #endif
-	{-1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}};
+	{-1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}
+};
 static display_data_t *local_display_data = NULL;
 
 static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
@@ -61,59 +62,66 @@ static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event,
 	local_display_data->user_data = user_data;
 	button_pressed(tree_view, event, local_display_data);
 }
+/*
+ * diff_tv_str - build a string showing the time difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
+ */
+inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
+		char *tv_str, int len_tv_str)
+{
+	long delta_t;
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+	if (delta_t > 1000000)
+		info("Warning: Note very large processing time: %s",tv_str); 
+}
+
 
 static int _append_part_record(partition_info_t *part_ptr,
 			       GtkListStore *liststore, GtkTreeIter *iter,
 			       int line)
 {
 	int printed = 0;
-	//int tempxcord;
-	int width = 0;
-	char *nodes = NULL, time_buf[20];
+	char time_buf[20];
 	char tmp_cnt[7];
-	char *temp[SORTID_CNT];
 	
+//	START_TIMER;
 	gtk_list_store_append(liststore, iter);
-	
-	if (part_ptr->name) {
-		temp[SORTID_PARTITION] = part_ptr->name;
-			if (part_ptr->state_up)
-				temp[SORTID_AVAIL] = "up";
-			else
-				temp[SORTID_AVAIL] = "down";
-								
-			if (part_ptr->max_time == INFINITE)
-				snprintf(time_buf, sizeof(time_buf),
-					 "infinite");
-			else {
-				snprint_time(time_buf,
-					     sizeof(time_buf),
-					     (part_ptr->max_time
-					      * 60));
-			}
-			
-			width = strlen(time_buf);
-			temp[SORTID_TIMELIMIT] = time_buf;		
-	}
+	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_PARTITION, part_ptr->name, -1);
 
+	if (part_ptr->state_up) 
+		gtk_list_store_set(liststore, iter, 
+				   SORTID_AVAIL, "up", -1);
+	else
+		gtk_list_store_set(liststore, iter, 
+				   SORTID_AVAIL, "down", -1);
+		
+	if (part_ptr->max_time == INFINITE)
+		snprintf(time_buf, sizeof(time_buf),
+			 "infinite");
+	else {
+		snprint_time(time_buf,
+			     sizeof(time_buf),
+			     (part_ptr->max_time
+			      * 60));
+	}
+	
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_TIMELIMIT, time_buf, -1);
+		
        	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
-	temp[SORTID_NODES] = tmp_cnt;
-		
-	//tempxcord = ba_system_ptr->xcord;
-		
-	nodes = part_ptr->nodes;
-		
-	temp[SORTID_NODELIST] = nodes;	
-	
-	gtk_list_store_set(liststore, iter,
-			   SORTID_POS, line,
-			   SORTID_PARTITION, temp[SORTID_PARTITION],
-			   SORTID_AVAIL, temp[SORTID_AVAIL],
-			   SORTID_TIMELIMIT, temp[SORTID_TIMELIMIT],
-			   SORTID_NODES, temp[SORTID_NODES],
-			   SORTID_NODELIST, temp[SORTID_NODELIST],
-			   -1);		
-	
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_NODES, tmp_cnt, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_NODELIST, part_ptr->nodes, -1);
+	//END_TIMER;
+	//g_print("Took %s\n",TIME_STR);
 	return printed;
 }
 

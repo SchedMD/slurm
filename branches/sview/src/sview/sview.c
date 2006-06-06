@@ -31,8 +31,8 @@ int adding = 1;
 int fini = 0;
 bool toggled = FALSE;
 GtkWidget *main_notebook = NULL;
-display_data_t main_display_data[PAGE_CNT+1] = {
-	{PARTITION_PAGE, "Partitions", TRUE, -1,
+display_data_t main_display_data[] = {
+	{PARTITION_PAGE, "Partitions", TRUE, -1, 
 	 get_info_part, set_fields_part, row_clicked_part, NULL},
 	{JOB_PAGE, "Jobs", TRUE, -1,
 	 get_info_job, set_fields_job, row_clicked_job, NULL},
@@ -288,7 +288,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 {
 	/* single click with the right mouse button? */
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
-					      display_data->extra);
+				      display_data->extra);
 	if(event->button == 3) {
 		right_button_pressed(NULL, event, display_data);
 	} 

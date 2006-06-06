@@ -83,71 +83,72 @@ static int _append_job_record(job_info_t *job_ptr,
 			      int line)
 {
 	int printed = 0;
-	int tempxcord;
-	int width = 0;
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[7];
 	char tmp_char[50];
-	char *temp[SORTID_CNT];
 	time_t time;
-	int prefixlen = 0;
-	int i = 0;
 	uint32_t node_cnt = 0;
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
 	
 	gtk_list_store_append(liststore, iter);
+	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
 	
-	sprintf(tmp_char, "%d ", job_ptr->job_id);
-	//temp[SORTID_JOBID] = 
-	printf("%9.9s ", job_ptr->partition);
+	snprintf(tmp_char, 50, "%d", job_ptr->job_id);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_JOBID, tmp_char, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_PARTITION, job_ptr->partition, -1);
 #ifdef HAVE_BG
-	printf("%16.16s ", 
-	       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
-				       time_buf, 
-				       sizeof(time_buf), 
-				       SELECT_PRINT_BG_ID));
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_BLOCK, 
+			   select_g_sprint_jobinfo(
+				   job_ptr->select_jobinfo, 
+				   time_buf, 
+				   sizeof(time_buf), 
+				   SELECT_PRINT_BG_ID), -1);
 #endif
-	printf("%8.8s ", uid_to_string((uid_t) job_ptr->user_id));
-	printf("%6.6s ", job_ptr->name);
-	printf("%2.2s ",
-	       job_state_string_compact(job_ptr->job_state));
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_USER, 
+			   uid_to_string((uid_t)job_ptr->user_id), -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_NAME, job_ptr->name, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_STATE, 
+			   job_state_string(job_ptr->job_state), -1);
+
 	if(!strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(time_buf,"0:00:00");
 	} else {
 		time = now_time - job_ptr->start_time;
 		snprint_time(time_buf, sizeof(time_buf), time);
 	}
-		
-	printf("%10.10s ", time_buf);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_TIME, time_buf, -1);
 
-	printf("%5s ", tmp_cnt);
-		
-	printf("%s", job_ptr->nodes);
+	convert_to_kilo(node_cnt, tmp_cnt);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_NODES, tmp_cnt, -1);
+				
+	nodes = job_ptr->nodes;
 	if(quarter != (uint16_t) NO_VAL) {
 		if(nodecard != (uint16_t) NO_VAL)
-			printf(".%d.%d", quarter, nodecard);
+			snprintf(tmp_char, 50, "%s.%d.%d", 
+				 nodes, quarter, nodecard);
 		else
-			printf(".%d", quarter);
-	}
-
-	printf("\n");
-
-/* 	gtk_list_store_set(liststore, iter, */
-/* 			   SORTID_POS, line, */
-/* 			   SORTID_PARTITION, temp[SORTID_PARTITION], */
-/* 			   SORTID_AVAIL, temp[SORTID_AVAIL], */
-/* 			   SORTID_TIMELIMIT, temp[SORTID_TIMELIMIT], */
-/* 			   SORTID_NODES, temp[SORTID_NODES], */
-/* 			   SORTID_NODELIST, temp[SORTID_NODELIST], */
-/* 			   -1);		 */
+			snprintf(tmp_char, 50, "%s.%d", nodes, quarter);
+		gtk_list_store_set(liststore, iter, 
+				   SORTID_NODELIST, tmp_char, -1);
+	} else
+		gtk_list_store_set(liststore, iter, 
+				   SORTID_NODELIST, nodes, -1);
 	
 	return printed;
 }
 
 extern void get_info_job(GtkTable *table, display_data_t *display_data)
 {
-	int error_code = -1, i, j, recs;
+	int error_code = SLURM_SUCCESS, i, j, recs;
 	static int printed_jobs = 0;
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
@@ -164,7 +165,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	if(new_job_ptr && toggled)
 		goto got_toggled;
 	now_time = time(NULL);
-	//show_flags |= SHOW_ALL;
+	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
 				&new_job_ptr, show_flags);
@@ -197,12 +198,12 @@ got_toggled:
 		recs = new_job_ptr->record_count;
 	else
 		recs = 0;
-	g_print("got here %d\n", recs);
+
 	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 
 	g_signal_connect(G_OBJECT(tree_view), "row-activated",
-			 G_CALLBACK(row_clicked_part),
+			 G_CALLBACK(row_clicked_job),
 			 new_job_ptr);
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(_set_up_button),
@@ -222,11 +223,11 @@ got_toggled:
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
 		
-		/* if ((job.job_state != JOB_PENDING) */
-/* 		    &&  (job.job_state != JOB_RUNNING) */
-/* 		    &&  (job.job_state != JOB_SUSPENDED) */
-/* 		    &&  ((job.job_state & JOB_COMPLETING) == 0)) */
-/* 			continue;	/\* job has completed *\/ */
+		if ((job.job_state != JOB_PENDING)
+		    &&  (job.job_state != JOB_RUNNING)
+		    &&  (job.job_state != JOB_SUSPENDED)
+		    &&  ((job.job_state & JOB_COMPLETING) == 0))
+			continue;	/* job has completed */
 
 		if (job.node_inx[0] != -1) {
 			job.num_nodes = 0;
@@ -257,6 +258,8 @@ got_toggled:
 	
 	//ba_system_ptr->ycord++;
 	
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
+	g_object_unref(GTK_TREE_MODEL(liststore));
 	job_info_ptr = new_job_ptr;
 	return;
 }
@@ -274,27 +277,51 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 {
 	job_info_msg_t *job_info_ptr = (job_info_msg_t *)user_data;
 	job_info_t *job_ptr = NULL;
-	int line = get_row_number(tree_view, path);
+	char *jobid_char = NULL;
+	int job_id = 0, i;
+	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
+	GtkTreeIter iter;
 	char *info = NULL;
-	if(line == -1) {
-		g_error("problem getting line number");
+	bool found = false;
+
+	if(!model) {
+		g_error("error getting the model from the tree_view");
 		return;
 	}
 	
-/* 	part_ptr = &new_part_ptr->partition_array[line]; */
-	/* if(!(info = slurm_sprint_partition_info(part_ptr, 0))) { */
-/* 		info = xmalloc(100); */
-/* 		sprintf(info, "Problem getting partition info for %s",  */
-/* 			part_ptr->name); */
-/* 	}  */
+	if (!gtk_tree_model_get_iter(model, &iter, path)) {
+		g_error("error getting iter from model");
+		return;
+	}	
+	gtk_tree_model_get(model, &iter, SORTID_JOBID, &jobid_char, -1);
+	job_id = atoi(jobid_char);
+
+	for (i = 0; i < job_info_ptr->record_count; i++) {
+		if(job_info_ptr->job_array[i].job_id == job_id) {
+			job_ptr = &job_info_ptr->job_array[i];
+			if(!(info = slurm_sprint_job_info(job_ptr, 0))) {
+				info = xmalloc(100);
+				sprintf(info, 
+					"Problem getting job info for %d",
+					job_ptr->job_id);
+			}
+			found = true;
+			break;
+		}
+	}
+
+	if(!found) {
+		info = xmalloc(100);
+		sprintf(info, "Job %d was not found!", job_ptr->job_id);
+	}
 
 	popup = gtk_dialog_new();
 
 	label = gtk_label_new(info);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   label, TRUE, TRUE, 0);
+			 label, TRUE, TRUE, 0);
 	xfree(info);
 	gtk_widget_show(label);
 	
