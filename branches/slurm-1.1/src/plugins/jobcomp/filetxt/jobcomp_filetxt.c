@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  jobcomp_filetxt.c - text file slurm job completion logging plugin.
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -45,6 +45,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -189,12 +190,13 @@ _make_time_str (time_t *time, char *string, int str_size)
 
 int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, host_cnt;
 	char job_rec[512+MAX_JOBNAME_LEN];
 	char usr_str[32], start_str[32], end_str[32], lim_str[32];
 	char select_buf[128];
 	size_t offset = 0, tot_size, wrote;
 	enum job_states job_state;
+	hostlist_t hl;
 
 	if ((log_name == NULL) || (job_comp_fd < 0)) {
 		error("JobCompLoc log file %s not open", log_name);
@@ -220,13 +222,19 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 
+	/* We want to report the proper node count, but since 
+	 * job_ptr->node_cnt gets decremented on epilog completion, 
+	 * we recompute it here */
+	hl = hostlist_create(job_ptr->nodes);
+	host_cnt = hostlist_count(hl);
+	hostlist_destroy(hl);
+
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
 			(unsigned long) job_ptr->job_id, usr_str, 
 			(unsigned long) job_ptr->user_id, job_ptr->name, 
 			job_state_string(job_state), 
 			job_ptr->partition, lim_str, start_str, 
-			end_str, job_ptr->nodes, job_ptr->node_cnt,
-			select_buf);
+			end_str, job_ptr->nodes, host_cnt, select_buf);
 	tot_size = strlen(job_rec);
 
 	while ( offset < tot_size ) {
