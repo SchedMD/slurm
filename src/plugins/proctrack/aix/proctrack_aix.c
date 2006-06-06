@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  proctrack_aix.c - process tracking via AIX kernel extension.
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -118,7 +118,6 @@ extern int slurm_container_create ( slurmd_job_t *job )
 extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
 {
 	int pgid = (int) job->pgid;
-	int i;
 
 	xassert(job);
 	xassert(pgid > 1);

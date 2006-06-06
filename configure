@@ -23635,7 +23635,7 @@ echo "$as_me: error: $bg_dir/lib64/libbglbridge_s.a is required and does not exi
          fi
 
          have_bg_ar=yes
-         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -L/usr/lib64 -lexpat"
+         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage_s -lbgldb_s -lbglmachine_s -ltableapi_s -L/usr/lib64 -lexpat"
 
       fi
 
@@ -23709,6 +23709,9 @@ else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
+{ { echo "$as_me:$LINENO: error: There is a problem linking to the bluegene api." >&5
+echo "$as_me: error: There is a problem linking to the bluegene api." >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext

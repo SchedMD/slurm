@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8235 2006-05-30 18:56:24Z morrone $
+# $Id: Makefile.am 8241 2006-05-30 23:23:19Z grondo $
 #
 
 SOURCES = $(srun_SOURCES)
