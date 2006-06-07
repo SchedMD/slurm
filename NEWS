@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
     fails due to a node failure.
  -- Fix Bluegene configure to work with the new 64bit libs.
+ -- Fix bug in controller that causes it to segfault when hit with a malformed
+    message.
 
 * Changes in SLURM 1.1.1
 ========================
