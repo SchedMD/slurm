@@ -47,7 +47,6 @@
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
-#include "src/srun/opt.h"
 
 /* number of active threads */
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -73,11 +72,11 @@ int message_thread = 0;
 /* 
  * Static prototypes
  */
-static void   _p_fwd_signal(slurm_msg_t *, srun_job_t *);
+static void   _p_fwd_signal(slurm_msg_t *, srun_job_t *, int);
 static void * _p_signal_task(void *);
 
 void 
-fwd_signal(srun_job_t *job, int signo)
+fwd_signal(srun_job_t *job, int signo, int max_threads)
 {
 	int i;
 	slurm_msg_t *req;
@@ -123,7 +122,7 @@ fwd_signal(srun_job_t *job, int signo)
 		        &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
-	_p_fwd_signal(req, job);
+	_p_fwd_signal(req, job, max_threads);
 
 	debug2("All tasks have been signalled");
 	xfree(req);
@@ -149,7 +148,7 @@ job_active_tasks_on_host(srun_job_t *job, int hostid)
 }
 
 /* _p_fwd_signal - parallel (multi-threaded) task signaller */
-static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job)
+static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job, int max_threads)
 {
 	int i;
 	task_info_t *tinfo;
@@ -161,7 +160,7 @@ static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job)
 			continue;	/* inactive task */
 
 		slurm_mutex_lock(&active_mutex);
-		while (active >= opt.max_threads) {
+		while (active >= max_threads) {
 			pthread_cond_wait(&active_cond, &active_mutex);
 		}
 		active++;

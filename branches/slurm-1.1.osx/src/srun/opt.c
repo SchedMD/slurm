@@ -125,6 +125,13 @@
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 
+/*---- global variables, defined in opt.h ----*/
+char **remote_argv;
+int remote_argc;
+int _verbose;
+enum modes mode;
+opt_t opt;
+
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;

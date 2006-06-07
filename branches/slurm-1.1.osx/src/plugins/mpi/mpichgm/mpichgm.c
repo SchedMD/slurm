@@ -267,7 +267,7 @@ static void _gmpi_wait_abort(srun_job_t *job)
 		}
 		close(newfd);
 		debug("Received ABORT message from an MPI process.");
-		fwd_signal(job, SIGKILL);
+		fwd_signal(job, SIGKILL, opt.max_threads);
 #if 0
 		xfree(rbuf);
 		close(jgmpi_fd);

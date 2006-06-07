@@ -154,7 +154,7 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 
 			info("sending Ctrl-C to job");
 			*last_intr_sent = time(NULL);
-			fwd_signal(job, SIGINT);
+			fwd_signal(job, SIGINT, opt.max_threads);
 
 		} else {
 			job_force_termination(job);
@@ -198,7 +198,7 @@ _sig_thr(void *arg)
 			job_force_termination(job);
 			break;
 		  default:
-			fwd_signal(job, signo);
+			fwd_signal(job, signo, opt.max_threads);
 			break;
 		}
 	}

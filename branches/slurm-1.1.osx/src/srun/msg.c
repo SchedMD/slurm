@@ -354,7 +354,7 @@ static void _node_fail_handler(char *nodelist, srun_job_t *job)
 	error("Node failure on %s, killing job", nodelist);
 	update_job_state(job, SRUN_JOB_FORCETERM);
 	info("sending Ctrl-C to remaining tasks");
-	fwd_signal(job, SIGINT);
+	fwd_signal(job, SIGINT, opt.max_threads);
 	if (job->ioid)
 		eio_signal_wakeup(job->eio);
 }
@@ -556,7 +556,7 @@ _confirm_launch_complete(srun_job_t *job)
 			error ("Node %s not responding, terminating job step",
 			       job->step_layout->host[i]);
 			info("sending Ctrl-C to remaining tasks");
-			fwd_signal(job, SIGINT);
+			fwd_signal(job, SIGINT, opt.max_threads);
 			job->rc = 124;
 			update_job_state(job, SRUN_JOB_FAILED);
 			pthread_exit(0);
