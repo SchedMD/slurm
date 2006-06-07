@@ -101,6 +101,9 @@
 /* define if you have the PAM library */
 #undef HAVE_PAM
 
+/* Define to 1 if you have the <pam/pam_appl.h> header file. */
+#undef HAVE_PAM_PAM_APPL_H
+
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 
@@ -121,6 +124,9 @@
 
 /* Define to 1 if you have the `sched_setaffinity' function. */
 #undef HAVE_SCHED_SETAFFINITY
+
+/* Define to 1 if you have the <security/pam_appl.h> header file. */
+#undef HAVE_SECURITY_PAM_APPL_H
 
 /* Define to 1 if you have the `setproctitle' function. */
 #undef HAVE_SETPROCTITLE

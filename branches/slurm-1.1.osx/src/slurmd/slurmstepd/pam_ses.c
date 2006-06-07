@@ -36,8 +36,13 @@
 
 #ifdef HAVE_PAM
 
-#include <security/pam_appl.h>
-#include <security/pam_misc.h>
+#ifdef HAVE_PAM_PAM_APPL_H
+#  include <pam/pam_appl.h>
+#  include <pam/pam_misc.h>
+#else
+#  include <security/pam_appl.h>
+#  include <security/pam_misc.h>
+#endif
 
 static pam_handle_t *pam_h = NULL;
 
