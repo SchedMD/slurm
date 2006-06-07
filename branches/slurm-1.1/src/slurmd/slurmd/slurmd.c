@@ -1048,7 +1048,7 @@ _set_bluegene_libdb2(void)
 	}
 	
 	snprintf(tmp_char, 200, "%s/select_bluegene.so", conf->plugindir);
-	snprintf(tmp_char2, 200, "%s/libdb2.so.1", conf->plugindir);
+	snprintf(tmp_char2, 200, "/usr/lib64/libdb2.so.1", conf->plugindir);
 	if (symlink(tmp_char, tmp_char2) < 0) {
 		if (errno != EEXIST) {
 			fatal("symlink(%s): %m", tmp_char2);
@@ -1056,7 +1056,7 @@ _set_bluegene_libdb2(void)
 		}
 	}
 	
-	snprintf(tmp_char, 200, "%s/libdb2.so", conf->plugindir);
+	snprintf(tmp_char, 200, "/usr/lib64/libdb2.so", conf->plugindir);
 	if (symlink(tmp_char2, tmp_char) < 0) {
 		if (errno != EEXIST) {
 			fatal("symlink(%s): %m", tmp_char2);
