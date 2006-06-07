@@ -916,9 +916,7 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 
 	exitcode = _print_script_exit_status(xbasename(argv[0]), status); 
 
-	if (unsetenv("SLURM_JOBID")) {
-		error("Unable to clear SLURM_JOBID environment variable");
-	}
+	(void) unsetenv("SLURM_JOBID");	/* no return code on some systems */
 	return exitcode;
 }
 
