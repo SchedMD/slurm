@@ -4,7 +4,7 @@
 #if HAVE_CONFIG_H
 #  include "config.h"
 #  if (!HAVE_STRLCPY)
-#     undef strlcpy;
+#     undef strlcpy
 
 #     include <sys/types.h>
 
