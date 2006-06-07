@@ -1054,6 +1054,13 @@ _set_bluegene_libdb2(void)
 			return SLURM_ERROR;
 		}
 	}
+	snprintf(tmp_char, 200, "%s/libdb2.so.1", conf->plugindir);
+	if (symlink(tmp_char2, tmp_char) < 0) {
+		if (errno != EEXIST) {
+			fatal("symlink(%s): %m", tmp_char2);
+			return SLURM_ERROR;
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
