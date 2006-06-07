@@ -109,6 +109,7 @@ typedef struct {
 typedef struct display_data display_data_t;
 
 struct display_data {
+	GType type;
 	int id;
 	char *name;
 	bool show;
@@ -164,6 +165,7 @@ extern void row_clicked_block(GtkTreeView *tree_view,
 			      gpointer user_data);
 
 // job_info.c
+extern int get_new_info_job(job_info_msg_t **info_ptr);
 extern void get_info_job(GtkTable *table, display_data_t *display_data);
 extern void set_fields_job(GtkMenu *menu);
 extern void row_clicked_job(GtkTreeView *tree_view,

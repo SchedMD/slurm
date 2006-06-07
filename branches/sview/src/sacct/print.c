@@ -215,7 +215,7 @@ void print_idrss(type_t type, void *object)
 		rusage = step->rusage;
 		break;
 	} 
-	convert_num((float)rusage.ru_idrss, outbuf);
+	convert_num_unit((float)rusage.ru_idrss, outbuf, UNIT_NONE);
 	printf("%8s", outbuf);
 }
 
@@ -698,11 +698,12 @@ void print_pages(type_t type, void *object)
 		break;
 	case JOB:
 		sacct = job->sacct;
-		convert_num((float)sacct.max_pages, buf1);
+		convert_num_unit((float)sacct.max_pages, buf1, UNIT_NONE);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
-			convert_num((float)sacct.ave_pages, buf2);
+			convert_num_unit((float)sacct.ave_pages,
+					 buf2, UNIT_NONE);
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
 				 buf1,
 				 sacct.max_pages_task, 
@@ -712,8 +713,8 @@ void print_pages(type_t type, void *object)
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
-		convert_num((float)sacct.max_pages, buf1);
-		convert_num((float)sacct.ave_pages, buf2);
+		convert_num_unit((float)sacct.max_pages, buf1, UNIT_NONE);
+		convert_num_unit((float)sacct.ave_pages, buf2, UNIT_NONE);
 		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
 			 buf1,
 			 sacct.max_pages_task, 
@@ -741,11 +742,12 @@ void print_rss(type_t type, void *object)
 		break;
 	case JOB:
 		sacct = job->sacct;
-		convert_num((float)sacct.max_rss, buf1);
+		convert_num_unit((float)sacct.max_rss, buf1, UNIT_NONE);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
-			convert_num((float)sacct.ave_rss, buf2);
+			convert_num_unit((float)sacct.ave_rss, 
+					 buf2, UNIT_NONE);
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
 				 buf1,
 				 sacct.max_rss_task, 
@@ -755,8 +757,8 @@ void print_rss(type_t type, void *object)
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
-		convert_num((float)sacct.max_rss, buf1);
-		convert_num((float)sacct.ave_rss, buf2);
+		convert_num_unit((float)sacct.max_rss, buf1, UNIT_NONE);
+		convert_num_unit((float)sacct.ave_rss, buf2, UNIT_NONE);
 		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
 			 buf1,
 			 sacct.max_rss_task, 
@@ -993,11 +995,12 @@ void print_vsize(type_t type, void *object)
 		break;
 	case JOB:
 		sacct = job->sacct;
-		convert_num((float)sacct.max_vsize, buf1);
+		convert_num_unit((float)sacct.max_vsize, buf1, UNIT_NONE);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
-			convert_num((float)sacct.ave_vsize, buf2);
+			convert_num_unit((float)sacct.ave_vsize,
+					 buf2, UNIT_NONE);
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
 				 buf1,
 				 sacct.max_vsize_task, 
@@ -1007,8 +1010,8 @@ void print_vsize(type_t type, void *object)
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
-		convert_num((float)sacct.max_vsize, buf1);
-		convert_num((float)sacct.ave_vsize, buf2);
+		convert_num_unit((float)sacct.max_vsize, buf1, UNIT_NONE);
+		convert_num_unit((float)sacct.ave_vsize, buf2, UNIT_NONE);
 		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
 			 buf1,
 			 sacct.max_vsize_task, 

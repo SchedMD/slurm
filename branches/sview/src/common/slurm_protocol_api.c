@@ -1842,6 +1842,20 @@ int convert_to_kilo(int number, char *tmp)
 	return SLURM_SUCCESS;
 }
 
+void convert_num_unit(float num, char *buf, int orig_type)
+{
+	char *unit = "\0KMGP?";
+		
+	while(num>1024) {
+		num /= 1024;
+		orig_type++;
+	}
+       
+	if(orig_type < UNIT_NONE || orig_type > UNIT_PETA)
+		orig_type = UNIT_UNKNOWN;
+	sprintf(buf, "%.2f%c", num, unit[orig_type]);
+}
+
 #if _DEBUG
 
 static void _print_data(char *data, int len)

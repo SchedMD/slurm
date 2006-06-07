@@ -265,7 +265,6 @@ void process_start(char *f[], int lc, int show_full);
 void process_step(char *f[], int lc, int show_full);
 void process_suspend(char *f[], int lc, int show_full);
 void process_terminated(char *f[], int lc, int show_full);
-void convert_num(float num, char *buf);
 void aggregate_sacct(sacct_t *dest, sacct_t *from);
 void destroy_acct_header(void *object);
 void destroy_job(void *object);

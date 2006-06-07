@@ -466,18 +466,6 @@ finished:
 	destroy_job(temp);
 }
 
-void convert_num(float num, char *buf)
-{
-	char *unit = "\0KMGP";
-	int count = 0;
-
-	while(num>1024) {
-		num /= 1024;
-		count++;
-	}
-	snprintf(buf, 20, "%.2f%c", num, unit[count]);
-}
-
 void aggregate_sacct(sacct_t *dest, sacct_t *from)
 {
 	if(dest->max_vsize < from->max_vsize) {

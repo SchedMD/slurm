@@ -50,29 +50,29 @@ enum {
 };
 
 static display_data_t display_data_job[] = {
-	{SORTID_POS, NULL, FALSE, -1},
-	{SORTID_JOBID, "JOBID", TRUE, -1},
-	{SORTID_PARTITION, "PARTITION", TRUE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_STRING, SORTID_JOBID, "JOBID", TRUE, -1},
+	{G_TYPE_STRING, SORTID_PARTITION, "PARTITION", TRUE, -1},
 #ifdef HAVE_BG
-	{SORTID_BLOCK, "BG BLOCK", TRUE, -1},
+	{G_TYPE_STRING, SORTID_BLOCK, "BG BLOCK", TRUE, -1},
 	
 #endif
-	{SORTID_USER, "USER", TRUE, -1},
-	{SORTID_NAME, "NAME", TRUE, -1},
-	{SORTID_STATE, "STATE", TRUE, -1},
-	{SORTID_TIME, "TIME", TRUE, -1},
-	{SORTID_NODES, "NODES", TRUE, -1},
+	{G_TYPE_STRING, SORTID_USER, "USER", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NAME, "NAME", TRUE, -1},
+	{G_TYPE_STRING, SORTID_STATE, "STATE", TRUE, -1},
+	{G_TYPE_STRING, SORTID_TIME, "TIME", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODES, "NODES", TRUE, -1},
 #ifdef HAVE_BG
-	{SORTID_NODELIST, "BP_LIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP_LIST", TRUE, -1},
 #else
-	{SORTID_NODELIST, "NODELIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
 #endif
-	{-1, NULL, FALSE, -1}};
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
 static display_data_t *local_display_data = NULL;
 time_t now_time;
 
 static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			    gpointer user_data)
+			   gpointer user_data)
 {
 	local_display_data->user_data = user_data;
 	button_pressed(tree_view, event, local_display_data);
@@ -146,6 +146,29 @@ static int _append_job_record(job_info_t *job_ptr,
 	return printed;
 }
 
+extern int get_new_info_job(job_info_msg_t **info_ptr)
+{
+	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
+	uint16_t show_flags = 0;
+	int error_code = SLURM_SUCCESS;
+
+	show_flags |= SHOW_ALL;
+	if (job_info_ptr) {
+		error_code = slurm_load_jobs(job_info_ptr->last_update,
+				&new_job_ptr, show_flags);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_job_info_msg(job_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_NO_CHANGE_IN_DATA;
+			new_job_ptr = job_info_ptr;
+		}
+	} else
+		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 
+					     show_flags);
+	job_info_ptr = new_job_ptr;
+	*info_ptr = new_job_ptr;
+	return error_code;
+}
 extern void get_info_job(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS, i, j, recs;
@@ -165,19 +188,11 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	if(new_job_ptr && toggled)
 		goto got_toggled;
 	now_time = time(NULL);
-	show_flags |= SHOW_ALL;
-	if (job_info_ptr) {
-		error_code = slurm_load_jobs(job_info_ptr->last_update,
-				&new_job_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_job_info_msg(job_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_job_ptr = job_info_ptr;
-		}
-	} else
-		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 
-					     show_flags);
+
+	if((error_code = get_new_info_job(&new_job_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) 
+		return;
+	g_print("got %d\n", error_code);
 got_toggled:
 	if(display_widget)
 		gtk_widget_destroy(display_widget);
@@ -198,7 +213,7 @@ got_toggled:
 		recs = new_job_ptr->record_count;
 	else
 		recs = 0;
-
+	g_print("got %d\n",recs);
 	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 

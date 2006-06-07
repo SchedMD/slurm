@@ -33,39 +33,179 @@ DEF_TIMERS;
 
 enum { 
 	SORTID_POS = POS_LOC,
-	SORTID_PARTITION, 
-	SORTID_AVAIL, 
-	SORTID_TIMELIMIT, 
-	SORTID_NODES, 
-	SORTID_NODELIST, 
-	SORTID_PARTITION_CNT
+	SORTID_NAME, 
+	SORTID_STATE,
+	SORTID_CPUS, 
+	SORTID_MEMORY, 
+	SORTID_DISK, 
+	SORTID_WEIGHT, 
+	SORTID_FEATURES, 
+	SORTID_REASON,
+	SORTID_CNT
 };
 
 static display_data_t display_data_node[] = {
-	{SORTID_POS, NULL, FALSE, -1},
-	{SORTID_PARTITION, "PARTITION", TRUE, -1},
-	{SORTID_AVAIL, "AVAIL", TRUE, -1},
-	{SORTID_TIMELIMIT, "TIMELIMIT", TRUE, -1},
-	{SORTID_NODES, "NODES", TRUE, -1},
-#ifdef HAVE_BG
-	{SORTID_NODELIST, "BP_LIST", TRUE, -1},
-#else
-	{SORTID_NODELIST, "NODELIST", TRUE, -1},
-#endif
-	{-1, NULL, FALSE, -1}};
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1},
+	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, -1},
+	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", TRUE, -1},
+	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", TRUE, -1},
+	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1},
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
 static display_data_t *local_display_data = NULL;
 
-
 static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			    gpointer user_data)
+			   gpointer user_data)
 {
 	local_display_data->user_data = user_data;
 	button_pressed(tree_view, event, local_display_data);
 }
 
+static int _append_node_record(node_info_t *node_ptr,
+			       GtkListStore *liststore, GtkTreeIter *iter,
+			       int line)
+{
+	int printed = 0;
+	char *nodes = NULL, time_buf[20];
+	char tmp_cnt[7];
+	char tmp_char[50];
+	time_t time;
+	uint32_t node_cnt = 0;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
+	
+	gtk_list_store_append(liststore, iter);
+	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_NAME, node_ptr->name, -1);
+	gtk_list_store_set(liststore, iter,
+			   SORTID_STATE,
+			   node_state_string(node_ptr->node_state), -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_CPUS, node_ptr->cpus, -1);
+
+	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_NONE);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_NAME, tmp_cnt, -1);
+	
+	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_MEMORY, tmp_cnt, -1);
+	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_DISK, tmp_cnt, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_WEIGHT, node_ptr->weight, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_FEATURES, node_ptr->features, -1);
+	gtk_list_store_set(liststore, iter, 
+			   SORTID_REASON, node_ptr->reason, -1);
+	
+}
+
+extern int get_new_info_node(node_info_msg_t **info_ptr)
+{
+	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
+	uint16_t show_flags = 0;
+	int error_code = SLURM_SUCCESS;
+
+	show_flags |= SHOW_ALL;
+	if (node_info_ptr) {
+		error_code = slurm_load_node(node_info_ptr->last_update,
+					     &new_node_ptr, show_flags);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_node_info_msg(node_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_NO_CHANGE_IN_DATA;
+			new_node_ptr = node_info_ptr;
+		}
+	} else
+		error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 
+					     show_flags);
+	node_info_ptr = new_node_ptr;
+	*info_ptr = new_node_ptr;
+	return error_code;
+}
+
 extern void get_info_node(GtkTable *table, display_data_t *display_data)
 {
-	local_display_data = display_data;	
+	int error_code = SLURM_SUCCESS, i, j, recs;
+	static int printed_nodes = 0;
+	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
+	node_info_t node;
+	uint16_t show_flags = 0;
+	char error_char[50];
+	GtkTreeIter iter;
+	GtkListStore *liststore = NULL;
+	GtkWidget *label = NULL;
+	GtkTreeView *tree_view = NULL;
+	static GtkWidget *display_widget = NULL;
+	
+	local_display_data = display_data;
+	if(new_node_ptr && toggled)
+		goto got_toggled;
+
+	if((error_code = get_new_info_node(&new_node_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) 
+		return;
+	
+got_toggled:
+	if(display_widget)
+		gtk_widget_destroy(display_widget);
+
+	if (error_code != SLURM_SUCCESS) {
+		sprintf(error_char, "slurm_load_node: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(GTK_TABLE(table), 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		display_widget = gtk_widget_ref(GTK_WIDGET(label));
+		return;
+	}
+
+	if (new_node_ptr)
+		recs = new_node_ptr->record_count;
+	else
+		recs = 0;
+	
+	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
+	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+
+	g_signal_connect(G_OBJECT(tree_view), "row-activated",
+			 G_CALLBACK(row_clicked_node),
+			 new_node_ptr);
+	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
+			 G_CALLBACK(_set_up_button),
+			 new_node_ptr);
+	
+	gtk_table_attach_defaults(GTK_TABLE(table), 
+				  GTK_WIDGET(tree_view),
+				  0, 1, 0, 1); 
+	gtk_widget_show(GTK_WIDGET(tree_view));
+	
+	liststore = create_liststore(display_data_node, SORTID_CNT);
+
+	load_header(tree_view, display_data_node);
+
+	printed_nodes = 0;
+	
+	for (i = 0; i < recs; i++) {
+		node = new_node_ptr->node_array[i];
+		_append_node_record(&node, liststore, &iter, i);
+	}
+		
+	//ba_system_ptr->ycord++;
+	
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
+	g_object_unref(GTK_TREE_MODEL(liststore));
+	node_info_ptr = new_node_ptr;
+	return;
+	
 }
 
 
@@ -77,10 +217,10 @@ extern void set_fields_node(GtkMenu *menu)
 extern void row_clicked_node(GtkTreeView *tree_view,
 			     GtkTreePath *path,
 			     GtkTreeViewColumn *column,
-			    gpointer user_data)
+			     gpointer user_data)
 {
-	/* job_info_msg_t *job_info_ptr = (job_info_msg_t *)user_data; */
-/* 	job_info_t *job_ptr = NULL; */
+	node_info_msg_t *node_info_ptr = (node_info_msg_t *)user_data;
+	node_info_t *node_ptr = NULL;
 	int line = get_row_number(tree_view, path);
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
@@ -90,12 +230,12 @@ extern void row_clicked_node(GtkTreeView *tree_view,
 		return;
 	}
 	
-/* 	part_ptr = &new_part_ptr->partition_array[line]; */
-	/* if(!(info = slurm_sprint_partition_info(part_ptr, 0))) { */
-/* 		info = xmalloc(100); */
-/* 		sprintf(info, "Problem getting partition info for %s",  */
-/* 			part_ptr->name); */
-/* 	}  */
+	node_ptr = &node_info_ptr->node_array[line];
+	if(!(info = slurm_sprint_node_table(node_ptr, 0))) {
+		info = xmalloc(100);
+		sprintf(info, "Problem getting node info for %s",
+			node_ptr->name);
+	}
 
 	popup = gtk_dialog_new();
 

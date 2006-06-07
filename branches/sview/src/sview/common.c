@@ -27,10 +27,10 @@
 
 #include "src/sview/sview.h"
 
-static int _sort_iter_compare_func(GtkTreeModel *model,
-				   GtkTreeIter  *a,
-				   GtkTreeIter  *b,
-				   gpointer      userdata)
+static int _sort_iter_compare_func_char(GtkTreeModel *model,
+					GtkTreeIter  *a,
+					GtkTreeIter  *b,
+					gpointer      userdata)
 {
 	int sortcol = GPOINTER_TO_INT(userdata);
 	int ret = 0;
@@ -53,6 +53,24 @@ static int _sort_iter_compare_func(GtkTreeModel *model,
 cleanup:
 	g_free(name1);
 	g_free(name2);
+	
+	return ret;
+}
+
+static int _sort_iter_compare_func_int(GtkTreeModel *model,
+				       GtkTreeIter  *a,
+				       GtkTreeIter  *b,
+				       gpointer      userdata)
+{
+	int sortcol = GPOINTER_TO_INT(userdata);
+	int ret = 0;
+	gint int1, int2;
+
+	gtk_tree_model_get(model, a, sortcol, &int1, -1);
+	gtk_tree_model_get(model, b, sortcol, &int2, -1);
+	
+	if (int1 != int2)
+		ret = (int1 > int2) ? 1 : -1;
 	
 	return ret;
 }
@@ -135,21 +153,38 @@ extern GtkListStore *create_liststore(display_data_t *display_data, int count)
 	GtkListStore *liststore = NULL;
 	GType types[count];
 	int i=0;
-	/* for the position 'unseen' var */
-	types[i] = G_TYPE_INT;
-	for(i=1; i<count; i++)
-		types[i] = G_TYPE_STRING;
+	
+	/*set up the types defined in the display_data_t */
+	for(i=0; i<count; i++)
+		types[i] = display_data[i].type;
 	liststore = gtk_list_store_newv(count, types);
 	if(!liststore)
 		return NULL;
 	for(i=1; i<count; i++) {
-		if(display_data[i].show)
-			gtk_tree_sortable_set_sort_func(
+		if(display_data[i].show) {
+			switch(display_data[i].type) {
+			case G_TYPE_INT:
+				gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE(liststore), 
+					i, 
+					_sort_iter_compare_func_int,
+					GINT_TO_POINTER(i), 
+					NULL); 
+				
+				break;
+			case G_TYPE_STRING:
+				gtk_tree_sortable_set_sort_func(
 				GTK_TREE_SORTABLE(liststore), 
 				i, 
-				_sort_iter_compare_func,
+				_sort_iter_compare_func_char,
 				GINT_TO_POINTER(i), 
 				NULL); 
+				break;
+			default:
+				g_print("unknown type %d",
+					(int)display_data[i].type);
+			}
+		}
 	}
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
 					     1, 

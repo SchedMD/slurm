@@ -59,6 +59,16 @@ enum controller_id {
 	SECONDARY_CONTROLLER = 2
 };
 
+/* unit types */
+enum {
+	UNIT_NONE,
+	UNIT_KILO,
+	UNIT_MEGA,
+	UNIT_GIGA,
+	UNIT_PETA,
+	UNIT_UNKNOWN
+};
+
 /**********************************************************************\
  * protocol configuration functions                
 \**********************************************************************/
@@ -594,4 +604,5 @@ extern int *set_span(int total, uint16_t tree_width);
 void slurm_free_msg(slurm_msg_t * msg);
 void slurm_auth_cred_destroy(void *auth_cred);
 int convert_to_kilo(int number, char *tmp);
+void convert_num_unit(float num, char *buf, int orig_type);
 #endif

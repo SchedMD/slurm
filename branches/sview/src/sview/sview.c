@@ -32,25 +32,25 @@ int fini = 0;
 bool toggled = FALSE;
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
-	{PARTITION_PAGE, "Partitions", TRUE, -1, 
+	{G_TYPE_NONE, PARTITION_PAGE, "Partitions", TRUE, -1, 
 	 get_info_part, set_fields_part, row_clicked_part, NULL},
-	{JOB_PAGE, "Jobs", TRUE, -1,
+	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
 	 get_info_job, set_fields_job, row_clicked_job, NULL},
-	{NODE_PAGE, "Nodes", TRUE, -1,
+	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
 	 get_info_node, set_fields_node, row_clicked_node, NULL},
 #ifdef HAVE_BG
-	{BLOCK_PAGE, "BG Blocks", TRUE, -1,
+	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
 #else
-	 {BLOCK_PAGE, "BG Blocks", FALSE, -1,
+	 {G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
 #endif
-	  get_info_block, set_fields_block, row_clicked_block, NULL},
-	 {JOB_SUBMIT_PAGE, "Submit Job", TRUE, -1,
-	  get_info_submit, set_fields_submit, row_clicked_submit, NULL},
-	 {ADMIN_PAGE, "Admin", TRUE, -1,
+	 get_info_block, set_fields_block, row_clicked_block, NULL},
+	 {G_TYPE_NONE, JOB_SUBMIT_PAGE, "Submit Job", TRUE, -1,
+	 get_info_submit, set_fields_submit, row_clicked_submit, NULL},
+	 {G_TYPE_NONE, ADMIN_PAGE, "Admin", TRUE, -1,
 	  get_info_admin, set_fields_admin, row_clicked_admin, NULL},
-	 {-1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}
+	 {G_TYPE_NONE, -1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}
 	};
-
+	
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
