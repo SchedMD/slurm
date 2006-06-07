@@ -65,8 +65,12 @@ void *_stat_thread(void *args)
 	ret_list = slurm_send_recv_node_msg(msg, 
 					    &resp_msg, 
 					    msg->forward.timeout);
-	if (!ret_list) {
-		error("got an error no list returned");
+	if (!ret_list || !resp_msg.auth_cred) {
+		if(ret_list)
+			list_destroy(ret_list);
+		if(resp_msg.auth_cred)
+			slurm_auth_cred_destroy(resp_msg.auth_cred);
+		error("got an error no list returned or no auth_cred");
 		goto cleanup;
 	}
 	g_slurm_auth_destroy(resp_msg.auth_cred);
@@ -75,9 +79,9 @@ void *_stat_thread(void *args)
 	case MESSAGE_STAT_JOBACCT:
 		jobacct_msg = (stat_jobacct_msg_t *)resp_msg.data;
 		if(jobacct_msg) {
-			debug2("got it back for job %d %d tasks", 
-			     jobacct_msg->job_id,
-			     jobacct_msg->num_tasks);
+			debug2("got it back for job %d %d tasks\n", 
+			       jobacct_msg->job_id,
+			       jobacct_msg->num_tasks);
 			jobacct_g_2_sacct(&temp_sacct, jobacct_msg->jobacct);
 			ntasks = jobacct_msg->num_tasks;
 			slurm_free_stat_jobacct_msg(jobacct_msg);
@@ -112,8 +116,6 @@ void *_stat_thread(void *args)
 						&temp_sacct2, 
 						jobacct_msg->jobacct);
 					ntasks += jobacct_msg->num_tasks;
-					slurm_free_stat_jobacct_msg(
-						jobacct_msg);
 					aggregate_sacct(&temp_sacct, 
 							&temp_sacct2);
 				}
@@ -174,7 +176,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	/* Common message contents */
 	r.job_id      = job->job_id;
 	r.step_id     = step_id;
-	r.jobacct     = jobacct_g_alloc((uint16_t)NO_VAL);
+	r.jobacct     = jobacct_g_alloc(NULL);
 
 	forward.cnt = job->node_cnt;
 	/* we need this for forwarding, but not really anything else, so 
@@ -272,7 +274,7 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	debug("requesting info for job %u.%u", jobid, stepid);
 	req.job_id = jobid;
 	req.step_id = stepid;
-	req.jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	req.jobacct = jobacct_g_alloc(NULL);
 	req_msg.msg_type = MESSAGE_STAT_JOBACCT;
 	req_msg.data     = &req;
 	

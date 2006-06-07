@@ -39,7 +39,7 @@ AC_DEFUN([X_AC_BLUEGENE],
          fi
 
          have_bg_ar=yes
-         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -L/usr/lib64 -lexpat"
+         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage_s -lbgldb_s -lbglmachine_s -ltableapi_s -L/usr/lib64 -lexpat"
       
       fi
       
@@ -63,7 +63,7 @@ AC_DEFUN([X_AC_BLUEGENE],
 
       saved_LDFLAGS="$LDFLAGS"
       LDFLAGS="$saved_LDFLAGS $bg_ldflags"
-      AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[AC_MSG_ERROR(There is a problem linking to the bluegene api.)])
       LDFLAGS="$saved_LDFLAGS"
    fi
    if test ! -z "$have_bg_files" ; then

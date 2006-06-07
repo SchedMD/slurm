@@ -617,10 +617,18 @@ of the individual SLURM_CPU_BIND* and SLURM_MEM_BIND* variables.
 .PP
 The following options support AIX systems, but may be applicable to 
 other systems as well. Since POE is used to launch tasks, these 
-options are not normally used.
+options are not normally used or are specified using the \fBSLURM_NETWORK\fR
+environment variable.
 .TP
 \fB\-\-network\fR=\fItype\fR
 Specify the communication protocol to be used. 
+The interpretation of \fItype\fR is system dependent. 
+For systems with an IBM Federation switch, the following 
+comma\-separated and case insensitive types are recongnized:
+\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
+\fBBULK_XFER\fR and adapter names. For more information, on 
+IBM systems see \fIpoe\fR documenation on the environment variables 
+\fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
 
 .PP
 The following options support Blue Gene systems, but may be 
@@ -875,6 +883,9 @@ The location of the SLURM configuration file.
 .TP
 \fBSLURM_MEM_BIND\fR
 \fB\-\-mem_bind\fR=\fItype\fR
+.TP
+\fBSLURM_NETWORK\fR
+\fB\-\-network\fR=\fItype\fR
 .TP
 \fBSLURM_NNODES\fR
 \fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)

@@ -100,33 +100,24 @@ static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
 static char *_task_count_string(srun_job_t *job);
 static void  _switch_standalone(srun_job_t *job);
-static int   _become_user (void);
+static int   _become_user (uid_t uid, gid_t gid);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 
-int slaunch(int ac, char **av)
+int slaunch(int argc, char **argv)
 {
-	allocation_resp *resp;
-	srun_job_t *job = NULL;
-	int exitcode = 0;
-	env_t *env = xmalloc(sizeof(env_t));
-
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	
-	env->stepid = -1;
-	env->procid = -1;
-	env->localid = -1;
-	env->nodeid = -1;
-	env->cli = NULL;
-	env->env = NULL;
-	
-	log_init(xbasename(av[0]), logopt, 0, NULL);
+	job_step_create_request_msg_t step_req;
+	slurm_step_ctx step_ctx;
+	int rc;
+
+	log_init(xbasename(argv[0]), logopt, 0, NULL);
 		
 	/* set default options, process commandline arguments, and
 	 * verify some basic values
 	 */
-	if (initialize_and_process_args(ac, av) < 0) {
+	if (initialize_and_process_args(argc, argv) < 0) {
 		error ("srun initialization failed");
 		exit (1);
 	}
@@ -140,158 +131,36 @@ int slaunch(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
-	(void) _set_rlimit_env();
-	_set_prio_process_env();
-	(void) _set_umask_env();
-
-	/* Set up slurmctld message handler */
-	slurmctld_msg_init();
-	
-	/* now global "opt" should be filled in and available,
-	 * create a job from opt
-	 */
-	if (opt.no_alloc) {
-		info("do not allocate resources");
-		sig_setup_sigmask();
-		job = job_create_noalloc(); 
-		_switch_standalone(job);
-
-	} else if (opt.jobid_set && (resp = _existing_allocation(opt.jobid)) ) {
-		if (job_resp_hack_for_step(resp))	/* FIXME */
-			exit(1);
-		
-		job = job_create_allocation(resp);
-		
-		job->old_job = true;
-		sig_setup_sigmask();
-		
-		if (_create_job_step(job, resp) < 0)
-			exit(1);
-		
-		slurm_free_resource_allocation_response_msg(resp);
-
-	} else {
-		fatal("You MUST specify a job allocation ID");
-	}
-
-	/*
-	 *  Become --uid user
-	 */
-	if (_become_user () < 0)
-		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
-
-	/* job structure should now be filled in */
-
-	/*
-	 *  Enhance environment for job
-	 */
-	env->nprocs = opt.nprocs;
-	env->cpus_per_task = opt.cpus_per_task;
-	env->distribution = opt.distribution;
-	env->overcommit = opt.overcommit;
-	env->slurmd_debug = opt.slurmd_debug;
-	env->labelio = opt.labelio;
-	env->comm_port = slurmctld_comm_addr.port;
-	env->comm_hostname = slurmctld_comm_addr.hostname;
-	if(job) {
-		env->select_jobinfo = job->select_jobinfo;
-		env->nhosts = job->nhosts;
-		env->nodelist = job->nodelist;
-		env->task_count = _task_count_string (job);
-		env->jobid = job->jobid;
-		env->stepid = job->stepid;
-	}
-	setup_env(env);
-	xfree(env->task_count);
-	xfree(env);
-	
-	_run_srun_prolog(job);
-
-	if (msg_thr_create(job) < 0)
-		job_fatal(job, "Unable to create msg thread");
-
-	if (slurm_mpi_thr_create(job) < 0)
-		job_fatal (job, "Failed to initialize MPI");
-
-	{
-		int siglen;
-		char *sig;
-		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
-
-		slaunch_set_stdio_fds(job, &fds);
-
-		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
-		    < 0) {
-			job_fatal(job, "Couldn't get cred signature");
-		}
-		
-		job->client_io = client_io_handler_create(
-			fds,
-			job->step_layout->num_tasks,
-			job->step_layout->num_hosts,
-			sig,
-			opt.labelio);
-		if (!job->client_io
-		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
-			job_fatal(job, "failed to start IO handler");
-	}
-
-	if (sig_thr_create(job) < 0)
-		job_fatal(job, "Unable to create signals thread: %m");
-	
-	if (launch_thr_create(job) < 0)
- 		job_fatal(job, "Unable to create launch thread: %m");
-	
-	/* wait for job to terminate 
-	 */
-	slurm_mutex_lock(&job->state_mutex);
-	while (job->state < SRUN_JOB_TERMINATED) {
-		pthread_cond_wait(&job->state_cond, &job->state_mutex);
-	}
-	slurm_mutex_unlock(&job->state_mutex);
-	
-	/* job is now overdone, clean up  
-	 *
-	 * If job is "forcefully terminated" exit immediately.
-	 *
-	 */
-	if (job->state == SRUN_JOB_FAILED) {
-		info("Terminating job");
-		srun_job_destroy(job, 0);
-	} else if (job->state == SRUN_JOB_FORCETERM) {
-		srun_job_destroy(job, 0);
+	if (!opt.jobid_set) {
+		error("Must specify a job ID");
 		exit(1);
 	}
 
-	/* wait for launch thread */
-	if (pthread_join(job->lid, NULL) < 0)
-		error ("Waiting on launch thread: %m");
+	step_req.job_id = opt.jobid;
+	step_req.user_id = getuid();
+	step_req.node_count = 1;
+	step_req.cpu_count = 1;
+	step_req.num_tasks = 1;
+	step_req.relative;
+	step_req.task_dist = 0;
+	step_req.port = 0;      /* port to contact initiating srun */
+	step_req.host = NULL;   /* host to contact initiating srun */
+	step_req.node_list = NULL;
+	step_req.network = NULL;
+	step_req.name = "slaunch";
+	
+	step_ctx = slurm_step_ctx_create(step_req);
+	if (step_ctx == NULL) {
+		error("Could not create job step context: %m");
+		exit(1);
+	}
 
-	/*
-	 *  Signal the IO thread to shutdown, which will stop
-	 *  the listening socket and file read (stdin) event
-	 *  IO objects, but allow file write (stdout) objects to
-	 *  complete any writing that remains.
-	 */
-	debug("Waiting for IO thread");
-	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
-		error ("IO handler did not finish correctly: %m");
-	client_io_handler_destroy(job->client_io);
-
-	if (slurm_mpi_exit () < 0)
-		; /* eh, ignore errors here */
-
-	/* Tell slurmctld that job is done */
-	srun_job_destroy(job, 0);
-
-	_run_srun_epilog(job);
-
-	/* 
-	 *  Let exit() clean up remaining threads.
-	 */
-	exitcode = job_rc(job);
-	log_fini();
-	exit(exitcode);
+	rc = slurm_step_launch(step_ctx);
+	if (rc != SLURM_SUCCESS) {
+		error("Application launch failed: %m");
+		slurm_step_ctx_destroy(step_ctx);
+		exit(1);
+	}
 }
 
 static resource_allocation_response_msg_t *
@@ -539,20 +408,20 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
-static int _become_user (void)
+static int _become_user (uid_t uid, gid_t gid)
 {
 	struct passwd *pwd = getpwuid (opt.uid);
 
-	if (opt.uid == getuid ())
+	if (uid == getuid())
 		return (0);
 
-	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0))
-		return (error ("setgid: %m"));
+	if ((gid != (gid_t)-1) && (setgid(gid) < 0))
+		return (error("setgid: %m"));
 
-	initgroups (pwd->pw_name, pwd->pw_gid); /* Ignore errors */
+	initgroups(pwd->pw_name, pwd->pw_gid); /* Ignore errors */
 
-	if (setuid (opt.uid) < 0)
-		return (error ("setuid: %m"));
+	if (setuid(uid) < 0)
+		return (error("setuid: %m"));
 
 	return (0);
 }

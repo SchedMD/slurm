@@ -8,6 +8,14 @@ documents those changes that are of interest to users and admins.
  -- Send overcommit flag from srun in RPCs and have slurmd set SLURM_OVERCOMMIT
     flag at batch job launch time.
 
+* Changes in SLURM 1.1.2
+========================
+ -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
+    fails due to a node failure.
+ -- Fix Bluegene configure to work with the new 64bit libs.
+ -- Fix bug in controller that causes it to segfault when hit with a malformed
+    message.
+
 * Changes in SLURM 1.1.1
 ========================
  -- Fix bug in packing job suspend/resume RPC.
@@ -16,6 +24,15 @@ documents those changes that are of interest to users and admins.
     to that time.
  -- Fix bug in PMI support that prevented use of second PMI_Barrier call.
     This fix is needed for MVAPICH2 use.
+ -- Add "-V" options to slurmctld and slurmd to print version number and exit.
+ -- Fix scalability bug in sbcast.
+ -- Fix bug in cons_res allocation strategy.
+ -- Fix bug in forwarding with mpi
+ -- Fix bug sacct forwarding with stat option
+ -- Added nodeid to sacct stat information
+ -- cleaned up way slurm_send_recv_node_msg works no more clearing errno
+ -- Fix error handling bug in the networking code that causes the slurmd to
+    xassert if the server is not running when the slurmd tries to register.
 
 * Changes in SLURM 1.1.0
 ========================

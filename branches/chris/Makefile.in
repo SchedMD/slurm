@@ -62,6 +62,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
+	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
 	$(top_srcdir)/auxdir/x_ac_xcpu.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -157,6 +158,8 @@ HAVE_PAM_FALSE = @HAVE_PAM_FALSE@
 HAVE_PAM_TRUE = @HAVE_PAM_TRUE@
 HAVE_SCHED_SETAFFINITY_FALSE = @HAVE_SCHED_SETAFFINITY_FALSE@
 HAVE_SCHED_SETAFFINITY_TRUE = @HAVE_SCHED_SETAFFINITY_TRUE@
+HAVE_SGI_JOB_FALSE = @HAVE_SGI_JOB_FALSE@
+HAVE_SGI_JOB_TRUE = @HAVE_SGI_JOB_TRUE@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HAVE_SOME_CURSES_FALSE = @HAVE_SOME_CURSES_FALSE@
 HAVE_SOME_CURSES_TRUE = @HAVE_SOME_CURSES_TRUE@
@@ -785,14 +788,10 @@ distclean-local:
 	-(cd $(top_srcdir) && rm -rf $(PACKAGE)-*)
 
 mrproper: distclean-local clean
-	-(cd $(top_srcdir) && rm -rf aclocal.m4 autom4te.cache config.h.in)
-	-(cd $(top_srcdir) && rm -rf config.log config.status configure)
-	-(cd $(top_srcdir) && rm -rf libtool config.h stamp-h1)
-	-(cd $(top_srcdir)/auxdir && rm -rf config.guess config.sub ltmain.sh)
-	-(cd $(top_srcdir)/auxdir && rm -rf install-sh mkinstalldirs missing)
-	-(cd $(top_srcdir)/auxdir && rm -rf depcomp)
+	-(cd $(top_srcdir) && rm -rf autom4te.cache config.h config.log)
+	-(cd $(top_srcdir) && rm -rf config.status libtool stamp-h1)
+	-(cd $(top_srcdir)/auxdir && rm -rf mkinstalldirs)
 	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
-	-find $(top_srcdir) -name "Makefile.in" -exec rm {} \;
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
 	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -30,12 +30,16 @@
 #include "src/common/parse_time.h"
 #define FORMAT_STRING_SIZE 32
 
-char *_decode_status(int status);
 void _elapsed_time(long secs, long usecs, char *str);
 
 void _elapsed_time(long secs, long usecs, char *str)
 {
 	long	days, hours, minutes, seconds;
+	
+	if(secs < 0) {
+		snprintf(str, FORMAT_STRING_SIZE, "'N/A'");
+		return;
+	}
 	
 	while (usecs >= 1E6) {
 		secs++;
@@ -687,38 +691,49 @@ void print_pages(type_t type, void *object)
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
+	char buf3[50];
 	sacct_t sacct;
-	
+	char *nodes = NULL;
+	uint32_t pos;
+
 	switch(type) {
 	case HEADLINE:
-		printf("%-22s", "MaxPages/Task - Ave");
+		printf("%-35s", "MaxPages/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-22s", "----------------------");
+		printf("%-35s", "----------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
+		nodes = job->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num((float)sacct.max_pages, buf1);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
 			convert_num((float)sacct.ave_pages, buf2);
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+			find_hostname(pos, nodes, buf3);
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 				 buf1,
-				 sacct.max_pages_task, 
+				 buf3,
+				 sacct.max_pages_id.taskid, 
 				 buf2);
 		}
-		printf("%-22s", outbuf);
+		printf("%-35s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
+		nodes = step->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num((float)sacct.max_pages, buf1);
 		convert_num((float)sacct.ave_pages, buf2);
-		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+		find_hostname(pos, nodes, buf3);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 			 buf1,
-			 sacct.max_pages_task, 
+			 buf3,
+			 sacct.max_pages_id.taskid, 
 			 buf2);
-		printf("%-22s", outbuf);
+		printf("%-35s", outbuf);
 		break;
 	} 
 }
@@ -730,38 +745,49 @@ void print_rss(type_t type, void *object)
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
+	char buf3[50];
 	sacct_t sacct;
-	
+	char *nodes = NULL;
+	uint32_t pos;
+
 	switch(type) {
 	case HEADLINE:
-		printf("%-22s", "MaxRSS/Task - Ave");
+		printf("%-32s", "MaxRSS/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-22s", "----------------------");
+		printf("%-32s", "--------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
+		nodes = job->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num((float)sacct.max_rss, buf1);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
 			convert_num((float)sacct.ave_rss, buf2);
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+			find_hostname(pos, nodes, buf3);
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 				 buf1,
-				 sacct.max_rss_task, 
+				 buf3, 
+				 sacct.max_rss_id.taskid, 
 				 buf2);
 		}
-		printf("%-22s", outbuf);
+		printf("%-32s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
+		nodes = step->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num((float)sacct.max_rss, buf1);
 		convert_num((float)sacct.ave_rss, buf2);
-		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+		find_hostname(pos, nodes, buf3);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 			 buf1,
-			 sacct.max_rss_task, 
+			 buf3, 
+			 sacct.max_rss_id.taskid, 
 			 buf2);
-		printf("%-22s", outbuf);
+		printf("%-32s", outbuf);
 		break;
 	} 
 }
@@ -982,38 +1008,49 @@ void print_vsize(type_t type, void *object)
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
+	char buf3[50];
 	sacct_t sacct;
-	
+	char *nodes = NULL;
+	uint32_t pos;
+
 	switch(type) {
 	case HEADLINE:
-		printf("%-22s", "MaxVSIZE/Task - Ave");
+		printf("%-34s", "MaxVSIZE/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-22s", "----------------------");
+		printf("%-34s", "----------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
+		nodes = job->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num((float)sacct.max_vsize, buf1);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
 			convert_num((float)sacct.ave_vsize, buf2);
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+			find_hostname(pos, nodes, buf3);
+			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 				 buf1,
-				 sacct.max_vsize_task, 
+				 buf3, 
+				 sacct.max_vsize_id.taskid, 
 				 buf2);
 		}
-		printf("%-22s", outbuf);
+		printf("%-34s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
+		nodes = step->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num((float)sacct.max_vsize, buf1);
 		convert_num((float)sacct.ave_vsize, buf2);
-		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%u - %s", 
+		find_hostname(pos, nodes, buf3);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 			 buf1,
-			 sacct.max_vsize_task, 
+			 buf3, 
+			 sacct.max_vsize_id.taskid, 
 			 buf2);
-		printf("%-22s", outbuf);
+		printf("%-34s", outbuf);
 		break;
 	} 
 }
@@ -1025,41 +1062,52 @@ void print_cputime(type_t type, void *object)
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
+	char buf3[50];
 	sacct_t sacct;
-	
+	char *nodes = NULL;
+	uint32_t pos;
+
 	switch(type) {
 	case HEADLINE:
-		printf("%-22s", "MinCPUtime/Task - Ave");
+		printf("%-36s", "MinCPUtime/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-22s", "----------------------");
+		printf("%-36s", "------------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
+		nodes = job->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		_elapsed_time((int)sacct.min_cpu, 0, buf1);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, 
 				 "%s/- - -", buf1);
 		else {
 			_elapsed_time((int)sacct.ave_cpu, 0, buf2);
+			find_hostname(pos, nodes, buf3);
 			snprintf(outbuf, FORMAT_STRING_SIZE, 
-				 "%s/%u - %s", 
+				 "%s/%s:%u - %s", 
 				 buf1,
-				 sacct.min_cpu_task, 
+				 buf3, 
+				 sacct.min_cpu_id.taskid, 
 				 buf2);
 		}
-		printf("%-22s", outbuf);
+		printf("%-36s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
+		nodes = step->nodes;
+		pos = sacct.min_cpu_id.nodeid;				 
 		_elapsed_time((int)sacct.min_cpu, 0, buf1);
 		_elapsed_time((int)sacct.ave_cpu, 0, buf2);
+		find_hostname(pos, nodes, buf3);
 		snprintf(outbuf, FORMAT_STRING_SIZE, 
-			 "%s/%u - %s", 
+			 "%s/%s:%u - %s", 
 			 buf1,
-			 sacct.min_cpu_task, 
+			 buf3, 
+			 sacct.min_cpu_id.taskid, 
 			 buf2);
-		printf("%-22s", outbuf);
+		printf("%-36s", outbuf);
 		break;
 	} 
 }

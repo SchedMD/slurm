@@ -627,7 +627,7 @@ static void *_service_connection(void *arg)
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
-	if(errno < 0) {
+	if(errno != SLURM_SUCCESS) {
 		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
 			slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
 		} else
@@ -937,7 +937,7 @@ static void _parse_commandline(int argc, char *argv[])
 	int c = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hL:rv")) != -1)
+	while ((c = getopt(argc, argv, "cdDf:hL:rvV")) != -1)
 		switch (c) {
 		case 'c':
 			recover = 0;
@@ -965,6 +965,10 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'v':
 			debug_level++;
+			break;
+		case 'V':
+			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			exit(0);
 			break;
 		default:
 			_usage(argv[0]);

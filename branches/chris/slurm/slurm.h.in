@@ -234,16 +234,16 @@ enum jobacct_data_type {
 	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
 	JOBACCT_DATA_RUSAGE,	/* data-> struct rusage */
 	JOBACCT_DATA_MAX_VSIZE,	/* data-> uint32_t vsize */
-	JOBACCT_DATA_MAX_VSIZE_TASK,	/* data-> uint32_t vsize */
+	JOBACCT_DATA_MAX_VSIZE_ID,	/* data-> jobacct_id_t vsize */
 	JOBACCT_DATA_TOT_VSIZE,	/* data-> uint32_t vsize */
 	JOBACCT_DATA_MAX_RSS,	/* data-> uint32_t psize */
-	JOBACCT_DATA_MAX_RSS_TASK,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MAX_RSS_ID,	/* data-> jobacct_id_t psize */
 	JOBACCT_DATA_TOT_RSS,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MAX_PAGES,	/* data-> uint32_t psize */
-	JOBACCT_DATA_MAX_PAGES_TASK,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MAX_PAGES_ID,	/* data-> jobacct_id_t psize */
 	JOBACCT_DATA_TOT_PAGES,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
-	JOBACCT_DATA_MIN_CPU_TASK,	/* data-> uint32_t psize */
+	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
 	JOBACCT_DATA_TOT_CPU	/* data-> uint32_t psize */
 };
 

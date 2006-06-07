@@ -189,7 +189,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 		       slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
-	
+
 	if (!(job = job_create(msg, cli))) {
 		_send_launch_failure (msg, cli, errno);
 		return NULL;
@@ -519,7 +519,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
-	msg.jobacct = jobacct_g_alloc((uint16_t)NO_VAL);
+	msg.jobacct = jobacct_g_alloc(NULL);
 	/************* acct stuff ********************/
 	jobacct_g_aggregate(step_complete.jobacct, job->jobacct);
 	jobacct_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
@@ -785,6 +785,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	int fdpair[2];
 	uint16_t propagate_prio = slurm_get_propagate_prio_process();
 	struct priv_state sprivs;
+	jobacct_id_t jobacct_id;
 
 	xassert(job != NULL);
 
@@ -940,8 +941,10 @@ _fork_all_tasks(slurmd_job_t *job)
                         error("slurm_container_create: %m");
 			goto fail1;
                 }
-
-		jobacct_g_add_task(job->task[i]->pid, job->task[i]->gtid);
+		jobacct_id.nodeid = job->nodeid;
+		jobacct_id.taskid = job->task[i]->gtid;
+		jobacct_g_add_task(job->task[i]->pid, 
+				   &jobacct_id);
 
 		if (spank_task_post_fork (job, i) < 0) {
 			error ("spank task %d post-fork failed", i);

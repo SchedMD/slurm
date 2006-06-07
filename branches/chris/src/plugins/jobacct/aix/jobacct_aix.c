@@ -119,14 +119,15 @@ extern int fini ( void )
  * The following routine is called by the slurmd mainline
  */
 
-int jobacct_p_init_struct(struct jobacctinfo *jobacct, uint16_t tid)
+int jobacct_p_init_struct(struct jobacctinfo *jobacct, 
+			  jobacct_id_t *jobacct_id)
 {
-	return common_init_struct(jobacct, tid);
+	return common_init_struct(jobacct, jobacct_id);
 }
 
-struct jobacctinfo *jobacct_p_alloc()
+struct jobacctinfo *jobacct_p_alloc(jobacct_id_t *jobacct_id)
 {
-	return common_alloc_jobacct();
+	return common_alloc_jobacct(jobacct_id);
 }
 
 void jobacct_p_free(struct jobacctinfo *jobacct)
@@ -256,9 +257,9 @@ int jobacct_p_endpoll()
 	return common_endpoll();
 }
 
-int jobacct_p_add_task(pid_t pid, uint16_t tid)
+int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	return common_add_task(pid, tid);
+	return common_add_task(pid, jobacct_id);
 }
 
 struct jobacctinfo *jobacct_p_stat_task(pid_t pid)

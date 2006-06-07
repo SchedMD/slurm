@@ -151,6 +151,10 @@ X_AC_FEDERATION
 AM_CONDITIONAL(HAVE_FEDERATION, test "x$ac_have_federation" = "xyes")
 AC_SUBST(HAVE_FEDERATION)
 
+dnl check for SGI job container support
+dnl
+X_AC_SGI_JOB
+
 dnl Check for whether to include readline support
 dnl 
 X_AC_READLINE
@@ -244,6 +248,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/rms/Makefile
+		 src/plugins/proctrack/sgi_job/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile

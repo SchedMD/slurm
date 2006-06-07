@@ -42,14 +42,10 @@ distclean-local:
 	-(cd $(top_srcdir) && rm -rf $(PACKAGE)-*)
 
 mrproper: distclean-local clean
-	-(cd $(top_srcdir) && rm -rf aclocal.m4 autom4te.cache config.h.in)
-	-(cd $(top_srcdir) && rm -rf config.log config.status configure)
-	-(cd $(top_srcdir) && rm -rf libtool config.h stamp-h1)
-	-(cd $(top_srcdir)/auxdir && rm -rf config.guess config.sub ltmain.sh)
-	-(cd $(top_srcdir)/auxdir && rm -rf install-sh mkinstalldirs missing)
-	-(cd $(top_srcdir)/auxdir && rm -rf depcomp)
+	-(cd $(top_srcdir) && rm -rf autom4te.cache config.h config.log)
+	-(cd $(top_srcdir) && rm -rf config.status libtool stamp-h1)
+	-(cd $(top_srcdir)/auxdir && rm -rf mkinstalldirs)
 	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
-	-find $(top_srcdir) -name "Makefile.in" -exec rm {} \;
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
 	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
 

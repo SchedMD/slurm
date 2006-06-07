@@ -367,10 +367,12 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	
 	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if(!ret_list || !resp_msg.auth_cred) {
 		error("slurm_pid2jobid: %m");
 		if(ret_list)
 			list_destroy(ret_list);
+		if(resp_msg.auth_cred)
+			slurm_auth_cred_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
 	if(list_count(ret_list)>0) {

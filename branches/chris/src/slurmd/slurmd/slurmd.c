@@ -67,7 +67,7 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 
-#define GETOPT_ARGS	"L:Dvhcf:MN:"
+#define GETOPT_ARGS	"L:Dvhcf:MN:V"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -348,8 +348,10 @@ _service_connection(void *arg)
 	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
+	
 	debug3("in the service_connection");
 	msg->conn_fd = con->fd;
+	/* this could change if being forwarded to */
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
 	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
@@ -359,15 +361,17 @@ _service_connection(void *arg)
 		error("service_connection: slurm_receive_msg: %m");
 		goto cleanup;
 	}
-	
+
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
+	/* this always is the connection */
+	memcpy(&msg->address, con->cli_addr, sizeof(slurm_addr));
 
 	debug2("got this type of message %d with %d other responses",
 	     msg->msg_type, list_count(ret_list));
 	msg->ret_list = ret_list;
-	slurmd_req(msg, con->cli_addr);
+	slurmd_req(msg);
 	
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
@@ -728,6 +732,10 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'N':
 			conf->node_name = xstrdup(optarg);
+			break;
+		case 'V':
+			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			exit(0);
 			break;
 		default:
 			_usage(c);

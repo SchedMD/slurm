@@ -14,8 +14,8 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am,v 1.4 2004/07/26 23:43:53 jette Exp $
-# Makefile for mpi/gmpi plugin
+# $Id: Makefile.am 4954 2005-05-26 22:04:39Z morrone $
+# Makefile for proctrack/sgi_job plugin
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -40,7 +40,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/mpi/mpichgm
+subdir = src/plugins/proctrack/sgi_job
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -76,10 +76,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-mpi_mpichgm_la_LIBADD =
-am_mpi_mpichgm_la_OBJECTS = mpi_mpichgm.lo mpichgm.lo global_srun.lo \
-	net.lo
-mpi_mpichgm_la_OBJECTS = $(am_mpi_mpichgm_la_OBJECTS)
+proctrack_sgi_job_la_LIBADD =
+am_proctrack_sgi_job_la_OBJECTS = proctrack_sgi_job.lo
+proctrack_sgi_job_la_OBJECTS = $(am_proctrack_sgi_job_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -91,8 +90,8 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(mpi_mpichgm_la_SOURCES)
-DIST_SOURCES = $(mpi_mpichgm_la_SOURCES)
+SOURCES = $(proctrack_sgi_job_la_SOURCES)
+DIST_SOURCES = $(proctrack_sgi_job_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -270,16 +269,11 @@ target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
+PLUGIN_FLAGS = - -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = mpi_mpichgm.la
-
-# Null switch plugin.
-mpi_mpichgm_la_SOURCES = mpi_mpichgm.c mpichgm.c mpichgm.h\
-                         $(top_srcdir)/src/common/global_srun.c \
-			  $(top_srcdir)/src/common/net.c
-
-mpi_mpichgm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pkglib_LTLIBRARIES = proctrack_sgi_job.la
+proctrack_sgi_job_la_SOURCES = proctrack_sgi_job.c
+proctrack_sgi_job_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(OTHER_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -293,9 +287,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/mpi/mpichgm/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/proctrack/sgi_job/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/mpi/mpichgm/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/proctrack/sgi_job/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -340,8 +334,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-mpi_mpichgm.la: $(mpi_mpichgm_la_OBJECTS) $(mpi_mpichgm_la_DEPENDENCIES) 
-	$(LINK) -rpath $(pkglibdir) $(mpi_mpichgm_la_LDFLAGS) $(mpi_mpichgm_la_OBJECTS) $(mpi_mpichgm_la_LIBADD) $(LIBS)
+proctrack_sgi_job.la: $(proctrack_sgi_job_la_OBJECTS) $(proctrack_sgi_job_la_DEPENDENCIES) 
+	$(LINK) -rpath $(pkglibdir) $(proctrack_sgi_job_la_LDFLAGS) $(proctrack_sgi_job_la_OBJECTS) $(proctrack_sgi_job_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -349,10 +343,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_srun.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_mpichgm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpichgm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack_sgi_job.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -374,20 +365,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-global_srun.lo: $(top_srcdir)/src/common/global_srun.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT global_srun.lo -MD -MP -MF "$(DEPDIR)/global_srun.Tpo" -c -o global_srun.lo `test -f '$(top_srcdir)/src/common/global_srun.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/global_srun.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/global_srun.Tpo" "$(DEPDIR)/global_srun.Plo"; else rm -f "$(DEPDIR)/global_srun.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/common/global_srun.c' object='global_srun.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o global_srun.lo `test -f '$(top_srcdir)/src/common/global_srun.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/global_srun.c
-
-net.lo: $(top_srcdir)/src/common/net.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT net.lo -MD -MP -MF "$(DEPDIR)/net.Tpo" -c -o net.lo `test -f '$(top_srcdir)/src/common/net.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/net.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/net.Tpo" "$(DEPDIR)/net.Plo"; else rm -f "$(DEPDIR)/net.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/common/net.c' object='net.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o net.lo `test -f '$(top_srcdir)/src/common/net.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/net.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -569,6 +546,8 @@ uninstall-am: uninstall-info-am uninstall-pkglibLTLIBRARIES
 	tags uninstall uninstall-am uninstall-info-am \
 	uninstall-pkglibLTLIBRARIES
 
+# Don't need to add -ljob because we dlopen the .so to avoid 
+#  symbol collisions with slurm functions
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

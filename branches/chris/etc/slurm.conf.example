@@ -257,14 +257,17 @@
 # "ProctrackType"           : the type of process tracking mechanism
 #     "proctrack/aix"       : use AIX kernel extension for process tracking,
 #                             the default value on AIX computers
-#     "proctrack/pgid"      : use Unix process group ID for process tracking,
-#                             the default value on all other computers
 #     "proctrack/linuxproc" : use parent process ID to establish process
 #                             tree, required for MPICH-GM use
 #     "proctrack/rms"       : use Quadrics kernal infrastructure to track 
 #                             processes, strongly recommended for systems
 #                             with a Quadrics switch
-#
+#     "proctrack/sgi_job    : which uses SGI’s Process Aggregates (PAGG)
+#                             kernel module, see http://oss.sgi.comm/projects/pagg/
+#                             for more information
+#     "proctrack/pgid"      : use Unix process group ID for process tracking,
+#                             the default value on all other computers
+
 # ProctrackType=proctrack/pgid
 
 

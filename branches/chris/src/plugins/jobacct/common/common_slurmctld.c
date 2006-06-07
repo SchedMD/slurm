@@ -76,7 +76,11 @@ const char *_jobstep_format =
 "%u "	/* min cpu task */
 "%.2f "	/* ave cpu */
 "%s "	/* step process name */
-"%s";	/* step node names */
+"%s "	/* step node names */
+"%u "	/* max vsize node */
+"%u "	/* max rss node */
+"%u "	/* max pages node */
+"%u";	/* min cpu node */
 
 /*
  * Print the record to the log file.
@@ -312,8 +316,12 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* min cpu task */
 		 float_tmp,	/* ave cpu */
 		 step->name,    /* step exe name */
-		 node_list);     /* name of nodes step running on */
-	
+		 node_list,     /* name of nodes step running on */
+		 0,	/* max vsize node */
+		 0,	/* max rss node */
+		 0,	/* max pages node */
+		 0);	/* min cpu node */
+		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
 
@@ -420,20 +428,24 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
 		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
 		 jobacct->max_vsize,	/* max vsize */
-		 jobacct->max_vsize_task,	/* max vsize task */
+		 jobacct->max_vsize_id.taskid,	/* max vsize node */
 		 ave_vsize,	/* ave vsize */
-		 jobacct->max_rss,	/* max rss */
-		 jobacct->max_rss_task,	/* max rss task */
+		 jobacct->max_rss,	/* max vsize */
+		 jobacct->max_rss_id.taskid,	/* max rss node */
 		 ave_rss,	/* ave rss */
 		 jobacct->max_pages,	/* max pages */
-		 jobacct->max_pages_task,	/* max pages task */
+		 jobacct->max_pages_id.taskid,	/* max pages node */
 		 ave_pages,	/* ave pages */
 		 ave_cpu2,	/* min cpu */
-		 jobacct->min_cpu_task,	/* min cpu task */
+		 jobacct->min_cpu_id.taskid,	/* min cpu node */
 		 ave_cpu,	/* ave cpu */
 		 step->name,      	/* step exe name */
-		 node_list); /* name of nodes step running on */
-
+		 node_list, /* name of nodes step running on */
+		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
+		 jobacct->max_rss_id.nodeid,	/* max rss task */
+		 jobacct->max_pages_id.nodeid,	/* max pages task */
+		 jobacct->min_cpu_id.nodeid);	/* min cpu task */
+		 
 	return _print_record(step->job_ptr, now, buf);	
 }
 

@@ -58,6 +58,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
+	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
 	$(top_srcdir)/auxdir/x_ac_xcpu.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -75,7 +76,7 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	uninstall-recursive
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = pgid linuxproc rms aix
+DIST_SUBDIRS = aix sgi_job pgid linuxproc rms
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -132,6 +133,8 @@ HAVE_PAM_FALSE = @HAVE_PAM_FALSE@
 HAVE_PAM_TRUE = @HAVE_PAM_TRUE@
 HAVE_SCHED_SETAFFINITY_FALSE = @HAVE_SCHED_SETAFFINITY_FALSE@
 HAVE_SCHED_SETAFFINITY_TRUE = @HAVE_SCHED_SETAFFINITY_TRUE@
+HAVE_SGI_JOB_FALSE = @HAVE_SGI_JOB_FALSE@
+HAVE_SGI_JOB_TRUE = @HAVE_SGI_JOB_TRUE@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HAVE_SOME_CURSES_FALSE = @HAVE_SOME_CURSES_FALSE@
 HAVE_SOME_CURSES_TRUE = @HAVE_SOME_CURSES_TRUE@
@@ -248,8 +251,9 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-@HAVE_AIX_PROCTRACK_FALSE@SUBDIRS = pgid linuxproc rms
-@HAVE_AIX_PROCTRACK_TRUE@SUBDIRS = aix pgid linuxproc rms
+@HAVE_AIX_PROCTRACK_TRUE@AIX_PROCTRACK = aix 
+@HAVE_SGI_JOB_TRUE@SGI_JOB = sgi_job
+SUBDIRS = $(AIX_PROCTRACK) $(SGI_JOB) pgid linuxproc rms 
 all: all-recursive
 
 .SUFFIXES:

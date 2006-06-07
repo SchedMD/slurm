@@ -507,28 +507,28 @@ int get_data(void)
 				printf("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else 
-				process_start(f, lc, show_full);
+				process_start(f, lc, show_full, i);
 			break;
 		case JOB_STEP:
-			if(i < JOB_STEP_LENGTH) {
+			if(i < F_MAX_VSIZE) {
 				printf("Bad data on a Step entry\n");
 				_show_rec(f);
 			} else
-				process_step(f, lc, show_full);
+				process_step(f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
 			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Suspend entry\n");
 				_show_rec(f);
 			} else
-				process_suspend(f, lc, show_full);
+				process_suspend(f, lc, show_full, i);
 			break;
 		case JOB_TERMINATED:
 			if(i < JOB_TERM_LENGTH) {
 				printf("Bad data on a Job Term\n");
 				_show_rec(f);
 			} else
-				process_terminated(f, lc, show_full);
+				process_terminated(f, lc, show_full, i);
 			break;
 		default:
 			if (params.opt_verbose > 1)
@@ -1136,17 +1136,21 @@ void do_dump(void)
 			       step->sacct.max_vsize/1024, 
 			       step->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
-			printf("%d %.2f %d %.2f %d %d %.2f "
-			       "%.2f %d %.2f %s %s\n",
-			       step->sacct.max_vsize_task,
+			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
+			       "%.2f %u %u %.2f %s %s\n",
+			       step->sacct.max_vsize_id.nodeid,
+			       step->sacct.max_vsize_id.taskid,
 			       step->sacct.ave_vsize/1024,
-			       step->sacct.max_rss_task,
+			       step->sacct.max_rss_id.nodeid,
+			       step->sacct.max_rss_id.taskid,
 			       step->sacct.ave_rss/1024,
 			       step->sacct.max_pages,
-			       step->sacct.max_pages_task,
+			       step->sacct.max_pages_id.nodeid,
+			       step->sacct.max_pages_id.taskid,
 			       step->sacct.ave_pages,
 			       step->sacct.min_cpu,
-			       step->sacct.min_cpu_task,
+			       step->sacct.min_cpu_id.nodeid,
+			       step->sacct.min_cpu_id.taskid,
 			       step->sacct.ave_cpu,
 			       step->stepname,
 			       step->nodes);
@@ -1193,20 +1197,24 @@ void do_dump(void)
 			       job->sacct.max_vsize/1024, 
 			       job->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
-			printf("%d %.2f %d %.2f %d %d %.2f "
-			       "%.2f %d %.2f %s %s\n",
-			       job->sacct.max_vsize_task,
+			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
+			       "%.2f %u %u %.2f %s %s\n",
+			       job->sacct.max_vsize_id.nodeid,
+			       job->sacct.max_vsize_id.taskid,
 			       job->sacct.ave_vsize/1024,
-			       job->sacct.max_rss_task,
+			       job->sacct.max_rss_id.nodeid,
+			       job->sacct.max_rss_id.taskid,
 			       job->sacct.ave_rss/1024,
 			       job->sacct.max_pages,
-			       job->sacct.max_pages_task,
+			       job->sacct.max_pages_id.nodeid,
+			       job->sacct.max_pages_id.taskid,
 			       job->sacct.ave_pages,
 			       job->sacct.min_cpu,
-			       job->sacct.min_cpu_task,
+			       job->sacct.min_cpu_id.nodeid,
+			       job->sacct.min_cpu_id.taskid,
 			       job->sacct.ave_cpu,
 			       "-",
-			       job->nodes);
+			       job->nodes);			
 		}
 	}
 	list_iterator_destroy(itr);		
@@ -1246,13 +1254,12 @@ void do_expire(void)
 		*old_logfile_name = NULL;
 	int	file_err=0,
 		new_file,
-		i;
+		i = 0;
 	expired_rec_t *exp_rec = NULL;
 	expired_rec_t *exp_rec2 = NULL;
 	List keep_list = list_create(_destroy_exp);
 	List exp_list = list_create(_destroy_exp);
 	List other_list = list_create(_destroy_exp);
-	pid_t	pid;
 	struct	stat statbuf;
 	mode_t	prot = 0600;
 	uid_t	uid;
@@ -1303,7 +1310,7 @@ void do_expire(void)
 		}
 	} else {
 		fprintf(stderr, "Warning! %s exists -- please remove "
-			"or rename it before proceeding",
+			"or rename it before proceeding\n",
 			old_logfile_name);
 		goto finished;
 	}
@@ -1484,23 +1491,18 @@ void do_expire(void)
 	}
 	fflush(new_logfile);	/* Flush the buffers before forking */
 	fflush(fd);
-	if ((pid=fork())) {
-		if (waitpid(pid, &i, 0) < 1) {
-			perror("forking scontrol");
-			goto finished;
-		}
-	} else {
-		execlp("scontrol", "scontrol", "reconfigure", NULL);
-		perror("attempting to run \"scontrol reconfigure\"");
-		goto finished2;
-	}
-	if (WEXITSTATUS(i)) {
+	
+	file_err = slurm_reconfigure ();
+	
+	if (file_err) {
 		file_err = 1;
-		fprintf(stderr, "Error: Attempt to execute \"scontrol "
-			"reconfigure\" failed. If SLURM is\n"
-			"running, please rename the file \"%s\"\n"
-			" to \"%s\" and try again.\n",
-			old_logfile_name, params.opt_filein);
+		fprintf(stderr, "Error: Attempt to reconfigure "
+			"SLURM failed.\n");
+		if (rename(old_logfile_name, params.opt_filein)) {
+			perror("renaming logfile from .old.");
+			goto finished2;
+		}
+
 	}
 	if (fseek(fd, 0, SEEK_CUR)) {	/* clear EOF */
 		perror("looking for late-arriving records");
@@ -1579,15 +1581,19 @@ void do_fdump(char* f[], int lc)
 			   "nvcsw",	 /* F_VCSW */
 			   "nivcsw",	 /* F_NIVCSW */
 			   "max_vsize",	 /* F_MAX_VSIZE */
+			   "max_vsize_node",	 /* F_MAX_VSIZE_NODE */
 			   "max_vsize_task",	 /* F_MAX_VSIZE_TASK */
 			   "ave_vsize",	 /* F_AVE_VSIZE */
 			   "max_rss",	 /* F_MAX_RSS */
+			   "max_rss_node",	 /* F_MAX_RSS_NODE */
 			   "max_rss_task",	 /* F_MAX_RSS_TASK */
 			   "ave_rss",	 /* F_AVE_RSS */
 			   "max_pages",	 /* F_MAX_PAGES */
+			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
 			   "max_pages_task",	 /* F_MAX_PAGES_TASK */
 			   "ave_pages",	 /* F_AVE_PAGES */
 			   "min_cputime",	 /* F_MIN_CPU */
+			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
 			   "min_cputime_task",	 /* F_MIN_CPU_TASK */
 			   "ave_cputime",	 /* F_AVE_RSS */
 			   "StepName",	 /* F_STEPNAME */

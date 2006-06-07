@@ -88,24 +88,24 @@ static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
-static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
-static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
-static void _rpc_signal_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_terminate_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
-static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_signal_job(slurm_msg_t *, slurm_addr *);
-static void _rpc_suspend_job(slurm_msg_t *, slurm_addr *);
-static void _rpc_terminate_job(slurm_msg_t *, slurm_addr *);
-static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
-static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
-static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
-static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
-static int  _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
-static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
-static int  _rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr);
-static int  _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr);
+static void _rpc_launch_tasks(slurm_msg_t *);
+static void _rpc_spawn_task(slurm_msg_t *);
+static void _rpc_batch_job(slurm_msg_t *);
+static void _rpc_signal_tasks(slurm_msg_t *);
+static void _rpc_terminate_tasks(slurm_msg_t *);
+static void _rpc_timelimit(slurm_msg_t *);
+static void _rpc_reattach_tasks(slurm_msg_t *);
+static void _rpc_signal_job(slurm_msg_t *);
+static void _rpc_suspend_job(slurm_msg_t *);
+static void _rpc_terminate_job(slurm_msg_t *);
+static void _rpc_update_time(slurm_msg_t *);
+static void _rpc_shutdown(slurm_msg_t *msg);
+static void _rpc_reconfig(slurm_msg_t *msg);
+static void _rpc_pid2jid(slurm_msg_t *msg);
+static int  _rpc_file_bcast(slurm_msg_t *msg);
+static int  _rpc_ping(slurm_msg_t *);
+static int  _rpc_step_complete(slurm_msg_t *msg);
+static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
@@ -129,7 +129,7 @@ static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 void
-slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
+slurmd_req(slurm_msg_t *msg)
 {
 	int rc;
 	
@@ -138,93 +138,94 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		/* Mutex locking moved into _rpc_batch_job() due to 
 		 * very slow prolog on Blue Gene system. Only batch 
 		 * jobs are supported on Blue Gene (no job steps). */
-		_rpc_batch_job(msg, cli);
+		_rpc_batch_job(msg);
 		slurm_free_job_launch_msg(msg->data);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		slurm_mutex_lock(&launch_mutex);
-		_rpc_launch_tasks(msg, cli);
+		_rpc_launch_tasks(msg);
 		slurm_free_launch_tasks_request_msg(msg->data);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SPAWN_TASK:
 		slurm_mutex_lock(&launch_mutex);
-		_rpc_spawn_task(msg, cli);
+		_rpc_spawn_task(msg);
 		slurm_free_spawn_task_request_msg(msg->data);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 		debug2("Processing RPC: REQUEST_SIGNAL_TASKS");
-		_rpc_signal_tasks(msg, cli);
+		_rpc_signal_tasks(msg);
 		slurm_free_kill_tasks_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_TASKS:
 		debug2("Processing RPC: REQUEST_TERMINATE_TASKS");
-		_rpc_terminate_tasks(msg, cli);
+		_rpc_terminate_tasks(msg);
 		slurm_free_kill_tasks_msg(msg->data);
 		break;
 	case REQUEST_KILL_TIMELIMIT:
 		debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
-		_rpc_timelimit(msg, cli);
+		_rpc_timelimit(msg);
 		slurm_free_timelimit_msg(msg->data);
 		break; 
 	case REQUEST_REATTACH_TASKS:
-		_rpc_reattach_tasks(msg, cli);
+		debug2("Processing RPC: REQUEST_REATTACH_TASKS");
+		_rpc_reattach_tasks(msg);
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_SIGNAL_JOB:
 		debug2("Processing RPC: REQUEST_SIGNAL_JOB");
-		_rpc_signal_job(msg, cli);
+		_rpc_signal_job(msg);
 		slurm_free_signal_job_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:
-		_rpc_suspend_job(msg, cli);
+		_rpc_suspend_job(msg);
 		slurm_free_suspend_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_JOB:
 		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
-		_rpc_terminate_job(msg, cli);
+		_rpc_terminate_job(msg);
 		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
-		_rpc_update_time(msg, cli);
+		_rpc_update_time(msg);
 		slurm_free_update_job_time_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN:
-		_rpc_shutdown(msg, cli);
+		_rpc_shutdown(msg);
 		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_RECONFIGURE:
-		_rpc_reconfig(msg, cli);
+		_rpc_reconfig(msg);
 		/* No body to free */
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
-		rc = _rpc_ping(msg, cli);
+		rc = _rpc_ping(msg);
 		/* No body to free */
 		/* Then initiate a separate node registration */
 		if (rc == SLURM_SUCCESS)
 			send_registration_msg(SLURM_SUCCESS, true);
 		break;
 	case REQUEST_PING:
-		_rpc_ping(msg, cli);
+		_rpc_ping(msg);
 		/* No body to free */
 		break;
 	case REQUEST_JOB_ID:
-		_rpc_pid2jid(msg, cli);
+		_rpc_pid2jid(msg);
 		slurm_free_job_id_request_msg(msg->data);
 		break;
 	case REQUEST_FILE_BCAST:
-		rc = _rpc_file_bcast(msg, cli);
+		rc = _rpc_file_bcast(msg);
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_file_bcast_msg(msg->data);
 		break;
 	case REQUEST_STEP_COMPLETE:
-		rc = _rpc_step_complete(msg, cli);
+		rc = _rpc_step_complete(msg);
 		slurm_free_step_complete_msg(msg->data);
 		break;
 	case MESSAGE_STAT_JOBACCT:
-		rc = _rpc_stat_jobacct(msg, cli);
+		rc = _rpc_stat_jobacct(msg);
 		slurm_free_stat_jobacct_msg(msg->data);
 		break;
 	default:
@@ -307,6 +308,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	       rank, conf->node_name,
 	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
+
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
 	safe_write(fd, &parent_rank, sizeof(int));
@@ -633,7 +635,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 
 
 static void 
-_rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_launch_tasks(slurm_msg_t *msg)
 {
 	int      errnum = 0;
 	uint16_t port;
@@ -644,6 +646,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uint32_t stepid = req->job_step_id;
 	bool     super_user = false;
 	slurm_addr self;
+	slurm_addr *cli = &msg->orig_addr;
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
 
@@ -719,7 +722,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 
 static void 
-_rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_spawn_task(slurm_msg_t *msg)
 {
 	int      errnum = 0;
 	uint16_t port;
@@ -730,6 +733,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	uint32_t stepid = req->job_step_id;
 	bool     super_user = false;
 	slurm_addr self;
+	slurm_addr *cli = &msg->orig_addr;
 	socklen_t adlen;
         int spawn_tasks_to_launch = -1;
 	hostset_t step_hset = NULL;
@@ -831,7 +835,7 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 }
 
 static void
-_rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_batch_job(slurm_msg_t *msg)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run = true;
@@ -839,7 +843,8 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	char    *bg_part_id = NULL;
 	bool	replied = false;
-
+	slurm_addr *cli = &msg->orig_addr;
+	
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
 		      (unsigned int) req_uid);
@@ -939,7 +944,7 @@ _abort_job(uint32_t job_id)
 }
 
 static void
-_rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_reconfig(slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
@@ -953,7 +958,7 @@ _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr)
 }
 
 static void
-_rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_shutdown(slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	
@@ -970,7 +975,7 @@ _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
 }
 
 static int
-_rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_ping(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -996,7 +1001,7 @@ _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 }
 
 static void
-_rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               fd;
 	int               rc = SLURM_SUCCESS;
@@ -1062,7 +1067,7 @@ done:
 }
 
 static void
-_rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_terminate_tasks(slurm_msg_t *msg)
 {
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	int               rc = SLURM_SUCCESS;
@@ -1108,7 +1113,7 @@ done:
 }
 
 static int
-_rpc_step_complete(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_step_complete(slurm_msg_t *msg)
 {
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
 	int               rc = SLURM_SUCCESS;
@@ -1148,7 +1153,7 @@ done:
 }
 
 static int
-_rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_stat_jobacct(slurm_msg_t *msg)
 {
 	stat_jobacct_msg_t *req = (stat_jobacct_msg_t *)msg->data;
 	slurm_msg_t        resp_msg;
@@ -1196,8 +1201,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
 		      req->job_id, req->step_id);
 	} 
 	close(fd);
-	debug("job %u.%u found", resp->job_id, resp->step_id);
-	resp_msg.address      = msg->address;
+	
 	resp_msg.msg_type     = MESSAGE_STAT_JOBACCT;
 	resp_msg.data         = resp;
 	resp_msg.forward = msg->forward;
@@ -1217,7 +1221,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg, slurm_addr *cli_addr)
  *  FIXME! - Perhaps we should send SIGXCPU first?
  */
 static void
-_rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_timelimit(slurm_msg_t *msg)
 {
 	uid_t           uid = g_slurm_auth_get_uid(msg->auth_cred);
 	kill_job_msg_t *req = msg->data;
@@ -1243,10 +1247,10 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	         req->job_id, nsteps );
 
 	/* Revoke credential, send SIGKILL, run epilog, etc. */
-	_rpc_terminate_job(msg, cli_addr); 
+	_rpc_terminate_job(msg); 
 }
 
-static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
+static void  _rpc_pid2jid(slurm_msg_t *msg)
 {
 	job_id_request_msg_t *req = (job_id_request_msg_t *) msg->data;
 	slurm_msg_t           resp_msg;
@@ -1295,7 +1299,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 static int
-_rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_file_bcast(slurm_msg_t *msg)
 {
 	file_bcast_msg_t *req = msg->data;
 	int i, fd, flags, offset, inx, rc;
@@ -1392,10 +1396,11 @@ _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 static void 
-_rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_reattach_tasks(slurm_msg_t *msg)
 {
 	reattach_tasks_request_msg_t  *req = msg->data;
-	reattach_tasks_response_msg_t *resp = NULL;
+	reattach_tasks_response_msg_t *resp = 
+		xmalloc(sizeof(reattach_tasks_response_msg_t));
 	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
@@ -1406,8 +1411,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	int               fd;
 	uid_t             req_uid;
 	slurmstepd_info_t *step = NULL;
-
-	resp = xmalloc(sizeof(reattach_tasks_response_msg_t));
+	slurm_addr *cli = &msg->orig_addr;
+	
 	memset(&resp_msg, 0, sizeof(slurm_msg_t));
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
@@ -1441,7 +1446,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
-
+	
 	/* 
 	 * Set IO address by io_port and client address
 	 */
@@ -1463,7 +1468,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		debug2("stepd_attach call failed");
 		goto done3;
 	}
-
 done3:
 	xfree(step);
 done2:
@@ -1478,7 +1482,8 @@ done:
 	resp->srun_node_id    = req->srun_node_id;
 	resp->return_code     = rc;
 
-	slurm_send_only_node_msg(&resp_msg);
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	//slurm_send_only_node_msg(&resp_msg);
 	slurm_free_reattach_tasks_response_msg(resp);
 }
 
@@ -1758,7 +1763,7 @@ _epilog_complete(uint32_t jobid, int rc)
  * belonging to a given job allocation.
  */
 static void 
-_rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_signal_job(slurm_msg_t *msg)
 {
 	signal_job_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -1857,7 +1862,7 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
  * each job step belonging to a given job allocation.
  */
 static void 
-_rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_suspend_job(slurm_msg_t *msg)
 {
 	suspend_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -1941,7 +1946,7 @@ _rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 static void 
-_rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_terminate_job(slurm_msg_t *msg)
 {
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
@@ -2176,7 +2181,7 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
  * Timelimit is not currently used in the slurmd or slurmstepd.
  */
 static void 
-_rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_update_time(slurm_msg_t *msg)
 {
 	int   rc      = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);

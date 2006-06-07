@@ -463,7 +463,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os PROJECT SLURM_API_VERSION SLURM_API_CURRENT SLURM_API_MAJOR SLURM_API_AGE SLURM_API_REVISION VERSION SLURM_MAJOR SLURM_MINOR SLURM_MICRO RELEASE SLURM_VERSION INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CMD_LDFLAGS LIB_LDFLAGS SO_LDFLAGS HAVE_AIX_TRUE HAVE_AIX_FALSE HAVE_AIX PROCTRACKDIR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE HAVE_AIX_PROCTRACK_TRUE HAVE_AIX_PROCTRACK_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL WITH_GNU_LD_TRUE WITH_GNU_LD_FALSE HAVE_SCHED_SETAFFINITY_TRUE HAVE_SCHED_SETAFFINITY_FALSE NUMA_LIBS HAVE_NUMA_TRUE HAVE_NUMA_FALSE PAM_LIBS HAVE_PAM_TRUE HAVE_PAM_FALSE LIBOBJS HAVE_UNSETENV_TRUE HAVE_UNSETENV_FALSE PTHREAD_CC PTHREAD_LIBS PTHREAD_CFLAGS BG_INCLUDES BG_LDFLAGS SEMAPHORE_SOURCES SEMAPHORE_LIBS NCURSES HAVE_SOME_CURSES_TRUE HAVE_SOME_CURSES_FALSE HAVE_SOME_CURSES DEBUG_MODULES_TRUE DEBUG_MODULES_FALSE SLURMCTLD_PORT SLURMD_PORT ELAN_LIBS HAVE_ELAN_TRUE HAVE_ELAN_FALSE HAVE_ELAN FEDERATION_LDFLAGS HAVE_FEDERATION_TRUE HAVE_FEDERATION_FALSE HAVE_FEDERATION READLINE_LIBS SSL_LDFLAGS SSL_LIBS SSL_CPPFLAGS MUNGE_LIBS MUNGE_CPPFLAGS MUNGE_LDFLAGS WITH_MUNGE_TRUE WITH_MUNGE_FALSE AUTHD_LIBS AUTHD_CFLAGS WITH_AUTHD_TRUE WITH_AUTHD_FALSE LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os PROJECT SLURM_API_VERSION SLURM_API_CURRENT SLURM_API_MAJOR SLURM_API_AGE SLURM_API_REVISION VERSION SLURM_MAJOR SLURM_MINOR SLURM_MICRO RELEASE SLURM_VERSION INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CMD_LDFLAGS LIB_LDFLAGS SO_LDFLAGS HAVE_AIX_TRUE HAVE_AIX_FALSE HAVE_AIX PROCTRACKDIR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE HAVE_AIX_PROCTRACK_TRUE HAVE_AIX_PROCTRACK_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL WITH_GNU_LD_TRUE WITH_GNU_LD_FALSE HAVE_SCHED_SETAFFINITY_TRUE HAVE_SCHED_SETAFFINITY_FALSE NUMA_LIBS HAVE_NUMA_TRUE HAVE_NUMA_FALSE PAM_LIBS HAVE_PAM_TRUE HAVE_PAM_FALSE LIBOBJS HAVE_UNSETENV_TRUE HAVE_UNSETENV_FALSE PTHREAD_CC PTHREAD_LIBS PTHREAD_CFLAGS BG_INCLUDES BG_LDFLAGS SEMAPHORE_SOURCES SEMAPHORE_LIBS NCURSES HAVE_SOME_CURSES_TRUE HAVE_SOME_CURSES_FALSE HAVE_SOME_CURSES DEBUG_MODULES_TRUE DEBUG_MODULES_FALSE SLURMCTLD_PORT SLURMD_PORT ELAN_LIBS HAVE_ELAN_TRUE HAVE_ELAN_FALSE HAVE_ELAN FEDERATION_LDFLAGS HAVE_FEDERATION_TRUE HAVE_FEDERATION_FALSE HAVE_FEDERATION HAVE_SGI_JOB_TRUE HAVE_SGI_JOB_FALSE READLINE_LIBS SSL_LDFLAGS SSL_LIBS SSL_CPPFLAGS MUNGE_LIBS MUNGE_CPPFLAGS MUNGE_LDFLAGS WITH_MUNGE_TRUE WITH_MUNGE_FALSE AUTHD_LIBS AUTHD_CFLAGS WITH_AUTHD_TRUE WITH_AUTHD_FALSE LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -23042,7 +23042,7 @@ echo "$as_me: error: $bg_dir/lib64/libbglbridge_s.a is required and does not exi
          fi
 
          have_bg_ar=yes
-         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -L/usr/lib64 -lexpat"
+         bg_ldflags="$bg_ldflags -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bg_dir/lib/bglbootload.a $bg_dir/lib/bglsp440supt.a -lsaymessage_s -lbgldb_s -lbglmachine_s -ltableapi_s -L/usr/lib64 -lexpat"
 
       fi
 
@@ -23115,6 +23115,9 @@ else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
+{ { echo "$as_me:$LINENO: error: There is a problem linking to the bluegene api." >&5
+echo "$as_me: error: There is a problem linking to the bluegene api." >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
@@ -24019,18 +24022,18 @@ echo $ECHO_N "checking whether to enable AIX Federation switch support... $ECHO_
    done
 
    if test "x$ac_have_federation" != "xyes" ; then
-      { echo "$as_me:$LINENO: Cannot support Federation without libntbl" >&5
-echo "$as_me: Cannot support Federation without libntbl" >&6;}
       echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
+      { echo "$as_me:$LINENO: Cannot support Federation without libntbl" >&5
+echo "$as_me: Cannot support Federation without libntbl" >&6;}
    else
+      echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBNTBL 1
 _ACEOF
 
-      echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
    fi
 
 
@@ -24043,6 +24046,90 @@ if test "x$ac_have_federation" = "xyes"; then
 else
   HAVE_FEDERATION_TRUE='#'
   HAVE_FEDERATION_FALSE=
+fi
+
+
+
+
+   echo "$as_me:$LINENO: checking for job_attachpid in -ljob" >&5
+echo $ECHO_N "checking for job_attachpid in -ljob... $ECHO_C" >&6
+if test "${ac_cv_lib_job_job_attachpid+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljob  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char job_attachpid ();
+int
+main ()
+{
+job_attachpid ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_job_job_attachpid=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_job_job_attachpid=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_job_job_attachpid" >&5
+echo "${ECHO_T}$ac_cv_lib_job_job_attachpid" >&6
+if test $ac_cv_lib_job_job_attachpid = yes; then
+  ac_have_sgi_job="yes"
+fi
+
+   echo "$as_me:$LINENO: checking for SGI job container support" >&5
+echo $ECHO_N "checking for SGI job container support... $ECHO_C" >&6
+   echo "$as_me:$LINENO: result: ${ac_have_sgi_job=no}" >&5
+echo "${ECHO_T}${ac_have_sgi_job=no}" >&6
+
+
+if test "x$ac_have_sgi_job" = "xyes"; then
+  HAVE_SGI_JOB_TRUE=
+  HAVE_SGI_JOB_FALSE='#'
+else
+  HAVE_SGI_JOB_TRUE='#'
+  HAVE_SGI_JOB_FALSE=
 fi
 
 
@@ -24603,7 +24690,7 @@ _ACEOF
 
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/maui/Makefile src/plugins/sched/maui/wiki/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/maui/Makefile src/plugins/sched/maui/wiki/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -24806,6 +24893,13 @@ if test -z "${HAVE_FEDERATION_TRUE}" && test -z "${HAVE_FEDERATION_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_FEDERATION\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"HAVE_FEDERATION\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HAVE_SGI_JOB_TRUE}" && test -z "${HAVE_SGI_JOB_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_SGI_JOB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_SGI_JOB\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -25307,6 +25401,7 @@ do
   "src/plugins/proctrack/pgid/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/pgid/Makefile" ;;
   "src/plugins/proctrack/linuxproc/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/linuxproc/Makefile" ;;
   "src/plugins/proctrack/rms/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/rms/Makefile" ;;
+  "src/plugins/proctrack/sgi_job/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/sgi_job/Makefile" ;;
   "src/plugins/sched/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/sched/Makefile" ;;
   "src/plugins/sched/backfill/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/sched/backfill/Makefile" ;;
   "src/plugins/sched/builtin/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/sched/builtin/Makefile" ;;
@@ -25558,6 +25653,8 @@ s,@FEDERATION_LDFLAGS@,$FEDERATION_LDFLAGS,;t t
 s,@HAVE_FEDERATION_TRUE@,$HAVE_FEDERATION_TRUE,;t t
 s,@HAVE_FEDERATION_FALSE@,$HAVE_FEDERATION_FALSE,;t t
 s,@HAVE_FEDERATION@,$HAVE_FEDERATION,;t t
+s,@HAVE_SGI_JOB_TRUE@,$HAVE_SGI_JOB_TRUE,;t t
+s,@HAVE_SGI_JOB_FALSE@,$HAVE_SGI_JOB_FALSE,;t t
 s,@READLINE_LIBS@,$READLINE_LIBS,;t t
 s,@SSL_LDFLAGS@,$SSL_LDFLAGS,;t t
 s,@SSL_LIBS@,$SSL_LIBS,;t t
