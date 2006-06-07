@@ -1,7 +1,7 @@
 /*****************************************************************************\
- * src/srun/signals.c - signal handling for srun
+ *  src/srun/signals.c - signal handling for srun
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, and
  *             Morris Jette  <jette1@llnl.gov>
@@ -46,6 +46,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/global_srun.h"
 
+#include "src/srun/opt.h"
 #include "src/srun/srun_job.h"
 
 #define MAX_RETRIES 3

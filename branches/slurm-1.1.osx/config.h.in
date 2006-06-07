@@ -149,6 +149,12 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the `strlcpy' function. */
+#undef HAVE_STRLCPY
+
+/* Define to 1 if you have the `strndup' function. */
+#undef HAVE_STRNDUP
+
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
 
@@ -181,6 +187,9 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/vfs.h> header file. */
+#undef HAVE_SYS_VFS_H
 
 /* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
 #undef HAVE_SYS_WAIT_H
@@ -255,6 +264,9 @@
 
 /* Define to 1 if sched_getaffinity takes two arguments. */
 #undef SCHED_GETAFFINITY_TWO_ARGS
+
+/* Define to 1 if setpgrp takes two arguments. */
+#undef SETPGRP_TWO_ARGS
 
 /* Define if you need setproctitle padding */
 #undef SETPROCTITLE_PS_PADDING

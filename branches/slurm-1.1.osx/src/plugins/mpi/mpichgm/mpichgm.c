@@ -44,6 +44,7 @@
 #include "src/common/xstring.h"
 #include "src/common/net.h"
 #include "src/common/global_srun.h"
+#include "src/srun/opt.h"
 
 #include "src/plugins/mpi/mpichgm/mpichgm.h"
 

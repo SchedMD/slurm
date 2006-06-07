@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 5279 2005-08-24 21:04:50Z morrone $
+# $Id: Makefile.am 8319 2006-06-06 19:09:16Z grondo $
 # Makefile for proctrack plugins
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -55,6 +55,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
+	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \

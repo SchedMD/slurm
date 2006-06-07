@@ -44,6 +44,7 @@
 #include "src/common/net.h"
 #include "src/common/fd.h"
 #include "src/common/global_srun.h"
+#include "src/srun/opt.h"
 
 /* NOTE: MVAPICH has changed protocols without changing version numbers.
  * This makes support of MVAPICH very difficult. 

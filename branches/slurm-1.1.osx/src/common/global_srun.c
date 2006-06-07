@@ -47,6 +47,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
+#include "src/srun/opt.h"
 
 /* number of active threads */
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;

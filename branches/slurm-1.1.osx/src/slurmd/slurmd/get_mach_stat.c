@@ -6,7 +6,7 @@
  *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and 
  *       USE_CPU_SPEED
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -48,7 +48,9 @@
 #include <string.h>
 #include <syslog.h>
 #include <sys/utsname.h>
-#include <sys/vfs.h>
+#ifdef HAVE_SYS_VFS_H
+#  include <sys/vfs.h>
+#endif
 #include <unistd.h>
 
 #include "src/common/hostlist.h"
@@ -105,8 +107,9 @@ get_procs(uint32_t *procs)
 	}
 	
 	*procs = (uint32_t)info.online_vcpus;
-	return 0;
-#else
+#else /* !LPAR_INFO_FORMAT2 */
+
+#  ifdef _SC_NPROCESSORS_ONLN
 	int my_proc_tally;
 
 	*procs = 1;
@@ -117,8 +120,12 @@ get_procs(uint32_t *procs)
 	} 
 
 	*procs = my_proc_tally;
+#  else
+	*procs = 1;
+#  endif /* _SC_NPROCESSORS_ONLN */
+#endif /* LPAR_INFO_FORMAT2 */
+
 	return 0;
-#endif
 }
 
 
@@ -184,6 +191,7 @@ get_mach_name(char *node_name)
 extern int
 get_memory(uint32_t *real_memory)
 {
+#ifdef _SC_PHYS_PAGES
 	long pages;
 
 	*real_memory = 1;
@@ -195,15 +203,19 @@ get_memory(uint32_t *real_memory)
 		*real_memory = _system_configuration.physmem / (1024 * 1024);
 		return 0;
 	}
-#endif
+#endif /* HAVE__SYSTEM_CONFIGURATION */
 
 	if (pages < 1) {
 		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)\n");
 		return EINVAL;
 	} 
 
-	*real_memory = (int)((float)pages * (sysconf(_SC_PAGE_SIZE) / 
+	*real_memory = (uint32_t)((float)pages * (sysconf(_SC_PAGE_SIZE) / 
 			1048576.0)); /* Megabytes of memory */
+#else  /* !_SC_PHYS_PAGES */
+	*real_memory = 1;
+#endif /* _SC_PHYS_PAGES */
+
 	return 0;
 }
 
@@ -258,13 +270,13 @@ get_speed(float *speed)
 extern int 
 get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs) 
 {
+	int error_code = 0;
+#ifdef HAVE_SYS_VFS
 	struct statfs stat_buf;
 	long   total_size;
-	int error_code;
 	float page_size;
 	char *tmp_fs_name = tmp_fs;
 
-	error_code = 0;
 	*tmp_disk = 0;
 	total_size = 0;
 	page_size = (sysconf(_SC_PAGE_SIZE) / 1048576.0); /* MG per page */
@@ -280,6 +292,9 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 			errno, tmp_fs_name);
 	}
 
-	*tmp_disk += (long)(total_size * page_size);
+	*tmp_disk += (uint32_t)(total_size * page_size);
+#else
+	*tmp_disk = 1;
+#endif
 	return error_code;
 }

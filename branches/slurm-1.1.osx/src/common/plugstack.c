@@ -1016,7 +1016,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		}
 		break;
 	case S_TASK_GLOBAL_ID:
-		p2uint32 = va_arg(vargs, int *);
+		p2uint32 = va_arg(vargs, uint32_t *);
 		if (!spank->task) {
 			rc = ESPANK_NOT_TASK;
 		} else {

@@ -45,7 +45,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-                 sys/systemcfg.h ncurses.h curses.h sys/dr.h \
+                 sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -63,6 +63,10 @@ X_AC_SLURM_PROGRAM_INVOCATION_NAME
 dnl Check if ptrace takes four or five arguments
 dnl
 X_AC_PTRACE
+
+dnl Check if setpgrp takes zero or two arguments
+drn
+X_AC_SETPGRP
 
 dnl Check of sched_getaffinity exists and it's argument count
 dnl
@@ -89,6 +93,8 @@ AC_CHECK_FUNCS( \
    hstrerror \
    strerror  \
    mtrace    \
+   strndup   \
+   strlcpy   \
    strsignal \ 
    inet_aton \
    inet_ntop \

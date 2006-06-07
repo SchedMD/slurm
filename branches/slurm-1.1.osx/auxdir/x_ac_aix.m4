@@ -33,6 +33,10 @@ AC_DEFUN([X_AC_AIX],
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
             AC_DEFINE(USE_ALIAS, 0, 
                       [Define slurm_ prefix function aliases for plusins]) ;;
+      *darwin*)
+            ac_have_aix="no"
+            AC_DEFINE(USE_ALIAS, 0,
+                      [Define slurm_ prefix function aliases for plusins]) ;;    
       *)    ac_have_aix="no"
             AC_DEFINE(USE_ALIAS, 1, 
                       [Define slurm_ prefix function aliases for plugins]) ;;

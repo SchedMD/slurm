@@ -40,6 +40,7 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
