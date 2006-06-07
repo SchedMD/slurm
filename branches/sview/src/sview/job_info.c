@@ -46,28 +46,54 @@ enum {
 	SORTID_TIME,
 	SORTID_NODES,
 	SORTID_NODELIST,
+	SORTID_REQ_NODELIST,
+	SORTID_EXC_NODELIST,
+	SORTID_SUBMIT,
+	SORTID_START,
+	SORTID_END,
+	SORTID_SUSPEND,
+	SORTID_PRIORITY,
+	SORTID_NUM_PROCS,
+	SORTID_SHARED,
+	SORTID_CPUS_PER_TASK,
+	SORTID_ACCOUNT,
+	SORTID_REASON,
 	SORTID_CNT
 };
 
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, SORTID_JOBID, "JOBID", TRUE, -1},
-	{G_TYPE_STRING, SORTID_PARTITION, "PARTITION", TRUE, -1},
+	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1},
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_BLOCK, "BG BLOCK", TRUE, -1},
-	
+	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1},	
 #endif
-	{G_TYPE_STRING, SORTID_USER, "USER", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NAME, "NAME", TRUE, -1},
-	{G_TYPE_STRING, SORTID_STATE, "STATE", TRUE, -1},
-	{G_TYPE_STRING, SORTID_TIME, "TIME", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NODES, "NODES", TRUE, -1},
+	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1},
+	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP_LIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1},
+	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested BP List", FALSE, -1},
+	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded BP List", FALSE, -1},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE, -1},
+	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", FALSE, -1},
+	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", FALSE, -1},
 #endif
+	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1},
+	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, -1},
+	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1},
+	{G_TYPE_STRING, SORTID_SUSPEND, "Suspend Time", FALSE, -1},
+	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, -1},
+	{G_TYPE_STRING, SORTID_NUM_PROCS, "Num Processors", FALSE, -1},
+	{G_TYPE_INT, SORTID_SHARED, "Shared", FALSE, -1},
+	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", FALSE, -1},
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", FALSE, -1},
+	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", FALSE, -1},	
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+
 static display_data_t *local_display_data = NULL;
 time_t now_time;
 
@@ -94,9 +120,8 @@ static int _append_job_record(job_info_t *job_ptr,
 	gtk_list_store_append(liststore, iter);
 	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
 	
-	snprintf(tmp_char, 50, "%d", job_ptr->job_id);
 	gtk_list_store_set(liststore, iter, 
-			   SORTID_JOBID, tmp_char, -1);
+			   SORTID_JOBID, job_ptr->job_id, -1);
 	gtk_list_store_set(liststore, iter, 
 			   SORTID_PARTITION, job_ptr->partition, -1);
 #ifdef HAVE_BG
@@ -192,7 +217,6 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	if((error_code = get_new_info_job(&new_job_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA) 
 		return;
-	g_print("got %d\n", error_code);
 got_toggled:
 	if(display_widget)
 		gtk_widget_destroy(display_widget);
@@ -213,10 +237,9 @@ got_toggled:
 		recs = new_job_ptr->record_count;
 	else
 		recs = 0;
-	g_print("got %d\n",recs);
+
 	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
-
 	g_signal_connect(G_OBJECT(tree_view), "row-activated",
 			 G_CALLBACK(row_clicked_job),
 			 new_job_ptr);
@@ -292,7 +315,6 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 {
 	job_info_msg_t *job_info_ptr = (job_info_msg_t *)user_data;
 	job_info_t *job_ptr = NULL;
-	char *jobid_char = NULL;
 	int job_id = 0, i;
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkWidget *popup = NULL;
@@ -310,9 +332,8 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 		g_error("error getting iter from model");
 		return;
 	}	
-	gtk_tree_model_get(model, &iter, SORTID_JOBID, &jobid_char, -1);
-	job_id = atoi(jobid_char);
-
+	gtk_tree_model_get(model, &iter, SORTID_JOBID, &job_id, -1);
+	
 	for (i = 0; i < job_info_ptr->record_count; i++) {
 		if(job_info_ptr->job_array[i].job_id == job_id) {
 			job_ptr = &job_info_ptr->job_array[i];
