@@ -82,6 +82,11 @@ Summary: SLURM interfaces to IBM AIX and Federation switch.
 Group: System Environment/Base
 Requires: slurm
 
+%package proctrack-sgi-job
+Summary: SLURM process tracking plugin for SGI job containers.
+Group: System Environment/Base
+Requires: slurm
+
 %description 
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
@@ -112,6 +117,10 @@ SLURM switch plugin for Quadrics Elan3 or Elan4.
 
 %description aix-federation
 SLURM plugins for IBM AIX and Federation switch.
+
+%description proctrack-sgi-job
+SLURM process tracking plugin for SGI job containers.
+(See http://oss.sgi.com/projects/pagg).
 
 %prep
 %setup -n %{name}-%{version}-%{release}
@@ -196,6 +205,11 @@ echo "%{_sbindir}/slurm_epilog"                   >> $LIST
 echo "%{_sbindir}/slurm_prolog"                   >> $LIST
 echo "%{_sbindir}/sfree"                          >> $LIST
 echo "%config %{_sysconfdir}/bluegene.conf.example" >> $LIST
+
+LIST=./sgi-job.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_sgi_job.so &&
+echo "%{_libdir}/slurm/proctrack_sgi_job.so" >> $LIST
 
 #############################################################################
 
@@ -287,6 +301,9 @@ rm -rf $RPM_BUILD_ROOT
 %files -f aix_federation.files aix-federation
 %defattr(-,root,root)
 #############################################################################
+
+%files -f sgi-job.files proctrack-sgi-job
+%defattr(-,root,root)
 
 %pre
 #if [ -x /etc/init.d/slurm ]; then
