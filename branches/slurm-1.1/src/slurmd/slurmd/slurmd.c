@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <dlfcn.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -119,6 +120,9 @@ static void      _increment_thd_count();
 static void      _decrement_thd_count();
 static void      _wait_for_all_threads();
 static int       _set_slurmd_spooldir(void);
+#ifdef HAVE_BG_FILES
+static int       _set_bluegene_libdb2(void);
+#endif
 static void      _usage();
 static void      _handle_connection(slurm_fd fd, slurm_addr *client);
 static void     *_service_connection(void *);
@@ -583,9 +587,9 @@ _read_config()
 		fatal("Unable to establish controller machine");
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
-
 	conf->use_pam = cf->use_pam;
-
+	_free_and_set(&conf->plugindir, xstrdup(cf->plugindir));
+	
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
 }
@@ -639,6 +643,7 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
+	debug3("PluginDir   = `%s'",     conf->plugindir);
 	slurm_conf_unlock();
 }
 
@@ -822,6 +827,16 @@ _slurmd_init()
 		error("Unable to initialize slurmd spooldir");
 		return SLURM_FAILURE;
 	}
+
+#ifdef HAVE_BG_FILES
+	/* 
+	 * Create a fake libdb2.so if necessary.
+	 */
+	if (_set_bluegene_libdb2() < 0) {
+		error("Unable to create libdb2.so");
+		return SLURM_FAILURE;
+	}
+#endif
 
 	if (conf->cleanstart) {
 		/* 
@@ -1013,6 +1028,36 @@ _set_slurmd_spooldir(void)
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_BG_FILES
+/* 
+ * make sure a libdb2.so exists so things linked to a bluegene plugin 
+ * won't seg fault 
+ */
+static int
+_set_bluegene_libdb2(void)
+{
+	char tmp_char[200];
+	char tmp_char2[200];
+	void *handle = NULL;
+	debug3("checking for fake libdb2.so");
+
+	handle = dlopen("libdb2.so", RTLD_LAZY);
+	if (handle) {
+		debug("libdb2.so already here");
+		return SLURM_SUCCESS;
+	}
+	snprintf(tmp_char, 200, "%s/select_bluegene.so", conf->plugindir);
+	snprintf(tmp_char2, 200, "%s/libdb2.so", conf->plugindir);
+	if (symlink(tmp_char, tmp_char2) < 0) {
+		if (errno != EEXIST) {
+			fatal("symlink(%s): %m", tmp_char2);
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+#endif
 
 /* Kill the currently running slurmd 
  *
