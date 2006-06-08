@@ -163,6 +163,7 @@ HAVE_SOME_CURSES_TRUE = @HAVE_SOME_CURSES_TRUE@
 HAVE_UNSETENV_FALSE = @HAVE_UNSETENV_FALSE@
 HAVE_UNSETENV_TRUE = @HAVE_UNSETENV_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
+INSTALL_DIRS = @INSTALL_DIRS@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
@@ -612,7 +613,7 @@ install-exec-local:
 	  srcdir=`cd $(top_srcdir) && pwd`; \
 	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
 	                         $(DESTDIR)$(bindir)/srun; fi; \
-	$(INSTALL) -D -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
+	$(INSTALL) $(INSTALL_DIRS) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
 	                       $(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
