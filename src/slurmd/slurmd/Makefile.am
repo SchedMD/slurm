@@ -7,6 +7,7 @@ AUTOMAKE_OPTIONS = foreign
 sbin_PROGRAMS = slurmd
 noinst_PROGRAMS = slurmd.test
 
+CPPFLAGS =  -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
 slurmd_LDADD = 					   \
