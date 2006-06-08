@@ -91,6 +91,7 @@ dnl
 AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS( \
+   fdatasync \
    hstrerror \
    strerror  \
    mtrace    \

@@ -22792,7 +22792,9 @@ fi
 
 
 
+
 for ac_func in \
+   fdatasync \
    hstrerror \
    strerror  \
    mtrace    \
