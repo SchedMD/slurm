@@ -588,7 +588,6 @@ _read_config()
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 	conf->use_pam = cf->use_pam;
-	_free_and_set(&conf->plugindir, xstrdup(cf->plugindir));
 	
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
@@ -643,7 +642,6 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
-	debug3("PluginDir   = `%s'",     conf->plugindir);
 	slurm_conf_unlock();
 }
 
@@ -1036,8 +1034,6 @@ _set_slurmd_spooldir(void)
 static int
 _set_bluegene_libdb2(void)
 {
-	char tmp_char[200];
-	char tmp_char2[200];
 	void *handle = NULL;
 	debug3("checking for fake libdb2.so");
 
@@ -1046,24 +1042,22 @@ _set_bluegene_libdb2(void)
 		debug("libdb2.so already here");
 		return SLURM_SUCCESS;
 	}
-	
-	snprintf(tmp_char, 200, "%s/select_bluegene.so", conf->plugindir);
-	snprintf(tmp_char2, 200, "/usr/lib64/libdb2.so.1", conf->plugindir);
-	if (symlink(tmp_char, tmp_char2) < 0) {
+#ifdef LIBSLURM_SO
+	if (symlink(LIBSLURM_SO, "/usr/lib64/libdb2.so.1") < 0) {
 		if (errno != EEXIST) {
-			fatal("symlink(%s): %m", tmp_char2);
+			fatal("symlink(/usr/lib64/libdb2.so.1): %m");
 			return SLURM_ERROR;
 		}
 	}
-	
-	snprintf(tmp_char, 200, "/usr/lib64/libdb2.so", conf->plugindir);
-	if (symlink(tmp_char2, tmp_char) < 0) {
+	if (symlink(LIBSLURM_SO, "/usr/lib64/libdb2locale.so.1") < 0) {
 		if (errno != EEXIST) {
-			fatal("symlink(%s): %m", tmp_char2);
+			fatal("symlink(/usr/lib64/libdb2locale.so.1): %m");
 			return SLURM_ERROR;
 		}
 	}
-
+#else 
+	fatal("LIBSLURM_SO is not defined!");
+#endif
 	return SLURM_SUCCESS;
 }
 #endif

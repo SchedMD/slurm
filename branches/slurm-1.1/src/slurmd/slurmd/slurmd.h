@@ -75,7 +75,6 @@ typedef struct slurmd_config {
 	char         *prolog;		/* Path to prolog script           */
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
-	char         *plugindir;	/* location of plugin dir          */
 	int           port;	        /* local slurmd port               */
 	int           hbeat;		/* heartbeat interval		   */
 	slurm_fd      lfd;		/* slurmd listen file descriptor   */
