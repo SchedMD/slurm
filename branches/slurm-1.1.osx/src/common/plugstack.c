@@ -312,7 +312,7 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 	char **argv;
 	int ac;
 	char *path;
-	bool required;
+	bool required = FALSE;
 
 	struct spank_plugin *p;
 
