@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix Bluegene configure to work with the new 64bit libs.
  -- Fix bug in controller that causes it to segfault when hit with a malformed
     message.
+ -- For "srun --attach=X" to other users job, report an error and exit (it 
+    previously just hung).
 
 * Changes in SLURM 1.1.1
 ========================
