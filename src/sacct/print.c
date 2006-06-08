@@ -208,9 +208,11 @@ void print_idrss(type_t type, void *object)
 	switch(type) {
 	case HEADLINE:
 		printf("%8s", "Idrss");
+		return;
 		break;
 	case UNDERSCORE:
 		printf("%8s", "------");
+		return;
 		break;
 	case JOB:
 		rusage = job->rusage;
