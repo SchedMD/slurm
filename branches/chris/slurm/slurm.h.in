@@ -875,7 +875,7 @@ extern int slurm_terminate_job_step PARAMS((
 \*****************************************************************************/
 
 /*
- * slurm_step_ctx_create - Create a job step and its context. 
+n * slurm_step_ctx_create - Create a job step and its context. 
  * IN step_req - description of job step request
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
@@ -935,6 +935,9 @@ extern int slurm_spawn PARAMS((slurm_step_ctx ctx,
  */
 extern int slurm_spawn_kill PARAMS((slurm_step_ctx ctx, 
 				       uint16_t signal));
+
+
+extern int slurm_step_launch PARAMS((slurm_step_ctx ctx));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

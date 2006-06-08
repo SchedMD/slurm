@@ -376,7 +376,8 @@ srun_job_destroy(srun_job_t *job, int error)
 		return;
 	}
 
-	if (error) debugger_launch_failure(job);
+	/* FIXME */
+	/*if (error) debugger_launch_failure(job);*/
 
 	job->removed = true;
 }

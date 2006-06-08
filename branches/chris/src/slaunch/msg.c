@@ -53,18 +53,17 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/mpi.h"
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
 
 #include "src/slaunch/opt.h"
 #include "src/slaunch/msg.h"
-#include "src/slaunch/pmi.h"
 #include "src/slaunch/sigstr.h"
 #include "src/slaunch/attach.h"
 #include "src/slaunch/multi_prog.h"
 
-#include "src/common/xstring.h"
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
 #define MAX_RETRIES 3		/* pthread_create retries */

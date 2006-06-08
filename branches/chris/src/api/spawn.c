@@ -51,31 +51,12 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/api/step_ctx.h"
+
 #define _DEBUG 0
 #define _MAX_THREAD_COUNT 50
-#define STEP_CTX_MAGIC 0xc7a3
 
 extern char **environ;
-
-struct slurm_step_ctx_struct {
-	uint16_t magic;	/* magic number */
-
-	uint32_t job_id;	/* assigned job id */
-	uint32_t user_id;	/* user the job runs as */
-	
-	resource_allocation_response_msg_t *alloc_resp;
-	job_step_create_response_msg_t *step_resp;
-
-	char *cwd;		/* working directory */
-	uint32_t argc;		/* count of arguments */
-	char **argv;		/* argument list */
-	uint16_t env_set;	/* flag if user set env */
-	uint32_t envc;		/* count of env vars */
-	char **env;		/* environment variables */
-
-	slurm_step_layout_t *step_layout; /* holds info about how the task is 
-					     laid out */
-};
 
 typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 typedef struct thd {
@@ -133,8 +114,8 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	ctx->user_id	= step_req->user_id;
 	ctx->step_resp	= step_resp;
 	ctx->alloc_resp	= alloc_resp;
-	
 	(void) task_layout(ctx->step_layout);
+	ctx->launch_state = NULL;
 
 	return ctx;
 }

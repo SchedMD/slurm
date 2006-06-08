@@ -86,8 +86,8 @@ am_libslurm_la_OBJECTS = allocate.lo cancel.lo checkpoint.lo \
 	complete.lo config_info.lo init_msg.lo job_info.lo \
 	job_step_info.lo node_info.lo node_select_info.lo \
 	partition_info.lo signal.lo slurm_pmi.lo spawn.lo \
-	step_client_io.lo submit.lo suspend.lo reconfigure.lo \
-	update_config.lo
+	step_client_io.lo step_launch.lo step_pmi.lo submit.lo \
+	suspend.lo reconfigure.lo update_config.lo
 libslurm_la_OBJECTS = $(am_libslurm_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -332,7 +332,10 @@ libslurm_la_SOURCES = \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
+	step_ctx.h       \
 	step_client_io.c step_client_io.h \
+	step_launch.c    \
+	step_pmi.c step_pmi.h \
 	submit.c         \
 	suspend.c        \
 	reconfigure.c    \
@@ -450,6 +453,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_pmi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spawn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_client_io.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_pmi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_config.Plo@am__quote@

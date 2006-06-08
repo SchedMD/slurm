@@ -90,11 +90,8 @@
 typedef resource_allocation_response_msg_t         allocation_resp;
 
 /*
- * forward declaration of static funcs
+ * declaration of static funcs
  */
-static resource_allocation_response_msg_t *_existing_allocation(uint32_t jobid);
-static int   _create_job_step(srun_job_t *job,
-			      resource_allocation_response_msg_t *alloc_resp);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
@@ -141,15 +138,15 @@ int slaunch(int argc, char **argv)
 	step_req.node_count = 1;
 	step_req.cpu_count = 1;
 	step_req.num_tasks = 1;
-	step_req.relative;
-	step_req.task_dist = 0;
+	step_req.relative = 0;
+	step_req.task_dist = SLURM_DIST_CYCLIC;
 	step_req.port = 0;      /* port to contact initiating srun */
 	step_req.host = NULL;   /* host to contact initiating srun */
 	step_req.node_list = NULL;
 	step_req.network = NULL;
 	step_req.name = "slaunch";
 	
-	step_ctx = slurm_step_ctx_create(step_req);
+	step_ctx = slurm_step_ctx_create(&step_req);
 	if (step_ctx == NULL) {
 		error("Could not create job step context: %m");
 		exit(1);
@@ -161,109 +158,6 @@ int slaunch(int argc, char **argv)
 		slurm_step_ctx_destroy(step_ctx);
 		exit(1);
 	}
-}
-
-static resource_allocation_response_msg_t *
-_existing_allocation(uint32_t jobid)
-{
-	resource_allocation_response_msg_t *resp = NULL;
-
-	if (slurm_allocation_lookup(jobid, &resp) < 0) {
-		if (opt.parallel_debug)
-			return NULL;	/* create new allocation as needed */
-		if (errno == ESLURM_ALREADY_DONE) 
-			error ("SLURM job %u has expired.", jobid); 
-		else
-			error ("Unable to confirm allocation for job %u: %m",
-			      jobid);
-		info ("Check SLURM_JOBID environment variable " 
-		      "for expired or invalid job.");
-		exit(1);
-	}
-
-	return resp;
-}
-
-static job_step_create_request_msg_t *
-_step_req_create(srun_job_t *j)
-{
-	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
-	r->job_id     = j->jobid;
-	r->user_id    = opt.uid;
-	r->node_count = j->nhosts;
-	r->cpu_count  = opt.overcommit ? j->nhosts
-		                       : (opt.nprocs*opt.cpus_per_task);
-	r->num_tasks  = opt.nprocs;
-	r->node_list  = xstrdup(j->nodelist);
-	r->network    = xstrdup(opt.network);
-	r->name       = xstrdup(opt.job_name);
-	r->relative   = false;      /* XXX fix this oneday */
-	
-	/* CJM - why are "UNKNOWN" and "default" behaviours different? */
-	/*       why do we even HAVE the SLURM_DIST_UNKNOWN state?? */
-	switch (opt.distribution) {
-	case SLURM_DIST_UNKNOWN:
-		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
-			                                 : SLURM_DIST_BLOCK;
-		break;
-	case SLURM_DIST_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC;
-		break;
-	case SLURM_DIST_ARBITRARY:
-		r->task_dist = SLURM_DIST_ARBITRARY;
-		break;
-	case SLURM_DIST_BLOCK:
-	default:
-		r->task_dist = SLURM_DIST_BLOCK;
-		break;
-	}
-
-	if (slurmctld_comm_addr.port) {
-		r->host = xstrdup(slurmctld_comm_addr.hostname);
-		r->port = slurmctld_comm_addr.port;
-	}
-
-	return(r);
-}
-
-static int
-_create_job_step(srun_job_t *job,
-		resource_allocation_response_msg_t *alloc_resp)
-{
-	job_step_create_request_msg_t  *req  = NULL;
-	job_step_create_response_msg_t *resp = NULL;
-	
-	if (!(req = _step_req_create(job))) {
-		error ("Unable to allocate step request message");
-		return -1;
-	}
-
-	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) {
-		error ("Unable to create job step: %m");
-		return -1;
-	}
-	
-	job->stepid  = resp->job_step_id;
-	job->cred    = resp->cred;
-	job->switch_job = resp->switch_job;
-	job->step_layout = step_layout_create(alloc_resp, resp, req);
-	if(!job->step_layout) {
-		error("step_layout not created correctly");
-		return 1;
-	}
-	if(task_layout(job->step_layout) != SLURM_SUCCESS) {
-		error("problem with task layout");
-		return 1;
-	}
-	
-	/*
-	 * Recreate filenames which may depend upon step id
-	 */
-	job_update_io_fnames(job);
-
-	slurm_free_job_step_create_request_msg(req);
-	
-	return 0;
 }
 
 static char *

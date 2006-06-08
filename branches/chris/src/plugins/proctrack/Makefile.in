@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 5279 2005-08-24 21:04:50Z morrone $
+# $Id: Makefile.am 8334 2006-06-07 20:36:04Z morrone $
 # Makefile for proctrack plugins
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
