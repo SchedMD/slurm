@@ -1652,7 +1652,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* init */
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	uint32_t step_id;
+	uint32_t step_id = 0;
 	struct job_record *job_ptr;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
