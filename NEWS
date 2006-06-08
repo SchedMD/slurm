@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
     message.
  -- For "srun --attach=X" to other users job, report an error and exit (it 
     previously just hung).
+ -- BLUEGENE - fix for doing correct small block logic on user error. 
+ -- BLUEGENE - Added support in slurmd to create a fake libdb2.so if it
+    doesn't exist so smap won't seg fault
 
 * Changes in SLURM 1.1.1
 ========================
@@ -35,8 +38,6 @@ documents those changes that are of interest to users and admins.
  -- cleaned up way slurm_send_recv_node_msg works no more clearing errno
  -- Fix error handling bug in the networking code that causes the slurmd to
     xassert if the server is not running when the slurmd tries to register.
- -- BLUEGENE - Added support in slurmd to create a fake libdb2.so if it
-    doesn't exist so smap won't seg fault
 
 * Changes in SLURM 1.1.0
 ========================
