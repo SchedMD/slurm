@@ -59,7 +59,7 @@ static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event,
 			    gpointer user_data)
 {
 	local_display_data->user_data = user_data;
-	button_pressed(tree_view, event, local_display_data);
+	row_clicked(tree_view, event, local_display_data);
 }
 
 extern void get_info_admin(GtkTable *table, display_data_t *display_data)
@@ -68,7 +68,8 @@ extern void get_info_admin(GtkTable *table, display_data_t *display_data)
 }
 
 
-extern void set_fields_admin(GtkMenu *menu)
+extern void set_menus_admin(GtkTreeView *tree_view, GtkTreePath *path, 
+			    GtkMenu *menu, int type)
 {
 	make_fields_menu(menu, display_data_admin);
 }

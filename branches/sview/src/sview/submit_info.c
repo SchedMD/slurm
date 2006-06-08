@@ -38,7 +38,7 @@ enum {
 	SORTID_TIMELIMIT, 
 	SORTID_NODES, 
 	SORTID_NODELIST, 
-	SORTID_PARTITION_CNT
+	SORTID_CNT
 };
 
 static display_data_t display_data_submit[] = {
@@ -52,7 +52,17 @@ static display_data_t display_data_submit[] = {
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
 #endif
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
+static display_data_t options_data_part[] = {
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, -1},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, -1},
+	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, -1},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, -1},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
 static display_data_t *local_display_data = NULL;
 
 
@@ -60,7 +70,7 @@ static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event,
 			    gpointer user_data)
 {
 	local_display_data->user_data = user_data;
-	button_pressed(tree_view, event, local_display_data);
+	row_clicked(tree_view, event, local_display_data);
 }
 
 extern void get_info_submit(GtkTable *table, display_data_t *display_data)
@@ -69,7 +79,8 @@ extern void get_info_submit(GtkTable *table, display_data_t *display_data)
 }
 
 
-extern void set_fields_submit(GtkMenu *menu)
+extern void set_menus_submit(GtkTreeView *tree_view, GtkTreePath *path, 
+			     GtkMenu *menu, int type)
 {
 	make_fields_menu(menu, display_data_submit);
 }

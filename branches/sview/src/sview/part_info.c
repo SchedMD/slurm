@@ -41,26 +41,35 @@ enum {
 	SORTID_CNT
 };
 
-static display_data_t display_data_path[] = {
+static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, SORTID_PARTITION, "PARTITION", TRUE, -1},
-	{G_TYPE_STRING, SORTID_AVAIL, "AVAIL", TRUE, -1},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "TIMELIMIT", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NODES, "NODES", TRUE, -1},
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1},
+	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP_LIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1},
 #endif
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
+
+static display_data_t options_data_part[] = {
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PARTITION_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PARTITION_PAGE},
+	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, PARTITION_PAGE},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, PARTITION_PAGE},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
 static display_data_t *local_display_data = NULL;
 
 static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
 			    gpointer user_data)
 {
 	local_display_data->user_data = user_data;
-	button_pressed(tree_view, event, local_display_data);
+	row_clicked(tree_view, event, local_display_data);
 }
 /*
  * diff_tv_str - build a string showing the time difference between two times
@@ -81,11 +90,10 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 }
 
 
-static int _append_part_record(partition_info_t *part_ptr,
+static void _append_part_record(partition_info_t *part_ptr,
 			       GtkListStore *liststore, GtkTreeIter *iter,
 			       int line)
 {
-	int printed = 0;
 	char time_buf[20];
 	char tmp_cnt[7];
 	
@@ -122,7 +130,7 @@ static int _append_part_record(partition_info_t *part_ptr,
 			   SORTID_NODELIST, part_ptr->nodes, -1);
 	//END_TIMER;
 	//g_print("Took %s\n",TIME_STR);
-	return printed;
+	
 }
 
 extern void get_info_part(GtkTable *table, display_data_t *display_data)
@@ -192,9 +200,9 @@ got_toggled:
 				  0, 1, 0, 1); 
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
-	liststore = create_liststore(display_data_path, SORTID_CNT);
+	liststore = create_liststore(display_data_part, SORTID_CNT);
 
-	load_header(tree_view, display_data_path);
+	load_header(tree_view, display_data_part);
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
@@ -219,9 +227,19 @@ got_toggled:
 }
 
 
-extern void set_fields_part(GtkMenu *menu)
+extern void set_menus_part(GtkTreeView *tree_view, GtkTreePath *path, 
+			   GtkMenu *menu, int type)
 {
-	make_fields_menu(menu, display_data_path);
+	switch(type) {
+	case TAB_CLICKED:
+		make_fields_menu(menu, display_data_part);
+		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_part);
+		break;
+	default:
+		g_error("UNKNOWN type %d given to set_fields\n", type);
+	}
 }
 
 extern void row_clicked_part(GtkTreeView *tree_view,
@@ -259,3 +277,11 @@ extern void row_clicked_part(GtkTreeView *tree_view,
 	
 }
 
+extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
+{
+	char *name = NULL;
+	
+	gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
+	  
+	g_print("got name %s\n", name);
+}

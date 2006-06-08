@@ -27,6 +27,11 @@
 
 #include "src/sview/sview.h"
 
+typedef struct {
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+} treedata_t;
+
 static int _sort_iter_compare_func_char(GtkTreeModel *model,
 					GtkTreeIter  *a,
 					GtkTreeIter  *b,
@@ -105,6 +110,33 @@ static void _toggle_state_changed(GtkCheckMenuItem *menuitem,
 		*checked = TRUE;
 	toggled = TRUE;
 	refresh_page(NULL, NULL);
+}
+
+static void _selected_page(GtkMenuItem *menuitem, 
+			   display_data_t *display_data)
+{
+	treedata_t *treedata = (treedata_t *)display_data->user_data;
+
+	switch(display_data->extra) {
+	case PARTITION_PAGE:
+		popup_all_part(treedata->model, &treedata->iter, 
+			       display_data->id);
+		break;
+	case JOB_PAGE:
+		popup_all_job(treedata->model, &treedata->iter, 
+			      display_data->id);
+		break;
+	case NODE_PAGE:
+		popup_all_node(treedata->model, &treedata->iter, 
+			       display_data->id);
+		break;
+	case BLOCK_PAGE: 
+		popup_all_block(treedata->model, &treedata->iter, 
+				display_data->id);
+		break;
+	default:
+		g_print("got %d\n",display_data->id);
+	}
 }
 
 extern void snprint_time(char *buf, size_t buf_size, time_t time)
@@ -222,9 +254,33 @@ extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
 				 G_CALLBACK(_toggle_state_changed), 
 				 &display_data->show);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
-    
-	}		
+	}
+}
 
+extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
+			      GtkMenu *menu, display_data_t *display_data)
+{
+	GtkWidget *menuitem = NULL;
+	treedata_t *treedata = xmalloc(sizeof(treedata_t));
+	treedata->model = gtk_tree_view_get_model(tree_view);
+	if (!gtk_tree_model_get_iter(treedata->model, &treedata->iter, path)) {
+		g_error("error getting iter from model\n");
+		return;
+	}	
+	if(display_data->user_data)
+		xfree(display_data->user_data);
+		
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		
+		display_data->user_data = treedata;
+		menuitem = gtk_menu_item_new_with_label(display_data->name); 
+		g_signal_connect(menuitem, "activate",
+				 G_CALLBACK(_selected_page), 
+				 display_data);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	}
 }
 
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
@@ -234,7 +290,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	GtkWidget *event_box = NULL;
 	GtkWidget *label = NULL;
 	int err;
-	GtkWidget *menu = gtk_menu_new();
+	//GtkWidget *menu = gtk_menu_new();
 	
 	table = gtk_table_new(1, 1, FALSE);
 
@@ -259,7 +315,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	label = gtk_label_new(display_data->name);
 	gtk_container_add(GTK_CONTAINER(event_box), label);
 	gtk_widget_show(label);
-	(display_data->set_fields)(GTK_MENU(menu));
+	//(display_data->set_fields)(GTK_MENU(menu));
 	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
 					   GTK_WIDGET(scrolled_window), 
 					   event_box)) == -1) {
@@ -270,14 +326,16 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 }
 
-extern void right_button_pressed(GtkWidget *widget,
+extern void right_button_pressed(GtkTreeView *tree_view, 
+				 GtkTreePath *path,
 				 GdkEventButton *event, 
-				 const display_data_t *display_data)
+				 const display_data_t *display_data,
+				 int type)
 {
 	if(event->button == 3) {
 		GtkMenu *menu = GTK_MENU(gtk_menu_new());
 	
-		(display_data->set_fields)(menu);
+		(display_data->set_menu)(tree_view, path, menu, type);
 				
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
@@ -286,8 +344,8 @@ extern void right_button_pressed(GtkWidget *widget,
 	}
 }
 
-extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
-			   const display_data_t *display_data)
+extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
+			const display_data_t *display_data)
 {
 	GtkTreePath *path = NULL;
 	GtkTreeSelection *selection = NULL;
@@ -304,7 +362,8 @@ extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event,
              	
 	/* single click with the right mouse button? */
 	if(event->button == 3) {
-		right_button_pressed(NULL, event, display_data);
+		right_button_pressed(tree_view, path, event, 
+				     display_data, ROW_CLICKED);
 	} else if(event->type==GDK_2BUTTON_PRESS ||
 		  event->type==GDK_3BUTTON_PRESS) {
 		(display_data->row_clicked)(tree_view, path, 
@@ -313,29 +372,3 @@ extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event,
 	gtk_tree_path_free(path);
 }
 
-extern void tab_focus(GtkNotebook *notebook, GdkEventFocus *event, 
-		      const display_data_t *display_data)
-{
-	int page = gtk_notebook_get_current_page(notebook);
-	g_print("page number is %d type %d, send_event %d, in %d\n",
-		page, event->type, event->send_event, event->in);
-	return;
-	/* single click with the right mouse button? */
-/* 	if(event->button == 3) { */
-/* 		right_button_pressed(NULL, event, display_data); */
-/* //view_popup_menu(treeview, event, userdata); */
-/* 	} else if(event->type==GDK_2BUTTON_PRESS || */
-/* 		  event->type==GDK_3BUTTON_PRESS) { */
-/* 		/\* (display_data->row_clicked)(tree_view, path,  *\/ */
-/* /\* 					    NULL, display_data->user_data); *\/ */
-/* 	} */
-	//gtk_tree_path_free(path);
-}
-
-extern GtkMenu *make_menu(const display_data_t *display_data)
-{
-	GtkMenu *menu = GTK_MENU(gtk_menu_new());
-	
-	(display_data->set_fields)(menu);
-	return menu;
-}

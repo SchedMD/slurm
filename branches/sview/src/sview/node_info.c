@@ -54,29 +54,32 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
+static display_data_t options_data_node[] = {
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, -1},
+	{G_TYPE_STRING, NODE_PAGE, "Partition", TRUE, -1},
+	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, -1},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, -1},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
 static display_data_t *local_display_data = NULL;
 
 static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
 			   gpointer user_data)
 {
 	local_display_data->user_data = user_data;
-	button_pressed(tree_view, event, local_display_data);
+	row_clicked(tree_view, event, local_display_data);
 }
 
-static int _append_node_record(node_info_t *node_ptr,
-			       GtkListStore *liststore, GtkTreeIter *iter,
-			       int line)
+static void _append_node_record(node_info_t *node_ptr,
+				GtkListStore *liststore, GtkTreeIter *iter,
+				int line)
 {
-	int printed = 0;
-	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[7];
-	char tmp_char[50];
-	time_t time;
-	uint32_t node_cnt = 0;
-	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t nodecard = (uint16_t) NO_VAL;
-	
+
 	gtk_list_store_append(liststore, iter);
 	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
 	gtk_list_store_set(liststore, iter, 
@@ -87,10 +90,6 @@ static int _append_node_record(node_info_t *node_ptr,
 	gtk_list_store_set(liststore, iter, 
 			   SORTID_CPUS, node_ptr->cpus, -1);
 
-	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_NONE);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_NAME, tmp_cnt, -1);
-	
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
 	gtk_list_store_set(liststore, iter, 
 			   SORTID_MEMORY, tmp_cnt, -1);
@@ -132,11 +131,10 @@ extern int get_new_info_node(node_info_msg_t **info_ptr)
 
 extern void get_info_node(GtkTable *table, display_data_t *display_data)
 {
-	int error_code = SLURM_SUCCESS, i, j, recs;
+	int error_code = SLURM_SUCCESS, i, recs;
 	static int printed_nodes = 0;
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
 	node_info_t node;
-	uint16_t show_flags = 0;
 	char error_char[50];
 	GtkTreeIter iter;
 	GtkListStore *liststore = NULL;
@@ -209,9 +207,19 @@ got_toggled:
 }
 
 
-extern void set_fields_node(GtkMenu *menu)
+extern void set_menus_node(GtkTreeView *tree_view, GtkTreePath *path, 
+			   GtkMenu *menu, int type)
 {
-	make_fields_menu(menu, display_data_node);
+	switch(type) {
+	case TAB_CLICKED:
+		make_fields_menu(menu, display_data_node);
+		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_node);
+		break;
+	default:
+		g_error("UNKNOWN type %d given to set_fields\n", type);
+	}
 }
 
 extern void row_clicked_node(GtkTreeView *tree_view,
@@ -249,3 +257,9 @@ extern void row_clicked_node(GtkTreeView *tree_view,
 	
 }
 
+extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
+{
+	char *name = NULL;
+
+	gtk_tree_model_get(model, &iter, SORTID_NAME, &name, -1);
+}

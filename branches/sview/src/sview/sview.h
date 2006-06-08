@@ -73,15 +73,17 @@
 
 #define POS_LOC 0
 
-enum { JOBS, SLURMPART, BGPART, COMMANDS };
 enum { PARTITION_PAGE, 
        JOB_PAGE, 
        NODE_PAGE, 
        BLOCK_PAGE, 
        JOB_SUBMIT_PAGE,
        ADMIN_PAGE,
-       PAGE_CNT};
-
+       PAGE_CNT 
+};
+enum { TAB_CLICKED,
+       ROW_CLICKED 
+};
 /* Input parameters */
 typedef struct {
 	bool all_flag;
@@ -115,7 +117,8 @@ struct display_data {
 	bool show;
 	int extra;
 	void (*get_info)    (GtkTable *table, display_data_t *display_data);
-	void (*set_fields)  (GtkMenu *menu);
+	void (*set_menu)    (GtkTreeView *tree_view, GtkTreePath *path,
+			     GtkMenu *menu, int type);
 	void (*row_clicked) (GtkTreeView *tree_view,
 			     GtkTreePath *path,
 			     GtkTreeViewColumn *column,
@@ -150,32 +153,39 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 
 // part_info.c
 extern void get_info_part(GtkTable *table, display_data_t *display_data);
-extern void set_fields_part(GtkMenu *menu);
+extern void set_menus_part(GtkTreeView *tree_view, GtkTreePath *path, 
+			   GtkMenu *menu, int type);
 extern void row_clicked_part(GtkTreeView *tree_view,
 			     GtkTreePath *path,
 			     GtkTreeViewColumn *column,
 			     gpointer user_data);
+extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // block_info.c
 extern void get_info_block(GtkTable *table, display_data_t *display_data);
-extern void set_fields_block(GtkMenu *menu);
+extern void set_menus_block(GtkTreeView *tree_view, GtkTreePath *path, 
+			    GtkMenu *menu, int type);
 extern void row_clicked_block(GtkTreeView *tree_view,
 			      GtkTreePath *path,
 			      GtkTreeViewColumn *column,
 			      gpointer user_data);
+extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // job_info.c
 extern int get_new_info_job(job_info_msg_t **info_ptr);
 extern void get_info_job(GtkTable *table, display_data_t *display_data);
-extern void set_fields_job(GtkMenu *menu);
+extern void set_menus_job(GtkTreeView *tree_view, GtkTreePath *path, 
+			  GtkMenu *menu, int type);
 extern void row_clicked_job(GtkTreeView *tree_view,
 			    GtkTreePath *path,
 			    GtkTreeViewColumn *column,
 			    gpointer user_data);
+extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // admin_info.c
 extern void get_info_admin(GtkTable *table, display_data_t *display_data);
-extern void set_fields_admin(GtkMenu *menu);
+extern void set_menus_admin(GtkTreeView *tree_view, GtkTreePath *path, 
+			    GtkMenu *menu, int type);
 extern void row_clicked_admin(GtkTreeView *tree_view,
 			      GtkTreePath *path,
 			      GtkTreeViewColumn *column,
@@ -183,15 +193,18 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 
 // node_info.c
 extern void get_info_node(GtkTable *table, display_data_t *display_data);
-extern void set_fields_node(GtkMenu *menu);
+extern void set_menus_node(GtkTreeView *tree_view, GtkTreePath *path, 
+			   GtkMenu *menu, int type);
 extern void row_clicked_node(GtkTreeView *tree_view,
 			     GtkTreePath *path,
 			     GtkTreeViewColumn *column,
 			     gpointer user_data);
+extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // submit_info.c
 extern void get_info_submit(GtkTable *table, display_data_t *display_data);
-extern void set_fields_submit(GtkMenu *menu);
+extern void set_menus_submit(GtkTreeView *tree_view, GtkTreePath *path, 
+			     GtkMenu *menu, int type);
 extern void row_clicked_submit(GtkTreeView *tree_view,
 			       GtkTreePath *path,
 			       GtkTreeViewColumn *column,
@@ -203,9 +216,13 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern GtkListStore *create_liststore(display_data_t *display_data, int count);
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
 extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data);
+extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path, 
+			      GtkMenu *menu, display_data_t *display_data);
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
-extern void right_button_pressed(GtkWidget *widget, GdkEventButton *event, 
-				 const display_data_t *display_data);
-extern void button_pressed(GtkTreeView *tree_view, GdkEventButton *event, 
-			   const display_data_t *display_data);
+extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 
+				 GdkEventButton *event, 
+				 const display_data_t *display_data,
+				 int type);
+extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
+			const display_data_t *display_data);
 #endif

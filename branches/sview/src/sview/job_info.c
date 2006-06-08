@@ -92,7 +92,15 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", FALSE, -1},
 	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", FALSE, -1},
 	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", FALSE, -1},	
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
+static display_data_t options_data_job[] = {
+	{G_TYPE_STRING, PARTITION_PAGE, "Partition", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, JOB_PAGE},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
 
 static display_data_t *local_display_data = NULL;
 time_t now_time;
@@ -101,14 +109,13 @@ static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event,
 			   gpointer user_data)
 {
 	local_display_data->user_data = user_data;
-	button_pressed(tree_view, event, local_display_data);
+	row_clicked(tree_view, event, local_display_data);
 }
 
-static int _append_job_record(job_info_t *job_ptr,
+static void _append_job_record(job_info_t *job_ptr,
 			      GtkListStore *liststore, GtkTreeIter *iter,
 			      int line)
 {
-	int printed = 0;
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[7];
 	char tmp_char[50];
@@ -168,7 +175,6 @@ static int _append_job_record(job_info_t *job_ptr,
 		gtk_list_store_set(liststore, iter, 
 				   SORTID_NODELIST, nodes, -1);
 	
-	return printed;
 }
 
 extern int get_new_info_job(job_info_msg_t **info_ptr)
@@ -201,7 +207,6 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t job;
-	uint16_t show_flags = 0;
 	char error_char[50];
 	GtkTreeIter iter;
 	GtkListStore *liststore = NULL;
@@ -303,9 +308,19 @@ got_toggled:
 }
 
 
-extern void set_fields_job(GtkMenu *menu)
+extern void set_menus_job(GtkTreeView *tree_view, GtkTreePath *path, 
+			  GtkMenu *menu, int type)
 {
-	make_fields_menu(menu, display_data_job);
+	switch(type) {
+	case TAB_CLICKED:
+		make_fields_menu(menu, display_data_job);
+		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_job);
+		break;
+	default:
+		g_error("UNKNOWN type %d given to set_fields\n", type);
+	}
 }
 
 extern void row_clicked_job(GtkTreeView *tree_view,
@@ -365,3 +380,8 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 	
 }
 
+extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
+{
+	int job_id = -1;
+	gtk_tree_model_get(model, &iter, SORTID_JOBID, &job_id, -1);
+}

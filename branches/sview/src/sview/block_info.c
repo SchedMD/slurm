@@ -61,24 +61,30 @@ enum {
 	SORTID_USE,
 	SORTID_NODES, 
 	SORTID_NODELIST, 
-	SORTID_PARTITION_CNT
+	SORTID_CNT
 };
 
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, SORTID_PARTITION, "PARTITION", TRUE, -1},
-	{G_TYPE_STRING, SORTID_BLOCK, "BG_BLOCK", FALSE, -1},
-	{G_TYPE_STRING, SORTID_STATE, "STATE", FALSE, -1},
-	{G_TYPE_STRING, SORTID_USER, "USER", FALSE, -1},
-	{G_TYPE_STRING, SORTID_CONN, "CONN TYPE", FALSE, -1},
-	{G_TYPE_STRING, SORTID_USE, "NODE USE", FALSE, -1},
-	{G_TYPE_STRING, SORTID_NODES, "NODES", TRUE, -1},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP_LIST", TRUE, -1},
-#else
-	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
-#endif
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1},
+	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", FALSE, -1},
+	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, -1},
+	{G_TYPE_STRING, SORTID_USER, "User", FALSE, -1},
+	{G_TYPE_STRING, SORTID_CONN, "Connection Type", FALSE, -1},
+	{G_TYPE_STRING, SORTID_USE, "Node Use", FALSE, -1},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+
+static display_data_t options_data_block[] = {
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Partition", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, BLOCK_PAGE},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
 static display_data_t *local_display_data = NULL;
 
 static List block_list = NULL;
@@ -100,7 +106,7 @@ static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event,
 			    gpointer user_data)
 {
 	local_display_data->user_data = user_data;
-	button_pressed(tree_view, event, local_display_data);
+	row_clicked(tree_view, event, local_display_data);
 }
 
 extern void get_info_block(GtkTable *table, display_data_t *display_data)
@@ -266,7 +272,7 @@ got_toggled:
 				  0, 1, 0, 1); 
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
-	liststore = create_liststore(display_data, SORTID_PARTITION_CNT);
+	liststore = create_liststore(display_data, SORTID_CNT);
 	
 	load_header(tree_view, display_data);
 
@@ -322,9 +328,19 @@ got_toggled:
 	return;
 }
 
-extern void set_fields_block(GtkMenu *menu)
+extern void set_menus_block(GtkTreeView *tree_view, GtkTreePath *path, 
+			    GtkMenu *menu, int type)
 {
-	make_fields_menu(menu, display_data_block);
+	switch(type) {
+	case TAB_CLICKED:
+		make_fields_menu(menu, display_data_block);
+		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_block);
+		break;
+	default:
+		g_error("UNKNOWN type %d given to set_fields\n", type);
+	}
 }
 
 extern void row_clicked_block(GtkTreeView *tree_view,
@@ -460,7 +476,7 @@ static int _append_block_record(db2_block_info_t *block_ptr,
 	char *nodes = NULL;
 	char tmp_cnt[7];
 	char tmp_nodes[30];
-	char *temp[SORTID_PARTITION_CNT];
+	char *temp[SORTID_CNT];
 	convert_to_kilo(block_ptr->node_cnt, tmp_cnt);
 	gtk_list_store_append(liststore, iter);
 		
@@ -679,3 +695,10 @@ static char* _convert_node_use(enum node_use_type node_use)
 	return "?";
 }
 
+extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
+{
+	char *name = NULL;
+
+	gtk_tree_model_get(model, &iter, SORTID_BLOCK, &name, -1);
+
+}

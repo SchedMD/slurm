@@ -33,21 +33,21 @@ bool toggled = FALSE;
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, PARTITION_PAGE, "Partitions", TRUE, -1, 
-	 get_info_part, set_fields_part, row_clicked_part, NULL},
+	 get_info_part, set_menus_part, row_clicked_part, NULL},
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
-	 get_info_job, set_fields_job, row_clicked_job, NULL},
+	 get_info_job, set_menus_job, row_clicked_job, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
-	 get_info_node, set_fields_node, row_clicked_node, NULL},
+	 get_info_node, set_menus_node, row_clicked_node, NULL},
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
 #else
 	 {G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
 #endif
-	 get_info_block, set_fields_block, row_clicked_block, NULL},
+	 get_info_block, set_menus_block, row_clicked_block, NULL},
 	 {G_TYPE_NONE, JOB_SUBMIT_PAGE, "Submit Job", TRUE, -1,
-	 get_info_submit, set_fields_submit, row_clicked_submit, NULL},
+	 get_info_submit, set_menus_submit, row_clicked_submit, NULL},
 	 {G_TYPE_NONE, ADMIN_PAGE, "Admin", TRUE, -1,
-	  get_info_admin, set_fields_admin, row_clicked_admin, NULL},
+	  get_info_admin, set_menus_admin, row_clicked_admin, NULL},
 	 {G_TYPE_NONE, -1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}
 	};
 	
@@ -230,16 +230,9 @@ int main(int argc, char *argv[])
 				       1);
 	/* Create the main notebook, place the position of the tabs */
 	main_notebook = gtk_notebook_new();
-	/* g_signal_connect(G_OBJECT(main_notebook), "button-press-event", */
-/* 			 G_CALLBACK(tab_pressed), */
-/* 			 NULL); */
 	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
 			 NULL);
-
-	/* g_signal_connect(G_OBJECT(main_notebook), "client-event", */
-/* 			 G_CALLBACK(tab_focus), */
-/* 			 NULL); */
 	
 	/* Create a menu */
 	menubar = _get_menubar_menu(window, main_notebook);
@@ -290,6 +283,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
 				      display_data->extra);
 	if(event->button == 3) {
-		right_button_pressed(NULL, event, display_data);
+		right_button_pressed(NULL, NULL, event, 
+				     display_data, TAB_CLICKED);
 	} 
 }
