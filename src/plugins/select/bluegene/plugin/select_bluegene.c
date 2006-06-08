@@ -478,9 +478,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		} else { 
 			/* this means it is either a quarter or smaller */
 			tmp = job_desc->min_nodes % bluegene_nodecard_node_cnt;
-			if(tmp > 0)
-				job_desc->min_nodes += 
-					(bluegene_nodecard_node_cnt-tmp);
+			if(tmp > 0) {
+				if(job_desc->min_nodes 
+				   < bluegene_nodecard_node_cnt)
+					job_desc->min_nodes = 
+						bluegene_nodecard_node_cnt;
+				else if(job_desc->min_nodes 
+				   < bluegene_quarter_node_cnt)
+					job_desc->min_nodes = 
+						bluegene_quarter_node_cnt;
+				else 
+					job_desc->min_nodes = 
+						bluegene_bp_node_cnt;
+			}
 			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
 			job_desc->num_procs = procs_per_node/tmp;
 			job_desc->min_nodes = 1;
@@ -501,9 +511,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			tmp = NO_VAL;
 		} else {
 			tmp = job_desc->max_nodes % bluegene_nodecard_node_cnt;
-			if(tmp > 0)
-				job_desc->max_nodes += 
-					(bluegene_nodecard_node_cnt-tmp);
+			if(tmp > 0) {
+				if(job_desc->max_nodes 
+				   < bluegene_nodecard_node_cnt)
+					job_desc->max_nodes = 
+						bluegene_nodecard_node_cnt;
+				else if(job_desc->max_nodes 
+				   < bluegene_quarter_node_cnt)
+					job_desc->max_nodes = 
+						bluegene_quarter_node_cnt;
+				else 
+					job_desc->max_nodes = 
+						bluegene_bp_node_cnt;
+			}
 			tmp = bluegene_bp_node_cnt/job_desc->max_nodes;
 			tmp = procs_per_node/tmp;
 			
@@ -518,5 +538,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	default:
 		error("unknown option %d for alter_node_cnt",type);
 	}
+	
 	return SLURM_SUCCESS;
 }
