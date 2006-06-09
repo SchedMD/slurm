@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurm_pmi.c - PMI support functions internal to SLURM
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -36,6 +36,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
 
+#define MAX_RETRIES 5
+
 int pmi_fd = -1;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
@@ -58,10 +60,11 @@ static int _get_addr(void)
 }
 
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
+int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr, 
+		int pmi_rank)
 {
 	slurm_msg_t msg_send;
-	int rc;
+	int rc, retries = 0;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -76,10 +79,16 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	msg_send.ret_list = NULL;
 	msg_send.forward_struct_init = 0;
 	
-	/* Send the RPC to the local srun communcation manager */
-	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
-		error("slurm_get_kvs_comm_set: %m");
-		return SLURM_ERROR;
+	/* Send the RPC to the local srun communcation manager.
+	 * Since the srun can be sent thousands of messages at 
+	 * the same time and refuse some connections, retry as 
+	 * needed. Spread out messages by task's rank.*/
+	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+		if (retries++ > MAX_RETRIES) {
+			error("slurm_get_kvs_comm_set: %m");
+			return SLURM_ERROR;
+		}
+		usleep(pmi_rank * 1000);
 	}
 
 	return rc;
@@ -89,7 +98,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 
 		int pmi_rank, int pmi_size)
 {
-	int rc, srun_fd;
+	int rc, srun_fd, retries = 0;
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr slurm_addr, srun_reply_addr;
 	char hostname[64];
@@ -138,10 +147,16 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	msg_send.ret_list = NULL;
 	msg_send.forward_struct_init = 0;
 
-	/* Send the RPC to the local srun communcation manager */
-	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
-		error("slurm_get_kvs_comm_set: %m");
-		return SLURM_ERROR;
+	/* Send the RPC to the local srun communcation manager.
+	 * Since the srun can be sent thousands of messages at 
+	 * the same time and refuse some connections, retry as 
+	 * needed. Spread out messages by task's rank. */
+	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+		if (retries++ > MAX_RETRIES) {
+			error("slurm_get_kvs_comm_set: %m");
+			return SLURM_ERROR;
+		}
+		usleep(pmi_rank * 1000);
 	}
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
