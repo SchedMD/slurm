@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     doesn't exist so smap won't seg fault
  -- BLUEGENE - "scontrol show job" reports "MaxProcs=None" and "Start=None"
     if values are not specified at job submit time
+ -- Add retry logic for PMI communications, may be needed for highly parallel
+    jobs.
 
 * Changes in SLURM 1.1.1
 ========================
