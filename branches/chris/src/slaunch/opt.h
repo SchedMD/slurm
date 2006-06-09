@@ -46,8 +46,6 @@
 
 
 /* global variables relating to user options */
-char **remote_argv;
-int remote_argc;
 int _verbose;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
@@ -153,6 +151,8 @@ typedef struct srun_options {
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
+	int argc;		/* length of argv array		*/
+	char **argv;		/* left over on command line	*/
 } opt_t;
 
 opt_t opt;

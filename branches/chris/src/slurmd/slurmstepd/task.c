@@ -333,6 +333,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	 * error() and clean up if execve() returns:
 	 */
 	error("execve(): %s: %m", job->argv[0]); 
+	printf("execve failed, %d %s\n", job->argc, job->argv[0]);
 	exit(errno);
 }
 

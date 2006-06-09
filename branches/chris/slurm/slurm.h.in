@@ -937,7 +937,8 @@ extern int slurm_spawn_kill PARAMS((slurm_step_ctx ctx,
 				       uint16_t signal));
 
 
-extern int slurm_step_launch PARAMS((slurm_step_ctx ctx));
+extern int slurm_step_launch PARAMS((slurm_step_ctx ctx,
+	int argc, char **argv));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

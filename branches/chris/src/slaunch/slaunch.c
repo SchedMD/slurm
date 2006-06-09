@@ -159,7 +159,7 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
-	rc = slurm_step_launch(step_ctx);
+	rc = slurm_step_launch(step_ctx, opt.argc, opt.argv);
 	if (rc != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		slurm_step_ctx_destroy(step_ctx);
@@ -375,8 +375,8 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		 */
 		args = xmalloc(sizeof(char *) * 1024);
 		args[0] = script;
-		for (i = 0; i < remote_argc; i++) {
-			args[i+1] = remote_argv[i];
+		for (i = 0; i < opt.argc; i++) {
+			args[i+1] = opt.argv[i];
 		}
 		args[i+1] = NULL;
 		execv(script, args);

@@ -1525,34 +1525,34 @@ static void _opt_args(int argc, char **argv)
 	}
 #endif
 
-	remote_argc = 0;
+	opt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[remote_argc] != NULL)
-			remote_argc++;
+		while (rest[opt.argc] != NULL)
+			opt.argc++;
 	}
-	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
-	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = xstrdup(rest[i]);
-	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
+	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+	for (i = 0; i < opt.argc; i++)
+		opt.argv[i] = xstrdup(rest[i]);
+	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (opt.multi_prog) {
-		if (remote_argc < 1) {
+		if (opt.argc < 1) {
 			error("configuration file not specified");
 			exit(1);
 		}
-		_load_multi(&remote_argc, remote_argv);
+		_load_multi(&opt.argc, opt.argv);
 
 	}
-	else if (remote_argc > 0) {
+	else if (opt.argc > 0) {
 		char *fullpath;
-		char *cmd       = remote_argv[0];
+		char *cmd       = opt.argv[0];
 		bool search_cwd = false; /* was: (opt.batch || opt.allocate); */
 		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
 		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
-			xfree(remote_argv[0]);
-			remote_argv[0] = fullpath;
+			xfree(opt.argv[0]);
+			opt.argv[0] = fullpath;
 		} 
 	}
 	if (!_opt_verify())
@@ -1606,12 +1606,12 @@ static bool _opt_verify(void)
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (remote_argc > 0))
-		opt.job_name = _base_name(remote_argv[0]);
+	if ((opt.job_name == NULL) && (opt.argc > 0))
+		opt.job_name = _base_name(opt.argv[0]);
 
 	{ /* FIXME - was: mode != MODE_ATTACH */
 
-		if (remote_argc == 0) {
+		if (opt.argc == 0) {
 			error("must supply remote command");
 			verified = false;
 		}
@@ -1855,8 +1855,8 @@ print_commandline()
 	char buf[256];
 
 	buf[0] = '\0';
-	for (i = 0; i < remote_argc; i++)
-		snprintf(buf, 256,  "%s", remote_argv[i]);
+	for (i = 0; i < opt.argc; i++)
+		snprintf(buf, 256,  "%s", opt.argv[i]);
 	return xstrdup(buf);
 }
 
