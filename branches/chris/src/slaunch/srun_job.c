@@ -54,7 +54,6 @@
 #include "src/slaunch/opt.h"
 #include "src/slaunch/fname.h"
 #include "src/slaunch/attach.h"
-#include "src/slaunch/msg.h"
 
 /* FIXME remove message_thread */
 extern int message_thread;

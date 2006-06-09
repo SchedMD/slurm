@@ -33,6 +33,7 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #include <slurm/slurm.h>
 
@@ -43,6 +44,8 @@
 
 struct step_launch_state {
 	eio_handle_t *msg_handle;
+	pthread_t msg_thread;
+	uint16_t msg_port;
 };
 
 struct slurm_step_ctx_struct {
@@ -52,6 +55,7 @@ struct slurm_step_ctx_struct {
 	uint32_t user_id;	/* user the job runs as */
 	
 	resource_allocation_response_msg_t *alloc_resp;
+	job_step_create_request_msg_t *step_req;
 	job_step_create_response_msg_t *step_resp;
 
 	char *cwd;		/* working directory */

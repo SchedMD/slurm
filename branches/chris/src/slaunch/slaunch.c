@@ -71,8 +71,6 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/global_srun.h"
 
-#include "src/slaunch/launch.h"
-#include "src/slaunch/msg.h"
 #include "src/slaunch/opt.h"
 #include "src/slaunch/sigstr.h"
 #include "src/slaunch/attach.h"
@@ -158,6 +156,8 @@ int slaunch(int argc, char **argv)
 		slurm_step_ctx_destroy(step_ctx);
 		exit(1);
 	}
+
+	sleep(5);
 }
 
 static char *

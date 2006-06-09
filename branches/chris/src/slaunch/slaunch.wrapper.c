@@ -1,6 +1,6 @@
 /* 
  * slaunch.wrapper.c - slaunch command wrapper for use with debuggers
- *	slaunch is the SLURM parallel job initiator and resource allocator
+ *	slaunch is the SLURM parallel application launcher
  *
  * For TotalView, a parallel job debugger from Etnus <http://www.etnus.com>
  *	Type "<ctrl-a>" to specify arguments for slaunch

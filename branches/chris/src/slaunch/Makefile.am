@@ -12,8 +12,6 @@ slaunch_SOURCES = \
 	opt.c opt.h \
 	srun_job.c  \
 	signals.c signals.h \
-	launch.c    \
-	launch.h    \
 	attach.h    \
 	attach.c    \
 	fname.c     \

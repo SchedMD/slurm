@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8269 2006-06-01 21:32:15Z morrone $
+# $Id: Makefile.am 8356 2006-06-08 02:19:16Z morrone $
 #
 
 srcdir = @srcdir@
@@ -72,10 +72,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_slaunch_OBJECTS = slaunch.$(OBJEXT) opt.$(OBJEXT) \
-	srun_job.$(OBJEXT) signals.$(OBJEXT) launch.$(OBJEXT) \
-	attach.$(OBJEXT) fname.$(OBJEXT) sigstr.$(OBJEXT) \
-	core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
-	slaunch.wrapper.$(OBJEXT)
+	srun_job.$(OBJEXT) signals.$(OBJEXT) attach.$(OBJEXT) \
+	fname.$(OBJEXT) sigstr.$(OBJEXT) core-format.$(OBJEXT) \
+	multi_prog.$(OBJEXT) slaunch.wrapper.$(OBJEXT)
 slaunch_OBJECTS = $(am_slaunch_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libspank.la \
@@ -278,8 +277,6 @@ slaunch_SOURCES = \
 	opt.c opt.h \
 	srun_job.c  \
 	signals.c signals.h \
-	launch.c    \
-	launch.h    \
 	attach.h    \
 	attach.c    \
 	fname.c     \
@@ -375,7 +372,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attach.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core-format.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Po@am__quote@

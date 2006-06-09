@@ -54,19 +54,25 @@
 #include "src/common/net.h"
 #include "src/common/fd.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/forward.h"
 
 #include "src/api/step_ctx.h"
 #include "src/api/step_pmi.h"
 
+#define STEP_LAUNCH_TIMEOUT 10 /* FIXME - should be defined elsewhere */
+
 /**********************************************************************
  * General declarations for step launch code
  **********************************************************************/
+static int _launch_tasks(slurm_step_ctx ctx,
+			 launch_tasks_request_msg_t *launch_msg);
 
 /**********************************************************************
  * Message handler declarations
  **********************************************************************/
 static uid_t  slurm_uid;
 static int _msg_thr_create(struct step_launch_state *sls);
+static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int _message_socket_accept(eio_obj_t *obj, List objs);
 
@@ -87,9 +93,13 @@ static struct io_operations message_socket_ops = {
  */
 int slurm_step_launch (slurm_step_ctx ctx)
 {
+	launch_tasks_request_msg_t launch;
+	int i;
+
 	debug("Entering slurm_step_launch");
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
 		error("Not a valid slurm_step_ctx!");
+
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
@@ -103,7 +113,60 @@ int slurm_step_launch (slurm_step_ctx ctx)
 	_msg_thr_create(ctx->launch_state);
 
 	/* Start tasks on compute nodes */
+	launch.job_id = ctx->alloc_resp->job_id;
+	launch.uid = ctx->step_req->user_id;
+	launch.gid = getgid(); /* FIXME */
+	launch.argc = 0; /* FIXME */
+	launch.argv = NULL; /* FIXME */
+	launch.cred = ctx->step_resp->cred;
+	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.envc = 0; /* FIXME */
+	launch.env = NULL; /* FIXME */
+	launch.cwd = get_current_dir_name(); /* FIXME */
+	launch.nnodes = ctx->step_req->node_count;
+	launch.nprocs = ctx->step_req->num_tasks;
+/* 	launch.slurmd_debug = opt.slurmd_debug; */
+	launch.switch_job = ctx->step_resp->switch_job;
+/* 	launch.task_prolog = opt.task_prolog; */
+/* 	launch.task_epilog = opt.task_epilog; */
+/* 	launch.cpu_bind_type = opt.cpu_bind_type; */
+/* 	launch.cpu_bind = opt.cpu_bind; */
+/* 	launch.mem_bind_type = opt.mem_bind_type; */
+/* 	launch.mem_bind = opt.mem_bind; */
+/* 	launch.multi_prog = opt.multi_prog; */
 
+	launch.options = job_options_create();
+	spank_set_remote_options (launch.options);
+
+	launch.ofname = "/dev/null";
+	launch.efname = "/dev/null";
+	launch.ifname = "/dev/null";
+	launch.buffered_stdio = true;
+
+/* 	if (opt.parallel_debug) */
+/* 		r.task_flags |= TASK_PARALLEL_DEBUG; */
+
+	/* Node specific message contents */
+/* 	if (slurm_mpi_single_task_per_node ()) { */
+/* 		for (i = 0; i < job->step_layout->num_hosts; i++) */
+/* 			job->step_layout->tasks[i] = 1; */
+/* 	}  */
+
+	launch.tasks_to_launch = ctx->step_layout->tasks;
+	launch.cpus_allocated  = ctx->step_layout->cpus;
+	launch.global_task_ids = ctx->step_layout->tids;
+	
+	launch.io_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
+	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
+	
+	for (i = 0; i < launch.nnodes; i++) {
+/* 		launch.io_port[i] = ntohs(job->client_io->listenport[ */
+/* 					     i%job->client_io->num_listen]); */
+		launch.io_port[i] = 0; /* FIXME */
+		launch.resp_port[i] = ntohs(ctx->launch_state->msg_port);
+	}
+
+	_launch_tasks(ctx, &launch);
 	return SLURM_SUCCESS;
 }
 
@@ -111,23 +174,36 @@ int slurm_step_launch (slurm_step_ctx ctx)
 /**********************************************************************
  * Message handler functions
  **********************************************************************/
+static void *_msg_thr_internal(void *arg)
+{
+	struct step_launch_state *sls = (struct step_launch_state *)arg;
+
+	eio_handle_mainloop(sls->msg_handle);
+
+	return NULL;
+}
+
 static int _msg_thr_create(struct step_launch_state *sls)
 {
 	int sock = -1;
 	int port = -1;
 	eio_obj_t *obj;
 
+	debug("Entering _msg_thr_create()");
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 
 	if (net_stream_listen(&sock, &port) < 0) {
 		error("unable to intialize step launch listening socket: %m");
 		return SLURM_ERROR;
 	}
+	sls->msg_port = port;
 
 	obj = eio_obj_create(sock, &message_socket_ops, (void *)sls);
 
 	sls->msg_handle = eio_handle_create();
-
+	eio_new_initial_obj(sls->msg_handle, obj);
+	/* FIXME check return code */
+	pthread_create(&sls->msg_thread, NULL, _msg_thr_internal, (void *)sls);
 
 }
 
@@ -153,8 +229,12 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	struct step_launch_state *sls = (struct step_launch_state *)obj->arg;
 
 	int fd;
+	unsigned char *uc;
+	short        port;
 	struct sockaddr_un addr;
+	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
+	List ret_list = NULL;
 
 	debug3("Called _msg_socket_accept");
 
@@ -174,6 +254,54 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
+
+	/* Should not call slurm_get_addr() because the IP may not be
+	   in /etc/hosts. */
+	uc = (unsigned char *)&((struct sockaddr_in *)&addr)->sin_addr.s_addr;
+	port = ((struct sockaddr_in *)&addr)->sin_port;
+	debug2("got message connection from %u.%u.%u.%u:%d",
+	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
+	printf("got message connection from %u.%u.%u.%u:%d\n",
+	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
+	fflush(stdout);
+
+	msg = xmalloc(sizeof(slurm_msg_t));
+	forward_init(&msg->forward, NULL);
+	msg->ret_list = NULL;
+	msg->conn_fd = fd;
+	msg->forward_struct_init = 0;
+
+again:
+	ret_list = slurm_receive_msg(fd, msg, STEP_LAUNCH_TIMEOUT);
+	if(!ret_list || errno != SLURM_SUCCESS) {
+		printf("error on slurm_recieve_msg\n");
+		fflush(stdout);
+		if (errno == EINTR) {
+			list_destroy(ret_list);
+			goto again;
+		}
+		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
+		      uc[0],uc[1],uc[2],uc[3]);
+		goto cleanup;
+	}
+	if(list_count(ret_list)>0) {
+		printf("_message_socket_accept connection: "
+		      "got %d from receive, expecting 0\n",
+		       list_count(ret_list));
+		fflush(stdout);
+		error("_message_socket_accept connection: "
+		      "got %d from receive, expecting 0",
+		      list_count(ret_list));
+	}
+	msg->ret_list = ret_list;
+			
+	_handle_msg(sls, msg); /* handle_msg frees msg */
+cleanup:
+	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
+		error ("close(%d): %m", msg->conn_fd);
+	slurm_free_msg(msg);
+
+	return SLURM_SUCCESS;
 }
 
 static void
@@ -200,9 +328,8 @@ static void
 _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-	uid_t uid     = getuid();
+	uid_t uid = getuid();
 	int rc;
-	srun_node_fail_msg_t *nf;
 	
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u", 
@@ -213,6 +340,7 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 	switch (msg->msg_type) {
 	case RESPONSE_LAUNCH_TASKS:
 		debug("recevied task launch response");
+		printf("recevied task launch response\n");
 		_launch_handler(sls, msg);
 		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
@@ -245,3 +373,43 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 	return;
 }
 
+/**********************************************************************
+ * Task launch functions
+ **********************************************************************/
+static int _launch_tasks(slurm_step_ctx ctx,
+			 launch_tasks_request_msg_t *launch_msg)
+{
+	slurm_msg_t msg;
+	Buf buffer = NULL;
+	hostlist_t hostlist = NULL;
+	hostlist_iterator_t itr = NULL;
+	int zero = 0;
+	List ret_list = NULL;
+	ListIterator ret_itr;
+	ListIterator data_itr;
+
+	debug("Entering _launch_tasks");
+
+	msg.msg_type = REQUEST_LAUNCH_TASKS;
+	msg.data = launch_msg;
+	buffer = slurm_pack_msg_no_header(&msg);
+	hostlist = hostlist_create(ctx->step_resp->node_list);
+	itr = hostlist_iterator_create(hostlist);
+	msg.srun_node_id = 0;
+	msg.ret_list = NULL;
+	msg.orig_addr.sin_addr.s_addr = 0;
+	msg.buffer = buffer;
+	memcpy(&msg.address, &ctx->alloc_resp->node_addr[0],
+	       sizeof(slurm_addr));
+	forward_set_launch(&msg.forward,
+			   ctx->step_req->node_count,
+			   &zero,
+			   ctx->step_layout,
+			   ctx->alloc_resp->node_addr,
+			   itr,
+			   STEP_LAUNCH_TIMEOUT);
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hostlist);
+
+	ret_list = slurm_send_recv_rc_packed_msg(&msg, STEP_LAUNCH_TIMEOUT);
+}

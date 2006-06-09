@@ -77,6 +77,7 @@ common_dir = $(top_builddir)/src/common
 
 libslurm_la_LIBADD	= 		\
 	$(common_dir)/libcommon.la	\
+	$(common_dir)/libspank.la       \
 	$(common_dir)/libeio.la		\
 	-lpthread
 

@@ -238,15 +238,21 @@ slurm_auth_verify( slurm_auth_credential_t *c, void *argv )
 uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred )
 {
+	printf("testing 1\n");
+	fflush(stdout);
 	if (cred == NULL) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
+	printf("testing 2\n");
+	fflush(stdout);
 	if ((!cred->verified) && (_decode_cred(cred) < 0)) {
 		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_AUTH_NOBODY;
 	}
 
+	printf("testing 3\n");
+	fflush(stdout);
 	xassert(cred->magic == MUNGE_MAGIC);
 
 	return cred->uid;

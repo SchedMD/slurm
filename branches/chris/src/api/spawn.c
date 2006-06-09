@@ -81,6 +81,9 @@ static void *	_thread_per_node_rpc(void *args);
 static int	_validate_ctx(slurm_step_ctx ctx);
 static void	_xcopy_char_array(char ***argv_p, char **argv, int cnt);
 static void	_xfree_char_array(char ***argv_p, int cnt);
+static job_step_create_request_msg_t *_copy_step_req(
+	job_step_create_request_msg_t *step_req);
+static void _free_step_req(job_step_create_request_msg_t *step_req);
 
 /*
  * slurm_step_ctx_create - Create a job step and its context. 
@@ -112,6 +115,7 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
+	ctx->step_req   = _copy_step_req(step_req);
 	ctx->step_resp	= step_resp;
 	ctx->alloc_resp	= alloc_resp;
 	(void) task_layout(ctx->step_layout);
@@ -297,6 +301,7 @@ slurm_step_ctx_destroy (slurm_step_ctx ctx)
 		return SLURM_ERROR;
 	}
 	step_layout_destroy(ctx->step_layout);
+	_free_step_req(ctx->step_req);
 	slurm_free_job_step_create_response_msg(ctx->step_resp);
 	slurm_free_resource_allocation_response_msg(ctx->alloc_resp);
 	if (ctx->argv)
@@ -679,4 +684,43 @@ static void *_thread_per_node_rpc(void *args)
 	pthread_cond_signal(&thread_cond);
 
 	return (void *) NULL;
+}
+
+static job_step_create_request_msg_t *_copy_step_req(
+	job_step_create_request_msg_t *step_req)
+{
+	job_step_create_request_msg_t *copy;
+
+	copy = xmalloc(sizeof(job_step_create_request_msg_t));
+	if (copy == NULL)
+		return NULL;
+
+	memcpy(copy, step_req, sizeof(job_step_create_request_msg_t));
+	if (step_req->host != NULL)
+		copy->host = xstrdup(step_req->host);
+	if (step_req->node_list != NULL)
+		copy->node_list = xstrdup(step_req->node_list);
+	if (step_req->network != NULL)
+		copy->network = xstrdup(step_req->network);
+	if (step_req->name != NULL)
+		copy->name = xstrdup(step_req->name);
+
+	return copy;
+}
+
+static void _free_step_req(job_step_create_request_msg_t *step_req)
+{
+	if (step_req == NULL)
+		return;
+
+	if (step_req->host != NULL)
+		xfree(step_req->host);
+	if (step_req->node_list != NULL)
+		xfree(step_req->node_list);
+	if (step_req->network != NULL)
+		xfree(step_req->network);
+	if (step_req->name != NULL)
+		xfree(step_req->name);
+
+	xfree(step_req);
 }
