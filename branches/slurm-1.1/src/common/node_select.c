@@ -897,7 +897,10 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 "CONNECT ROTATE MAX_PROCS GEOMETRY START BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		convert_to_kilo(jobinfo->max_procs, max_procs_char);
+		if (jobinfo->max_procs == NO_VAL)
+			sprintf(max_procs_char, "None");
+		else
+			convert_to_kilo(jobinfo->max_procs, max_procs_char);
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(start_char, "None");
 		else {
@@ -914,7 +917,10 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 start_char, jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		convert_to_kilo(jobinfo->max_procs, max_procs_char);
+		if (jobinfo->max_procs == NO_VAL)
+			sprintf(max_procs_char, "None");
+		else
+			convert_to_kilo(jobinfo->max_procs, max_procs_char);
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(start_char, "None");
 		else {
