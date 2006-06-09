@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix for doing correct small block logic on user error. 
  -- BLUEGENE - Added support in slurmd to create a fake libdb2.so if it
     doesn't exist so smap won't seg fault
+ -- BLUEGENE - "scontrol show job" reports Start=None if value not specified
+    at job submit time
 
 * Changes in SLURM 1.1.1
 ========================
