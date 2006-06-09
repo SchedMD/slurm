@@ -70,6 +70,7 @@ int main (int argc, char *argv[])
 	job_req.min_nodes = min_nodes;
 	job_req.max_nodes = max_nodes;
 	job_req.user_id   = getuid();
+	job_req.group_id  = getgid();
 	if (slurm_allocate_resources(&job_req, &job_resp)) {
 		slurm_perror ("slurm_allocate_resources");
 		exit(0);
