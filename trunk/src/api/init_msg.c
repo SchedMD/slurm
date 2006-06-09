@@ -79,6 +79,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->in          = NULL;
 	job_desc_msg->out         = NULL;
 	job_desc_msg->user_id     = NO_VAL;
+	job_desc_msg->group_id    = NO_VAL;
 	job_desc_msg->work_dir    = NULL;
 	job_desc_msg->host        = NULL;
 	job_desc_msg->mail_type   = 0;
