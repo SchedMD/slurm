@@ -76,7 +76,7 @@ static void *_agent_thread(void *args)
 	int rc = 0;
 
 	ret_list = slurm_send_recv_rc_msg(msg, 
-			SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
+			(slurm_get_msg_timeout() * 1000));
 	if (ret_list == NULL) {
 		error("slurm_send_recv_rc_msg: %m");
 		exit(1);
@@ -148,7 +148,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		hostlist_destroy(hl);
 		from.addr	= alloc_resp->node_addr;
 		from.node_id	= NULL;
-		from.timeout	= SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+		from.timeout	= slurm_get_msg_timeout() * 1000;
 
 		for (i=0; i<alloc_resp->node_cnt; i++) {
 			int j = i;

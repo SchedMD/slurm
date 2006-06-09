@@ -138,6 +138,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
 	{"MaxJobCount", S_P_UINT16},
+	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
 	{"MpichGmDirectSupport", S_P_LONG},
 	{"MpiDefault", S_P_STRING},
@@ -998,6 +999,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
+	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
@@ -1320,6 +1322,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
+
+	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
+		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
 
 	if (!s_p_get_uint16(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;

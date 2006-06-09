@@ -185,6 +185,23 @@ char *slurm_get_mpi_default(void)
 	return mpi_default;
 }
 
+/* slurm_get_msg_timeout
+ * get default message timeout value from slurmctld_conf object
+ */
+uint16_t slurm_get_msg_timeout(void)
+{
+        uint16_t msg_timeout;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        msg_timeout = conf->msg_timeout;
+        slurm_conf_unlock();
+#ifdef MEMORY_LEAK_DEBUG
+        msg_timeout *= 4;
+#endif
+        return msg_timeout;
+}
+
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller
@@ -723,8 +740,10 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	xassert(fd >= 0);
 	
-	if ((timeout*=1000) == 0)
-		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+	if (timeout == 0)
+                timeout  = slurm_get_msg_timeout();
+        timeout *= 1000;        /* convert secs to msec */
+
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
 	 *  length and allocate space on the heap for a buffer containing
@@ -1058,7 +1077,7 @@ size_t slurm_write_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
 	return _slurm_send_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
+				   (slurm_get_msg_timeout() * 1000));
 }
 size_t slurm_write_stream_timeout(slurm_fd open_fd, char *buffer,
 				  size_t size, int timeout)
@@ -1080,7 +1099,7 @@ size_t slurm_read_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
 	return _slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
+				   (slurm_get_msg_timeout() * 1000));
 }
 size_t slurm_read_stream_timeout(slurm_fd open_fd, char *buffer,
 				 size_t size, int timeout)
@@ -1333,7 +1352,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	resp->auth_cred = NULL;
 	if(slurm_send_node_msg(fd, req) >= 0) {
 		if (!timeout)
-			timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;
+			timeout = slurm_get_msg_timeout();
 		
 		if(req->forward.cnt>0) {
 			steps = req->forward.cnt/slurm_get_tree_width();
@@ -1616,7 +1635,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 
 	if(slurm_add_header_and_send(fd, msg) >= 0) {
 		if (!timeout)
-			timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;
+			timeout = slurm_get_msg_timeout();
 		
 		if(msg->forward.cnt>0) {
 			steps = msg->forward.cnt/slurm_get_tree_width();
