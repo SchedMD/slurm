@@ -33,22 +33,25 @@ bool toggled = FALSE;
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, PARTITION_PAGE, "Partitions", TRUE, -1, 
-	 get_info_part, set_menus_part, row_clicked_part, NULL},
+	 refresh_main, get_info_part, set_menus_part, row_clicked_part, NULL},
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
-	 get_info_job, set_menus_job, row_clicked_job, NULL},
+	 refresh_main, get_info_job, set_menus_job, row_clicked_job, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
-	 get_info_node, set_menus_node, row_clicked_node, NULL},
+	 refresh_main, get_info_node, set_menus_node, row_clicked_node, NULL},
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
 #else
 	 {G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
 #endif
-	 get_info_block, set_menus_block, row_clicked_block, NULL},
-	 {G_TYPE_NONE, JOB_SUBMIT_PAGE, "Submit Job", TRUE, -1,
-	 get_info_submit, set_menus_submit, row_clicked_submit, NULL},
+	  refresh_main, get_info_block, set_menus_block, 
+	  row_clicked_block, NULL},
+	 {G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", TRUE, -1,
+	  refresh_main, get_info_submit, set_menus_submit, 
+	  row_clicked_submit, NULL},
 	 {G_TYPE_NONE, ADMIN_PAGE, "Admin", TRUE, -1,
-	  get_info_admin, set_menus_admin, row_clicked_admin, NULL},
-	 {G_TYPE_NONE, -1, NULL, FALSE, -1, NULL, NULL, NULL, NULL}
+	  refresh_main, get_info_admin, set_menus_admin, 
+	  row_clicked_admin, NULL},
+	 {G_TYPE_NONE, -1, NULL, FALSE, -1, NULL, NULL, NULL, NULL, NULL}
 	};
 	
 static void _page_switched(GtkNotebook     *notebook,
@@ -122,6 +125,14 @@ static void _prev_page(GtkAction *action,
 	//gtk_notebook_prev_page(notebook);
 }
 
+static void _init_pages()
+{
+	int i;
+	for(i=1; i<PAGE_CNT; i++) {
+		(main_display_data[i].get_info)(NULL, &main_display_data[i]);
+	}
+}
+
 /* Our menu*/
 static const char *ui_description =
 "<ui>"
@@ -153,7 +164,7 @@ static GtkActionEntry entries[] = {
 	{"PrevPage", NULL, "_PrevPage", 
 	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
 	{"Refresh", NULL, "Refresh", 
-	 "F5", "Refreshes page", G_CALLBACK(refresh_page)},
+	 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
 	{"Help", NULL, "_Help"},
 	{"About", NULL, "_About"}
 };
@@ -219,7 +230,8 @@ int main(int argc, char *argv[])
 	
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
- 
+	/* fill in all static info for pages */
+	_init_pages();
 	/* Make a window */
 	window = gtk_dialog_new();
 	g_signal_connect(G_OBJECT(window), "delete_event",
@@ -266,8 +278,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-extern void refresh_page(GtkAction *action,
-			 gpointer user_data)
+extern void refresh_main(GtkAction *action, gpointer user_data)
 {
 	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook));
 	if(page == -1)

@@ -214,7 +214,11 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	
-	local_display_data = display_data;
+	if(display_data)
+		local_display_data = display_data;
+	if(!table)
+		return;
+
 	if(new_job_ptr && toggled)
 		goto got_toggled;
 	now_time = time(NULL);

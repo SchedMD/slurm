@@ -58,7 +58,7 @@ static display_data_t display_data_submit[] = {
 static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, -1},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, -1},
-	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, -1},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, -1},
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, -1},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };

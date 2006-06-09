@@ -85,7 +85,6 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 {
 	GtkTreeViewColumn   *col;
 	GtkCellRenderer     *renderer;
-  
 	renderer = gtk_cell_renderer_text_new();
 	col = gtk_tree_view_column_new();	
 	gtk_tree_view_column_pack_start (col, renderer, TRUE);
@@ -101,15 +100,25 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 }
 
 static void _toggle_state_changed(GtkCheckMenuItem *menuitem, 
-				  gpointer user_data)
+				  display_data_t *display_data)
 {
-	bool *checked = user_data;
-	if(*checked)
-		*checked = FALSE;
+	if(display_data->show)
+		display_data->show = FALSE;
 	else
-		*checked = TRUE;
+		display_data->show = TRUE;
 	toggled = TRUE;
-	refresh_page(NULL, NULL);
+	refresh_main(NULL, NULL);
+}
+
+static void _popup_state_changed(GtkCheckMenuItem *menuitem, 
+				 display_data_t *display_data)
+{
+	if(display_data->show)
+		display_data->show = FALSE;
+	else
+		display_data->show = TRUE;
+	toggled = TRUE;
+	(display_data->refresh)(NULL, NULL);
 }
 
 static void _selected_page(GtkMenuItem *menuitem, 
@@ -247,12 +256,12 @@ extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
 			break;
 		menuitem = gtk_check_menu_item_new_with_label(
 			display_data->name); 
-		
+	
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem),
 					       display_data->show);
 		g_signal_connect(menuitem, "toggled",
 				 G_CALLBACK(_toggle_state_changed), 
-				 &display_data->show);
+				 display_data);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 	}
 }
@@ -283,15 +292,29 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	}
 }
 
-extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
+extern void make_popup_fields_menu(GtkMenu *menu, display_data_t *display_data)
+{
+	GtkWidget *menuitem = NULL;
+	
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		menuitem = gtk_check_menu_item_new_with_label(
+			display_data->name); 
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem),
+					       display_data->show);
+		g_signal_connect(menuitem, "toggled",
+				 G_CALLBACK(_popup_state_changed), 
+				 display_data);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	}
+}
+
+
+extern GtkScrolledWindow *create_scrolled_window()
 {
 	GtkScrolledWindow *scrolled_window = NULL;
 	GtkWidget *table = NULL;
-	GtkWidget *event_box = NULL;
-	GtkWidget *label = NULL;
-	int err;
-	//GtkWidget *menu = gtk_menu_new();
-	
 	table = gtk_table_new(1, 1, FALSE);
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);	
@@ -305,7 +328,16 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 				       GTK_POLICY_AUTOMATIC);
     
 	gtk_scrolled_window_add_with_viewport(scrolled_window, table);
-	
+
+	return scrolled_window;
+}
+extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
+{
+	GtkScrolledWindow *scrolled_window = create_scrolled_window();
+	GtkWidget *event_box = NULL;
+	GtkWidget *label = NULL;
+	int err;
+		
 	event_box = gtk_event_box_new();
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(event_box), FALSE);
 	g_signal_connect(G_OBJECT(event_box), "button-press-event",
@@ -372,3 +404,17 @@ extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	gtk_tree_path_free(path);
 }
 
+extern void redo_popup(GtkWidget *widget, GdkEventButton *event, 
+		       const display_data_t *display_data)
+{
+	if(event->button == 3) {
+		GtkMenu *menu = GTK_MENU(gtk_menu_new());
+	
+		(display_data->set_menu)(NULL, NULL, menu, POPUP_CLICKED);
+		
+		gtk_widget_show_all(GTK_WIDGET(menu));
+		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
+			       (event != NULL) ? event->button : 0,
+			       gdk_event_get_time((GdkEvent*)event));
+	}
+}

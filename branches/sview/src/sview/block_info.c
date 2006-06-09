@@ -80,7 +80,7 @@ static display_data_t options_data_block[] = {
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, BLOCK_PAGE},
-	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, BLOCK_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
@@ -130,7 +130,11 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	
-	local_display_data = display_data;
+	if(display_data)
+		local_display_data = display_data;
+	if(!table)
+		return;
+	
 	if(new_part_ptr && new_bg_ptr && toggled)
 		goto got_toggled;
 	if (part_info_ptr) {

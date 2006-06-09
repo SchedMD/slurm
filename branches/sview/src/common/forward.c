@@ -608,6 +608,8 @@ extern int forward_set(forward_t *forward,
  *                      a job launch
  * IN: forward     - forward_t *           - struct to store forward info
  * IN: span        - int                   - count of forwards to do
+ * IN/OUT: pos     - int *                 - position in the original 
+ *                                           messages addr structure
  * IN: step_layout - slurm_step_layout_t * - contains information about hosts
  *                                           from original message
  * IN: slurmd_addr - slurm_addr *          - addrs of hosts to send messages to

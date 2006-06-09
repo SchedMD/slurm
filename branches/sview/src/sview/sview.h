@@ -77,12 +77,13 @@ enum { PARTITION_PAGE,
        JOB_PAGE, 
        NODE_PAGE, 
        BLOCK_PAGE, 
-       JOB_SUBMIT_PAGE,
+       SUBMIT_PAGE,
        ADMIN_PAGE,
        PAGE_CNT 
 };
 enum { TAB_CLICKED,
-       ROW_CLICKED 
+       ROW_CLICKED,
+       POPUP_CLICKED
 };
 /* Input parameters */
 typedef struct {
@@ -116,6 +117,7 @@ struct display_data {
 	char *name;
 	bool show;
 	int extra;
+	void (*refresh)     (GtkAction *action, gpointer user_data);
 	void (*get_info)    (GtkTable *table, display_data_t *display_data);
 	void (*set_menu)    (GtkTreeView *tree_view, GtkTreePath *path,
 			     GtkMenu *menu, int type);
@@ -146,8 +148,7 @@ extern void print_date();
 extern void clear_window(WINDOW *win);
 
 //sview.c
-extern void refresh_page(GtkAction *action,
-			 gpointer user_data);
+extern void refresh_main(GtkAction *action, gpointer user_data);
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event, 
 			const display_data_t *display_data);
 
@@ -192,7 +193,10 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 			      gpointer user_data);
 
 // node_info.c
+extern void refresh_node(GtkAction *action, gpointer user_data);
 extern void get_info_node(GtkTable *table, display_data_t *display_data);
+extern void specific_info_node(GtkTable *table, GtkWidget *event_box, 
+			       char *node_list);
 extern void set_menus_node(GtkTreeView *tree_view, GtkTreePath *path, 
 			   GtkMenu *menu, int type);
 extern void row_clicked_node(GtkTreeView *tree_view,
@@ -216,8 +220,11 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern GtkListStore *create_liststore(display_data_t *display_data, int count);
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
 extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data);
+extern void make_popup_fields_menu(GtkMenu *menu, 
+				   display_data_t *display_data);
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path, 
 			      GtkMenu *menu, display_data_t *display_data);
+extern GtkScrolledWindow *create_scrolled_window();
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
 extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 
 				 GdkEventButton *event, 
@@ -225,4 +232,6 @@ extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path,
 				 int type);
 extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
 			const display_data_t *display_data);
+extern void redo_popup(GtkWidget *widget, GdkEventButton *event, 
+		       const display_data_t *display_data);
 #endif

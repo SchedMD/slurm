@@ -33,7 +33,7 @@ DEF_TIMERS;
 
 enum { 
 	SORTID_POS = POS_LOC,
-	SORTID_PARTITION, 
+	SORTID_NAME, 
 	SORTID_AVAIL, 
 	SORTID_TIMELIMIT, 
 	SORTID_NODES, 
@@ -43,7 +43,7 @@ enum {
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1},
 	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", TRUE, -1},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
@@ -56,9 +56,13 @@ static display_data_t display_data_part[] = {
 };
 
 static display_data_t options_data_part[] = {
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PARTITION_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PARTITION_PAGE},
-	{G_TYPE_STRING, JOB_SUBMIT_PAGE, "Job Submit", TRUE, PARTITION_PAGE},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PARTITION_PAGE},
+#endif
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, PARTITION_PAGE},
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, PARTITION_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
@@ -101,7 +105,7 @@ static void _append_part_record(partition_info_t *part_ptr,
 	gtk_list_store_append(liststore, iter);
 	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
 	gtk_list_store_set(liststore, iter, 
-			   SORTID_PARTITION, part_ptr->name, -1);
+			   SORTID_NAME, part_ptr->name, -1);
 
 	if (part_ptr->state_up) 
 		gtk_list_store_set(liststore, iter, 
@@ -147,7 +151,10 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	
-	local_display_data = display_data;
+	if(display_data)
+		local_display_data = display_data;
+	if(!table)
+		return;
 	if(new_part_ptr && toggled)
 		goto got_toggled;
 	if (part_info_ptr) {
@@ -280,8 +287,47 @@ extern void row_clicked_part(GtkTreeView *tree_view,
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+	GtkScrolledWindow *window = create_scrolled_window();
+	GtkBin *bin = GTK_BIN(&window->container);
+	GtkViewport *view = GTK_VIEWPORT(bin->child);
+	GtkBin *bin2 = GTK_BIN(&view->bin);
+	GtkTable *table = GTK_TABLE(bin2->child);
+	GtkWidget *popup = gtk_dialog_new();
+	GtkWidget *event_box = gtk_event_box_new();
 	
-	gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
-	  
-	g_print("got name %s\n", name);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   event_box, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			 GTK_WIDGET(window), TRUE, TRUE, 0);
+	
+	toggled = true;
+	
+	switch(id) {
+	case JOB_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		get_info_job(table, NULL);
+		break;
+	case NODE_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
+		specific_info_node(table, event_box, name);
+		break;
+	case BLOCK_PAGE: 
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		get_info_block(table, NULL);
+		break;
+	case ADMIN_PAGE: 
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		break;
+	case SUBMIT_PAGE: 
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		break;
+	default:
+		g_print("got %d\n", id);
+	}
+	
+	gtk_window_set_default_size(GTK_WINDOW(popup), 600, 400);
+	gtk_window_set_title(GTK_WINDOW(popup), "Sview");
+	gtk_widget_show_all(popup);
+
+	toggled = false;	
 }
