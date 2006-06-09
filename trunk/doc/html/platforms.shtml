@@ -8,6 +8,7 @@
 in version 0.4.</li>
 <li><b>Linux</b>&#151;SLURM has been thoroughly tested on Red Hat Linux using 
 i386, ia64, and x86_64 architectures.</li>
+<li><b>OS X</b>&#151;SLURM support for OS X is available in version 1.2.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 <h2>Interconnects</h2>
@@ -24,6 +25,6 @@ are available in all versions of SLURM and have been thoroughly tested.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 May 2006</p>
+<p style="text-align:center;">Last modified 9 June 2006</p>
 
 <!--#include virtual="footer.txt"-->

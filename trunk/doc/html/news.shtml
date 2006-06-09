@@ -79,6 +79,7 @@ on a node.</li>
 <li>Treat memory as a consumable resource on a compute node.</li>
 <li>Perl API to SLURM.</li>
 <li>Graphical User Interfaces provided.</li>
+<li>Added support for OS X.</li>
 <li>Add Kerberos credential support including credential forwarding and refresh.</li>
 <li>Permit batch jobs to be requeued.</li>
 </ul>
@@ -94,6 +95,6 @@ to coordinate activies. Future development plans includes:
 </ul>
 
 
-<p style="text-align:center;">Last modified 30 May 2006</p>
+<p style="text-align:center;">Last modified 9 June 2006</p>
 
 <!--#include virtual="footer.txt"-->

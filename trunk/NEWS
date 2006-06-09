@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     flag at batch job launch time.
  -- Added new configuration parameter MessageTimeout (replaces #define in 
     the code)
+ -- Added support for OSX build.
 
 * Changes in SLURM 1.1.2
 ========================

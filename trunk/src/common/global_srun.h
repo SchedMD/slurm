@@ -1,7 +1,7 @@
 /*****************************************************************************\
- * src/common/global_srun.c - functions needed by more than just srun
+ *  src/common/global_srun.c - functions needed by more than just srun
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grodnona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -29,7 +29,7 @@
 
 #include "src/srun/srun_job.h"
 
-void fwd_signal(srun_job_t *job, int signal);
+void fwd_signal(srun_job_t *job, int signal, int max_threads);
 int job_active_tasks_on_host(srun_job_t *job, int hostid);
 
 #endif /* !_GLOBAL_SRUN_H */

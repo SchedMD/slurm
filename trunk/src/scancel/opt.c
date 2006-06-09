@@ -65,7 +65,7 @@
 struct signv {
 	char *name;
 	uint16_t val;
-} sys_signame[ ] = {
+} sig_name_num[ ] = {
 	{ "HUP",	SIGHUP  },
 	{ "INT",	SIGINT  },
 	{ "QUIT",	SIGQUIT },
@@ -178,16 +178,16 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 	if ((*end_ptr == '\0') || (sig_num != 0))
 		return sig_num;
 	
-	for (i=0; i<SIZE(sys_signame); i++) {
-		if (strcasecmp(sys_signame[i].name, signal_name) == 0) {
+	for (i=0; i<SIZE(sig_name_num); i++) {
+		if (strcasecmp(sig_name_num[i].name, signal_name) == 0) {
 			xfree(sig_names);
-			return sys_signame[i].val;
+			return sig_name_num[i].val;
 		}
 		if (i == 0)
-			sig_names = xstrdup(sys_signame[i].name);
+			sig_names = xstrdup(sig_name_num[i].name);
 		else {
 			xstrcat(sig_names, ",");
-			xstrcat(sig_names, sys_signame[i].name);
+			xstrcat(sig_names, sig_name_num[i].name);
 		}			
 	}
 	fprintf (stderr, "Invalid job signal: %s\n", signal_name);
