@@ -1722,5 +1722,5 @@ documents those changes that are of interest to users and admins.
  -- Fixed reattach bug when tasks have exited.
  -- Change directory to /tmp in slurmd if daemonizing.
  -- Logfiles are reopened on reconfigure.
-
+ 
 $Id$
