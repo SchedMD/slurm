@@ -59,6 +59,8 @@
 #include <fcntl.h>
 #include <grp.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
@@ -69,7 +71,7 @@
 #include "src/common/net.h"
 #include "src/common/mpi.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/global_srun.h"
+#include "src/common/plugstack.h"
 
 #include "src/slaunch/opt.h"
 #include "src/slaunch/sigstr.h"
@@ -83,9 +85,6 @@
 #define	TYPE_NOT_TEXT	0
 #define	TYPE_TEXT	1
 #define	TYPE_SCRIPT	2
-
-
-typedef resource_allocation_response_msg_t         allocation_resp;
 
 /*
  * declaration of static funcs
@@ -109,6 +108,16 @@ int slaunch(int argc, char **argv)
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 		
+	/* Initialize plugin stack, read options from plugins, etc.
+	 */
+	if (spank_init(NULL) < 0)
+		fatal("Plug-in initialization failed");
+
+	/* Be sure to call spank_fini when srun exits.
+	 */
+	if (atexit((void (*) (void)) spank_fini) < 0)
+		error("Failed to register atexit handler for plugins: %m");
+
 	/* set default options, process commandline arguments, and
 	 * verify some basic values
 	 */
