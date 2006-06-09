@@ -279,6 +279,9 @@ Specify how stdin is to redirected. By default,
 .B srun
 redirects stdin from the terminal all tasks. See \fBIO Redirection\fR
 below for more options.
+For OS X, the poll() function does not support stdin, so input from 
+a terminal is not possible.
+
 .TP
 \fB\-e\fR, \fB\-\-error\fR=\fImode\fR
 Specify how stderr is to be redirected. By default in interactive mode,
@@ -721,7 +724,10 @@ stdout and stderr of
 .B srun
 , and stdin will be redirected from the standard input of 
 .B srun 
-to all remote tasks. This behavior may be changed with the 
+to all remote tasks. 
+For OS X, the poll() function does not support stdin, so input from 
+a terminal is not possible.
+This behavior may be changed with the 
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR 
 (\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid format specifications 
 for these options are
