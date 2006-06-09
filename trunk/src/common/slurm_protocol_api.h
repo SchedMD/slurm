@@ -2,7 +2,7 @@
  *  slurm_protocol_api.h - high-level slurm communication functions 
  *	definitions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -80,6 +80,11 @@ inline slurm_protocol_config_t *slurm_get_api_config();
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
  */
 char *slurm_get_mpi_default(void);
+
+/* slurm_get_msg_timeout
+ * get default message timeout value from slurmctld_conf object
+ */
+uint16_t inline slurm_get_msg_timeout(void);
 
 /* slurm_api_set_conf_file
  *      set slurm configuration file to a non-default value

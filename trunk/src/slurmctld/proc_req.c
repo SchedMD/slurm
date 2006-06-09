@@ -327,6 +327,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
+	conf_ptr->msg_timeout         = conf->msg_timeout;
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);

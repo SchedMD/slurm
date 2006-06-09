@@ -375,7 +375,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	forward.name = agent_arg_ptr->node_names;
 	forward.addr = agent_arg_ptr->slurm_addr;
 	forward.node_id = NULL;
-	forward.timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+	forward.timeout = slurm_get_msg_timeout() * 1000;
 
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[thr_count].state      = DSH_NEW;

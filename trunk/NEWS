@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Permit batch jobs to be requeued, scontrol requeue <jobid>
  -- Send overcommit flag from srun in RPCs and have slurmd set SLURM_OVERCOMMIT
     flag at batch job launch time.
+ -- Added new configuration parameter MessageTimeout (replaces #define in 
+    the code)
 
 * Changes in SLURM 1.1.2
 ========================

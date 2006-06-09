@@ -3,7 +3,7 @@
  *                                           based upon sockets.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -56,6 +56,7 @@
 #  endif
 #endif
 
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/log.h"
@@ -152,7 +153,7 @@ ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *lenp,
                             uint32_t flags)
 {
         return _slurm_msg_recvfrom_timeout(fd, pbuf, lenp, flags, 
-                                           SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
+                                (slurm_get_msg_timeout() * 1000));
 }
 
 ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp, 
@@ -192,7 +193,7 @@ ssize_t _slurm_msg_sendto(slurm_fd fd, char *buffer, size_t size,
                           uint32_t flags)
 {
         return _slurm_msg_sendto_timeout( fd, buffer, size, flags, 
-                                          SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
+                                (slurm_get_msg_timeout() * 1000));
 }
 
 ssize_t _slurm_msg_sendto_timeout(slurm_fd fd, char *buffer, size_t size, 

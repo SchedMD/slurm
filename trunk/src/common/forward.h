@@ -121,7 +121,7 @@ forward.cnt  = agent_arg_ptr->node_count;
 forward.name = agent_arg_ptr->node_names;
 forward.addr = agent_arg_ptr->slurm_addr;
 forward.node_id = NULL;
-forward.timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+forward.timeout = slurm_get_msg_timeout() * 1000; // secs to msec
 
 thr_count = 0;
 for (i = 0; i < agent_arg_ptr->node_count; i++) {
