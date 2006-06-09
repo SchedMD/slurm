@@ -865,7 +865,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
-	char tmp_char[7];
+	char max_procs_char[7], start_char[32];
 
 	if (buf == NULL) {
 		error("select_g_sprint_jobinfo: buf is null");
@@ -897,29 +897,45 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 "CONNECT ROTATE MAX_PROCS GEOMETRY START BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		convert_to_kilo(jobinfo->max_procs, tmp_char);
+		if (jobinfo->max_procs == NO_VAL)
+			sprintf(max_procs_char, "None");
+		else
+			convert_to_kilo(jobinfo->max_procs, max_procs_char);
+		if (jobinfo->start[0] == (uint16_t) NO_VAL)
+			sprintf(start_char, "None");
+		else {
+			snprintf(start_char, sizeof(start_char), 
+				"%1ux%1ux%1u", jobinfo->start[0],
+				jobinfo->start[1], jobinfo->start[2]);
+		} 
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %9s    %1ux%1ux%1u %1ux%1ux%1u %-16s",
+			 "%7.7s %6.6s %9s    %1ux%1ux%1u %5s %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
-			 tmp_char,
+			 max_procs_char,
 			 geometry[0], geometry[1], geometry[2],
-			 jobinfo->start[0], jobinfo->start[1], 
-			 jobinfo->start[2],
-			 jobinfo->bg_block_id);
+			 start_char, jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		convert_to_kilo(jobinfo->max_procs, tmp_char);
+		if (jobinfo->max_procs == NO_VAL)
+			sprintf(max_procs_char, "None");
+		else
+			convert_to_kilo(jobinfo->max_procs, max_procs_char);
+		if (jobinfo->start[0] == (uint16_t) NO_VAL)
+			sprintf(start_char, "None");
+		else {
+			snprintf(start_char, sizeof(start_char),
+				"%1ux%1ux%1u", jobinfo->start[0],
+				jobinfo->start[1], jobinfo->start[2]);
+		}
 		snprintf(buf, size, 
 			 "Connection=%s Rotate=%s MaxProcs=%s "
-			 "Geometry=%ux%ux%u Start=%ux%ux%u Block_ID=%s",
+			 "Geometry=%ux%ux%u Start=%s Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
-			 tmp_char,
+			 max_procs_char,
 			 geometry[0], geometry[1], geometry[2],
-			 jobinfo->start[0], jobinfo->start[1], 
-			 jobinfo->start[2],
-			 jobinfo->bg_block_id);
+			 start_char, jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
 		return jobinfo->bg_block_id;
