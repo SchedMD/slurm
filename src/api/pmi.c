@@ -78,6 +78,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/common/macros.h"
 #include "src/common/malloc.h"
 
 #define KVS_STATE_LOCAL    0

@@ -31,7 +31,15 @@
 # include "config.h"
 #endif 
 
-#include "src/srun/opt.h"
+enum io_t {
+	IO_ALL          = 0, /* multiplex output from all/bcast stdin to all */
+	IO_ONE          = 1, /* output from only one task/stdin to one task  */
+	IO_PER_TASK     = 2, /* separate output/input file per task          */
+	IO_NONE         = 3, /* close output/close stdin                     */
+};
+
+#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
+                                                     "all" : "per task"
 
 typedef struct io_filename {
 	char      *name;

@@ -26,6 +26,9 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #include "jobacct_common.h"
 
@@ -115,7 +118,9 @@ static int _print_record(struct job_record *job_ptr,
 		    job_ptr->user_id, job_ptr->group_id, block_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
+#ifdef HAVE_FDATSYNC
 	fdatasync(LOGFILE_FD);
+#endif
 	slurm_mutex_unlock( &logfile_lock );
 	xfree(block_id);
 

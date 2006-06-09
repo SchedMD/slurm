@@ -61,6 +61,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
+	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -158,6 +159,7 @@ HAVE_SOME_CURSES_TRUE = @HAVE_SOME_CURSES_TRUE@
 HAVE_UNSETENV_FALSE = @HAVE_UNSETENV_FALSE@
 HAVE_UNSETENV_TRUE = @HAVE_UNSETENV_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
+INSTALL_DIRS = @INSTALL_DIRS@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@

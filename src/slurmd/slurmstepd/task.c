@@ -191,7 +191,11 @@ _run_script(const char *name, const char *path, slurmd_job_t *job)
 		dup(pfd[1]);
 		close(2);
 		close(0);
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
 		setpgrp();
+#endif
 		execve(path, argv, job->env);
 		error("execve(): %m");
 		exit(127);

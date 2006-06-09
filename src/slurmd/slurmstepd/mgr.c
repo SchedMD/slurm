@@ -616,7 +616,7 @@ static void
 _send_step_complete_msgs(slurmd_job_t *job)
 {
 	int start, size;
-	int first, last;
+	int first = 0, last = 0;
 	bool sent_own_comp_msg = false;
 
 	pthread_mutex_lock(&step_complete.lock);

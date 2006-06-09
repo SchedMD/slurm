@@ -24,6 +24,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/errno.h>
@@ -77,7 +81,11 @@ run_script(const char *name, const char *path, uint32_t jobid, uid_t uid,
 
 		if (strncmp(name, "user", 4) == 0)
 			setuid(uid);
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
 		setpgrp();
+#endif
 		execve(path, argv, env);
 		error("execve(): %m");
 		exit(127);

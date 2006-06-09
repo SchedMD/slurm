@@ -373,7 +373,7 @@ srun_job_destroy(srun_job_t *job, int error)
 		slurm_complete_job(job->jobid, error);
 	} else {
 		debug("no allocation to cancel, killing remote tasks");
-		fwd_signal(job, SIGKILL); 
+		fwd_signal(job, SIGKILL, opt.max_threads); 
 		return;
 	}
 

@@ -57,7 +57,7 @@ int slurm_sched_schedule( void );
 /*
  * Supply the initial SLURM priority for a newly-submitted job.
  */
-u_int32_t slurm_sched_initial_priority( u_int32_t max_prio );
+uint32_t slurm_sched_initial_priority( uint32_t max_prio );
 
 /*
  * Note that some job is pending.
@@ -87,7 +87,7 @@ char *slurm_sched_p_strerror( int errnum );
  * scheduler requests.  The interpretation of this value depends on
  * the scheduler type.  The value is returned in host byte order.
  */
-u_int16_t sched_get_port( void );
+uint16_t sched_get_port( void );
 
 /*
  * Returns the authentication credentials.
@@ -112,7 +112,7 @@ const char * sched_get_auth( void );
  * Returns non-zero if RootOnly partitions are to be filtered from
  * any external scheduling efforts.
  */
-u_int16_t sched_get_root_filter( void );
+uint16_t sched_get_root_filter( void );
 
 /*
  * Opaque type for a list of objects supplied by the controller.

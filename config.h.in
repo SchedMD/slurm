@@ -46,6 +46,9 @@
 /* Define to 1 if function EVP_MD_CTX_cleanup exists. */
 #undef HAVE_EVP_MD_CTX_CLEANUP
 
+/* Define to 1 if you have the `fdatasync' function. */
+#undef HAVE_FDATASYNC
+
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
 
@@ -101,6 +104,9 @@
 /* define if you have the PAM library */
 #undef HAVE_PAM
 
+/* Define to 1 if you have the <pam/pam_appl.h> header file. */
+#undef HAVE_PAM_PAM_APPL_H
+
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 
@@ -121,6 +127,9 @@
 
 /* Define to 1 if you have the `sched_setaffinity' function. */
 #undef HAVE_SCHED_SETAFFINITY
+
+/* Define to 1 if you have the <security/pam_appl.h> header file. */
+#undef HAVE_SECURITY_PAM_APPL_H
 
 /* Define to 1 if you have the `setproctitle' function. */
 #undef HAVE_SETPROCTITLE
@@ -148,6 +157,12 @@
 
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strlcpy' function. */
+#undef HAVE_STRLCPY
+
+/* Define to 1 if you have the `strndup' function. */
+#undef HAVE_STRNDUP
 
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
@@ -181,6 +196,9 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/vfs.h> header file. */
+#undef HAVE_SYS_VFS_H
 
 /* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
 #undef HAVE_SYS_WAIT_H
@@ -255,6 +273,9 @@
 
 /* Define to 1 if sched_getaffinity takes two arguments. */
 #undef SCHED_GETAFFINITY_TWO_ARGS
+
+/* Define to 1 if setpgrp takes two arguments. */
+#undef SETPGRP_TWO_ARGS
 
 /* Define if you need setproctitle padding */
 #undef SETPROCTITLE_PS_PADDING

@@ -40,7 +40,7 @@
 /* ************************************************************************ */
 typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
-	u_int32_t	(*initial_priority)	( u_int32_t );
+	uint32_t	(*initial_priority)	( uint32_t );
 	void            (*job_is_pending)     	( void );
 	int		(*get_errno)		( void );
 	char *		(*strerror)		( int );
@@ -235,8 +235,8 @@ slurm_sched_schedule( void )
 /* *********************************************************************** */
 /*  TAG(                   slurm_sched_initital_priority                )  */
 /* *********************************************************************** */
-u_int32_t
-slurm_sched_initial_priority( u_int32_t max_prio )
+uint32_t
+slurm_sched_initial_priority( uint32_t max_prio )
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
