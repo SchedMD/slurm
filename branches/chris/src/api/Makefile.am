@@ -59,7 +59,7 @@ libslurm_la_SOURCES =    \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
-	step_ctx.h       \
+	step_ctx.c step_ctx.h \
 	step_client_io.c step_client_io.h \
 	step_launch.c    \
 	step_pmi.c step_pmi.h \

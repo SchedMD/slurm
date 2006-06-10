@@ -103,13 +103,16 @@ int slurm_step_launch (slurm_step_ctx ctx, int argc, char **argv)
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
+
 	ctx->launch_state = xmalloc(sizeof(struct step_launch_state));
 	if (ctx->launch_state == NULL) {
 		error("Failed to allocate memory for step launch state: %m");
 		return SLURM_ERROR;
 	}
+	pthread_mutex_init(&ctx->launch_state->lock, NULL);
+	pthread_cond_init(&ctx->launch_state->cond, NULL);
 
-	/* Create message receiving socket */
+	/* Create message receiving socket and handler thread */
 	_msg_thr_create(ctx->launch_state);
 
 	/* Start tasks on compute nodes */

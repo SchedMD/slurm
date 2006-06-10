@@ -43,6 +43,10 @@
 #define STEP_CTX_MAGIC 0xc7a3
 
 struct step_launch_state {
+	pthread_mutex_t lock;
+	pthread_cond_t cond;
+
+	/* message thread variables */
 	eio_handle_t *msg_handle;
 	pthread_t msg_thread;
 	uint16_t msg_port;
