@@ -104,6 +104,7 @@ int slaunch(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_step_create_request_msg_t step_req;
 	slurm_step_ctx step_ctx;
+	slurm_job_step_launch_t params;
 	int rc;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -159,14 +160,27 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
-	rc = slurm_step_launch(step_ctx, opt.argc, opt.argv);
+	params.gid = opt.gid;
+	params.argc = opt.argc;
+	params.argv = opt.argv;
+	params.multi_prog = opt.multi_prog;
+	params.envc = 0; /* FIXME */
+	params.env = NULL; /* FIXME */
+	params.cwd = opt.cwd;
+	params.slurmd_debug = opt.slurmd_debug;
+	params.output_filename = "/dev/null"; /* FIXME */
+	params.input_filename = "/dev/null"; /* FIXME */
+	params.error_filename = "/dev/null"; /* FIXME */
+	params.buffered_stdio = !opt.unbuffered;
+
+	rc = slurm_step_launch(step_ctx, &params);
 	if (rc != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		slurm_step_ctx_destroy(step_ctx);
 		exit(1);
 	}
 
-	sleep(5);
+	sleep(2);
 }
 
 static char *
