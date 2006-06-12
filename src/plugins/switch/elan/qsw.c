@@ -1377,7 +1377,7 @@ qsw_gethost_bynodeid(char *buf, int len, int id)
 		goto done;
 	}
 	
-	rc = strlcpy (buf, hostp, len);
+	rc = slurm_strlcpy (buf, hostp, len);
 
     done:
 	_unlock_qsw();
