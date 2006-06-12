@@ -31,9 +31,9 @@
 #  include "config.h"
 #endif
 
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 #include "src/common/global_srun.h"
 
-void slaunch_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds);
+void slaunch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 
 #endif /* !_HAVE_SLAUNCH_H */

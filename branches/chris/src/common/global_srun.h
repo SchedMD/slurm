@@ -29,7 +29,7 @@
 
 #include <slurm/slurm.h>
 #include "src/common/slurm_protocol_common.h"
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 
 #define FWD_SIGNAL_MAX_THREADS 64
 
@@ -118,7 +118,7 @@ typedef struct srun_job {
 	
 	pthread_t lid;		  /* launch thread id */
 
-	client_io_t *client_io;
+	slurm_step_io_t *client_io;
 	time_t    ltimeout;       /* Time by which all tasks must be running */
 	time_t    etimeout;       /* exit timeout (see opt.max_wait          */
 

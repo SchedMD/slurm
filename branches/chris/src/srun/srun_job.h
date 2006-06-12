@@ -42,7 +42,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/dist_tasks.h"
 #include "src/common/global_srun.h"
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 
 #include "src/srun/fname.h"
 

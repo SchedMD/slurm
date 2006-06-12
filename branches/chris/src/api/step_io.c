@@ -1,5 +1,5 @@
 /****************************************************************************\
- *  io.c - process stdin, stdout, and stderr for parallel jobs.
+ *  step_io.c - process stdin, stdout, and stderr for parallel jobs.
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -58,7 +58,7 @@
 #include "src/common/io_hdr.h"
 #include "src/common/net.h"
 #include "src/common/dist_tasks.h"
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 
 #define MAX_RETRIES 3
 #define STDIO_MAX_FREE_BUF 1024
@@ -74,13 +74,13 @@ static struct io_buf *_alloc_io_buf(void);
 #if 0
 static void     _free_io_buf(struct io_buf *buf);
 #endif
-static void	_init_stdio_eio_objs(client_io_fds_t fds,
-				     client_io_t *cio);
-static void	_handle_io_init_msg(int fd, client_io_t *cio);
-static int      _read_io_init_msg(int fd, client_io_t *cio, char *host);
+static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
+				     slurm_step_io_t *cio);
+static void	_handle_io_init_msg(int fd, slurm_step_io_t *cio);
+static int      _read_io_init_msg(int fd, slurm_step_io_t *cio, char *host);
 static int      _wid(int n);
-static bool     _incoming_buf_free(client_io_t *cio);
-static bool     _outgoing_buf_free(client_io_t *cio);
+static bool     _incoming_buf_free(slurm_step_io_t *cio);
+static bool     _outgoing_buf_free(slurm_step_io_t *cio);
 
 /**********************************************************************
  * Listening socket declarations
@@ -109,7 +109,7 @@ struct io_operations server_ops = {
 };
 
 struct server_io_info {
-	client_io_t *cio;
+	slurm_step_io_t *cio;
 
 	/* incoming variables */
 	struct slurm_io_header header;
@@ -138,7 +138,7 @@ struct io_operations file_write_ops = {
 };
 
 struct file_write_info {
-	client_io_t *cio;
+	slurm_step_io_t *cio;
 
 	/* outgoing variables */
 	List msg_queue;
@@ -163,7 +163,7 @@ struct io_operations file_read_ops = {
 };
 
 struct file_read_info {
-	client_io_t *cio;
+	slurm_step_io_t *cio;
 
 	/* header contains destination of file input */
 	struct slurm_io_header header;
@@ -190,7 +190,7 @@ _listening_socket_readable(eio_obj_t *obj)
 static int
 _listening_socket_read(eio_obj_t *obj, List objs)
 {
-	client_io_t *cio = (client_io_t *)obj->arg;
+	slurm_step_io_t *cio = (slurm_step_io_t *)obj->arg;
 
 	debug3("Called _listening_socket_read");
 	_handle_io_init_msg(obj->fd, cio);
@@ -199,7 +199,7 @@ _listening_socket_read(eio_obj_t *obj, List objs)
 }
 
 static void
-_set_listensocks_nonblocking(client_io_t *cio)
+_set_listensocks_nonblocking(slurm_step_io_t *cio)
 {
 	int i;
 	for (i = 0; i < cio->num_listen; i++) 
@@ -210,7 +210,7 @@ _set_listensocks_nonblocking(client_io_t *cio)
  * IO server socket functions
  **********************************************************************/
 static eio_obj_t *
-_create_server_eio_obj(int fd, client_io_t *cio,
+_create_server_eio_obj(int fd, slurm_step_io_t *cio,
 		       int stdout_objs, int stderr_objs)
 {
 	struct server_io_info *info = NULL;
@@ -449,7 +449,7 @@ again:
  **********************************************************************/
 static eio_obj_t *
 create_file_write_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
-			  client_io_t *cio)
+			  slurm_step_io_t *cio)
 {
 	struct file_write_info *info = NULL;
 	eio_obj_t *eio = NULL;
@@ -675,7 +675,7 @@ static int _file_write(eio_obj_t *obj, List objs)
  **********************************************************************/
 static eio_obj_t *
 create_file_read_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
-			 client_io_t *cio)
+			 slurm_step_io_t *cio)
 {
 	struct file_read_info *info = NULL;
 	eio_obj_t *eio = NULL;
@@ -820,7 +820,7 @@ again:
 static void *
 _io_thr_internal(void *cio_arg)
 {
-	client_io_t *cio  = (client_io_t *) cio_arg;
+	slurm_step_io_t *cio  = (slurm_step_io_t *) cio_arg;
 	sigset_t set;
 
 	xassert(cio != NULL);
@@ -845,7 +845,7 @@ _io_thr_internal(void *cio_arg)
 }
 
 static eio_obj_t *
-_create_listensock_eio(int fd, client_io_t *cio)
+_create_listensock_eio(int fd, slurm_step_io_t *cio)
 {
 	eio_obj_t *eio = NULL;
 
@@ -855,7 +855,7 @@ _create_listensock_eio(int fd, client_io_t *cio)
 }
 
 static int
-_read_io_init_msg(int fd, client_io_t *cio, char *host)
+_read_io_init_msg(int fd, slurm_step_io_t *cio, char *host)
 {
 	struct slurm_io_init_msg msg;
 
@@ -910,7 +910,7 @@ _is_fd_ready(int fd)
 
 
 static void
-_handle_io_init_msg(int fd, client_io_t *cio)
+_handle_io_init_msg(int fd, slurm_step_io_t *cio)
 {
 	int j;
 	debug2("Activity on IO listening socket %d", fd);
@@ -1009,7 +1009,7 @@ _free_io_buf(struct io_buf *buf)
 #endif
 
 static void
-_init_stdio_eio_objs(client_io_fds_t fds, client_io_t *cio)
+_init_stdio_eio_objs(slurm_step_io_fds_t fds, slurm_step_io_t *cio)
 {
 	/*
 	 * build stdin eio_obj_t
@@ -1050,7 +1050,7 @@ _init_stdio_eio_objs(client_io_fds_t fds, client_io_t *cio)
 }
 
 static bool
-_incoming_buf_free(client_io_t *cio)
+_incoming_buf_free(slurm_step_io_t *cio)
 {
 	struct io_buf *buf;
 
@@ -1069,7 +1069,7 @@ _incoming_buf_free(client_io_t *cio)
 }
 
 static bool
-_outgoing_buf_free(client_io_t *cio)
+_outgoing_buf_free(slurm_step_io_t *cio)
 {
 	struct io_buf *buf;
 
@@ -1095,18 +1095,18 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-client_io_t *
-client_io_handler_create(client_io_fds_t fds,
-			 int num_tasks,
-			 int num_nodes,
-			 char *io_key,
-			 bool label)
+slurm_step_io_t *
+slurm_step_io_handler_create(slurm_step_io_fds_t fds,
+			     int num_tasks,
+			     int num_nodes,
+			     char *io_key,
+			     bool label)
 {
-	client_io_t *cio;
+	slurm_step_io_t *cio;
 	int len;
 	int i;
 
-	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
+	cio = (slurm_step_io_t *)xmalloc(sizeof(slurm_step_io_t));
 	if (cio == NULL)
 		return NULL;
 
@@ -1167,7 +1167,7 @@ client_io_handler_create(client_io_fds_t fds,
 }
 
 int
-client_io_handler_start(client_io_t *cio)
+slurm_step_io_handler_start(slurm_step_io_t *cio)
 {
 	int retries = 0;
 	pthread_attr_t attr;
@@ -1191,7 +1191,7 @@ client_io_handler_start(client_io_t *cio)
 }
 
 int
-client_io_handler_finish(client_io_t *cio)
+slurm_step_io_handler_finish(slurm_step_io_t *cio)
 {
 	eio_signal_shutdown(cio->eio);
 	if (pthread_join(cio->ioid, NULL) < 0) {
@@ -1203,7 +1203,7 @@ client_io_handler_finish(client_io_t *cio)
 }
 
 void
-client_io_handler_destroy(client_io_t *cio)
+slurm_step_io_handler_destroy(slurm_step_io_t *cio)
 {
 	xassert(cio);
 

@@ -47,7 +47,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 #include "src/common/mpi.h"
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"

@@ -60,7 +60,7 @@ libslurm_la_SOURCES =    \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
 	step_ctx.c step_ctx.h \
-	step_client_io.c step_client_io.h \
+	step_io.c step_io.h \
 	step_launch.c    \
 	step_pmi.c step_pmi.h \
 	submit.c         \
@@ -98,7 +98,6 @@ $(libslurm_la_LIBADD) : force
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   slurm_*;"; \
-	 echo "   client_io_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 

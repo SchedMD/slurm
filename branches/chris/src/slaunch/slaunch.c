@@ -168,9 +168,9 @@ int slaunch(int argc, char **argv)
 	params.env = NULL; /* FIXME */
 	params.cwd = opt.cwd;
 	params.slurmd_debug = opt.slurmd_debug;
-	params.output_filename = "/dev/null"; /* FIXME */
-	params.input_filename = "/dev/null"; /* FIXME */
-	params.error_filename = "/dev/null"; /* FIXME */
+	params.output_filename = NULL; /* FIXME */
+	params.input_filename = NULL; /* FIXME */
+	params.error_filename = NULL; /* FIXME */
 	params.buffered_stdio = !opt.unbuffered;
 
 	rc = slurm_step_launch(step_ctx, &params);
@@ -424,7 +424,7 @@ _is_local_file (io_filename_t *fname)
 }
 
 void
-slaunch_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds)
+slaunch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 {
 	bool err_shares_out = false;
 

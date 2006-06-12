@@ -315,7 +315,7 @@ job_force_termination(srun_job_t *job)
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	client_io_handler_finish(job->client_io);
+	slurm_step_io_handler_finish(job->client_io);
 }
 
 

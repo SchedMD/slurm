@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8364 2006-06-09 02:11:14Z morrone $
+# $Id: Makefile.am 8386 2006-06-10 00:30:49Z morrone $
 #
 # Makefile for slurm API library
 
@@ -86,8 +86,8 @@ am_libslurm_la_OBJECTS = allocate.lo cancel.lo checkpoint.lo \
 	complete.lo config_info.lo init_msg.lo job_info.lo \
 	job_step_info.lo node_info.lo node_select_info.lo \
 	partition_info.lo signal.lo slurm_pmi.lo spawn.lo step_ctx.lo \
-	step_client_io.lo step_launch.lo step_pmi.lo submit.lo \
-	suspend.lo reconfigure.lo update_config.lo
+	step_io.lo step_launch.lo step_pmi.lo submit.lo suspend.lo \
+	reconfigure.lo update_config.lo
 libslurm_la_OBJECTS = $(am_libslurm_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -333,7 +333,7 @@ libslurm_la_SOURCES = \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
 	step_ctx.c step_ctx.h \
-	step_client_io.c step_client_io.h \
+	step_io.c step_io.h \
 	step_launch.c    \
 	step_pmi.c step_pmi.h \
 	submit.c         \
@@ -453,8 +453,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_pmi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spawn.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_client_io.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_io.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_pmi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@
@@ -677,7 +677,6 @@ $(libslurm_la_LIBADD) : force
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   slurm_*;"; \
-	 echo "   client_io_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

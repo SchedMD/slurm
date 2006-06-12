@@ -310,7 +310,7 @@ int srun(int ac, char **av)
 	{
 		int siglen;
 		char *sig;
-		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
+		slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 		srun_set_stdio_fds(job, &fds);
 
@@ -319,14 +319,15 @@ int srun(int ac, char **av)
 			job_fatal(job, "Couldn't get cred signature");
 		}
 		
-		job->client_io = client_io_handler_create(
+		job->client_io = slurm_step_io_handler_create(
 			fds,
 			job->step_layout->num_tasks,
 			job->step_layout->num_hosts,
 			sig,
 			opt.labelio);
 		if (!job->client_io
-		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
+		    || (slurm_step_io_handler_start(job->client_io)
+			!= SLURM_SUCCESS))
 			job_fatal(job, "failed to start IO handler");
 	}
 
@@ -368,9 +369,9 @@ int srun(int ac, char **av)
 	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
+	if (slurm_step_io_handler_finish(job->client_io) != SLURM_SUCCESS)
 		error ("IO handler did not finish correctly: %m");
-	client_io_handler_destroy(job->client_io);
+	slurm_step_io_handler_destroy(job->client_io);
 
 	if (slurm_mpi_exit () < 0)
 		; /* eh, ignore errors here */
@@ -1041,7 +1042,7 @@ _is_local_file (io_filename_t *fname)
 }
 
 void
-srun_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds)
+srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 {
 	bool err_shares_out = false;
 

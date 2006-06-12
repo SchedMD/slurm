@@ -84,6 +84,8 @@ BEGIN_C_DECLS
 #  endif
 #endif
 
+#include <stdbool.h>
+
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
    typedef struct slurm_job_credential * slurm_cred_t;
@@ -683,6 +685,22 @@ typedef struct partition_info update_part_msg_t;
 /* Opaque data type for slurm_step_ctx_*, slurm_step_launch, slurm_spawn, and
  * slurm_spawn_kill functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
+
+/* Opaque data type for slurm step standard I/O handler */
+typedef struct slurm_step_io slurm_step_io_t;
+
+typedef struct slurm_step_io_fds {
+	struct {
+		int fd;
+		uint32_t taskid;
+		uint32_t nodeid;
+	} in, out, err;
+} slurm_step_io_fds_t;
+
+#define SLURM_STEP_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},\
+                                   {1, (uint32_t)-1, (uint32_t)-1},\
+                                   {2, (uint32_t)-1, (uint32_t)-1}}
+
 
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
@@ -1405,6 +1423,20 @@ extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
  */
 extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 		uint32_t *error_code, char **error_msg);
+
+
+/*****************************************************************************\
+ *      SLURM JOB STEP CLIENT-SIDE I/O FUNCTIONS
+\*****************************************************************************/
+extern slurm_step_io_t *slurm_step_io_handler_create PARAMS((
+		slurm_step_io_fds_t fds,
+		int num_tasks, int num_nodes, char *io_key, bool label));
+
+extern int slurm_step_io_handler_start PARAMS((slurm_step_io_t *cio));
+
+int slurm_step_io_handler_finish(slurm_step_io_t *cio);
+
+void slurm_step_io_handler_destroy(slurm_step_io_t *cio);
 
 END_C_DECLS
 
