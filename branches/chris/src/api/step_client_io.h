@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/api/step_client_io.h - job-step client-side I/O routines
+ * src/api/step_io.h - job-step client-side I/O routines
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
@@ -24,16 +24,18 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _HAVE_CLIENT_IO_H
-#define _HAVE_CLIENT_IO_H
+#ifndef _HAVE_STEP_IO_H
+#define _HAVE_STEP_IO_H
 
 #include <stdint.h>
+
+#include <slurm/slurm.h>
 
 #include "src/common/eio.h"
 #include "src/common/list.h"
 #include "src/common/dist_tasks.h"
 
-typedef struct client_io {
+struct slurm_step_io {
 	/* input parameters - set (indirectly) by user */
 	int num_tasks;
 	int num_nodes;
@@ -69,28 +71,6 @@ typedef struct client_io {
 			         * including free_incoming buffers and
 			         * buffers in use.
 			         */
-} client_io_t;
+};
 
-typedef struct client_io_fds {
-	struct {
-		int fd;
-		uint32_t taskid;
-		uint32_t nodeid;
-	} in, out, err;
-} client_io_fds_t;
-
-#define CLIENT_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},\
-                                   {1, (uint32_t)-1, (uint32_t)-1},\
-                                   {2, (uint32_t)-1, (uint32_t)-1}}
-
-client_io_t *
-client_io_handler_create(client_io_fds_t fds,
-			 int num_tasks,
-			 int num_nodes,
-			 char *io_key,
-			 bool label);
-int client_io_handler_start(client_io_t *cio);
-int client_io_handler_finish(client_io_t *cio);
-void client_io_handler_destroy(client_io_t *cio);
-
-#endif /* !_HAVE_CLIENT_IO_H */
+#endif /* !_HAVE_STEP_IO_H */
