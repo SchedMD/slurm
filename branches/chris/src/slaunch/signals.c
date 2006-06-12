@@ -132,13 +132,13 @@ static void
 _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 {
 	if (opt.quit_on_intr) {
-		job_force_termination(job);
+		/*job_force_termination(job);*/
 		pthread_exit (0);
 	}
 
 	if (((time(NULL) - *last_intr) > 1) && !opt.disable_status) {
 		info("interrupt (one more within 1 sec to abort)");
-		report_task_status(job);
+		/*report_task_status(job);*/
 		*last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
 
@@ -146,7 +146,7 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 		if (job->state < SRUN_JOB_FORCETERM) {
 
 			if ((time(NULL) - *last_intr_sent) < 1) {
-				job_force_termination(job);
+				/*job_force_termination(job);*/
 				pthread_exit(0);
 			}
 
@@ -155,7 +155,7 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 			fwd_signal(job, SIGINT);
 
 		} else {
-			job_force_termination(job);
+			/*job_force_termination(job);*/
 		}
 	}
 }
@@ -193,7 +193,7 @@ _sig_thr(void *arg)
 			break;
 		  case SIGQUIT:
 			info("Quit");
-			job_force_termination(job);
+			/*job_force_termination(job);*/
 			break;
 		  default:
 			fwd_signal(job, signo);

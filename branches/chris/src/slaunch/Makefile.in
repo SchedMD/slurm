@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8356 2006-06-08 02:19:16Z morrone $
+# $Id: Makefile.am 8385 2006-06-09 22:37:18Z morrone $
 #
 
 srcdir = @srcdir@
@@ -71,15 +71,15 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_slaunch_OBJECTS = slaunch.$(OBJEXT) opt.$(OBJEXT) \
-	srun_job.$(OBJEXT) signals.$(OBJEXT) attach.$(OBJEXT) \
-	fname.$(OBJEXT) sigstr.$(OBJEXT) core-format.$(OBJEXT) \
-	multi_prog.$(OBJEXT) slaunch.wrapper.$(OBJEXT)
+am_slaunch_OBJECTS = slaunch.$(OBJEXT) opt.$(OBJEXT) signals.$(OBJEXT) \
+	attach.$(OBJEXT) fname.$(OBJEXT) sigstr.$(OBJEXT) \
+	core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
+	slaunch.wrapper.$(OBJEXT)
 slaunch_OBJECTS = $(am_slaunch_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/common/libcommon.la \
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.la \
+	$(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libspank.la \
-	$(top_builddir)/src/common/libeio.la \
-	$(top_builddir)/src/api/libslurm.la
+	$(top_builddir)/src/common/libeio.la
 slaunch_DEPENDENCIES = $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -275,7 +275,6 @@ INCLUDES = -I$(top_srcdir)
 slaunch_SOURCES = \
 	slaunch.c slaunch.h \
 	opt.c opt.h \
-	srun_job.c  \
 	signals.c signals.h \
 	attach.h    \
 	attach.c    \
@@ -289,10 +288,10 @@ slaunch_SOURCES = \
 	slaunch.wrapper.c
 
 convenience_libs = \
-	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/common/libspank.la   \
-	$(top_builddir)/src/common/libeio.la      \
-	$(top_builddir)/src/api/libslurm.la
+	$(top_builddir)/src/api/libslurm.la \
+	$(top_builddir)/src/common/libcommon.la \
+	$(top_builddir)/src/common/libspank.la \
+	$(top_builddir)/src/common/libeio.la
 
 slaunch_LDADD = \
 	$(convenience_libs) 
@@ -378,7 +377,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigstr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slaunch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slaunch.wrapper.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

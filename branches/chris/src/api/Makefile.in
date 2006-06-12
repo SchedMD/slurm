@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8386 2006-06-10 00:30:49Z morrone $
+# $Id: Makefile.am 8394 2006-06-12 23:10:43Z morrone $
 #
 # Makefile for slurm API library
 
