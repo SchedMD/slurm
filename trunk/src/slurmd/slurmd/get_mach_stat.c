@@ -271,7 +271,7 @@ extern int
 get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs) 
 {
 	int error_code = 0;
-#ifdef HAVE_SYS_VFS
+#ifdef HAVE_SYS_VFS_H
 	struct statfs stat_buf;
 	long   total_size;
 	float page_size;
