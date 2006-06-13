@@ -84,8 +84,6 @@ BEGIN_C_DECLS
 #  endif
 #endif
 
-#include <stdbool.h>
-
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
    typedef struct slurm_job_credential * slurm_cred_t;
@@ -491,6 +489,18 @@ typedef struct job_step_create_response_msg {
 	switch_jobinfo_t switch_job;	/* switch context, opaque data structure */
 } job_step_create_response_msg_t;
 
+typedef struct slurm_step_io_fds {
+	struct {
+		int fd;
+		uint32_t taskid;
+		uint32_t nodeid;
+	} in, out, err;
+} slurm_step_io_fds_t;
+
+#define SLURM_STEP_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},\
+                                   {1, (uint32_t)-1, (uint32_t)-1},\
+                                   {2, (uint32_t)-1, (uint32_t)-1}}
+
 typedef struct {
 	uint32_t gid;
 	uint16_t argc;
@@ -500,12 +510,13 @@ typedef struct {
 	char **env;
 	char *cwd;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
+	/* buffered stdio flag: 1 for line-buffered, 0 for unbuffered */
+	uint8_t buffered_stdio;
+	uint8_t labelio; /* 1 for labeled, 0 for unlabeled */
 	char *output_filename;
 	char *error_filename;
 	char *input_filename;
-	/* buffered stdio flag: 1 for line-buffered, 0 for unbuffered */
-	uint8_t buffered_stdio;
-	
+	slurm_step_io_fds_t *fds;
 } slurm_job_step_launch_t;
 
 typedef struct {
@@ -685,21 +696,6 @@ typedef struct partition_info update_part_msg_t;
 /* Opaque data type for slurm_step_ctx_*, slurm_step_launch, slurm_spawn, and
  * slurm_spawn_kill functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
-
-/* Opaque data type for slurm step standard I/O handler */
-typedef struct slurm_step_io slurm_step_io_t;
-
-typedef struct slurm_step_io_fds {
-	struct {
-		int fd;
-		uint32_t taskid;
-		uint32_t nodeid;
-	} in, out, err;
-} slurm_step_io_fds_t;
-
-#define SLURM_STEP_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},\
-                                   {1, (uint32_t)-1, (uint32_t)-1},\
-                                   {2, (uint32_t)-1, (uint32_t)-1}}
 
 
 /*****************************************************************************\
@@ -1428,16 +1424,6 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 /*****************************************************************************\
  *      SLURM JOB STEP CLIENT-SIDE I/O FUNCTIONS
 \*****************************************************************************/
-extern slurm_step_io_t *slurm_step_io_handler_create PARAMS((
-		slurm_step_io_fds_t fds,
-		int num_tasks, int num_nodes, char *io_key, bool label));
-
-extern int slurm_step_io_handler_start PARAMS((slurm_step_io_t *cio));
-
-int slurm_step_io_handler_finish(slurm_step_io_t *cio);
-
-void slurm_step_io_handler_destroy(slurm_step_io_t *cio);
-
 END_C_DECLS
 
 #endif

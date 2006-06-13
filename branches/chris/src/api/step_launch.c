@@ -55,6 +55,8 @@
 #include "src/common/fd.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/forward.h"
+#include "src/common/plugstack.h"
+#include "src/common/slurm_cred.h"
 
 #include "src/api/step_ctx.h"
 #include "src/api/step_pmi.h"
@@ -66,6 +68,9 @@
  **********************************************************************/
 static int _launch_tasks(slurm_step_ctx ctx,
 			 launch_tasks_request_msg_t *launch_msg);
+static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
+					  slurm_step_io_fds_t *fds,
+					  bool labelio);
 
 /**********************************************************************
  * Message handler declarations
@@ -159,13 +164,24 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	launch.cpus_allocated  = ctx->step_layout->cpus;
 	launch.global_task_ids = ctx->step_layout->tids;
 	
+	if (params->fds != NULL) {
+		struct step_launch_state *sls = ctx->launch_state;
+		sls->client_io = _setup_step_client_io(ctx, params->fds,
+						       params->labelio);
+		if (sls->client_io == NULL)
+			return SLURM_ERROR;
+		if (client_io_handler_start(sls->client_io) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+	}
+
 	launch.io_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
 	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
 	
 	for (i = 0; i < launch.nnodes; i++) {
-/* 		launch.io_port[i] = ntohs(job->client_io->listenport[ */
-/* 					     i%job->client_io->num_listen]); */
-		launch.io_port[i] = 0; /* FIXME */
+		client_io_t *client_io = ctx->launch_state->client_io;
+		int port_idx = i % client_io->num_listen;
+
+		launch.io_port[i] = ntohs(client_io->listenport[port_idx]);
 		launch.resp_port[i] = ntohs(ctx->launch_state->msg_port);
 	}
 
@@ -417,4 +433,28 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	hostlist_destroy(hostlist);
 
 	ret_list = slurm_send_recv_rc_packed_msg(&msg, STEP_LAUNCH_TIMEOUT);
+}
+
+static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
+					  slurm_step_io_fds_t *fds,
+					  bool labelio)
+{
+	int siglen;
+	char *sig;
+	client_io_t *client_io;
+
+	if (slurm_cred_get_signature(ctx->step_resp->cred, &sig, &siglen)
+	    < 0) {
+		debug("_setup_step_client_io slurm_cred_get_signature failed");
+		return NULL;
+	}
+		
+	client_io = client_io_handler_create(*fds,
+					     ctx->step_req->num_tasks,
+					     ctx->step_req->node_count,
+					     sig,
+					     labelio);
+
+	/* no need to free sig, it is just a pointer into the credential */
+	return client_io;
 }

@@ -319,14 +319,14 @@ int srun(int ac, char **av)
 			job_fatal(job, "Couldn't get cred signature");
 		}
 		
-		job->client_io = slurm_step_io_handler_create(
+		job->client_io = client_io_handler_create(
 			fds,
 			job->step_layout->num_tasks,
 			job->step_layout->num_hosts,
 			sig,
 			opt.labelio);
 		if (!job->client_io
-		    || (slurm_step_io_handler_start(job->client_io)
+		    || (client_io_handler_start(job->client_io)
 			!= SLURM_SUCCESS))
 			job_fatal(job, "failed to start IO handler");
 	}
@@ -369,9 +369,9 @@ int srun(int ac, char **av)
 	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	if (slurm_step_io_handler_finish(job->client_io) != SLURM_SUCCESS)
+	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
 		error ("IO handler did not finish correctly: %m");
-	slurm_step_io_handler_destroy(job->client_io);
+	client_io_handler_destroy(job->client_io);
 
 	if (slurm_mpi_exit () < 0)
 		; /* eh, ignore errors here */

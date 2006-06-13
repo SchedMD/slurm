@@ -40,6 +40,8 @@
 #include "src/common/dist_tasks.h"
 #include "src/common/eio.h"
 
+#include "src/api/step_io.h"
+
 #define STEP_CTX_MAGIC 0xc7a3
 
 struct step_launch_state {
@@ -50,6 +52,9 @@ struct step_launch_state {
 	eio_handle_t *msg_handle;
 	pthread_t msg_thread;
 	uint16_t msg_port;
+
+	/* client side io varibales */
+	client_io_t *client_io;
 };
 
 struct slurm_step_ctx_struct {

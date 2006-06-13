@@ -35,7 +35,7 @@
 #include "src/common/list.h"
 #include "src/common/dist_tasks.h"
 
-struct slurm_step_io {
+struct client_io {
 	/* input parameters - set (indirectly) by user */
 	int num_tasks;
 	int num_nodes;
@@ -72,5 +72,19 @@ struct slurm_step_io {
 			         * buffers in use.
 			         */
 };
+
+typedef struct client_io client_io_t;
+
+client_io_t *client_io_handler_create(slurm_step_io_fds_t fds,
+				      int num_tasks,
+				      int num_nodes,
+				      char *io_key,
+				      bool label);
+
+int client_io_handler_start(client_io_t *cio);
+
+int client_io_handler_finish(client_io_t *cio);
+
+void client_io_handler_destroy(client_io_t *cio);
 
 #endif /* !_HAVE_STEP_IO_H */

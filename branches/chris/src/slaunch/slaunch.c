@@ -105,6 +105,7 @@ int slaunch(int argc, char **argv)
 	job_step_create_request_msg_t step_req;
 	slurm_step_ctx step_ctx;
 	slurm_job_step_launch_t params;
+	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	int rc;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -168,10 +169,12 @@ int slaunch(int argc, char **argv)
 	params.env = NULL; /* FIXME */
 	params.cwd = opt.cwd;
 	params.slurmd_debug = opt.slurmd_debug;
+	params.buffered_stdio = !opt.unbuffered;
+	params.labelio = opt.labelio;
 	params.output_filename = NULL; /* FIXME */
 	params.input_filename = NULL; /* FIXME */
 	params.error_filename = NULL; /* FIXME */
-	params.buffered_stdio = !opt.unbuffered;
+	params.fds = &fds;
 
 	rc = slurm_step_launch(step_ctx, &params);
 	if (rc != SLURM_SUCCESS) {

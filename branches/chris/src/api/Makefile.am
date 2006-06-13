@@ -93,11 +93,12 @@ force:
 $(libslurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-# FIXME - don't export the client_io_ symbols once srun is no longer
+# FIXME - don't export the client_io_handler_ symbols once srun is no longer
 #         calling them directly
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   slurm_*;"; \
+	 echo "   client_io_handler_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
