@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     if values are not specified at job submit time
  -- Add retry logic for PMI communications, may be needed for highly parallel
     jobs.
+ -- Fix bug in slurmd where variable is used in logging message after freed
+    (slurmstepd rank info).
 
 * Changes in SLURM 1.1.1
 ========================
