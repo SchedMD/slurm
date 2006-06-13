@@ -288,7 +288,6 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 				      "NodeName %s", parent_alias);
 				/* parent_rank = -1; */
 			}
-			free(parent_alias);
 		}
 #else
 		/* In FRONT_END mode, one slurmd pretends to be all
@@ -308,6 +307,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	       rank, conf->node_name,
 	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
+	if (parent_alias)
+		free(parent_alias);
 
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
