@@ -142,6 +142,10 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
+	(void)_set_rlimit_env();
+	_set_prio_process_env();
+	(void)_set_umask_env();
+
 	/*
 	 * Create a job step context.
 	 */

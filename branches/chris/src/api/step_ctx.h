@@ -47,6 +47,10 @@
 struct step_launch_state {
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
+	int tasks_requested;
+	int tasks_start_success;
+	int tasks_start_failure;
+	int tasks_exited;
 
 	/* message thread variables */
 	eio_handle_t *msg_handle;

@@ -109,6 +109,7 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 		return SLURM_ERROR;
 	}
 
+	/* Initialize launch state structure */
 	ctx->launch_state = xmalloc(sizeof(struct step_launch_state));
 	if (ctx->launch_state == NULL) {
 		error("Failed to allocate memory for step launch state: %m");
@@ -116,6 +117,10 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	}
 	pthread_mutex_init(&ctx->launch_state->lock, NULL);
 	pthread_cond_init(&ctx->launch_state->cond, NULL);
+	ctx->launch_state->tasks_requested = ctx->step_req->num_tasks;
+	ctx->launch_state->tasks_start_success = 0;
+	ctx->launch_state->tasks_start_failure = 0;
+	ctx->launch_state->tasks_exited = 0;
 
 	/* Create message receiving socket and handler thread */
 	_msg_thr_create(ctx->launch_state);
@@ -191,20 +196,30 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 
 int slurm_step_launch_wait (slurm_step_ctx ctx)
 {
+	struct step_launch_state *sls = ctx->launch_state;
+
 	/* First wait for all tasks to complete */
-	sleep(2); /* FIXME */
+	pthread_mutex_lock(&sls->lock);
+	while (((sls->tasks_start_success + sls->tasks_start_failure)
+		< sls->tasks_requested)
+	       || (sls->tasks_exited < sls->tasks_start_success)) {
+		pthread_cond_wait(&sls->cond, &sls->lock);
+	}
 
 	/* Then shutdown the message handler thread */
-	eio_signal_shutdown(ctx->launch_state->msg_handle);
-	pthread_join(ctx->launch_state->msg_thread, NULL);
-	eio_handle_destroy(ctx->launch_state->msg_handle);
+	eio_signal_shutdown(sls->msg_handle);
+	pthread_join(sls->msg_thread, NULL);
+	eio_handle_destroy(sls->msg_handle);
 
 	/* Then wait for the IO thread to finish */
-	client_io_handler_finish(ctx->launch_state->client_io);
-	client_io_handler_destroy(ctx->launch_state->client_io);
+	client_io_handler_finish(sls->client_io);
+	client_io_handler_destroy(sls->client_io);
 
-	pthread_mutex_destroy(&ctx->launch_state->lock);
-	pthread_cond_destroy(&ctx->launch_state->cond);
+	pthread_mutex_unlock(&sls->lock);
+
+	/* FIXME - put these in an sls-specific desctructor */
+	pthread_mutex_destroy(&sls->lock);
+	pthread_cond_destroy(&sls->cond);
 }
 
 /**********************************************************************
@@ -297,8 +312,6 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	port = ((struct sockaddr_in *)&addr)->sin_port;
 	debug2("got message connection from %u.%u.%u.%u:%d",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
-	printf("got message connection from %u.%u.%u.%u:%d\n",
-	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
@@ -330,7 +343,7 @@ again:
 		      list_count(ret_list));
 	}
 	msg->ret_list = ret_list;
-			
+
 	_handle_msg(sls, msg); /* handle_msg frees msg */
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
@@ -344,14 +357,28 @@ static void
 _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
+
+	pthread_mutex_lock(&sls->lock);
+
+	if (msg->return_code == SLURM_SUCCESS)
+		sls->tasks_start_success += msg->count_of_pids;
+	else
+		sls->tasks_start_failure += msg->count_of_pids;
+
+	pthread_cond_signal(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
 }
 
 static void 
 _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
-	printf("Task exited, return code %d (0x%x)\n",
-	       msg->return_code, msg->return_code);
+	pthread_mutex_lock(&sls->lock);
+
+	sls->tasks_exited += msg->num_tasks;
+
+	pthread_cond_signal(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
 }
 
 static void
@@ -359,6 +386,12 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
 
+	pthread_mutex_lock(&sls->lock);
+
+	/* does nothing yet */
+
+	pthread_cond_signal(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
 	slurm_send_rc_msg(fail_msg, SLURM_SUCCESS);
 }
 
@@ -377,27 +410,27 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 
 	switch (msg->msg_type) {
 	case RESPONSE_LAUNCH_TASKS:
-		printf("received task launch\n");
+		debug2("received task launch\n");
 		_launch_handler(sls, msg);
 		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
 	case MESSAGE_TASK_EXIT:
-		printf("received task exit\n");
+		debug2("received task exit\n");
 		_exit_handler(sls, msg);
 		slurm_free_task_exit_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
-		printf("received srun node fail\n");
+		debug2("received srun node fail\n");
 		_node_fail_handler(sls, msg);
 		slurm_free_srun_node_fail_msg(msg->data);
 		break;
 	case PMI_KVS_PUT_REQ:
-		printf("PMI_KVS_PUT_REQ received\n");
+		debug2("PMI_KVS_PUT_REQ received\n");
 		rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
 		slurm_send_rc_msg(msg, rc);
 		break;
 	case PMI_KVS_GET_REQ:
-		printf("PMI_KVS_GET_REQ received\n");
+		debug2("PMI_KVS_GET_REQ received\n");
 		rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
