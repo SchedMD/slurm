@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "June 2006" "slurm.conf 1.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "June 2006" "slurm.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -218,6 +218,12 @@ LAM MPI and Open MPI, but specify "none" instead and let
 LAM MPI and Open MPI select the plugin using an option of 
 the srun command), mpich\-gm, mvapich, 
 and none (default, which works for many other versions of MPI).
+
+.TP
+\fBMessageTimeout\fR
+Time permitted for a round\-trip communication to complete
+in seconds. Default value is 5 seconds.
+
 .TP
 \fBPluginDir\fR
 Identifies the places in which to look for SLURM plugins. 

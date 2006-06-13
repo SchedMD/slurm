@@ -1,7 +1,7 @@
 /*****************************************************************************\
- * src/common/global_srun.c - functions needed by more than just srun
+ *  src/common/global_srun.c - functions needed by more than just srun
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grodnona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -30,8 +30,6 @@
 #include <slurm/slurm.h>
 #include "src/common/slurm_protocol_common.h"
 #include "src/api/step_io.h"
-
-#define FWD_SIGNAL_MAX_THREADS 64
 
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
@@ -144,7 +142,7 @@ typedef struct srun_job {
 	
 } srun_job_t;
 
-void fwd_signal(srun_job_t *job, int signal);
+void fwd_signal(srun_job_t *job, int signal, int max_threads);
 int job_active_tasks_on_host(srun_job_t *job, int hostid);
 
 #endif /* !_GLOBAL_SRUN_H */

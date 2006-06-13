@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurm_pmi.h - definitions PMI support functions internal to SLURM
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -60,7 +60,8 @@ struct kvs_comm_set {
 };
 
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr);
+int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
+		int pmi_rank);
 
 /* Wait for barrier and get full PMI Keyval space data */
 int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 

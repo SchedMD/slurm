@@ -285,20 +285,55 @@ _poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[],
 static void
 _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 {
-	if ((revents & POLLERR ) && obj->ops->handle_error) {
-		if ((*obj->ops->handle_error) (obj, objList) < 0) 
-			return;
+	if (revents & POLLNVAL) {
+		debug("POLLNVAL on fd %d, shutting down eio object", obj->fd);
+		obj->shutdown = true;
+		return;
 	}
 
-	if ((revents & POLLHUP) && obj->ops->handle_close) {
-		(*obj->ops->handle_close) (obj, objList);
-	} else if (((revents & POLLIN) || (revents & POLLHUP)) 
-	    && obj->ops->handle_read ) {
-		(*obj->ops->handle_read ) (obj, objList);
+	if (revents & POLLERR) {
+		if (obj->ops->handle_error) {
+			(*obj->ops->handle_error) (obj, objList);
+		} else if (obj->ops->handle_read) {
+			(*obj->ops->handle_read) (obj, objList);
+		} else if (obj->ops->handle_write) {
+			(*obj->ops->handle_write) (obj, objList);
+		} else {
+			debug("No handler for POLLERR");
+			obj->shutdown = true;
+		}
+		return;
 	}
 
-	if ((revents & POLLOUT) && obj->ops->handle_write) {
-		(*obj->ops->handle_write) (obj, objList);
+	if (revents & POLLHUP) {
+		if (obj->ops->handle_close) {
+			(*obj->ops->handle_close) (obj, objList);
+		} else if (obj->ops->handle_read) {
+			(*obj->ops->handle_read) (obj, objList);
+		} else if (obj->ops->handle_write) {
+			(*obj->ops->handle_write) (obj, objList);
+		} else {
+			debug("No handler for POLLHUP");
+			obj->shutdown = true;
+		}
+	}
+
+	if (revents & POLLIN) {
+		if (obj->ops->handle_read) {
+			(*obj->ops->handle_read ) (obj, objList);
+		} else {
+			debug("No handler for POLLIN");
+			obj->shutdown = true;
+		}
+	}
+
+	if (revents & POLLOUT) {
+		if (obj->ops->handle_write) {
+			(*obj->ops->handle_write) (obj, objList);
+		} else {
+			debug("No handler for POLLOUT");
+			obj->shutdown = true;
+		}
 	}
 }
 

@@ -47,9 +47,9 @@
 
 
 /* global variables relating to user options */
-char **remote_argv;
-int remote_argc;
-int _verbose;
+extern char **remote_argv;
+extern int remote_argc;
+extern int _verbose;
 
 /* mutually exclusive modes for srun */
 enum modes {
@@ -61,16 +61,12 @@ enum modes {
 	MODE_BATCH	= 5
 };
 
-enum modes mode;
+extern enum modes mode;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
-
-#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
-                                                     "all" : "per task"
-//typedef struct srun_job fname_job_t;
 
 typedef struct srun_options {
 
@@ -172,7 +168,7 @@ typedef struct srun_options {
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 } opt_t;
 
-opt_t opt;
+extern opt_t opt;
 
 /* return whether any constraints were specified by the user 
  * (if new constraints are added above, might want to add them to this

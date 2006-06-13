@@ -1,12 +1,18 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.2.0-pre2
+=============================
+
 * Changes in SLURM 1.2.0-pre1
 =============================
  -- Fix bug that could run a job's prolog more than once
  -- Permit batch jobs to be requeued, scontrol requeue <jobid>
  -- Send overcommit flag from srun in RPCs and have slurmd set SLURM_OVERCOMMIT
     flag at batch job launch time.
+ -- Added new configuration parameter MessageTimeout (replaces #define in 
+    the code)
+ -- Added support for OSX build.
 
 * Changes in SLURM 1.1.2
 ========================
@@ -15,6 +21,15 @@ documents those changes that are of interest to users and admins.
  -- Fix Bluegene configure to work with the new 64bit libs.
  -- Fix bug in controller that causes it to segfault when hit with a malformed
     message.
+ -- For "srun --attach=X" to other users job, report an error and exit (it 
+    previously just hung).
+ -- BLUEGENE - fix for doing correct small block logic on user error. 
+ -- BLUEGENE - Added support in slurmd to create a fake libdb2.so if it
+    doesn't exist so smap won't seg fault
+ -- BLUEGENE - "scontrol show job" reports "MaxProcs=None" and "Start=None"
+    if values are not specified at job submit time
+ -- Add retry logic for PMI communications, may be needed for highly parallel
+    jobs.
 
 * Changes in SLURM 1.1.1
 ========================
@@ -1712,5 +1727,5 @@ documents those changes that are of interest to users and admins.
  -- Fixed reattach bug when tasks have exited.
  -- Change directory to /tmp in slurmd if daemonizing.
  -- Logfiles are reopened on reconfigure.
-
+ 
 $Id$

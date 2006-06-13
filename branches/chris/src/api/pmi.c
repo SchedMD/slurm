@@ -46,7 +46,7 @@
  *****************************************************************************
  *  COPYRIGHT: For the implementation of the functions
  *
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -78,6 +78,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/common/macros.h"
 #include "src/common/malloc.h"
 
 #define KVS_STATE_LOCAL    0
@@ -1104,7 +1105,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	}
 
 	/* Send the RPC */
-	if (slurm_send_kvs_comm_set(&kvs_set) != SLURM_SUCCESS)
+	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank) != SLURM_SUCCESS)
 		rc = PMI_FAIL;
 	else
 		rc = PMI_SUCCESS;

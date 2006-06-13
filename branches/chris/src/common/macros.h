@@ -245,4 +245,9 @@ typedef enum {false, true} bool;
 #  endif
 #endif
 
+#ifndef HAVE_STRNDUP
+#  undef  strndup
+#  define strndup(src,size) strdup(src)
+#endif
+
 #endif /* !_MACROS_H */

@@ -1,7 +1,7 @@
 /*****************************************************************************\
- * src/srun/signals.c - signal handling for srun
+ *  src/srun/signals.c - signal handling for srun
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, and
  *             Morris Jette  <jette1@llnl.gov>
@@ -46,6 +46,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/global_srun.h"
 
+#include "src/srun/opt.h"
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 
@@ -154,7 +155,7 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 
 			info("sending Ctrl-C to job");
 			*last_intr_sent = time(NULL);
-			fwd_signal(job, SIGINT);
+			fwd_signal(job, SIGINT, opt.max_threads);
 
 		} else {
 			job_force_termination(job);
@@ -198,7 +199,7 @@ _sig_thr(void *arg)
 			job_force_termination(job);
 			break;
 		  default:
-			fwd_signal(job, signo);
+			fwd_signal(job, signo, opt.max_threads);
 			break;
 		}
 	}

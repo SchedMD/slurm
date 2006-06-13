@@ -44,6 +44,7 @@
 #include "src/common/net.h"
 #include "src/common/fd.h"
 #include "src/common/global_srun.h"
+#include "src/srun/opt.h"
 
 /* NOTE: MVAPICH has changed protocols without changing version numbers.
  * This makes support of MVAPICH very difficult. 
@@ -283,7 +284,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 			info ("mvapich: Received ABORT message from MPI Rank %d", rank);
 		} else
 			info ("mvapich: Received ABORT message from an MPI process.");
-		fwd_signal(job, SIGKILL);
+		fwd_signal(job, SIGKILL, opt.max_threads);
 	}
 
 	return; /* but not reached */

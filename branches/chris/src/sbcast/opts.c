@@ -38,6 +38,7 @@
 #  include "src/common/getopt.h"
 #endif
 
+#include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
 

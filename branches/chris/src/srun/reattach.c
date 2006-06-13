@@ -2,7 +2,7 @@
  * src/srun/reattach.c - reattach to a running job
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -58,6 +58,8 @@
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
 static int             active = 0;
+
+static bool            invalid_user = false;
 
 typedef enum {THD_NEW, THD_ACTIVE, THD_DONE, THD_FAILED} state_t;
 
@@ -244,6 +246,7 @@ _get_job_info(srun_step_t *s)
 static void
 _get_step_info(srun_step_t *s)
 {
+	uid_t my_uid;
 	job_step_info_response_msg_t *resp = NULL;
 
 	xassert(s->stepid != NO_VAL);
@@ -259,6 +262,15 @@ _get_step_info(srun_step_t *s)
 		goto done;
 	}
 
+	invalid_user = false;
+	if ((my_uid = getuid()) != 0) {	/* not user root */
+		if (my_uid != resp->job_steps->user_id) {
+			error("Invalid user id");
+			invalid_user = true;
+			/* We let the request continue and log the 
+			 * event in SlurmdLog for security purposes */
+		}
+	}
 	s->nodes  = xstrdup(resp->job_steps->nodes);
 	s->ntasks = resp->job_steps->num_tasks;
 
@@ -493,6 +505,9 @@ int reattach()
 	}
 
 	_attach_to_job(job);
+
+	if (invalid_user)
+		exit(1);
 
 	slurm_mutex_lock(&job->state_mutex);
 	while (job->state < SRUN_JOB_TERMINATED) {

@@ -630,6 +630,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
+	uint16_t msg_timeout;	/* message timeout */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
 	char *proctrack_type;	/* process tracking plugin type */

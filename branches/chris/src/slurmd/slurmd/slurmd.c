@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <dlfcn.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -119,6 +120,9 @@ static void      _increment_thd_count();
 static void      _decrement_thd_count();
 static void      _wait_for_all_threads();
 static int       _set_slurmd_spooldir(void);
+#ifdef HAVE_BG_FILES
+static int       _set_bluegene_libdb2(void);
+#endif
 static void      _usage();
 static void      _handle_connection(slurm_fd fd, slurm_addr *client);
 static void     *_service_connection(void *);
@@ -583,9 +587,8 @@ _read_config()
 		fatal("Unable to establish controller machine");
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
-
 	conf->use_pam = cf->use_pam;
-
+	
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
 }
@@ -823,6 +826,16 @@ _slurmd_init()
 		return SLURM_FAILURE;
 	}
 
+#ifdef HAVE_BG_FILES
+	/* 
+	 * Create a fake libdb2.so if necessary.
+	 */
+	if (_set_bluegene_libdb2() < 0) {
+		error("Unable to create libdb2.so");
+		return SLURM_FAILURE;
+	}
+#endif
+
 	if (conf->cleanstart) {
 		/* 
 		 * Need to kill any running slurmd's here
@@ -1013,6 +1026,41 @@ _set_slurmd_spooldir(void)
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_BG_FILES
+/* 
+ * make sure a libdb2.so exists so things linked to a bluegene plugin 
+ * won't seg fault 
+ */
+static int
+_set_bluegene_libdb2(void)
+{
+	void *handle = NULL;
+	debug3("checking for fake libdb2.so");
+
+	handle = dlopen("libdb2.so", RTLD_LAZY);
+	if (handle) {
+		debug("libdb2.so already here");
+		return SLURM_SUCCESS;
+	}
+#ifdef LIBSLURM_SO
+	if (symlink(LIBSLURM_SO, "/usr/lib64/libdb2.so.1") < 0) {
+		if (errno != EEXIST) {
+			fatal("symlink(/usr/lib64/libdb2.so.1): %m");
+			return SLURM_ERROR;
+		}
+	}
+	if (symlink(LIBSLURM_SO, "/usr/lib64/libdb2locale.so.1") < 0) {
+		if (errno != EEXIST) {
+			fatal("symlink(/usr/lib64/libdb2locale.so.1): %m");
+			return SLURM_ERROR;
+		}
+	}
+#else 
+	fatal("LIBSLURM_SO is not defined!");
+#endif
+	return SLURM_SUCCESS;
+}
+#endif
 
 /* Kill the currently running slurmd 
  *

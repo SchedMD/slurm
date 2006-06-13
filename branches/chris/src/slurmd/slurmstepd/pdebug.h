@@ -26,6 +26,7 @@
 #ifndef _PDEBUG_H
 #define _PDEBUG_H
 
+#include <unistd.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

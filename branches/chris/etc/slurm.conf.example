@@ -314,6 +314,9 @@ JobAcctType=jobacct/none
 #                         node's state to DOWN. If set to 0, this feature
 #                         is disabled.
 #
+#    "MessageTimeout"   : amount of time, in seconds, allocated for a 
+#			  round-trip communication before it times out.
+#
 #    "InactiveLimit"    : The interval, in seconds, a job or job step is 
 #                         permitted to be inactive (srun command not responding)
 #                         before being terminated.
@@ -332,6 +335,7 @@ JobAcctType=jobacct/none
 #
 # SlurmctldTimeout=300	# Defaults to 300 seconds
 # SlurmdTimeout=300	# Defaults to 300 seconds
+# MessageTimeout=10	# Defaults to 5 seconds
 # InactiveLimit=600	# Defaults to 0 (unlimited)
 # MinJobAge=30		# Defaults to 300 seconds
 # KillWait=10		# Defaults to 30 seconds
