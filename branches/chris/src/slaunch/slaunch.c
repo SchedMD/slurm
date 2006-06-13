@@ -142,11 +142,17 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
+	/*
+	 * Create a job step context.
+	 */
 	step_req.job_id = opt.jobid;
 	step_req.user_id = getuid();
-	step_req.node_count = 1;
+	step_req.node_count = opt.min_nodes;
 	step_req.cpu_count = 1;
-	step_req.num_tasks = 1;
+	if (opt.nprocs_set)
+		step_req.num_tasks = opt.nprocs;
+	else
+		step_req.num_tasks = 1;
 	step_req.relative = 0;
 	step_req.task_dist = SLURM_DIST_CYCLIC;
 	step_req.port = 0;      /* port to contact initiating srun */
@@ -161,6 +167,9 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
+	/*
+	 * Use the job step context to launch the tasks.
+	 */
 	params.gid = opt.gid;
 	params.argc = opt.argc;
 	params.argv = opt.argv;
@@ -183,7 +192,11 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
-	sleep(2);
+	/* Wait for the tasks to finish. */
+	slurm_step_launch_wait(step_ctx);
+
+	/* Clean up. */
+	slurm_step_ctx_destroy(step_ctx);
 }
 
 static char *

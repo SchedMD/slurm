@@ -53,7 +53,7 @@ struct step_launch_state {
 	pthread_t msg_thread;
 	uint16_t msg_port;
 
-	/* client side io varibales */
+	/* client side io variables */
 	client_io_t *client_io;
 };
 

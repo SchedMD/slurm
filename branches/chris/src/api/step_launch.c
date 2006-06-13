@@ -189,7 +189,23 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	return SLURM_SUCCESS;
 }
 
-/* slurm_step_launch_wait */
+int slurm_step_launch_wait (slurm_step_ctx ctx)
+{
+	/* First wait for all tasks to complete */
+	sleep(2); /* FIXME */
+
+	/* Then shutdown the message handler thread */
+	eio_signal_shutdown(ctx->launch_state->msg_handle);
+	pthread_join(ctx->launch_state->msg_thread, NULL);
+	eio_handle_destroy(ctx->launch_state->msg_handle);
+
+	/* Then wait for the IO thread to finish */
+	client_io_handler_finish(ctx->launch_state->client_io);
+	client_io_handler_destroy(ctx->launch_state->client_io);
+
+	pthread_mutex_destroy(&ctx->launch_state->lock);
+	pthread_cond_destroy(&ctx->launch_state->cond);
+}
 
 /**********************************************************************
  * Message handler functions
