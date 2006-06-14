@@ -196,13 +196,15 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	xfree(cred->buf);
-
 	/*
-	 * Note: Munge cred not encoded with xmalloc()
+	 * Note: Munge cred string and application-specific data in 
+	 *  "buf" not encoded with xmalloc()
 	 */
 	if (cred->m_str)
 		free(cred->m_str);
+	if (cred->buf)
+		free(cred->buf);
+
 	xfree(cred);
 	return SLURM_SUCCESS;
 }
