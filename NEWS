@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.14
+=========================
+ -- Fix for bad xfree() call in auth/munge which can raise an assert().
+
 * Changes in SLURM 1.0.13
 =========================
  -- Fix for AllowGroups option to work when the /etc/group file doesn't 
