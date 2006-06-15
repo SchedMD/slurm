@@ -349,7 +349,10 @@ int srun(int ac, char **av)
 	 * If job is "forcefully terminated" exit immediately.
 	 *
 	 */
-	if (job->state == SRUN_JOB_FAILED) {
+	if (job->state == SRUN_JOB_CANCELLED) {
+		info("Cancelling job");
+		srun_job_destroy(job, NO_VAL);
+	} else if (job->state == SRUN_JOB_FAILED) {
 		info("Terminating job");
 		srun_job_destroy(job, 0);
 	} else if (job->state == SRUN_JOB_FORCETERM) {
