@@ -706,6 +706,9 @@ _print_daemons (void)
 	if ((n = slurm_conf_get_nodename(me))) {
 		d = 1;
 		xfree(n);
+	} else if ((n = slurm_conf_get_nodename("localhost"))) {
+		d = 1;
+		xfree(n);
 	}
 
 	strcpy(daemon_list, "");
