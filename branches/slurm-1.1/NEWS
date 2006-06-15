@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix bug in scontrol show daemons if NodeName=localhost will work now to
     display slurmd as place where it is running.  
+ -- Patch from HP for init nodes before init_bitmaps
+ -- ctrl-c killed sruns will result in job state as cancelled instead of 
+    completed.
 
 * Changes in SLURM 1.1.2
 ========================
