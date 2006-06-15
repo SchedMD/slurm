@@ -14,6 +14,11 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.3
+========================
+ -- Fix bug in scontrol show daemons if NodeName=localhost will work now to
+    display slurmd as place where it is running.  
+
 * Changes in SLURM 1.1.2
 ========================
  -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
