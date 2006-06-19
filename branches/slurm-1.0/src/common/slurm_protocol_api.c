@@ -85,7 +85,7 @@ void slurm_conf_install_fork_handlers()
 {
 	int err;
 	if ((err = pthread_atfork(NULL, NULL, &slurm_conf_mutex_init)))
-		lsd_fatal_error(__FILE__, __LINE__, "list atfork install");
+		fatal("can't install slurm_conf atfork handler");
 	return;
 }
 /* slurm_set_api_config
