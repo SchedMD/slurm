@@ -96,7 +96,7 @@ static display_data_t display_data_job[] = {
 };
 
 static display_data_t options_data_job[] = {
-	{G_TYPE_STRING, PARTITION_PAGE, "Partition", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, JOB_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, JOB_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -387,5 +387,5 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	int job_id = -1;
-	gtk_tree_model_get(model, &iter, SORTID_JOBID, &job_id, -1);
+	gtk_tree_model_get(model, iter, SORTID_JOBID, &job_id, -1);
 }

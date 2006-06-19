@@ -30,9 +30,11 @@ sview_parameters_t params;
 int adding = 1;
 int fini = 0;
 bool toggled = FALSE;
+List popup_list;
+	
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
-	{G_TYPE_NONE, PARTITION_PAGE, "Partitions", TRUE, -1, 
+	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1, 
 	 refresh_main, get_info_part, set_menus_part, row_clicked_part, NULL},
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
 	 refresh_main, get_info_job, set_menus_job, row_clicked_job, NULL},
@@ -218,6 +220,7 @@ static gboolean _delete(GtkWidget *widget,
                         gpointer data)
 {
 	gtk_main_quit ();
+	list_destroy(popup_list);
 	fini = 1;
 	return FALSE;
 }
@@ -269,7 +272,7 @@ int main(int argc, char *argv[])
 	}
 	/* tell signal we are done adding */
 	adding = 0;
-	
+	popup_list = list_create(destroy_popup_info);
 	gtk_widget_show_all (window);
 
 	/* Finished! */

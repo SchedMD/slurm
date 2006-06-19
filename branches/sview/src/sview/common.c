@@ -127,7 +127,7 @@ static void _selected_page(GtkMenuItem *menuitem,
 	treedata_t *treedata = (treedata_t *)display_data->user_data;
 
 	switch(display_data->extra) {
-	case PARTITION_PAGE:
+	case PART_PAGE:
 		popup_all_part(treedata->model, &treedata->iter, 
 			       display_data->id);
 		break;
@@ -144,7 +144,8 @@ static void _selected_page(GtkMenuItem *menuitem,
 				display_data->id);
 		break;
 	default:
-		g_print("got %d\n",display_data->id);
+		g_print("common got %d %d\n", display_data->extra,
+			display_data->id);
 	}
 }
 
@@ -418,3 +419,43 @@ extern void redo_popup(GtkWidget *widget, GdkEventButton *event,
 			       gdk_event_get_time((GdkEvent*)event));
 	}
 }
+
+extern void destroy_specific_info(void *arg)
+{
+	specific_info_t *spec_info = (specific_info_t *)arg;
+	if(spec_info) {
+		xfree(spec_info->title);
+		xfree(spec_info);
+	}
+}
+
+extern void destroy_popup_info(void *arg)
+{
+	popup_info_t *popup_win = (popup_info_t *)arg;
+	if(popup_win) {
+		destroy_specific_info(popup_win->spec_info);
+		xfree(popup_win);
+	}
+}
+
+extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
+{
+	ListIterator itr = list_iterator_create(popup_list);
+	popup_info_t *popup_win = NULL;
+	
+	while((popup_win = list_next(itr))) {
+		if(popup_win->spec_info) {
+			if(!strcmp(popup_win->spec_info->title, title)) {
+				//g_print("removing %s\n", title);
+				list_remove(itr);
+				destroy_popup_info(popup_win);
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	
+
+	return FALSE;
+}
+

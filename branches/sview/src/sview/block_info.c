@@ -74,11 +74,15 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_USE, "Node Use", FALSE, -1},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
+static display_data_t popup_data_block[SORTID_CNT+1];
 
 static display_data_t options_data_block[] = {
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Partition", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, BLOCK_PAGE},
@@ -410,16 +414,16 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			end[Z] = (number % 10);
 			j += 3;
 			
-			if(block_ptr->state != RM_PARTITION_FREE) 
-				block_ptr->size += set_grid_bg(start,
-							       end,
-							       count,
-							       1);
-			else
-				block_ptr->size += set_grid_bg(start, 
-							       end, 
-							       count, 
-							       0);
+			/* if(block_ptr->state != RM_PARTITION_FREE)  */
+/* 				block_ptr->size += set_grid_bg(start, */
+/* 							       end, */
+/* 							       count, */
+/* 							       1); */
+/* 			else */
+/* 				block_ptr->size += set_grid_bg(start,  */
+/* 							       end,  */
+/* 							       count,  */
+/* 							       0); */
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;
@@ -431,10 +435,10 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			start[Y] = (number % 100) / 10;
 			start[Z] = (number % 10);
 			j+=3;
-			block_ptr->size += set_grid_bg(start, 
-							start, 
-							count, 
-							0);
+			/* block_ptr->size += set_grid_bg(start,  */
+/* 							start,  */
+/* 							count,  */
+/* 							0); */
 			if(block_ptr->nodes[j] != ',')
 				break;
 		}
@@ -703,6 +707,6 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 
-	gtk_tree_model_get(model, &iter, SORTID_BLOCK, &name, -1);
+	gtk_tree_model_get(model, iter, SORTID_BLOCK, &name, -1);
 
 }

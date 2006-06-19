@@ -42,28 +42,29 @@ enum {
 };
 
 static display_data_t display_data_part[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1},
-	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part},
 #endif
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
+static display_data_t popup_data_part[SORTID_CNT+1];
 
 static display_data_t options_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PARTITION_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PARTITION_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PARTITION_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PART_PAGE},
 #endif
-	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, PARTITION_PAGE},
-	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, PARTITION_PAGE},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, PART_PAGE},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, PART_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -137,6 +138,36 @@ static void _append_part_record(partition_info_t *part_ptr,
 	
 }
 
+extern int get_new_info_part(partition_info_msg_t **part_ptr)
+{
+	static partition_info_msg_t *part_info_ptr = NULL;
+	static partition_info_msg_t *new_part_ptr = NULL;
+	int error_code = SLURM_SUCCESS;
+
+	if (part_info_ptr) {
+		error_code = slurm_load_partitions(part_info_ptr->last_update, 
+						   &new_part_ptr, SHOW_ALL);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_partition_info_msg(part_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_NO_CHANGE_IN_DATA;
+			new_part_ptr = part_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_partitions((time_t) NULL, 
+						   &new_part_ptr, SHOW_ALL);
+	}
+	
+	part_info_ptr = new_part_ptr;
+	*part_ptr = new_part_ptr;
+	return error_code;
+}
+
+extern void refresh_part(GtkAction *action, gpointer user_data)
+{
+	g_print("hey got here part\n");
+}
+
 extern void get_info_part(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
@@ -153,24 +184,24 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	
 	if(display_data)
 		local_display_data = display_data;
-	if(!table)
+	
+	if(!table) {
+		for(i=0; i<SORTID_CNT+1; i++) {
+			memcpy(&popup_data_part[i], &display_data_part[i], 
+			       sizeof(display_data_t));
+		}
 		return;
+	}
 	if(new_part_ptr && toggled)
 		goto got_toggled;
-	if (part_info_ptr) {
-		error_code = slurm_load_partitions(part_info_ptr->last_update, 
-						   &new_part_ptr, SHOW_ALL);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_partition_info_msg(part_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_part_ptr = part_info_ptr;
-			return;
-		}
-	} else {
-		error_code = slurm_load_partitions((time_t) NULL, 
-						   &new_part_ptr, SHOW_ALL);
+	
+	if((error_code = get_new_info_part(&new_part_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		if(!display_widget)
+			goto display_it;
+		return;
 	}
+	
 got_toggled:
 	if(display_widget)
 		gtk_widget_destroy(display_widget);
@@ -186,7 +217,7 @@ got_toggled:
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		return;
 	}
-		
+display_it:		
 	if (new_part_ptr)
 		recs = new_part_ptr->record_count;
 	else
@@ -233,6 +264,147 @@ got_toggled:
 	return;
 }
 
+extern void specific_info_part(popup_info_t *popup_win)
+{
+	int error_code = SLURM_SUCCESS;
+	int i, j, recs;
+	static partition_info_msg_t *part_info_ptr = NULL;
+	static partition_info_msg_t *new_part_ptr = NULL;
+	specific_info_t *spec_info = popup_win->spec_info;
+	partition_info_t part;
+	char error_char[50];
+	GtkTreeIter iter;
+	GtkListStore *liststore = NULL;
+	GtkWidget *label = NULL;
+	GtkTreeView *tree_view = NULL;
+	hostlist_t hostlist = NULL;
+	hostlist_iterator_t itr = NULL;
+	char *host = NULL;
+	char *name = NULL;
+	int found = 0;
+	
+	if(spec_info->display_widget)
+		gtk_widget_destroy(spec_info->display_widget);
+	else {
+		gtk_event_box_set_above_child(
+			GTK_EVENT_BOX(popup_win->event_box), 
+			FALSE);
+		g_signal_connect(G_OBJECT(popup_win->event_box), 
+				 "button-press-event",
+				 G_CALLBACK(redo_popup),
+				 local_display_data);
+		
+		label = gtk_label_new(spec_info->title);
+		gtk_container_add(GTK_CONTAINER(popup_win->event_box), label);
+		gtk_widget_show(label);
+	}
+
+	if(new_part_ptr && toggled)
+		goto display_it;
+	
+	if((error_code = get_new_info_part(&new_part_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) 
+		goto display_it;
+
+	if (error_code != SLURM_SUCCESS) {
+		sprintf(error_char, "slurm_load_partitions: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(popup_win->table, 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		
+		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+		return;
+	}
+display_it:	
+			
+	if (new_part_ptr)
+		recs = new_part_ptr->record_count;
+	else
+		recs = 0;
+	
+	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
+	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+
+	g_signal_connect(G_OBJECT(tree_view), "row-activated",
+			 G_CALLBACK(row_clicked_part),
+			 new_part_ptr);
+	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
+			 G_CALLBACK(_set_up_button),
+			 new_part_ptr);
+	
+	gtk_table_attach_defaults(popup_win->table, 
+				  GTK_WIDGET(tree_view),
+				  0, 1, 0, 1); 
+	gtk_widget_show(GTK_WIDGET(tree_view));
+	
+	liststore = create_liststore(display_data_part, SORTID_CNT);
+
+	load_header(tree_view, display_data_part);
+
+	switch(spec_info->type) {
+	case NODE_PAGE:
+		hostlist = hostlist_create((char *)spec_info->data);	
+		itr = hostlist_iterator_create(hostlist);
+		name = hostlist_next(itr);
+		hostlist_iterator_destroy(itr);
+		hostlist_destroy(hostlist);
+		if(name == NULL) {
+			g_print("nodelist was empty");
+			return;
+		}		
+		break;
+	case JOB_PAGE:
+		name = strdup((char *)spec_info->data);
+		break;
+	default:
+		g_print("Unkown type");
+		break;
+	} 
+
+	for (i = 0; i < recs; i++) {
+		j = 0;
+		part = new_part_ptr->partition_array[i];
+		
+		if (!part.nodes || (part.nodes[0] == '\0'))
+			continue;	/* empty partition */
+		switch(spec_info->type) {
+		case NODE_PAGE:
+			hostlist = hostlist_create(part.nodes);	
+			itr = hostlist_iterator_create(hostlist);
+			found = 0;
+			while((host = hostlist_next(itr)) != NULL) { 
+				if(!strcmp(host, name)) {
+					free(host);
+					found = 1;
+					break; 
+				}
+				free(host);
+			}
+			hostlist_iterator_destroy(itr);
+			hostlist_destroy(hostlist);
+			break;
+		case JOB_PAGE:
+			if(!strcmp(part.name, name)) 
+				found = 1;
+			break;
+		default:
+			g_print("Unkown type");
+			break;
+		}
+		
+		if(found)
+			_append_part_record(&part, liststore, &iter, i);
+	}
+	free(name);
+		
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
+	g_object_unref(GTK_TREE_MODEL(liststore));
+	part_info_ptr = new_part_ptr;
+	return;
+}
 
 extern void set_menus_part(GtkTreeView *tree_view, GtkTreePath *path, 
 			   GtkMenu *menu, int type)
@@ -243,6 +415,9 @@ extern void set_menus_part(GtkTreeView *tree_view, GtkTreePath *path,
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_part);
+		break;
+	case POPUP_CLICKED:
+		make_popup_fields_menu(menu, popup_data_part);
 		break;
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);
@@ -287,21 +462,86 @@ extern void row_clicked_part(GtkTreeView *tree_view,
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
-	GtkScrolledWindow *window = create_scrolled_window();
-	GtkBin *bin = GTK_BIN(&window->container);
-	GtkViewport *view = GTK_VIEWPORT(bin->child);
-	GtkBin *bin2 = GTK_BIN(&view->bin);
-	GtkTable *table = GTK_TABLE(bin2->child);
-	GtkWidget *popup = gtk_dialog_new();
-	GtkWidget *event_box = gtk_event_box_new();
+	char *part = NULL;
+	char title[100];
+	ListIterator itr = NULL;
+	popup_info_t *popup_win = NULL;
+	GtkScrolledWindow *window = NULL;
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkBin *bin2 = NULL;
+	GtkTable *table = NULL;
+	GtkWidget *popup = NULL;
+			
+	gtk_tree_model_get(model, iter, SORTID_NAME, &part, -1);
+	switch(id) {
+	case JOB_PAGE:
+		snprintf(title, 100, "Job(s) in partition %s", part);
+		break;
+	case NODE_PAGE:
+		snprintf(title, 100, "Node(s) in partition %s", part);
+		break;
+	case BLOCK_PAGE: 
+		snprintf(title, 100, "Block(s) in partition %s", part);
+		break;
+	case ADMIN_PAGE: 
+		snprintf(title, 100, "Admin page for partition %s", part);
+		break;
+	case SUBMIT_PAGE: 
+		snprintf(title, 100, "Submit job in partition %s", part);
+		break;
+	default:
+		g_print("part got %d\n", id);
+	}
 	
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   event_box, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			 GTK_WIDGET(window), TRUE, TRUE, 0);
+	itr = list_iterator_create(popup_list);
+	while((popup_win = list_next(itr))) {
+		if(popup_win->spec_info)
+			if(!strcmp(popup_win->spec_info->title, title)) {
+				break;
+			} 
+	}
+	list_iterator_destroy(itr);
+
+	if(!popup_win) {
+		popup_win = xmalloc(sizeof(popup_info_t));
+		list_push(popup_list, popup_win);
+	
+		popup_win->spec_info = xmalloc(sizeof(specific_info_t));
+		popup_win->popup = gtk_dialog_new();
+		gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
+					    600, 400);
+		gtk_window_set_title(GTK_WINDOW(popup_win->popup), "Sview");
+	
+		popup = popup_win->popup;
+
+		popup_win->event_box = gtk_event_box_new();
+		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+				   popup_win->event_box, FALSE, FALSE, 0);
+		
+		
+		window = create_scrolled_window();
+		bin = GTK_BIN(&window->container);
+		view = GTK_VIEWPORT(bin->child);
+		bin2 = GTK_BIN(&view->bin);
+		
+		popup_win->table = GTK_TABLE(bin2->child);
+	
+		gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+				 GTK_WIDGET(window), TRUE, TRUE, 0);
+		
+		popup_win->spec_info->type = NODE_PAGE;
+		popup_win->spec_info->title = xstrdup(title);
+		popup_win->spec_info->display_widget = NULL;
+
+		g_signal_connect(G_OBJECT(popup_win->popup), "delete_event",
+			 G_CALLBACK(delete_popup), 
+			 popup_win->spec_info->title);
+		gtk_widget_show_all(popup_win->popup);
+	}
 	
 	toggled = true;
-	
+			
 	switch(id) {
 	case JOB_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
@@ -309,7 +549,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
-		specific_info_node(table, event_box, name);
+		popup_win->spec_info->data = name;
+		specific_info_node(popup_win);
 		break;
 	case BLOCK_PAGE: 
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
@@ -322,12 +563,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 		break;
 	default:
-		g_print("got %d\n", id);
+		g_print("part got %d\n", id);
 	}
 	
-	gtk_window_set_default_size(GTK_WINDOW(popup), 600, 400);
-	gtk_window_set_title(GTK_WINDOW(popup), "Sview");
-	gtk_widget_show_all(popup);
-
 	toggled = false;	
 }
