@@ -80,6 +80,14 @@ void slurm_conf_mutex_init()
 {
 	pthread_mutex_init(&config_lock, NULL); 
 }
+
+void slurm_conf_install_fork_handlers()
+{
+	int err;
+	if ((err = pthread_atfork(NULL, NULL, &slurm_conf_mutex_init)))
+		lsd_fatal_error(__FILE__, __LINE__, "list atfork install");
+	return;
+}
 /* slurm_set_api_config
  * sets the slurm_protocol_config object
  * NOT THREAD SAFE
