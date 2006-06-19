@@ -177,9 +177,13 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.15
+=========================
+
 * Changes in SLURM 1.0.14
 =========================
  -- Fix for bad xfree() call in auth/munge which can raise an assert().
+ -- Fix installed fork handlers for the conf mutex for slurmd and slurmstepd.
 
 * Changes in SLURM 1.0.13
 =========================
