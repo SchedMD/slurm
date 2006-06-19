@@ -67,6 +67,11 @@ enum controller_id {
  */
 void slurm_conf_mutex_init();
 
+/* slurm_conf_mutex_init
+ * installs what to do with a fork with the conf mutex
+ */
+void slurm_conf_install_fork_handlers();
+
 /* slurm_set_api_config
  * sets the slurm_protocol_config object
  * IN protocol_conf		-  slurm_protocol_config object

@@ -220,7 +220,8 @@ main (int argc, char *argv[])
 
 	_install_fork_handlers();
 	list_install_fork_handlers();
-
+	slurm_conf_install_fork_handlers();
+	
 	_msg_engine();
 
 	/*
