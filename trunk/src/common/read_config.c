@@ -1158,6 +1158,15 @@ slurm_conf_mutex_init(void)
 	pthread_mutex_init(&conf_lock, NULL);
 }
 
+extern void 
+slurm_conf_install_fork_handlers()
+{
+	int err;
+	if ((err = pthread_atfork(NULL, NULL, &slurm_conf_mutex_init)))
+		fatal("can't install slurm_conf atfork handler");
+	return;
+}
+
 extern int
 slurm_conf_destroy(void)
 {
