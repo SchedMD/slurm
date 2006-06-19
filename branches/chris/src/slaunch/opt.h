@@ -93,9 +93,12 @@ typedef struct srun_options {
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 
-	char *ofname;		/* --output -o filename         */
-	char *ifname;		/* --input  -i filename         */
-	char *efname;		/* --error, -e filename         */
+	char *local_ofname;	/* --local-output, -o filename  */
+	char *local_ifname;	/* --local-input,  -i filename  */
+	char *local_efname;	/* --local-error, -e filename   */
+	char *remote_ofname;	/* --remote-output filename     */
+	char *remote_ifname;	/* --remote-input filename      */
+	char *remote_efname;	/* --remote-error filename      */
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	core_format_t core_type;/* --core= 	        	*/

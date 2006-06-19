@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  opt.c - options processing for srun
+ *  opt.c - options processing for slaunch
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -700,9 +700,12 @@ static void _opt_default()
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
 
-	opt.ofname = NULL;
-	opt.ifname = NULL;
-	opt.efname = NULL;
+	opt.local_ofname = NULL;
+	opt.local_ifname = NULL;
+	opt.local_efname = NULL;
+	opt.remote_ofname = NULL;
+	opt.remote_ifname = NULL;
+	opt.remote_efname = NULL;
 
 	opt.core_type = CORE_DEFAULT;
 
@@ -813,9 +816,9 @@ env_vars_t env_vars[] = {
   {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
-  {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
-  {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL           },
-  {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL           },
+  {"SLURM_STDERRMODE",    OPT_STRING,     &opt.local_efname,  NULL           },
+  {"SLURM_STDINMODE",     OPT_STRING,     &opt.local_ifname,  NULL           },
+  {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.local_ofname,  NULL           },
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
@@ -976,14 +979,14 @@ void set_options(const int argc, char **argv, int first)
 	struct utsname name;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
-		{"constraint",    required_argument, 0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
-		{"error",         required_argument, 0, 'e'},
+		{"local-error",   required_argument, 0, 'e'},
+		{"remote-error",  required_argument, 0, 'E'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
-		{"input",         required_argument, 0, 'i'},
-		{"immediate",     no_argument,       0, 'I'},
+		{"local-input",   required_argument, 0, 'i'},
+		{"remote-input",  required_argument, 0, 'I'},
 		{"join",          no_argument,       0, 'j'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
@@ -992,8 +995,9 @@ void set_options(const int argc, char **argv, int first)
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"output",        required_argument, 0, 'o'},
-		{"overcommit",    no_argument,       0, 'O'},
+		{"local-output",  required_argument, 0, 'o'},
+		{"remote-output", required_argument, 0, 'O'},
+		{"overcommit",    no_argument,       0, 'C'},
 		{"partition",     required_argument, 0, 'p'},
 		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
@@ -1046,8 +1050,8 @@ void set_options(const int argc, char **argv, int first)
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
-		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
+	char *opt_string = "+c:Cd:D:e:E:g:Hi:I:jJ:kKlm:n:N:"
+		"o:O:p:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1082,10 +1086,7 @@ void set_options(const int argc, char **argv, int first)
 				_get_int(optarg, "cpus-per-task");
 			break;
 		case (int)'C':
-			if(!first && opt.constraints)
-				break;
-			xfree(opt.constraints);
-			opt.constraints = xstrdup(optarg);
+			opt.overcommit = true;
 			break;
 		case (int)'d':
 			if(!first && opt.slurmd_debug)
@@ -1103,14 +1104,22 @@ void set_options(const int argc, char **argv, int first)
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
-			if(!first && opt.efname)
+			if(!first && opt.local_efname)
 				break;
-			
-			xfree(opt.efname);
+			xfree(opt.local_efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
-				opt.efname = xstrdup("/dev/null");
+				opt.local_efname = xstrdup("/dev/null");
 			else
-				opt.efname = xstrdup(optarg);
+				opt.local_efname = xstrdup(optarg);
+			break;
+		case (int)'E':
+			if(!first && opt.remote_efname)
+				break;
+			xfree(opt.remote_efname);
+			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+				opt.remote_efname = xstrdup("/dev/null");
+			else
+				opt.remote_efname = xstrdup(optarg);
 			break;
 		case (int)'g':
 			if(!first && opt.geometry)
@@ -1122,14 +1131,16 @@ void set_options(const int argc, char **argv, int first)
 			opt.hold = true;
 			break;
 		case (int)'i':
-			if(!first && opt.ifname)
+			if(!first && opt.local_ifname)
 				break;
-						
-			xfree(opt.ifname);
-			opt.ifname = xstrdup(optarg);
+			xfree(opt.local_ifname);
+			opt.local_ifname = xstrdup(optarg);
 			break;
 		case (int)'I':
-			opt.immediate = true;
+			if(!first && opt.remote_ifname)
+				break;
+			xfree(opt.remote_ifname);
+			opt.remote_ifname = xstrdup(optarg);
 			break;
 		case (int)'j':
 			opt.join = true;
@@ -1185,17 +1196,24 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'o':
-			if(!first && opt.ofname)
+			if(!first && opt.local_ofname)
 				break;			
 			
-			xfree(opt.ofname);
+			xfree(opt.local_ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
-				opt.ofname = xstrdup("/dev/null");
+				opt.local_ofname = xstrdup("/dev/null");
 			else
-				opt.ofname = xstrdup(optarg);
+				opt.local_ofname = xstrdup(optarg);
 			break;
 		case (int)'O':
-			opt.overcommit = true;
+			if(!first && opt.remote_ofname)
+				break;			
+			
+			xfree(opt.remote_ofname);
+			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+				opt.remote_ofname = xstrdup("/dev/null");
+			else
+				opt.remote_ofname = xstrdup(optarg);
 			break;
 		case (int)'p':
 			if(!first && opt.partition)

@@ -79,6 +79,9 @@
 #include "src/slaunch/slaunch.h"
 #include "src/slaunch/fname.h"
 
+/* FIXME doesn't belong here, we don't want to expose ctx contents */
+#include "src/api/step_ctx.h"
+
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
 
@@ -95,9 +98,11 @@ static int   _set_umask_env(void);
 static char *_task_count_string(srun_job_t *job);
 static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (uid_t uid, gid_t gid);
-static void  _run_srun_prolog (srun_job_t *job);
-static void  _run_srun_epilog (srun_job_t *job);
-static int   _run_srun_script (srun_job_t *job, char *script);
+static void  _run_srun_prolog (void);
+static void  _run_srun_epilog (void);
+static int   _run_srun_script (char *script);
+static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
+			      int stepid, slurm_step_layout_t *step_layout);
 
 int slaunch(int argc, char **argv)
 {
@@ -110,13 +115,11 @@ int slaunch(int argc, char **argv)
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 		
-	/* Initialize plugin stack, read options from plugins, etc.
-	 */
+	/* Initialize plugin stack, read options from plugins, etc. */
 	if (spank_init(NULL) < 0)
 		fatal("Plug-in initialization failed");
 
-	/* Be sure to call spank_fini when srun exits.
-	 */
+	/* Be sure to call spank_fini when srun exits. */
 	if (atexit((void (*) (void)) spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
 
@@ -128,8 +131,7 @@ int slaunch(int argc, char **argv)
 		exit (1);
 	}
 	
-	/* reinit log with new verbosity (if changed by command line)
-	 */
+	/* reinit log with new verbosity (if changed by command line) */
 	if (_verbose || opt.quiet) {
 		logopt.stderr_level += _verbose;
 		logopt.stderr_level -= opt.quiet;
@@ -184,10 +186,14 @@ int slaunch(int argc, char **argv)
 	params.slurmd_debug = opt.slurmd_debug;
 	params.buffered_stdio = !opt.unbuffered;
 	params.labelio = opt.labelio;
-	params.output_filename = NULL; /* FIXME */
-	params.input_filename = NULL; /* FIXME */
-	params.error_filename = NULL; /* FIXME */
-	params.fds = &fds;
+	params.remote_output_filename = opt.remote_ofname;
+	params.remote_input_filename = opt.remote_ifname;
+	params.remote_error_filename = opt.remote_efname;
+	/* FIXME - don't peek into the step context, that's cheating! */
+	_setup_local_fds(&fds, (int)step_ctx->job_id,
+			 (int)step_ctx->step_resp->job_step_id,
+			 step_ctx->step_layout);
+	params.local_fds = &fds;
 
 	rc = slurm_step_launch(step_ctx, &params);
 	if (rc != SLURM_SUCCESS) {
@@ -201,6 +207,8 @@ int slaunch(int argc, char **argv)
 
 	/* Clean up. */
 	slurm_step_ctx_destroy(step_ctx);
+
+	return 0;
 }
 
 static char *
@@ -363,27 +371,27 @@ static int _become_user (uid_t uid, gid_t gid)
 	return (0);
 }
 
-static void _run_srun_prolog (srun_job_t *job)
+static void _run_srun_prolog (void)
 {
 	int rc;
 
 	if (opt.prolog && strcasecmp(opt.prolog, "none") != 0) {
-		rc = _run_srun_script(job, opt.prolog);
+		rc = _run_srun_script(opt.prolog);
 		debug("srun prolog rc = %d", rc);
 	}
 }
 
-static void _run_srun_epilog (srun_job_t *job)
+static void _run_srun_epilog (void)
 {
 	int rc;
 
 	if (opt.epilog && strcasecmp(opt.epilog, "none") != 0) {
-		rc = _run_srun_script(job, opt.epilog);
+		rc = _run_srun_script(opt.epilog);
 		debug("srun epilog rc = %d", rc);
 	}
 }
 
-static int _run_srun_script (srun_job_t *job, char *script)
+static int _run_srun_script (char *script)
 {
 	int status;
 	pid_t cpid;
@@ -431,58 +439,47 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	/* NOTREACHED */
 }
 
-static int
-_is_local_file (io_filename_t *fname)
-{
-	if (fname->name == NULL)
-		return 1;
-	
-	if (fname->taskid != -1)
-		return 1;
-
-	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
-}
-
-void
-slaunch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
+static void
+_setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
+		 slurm_step_layout_t *step_layout)
 {
 	bool err_shares_out = false;
+	struct io_filename *ifname, *ofname, *efname;
+
+	ifname = fname_create(opt.local_ifname, jobid, stepid);
+	ofname = fname_create(opt.local_ofname, jobid, stepid);
+	efname = fname_create(opt.local_efname, jobid, stepid);
 
 	/*
 	 * create stdin file descriptor
 	 */
-	if (_is_local_file(job->ifname)) {
-		if (job->ifname->name == NULL || job->ifname->taskid != -1) {
-			cio_fds->in.fd = STDIN_FILENO;
-		} else {
-			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
-			if (cio_fds->in.fd == -1)
-				fatal("Could not open stdin file: %m");
-		}
-		if (job->ifname->type == IO_ONE) {
-			cio_fds->in.taskid = job->ifname->taskid;
-			cio_fds->in.nodeid = step_layout_host_id(
-				job->step_layout, job->ifname->taskid);
-		}
+	if (ifname->name == NULL) {
+		cio_fds->in.fd = STDIN_FILENO;
+	} else if (ifname->type == IO_ONE) {
+		cio_fds->in.taskid = ifname->taskid;
+		cio_fds->in.nodeid = step_layout_host_id(
+			step_layout, ifname->taskid);
+	} else {
+		cio_fds->in.fd = open(ifname->name, O_RDONLY);
+		if (cio_fds->in.fd == -1)
+			fatal("Could not open stdin file: %m");
 	}
 
 	/*
 	 * create stdout file descriptor
 	 */
-	if (_is_local_file(job->ofname)) {
-		if (job->ofname->name == NULL) {
-			cio_fds->out.fd = STDOUT_FILENO;
-		} else {
-			cio_fds->out.fd = open(job->ofname->name,
-					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
-			if (cio_fds->out.fd == -1)
-				fatal("Could not open stdout file: %m");
-		}
-		if (job->ofname->name != NULL
-		    && job->efname->name != NULL
-		    && !strcmp(job->ofname->name, job->efname->name)) {
-			err_shares_out = true;
-		}
+	if (ofname->name == NULL) {
+		cio_fds->out.fd = STDOUT_FILENO;
+	} else {
+		cio_fds->out.fd = open(ofname->name,
+				       O_CREAT|O_WRONLY|O_TRUNC, 0644);
+		if (cio_fds->out.fd == -1)
+			fatal("Could not open stdout file: %m");
+	}
+	if (ofname->name != NULL
+	    && efname->name != NULL
+	    && !strcmp(ofname->name, efname->name)) {
+		err_shares_out = true;
 	}
 
 	/*
@@ -492,11 +489,11 @@ slaunch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	if (err_shares_out) {
 		debug3("stdout and stderr sharing a file");
 		cio_fds->err.fd = cio_fds->out.fd;
-	} else if (_is_local_file(job->efname)) {
-		if (job->efname->name == NULL) {
+	} else {
+		if (efname->name == NULL) {
 			cio_fds->err.fd = STDERR_FILENO;
 		} else {
-			cio_fds->err.fd = open(job->efname->name,
+			cio_fds->err.fd = open(efname->name,
 					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
 			if (cio_fds->err.fd == -1)
 				fatal("Could not open stderr file: %m");

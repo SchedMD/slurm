@@ -36,8 +36,7 @@
 enum io_t {
 	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
 	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
-	IO_PER_TASK	= 2, /* separate output/input file per task          */
-	IO_NONE		= 3, /* close output/close stdin                     */
+	IO_NONE		= 2, /* close output/close stdin                     */
 };
 
 struct io_filename {
@@ -54,10 +53,8 @@ struct io_filename {
  */
 typedef struct srun_job fname_job_t;
 
-io_filename_t *fname_create(fname_job_t *job, char *format);
+io_filename_t *fname_create(char *format, int jobid, int stepid);
 void fname_destroy(io_filename_t *fname);
-
-char * fname_remote_string (io_filename_t *fname);
 
 #endif /* !_SLAUNCH_FNAME_H */
 

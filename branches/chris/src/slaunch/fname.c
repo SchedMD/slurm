@@ -52,7 +52,7 @@
  * filename type to one of the io types ALL, NONE, PER_TASK, ONE
  */
 io_filename_t *
-fname_create(srun_job_t *job, char *format)
+fname_create(char *format, int jobid, int stepid)
 {
 	unsigned long int wid     = 0;
 	unsigned long int taskid  = 0;
@@ -75,13 +75,7 @@ fname_create(srun_job_t *job, char *format)
 	}
 
 	if (strncasecmp(format, "none", (size_t) 4) == 0) {
-		/* 
-		 * Set type to IO_PER_TASK so that /dev/null is opened
-		 *  on every node, which should be more efficient
-		 */
-		fname->type = IO_PER_TASK; 
-		fname->name = xstrdup ("/dev/null");
-		return fname;
+		return NULL;
 	}
 
 	taskid = strtoul(format, &p, 10);
@@ -111,12 +105,15 @@ fname_create(srun_job_t *job, char *format)
 
 			switch (*p) {
 			 case 't':  /* '%t' => taskid         */
+				 error("\"%%t\" is ignored for local files");
+				 p++;
+				 break;
 			 case 'n':  /* '%n' => nodeid         */
+				 error("\"%%n\" is ignored for local files");
+				 p++;
+				 break;
 			 case 'N':  /* '%N' => node name      */
-
-				 fname->type = IO_PER_TASK;
-				 if (wid)
-					 xstrcatchar(name, '%');
+				 error("\"%%N\" is ignored for local files");
 				 p++;
 				 break;
 
@@ -124,16 +121,16 @@ fname_create(srun_job_t *job, char *format)
 			 case 'j':  /* '%j' => jobid          */
 
 				 xmemcat(name, q, p - 1);
-				 xstrfmtcat(name, "%0*d", wid, job->jobid);
+				 xstrfmtcat(name, "%0*d", wid, jobid);
 
-				 if ((*p == 'J') && (job->stepid != NO_VAL)) 
-					 xstrfmtcat(name, ".%d", job->stepid);
+				 if ((*p == 'J') && (stepid != NO_VAL)) 
+					 xstrfmtcat(name, ".%d", stepid);
 				 q = ++p;
 				 break;
 
 			 case 's':  /* '%s' => stepid         */
 				 xmemcat(name, q, p - 1);
-				 xstrfmtcat(name, "%0*d", wid, job->stepid);
+				 xstrfmtcat(name, "%0*d", wid, stepid);
 				 q = ++p;
 				 break;
 
@@ -160,11 +157,3 @@ fname_destroy(io_filename_t *f)
 	xfree(f);
 }
 
-char * 
-fname_remote_string (io_filename_t *f)
-{
-	if ((f->type == IO_PER_TASK) || (f->type == IO_ONE))
-		return (xstrdup (f->name));
-
-	return (NULL);
-}

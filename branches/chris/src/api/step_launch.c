@@ -142,18 +142,18 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	launch.switch_job = ctx->step_resp->switch_job;
 	launch.task_prolog = NULL; /* FIXME - opt.task_prolog */
 	launch.task_epilog = NULL; /* FIXME - opt.task_epilog */
-/* 	launch.cpu_bind_type = opt.cpu_bind_type; */
-/* 	launch.cpu_bind = opt.cpu_bind; */
-/* 	launch.mem_bind_type = opt.mem_bind_type; */
-/* 	launch.mem_bind = opt.mem_bind; */
+	launch.cpu_bind_type = 0; /* FIXME opt.cpu_bind_type; */
+	launch.cpu_bind = NULL; /* FIXME opt.cpu_bind; */
+	launch.mem_bind_type = 0; /* FIXME opt.mem_bind_type; */
+	launch.mem_bind = NULL; /* FIXME opt.mem_bind; */
 	launch.multi_prog = params->multi_prog;
 
 	launch.options = job_options_create();
 	spank_set_remote_options (launch.options);
 
-	launch.ofname = params->output_filename;
-	launch.efname = params->error_filename;
-	launch.ifname = params->input_filename;
+	launch.ofname = params->remote_output_filename;
+	launch.efname = params->remote_error_filename;
+	launch.ifname = params->remote_input_filename;
 	launch.buffered_stdio = params->buffered_stdio;
 
 /* 	if (opt.parallel_debug) */
@@ -169,9 +169,9 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	launch.cpus_allocated  = ctx->step_layout->cpus;
 	launch.global_task_ids = ctx->step_layout->tids;
 	
-	if (params->fds != NULL) {
+	if (params->local_fds != NULL) {
 		struct step_launch_state *sls = ctx->launch_state;
-		sls->client_io = _setup_step_client_io(ctx, params->fds,
+		sls->client_io = _setup_step_client_io(ctx, params->local_fds,
 						       params->labelio);
 		if (sls->client_io == NULL)
 			return SLURM_ERROR;

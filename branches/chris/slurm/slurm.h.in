@@ -513,10 +513,10 @@ typedef struct {
 	/* buffered stdio flag: 1 for line-buffered, 0 for unbuffered */
 	uint8_t buffered_stdio;
 	uint8_t labelio; /* 1 for labeled, 0 for unlabeled */
-	char *output_filename;
-	char *error_filename;
-	char *input_filename;
-	slurm_step_io_fds_t *fds;
+	char *remote_output_filename;
+	char *remote_error_filename;
+	char *remote_input_filename;
+	slurm_step_io_fds_t *local_fds;
 } slurm_job_step_launch_t;
 
 typedef struct {
