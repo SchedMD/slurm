@@ -600,6 +600,7 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 			       slurm_strerror(resp->return_code));
 		}
 		job->rc = 1;
+
 		update_job_state(job, SRUN_JOB_FAILED);
 		return;
 	}
@@ -1288,7 +1289,7 @@ msg_thr_create(srun_job_t *job)
 		/* parent */
 
 		slurm_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 		while ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
 					       (void *)job))) {
 			if (++retries > MAX_RETRIES)

@@ -14,14 +14,6 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
-* Changes in SLURM 1.1.3
-========================
- -- Fix bug in scontrol show daemons if NodeName=localhost will work now to
-    display slurmd as place where it is running.  
- -- Patch from HP for init nodes before init_bitmaps
- -- ctrl-c killed sruns will result in job state as cancelled instead of 
-    completed.
-
 * Changes in SLURM 1.1.2
 ========================
  -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
@@ -40,6 +32,11 @@ documents those changes that are of interest to users and admins.
     jobs.
  -- Fix bug in slurmd where variable is used in logging message after freed
     (slurmstepd rank info).
+ -- Fix bug in scontrol show daemons if NodeName=localhost will work now to
+    display slurmd as place where it is running.  
+ -- Patch from HP for init nodes before init_bitmaps
+ -- ctrl-c killed sruns will result in job state as cancelled instead of 
+    completed.
 
 * Changes in SLURM 1.1.1
 ========================
@@ -193,9 +190,13 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.15
+=========================
+
 * Changes in SLURM 1.0.14
 =========================
  -- Fix for bad xfree() call in auth/munge which can raise an assert().
+ -- Fix installed fork handlers for the conf mutex for slurmd and slurmstepd.
 
 * Changes in SLURM 1.0.13
 =========================
