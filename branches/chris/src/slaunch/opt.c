@@ -646,7 +646,7 @@ static void argerror(const char *msg, ...)
 	vsnprintf(buf, sizeof(buf), msg, ap);
 
 	fprintf(stderr, "%s: %s\n",
-		opt.progname ? opt.progname : "srun", buf);
+		opt.progname ? opt.progname : "slaunch", buf);
 	va_end(ap);
 }
 #else
@@ -833,7 +833,7 @@ env_vars_t env_vars[] = {
 /*
  * _opt_env(): used by initialize_and_process_args to set options via
  *            environment variables. See comments above for how to
- *            extend srun to process different vars
+ *            extend slaunch to process different vars
  */
 static void _opt_env()
 {
@@ -1073,8 +1073,8 @@ void set_options(const int argc, char **argv, int first)
 			
 		case (int)'?':
 			if(first) {
-				fprintf(stderr, "Try \"srun --help\" for more "
-					"information\n");
+				fprintf(stderr, "Try \"slaunch --help\" for "
+					"more information\n");
 				exit(1);
 			} 
 			break;
@@ -1588,7 +1588,7 @@ static bool _opt_verify(void)
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
 	 *   as DEBUG3 is used for slurmd IO operations, which
-	 *   are not appropriate to be sent back to srun. (because
+	 *   are not appropriate to be sent back to slaunch. (because
 	 *   these debug messages cause the generation of more
 	 *   debug messages ad infinitum)
 	 */
@@ -1984,7 +1984,7 @@ static void _opt_list()
 
 }
 
-/* Determine if srun is under the control of a parallel debugger or not */
+/* Determine if slaunch is under the control of a parallel debugger or not */
 static bool _under_parallel_debugger (void)
 {
 	return (MPIR_being_debugged != 0);
@@ -1993,30 +1993,30 @@ static bool _under_parallel_debugger (void)
 static void _usage(void)
 {
  	printf(
-"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
-"            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
-"            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
-"            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
-"            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
-"            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"            [--mpi=type] [--account=name] [--dependency=jobid]\n"
-"            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
-"            [--cpu_bind=...] [--mem_bind=...]\n"
+"Usage: slaunch [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
+"               [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
+"               [-D path] [--immediate] [--overcommit] [--no-kill]\n"
+"               [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
+"               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
+"               [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
+"               [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
+"               [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
+"               [--cpu_bind=...] [--mem_bind=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+"               [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
-"            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"            [--prolog=fname] [--epilog=fname]\n"
-"            [--task-prolog=fname] [--task-epilog=fname]\n"
-"            [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]"
-"            [-w hosts...] [-x hosts...] executable [args...]\n");
+"               [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
+"               [--prolog=fname] [--epilog=fname]\n"
+"               [--task-prolog=fname] [--task-epilog=fname]\n"
+"               [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]"
+"               [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
 static void _help(void)
 {
         printf (
-"Usage: srun [OPTIONS...] executable [args...]\n"
+"Usage: slaunch [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
 "  -n, --ntasks=ntasks         number of tasks to run\n"
@@ -2044,7 +2044,7 @@ static void _help(void)
 "      --jobid=id              run under already allocated job\n"
 "      --mpi=type              type of MPI being used\n"
 "  -b, --batch                 submit as batch job for later execution\n"
-"  -T, --threads=threads       set srun launch fanout\n"
+"  -T, --threads=threads       set slaunch launch fanout\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
@@ -2066,7 +2066,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun"
+"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"

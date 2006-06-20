@@ -55,9 +55,8 @@ int _verbose;
 
 #define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
                                                      "all" : "per task"
-//typedef struct srun_job fname_job_t;
 
-typedef struct srun_options {
+typedef struct slaunch_options {
 
 	char *progname;		/* argv[0] of this program or 
 				 * configuration file if multi_prog */
@@ -73,7 +72,7 @@ typedef struct srun_options {
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	int  max_threads;	/* --threads, -T (threads in srun) */
+	int  max_threads;	/* --threads, -T (threads in slaunch) */
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
@@ -123,7 +122,7 @@ typedef struct srun_options {
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	bool disable_status;    /* --disable-status, -X         */
 	int  quiet;
-	bool parallel_debug;	/* srun controlled by debugger	*/
+	bool parallel_debug;	/* slaunch controlled by debugger */
 	bool debugger_test;	/* --debugger-test		*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/

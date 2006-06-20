@@ -95,8 +95,6 @@
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
-static char *_task_count_string(srun_job_t *job);
-static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (uid_t uid, gid_t gid);
 static void  _run_srun_prolog (void);
 static void  _run_srun_epilog (void);
@@ -119,7 +117,7 @@ int slaunch(int argc, char **argv)
 	if (spank_init(NULL) < 0)
 		fatal("Plug-in initialization failed");
 
-	/* Be sure to call spank_fini when srun exits. */
+	/* Be sure to call spank_fini when slaunch exits. */
 	if (atexit((void (*) (void)) spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
 
@@ -127,7 +125,7 @@ int slaunch(int argc, char **argv)
 	 * verify some basic values
 	 */
 	if (initialize_and_process_args(argc, argv) < 0) {
-		error ("srun initialization failed");
+		error ("slaunch initialization failed");
 		exit (1);
 	}
 	
@@ -161,8 +159,8 @@ int slaunch(int argc, char **argv)
 		step_req.num_tasks = 1;
 	step_req.relative = 0;
 	step_req.task_dist = SLURM_DIST_CYCLIC;
-	step_req.port = 0;      /* port to contact initiating srun */
-	step_req.host = NULL;   /* host to contact initiating srun */
+	step_req.port = 0;      /* historical, used by srun */
+	step_req.host = NULL;   /* historical, used by srun */
 	step_req.node_list = NULL;
 	step_req.network = NULL;
 	step_req.name = "slaunch";
@@ -209,51 +207,6 @@ int slaunch(int argc, char **argv)
 	slurm_step_ctx_destroy(step_ctx);
 
 	return 0;
-}
-
-static char *
-_task_count_string (srun_job_t *job)
-{
-	int i, last_val, last_cnt;
-	char tmp[16];
-	char *str = xstrdup ("");
-	if(job->step_layout->tasks == NULL)
-		return (str);
-	last_val = job->step_layout->cpus[0];
-	last_cnt = 1;
-	for (i=1; i<job->nhosts; i++) {
-		if (last_val == job->step_layout->cpus[i])
-			last_cnt++;
-		else {
-			if (last_cnt > 1)
-				sprintf(tmp, "%d(x%d),", last_val, last_cnt);
-			else
-				sprintf(tmp, "%d,", last_val);
-			xstrcat(str, tmp);
-			last_val = job->step_layout->cpus[i];
-			last_cnt = 1;
-		}
-	}
-	if (last_cnt > 1)
-		sprintf(tmp, "%d(x%d)", last_val, last_cnt);
-	else
-		sprintf(tmp, "%d", last_val);
-	xstrcat(str, tmp);
-	return (str);
-}
-
-static void
-_switch_standalone(srun_job_t *job)
-{
-	int cyclic = (opt.distribution == SLURM_DIST_CYCLIC);
-
-	if (switch_alloc_jobinfo(&job->switch_job) < 0)
-		fatal("switch_alloc_jobinfo: %m");
-	if (switch_build_jobinfo(job->switch_job, 
-				 job->nodelist, 
-				 job->step_layout->tasks, 
-				 cyclic, opt.network) < 0)
-		fatal("switch_build_jobinfo: %m");
 }
 
 /* Set SLURM_UMASK environment variable with current state */
@@ -339,7 +292,7 @@ static int _set_rlimit_env(void)
 	}
 
 	/* 
-	 *  Now increase NOFILE to the max available for this srun
+	 *  Now increase NOFILE to the max available for this slaunch
 	 */
 	if (getrlimit (RLIMIT_NOFILE, rlim) < 0)
 	 	return (error ("getrlimit (RLIMIT_NOFILE): %m"));
@@ -444,7 +397,7 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
 		 slurm_step_layout_t *step_layout)
 {
 	bool err_shares_out = false;
-	struct io_filename *ifname, *ofname, *efname;
+	fname_t *ifname, *ofname, *efname;
 
 	ifname = fname_create(opt.local_ifname, jobid, stepid);
 	ofname = fname_create(opt.local_ofname, jobid, stepid);

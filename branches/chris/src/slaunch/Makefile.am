@@ -10,7 +10,6 @@ bin_PROGRAMS = slaunch
 slaunch_SOURCES = \
 	slaunch.c slaunch.h \
 	opt.c opt.h \
-	signals.c signals.h \
 	attach.h    \
 	attach.c    \
 	fname.c     \
@@ -23,10 +22,10 @@ slaunch_SOURCES = \
 	slaunch.wrapper.c
 
 convenience_libs = \
-	$(top_builddir)/src/api/libslurm.la \
 	$(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libspank.la \
-	$(top_builddir)/src/common/libeio.la
+	$(top_builddir)/src/common/libeio.la \
+	$(top_builddir)/src/api/libslurm.la
 
 slaunch_LDADD = \
 	$(convenience_libs) 

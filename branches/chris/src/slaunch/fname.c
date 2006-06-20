@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/srun/fname.h - IO filename type implementation (srun specific)
+ *  src/slaunch/fname.h - IO filename type implementation (slaunch specific)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -48,15 +48,15 @@
 
 
 /*
- * Fill in as much of filename as possible from srun, update
+ * Fill in as much of filename as possible from slaunch, update
  * filename type to one of the io types ALL, NONE, PER_TASK, ONE
  */
-io_filename_t *
+fname_t *
 fname_create(char *format, int jobid, int stepid)
 {
 	unsigned long int wid     = 0;
 	unsigned long int taskid  = 0;
-	io_filename_t *fname = NULL;
+	fname_t *fname = NULL;
 	char *p, *q, *name;
 
 	fname = xmalloc(sizeof(*fname));
@@ -150,7 +150,7 @@ fname_create(char *format, int jobid, int stepid)
 }
 
 void 
-fname_destroy(io_filename_t *f)
+fname_destroy(fname_t *f)
 {
 	if (f->name)
 		xfree(f->name);

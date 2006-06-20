@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * fname.c - IO filename type implementation (srun specific)
+ * fname.c - IO filename type implementation (slaunch specific)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,30 +31,26 @@
 # include "config.h"
 #endif 
 
-#include "src/common/global_srun.h"
-
 enum io_t {
 	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
 	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
 	IO_NONE		= 2, /* close output/close stdin                     */
 };
 
-struct io_filename {
+typedef struct fname {
 	char      *name;
 	enum io_t  type;
 	int        taskid;  /* taskid for IO if IO_ONE */
-};
+} fname_t;
 
 /*
  * Create an filename from a (probably user supplied) filename format.
- * fname_create() will expand the format as much as possible for srun,
+ * fname_create() will expand the format as much as possible for slaunch,
  * leaving node or task specific format specifiers for the remote 
  * slurmd to handle.
  */
-typedef struct srun_job fname_job_t;
-
-io_filename_t *fname_create(char *format, int jobid, int stepid);
-void fname_destroy(io_filename_t *fname);
+fname_t *fname_create(char *format, int jobid, int stepid);
+void fname_destroy(fname_t *fname);
 
 #endif /* !_SLAUNCH_FNAME_H */
 
