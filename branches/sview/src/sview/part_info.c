@@ -165,7 +165,9 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr)
 
 extern void refresh_part(GtkAction *action, gpointer user_data)
 {
-	g_print("hey got here part\n");
+	popup_info_t *popup_win = (popup_info_t *)user_data;
+	g_print("hey got here part for %s\n", popup_win->spec_info->title);
+	specific_info_part(popup_win);
 }
 
 extern void get_info_part(GtkTable *table, display_data_t *display_data)
@@ -184,7 +186,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	
 	if(display_data)
 		local_display_data = display_data;
-	
 	if(!table) {
 		for(i=0; i<SORTID_CNT+1; i++) {
 			memcpy(&popup_data_part[i], &display_data_part[i], 
@@ -286,13 +287,25 @@ extern void specific_info_part(popup_info_t *popup_win)
 	if(spec_info->display_widget)
 		gtk_widget_destroy(spec_info->display_widget);
 	else {
+		g_print("got part info\n");
+		
+		popup_win->display_data = 
+			xmalloc(sizeof(display_data_t)*(SORTID_CNT+2));
+		for(i=0; i<SORTID_CNT+1; i++) {
+			memcpy(&popup_win->display_data[i], 
+			       &display_data_part[i], 
+			       sizeof(display_data_t));
+		}
+		
+		popup_win->display_data->set_menu =
+			local_display_data->set_menu;
 		gtk_event_box_set_above_child(
 			GTK_EVENT_BOX(popup_win->event_box), 
 			FALSE);
 		g_signal_connect(G_OBJECT(popup_win->event_box), 
 				 "button-press-event",
 				 G_CALLBACK(redo_popup),
-				 local_display_data);
+				 popup_win);
 		
 		label = gtk_label_new(spec_info->title);
 		gtk_container_add(GTK_CONTAINER(popup_win->event_box), label);
@@ -340,9 +353,9 @@ display_it:
 				  0, 1, 0, 1); 
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
-	liststore = create_liststore(display_data_part, SORTID_CNT);
+	liststore = create_liststore(popup_win->display_data, SORTID_CNT);
 
-	load_header(tree_view, display_data_part);
+	load_header(tree_view, popup_win->display_data);
 
 	switch(spec_info->type) {
 	case NODE_PAGE:
@@ -406,9 +419,11 @@ display_it:
 	return;
 }
 
-extern void set_menus_part(GtkTreeView *tree_view, GtkTreePath *path, 
+extern void set_menus_part(void *arg, GtkTreePath *path, 
 			   GtkMenu *menu, int type)
 {
+	GtkTreeView *tree_view = (GtkTreeView *)arg;
+	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(menu, display_data_part);
@@ -417,7 +432,7 @@ extern void set_menus_part(GtkTreeView *tree_view, GtkTreePath *path,
 		make_options_menu(tree_view, path, menu, options_data_part);
 		break;
 	case POPUP_CLICKED:
-		make_popup_fields_menu(menu, popup_data_part);
+		make_popup_fields_menu(popup_win, menu);
 		break;
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);

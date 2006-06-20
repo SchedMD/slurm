@@ -94,6 +94,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", FALSE, -1},	
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
+static display_data_t popup_data_job[SORTID_CNT+1];
 
 static display_data_t options_data_job[] = {
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, JOB_PAGE},
@@ -216,8 +217,15 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	
 	if(display_data)
 		local_display_data = display_data;
-	if(!table)
+
+	local_display_data = display_data;
+	if(!table) {
+		for(i=0; i<SORTID_CNT+1; i++) {
+			memcpy(&popup_data_job[i], &display_data_job[i], 
+			       sizeof(display_data_t));
+		}
 		return;
+	}
 
 	if(new_job_ptr && toggled)
 		goto got_toggled;

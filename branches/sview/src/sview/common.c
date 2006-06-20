@@ -32,6 +32,7 @@ typedef struct {
 	GtkTreeIter iter;
 } treedata_t;
 
+
 static int _sort_iter_compare_func_char(GtkTreeModel *model,
 					GtkTreeIter  *a,
 					GtkTreeIter  *b,
@@ -118,7 +119,8 @@ static void _popup_state_changed(GtkCheckMenuItem *menuitem,
 	else
 		display_data->show = TRUE;
 	toggled = TRUE;
-	(display_data->refresh)(NULL, NULL);
+	g_print(" got %s\n", display_data->name);
+	(display_data->refresh)(NULL, display_data->user_data);
 }
 
 static void _selected_page(GtkMenuItem *menuitem, 
@@ -293,15 +295,18 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	}
 }
 
-extern void make_popup_fields_menu(GtkMenu *menu, display_data_t *display_data)
+extern void make_popup_fields_menu(popup_info_t *popup_win, GtkMenu *menu)
 {
 	GtkWidget *menuitem = NULL;
+	display_data_t *display_data = popup_win->display_data;
 	
 	while(display_data++) {
 		if(display_data->id == -1)
 			break;
-		menuitem = gtk_check_menu_item_new_with_label(
-			display_data->name); 
+		
+		display_data->user_data = popup_win;
+		menuitem = 
+			gtk_check_menu_item_new_with_label(display_data->name);
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem),
 					       display_data->show);
 		g_signal_connect(menuitem, "toggled",
@@ -406,12 +411,14 @@ extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 }
 
 extern void redo_popup(GtkWidget *widget, GdkEventButton *event, 
-		       const display_data_t *display_data)
+		       popup_info_t *popup_win)
 {
 	if(event->button == 3) {
 		GtkMenu *menu = GTK_MENU(gtk_menu_new());
-	
-		(display_data->set_menu)(NULL, NULL, menu, POPUP_CLICKED);
+		
+		(popup_win->display_data->set_menu)(popup_win, 
+						    NULL, 
+						    menu, POPUP_CLICKED);
 		
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
@@ -434,6 +441,7 @@ extern void destroy_popup_info(void *arg)
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	if(popup_win) {
 		destroy_specific_info(popup_win->spec_info);
+		xfree(popup_win->display_data);
 		xfree(popup_win);
 	}
 }

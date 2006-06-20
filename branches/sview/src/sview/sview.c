@@ -130,7 +130,7 @@ static void _prev_page(GtkAction *action,
 static void _init_pages()
 {
 	int i;
-	for(i=1; i<PAGE_CNT; i++) {
+	for(i=0; i<PAGE_CNT; i++) {
 		(main_display_data[i].get_info)(NULL, &main_display_data[i]);
 	}
 }
@@ -231,10 +231,10 @@ int main(int argc, char *argv[])
 	GtkWidget *menubar;
 	int i=0;
 	
+	_init_pages();
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
 	/* fill in all static info for pages */
-	_init_pages();
 	/* Make a window */
 	window = gtk_dialog_new();
 	g_signal_connect(G_OBJECT(window), "delete_event",
