@@ -28,7 +28,7 @@ AC_DEFUN([X_AC_BLUEGENE],
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$bg_dir/lib64/libbglbridge.so" ; then
          		have_bg_ar=yes
-       	 		bg_ldflags_d="$bg_ldflags_d -L$bg_dir/lib64 -L/usr/lib64 -lbglbridge -lbgldb -ltableapi -lbglmachine -lexpat -lsaymessage"
+       	 		bg_ldflags_d="$bg_ldflags_d -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -lbglbridge -lbgldb -ltableapi -lbglmachine -lexpat -lsaymessage"
 	 		bg_ldflags_s="$bg_ldflags_s -Wl,-rpath $bg_dir/lib64 -Wl,-L$bg_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive -lsaymessage_s -lbgldb_s -lbglmachine_s -ltableapi_s -L/usr/lib64 -lexpat"
       		fi
       
