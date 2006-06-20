@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- Patch from HP for init nodes before init_bitmaps
  -- ctrl-c killed sruns will result in job state as cancelled instead of 
     completed.
+ -- BLUEGENE - added configure option --with-bg-link to choose dynamic linking
+    or static linking with the bridgeapi.
 
 * Changes in SLURM 1.1.1
 ========================
