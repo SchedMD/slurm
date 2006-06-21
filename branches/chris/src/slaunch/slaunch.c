@@ -101,6 +101,11 @@ static void  _run_srun_epilog (void);
 static int   _run_srun_script (char *script);
 static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
 			      int stepid, slurm_step_layout_t *step_layout);
+static void _task_start(launch_tasks_response_msg_t *msg);
+static void _task_finish(task_exit_msg_t *msg);
+static void _dump_proctable(void);
+
+slurm_step_layout_t *global_step_layout;
 
 int slaunch(int argc, char **argv)
 {
@@ -108,7 +113,6 @@ int slaunch(int argc, char **argv)
 	job_step_create_request_msg_t step_req;
 	slurm_step_ctx step_ctx;
 	slurm_job_step_launch_t params;
-	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	int rc;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -150,13 +154,15 @@ int slaunch(int argc, char **argv)
 	 * Create a job step context.
 	 */
 	step_req.job_id = opt.jobid;
+	totalview_jobid = NULL;
+	xstrfmtcat(totalview_jobid, "%u", step_req.job_id);
 	step_req.user_id = getuid();
 	step_req.node_count = opt.min_nodes;
 	step_req.cpu_count = 1;
 	if (opt.nprocs_set)
 		step_req.num_tasks = opt.nprocs;
 	else
-		step_req.num_tasks = 1;
+		step_req.num_tasks = step_req.node_count;
 	step_req.relative = 0;
 	step_req.task_dist = SLURM_DIST_CYCLIC;
 	step_req.port = 0;      /* historical, used by srun */
@@ -170,6 +176,14 @@ int slaunch(int argc, char **argv)
 		error("Could not create job step context: %m");
 		exit(1);
 	}
+
+	/*
+	 * Set up some global variables for debugger use (e.g. Totalview)
+	 */
+	MPIR_proctable_size = step_req.num_tasks;
+	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * step_req.num_tasks);
+	/* FIXME - don't peek into the step context, that's cheating! */
+	global_step_layout = step_ctx->step_layout;
 
 	/*
 	 * Use the job step context to launch the tasks.
@@ -188,10 +202,11 @@ int slaunch(int argc, char **argv)
 	params.remote_input_filename = opt.remote_ifname;
 	params.remote_error_filename = opt.remote_efname;
 	/* FIXME - don't peek into the step context, that's cheating! */
-	_setup_local_fds(&fds, (int)step_ctx->job_id,
+	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
 			 (int)step_ctx->step_resp->job_step_id,
 			 step_ctx->step_layout);
-	params.local_fds = &fds;
+	params.task_start_callback = _task_start;
+	params.task_finish_callback = _task_finish;
 
 	rc = slurm_step_launch(step_ctx, &params);
 	if (rc != SLURM_SUCCESS) {
@@ -200,8 +215,17 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
-	/* Wait for the tasks to finish. */
-	slurm_step_launch_wait(step_ctx);
+	slurm_step_launch_wait_start(step_ctx);
+
+	if (opt.multi_prog)
+		set_multi_name(step_req.num_tasks);
+	MPIR_debug_state = MPIR_DEBUG_SPAWNED;
+	MPIR_Breakpoint();
+	if (opt.debugger_test)
+		_dump_proctable();
+	_dump_proctable();
+
+	slurm_step_launch_wait_finish(step_ctx);
 
 	/* Clean up. */
 	slurm_step_ctx_destroy(step_ctx);
@@ -454,3 +478,52 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
 	}
 }
 
+static void
+_task_start(launch_tasks_response_msg_t *msg)
+{
+	MPIR_PROCDESC *table;
+	int taskid;
+	int i;
+
+	verbose("Node %s (%d), %d tasks started",
+		msg->node_name, msg->srun_node_id, msg->count_of_pids);
+
+	for (i = 0; i < msg->count_of_pids; i++) {
+		taskid = global_step_layout->tids[msg->srun_node_id][i];
+		table = &MPIR_proctable[taskid];
+
+		table->host_name = global_step_layout->host[msg->srun_node_id];
+		/*table->executable_name = executable;*/
+		table->pid = msg->local_pids[i];
+	}
+
+}
+
+static void
+_task_finish(task_exit_msg_t *msg)
+{
+	verbose("%d tasks finished (rc=%d)",
+		msg->num_tasks, msg->return_code);
+}
+
+static void
+_dump_proctable()
+{
+	int node_inx, task_inx, taskid;
+	int num_tasks;
+	MPIR_PROCDESC *tv;
+
+	for (node_inx=0; node_inx < MPIR_proctable_size; node_inx++) {
+		num_tasks = global_step_layout->tasks[node_inx];
+		for (task_inx = 0; task_inx < num_tasks; task_inx++) {
+			taskid = global_step_layout->tids[node_inx][task_inx];
+			tv = &MPIR_proctable[taskid];
+			if (!tv)
+				break;
+			info("task:%d, host:%s, pid:%d, executable:%s",
+			     taskid, tv->host_name, tv->pid,
+			     tv->executable_name);
+		}
+	} 
+}
+	
