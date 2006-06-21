@@ -59,6 +59,10 @@ struct step_launch_state {
 
 	/* client side io variables */
 	client_io_t *client_io;
+
+	/* user registered callbacks */
+	void (*task_start_callback)(launch_tasks_response_msg_t *);
+	void (*task_finish_callback)(task_exit_msg_t *);
 };
 
 struct slurm_step_ctx_struct {

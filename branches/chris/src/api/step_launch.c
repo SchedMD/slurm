@@ -69,7 +69,7 @@
 static int _launch_tasks(slurm_step_ctx ctx,
 			 launch_tasks_request_msg_t *launch_msg);
 static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
-					  slurm_step_io_fds_t *fds,
+					  slurm_step_io_fds_t fds,
 					  bool labelio);
 
 /**********************************************************************
@@ -121,6 +121,8 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	ctx->launch_state->tasks_start_success = 0;
 	ctx->launch_state->tasks_start_failure = 0;
 	ctx->launch_state->tasks_exited = 0;
+	ctx->launch_state->task_start_callback = params->task_start_callback;
+	ctx->launch_state->task_finish_callback = params->task_finish_callback;
 
 	/* Create message receiving socket and handler thread */
 	_msg_thr_create(ctx->launch_state);
@@ -169,15 +171,12 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	launch.cpus_allocated  = ctx->step_layout->cpus;
 	launch.global_task_ids = ctx->step_layout->tids;
 	
-	if (params->local_fds != NULL) {
-		struct step_launch_state *sls = ctx->launch_state;
-		sls->client_io = _setup_step_client_io(ctx, params->local_fds,
-						       params->labelio);
-		if (sls->client_io == NULL)
-			return SLURM_ERROR;
-		if (client_io_handler_start(sls->client_io) != SLURM_SUCCESS)
-			return SLURM_ERROR;
-	}
+	ctx->launch_state->client_io = _setup_step_client_io(
+		ctx, params->local_fds, params->labelio);
+	if (ctx->launch_state->client_io == NULL)
+		return SLURM_ERROR;
+	if (client_io_handler_start(ctx->launch_state->client_io) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	launch.io_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
 	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
@@ -194,7 +193,26 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	return SLURM_SUCCESS;
 }
 
-int slurm_step_launch_wait (slurm_step_ctx ctx)
+/*
+ * Block until all tasks have started.
+ */
+int slurm_step_launch_wait_start(slurm_step_ctx ctx)
+{
+	struct step_launch_state *sls = ctx->launch_state;
+
+	/* First wait for all tasks to complete */
+	pthread_mutex_lock(&sls->lock);
+	while ((sls->tasks_start_success + sls->tasks_start_failure)
+	       < sls->tasks_requested) {
+		pthread_cond_wait(&sls->cond, &sls->lock);
+	}
+	pthread_mutex_unlock(&sls->lock);
+}
+
+/*
+ * Block until all tasks have finished (or failed to start altogether).
+ */
+void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
 
@@ -365,8 +383,12 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	else
 		sls->tasks_start_failure += msg->count_of_pids;
 
+	if (sls->task_start_callback != NULL)
+		(sls->task_start_callback)(msg);
+
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
+
 }
 
 static void 
@@ -376,6 +398,9 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	pthread_mutex_lock(&sls->lock);
 
 	sls->tasks_exited += msg->num_tasks;
+
+	if (sls->task_finish_callback != NULL)
+		(sls->task_finish_callback)(msg);
 
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
@@ -485,7 +510,7 @@ static int _launch_tasks(slurm_step_ctx ctx,
 }
 
 static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
-					  slurm_step_io_fds_t *fds,
+					  slurm_step_io_fds_t fds,
 					  bool labelio)
 {
 	int siglen;
@@ -498,7 +523,7 @@ static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
 		return NULL;
 	}
 		
-	client_io = client_io_handler_create(*fds,
+	client_io = client_io_handler_create(fds,
 					     ctx->step_req->num_tasks,
 					     ctx->step_req->node_count,
 					     sig,
