@@ -55,7 +55,7 @@ static display_data_t display_data_submit[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
-static display_data_t options_data_part[] = {
+static display_data_t options_data_submit[] = {
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, -1},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, -1},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, -1},
@@ -65,24 +65,30 @@ static display_data_t options_data_part[] = {
 
 static display_data_t *local_display_data = NULL;
 
-
-static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			    gpointer user_data)
-{
-	local_display_data->user_data = user_data;
-	row_clicked(tree_view, event, local_display_data);
-}
-
 extern void get_info_submit(GtkTable *table, display_data_t *display_data)
 {
 	local_display_data = display_data;	
 }
 
 
-extern void set_menus_submit(GtkTreeView *tree_view, GtkTreePath *path, 
+extern void set_menus_submit(void *arg, GtkTreePath *path, 
 			     GtkMenu *menu, int type)
 {
-	make_fields_menu(menu, display_data_submit);
+	GtkTreeView *tree_view = (GtkTreeView *)arg;
+	popup_info_t *popup_win = (popup_info_t *)arg;
+	switch(type) {
+	case TAB_CLICKED:
+		make_fields_menu(menu, display_data_submit);
+		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_submit);
+		break;
+	case POPUP_CLICKED:
+		make_popup_fields_menu(popup_win, menu);
+		break;
+	default:
+		g_error("UNKNOWN type %d given to set_fields\n", type);
+	}
 }
 
 extern void row_clicked_submit(GtkTreeView *tree_view,

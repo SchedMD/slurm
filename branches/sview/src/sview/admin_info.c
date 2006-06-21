@@ -53,14 +53,17 @@ static display_data_t display_data_admin[] = {
 	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
 #endif
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}};
+
+static display_data_t options_data_admin[] = {
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, -1},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, -1},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, -1},
+	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, -1},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
 static display_data_t *local_display_data = NULL;
 
-static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			    gpointer user_data)
-{
-	local_display_data->user_data = user_data;
-	row_clicked(tree_view, event, local_display_data);
-}
 
 extern void get_info_admin(GtkTable *table, display_data_t *display_data)
 {
@@ -68,10 +71,24 @@ extern void get_info_admin(GtkTable *table, display_data_t *display_data)
 }
 
 
-extern void set_menus_admin(GtkTreeView *tree_view, GtkTreePath *path, 
+extern void set_menus_admin(void *arg, GtkTreePath *path, 
 			    GtkMenu *menu, int type)
 {
-	make_fields_menu(menu, display_data_admin);
+	GtkTreeView *tree_view = (GtkTreeView *)arg;
+	popup_info_t *popup_win = (popup_info_t *)arg;
+	switch(type) {
+	case TAB_CLICKED:
+		make_fields_menu(menu, display_data_admin);
+		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_admin);
+		break;
+	case POPUP_CLICKED:
+		make_popup_fields_menu(popup_win, menu);
+		break;
+	default:
+		g_error("UNKNOWN type %d given to set_fields\n", type);
+	}
 }
 
 extern void row_clicked_admin(GtkTreeView *tree_view,

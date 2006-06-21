@@ -35,27 +35,35 @@ List popup_list;
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1, 
-	 refresh_main, get_info_part, set_menus_part, row_clicked_part, NULL},
+	 refresh_main, get_info_part, specific_info_part, 
+	 set_menus_part, row_clicked_part, NULL},
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
-	 refresh_main, get_info_job, set_menus_job, row_clicked_job, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
-	 refresh_main, get_info_node, set_menus_node, row_clicked_node, NULL},
+	 refresh_main, get_info_job, specific_info_job, 
+	 set_menus_job, row_clicked_job, NULL},
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
+	 refresh_main, get_info_block, NULL, 
+	 set_menus_block, row_clicked_block, NULL},
+	{G_TYPE_NONE, NODE_PAGE, "Base Partitions", TRUE, -1,
+	 refresh_main, get_info_node, specific_info_node, 
+	 set_menus_node, row_clicked_node, NULL},
 #else
-	 {G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
+	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
+	 refresh_main, get_info_block, NULL, 
+	 set_menus_block, row_clicked_block, NULL},
+	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
+	 refresh_main, get_info_node, specific_info_node, 
+	 set_menus_node, row_clicked_node, NULL},
 #endif
-	  refresh_main, get_info_block, set_menus_block, 
-	  row_clicked_block, NULL},
-	 {G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", TRUE, -1,
-	  refresh_main, get_info_submit, set_menus_submit, 
-	  row_clicked_submit, NULL},
-	 {G_TYPE_NONE, ADMIN_PAGE, "Admin", TRUE, -1,
-	  refresh_main, get_info_admin, set_menus_admin, 
-	  row_clicked_admin, NULL},
-	 {G_TYPE_NONE, -1, NULL, FALSE, -1, NULL, NULL, NULL, NULL, NULL}
-	};
-	
+	{G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", TRUE, -1,
+	 refresh_main, NULL, NULL, 
+	 NULL, NULL, NULL},
+	{G_TYPE_NONE, ADMIN_PAGE, "Admin", TRUE, -1,
+	 refresh_main, NULL, NULL,
+	 NULL, NULL, NULL},
+	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+};
+
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
@@ -87,7 +95,8 @@ static void _page_switched(GtkNotebook     *notebook,
 		g_print("page %d not found\n", page_num);
 		return;
 	} 
-	(main_display_data[i].get_info)(table, &main_display_data[i]);
+	if(main_display_data[i].get_info)
+		(main_display_data[i].get_info)(table, &main_display_data[i]);
 }
 
 static void _tab_pos(GtkRadioAction *action,

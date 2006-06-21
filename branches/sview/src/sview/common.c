@@ -151,6 +151,13 @@ static void _selected_page(GtkMenuItem *menuitem,
 	}
 }
 
+static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
+			   const display_data_t *display_data)
+{
+	//local_display_data->user_data = user_data;
+	row_clicked(tree_view, event, display_data);
+}
+
 extern void snprint_time(char *buf, size_t buf_size, time_t time)
 {
 	if (time == INFINITE) {
@@ -193,50 +200,6 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 	}	
 	gtk_tree_model_get(model, &iter, POS_LOC, &line, -1);
 	return line;
-}
-
-extern GtkListStore *create_liststore(display_data_t *display_data, int count)
-{
-	GtkListStore *liststore = NULL;
-	GType types[count];
-	int i=0;
-	
-	/*set up the types defined in the display_data_t */
-	for(i=0; i<count; i++)
-		types[i] = display_data[i].type;
-	liststore = gtk_list_store_newv(count, types);
-	if(!liststore)
-		return NULL;
-	for(i=1; i<count; i++) {
-		if(display_data[i].show) {
-			switch(display_data[i].type) {
-			case G_TYPE_INT:
-				gtk_tree_sortable_set_sort_func(
-					GTK_TREE_SORTABLE(liststore), 
-					i, 
-					_sort_iter_compare_func_int,
-					GINT_TO_POINTER(i), 
-					NULL); 
-				
-				break;
-			case G_TYPE_STRING:
-				gtk_tree_sortable_set_sort_func(
-				GTK_TREE_SORTABLE(liststore), 
-				i, 
-				_sort_iter_compare_func_char,
-				GINT_TO_POINTER(i), 
-				NULL); 
-				break;
-			default:
-				g_print("unknown type %d",
-					(int)display_data[i].type);
-			}
-		}
-	}
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
-					     1, 
-					     GTK_SORT_ASCENDING);
-	return liststore;
 }
 
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data)
@@ -364,6 +327,78 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 }
 
+extern GtkTreeView *create_treeview(display_data_t *local, gpointer user_data)
+{
+	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
+	g_signal_connect(G_OBJECT(tree_view), "row-activated",
+			 G_CALLBACK(local->row_clicked),
+			 user_data);
+
+	local->user_data = user_data;
+	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
+			 G_CALLBACK(_set_up_button),
+			 local);
+	
+	gtk_widget_show(GTK_WIDGET(tree_view));
+	
+	return tree_view;
+
+}
+
+extern GtkListStore *create_liststore(GtkTreeView *tree_view, 
+				      display_data_t *display_data,
+				      int count)
+{
+	GtkListStore *liststore = NULL;
+	GType types[count];
+	int i=0;
+	
+	/*set up the types defined in the display_data_t */
+	for(i=0; i<count; i++)
+		types[i] = display_data[i].type;
+
+	liststore = gtk_list_store_newv(count, types);
+	if(!liststore)
+		return NULL;
+
+	for(i=1; i<count; i++) {
+		if(display_data[i].show) {
+			switch(display_data[i].type) {
+			case G_TYPE_INT:
+				gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE(liststore), 
+					i, 
+					_sort_iter_compare_func_int,
+					GINT_TO_POINTER(i), 
+					NULL); 
+				
+				break;
+			case G_TYPE_STRING:
+				gtk_tree_sortable_set_sort_func(
+				GTK_TREE_SORTABLE(liststore), 
+				i, 
+				_sort_iter_compare_func_char,
+				GINT_TO_POINTER(i), 
+				NULL); 
+				break;
+			default:
+				g_print("unknown type %d",
+					(int)display_data[i].type);
+			}
+		}
+	}
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
+					     1, 
+					     GTK_SORT_ASCENDING);
+
+	load_header(tree_view, display_data);
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
+	g_object_unref(GTK_TREE_MODEL(liststore));
+
+	return liststore;
+}
+
+
 extern void right_button_pressed(GtkTreeView *tree_view, 
 				 GtkTreePath *path,
 				 GdkEventButton *event, 
@@ -408,6 +443,92 @@ extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 					    NULL, display_data->user_data);
 	}
 	gtk_tree_path_free(path);
+}
+
+extern popup_info_t *create_popup_info(int type, char *title)
+{
+	GtkScrolledWindow *window = NULL;
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkBin *bin2 = NULL;
+	GtkWidget *table = NULL;
+	GtkWidget *popup = NULL;
+	popup_info_t *popup_win = xmalloc(sizeof(popup_info_t));
+
+	list_push(popup_list, popup_win);
+	
+	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
+	popup_win->popup = gtk_dialog_new();
+	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
+				    600, 400);
+	gtk_window_set_title(GTK_WINDOW(popup_win->popup), "Sview");
+	
+	popup = popup_win->popup;
+
+	table = gtk_table_new(1, 2, FALSE);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+
+	popup_win->event_box = gtk_event_box_new();
+	gtk_event_box_set_above_child(
+		GTK_EVENT_BOX(popup_win->event_box), 
+		FALSE);
+	popup_win->button = gtk_button_new_with_label("Refresh");
+	gtk_table_attach_defaults(GTK_TABLE(table), 
+				  popup_win->event_box,
+				  0, 1, 0, 1); 
+	gtk_table_attach(GTK_TABLE(table), 
+			 popup_win->button,
+			 1, 2, 0, 1,
+			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
+			 0, 0); 
+		
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   table, FALSE, FALSE, 0);
+
+	window = create_scrolled_window();
+	bin = GTK_BIN(&window->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin2 = GTK_BIN(&view->bin);
+	popup_win->table = GTK_TABLE(bin2->child);
+	
+	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			 GTK_WIDGET(window), TRUE, TRUE, 0);
+	popup_win->spec_info->type = type;
+	popup_win->spec_info->title = xstrdup(title);
+	g_signal_connect(G_OBJECT(popup_win->popup), "delete_event",
+			 G_CALLBACK(delete_popup), 
+			 popup_win->spec_info->title);
+	gtk_widget_show_all(popup_win->popup);
+	return popup_win;
+}
+
+extern void setup_popup_info(popup_info_t *popup_win, 
+			     display_data_t *display_data, 
+			     int cnt)
+{
+	GtkWidget *label = NULL;
+	int i = 0;
+	specific_info_t *spec_info = popup_win->spec_info;
+	
+	popup_win->display_data = xmalloc(sizeof(display_data_t)*(cnt+2));
+	for(i=0; i<cnt+1; i++) {
+		memcpy(&popup_win->display_data[i], 
+		       &display_data[i], 
+		       sizeof(display_data_t));
+	}
+	
+	g_signal_connect(G_OBJECT(popup_win->event_box), 
+			 "button-press-event",
+			 G_CALLBACK(redo_popup),
+			 popup_win);
+	g_signal_connect(G_OBJECT(popup_win->button), 
+			 "pressed",
+			 G_CALLBACK(popup_win->display_data->refresh),
+			 popup_win);
+	
+	label = gtk_label_new(spec_info->title);
+	gtk_container_add(GTK_CONTAINER(popup_win->event_box), label);
+	gtk_widget_show(label);
 }
 
 extern void redo_popup(GtkWidget *widget, GdkEventButton *event, 

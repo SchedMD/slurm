@@ -94,24 +94,21 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", FALSE, -1},	
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
-static display_data_t popup_data_job[SORTID_CNT+1];
 
 static display_data_t options_data_job[] = {
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, JOB_PAGE},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, JOB_PAGE},
+#else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
+#endif
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, JOB_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
 static display_data_t *local_display_data = NULL;
 time_t now_time;
-
-static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			   gpointer user_data)
-{
-	local_display_data->user_data = user_data;
-	row_clicked(tree_view, event, local_display_data);
-}
 
 static void _append_job_record(job_info_t *job_ptr,
 			      GtkListStore *liststore, GtkTreeIter *iter,
@@ -201,10 +198,16 @@ extern int get_new_info_job(job_info_msg_t **info_ptr)
 	*info_ptr = new_job_ptr;
 	return error_code;
 }
+
+extern void refresh_job(GtkAction *action, gpointer user_data)
+{
+	popup_info_t *popup_win = (popup_info_t *)user_data;
+	specific_info_node(popup_win);
+}
+
 extern void get_info_job(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS, i, j, recs;
-	static int printed_jobs = 0;
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t job;
@@ -215,25 +218,24 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	
+	now_time = time(NULL);
 	if(display_data)
 		local_display_data = display_data;
-
-	local_display_data = display_data;
 	if(!table) {
-		for(i=0; i<SORTID_CNT+1; i++) {
-			memcpy(&popup_data_job[i], &display_data_job[i], 
-			       sizeof(display_data_t));
-		}
+		display_data_job->set_menu = local_display_data->set_menu;
 		return;
 	}
 
 	if(new_job_ptr && toggled)
 		goto got_toggled;
-	now_time = time(NULL);
 
 	if((error_code = get_new_info_job(&new_job_ptr))
-	   == SLURM_NO_CHANGE_IN_DATA) 
+	   == SLURM_NO_CHANGE_IN_DATA){
+		if(!display_widget)
+			goto display_it;
 		return;
+	}
+
 got_toggled:
 	if(display_widget)
 		gtk_widget_destroy(display_widget);
@@ -249,31 +251,118 @@ got_toggled:
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		return;
 	}
-
+display_it:
 	if (new_job_ptr)
 		recs = new_job_ptr->record_count;
 	else
 		recs = 0;
 
-	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
-	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
-	g_signal_connect(G_OBJECT(tree_view), "row-activated",
-			 G_CALLBACK(row_clicked_job),
-			 new_job_ptr);
-	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
-			 G_CALLBACK(_set_up_button),
-			 new_job_ptr);
+	tree_view = create_treeview(local_display_data, new_job_ptr);
 	
 	gtk_table_attach_defaults(GTK_TABLE(table), 
 				  GTK_WIDGET(tree_view),
 				  0, 1, 0, 1); 
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
-	liststore = create_liststore(display_data_job, SORTID_CNT);
+	liststore = create_liststore(tree_view, display_data_job, SORTID_CNT);
 
-	load_header(tree_view, display_data_job);
 
-	printed_jobs = 0;
+	count = 0;
+	for (i = 0; i < recs; i++) {
+		job = new_job_ptr->job_array[i];
+		
+		if ((job.job_state != JOB_PENDING)
+		    &&  (job.job_state != JOB_RUNNING)
+		    &&  (job.job_state != JOB_SUSPENDED)
+		    &&  ((job.job_state & JOB_COMPLETING) == 0))
+			continue;	/* job has completed */
+
+		if (job.node_inx[0] != -1) {
+			job.num_nodes = 0;
+			j = 0;
+			while (job.node_inx[j] >= 0) {
+				job.num_nodes +=
+				    (job.node_inx[j + 1] + 1) -
+				    job.node_inx[j];
+				/* set_grid(job.node_inx[j], */
+/* 					 job.node_inx[j + 1], count); */
+				j += 2;
+			}
+			_append_job_record(&job, liststore, &iter, count);
+		
+			count++;			
+		}
+	}
+		
+	for (i = 0; i < recs; i++) {
+		job = new_job_ptr->job_array[i];
+		
+		if (job.job_state != JOB_PENDING)
+			continue;	/* job has completed */
+		job.nodes = "waiting...";
+		_append_job_record(&job, liststore, &iter, count);
+		count++;			
+	}
+	
+	//ba_system_ptr->ycord++;
+
+	job_info_ptr = new_job_ptr;
+	return;
+}
+
+extern void specific_info_job(popup_info_t *popup_win)
+{
+	int error_code = SLURM_SUCCESS, i, j, recs;
+	static int count = 0;
+	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
+	specific_info_t *spec_info = popup_win->spec_info;
+	job_info_t job;
+	char error_char[50];
+	GtkTreeIter iter;
+	GtkListStore *liststore = NULL;
+	GtkWidget *label = NULL;
+	GtkTreeView *tree_view = NULL;
+	
+	now_time = time(NULL);
+	if(spec_info->display_widget)
+		gtk_widget_destroy(spec_info->display_widget);
+	else 
+		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
+
+	if(new_job_ptr && toggled)
+		goto display_it;
+
+	if((error_code = get_new_info_job(&new_job_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA)
+		goto display_it;	
+
+	if (error_code != SLURM_SUCCESS) {
+		sprintf(error_char, "slurm_load_job: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(GTK_TABLE(popup_win->table), 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+		return;
+	}
+display_it:
+
+	if (new_job_ptr)
+		recs = new_job_ptr->record_count;
+	else
+		recs = 0;
+	
+	tree_view = create_treeview(local_display_data, new_job_ptr);
+	
+	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+	gtk_table_attach_defaults(GTK_TABLE(popup_win->table), 
+				  GTK_WIDGET(tree_view),
+				  0, 1, 0, 1); 
+
+	liststore = create_liststore(tree_view, display_data_job, SORTID_CNT);
+
 	count = 0;
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
@@ -313,22 +402,24 @@ got_toggled:
 	
 	//ba_system_ptr->ycord++;
 	
-	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
-	g_object_unref(GTK_TREE_MODEL(liststore));
 	job_info_ptr = new_job_ptr;
 	return;
 }
 
-
-extern void set_menus_job(GtkTreeView *tree_view, GtkTreePath *path, 
+extern void set_menus_job(void *arg, GtkTreePath *path, 
 			  GtkMenu *menu, int type)
 {
+	GtkTreeView *tree_view = (GtkTreeView *)arg;
+	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(menu, display_data_job);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_job);
+		break;
+	case POPUP_CLICKED:
+		make_popup_fields_menu(popup_win, menu);
 		break;
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);
@@ -394,6 +485,67 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
+	char *name = NULL;
+	char title[100];
+	ListIterator itr = NULL;
+	popup_info_t *popup_win = NULL;
 	int job_id = -1;
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &job_id, -1);
+	
+	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	switch(id) {
+		case PART_PAGE:
+		snprintf(title, 100, "Partition(s) with node %s", name);
+		break;
+	case BLOCK_PAGE: 
+		snprintf(title, 100, "Blocks(s) with node %s", name);
+		break;
+	case ADMIN_PAGE: 
+		snprintf(title, 100, "Admin Page for node %s", name);
+		break;
+	case SUBMIT_PAGE: 
+		snprintf(title, 100, "Submit job on node %s", name);
+		break;
+	default:
+		g_print("nodes got %d\n", id);
+	}
+	
+	itr = list_iterator_create(popup_list);
+	while((popup_win = list_next(itr))) {
+		if(popup_win->spec_info)
+			if(!strcmp(popup_win->spec_info->title, title)) {
+				break;
+			} 
+	}
+	list_iterator_destroy(itr);
+	
+	if(!popup_win) 
+		popup_win = create_popup_info(NODE_PAGE, title);
+	
+	toggled = true;
+
+	switch(id) {
+	case JOB_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		snprintf(title, 100, "Jobs(s) with node %s", name);
+		break;
+	case PART_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		popup_win->spec_info->data = name;
+		specific_info_part(popup_win);
+		break;
+	case BLOCK_PAGE: 
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		break;
+	case ADMIN_PAGE: 
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		break;
+	case SUBMIT_PAGE: 
+		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		break;
+	default:
+		g_print("nodes got %d\n", id);
+	}
+	
+	toggled = false;	
 }

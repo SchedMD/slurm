@@ -77,8 +77,6 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
-static display_data_t popup_data_block[SORTID_CNT+1];
-
 static display_data_t options_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
@@ -105,13 +103,6 @@ static void _nodelist_del(void *object);
 static int _list_match_all(void *object, void *key);
 static int _in_slurm_partition(List slurm_nodes, List bg_nodes);
 static int _make_nodelist(char *nodes, List nodelist);
-
-static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			    gpointer user_data)
-{
-	local_display_data->user_data = user_data;
-	row_clicked(tree_view, event, local_display_data);
-}
 
 extern void get_info_block(GtkTable *table, display_data_t *display_data)
 {
@@ -265,25 +256,15 @@ got_toggled:
 	else
 		recs = 0;
 
-	tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
-	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+	tree_view = create_treeview(local_display_data, new_part_ptr);
 
-	g_signal_connect(G_OBJECT(tree_view), "row-activated",
-			 G_CALLBACK(row_clicked_block),
-			 new_part_ptr);
-	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
-			 G_CALLBACK(_set_up_button),
-			 new_part_ptr);
-	
 	gtk_table_attach_defaults(GTK_TABLE(table), 
 				  GTK_WIDGET(tree_view),
 				  0, 1, 0, 1); 
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
-	liststore = create_liststore(display_data, SORTID_CNT);
+	liststore = create_liststore(tree_view, display_data, SORTID_CNT);
 	
-	load_header(tree_view, display_data);
-
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
@@ -336,15 +317,20 @@ got_toggled:
 	return;
 }
 
-extern void set_menus_block(GtkTreeView *tree_view, GtkTreePath *path, 
+extern void set_menus_block(void *arg, GtkTreePath *path, 
 			    GtkMenu *menu, int type)
 {
+	GtkTreeView *tree_view = (GtkTreeView *)arg;
+	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(menu, display_data_block);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_block);
+		break;
+	case POPUP_CLICKED:
+		make_popup_fields_menu(popup_win, menu);
 		break;
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);
