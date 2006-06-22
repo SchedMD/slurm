@@ -312,6 +312,7 @@ typedef struct complete_job_allocation {
 
 typedef struct complete_batch_script {
 	uint32_t job_id;
+	uint32_t step_id;
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	char *node_name;

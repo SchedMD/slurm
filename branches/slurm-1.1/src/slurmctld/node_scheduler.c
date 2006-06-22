@@ -149,7 +149,7 @@ extern int count_cpus(unsigned *bitmap)
  *	node_record_table_ptr - pointer to global node table
  */
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout, 
-		bool suspended)
+			     bool suspended)
 {
 	int i;
 	kill_job_msg_t *kill_job;
