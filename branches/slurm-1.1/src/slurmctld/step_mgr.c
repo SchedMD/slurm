@@ -363,11 +363,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	else 
 		jobacct_g_step_complete_slurmctld(step_ptr);
 	
-	if ((job_ptr->kill_on_step_done)
-	&&  (list_count(job_ptr->step_list) <= 1)
-	&&  (!IS_JOB_FINISHED(job_ptr)))
-		return job_complete(job_id, uid, requeue, job_return_code);
-
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_COMPLETE RPC from uid %d",
 		      uid);
@@ -381,6 +376,12 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		     step_id);
 		return ESLURM_ALREADY_DONE;
 	}
+
+	if ((job_ptr->kill_on_step_done)
+	    && (list_is_empty(job_ptr->step_list))
+	    && (!IS_JOB_FINISHED(job_ptr)))
+		return job_complete(job_id, uid, requeue, job_return_code);
+
 	return SLURM_SUCCESS;
 }
 

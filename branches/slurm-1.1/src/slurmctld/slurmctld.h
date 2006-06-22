@@ -72,7 +72,7 @@
 		_X	= NULL; 	\
 	} while (0)
 #define IS_JOB_FINISHED(_X)		\
-	((_X->job_state & (~JOB_COMPLETING)) >  JOB_SUSPENDED)
+	(((_X->job_state & (~JOB_COMPLETING)) >  JOB_SUSPENDED) && !(_X->job_state & JOB_COMPLETING))
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
 
