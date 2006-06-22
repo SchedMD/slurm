@@ -340,6 +340,8 @@ struct job_record {
                                            each of the ntask_cnt hosts */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
+	bool suspended;                 /* marker to tell if job was 
+					 * suspended or not */
 };
 
 struct 	step_record {

@@ -1708,13 +1708,13 @@ extern void make_node_comp(struct node_record *node_ptr,
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
 		else
-			error("Node %s run_job_cnt underflow", node_ptr->name);
+			error("2 Node %s run_job_cnt underflow", node_ptr->name);
 
 		if (job_ptr->details && (job_ptr->details->shared == 0)) {
 			if (node_ptr->no_share_job_cnt)
 				(node_ptr->no_share_job_cnt)--;
 			else
-				error("Node %s no_share_job_cnt underflow", 
+				error("2 Node %s no_share_job_cnt underflow", 
 					node_ptr->name);
 			if (node_ptr->no_share_job_cnt == 0)
 				bit_set(share_node_bitmap, inx);
@@ -1796,13 +1796,13 @@ void make_node_idle(struct node_record *node_ptr,
 			if (node_ptr->run_job_cnt)
 				(node_ptr->run_job_cnt)--;
 			else
-				error("Node %s run_job_cnt underflow", 
+				error("3 Node %s run_job_cnt underflow", 
 				      node_ptr->name);
 		} else {
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else
-				error("Node %s comp_job_cnt underflow, job_id %u", 
+				error("3 Node %s comp_job_cnt underflow, job_id %u", 
 				      node_ptr->name, job_ptr->job_id);
 			if (node_ptr->comp_job_cnt > 0) 
 				return;		/* More jobs completing */
