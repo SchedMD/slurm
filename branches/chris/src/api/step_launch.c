@@ -148,7 +148,7 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	launch.cpu_bind = NULL; /* FIXME opt.cpu_bind; */
 	launch.mem_bind_type = 0; /* FIXME opt.mem_bind_type; */
 	launch.mem_bind = NULL; /* FIXME opt.mem_bind; */
-	launch.multi_prog = params->multi_prog;
+	launch.multi_prog = params->multi_prog ? 1 : 0;
 
 	launch.options = job_options_create();
 	spank_set_remote_options (launch.options);
@@ -156,10 +156,10 @@ int slurm_step_launch (slurm_step_ctx ctx, slurm_job_step_launch_t *params)
 	launch.ofname = params->remote_output_filename;
 	launch.efname = params->remote_error_filename;
 	launch.ifname = params->remote_input_filename;
-	launch.buffered_stdio = params->buffered_stdio;
+	launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
 
-/* 	if (opt.parallel_debug) */
-/* 		r.task_flags |= TASK_PARALLEL_DEBUG; */
+	if (params->parallel_debug)
+		launch.task_flags |= TASK_PARALLEL_DEBUG;
 
 	/* Node specific message contents */
 /* 	if (slurm_mpi_single_task_per_node ()) { */

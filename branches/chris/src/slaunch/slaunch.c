@@ -103,7 +103,10 @@ static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
 			      int stepid, slurm_step_layout_t *step_layout);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
-static void _dump_proctable(void);
+static void _mpir_init(int num_tasks);
+static void _mpir_cleanup(void);
+static void _mpir_set_executable_names(const char *executable_name);
+static void _mpir_dump_proctable(void);
 
 slurm_step_layout_t *global_step_layout;
 
@@ -116,7 +119,7 @@ int slaunch(int argc, char **argv)
 	int rc;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-		
+
 	/* Initialize plugin stack, read options from plugins, etc. */
 	if (spank_init(NULL) < 0)
 		fatal("Plug-in initialization failed");
@@ -177,11 +180,6 @@ int slaunch(int argc, char **argv)
 		exit(1);
 	}
 
-	/*
-	 * Set up some global variables for debugger use (e.g. Totalview)
-	 */
-	MPIR_proctable_size = step_req.num_tasks;
-	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * step_req.num_tasks);
 	/* FIXME - don't peek into the step context, that's cheating! */
 	global_step_layout = step_ctx->step_layout;
 
@@ -191,13 +189,13 @@ int slaunch(int argc, char **argv)
 	params.gid = opt.gid;
 	params.argc = opt.argc;
 	params.argv = opt.argv;
-	params.multi_prog = opt.multi_prog;
+	params.multi_prog = opt.multi_prog ? true : false;
 	params.envc = 0; /* FIXME */
 	params.env = NULL; /* FIXME */
 	params.cwd = opt.cwd;
 	params.slurmd_debug = opt.slurmd_debug;
-	params.buffered_stdio = !opt.unbuffered;
-	params.labelio = opt.labelio;
+	params.buffered_stdio = opt.unbuffered ? false : true;
+	params.labelio = opt.labelio ? true : false;
 	params.remote_output_filename = opt.remote_ofname;
 	params.remote_input_filename = opt.remote_ifname;
 	params.remote_error_filename = opt.remote_efname;
@@ -205,30 +203,35 @@ int slaunch(int argc, char **argv)
 	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
 			 (int)step_ctx->step_resp->job_step_id,
 			 step_ctx->step_layout);
+	params.parallel_debug = opt.parallel_debug ? true : false;
 	params.task_start_callback = _task_start;
 	params.task_finish_callback = _task_finish;
+
+	_mpir_init(step_req.num_tasks);
 
 	rc = slurm_step_launch(step_ctx, &params);
 	if (rc != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
-		slurm_step_ctx_destroy(step_ctx);
-		exit(1);
+		goto cleanup;
 	}
 
 	slurm_step_launch_wait_start(step_ctx);
 
 	if (opt.multi_prog)
-		set_multi_name(step_req.num_tasks);
+		mpir_set_multi_name(step_req.num_tasks);
+	else
+		_mpir_set_executable_names(params.argv[0]);
 	MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 	MPIR_Breakpoint();
 	if (opt.debugger_test)
-		_dump_proctable();
-	_dump_proctable();
+		_mpir_dump_proctable();
 
 	slurm_step_launch_wait_finish(step_ctx);
 
+cleanup:
 	/* Clean up. */
 	slurm_step_ctx_destroy(step_ctx);
+	_mpir_cleanup();
 
 	return 0;
 }
@@ -492,7 +495,8 @@ _task_start(launch_tasks_response_msg_t *msg)
 		taskid = global_step_layout->tids[msg->srun_node_id][i];
 		table = &MPIR_proctable[taskid];
 
-		table->host_name = global_step_layout->host[msg->srun_node_id];
+		table->host_name =
+			xstrdup(global_step_layout->host[msg->srun_node_id]);
 		/*table->executable_name = executable;*/
 		table->pid = msg->local_pids[i];
 	}
@@ -506,24 +510,57 @@ _task_finish(task_exit_msg_t *msg)
 		msg->num_tasks, msg->return_code);
 }
 
-static void
-_dump_proctable()
-{
-	int node_inx, task_inx, taskid;
-	int num_tasks;
-	MPIR_PROCDESC *tv;
 
-	for (node_inx=0; node_inx < MPIR_proctable_size; node_inx++) {
-		num_tasks = global_step_layout->tasks[node_inx];
-		for (task_inx = 0; task_inx < num_tasks; task_inx++) {
-			taskid = global_step_layout->tids[node_inx][task_inx];
-			tv = &MPIR_proctable[taskid];
-			if (!tv)
-				break;
-			info("task:%d, host:%s, pid:%d, executable:%s",
-			     taskid, tv->host_name, tv->pid,
-			     tv->executable_name);
-		}
-	} 
+/**********************************************************************
+ * Functions for manipulating the MPIR_* global variables which
+ * are accessed by parallel debuggers which trace slaunch.
+ **********************************************************************/
+static void
+_mpir_init(int num_tasks)
+{
+	MPIR_proctable_size = num_tasks;
+	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
+	if (MPIR_proctable == NULL)
+		fatal("Unable to initialize MPIR_proctable: %m");
+}
+
+static void
+_mpir_cleanup()
+{
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		xfree(MPIR_proctable[i].host_name);
+		xfree(MPIR_proctable[i].executable_name);
+	}
+	xfree(MPIR_proctable);
+}
+
+static void
+_mpir_set_executable_names(const char *executable_name)
+{
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		MPIR_proctable[i].executable_name = xstrdup(executable_name);
+		if (MPIR_proctable[i].executable_name == NULL)
+			fatal("Unable to set MPI_proctable executable_name:"
+			      " %m");
+	}
+}
+
+static void
+_mpir_dump_proctable()
+{
+	MPIR_PROCDESC *tv;
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		tv = &MPIR_proctable[i];
+		if (!tv)
+			break;
+		info("task:%d, host:%s, pid:%d, executable:%s",
+		     i, tv->host_name, tv->pid, tv->executable_name);
+	}
 }
 	

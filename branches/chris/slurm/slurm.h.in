@@ -74,6 +74,7 @@ BEGIN_C_DECLS
 #endif
 #include <stdio.h>		/* for FILE definitions */
 #include <time.h>		/* for time_t definitions */
+#include <stdbool.h>
 
 /* Define slurm_addr below to avoid including extraneous slurm headers */
 #ifdef	HAVE_SYS_SOCKET_H
@@ -522,15 +523,16 @@ typedef struct {
 	char **env;
 	char *cwd;
 	/* buffered stdio flag: 1 for line-buffered, 0 for unbuffered */
-	uint8_t buffered_stdio;
-	uint8_t labelio; /* 1 for labeled, 0 for unlabeled */
+	bool buffered_stdio;
+	bool labelio; /* 1 for labeled, 0 for unlabeled */
 	char *remote_output_filename;
 	char *remote_error_filename;
 	char *remote_input_filename;
 	slurm_step_io_fds_t local_fds;
 	uint32_t gid;
-	uint16_t multi_prog;
+	bool multi_prog;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
+	bool parallel_debug;
 	void (*task_start_callback)(launch_tasks_response_msg_t *);
 	void (*task_finish_callback)(task_exit_msg_t *);
 } slurm_job_step_launch_t;

@@ -155,7 +155,7 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 }
 
 extern int
-set_multi_name(int ntasks)
+mpir_set_multi_name(int ntasks)
 {
 	FILE *config_fd;
 	char line[256];
