@@ -186,6 +186,7 @@ int slaunch(int argc, char **argv)
 	/*
 	 * Use the job step context to launch the tasks.
 	 */
+	slurm_job_step_launch_t_init(&params);
 	params.gid = opt.gid;
 	params.argc = opt.argc;
 	params.argv = opt.argv;

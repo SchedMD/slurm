@@ -522,9 +522,8 @@ typedef struct {
 	uint16_t envc;
 	char **env;
 	char *cwd;
-	/* buffered stdio flag: 1 for line-buffered, 0 for unbuffered */
 	bool buffered_stdio;
-	bool labelio; /* 1 for labeled, 0 for unlabeled */
+	bool labelio;
 	char *remote_output_filename;
 	char *remote_error_filename;
 	char *remote_input_filename;
@@ -987,8 +986,17 @@ extern int slurm_spawn_kill PARAMS((slurm_step_ctx ctx,
 				       uint16_t signal));
 
 
+/* 
+ * slurm_job_step_launch_t_init - initialize a user-allocated
+ *      slurm_job_step_launch_t structure with default values.
+ *	default values.  This function will NOT allocate any new memory.
+ * IN ptr - pointer to a structure allocated by the use.  The structure will
+ *      be intialized.
+ */
+extern void slurm_job_step_launch_t_init PARAMS((slurm_job_step_launch_t *ptr));
+
 extern int slurm_step_launch PARAMS((slurm_step_ctx ctx,
-	slurm_job_step_launch_t *params));
+	const slurm_job_step_launch_t *params));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
