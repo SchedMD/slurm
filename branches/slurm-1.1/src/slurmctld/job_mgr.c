@@ -1590,7 +1590,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	uint32_t job_ran_flag = 0;
+	uint32_t job_comp_flag = 0;
 	bool suspended = false;
 
 	job_ptr = find_job_record(job_id);
@@ -1608,14 +1608,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if ((job_ptr->job_state & JOB_COMPLETING)
-	    && !list_is_empty(job_ptr->step_list))
+	if (job_ptr->job_state & JOB_COMPLETING)
 		return SLURM_SUCCESS;	/* avoid replay */
 
 	if (job_ptr->job_state == JOB_RUNNING)
-		job_ran_flag = JOB_COMPLETING;
+		job_comp_flag = JOB_COMPLETING;
 	if (job_ptr->job_state == JOB_SUSPENDED) {
-		job_ran_flag = JOB_COMPLETING;
+		job_comp_flag = JOB_COMPLETING;
 		suspended = true;
 	}
 
@@ -1629,47 +1628,34 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
 		job_ptr->batch_flag++;	/* only one retry */
-		job_ptr->job_state = JOB_PENDING | job_ran_flag;
+		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
-		if (job_ran_flag) 	/* job was running */
-			deallocate_nodes(job_ptr, false, suspended);
 	} else if (job_ptr->job_state == JOB_PENDING) {
 		job_ptr->job_state  = JOB_CANCELLED;
 		job_ptr->start_time = now;
 		job_ptr->end_time   = now;
 		job_completion_logger(job_ptr);
-		if (job_ran_flag) 	/* job was running */
-			deallocate_nodes(job_ptr, false, suspended);
-		info("job_complete for JobId=%u pending cancelled", job_id);
 	} else {
-		if (!(job_ptr->job_state & JOB_COMPLETING)) {
-			if (job_return_code == NO_VAL)
-				job_ptr->job_state = JOB_CANCELLED| job_ran_flag;
-			else if (job_return_code)
-				job_ptr->job_state = JOB_FAILED   | job_ran_flag;
-			else if (job_ran_flag &&  /* job was running */
-				 (job_ptr->end_time < now)) /* over time limit */
-				job_ptr->job_state = JOB_TIMEOUT  | job_ran_flag;
-			else
-				job_ptr->job_state = JOB_COMPLETE | job_ran_flag;
-			if (suspended)
-				job_ptr->end_time = job_ptr->suspend_time;
-			else
-				job_ptr->end_time = now;
-		}
-		if ((job_ptr->job_state & JOB_COMPLETING)
-		    && list_is_empty(job_ptr->step_list)) {
-			job_completion_logger(job_ptr);
-			deallocate_nodes(job_ptr, false, suspended);
-			info("job_complete for JobId=%u successful", job_id);
-		} else {
-			job_ptr->kill_on_step_done = 1;
-			info("job_complete JobId=%u completing(deallocated), "
-			     "not yet complete", job_id);
-		}
+		if (job_return_code == NO_VAL)
+			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
+		else if (job_return_code)
+			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
+		else if (job_comp_flag &&		/* job was running */
+			 (job_ptr->end_time < now))	/* over time limit */
+			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
+		else
+			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
+		if (suspended)
+			job_ptr->end_time = job_ptr->suspend_time;
+		else
+			job_ptr->end_time = now;
+		job_completion_logger(job_ptr);
 	}
 
 	last_job_update = now;
+	if (job_comp_flag) 	/* job was running */
+		deallocate_nodes(job_ptr, false, suspended);
+	info("job_complete for JobId=%u successful", job_id);
 
 	return SLURM_SUCCESS;
 }
