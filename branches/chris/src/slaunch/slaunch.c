@@ -492,7 +492,7 @@ _task_start(launch_tasks_response_msg_t *msg)
 		table = &MPIR_proctable[taskid];
 
 		table->host_name = xstrdup(msg->node_name);
-		/* table->executable_name = is set elsewhere */
+		/* table->executable_name is set elsewhere */
 		table->pid = msg->local_pids[i];
 	}
 

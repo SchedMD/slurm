@@ -508,7 +508,7 @@ typedef struct launch_tasks_response_msg {
 	uint32_t srun_node_id;
 	uint32_t count_of_pids;
 	uint32_t *local_pids;
-	uint32_t *task_ids;
+	uint32_t *task_ids; /* array of lenght count_of_pids */
 } launch_tasks_response_msg_t;
 
 typedef struct task_ext_msg {
