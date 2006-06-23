@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8395 2006-06-12 23:43:22Z morrone $
+# $Id: Makefile.am 8423 2006-06-20 17:48:33Z morrone $
 #
 
 srcdir = @srcdir@

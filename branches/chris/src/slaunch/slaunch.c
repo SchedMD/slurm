@@ -5,7 +5,8 @@
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
+ *  Written by Christopher J. Morrone <morrone2@llnl.gov>,
+ *    Mark Grondona <grondona@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
