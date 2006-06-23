@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8260 2006-06-01 01:19:31Z morrone $
+# $Id: Makefile.am 8441 2006-06-23 02:26:27Z morrone $
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -253,7 +253,7 @@ target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
 SUBDIRS = common api slurmctld slurmd plugins srun sacct sbcast \
-	scontrol scancel squeue sinfo smap slaunch salloc
+	scontrol scancel squeue sinfo smap slaunch salloc sbatch
 
 all: all-recursive
 
