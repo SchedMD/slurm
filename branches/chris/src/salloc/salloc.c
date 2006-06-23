@@ -31,22 +31,45 @@
 #  include "config.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
 
 #include <slurm/slurm.h>
 
+#include "src/common/xstring.h"
+
 #include "src/salloc/opt.h"
+
+static void ring_terminal_bell(void);
+static void run_command(void);
 
 int main(int argc, char *argv[])
 {
+	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t desc;
 	resource_allocation_response_msg_t *alloc;
+	time_t before, after;
 
+	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
 		fatal("salloc parameter parsing");
 	}
+	/* reinit log with new verbosity (if changed by command line) */
+	if (_verbose || opt.quiet) {
+		logopt.stderr_level += _verbose;
+		logopt.stderr_level -= opt.quiet;
+		logopt.prefix_level = 1;
+		log_alter(logopt, 0, NULL);
+	}
 
+
+	/*
+	 * Request a job allocation
+	 */
 	slurm_init_job_desc_msg(&desc);
 	desc.user_id = getuid();
 	desc.group_id = getgid();
@@ -54,16 +77,66 @@ int main(int argc, char *argv[])
 	desc.name = opt.job_name;
 	desc.immediate = opt.immediate;
 
+	before = time(NULL);
 	alloc = slurm_allocate_resources_blocking(&desc, 0);
 	if (alloc == NULL) 
 		fatal("Failed to allocate resources: %m");
+	after = time(NULL);
 
-	sleep(5);
+	/*
+	 * Allocation granted!
+	 */
+	info("Granted job allocation %d", alloc->job_id);
+	if (opt.bell == BELL_ALWAYS
+	    || (opt.bell == BELL_AFTER_DELAY
+		&& ((after - before) > DEFAULT_BELL_DELAY))) {
+		ring_terminal_bell();
+	}
 
+	/*
+	 * Run the user's command.
+	 */
+	setenvfs("SLURM_JOBID=%d", alloc->job_id);
+	run_command();
+
+	/*
+	 * Relinquish the job allocation.
+	 */
+	info("Relinquishing job allocation %d", alloc->job_id);
 	if (slurm_complete_job(alloc->job_id, 0) != 0)
 		fatal("Unable to clean up job allocation %d: %m",
 		      alloc->job_id);
 
 	slurm_free_resource_allocation_response_msg(alloc);
+
+	return 0;
 }
 
+static void ring_terminal_bell(void)
+{
+	fprintf(stdout, "\a");
+	fflush(stdout);
+}
+
+static void run_command(void)
+{
+	pid_t pid;
+	int status;
+	int rc;
+
+	pid = fork();
+	if (pid < 0) {
+		error("fork failed: %m");
+	} else if (pid > 0) {
+		/* parent */
+		while ((rc = waitpid(pid, &status, 0)) == -1) {
+			if (errno != EINTR) {
+				error("waitpid failed: %m");
+				break;
+			}
+		}
+	} else {
+		/* child */
+		execvp(command_argv[0], command_argv);
+	}
+}

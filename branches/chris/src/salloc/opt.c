@@ -122,10 +122,12 @@
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_NO_REQUEUE  0x123
+#define LONG_OPT_BELL        0x124
+#define LONG_OPT_NO_BELL     0x125
 
 /*---- global variables, defined in opt.h ----*/
-char **remote_argv;
-int remote_argc;
+char **command_argv;
+int command_argc;
 int _verbose;
 opt_t opt;
 
@@ -746,7 +748,7 @@ static void _opt_default()
 
 	getnodename(hostname, sizeof(hostname));
 	opt.ctrl_comm_ifhn  = xstrdup(hostname);
-
+	opt.bell            = BELL_AFTER_DELAY;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1002,6 +1004,8 @@ void set_options(const int argc, char **argv, int first)
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
+		{"bell",             no_argument,       0, LONG_OPT_BELL},
+		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:c:C:D:g:HIJ:kKm:n:N:"
@@ -1333,6 +1337,12 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
 			break;
+		case LONG_OPT_BELL:
+			opt.bell = BELL_ALWAYS;
+			break;
+		case LONG_OPT_NO_BELL:
+			opt.bell = BELL_NEVER;
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1405,33 +1415,33 @@ static void _opt_args(int argc, char **argv)
 	}
 #endif
 
-	remote_argc = 0;
+	command_argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[remote_argc] != NULL)
-			remote_argc++;
+		while (rest[command_argc] != NULL)
+			command_argc++;
 	}
-	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
-	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = xstrdup(rest[i]);
-	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
+	command_argv = (char **) xmalloc((command_argc + 1) * sizeof(char *));
+	for (i = 0; i < command_argc; i++)
+		command_argv[i] = xstrdup(rest[i]);
+	command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (opt.multi_prog) {
-		if (remote_argc < 1) {
+		if (command_argc < 1) {
 			error("configuration file not specified");
 			exit(1);
 		}
-		_load_multi(&remote_argc, remote_argv);
+		_load_multi(&command_argc, command_argv);
 
 	}
-	else if (remote_argc > 0) {
+	else if (command_argc > 0) {
 		char *fullpath;
-		char *cmd       = remote_argv[0];
+		char *cmd       = command_argv[0];
 		int  mode       = R_OK;
 
 		if ((fullpath = _search_path(cmd, true, mode))) {
-			xfree(remote_argv[0]);
-			remote_argv[0] = fullpath;
+			xfree(command_argv[0]);
+			command_argv[0] = fullpath;
 		} 
 	}
 	if (!_opt_verify())
@@ -1475,11 +1485,11 @@ static bool _opt_verify(void)
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (remote_argc > 0))
-		opt.job_name = _base_name(remote_argv[0]);
+	if ((opt.job_name == NULL) && (command_argc > 0))
+		opt.job_name = _base_name(command_argv[0]);
 
-	if (remote_argc == 0) {
-		error("must supply remote command");
+	if (command_argc == 0) {
+		error("A local command is a required parameter!");
 		verified = false;
 	}
 
@@ -1703,8 +1713,8 @@ print_commandline()
 	char buf[256];
 
 	buf[0] = '\0';
-	for (i = 0; i < remote_argc; i++)
-		snprintf(buf, 256,  "%s", remote_argv[i]);
+	for (i = 0; i < command_argc; i++)
+		snprintf(buf, 256,  "%s", command_argv[i]);
 	return xstrdup(buf);
 }
 
@@ -1802,7 +1812,7 @@ static void _opt_list()
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_commandline();
-	info("remote command : `%s'", str);
+	info("user command   : `%s'", str);
 	xfree(str);
 
 }

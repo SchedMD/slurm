@@ -228,12 +228,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
-			verbose("Allocation request enqueued, "
-				"listening for response on port %u",
-				listen->port);
-			printf("Allocation request enqueued, "
-				"listening for response on port %u\n",
-				listen->port);
+			verbose("Pending job allocation %u", job_id);
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 

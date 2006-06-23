@@ -39,14 +39,15 @@
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
-//#include "src/common/mpi.h"
 
 #define MAX_USERNAME	9
+#define DEFAULT_BELL_DELAY 10
 
+typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
 /* global variables relating to user options */
-extern char **remote_argv;
-extern int remote_argc;
+extern char **command_argv;
+extern int command_argc;
 extern int _verbose;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
@@ -130,6 +131,7 @@ typedef struct salloc_options {
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
+	bell_flag_t bell;       /* --bell, --no-bell            */
 } opt_t;
 
 extern opt_t opt;
