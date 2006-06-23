@@ -1364,12 +1364,16 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	resp.count_of_pids    = job->ntasks;
 
 	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
-	for (i = 0; i < job->ntasks; i++) 
+	resp.task_ids = xmalloc(job->ntasks * sizeof(*resp.task_ids));
+	for (i = 0; i < job->ntasks; i++) {
 		resp.local_pids[i] = job->task[i]->pid;  
+		resp.task_ids[i] = job->task[i]->gtid;
+	}
 
 	slurm_send_only_node_msg(&resp_msg);
 
 	xfree(resp.local_pids);
+	xfree(resp.task_ids);
 }
 
 

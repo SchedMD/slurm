@@ -108,8 +108,6 @@ static void _mpir_cleanup(void);
 static void _mpir_set_executable_names(const char *executable_name);
 static void _mpir_dump_proctable(void);
 
-slurm_step_layout_t *global_step_layout;
-
 int slaunch(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
@@ -179,9 +177,6 @@ int slaunch(int argc, char **argv)
 		error("Could not create job step context: %m");
 		exit(1);
 	}
-
-	/* FIXME - don't peek into the step context, that's cheating! */
-	global_step_layout = step_ctx->step_layout;
 
 	/*
 	 * Use the job step context to launch the tasks.
@@ -493,12 +488,11 @@ _task_start(launch_tasks_response_msg_t *msg)
 		msg->node_name, msg->srun_node_id, msg->count_of_pids);
 
 	for (i = 0; i < msg->count_of_pids; i++) {
-		taskid = global_step_layout->tids[msg->srun_node_id][i];
+		taskid = msg->task_ids[i];
 		table = &MPIR_proctable[taskid];
 
-		table->host_name =
-			xstrdup(global_step_layout->host[msg->srun_node_id]);
-		/*table->executable_name = executable;*/
+		table->host_name = xstrdup(msg->node_name);
+		/* table->executable_name = is set elsewhere */
 		table->pid = msg->local_pids[i];
 	}
 

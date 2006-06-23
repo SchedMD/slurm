@@ -2491,8 +2491,8 @@ _pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, Buf buffer)
 	packstr(msg->node_name, buffer);
 	pack32((uint32_t)msg->srun_node_id, buffer);
 	pack32((uint32_t)msg->count_of_pids, buffer);
-	pack32_array(msg->local_pids,
-		     msg->count_of_pids, buffer);
+	pack32_array(msg->local_pids, msg->count_of_pids, buffer);
+	pack32_array(msg->task_ids, msg->count_of_pids, buffer);
 }
 
 static int
@@ -2514,8 +2514,14 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 	safe_unpack32_array(&msg->local_pids, &uint32_tmp, buffer);
 	if (msg->count_of_pids != uint32_tmp)
 		goto unpack_error;
+	safe_unpack32_array(&msg->task_ids, &uint32_tmp, buffer);
+	if (msg->count_of_pids != uint32_tmp)
+		goto unpack_error2;
+
 	return SLURM_SUCCESS;
 
+      unpack_error2:
+	xfree(msg->count_of_pids);
       unpack_error:
 	xfree(msg->node_name);
 	xfree(msg);
