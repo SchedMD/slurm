@@ -329,7 +329,12 @@ int srun(int ac, char **av)
 	 * If job is "forcefully terminated" exit immediately.
 	 *
 	 */
-	
+	if (job->state == SRUN_JOB_FORCETERM) {
+		info("Force Terminated job");
+		srun_job_destroy(job, 0);
+		exit(1);
+	} 
+
 	/*
 	 *  We want to make sure we get the correct state of the job
 	 *  and not finish before all the messages have been sent.
@@ -337,21 +342,17 @@ int srun(int ac, char **av)
 	debug("Waiting for message thread");
 	if (pthread_join(job->jtid, NULL) < 0)
 		error ("Waiting on message thread: %m");
-
+	debug("done");
+	
 	if (job->state == SRUN_JOB_CANCELLED) {
 		info("Cancelling job");
 		srun_job_destroy(job, NO_VAL);
 	} else if (job->state == SRUN_JOB_FAILED) {
 		info("Terminating job");
 		srun_job_destroy(job, job->rc);
-	} else if (job->state == SRUN_JOB_FORCETERM) {
-		info("Force Terminated job");
+	} else 
 		srun_job_destroy(job, 0);
-		exit(1);
-	} else
-		srun_job_destroy(job, 0);
-	
-	
+		
 	/* wait for launch thread */
 	if (pthread_join(job->lid, NULL) < 0)
 		error ("Waiting on launch thread: %m");
@@ -366,7 +367,8 @@ int srun(int ac, char **av)
 	eio_signal_shutdown(job->eio);
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
-
+	debug("done");
+	
 	
 	if (slurm_mpi_exit () < 0)
 		; /* eh, ignore errors here */
