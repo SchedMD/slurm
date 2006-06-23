@@ -123,7 +123,6 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
-#define LONG_OPT_NO_REQUEUE  0x123
 
 /*---- forward declarations of static functions  ----*/
 
@@ -173,7 +172,6 @@ static bool  _under_parallel_debugger(void);
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static enum  task_dist_states _verify_dist_type(const char *arg);
-static bool  _verify_node_count(const char *arg, int *min, int *max);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
 					cpu_bind_type_t *cpu_bind_type);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
@@ -521,46 +519,6 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	return 0;
 }
 
-/* 
- * verify that a node count in arg is of a known form (count or min-max)
- * OUT min, max specified minimum and maximum node counts
- * RET true if valid
- */
-static bool 
-_verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
-{
-	char *end_ptr;
-	double val1, val2;
-	
-	val1 = strtod(arg, &end_ptr);
-	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
-		val1 *= 1024;
-		end_ptr++;
-	}
-
- 	if (end_ptr[0] == '\0') {
-		*min_nodes = val1;
-		return true;
-	}
-	
-	if (end_ptr[0] != '-')
-		return false;
-
-	val2 = strtod(&end_ptr[1], &end_ptr);
-	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
-		val2 *= 1024;
-		end_ptr++;
-	}
-
-	if (end_ptr[0] == '\0') {
-		*min_nodes = val1;
-		*max_nodes = val2;
-		return true;
-	} else
-		return false;
-
-}
-
 /* return command name from its full path name */
 static char * _base_name(char* command)
 {
@@ -681,22 +639,18 @@ static void _opt_default()
 	opt.nprocs_set = false;
 	opt.cpus_per_task = 1; 
 	opt.cpus_set = false;
-	opt.min_nodes = 1;
-	opt.max_nodes = 0;
-	opt.nodes_set = false;
+	opt.num_nodes = 1;
+	opt.num_nodes_set = false;
 	opt.cpu_bind_type = 0;
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.time_limit = -1;
-	opt.partition = NULL;
-	opt.max_threads = MAX_THREADS;
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
 	opt.dependency = NO_VAL;
-	opt.account  = NULL;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
 
@@ -712,15 +666,9 @@ static void _opt_default()
 	opt.labelio = false;
 	opt.unbuffered = false;
 	opt.overcommit = false;
-	opt.share = false;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
 
-	opt.immediate	= false;
-	opt.no_requeue	= false;
-
-	opt.attach	= NULL;
-	opt.join	= false;
 	opt.max_wait	= slurm_get_wait_time();
 
 	opt.quit_on_intr = false;
@@ -735,7 +683,6 @@ static void _opt_default()
 	opt.realmem	    = -1;
 	opt.tmpdisk	    = -1;
 
-	opt.hold	    = false;
 	opt.constraints	    = NULL;
 	opt.contiguous	    = false;
         opt.exclusive       = false;
@@ -769,7 +716,6 @@ static void _opt_default()
 	 */
 	if ((opt.parallel_debug = _under_parallel_debugger())) {
 		opt.max_launch_time = 120;
-		opt.max_threads     = 1;
 		opt.msg_timeout     = 15;
 	}
 
@@ -795,36 +741,32 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           }, 
-  {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
-  {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-  {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
-  {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-  {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-  {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
-  {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
-  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         &opt.jobid_set },
-  {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
-  {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
-  {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
-  {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
-  {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
-  {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-  {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
-  {"SLURM_STDERRMODE",    OPT_STRING,     &opt.local_efname,  NULL           },
-  {"SLURM_STDINMODE",     OPT_STRING,     &opt.local_ifname,  NULL           },
-  {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.local_ofname,  NULL           },
-  {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
-  {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
-  {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
-  {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
-  {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
+  {"SLURM_JOBID",          OPT_INT,       &opt.jobid,         &opt.jobid_set },
+  {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
+  {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_set  },
+  {"SLAUNCH_CONN_TYPE",    OPT_CONN_TYPE, NULL,               NULL           },
+  {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
+  {"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
+  {"SLAUNCH_MEM_BIND",     OPT_MEM_BIND,  NULL,               NULL           },
+  {"SLAUNCH_DEBUG",        OPT_DEBUG,     NULL,               NULL           },
+  {"SLAUNCH_DISTRIBUTION", OPT_DISTRIB,   NULL,               NULL           },
+  {"SLAUNCH_GEOMETRY",     OPT_GEOMETRY,  NULL,               NULL           },
+  {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
+  {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
+  {"SLAUNCH_NNODES",       OPT_NODES,     NULL,               NULL           },
+  {"SLAUNCH_NO_ROTATE",    OPT_NO_ROTATE, NULL,               NULL           },
+  {"SLAUNCH_NPROCS",       OPT_INT,       &opt.nprocs,        &opt.nprocs_set},
+  {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
+  {"SLAUNCH_REMOTE_CWD",   OPT_STRING,    &opt.cwd,           NULL           },
+  {"SLAUNCH_STDERRMODE",   OPT_STRING,    &opt.local_efname,  NULL           },
+  {"SLAUNCH_STDINMODE",    OPT_STRING,    &opt.local_ifname,  NULL           },
+  {"SLAUNCH_STDOUTMODE",   OPT_STRING,    &opt.local_ofname,  NULL           },
+  {"SLAUNCH_TIMELIMIT",    OPT_INT,       &opt.time_limit,    NULL           },
+  {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
+  {"SLAUNCH_DISABLE_STATUS",OPT_INT,      &opt.disable_status,NULL           },
+  {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
+  {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
+  {"SLAUNCH_SRUN_MULTI",   OPT_MULTI,     NULL,               NULL           },
 
   {NULL, 0, NULL, NULL}
 };
@@ -902,13 +844,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_NODES:
-		opt.nodes_set = _verify_node_count( val, 
-						    &opt.min_nodes, 
-						    &opt.max_nodes );
-		if (opt.nodes_set == false) {
-			error("\"%s=%s\" -- invalid node count. ignoring...",
-			      e->var, val);
-		}
+		opt.num_nodes_set = true;
+		opt.num_nodes = _get_int(val, "number of nodes");
 		break;
 
 	case OPT_OVERCOMMIT:
@@ -984,10 +921,8 @@ void set_options(const int argc, char **argv, int first)
 		{"local-error",   required_argument, 0, 'e'},
 		{"remote-error",  required_argument, 0, 'E'},
 		{"geometry",      required_argument, 0, 'g'},
-		{"hold",          no_argument,       0, 'H'},
 		{"local-input",   required_argument, 0, 'i'},
 		{"remote-input",  required_argument, 0, 'I'},
-		{"join",          no_argument,       0, 'j'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-on-bad-exit", no_argument,    0, 'K'},
@@ -998,17 +933,13 @@ void set_options(const int argc, char **argv, int first)
 		{"local-output",  required_argument, 0, 'o'},
 		{"remote-output", required_argument, 0, 'O'},
 		{"overcommit",    no_argument,       0, 'C'},
-		{"partition",     required_argument, 0, 'p'},
 		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
-		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
-		{"threads",       required_argument, 0, 'T'},
 		{"unbuffered",    no_argument,       0, 'u'},
-		{"account",       required_argument, 0, 'U'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
@@ -1047,11 +978,10 @@ void set_options(const int argc, char **argv, int first)
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:Cd:D:e:E:g:Hi:I:jJ:kKlm:n:N:"
-		"o:O:p:P:qQr:R:st:T:uU:vVw:W:x:XZ";
+	char *opt_string = "+c:Cd:D:e:E:g:i:I:J:kKlm:n:N:"
+		"o:O:P:qQr:R:t:uvVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1127,9 +1057,6 @@ void set_options(const int argc, char **argv, int first)
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
-		case (int)'H':
-			opt.hold = true;
-			break;
 		case (int)'i':
 			if(!first && opt.local_ifname)
 				break;
@@ -1141,9 +1068,6 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			xfree(opt.remote_ifname);
 			opt.remote_ifname = xstrdup(optarg);
-			break;
-		case (int)'j':
-			opt.join = true;
 			break;
 		case (int)'J':
 			if(!first && set_name)
@@ -1178,22 +1102,14 @@ void set_options(const int argc, char **argv, int first)
 				break;
 						
 			opt.nprocs_set = true;
-			opt.nprocs = 
-				_get_int(optarg, "number of tasks");
+			opt.nprocs = _get_int(optarg, "number of tasks");
 			break;
 		case (int)'N':
-			if(!first && opt.nodes_set)
+			if(!first && opt.num_nodes_set)
 				break;
 						
-			opt.nodes_set = 
-				_verify_node_count(optarg, 
-						   &opt.min_nodes,
-						   &opt.max_nodes);
-			if (opt.nodes_set == false) {
-				error("invalid node count `%s'", 
-				      optarg);
-				exit(1);
-			}
+			opt.num_nodes_set = true;
+			opt.num_nodes = _get_int(optarg, "number of nodes");
 			break;
 		case (int)'o':
 			if(!first && opt.local_ofname)
@@ -1214,13 +1130,6 @@ void set_options(const int argc, char **argv, int first)
 				opt.remote_ofname = xstrdup("/dev/null");
 			else
 				opt.remote_ofname = xstrdup(optarg);
-			break;
-		case (int)'p':
-			if(!first && opt.partition)
-				break;
-						
-			xfree(opt.partition);
-			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'P':
 			if(!first && opt.dependency)
@@ -1247,30 +1156,14 @@ void set_options(const int argc, char **argv, int first)
 		case (int)'R':
 			opt.no_rotate = true;
 			break;
-		case (int)'s':
-			opt.share = true;
-			break;
 		case (int)'t':
 			if(!first && opt.time_limit)
 				break;
 			
 			opt.time_limit = _get_int(optarg, "time");
 			break;
-		case (int)'T':
-			if(!first && opt.max_threads)
-				break;
-			
-			opt.max_threads = 
-				_get_int(optarg, "max_threads");
-			break;
 		case (int)'u':
 			opt.unbuffered = true;
-			break;
-		case (int)'U':
-			if(!first && opt.account)
-				break;
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
 			break;
 		case (int)'v':
 			if(!first && _verbose)
@@ -1395,7 +1288,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.parallel_debug   = true;
 			MPIR_being_debugged  = 1;
 			opt.max_launch_time = 120;
-			opt.max_threads     = 1;
 			opt.msg_timeout     = 15;
 			break;
 		case LONG_OPT_HELP:
@@ -1464,9 +1356,6 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
-			break;
-		case LONG_OPT_NO_REQUEUE:
-			opt.no_requeue = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -1585,6 +1474,12 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 
+	if (!opt.jobid_set) {
+		error("A job ID MUST be specified on the command line,");
+		error("or through the SLURM_JOBID environment variable.");
+		verified = false;
+	}
+
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
 	 *   as DEBUG3 is used for slurmd IO operations, which
@@ -1627,70 +1522,53 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (opt.argc > 0))
 		opt.job_name = _base_name(opt.argv[0]);
 
-	{ /* FIXME - was: mode != MODE_ATTACH */
-
-		if (opt.argc == 0) {
-			error("must supply remote command");
-			verified = false;
-		}
-
-
-		/* check for realistic arguments */
-		if (opt.nprocs <= 0) {
-			error("%s: invalid number of processes (-n %d)",
-				opt.progname, opt.nprocs);
-			verified = false;
-		}
-
-		if (opt.cpus_per_task <= 0) {
-			error("%s: invalid number of cpus per task (-c %d)\n",
-				opt.progname, opt.cpus_per_task);
-			verified = false;
-		}
-
-		if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
-		    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-			error("%s: invalid number of nodes (-N %d-%d)\n",
-			      opt.progname, opt.min_nodes, opt.max_nodes);
-			verified = false;
-		}
-
-		core_format_enable (opt.core_type);
-
-		/* massage the numbers */
-		if (opt.nodes_set && !opt.nprocs_set) {
-			/* 1 proc / node default */
-			opt.nprocs = opt.min_nodes;
-
-		} else if (opt.nodes_set && opt.nprocs_set) {
-
-			/* 
-			 *  make sure # of procs >= min_nodes 
-			 */
-			if (opt.nprocs < opt.min_nodes) {
-
-				info ("Warning: can't run %d processes on %d " 
-				      "nodes, setting nnodes to %d", 
-				      opt.nprocs, opt.min_nodes, opt.nprocs);
-
-				opt.min_nodes = opt.nprocs;
-				if (   opt.max_nodes 
-				   && (opt.min_nodes > opt.max_nodes) )
-					opt.max_nodes = opt.min_nodes;
-			}
-
-		} /* else if (opt.nprocs_set && !opt.nodes_set) */
-
+	if (opt.argc == 0) {
+		error("must supply remote command");
+		verified = false;
 	}
 
-	if (opt.max_threads <= 0) {	/* set default */
-		error("Thread value invalid, reset to 1");
-		opt.max_threads = 1;
-	} else if (opt.max_threads > MAX_THREADS) {
-		error("Thread value exceeds defined limit, reset to %d", 
-			MAX_THREADS);
-		//opt.max_threads = MAX_THREADS;
+
+	/* check for realistic arguments */
+	if (opt.nprocs <= 0) {
+		error("%s: invalid number of processes (-n %d)",
+		      opt.progname, opt.nprocs);
+		verified = false;
 	}
+
+	if (opt.cpus_per_task <= 0) {
+		error("%s: invalid number of cpus per task (-c %d)\n",
+		      opt.progname, opt.cpus_per_task);
+		verified = false;
+	}
+
+	if (opt.num_nodes <= 0) {
+		error("%s: invalid number of nodes (-N %d)\n",
+		      opt.progname, opt.num_nodes);
+		verified = false;
+	}
+
+	core_format_enable (opt.core_type);
+
+	/* massage the numbers */
+	if (opt.num_nodes_set && !opt.nprocs_set) {
+		/* 1 proc / node default */
+		opt.nprocs = opt.num_nodes;
+
+	} else if (opt.num_nodes_set && opt.nprocs_set) {
+
+		/* 
+		 *  make sure # of procs >= num_nodes 
+		 */
+		if (opt.nprocs < opt.num_nodes) {
+
+			info ("Warning: can't run %d processes on %d " 
+			      "nodes, setting nnodes to %d", 
+			      opt.nprocs, opt.num_nodes, opt.nprocs);
+
+			opt.num_nodes = opt.nprocs;
+		}
+
+	} /* else if (opt.nprocs_set && !opt.num_nodes_set) */
 
 	if (opt.labelio && opt.unbuffered) {
 		error("Do not specify both -l (--label) and " 
@@ -1916,16 +1794,10 @@ static void _opt_list()
 		opt.nprocs_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,
 		opt.cpus_set ? "(set)" : "(default)");
-	if (opt.max_nodes)
-		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
-	else {
-		info("nodes          : %d %s", opt.min_nodes,
-			opt.nodes_set ? "(set)" : "(default)");
-	}
+	info("nodes          : %d %s",
+	     opt.num_nodes, opt.num_nodes_set ? "(set)" : "(default)");
 	info("jobid          : %u %s", opt.jobid, 
 		opt.jobid_set ? "(set)" : "(default)");
-	info("partition      : %s",
-		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	info("cpu_bind       : %s", 
@@ -1935,12 +1807,9 @@ static void _opt_list()
 	info("core format    : %s", core_format_name (opt.core_type));
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
-	info("immediate      : %s", tf_(opt.immediate));
-	info("no-requeue     : %s", tf_(opt.no_requeue));
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));
 	info("overcommit     : %s", tf_(opt.overcommit));
-	info("threads        : %d", opt.max_threads);
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
 	else
@@ -1948,7 +1817,6 @@ static void _opt_list()
 	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
-	info("account        : %s", opt.account);
 	if (opt.dependency == NO_VAL)
 		info("dependency     : none");
 	else
@@ -1994,13 +1862,13 @@ static void _usage(void)
 {
  	printf(
 "Usage: slaunch [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
-"               [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"               [-D path] [--immediate] [--overcommit] [--no-kill]\n"
-"               [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
+"               [-c ncpus] [-r n] [-t minutes]\n"
+"               [-D path] [--overcommit] [--no-kill]\n"
+"               [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
-"               [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
+"               [--core=type] [-W sec]\n"
 "               [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"               [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"               [--mpi=type] [--dependency=jobid]\n"
 "               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
 "               [--cpu_bind=...] [--mem_bind=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
@@ -2009,7 +1877,7 @@ static void _usage(void)
 "               [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
-"               [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]"
+"               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "               [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2020,22 +1888,21 @@ static void _help(void)
 "\n"
 "Parallel run options:\n"
 "  -n, --ntasks=ntasks         number of tasks to run\n"
-"  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+"  -N, --nodes=N               number of nodes on which to run\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"  -i, --input=in              location of stdin redirection\n"
-"  -o, --output=out            location of stdout redirection\n"
-"  -e, --error=err             location of stderr redirection\n"
+"  -i, --local-input=in        location of local stdin redirection\n"
+"  -o, --local-output=out      location of local stdout redirection\n"
+"  -e, --local-error=err       location of local stderr redirection\n"
+"  -I, --remote-input=in       location of remote stdin redirection\n"
+"  -O, --remote-output=out     location of remote stdout redirection\n"
+"  -E, --remote-error=err      location of remote stderr redirection\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
-"  -p, --partition=partition   partition requested\n"
-"  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
 "  -D, --chdir=path            change remote current working directory\n"
-"  -I, --immediate             exit if resources are not immediately available\n"
-"  -O, --overcommit            overcommit resources\n"
+"  -C, --overcommit            overcommit resources\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
-"  -s, --share                 share nodes with other jobs\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
@@ -2044,7 +1911,6 @@ static void _help(void)
 "      --jobid=id              run under already allocated job\n"
 "      --mpi=type              type of MPI being used\n"
 "  -b, --batch                 submit as batch job for later execution\n"
-"  -T, --threads=threads       set slaunch launch fanout\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
@@ -2056,7 +1922,6 @@ static void _help(void)
 "                              (type=\"list\" to list of valid formats)\n"
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
-"  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"
 "      --prolog=program        run \"program\" before launching job step\n"
@@ -2069,16 +1934,6 @@ static void _help(void)
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
-"      --no-requeue            if set, do not permit the job to be requeued\n"
-"\n"
-"Allocate only:\n"
-"  -A, --allocate              allocate resources and spawn a shell\n"
-"      --no-shell              don't spawn shell in allocate mode\n"
-"\n"
-"Attach to running job:\n"
-"  -a, --attach=jobid          attach to running job with specified id\n"
-"  -j, --join                  when used with --attach, allow forwarding of\n"
-"                              signals and stdin.\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"

@@ -82,13 +82,6 @@
 /* FIXME doesn't belong here, we don't want to expose ctx contents */
 #include "src/api/step_ctx.h"
 
-#define MAX_RETRIES 20
-#define MAX_ENTRIES 50
-
-#define	TYPE_NOT_TEXT	0
-#define	TYPE_TEXT	1
-#define	TYPE_SCRIPT	2
-
 /*
  * declaration of static funcs
  */
@@ -142,11 +135,6 @@ int slaunch(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (!opt.jobid_set) {
-		error("Must specify a job ID");
-		exit(1);
-	}
-
 	(void)_set_rlimit_env();
 	_set_prio_process_env();
 	(void)_set_umask_env();
@@ -158,7 +146,7 @@ int slaunch(int argc, char **argv)
 	totalview_jobid = NULL;
 	xstrfmtcat(totalview_jobid, "%u", step_req.job_id);
 	step_req.user_id = getuid();
-	step_req.node_count = opt.min_nodes;
+	step_req.node_count = opt.num_nodes;
 	step_req.cpu_count = 1;
 	if (opt.nprocs_set)
 		step_req.num_tasks = opt.nprocs;
@@ -170,7 +158,7 @@ int slaunch(int argc, char **argv)
 	step_req.host = NULL;   /* historical, used by srun */
 	step_req.node_list = NULL;
 	step_req.network = NULL;
-	step_req.name = "slaunch";
+	step_req.name = opt.job_name;
 	
 	step_ctx = slurm_step_ctx_create(&step_req);
 	if (step_ctx == NULL) {

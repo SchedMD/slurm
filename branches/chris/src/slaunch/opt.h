@@ -41,7 +41,6 @@
 #include "src/slaunch/core-format.h"
 //#include "src/common/mpi.h"
 
-#define MAX_THREADS	64
 #define MAX_USERNAME	9
 
 
@@ -72,16 +71,13 @@ typedef struct slaunch_options {
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	int  max_threads;	/* --threads, -T (threads in slaunch) */
-	int  min_nodes;		/* --nodes=n,       -N n	*/ 
-	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
+	int  num_nodes;		/* --nodes=n,       -N n	*/ 
+	bool num_nodes_set;	/* true if num_nodes explicitly set */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
-	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
-	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
@@ -90,7 +86,6 @@ typedef struct slaunch_options {
 	char *mpi_type;		/* --mpi=type			*/
 	unsigned int dependency;/* --dependency, -P jobid	*/
 	int nice;		/* --nice			*/
-	char *account;		/* --account, -U acct_name	*/
 
 	char *local_ofname;	/* --local-output, -o filename  */
 	char *local_ifname;	/* --local-input,  -i filename  */
@@ -101,23 +96,12 @@ typedef struct slaunch_options {
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	core_format_t core_type;/* --core= 	        	*/
-	char *attach;		/* --attach=id	    -a id	*/ 
-	bool join;		/* --join, 	    -j		*/
 
-	/* no longer need these, they are set globally : 	*/
-	/*int verbose;*/	/* -v, --verbose		*/	
-	/*int debug;*/		/* -d, --debug			*/
-
-	int immediate;		/* -i, --immediate      	*/
-
-	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
-	bool no_requeue;	/* --no-requeue			*/
-	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	bool disable_status;    /* --disable-status, -X         */
