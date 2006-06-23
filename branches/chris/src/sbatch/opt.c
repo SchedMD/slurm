@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  opt.c - options processing for salloc
+ *  opt.c - options processing for sbatch
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -68,7 +68,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 
-#include "src/salloc/opt.h"
+#include "src/sbatch/opt.h"
 
 #include "src/common/mpi.h"
 
@@ -645,7 +645,7 @@ static void argerror(const char *msg, ...)
 	vsnprintf(buf, sizeof(buf), msg, ap);
 
 	fprintf(stderr, "%s: %s\n",
-		opt.progname ? opt.progname : "salloc", buf);
+		opt.progname ? opt.progname : "sbatch", buf);
 	va_end(ap);
 }
 #else
@@ -1020,7 +1020,7 @@ void set_options(const int argc, char **argv, int first)
 			
 		case (int)'?':
 			if(first) {
-				fprintf(stderr, "Try \"salloc --help\" for more "
+				fprintf(stderr, "Try \"sbatch --help\" for more "
 					"information\n");
 				exit(1);
 			} 
@@ -1810,7 +1810,7 @@ static void _opt_list()
 static void _usage(void)
 {
  	printf(
-"Usage: salloc [-N nnodes] [-n ntasks]\n"
+"Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "              [--share] [-m dist] [-J jobname]\n"
@@ -1832,7 +1832,7 @@ static void _usage(void)
 static void _help(void)
 {
         printf (
-"Usage: salloc [OPTIONS...] executable [args...]\n"
+"Usage: sbatch [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
 "  -n, --ntasks=ntasks         number of tasks to run\n"
