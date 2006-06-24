@@ -1,0 +1,40 @@
+.\" $Id$
+.TH "slaunch" "1" "SLURM 1.2" "Jun 2006" "SLURM Commands"
+.SH "NAME"
+.LP 
+slaunch \- Launch a parallel application under a SLURM job allocation.
+.SH "SYNOPSIS"
+.LP 
+slaunch [\fIoptions\fP] <\fIcommand\fP> [\fIcommand args\fR]
+.SH "DESCRIPTION"
+.LP 
+slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on the nodes, or subset of nodes, in a \fBjob allocation\fR.   A valid job allocation is a prerequisite of running slaunch.  The ID of the job allocation may be passed to slaunch through either the \fB\-\-jobid\fR command line parameter or the \fBSLURM_JOBID\fR environment variable.  The \fBsalloc\fR
+and \fBsbatch\fR commands may be used to request a job allocation, and each of those commands automatically set the \fBSLURM_JOBID\fR environment variable.
+.SH "OPTIONS"
+.LP 
+.TP 
+\fB\-\-jobid\fR <\fIJOBID\fP>
+The job allocation under which the parallel application should be launched.
+.TP 
+\fB\-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-\-version\fR
+Output version information and exit.
+.SH "ENVIRONMENT VARIABLES"
+.LP 
+.TP 
+\fBSLURM_JOBID\fP
+Same as \fB\-\-jobid\fR.
+.SH "EXAMPLES"
+.LP 
+To launch a parallel program job step in an existing job allocation:
+.IP 
+slaunch \-\-jobid 66777 \-N2 \-n8 myprogram
+.LP 
+To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):
+.IP 
+salloc \-N5 slaunch \-n10 myprogram
+.SH "SEE ALSO"
+.LP 
+sinfo(1), salloc(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)
