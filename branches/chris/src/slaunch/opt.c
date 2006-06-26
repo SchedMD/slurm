@@ -1644,16 +1644,16 @@ _freeF(void *data)
 static List
 _create_path_list(void)
 {
-	List l = list_create(_freeF);
+	List l;
 	char *path = xstrdup(getenv("PATH"));
 	char *c, *lc;
 
-	if (!path) {
-		error("Error in PATH environment variable");
-		list_destroy(l);
+	if (path == NULL) {
+		error("No PATH environment variable (or empty PATH)");
 		return NULL;
 	}
 
+	l = list_create(_freeF);
 	c = lc = path;
 
 	while (*c != '\0') {
@@ -1681,6 +1681,9 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 	List         l        = _create_path_list();
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
+
+	if (l == NULL)
+		return NULL;
 
 	if (  (cmd[0] == '.' || cmd[0] == '/') 
            && (access(cmd, access_mode) == 0 ) ) {

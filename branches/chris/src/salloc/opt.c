@@ -95,7 +95,6 @@
 #define LONG_OPT_XTO         0x102
 #define LONG_OPT_LAUNCH      0x103
 #define LONG_OPT_TIMEO       0x104
-#define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
 #define LONG_OPT_MINCPU      0x108
@@ -114,12 +113,9 @@
 #define LONG_OPT_BEGIN       0x119
 #define LONG_OPT_MAIL_TYPE   0x11a
 #define LONG_OPT_MAIL_USER   0x11b
-#define LONG_OPT_TASK_PROLOG 0x11c
-#define LONG_OPT_TASK_EPILOG 0x11d
 #define LONG_OPT_NICE        0x11e
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
-#define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_NO_REQUEUE  0x123
 #define LONG_OPT_BELL        0x124
@@ -693,8 +689,6 @@ static void _opt_default()
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
-	opt.jobid    = NO_VAL;
-	opt.jobid_set = false;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
@@ -703,7 +697,6 @@ static void _opt_default()
 	opt.overcommit = false;
 	opt.share = false;
 	opt.no_kill = false;
-	opt.kill_bad_exit = false;
 
 	opt.immediate	= false;
 	opt.no_requeue	= false;
@@ -743,11 +736,7 @@ static void _opt_default()
 	
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
 
-	opt.task_prolog     = NULL;
-	opt.task_epilog     = NULL;
-
 	getnodename(hostname, sizeof(hostname));
-	opt.ctrl_comm_ifhn  = xstrdup(hostname);
 	opt.bell            = BELL_AFTER_DELAY;
 }
 
@@ -779,8 +768,6 @@ env_vars_t env_vars[] = {
   {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
   {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
-  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
-  {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
   {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
@@ -792,7 +779,6 @@ env_vars_t env_vars[] = {
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
   {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
-  {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
   {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
 
   {NULL, 0, NULL, NULL}
@@ -952,7 +938,6 @@ void set_options(const int argc, char **argv, int first)
 		{"immediate",     no_argument,       0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
-		{"kill-on-bad-exit", no_argument,    0, 'K'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -961,7 +946,6 @@ void set_options(const int argc, char **argv, int first)
 		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
-		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
@@ -982,7 +966,6 @@ void set_options(const int argc, char **argv, int first)
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
 		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
-		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
@@ -998,18 +981,15 @@ void set_options(const int argc, char **argv, int first)
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
-		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{"bell",             no_argument,       0, LONG_OPT_BELL},
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:D:g:HIJ:kKm:n:N:"
-		"Op:P:qQr:R:st:U:vVw:W:x:XZ";
+	char *opt_string = "+a:c:C:D:g:HIJ:km:n:N:"
+		"Op:P:qQR:st:U:vVw:W:x:XZ";
 
 	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
@@ -1073,9 +1053,6 @@ void set_options(const int argc, char **argv, int first)
 		case (int)'k':
 			opt.no_kill = true;
 			break;
-		case (int)'K':
-			opt.kill_bad_exit = true;
-			break;
 		case (int)'m':
 			if(!first && opt.distribution)
 				break;
@@ -1133,13 +1110,6 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			
 			opt.quiet++;
-			break;
-		case (int)'r':
-			if(!first && opt.relative)
-				break;
-			
-			xfree(opt.relative);
-			opt.relative = xstrdup(optarg);
 			break;
 		case (int)'R':
 			opt.no_rotate = true;
@@ -1246,10 +1216,6 @@ void set_options(const int argc, char **argv, int first)
 				exit(1);
 			}
 			break;
-		case LONG_OPT_JOBID:
-			opt.jobid = _get_int(optarg, "jobid");
-			opt.jobid_set = true;
-			break;
 		case LONG_OPT_TIMEO:
 			opt.msg_timeout = 
 				_get_int(optarg, "msg-timeout");
@@ -1308,14 +1274,6 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
 			break;
-		case LONG_OPT_TASK_PROLOG:
-			xfree(opt.task_prolog);
-			opt.task_prolog = xstrdup(optarg);
-			break;
-		case LONG_OPT_TASK_EPILOG:
-			xfree(opt.task_epilog);
-			opt.task_epilog = xstrdup(optarg);
-			break;
 		case LONG_OPT_NICE:
 			if (optarg)
 				opt.nice = strtol(optarg, NULL, 10);
@@ -1326,10 +1284,6 @@ void set_options(const int argc, char **argv, int first)
 					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(1);
 			}
-			break;
-		case LONG_OPT_CTRL_COMM_IFHN:
-			xfree(opt.ctrl_comm_ifhn);
-			opt.ctrl_comm_ifhn = xstrdup(optarg);
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
@@ -1468,17 +1422,6 @@ static bool _opt_verify(void)
 
 	if (opt.no_alloc && opt.exc_nodes) {
 		error("can not specify --exclude list with -Z, --no-allocate.");
-		verified = false;
-	}
-
-	if (opt.no_alloc && opt.relative) {
-		error("do not specify -r,--relative with -Z,--no-allocate.");
-		verified = false;
-	}
-
-	if (opt.relative && (opt.exc_nodes || opt.nodelist)) {
-		error("-r,--relative not allowed with "
-		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
 	}
 
@@ -1762,8 +1705,6 @@ static void _opt_list()
 		info("nodes          : %d %s", opt.min_nodes,
 			opt.nodes_set ? "(set)" : "(default)");
 	}
-	info("jobid          : %u %s", opt.jobid, 
-		opt.jobid_set ? "(set)" : "(default)");
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
@@ -1807,9 +1748,6 @@ static void _opt_list()
 	}
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
-	info("task_prolog    : %s", opt.task_prolog);
-	info("task_epilog    : %s", opt.task_epilog);
-	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_commandline();
 	info("user command   : `%s'", str);
@@ -1824,7 +1762,7 @@ static void _usage(void)
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "              [--share] [-m dist] [-J jobname]\n"
-"              [--jobid=id] [--verbose]\n"
+"              [--verbose]\n"
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--mpi=type] [--account=name] [--dependency=jobid]\n"
@@ -1834,8 +1772,7 @@ static void _usage(void)
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--task-prolog=fname] [--task-epilog=fname]\n"
-"              [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]"
+"              [--multi-prog] [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1848,7 +1785,6 @@ static void _help(void)
 "  -n, --ntasks=ntasks         number of tasks to run\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
@@ -1856,13 +1792,10 @@ static void _help(void)
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -k, --no-kill               do not kill job on node failure\n"
-"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
-"                              non-zero exit code\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|hostfile)\n"
 "  -J, --job-name=jobname      name of job\n"
-"      --jobid=id              run under already allocated job\n"
 "      --mpi=type              type of MPI being used\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
@@ -1876,12 +1809,9 @@ static void _help(void)
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"
-"      --task-prolog=program   run \"program\" before launching task\n"
-"      --task-epilog=program   run \"program\" after launching task\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"

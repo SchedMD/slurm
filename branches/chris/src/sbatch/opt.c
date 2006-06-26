@@ -1478,12 +1478,6 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (remote_argc > 0))
 		opt.job_name = _base_name(remote_argv[0]);
 
-	if (remote_argc == 0) {
-		error("must supply remote command");
-		verified = false;
-	}
-
-
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
 		error("%s: invalid number of processes (-n %d)",

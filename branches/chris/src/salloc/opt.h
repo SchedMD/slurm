@@ -83,8 +83,6 @@ typedef struct salloc_options {
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
-	unsigned int jobid;     /* --jobid=jobid                */
-	bool jobid_set;		/* true of jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
 	unsigned int dependency;/* --dependency, -P jobid	*/
 	int nice;		/* --nice			*/
@@ -96,7 +94,6 @@ typedef struct salloc_options {
 	bool noshell;		/* --noshell                    */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
-	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	bool no_requeue;	/* --no-requeue			*/
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
@@ -105,8 +102,6 @@ typedef struct salloc_options {
 	int  quiet;
 	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
-	char *task_epilog;	/* --task-epilog=		*/
-	char *task_prolog;	/* --task-prolog=		*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
@@ -116,7 +111,6 @@ typedef struct salloc_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	char *relative;		/* --relative -r N              */
 	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
@@ -130,7 +124,6 @@ typedef struct salloc_options {
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
-	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	bell_flag_t bell;       /* --bell, --no-bell            */
 } opt_t;
 
