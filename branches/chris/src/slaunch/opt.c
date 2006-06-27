@@ -80,7 +80,6 @@
 #define OPT_STRING      0x02
 #define OPT_DEBUG       0x03
 #define OPT_DISTRIB     0x04
-#define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
@@ -740,6 +739,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SLURM_JOBID",          OPT_INT,       &opt.jobid,         &opt.jobid_set },
+  {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
   {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_set  },
   {"SLAUNCH_CONN_TYPE",    OPT_CONN_TYPE, NULL,               NULL           },
@@ -751,7 +751,8 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_GEOMETRY",     OPT_GEOMETRY,  NULL,               NULL           },
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLAUNCH_NNODES",       OPT_NODES,     NULL,               NULL           },
+  {"SLURM_NNODES",         OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
+  {"SLAUNCH_NNODES",       OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
   {"SLAUNCH_NO_ROTATE",    OPT_NO_ROTATE, NULL,               NULL           },
   {"SLAUNCH_NPROCS",       OPT_INT,       &opt.nprocs,        &opt.nprocs_set},
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
@@ -839,11 +840,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (_verify_mem_bind(val, &opt.mem_bind,
 				&opt.mem_bind_type))
 			exit(1);
-		break;
-
-	case OPT_NODES:
-		opt.num_nodes_set = true;
-		opt.num_nodes = _get_int(val, "number of nodes");
 		break;
 
 	case OPT_OVERCOMMIT:
