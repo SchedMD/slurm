@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8240 2006-05-30 23:14:48Z jette $
+# $Id: Makefile.am 8450 2006-06-27 02:24:07Z morrone $
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -254,6 +254,7 @@ target_vendor = @target_vendor@
 EXTRA_DIST = man1 man3 man5 man8 
 man1_MANS = \
 	man1/sacct.1 \
+	man1/sbcast.1 \
 	man1/scancel.1 \
 	man1/scontrol.1\
 	man1/sinfo.1   \
