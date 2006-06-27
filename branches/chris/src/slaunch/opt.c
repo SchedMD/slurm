@@ -113,7 +113,6 @@
 #define LONG_OPT_PROPAGATE   0x116
 #define LONG_OPT_PROLOG      0x117
 #define LONG_OPT_EPILOG      0x118
-#define LONG_OPT_BEGIN       0x119
 #define LONG_OPT_MAIL_TYPE   0x11a
 #define LONG_OPT_MAIL_USER   0x11b
 #define LONG_OPT_TASK_PROLOG 0x11c
@@ -650,7 +649,6 @@ static void _opt_default()
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
-	opt.dependency = NO_VAL;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
 
@@ -933,7 +931,6 @@ void set_options(const int argc, char **argv, int first)
 		{"local-output",  required_argument, 0, 'o'},
 		{"remote-output", required_argument, 0, 'O'},
 		{"overcommit",    no_argument,       0, 'C'},
-		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"relative",      required_argument, 0, 'r'},
@@ -970,7 +967,6 @@ void set_options(const int argc, char **argv, int first)
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
-		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
@@ -981,7 +977,7 @@ void set_options(const int argc, char **argv, int first)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+c:Cd:D:e:E:g:i:I:J:kKlm:n:N:"
-		"o:O:P:qQr:R:t:uvVw:W:x:XZ";
+		"o:O:qQr:R:t:uvVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1130,12 +1126,6 @@ void set_options(const int argc, char **argv, int first)
 				opt.remote_ofname = xstrdup("/dev/null");
 			else
 				opt.remote_ofname = xstrdup(optarg);
-			break;
-		case (int)'P':
-			if(!first && opt.dependency)
-				break;
-						
-			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
@@ -1318,9 +1308,6 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_EPILOG:
 			xfree(opt.epilog);
 			opt.epilog = xstrdup(optarg);
-			break;
-		case LONG_OPT_BEGIN:
-			opt.begin = parse_time(optarg);
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type = _parse_mail_type(optarg);
@@ -1820,10 +1807,6 @@ static void _opt_list()
 	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
-	if (opt.dependency == NO_VAL)
-		info("dependency     : none");
-	else
-		info("dependency     : %u", opt.dependency);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -1836,11 +1819,6 @@ static void _opt_list()
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
-	if (opt.begin) {
-		char time_str[32];
-		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
-		info("begin          : %s", time_str);
-	}
 	info("prolog         : %s", opt.prolog);
 	info("epilog         : %s", opt.epilog);
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
@@ -1871,7 +1849,7 @@ static void _usage(void)
 "               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
 "               [--core=type] [-W sec]\n"
 "               [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"               [--mpi=type] [--dependency=jobid]\n"
+"               [--mpi=type]\n"
 "               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
 "               [--cpu_bind=...] [--mem_bind=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
@@ -1923,7 +1901,6 @@ static void _help(void)
 "  -d, --slurmd-debug=level    slurmd debug level\n"
 "      --core=type             change default corefile format type\n"
 "                              (type=\"list\" to list of valid formats)\n"
-"  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"
@@ -1931,7 +1908,6 @@ static void _help(void)
 "      --epilog=program        run \"program\" after launching job step\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
-"      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch"

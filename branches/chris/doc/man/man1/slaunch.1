@@ -16,10 +16,30 @@ and \fBsbatch\fR commands may be used to request a job allocation, and each of t
 \fB\-\-jobid\fR <\fIJOBID\fP>
 The job allocation under which the parallel application should be launched.
 .TP 
+\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
+Specify the number of processes to launch.  The default is one process per node, but note that the \-c parameter will change this default.
+.TP 
+\fB\-N\fR, \fB\-\-nodes\fR=<\fInumber\fR>
+Specify the number of nodes to be used by this job step.  By default,
+slaunch will use all of the nodes in the specified job allocation.
+.TP 
+\fB\-r\fR, \fB\-\-relative\fR=<\fInumber\fR>
+Specify the first node in the allocation on which this job step will be launched.  Counting starts at zero, thus the first node in the job allocation is node 0.  The default value for \-\-relative is zero.
+.TP 
+\fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
+Specify that each task requires \fIncpus\fR number of CPUs.  Useful for applications in which each task will launch multiple threads and can therefore benefit from there being free processors on the node.
+
+.TP 
+\fB\-\-nice\fR=<\fIadjustment\fR>
+Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
+
+
+
+.TP 
 \fB\-\-help\fR
 Output help information and exit.
 .TP 
-\fB\-\-version\fR
+\fB\-V\fR, \fB\-\-version\fR
 Output version information and exit.
 .SH "ENVIRONMENT VARIABLES"
 .LP 
@@ -28,7 +48,7 @@ Output version information and exit.
 Same as \fB\-\-jobid\fR.
 .SH "EXAMPLES"
 .LP 
-To launch a parallel program job step in an existing job allocation:
+To launch a job step (parallel program) in an existing job allocation:
 .IP 
 slaunch \-\-jobid 66777 \-N2 \-n8 myprogram
 .LP 
