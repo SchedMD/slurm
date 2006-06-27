@@ -66,7 +66,7 @@ dnl
 X_AC_PTRACE
 
 dnl Check if setpgrp takes zero or two arguments
-drn
+dnl
 X_AC_SETPGRP
 
 dnl Check of sched_getaffinity exists and it's argument count

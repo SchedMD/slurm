@@ -1653,7 +1653,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->end_time   = now;
 		job_completion_logger(job_ptr);
 	} else {
-		if (job_return_code)
+		if (job_return_code == NO_VAL)
+			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
+		else if (job_return_code)
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
 		else if (job_comp_flag &&		/* job was running */
 			 (job_ptr->end_time < now))	/* over time limit */

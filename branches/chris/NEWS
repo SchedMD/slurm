@@ -30,6 +30,15 @@ documents those changes that are of interest to users and admins.
     if values are not specified at job submit time
  -- Add retry logic for PMI communications, may be needed for highly parallel
     jobs.
+ -- Fix bug in slurmd where variable is used in logging message after freed
+    (slurmstepd rank info).
+ -- Fix bug in scontrol show daemons if NodeName=localhost will work now to
+    display slurmd as place where it is running.  
+ -- Patch from HP for init nodes before init_bitmaps
+ -- ctrl-c killed sruns will result in job state as cancelled instead of 
+    completed.
+ -- BLUEGENE - added configure option --with-bg-link to choose dynamic linking
+    or static linking with the bridgeapi.
 
 * Changes in SLURM 1.1.1
 ========================
@@ -183,6 +192,14 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.15
+=========================
+
+* Changes in SLURM 1.0.14
+=========================
+ -- Fix for bad xfree() call in auth/munge which can raise an assert().
+ -- Fix installed fork handlers for the conf mutex for slurmd and slurmstepd.
+
 * Changes in SLURM 1.0.13
 =========================
  -- Fix for AllowGroups option to work when the /etc/group file doesn't 
@@ -190,6 +207,8 @@ documents those changes that are of interest to users and admins.
     that have a gid of that which we are looking for.
  -- Fix bug in InactiveLimit support that can potentially purge active jobs.
     NOTE: This is highly unlikely except on very large AIX clusters.
+ -- Fix bug for reiniting the config_lock around the control_file in 
+    slurm_protocol_api.c logic has changed in 1.1 so no need to merge
  
 * Changes in SLURM 1.0.12
 =========================

@@ -134,6 +134,7 @@ static void
 _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 {
 	if (opt.quit_on_intr) {
+		update_job_state(job, SRUN_JOB_CANCELLED);
 		job_force_termination(job);
 		pthread_exit (0);
 	}
@@ -144,10 +145,9 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 			report_task_status(job);
 		*last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
-
+		update_job_state(job, SRUN_JOB_CANCELLED);
 		/* terminate job */
 		if (job->state < SRUN_JOB_FORCETERM) {
-
 			if ((time(NULL) - *last_intr_sent) < 1) {
 				job_force_termination(job);
 				pthread_exit(0);

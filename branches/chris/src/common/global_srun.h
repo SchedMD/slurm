@@ -42,6 +42,7 @@ typedef enum {
 	SRUN_JOB_DONE,             /* tasks and IO complete                 */
 	SRUN_JOB_DETACHED,         /* Detached IO from job (Not used now)   */
 	SRUN_JOB_FAILED,           /* Job failed for some reason            */
+	SRUN_JOB_CANCELLED,        /* CTRL-C cancelled                      */
 	SRUN_JOB_FORCETERM         /* Forced termination of IO thread       */
 } srun_job_state_t;
 
