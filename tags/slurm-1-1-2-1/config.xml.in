@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE package SYSTEM "../package.dtd">
+<!--
+SLURM configuration file for use with OSCAR distribution
+http://oscar.openclusergroup.org/
+
+Copyright (C) 2005 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+$Id$
+-->
+<oscar>
+  <name>SLURM: Simple Linux Utility for  Resource Management</name>
+
+  <version>
+    <major>@SLURM_MAJOR@</major>
+    <minor>@SLURM_MINOR@</minor>
+    <subversion>@SLURM_MICRO@</subversion>
+    <release>@RELEASE@</release>
+    <epoch>1</epoch>
+  </version>
+
+  <class>included</class>
+
+  <summary>SLURM: Simple Linux Utility for  Resource Management</summary>
+  <license>GNU General Public License</license>
+  <group>Applications/batch</group>
+  <packager>
+    <name>Morris Jette</name>
+    <email>jette1@llnl.gov</email>
+  </packager>
+
+  <description>The Simple Linux Utility for Resource Management (SLURM) is an 
+  open source, fault-tolerant, and highly scalable cluster management and job 
+  scheduling system for large and small Linux clusters. SLURM requires no 
+  kernel modifications for its operation and is relatively self-contained. 
+  As a cluster resource manager, SLURM has three key functions. First, it 
+  allocates exclusive and/or non-exclusive access to resources (compute nodes) 
+  to users for some duration of time so they can perform work. Second, it 
+  provides a framework for starting, executing, and monitoring work (normally 
+  a parallel job) on the set of allocated nodes. Finally, it arbitrates 
+  conflicting requests for resources by managing a queue of pending work.
+  </description>
+
+  <url>http://www.llnl.gov/linux/slurm</url>
+  <rpmlist>
+      <rpm>slurm</rpm>
+      <rpm>slurm-devel</rpm>
+      <rpm>slurm-auth-authd</rpm>
+      <rpm>slurm-auth-none</rpm>
+      <rpm>slurm-auth-munge</rpm>
+      <rpm>slurm-sched-wiki</rpm>
+      <rpm>slurm-switch-elan</rpm>
+  </rpmlist>
+
+<conflicts>
+  <name>torque</name>
+  <name>pbs</name>
+  <type>package</type>
+</conflicts>
+</oscar>
