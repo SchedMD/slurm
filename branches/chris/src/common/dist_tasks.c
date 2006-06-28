@@ -170,7 +170,12 @@ extern slurm_step_layout_t *step_layout_create(
 	slurm_step_layout_t *step_layout = NULL;
 	char *temp = NULL;
 	
-	if(step_req && step_resp) {
+	/*
+	 * Swap the step_req and step_resp node lists.
+	 * (Why? I don't know. This really needs refactoring. - CJM)
+	 * FIXME!
+	 */
+	if(step_req && step_req->node_list != NULL && step_resp) {
 		temp = step_req->node_list;
 		step_req->node_list = step_resp->node_list;
 		step_resp->node_list = temp;
@@ -266,6 +271,8 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 	int cpu_cnt = 0, cpu_inx = 0, i;
 	debug("laying out the %d tasks on %d hosts\n", 
 	      step_layout->num_tasks, step_layout->num_hosts);
+	if (step_layout->num_hosts == 0)
+		return SLURM_ERROR;
 	if (step_layout->cpus)	/* layout already completed */
 		return SLURM_SUCCESS;
 	

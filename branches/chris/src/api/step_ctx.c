@@ -82,9 +82,8 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	}
 	
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
-	ctx->step_layout = step_layout_create(alloc_resp,
-					     step_resp,
-					     step_req);	
+	ctx->launch_state = NULL;
+	ctx->step_layout = step_layout_create(alloc_resp, step_resp, step_req);
 
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
@@ -92,10 +91,13 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	ctx->step_req   = _copy_step_req(step_req);
 	ctx->step_resp	= step_resp;
 	ctx->alloc_resp	= alloc_resp;
-	(void) task_layout(ctx->step_layout);
-	ctx->launch_state = NULL;
+	if (task_layout(ctx->step_layout) != SLURM_SUCCESS) {
+		slurm_step_ctx_destroy((slurm_step_ctx)ctx);
+		errno = ESLURM_BAD_DIST;
+		return NULL;
+	}
 
-	return ctx;
+	return (slurm_step_ctx)ctx;
 }
 
 /*

@@ -163,7 +163,7 @@ int slaunch(int argc, char **argv)
 	
 	step_ctx = slurm_step_ctx_create(&step_req);
 	if (step_ctx == NULL) {
-		error("Could not create job step context: %m");
+		error("Failed creating job step context: %m");
 		exit(1);
 	}
 
