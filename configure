@@ -23664,6 +23664,9 @@ if test "${with_bg_link+set}" = set; then
   bg_link="$withval"
 fi;
 
+		#remove this later hard code to always do static
+     		bg_link=static
+
       		saved_LDFLAGS="$LDFLAGS"
       	 	if test "$bg_link" = "dynamic"; then
 			LDFLAGS="$saved_LDFLAGS $bg_ldflags_d"
