@@ -52,7 +52,10 @@ AC_DEFUN([X_AC_BLUEGENE],
       		ac_with_readline="no"
       
       		AC_ARG_WITH(bg-link, AS_HELP_STRING(--with-bg-link=dynamic|static,set brigdeapi linking type), [bg_link="$withval"])
-      		      
+
+		#remove this later hard code to always do static
+     		bg_link=static      
+
       		saved_LDFLAGS="$LDFLAGS"
       	 	if test "$bg_link" = "dynamic"; then
 			LDFLAGS="$saved_LDFLAGS $bg_ldflags_d"
