@@ -83,6 +83,7 @@ extern void get_job()
 		
 		if ((job.job_state != JOB_PENDING)
 		    &&  (job.job_state != JOB_RUNNING)
+		    &&  (job.job_state != JOB_DEALLOCATING)
 		    &&  (job.job_state != JOB_SUSPENDED)
 		    &&  ((job.job_state & JOB_COMPLETING) == 0))
 			continue;	/* job has completed */

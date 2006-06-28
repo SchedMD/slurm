@@ -144,6 +144,7 @@ BEGIN_C_DECLS
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
 	JOB_RUNNING,		/* allocated resources and executing */
+	JOB_DEALLOCATING,	/* Cleaning up allocation of job */
 	JOB_SUSPENDED,		/* allocated resources, execution suspended */
 	JOB_COMPLETE,		/* completed execution successfully */
 	JOB_CANCELLED,		/* cancelled by user */
