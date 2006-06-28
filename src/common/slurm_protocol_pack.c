@@ -2834,6 +2834,7 @@ _pack_complete_batch_script_msg(
 	complete_batch_script_msg_t * msg, Buf buffer)
 {
 	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->job_rc, buffer);
 	pack32((uint32_t)msg->slurm_rc, buffer);
 	packstr(msg->node_name, buffer);
@@ -2850,6 +2851,7 @@ _unpack_complete_batch_script_msg(
 	*msg_ptr = msg;
 
 	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->step_id, buffer);
 	safe_unpack32(&msg->job_rc, buffer);
 	safe_unpack32(&msg->slurm_rc, buffer);
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);

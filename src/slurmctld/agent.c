@@ -1292,8 +1292,7 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 				RESPONSE_RESOURCE_ALLOCATION)
 			slurm_free_resource_allocation_response_msg(
 					agent_arg_ptr->msg_args);
-		else if ((agent_arg_ptr->msg_type == REQUEST_SIGNAL_JOB)
-		||       (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)
+		else if ((agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)
 		||       (agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT))
 			slurm_free_kill_job_msg(agent_arg_ptr->msg_args);
 		else

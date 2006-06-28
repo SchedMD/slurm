@@ -916,8 +916,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT %u",
-	       comp_msg->job_id);
+	debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT %u.%u",
+	       comp_msg->job_id, comp_msg->step_id);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	if (!_is_super_user(uid)) {
@@ -932,16 +932,19 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	/* First set node DOWN if fatal error */
 	if (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) {
 		/* race condition on job termination, not a real error */
-		info("slurmd error running JobId=%u from node=%s: %s",
-		      comp_msg->job_id,
-		      comp_msg->node_name,
-		      slurm_strerror(comp_msg->slurm_rc));
+		info("slurmd error running JobId=%u.%u from node=%s: %s",
+		     comp_msg->job_id,
+		     comp_msg->step_id,
+		     comp_msg->node_name,
+		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
 	}
 	if (comp_msg->slurm_rc != SLURM_SUCCESS) {
-		error("Fatal slurmd error %u running JobId=%u on node=%s: %s",
+		error("Fatal slurmd error %u running JobId=%u.%u "
+		      "on node=%s: %s",
 		      comp_msg->slurm_rc,
 		      comp_msg->job_id,
+		      comp_msg->step_id,
 		      comp_msg->node_name,
 		      slurm_strerror(comp_msg->slurm_rc));
 		if (error_code == SLURM_SUCCESS) {
@@ -958,6 +961,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		}
 	}
 
+	/* ignore step complete will catch it on job_complete */
+	job_step_complete(comp_msg->job_id, comp_msg->step_id,
+			  uid, job_requeue, comp_msg->job_rc);
+	
 	/* Mark job allocation complete */
 	error_code = job_complete(comp_msg->job_id, uid,
 				  job_requeue, comp_msg->job_rc);
@@ -1725,8 +1732,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, 
-				job_desc_msg->immediate, false,
-				false, uid, &job_ptr);
+					  job_desc_msg->immediate, false,
+					  false, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 	}

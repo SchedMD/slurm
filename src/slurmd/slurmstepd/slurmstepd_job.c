@@ -435,13 +435,18 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 		    char *ifname, char *ofname, char *efname)
 {
 	int          i;
-	int          n = job->ntasks;
 	char        *in, *out, *err;
 
-	job->task = (slurmd_task_info_t **) 
-		xmalloc(n * sizeof(slurmd_task_info_t *));
+	if (job->ntasks == 0) {
+		error("User requested launch of zero tasks!");
+		job->task = NULL;
+		return;
+	}
 
-	for (i = 0; i < n; i++){
+	job->task = (slurmd_task_info_t **) 
+		xmalloc(job->ntasks * sizeof(slurmd_task_info_t *));
+
+	for (i = 0; i < job->ntasks; i++){
 		in = _expand_stdio_filename(ifname, gtid[i], job);
 		out = _expand_stdio_filename(ofname, gtid[i], job);
 		err = _expand_stdio_filename(efname, gtid[i], job);

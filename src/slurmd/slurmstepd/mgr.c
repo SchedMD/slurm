@@ -1381,6 +1381,7 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	complete_batch_script_msg_t  req;
 
 	req.job_id	= job->jobid;
+	req.step_id	= job->stepid;
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
 		
@@ -1391,7 +1392,8 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	req_msg.ret_list = NULL;
 	req_msg.forward_struct_init = 0;
 	
-	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT %u.%u %d",
+	     job->jobid, job->stepid, status);
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
@@ -1513,10 +1515,11 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_set_argv0(argv0);
 	
 	/* Connect slurmd stderr to job's stderr */
-	if ((!job->spawn_task) && 
-	    (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0)) {
-		error("job_log_init: dup2(stderr): %m");
-		return;
+	if ((!job->spawn_task) && (job->task != NULL)) {
+		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
+			error("job_log_init: dup2(stderr): %m");
+			return;
+		}
 	}
 }
 
