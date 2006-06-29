@@ -192,7 +192,7 @@ main(int argc, char *argv[])
 		bit_nset(bs,97,1000);
 
 		bit_fmt(tmpstr, sizeof(tmpstr), bs);
-		TEST(bit_unfmt(bs2, tmpstr) != -1, "bitstring");
+		TEST((bit_unfmt(bs2, tmpstr) != -1), "bitstring");
 		TEST(bit_equal(bs, bs2), "bitstring");
 	}
 
