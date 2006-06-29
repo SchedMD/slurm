@@ -1379,7 +1379,6 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	complete_batch_script_msg_t  req;
 
 	req.job_id	= job->jobid;
-	req.step_id	= job->stepid;
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
 		
@@ -1390,8 +1389,7 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	req_msg.ret_list = NULL;
 	req_msg.forward_struct_init = 0;
 	
-	info("sending REQUEST_COMPLETE_BATCH_SCRIPT %u.%u %d",
-	     job->jobid, job->stepid, status);
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
