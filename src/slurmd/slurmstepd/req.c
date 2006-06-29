@@ -995,6 +995,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	int last;
 	jobacctinfo_t *jobacct = NULL;
 	int step_rc;
+/* 	char bits_string[128]; */
 
 	debug("_handle_completion for job %u.%u",
 	      job->jobid, job->stepid);
@@ -1021,9 +1022,16 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	 * Record the completed nodes
 	 */
 	pthread_mutex_lock(&step_complete.lock);
+/* 	debug2("Setting range %d(bit %d) through %d(bit %d)", */
+/* 	       first, first-(step_complete.rank+1), */
+/* 	       last, last-(step_complete.rank+1)); */
+/* 	bit_fmt(bits_string, 128, step_complete.bits); */
+/* 	debug2("  before bits: %s", bits_string); */
 	bit_nset(step_complete.bits,
 		 first - (step_complete.rank+1),
 		 last - (step_complete.rank+1));
+/* 	bit_fmt(bits_string, 128, step_complete.bits); */
+/* 	debug2("  after bits: %s", bits_string); */
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
 	
 	/************* acct stuff ********************/
