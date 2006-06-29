@@ -37,9 +37,9 @@
  * 
  * bitstrings are zero origin
  *
- * bitstrings are allways stored in a little-endian fashion.  In other words,
- * bit "1" is always in the low-order byte of a word, regardless of the
- * native architecture endianness.
+ * bitstrings are always stored in a little-endian fashion.  In other words,
+ * bit "1" is always in the byte of a word at the lowest memory address,
+ * regardless of the native architecture endianness.
  */
 
 #ifndef _BITSTRING_H_
