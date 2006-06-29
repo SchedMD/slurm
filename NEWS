@@ -26,9 +26,6 @@ documents those changes that are of interest to users and admins.
     completed.
  -- BLUEGENE - added configure option --with-bg-link to choose dynamic linking
     or static linking with the bridgeapi.
- -- Fix to make sure all steps are complete on job before removing allocation
- -- send SIGKILL to all steps when an allocation has been completed.
- -- new job state JOB_DEALLOCATING
 
 * Changes in SLURM 1.1.1
 ========================

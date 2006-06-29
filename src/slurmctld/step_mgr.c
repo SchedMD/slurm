@@ -251,8 +251,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if (job_ptr->job_state != JOB_RUNNING 
-	    && job_ptr->job_state != JOB_DEALLOCATING) {
+	if (job_ptr->job_state != JOB_RUNNING) {
 		verbose("job_step_signal: step %u.%u can not be sent signal "
 			"%u from state=%s", job_id, step_id, signal,
 			job_state_string(job_ptr->job_state));
@@ -351,7 +350,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	int error_code;
-	int nodes;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -362,42 +360,27 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
+	else 
+		jobacct_g_step_complete_slurmctld(step_ptr);
 	
-	if (step_ptr->exit_code == NO_VAL) {
-		/* initialize the node bitmap for exited nodes */
-		nodes = bit_set_count(step_ptr->step_node_bitmap);
-		xassert(step_ptr->exit_node_bitmap == NULL);
-		step_ptr->exit_node_bitmap = bit_alloc(nodes);
-		if (step_ptr->exit_node_bitmap == NULL)
-			fatal("bit_alloc: %m");
-		step_ptr->exit_code = job_return_code;
-	}
+	if ((job_ptr->kill_on_step_done)
+	&&  (list_count(job_ptr->step_list) <= 1)
+	&&  (!IS_JOB_FINISHED(job_ptr)))
+		return job_complete(job_id, uid, requeue, job_return_code);
 
-	jobacct_g_step_complete_slurmctld(step_ptr);
-	
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_COMPLETE RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
 	}
-	last_job_update = time(NULL);	
 
+	last_job_update = time(NULL);
 	error_code = delete_step_record(job_ptr, step_id);
 	if (error_code == ENOENT) {
 		info("job_step_complete step %u.%u not found", job_id,
 		     step_id);
 		return ESLURM_ALREADY_DONE;
 	}
-
-	debug2("have %d steps, kill %d, state %d %d", 
-	       list_count(job_ptr->step_list),
-	       job_ptr->kill_on_step_done,
-	       job_ptr->job_state, IS_JOB_FINISHED(job_ptr));
-	if ((job_ptr->kill_on_step_done)
-	    && (list_is_empty(job_ptr->step_list))
-	    && (!IS_JOB_FINISHED(job_ptr)))
-		return job_complete(job_id, uid, requeue, job_return_code);
-
 	return SLURM_SUCCESS;
 }
 
@@ -998,7 +981,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
 	} else if ((job_ptr->job_state != JOB_RUNNING)
-		   && (job_ptr->job_state != JOB_SUSPENDED)) {
+	&&         (job_ptr->job_state != JOB_SUSPENDED)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}

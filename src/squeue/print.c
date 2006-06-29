@@ -1110,7 +1110,6 @@ static int _filter_job(job_info_t * job)
 	} else {
 		if ((job->job_state != JOB_PENDING)
 		&&  (job->job_state != JOB_RUNNING)
-		&&  (job->job_state != JOB_DEALLOCATING)
 		&&  (job->job_state != JOB_SUSPENDED)
 		&&  ((job->job_state & JOB_COMPLETING) == 0))
 			return 4;

@@ -129,7 +129,6 @@ static int  _resume_job_nodes(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
-static void _kill_signal_job(struct job_record *job_ptr);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(struct job_record *job_ptr);
@@ -174,14 +173,12 @@ struct job_record *create_job_record(int *error_code)
 	xassert (job_ptr->magic = JOB_MAGIC); /* sets value */
 	job_ptr->details = detail_ptr;
 	job_ptr->step_list = list_create(NULL);
-	job_ptr->suspended = false;
-	
 	if (job_ptr->step_list == NULL)
 		fatal("memory allocation failure");
 
 	xassert (detail_ptr->magic = DETAILS_MAGIC); /* set value */
 	detail_ptr->submit_time = time(NULL);
-		
+
 	if (list_append(job_list, job_ptr) == 0)
 		fatal("list_append memory allocation failure");
 
@@ -1019,22 +1016,24 @@ extern int kill_job_by_part_name(char *part_name)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool suspended = false;
 		if (job_ptr->part_ptr != part_ptr)
 			continue;
 		job_ptr->part_ptr = NULL;
 
-		if ((job_ptr->job_state == JOB_RUNNING) 
-		    || job_ptr->suspended) {
+		if (job_ptr->job_state == JOB_SUSPENDED)
+			suspended = true;
+		if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
 			      job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
-			if (job_ptr->suspended)
+			if (suspended)
 				job_ptr->end_time = job_ptr->suspend_time;
 			else
 				job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
-			deallocate_nodes(job_ptr, false, job_ptr->suspended);
+			deallocate_nodes(job_ptr, false, suspended);
 		}
 
 	}
@@ -1067,11 +1066,12 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool suspended = false;
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
 		if (job_ptr->job_state == JOB_SUSPENDED)
-			job_ptr->suspended = true;
+			suspended = true;
 		if (job_ptr->job_state & JOB_COMPLETING) {
 			job_count++;
 			bit_clear(job_ptr->node_bitmap, bit_position);
@@ -1088,8 +1088,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				error("Node %s comp_job_cnt underflow, "
 					"JobId=%u", 
 					node_ptr->name, job_ptr->job_id);
-		} else if ((job_ptr->job_state == JOB_RUNNING) 
-			   || job_ptr->suspended) {
+		} else if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 			if (step_test && 
 			    (step_on_node(job_ptr, node_ptr) == 0))
 				continue;
@@ -1103,14 +1102,12 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				      job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
-				if (job_ptr->suspended)
-					job_ptr->end_time = 
-						job_ptr->suspend_time;
+				if (suspended)
+					job_ptr->end_time = job_ptr->suspend_time;
 				else
 					job_ptr->end_time = time(NULL);
 				job_completion_logger(job_ptr);
-				deallocate_nodes(job_ptr, false, 
-						 job_ptr->suspended);
+				deallocate_nodes(job_ptr, false, suspended);
 			} else {
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
@@ -1423,7 +1420,8 @@ extern int job_fail(uint32_t job_id)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	
+	bool suspended = false;
+
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		error("job_fail: invalid job id %u", job_id);
@@ -1432,16 +1430,15 @@ extern int job_fail(uint32_t job_id)
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if ((job_ptr->job_state == JOB_RUNNING) || job_ptr->suspended) {
+	if (job_ptr->job_state == JOB_SUSPENDED)
+		suspended = true;
+	if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
-		if (job_ptr->suspended)
-			job_ptr->end_time = job_ptr->suspend_time;
-		else
-			job_ptr->end_time = now;
+		job_ptr->end_time               = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
-		deallocate_nodes(job_ptr, false, job_ptr->suspended);
+		deallocate_nodes(job_ptr, false, suspended);
 		job_completion_logger(job_ptr);
 		return SLURM_SUCCESS;
 	}
@@ -1463,7 +1460,7 @@ extern int job_fail(uint32_t job_id)
  *	last_job_update - time of last job table update
  */
 extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag, 
-		      uid_t uid)
+		uid_t uid)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -1493,14 +1490,23 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
-		job_complete(job_id, uid, false, NO_VAL);
+		last_job_update		= now;
+		job_ptr->job_state	= JOB_CANCELLED;
+		job_ptr->start_time	= now;
+		job_ptr->end_time	= now;
+		job_completion_logger(job_ptr);
+		delete_job_details(job_ptr);
 		verbose("job_signal of pending job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
 
 	if ((job_ptr->job_state == JOB_SUSPENDED)
 	&&  (signal == SIGKILL)) {
-		job_complete(job_id, uid, false, NO_VAL);
+		last_job_update         = now;
+		job_ptr->end_time       = job_ptr->suspend_time;
+		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		deallocate_nodes(job_ptr, false, true);
+		job_completion_logger(job_ptr);
 		verbose("job_signal %u of suspended job %u successful",
 			signal, job_id);
 		return SLURM_SUCCESS;
@@ -1508,8 +1514,13 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	
 	if (job_ptr->job_state == JOB_RUNNING) {
 		if (signal == SIGKILL) {
-			job_ptr->time_last_active = now;
-			job_complete(job_id, uid, false, NO_VAL);
+			/* No need to signal steps, deallocate kills them */
+			job_ptr->time_last_active	= now;
+			job_ptr->end_time		= now;
+			last_job_update			= now;
+			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+			deallocate_nodes(job_ptr, false, false);
+			job_completion_logger(job_ptr);
 		} else if (batch_flag) {
 			if (job_ptr->batch_flag)
 				_signal_batch_job(job_ptr, signal);
@@ -1532,8 +1543,8 @@ static void
 _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 {
 	bitoff_t i;
-	kill_tasks_msg_t *kill_tasks_msg = NULL;
-	agent_arg_t *agent_args = NULL;
+	kill_tasks_msg_t *kill_tasks_msg;
+	agent_arg_t *agent_args;
 
 	xassert(job_ptr);
 	i = bit_ffs(job_ptr->node_bitmap);
@@ -1575,16 +1586,19 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
  *	last_job_update - time of last job table update
  */
 extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
-	     uint32_t job_return_code){
+	     uint32_t job_return_code)
+{
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
+	bool suspended = false;
+
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info("job_complete: invalid JobId=%u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	
+
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
@@ -1597,18 +1611,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (job_ptr->job_state & JOB_COMPLETING)
 		return SLURM_SUCCESS;	/* avoid replay */
 
-	last_job_update = now;
-
-	/* make sure all the steps know they are suppost to be done */
-	if (job_ptr->job_state == JOB_RUNNING
-	    || job_ptr->job_state == JOB_SUSPENDED)
-		_kill_signal_job(job_ptr);
-	
-	if (job_ptr->job_state == JOB_RUNNING
-	    || job_ptr->job_state == JOB_SUSPENDED
-	    || job_ptr->job_state == JOB_DEALLOCATING)
+	if (job_ptr->job_state == JOB_RUNNING)
 		job_comp_flag = JOB_COMPLETING;
-	
+	if (job_ptr->job_state == JOB_SUSPENDED) {
+		job_comp_flag = JOB_COMPLETING;
+		suspended = true;
+	}
+
 	if (requeue && (job_ptr->batch_flag > 1)) {
 		/* Failed one requeue, just kill it */
 		requeue = 0;
@@ -1627,7 +1636,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->end_time   = now;
 		job_completion_logger(job_ptr);
 	} else {
-		job_ptr->kill_on_step_done = 1;
 		if (job_return_code == NO_VAL)
 			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
 		else if (job_return_code)
@@ -1635,39 +1643,19 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		else if (job_comp_flag &&		/* job was running */
 			 (job_ptr->end_time < now))	/* over time limit */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
-		else 
-			job_ptr->job_state = JOB_DEALLOCATING;
+		else
+			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
+		if (suspended)
+			job_ptr->end_time = job_ptr->suspend_time;
+		else
+			job_ptr->end_time = now;
+		job_completion_logger(job_ptr);
 	}
 
-	/* job was running */
-	if (job_comp_flag) {
-		if (list_is_empty(job_ptr->step_list))	{
-			if (job_ptr->job_state == JOB_DEALLOCATING)
-				job_ptr->job_state = 
-					JOB_COMPLETE | job_comp_flag;
-			if (job_ptr->suspended)
-				job_ptr->end_time = job_ptr->suspend_time;
-			else
-				job_ptr->end_time = now;
-			job_completion_logger(job_ptr);
-			deallocate_nodes(job_ptr, false, job_ptr->suspended);
-			info("job_complete for JobId=%u successful", job_id);
-		} else if (job_ptr->job_state != JOB_DEALLOCATING) {
-			if (job_ptr->suspended) 
-				job_ptr->end_time = job_ptr->suspend_time;
-			else
-				job_ptr->end_time = now;
-			job_completion_logger(job_ptr);
-			deallocate_nodes(job_ptr, false, job_ptr->suspended);
-			info("1 job_complete for JobId=%u successful", job_id);
-		} else {
-			debug("%d job steps not complete", 
-			      list_count(job_ptr->step_list));
-		}
-	} else {
-		info("job_complete for non-running JobId=%u successful", 
-		     job_id);
-	}
+	last_job_update = now;
+	if (job_comp_flag) 	/* job was running */
+		deallocate_nodes(job_ptr, false, suspended);
+	info("job_complete for JobId=%u successful", job_id);
 
 	return SLURM_SUCCESS;
 }
@@ -3531,7 +3519,6 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
-	kill_req->nodes	        = xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo = 
 			select_g_copy_jobinfo(job_ptr->select_jobinfo);
@@ -3899,19 +3886,20 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 /* Send specified signal to all steps associated with a job */
 static void _signal_job(struct job_record *job_ptr, int signal)
 {
-	agent_arg_t *agent_args = NULL;
-	signal_job_msg_t *signal_job_msg = NULL;
+	agent_arg_t *agent_args;
+	signal_job_msg_t *signal_job_msg;
 	int i, buf_rec_size = 0;
 
-	debug3("signaling job %d with signal %d", job_ptr->job_id, signal);
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	
-	agent_args->msg_type = REQUEST_SIGNAL_JOB;
+	if (signal == SIGKILL)
+		agent_args->msg_type = REQUEST_TERMINATE_JOB;
+	else
+		agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
-	signal_job_msg = xmalloc(sizeof(signal_job_msg_t));
+	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
 	signal_job_msg->signal = signal;
-	
+
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
@@ -3939,63 +3927,11 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 		xfree(agent_args);
 		return;
 	}
+
 	agent_args->msg_args = signal_job_msg;
 	agent_queue_request(agent_args);
 	return;
 }
-
-/* Send specified SIGTERM to all steps associated with a job */
-static void _kill_signal_job(struct job_record *job_ptr)
-{
-	agent_arg_t *agent_args;
-	kill_job_msg_t *kill_job_msg;
-	int i, buf_rec_size = 0;
-
-	debug3("sending SIGTERM to job %d", job_ptr->job_id);
-	agent_args = xmalloc(sizeof(agent_arg_t));
-	
-	agent_args->msg_type = REQUEST_TERMINATE_JOB;
-	agent_args->retry = 1;
-	
-	kill_job_msg = xmalloc(sizeof(kill_job_msg_t));
-	kill_job_msg->job_id = job_ptr->job_id;
-	kill_job_msg->job_uid = job_ptr->user_id;
-	kill_job_msg->nodes = xstrdup(job_ptr->nodes);
-	kill_job_msg->select_jobinfo = select_g_copy_jobinfo(
-		job_ptr->select_jobinfo);
-
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				(sizeof(struct sockaddr_in) *
-				buf_rec_size));
-			xrealloc((agent_args->node_names),
-				(MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-			node_record_table_ptr[i].slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_SLURM_NAME);
-		agent_args->node_count++;
-#ifdef HAVE_FRONT_END	/* Operate only on front-end */
-		break;
-#endif
-	}
-
-	if (agent_args->node_count == 0) {
-		slurm_free_kill_job_msg(kill_job_msg);
-		xfree(agent_args);
-		return;
-	}
-	agent_args->msg_args = kill_job_msg;
-	agent_queue_request(agent_args);
-	return;
-}
-
 
 /* Send suspend request to slumrd of all nodes associated with a job */
 static void _suspend_job(struct job_record *job_ptr, uint16_t op)
@@ -4060,7 +3996,7 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
 		else {
-			error("1 Node %s run_job_cnt underflow", 
+			error("Node %s run_job_cnt underflow", 
 				node_ptr->name);
 		}
 		if (job_ptr->details
@@ -4068,7 +4004,7 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 			if (node_ptr->no_share_job_cnt)
 				(node_ptr->no_share_job_cnt)--;
 			else {
-				error("1 Node %s no_share_job_cnt "
+				error("Node %s no_share_job_cnt "
 					"underflow", node_ptr->name);
 			}
 			if (node_ptr->no_share_job_cnt == 0)
@@ -4196,7 +4132,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_SUSPENDED;
-		job_ptr->suspended = true;
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
 				difftime(now, 
@@ -4216,7 +4151,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_RUNNING;
-		job_ptr->suspended = false;
 		if (job_ptr->time_limit != INFINITE) {
 			/* adjust effective time_limit */
 			job_ptr->end_time = now +
