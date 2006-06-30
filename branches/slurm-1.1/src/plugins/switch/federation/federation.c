@@ -82,6 +82,7 @@ mode_t fed_umask;
 typedef struct fed_window {
 	uint16_t id;
 	uint32_t status;
+	uint16_t job_key;
 } fed_window_t;
 	
 typedef struct fed_adapter {
@@ -126,6 +127,9 @@ struct fed_jobinfo {
 	uint8_t bulk_xfer;  /* flag */
 	uint16_t tables_per_task;
 	fed_tableinfo_t *tableinfo;
+
+	hostlist_t nodenames;
+	int num_tasks;
 };
 
 typedef struct {
@@ -884,6 +888,7 @@ fed_pack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 		for(j = 0; j < a->window_count; j++) {
 			pack16(a->window_list[j].id, buf);
 			pack32(a->window_list[j].status, buf);
+			pack16(a->window_list[j].job_key, buf);
 		}
 	}
 
@@ -953,8 +958,7 @@ _hash_index (char *name)
 	return index;
 }
 
-/* Tries to find a node fast using the hash table if possible, 
- * otherwise falls back to a linear search.
+/* Tries to find a node fast using the hash table
  *
  * Used by: slurmctld
  */
@@ -1208,8 +1212,11 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		for(j = 0; j < tmp_a->window_count; j++) {
 			safe_unpack16(&tmp_w[j].id, buf);
 			safe_unpack32(&tmp_w[j].status, buf);
-			if (!believe_window_status)
+			safe_unpack16(&tmp_w[j].job_key, buf);
+			if (!believe_window_status) {
 				tmp_w[j].status = NTBL_UNLOADED_STATE;
+				tmp_w[j].job_key = 0;
+			}
 		}
 		tmp_a->window_list = tmp_w;
 	}
@@ -1340,7 +1347,7 @@ _find_window(fed_adapter_t *adapter, int window_id) {
  */
 static int
 _allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
-		      char *hostname, int task_id)
+		      char *hostname, int task_id, uint16_t job_key)
 {
 	fed_nodeinfo_t *node;
 	fed_adapter_t *adapter;
@@ -1367,6 +1374,7 @@ _allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
 			return SLURM_ERROR;
 		}
 		window->status = NTBL_LOADED_STATE;
+		window->job_key = job_key;
 
 		table = tableinfo[i].table[task_id];
 		table->task_id = task_id;
@@ -1390,7 +1398,7 @@ _allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
  */
 static int
 _allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
-			char *hostname, int task_id)
+			char *hostname, int task_id, uint16_t job_key)
 {
 	fed_nodeinfo_t *node;
 	fed_adapter_t *adapter = NULL;
@@ -1432,6 +1440,7 @@ _allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
 		return SLURM_ERROR;
 	}
 	window->status = NTBL_LOADED_STATE;
+	window->job_key = job_key;
 
 	table = tableinfo[0].table[task_id];
 	table->task_id = task_id;
@@ -1452,7 +1461,8 @@ _allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
  */
 static int
 _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
-		  char *hostname, int task_id, enum NTBL_RC state)
+		  char *hostname, int task_id, enum NTBL_RC state,
+		  uint16_t job_key)
 {
 	fed_nodeinfo_t *node = NULL;
 	fed_adapter_t *adapter = NULL;
@@ -1511,8 +1521,11 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		       adapter->name,
 		       table->lid, table->window_id, task_id);
 		window = _find_window(adapter, table->window_id);
-		if (window)
+		if (window) {
 			window->status = state;
+			window->job_key =
+				(state == NTBL_UNLOADED_STATE) ? 0 : job_key;
+		}
 	}
 	
 	return SLURM_SUCCESS;
@@ -1617,7 +1630,7 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 			rc = _window_state_set(jp->tables_per_task,
 					       jp->tableinfo,
 					       host, proc_cnt,
-					       state);
+					       state, jp->job_key);
 			proc_cnt++;
 		}
 		free(host);
@@ -1628,15 +1641,101 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	return SLURM_SUCCESS;
 }
 
-/* Find all of the windows used by job step "jp" and mark their
- * state NTBL_UNLOADED_STATE.
+/*
+ * For one node, free all of the windows belonging to a particular
+ * job step (as identified by the job_key).
+ */
+static void inline
+_free_windows_by_job_key(uint16_t job_key, char *nodename)
+{
+	fed_nodeinfo_t *node;
+	fed_adapter_t *adapter;
+	fed_window_t *window;
+	int i, j;
+
+	/* debug3("_free_windows_by_job_key(%hu, %s)", job_key, nodename); */
+	if ((node = _find_node(fed_state, nodename)) == NULL)
+		return;
+
+	if (node->adapter_list == NULL) {
+		error("_free_windows_by_job_key, "
+		      "adapter_list NULL for node %s", nodename);
+		return;
+	}
+	for (i = 0; i < node->adapter_count; i++) {
+		adapter = &node->adapter_list[i];
+		if (adapter->window_list == NULL) {
+			error("_free_windows_by_job_key, "
+			      "window_list NULL for node %s adapter %s",
+			      nodename, adapter->name);
+			continue;
+		}
+		/* We could check here to see if this adapter's name
+		 * is in the fed_jobinfo tablinfo list to avoid the next
+		 * loop if the adapter isn't in use by the job step.
+		 * However, the added searching and string comparisons
+		 * probably aren't worth it, especially since MOST job
+		 * steps will use all of the adapters.
+		 */
+		for (j = 0; j < adapter->window_count; j++) {
+			window = &adapter->window_list[j];
+
+			if (window->job_key == job_key) {
+				/* debug3("Freeing adapter %s window %d",
+				   adapter->name, window->id); */
+				window->status = NTBL_UNLOADED_STATE;
+				window->job_key = 0;
+			}
+		}
+	}
+}
+
+/* Find all of the windows used by job step "jp" on the hosts
+ * designated in hostlist "hl" and mark their state NTBL_UNLOADED_STATE.
  *
  * Used by: slurmctld
  */
 int
 fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 {
-	return _job_step_window_state(jp, hl, NTBL_UNLOADED_STATE);
+	enum NTBL_RC state = NTBL_UNLOADED_STATE;
+	hostlist_t uniq_hl;
+	hostlist_iterator_t hi;
+	char *nodename;
+
+	xassert(!hostlist_is_empty(hl));
+	xassert(jp);
+	xassert(jp->magic == FED_JOBINFO_MAGIC);
+
+	if ((jp == NULL)
+	    || (jp->magic != FED_JOBINFO_MAGIC)
+	    || (hostlist_is_empty(hl)))
+		return SLURM_ERROR;
+
+	if ((jp->tables_per_task == 0)
+	    || !jp->tableinfo
+	    || (jp->tableinfo[0].table_length == 0))
+		return SLURM_SUCCESS;
+
+	/* The hl hostlist may contain duplicate nodenames (poe -hostfile
+	 * triggers duplicates in the hostlist).  Since there
+	 * is no reason to call _free_windows_by_job_key more than once
+	 * per nodename, we create a new unique hostlist.
+	 */
+	uniq_hl = hostlist_copy(hl);
+	hostlist_uniq(uniq_hl);
+	hi = hostlist_iterator_create(uniq_hl);
+
+	_lock();
+	while((nodename = hostlist_next(hi)) != NULL) {
+		_free_windows_by_job_key(jp->job_key, nodename);
+		free(nodename);
+	}
+	_unlock();
+	
+	hostlist_iterator_destroy(hi);
+	hostlist_destroy(uniq_hl);
+	return SLURM_SUCCESS;
 }
 
 
@@ -1645,7 +1744,7 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
  *
  * Used by the slurmctld at startup time to restore the allocation
  * status of any job steps that were running at the time the previous
- * slurmctld was shutdown.  Also used to restore teh allocation
+ * slurmctld was shutdown.  Also used to restore the allocation
  * status after a call to switch_clear().
  */
 int
@@ -1746,11 +1845,13 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			if (adapter_name == NULL) {
 				rc = _allocate_windows_all(jp->tables_per_task,
 							   jp->tableinfo,
-							   host, proc_cnt);
+							   host, proc_cnt,
+							   jp->job_key);
 			} else {
 				rc = _allocate_window_single(adapter_name,
 							     jp->tableinfo,
-							     host, proc_cnt);
+							     host, proc_cnt,
+							     jp->job_key);
 			}
 			if (rc != SLURM_SUCCESS) {
 				_unlock();
