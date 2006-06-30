@@ -381,6 +381,18 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		     step_id);
 		return ESLURM_ALREADY_DONE;
 	}
+
+	if ((job_ptr->job_state & JOB_COMPLETING)
+	&&  (job_ptr->node_cnt == 0)	/* no more pending epilogs */
+	&&  (list_count(job_ptr->step_list) == 0)) { /* no more steps */
+		time_t delay = time(NULL) - job_ptr->end_time;
+		if (delay > 60)
+			info("Job %u completion process took "
+				"%ld seconds", job_ptr->job_id,
+				(long) delay);
+		job_ptr->job_state &= (~JOB_COMPLETING);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -1017,7 +1029,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	int nodes;
+	int nodes, rem_nodes;
 
 	/* find the job, step, and validate input */
 	job_ptr = find_job_record (req->job_id);
@@ -1053,11 +1065,47 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 
 	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
 		req->range_last);
+	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
+	if (rem_nodes && step_ptr->switch_job) {
+		/* perform partitial release of switch resources */
+/*FIXME*/	char *partitial_nodelist = NULL;
+		switch_g_job_step_complete(step_ptr->switch_job,
+			partitial_nodelist);
+	}
 	if (rem)
-		*rem = bit_clear_count(step_ptr->exit_node_bitmap);
+		*rem = rem_nodes;
+
 	if (max_rc)
 		*max_rc = step_ptr->exit_code;
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * kill_steps_by_node_name - Given a job being killed due to a DOWN node,
+ *	purge its step switch contexts as needed
+ * IN job_ptr - the job being killed
+ * IN node_name - name of node being made DOWN
+ * IN node_inx - index (offset) of the node being made DOWN
+ * RET number of steps on that node
+ */
+extern int kill_steps_by_node_name(struct job_record *job_ptr,
+		char *node_name, int node_inx)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	int cnt = 0;
+
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->switch_job
+		&&  bit_test(step_ptr->step_node_bitmap, node_inx)) {
+			switch_g_job_step_complete(step_ptr->switch_job,
+				node_name);
+			cnt++;
+		}
+	}
+	list_iterator_destroy (step_iterator);
+	return cnt;
 }
 

@@ -836,6 +836,17 @@ extern void kill_job_on_node(uint32_t job_id,
  */
 extern int kill_running_job_by_node_name(char *node_name, bool step_test);
 
+/*
+ * kill_steps_by_node_name - Given a job being killed due to a DOWN node, 
+ *	purge its step switch contexts as needed
+ * IN job_ptr - the job being killed
+ * IN node_name - name of node being made DOWN
+ * IN node_inx - index (offset) of the node being made DOWN
+ * RET number of steps on that node
+ */
+extern int kill_steps_by_node_name(struct job_record *job_ptr, 
+		char *node_name, int node_inx);
+
 /* list_compare_config - compare two entry from the config list based upon 
  *	weight, see common/list.h for documentation */
 int list_compare_config (void *config_entry1, void *config_entry2);

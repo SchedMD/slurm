@@ -1778,7 +1778,8 @@ void make_node_idle(struct node_record *node_ptr,
 		last_job_update = time (NULL);
 		bit_clear(job_ptr->node_bitmap, inx);
 		if (job_ptr->node_cnt) {
-			if ((--job_ptr->node_cnt) == 0) {
+			if (((--job_ptr->node_cnt) == 0)
+			&&  (list_count(job_ptr->step_list) == 0)) {
 				time_t delay;
 				delay = last_job_update - job_ptr->end_time;
 				if (delay > 60)

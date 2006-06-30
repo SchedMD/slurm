@@ -209,7 +209,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		agent_args->node_count++;
 	}
 
-	if ((agent_args->node_count - down_node_cnt) == 0)
+	if (((agent_args->node_count - down_node_cnt) == 0)
+	&&  (list_count(job_ptr->step_list) == 0))
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	if (agent_args->node_count == 0) {
 		error("Job %u allocated no nodes to be killed on",
@@ -1415,8 +1416,9 @@ extern void re_kill_job(struct job_record *job_ptr)
 			bit_clear(job_ptr->node_bitmap, i);
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
-			if ((--job_ptr->node_cnt) == 0) {
-				last_node_update = time(NULL);
+			if (((--job_ptr->node_cnt) == 0) 
+			&&  (list_count(job_ptr->step_list) == 0)) {
+				last_job_update = time(NULL);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 			}
 			continue;
