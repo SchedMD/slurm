@@ -3785,6 +3785,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	}
 #endif
 
+	step_epilog_complete(job_ptr, node_name);
 	if (!(job_ptr->job_state & JOB_COMPLETING))	/* COMPLETED */
 		return true;
 	else

@@ -1140,6 +1140,16 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
 			 bool kill_job_when_step_done,
 			 bool batch_step );
 
+/*
+ * step_epilog_complete - note completion of epilog on some node and 
+ *	release it's switch windows if appropriate. can perform partition 
+ *	switch window releases.
+ * IN job_ptr - pointer to job which has completed epilog
+ * IN node_name - name of node which has completed epilog
+ */
+extern int step_epilog_complete(struct job_record  *job_ptr, 
+	char *node_name);
+
 /* 
  * step_on_node - determine if the specified job has any job steps allocated to 
  * 	the specified node 
