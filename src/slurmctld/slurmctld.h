@@ -537,7 +537,8 @@ extern struct job_record *find_job_record (uint32_t job_id);
  */
 extern struct node_record *find_first_node_record (bitstr_t *node_bitmap);
 
-/* find_node_record - find a record for node with specified name */
+/* find_node_record - find a record for node with specified name, 
+ *	returns pointer to record or NULL if not found */
 extern struct node_record *find_node_record (char *name);
 
 /* 
