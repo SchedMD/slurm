@@ -1435,7 +1435,10 @@ extern int job_fail(uint32_t job_id)
 	if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
-		job_ptr->end_time               = now;
+		if (suspended)
+			job_ptr->end_time       = job_ptr->suspend_time;
+		else
+			job_ptr->end_time       = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
 		deallocate_nodes(job_ptr, false, suspended);
@@ -1543,8 +1546,8 @@ static void
 _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 {
 	bitoff_t i;
-	kill_tasks_msg_t *kill_tasks_msg;
-	agent_arg_t *agent_args;
+	kill_tasks_msg_t *kill_tasks_msg = NULL;
+	agent_arg_t *agent_args = NULL;
 
 	xassert(job_ptr);
 	i = bit_ffs(job_ptr->node_bitmap);
@@ -3887,15 +3890,12 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 /* Send specified signal to all steps associated with a job */
 static void _signal_job(struct job_record *job_ptr, int signal)
 {
-	agent_arg_t *agent_args;
-	signal_job_msg_t *signal_job_msg;
+	agent_arg_t *agent_args = NULL;
+	signal_job_msg_t *signal_job_msg = NULL;
 	int i, buf_rec_size = 0;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	if (signal == SIGKILL)
-		agent_args->msg_type = REQUEST_TERMINATE_JOB;
-	else
-		agent_args->msg_type = REQUEST_SIGNAL_JOB;
+	agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
