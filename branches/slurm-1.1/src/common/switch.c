@@ -94,6 +94,9 @@ typedef struct slurm_switch_ops {
 						char *buf, size_t size );
 	int          (*step_complete)     ( switch_jobinfo_t jobinfo,
 						char *nodelist );
+	int          (*step_part_comp)    ( switch_jobinfo_t jobinfo,
+						char *nodelist );
+	bool         (*part_comp)         ( void );
 	int          (*step_allocated)    ( switch_jobinfo_t jobinfo,
 					        char *nodelist );
 	int          (*state_clear)       ( void );
@@ -202,6 +205,8 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_free_node_info",
 		"switch_p_sprintf_node_info",
 		"switch_p_job_step_complete",
+		"switch_p_job_step_part_comp",
+		"switch_p_part_comp",
 		"switch_p_job_step_allocated",
 		"switch_p_libstate_clear",
 		"switch_p_slurmctld_init",
@@ -548,6 +553,24 @@ extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
 
 	return (*(g_context->ops.step_complete))( jobinfo, nodelist );
 }
+
+extern int switch_g_job_step_part_comp(switch_jobinfo_t jobinfo,
+	char *nodelist)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.step_part_comp))( jobinfo, nodelist );
+}
+
+extern bool switch_g_part_comp(void)
+{
+	if ( switch_init() < 0 )
+		return false;
+
+	return (*(g_context->ops.part_comp))( );
+}
+
 
 extern int switch_g_job_step_allocated(switch_jobinfo_t jobinfo,
 	char *nodelist)
