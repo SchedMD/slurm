@@ -151,6 +151,7 @@ struct file_read_info {
 	struct slurm_io_header header;
 
 	bool eof;
+	bool was_blocking;
 };
 
 
@@ -663,6 +664,12 @@ create_file_read_eio_obj(int fd, srun_job_t *job,
 	info->header.ltaskid = (uint16_t)-1;
 	info->eof = false;
 
+	if (fd_is_blocking(fd)) {
+		fd_set_nonblocking(fd);
+		info->was_blocking = true;
+	} else {
+		info->was_blocking = false;
+	}
 	eio = eio_obj_create(fd, &file_read_ops, (void *)info);
 
 	return eio;
@@ -685,6 +692,11 @@ static bool _file_readable(eio_obj_t *obj)
 	}
 	if (obj->shutdown == true) {
 		debug3("  false, shutdown");
+		/* if the file descriptor was in blocking mode before we set it
+		 * to O_NONBLOCK, then set it back to blocking mode before
+		 * closing */
+		if (info->was_blocking)
+			fd_set_blocking(obj->fd);
 		close(obj->fd);
 		obj->fd = -1;
 		info->eof = true;
@@ -1102,7 +1114,6 @@ _init_stdio_eio_objs(srun_job_t *job)
 			if (infd == -1)
 				fatal("Could not open stdin file: %m");
 		}
-		fd_set_nonblocking(infd);
 		fd_set_close_on_exec(infd);
 		if (job->ifname->type == IO_ONE) {
 			type = SLURM_IO_STDIN;
