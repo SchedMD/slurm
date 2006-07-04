@@ -61,6 +61,17 @@ void fd_set_noclose_on_exec(int fd)
     return;
 }
 
+int fd_is_blocking(int fd)
+{
+    int val = 0;
+
+    assert(fd >= 0);
+
+    if ((val = fcntl(fd, F_GETFL, 0)) < 0)
+	error("fnctl(F_GET_FL) failed: %m");
+    return (val & O_NONBLOCK) ? 0 : 1;
+}
+
 void fd_set_nonblocking(int fd)
 {
     int fval;
