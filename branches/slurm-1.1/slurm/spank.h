@@ -77,24 +77,43 @@ extern spank_f slurm_spank_exit;
 
 
 /*  Items which may be obtained from the spank handle using the
- *   spank_get_item () call.
+ *   spank_get_item () call. The expected list of variable arguments may
+ *   be found in the comments below. 
+ * 
+ *  For example, S_JOB_NCPUS takes (uint16_t *), a pointer to uint16_t, so
+ *   the get item call would look like:
+ *
+ *    uint16_t ncpus;
+ *    spank_err_t rc = spank_get_item (spank, S_JOB_NCPUS, &ncpus);
+ *
+ *   while  S_JOB_PID_TO_GLOBAL_ID takes (pid_t, uint32_t *), so it would
+ *   be called as:
+ *
+ *    uint32_t global_id;
+ *    spank_err_t rc;
+ *    rc = spank_get_item (spank, S_JOB_PID_TO_GLOBAL_ID, pid, &global_id);
  */
 enum spank_item {
-    S_JOB_UID,              /* User id (uid_t)                               */
-    S_JOB_GID,              /* Primary group id (gid_t)                      */
-    S_JOB_ID,               /* SLURM job id (uint32_t)                       */ 
-    S_JOB_STEPID,           /* SLURM job step id (uint32_t)                  */ 
-    S_JOB_NNODES,           /* Total number of nodes in job (uint32_t)       */ 
-    S_JOB_NODEID,           /* Relative id of this node (uint32_t)           */
-    S_JOB_LOCAL_TASK_COUNT, /* Number of local tasks (uint32_t)              */
-    S_JOB_TOTAL_TASK_COUNT, /* Total number of tasks in job (uint32_t)       */ 
-    S_JOB_NCPUS,            /* Number of CPUs used by this job (uint16_t)    */
-    S_JOB_ARGV,             /* Command args (int, char **)                   */
-    S_JOB_ENV,              /* Job env array (char **)                       */
-    S_TASK_ID,              /* Local task id (int)                           */
-    S_TASK_GLOBAL_ID,       /* Global task id (uint32_t)                     */ 
-    S_TASK_EXIT_STATUS,     /* Exit status of task if exited (int)           */
-    S_TASK_PID              /* Task pid (pid_t)                              */
+    S_JOB_UID,               /* User id (uid_t *)                             */
+    S_JOB_GID,               /* Primary group id (gid_t *)                    */
+    S_JOB_ID,                /* SLURM job id (uint32_t *)                     */ 
+    S_JOB_STEPID,            /* SLURM job step id (uint32_t *)                */ 
+    S_JOB_NNODES,            /* Total number of nodes in job (uint32_t *)     */ 
+    S_JOB_NODEID,            /* Relative id of this node (uint32_t *)         */
+    S_JOB_LOCAL_TASK_COUNT,  /* Number of local tasks (uint32_t *)            */
+    S_JOB_TOTAL_TASK_COUNT,  /* Total number of tasks in job (uint32_t *)     */ 
+    S_JOB_NCPUS,             /* Number of CPUs used by this job (uint16_t *)  */
+    S_JOB_ARGV,              /* Command args (int, char ***)                  */
+    S_JOB_ENV,               /* Job env array (char ***)                      */
+    S_TASK_ID,               /* Local task id (int *)                         */
+    S_TASK_GLOBAL_ID,        /* Global task id (uint32_t *)                   */ 
+    S_TASK_EXIT_STATUS,      /* Exit status of task if exited (int *)         */
+    S_TASK_PID,              /* Task pid (pid_t *)                            */
+    S_JOB_PID_TO_GLOBAL_ID,  /* global task id from pid (pid_t, uint32_t *)   */
+    S_JOB_PID_TO_LOCAL_ID,   /* local task id from pid (pid_t, uint32_t *)    */
+    S_JOB_LOCAL_TO_GLOBAL_ID,/* local id to global id  (uint32_t, uint32_t *) */
+    S_JOB_GLOBAL_TO_LOCAL_ID,/* global id to local id  (uint32_t, uint32_t *) */
+    S_JOB_SUPPLEMENTARY_GIDS /* Array of suppl. gids (gid_t **, int *)        */
 };
 
 typedef enum spank_item spank_item_t;
@@ -107,9 +126,11 @@ enum spank_err {
     ESPANK_BAD_ARG     = 2, /* Bad argument.                                 */
     ESPANK_NOT_TASK    = 3, /* Not in task context.                          */
     ESPANK_ENV_EXISTS  = 4, /* Environment variable exists && !overwrite     */
-    ESPANK_ENV_NOEXIST = 5, /* No such environemtn variable                  */
+    ESPANK_ENV_NOEXIST = 5, /* No such environment variable                  */
     ESPANK_NOSPACE     = 6, /* Buffer too small.                             */
-    ESPANK_NOT_REMOTE  = 7  /* Function only may be called in remote context */
+    ESPANK_NOT_REMOTE  = 7, /* Function only may be called in remote context */
+    ESPANK_NOEXIST     = 8, /* Id/pid doesn't exist on this node             */
+    ESPANK_NOT_EXECD   = 9  /* Lookup by pid requested, but no tasks running */
 };
 
 typedef enum spank_err spank_err_t;
@@ -193,8 +214,8 @@ spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len);
 
 /* 
  *  Set the environment variable "var" to "val" in the environment of
- *   the current job or task in the spank handle. If overwrite != an
- *   existing value for var will be overwritten.
+ *   the current job or task in the spank handle. If overwrite != 0 an
+ *   existing value for var will be overwritten. 
  *
  *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *     ESPANK_ENV_EXISTS  = var exists in job env and overwrite == 0.
@@ -203,6 +224,17 @@ spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len);
  */
 spank_err_t spank_setenv (spank_t spank, const char *var, const char *val, 
         int overwrite);
+
+/*
+ *  Unset environment variable "var" in the environment of current job or
+ *   task in the spank handle.
+ *
+ *  Returns ESPANK_SUCCESS on sucess, o/w spank_err_t on failure:
+ *    ESPANK_BAD_ARG   = spank handle invalid or var is NULL.
+ *    SPANK_NOT_REMOTE = not called from slurmd.
+ */
+spank_err_t spank_unsetenv (spank_t spank, const char *var);
+
 /*
  *  SLURM logging functions which are exported to plugins.
  */
