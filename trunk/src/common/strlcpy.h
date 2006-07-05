@@ -1,10 +1,9 @@
 #ifndef _STRLCPY_H
 #define _STRLCPY_H
 
-#if HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if (!HAVE_STRLCPY)
-#     undef strlcpy
+#  ifndef HAVE_STRLCPY
 
 #     include <sys/types.h>
 
