@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "June 2006" "slurm.conf 1.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2006" "slurm.conf 1.1" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -305,10 +305,13 @@ appearing in this list.   The user can override this by specifying which
 resource limits to propagate with the srun commands "--propagate" option.
 .TP
 \fBReturnToService\fR
-If set to 1, then a DOWN node will become available for use 
-upon registration. The default value is 0, which 
-means that a node will remain in the DOWN state 
-until a system administrator explicitly changes its state
+If set to 1, then a non-responding (DOWN) node will become available 
+for use upon registration. Note that DOWN node's state will be changed 
+only if it was set DOWN due to being non-responsive. If the node was 
+set DOWN for any other reason (low memory, prolog failure, epilog 
+failure, etc.), its state will not automatically be changed.  The 
+default value is 0, which means that a node will remain in the 
+DOWN state until a system administrator explicitly changes its state
 (even if the slurmd daemon registers and resumes communications).
 .TP
 \fBSchedulerAuth\fR

@@ -90,6 +90,7 @@ cset bin_bash   [exec which bash]
 cset bin_cat	"cat"
 cset bin_cc	"gcc"
 cset bin_chmod	"chmod"
+cset bin_cmp	"cmp"
 cset bin_cp	"cp"
 cset bin_diff	"diff"
 cset bin_echo	"echo"

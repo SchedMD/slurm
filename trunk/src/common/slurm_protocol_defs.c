@@ -520,8 +520,6 @@ char *job_state_string(enum job_states inx)
 			return "PENDING";
 		case JOB_RUNNING:
 			return "RUNNING";
-		case JOB_DEALLOCATING:
-			return "DEALLOCATING";
 		case JOB_SUSPENDED:
 			return "SUSPENDED";
 		case JOB_COMPLETE:
@@ -549,8 +547,6 @@ char *job_state_string_compact(enum job_states inx)
 			return "PD";
 		case JOB_RUNNING:
 			return "R";
-		case JOB_DEALLOCATING:
-			return "DE";
 		case JOB_SUSPENDED:
 			return "S";
 		case JOB_COMPLETE:
