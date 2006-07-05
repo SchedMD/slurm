@@ -8,7 +8,7 @@
 /* Test for failure: 
 */
 #define TEST(_tst, _msg) do {			\
-	if (! _tst) 				\
+	if (! (_tst))				\
 		fail( _msg );       \
 	else					\
 		pass( _msg );       \

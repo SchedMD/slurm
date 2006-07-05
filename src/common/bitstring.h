@@ -36,6 +36,10 @@
  * 32 bit words.
  * 
  * bitstrings are zero origin
+ *
+ * bitstrings are always stored in a little-endian fashion.  In other words,
+ * bit "1" is always in the byte of a word at the lowest memory address,
+ * regardless of the native architecture endianness.
  */
 
 #ifndef _BITSTRING_H_
@@ -90,7 +94,11 @@ typedef bitstr_t bitoff_t;
 	((char *)((name) + BITSTR_OVERHEAD) + ((bit) >> BITSTR_SHIFT_WORD8))
 
 /* mask for the bit within its word */
-#define	_bit_mask(bit) 		((bitstr_t)1 << ((bit)&BITSTR_MAXPOS))
+#ifdef SLURM_BIGENDIAN
+#define	_bit_mask(bit) ((bitstr_t)1 << (BITSTR_MAXPOS - ((bit)&BITSTR_MAXPOS)))
+#else
+#define	_bit_mask(bit) ((bitstr_t)1 << ((bit)&BITSTR_MAXPOS))
+#endif
 
 /* number of bits actually allocated to a bitstr */
 #define _bitstr_bits(name) 	((name)[1])

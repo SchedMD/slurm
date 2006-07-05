@@ -280,12 +280,12 @@ Slurmctld state save directory
 <input type="text" name="slurmd_spool_dir" value="/tmp/slurmd"> <B>SlurmdSpoolDir</B>:
 Slurmd state save directory
 <P>
-Define when a DOWN node is returned to service.<BR>
+Define when a non-responding (DOWN) node is returned to service.<BR>
 Select one value for <B>ReturnToService</B>:<BR>
+<input type="radio" name="return_to_service" value="0" checked>
+<B>0</B>: When explicitly restored to service by an administrator.<BR>
 <input type="radio" name="return_to_service" value="1"> 
 <B>1</B>: Automatically, when slurmd daemon registers with valid configuration<BR>
-<input type="radio" name="return_to_service" value="0" checked>
-<B>0</B>: When explicitly restored to service by an administrator.
 <P>
  
 <H2>Scheduling</H2>
@@ -464,6 +464,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-217616<br>
-Last modified 6 June 2006</p>
+Last modified 5 July 2006</p>
 </BODY>
 

@@ -342,8 +342,6 @@ struct job_record {
                                            each of the ntask_cnt hosts */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
-	bool suspended;                 /* marker to tell if job was 
-					 * suspended or not */
 };
 
 struct 	step_record {
@@ -541,7 +539,8 @@ extern struct job_record *find_job_record (uint32_t job_id);
  */
 extern struct node_record *find_first_node_record (bitstr_t *node_bitmap);
 
-/* find_node_record - find a record for node with specified name */
+/* find_node_record - find a record for node with specified name, 
+ *	returns pointer to record or NULL if not found */
 extern struct node_record *find_node_record (char *name);
 
 /* 
@@ -1159,6 +1158,16 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
 			 struct step_record** new_step_record,
 			 bool kill_job_when_step_done,
 			 bool batch_step );
+
+/*
+ * step_epilog_complete - note completion of epilog on some node and 
+ *	release it's switch windows if appropriate. can perform partition 
+ *	switch window releases.
+ * IN job_ptr - pointer to job which has completed epilog
+ * IN node_name - name of node which has completed epilog
+ */
+extern int step_epilog_complete(struct job_record  *job_ptr, 
+	char *node_name);
 
 /* 
  * step_on_node - determine if the specified job has any job steps allocated to 
