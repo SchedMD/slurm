@@ -85,7 +85,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * needed. Spread out messages by task's rank.*/
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
 		if (retries++ > MAX_RETRIES) {
-			error("slurm_get_kvs_comm_set: %m");
+			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
 		usleep(pmi_rank * 1000);
