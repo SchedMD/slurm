@@ -60,7 +60,7 @@ const uint32_t plugin_version = 90;
 typedef uint64_t jid_t;
 
 typedef jid_t (*create_f)    (jid_t jid_requested, uid_t uid, int options);
-typedef jid_t (*getjid_f)    (jid_t jid);
+typedef jid_t (*getjid_f)    (pid_t pid);
 typedef jid_t (*waitjid_f)   (jid_t jid, int *status, int options);
 typedef int   (*killjid_f)   (jid_t jid, int sig);
 typedef jid_t (*detachpid_f) (pid_t pid);
