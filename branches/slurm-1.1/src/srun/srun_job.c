@@ -396,6 +396,9 @@ srun_job_destroy(srun_job_t *job, int error)
 	if (job->old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
 		slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+	} else if (job->state == SRUN_JOB_FORCETERM) {
+		/* set job state to cancelled */
+		slurm_kill_job(job->jobid, SIGKILL, (uint16_t) 0);
 	} else if (!opt.no_alloc) {
 		debug("cancelling job %u", job->jobid);
 		slurm_complete_job(job->jobid, error);
