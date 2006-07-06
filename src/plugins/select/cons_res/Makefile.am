@@ -9,7 +9,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = select_cons_res.la
 
-# Linear node selection plugin.
+# Consumable resources node selection plugin.
 select_cons_res_la_SOURCES = select_cons_res.c
 select_cons_res_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
