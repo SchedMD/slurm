@@ -654,7 +654,6 @@ log_flush()
 {
 	slurm_mutex_lock(&log_lock);
 	_log_flush();
-    done:
 	slurm_mutex_unlock(&log_lock);
 }
 
