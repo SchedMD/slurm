@@ -1698,7 +1698,6 @@ _free_windows_by_job_key(uint16_t job_key, char *nodename)
 int
 fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 {
-	enum NTBL_RC state = NTBL_UNLOADED_STATE;
 	hostlist_t uniq_hl;
 	hostlist_iterator_t hi;
 	char *nodename;

@@ -468,12 +468,12 @@ static inline int _make_step_comp(switch_jobinfo_t jobinfo, char *nodelist)
 
 extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
 {
-	return _make_step_comp(job_info, nodelist);
+	return _make_step_comp(jobinfo, nodelist);
 }
 
 extern int switch_p_job_step_part_comp(switch_jobinfo_t jobinfo, char *nodelist)
 {
-	return _make_step_comp(job_info, nodelist);
+	return _make_step_comp(jobinfo, nodelist);
 }
 
 extern bool switch_p_part_comp(void)

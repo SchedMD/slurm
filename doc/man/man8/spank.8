@@ -58,7 +58,7 @@ In local context, called before \fBsrun\fR exits.
 All of these functions have the same prototype, for example:
 .nf
 
-   slurm_spank_init (spank_t spank, int ac, char *argv[])
+   int \fBslurm_spank_init\fR (spank_t spank, int ac, char *argv[])
 
 .fi
 .LP
@@ -73,7 +73,7 @@ data structures. Instead, information about the currently executing
 job is obtained via the \fBspank_get_item\fR function call.
 .nf
 
-  spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
+  spank_err_t \fBspank_get_item\fR (spank_t spank, spank_item_t item, ...);
 
 .fi
 The \fBspank_get_item\fR call must be passed the current \fBSPANK\fR
@@ -100,19 +100,22 @@ are (int *, char ***).
 See \fBspank.h\fR for more details, and \fBEXAMPLES\fR below for an example
 of \fBspank_get_item\fR usage.
 .LP
-\fBSPANK\fR plugins may also use the \fBspank_getenv\fR and
-\fBspank_setenv\fR functions to view and modify the job's
-environment. \fBspank_getenv\fR searches the job's environment for
-the environment variable \fIvar\fR and copies the current value
-into a buffer \fIbuf\fR of length \fIlen\fR.  \fBspank_setenv\fR
-allows a \fBSPANK\fR plugin to set or overwrite a variable in the job's
-environment. The prototypes are:
+\fBSPANK\fR plugins may also use the \fBspank_getenv\fR,
+\fBspank_setenv\fR, and \fBspank_unsetenv\fR functions to
+view and modify the job's environment. \fBspank_getenv\fR
+searches the job's environment for the environment variable
+\fIvar\fR and copies the current value into a buffer \fIbuf\fR
+of length \fIlen\fR.  \fBspank_setenv\fR allows a \fBSPANK\fR
+plugin to set or overwrite a variable in the job's environment,
+and \fBspank_unsetenv\fR unsets an environment variable in
+the job's environment. The prototypes are: 
 .nf
 
- spank_err_t spank_getenv (spank_t spank, const char *var, 
+ spank_err_t \fBspank_getenv\fR (spank_t spank, const char *var, 
 		           char *buf, int len);
- spank_err_t spank_setenv (spank_t spank, const char *var, 
+ spank_err_t \fBspank_setenv\fR (spank_t spank, const char *var, 
 		           const char *val, int overwrite);
+ spank_err_t \fBspank_unsetenv\fR (spank_t spank, const char *var);
 .fi
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
