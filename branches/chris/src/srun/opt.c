@@ -1554,7 +1554,7 @@ static void _load_multi(int *argc, char **argv)
 			argv[0]);
 		exit(1);
 	}
-	data_buf = xmalloc(stat_buf.st_size);
+	data_buf = xmalloc(stat_buf.st_size + 1);
 	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
 			- data_read)) != 0) {
 		if (i < 0) {

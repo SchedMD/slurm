@@ -134,7 +134,6 @@ static void
 _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 {
 	if (opt.quit_on_intr) {
-		update_job_state(job, SRUN_JOB_CANCELLED);
 		job_force_termination(job);
 		pthread_exit (0);
 	}

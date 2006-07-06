@@ -3,7 +3,7 @@
  **	Federation
  **  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  UCRL-CODE-217948.
@@ -454,7 +454,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t switch_job, int key,
 	return fed_get_jobinfo((fed_jobinfo_t *)switch_job, key, resulting_data);
 } 
 
-int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
+static inline int _make_step_comp(switch_jobinfo_t jobinfo, char *nodelist)
 {
 	hostlist_t list = NULL;
 	int rc;
@@ -466,7 +466,22 @@ int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
 	return rc;
 }
 
-int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
+extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
+{
+	return _make_step_comp(job_info, nodelist);
+}
+
+extern int switch_p_job_step_part_comp(switch_jobinfo_t jobinfo, char *nodelist)
+{
+	return _make_step_comp(job_info, nodelist);
+}
+
+extern bool switch_p_part_comp(void)
+{
+	return true;
+}
+
+extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
 {
 	hostlist_t list = NULL;
 	int rc;

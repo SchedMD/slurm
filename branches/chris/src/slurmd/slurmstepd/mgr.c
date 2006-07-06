@@ -1517,10 +1517,11 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_set_argv0(argv0);
 	
 	/* Connect slurmd stderr to job's stderr */
-	if ((!job->spawn_task) && 
-	    (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0)) {
-		error("job_log_init: dup2(stderr): %m");
-		return;
+	if ((!job->spawn_task) && (job->task != NULL)) {
+		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
+			error("job_log_init: dup2(stderr): %m");
+			return;
+		}
 	}
 }
 

@@ -14,6 +14,13 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.3
+========================
+ -- Fix big-endian bug in the bitstring code which plagued AIX.
+ -- Fix bug in handling srun's --multi-prog option, could go off end of buffer.
+ -- Added support for job step completion (and switch window release) on 
+    subset of allocated nodes.
+
 * Changes in SLURM 1.1.2
 ========================
  -- Fix bug in jobcomp/filetxt plugin to report proper NodeCnt when a job 
@@ -194,6 +201,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.0.15
 =========================
+ -- In srun, reset stdin to blocking mode (if it was originally blocking before
+    we set it to O_NONBLOCK) on exit to avoid trouble with things like running
+    srun under a bash shell in an emacs *shell* buffer.
 
 * Changes in SLURM 1.0.14
 =========================

@@ -215,6 +215,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	if (agent_args->node_count == 0) {
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
+		xfree(kill_job->nodes);
+		select_g_free_jobinfo(&kill_job->select_jobinfo);
 		xfree(kill_job);
 		xfree(agent_args);
 		return;

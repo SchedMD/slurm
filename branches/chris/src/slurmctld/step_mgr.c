@@ -61,6 +61,11 @@
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    job_step_create_request_msg_t *step_spec );
+static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
+				uint32_t range_first, uint32_t range_last);
+static int _step_hostname_to_inx(struct step_record *step_ptr,
+				char *node_name);
+
 /* 
  * create_step_record - create an empty step_record for the specified job.
  * IN job_ptr - pointer to job table entry to have step record added
@@ -1017,7 +1022,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	int nodes;
+	int nodes, rem_nodes;
 
 	/* find the job, step, and validate input */
 	job_ptr = find_job_record (req->job_id);
@@ -1028,16 +1033,22 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
-	if (req->range_last < req->range_first)
+	if (req->range_last < req->range_first) {
+		error("step_partial_comp: range: %u-%u", req->range_first, 
+			req->range_last);
 		return EINVAL;
+	}
 
 	jobacct_g_aggregate(step_ptr->jobacct, req->jobacct);
 
 	if (step_ptr->exit_code == NO_VAL) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
-		if (req->range_last >= nodes)	/* range is zero origin */
+		if (req->range_last >= nodes) {	/* range is zero origin */
+			error("step_partial_comp: last=%u, nodes=%d",
+				req->range_last, nodes);
 			return EINVAL;
+		}
 		xassert(step_ptr->exit_node_bitmap == NULL);
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
 		if (step_ptr->exit_node_bitmap == NULL)
@@ -1046,18 +1057,144 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	} else {
 		xassert(step_ptr->exit_node_bitmap);
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
-		if (req->range_last >= nodes)	/* range is zero origin */
+		if (req->range_last >= nodes) {	/* range is zero origin */
+			error("step_partial_comp: last=%u, nodes=%d",
+				req->range_last, nodes);
 			return EINVAL;
+		}
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
 	}
 
 	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
 		req->range_last);
+	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
 	if (rem)
-		*rem = bit_clear_count(step_ptr->exit_node_bitmap);
+		*rem = rem_nodes;
+	if (rem_nodes == 0) {
+		/* release all switch windows */
+		if (step_ptr->switch_job) {
+			debug2("full switch release for step %u.%u, "
+				"nodes %s", req->job_id, 
+				req->job_step_id, 
+				step_ptr->step_node_list);
+			switch_g_job_step_complete(
+				step_ptr->switch_job,
+				step_ptr->step_node_list);
+			switch_free_jobinfo (step_ptr->switch_job);
+			step_ptr->switch_job = NULL;
+		}
+	} else if (switch_g_part_comp() && step_ptr->switch_job) {
+		/* release switch windows on completed nodes,
+		 * must translate range numbers to nodelist */
+		hostlist_t hl;
+		char *node_list;
+		int new_size = 8096;
+
+		hl = _step_range_to_hostlist(step_ptr,
+			req->range_first, req->range_last);
+		node_list = (char *) xmalloc(new_size);
+		while (hostlist_ranged_string(hl, new_size,
+				node_list) == -1) {
+			new_size *= 2;
+			xrealloc(node_list, new_size );
+		}
+		debug2("partitial switch release for step %u.%u, "
+			"nodes %s", req->job_id, 
+			req->job_step_id, node_list);
+		switch_g_job_step_part_comp(
+			step_ptr->switch_job, node_list);
+		hostlist_destroy(hl);
+		xfree(node_list);
+	}
+
 	if (max_rc)
 		*max_rc = step_ptr->exit_code;
 
 	return SLURM_SUCCESS;
+}
+
+/* convert a range of nodes allocated to a step to a hostlist with 
+ * names of those nodes */
+static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
+		uint32_t range_first, uint32_t range_last)
+{
+	int i, node_inx = -1;
+	hostlist_t hl = hostlist_create("");
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		node_inx++;
+		if ((node_inx >= range_first)
+		&&  (node_inx <= range_last)) {
+			hostlist_push(hl, 
+				node_record_table_ptr[i].name);
+		}
+	}
+
+	return hl;
+}
+
+/* convert a single node name to it's offset within a step's 
+ * nodes allocation. returns -1 on error */
+static int _step_hostname_to_inx(struct step_record *step_ptr,
+		char *node_name)
+{
+	struct node_record *node_ptr;
+	int i, node_inx, node_offset = 0; 
+
+	node_ptr = find_node_record(node_name);
+	if (node_ptr == NULL)
+		return -1;
+	node_inx = node_ptr - node_record_table_ptr;
+
+	for (i = 0; i < node_inx; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i))
+			node_offset++;
+	}
+	return node_offset;
+}
+
+extern int step_epilog_complete(struct job_record  *job_ptr, 
+		char *node_name)
+{
+	int rc = 0, node_inx, step_offset;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	struct node_record *node_ptr;
+
+	if (!switch_g_part_comp()) {
+		/* don't bother with partitial completions */
+		return 0;
+	}
+	if ((node_ptr = find_node_record(node_name)) == NULL)
+		return 0;
+	node_inx = node_ptr - node_record_table_ptr;
+	
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if ((!step_ptr->switch_job)
+		||  (bit_test(step_ptr->step_node_bitmap, node_inx) == 0))
+			continue;
+		if (step_ptr->exit_node_bitmap) {
+			step_offset = _step_hostname_to_inx(
+					step_ptr, node_name);
+			if ((step_offset < 0)
+			||  bit_test(step_ptr->exit_node_bitmap,
+					step_offset))
+				continue;
+			bit_set(step_ptr->exit_node_bitmap,
+				step_offset);
+		}
+		rc++;
+		debug2("partitial switch release for step %u.%u, "
+			"epilog on %s", job_ptr->job_id, 
+			step_ptr->step_id, node_name);
+		switch_g_job_step_part_comp(
+			step_ptr->switch_job, node_name);
+	}
+	list_iterator_destroy (step_iterator);
+
+	return rc;
 }
 
