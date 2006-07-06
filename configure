@@ -20682,12 +20682,13 @@ fi
 
 
 
+
 for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
                  sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
-		 pam/pam_appl.h security/pam_appl.h \
+		 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
 
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -22798,6 +22799,7 @@ fi
 
 
 
+
 for ac_func in \
    fdatasync \
    hstrerror \
@@ -22810,6 +22812,7 @@ for ac_func in \
    inet_ntop \
    inet_pton \
    setproctitle \
+   sysctlbyname \
 
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`

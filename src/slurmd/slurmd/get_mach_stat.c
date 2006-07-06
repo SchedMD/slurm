@@ -40,6 +40,10 @@
 #ifdef HAVE_SYS_DR_H
 # include <sys/dr.h>
 #endif
+
+#ifdef HAVE_SYS_SYSCTL_H
+# include <sys/sysctl.h>
+#endif
  
 #include <errno.h>
 #include <fcntl.h> 
@@ -115,13 +119,25 @@ get_procs(uint32_t *procs)
 	*procs = 1;
 	my_proc_tally = (int)sysconf(_SC_NPROCESSORS_ONLN);
 	if (my_proc_tally < 1) {
-		error ("get_procs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
+		error ("get_procs: error running sysconf(_SC_NPROCESSORS_ONLN)");
 		return EINVAL;
 	} 
 
 	*procs = my_proc_tally;
 #  else
+#    ifdef HAVE_SYSCTLBYNAME
+	int ncpu;
+	size_t len = sizeof(ncpu);
+
 	*procs = 1;
+	if (sysctlbyname("hw.ncpus", &ncpu, &len, NULL, 0) == -1) {
+		error("get_procs: error running sysctl(HW_NCPU)");
+		return EINVAL;
+	}
+	*procs = ncpu;
+#    else /* !HAVE_SYSCTLBYNAME */
+	*procs = 1;
+#    endif /* HAVE_SYSCTLBYNAME */
 #  endif /* _SC_NPROCESSORS_ONLN */
 #endif /* LPAR_INFO_FORMAT2 */
 
@@ -191,30 +207,34 @@ get_mach_name(char *node_name)
 extern int
 get_memory(uint32_t *real_memory)
 {
-#ifdef _SC_PHYS_PAGES
+#ifdef HAVE__SYSTEM_CONFIGURATION
+	*real_memory = _system_configuration.physmem / (1024 * 1024);
+#else
+#  ifdef _SC_PHYS_PAGES
 	long pages;
 
 	*real_memory = 1;
 	pages = sysconf(_SC_PHYS_PAGES);
-
-#ifdef HAVE__SYSTEM_CONFIGURATION
-	/* Works for AIX */
 	if (pages < 1) {
-		*real_memory = _system_configuration.physmem / (1024 * 1024);
-		return 0;
-	}
-#endif /* HAVE__SYSTEM_CONFIGURATION */
-
-	if (pages < 1) {
-		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)\n");
+		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)");
 		return EINVAL;
 	} 
-
 	*real_memory = (uint32_t)((float)pages * (sysconf(_SC_PAGE_SIZE) / 
 			1048576.0)); /* Megabytes of memory */
-#else  /* !_SC_PHYS_PAGES */
+#  else  /* !_SC_PHYS_PAGES */
+#    if HAVE_SYSCTLBYNAME
+	int mem;
+	size_t len = sizeof(mem);
+	if (sysctlbyname("hw.physmem", &mem, &len, NULL, 0) == -1) {
+		error("get_procs: error running sysctl(HW_PHYSMEM)");
+		return EINVAL;
+	}
+	*real_memory = mem;
+#    else /* !HAVE_SYSCTLBYNAME */
 	*real_memory = 1;
-#endif /* _SC_PHYS_PAGES */
+#    endif /* HAVE_SYSCTLBYNAME */
+#  endif /* _SC_PHYS_PAGES */
+#endif /* HAVE__SYSTEM_CONFIGURATION */
 
 	return 0;
 }
