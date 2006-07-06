@@ -27,7 +27,7 @@
 #ifndef _REVERSE_TREE_H
 #define _REVERSE_TREE_H
 
-#define REVERSE_TREE_WIDTH 2
+#define REVERSE_TREE_WIDTH 7
 #define REVERSE_TREE_CHILDREN_TIMEOUT 60 /* seconds */
 #define REVERSE_TREE_PARENT_RETRY 5	/* count, 1 sec per attempt */
 
