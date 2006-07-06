@@ -1249,7 +1249,6 @@ msg_thr_create(srun_job_t *job)
 		/* parent */
 
 		slurm_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 		while ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
 					    (void *)job))) {
 			if (++retries > MAX_RETRIES)

@@ -334,6 +334,11 @@ int srun(int ac, char **av)
 	/* Tell slurmctld that job is done */
 	srun_job_destroy(job, 0);
 
+	/* Wait for the message thread (which talks to the message
+	   handler process) */
+	if (pthread_join(job->jtid, NULL) < 0)
+		error ("Waiting for message thread: %m");
+	
 	_run_srun_epilog(job);
 
 	/* 
