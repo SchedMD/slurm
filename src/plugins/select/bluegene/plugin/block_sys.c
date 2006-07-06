@@ -116,9 +116,9 @@ static void _pre_allocate(bg_record_t *bg_record)
 			      &bg_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bg_err_str(rc));
 	
-	rc = bluegene_bp_node_cnt/bg_record->node_cnt;
-	if(rc > 1)
-		send_psets = bluegene_numpsets/rc;
+	/* rc = bluegene_bp_node_cnt/bg_record->node_cnt; */
+/* 	if(rc > 1) */
+/* 		send_psets = bluegene_numpsets/rc; */
 	
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
 			      &send_psets)) != STATUS_OK)

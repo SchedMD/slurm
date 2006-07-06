@@ -253,8 +253,8 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 		if(bit_equal(bg_record->bitmap, found_record->bitmap)
 		   && (bg_record->quarter == found_record->quarter)
 		   && (bg_record->nodecard == found_record->nodecard)){
-			debug2("This partition %s %d %d "
-			       "already exists here %s",
+			debug3("This partition %s %d %d "
+			       "is already in the list %s",
 			       bg_record->nodes,
 			       bg_record->quarter,
 			       bg_record->nodecard,
