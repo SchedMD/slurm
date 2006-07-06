@@ -123,5 +123,10 @@ ssize_t fd_read_line(int fd, void *buf, size_t maxlen);
  *  Returns the number of bytes read, 0 on EOF, or -1 on error.
  */
 
+int fd_is_blocking(int fd);
+/*
+ * Return 1 if the file specified by the file descriptor is blocking.
+ * Return 0 otherwise.
+ */
 
 #endif /* !_FD_H */
