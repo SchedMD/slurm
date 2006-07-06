@@ -995,7 +995,7 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 	int i, j, rc;
 
 	if (pmi_debug)
-		fprintf(stderr, "In: PMI_KVS_Put\n");
+		fprintf(stderr, "In: PMI_KVS_Put(%s:%s)\n", key, value);
 
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
