@@ -321,7 +321,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	
 	if(bg_record->job_running <= -1) {
 		slurm_mutex_unlock(&job_start_mutex);
-		debug("job finished which booting");
+		debug("job finished during the start of the boot "
+		      "(everything is ok)");
 		return;
 	}
 	slurm_mutex_lock(&block_state_mutex);
