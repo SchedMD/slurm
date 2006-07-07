@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     subset of allocated nodes.
  -- BLUEGENE - removed configure option --with-bg-link bridge is linked with 
     dlopen now no longer needing fake database so files on frontend node.
+ -- Streamline PMI communications and increase timeouts for highly parallel 
+    jobs. Improves scalability of PMI.
 
 * Changes in SLURM 1.1.2
 ========================
