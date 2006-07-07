@@ -70,6 +70,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
+#include "src/common/read_config.h" /* getnodename() */
 
 #include "src/slaunch/attach.h"
 #include "src/common/mpi.h"

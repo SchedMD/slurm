@@ -79,6 +79,7 @@
 #include "src/slaunch/attach.h"
 #include "src/slaunch/slaunch.h"
 #include "src/slaunch/fname.h"
+#include "src/slaunch/multi_prog.h"
 
 /* FIXME doesn't belong here, we don't want to expose ctx contents */
 #include "src/api/step_ctx.h"

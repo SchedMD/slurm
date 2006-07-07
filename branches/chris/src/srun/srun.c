@@ -80,6 +80,7 @@
 #include "src/srun/reattach.h"
 #include "src/srun/attach.h"
 #include "src/srun/srun.h"
+#include "src/srun/signals.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
