@@ -67,12 +67,14 @@ extern void srun_allocate (uint32_t job_id)
 	struct job_record *job_ptr = find_job_record (job_id);
 
 	xassert(job_ptr);
-	if (job_ptr && job_ptr->port && job_ptr->host && job_ptr->host[0]) {
+	if (job_ptr && job_ptr->alloc_resp_port
+	    && job_ptr->alloc_resp_host && job_ptr->alloc_resp_host[0]) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
 
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, job_ptr->port, job_ptr->host);
+		slurm_set_addr(addr, job_ptr->alloc_resp_port,
+			       job_ptr->alloc_resp_host);
 		msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
 		msg_arg->job_id 	= job_ptr->job_id;
 		msg_arg->node_list	= xstrdup(job_ptr->nodes);
@@ -93,7 +95,7 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg->select_jobinfo = select_g_copy_jobinfo(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
-		_srun_agent_launch(addr, job_ptr->host, 
+		_srun_agent_launch(addr, job_ptr->alloc_resp_host, 
 				RESPONSE_RESOURCE_ALLOCATION, msg_arg);
 	}
 }
@@ -121,15 +123,16 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		return;
 	bit_position = node_ptr - node_record_table_ptr;
 
-	if (job_ptr->port && job_ptr->host && job_ptr->host[0]) {
+	if (job_ptr->other_port
+	    && job_ptr->other_host && job_ptr->other_host[0]) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, job_ptr->port, job_ptr->host);
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->other_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
 		msg_arg->job_id   = job_id;
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
-		_srun_agent_launch(addr, job_ptr->host, SRUN_NODE_FAIL, 
-				msg_arg);
+		_srun_agent_launch(addr, job_ptr->other_host, SRUN_NODE_FAIL,
+				   msg_arg);
 	}
 
 
@@ -175,15 +178,17 @@ extern void srun_ping (void)
 		
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
-		if ( (job_ptr->time_last_active <= old) && job_ptr->port &&
-			job_ptr->host && job_ptr->host[0] ) {
+		if ( (job_ptr->time_last_active <= old)
+		     && job_ptr->other_port
+		     && job_ptr->other_host && job_ptr->other_host[0] ) {
 			addr = xmalloc(sizeof(struct sockaddr_in));
-			slurm_set_addr(addr, job_ptr->port, job_ptr->host);
+			slurm_set_addr(addr, job_ptr->other_port,
+				       job_ptr->other_host);
 			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
 			msg_arg->job_id  = job_ptr->job_id;
 			msg_arg->step_id = NO_VAL;
-			_srun_agent_launch(addr, job_ptr->host, SRUN_PING, 
-				msg_arg);
+			_srun_agent_launch(addr, job_ptr->other_host,
+					   SRUN_PING, msg_arg);
 		}
 
 		step_iterator = list_iterator_create(job_ptr->step_list);
@@ -228,15 +233,16 @@ extern void srun_timeout (struct job_record *job_ptr)
 	if (job_ptr->job_state != JOB_RUNNING)
 		return;
 
-	if (job_ptr->port && job_ptr->host && job_ptr->host[0]) {
+	if (job_ptr->other_port
+	    && job_ptr->other_host && job_ptr->other_host[0]) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, job_ptr->port, job_ptr->host);
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->other_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->timeout  = job_ptr->end_time;
-		_srun_agent_launch(addr, job_ptr->host, SRUN_TIMEOUT, 
-				msg_arg);
+		_srun_agent_launch(addr, job_ptr->other_host, SRUN_TIMEOUT,
+				   msg_arg);
 	}
 
 

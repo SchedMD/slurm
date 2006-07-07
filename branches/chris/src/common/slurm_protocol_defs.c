@@ -147,7 +147,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->in);
 		xfree(msg->out);
 		xfree(msg->work_dir);
-		xfree(msg->host);
+		xfree(msg->alloc_resp_hostname);
+		xfree(msg->other_hostname);
 		xfree(msg->account);
 		xfree(msg->network);
 		xfree(msg);

@@ -188,8 +188,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 
 	if (hostname_is_set) {
 		listen = _create_allocation_response_socket(hostname);
-		req->host = listen->hostname;
-		req->port = listen->port;
+		req->alloc_resp_hostname = listen->hostname;
+		req->alloc_resp_port = listen->port;
 		req->immediate = 0;
 	}
 

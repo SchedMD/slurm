@@ -488,11 +488,17 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.share)
 		j->shared              = 1;
 
-	j->port = slurmctld_comm_addr.port;
-	if (slurmctld_comm_addr.hostname)
-		j->host = xstrdup(slurmctld_comm_addr.hostname);
-	else
-		j->host = NULL;
+	/* srun uses the same listening port for the allocation response
+	 * message as all other messages */
+	j->alloc_resp_port = slurmctld_comm_addr.port;
+	j->other_port = slurmctld_comm_addr.port;
+	if (slurmctld_comm_addr.hostname) {
+		j->alloc_resp_hostname = xstrdup(slurmctld_comm_addr.hostname);
+		j->other_hostname = xstrdup(slurmctld_comm_addr.hostname);
+	} else {
+		j->alloc_resp_hostname = NULL;
+		j->other_hostname = NULL;
+	}
 
 	if (script) {
 		/*
@@ -521,7 +527,8 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 {
 	if (j) {
 		xfree(j->account);
-		xfree(j->host);
+		xfree(j->alloc_resp_hostname);
+		xfree(j->other_hostname);
 		xfree(j);
 	}
 }
@@ -541,23 +548,21 @@ _step_req_create(srun_job_t *j)
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = false;      /* XXX fix this oneday */
 	
-	/* CJM - why are "UNKNOWN" and "default" behaviours different? */
-	/*       why do we even HAVE the SLURM_DIST_UNKNOWN state?? */
 	switch (opt.distribution) {
-	case SLURM_DIST_UNKNOWN:
-		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
-			                                 : SLURM_DIST_BLOCK;
-		break;
-	case SLURM_DIST_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC;
-		break;
 	case SLURM_DIST_ARBITRARY:
 		r->task_dist = SLURM_DIST_ARBITRARY;
 		break;
 	case SLURM_DIST_BLOCK:
-	default:
 		r->task_dist = SLURM_DIST_BLOCK;
 		break;
+	case SLURM_DIST_CYCLIC:
+		r->task_dist = SLURM_DIST_CYCLIC;
+		break;
+	default:
+		r->task_dist = ((opt.nprocs <= j->nhosts)
+				? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK);
+		break;
+
 	}
 
 	if (slurmctld_comm_addr.port) {

@@ -252,8 +252,7 @@ enum jobacct_data_type {
 enum task_dist_states {
 	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
 	SLURM_DIST_BLOCK,	/* distribute tasks filling node by node */
-	SLURM_DIST_ARBITRARY,	/* arbitrary task distribution  */
-	SLURM_DIST_UNKNOWN	/* unknown dist */
+	SLURM_DIST_ARBITRARY	/* arbitrary task distribution  */
 };
 
 typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
@@ -379,8 +378,18 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t alloc_sid;	/* local sid making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or 
 				 * slurm_allocate* function */
-	uint16_t port;		/* port to contact initiating srun */
-	char *host;		/* host to contact initiating srun */
+
+	/* If the requested allocation is not immediately available,
+	 * The controller sends the RESPONSE_RESOURCE_ALLOCATION message to
+	 * the address designated by the alloc_hostname and alloc_port.
+	 * All other messages (SRUN_PING, SRUN_TIMEOUT, etc.) are sent to
+	 * the address designated by other_hostname/other_port.
+	 */
+	char    *alloc_resp_hostname;
+	uint16_t alloc_resp_port;
+	char    *other_hostname;
+	uint16_t other_port;
+
 	uint32_t dependency;	/* defer until specified job completes */
 	uint16_t overcommit;	/* over subscribe resources, for batch only */
 	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
@@ -946,7 +955,7 @@ extern int slurm_terminate_job_step PARAMS((
 \*****************************************************************************/
 
 /*
-n * slurm_step_ctx_create - Create a job step and its context. 
+ * slurm_step_ctx_create - Create a job step and its context. 
  * IN step_req - description of job step request
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.

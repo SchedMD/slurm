@@ -255,8 +255,7 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	} 
 
-	if (env->distribution 
-	    && env->distribution != SLURM_DIST_UNKNOWN) {
+	if (env->distribution) {
 		switch(env->distribution) {
 		case SLURM_DIST_CYCLIC:
 			dist = "cyclic";

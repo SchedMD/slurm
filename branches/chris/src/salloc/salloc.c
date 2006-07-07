@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 	 * Run the user's command.
 	 */
 	setenvfs("SLURM_JOBID=%d", alloc->job_id);
+	setenvfs("SLURM_NNODES=%d", alloc->node_cnt);
 	run_command();
 
 	/*
@@ -194,12 +195,9 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.share)
 		desc->shared = 1;
 
-/* We only want to support the pinger here */
-/* 	desc->port = slurmctld_comm_addr.port; */
-/* 	if (slurmctld_comm_addr.hostname) */
-/* 		desc->host = xstrdup(slurmctld_comm_addr.hostname); */
-/* 	else */
-/* 		desc->host = NULL; */
+/* We want to support the pinger here */
+/* 	desc->other_port = slurmctld_comm_addr.port; */
+/*	desc->other_hostname = xstrdup(slurmctld_comm_addr.hostname); */
 
 	return 0;
 }

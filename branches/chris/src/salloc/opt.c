@@ -248,12 +248,12 @@ static bool _valid_node_list(char **node_list_pptr)
 
 /* 
  * verify that a distribution type in arg is of a known form
- * returns the task_dist_states or SLURM_DIST_UNKNOWN
+ * returns the task_dist_states, or -1 for unrecognized state
  */
 static enum task_dist_states _verify_dist_type(const char *arg)
 {
 	int len = strlen(arg);
-	enum task_dist_states result = SLURM_DIST_UNKNOWN;
+	enum task_dist_states result = -1;
 
 	if (strncasecmp(arg, "cyclic", len) == 0)
 		result = SLURM_DIST_CYCLIC;
@@ -692,7 +692,7 @@ static void _opt_default()
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
-	opt.distribution = SLURM_DIST_UNKNOWN;
+	opt.distribution = SLURM_DIST_CYCLIC;
 
 	opt.overcommit = false;
 	opt.share = false;
@@ -837,7 +837,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_DISTRIB:
 		dt = _verify_dist_type(val);
-		if (dt == SLURM_DIST_UNKNOWN) {
+		if (dt == -1) {
 			error("\"%s=%s\" -- invalid distribution type. " 
 			      "ignoring...", e->var, val);
 		} else 
@@ -1058,7 +1058,7 @@ void set_options(const int argc, char **argv, int first)
 				break;
 						
 			opt.distribution = _verify_dist_type(optarg);
-			if (opt.distribution == SLURM_DIST_UNKNOWN) {
+			if (opt.distribution == -1) {
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
 				exit(1);

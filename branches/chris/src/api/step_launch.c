@@ -440,7 +440,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 static void
 _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
-	srun_node_fail_msg_t *nf = fail_msg->data;
+	/*srun_node_fail_msg_t *nf = fail_msg->data;*/
 
 	pthread_mutex_lock(&sls->lock);
 
@@ -538,6 +538,7 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	hostlist_destroy(hostlist);
 
 	ret_list = slurm_send_recv_rc_packed_msg(&msg, STEP_LAUNCH_TIMEOUT);
+	/* FIXME - look through list of return codes */
 }
 
 static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
