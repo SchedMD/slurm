@@ -51,6 +51,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/mpi.h"
@@ -915,11 +916,10 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	msg->conn_fd = fd;
 	msg->forward_struct_init = 0;
 	
-	/* multiple jobs (easily induced via no_alloc) sometimes result
-	 * in slow message responses and timeouts. Raise the timeout
-	 * to 5 seconds for no_alloc option only */
-	if (opt.no_alloc)
-		timeout = 5;
+	/* multiple jobs (easily induced via no_alloc) and highly
+	 * parallel jobs using PMI sometimes result in slow message 
+	 * responses and timeouts. Raise the default timeout for srun. */
+	timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 8;
 again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
