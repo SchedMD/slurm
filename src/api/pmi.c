@@ -617,6 +617,7 @@ int PMI_Barrier( void )
 	struct kvs_comm_set *kvs_set_ptr = NULL;
 	struct kvs_comm *kvs_ptr;
 	int i, j, k, rc = PMI_SUCCESS;
+	int save_pmi_debug;
 
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_Barrier\n");
@@ -628,6 +629,8 @@ int PMI_Barrier( void )
 	if (kvs_set_ptr == NULL)
 		return PMI_SUCCESS;
 
+	save_pmi_debug = pmi_debug;
+	pmi_debug = 0;	/* don't log PMI_KVS_Put calls below */
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
 		for (j=0; j<kvs_ptr->kvs_cnt; j++) {
@@ -638,6 +641,7 @@ int PMI_Barrier( void )
 				rc = k;
 		}
 	}
+	pmi_debug = save_pmi_debug;
 
 	/* Release temporary storage from RPC */
 	slurm_free_kvs_comm_set(kvs_set_ptr);
