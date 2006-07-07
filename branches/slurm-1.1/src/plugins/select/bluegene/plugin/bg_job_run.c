@@ -100,10 +100,10 @@ static int _remove_job(db_job_id_t job_id)
 		if (i > 0)
 			sleep(POLL_INTERVAL);
 
-		slurm_mutex_lock(&api_file_mutex);
+		
 		/* Find the job */
-		if ((rc = rm_get_job(job_id, &job_rec)) != STATUS_OK) {
-			slurm_mutex_unlock(&api_file_mutex);
+		if ((rc = bridge_get_job(job_id, &job_rec)) != STATUS_OK) {
+			
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
 				return STATUS_OK;
@@ -113,11 +113,11 @@ static int _remove_job(db_job_id_t job_id)
 			      bg_err_str(rc));
 			continue;
 		}
-		slurm_mutex_unlock(&api_file_mutex);
+		
 			
-		if ((rc = rm_get_data(job_rec, RM_JobState, &job_state)) != 
-				STATUS_OK) {
-			(void) rm_free_job(job_rec);
+		if ((rc = bridge_get_data(job_rec, RM_JobState, &job_state)) 
+		    != STATUS_OK) {
+			(void) bridge_free_job(job_rec);
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d not found in MMCS", job_id);
 				return STATUS_OK;
@@ -127,7 +127,7 @@ static int _remove_job(db_job_id_t job_id)
 			      "%s", job_id, bg_err_str(rc));
 			continue;
 		}
-		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
+		if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
 			error("rm_free_job: %s", bg_err_str(rc));
 
 		debug2("job %d is in state %d", job_id, job_state);
@@ -144,10 +144,10 @@ static int _remove_job(db_job_id_t job_id)
 			return STATUS_OK;
 		}
 
-		(void) jm_signal_job(job_id, SIGKILL);
-		rc = jm_cancel_job(job_id);
+		(void) bridge_signal_job(job_id, SIGKILL);
+		rc = bridge_cancel_job(job_id);
 		/* it doesn't appear that this does anything. */
-		// rc = rm_remove_job(job_id);
+		// rc = bridge_remove_job(job_id);
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
@@ -366,15 +366,15 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		& (~JOB_TERMINATED_FLAG) 
 		& (~JOB_KILLED_FLAG)
 		& (~JOB_ERROR_FLAG);
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
+	
+	if ((rc = bridge_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bg_err_str(rc));
-		slurm_mutex_unlock(&api_file_mutex);
+		
 		return;
 	}
-	slurm_mutex_unlock(&api_file_mutex);
+	
 			
-	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
+	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
 		error("rm_get_data(RM_JobListSize): %s", bg_err_str(rc));
 		jobs = 0;
 	} else if (jobs > 300)
@@ -384,14 +384,14 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 
 	for (i=0; i<jobs; i++) {		
 		if (i) {
-			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
+			if ((rc = bridge_get_data(job_list, RM_JobListNextJob, 
 					&job_elem)) != STATUS_OK) {
 				error("rm_get_data(RM_JobListNextJob): %s", 
 				      bg_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = rm_get_data(job_list, RM_JobListFirstJob, 
+			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob, 
 					      &job_elem)) != STATUS_OK) {
 				error("rm_get_data(RM_JobListFirstJob): %s",
 				      bg_err_str(rc));
@@ -404,7 +404,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			      jobs);
 			break;
 		}
-		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &block_id))
+		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID, &block_id))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_JobPartitionID) %s: %s", 
 			      block_id, bg_err_str(rc));
@@ -426,7 +426,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		
 		free(block_id);
 
-		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
+		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_JobDBJobID): %s", 
 			      bg_err_str(rc));
@@ -497,7 +497,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		} 
 	}
 #ifdef HAVE_BG_FILES
-	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
+	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bg_err_str(rc));
 #endif
 	
@@ -866,31 +866,31 @@ extern int boot_block(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES
 	int rc;
 	
-	slurm_mutex_lock(&api_file_mutex);
+	
 	slurm_conf_lock();
-	if ((rc = rm_set_part_owner(bg_record->bg_block_id, 
-				    slurmctld_conf.slurm_user_name)) 
+	if ((rc = bridge_set_block_owner(bg_record->bg_block_id, 
+					 slurmctld_conf.slurm_user_name)) 
 	    != STATUS_OK) {
 		error("rm_set_part_owner(%s,%s): %s", 
 		      bg_record->bg_block_id, 
 		      slurmctld_conf.slurm_user_name,
 		      bg_err_str(rc));
 		slurm_conf_unlock();
-		slurm_mutex_unlock(&api_file_mutex);
+		
 		return SLURM_ERROR;
 	}
 	slurm_conf_unlock();
 			
 	info("Booting block %s", 
 	     bg_record->bg_block_id);
-	if ((rc = pm_create_partition(bg_record->bg_block_id)) 
+	if ((rc = bridge_create_block(bg_record->bg_block_id)) 
 	    != STATUS_OK) {
 		error("pm_create_partition(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
-		slurm_mutex_unlock(&api_file_mutex);
+		
 		return SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&api_file_mutex);
+	
 	slurm_mutex_lock(&block_state_mutex);
 	if(!block_exist_in_list(bg_booted_block_list, bg_record))
 		list_push(bg_booted_block_list, bg_record);

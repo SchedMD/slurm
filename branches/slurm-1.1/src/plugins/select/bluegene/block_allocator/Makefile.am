@@ -9,13 +9,14 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 #to build the executable
 # noinst_PROGRAMS = partition_allocator
 
-# partition_allocator_SOURCES = partition_allocator.c partition_allocator.h
+# partition_allocator_SOURCES = block_allocator.c api_linker.c \
+#	block_allocator.h
 
 # partition_allocator_LDADD = \
 # 	$(top_builddir)/src/common/libcommon.la -lpthread \
 # 	$(top_builddir)/src/api/libslurm.la
 
-# partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS)
+# partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
 # CPPFLAGS = -DBUILD_EXE
 
@@ -23,7 +24,7 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 # making a .la
 noinst_LTLIBRARIES = libbluegene_block_allocator.la 
 libbluegene_block_allocator_la_SOURCES =    \
-	block_allocator.c block_allocator.h 
+	block_allocator.c bridge_linker.c block_allocator.h bridge_linker.h
 
 libbluegene_block_allocator_la_LIBADD  =  \
 	$(top_builddir)/src/common/libcommon.la -lpthread \

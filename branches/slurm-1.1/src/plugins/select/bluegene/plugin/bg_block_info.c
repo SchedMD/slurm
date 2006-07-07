@@ -205,26 +205,26 @@ extern int update_block_list()
 	time_t now;
 	int skipped_dealloc = 0;
 
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_get_partitions_info(block_state, &block_list))
+	
+	if ((rc = bridge_get_blocks_info(block_state, &block_list))
 	    != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
+		
 		if(rc != PARTITION_NOT_FOUND)
 			error("rm_get_partitions_info(): %s", bg_err_str(rc));
 		return -1; 
 	}
 	
-	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
+	if ((rc = bridge_get_data(block_list, RM_PartListSize, &num_blocks))
 		   != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		updated = -1;
 		num_blocks = 0;
 	}
-	slurm_mutex_unlock(&api_file_mutex);
+	
 			
 	for (j=0; j<num_blocks; j++) {
 		if (j) {
-			if ((rc = rm_get_data(block_list, RM_PartListNextPart, 
+			if ((rc = bridge_get_data(block_list, RM_PartListNextPart, 
 					      &block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 				      bg_err_str(rc));
@@ -232,7 +232,7 @@ extern int update_block_list()
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(block_list, RM_PartListFirstPart,
+			if ((rc = bridge_get_data(block_list, RM_PartListFirstPart,
 					      &block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      bg_err_str(rc));
@@ -240,7 +240,7 @@ extern int update_block_list()
 				break;
 			}
 		}
-		if ((rc = rm_get_data(block_ptr, RM_PartitionID, &name))
+		if ((rc = bridge_get_data(block_ptr, RM_PartitionID, &name))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s", 
 			      bg_err_str(rc));
@@ -264,7 +264,7 @@ extern int update_block_list()
 			debug("Block %s not found in bg_list "
 			      "removing from database", name);
 			term_jobs_on_block(name);
-			if ((rc = rm_get_data(block_ptr, 
+			if ((rc = bridge_get_data(block_ptr, 
 					      RM_PartitionState, &state))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartitionState): %s",
@@ -272,19 +272,17 @@ extern int update_block_list()
 				updated = -1;
 				break;
 			}
-			slurm_mutex_lock(&api_file_mutex);
+			
 			if (state != NO_VAL
 			    && state != RM_PARTITION_FREE 
 			    && state != RM_PARTITION_DEALLOCATING) {
-				if ((rc = pm_destroy_partition(name)) 
+				if ((rc = bridge_destroy_block(name)) 
 				    != STATUS_OK) {
 					if(rc == PARTITION_NOT_FOUND) {
 						debug("partition %s is "
 						      "not found",
 						      name);
 						free(name);
-						slurm_mutex_unlock(
-							&api_file_mutex);
 						break;
 					}
 					error("pm_destroy_partition(%s): %s",
@@ -294,7 +292,7 @@ extern int update_block_list()
 			}
 			if ((state == RM_PARTITION_FREE)
 			    ||  (state == RM_PARTITION_ERROR)) {
-				rc = rm_remove_partition(name);
+				rc = bridge_remove_block(name);
 				if (rc != STATUS_OK) {
 					if(rc == PARTITION_NOT_FOUND) {
 						debug("1 block %s not found",
@@ -308,7 +306,7 @@ extern int update_block_list()
 				} else
 					debug("done\n");
 			}
-			slurm_mutex_unlock(&api_file_mutex);
+			
 			
 			free(name);
 			continue;
@@ -317,7 +315,7 @@ extern int update_block_list()
 			
 		slurm_mutex_lock(&block_state_mutex);
 		
-		if ((rc = rm_get_data(block_ptr, RM_PartitionMode, &node_use))
+		if ((rc = bridge_get_data(block_ptr, RM_PartitionMode, &node_use))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionMode): %s",
 			      bg_err_str(rc));
@@ -333,7 +331,7 @@ extern int update_block_list()
 			updated = 1;
 		}
 		
-		if ((rc = rm_get_data(block_ptr, RM_PartitionState, &state))
+		if ((rc = bridge_get_data(block_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
@@ -431,7 +429,7 @@ extern int update_block_list()
 		slurm_mutex_unlock(&block_state_mutex);	
 	}
 	
-	if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
+	if ((rc = bridge_free_block_list(block_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", bg_err_str(rc));
 	}
 	

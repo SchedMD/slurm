@@ -41,7 +41,6 @@
 bool _initialized = false;
 bool _wires_initialized = false;
 bool _bp_map_initialized = false;
-bool have_db2 = false;
 
 /* _ba_system is the "current" system that the structures will work
  *  on */
@@ -61,7 +60,6 @@ int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
 #else
 int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
-pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 s_p_options_t bg_conf_file_options[] = {
 	{"BlrtsImage", S_P_STRING}, 
 	{"LinuxImage", S_P_STRING},
@@ -576,27 +574,6 @@ extern void print_ba_request(ba_request_t* ba_request)
 }
 
 /**
- * Search for local DB2 library
- */
-static void _db2_check(void)
-{
-	void *handle;
-
-	handle = dlopen("libdb2.so", RTLD_LAZY);
-	if (!handle) {
-		debug("can not open libdb2.so");
-		return;
-	}
-
-	if (dlsym(handle, "SQLAllocHandle") == NULL)
-		debug("SQLAllocHandle not found in libdb2.so");
-	else
-		have_db2 = true;
-
-	dlclose(handle);
-}
-
-/**
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
  * 
@@ -630,6 +607,9 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	if (_initialized){
 		return;
 	}
+	
+	bridge_init();
+	
 	y = 65;
 	for (x = 0; x < 62; x++) {
 		if (y == 91)
@@ -649,7 +629,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 		colors[x] = z;				
 		z++;
 	}
-	_db2_check();
 		
 	best_count=BEST_COUNT_INIT;
 
@@ -711,21 +690,13 @@ node_info_error:
 #ifdef HAVE_BG_FILES
 	if (have_db2
 	    && ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0))) {
-		slurm_mutex_lock(&api_file_mutex);
-		if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
-			slurm_mutex_unlock(&api_file_mutex);
-			error("rm_set_serial(%s): %d", BG_SERIAL, rc);
-			return;
-		}
-		if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
-			slurm_mutex_unlock(&api_file_mutex);
+		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 			error("rm_get_BGL(): %d", rc);
 			return;
 		}
-		slurm_mutex_unlock(&api_file_mutex);
-	
+		
 		if ((bg != NULL)
-		&&  ((rc = rm_get_data(bg, RM_Msize, &bp_size)) 
+		&&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size)) 
 		     == STATUS_OK)) {
 			DIM_SIZE[X]=bp_size.X;
 			DIM_SIZE[Y]=bp_size.Y;
@@ -733,7 +704,7 @@ node_info_error:
 		} else {
 			error("rm_get_data(RM_Msize): %d", rc);	
 		}
-		if ((rc = rm_free_BGL(bg)) != STATUS_OK)
+		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
 			error("rm_free_BGL(): %d", rc);
 	}
 #endif
@@ -865,7 +836,7 @@ extern void ba_fini()
 		list_destroy(bp_map_list);
 #endif
 	_delete_ba_system();
-
+	bridge_fini();
 //	debug2("pa system destroyed");
 }
 
@@ -1318,34 +1289,31 @@ extern int load_block_wiring(char *bg_block_id)
 	
 	debug2("getting info for block %s\n", bg_block_id);
 	
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
+	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		error("rm_get_partition(%s): %s", 
 		      bg_block_id, 
 		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}	
-	slurm_mutex_unlock(&api_file_mutex);
 	
-	if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
-			      &switch_cnt)) != STATUS_OK) {
+	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
+				  &switch_cnt)) != STATUS_OK) {
 		error("rm_get_data(RM_PartitionSwitchNum): %s",
 		      bg_err_str(rc));
 		return SLURM_ERROR;
 	} 
 	if(!switch_cnt) {
 		debug3("no switch_cnt");
-		if ((rc = rm_get_data(block_ptr, 
-				      RM_PartitionFirstBP, 
-				      &curr_bp)) 
-			    != STATUS_OK) {
-				error("rm_get_data: "
-				      "RM_PartitionFirstBP: %s",
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-		if ((rc = rm_get_data(curr_bp, RM_BPID, &switchid))
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionFirstBP, 
+					  &curr_bp)) 
+		    != STATUS_OK) {
+			error("rm_get_data: "
+			      "RM_PartitionFirstBP: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		}
+		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid))
 		    != STATUS_OK) { 
 			error("rm_get_data: RM_SwitchBPID: %s",
 			      bg_err_str(rc));
@@ -1362,9 +1330,9 @@ extern int load_block_wiring(char *bg_block_id)
 	}
 	for (i=0; i<switch_cnt; i++) {
 		if(i) {
-			if ((rc = rm_get_data(block_ptr, 
-					      RM_PartitionNextSwitch, 
-					      &curr_switch)) 
+			if ((rc = bridge_get_data(block_ptr, 
+						  RM_PartitionNextSwitch, 
+						  &curr_switch)) 
 			    != STATUS_OK) {
 				error("rm_get_data: "
 				      "RM_PartitionNextSwitch: %s",
@@ -1372,9 +1340,9 @@ extern int load_block_wiring(char *bg_block_id)
 				return SLURM_ERROR;
 			}
 		} else {
-			if ((rc = rm_get_data(block_ptr, 
-					      RM_PartitionFirstSwitch, 
-					      &curr_switch)) 
+			if ((rc = bridge_get_data(block_ptr, 
+						  RM_PartitionFirstSwitch, 
+						  &curr_switch)) 
 			    != STATUS_OK) {
 				error("rm_get_data: "
 				      "RM_PartitionFirstSwitch: %s",
@@ -1382,13 +1350,14 @@ extern int load_block_wiring(char *bg_block_id)
 				return SLURM_ERROR;
 			}
 		}
-		if ((rc = rm_get_data(curr_switch, RM_SwitchDim, &dim))
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
 		    != STATUS_OK) { 
 			error("rm_get_data: RM_SwitchDim: %s",
 			      bg_err_str(rc));
 			return SLURM_ERROR;
 		} 
-		if ((rc = rm_get_data(curr_switch, RM_SwitchBPID, &switchid))
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID, 
+					  &switchid))
 		    != STATUS_OK) { 
 			error("rm_get_data: RM_SwitchBPID: %s",
 			      bg_err_str(rc));
@@ -1401,7 +1370,7 @@ extern int load_block_wiring(char *bg_block_id)
 			return SLURM_ERROR;
 		}
 		
-		if ((rc = rm_get_data(curr_switch, RM_SwitchConnNum, &cnt))
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
 		    != STATUS_OK) { 
 			error("rm_get_data: RM_SwitchBPID: %s",
 			      bg_err_str(rc));
@@ -1413,9 +1382,10 @@ extern int load_block_wiring(char *bg_block_id)
 			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
 		for (j=0; j<cnt; j++) {
 			if(j) {
-				if ((rc = rm_get_data(curr_switch, 
-						      RM_SwitchNextConnection, 
-						      &curr_conn)) 
+				if ((rc = bridge_get_data(
+					     curr_switch, 
+					     RM_SwitchNextConnection, 
+					     &curr_conn)) 
 				    != STATUS_OK) {
 					error("rm_get_data: "
 					      "RM_SwitchNextConnection: %s",
@@ -1423,9 +1393,10 @@ extern int load_block_wiring(char *bg_block_id)
 					return SLURM_ERROR;
 				}
 			} else {
-				if ((rc = rm_get_data(curr_switch, 
-						      RM_SwitchFirstConnection,
-						      &curr_conn)) 
+				if ((rc = bridge_get_data(
+					     curr_switch, 
+					     RM_SwitchFirstConnection,
+					     &curr_conn)) 
 				    != STATUS_OK) {
 					error("rm_get_data: "
 					      "RM_SwitchFirstConnection: %s",
@@ -2130,21 +2101,12 @@ extern int set_bp_map(void)
 		return -1;
 	}
 	
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
-		error("rm_set_serial(): %d", rc);
-		return -1;
-	}
-	
-	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
+	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 		error("rm_get_BGL(): %d", rc);
 		return -1;
 	}
-	slurm_mutex_unlock(&api_file_mutex);
 	
-	if ((rc = rm_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %d", rc);
 		bp_num = 0;
 	}
@@ -2152,13 +2114,13 @@ extern int set_bp_map(void)
 	for (i=0; i<bp_num; i++) {
 
 		if (i) {
-			if ((rc = rm_get_data(bg, RM_NextBP, &my_bp))
+			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_NextBP): %d", rc);
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(bg, RM_FirstBP, &my_bp))
+			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_FirstBP): %d", rc);
 				break;
@@ -2167,7 +2129,7 @@ extern int set_bp_map(void)
 		
 		bp_map = (ba_bp_map_t *) xmalloc(sizeof(ba_bp_map_t));
 		
-		if ((rc = rm_get_data(my_bp, RM_BPID, &bp_id))
+		if ((rc = bridge_get_data(my_bp, RM_BPID, &bp_id))
 		    != STATUS_OK) {
 			xfree(bp_map);
 			error("rm_get_data(RM_BPID): %d", rc);
@@ -2179,7 +2141,7 @@ extern int set_bp_map(void)
 			continue;
 		}
 			
-		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc))
+		if ((rc = bridge_get_data(my_bp, RM_BPLoc, &bp_loc))
 		    != STATUS_OK) {
 			xfree(bp_map);
 			error("rm_get_data(RM_BPLoc): %d", rc);
@@ -2204,7 +2166,7 @@ extern int set_bp_map(void)
 		free(bp_id);		
 	}
 
-	if ((rc = rm_free_BGL(bg)) != STATUS_OK)
+	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
 		error("rm_free_BGL(): %s", rc);	
 	
 #endif
@@ -2524,23 +2486,16 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		error("Can't access DB2 library, run from service node");
 		return -1;
 	}
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
-		error("rm_set_serial(%s): %d", BG_SERIAL, rc);
-		return -1;
-	}
-	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
+	
+	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 		error("rm_get_BGL(): %d", rc);
 		return -1;
 	}
-	slurm_mutex_unlock(&api_file_mutex);
-	
+		
 	if (bg == NULL) 
 		return -1;
 	
-	if ((rc = rm_get_data(bg, RM_WireNum, &wire_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_WireNum, &wire_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %d", rc);
 		wire_num = 0;
 	}
@@ -2549,19 +2504,19 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 	for (i=0; i<wire_num; i++) {
 		
 		if (i) {
-			if ((rc = rm_get_data(bg, RM_NextWire, &my_wire))
+			if ((rc = bridge_get_data(bg, RM_NextWire, &my_wire))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_NextWire): %d", rc);
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(bg, RM_FirstWire, &my_wire))
+			if ((rc = bridge_get_data(bg, RM_FirstWire, &my_wire))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_FirstWire): %d", rc);
 				break;
 			}
 		}
-		if ((rc = rm_get_data(my_wire, RM_WireID, &wire_id))
+		if ((rc = bridge_get_data(my_wire, RM_WireID, &wire_id))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_FirstWire): %d", rc);
 			break;
@@ -2596,22 +2551,22 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		
 		from_node[4] = '\0';
 		to_node[4] = '\0';
-		if ((rc = rm_get_data(my_wire, RM_WireFromPort, &my_port))
+		if ((rc = bridge_get_data(my_wire, RM_WireFromPort, &my_port))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_FirstWire): %d", rc);
 			break;
 		}
-		if ((rc = rm_get_data(my_port, RM_PortID, &from_port))
+		if ((rc = bridge_get_data(my_port, RM_PortID, &from_port))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PortID): %d", rc);
 			break;
 		}
-		if ((rc = rm_get_data(my_wire, RM_WireToPort, &my_port))
+		if ((rc = bridge_get_data(my_wire, RM_WireToPort, &my_port))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_WireToPort): %d", rc);
 			break;
 		}
-		if ((rc = rm_get_data(my_port, RM_PortID, &to_port))
+		if ((rc = bridge_get_data(my_port, RM_PortID, &to_port))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PortID): %d", rc);
 			break;
@@ -2672,7 +2627,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		     _port_enum(to_port));
 		
 	}
-	if ((rc = rm_free_BGL(bg)) != STATUS_OK)
+	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
 		error("rm_free_BGL(): %s", rc);
 	
 #else

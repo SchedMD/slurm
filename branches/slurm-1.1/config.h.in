@@ -1,5 +1,11 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define the BG_BRIDGE_SO value */
+#undef BG_BRIDGE_SO
+
+/* Define the BG_DB2_SO value */
+#undef BG_DB2_SO
+
 /* Define the BG_SERIAL value */
 #undef BG_SERIAL
 

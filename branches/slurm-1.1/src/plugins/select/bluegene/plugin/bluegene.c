@@ -39,7 +39,7 @@
 char* bg_conf = NULL;
 
 /* Global variables */
-rm_BGL_t *bg;
+rm_BGL_t *bg = NULL;
 
 List bg_list = NULL;			/* total list of bg_record entries */
 List bg_curr_block_list = NULL;  	/* current bg blocks in bluegene.conf*/
@@ -107,21 +107,12 @@ extern int init_bg(void)
 	rm_size3D_t bp_size;
 	
 	info("Attempting to contact MMCS");
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
-		fatal("init_bg: rm_set_serial(): %s", bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-	
-	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
+	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 		fatal("init_bg: rm_get_BGL(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&api_file_mutex);
 	
-	if ((rc = rm_get_data(bg, RM_Msize, &bp_size)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_Msize, &bp_size)) != STATUS_OK) {
 		fatal("init_bg: rm_get_data(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
@@ -175,7 +166,7 @@ extern void fini_bg(void)
 	
 #ifdef HAVE_BG_FILES
 	if(bg)
-		if ((rc = rm_free_BGL(bg)) != STATUS_OK)
+		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
 			error("rm_free_BGL(): %s", bg_err_str(rc));
 #endif	
 	ba_fini();
@@ -483,19 +474,16 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 				     bg_record->target_name, 
 				     bg_record->bg_block_id);
 				
-				slurm_mutex_lock(&api_file_mutex);
-				if ((rc = rm_add_part_user(
+				if ((rc = bridge_add_block_user(
 					     bg_record->bg_block_id, 
 					     bg_record->target_name)) 
 				    != STATUS_OK) {
-					slurm_mutex_unlock(&api_file_mutex);
 					error("rm_add_part_user(%s,%s): %s", 
 					      bg_record->bg_block_id, 
 					      bg_record->target_name,
 					      bg_err_str(rc));
 					return -1;
 				} 
-				slurm_mutex_unlock(&api_file_mutex);
 			}
 		}
 	}
@@ -629,9 +617,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	rm_partition_t *block_ptr = NULL;
 	int rc, i, user_count;
 
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_get_partition(bg_block_id,  &block_ptr)) != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
+	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		if(rc == INCONSISTENT_DATA
 		   && bluegene_layout_mode == LAYOUT_DYNAMIC)
 			return REMOVE_USER_FOUND;
@@ -641,9 +627,9 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		      bg_err_str(rc));
 		return REMOVE_USER_ERR;
 	}	
-	slurm_mutex_unlock(&api_file_mutex);
 	
-	if((rc = rm_get_data(block_ptr, RM_PartitionUsersNum, &user_count)) 
+	if((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum, 
+				 &user_count)) 
 	   != STATUS_OK) {
 		error("rm_get_data(RM_PartitionUsersNum): %s", 
 		      bg_err_str(rc));
@@ -653,7 +639,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		debug2("got %d users for %s",user_count, bg_block_id);
 	for(i=0; i<user_count; i++) {
 		if(i) {
-			if ((rc = rm_get_data(block_ptr, 
+			if ((rc = bridge_get_data(block_ptr, 
 					      RM_PartitionNextUser, 
 					      &user)) 
 			    != STATUS_OK) {
@@ -663,7 +649,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(block_ptr, 
+			if ((rc = bridge_get_data(block_ptr, 
 					      RM_PartitionFirstUser, 
 					      &user)) 
 			    != STATUS_OK) {
@@ -691,17 +677,15 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		}
 		
 		info("Removing user %s from Block %s", user, bg_block_id);
-		slurm_mutex_lock(&api_file_mutex);
-		if ((rc = rm_remove_part_user(bg_block_id, user)) 
+		if ((rc = bridge_remove_block_user(bg_block_id, user)) 
 		    != STATUS_OK) {
 			debug("user %s isn't on block %s",
 			      user, 
 			      bg_block_id);
 		}
-		slurm_mutex_unlock(&api_file_mutex);
 		free(user);
 	}
-	if ((rc = rm_free_partition(block_ptr)) != STATUS_OK) {
+	if ((rc = bridge_free_block(block_ptr)) != STATUS_OK) {
 		error("rm_free_partition(): %s", bg_err_str(rc));
 	}
 #endif
@@ -1365,9 +1349,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES
 			debug2("pm_destroy %s",bg_record->bg_block_id);
 			
-			slurm_mutex_lock(&api_file_mutex);
-			rc = pm_destroy_partition(bg_record->bg_block_id);
-			slurm_mutex_unlock(&api_file_mutex);
+			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
 					debug("block %s is not found",
@@ -1512,9 +1494,8 @@ extern void *mult_destroy_block(void *args)
 #ifdef HAVE_BG_FILES
 		debug2("removing from database %s", 
 		       (char *)found_record->bg_block_id);
-
-		slurm_mutex_lock(&api_file_mutex);
-		rc = rm_remove_partition(found_record->bg_block_id);
+		
+		rc = bridge_remove_block(found_record->bg_block_id);
 		if (rc != STATUS_OK) {
 			if(rc == PARTITION_NOT_FOUND) {
 				debug("block %s is not found",
@@ -1526,9 +1507,7 @@ extern void *mult_destroy_block(void *args)
 			}
 		} else
 			debug2("done");
-		slurm_mutex_unlock(&api_file_mutex);	
 #endif
-		slurm_mutex_lock(&block_state_mutex);
 		if(blocks_are_created)
 			destroy_bg_record(bg_record);
 		destroy_bg_record(found_record);
@@ -1787,15 +1766,13 @@ static int _update_bg_record_state(List bg_destroy_list)
 		return SLURM_SUCCESS;
 	}
 	
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_get_partitions_info(block_state, &block_list))
+	if ((rc = bridge_get_blocks_info(block_state, &block_list))
 	    != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
 		error("1 rm_get_partitions_info(): %s", bg_err_str(rc));
 		return SLURM_ERROR; 
 	}
 	
-	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
+	if ((rc = bridge_get_data(block_list, RM_PartListSize, &num_blocks))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		func_rc = SLURM_ERROR;
@@ -1804,7 +1781,7 @@ static int _update_bg_record_state(List bg_destroy_list)
 		
 	for (j=0; j<num_blocks; j++) {
 		if (j) {
-			if ((rc = rm_get_data(block_list, 
+			if ((rc = bridge_get_data(block_list, 
 					      RM_PartListNextPart, 
 					      &block_ptr)) 
 			    != STATUS_OK) {
@@ -1814,7 +1791,7 @@ static int _update_bg_record_state(List bg_destroy_list)
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(block_list, 
+			if ((rc = bridge_get_data(block_list, 
 					      RM_PartListFirstPart, 
 					      &block_ptr)) 
 			    != STATUS_OK) {
@@ -1824,7 +1801,7 @@ static int _update_bg_record_state(List bg_destroy_list)
 				break;
 			}
 		}
-		if ((rc = rm_get_data(block_ptr, 
+		if ((rc = bridge_get_data(block_ptr, 
 				      RM_PartitionID, 
 				      &name))
 		    != STATUS_OK) {
@@ -1847,7 +1824,7 @@ static int _update_bg_record_state(List bg_destroy_list)
 				continue;		
 			}
 		       
-			if ((rc = rm_get_data(block_ptr, 
+			if ((rc = bridge_get_data(block_ptr, 
 					      RM_PartitionState, 
 					      &state))
 			    != STATUS_OK) {
@@ -1867,10 +1844,9 @@ static int _update_bg_record_state(List bg_destroy_list)
 		free(name);
 	}
 	
-	if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
+	if ((rc = bridge_free_block_list(block_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", bg_err_str(rc));
 	}
-	slurm_mutex_unlock(&api_file_mutex);
 	
 	return func_rc;
 }
@@ -2265,6 +2241,7 @@ static int _add_block_db(bg_record_t *bg_record, int *block_inx)
 #endif
 	return SLURM_SUCCESS;
 }
+
 static int _split_block(bg_record_t *bg_record, int procs, int *block_inx) 
 {
 	bg_record_t *found_record = NULL;
@@ -2664,7 +2641,6 @@ static int _reopen_bridge_log(void)
 	if (bridge_api_file == NULL)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&api_file_mutex);
 	if(fp)
 		fclose(fp);
 	fp = fopen(bridge_api_file, "a");
@@ -2672,21 +2648,18 @@ static int _reopen_bridge_log(void)
 	if (fp == NULL) { 
 		error("can't open file for bridgeapi.log at %s: %m", 
 		      bridge_api_file);
-		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
 
 #ifdef HAVE_BG_FILES
-	setSayMessageParams(fp, bridge_api_verb);
+	bridge_set_log_params(fp, bridge_api_verb);
 #else
 	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", 
 		    bridge_api_verb) < 20) {
 		error("can't write to bridgeapi.log: %m");
-		slurm_mutex_unlock(&api_file_mutex);	
 		return SLURM_ERROR;
 	}
 #endif
-	slurm_mutex_unlock(&api_file_mutex);	
 	
 	return SLURM_SUCCESS;
 }
