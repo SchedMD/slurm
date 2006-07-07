@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in handling srun's --multi-prog option, could go off end of buffer.
  -- Added support for job step completion (and switch window release) on 
     subset of allocated nodes.
+ -- BLUEGENE - removed configure option --with-bg-link bridge is linked with 
+    dlopen now no longer needing fake database so files on frontend node.
 
 * Changes in SLURM 1.1.2
 ========================
