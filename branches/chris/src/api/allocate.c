@@ -162,6 +162,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 	uint32_t job_id;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
+	int errnum = SLURM_SUCCESS;
 
 	if (timeout == 0)
 		timeout = (time_t)-1;
@@ -171,7 +172,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 	req = (job_desc_msg_t *)xmalloc(sizeof(job_desc_msg_t));
 	if (req == NULL)
 		return NULL;
-	*req = *user_req;
+	memcpy(req, user_req, sizeof(job_desc_msg_t));
 
 	/* 
 	 * set Node and session id for this request
@@ -181,13 +182,17 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 
 	hostname[0] = '\0';
 	if (getnodename(hostname, sizeof(hostname)) == 0)
-	    hostname_is_set = true;
+		hostname_is_set = true;
 	if ((req->alloc_node == NULL) && hostname_is_set) {
 		req->alloc_node = hostname;
 	}
 
 	if (hostname_is_set) {
 		listen = _create_allocation_response_socket(hostname);
+		if (listen == NULL) {
+			xfree(req);
+			return NULL;
+		}
 		req->alloc_resp_hostname = listen->hostname;
 		req->alloc_resp_port = listen->port;
 		req->immediate = 0;
@@ -203,6 +208,10 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	if (rc == SLURM_SOCKET_ERROR) {
+		destroy_forward(&req_msg.forward);
+		destroy_forward(&resp_msg.forward);
+		_destroy_allocation_response_socket(listen);
+		xfree(req);
 		errno = SLURM_SOCKET_ERROR;
 		return NULL;
 	}
@@ -210,12 +219,11 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0) {
-			errno = SLURM_PROTOCOL_ERROR;
-			return NULL;
+			errnum = SLURM_PROTOCOL_ERROR;
+		} else {
+			errnum = -1; /* FIXME - need to figure out what the
+					correct error code would be */
 		}
-		errno = -1; /* FIXME - need to figure out what the correct
-			       error code would be */
-		return NULL;
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
 		/* Yay, the controller has acknowledge our request!  But did
@@ -233,17 +241,22 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
 			   the time desired, so just free the job id */
-			if (resp == NULL)
+			if (resp == NULL) {
 				slurm_complete_job(job_id, -1);
+				errnum = -1;
+			}
 		}
 		break;
 	default:
-		errno = SLURM_UNEXPECTED_MSG_ERROR;
+		errnum = SLURM_UNEXPECTED_MSG_ERROR;
 		return NULL;
 	}
 
+	destroy_forward(&req_msg.forward);
+	destroy_forward(&resp_msg.forward);
 	_destroy_allocation_response_socket(listen);
-	errno = SLURM_PROTOCOL_SUCCESS;
+	xfree(req);
+	errno = errnum;
 	return resp;
 }
 
@@ -526,7 +539,6 @@ cleanup_hostfile:
 
 /***************************************************************************
  * Support functions for slurm_allocate_resources_blocking()
- * FIXME - get rid of all fatal() calls
  ***************************************************************************/
 static listen_t *_create_allocation_response_socket(char *interface_hostname)
 {
@@ -538,10 +550,15 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 
 	/* port "0" lets the operating system pick any port */
 	slurm_set_addr(&listen->address, 0, interface_hostname);
-	if ((listen->fd = slurm_init_msg_engine(&listen->address)) < 0)
-		fatal("slurm_init_msg_engine_port error %m");
-	if (slurm_get_stream_addr(listen->fd, &listen->address) < 0)
-		fatal("slurm_get_stream_addr error %m");
+	if ((listen->fd = slurm_init_msg_engine(&listen->address)) < 0) {
+		error("slurm_init_msg_engine_port error %m");
+		return NULL;
+	}
+	if (slurm_get_stream_addr(listen->fd, &listen->address) < 0) {
+		error("slurm_get_stream_addr error %m");
+		slurm_shutdown_msg_engine(listen->fd);
+		return NULL;
+	}
 	listen->hostname = xstrdup(interface_hostname);
 	/* FIXME - screw it!  I can't seem to get the port number through slurm_*
 	   functions */
@@ -679,11 +696,13 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 			case EAGAIN:
 			case EINTR:
 				*resp = NULL;
-				return (-1);
+				return -1;
 			case ENOMEM:
 			case EINVAL:
 			case EFAULT:
-				fatal("poll: %m");
+				error("poll: %m");
+				*resp = NULL;
+				return -1;
 			default:
 				error("poll: %m. Continuing...");
 		}
