@@ -608,8 +608,9 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 		return;
 	}
 	
+#ifdef HAVE_BG_FILES
 	bridge_init();
-	
+#endif	
 	y = 65;
 	for (x = 0; x < 62; x++) {
 		if (y == 91)
@@ -834,9 +835,9 @@ extern void ba_fini()
 #ifdef HAVE_BG_FILES
 	if (bp_map_list)
 		list_destroy(bp_map_list);
+	bridge_fini();
 #endif
 	_delete_ba_system();
-	bridge_fini();
 //	debug2("pa system destroyed");
 }
 
