@@ -1144,7 +1144,8 @@ int PMI_KVS_Commit( const char kvsname[] )
 	}
 
 	/* Send the RPC */
-	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank) != SLURM_SUCCESS)
+	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank, pmi_size) 
+			!= SLURM_SUCCESS)
 		rc = PMI_FAIL;
 	else
 		rc = PMI_SUCCESS;
