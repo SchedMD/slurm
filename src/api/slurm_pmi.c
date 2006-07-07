@@ -83,6 +83,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * Since the srun can be sent thousands of messages at 
 	 * the same time and refuse some connections, retry as 
 	 * needed. Spread out messages by task's rank.*/
+	usleep(pmi_rank * 1000);
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_send_kvs_comm_set: %m");
@@ -151,6 +152,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * Since the srun can be sent thousands of messages at 
 	 * the same time and refuse some connections, retry as 
 	 * needed. Spread out messages by task's rank. */
+	usleep(pmi_rank * 1000);
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
