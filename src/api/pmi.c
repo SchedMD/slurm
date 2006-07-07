@@ -1126,7 +1126,6 @@ int PMI_KVS_Commit( const char kvsname[] )
 		}
 		if (local_pairs == 0)
 			continue;
-printf("send %d of %d\n", local_pairs, kvs_recs[i].kvs_cnt);
 
 		kvs_set.kvs_comm_ptr = realloc(kvs_set.kvs_comm_ptr, 
 			(sizeof(struct kvs_comm *) *
