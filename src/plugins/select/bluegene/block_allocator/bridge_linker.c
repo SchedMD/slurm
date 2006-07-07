@@ -27,6 +27,7 @@
 
 #include "bridge_linker.h"
 
+#ifdef HAVE_BG_FILES
 typedef struct {
 	/* all the rm functions */
 	status_t (*set_serial)(const rm_serial_t serial);
@@ -554,6 +555,6 @@ extern void bridge_set_log_params(FILE * stream, unsigned int level)
 	(*(bridge_api.set_log_params))(stream, level);
 	slurm_mutex_unlock(&api_file_mutex);
 }
-
+#endif /* HAVE_BG_FILES */
 
 

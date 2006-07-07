@@ -64,10 +64,11 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
+#ifdef HAVE_BG_FILES
 extern bool have_db2;
-
 extern int bridge_init();
 extern int bridge_fini();
+
 extern status_t bridge_get_bg(rm_BGL_t **bgl);
 extern status_t bridge_add_block(rm_partition_t *partition);
 extern status_t bridge_get_block(pm_partition_id_t pid, 
@@ -111,5 +112,5 @@ extern status_t bridge_destroy_block(pm_partition_id_t pid);
 /* say message */
 
 extern void bridge_set_log_params(FILE * stream, unsigned int level);
-
-#endif
+#endif /* HAVE_BG_FILES */
+#endif /* _BRIDGE_LINKER_H_ */
