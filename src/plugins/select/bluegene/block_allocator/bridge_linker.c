@@ -166,11 +166,11 @@ extern int bridge_init()
 	if(!_get_syms(n_syms, syms, (void **) &bridge_api))
 		return 0;
 #ifdef BG_SERIAL
-	info("setting the serial to %s", BG_SERIAL);
+	debug("setting the serial to %s", BG_SERIAL);
 	slurm_mutex_lock(&api_file_mutex);
 	rc = (*(bridge_api.set_serial))(BG_SERIAL);
 	slurm_mutex_unlock(&api_file_mutex);
-	info("done %d", rc);
+	debug2("done %d", rc);
 #else
 	fatal("No BG_SERIAL is set, can't run.");
 #endif

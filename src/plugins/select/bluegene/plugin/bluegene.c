@@ -71,12 +71,12 @@ int free_cnt = 0;
 int destroy_cnt = 0;
 
 #ifdef HAVE_BG_FILES
-  static int _update_bg_record_state(List bg_destroy_list);
+static int _update_bg_record_state(List bg_destroy_list);
 #else
 # if BA_SYSTEM_DIMENSIONS==3
-    int max_dim[BA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
+int max_dim[BA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
 # else
-    int max_dim[BA_SYSTEM_DIMENSIONS] = { 0 };
+int max_dim[BA_SYSTEM_DIMENSIONS] = { 0 };
 # endif
 #endif
 
@@ -167,7 +167,7 @@ extern void fini_bg(void)
 #ifdef HAVE_BG_FILES
 	if(bg)
 		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-			error("rm_free_BGL(): %s", bg_err_str(rc));
+			error("bridge_free_BGL(): %s", bg_err_str(rc));
 #endif	
 	ba_fini();
 }
@@ -292,9 +292,9 @@ extern void process_nodes(bg_record_t *bg_record)
 				bg_record->start[Y] = start[Y];
 				bg_record->start[Z] = start[Z];
 				debug2("start is %d%d%d",
-				      bg_record->start[X],
-				      bg_record->start[Y],
-				      bg_record->start[Z]);
+				       bg_record->start[X],
+				       bg_record->start[Y],
+				       bg_record->start[Z]);
 			}
 			bg_record->bp_count += _addto_node_list(bg_record, 
 								start, 
@@ -315,13 +315,13 @@ extern void process_nodes(bg_record_t *bg_record)
 				bg_record->start[Y] = start[Y];
 				bg_record->start[Z] = start[Z];
 				debug2("start is %d%d%d",
-				      bg_record->start[X],
-				      bg_record->start[Y],
-				      bg_record->start[Z]);
+				       bg_record->start[X],
+				       bg_record->start[Y],
+				       bg_record->start[Z]);
 			}
 			bg_record->bp_count += _addto_node_list(bg_record, 
-								 start, 
-								 start);
+								start, 
+								start);
 			if(bg_record->nodes[j] != ',')
 				break;
 		}
@@ -478,7 +478,8 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 					     bg_record->bg_block_id, 
 					     bg_record->target_name)) 
 				    != STATUS_OK) {
-					error("rm_add_part_user(%s,%s): %s", 
+					error("bridge_add_block_user"
+					      "(%s,%s): %s", 
 					      bg_record->bg_block_id, 
 					      bg_record->target_name,
 					      bg_err_str(rc));
@@ -514,6 +515,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	bool needed = true;
 	hostlist_t hl;
 	char *host = NULL;
+	char bg_down_node[128];
 
 	if(bg_record->job_running > -1)
 		slurm_fail_job(bg_record->job_running);			
@@ -537,7 +539,12 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		return;
 	}
 	while ((host = hostlist_shift(hl))) {
-		if (node_already_down(host)) {
+		slurm_conf_lock();
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%s", 
+			 slurmctld_conf.node_prefix,
+			 host);
+		slurm_conf_unlock();
+		if (node_already_down(bg_down_node)) {
 			needed = false;
 			free(host);
 			break;
@@ -622,7 +629,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		   && bluegene_layout_mode == LAYOUT_DYNAMIC)
 			return REMOVE_USER_FOUND;
 			
-		error("rm_get_partition(%s): %s", 
+		error("bridge_get_block(%s): %s", 
 		      bg_block_id, 
 		      bg_err_str(rc));
 		return REMOVE_USER_ERR;
@@ -631,7 +638,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	if((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum, 
 				 &user_count)) 
 	   != STATUS_OK) {
-		error("rm_get_data(RM_PartitionUsersNum): %s", 
+		error("bridge_get_data(RM_PartitionUsersNum): %s", 
 		      bg_err_str(rc));
 		returnc = REMOVE_USER_ERR;
 		user_count = 0;
@@ -640,20 +647,22 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	for(i=0; i<user_count; i++) {
 		if(i) {
 			if ((rc = bridge_get_data(block_ptr, 
-					      RM_PartitionNextUser, 
-					      &user)) 
+						  RM_PartitionNextUser, 
+						  &user)) 
 			    != STATUS_OK) {
-				error("rm_get_data(RM_PartitionNextUser): %s", 
+				error("bridge_get_data"
+				      "(RM_PartitionNextUser): %s", 
 				      bg_err_str(rc));
 				returnc = REMOVE_USER_ERR;
 				break;
 			}
 		} else {
 			if ((rc = bridge_get_data(block_ptr, 
-					      RM_PartitionFirstUser, 
-					      &user)) 
+						  RM_PartitionFirstUser, 
+						  &user)) 
 			    != STATUS_OK) {
-				error("rm_get_data(RM_PartitionFirstUser): %s",
+				error("bridge_get_data"
+				      "(RM_PartitionFirstUser): %s",
 				      bg_err_str(rc));
 				returnc = REMOVE_USER_ERR;
 				break;
@@ -686,7 +695,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		free(user);
 	}
 	if ((rc = bridge_free_block(block_ptr)) != STATUS_OK) {
-		error("rm_free_partition(): %s", bg_err_str(rc));
+		error("bridge_free_block(): %s", bg_err_str(rc));
 	}
 #endif
 	return returnc;
@@ -1253,8 +1262,8 @@ extern int create_full_system_block(int *block_inx)
 	bg_record = (bg_record_t *) list_pop(records);
 	if(!bg_record) {
 		error("Nothing was returned from full system create");
-			rc = SLURM_ERROR;
-			goto no_total;
+		rc = SLURM_ERROR;
+		goto no_total;
 	}
 	reset_ba_system();
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
@@ -1347,7 +1356,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES
-			debug2("pm_destroy %s",bg_record->bg_block_id);
+			debug2("bridge_destroy %s",bg_record->bg_block_id);
 			
 			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
@@ -1356,14 +1365,14 @@ extern int bg_free_block(bg_record_t *bg_record)
 					      bg_record->bg_block_id);
 					break;
 				} else if(rc == INCOMPATIBLE_STATE) {
-					debug2("pm_destroy_partition(%s): %s "
-					      "State = %d",
-					      bg_record->bg_block_id, 
-					      bg_err_str(rc), 
-					      bg_record->state);
+					debug2("bridge_destroy_partition"
+					       "(%s): %s State = %d",
+					       bg_record->bg_block_id, 
+					       bg_err_str(rc), 
+					       bg_record->state);
 				} else {
-					error("pm_destroy_partition(%s): %s "
-					      "State = %d",
+					error("bridge_destroy_partition"
+					      "(%s): %s State = %d",
 					      bg_record->bg_block_id, 
 					      bg_err_str(rc), 
 					      bg_record->state);
@@ -1480,7 +1489,7 @@ extern void *mult_destroy_block(void *args)
 		slurm_mutex_unlock(&freed_cnt_mutex);
 
 		debug2("removing the jobs on block %s\n",
-		      bg_record->bg_block_id);
+		       bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
 		
 		debug2("destroying %s", (char *)bg_record->bg_block_id);
@@ -1753,10 +1762,8 @@ extern int read_bg_conf(void)
 #ifdef HAVE_BG_FILES
 static int _update_bg_record_state(List bg_destroy_list)
 {
-	rm_partition_state_flag_t block_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
-	rm_partition_list_t *block_list = NULL;
-	int j, rc, func_rc = SLURM_SUCCESS, num_blocks = 0;
+	int rc;
 	rm_partition_state_t state;
 	rm_partition_t *block_ptr = NULL;
 	ListIterator itr;
@@ -1766,89 +1773,55 @@ static int _update_bg_record_state(List bg_destroy_list)
 		return SLURM_SUCCESS;
 	}
 	
-	if ((rc = bridge_get_blocks_info(block_state, &block_list))
-	    != STATUS_OK) {
-		error("1 rm_get_partitions_info(): %s", bg_err_str(rc));
-		return SLURM_ERROR; 
-	}
-	
-	if ((rc = bridge_get_data(block_list, RM_PartListSize, &num_blocks))
-	    != STATUS_OK) {
-		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
-		func_rc = SLURM_ERROR;
-		num_blocks = 0;
-	}
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_destroy_list);
+	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		if(!bg_record->bg_block_id)
+			continue;
 		
-	for (j=0; j<num_blocks; j++) {
-		if (j) {
-			if ((rc = bridge_get_data(block_list, 
-					      RM_PartListNextPart, 
-					      &block_ptr)) 
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartListNextPart): %s",
-				      bg_err_str(rc));
-				func_rc = SLURM_ERROR;
-				break;
-			}
-		} else {
-			if ((rc = bridge_get_data(block_list, 
-					      RM_PartListFirstPart, 
-					      &block_ptr)) 
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartListFirstPart: %s",
-				      bg_err_str(rc));
-				func_rc = SLURM_ERROR;
-				break;
-			}
-		}
-		if ((rc = bridge_get_data(block_ptr, 
-				      RM_PartitionID, 
-				      &name))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionID): %s", 
-			      bg_err_str(rc));
-			func_rc = SLURM_ERROR;
-			break;
-		}
-		if (!name) {
-			error("RM_Partition is NULL");
+		if ((bg_record->state == RM_PARTITION_FREE)
+		    ||  (bg_record->state == RM_PARTITION_ERROR)) {
 			continue;
 		}
+		name = bg_record->bg_block_id;
 		
-		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(bg_destroy_list);
-		while ((bg_record = (bg_record_t*) list_next(itr))) {	
-			if(!bg_record->bg_block_id) 
+		if ((rc = bridge_get_block_info(name, &block_ptr)) 
+		    != STATUS_OK) {
+			if(rc == PARTITION_NOT_FOUND 
+			   || (rc == INCONSISTENT_DATA
+			       && bluegene_layout_mode == LAYOUT_DYNAMIC)) {
+				debug4("block %s is not found",
+				      bg_record->bg_block_id);
 				continue;
-			if(strcmp(bg_record->bg_block_id, name)) {
-				continue;		
-			}
-		       
-			if ((rc = bridge_get_data(block_ptr, 
-					      RM_PartitionState, 
-					      &state))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartitionState): %s",
-				      bg_err_str(rc));
-			} else if(bg_record->state != state) {
-				debug("state of Block %s was %d "
-				      "and now is %d",
-				      name, bg_record->state, state);
-				bg_record->state = state;
-			}
-			break;
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&block_state_mutex);
+			} 
 			
-		free(name);
-	}
+			error("bridge_get_block_info(%s): %s", 
+			      name, 
+			      bg_err_str(rc));
+			continue;
+		}
 	
-	if ((rc = bridge_free_block_list(block_list)) != STATUS_OK) {
-		error("rm_free_partition_list(): %s", bg_err_str(rc));
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionState, 
+					  &state))
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionState): %s",
+			      bg_err_str(rc));
+		} else if(bg_record->state != state) {
+			debug("state of Block %s was %d "
+			      "and now is %d",
+			      name, bg_record->state, state);
+			bg_record->state = state;
+		}
+		if ((rc = bridge_free_block(block_ptr)) 
+		    != STATUS_OK) {
+			error("bridge_free_block(): %s", 
+			      bg_err_str(rc));
+		}
 	}
-	
-	return func_rc;
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	return SLURM_SUCCESS;
 }
 #endif /* HAVE_BG_FILES */
 
@@ -1859,16 +1832,16 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	int x,y,z;
 	char node_name_tmp[255];
 	debug3("%d%d%dx%d%d%d",
-	     start[X],
-	     start[Y],
-	     start[Z],
-	     end[X],
-	     end[Y],
-	     end[Z]);
+	       start[X],
+	       start[Y],
+	       start[Z],
+	       end[X],
+	       end[Y],
+	       end[Z]);
 	debug3("%d%d%d",
-	     DIM_SIZE[X],
-	     DIM_SIZE[Y],
-	     DIM_SIZE[Z]);
+	       DIM_SIZE[X],
+	       DIM_SIZE[Y],
+	       DIM_SIZE[Z]);
 	     
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
@@ -1988,7 +1961,7 @@ static int _validate_config_nodes(void)
 			if(((bg_record->state == RM_PARTITION_READY)
 			    || (bg_record->state == RM_PARTITION_CONFIGURING))
 			   && !block_exist_in_list(bg_booted_block_list, 
-						    bg_record))
+						   bg_record))
 				list_push(bg_booted_block_list, bg_record);
 		}
 	}		
@@ -2028,7 +2001,7 @@ static int _validate_config_nodes(void)
 			if(((bg_record->state == RM_PARTITION_READY)
 			    || (bg_record->state == RM_PARTITION_CONFIGURING))
 			   && !block_exist_in_list(bg_booted_block_list, 
-						    bg_record))
+						   bg_record))
 				list_push(bg_booted_block_list, bg_record);
 			break;
 		}
@@ -2268,7 +2241,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 		return SLURM_ERROR;
 	}
 	debug2("asking for %d 32s from a %d block",
-	     num_nodecard, bg_record->node_cnt);
+	       num_nodecard, bg_record->node_cnt);
 	small_count = num_nodecard+num_quarter; 
 
 	/* break base partition up into 16 parts */
@@ -2323,7 +2296,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 	char tmp_char[256];
 	
 	debug2("proc count = %d size = %d",
-	      request->procs, request->size);
+	       request->procs, request->size);
 	
 	itr = list_iterator_create(bg_list);			
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
@@ -2457,8 +2430,8 @@ found_one:
 		format_node_name(bg_record, tmp_char);
 			
 		debug2("going to split %s, %s",
-		      bg_record->bg_block_id,
-		      tmp_char);
+		       bg_record->bg_block_id,
+		       tmp_char);
 		request->save_name = xmalloc(sizeof(char) * 4);
 		sprintf(request->save_name, "%d%d%d",
 			bg_record->start[X],
