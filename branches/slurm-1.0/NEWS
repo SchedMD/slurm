@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
     srun under a bash shell in an emacs *shell* buffer.
  -- Fix srun race condition that occasionally causes segfaults at shutdown
  -- Fix obscure locking issues in log.c code.
+ -- Explicitly close IO related sockets, so if an srun gets "stuck", possibly
+    because of unkillable tasks in its job step, it will not hold many TCP
+    sockets in the CLOSE_WAIT state.
 
 * Changes in SLURM 1.0.14
 =========================

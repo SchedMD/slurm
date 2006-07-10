@@ -163,6 +163,10 @@ _listening_socket_readable(eio_obj_t *obj)
 {
 	debug3("Called _listening_socket_readable");
 	if (obj->shutdown == true) {
+		if (obj->fd != -1) {
+			close(obj->fd);
+			obj->fd = -1;
+		}
 		debug2("  false, shutdown");
 		return false;
 	}
@@ -237,6 +241,17 @@ _server_readable(eio_obj_t *obj)
 		return true;	
 	}
 
+	if (obj->shutdown) {
+		if (obj->fd != -1) {
+			close(obj->fd);
+			obj->fd = -1;
+			s->in_eof = true;
+			s->out_eof = true;
+		}
+		debug3("  false, shutdown");
+		return false;
+	}
+
 	debug3("  false");
 	return false;
 }
@@ -260,7 +275,10 @@ _server_read(eio_obj_t *obj, List objs)
 		n = io_hdr_read_fd(obj->fd, &s->header);
 		if (n <= 0) { /* got eof or error on socket read */
 			debug3(  "got eof or error on _server_read header");
+			close(obj->fd);
+			obj->fd = -1;
 			s->in_eof = true;
+			s->out_eof = true;
 			list_enqueue(s->job->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
@@ -295,8 +313,11 @@ _server_read(eio_obj_t *obj, List objs)
 			debug3("_server_read error: %m");
 		}
 		if (n <= 0) { /* got eof or unhandled error */
-			debug3(  "got eof on _server_read body");
+			debug3(  "got eof or error on _server_read body");
+			close(obj->fd);
+			obj->fd = -1;
 			s->in_eof = true;
+			s->out_eof = true;
 			list_enqueue(s->job->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
