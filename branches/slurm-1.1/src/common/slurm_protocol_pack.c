@@ -3143,7 +3143,8 @@ _unpack_ret_list(List *ret_list,
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
 			safe_unpackstr_xmalloc(&ret_data_info->node_name, 
 					       &uint16_tmp, buffer);
-			safe_unpack32((uint32_t *)&ret_data_info->nodeid, buffer);
+			safe_unpack32((uint32_t *)&ret_data_info->nodeid, 
+				      buffer);
 			if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
 				goto unpack_error;
 			ret_data_info->data = msg.data;
