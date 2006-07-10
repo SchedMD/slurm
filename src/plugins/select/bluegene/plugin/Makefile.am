@@ -33,9 +33,11 @@ slurm_prolog_LDADD = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/api/libslurm.la
 slurm_epilog_LDADD =  $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/api/libslurm.la
-sfree_SOURCES = sfree.c sfree.h opts.c 
+sfree_SOURCES = sfree.c sfree.h opts.c \
+		../block_allocator/bridge_linker.c \
+		../block_allocator/bridge_linker.h 
 slurm_prolog_SOURCES = slurm_prolog.c
 slurm_epilog_SOURCES = slurm_epilog.c
-sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS) 
+sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) 
 slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

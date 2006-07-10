@@ -84,18 +84,25 @@
 #define KVS_STATE_LOCAL    0
 #define KVS_STATE_DEFUNCT  1
 
+#define KVS_KEY_STATE_GLOBAL   0
+#define KVS_KEY_STATE_LOCAL    1
+
 /* default key names form is jobid.stepid[.taskid.sequence] */
 struct kvs_rec {
 	char *		kvs_name;
 	uint16_t	kvs_state;	/* see KVS_STATE_* */
 	uint16_t	kvs_cnt;	/* count of key-pairs */
 	uint16_t	kvs_inx;	/* iteration index */
+	uint16_t *	kvs_key_states;	/* see KVS_KEY_STATE_* */
 	char **		kvs_keys;
 	char **		kvs_values;
 };
 
-static void _init_kvs( char kvsname[] );
 static void _del_kvs_rec( struct kvs_rec *kvs_ptr );
+static void _init_kvs( char kvsname[] );
+static int  _kvs_put( const char kvsname[], const char key[], 
+		const char value[], int local);
+static void _kvs_swap(struct kvs_rec *kvs_ptr, int inx1, int inx2);
 
 /* Global variables */
 long pmi_jobid;
@@ -632,9 +639,10 @@ int PMI_Barrier( void )
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
 		for (j=0; j<kvs_ptr->kvs_cnt; j++) {
-			k = PMI_KVS_Put(kvs_ptr->kvs_name, 
+			k = _kvs_put(kvs_ptr->kvs_name, 
 				kvs_ptr->kvs_keys[j], 
-				kvs_ptr->kvs_values[j]);
+				kvs_ptr->kvs_values[j],
+				0);
 			if (k != PMI_SUCCESS)
 				rc = k;
 		}
@@ -993,10 +1001,8 @@ with the same key.
 @*/
 int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 {
-	int i, j, rc;
-
 	if (pmi_debug)
-		fprintf(stderr, "In: PMI_KVS_Put\n");
+		fprintf(stderr, "In: PMI_KVS_Put(%s:%s)\n", key, value);
 
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
@@ -1004,6 +1010,14 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 		return PMI_ERR_INVALID_KEY;
 	if ((value == NULL) || (strlen(value) > PMI_MAX_VAL_LEN))
 		return PMI_ERR_INVALID_VAL;
+
+	return _kvs_put(kvsname, key, value, 1);
+}
+
+static int _kvs_put( const char kvsname[], const char key[], const char value[], 
+		int local)
+{
+	int i, j, rc;
 
 	/* find the proper kvs record */
 	pthread_mutex_lock(&kvs_mutex);
@@ -1015,6 +1029,9 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 			if (strncmp(kvs_recs[i].kvs_keys[j], key, 
 					PMI_MAX_KEY_LEN))
 				continue;
+			if (local)
+				kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_LOCAL;
+			/* else leave unchanged */
 			/* replace the existing value */
 			free(kvs_recs[i].kvs_values[j]);
 			kvs_recs[i].kvs_values[j] = 
@@ -1027,15 +1044,22 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 		}
 		/* create new key */
 		kvs_recs[i].kvs_cnt++;
+		kvs_recs[i].kvs_key_states = realloc(kvs_recs[i].kvs_key_states,
+			(sizeof (uint16_t) * kvs_recs[i].kvs_cnt));
 		kvs_recs[i].kvs_values = realloc(kvs_recs[i].kvs_values, 
 			(sizeof (char *) * kvs_recs[i].kvs_cnt));
 		kvs_recs[i].kvs_keys = realloc(kvs_recs[i].kvs_keys,
 			(sizeof (char *) * kvs_recs[i].kvs_cnt));
-		if ((kvs_recs[i].kvs_values == NULL)
-		||  (kvs_recs[i].kvs_keys == NULL)) {
+		if ((kvs_recs[i].kvs_key_states == NULL)
+		||  (kvs_recs[i].kvs_values     == NULL)
+		||  (kvs_recs[i].kvs_keys       == NULL)) {
 			rc = PMI_FAIL;	/* malloc error */
 			goto fini;
 		}
+		if (local)
+			kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_LOCAL;
+		else
+			kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_GLOBAL;
 		kvs_recs[i].kvs_values[j] = strndup(value, PMI_MAX_VAL_LEN);
 		kvs_recs[i].kvs_keys[j]   = strndup(key, PMI_MAX_KEY_LEN);
 		if ((kvs_recs[i].kvs_values[j] == NULL)
@@ -1070,7 +1094,7 @@ the specified keyval space. It is a process local operation.
 int PMI_KVS_Commit( const char kvsname[] )
 {
 	struct kvs_comm_set kvs_set;
-	int i, rc;
+	int i, j, rc, local_pairs;
 
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_KVS_Commit\n");
@@ -1079,7 +1103,11 @@ int PMI_KVS_Commit( const char kvsname[] )
 		return PMI_ERR_INVALID_ARG;
 
 	/* Pack records into RPC for sending to slurmd_step
-	 * NOTE: For arrays we copy pointers, not values */
+	 * NOTE: For performance reasons, we only send key-pairs
+	 * which have been locally set rather than the full key-pair
+	 * space. We do this by moving the local key-pairs to the 
+	 * head of the list and sending the count of local entries
+	 * rather than the full set. */
 	kvs_set.task_id       = pmi_rank;
 	kvs_set.kvs_comm_recs = 0;
 	kvs_set.kvs_comm_ptr  = NULL;
@@ -1088,6 +1116,18 @@ int PMI_KVS_Commit( const char kvsname[] )
 	for (i=0; i<kvs_rec_cnt; i++) {
 		if (kvs_recs[i].kvs_state == KVS_STATE_DEFUNCT)
 			continue;
+		local_pairs = 0;
+		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
+			if (kvs_recs[i].kvs_key_states[j] == 
+					KVS_KEY_STATE_GLOBAL)
+				continue;
+			if (local_pairs != j)
+				_kvs_swap(&kvs_recs[i], j, local_pairs);
+			local_pairs++;
+		}
+		if (local_pairs == 0)
+			continue;
+
 		kvs_set.kvs_comm_ptr = realloc(kvs_set.kvs_comm_ptr, 
 			(sizeof(struct kvs_comm *) *
 			(kvs_set.kvs_comm_recs+1)));
@@ -1096,7 +1136,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_name   =
 			kvs_recs[i].kvs_name;
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_cnt    =
-			kvs_recs[i].kvs_cnt;
+			local_pairs;
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_keys   =
 			kvs_recs[i].kvs_keys;
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_values =
@@ -1105,7 +1145,8 @@ int PMI_KVS_Commit( const char kvsname[] )
 	}
 
 	/* Send the RPC */
-	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank) != SLURM_SUCCESS)
+	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank, pmi_size) 
+			!= SLURM_SUCCESS)
 		rc = PMI_FAIL;
 	else
 		rc = PMI_SUCCESS;
@@ -1118,6 +1159,24 @@ int PMI_KVS_Commit( const char kvsname[] )
 		free(kvs_set.kvs_comm_ptr);
 
 	return rc;
+}
+
+static void _kvs_swap(struct kvs_rec *kvs_ptr, int inx1, int inx2)
+{
+	char *tmp_char;
+	uint16_t tmp_16;
+
+	tmp_16 = kvs_ptr->kvs_key_states[inx1];
+	kvs_ptr->kvs_key_states[inx1] = kvs_ptr->kvs_key_states[inx2];
+	kvs_ptr->kvs_key_states[inx2] = tmp_16;
+
+	tmp_char = kvs_ptr->kvs_keys[inx1];
+	kvs_ptr->kvs_keys[inx1] =  kvs_ptr->kvs_keys[inx2];
+	kvs_ptr->kvs_keys[inx2] = tmp_char;
+
+	tmp_char = kvs_ptr->kvs_values[inx1];
+	kvs_ptr->kvs_values[inx1] =  kvs_ptr->kvs_values[inx2];
+	kvs_ptr->kvs_values[inx2] = tmp_char;
 }
 
 /*@

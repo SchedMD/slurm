@@ -34,8 +34,8 @@
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -116,7 +116,7 @@ static void _kvs_xmit_tasks(void)
 static void *_msg_thread(void *x)
 {
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
-	int rc, success = 0;
+	int rc, success = 0, timeout;
 	slurm_msg_t msg_send;
 	
 
@@ -128,8 +128,9 @@ static void *_msg_thread(void *x)
 	slurm_set_addr(&msg_send.address,
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
-	
-	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+
+	timeout = slurm_get_msg_timeout() * 8;
+	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		error("slurm_send_recv_rc_msg_only_one: %m");
 	} else if (rc != SLURM_SUCCESS) {
 		error("KVS_Barrier confirm from %s, rc=%d",

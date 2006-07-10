@@ -88,7 +88,8 @@ am_select_bluegene_la_OBJECTS = select_bluegene.lo bg_job_place.lo \
 select_bluegene_la_OBJECTS = $(am_select_bluegene_la_OBJECTS)
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
-am_sfree_OBJECTS = sfree.$(OBJEXT) opts.$(OBJEXT)
+am_sfree_OBJECTS = sfree.$(OBJEXT) opts.$(OBJEXT) \
+	bridge_linker.$(OBJEXT)
 sfree_OBJECTS = $(am_sfree_OBJECTS)
 sfree_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/api/libslurm.la
@@ -130,7 +131,6 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BG_INCLUDES = @BG_INCLUDES@
-BG_LDFLAGS = @BG_LDFLAGS@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -319,10 +319,13 @@ slurm_prolog_LDADD = $(top_builddir)/src/common/libcommon.la \
 slurm_epilog_LDADD = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/api/libslurm.la
 
-sfree_SOURCES = sfree.c sfree.h opts.c 
+sfree_SOURCES = sfree.c sfree.h opts.c \
+		../block_allocator/bridge_linker.c \
+		../block_allocator/bridge_linker.h 
+
 slurm_prolog_SOURCES = slurm_prolog.c
 slurm_epilog_SOURCES = slurm_epilog.c
-sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS) 
+sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) 
 slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
@@ -437,6 +440,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_switch_connections.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_sys.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bluegene.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sfree.Po@am__quote@
@@ -464,6 +468,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+bridge_linker.o: ../block_allocator/bridge_linker.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT bridge_linker.o -MD -MP -MF "$(DEPDIR)/bridge_linker.Tpo" -c -o bridge_linker.o `test -f '../block_allocator/bridge_linker.c' || echo '$(srcdir)/'`../block_allocator/bridge_linker.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/bridge_linker.Tpo" "$(DEPDIR)/bridge_linker.Po"; else rm -f "$(DEPDIR)/bridge_linker.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../block_allocator/bridge_linker.c' object='bridge_linker.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bridge_linker.o `test -f '../block_allocator/bridge_linker.c' || echo '$(srcdir)/'`../block_allocator/bridge_linker.c
+
+bridge_linker.obj: ../block_allocator/bridge_linker.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT bridge_linker.obj -MD -MP -MF "$(DEPDIR)/bridge_linker.Tpo" -c -o bridge_linker.obj `if test -f '../block_allocator/bridge_linker.c'; then $(CYGPATH_W) '../block_allocator/bridge_linker.c'; else $(CYGPATH_W) '$(srcdir)/../block_allocator/bridge_linker.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/bridge_linker.Tpo" "$(DEPDIR)/bridge_linker.Po"; else rm -f "$(DEPDIR)/bridge_linker.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../block_allocator/bridge_linker.c' object='bridge_linker.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bridge_linker.obj `if test -f '../block_allocator/bridge_linker.c'; then $(CYGPATH_W) '../block_allocator/bridge_linker.c'; else $(CYGPATH_W) '$(srcdir)/../block_allocator/bridge_linker.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

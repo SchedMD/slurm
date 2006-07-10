@@ -20,6 +20,7 @@
 
 <p> SLURM contributers include: </p>
 <ul>
+<li>Amjad Majid Ali (Colorado State University)</li>
 <li>Ernest Artiaga (Barcelona Supercomputer Center, Spain)</li>
 <li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
@@ -39,6 +40,6 @@
 <li>Jay Windley (Linux NetworX)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 May 2006</p>
+<p style="text-align:center;">Last modified 6 June 2006</p>
 
 <!--#include virtual="footer.txt"-->

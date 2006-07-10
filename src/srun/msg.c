@@ -910,11 +910,10 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	msg->conn_fd = fd;
 	msg->forward_struct_init = 0;
 	
-	/* multiple jobs (easily induced via no_alloc) sometimes result
-	 * in slow message responses and timeouts. Raise the timeout
-	 * to 5 seconds for no_alloc option only */
-	if (opt.no_alloc)
-		timeout = 5;
+	/* multiple jobs (easily induced via no_alloc) and highly
+	 * parallel jobs using PMI sometimes result in slow message 
+	 * responses and timeouts. Raise the default timeout for srun. */
+	timeout = slurm_get_msg_timeout() * 8;
 again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {

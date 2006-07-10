@@ -26,7 +26,7 @@ force:
 $(smap_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) 
+smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 else
 
