@@ -353,7 +353,7 @@ int _destroy_data_info_data(uint32_t type, ret_data_info_t *ret_data_info)
 		slurm_free_return_code_msg(ret_data_info->data);
 		break;
 	default:
-		error("invalid FORWARD ret_type=%d", type);
+		error("invalid FORWARD ret_type=%u", type);
 		break; 
 	}
 	return SLURM_SUCCESS;

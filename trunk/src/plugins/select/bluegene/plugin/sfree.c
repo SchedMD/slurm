@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sfree.c - free specified partition or all partitions.
+ *  sfree.c - free specified block or all blocks.
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
@@ -48,7 +48,6 @@ typedef struct bg_records {
 static int num_block_to_free = 0;
 static int num_block_freed = 0;
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool _have_db2 = true;
 static List delete_record_list = NULL;
 
 /************
@@ -73,7 +72,7 @@ static void _clean_destroy_list(void* object)
 	}
 }
 
-/* Free multiple partitions in parallel */
+/* Free multiple blocks in parallel */
 static void *_mult_free_block(void *args)
 {
 	delete_record_t *delete_record = (delete_record_t *) args;
@@ -86,20 +85,6 @@ static void *_mult_free_block(void *args)
 	slurm_mutex_unlock(&freed_cnt_mutex);
 	
 	return NULL;
-}
-
-static void _db2_check(void)
-{
-	void *handle;
-
-	handle = dlopen("libdb2.so", RTLD_LAZY);
-	if (!handle)
-		return;
-
-	if (dlsym(handle, "SQLAllocHandle"))
-		_have_db2 = true;
-
-	dlclose(handle);
 }
 
 int main(int argc, char *argv[])
@@ -115,8 +100,8 @@ int main(int argc, char *argv[])
 	int retries;
 	delete_record_t *delete_record = NULL;
 	
-	_db2_check();
-	if (!_have_db2) {
+	bridge_init();
+	if (!have_db2) {
 		printf("must be on BG SN to resolve.\n");
 		exit(0);
 	}
@@ -160,16 +145,16 @@ int main(int argc, char *argv[])
 		slurm_attr_destroy(&attr_agent);
 		num_block_to_free++;
 	} else {
-		if ((rc = rm_get_partitions_info(block_state, &block_list))
+		if ((rc = bridge_get_blocks_info(block_state, &block_list))
 		    != STATUS_OK) {
-			error("rm_get_partitions_info(): %s", 
+			error("bridge_get_blocks_info(): %s", 
 			      _bg_err_str(rc));
 			return -1; 
 		}
 
-		if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_PartListSize): %s", 
+		if ((rc = bridge_get_data(block_list, RM_PartListSize, 
+					  &num_blocks)) != STATUS_OK) {
+			error("bridge_get_data(RM_PartListSize): %s", 
 			      _bg_err_str(rc));
 			
 			num_blocks = 0;
@@ -177,32 +162,32 @@ int main(int argc, char *argv[])
 			
 		for (j=0; j<num_blocks; j++) {
 			if (j) {
-				if ((rc = rm_get_data(block_list, 
-						      RM_PartListNextPart, 
-						      &block_ptr)) 
+				if ((rc = bridge_get_data(block_list, 
+							  RM_PartListNextPart, 
+							  &block_ptr)) 
 				    != STATUS_OK) {
-					error("rm_get_data"
+					error("bridge_get_data"
 					      "(RM_PartListNextPart): %s",
 					      _bg_err_str(rc));
 					
 					break;
 				}
 			} else {
-				if ((rc = rm_get_data(block_list, 
-						      RM_PartListFirstPart, 
-						      &block_ptr)) 
+				if ((rc = bridge_get_data(block_list, 
+							  RM_PartListFirstPart,
+							  &block_ptr)) 
 				    != STATUS_OK) {
-					error("rm_get_data"
+					error("bridge_get_data"
 					      "(RM_PartListFirstPart: %s",
 					      _bg_err_str(rc));
 					
 					break;
 				}
 			}
-			if ((rc = rm_get_data(block_ptr, RM_PartitionID, 
-					      &bg_block_id))
+			if ((rc = bridge_get_data(block_ptr, RM_PartitionID, 
+						  &bg_block_id))
 			    != STATUS_OK) {
-				error("rm_get_data(RM_PartitionID): %s", 
+				error("bridge_get_data(RM_PartitionID): %s", 
 				      _bg_err_str(rc));
 				
 				break;
@@ -223,11 +208,11 @@ int main(int argc, char *argv[])
 			
 			free(bg_block_id);
 			
-			if ((rc = rm_get_data(block_ptr,
-					      RM_PartitionState,
-					      &delete_record->state))
+			if ((rc = bridge_get_data(block_ptr,
+						  RM_PartitionState,
+						  &delete_record->state))
 			    != STATUS_OK) {
-				error("rm_get_data"
+				error("bridge_get_data"
 				      "(RM_PartitionState): %s",
 				      _bg_err_str(rc));
 			} 
@@ -258,18 +243,19 @@ int main(int argc, char *argv[])
 			slurm_attr_destroy(&attr_agent);
 			num_block_to_free++;
 		}
-		if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
-			error("rm_free_partition_list(): %s",
+		if ((rc = bridge_free_block_list(block_list)) != STATUS_OK) {
+			error("bridge_free_block_list(): %s",
 			      _bg_err_str(rc));
 		}
 	}
-	while(num_block_to_free != num_block_freed) {
+	while(num_block_to_free > num_block_freed) {
 		info("waiting for all bgblocks to free...");
 		_update_bg_record_state();
 		sleep(1);
 	}
 	list_destroy(delete_record_list);
 	
+	bridge_fini();
 	return 0;
 }
 
@@ -284,15 +270,15 @@ static int _free_block(delete_record_t *delete_record)
 		if (delete_record->state != (rm_partition_state_t)NO_VAL
 		    && delete_record->state != RM_PARTITION_FREE 
 		    && delete_record->state != RM_PARTITION_DEALLOCATING) {
-			info("pm_destroy %s",delete_record->bg_block_id);
-			if ((rc = pm_destroy_partition(
+			info("bridge_destroy %s",delete_record->bg_block_id);
+			if ((rc = bridge_destroy_block(
 				     delete_record->bg_block_id))
 			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
-					info("partition %s is not found");
+					info("block %s is not found");
 					break;
 				}
-				error("pm_destroy_partition(%s): %s",
+				error("bridge_destroy_block(%s): %s",
 				      delete_record->bg_block_id,
 				      _bg_err_str(rc));
 			}
@@ -316,95 +302,70 @@ static int _free_block(delete_record_t *delete_record)
 
 static int _update_bg_record_state()
 {
-	rm_partition_state_flag_t block_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
-	rm_partition_list_t *block_list = NULL;
-	int j, rc, num_blocks = 0;
+	int rc;
 	rm_partition_state_t state = -2;
 	rm_partition_t *block_ptr = NULL;
 	delete_record_t *delete_record = NULL;
 	ListIterator itr;
-
-	if ((rc = rm_get_partitions_info(block_state, &block_list))
-	    != STATUS_OK) {
-		error("rm_get_partitions_info(): %s", _bg_err_str(rc));
-		return -1;
-	}
-
-	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
-	    != STATUS_OK) {
-		error("rm_get_data(RM_PartListSize): %s", _bg_err_str(rc));
-		state = -1;
-		num_blocks = 0;
-	}
 	
-	for (j=0; j<num_blocks; j++) {
-		if (j) {
-			if ((rc = rm_get_data(block_list,
-					      RM_PartListNextPart,
-					      &block_ptr))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartListNextPart): %s",
-				      _bg_err_str(rc));
-				state = -1;
-				break;
-			}
-		} else {
-			if ((rc = rm_get_data(block_list,
-					      RM_PartListFirstPart,
-					      &block_ptr))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartListFirstPart: %s",
-				      _bg_err_str(rc));
-				state = -1;
-				break;
-			}
-		}
-		if ((rc = rm_get_data(block_ptr,
-				      RM_PartitionID,
-				      &name))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionID): %s",
-			      _bg_err_str(rc));
-			state = -1;
-			break;
-		}
-		
-		if(!name) {
-			error("No Partition ID was returned from database");
+	if(!delete_record_list) {
+		return SLURM_SUCCESS;
+	}
+
+	itr = list_iterator_create(delete_record_list);
+	while ((delete_record = (delete_record_t*) list_next(itr))) {	
+		if(!delete_record->bg_block_id) {
 			continue;
 		}
-		itr = list_iterator_create(delete_record_list);
-		while ((delete_record = 
-			(delete_record_t*) list_next(itr))) {	
-			if(!delete_record->bg_block_id)
-				continue;
-			if(strcmp(delete_record->bg_block_id, name)) {
+		
+		if ((delete_record->state == RM_PARTITION_FREE)
+		    || (delete_record->state == RM_PARTITION_ERROR)) {
+			continue;
+		}
+		name = delete_record->bg_block_id;
+		
+		if ((rc = bridge_get_block_info(name, &block_ptr)) 
+		    != STATUS_OK) {
+			if(rc == PARTITION_NOT_FOUND 
+			   || rc == INCONSISTENT_DATA) {
+				debug("block %s is not found",
+				      delete_record->bg_block_id);
 				continue;
 			}
-			state = 1;
-		
-			if ((rc = rm_get_data(block_ptr,
-					      RM_PartitionState,
-					      &delete_record->state))
-			    != STATUS_OK) {
-				error("rm_get_data"
-				      "(RM_PartitionState): %s",
-				      _bg_err_str(rc));
-			} 
-			break;
+			
+			error("bridge_get_block_info(%s): %s", 
+			      name, 
+			      _bg_err_str(rc));
+			goto finished;
 		}
-		list_iterator_destroy(itr);
-		free(name);
+		state = 1;
+
+		if ((rc = bridge_get_data(block_ptr,
+					  RM_PartitionState,
+					  &delete_record->state))
+		    != STATUS_OK) {
+			error("bridge_get_data"
+			      "(RM_PartitionState): %s",
+			      _bg_err_str(rc));
+		} 
+		if ((rc = bridge_free_block(block_ptr)) 
+		    != STATUS_OK) {
+			error("bridge_free_block(): %s", 
+			      _bg_err_str(rc));
+		}
+	finished:
+		if(state != 1) {
+			error("The requested block %s was not "
+			      "found in system.",
+			      name);
+			slurm_mutex_lock(&freed_cnt_mutex);
+			num_block_freed++;
+			slurm_mutex_unlock(&freed_cnt_mutex);
+		}
 	}
-	if(state != 1) {
-		error("The requested block %s was not found in system.",
-		      bg_block_id);
-		num_block_to_free = num_block_freed;
-	}
-	if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
-		error("rm_free_partition_list(): %s", _bg_err_str(rc));
-	}
+	list_iterator_destroy(itr);
+	
 	return state;
 }
 
@@ -423,29 +384,31 @@ static void _term_jobs_on_block(char *bg_block_id)
 		& (~JOB_TERMINATED_FLAG)
 		& (~JOB_ERROR_FLAG)
 		& (~JOB_KILLED_FLAG);
-	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("rm_get_jobs(): %s", _bg_err_str(rc));
+	if ((rc = bridge_get_jobs(live_states, &job_list)) != STATUS_OK) {
+		error("bridge_get_jobs(): %s", _bg_err_str(rc));
 		return;
 	}
 	
-	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
-		error("rm_get_data(RM_JobListSize): %s", _bg_err_str(rc));
+	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) 
+	    != STATUS_OK) {
+		error("bridge_get_data(RM_JobListSize): %s", _bg_err_str(rc));
 		jobs = 0;
 	} else if (jobs > 300)
 		fatal("Active job count (%d) invalid, restart MMCS", jobs);
 	//debug("job count %d",jobs);
 	for (i=0; i<jobs; i++) {
 		if (i) {
-			if ((rc = rm_get_data(job_list, RM_JobListNextJob,
-					&job_elem)) != STATUS_OK) {
-				error("rm_get_data(RM_JobListNextJob): %s",
+			if ((rc = bridge_get_data(job_list, RM_JobListNextJob,
+						  &job_elem)) != STATUS_OK) {
+				error("bridge_get_data(RM_JobListNextJob): %s",
 				      _bg_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = rm_get_data(job_list, RM_JobListFirstJob,
-					      &job_elem)) != STATUS_OK) {
-				error("rm_get_data(RM_JobListFirstJob): %s",
+			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
+						  &job_elem)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_JobListFirstJob): %s",
 				      _bg_err_str(rc));
 				continue;
 			}
@@ -456,15 +419,15 @@ static void _term_jobs_on_block(char *bg_block_id)
 			      jobs);
 			break;
 		}
-		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &block_id))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_JobPartitionID) %s: %s",
+		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID, 
+					  &block_id)) != STATUS_OK) {
+			error("bridge_get_data(RM_JobPartitionID) %s: %s",
 			      block_id, _bg_err_str(rc));
 			continue;
 		}
 
 		if(!block_id) {
-			error("No Partition ID was returned from database");
+			error("No Block ID was returned from database");
 			continue;
 		}
 
@@ -474,9 +437,9 @@ static void _term_jobs_on_block(char *bg_block_id)
 		}
 		free(block_id);
 		job_found = 1;
-		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
+		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
 		    != STATUS_OK) {
-			error("rm_get_data(RM_JobDBJobID): %s",
+			error("bridge_get_data(RM_JobDBJobID): %s",
 			      _bg_err_str(rc));
 			continue;
 		}
@@ -489,8 +452,8 @@ static void _term_jobs_on_block(char *bg_block_id)
 		info("No jobs on bgblock %s", bg_block_id);
 	
 not_removed:
-	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
-		error("rm_free_job_list(): %s", _bg_err_str(rc));
+	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
+		error("bridge_free_job_list(): %s", _bg_err_str(rc));
 }
 
 /*
@@ -540,31 +503,31 @@ static int _remove_job(db_job_id_t job_id)
 			sleep(POLL_INTERVAL);
 
 		/* Find the job */
-		if ((rc = rm_get_job(job_id, &job_rec)) != STATUS_OK) {
+		if ((rc = bridge_get_job(job_id, &job_rec)) != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
 				return STATUS_OK;
 			} 
 
-			error("rm_get_job(%d): %s", job_id, 
+			error("bridge_get_job(%d): %s", job_id, 
 			      _bg_err_str(rc));
 			continue;
 		}
 
-		if ((rc = rm_get_data(job_rec, RM_JobState, &job_state)) != 
-				STATUS_OK) {
-			(void) rm_free_job(job_rec);
+		if ((rc = bridge_get_data(job_rec, RM_JobState, &job_state)) 
+		    != STATUS_OK) {
+			(void) bridge_free_job(job_rec);
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d not found in MMCS", job_id);
 				return STATUS_OK;
 			} 
 
-			error("rm_get_data(RM_JobState) for jobid=%d "
+			error("bridge_get_data(RM_JobState) for jobid=%d "
 			      "%s", job_id, _bg_err_str(rc));
 			continue;
 		}
-		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
-			error("rm_free_job: %s", _bg_err_str(rc));
+		if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
+			error("bridge_free_job: %s", _bg_err_str(rc));
 
 		info("job %d is in state %d", job_id, job_state);
 		
@@ -580,8 +543,8 @@ static int _remove_job(db_job_id_t job_id)
 			return STATUS_OK;
 		}
 
-		(void) jm_signal_job(job_id, SIGKILL);
-		rc = jm_cancel_job(job_id);
+		(void) bridge_signal_job(job_id, SIGKILL);
+		rc = bridge_cancel_job(job_id);
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
@@ -591,7 +554,7 @@ static int _remove_job(db_job_id_t job_id)
 				debug("job %d is in an INCOMPATIBLE_STATE",
 				      job_id);
 			else
-				error("rm_cancel_job(%d): %s", job_id, 
+				error("bridge_cancel_job(%d): %s", job_id, 
 				      _bg_err_str(rc));
 		}
 	}

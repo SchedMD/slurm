@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bg_block_info.c - blue gene partition information from the db2 database.
+ *  bg_block_info.c - bluegene block information from the db2 database.
  *
  *  $Id$
  *****************************************************************************
@@ -70,7 +70,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
-		      "users from partition %s", 
+		      "users from block %s", 
 		      bg_record->bg_block_id);
 	} 
 	slurm_conf_unlock();
@@ -105,7 +105,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			}
 		} else {
 			error("State went to free on a boot "
-			      "for partition %s.",
+			      "for block %s.",
 			      bg_record->bg_block_id);
 		}
 		slurm_mutex_unlock(&block_state_mutex);
@@ -113,13 +113,13 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		slurm_mutex_lock(&block_state_mutex);
 	} else if(bg_record->user_name) {
 		error("Target Name was not set "
-		      "not set for partition %s.",
+		      "not set for block %s.",
 		      bg_record->bg_block_id);
 		bg_record->target_name = 
 			xstrdup(bg_record->user_name);
 	} else {
 		error("Target Name and User Name are "
-		      "not set for partition %s.",
+		      "not set for block %s.",
 		      bg_record->bg_block_id);
 		bg_record->user_name = xstrdup(user_name);
 		bg_record->target_name = 
@@ -134,9 +134,9 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 
 
 /*
- * check to see if partition is ready to execute.  Meaning
+ * check to see if block is ready to execute.  Meaning
  * User is added to the list of users able to run, and no one 
- * else is running on the partition.
+ * else is running on the block.
  *
  * NOTE: This happens in parallel with srun and slurmd spawning
  * the job. A prolog script is expected to defer initiation of
@@ -158,14 +158,15 @@ extern int block_ready(struct job_record *job_ptr)
 			if(bg_record->job_running != job_ptr->job_id) {
 				rc = 0;
 			} else if ((bg_record->user_uid == job_ptr->user_id)
-			    && (bg_record->state == RM_PARTITION_READY)) {
+				   && (bg_record->state 
+				       == RM_PARTITION_READY)) {
 				rc = 1;
 			} else if (bg_record->user_uid != job_ptr->user_id)
 				rc = 0;
 			else
 				rc = READY_JOB_ERROR;	/* try again */
 		} else {
-			error("block_ready: partition %s not in bg_list.",
+			error("block_ready: block %s not in bg_list.",
 			      block_id);
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}
@@ -176,7 +177,7 @@ extern int block_ready(struct job_record *job_ptr)
 	return rc;
 }				
 
-/* Pack all relevent information about a partition */
+/* Pack all relevent information about a block */
 extern void pack_block(bg_record_t *bg_record, Buf buffer)
 {
 	packstr(bg_record->nodes, buffer);
@@ -194,138 +195,47 @@ extern int update_block_list()
 {
 	int updated = 0;
 #ifdef HAVE_BG_FILES
-	int j, rc, num_blocks = 0;
+	int rc;
 	rm_partition_t *block_ptr = NULL;
 	rm_partition_mode_t node_use;
 	rm_partition_state_t state;
-	rm_partition_state_flag_t block_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
-	rm_partition_list_t *block_list = NULL;
 	bg_record_t *bg_record = NULL;
 	time_t now;
 	int skipped_dealloc = 0;
-
-	slurm_mutex_lock(&api_file_mutex);
-	if ((rc = rm_get_partitions_info(block_state, &block_list))
-	    != STATUS_OK) {
-		slurm_mutex_unlock(&api_file_mutex);
-		if(rc != PARTITION_NOT_FOUND)
-			error("rm_get_partitions_info(): %s", bg_err_str(rc));
-		return -1; 
-	}
+	ListIterator itr = NULL;
 	
-	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
-		   != STATUS_OK) {
-		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
-		updated = -1;
-		num_blocks = 0;
-	}
-	slurm_mutex_unlock(&api_file_mutex);
-			
-	for (j=0; j<num_blocks; j++) {
-		if (j) {
-			if ((rc = rm_get_data(block_list, RM_PartListNextPart, 
-					      &block_ptr)) != STATUS_OK) {
-				error("rm_get_data(RM_PartListNextPart): %s",
-				      bg_err_str(rc));
-				updated = -1;
-				break;
-			}
-		} else {
-			if ((rc = rm_get_data(block_list, RM_PartListFirstPart,
-					      &block_ptr)) != STATUS_OK) {
-				error("rm_get_data(RM_PartListFirstPart: %s",
-				      bg_err_str(rc));
-				updated = -1;
-				break;
-			}
-		}
-		if ((rc = rm_get_data(block_ptr, RM_PartitionID, &name))
+	if(!bg_list) 
+		return updated;
+	
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_list);
+	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		if(!bg_record->bg_block_id)
+			continue;
+		name = bg_record->bg_block_id;
+		if ((rc = bridge_get_block_info(name, &block_ptr)) 
 		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionID): %s", 
+			if(rc == INCONSISTENT_DATA
+			   && bluegene_layout_mode == LAYOUT_DYNAMIC)
+				continue;
+			
+			error("bridge_get_block_info(%s): %s", 
+			      name, 
+			      bg_err_str(rc));
+			continue;
+		}
+				
+		if ((rc = bridge_get_data(block_ptr, RM_PartitionMode,
+					  &node_use))
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionMode): %s",
 			      bg_err_str(rc));
 			updated = -1;
-			break;
-		}
-		if(!name) {
-			error("No Partition ID was returned from database");
-			continue;
-		}
-		if(strncmp("RMP", name, 3)) {
-			free(name);
-			continue;
-		}
-		bg_record = find_bg_record_in_list(bg_list, name);
-		
-		if(bg_record == NULL) {
-			if(find_bg_record_in_list(bg_freeing_list, name)) {
-				break;
-			}
-			debug("Block %s not found in bg_list "
-			      "removing from database", name);
-			term_jobs_on_block(name);
-			if ((rc = rm_get_data(block_ptr, 
-					      RM_PartitionState, &state))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartitionState): %s",
-				      bg_err_str(rc));
-				updated = -1;
-				break;
-			}
-			slurm_mutex_lock(&api_file_mutex);
-			if (state != NO_VAL
-			    && state != RM_PARTITION_FREE 
-			    && state != RM_PARTITION_DEALLOCATING) {
-				if ((rc = pm_destroy_partition(name)) 
-				    != STATUS_OK) {
-					if(rc == PARTITION_NOT_FOUND) {
-						debug("partition %s is "
-						      "not found",
-						      name);
-						free(name);
-						slurm_mutex_unlock(
-							&api_file_mutex);
-						break;
-					}
-					error("pm_destroy_partition(%s): %s",
-					      name, 
-					      bg_err_str(rc));
-				}
-			}
-			if ((state == RM_PARTITION_FREE)
-			    ||  (state == RM_PARTITION_ERROR)) {
-				rc = rm_remove_partition(name);
-				if (rc != STATUS_OK) {
-					if(rc == PARTITION_NOT_FOUND) {
-						debug("1 block %s not found",
-						      name);
-					} else {
-						error("1 rm_remove_partition"
-						      "(%s): %s",
-						      name,
-						      bg_err_str(rc));
-					}
-				} else
-					debug("done\n");
-			}
-			slurm_mutex_unlock(&api_file_mutex);
-			
-			free(name);
-			continue;
-		}
-		free(name);
-			
-		slurm_mutex_lock(&block_state_mutex);
-		
-		if ((rc = rm_get_data(block_ptr, RM_PartitionMode, &node_use))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionMode): %s",
-			      bg_err_str(rc));
-			updated = -1;
-			slurm_mutex_unlock(&block_state_mutex);
-			break;
+			goto next_block;
 		} else if(bg_record->node_use != node_use) {
-			debug("node_use of Partition %s was %d and now is %d",
+			debug("node_use of Block %s was %d "
+			      "and now is %d",
 			      bg_record->bg_block_id, 
 			      bg_record->node_use, 
 			      node_use);
@@ -333,28 +243,33 @@ extern int update_block_list()
 			updated = 1;
 		}
 		
-		if ((rc = rm_get_data(block_ptr, RM_PartitionState, &state))
+		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
+					  &state))
 		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionState): %s",
+			error("bridge_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
 			updated = -1;
-			slurm_mutex_unlock(&block_state_mutex);
-			break;
-		} else if(bg_record->job_running != -3 //plugin set error
+			goto next_block;
+		} else if(bg_record->job_running != -3 
+			  //plugin set error
 			  && bg_record->state != state) {
-			debug("state of Partition %s was %d and now is %d",
+			debug("state of Block %s was %d and now is %d",
 			      bg_record->bg_block_id, 
 			      bg_record->state, 
 			      state);
 			/* 
-			   check to make sure partition went 
+			   check to make sure block went 
 			   through freeing correctly 
 			*/
-			if(bg_record->state != RM_PARTITION_DEALLOCATING
+			if(bg_record->state 
+			   != RM_PARTITION_DEALLOCATING
 			   && state == RM_PARTITION_FREE)
 				skipped_dealloc = 1;
+
 			bg_record->state = state;
-			if(bg_record->state == RM_PARTITION_DEALLOCATING) {
+
+			if(bg_record->state 
+			   == RM_PARTITION_DEALLOCATING) {
 				_block_is_deallocating(bg_record);
 			} else if(skipped_dealloc) {
 				_block_is_deallocating(bg_record);
@@ -366,32 +281,36 @@ extern int update_block_list()
 		}
 
 		/* check the boot state */
-		/* debug("boot state for partition %s is %d", */
-/* 		      bg_record->bg_block_id, */
-/* 		      bg_record->boot_state); */
+		debug3("boot state for block %s is %d",
+		       bg_record->bg_block_id,
+		       bg_record->boot_state);
 		if(bg_record->boot_state == 1) {
 			switch(bg_record->state) {
 			case RM_PARTITION_CONFIGURING:
-				/* debug("checking to make sure user %s " */
-/* 				      "is the user.",  */
-/* 				      bg_record->target_name); */
+				debug3("checking to make sure user %s "
+				       "is the user.",
+				       bg_record->target_name);
 				slurm_conf_lock();
-				if(update_block_user(bg_record, 0) == 1)
+				if(update_block_user(bg_record, 0) 
+				   == 1)
 					last_bg_update = time(NULL);
 				slurm_conf_unlock();
 				break;
 			case RM_PARTITION_ERROR:
-				error("partition in an error state");
+				error("block in an error state");
 			case RM_PARTITION_FREE:
-				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
-					slurm_mutex_unlock(&block_state_mutex);
+				if(bg_record->boot_count 
+				   < RETRY_BOOT_COUNT) {
+					slurm_mutex_unlock(
+						&block_state_mutex);
 					if((rc = boot_block(bg_record))
 					   != SLURM_SUCCESS) {
 						updated = -1;
 					}
-					slurm_mutex_lock(&block_state_mutex);
-					debug("boot count for partition %s "
-					      " is %d",
+					slurm_mutex_lock(
+						&block_state_mutex);
+					debug("boot count for block "
+					      "%s is %d",
 					      bg_record->bg_block_id,
 					      bg_record->boot_count);
 					bg_record->boot_count++;
@@ -402,15 +321,18 @@ extern int update_block_list()
 					      "for user %s",
 					      bg_record->bg_block_id, 
 					      bg_record->target_name);
-					slurm_mutex_unlock(&block_state_mutex);
+					slurm_mutex_unlock(
+						&block_state_mutex);
 					
 					now = time(NULL);
 					slurm_make_time_str(&now, time_str,
-						sizeof(time_str));
-					snprintf(reason, sizeof(reason),
-						"update_block_list: "
-						"Boot fails [SLURM@%s]", 
-						time_str);
+							    sizeof(time_str));
+					snprintf(reason, 
+						 sizeof(reason),
+						 "update_block_list: "
+						 "Boot fails "
+						 "[SLURM@%s]", 
+						 time_str);
 					drain_as_needed(bg_record, reason);
 					slurm_mutex_lock(&block_state_mutex);
 					bg_record->boot_state = 0;
@@ -418,23 +340,27 @@ extern int update_block_list()
 				}
 				break;
 			case RM_PARTITION_READY:
-				debug("partition %s is ready.",
+				debug("block %s is ready.",
 				      bg_record->bg_block_id);
 				set_block_user(bg_record); 	
 				break;
 			default:
-				debug("Hey the state of the Partition is %d "
-				      "doing nothing.",bg_record->state);
+				debug("Hey the state of the "
+				      "Block is %d doing nothing.",
+				      bg_record->state);
 				break;
 			}
-		}	
-		slurm_mutex_unlock(&block_state_mutex);	
+		}
+	next_block:
+		if ((rc = bridge_free_block(block_ptr)) 
+		    != STATUS_OK) {
+			error("bridge_free_block(): %s", 
+			      bg_err_str(rc));
+		}				
 	}
-	
-	if ((rc = rm_free_partition_list(block_list)) != STATUS_OK) {
-		error("rm_free_partition_list(): %s", bg_err_str(rc));
-	}
-	
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+		
 #endif
 	return updated;
 }

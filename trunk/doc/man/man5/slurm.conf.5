@@ -269,10 +269,18 @@ default for all other systems
 
 .TP
 \fBProlog\fR
-Fully qualified pathname of a script to execute as user root on every 
-node when a user's job begins execution (e.g. "/usr/local/slurm/prolog"). 
-This may be used to purge files, enable user login, etc. By default there 
-is no prolog.
+Fully qualified pathname of a script for the slurmd to execute whenever
+it is asked to run a job step from a new job allocation.  (e.g.
+"/usr/local/slurm/prolog").  The slurmd executes the script before starting
+the job step.  This may be used to purge files, enable user login, etc.
+By default there is no prolog.
+
+NOTE:  The Prolog script is ONLY run on any individual
+node when it first sees a job step from a new allocation; it does not
+run the Prolog immediately when an allocation is granted.  If no job steps
+from an allocation are run on a node, it will never run the Prolog for that
+allocation.  The Epilog, on the other hand, always runs on every node of an
+allocation when the allocation is released.
 .TP
 \fBPropagatePrioProcess\fR
 Setting \fBPropagatePrioProcess\fR to "1", will cause a users job to run
