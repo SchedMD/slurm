@@ -313,6 +313,15 @@ int srun(int ac, char **av)
 		exit(1);
 	}
 
+	/*
+	 *  We want to make sure we get the correct state of the job
+	 *  and not finish before all the messages have been sent.
+	 */	
+	debug("Waiting for message thread");
+	if (pthread_join(job->jtid, NULL) < 0)
+		error ("Waiting on message thread: %m");
+	debug("done");
+
 	/* wait for launch thread */
 	if (pthread_join(job->lid, NULL) < 0)
 		error ("Waiting on launch thread: %m");
@@ -334,11 +343,6 @@ int srun(int ac, char **av)
 	/* Tell slurmctld that job is done */
 	srun_job_destroy(job, 0);
 
-	/* Wait for the message thread (which talks to the message
-	   handler process) */
-	if (pthread_join(job->jtid, NULL) < 0)
-		error ("Waiting for message thread: %m");
-	
 	_run_srun_epilog(job);
 
 	/* 
