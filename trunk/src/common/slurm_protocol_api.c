@@ -854,6 +854,7 @@ total_return:
 	destroy_forward(&header.forward);
 	
 	if(rc != SLURM_SUCCESS) {
+		msg->msg_type = REQUEST_PING;
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
 	errno = rc;
@@ -1563,9 +1564,10 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	ret_list = _send_and_recv_msg(fd, req, &msg, timeout);
 	err = errno;	
 
-	if(!msg.auth_cred) 
+	if(!msg.auth_cred) {
+		msg.msg_type = REQUEST_PING;
 		msg_rc = SLURM_ERROR;	
-	else {
+	} else {
 		msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 		slurm_free_return_code_msg(msg.data);
 		g_slurm_auth_destroy(msg.auth_cred);
@@ -1662,9 +1664,10 @@ failed:
 		no_resp_forwards(&msg->forward, &ret_list, err);
 	}
 	
-	if(err != SLURM_SUCCESS) 
+	if(err != SLURM_SUCCESS) {
+		resp.msg_type = REQUEST_PING;
 		msg_rc = SLURM_ERROR;	
-	else {
+	} else {
 		msg_rc = ((return_code_msg_t *)resp.data)->return_code;
 		slurm_free_return_code_msg(resp.data);
 		g_slurm_auth_destroy(resp.auth_cred);

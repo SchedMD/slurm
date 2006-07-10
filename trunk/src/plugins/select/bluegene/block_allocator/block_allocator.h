@@ -222,7 +222,7 @@ extern int new_ba_request(ba_request_t* ba_request);
 /**
  * delete a block request 
  */
-extern void delete_ba_request(ba_request_t* ba_request);
+extern void delete_ba_request(void *arg);
 
 /**
  * print a block request 

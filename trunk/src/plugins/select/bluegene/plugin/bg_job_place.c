@@ -93,6 +93,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	uint32_t req_procs = job_ptr->num_procs;
 	uint32_t proc_cnt;
 	ba_request_t request; 
+	ba_request_t *try_request = NULL; 
 	int i;
 	int rot_cnt = 0;
 	int created = 0;
@@ -122,7 +123,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		error("_find_best_block_match: There is no bg_list");
 		return SLURM_ERROR;
 	}
-	
+		
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -387,16 +388,56 @@ try_again:
 	}
 	list_iterator_destroy(itr);
 
+	if(!found && bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		/* 
+		   see if we have already tryed to create this 
+		   size but couldn't make it right now no reason 
+		   to try again 
+		*/
+		slurm_mutex_lock(&request_list_mutex);
+		itr = list_iterator_create(bg_request_list);
+		while ((try_request = list_next(itr)) != NULL) {
+			if(try_request->procs > req_procs) {
+				debug("already tried to create but "
+				      "can't right now.");
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&request_list_mutex);
+				slurm_mutex_unlock(&block_state_mutex);
+				return SLURM_SUCCESS;
+			}				
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&request_list_mutex);
+	}
+
 	if(bluegene_layout_mode == LAYOUT_OVERLAP 
 	   &&!test_only && created<2 && !*found_bg_record) {
 		created++;
 		slurm_mutex_unlock(&block_state_mutex);
 		goto try_again;
 	}
-	
+		
 	if(!found && test_only && bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		slurm_mutex_unlock(&block_state_mutex);
-	
+		/* 
+		   see if we have already tryed to create this 
+		   size but couldn't make it right now no reason 
+		   to try again 
+		*/
+		slurm_mutex_lock(&request_list_mutex);
+		itr = list_iterator_create(bg_request_list);
+		while ((try_request = list_next(itr)) != NULL) {
+			if(try_request->procs == req_procs) {
+				debug2("already tried to create but "
+				     "can't right now. 2");
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&request_list_mutex);
+				return SLURM_SUCCESS;
+			}				
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&request_list_mutex);
+		
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 			request.start[i] = start[i];
 			
@@ -423,6 +464,22 @@ try_again:
 				      "create_dynamic_block");
 				return SLURM_ERROR;
 			} 
+
+			/* 
+			   add request to list so we don't try again until 
+			   something happens like a job finishing or 
+			   something so we can try again 
+			*/
+			debug3("adding %d %d", 
+			       request.procs, request.conn_type);
+			try_request = xmalloc(sizeof(ba_request_t));
+			try_request->procs = req_procs;
+			try_request->save_name = NULL;
+			try_request->elongate_geos = NULL;
+			slurm_mutex_lock(&request_list_mutex);
+			list_push(bg_request_list, try_request);
+			slurm_mutex_unlock(&request_list_mutex);
+		
 			slurm_conf_lock();
 			sprintf(tmp_char, "%s%s", 
 				slurmctld_conf.node_prefix, request.save_name);
