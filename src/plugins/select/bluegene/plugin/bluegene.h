@@ -132,9 +132,12 @@ extern List bg_list;			/* List of configured BG blocks */
 extern List bg_job_block_list;  	/* jobs running in these blocks */
 extern List bg_booted_block_list;  	/* blocks that are booted */
 extern List bg_freeing_list;  	        /* blocks that being freed */
+extern List bg_request_list;  	        /* list of request that can't 
+					   be made just yet */
 
 extern bool agent_fini;
 extern pthread_mutex_t block_state_mutex;
+extern pthread_mutex_t request_list_mutex;
 extern int num_block_to_free;
 extern int num_block_freed;
 extern int blocks_are_created;

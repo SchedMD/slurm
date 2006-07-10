@@ -47,6 +47,8 @@ List bg_found_block_list = NULL;  	/* found bg blocks already on system */
 List bg_job_block_list = NULL;  	/* jobs running in these blocks */
 List bg_booted_block_list = NULL;  	/* blocks that are booted */
 List bg_freeing_list = NULL;  	        /* blocks that being freed */
+List bg_request_list = NULL;  	        /* list of request that can't 
+					   be made just yet */
 
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL, *bridge_api_file = NULL; 
@@ -59,6 +61,7 @@ uint16_t bridge_api_verb = 0;
 bool agent_fini = false;
 time_t last_bg_update;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t request_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_block_to_free = 0;
 int num_block_freed = 0;
 int blocks_are_created = 0;
@@ -157,6 +160,14 @@ extern void fini_bg(void)
 		list_destroy(bg_booted_block_list);
 		bg_booted_block_list = NULL;
 	}
+	
+	slurm_mutex_lock(&request_list_mutex);
+	if (bg_request_list) {
+		list_destroy(bg_request_list);
+		bg_request_list = NULL;
+	}
+	slurm_mutex_unlock(&request_list_mutex);
+		
 	xfree(bluegene_blrts);
 	xfree(bluegene_linux);
 	xfree(bluegene_mloader);
@@ -1890,6 +1901,13 @@ static void _set_bg_lists()
 	if (bg_list) 
 		list_destroy(bg_list);
 	bg_list = list_create(destroy_bg_record);
+
+	slurm_mutex_lock(&request_list_mutex);
+	if (bg_request_list) 
+		list_destroy(bg_request_list);
+	bg_request_list = list_create(delete_ba_request);
+	slurm_mutex_unlock(&request_list_mutex);
+		
 	slurm_mutex_unlock(&block_state_mutex);		
 }
 
