@@ -35,6 +35,9 @@ AC_DEFUN([X_AC_AIX],
             AC_DEFINE(USE_ALIAS, 0, 
                       [Define slurm_ prefix function aliases for plusins]) ;;
       *darwin*)
+            AC_MSG_WARN([On OSX, "install -d" does not work as documented])
+            AC_MSG_WARN([  Remove the "-d" from INSTALL_DIRS in src/srun/Makefile])
+            AC_MSG_WARN([  and manually create the directory as needed])
             INSTALL_DIRS="-d"
             ac_have_aix="no"
             AC_DEFINE(USE_ALIAS, 0,
