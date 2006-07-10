@@ -89,7 +89,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	usleep(pmi_rank * 1000);
 	if (pmi_size > 1000)
 		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 8;
-	else if (pmi_size > 100)
+	else if (pmi_size > 10)
 		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 4;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
@@ -164,7 +164,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	usleep(pmi_rank * 1000);
 	if (pmi_size > 1000)
 		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 8;
-	else if (pmi_size > 100)
+	else if (pmi_size > 10)
 		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 4;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
