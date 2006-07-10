@@ -1576,7 +1576,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	if(!set) {
 		ret_type = xmalloc(sizeof(ret_types_t));
 		list_push(ret_list, ret_type);
-		ret_type->type = msg.msg_type;
+		ret_type->type = REQUEST_PING;
 		ret_type->msg_rc = msg_rc;
 		ret_type->err = err;
 		ret_type->ret_data_list = list_create(destroy_data_info);
