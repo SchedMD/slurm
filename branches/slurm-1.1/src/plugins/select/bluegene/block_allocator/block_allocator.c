@@ -542,13 +542,16 @@ endit:
 /**
  * delete a block request 
  */
-extern void delete_ba_request(ba_request_t *ba_request)
+extern void delete_ba_request(void *arg)
 {
-	xfree(ba_request->save_name);
-	if(ba_request->elongate_geos)
-		list_destroy(ba_request->elongate_geos);
-	
-	xfree(ba_request);
+	ba_request_t *ba_request = (ba_request_t *)arg;
+	if(ba_request) {
+		xfree(ba_request->save_name);
+		if(ba_request->elongate_geos)
+			list_destroy(ba_request->elongate_geos);
+		
+		xfree(ba_request);
+	}
 }
 
 /**

@@ -352,6 +352,9 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 	time_t now;
 	char reason[128];
 	int job_remove_failed = 0;
+	ba_request_t *try_request = NULL; 
+	int proc_cnt = 0;
+	ListIterator itr;
 	
 #ifdef HAVE_BG_FILES
 	rm_element_t *job_elem = NULL;
@@ -442,6 +445,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 	}
 #endif
+	
 	/* remove the block's users */
 	bg_record = 
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
@@ -449,6 +453,29 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		debug("got the record %s user is %s",
 		      bg_record->bg_block_id,
 		      bg_record->user_name);
+
+		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			/* 
+			   remove all requests out of the list 
+			   that are smaller than the one the 
+			   job was running on.
+			*/
+			proc_cnt = bg_record->bp_count * 
+				bg_record->cpus_per_bp;
+			slurm_mutex_lock(&request_list_mutex);
+			itr = list_iterator_create(bg_request_list);
+			while ((try_request = list_next(itr)) != NULL) {
+				if(try_request->procs <= proc_cnt) {
+					debug3("removing size %d", 
+					       try_request->procs);
+					list_remove(itr);
+					delete_ba_request(try_request);
+					list_iterator_reset(itr);
+				}				
+			}
+			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&request_list_mutex);
+		}
 
 		if(job_remove_failed) {
 			char time_str[32];
