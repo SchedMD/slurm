@@ -1079,21 +1079,28 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 		if(!thread_ptr[i].ret_list) {
 			if (thread_ptr[i].state != DSH_NO_RESP)
 				continue;
+			agent_arg_ptr->slurm_addr[j] = 
+				thread_ptr[i].slurm_addr;
+			strncpy(&agent_arg_ptr->node_names[j * MAX_SLURM_NAME],
+				thread_ptr[i].node_name, MAX_SLURM_NAME);
+			if ((++j) == count)
+				break;
 		} else {
 			itr = list_iterator_create(thread_ptr[i].ret_list);
 			while((ret_type = list_next(itr)) != NULL) {
 				if (ret_type->msg_rc != DSH_NO_RESP)
+					continue;
+				agent_arg_ptr->slurm_addr[j] = 
+					thread_ptr[i].slurm_addr;
+				strncpy(&agent_arg_ptr->
+					node_names[j * MAX_SLURM_NAME],
+					thread_ptr[i].node_name, 
+					MAX_SLURM_NAME);
+				if ((++j) == count)
 					break;
 			}
 			list_iterator_destroy(itr);
-			if(ret_type)
-				continue;
 		}
-		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
-		strncpy(&agent_arg_ptr->node_names[j * MAX_SLURM_NAME],
-			thread_ptr[i].node_name, MAX_SLURM_NAME);
-		if ((++j) == count)
-			break;
 	}
 	if (count != j) {
 		error("agent: Retry count (%d) != actual count (%d)", 
