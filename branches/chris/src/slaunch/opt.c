@@ -1447,6 +1447,10 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[0] = fullpath;
 		} 
 	}
+
+	if (!opt.num_nodes_set && opt.num_tasks < opt.num_nodes)
+		opt.num_nodes = opt.num_tasks;
+
 	if (!_opt_verify())
 		exit(1);
 }
