@@ -1093,12 +1093,16 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			job->envtp->env = job->env;
 			job->envtp->procid = job->task[i]->gtid;
 			job->envtp->localid = job->task[i]->id;
+			
+			/* need to take this out in 1.2 */
+			job->envtp->distribution = SLURM_DIST_UNKNOWN;
 			setup_env(job->envtp);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
 				run_script("user task_epilog", 
 					   job->task_epilog, 
-					   job->jobid, job->uid, 2, job->env);
+					   job->jobid, job->uid, 
+					   2, job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;

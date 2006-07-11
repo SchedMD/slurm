@@ -268,7 +268,10 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
 
+	/* need to take this out in 1.2 */
+	job->envtp->distribution = SLURM_DIST_UNKNOWN;
 	setup_env(job->envtp);
+	
 	job->env = job->envtp->env;
 	job->envtp->env = NULL;
 	xfree(job->envtp->task_count);
