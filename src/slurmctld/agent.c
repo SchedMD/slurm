@@ -1057,6 +1057,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	queued_request_t *queued_req_ptr = NULL;
 	thd_t *thread_ptr = agent_info_ptr->thread_struct;
 	int i, j;
+	ListIterator itr;
+	ret_types_t *ret_type = NULL;
 
 	if (count == 0)
 		return;
@@ -1074,8 +1076,19 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		if (thread_ptr[i].state != DSH_NO_RESP)
-			continue;
+		if(!thread_ptr[i].ret_list) {
+			if (thread_ptr[i].state != DSH_NO_RESP)
+				continue;
+		} else {
+			itr = list_iterator_create(thread_ptr[i].ret_list);
+			while((ret_type = list_next(itr)) != NULL) {
+				if (ret_type->msg_rc != DSH_NO_RESP)
+					break;
+			}
+			list_iterator_destroy(itr);
+			if(ret_type)
+				continue;
+		}
 		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
 		strncpy(&agent_arg_ptr->node_names[j * MAX_SLURM_NAME],
 			thread_ptr[i].node_name, MAX_SLURM_NAME);
