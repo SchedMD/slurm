@@ -461,7 +461,6 @@ try_again:
 		bit_not (relative_nodes);
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
-		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 	} else {
 		ListIterator step_iterator;
 		struct step_record *step_p;
