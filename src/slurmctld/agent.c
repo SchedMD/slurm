@@ -1088,8 +1088,11 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 		} else {
 			itr = list_iterator_create(thread_ptr[i].ret_list);
 			while((ret_type = list_next(itr)) != NULL) {
+				/* since all the rc's are the same 
+				   we only have to check the first
+				   one to and break */
 				if (ret_type->msg_rc != DSH_NO_RESP)
-					continue;
+					break;
 				agent_arg_ptr->slurm_addr[j] = 
 					thread_ptr[i].slurm_addr;
 				strncpy(&agent_arg_ptr->
