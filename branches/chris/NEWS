@@ -14,12 +14,22 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.4
+========================
+ -- Improve error handling in hierarchical communications logic.
+
 * Changes in SLURM 1.1.3
 ========================
  -- Fix big-endian bug in the bitstring code which plagued AIX.
  -- Fix bug in handling srun's --multi-prog option, could go off end of buffer.
  -- Added support for job step completion (and switch window release) on 
     subset of allocated nodes.
+ -- BLUEGENE - removed configure option --with-bg-link bridge is linked with 
+    dlopen now no longer needing fake database so files on frontend node.
+ -- BLUEGENE - implemented use of rm_get_partition_info instead of 
+    ...partitions_info which has made a much better design improving stability.
+ -- Streamline PMI communications and increase timeouts for highly parallel 
+    jobs. Improves scalability of PMI.
 
 * Changes in SLURM 1.1.2
 ========================
@@ -204,6 +214,8 @@ documents those changes that are of interest to users and admins.
  -- In srun, reset stdin to blocking mode (if it was originally blocking before
     we set it to O_NONBLOCK) on exit to avoid trouble with things like running
     srun under a bash shell in an emacs *shell* buffer.
+ -- Fix srun race condition that occasionally causes segfaults at shutdown
+ -- Fix obscure locking issues in log.c code.
 
 * Changes in SLURM 1.0.14
 =========================

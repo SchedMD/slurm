@@ -3148,7 +3148,7 @@ _unpack_ret_list(List *ret_list,
 		 uint16_t size_val, Buf buffer)
 {
 	int i = 0, j = 0;
-	uint16_t nl, uint16_tmp;
+	uint16_t nl = 0, uint16_tmp;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
@@ -3167,17 +3167,29 @@ _unpack_ret_list(List *ret_list,
 		ret_type->ret_data_list = list_create(destroy_data_info);
 		for(j=0; j<nl; j++) {
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
-			list_push(ret_type->ret_data_list, ret_data_info);
 			safe_unpackstr_xmalloc(&ret_data_info->node_name, 
 					       &uint16_tmp, buffer);
-			safe_unpack32((uint32_t *)&ret_data_info->nodeid, buffer);
-			unpack_msg(&msg, buffer);
+			safe_unpack32((uint32_t *)&ret_data_info->nodeid, 
+				      buffer);
+			if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
+				goto unpack_error;
 			ret_data_info->data = msg.data;
+			list_push(ret_type->ret_data_list, ret_data_info);
+			ret_data_info = NULL;
 		}
 	}
 	return SLURM_SUCCESS;
 
       unpack_error:
+	if (ret_type && ret_type->type) {
+		error("_unpack_ret_list: message type %u, record %d of %u", 
+			ret_type->type, j, nl);
+	}
+	if (ret_data_info) {
+		/* failed unpacking data, free without putting on ret_list */
+		xfree(ret_data_info->node_name);
+		xfree(ret_data_info);
+	}
 	list_destroy(*ret_list);
 	*ret_list = NULL;
 	return SLURM_ERROR;

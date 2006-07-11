@@ -26,42 +26,8 @@
 
 #ifndef _BLOCK_ALLOCATOR_H_
 #define _BLOCK_ALLOCATOR_H_
-/* This must be included first for AIX systems */
-#include "src/common/macros.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_CURSES_H
-#  include <curses.h>
-#endif
-#if HAVE_NCURSES_H
-#  include <ncurses.h>
-#  ifndef HAVE_CURSES_H
-#     define HAVE_CURSES_H
-#  endif
-#endif
-
-#include "src/api/node_select_info.h"
-#include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
-#include "src/slurmctld/proc_req.h"
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
-#include "src/common/bitstring.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
-#include <dlfcn.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include "bridge_linker.h"
 
 // #define DEBUG_PA
 #define BIG_MAX 9999
@@ -76,7 +42,6 @@
 #endif
 
 extern bool _initialized;
-extern bool have_db2;
 
 enum {X, Y, Z};
 
@@ -226,7 +191,6 @@ extern List bp_map_list;
 extern char letters[62];
 extern char colors[6];
 extern int DIM_SIZE[BA_SYSTEM_DIMENSIONS];
-extern pthread_mutex_t api_file_mutex;
 extern s_p_options_t bg_conf_file_options[];
 
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
@@ -258,7 +222,7 @@ extern int new_ba_request(ba_request_t* ba_request);
 /**
  * delete a block request 
  */
-extern void delete_ba_request(ba_request_t* ba_request);
+extern void delete_ba_request(void *arg);
 
 /**
  * print a block request 

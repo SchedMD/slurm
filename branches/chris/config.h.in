@@ -1,5 +1,11 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define the BG_BRIDGE_SO value */
+#undef BG_BRIDGE_SO
+
+/* Define the BG_DB2_SO value */
+#undef BG_DB2_SO
+
 /* Define the BG_SERIAL value */
 #undef BG_SERIAL
 
@@ -167,6 +173,9 @@
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
 
+/* Define to 1 if you have the `sysctlbyname' function. */
+#undef HAVE_SYSCTLBYNAME
+
 /* Define to 1 if you have the <sysint.h> header file. */
 #undef HAVE_SYSINT_H
 
@@ -190,6 +199,9 @@
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/sysctl.h> header file. */
+#undef HAVE_SYS_SYSCTL_H
 
 /* Define to 1 if you have the <sys/systemcfg.h> header file. */
 #undef HAVE_SYS_SYSTEMCFG_H

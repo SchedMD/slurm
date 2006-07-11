@@ -597,7 +597,7 @@ proc available_nodes { partition } {
     set available -1
     set fd [open "|$sinfo --noheader --partition pdebug --state idle,alloc,comp --format %D"]
     gets $fd line
-    close $fd
+    catch [close $fd]
     regexp {\d+} $line available
     return $available
 }
@@ -624,7 +624,7 @@ proc default_partition {} {
 	    break
 	}
     }
-    close $fd
+    catch [close $fd]
 
     if {[string length $name] == 0} {
 	send_user "ERROR: could not identify the default partition"

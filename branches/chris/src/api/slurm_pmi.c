@@ -29,8 +29,8 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -61,10 +61,10 @@ static int _get_addr(void)
 
 /* Transmit PMI Keyval space data */
 int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr, 
-		int pmi_rank)
+		int pmi_rank, int pmi_size)
 {
 	slurm_msg_t msg_send;
-	int rc, retries = 0;
+	int rc, retries = 0, timeout = 0;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -82,10 +82,17 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
 	 * the same time and refuse some connections, retry as 
-	 * needed. Spread out messages by task's rank.*/
-	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+	 * needed. Spread out messages by task's rank. Also 
+	 * increase the timeout if many tasks since the srun 
+	 * command is very overloaded. */
+	usleep(pmi_rank * 1000);
+	if (pmi_size > 1000)
+		timeout = slurm_get_msg_timeout() * 8;
+	else if (pmi_size > 10)
+		timeout = slurm_get_msg_timeout() * 4;
+	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
-			error("slurm_get_kvs_comm_set: %m");
+			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
 		usleep(pmi_rank * 1000);
@@ -98,7 +105,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 
 		int pmi_rank, int pmi_size)
 {
-	int rc, srun_fd, retries = 0;
+	int rc, srun_fd, retries = 0, timeout = 0;
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr slurm_addr, srun_reply_addr;
 	char hostname[64];
@@ -150,8 +157,15 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
 	 * the same time and refuse some connections, retry as 
-	 * needed. Spread out messages by task's rank. */
-	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+	 * needed. Spread out messages by task's rank. Also
+	 * increase the timeout if many tasks since the srun
+	 * command is very overloaded. */
+	usleep(pmi_rank * 1000);
+	if (pmi_size > 1000)
+		timeout = slurm_get_msg_timeout() * 8;
+	else if (pmi_size > 10)
+		timeout = slurm_get_msg_timeout() * 4;
+	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
 			return SLURM_ERROR;

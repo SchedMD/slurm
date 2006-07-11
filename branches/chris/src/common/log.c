@@ -125,7 +125,7 @@ typedef struct {
 
 /* static variables */
 #ifdef WITH_PTHREADS
-  static pthread_mutex_t  log_lock;
+  static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
 #else
   static int              log_lock;
 #endif /* WITH_PTHREADS */
@@ -148,9 +148,9 @@ extern char * program_invocation_name;
  * pthread_atfork handlers:
  */
 #ifdef WITH_PTHREADS
-static void _atfork_prep()   { if (log) slurm_mutex_lock(&log_lock);   }
-static void _atfork_parent() { if (log) slurm_mutex_unlock(&log_lock); }
-static void _atfork_child()  { if (log) slurm_mutex_init(&log_lock);   }
+static void _atfork_prep()   { slurm_mutex_lock(&log_lock);   }
+static void _atfork_parent() { slurm_mutex_unlock(&log_lock); }
+static void _atfork_child()  { slurm_mutex_unlock(&log_lock); }
 static bool at_forked = false;
 #  define atfork_install_handlers()                                           \
           while (!at_forked) {                                                \
@@ -160,6 +160,7 @@ static bool at_forked = false;
 #else 
 #  define atfork_install_handlers() (NULL)
 #endif
+static void _log_flush();
 
 /*
  * Initialize log with 
@@ -253,7 +254,6 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 {
 	int rc = 0;
 
-	slurm_mutex_init(&log_lock);
 	slurm_mutex_lock(&log_lock);
 	rc = _log_init(prog, opt, fac, logfile);
 	slurm_mutex_unlock(&log_lock);
@@ -265,8 +265,8 @@ void log_fini()
 	if (!log)
 		return;
 
-	log_flush();
 	slurm_mutex_lock(&log_lock);
+	_log_flush();
 	xfree(log->argv0);
 	xfree(log->fpfx);
 	if (log->buf)
@@ -278,7 +278,6 @@ void log_fini()
 	xfree(log);
 	log = NULL;
 	slurm_mutex_unlock(&log_lock);
-	slurm_mutex_destroy(&log_lock);
 }
 
 void log_reinit()
@@ -522,12 +521,11 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	char *msgbuf = NULL;
 	int priority = LOG_INFO;
 
+	slurm_mutex_lock(&log_lock);
 	if (!LOG_INITIALIZED) {
 		log_options_t opts = LOG_OPTS_STDERR_ONLY;
-		log_init(NULL, opts, 0, NULL);
+		_log_init(NULL, opts, 0, NULL);
 	}
-
-	slurm_mutex_lock(&log_lock);
 
 	if (level > log->opt.syslog_level  && 
 	    level > log->opt.logfile_level && 
@@ -639,20 +637,23 @@ log_has_data()
 	return rc;
 }
 
-void
-log_flush()
+static void
+_log_flush()
 {
-	slurm_mutex_lock(&log_lock);
-
 	if (!log->opt.buffered)
-		goto done;
+		return;
 
 	if (log->opt.stderr_level) 
 		cbuf_read_to_fd(log->buf, fileno(stderr), -1);
 	else if (log->logfp && (fileno(log->logfp) > 0))
 		cbuf_read_to_fd(log->fbuf, fileno(log->logfp), -1);
+}
 
-    done:
+void
+log_flush()
+{
+	slurm_mutex_lock(&log_lock);
+	_log_flush();
 	slurm_mutex_unlock(&log_lock);
 }
 
