@@ -504,24 +504,17 @@ _free_and_set(char **confvar, char *newval)
 		return 0;
 }
 
-/* Replace any "%h" in logfile name with actual hostname */
+/* Replace first "%h" in logfile name with actual hostname,
+ * replace first "%n" in logfile name with NodeName
+ */
 static void
 _massage_logfile(void)
 {
-	char *ptr, *new_fname;
-	int new_len;
-
-	if ((conf->logfile == NULL)
-	    ||  (ptr = strstr(conf->logfile, "%h")) == NULL)
+	if (conf->logfile == NULL)
 		return;
 
-	new_len = strlen(conf->logfile) + strlen(conf->hostname);
-	new_fname = xmalloc(new_len);
-	*ptr = '\0';
-	snprintf(new_fname, new_len, "%s%s%s", conf->logfile, conf->hostname, 
-		&ptr[2]);
-	xfree(conf->logfile);
-	conf->logfile = new_fname;
+	xstrsubstitute(conf->logfile, "%h", conf->hostname);
+	xstrsubstitute(conf->logfile, "%n", conf->node_name);
 }
 
 /*
@@ -547,7 +540,6 @@ _read_config()
 
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
-	_massage_logfile();	
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
@@ -557,6 +549,8 @@ _read_config()
 		conf->node_name = slurm_conf_get_nodename("localhost");
 	if (conf->node_name == NULL)
 		fatal("Unable to determine this slurmd's NodeName");
+
+	_massage_logfile();
 
 	conf->port = slurm_conf_get_port(conf->node_name);
 
