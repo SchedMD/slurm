@@ -634,8 +634,8 @@ static void _opt_default()
 
 	opt.progname = NULL;
 
-	opt.nprocs = 1;
-	opt.nprocs_set = false;
+	opt.num_tasks = 1;
+	opt.num_tasks_set = false;
 	opt.cpus_per_task = 1; 
 	opt.cpus_set = false;
 	opt.num_nodes = 1;
@@ -645,6 +645,7 @@ static void _opt_default()
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.time_limit = -1;
+	opt.relative = 0;
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
@@ -752,10 +753,10 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_GEOMETRY",     OPT_GEOMETRY,  NULL,               NULL           },
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLURM_NNODES",         OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
+  {"SLURM_NNODES",         OPT_INT,       &opt.num_nodes,     NULL           },
   {"SLAUNCH_NNODES",       OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
   {"SLAUNCH_NO_ROTATE",    OPT_NO_ROTATE, NULL,               NULL           },
-  {"SLAUNCH_NPROCS",       OPT_INT,       &opt.nprocs,        &opt.nprocs_set},
+  {"SLAUNCH_NPROCS",       OPT_INT,       &opt.num_tasks,  &opt.num_tasks_set},
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
   {"SLAUNCH_REMOTE_CWD",   OPT_STRING,    &opt.cwd,           NULL           },
   {"SLAUNCH_STDERRMODE",   OPT_STRING,    &opt.local_efname,  NULL           },
@@ -1091,11 +1092,11 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'n':
-			if(!first && opt.nprocs_set)
+			if(!first && opt.num_tasks_set)
 				break;
 						
-			opt.nprocs_set = true;
-			opt.nprocs = _get_int(optarg, "number of tasks");
+			opt.num_tasks_set = true;
+			opt.num_tasks = _get_int(optarg, "number of tasks");
 			break;
 		case (int)'N':
 			if(!first && opt.num_nodes_set)
@@ -1137,8 +1138,8 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.relative)
 				break;
 			
-			xfree(opt.relative);
-			opt.relative = xstrdup(optarg);
+			opt.relative_set = true;
+			opt.relative = _get_int(optarg, "relative start node");
 			break;
 		case (int)'R':
 			opt.no_rotate = true;
@@ -1513,9 +1514,9 @@ static bool _opt_verify(void)
 
 
 	/* check for realistic arguments */
-	if (opt.nprocs <= 0) {
-		error("%s: invalid number of processes (-n %d)",
-		      opt.progname, opt.nprocs);
+	if (opt.num_tasks <= 0) {
+		error("%s: invalid number of tasks (-n %d)",
+		      opt.progname, opt.num_tasks);
 		verified = false;
 	}
 
@@ -1534,25 +1535,18 @@ static bool _opt_verify(void)
 	core_format_enable (opt.core_type);
 
 	/* massage the numbers */
-	if (opt.num_nodes_set && !opt.nprocs_set) {
+	if (opt.num_nodes_set && !opt.num_tasks_set) {
 		/* 1 proc / node default */
-		opt.nprocs = opt.num_nodes;
-
-	} else if (opt.num_nodes_set && opt.nprocs_set) {
-
-		/* 
-		 *  make sure # of procs >= num_nodes 
-		 */
-		if (opt.nprocs < opt.num_nodes) {
-
-			info ("Warning: can't run %d processes on %d " 
+		opt.num_tasks = opt.num_nodes;
+	} else if (opt.num_nodes_set && opt.num_tasks_set) {
+		if (opt.num_tasks < opt.num_nodes) {
+			info ("Warning: can't run %d tasks on %d " 
 			      "nodes, setting nnodes to %d", 
-			      opt.nprocs, opt.num_nodes, opt.nprocs);
-
-			opt.num_nodes = opt.nprocs;
+			      opt.num_tasks, opt.num_nodes, opt.num_tasks);
+			opt.num_nodes = opt.num_tasks;
 		}
 
-	} /* else if (opt.nprocs_set && !opt.num_nodes_set) */
+	} /* else if (opt.num_tasks_set && !opt.num_nodes_set) */
 
 	if (opt.labelio && opt.unbuffered) {
 		error("Do not specify both -l (--label) and " 
@@ -1777,8 +1771,8 @@ static void _opt_list()
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
-	info("nprocs         : %d %s", opt.nprocs,
-		opt.nprocs_set ? "(set)" : "(default)");
+	info("num_tasks      : %d %s", opt.num_tasks,
+		opt.num_tasks_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,
 		opt.cpus_set ? "(set)" : "(default)");
 	info("nodes          : %d %s",

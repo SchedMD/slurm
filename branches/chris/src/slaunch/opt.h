@@ -67,8 +67,8 @@ typedef struct slaunch_options {
 	gid_t egid;		/* effective group --gid=group	*/
 	char *cwd;		/* current working directory	*/
 
-	int  nprocs;		/* --nprocs=n,      -n n	*/
-	bool nprocs_set;	/* true if nprocs explicitly set */
+	int  num_tasks;		/* --ntasks=n,      -n n	*/
+	bool num_tasks_set;	/* true if ntasks explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int  num_nodes;		/* --nodes=n,       -N n	*/ 
@@ -119,7 +119,8 @@ typedef struct slaunch_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	char *relative;		/* --relative -r N              */
+	int relative;		/* --relative -r N              */
+	bool relative_set;      /* true if --relative set explicitly */
 	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */

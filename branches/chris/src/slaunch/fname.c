@@ -79,7 +79,7 @@ fname_create(char *format, int jobid, int stepid)
 	}
 
 	taskid = strtoul(format, &p, 10);
-	if ((*p == '\0') && ((int) taskid < opt.nprocs)) {
+	if ((*p == '\0') && ((int) taskid < opt.num_tasks)) {
 		fname->type   = IO_ONE;
 		fname->taskid = (uint32_t) taskid;
 		/* Set the name string to pass to slurmd

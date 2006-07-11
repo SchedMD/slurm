@@ -149,12 +149,14 @@ int slaunch(int argc, char **argv)
 	xstrfmtcat(totalview_jobid, "%u", step_req.job_id);
 	step_req.user_id = getuid();
 	step_req.node_count = opt.num_nodes;
-	step_req.cpu_count = 1;
-	if (opt.nprocs_set)
-		step_req.num_tasks = opt.nprocs;
+	if (opt.num_tasks_set)
+		step_req.num_tasks = opt.num_tasks;
 	else
-		step_req.num_tasks = step_req.node_count;
-	step_req.relative = 0;
+		step_req.num_tasks = opt.num_nodes;
+/* 	step_req.cpu_count = opt.cpus_per_task; */
+	step_req.cpu_count = 0;
+	step_req.relative = opt.relative;
+	info("step_req.relative = %d", step_req.relative);
 	step_req.task_dist = SLURM_DIST_CYCLIC;
 	step_req.port = 0;      /* historical, used by srun */
 	step_req.host = NULL;   /* historical, used by srun */
