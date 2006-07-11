@@ -612,7 +612,7 @@ proc available_nodes { partition } {
 	log_user 1
 
 	if {$available == -1} {
-		send_user "ERROR: could not locate partition $partition\n"
+		send_user "ERROR: could not locate partition \"$partition\"\n"
 	}
 	return $available
 }
