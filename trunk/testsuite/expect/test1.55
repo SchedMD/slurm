@@ -57,6 +57,8 @@ make_bash_script $test_script {
 set srun_pid [spawn $srun -u -v -n1 $test_script]
 
 set timeout $max_job_delay
+set jobid  0
+set stepid 0
 expect {
     -re "launching (($number)\.0)" {
 	set stepid $expect_out(1,string)
@@ -69,6 +71,10 @@ expect {
 	catch {exec $scancel $jobid}
 	exit 1
     }
+}
+if {$jobid == 0} {
+	send_user "\nFAILURE: Failed to launch test program through srun\n"
+	exit 1
 }
 
 #
@@ -89,7 +95,7 @@ while {[string compare $running ""]} {
     sleep 1
     if {$i == 30} {
 	send_user "\nFAILURE: job step is not completing\n"
-	exec $scancel $jobid
+	exec $scancel -q $jobid
 	sleep 5
 	exec kill -9 $srun_pid
 	exit 1
