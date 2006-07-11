@@ -504,17 +504,20 @@ _free_and_set(char **confvar, char *newval)
 		return 0;
 }
 
-/* Replace first "%h" in logfile name with actual hostname,
- * replace first "%n" in logfile name with NodeName
+/* Replace first "%h" in path string with actual hostname.
+ * Replace first "%n" in path string with NodeName.
+ *
+ * Make sure to call _massage_pathname AFTER conf->node_name has been
+ * fully initialized.
  */
 static void
-_massage_logfile(void)
+_massage_pathname(char **path)
 {
 	if (conf->logfile == NULL)
 		return;
 
-	xstrsubstitute(conf->logfile, "%h", conf->hostname);
-	xstrsubstitute(conf->logfile, "%n", conf->node_name);
+	xstrsubstitute(*path, "%h", conf->hostname);
+	xstrsubstitute(*path, "%n", conf->node_name);
 }
 
 /*
@@ -550,7 +553,7 @@ _read_config()
 	if (conf->node_name == NULL)
 		fatal("Unable to determine this slurmd's NodeName");
 
-	_massage_logfile();
+	_massage_pathname(&conf->logfile);
 
 	conf->port = slurm_conf_get_port(conf->node_name);
 
@@ -559,15 +562,9 @@ _read_config()
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(cf->slurmd_spooldir));
-#ifdef MULTIPLE_SLURMD
-	/* append the NodeName to the spooldir to make it unique */
-	xstrfmtcat(conf->spooldir, ".%s", conf->node_name);
-#endif
+	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
-#ifdef MULTIPLE_SLURMD
-	/* append the NodeName to the pidfile name to make it unique */
-	xstrfmtcat(conf->pidfile, ".%s", conf->node_name);
-#endif
+	_massage_pathname(&conf->pidfile);
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
