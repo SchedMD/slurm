@@ -624,7 +624,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 				     SELECT_DATA_NODE_CNT, 
 				     &node_cnt);
 #endif
-		if(node_cnt == 0)
+		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
 		convert_to_kilo(node_cnt, tmp_char);
 		_print_str(tmp_char, width, right_justify, true);
