@@ -1709,15 +1709,24 @@ extern int read_bg_conf(void)
 		bluegene_bp_node_cnt = 512;
 		bluegene_quarter_node_cnt = 128;
 	} else {
+		if(bluegene_bp_node_cnt<=0)
+			fatal("You should have more than 0 nodes "
+			      "per base partition");
+
 		bluegene_quarter_node_cnt = bluegene_bp_node_cnt/4;
 	}
+	
+
 	if (!s_p_get_uint16(
 		    &bluegene_nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
 		error("NodeCardNodeCnt not configured in bluegene.conf "
 		      "defaulting to 32 as NodeCardNodeCnt");
 		bluegene_nodecard_node_cnt = 32;
 	}
-	    
+	
+	if(bluegene_nodecard_node_cnt<=0)
+		fatal("You should have more than 0 nodes per nodecard");
+
 	_set_bg_lists();	
 	/* add blocks defined in file */
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
