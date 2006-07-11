@@ -592,14 +592,29 @@ proc dec2hex16 {value} {
 ################################################################
 
 proc available_nodes { partition } {
-    global sinfo
+	global sinfo number
 
-    set available -1
-    set fd [open "|$sinfo --noheader --partition pdebug --state idle,alloc,comp --format %D"]
-    gets $fd line
-    close $fd
-    regexp {\d+} $line available
-    return $available
+	set available -1
+	log_user 0
+	spawn $sinfo --noheader --partition $partition --state idle,alloc,comp --format %D
+	expect {
+		-re ($number) {
+			set available $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sinfo not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$available == -1} {
+		send_user "ERROR: could not locate partition $partition\n"
+	}
+	return $available
 }
 
 
@@ -614,23 +629,30 @@ proc available_nodes { partition } {
 ################################################################
 
 proc default_partition {} {
-    global scontrol
+	global scontrol alpha_numeric
 
-    set name ""
-    set fd [open "|$scontrol --all --oneliner show partition"]
-    while {[gets $fd line] != -1} {
-	if {[regexp {^PartitionName=(\w+).*Default=YES} $line name]
-	    == 1} {
-	    break
+	set name ""
+	log_user 0
+	spawn $scontrol --all --oneliner show partition
+	expect {
+		-re "PartitionName=($alpha_numeric) (\[a-zA-Z0-9\\-=, \]*)Default=YES" {
+			set name $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+		}
+		eof {
+			wait
+		}
 	}
-    }
-    close $fd
+	log_user 1
 
-    if {[string length $name] == 0} {
-	send_user "ERROR: could not identify the default partition"
-    }
-
-    return $name
+	if {[string length $name] == 0} {
+		send_user "ERROR: could not identify the default partition\n"
+	}
+	
+	return $name
 }
 
 
