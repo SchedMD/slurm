@@ -595,7 +595,7 @@ proc available_nodes { partition } {
     global sinfo
 
     set available -1
-    set fd [open "|$sinfo --noheader --partition pdebug --state idle,alloc,comp --format %D"]
+    set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
     gets $fd line
     catch [close $fd]
     regexp {\d+} $line available

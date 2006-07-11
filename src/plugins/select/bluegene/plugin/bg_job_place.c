@@ -623,7 +623,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-			if(job_ptr->num_procs < bluegene_bp_node_cnt) {
+			if(job_ptr->num_procs < bluegene_bp_node_cnt 
+				&& job_ptr->num_procs > 0) {
 				i = procs_per_node/job_ptr->num_procs;
 				debug2("divide by %d", i);
 			} else 
