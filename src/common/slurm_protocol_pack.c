@@ -3108,6 +3108,7 @@ _pack_ret_list(List ret_list,
 		itr_data = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(itr_data)) != NULL) {
 			packstr(ret_data_info->node_name, buffer);
+			slurm_pack_slurm_addr(&ret_data_info->addr, buffer);
 			pack32((uint32_t)ret_data_info->nodeid, buffer);
 			msg.data = ret_data_info->data;
 			pack_msg(&msg, buffer);
@@ -3143,6 +3144,8 @@ _unpack_ret_list(List *ret_list,
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
 			safe_unpackstr_xmalloc(&ret_data_info->node_name, 
 					       &uint16_tmp, buffer);
+			slurm_unpack_slurm_addr_no_alloc(&ret_data_info->addr,
+							 buffer);
 			safe_unpack32((uint32_t *)&ret_data_info->nodeid, 
 				      buffer);
 			if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)

@@ -1412,7 +1412,7 @@ static int _parse_single_range(const char *str, struct _range *range)
 	free(orig);
 	range->width = strlen(str);
 	return 1;
-
+	
   error:
     errno = EINVAL;
 	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
@@ -1926,7 +1926,7 @@ int hostlist_find(hostlist_t hl, const char *hostname)
 	int i, count, ret = -1;
 	hostname_t hn;
 
-	if (!hostname)
+	if (!hostname || !hl)
 		return -1;
 
 	hn = hostname_create(hostname);
