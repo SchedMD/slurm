@@ -769,6 +769,7 @@ void destroy_forward(forward_t *forward)
 		xfree(forward->name);
 		xfree(forward->node_id);
 		forward->cnt = 0;
+		forward->init = 0;
 	}
 }
 

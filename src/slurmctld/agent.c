@@ -161,6 +161,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		int no_resp_cnt, int retry_cnt);
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
+static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr, 
+			  int count, int *spot);
 static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
 static void *_thread_per_group_rpc(void *args);
@@ -484,6 +486,7 @@ static void *_wdog(void *args)
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
+			//info("thread name %s",thread_ptr[i].node_name);
 			if(!thread_ptr[i].ret_list) {
 				_update_wdog_state(&thread_ptr[i],
 						   &thread_ptr[i].state,
@@ -517,8 +520,7 @@ static void *_wdog(void *args)
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		if (thread_ptr[i].ret_list)
 			list_destroy(thread_ptr[i].ret_list);
-		destroy_forward(&thread_ptr[i].forward);
-	
+		destroy_forward(&thread_ptr[i].forward);	
 	}
 	
 	if (thd_comp.max_delay)
@@ -819,7 +821,7 @@ static void *_thread_per_group_rpc(void *args)
 	msg.srun_node_id = 0;
 	msg.forward_struct_init = 0;
 
-	//info("forwarding to %d",msg.forward.cnt);
+	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 	send_rc_again:
@@ -841,6 +843,8 @@ static void *_thread_per_group_rpc(void *args)
 				msg.address = fwd_msg.addr;
 				forward_init(&msg.forward, 
 					     &fwd_msg.header.forward);
+				forward_init(&thread_ptr->forward, 
+					     &fwd_msg.header.forward);
 				//destroy_forward(&fwd_msg.header.forward);
 				msg.srun_node_id = fwd_msg.header.srun_node_id;
 				strncpy(thread_ptr->node_name,
@@ -856,7 +860,8 @@ static void *_thread_per_group_rpc(void *args)
 				tmp_ret_list = list_create(destroy_ret_types);
 			
 			fwd_msg.header.srun_node_id = msg.srun_node_id;
-			fwd_msg.header.forward = msg.forward;
+			forward_init(&fwd_msg.header.forward, &msg.forward);
+			//fwd_msg.header.forward = msg.forward;
 			fwd_msg.ret_list = tmp_ret_list;
 			strncpy(fwd_msg.node_name,
 				thread_ptr->node_name,
@@ -864,7 +869,10 @@ static void *_thread_per_group_rpc(void *args)
 			fwd_msg.forward_mutex = NULL;
 			if(forward_msg_to_next(&fwd_msg, errno)) {
 				msg.address = fwd_msg.addr;
-				msg.forward = fwd_msg.header.forward;
+				forward_init(&msg.forward, 
+					     &fwd_msg.header.forward);
+				forward_init(&thread_ptr->forward, 
+					     &fwd_msg.header.forward);
 				msg.srun_node_id = fwd_msg.header.srun_node_id;
 				strncpy(thread_ptr->node_name,
 					fwd_msg.node_name,
@@ -898,13 +906,14 @@ static void *_thread_per_group_rpc(void *args)
 			rc = ret_type->msg_rc;
 			if(!found 
 			   && !strcmp(ret_data_info->node_name,"localhost")) {
-			  //info("got localhost");
 				xfree(ret_data_info->node_name);
 				ret_data_info->node_name = 
 					xstrdup(thread_ptr->node_name);
+				/* info("got localhost changing to %s", */
+/* 				     ret_data_info->node_name); */
 				found = 1;
 			}
-/* 			info("response for %s rc = %d", */
+			/* info("response for %s rc = %d", */
 /* 			     ret_data_info->node_name, */
 /* 			     ret_type->msg_rc); */
 			if(rc == SLURM_ERROR) {
@@ -1050,6 +1059,84 @@ static void _alarm_handler(int dummy)
 	xsignal(SIGALRM, _alarm_handler);
 }
 
+static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr, 
+			  int count, int *spot)
+{
+	ListIterator itr;
+	ListIterator data_itr;
+	char name[MAX_SLURM_NAME];
+	ret_data_info_t *ret_data_info = NULL;
+	ret_types_t *ret_type = NULL;
+	int i;
+
+	itr = list_iterator_create(thread_ptr->ret_list);
+	while((ret_type = list_next(itr)) != NULL) {
+		if (ret_type->msg_rc != DSH_NO_RESP)
+			continue;
+
+		data_itr = list_iterator_create(ret_type->ret_data_list);
+		while((ret_data_info = list_next(data_itr)) != NULL) {
+			debug("looking for %s",  ret_data_info->node_name);
+			/* see if this was the main thread */
+			if(!strcmp(thread_ptr->node_name, 
+				   ret_data_info->node_name)) {
+				debug("got the name %s to resend", 
+				      thread_ptr->node_name);
+				if(agent_arg_ptr) {
+					agent_arg_ptr->slurm_addr[*spot] = 
+						thread_ptr->slurm_addr;
+					strncpy(&agent_arg_ptr->node_names
+						[(*spot) * MAX_SLURM_NAME],
+						thread_ptr->node_name, 
+						MAX_SLURM_NAME);
+					if ((++(*spot)) == count)
+						return 1;
+				}
+				continue;
+			}
+			
+			/* see if this was one of the forwards of the thread */
+			for(i=0; i < thread_ptr->forward.cnt; i++) {
+				strncpy(name,
+					&thread_ptr->forward.
+					name[i * MAX_SLURM_NAME],
+					MAX_SLURM_NAME);
+				if(!strcmp(name, ret_data_info->node_name)) {
+					break;
+				}
+			}
+			
+			if(i >= thread_ptr->forward.cnt) {
+				error("This should never happen... "
+				      "Couldn't find problem "
+				      "node %s on requeue.  "
+				      "Problems may happen.",
+				      ret_data_info->node_name);
+				continue;				
+			}
+			debug("1 got the name %s to resend", 
+			      ret_data_info->node_name);
+				
+			if(agent_arg_ptr) {
+				memcpy(&agent_arg_ptr->slurm_addr[*spot], 
+				       &thread_ptr->forward.addr[i], 
+				       sizeof(slurm_addr));
+			
+				strncpy(&agent_arg_ptr->
+					node_names[(*spot) * MAX_SLURM_NAME],
+					ret_data_info->node_name, 
+					MAX_SLURM_NAME);
+				
+				if ((++(*spot)) == count)
+					return 1;
+			}
+		}
+		list_iterator_destroy(data_itr);
+	}
+	list_iterator_destroy(itr);
+	return 0;
+}
+
 /*
  * _queue_agent_retry - Queue any failed RPCs for later replay
  * IN agent_info_ptr - pointer to info on completed agent requests
@@ -1060,12 +1147,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	agent_arg_t *agent_arg_ptr;
 	queued_request_t *queued_req_ptr = NULL;
 	thd_t *thread_ptr = agent_info_ptr->thread_struct;
-	int i, j, x;
-	ListIterator itr;
-	ListIterator data_itr;
-	ret_types_t *ret_type = NULL;
-	char name[MAX_SLURM_NAME];
-	ret_data_info_t *ret_data_info = NULL;
+	int i, j;
 	
 	if (count == 0)
 		return;
@@ -1093,47 +1175,9 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			if ((++j) == count)
 				break;
 		} else {
-			itr = list_iterator_create(thread_ptr[i].ret_list);
-			while((ret_type = list_next(itr)) != NULL) {
-				if (ret_type->msg_rc != DSH_NO_RESP)
-					continue;
-
-				data_itr = list_iterator_create(
-					ret_type->ret_data_list);
-				while((ret_data_info = list_next(data_itr)) 
-				      != NULL) {
-					for(x=0; 
-					    x < thread_ptr[i].forward.cnt;
-					    x++) {
-						strncpy(name,
-							&thread_ptr[i].forward.
-							name[x*MAX_SLURM_NAME],
-							MAX_SLURM_NAME);
-						if(!strcmp(name, 
-							   ret_data_info->
-							   node_name)) {
-							break;
-						}
-					}
-					if(x >= thread_ptr[i].forward.cnt) {
-						error("couldn't find problem "
-						      "node on requeue.  "
-						      "Problems may happen.");
-						continue;
-					}
-					
-					agent_arg_ptr->slurm_addr[j] = 
-						thread_ptr[i].forward.addr[x];
-					strncpy(&agent_arg_ptr->
-						node_names[j * MAX_SLURM_NAME],
-						ret_data_info->node_name, 
-						MAX_SLURM_NAME);
-					if ((++j) == count)
-						break;
-				}
-				list_iterator_destroy(data_itr);
-			}
-			list_iterator_destroy(itr);
+			if(_setup_requeue(agent_arg_ptr, &thread_ptr[i], 
+					  count, &j))
+				break;
 		}
 	}
 	if (count != j) {
