@@ -74,7 +74,9 @@ allocate_test(void)
 {
 	int rc;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts (NULL);
-
+	if(!j)
+		return SLURM_ERROR;
+	
 	rc = slurm_job_will_run(j);
 	job_desc_msg_destroy(j);
 	return rc;
@@ -89,7 +91,9 @@ allocate_nodes(void)
 	sigset_t oset;
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts (NULL);
-
+	if(!j)
+		return NULL;
+	
 	oquitf = xsignal(SIGQUIT, _intr_handler);
 	ointf  = xsignal(SIGINT,  _intr_handler);
 	otermf = xsignal(SIGTERM, _intr_handler);
@@ -424,6 +428,12 @@ job_desc_msg_create_from_opts (char *script)
 			}
 		}
 	}
+	if(opt.distribution == SLURM_DIST_ARBITRARY
+	   && !j->req_nodes) {
+		error("With Arbitrary distribution you need to "
+		      "specify a nodelist or hostfile with the -w option");
+		return NULL;
+	}
 	j->exc_nodes      = opt.exc_nodes;
 	j->partition      = opt.partition;
 	j->min_nodes      = opt.min_nodes;
@@ -541,25 +551,25 @@ _step_req_create(srun_job_t *j)
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = false;      /* XXX fix this oneday */
 	
-	/* CJM - why are "UNKNOWN" and "default" behaviours different? */
-	/*       why do we even HAVE the SLURM_DIST_UNKNOWN state?? */
 	switch (opt.distribution) {
-	case SLURM_DIST_UNKNOWN:
-		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
-			                                 : SLURM_DIST_BLOCK;
-		break;
 	case SLURM_DIST_CYCLIC:
 		r->task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_BLOCK:
+		r->task_dist = SLURM_DIST_BLOCK;
 		break;
 	case SLURM_DIST_ARBITRARY:
 		r->task_dist = SLURM_DIST_ARBITRARY;
 		break;
-	case SLURM_DIST_BLOCK:
+	case SLURM_DIST_UNKNOWN:
 	default:
-		r->task_dist = SLURM_DIST_BLOCK;
+		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
+			                                 : SLURM_DIST_BLOCK;
 		break;
 	}
-
+	/* make sure we set the env correctly */
+	opt.distribution = r->task_dist;
+	
 	if (slurmctld_comm_addr.port) {
 		r->host = xstrdup(slurmctld_comm_addr.hostname);
 		r->port = slurmctld_comm_addr.port;
@@ -591,11 +601,11 @@ create_job_step(srun_job_t *job,
 	job->step_layout = step_layout_create(alloc_resp, resp, req);
 	if(!job->step_layout) {
 		error("step_layout not created correctly");
-		return 1;
+		return -1;
 	}
 	if(task_layout(job->step_layout) != SLURM_SUCCESS) {
 		error("problem with task layout");
-		return 1;
+		return -1;
 	}
 	
 	/*
