@@ -212,10 +212,13 @@ extern slurm_step_layout_t *step_layout_create(
 		step_layout->cpu_count_reps = NULL;
 	}
 
-	if(step_resp) 
+	if(step_resp) {
 		step_layout->step_nodes = 
 			(char *)xstrdup(step_resp->node_list);
-	else {
+		if (step_layout->hl)
+			hostlist_destroy(step_layout->hl);
+		step_layout->hl = hostlist_create(step_resp->node_list);
+	} else {
 		debug("no step_resp given for step_layout_create");
 		step_layout->step_nodes = NULL;
 	}

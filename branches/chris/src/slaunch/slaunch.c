@@ -156,7 +156,6 @@ int slaunch(int argc, char **argv)
 /* 	step_req.cpu_count = opt.cpus_per_task; */
 	step_req.cpu_count = 0;
 	step_req.relative = opt.relative;
-	info("step_req.relative = %d", step_req.relative);
 	step_req.task_dist = SLURM_DIST_CYCLIC;
 	step_req.port = 0;      /* historical, used by srun */
 	step_req.host = NULL;   /* historical, used by srun */
