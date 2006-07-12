@@ -253,14 +253,14 @@ typedef struct slurm_msg {
 typedef struct ret_data_info {
 	char *node_name;
 	uint32_t nodeid;
-	void *data;
+	void *data; /* what is this? - CJM */
 } ret_data_info_t;
 
 typedef struct ret_types {
 	uint32_t msg_rc;
 	uint32_t err;
 	uint32_t type;
-	List ret_data_list;
+	List ret_data_list; /* list of ret_data_info_t pointers */
 } ret_types_t;
 
 /*****************************************************************************\
