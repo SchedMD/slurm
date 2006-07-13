@@ -147,6 +147,16 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 'n':
 			params.nodes= xstrdup(optarg);
+			/*
+			 * confirm valid nodelist entry
+			 */
+			host_list = hostlist_create(params.nodes);
+			if (!host_list) {
+				error("'%s' invalid entry for --nodes",
+				      optarg);
+				exit(1);
+			}
+			hostlist_destroy(host_list);
 			break;
 		case (int) 'N':
 			params.node_flag = true;
