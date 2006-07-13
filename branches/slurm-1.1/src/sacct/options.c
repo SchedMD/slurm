@@ -1581,23 +1581,23 @@ void do_fdump(char* f[], int lc)
 			   "nvcsw",	 /* F_VCSW */
 			   "nivcsw",	 /* F_NIVCSW */
 			   "max_vsize",	 /* F_MAX_VSIZE */
-			   "max_vsize_node",	 /* F_MAX_VSIZE_NODE */
 			   "max_vsize_task",	 /* F_MAX_VSIZE_TASK */
 			   "ave_vsize",	 /* F_AVE_VSIZE */
 			   "max_rss",	 /* F_MAX_RSS */
-			   "max_rss_node",	 /* F_MAX_RSS_NODE */
 			   "max_rss_task",	 /* F_MAX_RSS_TASK */
 			   "ave_rss",	 /* F_AVE_RSS */
 			   "max_pages",	 /* F_MAX_PAGES */
-			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
 			   "max_pages_task",	 /* F_MAX_PAGES_TASK */
 			   "ave_pages",	 /* F_AVE_PAGES */
 			   "min_cputime",	 /* F_MIN_CPU */
-			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
 			   "min_cputime_task",	 /* F_MIN_CPU_TASK */
 			   "ave_cputime",	 /* F_AVE_RSS */
 			   "StepName",	 /* F_STEPNAME */
 			   "StepNodes",	 /* F_STEPNODES */
+			   "max_vsize_node",	 /* F_MAX_VSIZE_NODE */
+			   "max_rss_node",	 /* F_MAX_RSS_NODE */
+			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
+			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
 			   NULL};
        
 	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
