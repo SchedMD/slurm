@@ -47,7 +47,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 #include "src/common/mpi.h"
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
@@ -188,7 +188,7 @@ launch(void *arg)
 	msg_array_ptr[0].data            = &r;
 	buffer = slurm_pack_msg_no_header(&msg_array_ptr[0]);
 	
-	hostlist = hostlist_create(job->nodelist); 		
+	hostlist = hostlist_create(job->nodelist);
 	itr = hostlist_iterator_create(hostlist);
 	job->thr_count = 0;
 	for (i = 0; i < job->step_layout->num_hosts; i++) {

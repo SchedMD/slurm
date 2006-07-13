@@ -74,6 +74,7 @@ BEGIN_C_DECLS
 #endif
 #include <stdio.h>		/* for FILE definitions */
 #include <time.h>		/* for time_t definitions */
+#include <stdbool.h>
 
 /* Define slurm_addr below to avoid including extraneous slurm headers */
 #ifdef	HAVE_SYS_SOCKET_H
@@ -251,8 +252,7 @@ enum jobacct_data_type {
 enum task_dist_states {
 	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
 	SLURM_DIST_BLOCK,	/* distribute tasks filling node by node */
-	SLURM_DIST_ARBITRARY,	/* arbitrary task distribution  */
-	SLURM_DIST_UNKNOWN	/* unknown dist */
+	SLURM_DIST_ARBITRARY	/* arbitrary task distribution  */
 };
 
 typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
@@ -378,8 +378,18 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t alloc_sid;	/* local sid making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or 
 				 * slurm_allocate* function */
-	uint16_t port;		/* port to contact initiating srun */
-	char *host;		/* host to contact initiating srun */
+
+	/* If the requested allocation is not immediately available,
+	 * The controller sends the RESPONSE_RESOURCE_ALLOCATION message to
+	 * the address designated by the alloc_hostname and alloc_port.
+	 * All other messages (SRUN_PING, SRUN_TIMEOUT, etc.) are sent to
+	 * the address designated by other_hostname/other_port.
+	 */
+	char    *alloc_resp_hostname;
+	uint16_t alloc_resp_port;
+	char    *other_hostname;
+	uint16_t other_port;
+
 	uint32_t dependency;	/* defer until specified job completes */
 	uint16_t overcommit;	/* over subscribe resources, for batch only */
 	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
@@ -488,6 +498,53 @@ typedef struct job_step_create_response_msg {
 	slurm_cred_t cred;      /* slurm job credential */
 	switch_jobinfo_t switch_job;	/* switch context, opaque data structure */
 } job_step_create_response_msg_t;
+
+typedef struct slurm_step_io_fds {
+	struct {
+		int fd;
+		uint32_t taskid;
+		uint32_t nodeid;
+	} in, out, err;
+} slurm_step_io_fds_t;
+
+#define SLURM_STEP_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},\
+                                   {1, (uint32_t)-1, (uint32_t)-1},\
+                                   {2, (uint32_t)-1, (uint32_t)-1}}
+
+typedef struct launch_tasks_response_msg {
+	uint32_t return_code;
+	char    *node_name;
+	uint32_t srun_node_id;
+	uint32_t count_of_pids;
+	uint32_t *local_pids;
+	uint32_t *task_ids; /* array of lenght count_of_pids */
+} launch_tasks_response_msg_t;
+
+typedef struct task_ext_msg {
+	uint32_t num_tasks;
+	uint32_t *task_id_list;
+	uint32_t return_code;
+} task_exit_msg_t;
+
+typedef struct {
+	uint16_t argc;
+	char **argv;
+	uint16_t envc;
+	char **env;
+	char *cwd;
+	bool buffered_stdio;
+	bool labelio;
+	char *remote_output_filename;
+	char *remote_error_filename;
+	char *remote_input_filename;
+	slurm_step_io_fds_t local_fds;
+	uint32_t gid;
+	bool multi_prog;
+	uint32_t slurmd_debug;  /* remote slurmd debug level */
+	bool parallel_debug;
+	void (*task_start_callback)(launch_tasks_response_msg_t *);
+	void (*task_finish_callback)(task_exit_msg_t *);
+} slurm_job_step_launch_t;
 
 typedef struct {
 	uint32_t job_id;	/* job ID */
@@ -664,9 +721,10 @@ typedef struct slurm_update_node_msg {
 
 typedef struct partition_info update_part_msg_t;
 
-/* Opaque data type for slurm_step_ctx_*, slurm_spawn, and
+/* Opaque data type for slurm_step_ctx_*, slurm_step_launch, slurm_spawn, and
  * slurm_spawn_kill functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
+
 
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
@@ -681,14 +739,35 @@ extern void slurm_init_job_desc_msg PARAMS((job_desc_msg_t * job_desc_msg));
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
+ *   If the requested resources are not immediately available, the slurmctld
+ *   will send the job_alloc_resp_msg to the sepecified node and port.
  * IN job_desc_msg - description of resource allocation request
- * OUT slurm_alloc_msg - response to request
+ * OUT job_alloc_resp_msg - response to request.  This only represents
+ *   a job allocation if resources are immediately.  Otherwise it just contains
+ *   the job id of the enqueued job request.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_allocate_resources PARAMS((
 	job_desc_msg_t * job_desc_msg , 
 	resource_allocation_response_msg_t ** job_alloc_resp_msg));
+
+/*
+ * slurm_allocate_resources_blocking
+ *	allocate resources for a job request.  This call will block until
+ *	the allocation is granted, or the specified timeout limit is reached.
+ * IN req - description of resource allocation request
+ * IN timeout - amount of time to wait for a response before giving up.
+ *	A timeout of zero will wait indefinitely.
+ * 
+ * RET allocation structure on success, NULL on error set errno to
+ *	indicate the error
+ * NOTE: free the allocation structure using
+ *	slurm_free_resource_allocation_response_msg
+ */
+extern resource_allocation_response_msg_t *
+	slurm_allocate_resources_blocking PARAMS((
+	const job_desc_msg_t *user_req, time_t timeout));
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
@@ -936,6 +1015,34 @@ extern int slurm_spawn PARAMS((slurm_step_ctx ctx,
  */
 extern int slurm_spawn_kill PARAMS((slurm_step_ctx ctx, 
 				       uint16_t signal));
+
+
+/* 
+ * slurm_job_step_launch_t_init - initialize a user-allocated
+ *      slurm_job_step_launch_t structure with default values.
+ *	default values.  This function will NOT allocate any new memory.
+ * IN ptr - pointer to a structure allocated by the use.  The structure will
+ *      be intialized.
+ */
+extern void slurm_job_step_launch_t_init PARAMS((slurm_job_step_launch_t *ptr));
+
+/*
+ * slurm_step_launch - launch a parallel job step
+ * IN ctx - job step context generated by slurm_step_ctx_create
+ * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
+ */
+extern int slurm_step_launch PARAMS((slurm_step_ctx ctx,
+	const slurm_job_step_launch_t *params));
+
+/*
+ * Block until all tasks have started.
+ */
+extern int slurm_step_launch_wait_start PARAMS((slurm_step_ctx ctx));
+
+/*
+ * Block until all tasks have finished (or failed to start altogether).
+ */
+extern void slurm_step_launch_wait_finish PARAMS((slurm_step_ctx ctx));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -1386,6 +1493,10 @@ extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
 extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 		uint32_t *error_code, char **error_msg);
 
+
+/*****************************************************************************\
+ *      SLURM JOB STEP CLIENT-SIDE I/O FUNCTIONS
+\*****************************************************************************/
 END_C_DECLS
 
 #endif

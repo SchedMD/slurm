@@ -254,14 +254,14 @@ typedef struct ret_data_info {
 	char *node_name;
 	slurm_addr addr;       
 	uint32_t nodeid;
-	void *data;
+	void *data; /* what is this? - CJM */
 } ret_data_info_t;
 
 typedef struct ret_types {
 	uint32_t msg_rc;
 	uint32_t err;
 	uint32_t type;
-	List ret_data_list;
+	List ret_data_list; /* list of ret_data_info_t pointers */
 } ret_types_t;
 
 /*****************************************************************************\
@@ -400,14 +400,6 @@ typedef struct launch_tasks_request_msg {
 	job_options_t options;  /* Arbitrary job options */
 } launch_tasks_request_msg_t;
 
-typedef struct launch_tasks_response_msg {
-	uint32_t return_code;
-	char    *node_name;
-	uint32_t srun_node_id;
-	uint32_t count_of_pids;
-	uint32_t *local_pids;
-} launch_tasks_response_msg_t;
-
 typedef struct spawn_task_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
@@ -433,12 +425,6 @@ typedef struct spawn_task_request_msg {
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 
 } spawn_task_request_msg_t;
-
-typedef struct task_ext_msg {
-	uint32_t num_tasks;
-	uint32_t *task_id_list;
-	uint32_t return_code;
-} task_exit_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
 

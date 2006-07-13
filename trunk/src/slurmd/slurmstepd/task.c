@@ -272,8 +272,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
 
-	/* need to take this out in 1.2 */
-	job->envtp->distribution = SLURM_DIST_UNKNOWN;
+	job->envtp->distribution = -1;
 	setup_env(job->envtp);
 	
 	job->env = job->envtp->env;
@@ -340,6 +339,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	 * error() and clean up if execve() returns:
 	 */
 	error("execve(): %s: %m", job->argv[0]); 
+	printf("execve failed, %d %s\n", job->argc, job->argv[0]);
 	exit(errno);
 }
 

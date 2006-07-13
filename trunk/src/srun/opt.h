@@ -39,6 +39,7 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/srun/core-format.h"
 #include "src/common/env.h"
+#include "src/srun/fname.h"
 //#include "src/common/mpi.h"
 
 #define MAX_THREADS	64

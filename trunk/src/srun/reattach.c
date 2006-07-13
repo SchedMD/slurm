@@ -52,6 +52,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/msg.h"
 #include "src/srun/srun.h"
+#include "src/srun/signals.h"
 
 
 /* number of active threads */
@@ -479,7 +480,7 @@ int reattach()
 	{
 		int siglen;
 		char *sig;
-		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
+		slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 		srun_set_stdio_fds(job, &fds);
 
@@ -495,7 +496,8 @@ int reattach()
 			sig,
 			opt.labelio);
 		if (!job->client_io
-		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
+		    || (client_io_handler_start(job->client_io)
+			!= SLURM_SUCCESS))
 			job_fatal(job, "failed to start IO handler");
 	}
 

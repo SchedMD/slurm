@@ -48,6 +48,7 @@
 
 #include "src/srun/opt.h"
 #include "src/srun/srun_job.h"
+#include "src/srun/opt.h"
 
 #define MAX_RETRIES 3
 

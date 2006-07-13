@@ -1,8 +1,8 @@
 /****************************************************************************\
- *  step_client_io.c - process stdin, stdout, and stderr for parallel jobs.
+ *  step_io.c - process stdin, stdout, and stderr for parallel jobs.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -58,7 +58,7 @@
 #include "src/common/io_hdr.h"
 #include "src/common/net.h"
 #include "src/common/dist_tasks.h"
-#include "src/api/step_client_io.h"
+#include "src/api/step_io.h"
 
 #define MAX_RETRIES 3
 #define STDIO_MAX_FREE_BUF 1024
@@ -74,7 +74,7 @@ static struct io_buf *_alloc_io_buf(void);
 #if 0
 static void     _free_io_buf(struct io_buf *buf);
 #endif
-static void	_init_stdio_eio_objs(client_io_fds_t fds,
+static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
 static int      _read_io_init_msg(int fd, client_io_t *cio, char *host);
@@ -1042,7 +1042,7 @@ _free_io_buf(struct io_buf *buf)
 #endif
 
 static void
-_init_stdio_eio_objs(client_io_fds_t fds, client_io_t *cio)
+_init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 {
 	/*
 	 * build stdin eio_obj_t
@@ -1128,7 +1128,7 @@ _estimate_nports(int nclients, int cli_per_port)
 }
 
 client_io_t *
-client_io_handler_create(client_io_fds_t fds,
+client_io_handler_create(slurm_step_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
 			 char *io_key,

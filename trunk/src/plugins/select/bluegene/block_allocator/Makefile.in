@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 6669 2005-11-21 22:41:16Z da $
+# $Id: Makefile.am 8540 2006-07-11 18:18:19Z morrone $
 # Makefile.am for bluegene_block_allocator
 
 SOURCES = $(libbluegene_block_allocator_la_SOURCES)

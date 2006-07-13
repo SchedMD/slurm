@@ -254,8 +254,8 @@ int setup_env(env_t *env)
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	} 
-	
-	if (env->distribution != SLURM_DIST_UNKNOWN) {
+
+	if (env->distribution >= 0) {
 		switch(env->distribution) {
 		case SLURM_DIST_CYCLIC:
 			dist = "cyclic";
@@ -267,7 +267,7 @@ int setup_env(env_t *env)
 			dist = "arbitrary";
 			break;
 		default:
-			dist = "cyclic";
+			dist = "unknown";
 		}
 		
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {

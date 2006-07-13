@@ -147,7 +147,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->in);
 		xfree(msg->out);
 		xfree(msg->work_dir);
-		xfree(msg->host);
+		xfree(msg->alloc_resp_hostname);
+		xfree(msg->other_hostname);
 		xfree(msg->account);
 		xfree(msg->network);
 		xfree(msg);
@@ -288,6 +289,7 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 	if (msg) {
 		xfree(msg->node_name);
 		xfree(msg->local_pids);
+		xfree(msg->task_ids);
 		xfree(msg);
 	}
 }
