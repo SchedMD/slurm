@@ -73,6 +73,7 @@ extern void parse_command_line(int argc, char *argv[])
 	char *env_val = NULL;
 	int opt_char;
 	int option_index;
+	hostlist_t host_list;
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
 		{"bg",        no_argument,       0, 'b'},
@@ -136,7 +137,8 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) 'i':
 			params.iterate= atoi(optarg);
 			if (params.iterate <= 0) {
-				error ("Error: --iterate=%s");
+				error ("Error: invalid entry for "
+				       "--iterate=%s", optarg);
 				exit(1);
 			}
 			break;
@@ -145,6 +147,16 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 'n':
 			params.nodes= xstrdup(optarg);
+			/*
+			 * confirm valid nodelist entry
+			 */
+			host_list = hostlist_create(params.nodes);
+			if (!host_list) {
+				error("'%s' invalid entry for --nodes",
+				      optarg);
+				exit(1);
+			}
+			hostlist_destroy(host_list);
 			break;
 		case (int) 'N':
 			params.node_flag = true;
