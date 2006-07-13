@@ -1923,7 +1923,7 @@ int hostlist_find(hostlist_t hl, const char *hostname)
 	int i, count, ret = -1;
 	hostname_t hn;
 
-	if (!hostname)
+	if (!hostname || !hl)
 		return -1;
 
 	hn = hostname_create(hostname);
