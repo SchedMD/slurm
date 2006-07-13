@@ -88,11 +88,10 @@ static void *_agent_thread(void *args)
 		while ((ret_data_info = list_next(data_itr)) != NULL) {
 			if (ret_type->msg_rc == SLURM_SUCCESS)
 				continue;
-			if (!strcmp(ret_data_info->node_name,
-					"localhost")) {
-				xfree(ret_data_info->node_name);
+			if (!ret_data_info->node_name) {
 				ret_data_info->node_name = 
 					xstrdup(thread_ptr->node_name);
+				ret_data_info->addr = msg->address;
 			}
 			error("REQUEST_FILE_BCAST(%s): %s",
 				ret_data_info->node_name,
