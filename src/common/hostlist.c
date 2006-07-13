@@ -519,7 +519,10 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
  */
 static size_t host_prefix_end(const char *hostname)
 {
-	size_t idx = strlen(hostname) - 1;
+	size_t idx; 
+	if (!hostname)
+		return -1;
+	idx = strlen(hostname) - 1;
 
 	while (idx >= 0 && isdigit((char) hostname[idx])) 
 		idx--;
@@ -598,6 +601,8 @@ static void hostname_destroy(hostname_t hn)
  */
 static int hostname_suffix_is_valid(hostname_t hn)
 {
+	if (!hn)
+		return false;
 	return hn->suffix != NULL;
 }
 
@@ -605,6 +610,8 @@ static int hostname_suffix_is_valid(hostname_t hn)
  */
 static int hostname_suffix_width(hostname_t hn)
 {
+	if (!hn)
+		return -1;
 	assert(hn->suffix != NULL);
 	return (int) strlen(hn->suffix);
 }
@@ -768,12 +775,12 @@ static int hostrange_cmp(hostrange_t h1, hostrange_t h2)
 
 /* compare the prefixes of two hostrange objects. 
  * returns:
- *    < 0   if h1 prefix is less than h2 OR h1 == NULL.
+ *    < 0   if h1 prefix is less than h2 OR h2 == NULL.
  *
  *      0   if h1's prefix and h2's prefix match, 
  *          UNLESS, either h1 or h2 (NOT both) do not have a valid suffix.
  *
- *    > 0   if h1's prefix is greater than h2's OR h2 == NULL. */
+ *    > 0   if h1's prefix is greater than h2's OR h1 == NULL. */
 static int hostrange_prefix_cmp(hostrange_t h1, hostrange_t h2)
 {
 	int retval;
@@ -982,6 +989,8 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 
 	if (n == 0)
 		return 0;
+	
+	assert(hr != NULL);
 
 	if (hr->singlehost)
 		return snprintf(buf, n, "%s", hr->prefix);
@@ -1017,6 +1026,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	int len = 0;
 
 	assert(buf != NULL);
+	assert(hr != NULL);
 
 	if (hr->singlehost || n == 0)
 		return 0;
@@ -1245,8 +1255,11 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	hostlist_t new = hostlist_new();
 
-	orig = str = strdup(hostlist);
+	if (hostlist == NULL)
+		return new;
 
+	orig = str = strdup(hostlist);
+	
 	/* return an empty list if an empty string was passed in */
 	if (str == NULL || strlen(str) == 0)
 		goto done;
@@ -1356,7 +1369,8 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	}
 
   done:
-	free(orig);
+	if(orig)
+		free(orig);
 
 	return new;
 }
@@ -1412,7 +1426,7 @@ static int _parse_single_range(const char *str, struct _range *range)
 	free(orig);
 	range->width = strlen(str);
 	return 1;
-
+	
   error:
     errno = EINVAL;
 	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
@@ -1499,6 +1513,7 @@ _push_range_list(hostlist_t hl, char *pfx, struct _range *rng,
 	int n)
 {
 	int i;
+	
 	for (i = 0; i < n; i++) {
 		hostlist_push_hr(hl, pfx, rng->lo, rng->hi, rng->width);
 		rng++;
@@ -1571,7 +1586,7 @@ hostlist_t hostlist_copy(const hostlist_t hl)
 	int i;
 	hostlist_t new;
 
-	if (hl == NULL)
+	if (!hl)
 		return NULL;
 
 	LOCK_HOSTLIST(hl);
@@ -1595,7 +1610,7 @@ hostlist_t hostlist_copy(const hostlist_t hl)
 void hostlist_destroy(hostlist_t hl)
 {
 	int i;
-	if (hl == NULL)
+	if (!hl)
 		return;
 	LOCK_HOSTLIST(hl);
 	while (hl->ilist) {
@@ -1617,7 +1632,7 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 {
 	hostlist_t new;
 	int retval;
-	if (hosts == NULL)
+	if (!hosts || !hl)
 		return 0;
 	new = hostlist_create(hosts);
 	if (!new)
@@ -1635,7 +1650,7 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 	hostrange_t hr;
 	hostname_t hn;
 
-	if (str == NULL)
+	if (!str || !hl)
 		return 0;
 
 	hn = hostname_create(str);
@@ -1658,7 +1673,7 @@ int hostlist_push_list(hostlist_t h1, hostlist_t h2)
 {
 	int i, n = 0;
 
-	if (h2 == NULL)
+	if (!h2 || !h1)
 		return 0;
 
 	LOCK_HOSTLIST(h2);
@@ -1675,7 +1690,11 @@ int hostlist_push_list(hostlist_t h1, hostlist_t h2)
 char *hostlist_pop(hostlist_t hl)
 {
 	char *host = NULL;
-
+	if(!hl) {
+		error("hostlist_pop: no hoslist given");
+		return NULL;
+	}
+	
 	LOCK_HOSTLIST(hl);
 	if (hl->nhosts > 0) {
 		hostrange_t hr = hl->hr[hl->nranges - 1];
@@ -1696,6 +1715,10 @@ static void
 hostlist_shift_iterators(hostlist_t hl, int idx, int depth, int n)
 {
 	hostlist_iterator_t i;
+	if(!hl) {
+		error("hostlist_shift_iterators: no hoslist given");
+		return;
+	}
 	for (i = hl->ilist; i; i = i->next) {
 		if (n == 0) {
 			if (i->idx == idx && i->depth >= depth)
@@ -1715,6 +1738,10 @@ char *hostlist_shift(hostlist_t hl)
 {
 	char *host = NULL;
 
+	if(!hl){
+		error("hostlist_shift: no hoslist given");
+		return NULL;
+	}
 	LOCK_HOSTLIST(hl);
 
 	if (hl->nhosts > 0) {
@@ -1743,6 +1770,8 @@ char *hostlist_pop_range(hostlist_t hl)
 	hostlist_t hltmp;
 	hostrange_t tail;
 
+	if(!hl)
+		return NULL;
 	LOCK_HOSTLIST(hl);
 	if (hl->nranges < 1 || !(hltmp = hostlist_new())) {
 		UNLOCK_HOSTLIST(hl);
@@ -1774,7 +1803,7 @@ char *hostlist_shift_range(hostlist_t hl)
 	int i;
 	char buf[1024];
 	hostlist_t hltmp = hostlist_new();
-	if (!hltmp)
+	if (!hltmp || !hl)
 		return NULL;
 
 	LOCK_HOSTLIST(hl);
@@ -1816,7 +1845,9 @@ int hostlist_delete(hostlist_t hl, const char *hosts)
 	int n = 0;
 	char *hostname = NULL;
 	hostlist_t hltmp;
-
+	if(!hl)
+		return -1;
+	
 	if (!(hltmp = hostlist_create(hosts)))
 		seterrno_ret(EINVAL, 0);
 
@@ -1833,7 +1864,12 @@ int hostlist_delete(hostlist_t hl, const char *hosts)
 /* XXX watch out! poor implementation follows! (fix it at some point) */
 int hostlist_delete_host(hostlist_t hl, const char *hostname)
 {
-	int n = hostlist_find(hl, hostname);
+	int n;
+
+	if(!hl)
+		return -1;
+	n = hostlist_find(hl, hostname);
+
 	if (n >= 0)
 		hostlist_delete_nth(hl, n);
 	return n >= 0 ? 1 : 0;
@@ -1857,6 +1893,8 @@ char * hostlist_nth(hostlist_t hl, int n)
 	char *host = NULL;
 	int   i, count;
 
+	if(!hl)
+		return NULL;
 	LOCK_HOSTLIST(hl);
 	count = 0;
 	for (i = 0; i < hl->nranges; i++) {
@@ -1879,6 +1917,8 @@ int hostlist_delete_nth(hostlist_t hl, int n)
 {
 	int i, count;
 
+	if(!hl)
+		return -1;
 	LOCK_HOSTLIST(hl);
 	assert(n >= 0 && n <= hl->nhosts);
 
@@ -1915,6 +1955,9 @@ int hostlist_delete_nth(hostlist_t hl, int n)
 int hostlist_count(hostlist_t hl)
 {
 	int retval;
+	if(!hl)
+		return -1;
+
 	LOCK_HOSTLIST(hl);
 	retval = hl->nhosts;
 	UNLOCK_HOSTLIST(hl);
@@ -1926,7 +1969,7 @@ int hostlist_find(hostlist_t hl, const char *hostname)
 	int i, count, ret = -1;
 	hostname_t hn;
 
-	if (!hostname)
+	if (!hostname || !hl)
 		return -1;
 
 	hn = hostname_create(hostname);

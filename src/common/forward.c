@@ -497,6 +497,8 @@ extern int forward_msg_to_next(forward_msg_t *fwd_msg, int err)
 	if(fwd_msg->ret_list) {
 		ret_data_info = xmalloc(sizeof(ret_data_info_t));
 		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+		memcpy(&ret_data_info->addr, &fwd_msg->addr, 
+		       sizeof(slurm_addr));
 		ret_data_info->nodeid = fwd_msg->header.srun_node_id;
 		itr = list_iterator_create(fwd_msg->ret_list);	
 		while((type = (ret_types_t *) list_next(itr)) != NULL) {
@@ -747,6 +749,8 @@ extern int no_resp_forwards(forward_t *forward, List *ret_list, int err)
 			&forward->name[i * MAX_SLURM_NAME], 
 			MAX_SLURM_NAME);
 		ret_data_info->node_name = xstrdup(name);
+		memcpy(&ret_data_info->addr, &forward->addr[i], 
+		       sizeof(slurm_addr));
 		ret_data_info->nodeid = forward->node_id[i];
 	}
 no_forward:
@@ -769,6 +773,7 @@ void destroy_forward(forward_t *forward)
 		xfree(forward->name);
 		xfree(forward->node_id);
 		forward->cnt = 0;
+		forward->init = 0;
 	}
 }
 
