@@ -255,7 +255,7 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	} 
 
-	if (env->distribution) {
+	if (env->distribution >= 0) {
 		switch(env->distribution) {
 		case SLURM_DIST_CYCLIC:
 			dist = "cyclic";
@@ -274,7 +274,7 @@ int setup_env(env_t *env)
 			error("Can't set SLURM_DISTRIBUTION env variable");
 			rc = SLURM_FAILURE;
 		}
-	}
+	} 
 	
 	if (env->cpu_bind_type) {
 		int setstat = 0;

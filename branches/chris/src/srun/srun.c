@@ -394,7 +394,7 @@ int srun(int ac, char **av)
 	
 	if (slurm_mpi_exit () < 0)
 		; /* eh, ignore errors here */
-		
+
 	_run_srun_epilog(job);
 
 	/* 

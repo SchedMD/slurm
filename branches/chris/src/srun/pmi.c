@@ -33,6 +33,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/srun/opt.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -42,7 +43,6 @@
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
 #define MSG_TRANSMITS    2	/* transmit KVS messages this number times */
-#define MSG_PARALLELISM 50	/* count of simultaneous KVS message threads */
 
 /* Global variables */
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -167,7 +167,7 @@ static void *_agent(void *x)
 			if (args->barrier_xmit_ptr[j].port == 0)
 				continue;
 			slurm_mutex_lock(&agent_mutex);
-			while (agent_cnt >= MSG_PARALLELISM)
+			while (agent_cnt >= opt.max_threads)
 				pthread_cond_wait(&agent_cond, &agent_mutex);
 			agent_cnt++;
 			slurm_mutex_unlock(&agent_mutex);

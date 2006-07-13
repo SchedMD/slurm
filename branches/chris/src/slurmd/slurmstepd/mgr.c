@@ -1095,6 +1095,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			job->envtp->env = job->env;
 			job->envtp->procid = job->task[i]->gtid;
 			job->envtp->localid = job->task[i]->id;
+			
+			job->envtp->distribution = -1;
 			setup_env(job->envtp);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
