@@ -36,6 +36,7 @@
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
 #define xstrfmtcat(__p, __fmt, args...)	_xstrfmtcat(&(__p), __fmt, ## args)
 #define xmemcat(__p, __s, __e)          _xmemcat(&(__p), __s, __e)
+#define xstrsubstitute(__p, __pat, __rep) _xstrsubstitute(&(__p), __pat, __rep)
 
 /*
 ** The following functions take a ptr to a string and expand the
@@ -95,5 +96,11 @@ char *xstrndup(const char *str, size_t n);
 ** replacement for libc basename
 */
 char *xbasename(char *path);
+
+/*
+** Find the first instance of a sub-string "pattern" in the string "str",
+** and replace it with the string "replacement".
+*/
+void _xstrsubstitute(char **str, const char *pattern, const char *replacement);
 
 #endif /* !_XSTRING_H */

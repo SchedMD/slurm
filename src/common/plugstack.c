@@ -39,6 +39,7 @@
 #include "src/common/read_config.h"
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
+#include "src/common/job_options.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

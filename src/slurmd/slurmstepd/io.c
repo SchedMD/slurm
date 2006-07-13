@@ -955,6 +955,9 @@ _io_thr(void *arg)
  * Since this is the first client connection and the IO engine has not
  * yet started, we initialize the msg_queue as an empty list and
  * directly add the eio_obj_t to the eio handle with eio_new_initial_obj.
+ *
+ * We assume that if the port is zero the client does not wish us to connect
+ * an IO stream.
  */
 int
 io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
@@ -969,6 +972,10 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
 		char         ip[256];
 		uint16_t     port;
 		slurm_get_ip_str(&srun->ioaddr, &port, ip, sizeof(ip));
+		if (ntohs(port) == 0) {
+			debug3("No IO connection requested");
+			return SLURM_SUCCESS;
+		}
 		debug4("connecting IO back to %s:%d", ip, ntohs(port));
 	} 
 

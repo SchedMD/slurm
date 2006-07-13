@@ -493,10 +493,12 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16((uint16_t)dump_job_ptr->kill_on_node_fail, buffer);
 	pack16((uint16_t)dump_job_ptr->kill_on_step_done, buffer);
 	pack16((uint16_t)dump_job_ptr->batch_flag, buffer);
-	pack16((uint16_t)dump_job_ptr->port, buffer);
+	pack16((uint16_t)dump_job_ptr->alloc_resp_port, buffer);
+	pack16((uint16_t)dump_job_ptr->other_port, buffer);
 	pack16((uint16_t)dump_job_ptr->mail_type, buffer);
 
-	packstr(dump_job_ptr->host, buffer);
+	packstr(dump_job_ptr->alloc_resp_host, buffer);
+	packstr(dump_job_ptr->other_host, buffer);
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
@@ -535,11 +537,11 @@ static int _load_job_state(Buf buffer)
 	uint32_t dependency, num_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
-	uint16_t mail_type;
+	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
+	uint16_t alloc_resp_port, other_port, mail_type;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
-	char *alloc_node = NULL, *host = NULL, *account = NULL;
-	char *network = NULL, *mail_user = NULL;
+	char *alloc_node = NULL, *alloc_resp_host = NULL, *other_host = NULL;
+	char *account = NULL, *network = NULL, *mail_user = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -564,10 +566,12 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&kill_on_node_fail, buffer);
 	safe_unpack16(&kill_on_step_done, buffer);
 	safe_unpack16(&batch_flag, buffer);
-	safe_unpack16(&port, buffer);
+	safe_unpack16(&alloc_resp_port, buffer);
+	safe_unpack16(&other_port, buffer);
 	safe_unpack16(&mail_type, buffer);
 
-	safe_unpackstr_xmalloc(&host, &name_len, buffer);
+	safe_unpackstr_xmalloc(&alloc_resp_host, &name_len, buffer);
+	safe_unpackstr_xmalloc(&other_host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
@@ -662,8 +666,10 @@ static int _load_job_state(Buf buffer)
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
 	job_ptr->kill_on_step_done = kill_on_step_done;
 	job_ptr->batch_flag        = batch_flag;
-	job_ptr->port              = port;
-	job_ptr->host              = host;
+	job_ptr->alloc_resp_port   = alloc_resp_port;
+	job_ptr->alloc_resp_host   = alloc_resp_host;
+	job_ptr->other_port        = other_port;
+	job_ptr->other_host        = other_host;
 	job_ptr->mail_type         = mail_type;
 	job_ptr->mail_user         = mail_user;
 	mail_user = NULL;	/* reused, nothing left to free */
@@ -685,7 +691,8 @@ static int _load_job_state(Buf buffer)
 
       unpack_error:
 	error("Incomplete job record");
-	xfree(host);
+	xfree(alloc_resp_host);
+	xfree(other_host);
 	xfree(nodes);
 	xfree(partition);
 	xfree(name);
@@ -1249,9 +1256,12 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	dependency = (job_specs->dependency != NO_VAL) ?
                         (long) job_specs->dependency : -1L;
-	debug3("   host=%s port=%u dependency=%ld account=%s",
-		job_specs->host, job_specs->port,
-		dependency, job_specs->account);
+	debug3("   alloc_resp_hostname=%s alloc_resp_port=%u",
+	       job_specs->alloc_resp_hostname, job_specs->alloc_resp_port);
+	debug3("   other_hostname=%s other_port=%u",
+	       job_specs->other_hostname, job_specs->other_port);
+	debug3("   dependency=%ld account=%s",
+	       dependency, job_specs->account);
 
 	num_tasks = (job_specs->num_tasks != (uint16_t) NO_VAL) ?
 			(long) job_specs->num_tasks : -1L;
@@ -2299,8 +2309,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 
-	job_ptr->port = job_desc->port;
-	job_ptr->host = xstrdup(job_desc->host);
+	job_ptr->alloc_resp_port = job_desc->alloc_resp_port;
+	job_ptr->alloc_resp_host = xstrdup(job_desc->alloc_resp_hostname);
+	job_ptr->other_port = job_desc->other_port;
+	job_ptr->other_host = xstrdup(job_desc->other_hostname);
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->num_procs = job_desc->num_procs;
         job_ptr->cr_enabled = 0;
@@ -2592,7 +2604,8 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpus_per_node);
 	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->node_addr);
-	xfree(job_ptr->host);
+	xfree(job_ptr->alloc_resp_host);
+	xfree(job_ptr->other_host);
 	xfree(job_ptr->account);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);

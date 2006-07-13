@@ -1096,15 +1096,13 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			job->envtp->procid = job->task[i]->gtid;
 			job->envtp->localid = job->task[i]->id;
 			
-			/* need to take this out in 1.2 */
-			job->envtp->distribution = SLURM_DIST_UNKNOWN;
+			job->envtp->distribution = -1;
 			setup_env(job->envtp);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
 				run_script("user task_epilog", 
 					   job->task_epilog, 
-					   job->jobid, job->uid, 
-					   2, job->env);
+					   job->jobid, job->uid, 2, job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;
@@ -1368,12 +1366,16 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	resp.count_of_pids    = job->ntasks;
 
 	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
-	for (i = 0; i < job->ntasks; i++) 
+	resp.task_ids = xmalloc(job->ntasks * sizeof(*resp.task_ids));
+	for (i = 0; i < job->ntasks; i++) {
 		resp.local_pids[i] = job->task[i]->pid;  
+		resp.task_ids[i] = job->task[i]->gtid;
+	}
 
 	slurm_send_only_node_msg(&resp_msg);
 
 	xfree(resp.local_pids);
+	xfree(resp.task_ids);
 }
 
 

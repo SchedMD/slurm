@@ -80,6 +80,7 @@
 #include "src/srun/reattach.h"
 #include "src/srun/attach.h"
 #include "src/srun/srun.h"
+#include "src/srun/signals.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
@@ -310,7 +311,7 @@ int srun(int ac, char **av)
 	{
 		int siglen;
 		char *sig;
-		client_io_fds_t fds = CLIENT_IO_FDS_INITIALIZER;
+		slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 		srun_set_stdio_fds(job, &fds);
 
@@ -326,7 +327,8 @@ int srun(int ac, char **av)
 			sig,
 			opt.labelio);
 		if (!job->client_io
-		    || client_io_handler_start(job->client_io) != SLURM_SUCCESS)
+		    || (client_io_handler_start(job->client_io)
+			!= SLURM_SUCCESS))
 			job_fatal(job, "failed to start IO handler");
 	}
 
@@ -1054,7 +1056,7 @@ _is_local_file (io_filename_t *fname)
 }
 
 void
-srun_set_stdio_fds(srun_job_t *job, client_io_fds_t *cio_fds)
+srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 {
 	bool err_shares_out = false;
 

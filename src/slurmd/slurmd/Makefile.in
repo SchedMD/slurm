@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8357 2006-06-08 16:10:30Z da $
+# $Id: Makefile.am 8398 2006-06-13 02:33:26Z morrone $
 #
 # Makefile for slurmd
 

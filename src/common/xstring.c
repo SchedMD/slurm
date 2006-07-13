@@ -67,6 +67,7 @@ strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
+strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -278,4 +279,38 @@ char * xstrndup(const char *str, size_t n)
 	rsiz = strlcpy(result, str, siz);
 
 	return result;
+}
+
+/* 
+ * Find the first instance of a sub-string "pattern" in the string "str",
+ * and replace it with the string "replacement".
+ *   str (IN/OUT)	target string (pointer to in case of expansion)
+ *   pattern (IN)	substring to look for in str
+ *   replacement (IN)   string with which to replace the "pattern" string
+ */
+void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
+{
+	int pat_len, rep_len;
+	char *ptr, *end_copy;
+	int pat_offset;
+
+	if (*str == NULL || pattern == NULL || pattern[0] == '\0')
+		return;
+
+	if ((ptr = strstr(*str, pattern)) == NULL)
+		return;
+	pat_offset = ptr - (*str);
+	pat_len = strlen(pattern);
+	if (replacement == NULL)
+		rep_len = 0;
+	else
+		rep_len = strlen(replacement);
+
+	end_copy = xstrdup(ptr + pat_len);
+	if (rep_len != 0) {
+		makespace(str, rep_len-pat_len);
+		strcpy((*str)+pat_offset, replacement);
+	}
+	strcpy((*str)+pat_offset+rep_len, end_copy);
+	xfree(end_copy);
 }

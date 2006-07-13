@@ -1,0 +1,60 @@
+.\" $Id$
+.TH "slaunch" "1" "SLURM 1.2" "Jun 2006" "SLURM Commands"
+.SH "NAME"
+.LP 
+slaunch \- Launch a parallel application under a SLURM job allocation.
+.SH "SYNOPSIS"
+.LP 
+slaunch [\fIoptions\fP] <\fIcommand\fP> [\fIcommand args\fR]
+.SH "DESCRIPTION"
+.LP 
+slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on the nodes, or subset of nodes, in a \fBjob allocation\fR.   A valid job allocation is a prerequisite of running slaunch.  The ID of the job allocation may be passed to slaunch through either the \fB\-\-jobid\fR command line parameter or the \fBSLURM_JOBID\fR environment variable.  The \fBsalloc\fR
+and \fBsbatch\fR commands may be used to request a job allocation, and each of those commands automatically set the \fBSLURM_JOBID\fR environment variable.
+.SH "OPTIONS"
+.LP 
+.TP 
+\fB\-\-jobid\fR <\fIJOBID\fP>
+The job allocation under which the parallel application should be launched.
+.TP 
+\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
+Specify the number of processes to launch.  The default is one process per node, but note that the \-c parameter will change this default.
+.TP 
+\fB\-N\fR, \fB\-\-nodes\fR=<\fInumber\fR>
+Specify the number of nodes to be used by this job step.  By default,
+slaunch will use all of the nodes in the specified job allocation.
+.TP 
+\fB\-r\fR, \fB\-\-relative\fR=<\fInumber\fR>
+Specify the first node in the allocation on which this job step will be launched.  Counting starts at zero, thus the first node in the job allocation is node 0.  The default value for \-\-relative is zero.
+.TP 
+\fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
+Specify that each task requires \fIncpus\fR number of CPUs.  Useful for applications in which each task will launch multiple threads and can therefore benefit from there being free processors on the node.
+
+.TP 
+\fB\-\-nice\fR=<\fIadjustment\fR>
+Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
+
+
+
+.TP 
+\fB\-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-V\fR, \fB\-\-version\fR
+Output version information and exit.
+.SH "ENVIRONMENT VARIABLES"
+.LP 
+.TP 
+\fBSLURM_JOBID\fP
+Same as \fB\-\-jobid\fR.
+.SH "EXAMPLES"
+.LP 
+To launch a job step (parallel program) in an existing job allocation:
+.IP 
+slaunch \-\-jobid 66777 \-N2 \-n8 myprogram
+.LP 
+To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):
+.IP 
+salloc \-N5 slaunch \-n10 myprogram
+.SH "SEE ALSO"
+.LP 
+sinfo(1), salloc(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)

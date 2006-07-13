@@ -94,7 +94,7 @@ _set_umask(char **env)
 	char *val;
 	
 	if (!(val = getenvp(env, "SLURM_UMASK"))) {
-		error("Couldn't find SLURM_UMASK in environment");
+		debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}
 
@@ -122,7 +122,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	strcpy( &env_name[sizeof("SLURM_RLIMIT_")-1], rli->name );
 
 	if (_get_env_val( env, env_name, &env_value, &u_req_propagate )){
-		error( "Couldn't find %s in environment", env_name );
+		debug( "Couldn't find %s in environment", env_name );
 		return SLURM_ERROR;
 	}
 
