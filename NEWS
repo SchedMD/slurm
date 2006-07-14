@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.5
+========================
+
 * Changes in SLURM 1.1.4
 ========================
  -- Improve error handling in hierarchical communications logic.
