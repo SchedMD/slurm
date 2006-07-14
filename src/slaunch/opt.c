@@ -1448,8 +1448,11 @@ static void _opt_args(int argc, char **argv)
 		} 
 	}
 
-	if (!opt.num_nodes_set && opt.num_tasks < opt.num_nodes)
+	if (!opt.num_nodes_set
+	    && opt.num_tasks_set && opt.num_tasks < opt.num_nodes)
 		opt.num_nodes = opt.num_tasks;
+	if (!opt.num_tasks_set)
+		opt.num_tasks = opt.num_nodes;
 
 	if (!_opt_verify())
 		exit(1);
