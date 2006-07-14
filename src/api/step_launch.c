@@ -71,8 +71,8 @@ static int _launch_tasks(slurm_step_ctx ctx,
 static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
 					  slurm_step_io_fds_t fds,
 					  bool labelio);
-static int _get_step_addresses(const slurm_step_ctx ctx,
-			       slurm_addr **address, int *num_addresses);
+/* static int _get_step_addresses(const slurm_step_ctx ctx, */
+/* 			       slurm_addr **address, int *num_addresses); */
 
 /**********************************************************************
  * Message handler declarations
@@ -240,6 +240,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 		pthread_cond_wait(&sls->cond, &sls->lock);
 	}
 	pthread_mutex_unlock(&sls->lock);
+	return 1;
 }
 
 /*
@@ -615,6 +616,7 @@ static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
 	return client_io;
 }
 
+#if 0
 /*
  * Given a step context, return an array of the addresses of all nodes
  * in the job step.
@@ -670,3 +672,4 @@ _get_step_addresses(const slurm_step_ctx ctx,
 	*num_addresses = num_nodes;
 	return 0;
 }
+#endif
