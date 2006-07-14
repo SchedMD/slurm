@@ -55,7 +55,8 @@ struct step_launch_state {
 	/* message thread variables */
 	eio_handle_t *msg_handle;
 	pthread_t msg_thread;
-	uint16_t msg_port;
+	uint16_t num_resp_port;
+	uint16_t *resp_port; /* array of message response ports */
 
 	/* client side io variables */
 	client_io_t *client_io;
