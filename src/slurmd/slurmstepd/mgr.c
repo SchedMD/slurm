@@ -1320,7 +1320,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, 
-		       msg->resp_port[msg->srun_node_id], 
+		       msg->resp_port[msg->srun_node_id % msg->num_resp_port],
 		       NULL); 
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;

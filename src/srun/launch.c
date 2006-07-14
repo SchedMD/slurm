@@ -175,14 +175,19 @@ launch(void *arg)
 	r.global_task_ids = job->step_layout->tids;
 	r.cpus_allocated  = job->step_layout->cpus;
 	
-	r.io_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
-	r.resp_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
-	
-	for (i = 0; i < job->step_layout->num_hosts; i++) {
-		r.io_port[i] = ntohs(job->client_io->listenport[
-					     i%job->client_io->num_listen]);
-		r.resp_port[i] = ntohs(job->jaddr[i%job->njfds].sin_port);
+	r.num_resp_port = job->njfds;
+	r.resp_port = xmalloc(sizeof(uint16_t) * r.num_resp_port);
+	for (i = 0; i < r.num_resp_port; i++) {
+		r.resp_port[i] = ntohs(job->jaddr[i].sin_port);
 	}
+
+	r.num_io_port = job->client_io->num_listen;
+	r.io_port = xmalloc(sizeof(uint16_t) * r.num_io_port);
+	for (i = 0; i < r.num_io_port; i++) {
+		r.io_port[i] = ntohs(job->client_io->listenport[i]);
+	}
+	info("num_io_port = %d", r.num_io_port);
+	info("num_resp_port = %d", r.num_resp_port);
 
 	msg_array_ptr[0].msg_type = REQUEST_LAUNCH_TASKS;
 	msg_array_ptr[0].data            = &r;

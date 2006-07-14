@@ -2552,12 +2552,16 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	for(i=0; i<msg->nnodes; i++) {
 		pack32((uint32_t)msg->tasks_to_launch[i], buffer);
 		pack32((uint32_t)msg->cpus_allocated[i], buffer);
-		pack16((uint16_t)msg->resp_port[i], buffer);
-		pack16((uint16_t)msg->io_port[i], buffer);
 		pack32_array(msg->global_task_ids[i], 
 			     msg->tasks_to_launch[i], 
 			     buffer);	
 	}
+	pack16((uint16_t)msg->num_resp_port, buffer);
+	for(i = 0; i < msg->num_resp_port; i++)
+		pack16((uint16_t)msg->resp_port[i], buffer);
+	pack16((uint16_t)msg->num_io_port, buffer);
+	for(i = 0; i < msg->num_io_port; i++)
+		pack16((uint16_t)msg->io_port[i], buffer);
 	slurm_pack_slurm_addr(&msg->orig_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
@@ -2603,20 +2607,28 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		goto unpack_error;
 	msg->tasks_to_launch = xmalloc(sizeof(uint32_t) * msg->nnodes);
 	msg->cpus_allocated = xmalloc(sizeof(uint32_t) * msg->nnodes);
-	msg->resp_port = xmalloc(sizeof(uint16_t) * msg->nnodes);
-	msg->io_port = xmalloc(sizeof(uint16_t) * msg->nnodes);
 	msg->global_task_ids = xmalloc(sizeof(uint32_t *) * msg->nnodes);
 	for(i=0; i<msg->nnodes; i++) {
 		safe_unpack32(&msg->tasks_to_launch[i], buffer);
 		safe_unpack32(&msg->cpus_allocated[i], buffer);
-		safe_unpack16(&msg->resp_port[i], buffer);
-		safe_unpack16(&msg->io_port[i], buffer);
 		safe_unpack32_array(&msg->global_task_ids[i], 
 				    &uint32_tmp, 
 				    buffer);	
 		if (msg->tasks_to_launch[i] != uint32_tmp)
 			goto unpack_error;
 
+	}
+	safe_unpack16(&msg->num_resp_port, buffer);
+	if (msg->num_resp_port > 0) {
+		msg->resp_port = xmalloc(sizeof(uint16_t)*msg->num_resp_port);
+		for (i = 0; i < msg->num_resp_port; i++)
+			safe_unpack16(&msg->resp_port[i], buffer);
+	}
+	safe_unpack16(&msg->num_io_port, buffer);
+	if (msg->num_io_port > 0) {
+		msg->io_port = xmalloc(sizeof(uint16_t)*msg->num_io_port);
+		for (i = 0; i < msg->num_io_port; i++)
+			safe_unpack16(&msg->io_port[i], buffer);
 	}
 	slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
