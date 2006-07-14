@@ -320,6 +320,7 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
+#if 0
 static int _become_user (uid_t uid, gid_t gid)
 {
 	struct passwd *pwd = getpwuid (opt.uid);
@@ -405,6 +406,7 @@ static int _run_srun_script (char *script)
 
 	/* NOTREACHED */
 }
+#endif
 
 static void
 _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,

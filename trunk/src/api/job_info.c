@@ -351,6 +351,9 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	job_id_request_msg_t req;
 	List ret_list;
 
+	memset(&req_msg, 0, sizeof(slurm_msg_t));
+	memset(&resp_msg, 0, sizeof(slurm_msg_t));
+
 	/*
 	 *  Set request message address to slurmd on localhost
 	 */
