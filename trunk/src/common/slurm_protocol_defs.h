@@ -376,8 +376,10 @@ typedef struct launch_tasks_request_msg {
 	char     *cpu_bind;	/* binding map for map/mask_cpu           */
 	mem_bind_type_t mem_bind_type;	/* --mem_bind=                    */
 	char     *mem_bind;	/* binding map for tasks to memory        */
-	uint16_t  *resp_port;
-	uint16_t  *io_port;
+	uint16_t  num_resp_port;
+	uint16_t  *resp_port;   /* array of available response ports      */
+	uint16_t  num_io_port;
+	uint16_t  *io_port;  /* array of available client IO listen ports */
 
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;

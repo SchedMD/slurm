@@ -198,9 +198,13 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->mem_bind = NULL;
 	
 	memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr));
-	slurm_set_addr(&resp_addr, msg->resp_port[msg->srun_node_id], NULL);
+	slurm_set_addr(&resp_addr,
+		       msg->resp_port[msg->srun_node_id % msg->num_resp_port],
+		       NULL);
 	memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
-	slurm_set_addr(&io_addr, msg->io_port[msg->srun_node_id], NULL);
+	slurm_set_addr(&io_addr,
+		       msg->io_port[msg->srun_node_id % msg->num_io_port],
+		       NULL);
 		
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 

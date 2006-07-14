@@ -1162,7 +1162,7 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	 * all of the slurmds to establish IO streams with srun, without
 	 * overstressing the TCP/IP backoff/retry algorithm
 	 */
-	cio->num_listen = _estimate_nports(num_nodes, 64);
+	cio->num_listen = _estimate_nports(num_nodes, 48);
 	cio->listensock = (int *) xmalloc(cio->num_listen * sizeof(int));
 	cio->listenport = (int *) xmalloc(cio->num_listen * sizeof(int));
 

@@ -214,11 +214,13 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.io_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
 	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.nnodes);
 	
-	for (i = 0; i < launch.nnodes; i++) {
-		client_io_t *client_io = ctx->launch_state->client_io;
-		int port_idx = i % client_io->num_listen;
-
-		launch.io_port[i] = ntohs(client_io->listenport[port_idx]);
+	launch.num_io_port = ctx->launch_state->client_io->num_listen;
+	for (i = 0; i < launch.num_io_port; i++) {
+		launch.io_port[i] =
+			ntohs(ctx->launch_state->client_io->listenport[i]);
+	}
+	launch.num_resp_port = 1;
+	for (i = 0; i < launch.num_resp_port; i++) {
 		launch.resp_port[i] = ntohs(ctx->launch_state->msg_port);
 	}
 
