@@ -81,6 +81,7 @@ parse_command_line( int argc, char* argv[] )
 	char *env_val = NULL;
 	int opt_char;
 	int option_index;
+	hostlist_t host_list;
 	static struct option long_options[] = {
 		{"all",        no_argument,       0, 'a'},
 		{"noheader",   no_argument,       0, 'h'},
@@ -144,12 +145,20 @@ parse_command_line( int argc, char* argv[] )
 			case (int) 'n':
 				xfree(params.node);
 				params.node = xstrdup(optarg);
+				host_list = hostlist_create(params.node);
+				if (!host_list) {
+					error("'%s' invalid entry for --node",
+						optarg);
+					exit(1);
+				}
+				hostlist_destroy(host_list);
 				break;
 			case (int) 'o':
 				xfree(params.format);
 				params.format = xstrdup(optarg);
 				break;
 			case (int) 'p':
+				xfree(params.partitions);
 				params.partitions = xstrdup(optarg);
 				params.part_list = 
 					_build_part_list( params.partitions );
@@ -167,11 +176,13 @@ parse_command_line( int argc, char* argv[] )
 				params.sort = xstrdup(optarg);
 				break;
 			case (int) 't':
+				xfree(params.states);
 				params.states = xstrdup(optarg);
 				params.state_list = 
 					_build_state_list( params.states );
 				break;
 			case (int) 'u':
+				xfree(params.users);
 				params.users = xstrdup(optarg);
 				params.user_list = 
 					_build_user_list( params.users );

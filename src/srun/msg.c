@@ -91,7 +91,6 @@ static void 	_msg_thr_poll(srun_job_t *job);
 static void	_set_jfds_nonblocking(srun_job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
-static void     _timeout_handler(time_t timeout);
 static void     _node_fail_handler(char *nodelist, srun_job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
@@ -324,7 +323,7 @@ rwfail:
  * FIXME: How much lead time do we want for this message? Some jobs may 
  *	require tens of minutes to gracefully terminate.
  */
-static void _timeout_handler(time_t timeout)
+void timeout_handler(time_t timeout)
 {
 	static time_t last_timeout = 0;
 
@@ -840,7 +839,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	case SRUN_TIMEOUT:
 		verbose("timeout received");
 		to = msg->data;
-		_timeout_handler(to->timeout);
+		timeout_handler(to->timeout);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
