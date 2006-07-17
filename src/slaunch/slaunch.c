@@ -90,10 +90,12 @@
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
+#if 0
 static int   _become_user (uid_t uid, gid_t gid);
 static void  _run_srun_prolog (void);
 static void  _run_srun_epilog (void);
 static int   _run_srun_script (char *script);
+#endif
 static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
 			      int stepid, slurm_step_layout_t *step_layout);
 static void _task_start(launch_tasks_response_msg_t *msg);
