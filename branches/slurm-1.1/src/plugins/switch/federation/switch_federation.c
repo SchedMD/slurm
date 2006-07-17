@@ -397,8 +397,8 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			       adapter_name);
 			sn_all = false;
 		} else {
+			/* default to sn_all */
 			sn_all = true;
-			return SLURM_ERROR;
 		}
 
 		list = hostlist_create(nodelist);
