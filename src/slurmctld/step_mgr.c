@@ -661,8 +661,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->step_node_list = xstrdup(step_specs->node_list);
 	else
 		step_ptr->step_node_list = bitmap2node_name(nodeset);
-	xfree(step_specs->node_list);
-	step_specs->node_list = bitmap2node_name(nodeset);
+	//xfree(step_specs->node_list);
+	//step_specs->node_list = bitmap2node_name(nodeset);
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);

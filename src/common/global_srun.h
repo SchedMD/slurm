@@ -143,6 +143,7 @@ typedef struct srun_job {
 	
 } srun_job_t;
 
+
 void fwd_signal(srun_job_t *job, int signal, int max_threads);
 int job_active_tasks_on_host(srun_job_t *job, int hostid);
 
