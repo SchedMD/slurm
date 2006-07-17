@@ -146,6 +146,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.long_output = true;
 			break;
 		case (int) 'n':
+			xfree(params.nodes);
 			params.nodes= xstrdup(optarg);
 			/*
 			 * confirm valid nodelist entry
@@ -162,6 +163,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.node_flag = true;
 			break;
 		case (int) 'o':
+			xfree(params.format);
 			params.format = xstrdup(optarg);
 			break;
 		case (int) 'p':
@@ -182,6 +184,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.sort = xstrdup(optarg);
 			break;
 		case (int) 't':
+			xfree(params.states);
 			params.states = xstrdup(optarg);
 			if (!(params.state_list = _build_state_list(optarg))) {
 				error ("valid states: %s", _node_state_list ());

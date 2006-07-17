@@ -334,6 +334,7 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 	uid_t uid       = getuid();
 	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	int rc = 0;
+	srun_timeout_msg_t *to;
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
@@ -352,6 +353,13 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			*resp = msg->data;
 			rc = 1;
+			break;
+		case SRUN_TIMEOUT:
+			debug2("timeout received");
+			to = msg->data;
+			timeout_handler(to->timeout);
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_srun_timeout_msg(msg->data);
 			break;
 		default:
 			error("received spurious message type: %d\n",
