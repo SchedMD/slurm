@@ -33,6 +33,7 @@
 void     *msg_thr(void *arg);
 int       msg_thr_create(srun_job_t *job);
 slurm_fd  slurmctld_msg_init(void);
+void      timeout_handler(time_t timeout);
 
 typedef struct slurmctld_communication_addr {
 	char *hostname;

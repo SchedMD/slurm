@@ -1752,7 +1752,7 @@ documents those changes that are of interest to users and admins.
  -- "fatal: _shm_unlock: Numerical result out of range" bug fixed in slurmd.
  -- Config file parsing is now case insensitive.
  -- SLURM_NODELIST environment variable now set in allocate mode.
-
+ 
 * Changes in SLURM 0.2.0-pre2
 =============================
 
