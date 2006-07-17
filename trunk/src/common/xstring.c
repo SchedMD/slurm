@@ -68,6 +68,7 @@ strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
+strong_alias(xshort_hostname,   slurm_xshort_hostname);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -313,4 +314,30 @@ void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 	}
 	strcpy((*str)+pat_offset+rep_len, end_copy);
 	xfree(end_copy);
+}
+
+/* xshort_hostname
+ *   Returns an xmalloc'd string containing the hostname
+ *   of the local machine.  The hostname contains only
+ *   the short version of the hostname (e.g. "linux123.foo.bar"
+ *   becomes "linux123") 
+ *
+ *   Returns NULL on error.
+ */
+char *xshort_hostname(void)
+{
+	int error_code;
+	char *dot_ptr, path_name[1024];
+
+	error_code = gethostname (path_name, sizeof(path_name));
+	if (error_code)
+		return NULL;
+
+	dot_ptr = strchr (path_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = path_name + strlen(path_name);
+	else
+		dot_ptr[0] = '\0';
+
+	return xstrdup(path_name);
 }
