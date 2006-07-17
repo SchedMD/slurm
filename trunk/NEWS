@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0-pre2
 =============================
+ -- Fixed task dist to work with hostfile and warn about asking for more tasks 
+    than you have nodes for in arbitray mode.
 
 * Changes in SLURM 1.2.0-pre1
 =============================

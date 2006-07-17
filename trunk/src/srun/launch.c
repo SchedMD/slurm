@@ -197,6 +197,8 @@ launch(void *arg)
 	itr = hostlist_iterator_create(hostlist);
 	job->thr_count = 0;
 	for (i = 0; i < job->step_layout->num_hosts; i++) {
+		debug2("sending to %s %d %d", job->step_layout->host[i],
+		       i, job->step_layout->num_hosts);
 		if(!job->step_layout->host[i])
 			break;
 		slurm_msg_t                *m = &msg_array_ptr[job->thr_count];
@@ -385,16 +387,15 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	 * Set job timeout to maximum launch time + current time
 	 */
 	job->ltimeout = time(NULL) + opt.max_launch_time;
-
 	thd = xmalloc (job->thr_count * sizeof (thd_t));
 	for (i = 0; i < job->thr_count; i++) {
-		/* if (job->step_layout->tasks[i] == 0)	{	 */
-/* 			/\* No tasks for this node *\/ */
-/* 			debug("Node %s is unused",job->step_layout->host[i]); */
-/* 			job->host_state[i] = SRUN_HOST_REPLIED; */
-/* 			thd[i].thread = (pthread_t) NULL; */
-/* 			continue; */
-/* 		} */
+		if (job->step_layout->tasks[i] == 0)	{
+			/* No tasks for this node */
+			debug("Node %s is unused",job->step_layout->host[i]);
+			job->host_state[i] = SRUN_HOST_REPLIED;
+			thd[i].thread = (pthread_t) NULL;
+			continue;
+		}
 
 		if (job->state > SRUN_JOB_LAUNCHING)
 			break;

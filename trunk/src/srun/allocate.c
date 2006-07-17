@@ -117,7 +117,7 @@ allocate_nodes(void)
 
 	if(!resp)
 		goto done;
-
+	
 	if ((rc == 0) && (resp->node_list == NULL)) {
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
@@ -134,7 +134,7 @@ allocate_nodes(void)
 		xfree(resp->node_list);
 		resp->node_list = xstrdup(j->req_nodes);
 	}
-
+		
     done:
 	xsignal_set_mask(&oset);
 	xsignal(SIGINT,  ointf);
@@ -410,6 +410,8 @@ job_desc_msg_create_from_opts (char *script)
 {
 	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
+	char buf[8192];
+	hostlist_t hl = NULL;
 	
 	slurm_init_job_desc_msg(j);
 	
@@ -417,7 +419,7 @@ job_desc_msg_create_from_opts (char *script)
 	j->features       = opt.constraints;
 	j->immediate      = opt.immediate;
 	j->name           = opt.job_name;
-	j->req_nodes      = opt.nodelist;
+	j->req_nodes      = xstrdup(opt.nodelist);
 	if (j->req_nodes == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -436,6 +438,21 @@ job_desc_msg_create_from_opts (char *script)
 			}
 		}
 	}
+	/* simplify the job allocation nodelist, 
+	  not laying out tasks until step */
+	if(j->req_nodes) {
+		hl = hostlist_create(j->req_nodes);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		xfree(opt.nodelist);
+		opt.nodelist = xstrdup(buf);
+		hostlist_uniq(hl);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		hostlist_destroy(hl);
+
+		xfree(j->req_nodes);
+		j->req_nodes = xstrdup(buf);
+	}
+	
 	if(opt.distribution == SLURM_DIST_ARBITRARY
 	   && !j->req_nodes) {
 		error("With Arbitrary distribution you need to "
@@ -561,7 +578,8 @@ _step_req_create(srun_job_t *j)
 	r->cpu_count  = opt.overcommit ? j->nhosts
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
-	r->node_list  = xstrdup(j->nodelist);
+	r->node_list  = xstrdup(opt.nodelist);
+	debug("requesting nodes %s", r->node_list);
 	r->network    = xstrdup(opt.network);
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = false;      /* XXX fix this oneday */

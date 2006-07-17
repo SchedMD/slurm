@@ -1359,7 +1359,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	error_code = _job_create(job_specs, allocate, will_run,
 				 &job_ptr, submit_uid);
 	*job_pptr = job_ptr;
-
+	
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
@@ -1411,6 +1411,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 			(!top_prio) || (!independent);
 	
 	error_code = select_nodes(job_ptr, no_alloc);
+	
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		/* Not fatal error, but job can't be scheduled right now */
