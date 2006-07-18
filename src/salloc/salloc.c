@@ -42,8 +42,10 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/read_config.h"
 
 #include "src/salloc/opt.h"
+#include "src/salloc/msg.h"
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
@@ -55,6 +57,7 @@ int main(int argc, char *argv[])
 	job_desc_msg_t desc;
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
+	salloc_msg_thread_t *msg_thr;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -75,6 +78,12 @@ int main(int argc, char *argv[])
 	if (fill_job_desc_from_opts(&desc) == -1) {
 		exit(1);
 	}
+
+	/* create message thread to handle pings and such from slurmctld */
+	msg_thr = msg_thr_create(&desc.other_port);
+	desc.other_hostname = xshort_hostname();
+	verbose("other_port = %hu", desc.other_port);
+	verbose("other_hostname = %s", desc.other_hostname);
 
 	before = time(NULL);
 	alloc = slurm_allocate_resources_blocking(&desc, 0);
@@ -108,6 +117,7 @@ int main(int argc, char *argv[])
 		      alloc->job_id);
 
 	slurm_free_resource_allocation_response_msg(alloc);
+	msg_thr_destroy(msg_thr);
 
 	return 0;
 }
@@ -194,10 +204,6 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	if (opt.share)
 		desc->shared = 1;
-
-/* We want to support the pinger here */
-/* 	desc->other_port = slurmctld_comm_addr.port; */
-/*	desc->other_hostname = xstrdup(slurmctld_comm_addr.hostname); */
 
 	return 0;
 }
