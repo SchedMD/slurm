@@ -161,6 +161,8 @@ static void *_agent(void *x)
 	pthread_attr_t attr;
 
 	/* send the messages */
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	kvs_set.kvs_comm_recs = args->kvs_xmit_cnt;
 	kvs_set.kvs_comm_ptr  = args->kvs_xmit_ptr;
 	for (i=0; i<MSG_TRANSMITS; i++) {
@@ -176,19 +178,16 @@ static void *_agent(void *x)
 			msg_args = xmalloc(sizeof(struct msg_arg));
 			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
 			msg_args->kvs_ptr = &kvs_set;
-			slurm_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr, 
-						    PTHREAD_CREATE_DETACHED);
 			if (pthread_create(&msg_id, &attr, _msg_thread, 
 					(void *) msg_args)) {
 				fatal("pthread_create: %m");
 			}
-			slurm_attr_destroy(&attr);
 		}
 		while (agent_cnt > 0)
 			pthread_cond_wait(&agent_cond, &agent_mutex);
 		slurm_mutex_unlock(&agent_mutex);
 	}
+	slurm_attr_destroy(&attr);
 
 	/* Release allocated memory */
 	for (i=0; i<args->barrier_xmit_cnt; i++)
