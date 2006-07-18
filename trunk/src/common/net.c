@@ -63,8 +63,12 @@ static int _sock_bind_wild(int sockfd)
 	return (sin.sin_port);
 }
 
-
-
+/* open a stream socket on an ephemereal port and put it into 
+ * the listen state. fd and port are filled in with the new
+ * socket's file descriptor and port #.
+ *
+ * NOTE: port is in network byte order!
+ */
 int net_stream_listen(int *fd, int *port)
 {
 	int rc, val;

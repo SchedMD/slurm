@@ -50,9 +50,6 @@ slurm_complete_job ( uint32_t job_id, uint32_t job_return_code )
 	int rc;
 	slurm_msg_t req_msg;
 	complete_job_allocation_msg_t req;
-	char host[128];
-
-	(void) getnodename (host, sizeof(host)) ;
 
 	req.job_id      = job_id;
 	req.job_rc      = job_return_code;

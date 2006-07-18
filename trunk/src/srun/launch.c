@@ -186,8 +186,6 @@ launch(void *arg)
 	for (i = 0; i < r.num_io_port; i++) {
 		r.io_port[i] = ntohs(job->client_io->listenport[i]);
 	}
-	info("num_io_port = %d", r.num_io_port);
-	info("num_resp_port = %d", r.num_resp_port);
 
 	msg_array_ptr[0].msg_type = REQUEST_LAUNCH_TASKS;
 	msg_array_ptr[0].data            = &r;
