@@ -103,4 +103,14 @@ char *xbasename(char *path);
 */
 void _xstrsubstitute(char **str, const char *pattern, const char *replacement);
 
+/* xshort_hostname
+ *   Returns an xmalloc'd string containing the hostname
+ *   of the local machine.  The hostname contains only
+ *   the short version of the hostname (e.g. "linux123.foo.bar"
+ *   becomes "linux123") 
+ *
+ *   Returns NULL on error.
+ */
+char *xshort_hostname(void);
+
 #endif /* !_XSTRING_H */
