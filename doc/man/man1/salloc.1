@@ -36,18 +36,18 @@ Output help information and exit.
 Output version information and exit.
 .SH "ENVIRONMENT VARIABLES"
 .LP 
-.TP 
-\fBSLURM_JOBID\fP
-Same as \fB\-\-jobid\fR.
 .SH "EXAMPLES"
 .LP 
-To launch a job step (parallel program) in an existing job allocation:
+To get an allocation, and open a new xterm in which slaunch commands may be typed interactively:
 .IP 
-slaunch \-\-jobid 66777 \-N2 \-n8 myprogram
+$ salloc \-N16 xterm
+salloc: Granted job allocation 65537
+(at this point the xterm appears, and salloc waits for xterm to exit)
+salloc: Relinquishing job allocation 65537
 .LP 
 To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):
 .IP 
 salloc \-N5 slaunch \-n10 myprogram
 .SH "SEE ALSO"
 .LP 
-sinfo(1), salloc(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)
+sinfo(1), slaunch(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)
