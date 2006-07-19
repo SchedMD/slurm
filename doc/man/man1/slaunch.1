@@ -1,5 +1,5 @@
 .\" $Id$
-.TH "slaunch" "1" "SLURM 1.2" "Jun 2006" "SLURM Commands"
+.TH "slaunch" "1" "SLURM 1.2" "July 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 slaunch \- Launch a parallel application under a SLURM job allocation.
@@ -8,8 +8,7 @@ slaunch \- Launch a parallel application under a SLURM job allocation.
 slaunch [\fIoptions\fP] <\fIcommand\fP> [\fIcommand args\fR]
 .SH "DESCRIPTION"
 .LP 
-slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on the nodes, or subset of nodes, in a \fBjob allocation\fR.   A valid job allocation is a prerequisite of running slaunch.  The ID of the job allocation may be passed to slaunch through either the \fB\-\-jobid\fR command line parameter or the \fBSLURM_JOBID\fR environment variable.  The \fBsalloc\fR
-and \fBsbatch\fR commands may be used to request a job allocation, and each of those commands automatically set the \fBSLURM_JOBID\fR environment variable.
+slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on the nodes, or subset of nodes, in a \fBjob allocation\fR.   A valid job allocation is a prerequisite of running slaunch.  The ID of the job allocation may be passed to slaunch through either the \fB\-\-jobid\fR command line parameter or the \fBSLURM_JOBID\fR environment variable.  The \fBsalloc\fR and \fBsbatch\fR commands may be used to request a job allocation, and each of those commands automatically set the \fBSLURM_JOBID\fR environment variable.
 .SH "OPTIONS"
 .LP 
 .TP 

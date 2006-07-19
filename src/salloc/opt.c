@@ -48,7 +48,7 @@
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
-#include <stdlib.h>		/* getenv     */
+#include <stdlib.h>		/* getenv, strtol, etc. */
 #include <pwd.h>		/* getpwuid   */
 #include <ctype.h>		/* isdigit    */
 #include <sys/param.h>		/* MAXPATHLEN */
@@ -87,7 +87,6 @@
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
-#define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -116,7 +115,6 @@
 #define LONG_OPT_NICE        0x11e
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
-#define LONG_OPT_MULTI       0x122
 #define LONG_OPT_NO_REQUEUE  0x123
 #define LONG_OPT_BELL        0x124
 #define LONG_OPT_NO_BELL     0x125
@@ -141,9 +139,6 @@ static int  _get_int(const char *arg, const char *what);
 
 static void  _help(void);
 
-/* load a multi-program configuration file */
-static void _load_multi(int *argc, char **argv);
-
 /* fill in default options  */
 static void _opt_default(void);
 
@@ -164,9 +159,6 @@ static void _process_env_var(env_vars_t *e, const char *val);
 
 static uint16_t _parse_mail_type(const char *arg);
 static char *_print_mail_type(const uint16_t type);
-
-/* search PATH for command returns full path */
-static char *_search_path(char *, bool, int);
 
 static long  _to_bytes(const char *arg);
 
@@ -518,6 +510,46 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	return 0;
 }
 
+
+/* Convert a string into a node count */
+static int
+_str_to_nodes(const char *num_str, char **leftover)
+{
+	long int num;
+	char *endptr;
+
+	num = strtol(num_str, &endptr, 10);
+	if (endptr == num_str) { /* no valid digits */
+		*leftover = num_str;
+		return 0;
+	} 
+	if (*endptr != '\0' && (*endptr == 'k' || *endptr == 'K')) {
+		num *= 1024;
+		endptr++;
+	}
+	*leftover = endptr;
+
+	return (int)num;
+}
+
+/* Returns true if all characters in a string are whitespace characters,
+ * otherwise returns false;
+ */
+static bool
+_is_whitespace(const char *str)
+{
+	int i, len;
+
+	len = strlen(str);
+	for (i = 0; i < len; i++) {
+		if (!isspace(str[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /* 
  * verify that a node count in arg is of a known form (count or min-max)
  * OUT min, max specified minimum and maximum node counts
@@ -526,36 +558,52 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 static bool 
 _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 {
-	char *end_ptr;
-	double val1, val2;
+	char *ptr, *min_str, *max_str;
+	char *leftover;
 	
-	val1 = strtod(arg, &end_ptr);
-	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
-		val1 *= 1024;
-		end_ptr++;
+	/* Does the string contain a "-" character?  If so, treat as a range.
+	 * otherwise treat as an absolute node count. */
+	if ((ptr = index(arg, '-')) != NULL) {
+		min_str = xstrndup(arg, ptr-arg);
+		*min_nodes = _str_to_nodes(min_str, &leftover);
+		if (!_is_whitespace(leftover)) {
+			error("\"%s\" is not a valid node count", min_str);
+			xfree(min_str);
+			return false;
+		}
+		xfree(min_str);
+		if (*min_nodes == 0)
+			*min_nodes = 1;
+
+		max_str = xstrndup(ptr+1, strlen(arg)-((ptr+1)-arg));
+		*max_nodes = _str_to_nodes(max_str, &leftover);
+		if (!_is_whitespace(leftover)) {
+			error("\"%s\" is not a valid node count", max_str);
+			xfree(max_str);
+			return false;
+		}
+		xfree(max_str);
+	} else {
+		*min_nodes = *max_nodes = _str_to_nodes(arg, &leftover);
+		if (!_is_whitespace(leftover)) {
+			error("\"%s\" is not a valid node count", arg);
+			return false;
+		}
+		if (*min_nodes == 0) {
+			/* whitespace does not a valid node count make */
+			error("\"%s\" is not a valid node count", arg);
+			return false;
+		}
 	}
 
- 	if (end_ptr[0] == '\0') {
-		*min_nodes = val1;
-		return true;
-	}
-	
-	if (end_ptr[0] != '-')
+	if ((*max_nodes != 0) && (*max_nodes < *min_nodes)) {
+		error("Maximum node count %d is less than"
+		      " minimum node count %d",
+		      *max_nodes, *min_nodes);
 		return false;
-
-	val2 = strtod(&end_ptr[1], &end_ptr);
-	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
-		val2 *= 1024;
-		end_ptr++;
 	}
 
-	if (end_ptr[0] == '\0') {
-		*min_nodes = val1;
-		*max_nodes = val2;
-		return true;
-	} else
-		return false;
-
+	return true;
 }
 
 /* return command name from its full path name */
@@ -655,7 +703,6 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default()
 {
-	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
 	int i;
 
@@ -666,10 +713,6 @@ static void _opt_default()
 		error("who are you?");
 
 	opt.gid = getgid();
-
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
-		fatal("getcwd failed: %m");
-	opt.cwd = xstrdup(buf);
 
 	opt.progname = NULL;
 
@@ -772,13 +815,10 @@ env_vars_t env_vars[] = {
   {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
   {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
-  {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
-
   {NULL, 0, NULL, NULL}
 };
 
@@ -859,8 +899,7 @@ _process_env_var(env_vars_t *e, const char *val)
 						    &opt.min_nodes, 
 						    &opt.max_nodes );
 		if (opt.nodes_set == false) {
-			error("\"%s=%s\" -- invalid node count. ignoring...",
-			      e->var, val);
+			error("invalid node count in env variable, ignoring");
 		}
 		break;
 
@@ -924,20 +963,18 @@ _get_int(const char *arg, const char *what)
 void set_options(const int argc, char **argv, int first)
 {
 	int opt_char, option_index = 0;
-	static bool set_cwd=false, set_name=false;
+	static bool set_name=false;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
-		{"chdir",         required_argument, 0, 'D'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"immediate",     no_argument,       0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"distribution",  required_argument, 0, 'm'},
-		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
@@ -980,13 +1017,12 @@ void set_options(const int argc, char **argv, int first)
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{"bell",             no_argument,       0, LONG_OPT_BELL},
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:D:g:HIJ:km:n:N:"
+	char *opt_string = "+a:c:C:g:HIJ:km:N:"
 		"Op:P:qQR:st:U:vVw:W:x:XZ";
 
 	if(opt.progname == NULL)
@@ -1019,14 +1055,6 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
-			break;
-		case (int)'D':
-			if(!first && set_cwd)
-				break;
-
-			set_cwd = true;
-			xfree(opt.cwd);
-			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'g':
 			if(!first && opt.geometry)
@@ -1079,8 +1107,6 @@ void set_options(const int argc, char **argv, int first)
 						   &opt.min_nodes,
 						   &opt.max_nodes);
 			if (opt.nodes_set == false) {
-				error("invalid node count `%s'", 
-				      optarg);
 				exit(1);
 			}
 			break;
@@ -1283,9 +1309,6 @@ void set_options(const int argc, char **argv, int first)
 				exit(1);
 			}
 			break;
-		case LONG_OPT_MULTI:
-			opt.multi_prog = true;
-			break;
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
 			break;
@@ -1309,46 +1332,6 @@ void set_options(const int argc, char **argv, int first)
 	}
 }
 
-/* Load the multi_prog config file into argv, pass the  entire file contents 
- * in order to avoid having to read the file on every node. We could parse
- * the infomration here too for loading the MPIR records for TotalView */
-static void _load_multi(int *argc, char **argv)
-{
-	int config_fd, data_read = 0, i;
-	struct stat stat_buf;
-	char *data_buf;
-
-	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
-		error("Could not open multi_prog config file %s",
-			argv[0]);
-		exit(1);
-	}
-	if (fstat(config_fd, &stat_buf) == -1) {
-		error("Could not stat multi_prog config file %s",
-			argv[0]);
-		exit(1);
-	}
-	if (stat_buf.st_size > 60000) {
-		error("Multi_prog config file %s is too large",
-			argv[0]);
-		exit(1);
-	}
-	data_buf = xmalloc(stat_buf.st_size);
-	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
-			- data_read)) != 0) {
-		if (i < 0) {
-			error("Error reading multi_prog config file %s", 
-				argv[0]);
-			exit(1);
-		} else
-			data_read += i;
-	}
-	close(config_fd);
-	for (i=1; i<*argc; i++)
-		xfree(argv[i]);
-	argv[1] = data_buf;
-	*argc = 2;
-}
 
 /*
  * _opt_args() : set options via commandline args and popt
@@ -1378,24 +1361,6 @@ static void _opt_args(int argc, char **argv)
 		command_argv[i] = xstrdup(rest[i]);
 	command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
-	if (opt.multi_prog) {
-		if (command_argc < 1) {
-			error("configuration file not specified");
-			exit(1);
-		}
-		_load_multi(&command_argc, command_argv);
-
-	}
-	else if (command_argc > 0) {
-		char *fullpath;
-		char *cmd       = command_argv[0];
-		int  mode       = R_OK;
-
-		if ((fullpath = _search_path(cmd, true, mode))) {
-			xfree(command_argv[0]);
-			command_argv[0] = fullpath;
-		} 
-	}
 	if (!_opt_verify())
 		exit(1);
 }
@@ -1448,7 +1413,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
+	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) || 
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
 		error("%s: invalid number of nodes (-N %d-%d)\n",
 		      opt.progname, opt.min_nodes, opt.max_nodes);
@@ -1578,39 +1543,6 @@ _create_path_list(void)
 	return l;
 }
 
-static char *
-_search_path(char *cmd, bool check_current_dir, int access_mode)
-{
-	List         l        = _create_path_list();
-	ListIterator i        = NULL;
-	char *path, *fullpath = NULL;
-
-	if (  (cmd[0] == '.' || cmd[0] == '/') 
-           && (access(cmd, access_mode) == 0 ) ) {
-		if (cmd[0] == '.')
-			xstrfmtcat(fullpath, "%s/", opt.cwd);
-		xstrcat(fullpath, cmd);
-		goto done;
-	}
-
-	if (check_current_dir) 
-		list_prepend(l, xstrdup(opt.cwd));
-
-	i = list_iterator_create(l);
-	while ((path = list_next(i))) {
-		xstrfmtcat(fullpath, "%s/%s", path, cmd);
-
-		if (access(fullpath, access_mode) == 0)
-			goto done;
-
-		xfree(fullpath);
-		fullpath = NULL;
-	}
-  done:
-	list_destroy(l);
-	return fullpath;
-}
-
 
 /* helper function for printing options
  * 
@@ -1692,7 +1624,6 @@ static void _opt_list()
 	info("user           : `%s'", opt.user);
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
-	info("cwd            : %s", opt.cwd);
 	info("nprocs         : %d %s", opt.nprocs,
 		opt.nprocs_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,
@@ -1746,7 +1677,6 @@ static void _opt_list()
 	}
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
-	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_commandline();
 	info("user command   : `%s'", str);
 	xfree(str);
@@ -1756,7 +1686,7 @@ static void _opt_list()
 static void _usage(void)
 {
  	printf(
-"Usage: salloc [-N nnodes] [-n ntasks]\n"
+"Usage: salloc [-N numnodes|[min nodes]-[max nodes]]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "              [--share] [-m dist] [-J jobname]\n"
@@ -1770,7 +1700,7 @@ static void _usage(void)
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--multi-prog] [--no-requeue]\n"
+"              [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1780,13 +1710,11 @@ static void _help(void)
 "Usage: salloc [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
-"  -n, --ntasks=ntasks         number of tasks to run\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
-"  -D, --chdir=path            change remote current working directory\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -k, --no-kill               do not kill job on node failure\n"
@@ -1810,8 +1738,6 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --multi-prog            if set the program name specified is the\n"
-"                              configuration specificaiton for multiple programs\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
 "      --no-shell              don't spawn shell in allocate mode\n"
 "\n"
