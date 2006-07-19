@@ -59,13 +59,11 @@ typedef struct salloc_options {
 
 	char *progname;		/* argv[0] of this program or 
 				 * configuration file if multi_prog */
-	bool multi_prog;	/* multiple programs to execute */
 	char user[MAX_USERNAME];/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
 	uid_t euid;		/* effective user --uid=user	*/
 	gid_t egid;		/* effective group --gid=group	*/
-	char *cwd;		/* current working directory	*/
 
 	int  nprocs;		/* --nprocs=n,      -n n	*/
 	bool nprocs_set;	/* true if nprocs explicitly set */
