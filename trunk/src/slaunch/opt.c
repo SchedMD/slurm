@@ -113,11 +113,8 @@
 #define LONG_OPT_PROPAGATE   0x116
 #define LONG_OPT_PROLOG      0x117
 #define LONG_OPT_EPILOG      0x118
-#define LONG_OPT_MAIL_TYPE   0x11a
-#define LONG_OPT_MAIL_USER   0x11b
 #define LONG_OPT_TASK_PROLOG 0x11c
 #define LONG_OPT_TASK_EPILOG 0x11d
-#define LONG_OPT_NICE        0x11e
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
@@ -157,9 +154,6 @@ static bool _opt_verify(void);
 static void  _print_version(void);
 
 static void _process_env_var(env_vars_t *e, const char *val);
-
-static uint16_t _parse_mail_type(const char *arg);
-static char *_print_mail_type(const uint16_t type);
 
 /* search PATH for command returns full path */
 static char *_search_path(char *, bool, int);
@@ -963,11 +957,8 @@ void set_options(const int argc, char **argv, int first)
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
-		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
-		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
-		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{NULL,               0,                 0, 0}
@@ -1305,15 +1296,6 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.epilog);
 			opt.epilog = xstrdup(optarg);
 			break;
-		case LONG_OPT_MAIL_TYPE:
-			opt.mail_type = _parse_mail_type(optarg);
-			if (opt.mail_type == 0)
-				fatal("--mail-type=%s invalid", optarg);
-			break;
-		case LONG_OPT_MAIL_USER:
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
-			break;
 		case LONG_OPT_TASK_PROLOG:
 			xfree(opt.task_prolog);
 			opt.task_prolog = xstrdup(optarg);
@@ -1321,17 +1303,6 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_TASK_EPILOG:
 			xfree(opt.task_epilog);
 			opt.task_epilog = xstrdup(optarg);
-			break;
-		case LONG_OPT_NICE:
-			if (optarg)
-				opt.nice = strtol(optarg, NULL, 10);
-			else
-				opt.nice = 100;
-			if (abs(opt.nice) > NICE_OFFSET) {
-				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
-				exit(1);
-			}
 			break;
 		case LONG_OPT_CTRL_COMM_IFHN:
 			xfree(opt.ctrl_comm_ifhn);
@@ -1585,39 +1556,6 @@ static bool _opt_verify(void)
 	return verified;
 }
 
-static uint16_t _parse_mail_type(const char *arg)
-{
-	uint16_t rc;
-
-	if (strcasecmp(arg, "BEGIN") == 0)
-		rc = MAIL_JOB_BEGIN;
-	else if  (strcasecmp(arg, "END") == 0)
-		rc = MAIL_JOB_END;
-	else if (strcasecmp(arg, "FAIL") == 0)
-		rc = MAIL_JOB_FAIL;
-	else if (strcasecmp(arg, "ALL") == 0)
-		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL;
-	else
-		rc = 0;		/* failure */
-
-	return rc;
-}
-static char *_print_mail_type(const uint16_t type)
-{
-	if (type == 0)
-		return "NONE";
-	if (type == MAIL_JOB_BEGIN)
-		return "BEGIN";
-	if (type == MAIL_JOB_END)
-		return "END";
-	if (type == MAIL_JOB_FAIL)
-		return "FAIL";
-	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL))
-		return "ALL";
-
-	return "UNKNOWN";
-}
-
 static void
 _freeF(void *data)
 {
@@ -1769,10 +1707,10 @@ static void _opt_list()
 {
 	char *str;
 
-	info("defined options for program `%s'", opt.progname);
+	info("defined options for program \"%s\"", opt.progname);
 	info("--------------- ---------------------");
 
-	info("user           : `%s'", opt.user);
+	info("user           : \"%s\"", opt.user);
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
@@ -1784,7 +1722,7 @@ static void _opt_list()
 	     opt.num_nodes, opt.num_nodes_set ? "(set)" : "(default)");
 	info("jobid          : %u %s", opt.jobid, 
 		opt.jobid_set ? "(set)" : "(default)");
-	info("job name       : `%s'", opt.job_name);
+	info("job name       : \"%s\"", opt.job_name);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	info("cpu_bind       : %s", 
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
@@ -1801,8 +1739,6 @@ static void _opt_list()
 	else
 		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
-	if (opt.nice)
-		info("nice           : %d", opt.nice);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -1817,14 +1753,12 @@ static void _opt_list()
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	info("prolog         : %s", opt.prolog);
 	info("epilog         : %s", opt.epilog);
-	info("mail_type      : %s", _print_mail_type(opt.mail_type));
-	info("mail_user      : %s", opt.mail_user);
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_commandline();
-	info("remote command : `%s'", str);
+	info("remote command : \"%s\"", str);
 	xfree(str);
 
 }
@@ -1851,7 +1785,6 @@ static void _usage(void)
 #ifdef HAVE_BG		/* Blue gene specific options */
 "               [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
-"               [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
 "               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
@@ -1897,15 +1830,12 @@ static void _help(void)
 "  -d, --slurmd-debug=level    slurmd debug level\n"
 "      --core=type             change default corefile format type\n"
 "                              (type=\"list\" to list of valid formats)\n"
-"      --nice[=value]          decrease secheduling priority by value\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --epilog=program        run \"program\" after launching job step\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
-"      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
-"      --mail-user=user        who to send email notification for job state changes\n"
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"

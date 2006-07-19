@@ -84,7 +84,6 @@ typedef struct slaunch_options {
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true of jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
-	int nice;		/* --nice			*/
 
 	char *local_ofname;	/* --local-output, -o filename  */
 	char *local_ifname;	/* --local-input,  -i filename  */
@@ -133,8 +132,6 @@ typedef struct slaunch_options {
 	int16_t conn_type;	/* --conn-type 			*/
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
-	uint16_t mail_type;	/* --mail-type			*/
-	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	int argc;		/* length of argv array		*/
 	char **argv;		/* left over on command line	*/
