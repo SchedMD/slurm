@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.5
 ========================
+ -- Ignore partition's MaxNodes for SlurmUser and root.
 
 * Changes in SLURM 1.1.4
 ========================
