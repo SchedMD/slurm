@@ -73,7 +73,6 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
 }
-exec $bin_rm -f $file_in
 
 if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: error on job\n"
@@ -128,6 +127,7 @@ if {$matches != 1} {
 }
 
 if {$exit_code == 0} {
+	exec rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
