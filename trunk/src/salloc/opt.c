@@ -132,8 +132,6 @@ typedef struct env_vars env_vars_t;
 /* return command name from its full path name */
 static char * _base_name(char* command);
 
-static List  _create_path_list(void);
-
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what);
 
@@ -520,7 +518,7 @@ _str_to_nodes(const char *num_str, char **leftover)
 
 	num = strtol(num_str, &endptr, 10);
 	if (endptr == num_str) { /* no valid digits */
-		*leftover = num_str;
+		*leftover = (char *)num_str;
 		return 0;
 	} 
 	if (*endptr != '\0' && (*endptr == 'k' || *endptr == 'K')) {
@@ -1507,47 +1505,6 @@ static char *_print_mail_type(const uint16_t type)
 
 	return "UNKNOWN";
 }
-
-static void
-_freeF(void *data)
-{
-	xfree(data);
-}
-
-static List
-_create_path_list(void)
-{
-	List l = list_create(_freeF);
-	char *path = xstrdup(getenv("PATH"));
-	char *c, *lc;
-
-	if (!path) {
-		error("Error in PATH environment variable");
-		list_destroy(l);
-		return NULL;
-	}
-
-	c = lc = path;
-
-	while (*c != '\0') {
-		if (*c == ':') {
-			/* nullify and push token onto list */
-			*c = '\0';
-			if (lc != NULL && strlen(lc) > 0)
-				list_append(l, xstrdup(lc));
-			lc = ++c;
-		} else
-			c++;
-	}
-
-	if (strlen(lc) > 0)
-		list_append(l, xstrdup(lc));
-
-	xfree(path);
-
-	return l;
-}
-
 
 /* helper function for printing options
  * 
