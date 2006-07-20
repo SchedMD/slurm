@@ -1048,6 +1048,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.cred        = slurm_cred;
 		job_step_resp.switch_job  = switch_copy_jobinfo(
 						step_rec->switch_job);
+		job_step_resp.step_layout = 
+			step_layout_copy(step_rec->step_layout);
 		unlock_slurmctld(job_write_lock);
 		resp.address = msg->address;
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;

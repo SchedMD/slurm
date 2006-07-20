@@ -770,7 +770,7 @@ void set_slurmd_addr (void)
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
-		slurm_set_addr (&node_ptr->slurm_addr, 
+		slurm_set_addr (&node_ptr->slurm_addr,
 				node_ptr->port,
 				node_ptr->comm_name);
 		if (node_ptr->slurm_addr.sin_port)

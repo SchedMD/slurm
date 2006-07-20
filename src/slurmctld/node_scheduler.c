@@ -1047,8 +1047,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].weight =
 		    config_ptr->weight;
 		node_set_ptr[node_set_inx].feature = tmp_feature;
-		debug("found %d usable nodes from config containing %s",
-		     node_set_ptr[node_set_inx].nodes, config_ptr->nodes);
+		debug2("found %d usable nodes from config containing %s",
+		       node_set_ptr[node_set_inx].nodes, config_ptr->nodes);
 
 		node_set_inx++;
 		xrealloc(node_set_ptr,

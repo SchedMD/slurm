@@ -477,6 +477,26 @@ typedef struct job_info_msg {
 	job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
+typedef struct slurm_step_layout {
+	char *nodes;
+	char *arbitrary_nodes;
+	char **host;		/* name for each host */
+
+	slurm_addr *node_addr;
+
+	uint32_t *cpus_per_node;
+	uint32_t *cpu_count_reps;
+	uint32_t *cpus;		/* count of processors on each host */
+	uint32_t *tasks;	/* number of tasks on each host */
+	
+	uint32_t **tids;	/* host id => task id mapping */
+	uint32_t *hostids;      /* task id => host id mapping */
+	
+	uint16_t num_hosts;	/* node count */
+	uint32_t num_tasks;	/* number of tasks to execute */
+	uint16_t task_dist;	/* see enum task_dist_state */
+} slurm_step_layout_t;
+
 typedef struct job_step_specs {
 	uint32_t job_id;	/* job ID */
 	uint32_t user_id;	/* user the job runs as */
@@ -495,6 +515,8 @@ typedef struct job_step_specs {
 typedef struct job_step_create_response_msg {
 	uint32_t job_step_id;	/* assigned job step id */
 	char *node_list;	/* list of allocated nodes */
+	slurm_step_layout_t *step_layout; /* info about how the tasks 
+					     are to be layout in the step */ 
 	slurm_cred_t cred;      /* slurm job credential */
 	switch_jobinfo_t switch_job;	/* switch context, opaque data structure */
 } job_step_create_response_msg_t;

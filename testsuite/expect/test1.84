@@ -105,6 +105,12 @@ if {$cpu_count < 2} {
 set read_cpus 0
 spawn $srun -N1 --cpus-per-task=2 --nodelist=$host -l -t1 $bin_hostname  
 expect {
+	-re "Invalid node name specified" {
+		send_user "\nWARNING: Appears you are using "
+		send_user "multiple slurmd testing.\n"
+		send_user "This test won't work in that fashion.\n"
+		exit 0	
+	}
 	-re "$number: ($alpha_numeric)" {
 		incr read_cpus
 		exp_continue

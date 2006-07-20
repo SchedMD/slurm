@@ -341,7 +341,8 @@ _attach_to_job(srun_job_t *job)
 		m->ret_list = NULL;
 		msg->forward_struct_init = 0;
 	
-		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
+		memcpy(&m->address, &job->step_layout->node_addr[i], 
+		       sizeof(slurm_addr));
 	}
 
 	_p_reattach(msg, job);

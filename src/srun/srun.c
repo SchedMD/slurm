@@ -121,7 +121,7 @@ int srun(int ac, char **av)
 	srun_job_t *job = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
-
+	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	
 	env->stepid = -1;
@@ -223,25 +223,20 @@ int srun(int ac, char **av)
 		xfree(env);
 		exit (exitcode);
 
-	} else if ( (resp = existing_allocation()) ) {
+	} else if ((job_id = jobid_from_env())) {
 		if (opt.allocate) {
 			error("job %u already has an allocation",
-				resp->job_id);
+			      job_id);
 			exit(1);
 		}
-		if (job_resp_hack_for_step(resp))	/* FIXME */
-			exit(1);
 		
-		job = job_create_allocation(resp);
+		job = job_step_create_allocation(job_id);
 		
 		job->old_job = true;
 		sig_setup_sigmask();
-		
-		if (create_job_step(job, resp) < 0)
+			
+		if (create_job_step(job) < 0)
 			exit(1);
-		
-		slurm_free_resource_allocation_response_msg(resp);
-		
 	} else if (mode == MODE_ATTACH) {
 		reattach();
 		exit (0);
@@ -261,7 +256,7 @@ int srun(int ac, char **av)
 		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp);
-		if (create_job_step(job, resp) < 0) {
+		if (create_job_step(job) < 0) {
 			srun_job_destroy(job, 0);
 			exit(1);
 		}

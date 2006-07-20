@@ -49,12 +49,63 @@
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 
 static int _task_layout_block(slurm_step_layout_t *step_layout);
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout);
 #ifndef HAVE_FRONT_END
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout);
 #endif
+
+
+extern slurm_step_layout_t *_step_layout_create(
+	const char *mlist, const char *tlist,
+	uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
+	uint32_t num_hosts, uint32_t num_tasks, uint16_t task_dist)
+{
+	slurm_step_layout_t *step_layout = NULL;
+
+	step_layout = xmalloc(sizeof(slurm_step_layout_t));
+	if(!step_layout) {
+		error("xmalloc error for step_layout");
+		return NULL;
+	}
+	
+	if(task_dist == SLURM_DIST_ARBITRARY) {
+		hostlist_t hl = NULL;
+		char buf[8192];
+		/* set the node list for the task layout later if user
+		   supplied could be different that the job allocation */
+		step_layout->arbitrary_nodes = xstrdup(tlist);
+
+		hl = hostlist_create(tlist);
+		hostlist_uniq(hl);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		num_hosts = hostlist_count(hl);
+		hostlist_destroy(hl);
+		step_layout->nodes = xstrdup(buf);
+	} else {
+		step_layout->nodes = xstrdup(tlist);
+		step_layout->arbitrary_nodes = NULL;
+	}
+	step_layout->cpus_per_node = cpus_per_node;
+	step_layout->cpu_count_reps = cpu_count_reps;
+	step_layout->task_dist	= task_dist;
+	step_layout->num_tasks  = num_tasks;
+	
+#ifdef HAVE_FRONT_END	/* Limited job step support */
+	/* All jobs execute through front-end on Blue Gene.
+	 * Normally we would not permit execution of job steps,
+	 * but can fake it by just allocating all tasks to
+	 * one of the allocated nodes. */
+	step_layout->num_hosts    = 1;
+#else
+	step_layout->num_hosts  = num_hosts;
+#endif
+	
+	return step_layout;
+}
 
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
@@ -69,98 +120,112 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout);
  * RET a pointer to an integer array listing task counts per node
  * NOTE: allocates memory that should be xfreed by caller
  */
-uint32_t *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
-			uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
-			const char *tlist, uint32_t num_tasks) 
+slurm_step_layout_t *distribute_tasks(
+	const char *mlist, const char *tlist,
+	uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
+	uint32_t num_hosts, uint32_t num_tasks,
+	uint16_t task_dist) 
 {
-	hostlist_t master_hl = NULL, task_hl = NULL;
-	int i, index, count, hostid, nnodes, ncpus;
-	uint32_t *cpus, *ntask = NULL;
-	char *this_node_name;
+	slurm_step_layout_t *step_layout = NULL;
+/* 	hostlist_t master_hl = NULL, task_hl = NULL; */
+/* 	int i, index, count, hostid, nnodes, ncpus; */
+/* 	uint32_t *cpus, *ntask = NULL; */
+/* 	char *this_node_name; */
 	
-	if (!tlist || num_tasks == 0)
-		return NULL;
+/* 	if (!tlist || num_tasks == 0) */
+/* 		return NULL; */
 
-	if ((master_hl = hostlist_create(mlist)) == NULL)
-		fatal("hostlist_create error for %s: %m", mlist);
+/* 	if ((master_hl = hostlist_create(mlist)) == NULL) */
+/* 		fatal("hostlist_create error for %s: %m", mlist); */
 
-	if ((task_hl = hostlist_create(tlist)) == NULL)
-		fatal("hostlist_create error for %s: %m", tlist);
+/* 	if ((task_hl = hostlist_create(tlist)) == NULL) */
+/* 		fatal("hostlist_create error for %s: %m", tlist); */
 
-	nnodes = hostlist_count(task_hl);
-	ntask = (uint32_t *) xmalloc(sizeof(uint32_t *) * nnodes);
-	if (!ntask) {
-		hostlist_destroy(master_hl);
-		hostlist_destroy(task_hl);
-		slurm_seterrno(ENOMEM);
-		return NULL;
+/* 	nnodes = hostlist_count(task_hl); */
+/* 	ntask = (uint32_t *) xmalloc(sizeof(uint32_t *) * nnodes); */
+/* 	if (!ntask) { */
+/* 		hostlist_destroy(master_hl); */
+/* 		hostlist_destroy(task_hl); */
+/* 		slurm_seterrno(ENOMEM); */
+/* 		return NULL; */
+/* 	} */
+
+/* 	index = 0; */
+/* 	count = 1; */
+/* 	i = 0; */
+/* 	ncpus = 0; */
+/* 	while ((this_node_name = hostlist_shift(master_hl))) { */
+/* 		if (hostlist_find(task_hl, this_node_name) >= 0) { */
+/* 			if (i >= nnodes) { */
+/* 				fatal("Internal error: duplicate nodes? " */
+/* 					"(%s)(%s):%m", mlist, tlist); */
+/* 			} */
+/* 			ntask[i++] = cpus_per_node[index]; */
+/* 			ncpus += cpus_per_node[index]; */
+/* 		} */
+
+/* 		if (++count > cpu_count_reps[index]) { */
+/* 			index++; */
+/* 			count = 1; */
+/* 		} */
+/* 		free(this_node_name); */
+/* 	} */
+/* 	hostlist_destroy(master_hl); */
+/* 	hostlist_destroy(task_hl); */
+
+	step_layout = _step_layout_create(mlist, tlist, 
+					  cpus_per_node, cpu_count_reps,
+					  num_hosts, num_tasks, 
+					  task_dist);
+	if(task_layout(step_layout) == SLURM_ERROR) {
+		step_layout_destroy(step_layout);
+		step_layout = NULL;
 	}
+	return step_layout;
 
-	index = 0;
-	count = 1;
-	i = 0;
-	ncpus = 0;
-	while ((this_node_name = hostlist_shift(master_hl))) {
-		if (hostlist_find(task_hl, this_node_name) >= 0) {
-			if (i >= nnodes) {
-				fatal("Internal error: duplicate nodes? "
-					"(%s)(%s):%m", mlist, tlist);
-			}
-			ntask[i++] = cpus_per_node[index];
-			ncpus += cpus_per_node[index];
-		}
+	/* if (num_tasks >= ncpus) { */
+/* 		/\* */
+/* 		 * Evenly overcommit tasks over the hosts */
+/* 		 *\/ */
+/* 		int extra = num_tasks - ncpus; */
+/* 		int add_to_all = extra / nnodes; */
+/* 		int subset = extra % nnodes; */
+/* 		for (i = 0; i < nnodes; i++) { */
+/* 			ntask[i] += add_to_all; */
+/* 			if (i < subset) */
+/* 				ntask[i]++; */
+/* 		} */
+/* 		return ntask; */
+/* 	} */
 
-		if (++count > cpu_count_reps[index]) {
-			index++;
-			count = 1;
-		}
-		free(this_node_name);
-	}
-	hostlist_destroy(master_hl);
-	hostlist_destroy(task_hl);
-	if (num_tasks >= ncpus) {
-		/*
-		 * Evenly overcommit tasks over the hosts
-		 */
-		int extra = num_tasks - ncpus;
-		int add_to_all = extra / nnodes;
-		int subset = extra % nnodes;
-		for (i = 0; i < nnodes; i++) {
-			ntask[i] += add_to_all;
-			if (i < subset)
-				ntask[i]++;
-		}
-		return ntask;
-	}
+/* 	/\* */
+/* 	 * NOTE: num_tasks is less than ncpus here. */
+/* 	 * */
+/* 	 * In a cyclic fashion, place tasks on the nodes as permitted */
+/* 	 * by the cpu constraints. */
+/* 	 *\/ */
+/* 	cpus = ntask; */
+/* 	ntask = (uint32_t *) xmalloc(sizeof(int *) * nnodes); */
+/* 	if (!ntask) { */
+/* 		slurm_seterrno(ENOMEM); */
+/* 		xfree(cpus); */
+/* 		return NULL; */
+/* 	} */
 
-	/*
-	 * NOTE: num_tasks is less than ncpus here.
-	 *
-	 * In a cyclic fashion, place tasks on the nodes as permitted
-	 * by the cpu constraints.
-	 */
-	cpus = ntask;
-	ntask = (uint32_t *) xmalloc(sizeof(int *) * nnodes);
-	if (!ntask) {
-		slurm_seterrno(ENOMEM);
-		xfree(cpus);
-		return NULL;
-	}
+/* 	for (i = 0; i < nnodes; i++) */
+/* 		ntask[i] = 0; */
 
-	for (i = 0; i < nnodes; i++)
-		ntask[i] = 0;
-
-	hostid = 0;
-	for (i = 0; i < num_tasks;) {
-		if (ntask[hostid] < cpus[hostid]) {
-			ntask[hostid]++;
-			i++;
-		}
-		if (++hostid >= nnodes)
-			hostid = 0;
-	}
-	xfree(cpus);
-	return ntask;
+/* 	hostid = 0; */
+/* 	for (i = 0; i < num_tasks;) { */
+/* 		if (ntask[hostid] < cpus[hostid]) { */
+/* 			ntask[hostid]++; */
+/* 			i++; */
+/* 		} */
+/* 		if (++hostid >= nnodes) */
+/* 			hostid = 0; */
+/* 	} */
+/* 	xfree(cpus); */
+/* 	return ntask; */
 }
 
 extern slurm_step_layout_t *step_layout_create(
@@ -175,12 +240,13 @@ extern slurm_step_layout_t *step_layout_create(
 		error("xmalloc error for step_layout");
 		return NULL;
 	}
-	step_layout->hl = NULL;
+	//step_layout->hl = NULL;
 	
 	if(alloc_resp) {
-		step_layout->alloc_nodes = 
+		//info("got hostlist of %s", alloc_resp->node_list);
+		step_layout->nodes = 
 			(char *)xstrdup(alloc_resp->node_list);
-		step_layout->hl	= hostlist_create(alloc_resp->node_list);
+		//step_layout->hl	= hostlist_create(alloc_resp->node_list);
 		step_layout->cpus_per_node = alloc_resp->cpus_per_node;
 		step_layout->cpu_count_reps = alloc_resp->cpu_count_reps;
 #ifdef HAVE_FRONT_END	/* Limited job step support */
@@ -195,7 +261,7 @@ extern slurm_step_layout_t *step_layout_create(
 		step_layout->num_tasks  = alloc_resp->node_cnt;
 	} else {
 		debug("no alloc_resp given for step_layout_create");
-		step_layout->alloc_nodes = NULL;
+		step_layout->nodes = NULL;
 		step_layout->cpus_per_node = NULL;
 		step_layout->cpu_count_reps = NULL;
 	}
@@ -203,11 +269,11 @@ extern slurm_step_layout_t *step_layout_create(
 	if(step_resp) {
 		/* set the node list for the task layout later if user
 		   supplied could be different that the job allocation */
-		step_layout->step_nodes = xstrdup(step_resp->node_list);
+		xfree(step_layout->nodes);
+		step_layout->nodes = xstrdup(step_resp->node_list);
 /* 		info("host list is %s", step_resp->node_list); */
 	} else {
 		debug("no step_resp given for step_layout_create");
-		step_layout->step_nodes = NULL;
 	}
 
 	if(step_req) {
@@ -223,15 +289,56 @@ extern slurm_step_layout_t *step_layout_create(
 	return step_layout;
 }
 
+/* copys structure for step layout */
+extern slurm_step_layout_t *step_layout_copy(slurm_step_layout_t *step_layout)
+{
+	slurm_step_layout_t *layout;
+	int i=0;
+	if(!step_layout) 
+		return NULL;
+
+	layout = xmalloc(sizeof(slurm_step_layout_t));
+	layout->nodes = xstrdup(step_layout->nodes);
+	layout->arbitrary_nodes = xstrdup(step_layout->arbitrary_nodes);
+	layout->num_hosts = step_layout->num_hosts;
+	layout->num_tasks = step_layout->num_tasks;
+
+	layout->node_addr = xmalloc(sizeof(slurm_addr) * layout->num_hosts);
+	memcpy(layout->node_addr, step_layout->node_addr, 
+	       (sizeof(slurm_addr) * layout->num_hosts));
+	layout->cpus  = xmalloc(sizeof(uint32_t) * layout->num_hosts);
+	memcpy(layout->cpus, step_layout->cpus, 
+	       (sizeof(uint32_t) * layout->num_hosts));
+	layout->tasks = xmalloc(sizeof(uint32_t) * layout->num_hosts);
+	memcpy(layout->tasks, step_layout->tasks, 
+	       (sizeof(uint32_t) * layout->num_hosts));
+	layout->hostids = xmalloc(sizeof(uint32_t) * layout->num_tasks);
+	memcpy(layout->hostids, step_layout->hostids, 
+	       (sizeof(uint32_t) * layout->num_tasks));
+	
+	layout->host  = xmalloc(sizeof(char *) * layout->num_hosts);
+	layout->tids  = xmalloc(sizeof(uint32_t *) * layout->num_hosts);
+	for (i=0; i<layout->num_hosts; i++) {
+		layout->host[i] = malloc(strlen(step_layout->host[i]));
+		strcpy(layout->host[i], step_layout->host[i]);
+		layout->tids[i] = xmalloc(sizeof(uint32_t) * layout->tasks[i]);
+		memcpy(layout->tids[i], step_layout->tids[i], 
+		       (sizeof(uint32_t) * layout->tasks[i]));
+	}
+			
+	return layout;
+}
+
 /* destroys structure for step layout */
 extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 {
 	int i=0;
 	if(step_layout) {
-		xfree(step_layout->alloc_nodes);
-		xfree(step_layout->step_nodes);
+		xfree(step_layout->nodes);
+		xfree(step_layout->arbitrary_nodes);
 		for (i=0; i<step_layout->num_hosts; i++) {
-			free(step_layout->host[i]);
+			if(step_layout->host && step_layout->host[i])
+				free(step_layout->host[i]);
 			xfree(step_layout->tids[i]);
 		}
 		xfree(step_layout->host);
@@ -240,7 +347,7 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->tasks);
 		xfree(step_layout->hostids);
 		
-		hostlist_destroy(step_layout->hl);
+		//hostlist_destroy(step_layout->hl);
 		xfree(step_layout);
 	}
 		
@@ -251,13 +358,15 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 extern int task_layout(slurm_step_layout_t *step_layout)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
-	debug("laying out the %d tasks on %d hosts\n", 
-	      step_layout->num_tasks, step_layout->num_hosts);
+	hostlist_t hl;
+		
 	if (step_layout->num_hosts == 0)
 		return SLURM_ERROR;
 	if (step_layout->cpus)	/* layout already completed */
 		return SLURM_SUCCESS;
 	
+	step_layout->node_addr = xmalloc(sizeof(slurm_addr) 
+				     * step_layout->num_hosts);
 	step_layout->cpus  = xmalloc(sizeof(uint32_t) 
 				     * step_layout->num_hosts);
 	step_layout->tasks = xmalloc(sizeof(uint32_t) 
@@ -268,15 +377,31 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 				     * step_layout->num_hosts);
 	step_layout->hostids = xmalloc(sizeof(uint32_t) 
 				     * step_layout->num_tasks);
-
+	
+	hl = hostlist_create(step_layout->nodes);
+	/* make sure the number of nodes we think we have 
+	   is the correct number */
+	i = hostlist_count(hl);
+	if(step_layout->num_hosts > i)
+		step_layout->num_hosts = i;
+	debug("laying out the %d tasks on %d hosts %s\n", 
+	      step_layout->num_tasks, step_layout->num_hosts,
+	      step_layout->nodes);
+	if(step_layout->num_hosts < 1) {
+		error("no hostlist given can't layout tasks");
+		return SLURM_ERROR;
+	}
 	for (i=0; i<step_layout->num_hosts; i++) {
-		step_layout->host[i] = hostlist_shift(step_layout->hl);
+		step_layout->host[i] = hostlist_shift(hl);
 		if(!step_layout->host[i]) {
 			error("hostlist incomplete for this job request");
+			hostlist_destroy(hl);
 			return SLURM_ERROR;
 		}
-			
-		debug2("host %d = %s", i, step_layout->host[i]);
+		slurm_conf_get_addr(step_layout->host[i], 
+				    &step_layout->node_addr[i]);
+							
+		debug("host %d = %s", i, step_layout->host[i]);
 		step_layout->cpus[i] = step_layout->cpus_per_node[cpu_inx];
 		if ((++cpu_cnt) >= step_layout->cpu_count_reps[cpu_inx]) {
 			/* move to next record */
@@ -284,7 +409,8 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 			cpu_cnt = 0;
 		}
 	}
-	
+	hostlist_destroy(hl);
+
 	if (step_layout->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(step_layout);
 #ifndef HAVE_FRONT_END
@@ -328,11 +454,11 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 	hostlist_t job_alloc_hosts = NULL;
 	hostlist_t step_alloc_hosts = NULL;
 	
-	debug3("job list is %s", step_layout->alloc_nodes);
-	job_alloc_hosts = hostlist_create(step_layout->alloc_nodes);
+	debug("job list is %s", step_layout->nodes);
+	job_alloc_hosts = hostlist_create(step_layout->nodes);
 	itr = hostlist_iterator_create(job_alloc_hosts);
-	debug3("list is %s", step_layout->step_nodes);
-	step_alloc_hosts = hostlist_create(step_layout->step_nodes);
+	debug("list is %s", step_layout->arbitrary_nodes);
+	step_alloc_hosts = hostlist_create(step_layout->arbitrary_nodes);
 	if(hostlist_count(step_alloc_hosts) != step_layout->num_tasks) {
 		error("Asked for %d tasks have %d in the nodelist. "
 		      "Check your nodelist",
@@ -389,6 +515,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 		      step_layout->num_tasks, task_cnt);
 		return SLURM_ERROR;
 	}
+		
 	return SLURM_SUCCESS;
 }
 #endif

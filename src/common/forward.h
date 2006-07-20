@@ -159,7 +159,6 @@ extern int forward_set (forward_t *forward,
  * IN: span        - int                   - count of forwards to do
  * IN: step_layout - slurm_step_layout_t * - contains information about hosts
  *                                           from original message
- * IN: slurmd_addr - slurm_addr *          - addrs of hosts to send messages to
  * IN: itr         - hostlist_iterator_t   - count into host list of hosts to 
  *                                           send messages to 
  * IN: timeout     - int32_t               - timeout if any to wait for 
@@ -175,10 +174,11 @@ This function should be used sending a launch message that could be forwarded.
 int *span = set_span(job->step_layout->num_hosts, 0);
 	
 //set up hostlist off the nodelist of the job
-hostlist = hostlist_create(job->nodelist); 		
+hostlist = hostlist_create(job->step_layout->nodes);
 itr = hostlist_iterator_create(hostlist);
 job->thr_count = 0;
-for (i = 0; i < job->step_layout->num_hosts; i++) {
+i=0;
+while((host = hostlist_next(itr)) != NULL) {
 	slurm_msg_t                *m = &msg_array_ptr[job->thr_count];
 	
 	m->srun_node_id    = (uint32_t)i;			
@@ -190,18 +190,9 @@ for (i = 0; i < job->step_layout->num_hosts; i++) {
 	m->orig_addr.sin_addr.s_addr = 0;
 	m->buffer = buffer;
 
-	j=0; 
-	while(host = hostlist_next(itr)) { 
-		if(!strcmp(host,job->step_layout->host[i])) {
-       		       free(host);
-		       break; 
-		}
-  	       	j++; 
-	       	free(host);
-        }
-	hostlist_iterator_reset(itr);
+	
 	memcpy(&m->address, 
-	       &job->slurmd_addr[j], 
+	       &job->step_layout->node_addr[i], 
 	       sizeof(slurm_addr));
 	
 // send the messages forward struct to be filled in with the information from
@@ -210,7 +201,6 @@ for (i = 0; i < job->step_layout->num_hosts; i++) {
 			   span[job->thr_count],
 			   &i,
 			   job->step_layout,
-			   job->slurmd_addr,
 			   itr,
 			   opt.msg_timeout);
 //increment the count of threads created		
@@ -225,7 +215,6 @@ extern int forward_set_launch (forward_t *forward,
 			       int span,
 			       int *pos,
 			       slurm_step_layout_t *step_layout,
-			       slurm_addr *slurmd_addr,
 			       hostlist_iterator_t itr,
 			       int32_t timeout);
 

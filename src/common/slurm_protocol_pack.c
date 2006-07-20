@@ -235,11 +235,16 @@ static void _pack_slurm_addr_array(slurm_addr * slurm_address,
 static int _unpack_slurm_addr_array(slurm_addr ** slurm_address,
 				    uint16_t * size_val, Buf buffer);
 
+static void
+_pack_slurm_step_layout(slurm_step_layout_t *step_layout, Buf buffer);
+static int _unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer);
+
 static void _pack_ret_list(List ret_list, uint16_t size_val, Buf buffer);
 static int _unpack_ret_list(List *ret_list, uint16_t size_val, Buf buffer);
 
 static void _pack_job_id_request_msg(job_id_request_msg_t * msg, Buf buffer);
-static int  _unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer);
+static int  
+_unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer);
 
 static void _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer);
 static int  _unpack_job_id_response_msg(job_id_response_msg_t ** msg, 
@@ -257,7 +262,8 @@ static int  _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr,
 					Buf buffer);
 
 static void _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer);
-static int  _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer);
+static int  
+_unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer);
 
 static void _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer);
 static int  _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer);
@@ -1526,6 +1532,7 @@ _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 
 	pack32((uint32_t)msg->job_step_id, buffer);
 	packstr(msg->node_list, buffer);
+	_pack_slurm_step_layout(msg->step_layout, buffer);
 	slurm_cred_pack(msg->cred, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
 
@@ -1545,6 +1552,11 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 
 	safe_unpack32(&tmp_ptr->job_step_id, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint16_tmp, buffer);
+
+	if(_unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer)
+	   != SLURM_SUCCESS)
+		goto unpack_error;
+	
 	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 
@@ -3118,6 +3130,91 @@ _unpack_slurm_addr_array(slurm_addr ** slurm_address,
       unpack_error:
 	xfree(*slurm_address);
 	*slurm_address = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_slurm_step_layout(slurm_step_layout_t *step_layout, Buf buffer)
+{
+	int i;
+	packstr(step_layout->nodes, buffer);
+	pack16(step_layout->num_hosts, buffer);
+	pack32(step_layout->num_tasks, buffer);
+	_pack_slurm_addr_array(step_layout->node_addr, 
+			       step_layout->num_hosts, buffer);
+	pack32_array(step_layout->cpus, step_layout->num_hosts, buffer);
+	pack32_array(step_layout->tasks, step_layout->num_hosts, buffer);
+	pack32_array(step_layout->hostids, step_layout->num_tasks, buffer);
+	for(i=0; i<step_layout->num_hosts; i++) {
+		pack32_array(step_layout->tids[i], step_layout->tasks[i], 
+			     buffer);
+		packstr(step_layout->host[i], buffer);	
+	}
+}
+
+static int
+_unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
+	int i;
+	slurm_step_layout_t *step_layout;
+
+	step_layout = xmalloc(sizeof(slurm_step_layout_t));
+	*layout = step_layout;
+
+	step_layout->nodes = NULL;
+	step_layout->arbitrary_nodes = NULL;
+	step_layout->num_hosts = 0;
+	step_layout->host = NULL;
+	step_layout->tids = NULL;
+	step_layout->cpus = NULL;
+	step_layout->tasks = NULL;
+	step_layout->hostids = NULL;
+	
+	safe_unpackstr_xmalloc(&step_layout->nodes, &uint16_tmp, buffer);
+	safe_unpack16(&step_layout->num_hosts, buffer);
+	safe_unpack32(&step_layout->num_tasks, buffer);
+	
+	if (_unpack_slurm_addr_array(&(step_layout->node_addr), 
+				     &uint16_tmp, buffer))
+		goto unpack_error;
+	if (uint16_tmp != step_layout->num_hosts)
+		goto unpack_error;
+	
+	safe_unpack32_array(&(step_layout->cpus), 
+			    &uint32_tmp, buffer);
+	if (uint32_tmp != step_layout->num_hosts)
+		goto unpack_error;
+	
+	safe_unpack32_array(&(step_layout->tasks), 
+			    &uint32_tmp, buffer);
+	if (uint32_tmp != step_layout->num_hosts)
+		goto unpack_error;
+	
+	safe_unpack32_array(&(step_layout->hostids), 
+			    &uint32_tmp, buffer);
+	if (uint32_tmp != step_layout->num_tasks)
+		goto unpack_error;
+	
+	step_layout->tids = xmalloc(sizeof(uint32_t *) 
+				    * step_layout->num_hosts);
+	step_layout->host = xmalloc(sizeof(char *) 
+				    * step_layout->num_hosts);
+	for(i=0; i<step_layout->num_hosts; i++) {
+		safe_unpack32_array(&(step_layout->tids[i]), 
+				    &uint32_tmp, 
+				    buffer);
+		if (uint32_tmp != step_layout->tasks[i])
+			goto unpack_error;
+		safe_unpackstr_malloc(&step_layout->host[i], &uint16_tmp, 
+				       buffer);	
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	step_layout_destroy(step_layout);
+	*layout = NULL;
 	return SLURM_ERROR;
 }
 

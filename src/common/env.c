@@ -255,7 +255,7 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	} 
 
-	if (env->distribution >= 0) {
+	if ((int)env->distribution >= 0) {
 		switch(env->distribution) {
 		case SLURM_DIST_CYCLIC:
 			dist = "cyclic";
@@ -267,6 +267,7 @@ int setup_env(env_t *env)
 			dist = "arbitrary";
 			break;
 		default:
+			error("unknown dist, type %d", env->distribution);
 			dist = "unknown";
 		}
 		

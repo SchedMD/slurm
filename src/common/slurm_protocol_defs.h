@@ -50,6 +50,7 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/switch.h"
 #include "src/common/job_options.h"
+#include "src/common/dist_tasks.h"
 #include "src/common/xassert.h"
 
 #define MAX_SLURM_NAME 64

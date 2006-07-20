@@ -108,8 +108,6 @@ typedef struct srun_job {
 	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
 
-	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
-
 	pthread_t sigid;	/* signals thread tid		  */
 
 	pthread_t jtid;		/* job control thread id 	  */

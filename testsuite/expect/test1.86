@@ -217,6 +217,13 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_hostname\n"
 expect {
+	-re "Requested node configuration is not available" {
+		send_user "\nWARNING: Appears you are using "
+		send_user "multiple slurmd testing.\n"
+		send_user "This test won't work in that fashion.\n"
+		send "exit\n"
+		exit 0	
+	}
 	-re "0: ($alpha_numeric)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
