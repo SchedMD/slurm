@@ -325,3 +325,36 @@ test14.7   Test sbcast security issues.
 test14.8   Test sbcast transmission buffer options (--size and 
            --fanout options).
 
+
+test15.#   Testing of salloc options.
+=====================================
+test15.1   Confirm salloc usage option works (--usage option).
+test15.2   Confirm salloc help option works (--help option).
+test15.3   Confirm that salloc reports a proper version number
+           (--version option).
+
+
+test16.#   Testing of sattach options.
+======================================
+test16.1   Confirm sattach usage option works (--usage option).
+test16.2   Confirm sattach help option works (--help option).
+test16.3   Confirm that sattach reports a proper version number
+           (--version option).
+
+
+test17.#   Testing of sbatch options.
+=====================================
+test17.1   Confirm sbatch usage option works (--usage option).
+test17.2   Confirm sbatch help option works (--help option).
+test17.3   Confirm that sbatch reports a proper version number
+           (--version option).
+
+
+test18.#   Testing of slaunch options.
+======================================
+test18.1   Confirm slaunch usage option works (--usage option).
+test18.2   Confirm slaunch help option works (--help option).
+test18.3   Confirm that slaunch reports a proper version number
+           (--version option).
+
+
