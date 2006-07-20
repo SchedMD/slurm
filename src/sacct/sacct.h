@@ -94,6 +94,7 @@ enum {	F_JOBNAME = HEADER_LENGTH,
 	F_PRIORITY,	
 	F_NCPUS,		
 	F_NODES,
+	F_JOB_ACCOUNT,
 	JOB_START_LENGTH
 };
 
@@ -142,6 +143,7 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_MAX_RSS_NODE,
 	F_MAX_PAGES_NODE,
 	F_MIN_CPU_NODE,
+	F_STEP_ACCOUNT,
 	JOB_STEP_LENGTH
 };
 
@@ -202,6 +204,7 @@ typedef struct job_rec {
 	struct rusage rusage;
 	sacct_t sacct;
 	List    steps;
+	char    *account;
 } job_rec_t;
 
 typedef struct step_rec {
@@ -217,8 +220,9 @@ typedef struct step_rec {
 	time_t          end;
 	uint32_t	tot_cpu_sec;
 	uint32_t        tot_cpu_usec;
-	struct rusage rusage;
-	sacct_t sacct;
+	struct rusage   rusage;
+	sacct_t         sacct;
+	char            *account;
 } step_rec_t;
 
 typedef struct selected_step_t {
@@ -317,6 +321,7 @@ void print_user(type_t type, void *object);
 void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
 void print_cputime(type_t type, void *object);
+void print_account(type_t type, void *object);
 
 /* options.c */
 int decode_status_char(char *status);

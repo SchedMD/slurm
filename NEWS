@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Fixed task dist to work with hostfile and warn about asking for more tasks 
     than you have nodes for in arbitray mode.
+ -- Added "account" field to job and step accounting information and sacct output.
 
 * Changes in SLURM 1.2.0-pre1
 =============================

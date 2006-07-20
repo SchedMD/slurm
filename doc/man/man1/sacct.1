@@ -230,16 +230,16 @@ option.
 .nf 
 .ft 3
 Fields available:
-blockid     cpu         cputime     elapsed
-end         exitcode    gid         group
-idrss       inblock     isrss       ixrss
-job         jobid       jobname     majflt
-minflt      msgrcv      msgsnd      ncpus
-nivcsw      nodes       nprocs      nsignals
-nswap       ntasks      nvcsw       outblocks
-pages       partition   rss         start
-status      submit      systemcpu   uid
-user        usercpu     vsize
+account     blockid     cpu         cputime
+elapsed     end         exitcode    gid
+group       idrss       inblock     isrss
+ixrss       job         jobid       jobname
+majflt      minflt      msgrcv      msgsnd
+ncpus       nivcsw      nodes       nprocs
+nsignals    nswap       ntasks      nvcsw
+outblocks   pages       partition   rss
+start       status      submit      systemcpu
+uid         user        usercpu     vsize
 
 .ft 1
 .fi 
@@ -377,6 +377,10 @@ This option is primarily used for debugging.
 The following describes each job accounting field:
 .RS 
 .TP "10"
+\f3account\fP
+User supplied account number for the job
+
+.TP
 \f3blockid\fP
 Block ID, applicable to BlueGene computers only
 
@@ -1039,11 +1043,11 @@ command:
 .ft 3
 # sacct
 Jobid      Jobname    Partition    Ncpus Status     Exitcode
----------- ---------- ---------- ------- ---------- -----
-2          script01   srun             1 RUNNING        0
-3          script02   srun             1 RUNNING        0
-4          endscript  srun             1 RUNNING        0
-4.0                   srun             1 COMPLETED      0
+---------- ---------- ---------- ------- ---------- --------
+2          script01   srun             1 RUNNING           0
+3          script02   srun             1 RUNNING           0
+4          endscript  srun             1 RUNNING           0
+4.0                   srun             1 COMPLETED         0
 
 .ft 1
 .fi 
@@ -1058,11 +1062,11 @@ option.
 .ft 3
 # sacct --brief
 Jobid      Status     Exitcode
----------- ---------- -----
-2          RUNNING        0
-3          RUNNING        0
-4          RUNNING        0
-4.0        COMPLETED      0
+---------- ---------- --------
+2          RUNNING           0
+3          RUNNING           0
+4          RUNNING           0
+4.0        COMPLETED         0
 .ft 1
 .fi 
 .RE 
@@ -1073,15 +1077,15 @@ Jobid      Status     Exitcode
 .ft 3
 # sacct --total
 Jobid      Jobname    Partition    Ncpus Status     Exitcode
----------- ---------- ---------- ------- ---------- -----
-3          sja_init   andy             1 COMPLETED      0
-4          sjaload    andy             2 COMPLETED      0
-5          sja_scr1   andy             1 COMPLETED      0
-6          sja_scr2   andy            18 COMPLETED      2
-7          sja_scr3   andy            18 COMPLETED      0
-8          sja_scr5   andy             2 COMPLETED      0
-9          sja_scr7   andy            90 COMPLETED      1
-10         endscript  andy           186 COMPLETED      0
+---------- ---------- ---------- ------- ---------- --------
+3          sja_init   andy             1 COMPLETED         0
+4          sjaload    andy             2 COMPLETED         0
+5          sja_scr1   andy             1 COMPLETED         0
+6          sja_scr2   andy            18 COMPLETED         2
+7          sja_scr3   andy            18 COMPLETED         0
+8          sja_scr5   andy             2 COMPLETED         0
+9          sja_scr7   andy            90 COMPLETED         1
+10         endscript  andy           186 COMPLETED         0
 
 .ft 1
 .fi 
@@ -1096,7 +1100,7 @@ The fields are displayed in the order designated on the command line.
 .nf 
 .ft 3
 # sacct --fields=jobid,ncpus,ntasks,nsignals,status
-Jobid        Ncpus  Ntasks  Nsignals     Status
+Jobid        Ncpus  Ntasks  Nsignals Status
 ---------- ------- ------- --------- ----------
 3                2       1         0 COMPLETED
 3.0              2       1         0 COMPLETED

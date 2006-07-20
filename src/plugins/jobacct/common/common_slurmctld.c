@@ -83,7 +83,8 @@ const char *_jobstep_format =
 "%u "	/* max vsize node */
 "%u "	/* max rss node */
 "%u "	/* max pages node */
-"%u";	/* min cpu node */
+"%u "	/* min cpu node */
+"%s";	/* account */
 
 /*
  * Print the record to the log file.
@@ -171,7 +172,7 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 		ncpus=0,
 		rc=SLURM_SUCCESS,
 		tmp;
-	char	buf[BUFFER_SIZE], *jname;
+	char	buf[BUFFER_SIZE], *jname, *account, *nodes;
 	long	priority;
 	int track_steps = 0;
 
@@ -200,15 +201,24 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 		track_steps = 1;
 	}
 
+	if (job_ptr->account && job_ptr->account[0])
+		account = job_ptr->account;
+	else
+		account = "(null)";
+	if (job_ptr->nodes && job_ptr->nodes[0])
+		nodes = job_ptr->nodes;
+	else
+		nodes = "(null)";
+
 	if(job_ptr->batch_flag)
 		track_steps = 1;
 
 	tmp = snprintf(buf, BUFFER_SIZE,
-		       "%d %s %d %ld %u %s",
+		       "%d %s %d %ld %u %s %s",
 		       JOB_START, jname,
 		       track_steps, priority, job_ptr->num_procs,
-		       job_ptr->nodes);
-	
+		       nodes, account);
+
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
 	
 	xfree(jname);
@@ -247,6 +257,7 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	uint16_t nodecard = (uint16_t)NO_VAL;
 #endif
 	float float_tmp = 0;
+	char *account;
 	
 	if(!init) {
 		debug("jobacct init was not called or it failed");
@@ -278,7 +289,10 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		cpus = step->num_cpus;
 	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 #endif
-	
+	if (step->job_ptr->account && step->job_ptr->account[0])
+		account = step->job_ptr->account;
+	else
+		account = "(null)";
 	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -325,7 +339,8 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* max vsize node */
 		 0,	/* max rss node */
 		 0,	/* max pages node */
-		 0);	/* min cpu node */
+		 0,	/* min cpu node */
+		 account);
 		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
@@ -345,6 +360,7 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 #endif
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
+	char *account;
 
 	if(!init) {
 		debug("jobacct init was not called or it failed");
@@ -400,6 +416,11 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	ave_cpu2 = jobacct->min_cpu;
 	ave_cpu2 /= 100;
 	
+	if (step->job_ptr->account && step->job_ptr->account[0])
+		account = step->job_ptr->account;
+	else
+		account = "(null)";
+
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
@@ -449,7 +470,8 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
 		 jobacct->max_rss_id.nodeid,	/* max rss task */
 		 jobacct->max_pages_id.nodeid,	/* max pages task */
-		 jobacct->min_cpu_id.nodeid);	/* min cpu task */
+		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
+		 account);
 		 
 	return _print_record(step->job_ptr, now, buf);	
 }
