@@ -421,6 +421,35 @@ proc test_front_end { } {
 
 ################################################################
 #
+# Proc: test_mutliple_slurmd
+#
+# Returns 1 if running multple slurmd per node
+#
+################################################################
+
+proc test_mutliple_slurmd { } {
+        global scontrol
+
+        log_user 0
+        set multiple_slurmd 0
+        spawn $scontrol show config
+        expect {
+                "MULTIPLE_SLURMD" {
+                        set multiple_slurmd 1
+                        exp_continue
+                }
+                eof {
+                        wait
+                }
+        }
+        log_user 1
+
+        return $multiple_slurmd
+}
+
+
+################################################################
+#
 # Proc: test_xcpu
 #
 # Purpose: Determine if the system xcpu for task launch
