@@ -181,17 +181,7 @@ job_step_create_allocation(uint32_t job_id)
 		}
 	}
 	
-	if(opt.nodelist) {
-		hl = hostlist_create(opt.nodelist);
-		hostlist_ranged_string(hl, sizeof(buf), buf);
-		hostlist_destroy(hl);
-		ai->nodelist = xstrdup(buf);
-		xfree(opt.nodelist);
-		opt.nodelist = xstrdup(buf);
-	} else {
-		ai->nodelist       = opt.alloc_nodelist;
-	}
-	
+	ai->nodelist       = opt.alloc_nodelist;
 	if (opt.exc_nodes) {
 		hl = hostlist_create(ai->nodelist);
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
@@ -210,7 +200,17 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_destroy(hl);
 		ai->nodelist = xstrdup(buf);
 	}
-
+	
+/* 	if(!opt.nodelist)  */
+/* 		opt.nodelist = ai->nodelist; */
+	if(opt.nodelist) { 
+		hl = hostlist_create(opt.nodelist);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		hostlist_destroy(hl);
+		ai->nodelist = xstrdup(buf);
+		xfree(opt.nodelist);
+		opt.nodelist = xstrdup(buf);
+	}
 	ai->nnodes         = opt.min_nodes;
 	debug("node list is now %s", ai->nodelist);
 	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
