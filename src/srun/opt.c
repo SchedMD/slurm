@@ -2061,7 +2061,7 @@ static void _usage(void)
 "            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
-"            [--ctrl-comm-ifhn=addr] [--multi-prog]"
+"            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2118,7 +2118,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun"
+"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
 "     --multi-prog             if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "\n"
