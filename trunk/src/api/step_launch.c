@@ -566,7 +566,6 @@ static int _launch_tasks(slurm_step_ctx ctx,
 			   ctx->step_req->node_count,
 			   &zero,
 			   ctx->step_layout,
-			   ctx->alloc_resp->node_addr,
 			   itr,
 			   timeout);
 	hostlist_iterator_destroy(itr);

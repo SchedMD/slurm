@@ -370,6 +370,8 @@ struct 	step_record {
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the 
 					   step */
+	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
+					    in the step */
 };
 
 extern List job_list;			/* list of job_record entries */

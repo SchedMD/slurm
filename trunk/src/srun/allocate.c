@@ -159,32 +159,6 @@ jobid_from_env(void)
 		return (0);
 }
 
-resource_allocation_response_msg_t *
-existing_allocation(void)
-{
-	old_job_alloc_msg_t job;
-	resource_allocation_response_msg_t *resp = NULL;
-
-	if ((job.job_id = jobid_from_env()) == 0)
-		return NULL;
-
-	if (slurm_confirm_allocation(&job, &resp) < 0) {
-		if (opt.parallel_debug)
-			return NULL;	/* create new allocation as needed */
-		if (errno == ESLURM_ALREADY_DONE) 
-			error ("SLURM job %u has expired.", job.job_id); 
-		else
-			error ("Unable to confirm allocation for job %u: %m",
-			      job.job_id);
-		info ("Check SLURM_JOBID environment variable " 
-		      "for expired or invalid job.");
-		exit(1);
-	}
-
-	return resp;
-}
-
-
 static void
 _wait_for_resources(resource_allocation_response_msg_t **resp)
 {
@@ -579,10 +553,13 @@ _step_req_create(srun_job_t *j)
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
 	r->node_list  = xstrdup(opt.nodelist);
-	debug("requesting nodes %s", r->node_list);
 	r->network    = xstrdup(opt.network);
 	r->name       = xstrdup(opt.job_name);
-	r->relative   = false;      /* XXX fix this oneday */
+	r->relative   = opt.relative;
+	debug("requesting job %d, user %d, nodes %d (%s)", 
+	      r->job_id, r->user_id, r->node_count, r->node_list);
+	debug("cpus %d, tasks %d, name %s, relative %d", 
+	      r->cpu_count, r->num_tasks, r->name, r->relative);
 	
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
@@ -612,12 +589,10 @@ _step_req_create(srun_job_t *j)
 }
 
 int
-create_job_step(srun_job_t *job,
-		resource_allocation_response_msg_t *alloc_resp)
+create_job_step(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
-	
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
 		return -1;
@@ -631,13 +606,9 @@ create_job_step(srun_job_t *job,
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
 	job->switch_job = resp->switch_job;
-	job->step_layout = step_layout_create(alloc_resp, resp, req);
+	job->step_layout = resp->step_layout;
 	if(!job->step_layout) {
-		error("step_layout not created correctly");
-		return -1;
-	}
-	if(task_layout(job->step_layout) != SLURM_SUCCESS) {
-		error("problem with task layout");
+		error("step_layout not returned");
 		return -1;
 	}
 	

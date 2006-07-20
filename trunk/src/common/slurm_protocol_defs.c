@@ -213,8 +213,8 @@ void slurm_free_job_info_members(job_info_t * job)
 	}
 }
 
-void slurm_free_node_registration_status_msg
-	(slurm_node_registration_status_msg_t * msg)
+void slurm_free_node_registration_status_msg(
+	slurm_node_registration_status_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
@@ -695,7 +695,8 @@ void slurm_free_job_step_create_response_msg(
 {
 	if (msg) {
 		slurm_cred_destroy(msg->cred);
-
+		step_layout_destroy(msg->step_layout);
+	
 		if (msg->switch_job)
 			switch_free_jobinfo(msg->switch_job);
 

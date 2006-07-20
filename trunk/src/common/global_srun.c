@@ -119,7 +119,7 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 		req[i].msg_type = REQUEST_SIGNAL_TASKS;
 		req[i].data     = &msg;
 		memcpy( &req[i].address, 
-		        &job->slurmd_addr[i], sizeof(slurm_addr));
+		        &job->step_layout->node_addr[i], sizeof(slurm_addr));
 	}
 
 	_p_fwd_signal(req, job, max_threads);

@@ -118,6 +118,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		xfree(step_ptr->host);
 		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
+		step_layout_destroy(step_ptr->step_layout);
 		jobacct_g_free(step_ptr->jobacct);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
@@ -165,6 +166,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
+			step_layout_destroy(step_ptr->step_layout);
 			jobacct_g_free(step_ptr->jobacct);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
@@ -406,6 +408,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
+	//char *temp;
+	ListIterator step_iterator;
+	struct step_record *step_p;
 
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
@@ -419,17 +424,20 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return nodes_avail;
 try_again:
 	if (step_spec->node_list) {
+		bitstr_t *selected_nodes = NULL;
 		error_code = node_name2bitmap (step_spec->node_list, false, 
-						&nodes_picked);
+					       &selected_nodes);
 		if (error_code) {
-			info ("_pick_step_nodes: invalid node list %s", 
+			info("_pick_step_nodes: invalid node list %s", 
 				step_spec->node_list);
+			bit_free(selected_nodes);
 			goto cleanup;
 		}
-		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
+		if (!bit_super_set(selected_nodes, job_ptr->node_bitmap)) {
 			info ("_pick_step_nodes: requested nodes %s not part "
 				"of job %u", 
 				step_spec->node_list, job_ptr->job_id);
+			bit_free(selected_nodes);
 			goto cleanup;
 		}
 		if(step_spec->task_dist == SLURM_DIST_ARBITRARY) {
@@ -444,14 +452,17 @@ try_again:
 				goto try_again;
 			}
 			FREE_NULL_BITMAP(nodes_avail);
-			return nodes_picked;
+			return selected_nodes;
 		}
+		FREE_NULL_BITMAP(nodes_avail);
+		nodes_avail = selected_nodes;
+		goto create_idle;
 	} else if (step_spec->relative) {
 		/* Remove first (step_spec->relative) nodes from  
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
 		relative_nodes = 
-			bit_pick_cnt (nodes_avail, step_spec->relative);
+			bit_pick_cnt(nodes_avail, step_spec->relative);
 		if (relative_nodes == NULL) {
 			info ("_pick_step_nodes: "
 			      "Invalid relative value (%u) for job %u",
@@ -461,23 +472,34 @@ try_again:
 		bit_not (relative_nodes);
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
-		nodes_picked = bit_alloc (bit_size (nodes_avail) );
+		nodes_picked = bit_alloc(bit_size(nodes_avail));
+		if ((nodes_picked == NULL))
+			fatal("bit_alloc malloc failure");
 	} else {
-		ListIterator step_iterator;
-		struct step_record *step_p;
-		nodes_picked = bit_alloc (bit_size (nodes_avail) );
-		nodes_idle = bit_alloc (bit_size (nodes_avail) );
+	create_idle:
+		nodes_picked = bit_alloc(bit_size(nodes_avail));
+		nodes_idle = bit_alloc(bit_size(nodes_avail));
 		if ((nodes_picked == NULL) || (nodes_idle == NULL))
 			fatal("bit_alloc malloc failure");
-		step_iterator = list_iterator_create (job_ptr->step_list);
+		step_iterator = 
+			list_iterator_create(job_ptr->step_list);
 		while ((step_p = (struct step_record *)
-			list_next(step_iterator)))
-			bit_or (nodes_idle, step_p->step_node_bitmap); 
+			list_next(step_iterator))) {
+			bit_or(nodes_idle, step_p->step_node_bitmap);
+			/* temp = bitmap2node_name(step_p->step_node_bitmap); */
+/* 			info("step %d has nodes %s", step_p->step_id, temp); */
+/* 			xfree(temp); */
+		} 
 		list_iterator_destroy (step_iterator);
-		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
-
+	/* temp = bitmap2node_name(nodes_avail); */
+/* 	info("can pick from %s", temp); */
+/* 	xfree(temp); */
+/* 	temp = bitmap2node_name(nodes_idle); */
+/* 	info("can pick from %s", temp); */
+/* 	xfree(temp); */
+	
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
 	 * a node count */
@@ -490,13 +512,18 @@ try_again:
 		step_spec->cpu_count = 0;
 	}
 
+	
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (nodes_idle 
-		&&  (step_spec->node_count > nodes_picked_cnt)) {
+		    && (bit_set_count(nodes_idle) >= step_spec->node_count)
+		    && (step_spec->node_count > nodes_picked_cnt)) {
 			node_tmp = bit_pick_cnt(nodes_idle,
-					(step_spec->node_count -
-					nodes_picked_cnt));
+						(step_spec->node_count -
+						 nodes_picked_cnt));
+			debug2("1 got - %d %s", (step_spec->node_count -
+						 nodes_picked_cnt),
+			     node_tmp);
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -509,8 +536,11 @@ try_again:
 		}
 		if (step_spec->node_count > nodes_picked_cnt) {
 			node_tmp = bit_pick_cnt(nodes_avail, 
-					(step_spec->node_count - 
-					nodes_picked_cnt));
+						(step_spec->node_count - 
+						 nodes_picked_cnt));
+			debug2("2 got - %d %s", (step_spec->node_count -
+						 nodes_picked_cnt),
+			     node_tmp);
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -521,7 +551,7 @@ try_again:
 			nodes_picked_cnt = step_spec->node_count;
 		}
 	}
-
+	
 	if (step_spec->cpu_count) {
 		cpus_picked_cnt = count_cpus(nodes_picked);
 		if (nodes_idle
@@ -560,7 +590,7 @@ try_again:
 				goto cleanup;
 		}
 	}
-
+	
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	return nodes_picked;
@@ -631,7 +661,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
 
 	job_ptr->time_last_active = now;
-	nodeset = _pick_step_nodes (job_ptr, step_specs);
+	nodeset = _pick_step_nodes(job_ptr, step_specs);
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
 	node_count = bit_set_count(nodeset);
@@ -657,10 +687,13 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	/* set the step_record values */
 	/* Here is where the node list is set for the job */
-	if(step_specs->node_list)
+	if(step_specs->node_list 
+	   && step_specs->task_dist == SLURM_DIST_ARBITRARY)
 		step_ptr->step_node_list = xstrdup(step_specs->node_list);
-	else
+	else {
 		step_ptr->step_node_list = bitmap2node_name(nodeset);
+		step_specs->node_list = xstrdup(step_ptr->step_node_list);
+	}
 	//xfree(step_specs->node_list);
 	//step_specs->node_list = bitmap2node_name(nodeset);
 	step_ptr->step_node_bitmap = nodeset;
@@ -687,28 +720,28 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	/* a batch script does not need switch info */
 	if (!batch_step) {
-		uint32_t *tasks_per_node;
-		tasks_per_node = distribute_tasks(job_ptr->nodes,
-						  job_ptr->num_cpu_groups,
-						  job_ptr->cpus_per_node,
-						  job_ptr->cpu_count_reps,
-						  step_ptr->step_node_list,
-						  step_ptr->num_tasks);
-
+		step_ptr->step_layout = 
+			distribute_tasks(job_ptr->nodes,
+					 step_ptr->step_node_list,
+					 job_ptr->cpus_per_node,
+					 job_ptr->cpu_count_reps,
+					 step_specs->node_count,
+					 step_ptr->num_tasks,
+					 step_specs->task_dist);
+		if (!step_ptr->step_layout)
+			return SLURM_ERROR;
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
 		
 		if (switch_build_jobinfo(step_ptr->switch_job, 
 					 step_ptr->step_node_list,
-					 tasks_per_node, 
+					 step_ptr->step_layout->tasks, 
 					 step_ptr->cyclic_alloc,
 					 step_ptr->network) < 0) {
 			error("switch_build_jobinfo: %m");
-			xfree(tasks_per_node);
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
-		xfree(tasks_per_node);
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");

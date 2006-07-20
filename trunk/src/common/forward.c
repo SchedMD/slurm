@@ -612,7 +612,6 @@ extern int forward_set(forward_t *forward,
  * IN: span        - int                   - count of forwards to do
  * IN: step_layout - slurm_step_layout_t * - contains information about hosts
  *                                           from original message
- * IN: slurmd_addr - slurm_addr *          - addrs of hosts to send messages to
  * IN: itr         - hostlist_iterator_t   - count into host list of hosts to 
  *                                           send messages to 
  * IN: timeout     - int32_t               - timeout if any to wait for 
@@ -623,12 +622,11 @@ extern int forward_set_launch(forward_t *forward,
 			      int span,
 			      int *pos,
 			      slurm_step_layout_t *step_layout,
-			      slurm_addr *slurmd_addr,
 			      hostlist_iterator_t itr,
 			      int32_t timeout)
 {
 	
-	int j=1, i;
+	int j=1;
 	char *host = NULL;
 	int total = step_layout->num_hosts;
 	
@@ -647,29 +645,15 @@ extern int forward_set_launch(forward_t *forward,
 		forward->init = FORWARD_INIT;
 
 		while(j<span && ((*pos+j) < total)) {
-			i=0; 
-			while((host = hostlist_next(itr))) { 
-				if(!strcmp(host,
-					   step_layout->host[*pos+j])) {
-					free(host);
-					break; 
-				}
-				i++; 
-				free(host);
-			}
-			hostlist_iterator_reset(itr);
+			host = hostlist_next(itr);
+			
 			memcpy(&forward->addr[j-1], 
-			       &slurmd_addr[i], 
+			       &step_layout->node_addr[(*pos+j)], 
 			       sizeof(slurm_addr));
-			//forward->addr[j-1] = slurmd_addr[i];
-			strncpy(&forward->name[(j-1) * MAX_SLURM_NAME],
-				step_layout->host[*pos+j], 
-				MAX_SLURM_NAME);
+			strcpy(&forward->name[(j-1) * MAX_SLURM_NAME], host);
 			forward->node_id[j-1] = (*pos+j);
-			/* strncpy(name, */
-/* 				step_layout->host[*pos+j], */
-/* 				MAX_SLURM_NAME); */
-/* 			info("along with %s",name);	 */
+/* 			info("along with %s",host);	 */
+			free(host);
 			j++;
 		}
 			

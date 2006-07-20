@@ -703,7 +703,7 @@ static void _opt_default()
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
-	opt.distribution = SLURM_DIST_CYCLIC;
+	opt.distribution = -1;
 
 	opt.ofname = NULL;
 	opt.ifname = NULL;
@@ -803,7 +803,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           }, 
+  {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           },
   {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
   {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
@@ -832,7 +832,8 @@ env_vars_t env_vars[] = {
   {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
   {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
   {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
-
+  {"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL           },
+  {"SLURM_NODELIST",      OPT_STRING,     &opt.nodelist,      NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -1280,8 +1281,8 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.relative)
 				break;
 			
-			xfree(opt.relative);
-			opt.relative = xstrdup(optarg);
+			//xfree(opt.relative);
+			opt.relative = _get_int(optarg, "relative");
 			break;
 		case (int)'R':
 			opt.no_rotate = true;

@@ -63,9 +63,14 @@ expect {
 		wait
 	}
 }
+
 if {$matches != 3} {
-	send_user "\nFAILURE: scontrol show config command failed\n"
-	set exit_code 1
+	if {$matches == 2} {
+		send_user "\nWARNING: it appears you are running with multiple slurmds.\n"
+	} else {
+		send_user "\nFAILURE: scontrol show config command failed\n"
+		set exit_code 1
+	}
 }
 
 #

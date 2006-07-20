@@ -51,7 +51,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2 -n4 -l --distribution=block -t1 $bin_hostname  
+spawn $srun -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -123,7 +123,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2 -n4 -l --distribution=cyclic -t1 $bin_hostname  
+spawn $srun -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"

@@ -112,14 +112,15 @@ launch_thr_create(srun_job_t *job)
 void *
 launch(void *arg)
 {
-	slurm_msg_t *msg_array_ptr;
+	slurm_msg_t *msg_array_ptr = NULL;
 	launch_tasks_request_msg_t r;
 	srun_job_t *job = (srun_job_t *) arg;
-	int i, j, my_envc;
+	int i, my_envc;
 	hostlist_t hostlist = NULL;
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts, 0);
+	slurm_msg_t *m = NULL;
 	Buf buffer = NULL;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
@@ -191,15 +192,21 @@ launch(void *arg)
 	msg_array_ptr[0].data            = &r;
 	buffer = slurm_pack_msg_no_header(&msg_array_ptr[0]);
 	
-	hostlist = hostlist_create(job->nodelist);
+	//hostlist = hostlist_create(job->nodelist);
+	debug("sending to list %s", job->step_layout->nodes);
+	hostlist = hostlist_create(job->step_layout->nodes);
 	itr = hostlist_iterator_create(hostlist);
 	job->thr_count = 0;
-	for (i = 0; i < job->step_layout->num_hosts; i++) {
-		debug2("sending to %s %d %d", job->step_layout->host[i],
-		       i, job->step_layout->num_hosts);
-		if(!job->step_layout->host[i])
+	i=0;
+	for(i=0; i<job->step_layout->num_hosts; i++) {
+		host = hostlist_next(itr);
+		if(!job->step_layout->host[i] || !host)
 			break;
-		slurm_msg_t                *m = &msg_array_ptr[job->thr_count];
+		
+		//for (i = 0; i < job->step_layout->num_hosts; i++) {
+		debug("sending to %s %s %d %d", job->step_layout->host[i],
+		       host, i, job->step_layout->num_hosts);
+		m = &msg_array_ptr[job->thr_count];
 		
 		m->srun_node_id    = (uint32_t)i;			
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
@@ -208,31 +215,18 @@ launch(void *arg)
 		m->orig_addr.sin_addr.s_addr = 0;
 		m->buffer = buffer;
 		
-		j=0; 
-		while((host = hostlist_next(itr)) != NULL) { 
-			if(!strcmp(host,job->step_layout->host[i])) {
-  				free(host);
-				break; 
-			}
-  			j++; 
-			free(host);
-  		}
-		hostlist_iterator_reset(itr);
-		/* debug2("using %d %s with %d tasks\n", j, */
-/* 		       job->step_layout->host[i], */
-/* 		       r.nprocs); */
 		memcpy(&m->address, 
-		       &job->slurmd_addr[j], 
+		       &job->step_layout->node_addr[i], 
 		       sizeof(slurm_addr));
 		
 		forward_set_launch(&m->forward,
 				   span[job->thr_count],
 				   &i,
 				   job->step_layout,
-				   job->slurmd_addr,
 				   itr,
 				   opt.msg_timeout);
 		job->thr_count++;
+		free(host);
 	}
 	xfree(span);
 	hostlist_iterator_destroy(itr);
@@ -385,6 +379,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	 * Set job timeout to maximum launch time + current time
 	 */
 	job->ltimeout = time(NULL) + opt.max_launch_time;
+	debug2("got thr_count of %d", job->thr_count);
 	thd = xmalloc (job->thr_count * sizeof (thd_t));
 	for (i = 0; i < job->thr_count; i++) {
 		if (job->step_layout->tasks[i] == 0)	{

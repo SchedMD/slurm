@@ -104,6 +104,12 @@ for {set i 0} {$i<2} {incr i} {
 	set node1 ""
 	spawn $srun -N2 -l $bin_hostname
 	expect {
+		-re "Invalid node name specified" {
+			send_user "\nWARNING: Appears you are using "
+			send_user "multiple slurmd testing.\n"
+			send_user "This test won't work in that fashion.\n"
+			exit 0	
+		}
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
@@ -129,7 +135,7 @@ for {set i 0} {$i<2} {incr i} {
 }
 
 if { [string compare $node0 $1node1] } {
-	send_user "\nFAILURE: tasks not distributed by hostfile\n"
+	send_user "\n FAILURE: tasks not distributed by hostfile\n"
 	set exit_code 1
 } elseif { [string compare $node1 $1node0] } {
 	send_user "\nFAILURE: tasks not distributed by hostfile\n"

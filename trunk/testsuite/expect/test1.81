@@ -46,18 +46,8 @@ set task_cnt    0
 set can_not_run 0
 set timeout $max_job_delay
 
-if {![test_aix]} {
-	set hostname_arg "--short"
-	set have_arg 1
-} else {
-	set hostname_arg ""
-	set have_arg 0
-}
-if {$have_arg == 0} {
-	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname
-} else {
-	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname $hostname_arg
-} 
+spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID
+
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
@@ -89,11 +79,7 @@ if {[string compare $host_0 ""] == 0} {
 
 set alloc_fail 0
 set task_cnt2  0
-if {$have_arg == 0} {
-	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname
-} else {
-	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname $hostname_arg 
-}
+	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -122,11 +108,8 @@ if { $task_cnt2 != 0 } {
 #
 set host_0      ""
 set host_1      ""
-if {$have_arg == 0} {
-	spawn $srun -N1-1 -l -t1 $bin_hostname
-} else {
-	spawn $srun -N1-1 -l -t1 $bin_hostname $hostname_arg  
-}
+
+spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -171,11 +154,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-if {$have_arg == 0} {
-	spawn $srun -N1-3 -l -t1 $bin_hostname
-} else {
-	spawn $srun -N1-3 -l -t1 $bin_hostname $hostname_arg 
-}
+spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -237,11 +216,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-if {$have_arg == 0} {
-	spawn $srun -N2-3 -l -t1 $bin_hostname
-} else {
-	spawn $srun -N2-3 -l -t1 $bin_hostname $hostname_arg   
-}
+spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"

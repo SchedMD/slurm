@@ -115,6 +115,7 @@ cset bin_touch   "touch"
 cset bin_uname	"uname"
 cset bin_usleep  "usleep"
 cset bin_wc	"wc"
+cset bin_printenv "printenv"
 
 #
 # Let the commands complete without expect timing out waiting for a 
@@ -599,6 +600,7 @@ proc available_nodes { partition } {
     global sinfo
 
     set available -1
+    send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
     set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
     gets $fd line
     catch [close $fd]

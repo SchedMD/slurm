@@ -45,26 +45,6 @@
 
 #include "src/common/hostlist.h"
 
-typedef struct slurm_step_layout {
-	char *alloc_nodes;
-	char *step_nodes;
-	char **host;		/* name for each host */
-
-	uint32_t *cpus_per_node;
-	uint32_t *cpu_count_reps;
-	uint32_t *cpus;		/* count of processors on each host */
-	uint32_t *tasks;	/* number of tasks on each host */
-	
-	uint32_t **tids;	/* host id => task id mapping */
-	uint32_t *hostids;      /* task id => host id mapping */
-	
-	uint32_t num_hosts;	/* node count */
-	uint32_t num_tasks;	/* number of tasks to execute */
-	uint16_t task_dist;	/* see enum task_dist_state */
-
-	hostlist_t hl;
-} slurm_step_layout_t;
-
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
  *                    node. Distribution is influenced by number of cpus on
@@ -79,18 +59,20 @@ typedef struct slurm_step_layout {
  * RET a pointer to an integer array listing task counts per node
  * NOTE: allocates memory that should be xfreed by caller
  */
-uint32_t * distribute_tasks(const char *mlist,
-		       uint16_t num_cpu_groups,
-		       uint32_t *cpus_per_node,
-		       uint32_t *cpu_count_reps,
-		       const char *tlist,
-		       uint32_t num_tasks);
+slurm_step_layout_t *distribute_tasks(const char *mlist, 
+				      const char *tlist,
+				      uint32_t *cpus_per_node, 
+				      uint32_t *cpu_count_reps,
+				      uint32_t num_hosts, 
+				      uint32_t num_tasks,
+				      uint16_t task_dist);
 
 /* creates structure for step layout */
 extern slurm_step_layout_t *step_layout_create(
 	resource_allocation_response_msg_t *alloc_resp,
 	job_step_create_response_msg_t *step_resp,
 	job_step_create_request_msg_t *step_req);
+extern slurm_step_layout_t *step_layout_copy(slurm_step_layout_t *step_layout);
 /* destroys structure for step layout */
 extern int step_layout_destroy(slurm_step_layout_t *step_layout);
 /* build maps for task layout on nodes */

@@ -54,6 +54,7 @@ void    job_force_termination(srun_job_t *job);
 srun_job_state_t job_state(srun_job_t *job);
 
 extern srun_job_t * job_create_noalloc(void);
+extern srun_job_t *job_step_create_allocation(uint32_t job_id);
 extern srun_job_t * job_create_allocation(
 	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_structure(
@@ -93,16 +94,5 @@ void    report_job_status(srun_job_t *job);
  * Returns job return code (for srun exit status)
  */
 int    job_rc(srun_job_t *job);
-
-/*
- * To run a job step on existing allocation, modify the 
- * existing_allocation() response to remove nodes as needed 
- * for the job step request (for --excluded nodes or reduced 
- * --nodes count). This is a temporary fix for slurm 0.2.
- * resp IN/OUT - existing_allocation() response message
- * RET - zero or fatal error code
- */
-
-int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp);
 
 #endif /* !_HAVE_JOB_H */
