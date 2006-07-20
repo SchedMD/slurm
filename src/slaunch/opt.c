@@ -1836,7 +1836,7 @@ static void _help(void)
 "      --epilog=program        run \"program\" after launching job step\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch"
+"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "\n"
