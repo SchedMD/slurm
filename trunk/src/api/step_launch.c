@@ -198,9 +198,9 @@ int slurm_step_launch (slurm_step_ctx ctx,
 /* 			job->step_layout->tasks[i] = 1; */
 /* 	}  */
 
-	launch.tasks_to_launch = ctx->step_layout->tasks;
-	launch.cpus_allocated  = ctx->step_layout->cpus;
-	launch.global_task_ids = ctx->step_layout->tids;
+	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
+	launch.cpus_allocated  = ctx->step_resp->step_layout->cpus;
+	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 	
 	ctx->launch_state->client_io = _setup_step_client_io(
 		ctx, params->local_fds, params->labelio);
@@ -559,13 +559,13 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	msg.ret_list = NULL;
 	msg.orig_addr.sin_addr.s_addr = 0;
 	msg.buffer = buffer;
-	memcpy(&msg.address, &ctx->alloc_resp->node_addr[0],
+	memcpy(&msg.address, &ctx->step_resp->step_layout->node_addr[0],
 	       sizeof(slurm_addr));
 	timeout = slurm_get_msg_timeout();
  	forward_set_launch(&msg.forward,
-			   ctx->step_req->node_count,
+			   ctx->step_resp->step_layout->num_hosts,
 			   &zero,
-			   ctx->step_layout,
+			   ctx->step_resp->step_layout,
 			   itr,
 			   timeout);
 	hostlist_iterator_destroy(itr);
