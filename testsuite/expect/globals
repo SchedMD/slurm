@@ -396,18 +396,18 @@ proc wait_for_job { job_id desired_state } {
 ################################################################
 
 proc test_front_end { } {
-	global scontrol bin_bash bin_grep xcpu_dir
-
-	if [file exists $xcpu_dir] {
-		return 1
-	}
+	global scontrol
 
 	log_user 0
-	set bluegene 0
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	set front_end 0
+	spawn $scontrol show config
 	expect {
+		"HAVE_XCPU" {
+			set front_end 1
+			exp_continue
+		}
 		"select/bluegene" {
-			set bluegene 1
+			set front_end 1
 			exp_continue
 		}
 		eof {
@@ -416,7 +416,7 @@ proc test_front_end { } {
 	}
 	log_user 1
 	
-	return $bluegene
+	return $front_end
 }
 
 ################################################################
@@ -430,13 +430,23 @@ proc test_front_end { } {
 ################################################################
 
 proc test_xcpu { } {
-	global xcpu_dir
+	global scontrol
 
-	if [file exists $xcpu_dir] {
-		return 1
+	log_user 0
+	set have_xcpu 0
+	spawn $scontrol show config
+	expect {
+		"HAVE_XCPU" {
+			set have_xcpu 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
+	log_user 1
 
-	return 0
+	return $have_xcpu
 }
 
 ################################################################
@@ -480,14 +490,14 @@ proc test_bluegene { } {
 ################################################################
 
 proc test_aix {} {
-    set fd [open "|uname"]
-    gets $fd line
-    close $fd
-    if {[string compare $line AIX] == 0} {
-	return 1
-    } else {
-	return 0
-    }
+	set fd [open "|uname"]
+	gets $fd line
+	close $fd
+	if {[string compare $line AIX] == 0} {
+		return 1
+	} else {
+		return 0
+	}
 }
 
 ################################################################
