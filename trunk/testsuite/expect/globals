@@ -34,7 +34,7 @@
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 
-global sacct sbcast scancel scontrol sinfo smap squeue srun
+global sacct salloc sattach sbatch sbcast scancel scontrol sinfo slaunch smap squeue srun
 
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
@@ -54,10 +54,14 @@ if [file exists globals.local] {
 #
 cset slurm_dir   "/usr"
 cset sacct       "${slurm_dir}/bin/sacct"
+cset salloc      "${slurm_dir}/bin/salloc"
+cset sattach     "${slurm_dir}/bin/sattach"
+cset sbatch      "${slurm_dir}/bin/sbatch"
 cset sbcast      "${slurm_dir}/bin/sbcast"
 cset scancel     "${slurm_dir}/bin/scancel"
 cset scontrol    "${slurm_dir}/bin/scontrol"
 cset sinfo       "${slurm_dir}/bin/sinfo"
+cset slaunch     "${slurm_dir}/bin/slaunch"
 cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
