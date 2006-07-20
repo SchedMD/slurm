@@ -833,7 +833,6 @@ env_vars_t env_vars[] = {
   {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
   {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
   {"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL           },
-  {"SLURM_NODELIST",      OPT_STRING,     &opt.nodelist,      NULL           },
   {NULL, 0, NULL, NULL}
 };
 
