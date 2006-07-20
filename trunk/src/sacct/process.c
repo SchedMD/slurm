@@ -131,6 +131,7 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	job->steps = list_create(destroy_step);
 	job->nodes = NULL;
 	job->track_steps = 0;
+	job->account = NULL;
 
       	return job;
 }
@@ -151,7 +152,8 @@ step_rec_t *_init_step_rec(acct_header_t header)
 	step->elapsed = (uint32_t)NO_VAL;
 	step->tot_cpu_sec = (uint32_t)NO_VAL;
 	step->tot_cpu_usec = (uint32_t)NO_VAL;
-	
+	step->account = NULL;
+
 	return step;
 }
 
@@ -183,12 +185,21 @@ int _parse_line(char *f[], void **data, int len)
 		(*job)->priority = atoi(f[F_PRIORITY]);
 		(*job)->ncpus = atoi(f[F_NCPUS]);
 		(*job)->nodes = xstrdup(f[F_NODES]);
-		for (i=0; (*job)->nodes[i]; i++)  /* discard trailing <CR> */
+		for (i=0; (*job)->nodes[i]; i++) { /* discard trailing <CR> */
 			if (isspace((*job)->nodes[i]))
-				(*job)->nodes[i] = 0;
+				(*job)->nodes[i] = '\0';
+		}
 		if (!strcmp((*job)->nodes, "(null)")) {
 			xfree((*job)->nodes);
 			(*job)->nodes = xstrdup("(unknown)");
+		}
+		if (len > F_JOB_ACCOUNT) {
+			(*job)->account = xstrdup(f[F_JOB_ACCOUNT]);
+			for (i=0; (*job)->account[i]; i++) {
+				/* discard trailing <CR> */
+				if (isspace((*job)->account[i]))
+					(*job)->account[i] = '\0';
+			}
 		}
 		break;
 	case JOB_STEP:
@@ -220,7 +231,7 @@ int _parse_line(char *f[], void **data, int len)
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
 		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]) * 1024;
-		if(len >= F_STEPNODES) {
+		if(len > F_STEPNODES) {
 			(*step)->sacct.max_vsize_id.taskid = 
 				atoi(f[F_MAX_VSIZE_TASK]);
 			(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]) * 1024;
@@ -253,7 +264,7 @@ int _parse_line(char *f[], void **data, int len)
 			(*step)->stepname = NULL;
 			(*step)->nodes = NULL;
 		}
-		if(len >= F_MIN_CPU_NODE) {
+		if(len > F_MIN_CPU_NODE) {
 			(*step)->sacct.max_vsize_id.nodeid = 
 				atoi(f[F_MAX_VSIZE_NODE]);
 			(*step)->sacct.max_rss_id.nodeid = 
@@ -272,6 +283,8 @@ int _parse_line(char *f[], void **data, int len)
 			(*step)->sacct.min_cpu_id.nodeid = 
 				(uint32_t)NO_VAL;
 		}
+		if(len > F_STEP_ACCOUNT)
+			(*step)->account = xstrdup(f[F_STEP_ACCOUNT]);
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:

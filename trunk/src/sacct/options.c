@@ -503,7 +503,7 @@ int get_data(void)
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
-			if(i < JOB_START_LENGTH) {
+			if(i < F_JOB_ACCOUNT) {
 				printf("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else 

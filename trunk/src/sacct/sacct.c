@@ -25,6 +25,9 @@
 /*
  * HISTORY
  * $Log$
+ * Revision 1.8  2006/06/09   ciclouston
+ * Added new account entry to begining of fields[].
+ *
  * Revision 1.7  2005/06/29 20:41:23  da
  * New Tag HP's patch applied for mutex issue in jobacct.
  *
@@ -139,7 +142,8 @@ void _print_header(void);
  * Globals
  */
 sacct_parameters_t params;
-fields_t fields[] = {{"blockid", print_blockid},
+fields_t fields[] = {{"account", print_account},
+		     {"blockid", print_blockid},
 		     {"cpu", print_cpu},
 		     {"cputime", print_cputime}, 
 		     {"elapsed", print_elapsed},
