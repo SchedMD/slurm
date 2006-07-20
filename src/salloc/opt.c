@@ -86,6 +86,8 @@
 #define OPT_GEOMETRY	0x0b
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
+#define OPT_BELL        0x0f
+#define OPT_NO_BELL     0x10
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -812,6 +814,8 @@ env_vars_t env_vars[] = {
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
+  {"SALLOC_BELL",         OPT_BELL,       NULL,               NULL           },
+  {"SALLOC_NO_BELL",      OPT_NO_BELL,    NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -914,6 +918,12 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
+	case OPT_BELL:
+		opt.bell = BELL_ALWAYS;
+		break;
+	case OPT_NO_BELL:
+		opt.bell = BELL_NEVER;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -951,7 +961,6 @@ void set_options(const int argc, char **argv, int first)
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
-		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"immediate",     no_argument,       0, 'I'},
@@ -1002,8 +1011,7 @@ void set_options(const int argc, char **argv, int first)
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:g:HIJ:km:N:"
-		"Op:P:qQR:st:U:vVw:W:x:";
+	char *opt_string = "+a:c:C:D:g:HIJ:km:N:Op:qQR:st:U:vVw:W:x:";
 
 	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
@@ -1035,6 +1043,12 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
+			break;
+		case (int)'D':
+			if(!first && opt.dependency)
+				break;
+						
+			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case (int)'g':
 			if(!first && opt.geometry)
@@ -1099,12 +1113,6 @@ void set_options(const int argc, char **argv, int first)
 						
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case (int)'P':
-			if(!first && opt.dependency)
-				break;
-						
-			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
@@ -1606,7 +1614,7 @@ static void _usage(void)
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [-D path] [--immediate] [--overcommit] [--no-kill]\n"
+"              [--immediate] [--overcommit] [--no-kill]\n"
 "              [--share] [-m dist] [-J jobname]\n"
 "              [--verbose]\n"
 "              [-W sec]\n"
@@ -1646,7 +1654,6 @@ static void _help(void)
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --slurmd-debug=level    slurmd debug level\n"
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
