@@ -159,8 +159,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	resource_allocation_response_msg_t *resp = NULL;
-	char hostname[64];
-	bool hostname_is_set = false;
+	char *hostname;
 	uint32_t job_id;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
@@ -182,14 +181,17 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	if (req->alloc_sid == NO_VAL)
 		req->alloc_sid = getsid(0);
 
-	hostname[0] = '\0';
-	if (getnodename(hostname, sizeof(hostname)) == 0)
-		hostname_is_set = true;
-	if ((req->alloc_node == NULL) && hostname_is_set) {
+	if (user_req->alloc_node != NULL) {
+		req->alloc_node = xstrdup(user_req->alloc_node);
+	} else if ((hostname = xshort_hostname()) != NULL) {
 		req->alloc_node = hostname;
+	} else {
+		error("Could not get local hostname,"
+		      " forcing immediate allocation mode.");
+		req->immediate = 1;
 	}
 
-	if (hostname_is_set) {
+	if (!req->immediate) {
 		listen = _create_allocation_response_socket(hostname);
 		if (listen == NULL) {
 			xfree(req);
@@ -197,7 +199,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		}
 		req->alloc_resp_hostname = listen->hostname;
 		req->alloc_resp_port = listen->port;
-		req->immediate = 0;
 	}
 
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
@@ -212,7 +213,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	if (rc == SLURM_SOCKET_ERROR) {
 		destroy_forward(&req_msg.forward);
 		destroy_forward(&resp_msg.forward);
-		_destroy_allocation_response_socket(listen);
+		if (!req->immediate)
+			_destroy_allocation_response_socket(listen);
 		xfree(req);
 		errno = SLURM_SOCKET_ERROR;
 		return NULL;
@@ -221,10 +223,11 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0) {
-			errnum = SLURM_PROTOCOL_ERROR;
+			/* will reach this when the allocation fails */
+			errnum = errno;
 		} else {
-			errnum = -1; /* FIXME - need to figure out what the
-					correct error code would be */
+			/* shouldn't get here */
+			errnum = -1;
 		}
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
@@ -234,7 +237,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		if (resp->node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
-		} else {
+		} else if (!req->immediate) {
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
@@ -256,7 +259,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 
 	destroy_forward(&req_msg.forward);
 	destroy_forward(&resp_msg.forward);
-	_destroy_allocation_response_socket(listen);
+	if (!req->immediate)
+		_destroy_allocation_response_socket(listen);
 	xfree(req);
 	errno = errnum;
 	return resp;
