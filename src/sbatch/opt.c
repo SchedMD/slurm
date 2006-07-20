@@ -1817,7 +1817,7 @@ static void _usage(void)
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--task-prolog=fname] [--task-epilog=fname]\n"
-"              [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]"
+"              [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
