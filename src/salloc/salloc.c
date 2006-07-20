@@ -42,6 +42,7 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/read_config.h"
 
 #include "src/salloc/opt.h"
@@ -49,7 +50,9 @@
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
-static void run_command(void);
+static int run_command(char **command);
+
+static int signals_to_block[] = {SIGINT, SIGTERM, SIGQUIT, 0};
 
 int main(int argc, char *argv[])
 {
@@ -58,6 +61,7 @@ int main(int argc, char *argv[])
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
 	salloc_msg_thread_t *msg_thr;
+	int rc;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -70,6 +74,8 @@ int main(int argc, char *argv[])
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
+
+	xsignal_block(signals_to_block);
 
 	/*
 	 * Request a job allocation
@@ -86,7 +92,7 @@ int main(int argc, char *argv[])
 	verbose("other_hostname = %s", desc.other_hostname);
 
 	before = time(NULL);
-	alloc = slurm_allocate_resources_blocking(&desc, 0);
+	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait);
 	if (alloc == NULL) 
 		fatal("Failed to allocate resources: %m");
 	after = time(NULL);
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
 	 */
 	setenvfs("SLURM_JOBID=%d", alloc->job_id);
 	setenvfs("SLURM_NNODES=%d", alloc->node_cnt);
-	run_command();
+	rc = run_command(command_argv);
 
 	/*
 	 * Relinquish the job allocation.
@@ -119,7 +125,7 @@ int main(int argc, char *argv[])
 	slurm_free_resource_allocation_response_msg(alloc);
 	msg_thr_destroy(msg_thr);
 
-	return 0;
+	return rc;
 }
 
 
@@ -128,7 +134,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
-	desc->immediate = opt.immediate;
+	desc->immediate = opt.immediate ? 1 : 0;
 	desc->name = opt.job_name;
 	desc->req_nodes = opt.nodelist;
 	if (desc->req_nodes == NULL) {
@@ -214,25 +220,36 @@ static void ring_terminal_bell(void)
 	fflush(stdout);
 }
 
-static void run_command(void)
+/* returns the exit status of the command */
+static int run_command(char **command)
 {
 	pid_t pid;
 	int status;
-	int rc;
+	int rc = 0;
 
 	pid = fork();
 	if (pid < 0) {
 		error("fork failed: %m");
 	} else if (pid > 0) {
 		/* parent */
-		while ((rc = waitpid(pid, &status, 0)) == -1) {
-			if (errno != EINTR) {
-				error("waitpid failed: %m");
-				break;
-			}
+		while ((rc = waitpid(pid, &status, 0)) == -1
+		       && errno == EINTR) {
+			/* just keep spinning */
+		}
+		if (rc == -1) {
+			error("waitpid for %s failed: %m", command[0]);
+			rc = 1;
+		} else {
+			if (WIFEXITED(status))
+				rc = WEXITSTATUS(status);
+			else
+				rc = 1;
 		}
 	} else {
 		/* child */
-		execvp(command_argv[0], command_argv);
+		xsignal_unblock(signals_to_block);
+		execvp(command[0], command);
 	}
+
+	return rc;
 }

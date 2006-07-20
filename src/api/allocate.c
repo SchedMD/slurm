@@ -146,12 +146,14 @@ slurm_allocate_resources (job_desc_msg_t *req,
  *	A timeout of zero will wait indefinitely.
  * 
  * RET allocation structure on success, NULL on error set errno to
- *	indicate the error
+ *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
+ *      with no allocation granted)
  * NOTE: free the allocation structure using
  *	slurm_free_resource_allocation_response_msg
  */
 resource_allocation_response_msg_t *
-slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeout)
+slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
+				   time_t timeout)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -236,14 +238,14 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req, time_t timeou
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
-			verbose("Pending job allocation %u", job_id);
+			info("Pending job allocation %u", job_id);
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
 			   the time desired, so just free the job id */
 			if (resp == NULL) {
+				errnum = errno;
 				slurm_complete_job(job_id, -1);
-				errnum = -1;
 			}
 		}
 		break;
@@ -687,11 +689,12 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 		    resource_allocation_response_msg_t **resp)
 {
 	struct pollfd fds[1];
+	int rc;
 
 	fds[0].fd = listen->fd;
 	fds[0].events = POLLIN;
 
-	while (poll (fds, 1, (sleep_time * 1000)) < 0) {
+	while ((rc = poll(fds, 1, (sleep_time * 1000))) < 0) {
 		switch (errno) {
 			case EAGAIN:
 			case EINTR:
@@ -708,20 +711,25 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 		}
 	}
 
-	if (fds[0].revents & POLLIN)
+	if (rc == 0) { /* poll timed out */
+		errno = ETIMEDOUT;
+	} else if (fds[0].revents & POLLIN) {
 		return (_accept_msg_connection(listen->fd, resp));
+	}
 
-	return (0);
+	return 0;
 }
 
 static resource_allocation_response_msg_t *
 _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 			      int timeout)
 {
-	resource_allocation_response_msg_t *resp;
+	resource_allocation_response_msg_t *resp = NULL;
+	int errnum;
 
-	debug ("job %u queued and waiting for resources", job_id);
+	debug("job %u queued and waiting for resources", job_id);
 	if (_wait_for_alloc_rpc(listen, timeout, &resp) <= 0) {
+		errnum = errno;
 		/* Maybe the resource allocation response RPC got lost
 		 * in the mail; surely it should have arrived by now.
 		 * Let's see if the controller thinks that the allocation
@@ -730,10 +738,12 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 		if (slurm_allocation_lookup(job_id, &resp) >= 0)
 			return resp;
 
-		if (slurm_get_errno() == ESLURM_JOB_PENDING) 
-			debug3 ("Still waiting for allocation");
-		else {
-			debug3 ("Unable to confirm allocation for job %u: %m", 
+		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
+			debug3("Still waiting for allocation");
+			errno = errnum;
+			return NULL;
+		} else {
+			debug3("Unable to confirm allocation for job %u: %m", 
 			       job_id);
 			return NULL;
 		}

@@ -84,7 +84,6 @@
 #define OPT_CONN_TYPE	0x08
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
-#define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
 
@@ -100,7 +99,6 @@
 #define LONG_OPT_CONT        0x109
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
-#define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_NOSHELL     0x10f
 #define LONG_OPT_DEBUG_TS    0x110
@@ -742,10 +740,9 @@ static void _opt_default()
 	opt.no_requeue	= false;
 
 	opt.noshell	= false;
-	opt.max_wait	= slurm_get_wait_time();
+	opt.max_wait	= 0;
 
 	opt.quit_on_intr = false;
-	opt.disable_status = false;
 	opt.test_only   = false;
 
 	opt.quiet = 0;
@@ -815,8 +812,6 @@ env_vars_t env_vars[] = {
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
-  {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -919,15 +914,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-
-	case OPT_MPI:
-		if (srun_mpi_init((char *)val) == SLURM_ERROR) {
-			fatal("\"%s=%s\" -- invalid MPI type, "
-			      "--mpi=list for acceptable types.",
-			      e->var, val);
-		}
-		break;
-
 	default:
 		/* do nothing */
 		break;
@@ -962,7 +948,6 @@ void set_options(const int argc, char **argv, int first)
 {
 	int opt_char, option_index = 0;
 	static bool set_name=false;
-	struct utsname name;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -988,15 +973,12 @@ void set_options(const int argc, char **argv, int first)
 		{"nodelist",      required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
-		{"disable-status", no_argument,      0, 'X'},
-		{"no-allocate",   no_argument,       0, 'Z'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
-		{"mpi",              required_argument, 0, LONG_OPT_MPI},
 		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -1021,7 +1003,7 @@ void set_options(const int argc, char **argv, int first)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:c:C:g:HIJ:km:N:"
-		"Op:P:qQR:st:U:vVw:W:x:XZ";
+		"Op:P:qQR:st:U:vVw:W:x:";
 
 	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
@@ -1185,15 +1167,6 @@ void set_options(const int argc, char **argv, int first)
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(1);
 			break;
-		case (int)'X': 
-			opt.disable_status = true;
-			break;
-		case (int)'Z':
-			opt.no_alloc = true;
-			uname(&name);
-			if (strcasecmp(name.sysname, "AIX") == 0)
-				opt.network = xstrdup("ip");
-			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
@@ -1219,13 +1192,6 @@ void set_options(const int argc, char **argv, int first)
 				error("invalid memory constraint %s", 
 				      optarg);
 				exit(1);
-			}
-			break;
-		case LONG_OPT_MPI:
-			if (srun_mpi_init((char *)optarg) == SLURM_ERROR) {
-				fatal("\"--mpi=%s\" -- long invalid MPI type, "
-				      "--mpi=list for acceptable types.",
-				      optarg);
 			}
 			break;
 		case LONG_OPT_NOSHELL:
@@ -1378,16 +1344,6 @@ static bool _opt_verify(void)
 
 	if (opt.quiet && _verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
-		verified = false;
-	}
-
-	if (opt.no_alloc && !opt.nodelist) {
-		error("must specify a node list with -Z, --no-allocate.");
-		verified = false;
-	}
-
-	if (opt.no_alloc && opt.exc_nodes) {
-		error("can not specify --exclude list with -Z, --no-allocate.");
 		verified = false;
 	}
 
@@ -1685,10 +1641,9 @@ static void _help(void)
 "                              (type = block|cyclic|hostfile)\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --mpi=type              type of MPI being used\n"
-"  -W, --wait=sec              seconds to wait after first task exits\n"
-"                              before killing job\n"
+"  -W, --wait=sec              seconds to wait for allocation if not\n"
+"                              immediately available\n"
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
-"  -X, --disable-status        Disable Ctrl-C status feature\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --slurmd-debug=level    slurmd debug level\n"

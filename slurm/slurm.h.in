@@ -761,7 +761,8 @@ extern int slurm_allocate_resources PARAMS((
  *	A timeout of zero will wait indefinitely.
  * 
  * RET allocation structure on success, NULL on error set errno to
- *	indicate the error
+ *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
+ *      with no allocation granted)
  * NOTE: free the allocation structure using
  *	slurm_free_resource_allocation_response_msg
  */
