@@ -86,6 +86,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId        = %u\n", 
 		slurm_ctl_conf_ptr->first_job_id);
+#ifdef HAVE_XCPU
+	fprintf(out, "HAVE_XCPU         = %d\n", HAVE_XCPU);
+#endif
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
 	fprintf(out, "JobAcctLogFile    = %s\n", 
@@ -112,6 +115,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->min_job_age);
 	fprintf(out, "MpiDefault        = %s\n",
 		slurm_ctl_conf_ptr->mpi_default);
+#ifdef MULTIPLE_SLURMD
+	fprintf(out, "MULTIPLE_SLURMD   = %d\n", MULTIPLE_SLURMD);
+#endif
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig   = %s\n",
