@@ -191,7 +191,7 @@ int slaunch(int argc, char **argv)
 	/* FIXME - don't peek into the step context, that's cheating! */
 	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
 			 (int)step_ctx->step_resp->job_step_id,
-			 step_ctx->step_layout);
+			 step_ctx->step_resp->step_layout);
 	params.parallel_debug = opt.parallel_debug ? true : false;
 	params.task_start_callback = _task_start;
 	params.task_finish_callback = _task_finish;

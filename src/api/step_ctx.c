@@ -83,19 +83,12 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	ctx->launch_state = NULL;
-	ctx->step_layout = step_layout_create(alloc_resp, step_resp, step_req);
-
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = _copy_step_req(step_req);
 	ctx->step_resp	= step_resp;
 	ctx->alloc_resp	= alloc_resp;
-	if (task_layout(ctx->step_layout) != SLURM_SUCCESS) {
-		slurm_step_ctx_destroy((slurm_step_ctx)ctx);
-		errno = ESLURM_BAD_DIST;
-		return NULL;
-	}
 
 	return (slurm_step_ctx)ctx;
 }
@@ -132,18 +125,20 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 		break;
 	case SLURM_STEP_CTX_TASKS:
 		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
-		*uint32_array_pptr = ctx->step_layout->tasks;
+		*uint32_array_pptr = ctx->step_resp->step_layout->tasks;
 		break;
 		
 	case SLURM_STEP_CTX_TID:
 		node_inx = va_arg(ap, uint32_t);
-		if ((node_inx < 0) || (node_inx > ctx->step_layout->num_hosts)) {
+		if ((node_inx < 0)
+		    || (node_inx > ctx->step_resp->step_layout->num_hosts)) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
 			break;
 		}
 		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
-		*uint32_array_pptr = ctx->step_layout->tids[node_inx];
+		*uint32_array_pptr =
+			ctx->step_resp->step_layout->tids[node_inx];
 		break;
 		
 	case SLURM_STEP_CTX_RESP:
@@ -161,21 +156,22 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 		break;
 	case SLURM_STEP_CTX_NUM_HOSTS:
 		uint32_ptr = (uint32_t *) va_arg(ap, void *);
-		*uint32_ptr = ctx->step_layout->num_hosts;
+		*uint32_ptr = ctx->step_resp->step_layout->num_hosts;
 		break;
 	case SLURM_STEP_CTX_CPUS:
 		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
-		*uint32_array_pptr = ctx->step_layout->cpus;
+		*uint32_array_pptr = ctx->step_resp->step_layout->cpus;
 		break;
 	case SLURM_STEP_CTX_HOST:
 		node_inx = va_arg(ap, uint32_t);
-		if ((node_inx < 0) || (node_inx > ctx->step_layout->num_hosts)) {
+		if ((node_inx < 0)
+		    || (node_inx > ctx->step_resp->step_layout->num_hosts)) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
 			break;
 		}
 		char_array_pptr = (char **) va_arg(ap, void *);
-		*char_array_pptr = ctx->step_layout->host[node_inx];
+		*char_array_pptr = ctx->step_resp->step_layout->host[node_inx];
 		break;
 	default:
 		slurm_seterrno(EINVAL);
@@ -276,7 +272,6 @@ slurm_step_ctx_destroy (slurm_step_ctx ctx)
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
-	step_layout_destroy(ctx->step_layout);
 	_free_step_req(ctx->step_req);
 	slurm_free_job_step_create_response_msg(ctx->step_resp);
 	slurm_free_resource_allocation_response_msg(ctx->alloc_resp);

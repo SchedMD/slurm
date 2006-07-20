@@ -83,9 +83,6 @@ struct slurm_step_ctx_struct {
 	uint32_t envc;		/* count of env vars */
 	char **env;		/* environment variables */
 
-	slurm_step_layout_t *step_layout; /* holds info about how the task is 
-					     laid out */
-
 	/* Used by slurm_step_launch(), but not slurm_spawn() */
 	struct step_launch_state *launch_state;
 };
