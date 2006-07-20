@@ -421,13 +421,13 @@ proc test_front_end { } {
 
 ################################################################
 #
-# Proc: test_mutliple_slurmd
+# Proc: test_multiple_slurmd
 #
 # Returns 1 if running multple slurmd per node
 #
 ################################################################
 
-proc test_mutliple_slurmd { } {
+proc test_multiple_slurmd { } {
         global scontrol
 
         log_user 0
