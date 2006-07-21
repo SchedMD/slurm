@@ -45,14 +45,14 @@
 #define MAX_THREADS 50
 
 static int _signal_job_step(const job_step_info_t *step,
-			    const resource_allocation_response_msg_t *allocation,
+			    const job_alloc_info_response_msg_t *allocation,
 			    uint16_t signal);
 static int _signal_batch_script_step(
-	const resource_allocation_response_msg_t *allocation, uint16_t signal);
+	const job_alloc_info_response_msg_t *allocation, uint16_t signal);
 static int _terminate_job_step(const job_step_info_t *step,
-		       const resource_allocation_response_msg_t *allocation);
+		       const job_alloc_info_response_msg_t *allocation);
 static int _terminate_batch_script_step(
-	const resource_allocation_response_msg_t *allocation);
+	const job_alloc_info_response_msg_t *allocation);
 static int _p_send_recv_rc_msg(int num_nodes, slurm_msg_t msg[],
 			       int rc[], int timeout);
 static void *_thr_send_recv_rc_msg(void *args);
@@ -75,7 +75,7 @@ extern int
 slurm_signal_job (uint32_t job_id, uint16_t signal)
 {
 	int rc = SLURM_SUCCESS;
-	resource_allocation_response_msg_t *alloc_info;
+	job_alloc_info_response_msg_t *alloc_info;
 	slurm_msg_t *msg; /* array of message structs, one per node */
 	signal_job_msg_t rpc;
 	int *rc_array;
@@ -89,8 +89,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 	/* same remote procedure call for each node */
 	rpc.job_id = job_id;
 	rpc.signal = (uint32_t)signal;
-
-        msg = xmalloc(sizeof(slurm_msg_t) * alloc_info->node_cnt);
+	msg = xmalloc(sizeof(slurm_msg_t) * alloc_info->node_cnt);
 	rc_array = xmalloc(sizeof(int) * alloc_info->node_cnt);
 	for (i = 0; i < alloc_info->node_cnt; i++) {
 		msg[i].msg_type = REQUEST_SIGNAL_JOB;
@@ -109,7 +108,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 
 	xfree(msg);
 	xfree(rc_array);
-	slurm_free_resource_allocation_response_msg(alloc_info);
+	slurm_free_job_alloc_info_response_msg(alloc_info);
 fail1:
 	if (rc) {
 		slurm_seterrno_ret(rc);
@@ -129,7 +128,7 @@ fail1:
 extern int 
 slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
-	resource_allocation_response_msg_t *alloc_info;
+	job_alloc_info_response_msg_t *alloc_info;
 	job_step_info_response_msg_t *step_info;
 	int rc;
 	int i;
@@ -145,7 +144,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
 		rc = _signal_batch_script_step(alloc_info, signal);
-		slurm_free_resource_allocation_response_msg(alloc_info);
+		slurm_free_job_alloc_info_response_msg(alloc_info);
 		errno = rc;
 		return rc ? -1 : 0;
 	}
@@ -171,7 +170,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
-	slurm_free_resource_allocation_response_msg(alloc_info);
+	slurm_free_job_alloc_info_response_msg(alloc_info);
  	errno = save_errno;
  	return rc ? -1 : 0;
 }
@@ -184,7 +183,7 @@ fail:
  */
 static int
 _get_step_addresses(const job_step_info_t *step,
-		    const resource_allocation_response_msg_t *allocation,
+		    const job_alloc_info_response_msg_t *allocation,
 		    slurm_addr **address, int *num_addresses)
 {
 	hostset_t alloc_nodes;
@@ -223,7 +222,7 @@ _get_step_addresses(const job_step_info_t *step,
 
 static int
 _signal_job_step(const job_step_info_t *step,
-		 const resource_allocation_response_msg_t *allocation,
+		 const job_alloc_info_response_msg_t *allocation,
 		 uint16_t signal)
 {
 	slurm_msg_t *msg; /* array of message structs, one per node */
@@ -268,7 +267,7 @@ _signal_job_step(const job_step_info_t *step,
 }
 
 static int _signal_batch_script_step(
-	const resource_allocation_response_msg_t *allocation, uint16_t signal)
+	const job_alloc_info_response_msg_t *allocation, uint16_t signal)
 {
 	slurm_msg_t msg;
 	kill_tasks_msg_t rpc;
@@ -387,7 +386,7 @@ extern int
 slurm_terminate_job (uint32_t job_id)
 {
 	int rc = SLURM_SUCCESS;
-	resource_allocation_response_msg_t *alloc_info;
+	job_alloc_info_response_msg_t *alloc_info;
 	slurm_msg_t *msg; /* array of message structs, one per node */
 	signal_job_msg_t rpc;
 	int *rc_array;
@@ -421,7 +420,7 @@ slurm_terminate_job (uint32_t job_id)
 
 	xfree(msg);
 	xfree(rc_array);
-	slurm_free_resource_allocation_response_msg(alloc_info);
+	slurm_free_job_alloc_info_response_msg(alloc_info);
 
 	slurm_complete_job(job_id, 0);
 fail1:
@@ -444,7 +443,7 @@ fail1:
 extern int 
 slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 {
-	resource_allocation_response_msg_t *alloc_info;
+	job_alloc_info_response_msg_t *alloc_info;
 	job_step_info_response_msg_t *step_info;
 	int rc = 0;
 	int i;
@@ -460,7 +459,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
 		rc = _terminate_batch_script_step(alloc_info);
-		slurm_free_resource_allocation_response_msg(alloc_info);
+		slurm_free_job_alloc_info_response_msg(alloc_info);
 		errno = rc;
 		return rc ? -1 : 0;
 	}
@@ -486,7 +485,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
-	slurm_free_resource_allocation_response_msg(alloc_info);
+	slurm_free_job_alloc_info_response_msg(alloc_info);
 	errno = save_errno;
 	return rc ? -1 : 0;
 }
@@ -500,7 +499,7 @@ fail:
  */
 static int
 _terminate_job_step(const job_step_info_t *step,
-		    const resource_allocation_response_msg_t *allocation)
+		    const job_alloc_info_response_msg_t *allocation)
 {
 	slurm_msg_t *msg; /* array of message structs, one per node */
 	kill_tasks_msg_t rpc;
@@ -544,7 +543,7 @@ _terminate_job_step(const job_step_info_t *step,
 }
 
 static int _terminate_batch_script_step(
-	const resource_allocation_response_msg_t *allocation)
+	const job_alloc_info_response_msg_t *allocation)
 {
 	slurm_msg_t msg;
 	kill_tasks_msg_t rpc;

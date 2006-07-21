@@ -52,6 +52,6 @@ extern struct sbcast_parameters params;
 
 extern void parse_command_line(int argc, char *argv[]);
 extern void send_rpc(file_bcast_msg_t *bcast_msg,
-		resource_allocation_response_msg_t *alloc_resp);
+		     job_alloc_info_response_msg_t *alloc_resp);
 
 #endif

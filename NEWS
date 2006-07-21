@@ -9,6 +9,11 @@ documents those changes that are of interest to users and admins.
  -- Moved task layout to slurmctld instead of srun.  Job step create returns
     step_layout structure with hostnames and addresses that corrisponds 
     to those nodes. 
+ -- changed api slurm_lookup_allocation params, 
+    resource_allocation_response_msg_t changed to job_alloc_info_response_msg_t
+    this structure is being renamed so contents are the same.
+ -- alter resource_allocation_response_msg_t see slurm.h.in
+ -- remove old_job_alloc_msg_t and function slurm_confirm_alloc	
 
 * Changes in SLURM 1.2.0-pre1
 =============================

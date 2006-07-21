@@ -53,7 +53,7 @@
 int fd;						/* source file descriptor */
 struct sbcast_parameters params;		/* program parameters */
 struct stat f_stat;				/* source file stats */
-resource_allocation_response_msg_t *alloc_resp;	/* job specification */
+job_alloc_info_response_msg_t *alloc_resp;	/* job specification */
 
 static void _bcast_file(void);
 static void _get_job_info(void);

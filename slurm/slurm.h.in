@@ -604,9 +604,9 @@ typedef struct node_info_msg {
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
 
-typedef struct old_job_alloc_msg {
+typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
-} old_job_alloc_msg_t;
+} job_alloc_info_msg_t;
 
 typedef struct partition_info {
 	char *name;		/* name of the partition */
@@ -646,6 +646,19 @@ typedef struct resource_allocation_response_msg {
 	select_jobinfo_t select_jobinfo;	/* opaque data structure,
 			* use select_g_get_jobinfo() to access conents */
 } resource_allocation_response_msg_t;
+
+typedef struct job_alloc_info_response_msg {
+	uint32_t job_id;	/* assigned job id */
+	char *node_list;	/* assigned list of nodes */
+	uint16_t num_cpu_groups;/* elements in below cpu arrays */
+	uint32_t *cpus_per_node;/* cpus per node */
+	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
+	uint16_t node_cnt;	/* count of nodes */
+	slurm_addr *node_addr;	/* network addresses */
+	uint32_t error_code;	/* error code for warning message */
+	select_jobinfo_t select_jobinfo;	/* opaque data structure,
+			* use select_g_get_jobinfo() to access conents */
+} job_alloc_info_response_msg_t;
 
 typedef struct partition_info_msg {
 	time_t last_update;	/* time of latest info */
@@ -801,29 +814,33 @@ extern resource_allocation_response_msg_t *
 extern void slurm_free_resource_allocation_response_msg PARAMS((
 	resource_allocation_response_msg_t * msg));
 
-
 /*
- * OBSOLETE! This function, along with the old_job_alloc_msg_t
- *           structure, will go away in a future version of SLURM.  Use
- *           slurm_allocation_lookup() instead.
- * slurm_confirm_allocation - confirm an existing resource allocation
- * IN job_desc_msg - description of existing job request
- * OUT slurm_alloc_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the response using slurm_free_resource_allocation_response_msg
+ * slurm_free_job_alloc_info_response_msg - free slurm resource
+ *	allocation lookup message
+ * IN msg - pointer to job allocation info response message
+ * NOTE: buffer is loaded by slurm_allocation_lookup
  */
-extern int slurm_confirm_allocation PARAMS((
-	old_job_alloc_msg_t * job_desc_msg, 
-	resource_allocation_response_msg_t ** slurm_alloc_msg));
+extern void slurm_free_job_alloc_info_response_msg PARAMS((
+	job_alloc_info_response_msg_t * msg));
 
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource allocation
  * IN job_id - job allocation identifier
  * OUT resp - job allocation information
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free "info" using slurm_free_resource_allocation_response_msg
+ * NOTE: free "info" using slurm_free_job_alloc_info_response_msg
  */
 extern int slurm_allocation_lookup PARAMS((
+	uint32_t job_id, job_alloc_info_response_msg_t **info));
+/*
+ * slurm_allocation_lookup_lite - retrieve minor info for an existing 
+ *				  resource allocation
+ * IN job_id - job allocation identifier
+ * OUT resp - job allocation information
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free "info" using slurm_free_job_alloc_info_response_msg
+ */
+extern int slurm_allocation_lookup_lite PARAMS((
 	uint32_t job_id, resource_allocation_response_msg_t **info));
 
 /*
@@ -1208,7 +1225,7 @@ extern int slurm_get_select_jobinfo PARAMS((select_jobinfo_t jobinfo,
  * IN job_id - get information for specific job id, zero for all jobs
  * IN step_id - get information for specific job step id, zero for all 
  *	job steps
- * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN step_response_pptr - place to store a step response pointer
  * IN show_flags - job step filtering options
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_info_response_msg

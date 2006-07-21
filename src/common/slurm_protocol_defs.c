@@ -70,7 +70,7 @@ void slurm_free_shutdown_msg(shutdown_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg)
+void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -672,6 +672,24 @@ char *node_state_string_compact(enum node_states inx)
  */
 void slurm_free_resource_allocation_response_msg ( 
 				resource_allocation_response_msg_t * msg)
+{
+	if (msg) {
+		select_g_free_jobinfo(&msg->select_jobinfo);
+		xfree(msg->node_list);
+		xfree(msg->cpus_per_node);
+		xfree(msg->cpu_count_reps);
+		xfree(msg->node_addr);
+		xfree(msg);
+	}
+}
+
+/*
+ * slurm_free_job_alloc_info_response_msg - free slurm job allocation
+ *	                                    info response message
+ * IN msg - pointer to job allocation info response message
+ * NOTE: buffer is loaded by slurm_allocate_resources
+ */
+void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
 {
 	if (msg) {
 		select_g_free_jobinfo(&msg->select_jobinfo);
