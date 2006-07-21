@@ -38,6 +38,7 @@
 #include "src/common/fd.h"
 
 #define MAX_RETRIES 5
+#define PMI_TIME    1000	/* spacing between RPCs, usec */
 
 int pmi_fd = -1;
 uint16_t srun_port = 0;
@@ -86,17 +87,15 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * needed. Spread out messages by task's rank. Also 
 	 * increase the timeout if many tasks since the srun 
 	 * command is very overloaded. */
-	usleep(pmi_rank * 1000);
-	if (pmi_size > 1000)
+	usleep(pmi_rank * PMI_TIME);
+	if (pmi_size > 10)
 		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 8;
-	else if (pmi_size > 10)
-		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 4;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
-		usleep(pmi_rank * 1000);
+		usleep(pmi_rank * PMI_TIME);
 	}
 
 	return rc;
@@ -161,17 +160,15 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * needed. Spread out messages by task's rank. Also
 	 * increase the timeout if many tasks since the srun
 	 * command is very overloaded. */
-	usleep(pmi_rank * 1000);
-	if (pmi_size > 1000)
+	usleep(pmi_rank * PMI_TIME);
+	if (pmi_size > 10)
 		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 8;
-	else if (pmi_size > 10)
-		timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 4;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
-		usleep(pmi_rank * 1000);
+		usleep(pmi_rank * PMI_TIME);
 	}
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
