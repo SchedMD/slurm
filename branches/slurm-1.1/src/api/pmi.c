@@ -634,6 +634,8 @@ int PMI_Barrier( void )
 		return PMI_FAIL;
 	if (kvs_set_ptr == NULL)
 		return PMI_SUCCESS;
+	if (pmi_debug)
+		fprintf(stderr, "Past PMI_Barrier\n");
 
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
@@ -1207,7 +1209,7 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 	int i, j, rc;
 
 	if (pmi_debug)
-		fprintf(stderr, "In: PMI_KVS_Get\n");
+		fprintf(stderr, "In: PMI_KVS_Get(%s)\n", key);
 	
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
