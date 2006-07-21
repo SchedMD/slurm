@@ -123,7 +123,10 @@ typedef enum {
 	RESPONSE_JOB_ATTACH,
 	REQUEST_JOB_WILL_RUN,
 	RESPONSE_JOB_WILL_RUN,
-	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
+	REQUEST_JOB_ALLOCATION_INFO,
+	RESPONSE_JOB_ALLOCATION_INFO,
+	REQUEST_JOB_ALLOCATION_INFO_LITE,
+	RESPONSE_JOB_ALLOCATION_INFO_LITE,
 	REQUEST_UPDATE_JOB_TIME,
 	REQUEST_JOB_READY,
 	RESPONSE_JOB_READY,
@@ -603,14 +606,12 @@ typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
 /* free message functions */
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
-void inline slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg);
+void inline slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
 void inline slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
 void inline slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
-void inline slurm_free_node_info_request_msg(
-		node_info_request_msg_t *msg);
-void inline slurm_free_part_info_request_msg(
-		part_info_request_msg_t *msg);
+void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
+void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)
@@ -666,6 +667,8 @@ void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
+void slurm_free_job_alloc_info_response_msg (
+		job_alloc_info_response_msg_t * msg);
 void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg);
 void slurm_free_submit_response_response_msg(submit_response_msg_t * msg);

@@ -3586,13 +3586,13 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 
 
 /*
- * old_job_info - get details about an existing job allocation
+ * job_alloc_info - get details about an existing job allocation
  * IN uid - job issuing the code
  * IN job_id - ID of job for which info is requested
  * OUT job_pptr - set to pointer to job record
  */
 extern int
-old_job_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
+job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 {
 	struct job_record *job_ptr;
 
@@ -4336,8 +4336,8 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
  * OUT timeout_msg - job timeout response to be sent
  * RET SLURM_SUCESS or an error code
  */
-extern int job_end_time(old_job_alloc_msg_t *time_req_msg,
-		srun_timeout_msg_t *timeout_msg)
+extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
+			srun_timeout_msg_t *timeout_msg)
 {
 	struct job_record *job_ptr;
 	xassert(timeout_msg);

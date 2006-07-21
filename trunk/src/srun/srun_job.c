@@ -67,7 +67,6 @@ typedef struct allocation_info {
 	uint32_t                stepid;
 	char                   *nodelist;
 	uint32_t                nnodes;
-	slurm_addr             *addrs;
 	uint16_t                num_cpu_groups;
 	uint32_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
@@ -121,8 +120,7 @@ job_create_noalloc(void)
 	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
 	ai->cpus_per_node  = &cpn;
 	ai->cpu_count_reps = &ai->nnodes;
-	ai->addrs          = NULL; 
-
+	
 	/* 
 	 * Create job, then fill in host addresses
 	 */
@@ -216,8 +214,7 @@ job_step_create_allocation(uint32_t job_id)
 	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
 	ai->cpus_per_node  = &cpn;
 	ai->cpu_count_reps = &ai->nnodes;
-	ai->addrs          = NULL; 
-
+	
 	/* 
 	 * Create job, then fill in host addresses
 	 */
@@ -244,7 +241,6 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->num_cpu_groups = resp->num_cpu_groups;
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
-	i->addrs          = resp->node_addr;
 	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
 
 	job = _job_create_structure(i);

@@ -162,31 +162,30 @@ jobid_from_env(void)
 static void
 _wait_for_resources(resource_allocation_response_msg_t **resp)
 {
-	old_job_alloc_msg_t old;
 	resource_allocation_response_msg_t *r = *resp;
 	int sleep_time = MIN_ALLOC_WAIT;
+	int job_id = r->job_id;
 
 	if (!opt.quiet)
 		info ("job %u queued and waiting for resources", r->job_id);
 
-	old.job_id = r->job_id;
 	slurm_free_resource_allocation_response_msg(r);
 
 	/* Keep polling until the job is allocated resources */
 	while (_wait_for_alloc_rpc(sleep_time, resp) <= 0) {
 
-		if (slurm_confirm_allocation(&old, resp) >= 0)
+		if (slurm_allocation_lookup_lite(job_id, resp) >= 0)
 			break;
 
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) 
 			debug3 ("Still waiting for allocation");
 		else 
 			fatal ("Unable to confirm allocation for job %u: %m", 
-			       old.job_id);
+			       job_id);
 
 		if (destroy_job) {
-			verbose("cancelling job %u", old.job_id);
-			slurm_complete_job(old.job_id, 0);
+			verbose("cancelling job %u", job_id);
+			slurm_complete_job(job_id, 0);
 			debugger_launch_failure(allocate_job);
 			exit(0);
 		}

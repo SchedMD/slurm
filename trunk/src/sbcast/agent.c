@@ -114,7 +114,7 @@ static void *_agent_thread(void *args)
 
 /* Issue the RPC to transfer the file's data */
 extern void send_rpc(file_bcast_msg_t *bcast_msg,
-		resource_allocation_response_msg_t *alloc_resp)
+		     job_alloc_info_response_msg_t *alloc_resp)
 {
 	/* Preserve some data structures across calls for better performance */
 	static forward_t from, forward[MAX_THREADS];
@@ -155,16 +155,15 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 				&from.name[MAX_SLURM_NAME*i], MAX_SLURM_NAME); 
 			       
 			forward_set(&forward[threads_used], span[threads_used],
-				&i, &from);
-			msg[threads_used].msg_type    = REQUEST_FILE_BCAST;
-			msg[threads_used].address     = alloc_resp->node_addr[j];
-			msg[threads_used].data        = bcast_msg;
-			msg[threads_used].forward     = forward[threads_used];
-			msg[threads_used].ret_list    = NULL;
+				    &i, &from);
+			msg[threads_used].msg_type  = REQUEST_FILE_BCAST;
+			msg[threads_used].address   = alloc_resp->node_addr[j];
+			msg[threads_used].data      = bcast_msg;
+			msg[threads_used].forward   = forward[threads_used];
+			msg[threads_used].ret_list  = NULL;
 			msg[threads_used].orig_addr.sin_addr.s_addr = 0;
 			msg[threads_used].srun_node_id = 0;
-			
-			
+						
 			threads_used++;
 		}
 		xfree(span);

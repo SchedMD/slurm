@@ -233,9 +233,6 @@ int _destroy_data_info_data(uint32_t type, ret_data_info_t *ret_data_info)
 	case REQUEST_JOB_INFO:
 		slurm_free_job_info_request_msg(ret_data_info->data);
 		break;
-	case REQUEST_JOB_END_TIME:
-		slurm_free_old_job_alloc_msg(ret_data_info->data);
-		break;
 	case REQUEST_NODE_INFO:
 		slurm_free_node_info_request_msg(ret_data_info->data);
 		break;
@@ -269,8 +266,9 @@ int _destroy_data_info_data(uint32_t type, ret_data_info_t *ret_data_info)
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(ret_data_info->data);
 		break;
-	case REQUEST_OLD_JOB_RESOURCE_ALLOCATION:
-		slurm_free_old_job_alloc_msg(ret_data_info->data);
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_ALLOCATION_INFO:
+		slurm_free_job_alloc_info_msg(ret_data_info->data);
 		break;
 	case SLURM_SUCCESS:		
 	case REQUEST_PING:		
