@@ -73,9 +73,6 @@ s_p_options_t bg_conf_file_options[] = {
 	{"NodeCardNodeCnt", S_P_UINT16},
 	{"Numpsets", S_P_UINT16},
 	{"BPs", S_P_ARRAY, parse_blockreq, destroy_blockreq},
-	{"Type", S_P_IGNORE},
-	{"Nodecards", S_P_IGNORE},
-	{"Quarters", S_P_IGNORE},
 	{NULL}
 };
 
@@ -170,10 +167,9 @@ static void _destroy_geo(void *object);
 
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, 
-			  const char *line)
+			  const char *line, char **leftover)
 {
 	s_p_options_t block_options[] = {
-		{"BPs", S_P_STRING},
 		{"Type", S_P_STRING},
 		{"Nodecards", S_P_UINT16},
 		{"Quarters", S_P_UINT16},
@@ -184,10 +180,10 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	blockreq_t *n = NULL;
 
 	tbl = s_p_hashtbl_create(block_options);
-	s_p_parse_line(tbl, line);
+	s_p_parse_line(tbl, *leftover, leftover);
 	
 	n = xmalloc(sizeof(blockreq_t));
-	s_p_get_string(&n->block, "BPs", tbl);
+	n->block = xstrdup(value);
 
 	s_p_get_string(&tmp, "Type", tbl);
 	if (!tmp || !strcasecmp(tmp,"TORUS"))

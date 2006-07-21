@@ -120,18 +120,21 @@
  * a "handler" function and a "destroy" function.  The prototypes for each
  * are available below in the typedef of s_p_options_t.
  *
- * A handler function is given the the "key" string, "value" string, and a
- * pointer to the entire "line" on which the key-value pair was found (this is
- * the line after the parser has removed comments and concatenated continued
- * lines).  The handler can transform the value any way it desires, and then
- * return a pointer to the newly allocated value data in the "data" pointer.
- * The return code from "handler" must be -1 if the value is invalid, 0 if
- * the value is valid but no value will be set for "data" (the parser will not
- * flag this key as already seen, and the destroy() function will not be
- * called during s_p_hashtbl_destroy()), and 1 if "data" is set.
+ * The "handler" function is given the the "key" string, "value" string, and a
+ * pointer to the remainder of the "line" on which the key-value pair was found
+ * (this is the line after the parser has removed comments and concatenated
+ * continued lines).  The handler can transform the value any way it desires,
+ * and then return a pointer to the newly allocated value data in the "data"
+ * pointer.  The handler shall also return int the "leftover" parameter a
+ * pointer into the "line" buffer designating the start of any leftover,
+ * unparsed characters in the string.  The return code from "handler" must be
+ * -1 if the value is invalid, 0 if the value is valid but no value will be set
+ * for "data" (the parser will not flag this key as already seen, and the
+ * destroy() function will not be called during s_p_hashtbl_destroy()),
+ * and 1 if "data" is set.
  *
- * If the "destroy" function is set for a key, and the parser marked a key as
- * "seen" during parsing, then it will pass the pointer to the value data
+ * If the "destroy" function is set for a key, and the parser will mark the key
+ * as "seen" during parsing, then it will pass the pointer to the value data
  * to the "destroy" function when s_p_hashtbl_destroy() is called.  If
  * a key was "seen" during parsing, but the "destroy" function is NULL,
  * s_p_hashtbl_destroy() will call xfree() on the data pointer.
@@ -155,7 +158,8 @@ typedef struct conf_file_options {
 	char *key;
 	slurm_parser_enum_t type;
 	int (*handler)(void **data, slurm_parser_enum_t type,
-		       const char *key, const char *value, const char *line);
+		       const char *key, const char *value,
+		       const char *line, char **leftover);
 	void (*destroy)(void *data);
 } s_p_options_t;
 
@@ -169,7 +173,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename);
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
  */
-int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line);
+int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover);
 
 /*
  * s_p_get_string
