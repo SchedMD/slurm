@@ -71,6 +71,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
 #include "src/common/read_config.h" /* getnodename() */
+#include "src/common/hostlist.h"
 
 #include "src/slaunch/attach.h"
 #include "src/common/mpi.h"
@@ -645,6 +646,7 @@ static void _opt_default()
 	opt.jobid_set = false;
 
 	opt.distribution = SLURM_DIST_CYCLIC;
+	opt.distribution_set = false;
 
 	opt.local_ofname = NULL;
 	opt.local_ifname = NULL;
@@ -663,9 +665,6 @@ static void _opt_default()
 
 	opt.max_wait	= slurm_get_wait_time();
 
-	opt.quit_on_intr = false;
-	opt.disable_status = false;
-
 	opt.quiet = 0;
 	_verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
@@ -679,7 +678,6 @@ static void _opt_default()
 	opt.contiguous	    = false;
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
-	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
@@ -756,7 +754,6 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_STDOUTMODE",   OPT_STRING,    &opt.local_ofname,  NULL           },
   {"SLAUNCH_TIMELIMIT",    OPT_INT,       &opt.time_limit,    NULL           },
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
-  {"SLAUNCH_DISABLE_STATUS",OPT_INT,      &opt.disable_status,NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
   {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
   {"SLAUNCH_SRUN_MULTI",   OPT_MULTI,     NULL,               NULL           },
@@ -820,8 +817,10 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (dt == -1) {
 			error("\"%s=%s\" -- invalid distribution type. " 
 			      "ignoring...", e->var, val);
-		} else 
+		} else {
 			opt.distribution = dt;
+			opt.distribution_set = true;
+		}
 		break;
 
 	case OPT_CPU_BIND:
@@ -921,7 +920,6 @@ void set_options(const int argc, char **argv, int first)
 		{"local-output",  required_argument, 0, 'o'},
 		{"remote-output", required_argument, 0, 'O'},
 		{"overcommit",    no_argument,       0, 'C'},
-		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
@@ -931,8 +929,6 @@ void set_options(const int argc, char **argv, int first)
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
-		{"exclude",       required_argument, 0, 'x'},
-		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
@@ -964,7 +960,7 @@ void set_options(const int argc, char **argv, int first)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+c:Cd:D:e:E:g:i:I:J:kKlm:n:N:"
-		"o:O:qQr:R:t:uvVw:W:x:XZ";
+		"o:O:Qr:R:t:uvVw:W:Z";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1078,6 +1074,8 @@ void set_options(const int argc, char **argv, int first)
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
 				exit(1);
+			} else {
+				opt.distribution_set = true;
 			}
 			break;
 		case (int)'n':
@@ -1113,9 +1111,6 @@ void set_options(const int argc, char **argv, int first)
 				opt.remote_ofname = xstrdup("/dev/null");
 			else
 				opt.remote_ofname = xstrdup(optarg);
-			break;
-		case (int)'q':
-			opt.quit_on_intr = true;
 			break;
 		case (int) 'Q':
 			if(!first && opt.quiet)
@@ -1169,15 +1164,6 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case (int)'W':
 			opt.max_wait = _get_int(optarg, "wait");
-			break;
-		case (int)'x':
-			xfree(opt.exc_nodes);
-			opt.exc_nodes = xstrdup(optarg);
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(1);
-			break;
-		case (int)'X': 
-			opt.disable_status = true;
 			break;
 		case (int)'Z':
 			opt.no_alloc = true;
@@ -1417,12 +1403,6 @@ static void _opt_args(int argc, char **argv)
 		} 
 	}
 
-	if (!opt.num_nodes_set
-	    && opt.num_tasks_set && opt.num_tasks < opt.num_nodes)
-		opt.num_nodes = opt.num_tasks;
-	if (!opt.num_tasks_set)
-		opt.num_tasks = opt.num_nodes;
-
 	if (!_opt_verify())
 		exit(1);
 }
@@ -1434,6 +1414,66 @@ static void _opt_args(int argc, char **argv)
 static bool _opt_verify(void)
 {
 	bool verified = true;
+	hostlist_t hl = NULL;
+	hostlist_t hl_unique = NULL;
+
+	if (opt.nodelist != NULL) {
+		hl = hostlist_create(opt.nodelist);
+		hl_unique = hostlist_copy(hl);
+		hostlist_uniq(hl_unique);
+	}
+
+	/* Automatically trigger arbitrary task distribution mode if a hostlist
+	   was specified, and the sorted unique hostlist does not match the
+	   unsorted hostlist */
+	if (!opt.distribution_set && opt.nodelist != NULL) {
+		if (hostlist_count(hl) != hostlist_count(hl_unique)) {
+			opt.distribution = SLURM_DIST_ARBITRARY;
+		} else {
+			/* They are the same length, but are they in the
+			   same order?  There is an easy way to tell;
+			   turn them both back into a strings and compare. */
+			char buf1[8192], buf2[8192];
+			buf1[0] = buf2[0] = '\0';
+			hostlist_ranged_string(hl, 8192, buf1);
+			hostlist_ranged_string(hl_unique, 8192, buf2);
+			if (strcmp(buf1, buf2) != 0) {
+				opt.distribution = SLURM_DIST_ARBITRARY;
+			}
+		}
+	}
+
+	if (!opt.num_nodes_set && opt.nodelist != NULL) {
+		/* Need to ask for at as many nodes as are in the
+		   nodelist, otherwise the controller gets confused. */
+		opt.num_nodes = hostlist_count(hl_unique);
+	}
+	if (!opt.num_nodes_set
+	    && opt.num_tasks_set && opt.num_tasks < opt.num_nodes)
+		opt.num_nodes = opt.num_tasks;
+	if (opt.num_nodes_set
+	    && opt.num_nodes != hostlist_count(hl_unique)) {
+		if (opt.num_nodes > hostlist_count(hl_unique)) {
+			error("Asked for more nodes (%d) "
+			      "than listed in the nodelist (%d)",
+			      opt.num_nodes, hostlist_count(hl_unique));
+			verified = false;
+		} else { /* num_nodes < hostlist_count */
+			/* shrink the nodelist instead of an error? */
+			error("Asked for fewer nodes (%d) "
+			      "than listed in the nodelist (%d)",
+			      opt.num_nodes, hostlist_count(hl_unique));
+			verified = false;
+		}
+	}
+	if (!opt.num_tasks_set) {
+		if (opt.nodelist != NULL) {
+			opt.num_tasks = hostlist_count(hl);
+		} else {
+			opt.num_tasks = opt.num_nodes;
+		}
+	}
+
 
 	if (!opt.jobid_set) {
 		error("A job ID MUST be specified on the command line,");
@@ -1461,19 +1501,13 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.no_alloc && opt.exc_nodes) {
-		error("can not specify --exclude list with -Z, --no-allocate.");
-		verified = false;
-	}
-
 	if (opt.no_alloc && opt.relative) {
 		error("do not specify -r,--relative with -Z,--no-allocate.");
 		verified = false;
 	}
 
-	if (opt.relative && (opt.exc_nodes || opt.nodelist)) {
-		error("-r,--relative not allowed with "
-		      "-w,--nodelist or -x,--exclude.");
+	if (opt.relative && opt.nodelist) {
+		error("-r,--relative not allowed with -w,--nodelist.");
 		verified = false;
 	}
 
@@ -1510,20 +1544,6 @@ static bool _opt_verify(void)
 
 	core_format_enable (opt.core_type);
 
-	/* massage the numbers */
-	if (opt.num_nodes_set && !opt.num_tasks_set) {
-		/* 1 proc / node default */
-		opt.num_tasks = opt.num_nodes;
-	} else if (opt.num_nodes_set && opt.num_tasks_set) {
-		if (opt.num_tasks < opt.num_nodes) {
-			info ("Warning: can't run %d tasks on %d " 
-			      "nodes, setting nnodes to %d", 
-			      opt.num_tasks, opt.num_nodes, opt.num_tasks);
-			opt.num_nodes = opt.num_tasks;
-		}
-
-	} /* else if (opt.num_tasks_set && !opt.num_nodes_set) */
-
 	if (opt.labelio && opt.unbuffered) {
 		error("Do not specify both -l (--label) and " 
 		      "-u (--unbuffered)");
@@ -1553,6 +1573,8 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	hostlist_destroy(hl);
+	hostlist_destroy(hl_unique);
 	return verified;
 }
 
@@ -1659,9 +1681,6 @@ static char *print_constraints()
 	if (opt.nodelist != NULL)
 		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
 
-	if (opt.exc_nodes != NULL)
-		xstrfmtcat(buf, "exclude=%s ", opt.exc_nodes);
-
 	if (opt.constraints != NULL)
 		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
 
@@ -1723,7 +1742,9 @@ static void _opt_list()
 	info("jobid          : %u %s", opt.jobid, 
 		opt.jobid_set ? "(set)" : "(default)");
 	info("job name       : \"%s\"", opt.job_name);
-	info("distribution   : %s", format_task_dist_states(opt.distribution));
+	info("distribution   : %s %s",
+	     format_task_dist_states(opt.distribution),
+	     opt.distribution_set ? "(set)" : "(default)");
 	info("cpu_bind       : %s", 
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind       : %s",
@@ -1788,7 +1809,7 @@ static void _usage(void)
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
 "               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
-"               [-w hosts...] [-x hosts...] executable [args...]\n");
+"               [-w hosts...] executable [args...]\n");
 }
 
 static void _help(void)
@@ -1823,8 +1844,6 @@ static void _help(void)
 "  -b, --batch                 submit as batch job for later execution\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
-"  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
-"  -X, --disable-status        Disable Ctrl-C status feature\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --slurmd-debug=level    slurmd debug level\n"
@@ -1847,7 +1866,6 @@ static void _help(void)
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
-"  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Consumable resources related options:\n" 

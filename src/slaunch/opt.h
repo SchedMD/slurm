@@ -80,6 +80,7 @@ typedef struct slaunch_options {
 	int  time_limit;	/* --time,   -t			*/
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
+	bool distribution_set;
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true of jobid explicitly set */
@@ -101,8 +102,6 @@ typedef struct slaunch_options {
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	int  max_wait;		/* --wait,    -W		*/
-	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
-	bool disable_status;    /* --disable-status, -X         */
 	int  quiet;
 	bool parallel_debug;	/* slaunch controlled by debugger */
 	bool debugger_test;	/* --debugger-test		*/
@@ -117,7 +116,6 @@ typedef struct slaunch_options {
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
-	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 	int relative;		/* --relative -r N              */
 	bool relative_set;      /* true if --relative set explicitly */
 	bool no_alloc;		/* --no-allocate, -Z		*/

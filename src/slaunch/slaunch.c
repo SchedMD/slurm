@@ -151,18 +151,15 @@ int slaunch(int argc, char **argv)
 	xstrfmtcat(totalview_jobid, "%u", step_req.job_id);
 	step_req.user_id = getuid();
 	step_req.node_count = opt.num_nodes;
-	if (opt.num_tasks_set)
-		step_req.num_tasks = opt.num_tasks;
-	else
-		step_req.num_tasks = opt.num_nodes;
+	step_req.num_tasks = opt.num_tasks;
 /* 	step_req.cpu_count = opt.cpus_per_task; */
-	step_req.cpu_count = 0;
+	step_req.cpu_count = 0; /* FIXME */
 	step_req.relative = opt.relative;
-	step_req.task_dist = SLURM_DIST_CYCLIC;
+	step_req.task_dist = opt.distribution;
 	step_req.port = 0;      /* historical, used by srun */
 	step_req.host = NULL;   /* historical, used by srun */
-	step_req.node_list = NULL;
-	step_req.network = NULL;
+	step_req.node_list = opt.nodelist;
+	step_req.network = opt.network;
 	step_req.name = opt.job_name;
 	
 	step_ctx = slurm_step_ctx_create(&step_req);

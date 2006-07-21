@@ -15,39 +15,36 @@ slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on 
 \fB\-\-jobid\fR <\fIJOBID\fP>
 The job allocation under which the parallel application should be launched.
 .TP 
-\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
+\fB\-n\fR, \fB\-\-ntasks\fR[=]<\fInumber\fR>
 Specify the number of processes to launch.  The default is one process per node, but note that the \-c parameter will change this default.
 .TP 
-\fB\-N\fR, \fB\-\-nodes\fR=<\fInumber\fR>
+\fB\-N\fR, \fB\-\-nodes\fR[=]<\fInumber\fR>
 Specify the number of nodes to be used by this job step.  By default,
 slaunch will use all of the nodes in the specified job allocation.
 .TP 
-\fB\-r\fR, \fB\-\-relative\fR=<\fInumber\fR>
+\fB\-r\fR, \fB\-\-relative\fR[=]<\fInumber\fR>
 Specify the first node in the allocation on which this job step will be launched.  Counting starts at zero, thus the first node in the job allocation is node 0.  The default value for \-\-relative is zero.
 .TP 
-\fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
+\fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
 Specify that each task requires \fIncpus\fR number of CPUs.  Useful for applications in which each task will launch multiple threads and can therefore benefit from there being free processors on the node.
+.TP 
+\fB\-w\fR, \fB\-\-nodelist\fR[=]<\fInodelist\fR>
+Request a specific list of node names.  The list may be specified as a comma\-separated list of node names, or a range of node names (e.g. mynode[1\-5,7,...]).
+
+If the configured SLURM switch plugin supports the "arbitrary" method of task distribution, the nodelist may also contain nodenames more than once, and in any order.  Each node will then represent one task in the job step.  For example, given a nodelist "mynode[2,8,2,2,8]" tasks 0, 2, and 3 will run on mynode2, and tasks 1 and 4 will run on mynode8.
 
 .TP 
 \fB\-\-nice\fR=<\fIadjustment\fR>
 Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
 
 
-.PP
-Help options
-.TP
+
+.TP 
 \fB\-\-help\fR
-Display verbose help message and exit.
-.TP
-\fB\-\-usage\fR
-Display brief help message and exit.
-
-.PP
-Other options
-.TP
+Output help information and exit.
+.TP 
 \fB\-V\fR, \fB\-\-version\fR
-Display version information and exit.
-
+Output version information and exit.
 .SH "ENVIRONMENT VARIABLES"
 .LP 
 .TP 
