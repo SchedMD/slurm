@@ -183,6 +183,7 @@ static void *_agent(void *x)
 				fatal("pthread_create: %m");
 			}
 		}
+		slurm_mutex_lock(&agent_mutex);
 		while (agent_cnt > 0)
 			pthread_cond_wait(&agent_cond, &agent_mutex);
 		slurm_mutex_unlock(&agent_mutex);
