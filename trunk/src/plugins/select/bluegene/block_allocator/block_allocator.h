@@ -195,7 +195,7 @@ extern s_p_options_t bg_conf_file_options[];
 
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, 
-			  const char *line);
+			  const char *line, char **leftover);
 
 extern void destroy_blockreq(void *ptr);
 

@@ -70,7 +70,8 @@ struct s_p_values {
 	int data_count;
 	void *data;
 	int (*handler)(void **data, slurm_parser_enum_t type,
-		       const char *key, const char *value, const char *line);
+		       const char *key, const char *value,
+		       const char *line, char **leftover);
 	void (*destroy)(void *data);
 	s_p_values_t *next;
 };
@@ -199,7 +200,7 @@ static void _keyvalue_regex_init(void)
 	if (!keyvalue_initialized) {
 		if (regcomp(&keyvalue_re, keyvalue_pattern,
 			    REG_EXTENDED) != 0) {
-			/* FIXME - should be fatal */
+			/* FIXME - should be fatal? */
 			error("keyvalue regex compilation failed\n");
 		}
 		keyvalue_initialized = true;
@@ -362,7 +363,7 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 }
 
 static int _handle_string(s_p_values_t *v,
-			  const char *value, const char *line)
+			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
 		error("%s specified more than once", v->key);
@@ -372,7 +373,8 @@ static int _handle_string(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&v->data, v->type, v->key, value, line);
+		rc = v->handler(&v->data, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -384,7 +386,7 @@ static int _handle_string(s_p_values_t *v,
 }
 
 static int _handle_long(s_p_values_t *v,
-		       const char *value, const char *line)
+			const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
 		error("%s specified more than once", v->key);
@@ -394,7 +396,8 @@ static int _handle_long(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&v->data, v->type, v->key, value, line);
+		rc = v->handler(&v->data, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -424,7 +427,7 @@ static int _handle_long(s_p_values_t *v,
 }
 
 static int _handle_uint16(s_p_values_t *v,
-			  const char *value, const char *line)
+			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
 		error("%s specified more than once", v->key);
@@ -434,7 +437,8 @@ static int _handle_uint16(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&v->data, v->type, v->key, value, line);
+		rc = v->handler(&v->data, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -472,7 +476,7 @@ static int _handle_uint16(s_p_values_t *v,
 }
 
 static int _handle_uint32(s_p_values_t *v,
-			  const char *value, const char *line)
+			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
 		error("%s specified more than once", v->key);
@@ -482,7 +486,8 @@ static int _handle_uint32(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&v->data, v->type, v->key, value, line);
+		rc = v->handler(&v->data, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -521,7 +526,7 @@ static int _handle_uint32(s_p_values_t *v,
 }
 
 static int _handle_pointer(s_p_values_t *v,
-			   const char *value, const char *line)
+			   const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
 		error("%s specified more than once", v->key);
@@ -531,7 +536,8 @@ static int _handle_pointer(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&v->data, v->type, v->key, value, line);
+		rc = v->handler(&v->data, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -543,7 +549,7 @@ static int _handle_pointer(s_p_values_t *v,
 }
 
 static int _handle_array(s_p_values_t *v,
-			 const char *value, const char *line)
+			 const char *value, const char *line, char **leftover)
 {
 	void *new_ptr;
 	void **data;
@@ -551,7 +557,8 @@ static int _handle_array(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&new_ptr, v->type, v->key, value, line);
+		rc = v->handler(&new_ptr, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -566,7 +573,7 @@ static int _handle_array(s_p_values_t *v,
 }
 
 static int _handle_boolean(s_p_values_t *v,
-			   const char *value, const char *line)
+			   const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
 		error("%s specified more than once", v->key);
@@ -576,7 +583,8 @@ static int _handle_boolean(s_p_values_t *v,
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
-		rc = v->handler(&v->data, v->type, v->key, value, line);
+		rc = v->handler(&v->data, v->type, v->key, value,
+				line, leftover);
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
@@ -604,35 +612,46 @@ static int _handle_boolean(s_p_values_t *v,
 	return 1;
 }
 
+
+/*
+ * IN line: the entire line that currently being parsed
+ * IN/OUT leftover: leftover is a pointer into the "line" string.
+ *                  The incoming leftover point is a pointer to the
+ *                  character just after the already parsed key/value pair.
+ *                  If the handler for that key parses more of the line,
+ *                  it will move the leftover pointer to point to the character
+ *                  after it has finished parsing in the line.
+ */
 static void _handle_keyvalue_match(s_p_values_t *v,
-				   const char *value, const char *line)
+				   const char *value, const char *line,
+				   char **leftover)
 {
-	/* debug3("key = %s, value = %s, line = \"%s\"", */
-	/*        v->key, value, line); */
+/* 	debug3("key = %s, value = %s, line = \"%s\"", */
+/* 	       v->key, value, line); */
 	switch (v->type) {
 	case S_P_IGNORE:
 		/* do nothing */
 		break;
 	case S_P_STRING:
-		_handle_string(v, value, line);
+		_handle_string(v, value, line, leftover);
 		break;
 	case S_P_LONG:
-		_handle_long(v, value, line);
+		_handle_long(v, value, line, leftover);
 		break;
 	case S_P_UINT16:
-		_handle_uint16(v, value, line);
+		_handle_uint16(v, value, line, leftover);
 		break;
 	case S_P_UINT32:
-		_handle_uint32(v, value, line);
+		_handle_uint32(v, value, line, leftover);
 		break;
 	case S_P_POINTER:
-		_handle_pointer(v, value, line);
+		_handle_pointer(v, value, line, leftover);
 		break;
 	case S_P_ARRAY:
-		_handle_array(v, value, line);
+		_handle_array(v, value, line, leftover);
 		break;
 	case S_P_BOOLEAN:
-		_handle_boolean(v, value, line);
+		_handle_boolean(v, value, line, leftover);
 		break;
 	}
 }
@@ -658,21 +677,22 @@ static int _line_is_space(const char *line)
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
  */
-int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
+int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 {
 	char *key, *value;
-	const char *ptr = line;
-	char *leftover = (char *)line;
+	char *ptr = (char *)line;
 	s_p_values_t *p;
+	char *new_leftover;
 
 	_keyvalue_regex_init();
 
-	while (_keyvalue_regex(ptr, &key, &value, &leftover) == 0) {
+	while (_keyvalue_regex(ptr, &key, &value, &new_leftover) == 0) {
 		if ((p = _conf_hashtbl_lookup(hashtbl, key))) {
-			_handle_keyvalue_match(p, value, line);
-			ptr = leftover;
+			_handle_keyvalue_match(p, value,
+					       new_leftover, &new_leftover);
+			*leftover = ptr = new_leftover;
 		} else {
-			error("Parsing failed at unrecognized key: %s", key);
+			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
 			xfree(value);
 			return 0;
@@ -681,12 +701,34 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 		xfree(value);
 	}
 
-	if (!_line_is_space(leftover)) {
-		char *ptr = xstrdup(leftover);
-		_strip_cr_nl(ptr);
-		error("Parsing failed at: \"%s\"", ptr);
-		xfree(ptr);
-		return 0;
+	return 1;
+}
+
+/*
+ * Returns 1 if the line is parsed cleanly, and 0 otherwise.
+ */
+static int s_p_parse_next_key(s_p_hashtbl_t *hashtbl,
+			      const char *line, char **leftover)
+{
+	char *key, *value;
+	s_p_values_t *p;
+	char *new_leftover;
+
+	_keyvalue_regex_init();
+
+	if (_keyvalue_regex(line, &key, &value, &new_leftover) == 0) {
+		if ((p = _conf_hashtbl_lookup(hashtbl, key))) {
+			_handle_keyvalue_match(p, value,
+					       new_leftover, &new_leftover);
+			*leftover = new_leftover;
+		} else {
+			error("Parsing error at unrecognized key: %s", key);
+			xfree(key);
+			xfree(value);
+			return 0;
+		}
+		xfree(key);
+		xfree(value);
 	}
 
 	return 1;
@@ -696,6 +738,8 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
+	char *leftover;
+	int rc = SLURM_SUCCESS;
 
 	if(!filename) {
 		error("s_p_parse_file: No filename given.");
@@ -715,11 +759,20 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 		if (line[0] == '\0')
 			continue;
 
-		s_p_parse_line(hashtbl, line);
+		s_p_parse_next_key(hashtbl, line, &leftover);
+
+		/* Make sure that after parsing only whitespace is left over */
+		if (!_line_is_space(leftover)) {
+			char *ptr = xstrdup(leftover);
+			_strip_cr_nl(ptr);
+			error("Parsing error at: \"%s\"", ptr);
+			xfree(ptr);
+			rc = SLURM_ERROR;
+		}
 	}
 
 	fclose(f);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*

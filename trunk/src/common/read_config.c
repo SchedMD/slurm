@@ -73,7 +73,7 @@ static bool conf_initialized = false;
 static uint16_t default_slurmd_port;
 static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 			     const char *key, const char *value,
-			     const char *line);
+			     const char *line, char **leftover);
 
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
@@ -98,19 +98,19 @@ static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 
 static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
-			  const char *line);
+			  const char *line, char **leftover);
 static void destroy_nodename(void *ptr);
 static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
-			       const char *line);
+			       const char *line, char **leftover);
 static void destroy_partitionname(void *ptr);
 static int parse_downnodes(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
-			   const char *line);
+			   const char *line, char **leftover);
 static void destroy_downnodes(void *ptr);
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
-			  const char *line);
+			  const char *line, char **leftover);
 static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 				      s_p_hashtbl_t *hashtbl);
 
@@ -180,75 +180,13 @@ s_p_options_t slurm_conf_options[] = {
 	{"WaitTime", S_P_UINT16},
 
 	{"NodeName", S_P_ARRAY, parse_nodename, destroy_nodename},
-	/* The following keywords are ignored by this parser and handled
-	   by the NodeName handler */
-	{"NodeHostname"},
-	{"NodeAddr"},
-	{"Feature"},
-	{"Port"},
-	{"Procs"},
-	{"RealMemory"},
-	{"Reason"},
-	{"State"},
-	{"TmpDisk"},
-	{"Weight"},
-
 	{"PartitionName", S_P_ARRAY, parse_partitionname, destroy_partitionname},
-	/* The following keywords are ignored by this parser and handled
-	   by the PartitionName handler */
-	{"AllowGroups"},
-	{"Default"},
-	{"Hidden"},
-	{"MaxTime"},
-	{"MaxNodes"},
-	{"MinNodes"},
-	{"Nodes"},
-	{"RootOnly"},
-	{"Shared"},
-	{"State"},
-
 	{"DownNodes", S_P_ARRAY, parse_downnodes, destroy_downnodes},
-	/* "State" and "Reason" are already ignored */
 
 	{NULL}
 };
 
-static s_p_options_t _nodename_options[] = {
-	{"NodeName", S_P_STRING},
-	{"NodeHostname", S_P_STRING},
-	{"NodeAddr", S_P_STRING},
-	{"Feature", S_P_STRING},
-	{"Port", S_P_UINT16},
-	{"Procs", S_P_UINT32},
-	{"RealMemory", S_P_UINT32},
-	{"Reason", S_P_STRING},
-	{"State", S_P_STRING},
-	{"TmpDisk", S_P_UINT32},
-	{"Weight", S_P_UINT32},
-	{NULL}
-};
 
-static s_p_options_t _partition_options[] = {
-	{"PartitionName", S_P_STRING},
-	{"AllowGroups", S_P_STRING},
-	{"Default", S_P_BOOLEAN}, /* YES or NO */
-	{"Hidden", S_P_BOOLEAN}, /* YES or NO */
-	{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
-	{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
-	{"MinNodes", S_P_UINT32},
-	{"Nodes", S_P_STRING},
-	{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
-	{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
-	{"State", S_P_BOOLEAN}, /* UP or DOWN */
-	{NULL}
-};
-
-static s_p_options_t _downnodes_options[] = {
-	{"DownNodes", S_P_STRING},
-	{"Reason", S_P_STRING},
-	{"State", S_P_STRING},
-	{NULL}
-};
 /*
  * This function works almost exactly the same as the
  * default S_P_UINT32 handler, except that it also sets the
@@ -256,7 +194,7 @@ static s_p_options_t _downnodes_options[] = {
  */
 static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 			     const char *key, const char *value,
-			     const char *line)
+			     const char *line, char **leftover)
 {
 	char *endptr;
 	unsigned long num;
@@ -291,20 +229,34 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
-			  const char *line)
+			  const char *line, char **leftover)
 {
 	error("The option \"%s\" is defunct, see man slurm.conf.", key);
 	return 0;
 }
 
 static int parse_nodename(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value, const char *line)
+			  const char *key, const char *value,
+			  const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_node_t *n;
+	static s_p_options_t _nodename_options[] = {
+		{"NodeHostname", S_P_STRING},
+		{"NodeAddr", S_P_STRING},
+		{"Feature", S_P_STRING},
+		{"Port", S_P_UINT16},
+		{"Procs", S_P_UINT32},
+		{"RealMemory", S_P_UINT32},
+		{"Reason", S_P_STRING},
+		{"State", S_P_STRING},
+		{"TmpDisk", S_P_UINT32},
+		{"Weight", S_P_UINT32},
+		{NULL}
+	};
 
 	tbl = s_p_hashtbl_create(_nodename_options);
-	s_p_parse_line(tbl, line);
+	s_p_parse_line(tbl, *leftover, leftover);
 	/* s_p_dump_values(tbl, _nodename_options); */
 
 	if (strcasecmp(value, "DEFAULT") == 0) {
@@ -331,7 +283,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		n = xmalloc(sizeof(slurm_conf_node_t));
 		dflt = default_nodename_tbl;
 
-		s_p_get_string(&n->nodenames, "NodeName", tbl);
+		n->nodenames = xstrdup(value);
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
 			n->hostnames = xstrdup(n->nodenames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
@@ -408,14 +360,29 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 }
 
 static int parse_partitionname(void **dest, slurm_parser_enum_t type,
-		   const char *key, const char *value, const char *line)
+			       const char *key, const char *value,
+			       const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_partition_t *p;
 	char *tmp = NULL;
+	static s_p_options_t _partition_options[] = {
+		{"AllowGroups", S_P_STRING},
+		{"Default", S_P_BOOLEAN}, /* YES or NO */
+		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
+		{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
+		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
+		{"MinNodes", S_P_UINT32},
+		{"Nodes", S_P_STRING},
+		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
+		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
+		{"State", S_P_BOOLEAN}, /* UP or DOWN */
+		{NULL}
+	};
+
 
 	tbl = s_p_hashtbl_create(_partition_options);
-	s_p_parse_line(tbl, line);
+	s_p_parse_line(tbl, *leftover, leftover);
 	/* s_p_dump_values(tbl, _partition_options); */
 
 	if (strcasecmp(value, "DEFAULT") == 0) {
@@ -428,7 +395,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		p = xmalloc(sizeof(slurm_conf_partition_t));
 		dflt = default_partition_tbl;
 
-		s_p_get_string(&p->name, "PartitionName", tbl);
+		p->name = xstrdup(value);
 
 		if (!s_p_get_string(&p->allow_groups, "AllowGroups", tbl))
 			s_p_get_string(&p->allow_groups, "AllowGroups", dflt);
@@ -529,19 +496,24 @@ int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[])
 
 static int parse_downnodes(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
-			   const char *line)
+			   const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_downnodes_t *n;
+	static s_p_options_t _downnodes_options[] = {
+		{"Reason", S_P_STRING},
+		{"State", S_P_STRING},
+		{NULL}
+	};
 
 	tbl = s_p_hashtbl_create(_downnodes_options);
-	s_p_parse_line(tbl, line);
+	s_p_parse_line(tbl, *leftover, leftover);
 	/* s_p_dump_values(tbl, _downnodes_options); */
 
 	n = xmalloc(sizeof(slurm_conf_node_t));
 	dflt = default_nodename_tbl;
 
-	s_p_get_string(&n->nodenames, "DownNodes", tbl);
+	n->nodenames = xstrdup(value);
 
 	if (!s_p_get_string(&n->reason, "Reason", tbl))
 		n->reason = xstrdup("Set in slurm.conf");
