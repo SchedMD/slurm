@@ -42,7 +42,7 @@ void parse_command_line(int argc, char *argv[])
 	
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
-		{"bgblock",  required_argument, 0, 'b'},
+		{"bgblock",   required_argument, 0, 'b'},
 		{"partition", required_argument, 0, 'p'},
 		{"wait",      no_argument,       0, 'w'},
 		{"version",   no_argument,       0, 'V'},
@@ -118,7 +118,7 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: sfree [-huwVa] [-b]\n");
+	printf("Usage: sfree [-huwVa] [-b <name>]\n");
 }
 
 static void _help(void)
@@ -128,14 +128,14 @@ static void _help(void)
 
 	printf("\
 Usage: sfree [OPTIONS]\n\
-  -b, --bgblock             free specific bgblock named\n\
-  -a, --all                 free all bgblocks\n\
-  -w, --wait                wait to make sure all blocks have been freed\n\
-                            (Otherwise sfree will start the free and once\n\
-                             sure the block(s) have started to free will\n\
-                             exit)\n\
-  -V, --version             output version information and exit\n\
+  -b <name>, --bgblock=<name>  free specific bgblock named\n\
+  -a, --all                    free all bgblocks\n\
+  -w, --wait                   wait to make sure all blocks have been freed\n\
+                               (Otherwise sfree will start the free and once\n\
+                               sure the block(s) have started to free will\n\
+                               exit)\n\
+  -V, --version                output version information and exit\n\
 \nHelp options:\n\
-  --help                    show this help message\n\
-  --usage                   display brief usage message\n");
+  --help                       show this help message\n\
+  --usage                      display brief usage message\n");
 }
