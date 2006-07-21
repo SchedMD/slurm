@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Ignore partition's MaxNodes for SlurmUser and root.
  -- Fix possible memory corruption with use of PMI_KVS_Create call.
+ -- Fix race condition when multiple PMI_KVS_Barrier calls.
 
 * Changes in SLURM 1.1.4
 ========================
