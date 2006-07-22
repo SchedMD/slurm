@@ -2,7 +2,7 @@
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
-\fB/etc/slurm.conf\fP is an ASCI file which describes general SLURM
+\fB/etc/slurm.conf\fP is an ASCII file which describes general SLURM
 configuration information, the nodes to be managed, information about
 how those nodes are grouped into partitions, and various scheduling
 parameters associated with those partitions.
@@ -21,6 +21,10 @@ The size of each line in the file is limited to 1024 characters.
 Changes to the configuration file take effect upon restart of 
 SLURM daemons, daemon receipt of the SIGHUP signal, or execution 
 of the command "scontrol reconfigure" unless otherwise noted.
+.LP
+If a line begins with the word "Include", followed by whitespace
+and then a file name, that file will be included inline with the current
+configuration file.
 .LP
 The overall configuration parameters available include:
 .TP
