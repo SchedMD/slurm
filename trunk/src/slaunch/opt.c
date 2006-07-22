@@ -1476,7 +1476,7 @@ static bool _opt_verify(void)
 	if (!opt.num_nodes_set
 	    && opt.num_tasks_set && opt.num_tasks < opt.num_nodes)
 		opt.num_nodes = opt.num_tasks;
-	if (opt.node_list
+	if (opt.nodelist
 	    && opt.num_nodes != hostlist_count(hl_unique)) {
 		if (opt.num_nodes > hostlist_count(hl_unique)) {
 			error("Asked for more nodes (%d) "
