@@ -342,10 +342,10 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 	char *ptr = buf;
 	int leftover = buf_size;
 	int read_size, new_size;
-	int eof = 1;
+	int lines = 0;
 
 	while (fgets(ptr, leftover, file)) {
-		eof = 0;
+		lines++;
 		_strip_comments(ptr);
 		read_size = strlen(ptr);
 		new_size = _strip_continuation(ptr, read_size);
@@ -359,7 +359,7 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 	/* _strip_cr_nl(buf); */ /* not necessary */
 	_strip_escapes(buf);
 	
-	return !eof;
+	return lines;
 }
 
 static int _handle_string(s_p_values_t *v,
@@ -707,8 +707,8 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
  */
-static int s_p_parse_next_key(s_p_hashtbl_t *hashtbl,
-			      const char *line, char **leftover)
+static int _parse_next_key(s_p_hashtbl_t *hashtbl,
+			   const char *line, char **leftover)
 {
 	char *key, *value;
 	s_p_values_t *p;
@@ -734,12 +734,48 @@ static int s_p_parse_next_key(s_p_hashtbl_t *hashtbl,
 	return 1;
 }
 
+/*
+ * Returns 1 if the line contained an include directive and the included
+ * file was parsed without error.  Returns -1 if the line was an include
+ * directive but the included file contained errors.  Returns 0 if
+ * no include directive is found.
+ */
+static int _parse_include_directive(s_p_hashtbl_t *hashtbl,
+				    const char *line, char **leftover)
+{
+	char *ptr;
+	char *fn_start, *fn_stop;
+	char *filename;
+
+	if (strncasecmp("include", line, strlen("include")) == 0) {
+		ptr = (char *)line + strlen("include");
+		if (!isspace(*ptr))
+			return 0;
+		while (isspace(*ptr))
+			ptr++;
+		fn_start = ptr;
+		while (!isspace(*ptr))
+			ptr++;
+		fn_stop = *leftover = ptr;
+		filename = xstrndup(fn_start, fn_stop-fn_start);
+		if (s_p_parse_file(hashtbl, filename) == SLURM_SUCCESS)
+			return 1;
+		else
+			return -1;
+	} else {
+		return 0;
+	}
+}
+
 int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
 	char *leftover;
 	int rc = SLURM_SUCCESS;
+	int line_number;
+	int merged_lines;
+	int inc_rc;
 
 	if(!filename) {
 		error("s_p_parse_file: No filename given.");
@@ -750,25 +786,38 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 	
 	f = fopen(filename, "r");
 	if (f == NULL) {
-		error("s_p_parse_file: problem reading the file %s",
+		error("s_p_parse_file: unable to read \"%s\": %m",
 		      filename);
 		return SLURM_ERROR;
 	}
-	while(_get_next_line(line, BUFFER_SIZE, f)) {
-		/* skip empty lines */
-		if (line[0] == '\0')
-			continue;
 
-		s_p_parse_next_key(hashtbl, line, &leftover);
+	line_number = 1;
+	while((merged_lines = _get_next_line(line, BUFFER_SIZE, f)) > 0) {
+		/* skip empty lines */
+		if (line[0] == '\0') {
+			line_number += merged_lines;
+			continue;
+		}
+
+		inc_rc =_parse_include_directive(hashtbl, line, &leftover);
+		if (inc_rc == 0) {
+			_parse_next_key(hashtbl, line, &leftover);
+		} else if (inc_rc < 0) {
+			error("\"Include\" failed in file %s line %d",
+			      filename, line_number);
+			rc = SLURM_ERROR;
+		}
 
 		/* Make sure that after parsing only whitespace is left over */
 		if (!_line_is_space(leftover)) {
 			char *ptr = xstrdup(leftover);
 			_strip_cr_nl(ptr);
-			error("Parsing error at: \"%s\"", ptr);
+			error("Parse error in file %s line %d: \"%s\"",
+			      filename, line_number, ptr);
 			xfree(ptr);
 			rc = SLURM_ERROR;
 		}
+		line_number += merged_lines;
 	}
 
 	fclose(f);
