@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     this structure is being renamed so contents are the same.
  -- alter resource_allocation_response_msg_t see slurm.h.in
  -- remove old_job_alloc_msg_t and function slurm_confirm_alloc	
+ -- Slurm configuration files now support an "Include" directive to
+    include other files inline.
 
 * Changes in SLURM 1.2.0-pre1
 =============================
