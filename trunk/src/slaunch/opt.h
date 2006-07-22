@@ -115,7 +115,8 @@ typedef struct slaunch_options {
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
-	char *nodelist;		/* --nodelist=node1,node2,...	*/
+	char *nodelist;		/* -w,--nodelist=node1,node2,...*/
+	char *nodefile;         /* -F,--nodefile=filename       */
 	int relative;		/* --relative -r N              */
 	bool relative_set;      /* true if --relative set explicitly */
 	bool no_alloc;		/* --no-allocate, -Z		*/

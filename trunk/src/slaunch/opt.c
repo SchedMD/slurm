@@ -678,6 +678,7 @@ static void _opt_default()
 	opt.contiguous	    = false;
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
+	opt.nodefile	    = NULL;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
@@ -907,6 +908,7 @@ void set_options(const int argc, char **argv, int first)
 		{"chdir",         required_argument, 0, 'D'},
 		{"local-error",   required_argument, 0, 'e'},
 		{"remote-error",  required_argument, 0, 'E'},
+		{"nodefile",      required_argument, 0, 'F'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"local-input",   required_argument, 0, 'i'},
 		{"remote-input",  required_argument, 0, 'I'},
@@ -959,7 +961,7 @@ void set_options(const int argc, char **argv, int first)
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:Cd:D:e:E:g:i:I:J:kKlm:n:N:"
+	char *opt_string = "+c:Cd:D:e:E:F:g:i:I:J:kKlm:n:N:"
 		"o:O:Qr:R:t:uvVw:W:Z";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1020,6 +1022,19 @@ void set_options(const int argc, char **argv, int first)
 				opt.local_efname = xstrdup("/dev/null");
 			else
 				opt.local_efname = xstrdup(optarg);
+			break;
+		case (int)'F':
+			if(!first && opt.nodefile)
+				break;
+			
+			xfree(opt.nodefile);
+			opt.nodefile = xstrdup(optarg);
+#ifdef HAVE_BG
+			info("\tThe nodefile option should only be used if\n"
+			     "\tthe block you are asking for can be created.\n"
+			     "\tPlease consult smap before using this option\n"
+			     "\tor your job may be stuck with no way to run.");
+#endif
 			break;
 		case (int)'E':
 			if(!first && opt.remote_efname)
@@ -1417,6 +1432,16 @@ static bool _opt_verify(void)
 	hostlist_t hl = NULL;
 	hostlist_t hl_unique = NULL;
 
+	if (opt.nodelist != NULL && opt.nodefile != NULL) {
+		error("The -w,--nodelist and -F,--nodefile parameters"
+		      " may not be used at the same time.");
+		verified = false;
+	} else if (opt.nodefile != NULL) {
+		char *tmp;
+		tmp = slurm_read_hostfile(opt.nodefile, 0);
+		opt.nodelist = xstrdup(tmp);
+		free(tmp);
+	}
 	if (opt.nodelist != NULL) {
 		hl = hostlist_create(opt.nodelist);
 		hl_unique = hostlist_copy(hl);
@@ -1451,7 +1476,7 @@ static bool _opt_verify(void)
 	if (!opt.num_nodes_set
 	    && opt.num_tasks_set && opt.num_tasks < opt.num_nodes)
 		opt.num_nodes = opt.num_tasks;
-	if (opt.num_nodes_set
+	if (opt.node_list
 	    && opt.num_nodes != hostlist_count(hl_unique)) {
 		if (opt.num_nodes > hostlist_count(hl_unique)) {
 			error("Asked for more nodes (%d) "
@@ -1459,7 +1484,7 @@ static bool _opt_verify(void)
 			      opt.num_nodes, hostlist_count(hl_unique));
 			verified = false;
 		} else { /* num_nodes < hostlist_count */
-			/* shrink the nodelist instead of an error? */
+			/* FIXME - shrink the nodelist instead of an error */
 			error("Asked for fewer nodes (%d) "
 			      "than listed in the nodelist (%d)",
 			      opt.num_nodes, hostlist_count(hl_unique));
