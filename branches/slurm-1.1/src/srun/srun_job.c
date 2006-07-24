@@ -154,10 +154,8 @@ job_create_noalloc(void)
 
 
 	for (i = 0; i < job->nhosts; i++) {
-		char *nd = slurm_conf_get_hostname(job->step_layout->host[i]);
-		uint16_t port = slurm_conf_get_port(job->step_layout->host[i]);
-		slurm_set_addr ( &job->slurmd_addr[i], port, nd );
-		xfree(nd);
+		slurm_conf_get_addr(job->step_layout->host[i], 
+				    &job->slurmd_addr[i]);
 	}
 
 	_job_fake_cred(job);
@@ -165,6 +163,90 @@ job_create_noalloc(void)
 
    error:
 	xfree(ai);
+	return (job);
+
+}
+
+/* 
+ * Create an srun job structure for a step w/out an allocation response msg.
+ * (i.e. inside an allocation)
+ */
+srun_job_t *
+job_step_create_allocation(resource_allocation_response_msg_t *resp)
+{
+	srun_job_t *job = NULL;
+	allocation_info_t *ai = xmalloc(sizeof(*ai));
+	hostlist_t hl = NULL;
+	char buf[8192];
+	
+
+	ai->nodelist       = _normalize_hostlist(resp->node_list);
+	ai->nnodes	  = resp->node_cnt;
+	ai->jobid          = resp->job_id;
+	ai->stepid         = NO_VAL;
+	ai->num_cpu_groups = resp->num_cpu_groups;
+	ai->cpus_per_node  = resp->cpus_per_node;
+	ai->cpu_count_reps = resp->cpu_count_reps;
+	ai->addrs          = resp->node_addr;
+	ai->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
+
+
+	if (opt.nodelist == NULL) {
+		char *nodelist = NULL;
+		char *hostfile = getenv("SLURM_HOSTFILE");
+		
+		if (hostfile != NULL) {
+			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
+			if (nodelist == NULL) {
+				error("Failure getting NodeNames from "
+				      "hostfile");
+				/* FIXME - need to fail somehow */
+			} else {
+				debug("loading nodes from hostfile %s",
+				      hostfile);
+				opt.nodelist = xstrdup(nodelist);
+				free(nodelist);
+			}
+		}
+	}
+	
+	if (opt.exc_nodes) {
+		hl = hostlist_create(ai->nodelist);
+		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
+		char *node_name = NULL;
+
+		while ((node_name = hostlist_shift(exc_hl))) {
+			int inx = hostlist_find(hl, node_name);
+			if (inx >= 0) {
+				debug("excluding node %s", node_name);
+				hostlist_delete_nth(hl, inx);
+			}
+			free(node_name);
+		}
+		hostlist_destroy(exc_hl);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		hostlist_destroy(hl);
+		xfree(opt.nodelist);
+		opt.nodelist = xstrdup(buf);
+	}
+	
+/* 	if(!opt.nodelist)  */
+/* 		opt.nodelist = ai->nodelist; */
+	if(opt.nodelist) { 
+		hl = hostlist_create(opt.nodelist);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		hostlist_destroy(hl);
+		xfree(opt.nodelist);
+		opt.nodelist = xstrdup(buf);
+	}
+	debug("node list is now %s inside of %s", opt.nodelist, ai->nodelist);
+	
+	/* 
+	 * Create job, then fill in host addresses
+	 */
+	job = _job_create_structure(ai);
+	
+   	xfree(ai);
 	return (job);
 
 }

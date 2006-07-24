@@ -558,11 +558,15 @@ _step_req_create(srun_job_t *j)
 	r->cpu_count  = opt.overcommit ? j->nhosts
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
-	r->node_list  = xstrdup(j->nodelist);
+	r->node_list  = xstrdup(opt.nodelist);
 	r->network    = xstrdup(opt.network);
 	r->name       = xstrdup(opt.job_name);
-	r->relative   = false;      /* XXX fix this oneday */
-	
+	if(opt.relative)
+		/* works now, better fix in 1.2 */
+		r->relative   = atoi(opt.relative);  
+	else 
+		r->relative   = 0;
+ 		
 	switch (opt.distribution) {
 	case SLURM_DIST_CYCLIC:
 		r->task_dist = SLURM_DIST_CYCLIC;
@@ -601,12 +605,11 @@ create_job_step(srun_job_t *job,
 		error ("Unable to allocate step request message");
 		return -1;
 	}
-
 	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) {
 		error ("Unable to create job step: %m");
 		return -1;
 	}
-	
+		
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
 	job->switch_job = resp->switch_job;
