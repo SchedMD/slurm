@@ -1608,16 +1608,13 @@ static void _dump_hash (void)
 }
 #endif
 
-/* msg_to_slurmd - send given msg_type every slurmd, no args */
+/* msg_to_slurmd - send given msg_type (REQUEST_RECONFIGURE or
+ * REQUEST_SHUTDOWN) to every slurmd, no args */
 void msg_to_slurmd (slurm_msg_type_t msg_type)
 {
 	int i, pos;
 	shutdown_msg_t *shutdown_req;
-
 	agent_arg_t *kill_agent_args;
-	pthread_attr_t kill_attr_agent;
-	pthread_t kill_thread_agent;
-	int retries = 0;
 	
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
@@ -1651,18 +1648,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		xfree (kill_agent_args);
 	} else {
 		debug ("Spawning agent msg_type=%d", msg_type);
-		slurm_attr_init (&kill_attr_agent);
-		if (pthread_attr_setdetachstate (&kill_attr_agent, 
-						PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
-		while (pthread_create (&kill_thread_agent, &kill_attr_agent, 
-					agent, (void *)kill_agent_args)) {
-			error ("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1);	/* sleep and try again */
-		}
-		slurm_attr_destroy (&kill_attr_agent);
+		agent_queue_request(kill_agent_args);
 	}
 }
 
