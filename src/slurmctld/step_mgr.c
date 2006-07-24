@@ -688,14 +688,14 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* set the step_record values */
 	/* Here is where the node list is set for the job */
 	if(step_specs->node_list 
-	   && step_specs->task_dist == SLURM_DIST_ARBITRARY)
+	   && step_specs->task_dist == SLURM_DIST_ARBITRARY) {
 		step_ptr->step_node_list = xstrdup(step_specs->node_list);
-	else {
+		xfree(step_specs->node_list);
+	} else {
 		step_ptr->step_node_list = bitmap2node_name(nodeset);
 		step_specs->node_list = xstrdup(step_ptr->step_node_list);
 	}
-	//xfree(step_specs->node_list);
-	//step_specs->node_list = bitmap2node_name(nodeset);
+	step_specs->node_list = bitmap2node_name(nodeset);
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
@@ -742,6 +742,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
+		/* FIXME: this var should be removed all together once the 
+		   switch_build_jobinfo is rewritten to take the step_layout
+		   structure */
+		xfree(step_ptr->step_node_list);
+		step_ptr->step_node_list = 
+			xstrdup(step_ptr->step_layout->nodes);
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
