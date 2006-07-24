@@ -729,13 +729,13 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
 			xfree(value);
-			*leftover = line;
+			*leftover = (char *)line;
 			return 0;
 		}
 		xfree(key);
 		xfree(value);
 	} else {
-		*leftover = line;
+		*leftover = (char *)line;
 	}
 
 	return 1;
