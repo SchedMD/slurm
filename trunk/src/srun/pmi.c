@@ -47,6 +47,7 @@
 /* Global variables */
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 int kvs_comm_cnt = 0;
+int kvs_updated = 0;
 struct kvs_comm **kvs_comm_ptr = NULL;
 
 struct barrier_resp {
@@ -95,15 +96,23 @@ static void _kvs_xmit_tasks(void)
 #if _DEBUG
 	info("All tasks at barrier, transmit KVS keypairs now");
 #endif
-	/* copy the data */
+	/* reset barrier info */
 	args = xmalloc(sizeof(struct agent_arg));
 	args->barrier_xmit_ptr = barrier_ptr;
 	args->barrier_xmit_cnt = barrier_cnt;
 	barrier_ptr = NULL;
 	barrier_resp_cnt = 0;
 	barrier_cnt = 0;
-	args->kvs_xmit_ptr = _kvs_comm_dup();
-	args->kvs_xmit_cnt = kvs_comm_cnt;
+
+	/* copy the new kvs data */
+	if (kvs_updated) {
+		args->kvs_xmit_ptr = _kvs_comm_dup();
+		args->kvs_xmit_cnt = kvs_comm_cnt;
+		kvs_updated = 0;
+	} else {	/* No new data to transmit */
+		args->kvs_xmit_ptr = xmalloc(0);
+		args->kvs_xmit_cnt = 0;
+	}
 
 	/* Spawn a pthread to transmit it */
 	slurm_attr_init(&attr);
@@ -316,12 +325,13 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 			_merge_named_kvs(kvs_ptr, 
 				kvs_set_ptr->kvs_comm_ptr[i]);
 		} else {
-			_move_kvs(kvs_set_ptr-> kvs_comm_ptr[i]);
+			_move_kvs(kvs_set_ptr->kvs_comm_ptr[i]);
 			kvs_set_ptr-> kvs_comm_ptr[i] = NULL;
 		}
 	}
 	slurm_free_kvs_comm_set(kvs_set_ptr);
 	_print_kvs();
+	kvs_updated = 1;
 	pthread_mutex_unlock(&kvs_mutex);
 	return SLURM_SUCCESS;
 }
