@@ -34,11 +34,11 @@
 #else
 /* Typical MVAPICH2 use
  *
- * Typically takes very long time for large task count
- * adjust job time limit and timeout in test7.2 as needed
+ * Adjust job time limit and timeout in test7.2 as needed
+ * for large values.
  */
-#  define BARRIER_CNT           7
-#  define PUTS_PER_BARRIER     32
+#  define BARRIER_CNT           4
+#  define PUTS_PER_BARRIER      0
 #endif
 
 #define OFFSET_1  1234
