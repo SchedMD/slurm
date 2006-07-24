@@ -196,6 +196,7 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_destroy(exc_hl);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
+		xfree(ai->nodelist);
 		ai->nodelist = xstrdup(buf);
 	}
 	
@@ -205,6 +206,7 @@ job_step_create_allocation(uint32_t job_id)
 		hl = hostlist_create(opt.nodelist);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
+		xfree(ai->nodelist);
 		ai->nodelist = xstrdup(buf);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);

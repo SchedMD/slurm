@@ -448,7 +448,7 @@ try_again:
 				      "to BLOCK");
 				xfree(step_spec->node_list);
 				step_spec->task_dist = SLURM_DIST_BLOCK;
-				FREE_NULL_BITMAP(nodes_picked);
+				FREE_NULL_BITMAP(selected_nodes);
 				goto try_again;
 			}
 			FREE_NULL_BITMAP(nodes_avail);

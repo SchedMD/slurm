@@ -29,8 +29,8 @@
 
 #if 0
 /* Typical MPICH2 use */
-#  define BARRIER_CNT           1
-#  define PUTS_PER_BARRIER     60
+#  define BARRIER_CNT           0
+#  define PUTS_PER_BARRIER      0
 #else
 /* Typical MVAPICH2 use
  *
