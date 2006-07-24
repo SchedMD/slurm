@@ -127,51 +127,6 @@ slurm_step_layout_t *distribute_tasks(
 	uint16_t task_dist) 
 {
 	slurm_step_layout_t *step_layout = NULL;
-/* 	hostlist_t master_hl = NULL, task_hl = NULL; */
-/* 	int i, index, count, hostid, nnodes, ncpus; */
-/* 	uint32_t *cpus, *ntask = NULL; */
-/* 	char *this_node_name; */
-	
-/* 	if (!tlist || num_tasks == 0) */
-/* 		return NULL; */
-
-/* 	if ((master_hl = hostlist_create(mlist)) == NULL) */
-/* 		fatal("hostlist_create error for %s: %m", mlist); */
-
-/* 	if ((task_hl = hostlist_create(tlist)) == NULL) */
-/* 		fatal("hostlist_create error for %s: %m", tlist); */
-
-/* 	nnodes = hostlist_count(task_hl); */
-/* 	ntask = (uint32_t *) xmalloc(sizeof(uint32_t *) * nnodes); */
-/* 	if (!ntask) { */
-/* 		hostlist_destroy(master_hl); */
-/* 		hostlist_destroy(task_hl); */
-/* 		slurm_seterrno(ENOMEM); */
-/* 		return NULL; */
-/* 	} */
-
-/* 	index = 0; */
-/* 	count = 1; */
-/* 	i = 0; */
-/* 	ncpus = 0; */
-/* 	while ((this_node_name = hostlist_shift(master_hl))) { */
-/* 		if (hostlist_find(task_hl, this_node_name) >= 0) { */
-/* 			if (i >= nnodes) { */
-/* 				fatal("Internal error: duplicate nodes? " */
-/* 					"(%s)(%s):%m", mlist, tlist); */
-/* 			} */
-/* 			ntask[i++] = cpus_per_node[index]; */
-/* 			ncpus += cpus_per_node[index]; */
-/* 		} */
-
-/* 		if (++count > cpu_count_reps[index]) { */
-/* 			index++; */
-/* 			count = 1; */
-/* 		} */
-/* 		free(this_node_name); */
-/* 	} */
-/* 	hostlist_destroy(master_hl); */
-/* 	hostlist_destroy(task_hl); */
 
 	step_layout = _step_layout_create(mlist, tlist, 
 					  cpus_per_node, cpu_count_reps,
@@ -182,50 +137,6 @@ slurm_step_layout_t *distribute_tasks(
 		step_layout = NULL;
 	}
 	return step_layout;
-
-	/* if (num_tasks >= ncpus) { */
-/* 		/\* */
-/* 		 * Evenly overcommit tasks over the hosts */
-/* 		 *\/ */
-/* 		int extra = num_tasks - ncpus; */
-/* 		int add_to_all = extra / nnodes; */
-/* 		int subset = extra % nnodes; */
-/* 		for (i = 0; i < nnodes; i++) { */
-/* 			ntask[i] += add_to_all; */
-/* 			if (i < subset) */
-/* 				ntask[i]++; */
-/* 		} */
-/* 		return ntask; */
-/* 	} */
-
-/* 	/\* */
-/* 	 * NOTE: num_tasks is less than ncpus here. */
-/* 	 * */
-/* 	 * In a cyclic fashion, place tasks on the nodes as permitted */
-/* 	 * by the cpu constraints. */
-/* 	 *\/ */
-/* 	cpus = ntask; */
-/* 	ntask = (uint32_t *) xmalloc(sizeof(int *) * nnodes); */
-/* 	if (!ntask) { */
-/* 		slurm_seterrno(ENOMEM); */
-/* 		xfree(cpus); */
-/* 		return NULL; */
-/* 	} */
-
-/* 	for (i = 0; i < nnodes; i++) */
-/* 		ntask[i] = 0; */
-
-/* 	hostid = 0; */
-/* 	for (i = 0; i < num_tasks;) { */
-/* 		if (ntask[hostid] < cpus[hostid]) { */
-/* 			ntask[hostid]++; */
-/* 			i++; */
-/* 		} */
-/* 		if (++hostid >= nnodes) */
-/* 			hostid = 0; */
-/* 	} */
-/* 	xfree(cpus); */
-/* 	return ntask; */
 }
 
 extern slurm_step_layout_t *step_layout_create(
@@ -336,6 +247,7 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 	if(step_layout) {
 		xfree(step_layout->nodes);
 		xfree(step_layout->arbitrary_nodes);
+		xfree(step_layout->node_addr);
 		for (i=0; i<step_layout->num_hosts; i++) {
 			if(step_layout->host && step_layout->host[i])
 				free(step_layout->host[i]);
@@ -347,7 +259,6 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->tasks);
 		xfree(step_layout->hostids);
 		
-		//hostlist_destroy(step_layout->hl);
 		xfree(step_layout);
 	}
 		

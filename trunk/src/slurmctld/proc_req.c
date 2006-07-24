@@ -212,7 +212,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_slurm_rpc_job_alloc_info_lite(msg);
-		slurm_free_resource_allocation_response_msg(msg->data);
+		slurm_free_job_alloc_info_msg(msg->data);
 		break;
 	case REQUEST_PING:
 		_slurm_rpc_ping(msg);
@@ -1067,6 +1067,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		xfree(job_step_resp.node_list);
 		slurm_cred_destroy(slurm_cred);
 		switch_free_jobinfo(job_step_resp.switch_job);
+		step_layout_destroy(job_step_resp.step_layout);
 		schedule_job_save();	/* Sets own locks */
 	}
 }

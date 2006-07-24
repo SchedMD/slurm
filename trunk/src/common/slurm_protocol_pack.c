@@ -441,7 +441,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(slurm_node_registration_status_msg_t *) msg->data, 
 			buffer);
 		break;
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
@@ -451,6 +450,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer);
 		break;
@@ -720,7 +720,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(slurm_node_registration_status_msg_t **)
 			& (msg->data), buffer);
 		break;
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
@@ -730,6 +729,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer);
 		break;
