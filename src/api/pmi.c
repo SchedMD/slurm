@@ -794,6 +794,7 @@ static void _init_kvs( char kvsname[] )
 	kvs_rec_cnt++;
 	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec) * kvs_rec_cnt));
 	kvs_recs[i].kvs_name = strndup(kvsname, PMI_MAX_KVSNAME_LEN);
+	kvs_recs[i].kvs_state = KVS_STATE_LOCAL;
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
 	kvs_recs[i].kvs_key_states = NULL;
