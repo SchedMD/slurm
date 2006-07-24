@@ -289,7 +289,7 @@ void *agent(void *args)
 	/* wait for termination of remaining threads */
 	pthread_join(thread_wdog, NULL);
 	delay = (int) difftime(time(NULL), begin_time);
-	if (delay > (SLURM_MESSAGE_TIMEOUT_MSEC_STATIC + 1)) {
+	if (delay > (SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 2)) {
 		info("agent msg_type=%u ran for %d seconds",
 			agent_arg_ptr->msg_type,  delay);
 	}
