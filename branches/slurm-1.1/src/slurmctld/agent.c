@@ -460,7 +460,7 @@ static void *_wdog(void *args)
 	int i, j, count;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
-	unsigned long usec = 1250000;
+	unsigned long usec = 125000;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
 	thd_complete_t thd_comp;
