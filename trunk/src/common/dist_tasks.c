@@ -401,7 +401,7 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 		slurm_conf_get_addr(step_layout->host[i], 
 				    &step_layout->node_addr[i]);
 							
-		debug("host %d = %s", i, step_layout->host[i]);
+		debug2("host %d = %s", i, step_layout->host[i]);
 		step_layout->cpus[i] = step_layout->cpus_per_node[cpu_inx];
 		if ((++cpu_cnt) >= step_layout->cpu_count_reps[cpu_inx]) {
 			/* move to next record */
@@ -454,10 +454,10 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout)
 	hostlist_t job_alloc_hosts = NULL;
 	hostlist_t step_alloc_hosts = NULL;
 	
-	debug("job list is %s", step_layout->nodes);
+	debug2("job list is %s", step_layout->nodes);
 	job_alloc_hosts = hostlist_create(step_layout->nodes);
 	itr = hostlist_iterator_create(job_alloc_hosts);
-	debug("list is %s", step_layout->arbitrary_nodes);
+	debug2("list is %s", step_layout->arbitrary_nodes);
 	step_alloc_hosts = hostlist_create(step_layout->arbitrary_nodes);
 	if(hostlist_count(step_alloc_hosts) != step_layout->num_tasks) {
 		error("Asked for %d tasks have %d in the nodelist. "
