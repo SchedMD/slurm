@@ -635,6 +635,8 @@ int PMI_Barrier( void )
 		return PMI_FAIL;
 	if (kvs_set_ptr == NULL)
 		return PMI_SUCCESS;
+	if (pmi_debug)
+		fprintf(stderr, "Past PMI_Barrier\n");
 
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
@@ -793,8 +795,10 @@ static void _init_kvs( char kvsname[] )
 	kvs_rec_cnt++;
 	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec) * kvs_rec_cnt));
 	kvs_recs[i].kvs_name = strndup(kvsname, PMI_MAX_KVSNAME_LEN);
+	kvs_recs[i].kvs_state = KVS_STATE_LOCAL;
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
+	kvs_recs[i].kvs_key_states = NULL;
 	kvs_recs[i].kvs_keys = NULL;
 	kvs_recs[i].kvs_values = NULL;
 }
@@ -1207,7 +1211,7 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 	int i, j, rc;
 
 	if (pmi_debug)
-		fprintf(stderr, "In: PMI_KVS_Get\n");
+		fprintf(stderr, "In: PMI_KVS_Get(%s)\n", key);
 	
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;

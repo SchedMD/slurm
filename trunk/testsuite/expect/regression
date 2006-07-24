@@ -50,6 +50,7 @@ fi
 
 # Run the tests in this directory
 /bin/date
+BEGIN_TIME=`date +%s`
 for major in `seq 1 20`; do
 	for minor in `seq 1 100`; do
 		TEST=test${major}.${minor}
@@ -65,6 +66,8 @@ for major in `seq 1 20`; do
 		/bin/echo "============================================"
 	done
 done
+END_TIME=`date +%s`
+DELTA_TIME=`expr $END_TIME - $BEGIN_TIME`
 
 # Report the results
 /bin/date
@@ -72,6 +75,7 @@ echo ""
 echo ""
 echo "Completions:$COMPLETIONS"
 echo "Failures:   $FAILURES"
+echo "Time (sec): $DELTA_TIME"
 
 if [ $FAILURES -eq 0 ]
 then

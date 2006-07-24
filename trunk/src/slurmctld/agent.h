@@ -4,7 +4,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from dsh written by Jim Garlick <garlick1@llnl.gov>
@@ -76,8 +76,7 @@ extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * RET count of queued requests remaining (zero if none are old enough 
- * to re-issue)
+ * RET count of queued requests remaining
  */
 extern int agent_retry (int min_wait);
 
