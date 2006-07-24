@@ -1208,16 +1208,30 @@ extern int agent_retry (int min_wait)
 	int list_size = 0;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
+	agent_arg_t *agent_arg_ptr;
 	ListIterator retry_iter;
 
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
+		uint32_t msg_type[5], i = 0;
 		list_size = list_count(retry_list);
 		if ((list_size > MAX_AGENT_CNT) 
 		&&  (difftime(now, last_msg_time) > 300)) {
 			/* Note sizable backlog of work */
 			info("WARNING: agent retry_list size is %d", 
 				list_size);
+			retry_iter = list_iterator_create(retry_list);
+			while ((queued_req_ptr = (queued_request_t *) 
+					list_next(retry_iter))) {
+				agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+				msg_type[i++] = agent_arg_ptr->msg_type;
+				if (i == 5)
+					break;
+			}
+			list_iterator_destroy(retry_iter);
+			info("   retry_list msg_type=%u,%u,%u,%u,%u", 
+				msg_type[0], msg_type[1], msg_type[2],
+				msg_type[3], msg_type[4]);
 			last_msg_time = now;
 		}
 	}
@@ -1260,7 +1274,7 @@ extern int agent_retry (int min_wait)
 	slurm_mutex_unlock(&retry_mutex);
 
 	if (queued_req_ptr) {
-		agent_arg_t *agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 		xfree(queued_req_ptr);
 		if (agent_arg_ptr)
 			_spawn_retry_agent(agent_arg_ptr);
