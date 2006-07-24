@@ -228,10 +228,12 @@ int srun(int ac, char **av)
 				resp->job_id);
 			exit(1);
 		}
-		if (job_resp_hack_for_step(resp))	/* FIXME */
-			exit(1);
-		
-		job = job_create_allocation(resp);
+		//info("before hack got back %s", resp->node_list);
+		/* if (job_resp_hack_for_step(resp))	/\* FIXME *\/ */
+/* 			exit(1); */
+		//info("after hack got back %s", resp->node_list);
+		//job = job_create_allocation(resp);
+		job = job_step_create_allocation(resp);
 		
 		job->old_job = true;
 		sig_setup_sigmask();

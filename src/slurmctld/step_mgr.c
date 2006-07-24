@@ -406,7 +406,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
-
+	ListIterator step_iterator;
+	struct step_record *step_p;
+	char *temp;
+		
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
 	
@@ -419,17 +422,20 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return nodes_avail;
 try_again:
 	if (step_spec->node_list) {
+		bitstr_t *selected_nodes = NULL;
 		error_code = node_name2bitmap (step_spec->node_list, false, 
-						&nodes_picked);
+						&selected_nodes);
 		if (error_code) {
 			info ("_pick_step_nodes: invalid node list %s", 
 				step_spec->node_list);
+			bit_free(selected_nodes);
 			goto cleanup;
 		}
-		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
+		if (!bit_super_set(selected_nodes, job_ptr->node_bitmap)) {
 			info ("_pick_step_nodes: requested nodes %s not part "
 				"of job %u", 
 				step_spec->node_list, job_ptr->job_id);
+			bit_free(selected_nodes);
 			goto cleanup;
 		}
 		if(step_spec->task_dist == SLURM_DIST_ARBITRARY) {
@@ -440,12 +446,15 @@ try_again:
 				      "to BLOCK");
 				xfree(step_spec->node_list);
 				step_spec->task_dist = SLURM_DIST_BLOCK;
-				FREE_NULL_BITMAP(nodes_picked);
+				FREE_NULL_BITMAP(selected_nodes);
 				goto try_again;
 			}
 			FREE_NULL_BITMAP(nodes_avail);
-			return nodes_picked;
+			return selected_nodes;
 		}
+		FREE_NULL_BITMAP(nodes_avail);
+		nodes_avail = selected_nodes;
+		goto create_idle;
 	} else if (step_spec->relative) {
 		/* Remove first (step_spec->relative) nodes from  
 		 * available list */
@@ -461,9 +470,11 @@ try_again:
 		bit_not (relative_nodes);
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
+		nodes_picked = bit_alloc(bit_size(nodes_avail));
+		if ((nodes_picked == NULL))
+			fatal("bit_alloc malloc failure");
 	} else {
-		ListIterator step_iterator;
-		struct step_record *step_p;
+	create_idle:
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		if ((nodes_picked == NULL) || (nodes_idle == NULL))
@@ -476,6 +487,12 @@ try_again:
 		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
+	temp = bitmap2node_name(nodes_avail);
+	info("can pick from %s", temp);
+	xfree(temp);
+	temp = bitmap2node_name(nodes_idle);
+	info("can pick from %s", temp);
+	xfree(temp);
 
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
@@ -492,7 +509,8 @@ try_again:
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (nodes_idle 
-		&&  (step_spec->node_count > nodes_picked_cnt)) {
+		    && (bit_set_count(nodes_idle) >= step_spec->node_count)
+		    &&  (step_spec->node_count > nodes_picked_cnt)) {
 			node_tmp = bit_pick_cnt(nodes_idle,
 					(step_spec->node_count -
 					nodes_picked_cnt));
