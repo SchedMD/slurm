@@ -118,7 +118,7 @@ void ping_end (void)
 void ping_nodes (void)
 {
 	static int offset = 0;	/* mutex via node table write lock on entry */
-	int i, pos, retries = 0;
+	int i, pos;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
 	uint16_t base_state, no_resp_flag;
@@ -129,13 +129,9 @@ void ping_nodes (void)
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
-	pthread_attr_t ping_attr_agent;
-	pthread_t ping_thread_agent;
 
 	int reg_buf_rec_size = 0;
 	agent_arg_t *reg_agent_args;
-	pthread_attr_t reg_attr_agent;
-	pthread_t reg_thread_agent;
 	
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
@@ -155,11 +151,13 @@ void ping_nodes (void)
 	 * time needed to complete a ping of all nodes.
 	 */
 	now = time (NULL);
-	if ( (slurmctld_conf.slurmd_timeout == 0) || 
-	     (last_ping_time == (time_t) 0) )
+	if ((slurmctld_conf.slurmd_timeout == 0) 
+	||  (last_ping_time == (time_t) 0)) {
 		node_dead_time = (time_t) 0;
-	else
-		node_dead_time = last_ping_time-slurmctld_conf.slurmd_timeout;
+	} else {
+		node_dead_time = last_ping_time -
+				slurmctld_conf.slurmd_timeout;
+	}
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 2);
 	last_ping_time  = now;
 
@@ -256,18 +254,7 @@ void ping_nodes (void)
 			sizeof(host_str), host_str);
 		info("Spawning ping agent for %s", host_str);
 		ping_begin();
-		slurm_attr_init (&ping_attr_agent);
-		if (pthread_attr_setdetachstate (&ping_attr_agent, 
-						PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
-		while (pthread_create (&ping_thread_agent, &ping_attr_agent, 
-					agent, (void *)ping_agent_args)) {
-			error ("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep (1); /* sleep and try again */
-		}
-		slurm_attr_destroy (&ping_attr_agent);
+		agent_queue_request(ping_agent_args);
 	}
 
 	if (reg_agent_args->node_count == 0)
@@ -279,18 +266,7 @@ void ping_nodes (void)
 		debug2 ("Spawning registration agent for %s %d hosts", 
 			host_str, reg_agent_args->node_count);
 		ping_begin();
-		slurm_attr_init (&reg_attr_agent);
-		if (pthread_attr_setdetachstate (&reg_attr_agent, 
-						 PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
-		while (pthread_create (&reg_thread_agent, &reg_attr_agent, 
-					agent, (void *)reg_agent_args)) {
-			error ("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep (1); /* sleep and try again */
-		}
-		slurm_attr_destroy (&reg_attr_agent);
+		agent_queue_request(reg_agent_args);
 	}
 
 	if (down_hostlist) {

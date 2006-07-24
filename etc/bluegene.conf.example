@@ -15,9 +15,9 @@
 #                       equals this value multiplied by the number of 
 #                       base partitions in the bgblock.
 #
-# BridgeAPILogFile : Pathname of file in which to write the BGL 
-#                    Bridge API logs.
-# BridgeAPIVerbose:  How verbose the BGL Bridge API logs should be
+# BridgeAPILogFile : Pathname of file in which to write the Bridge
+#                    API logs.
+# BridgeAPIVerbose:  How verbose the Bridge API logs should be
 #                    0: Log only error and warning messages
 #                    1: Log level 0 and information messasges
 #                    2: Log level 1 and basic debug messages

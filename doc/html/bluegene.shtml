@@ -81,7 +81,7 @@ coordinates in the X, Y and Z dimensions with a zero origin.
 For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2.  In a system 
 configured with <i>small blocks</i> (any block less than a full base partition) there will be divisions
 into the base partition notation.  For example, bg012.0 represents the first quarter of a midplane in 
-bluegene/L this would be 128 c-node block, and bg012.1.0 would represent the first nodecard in the second
+BlueGene/L this would be 128 c-node block, and bg012.1.0 would represent the first nodecard in the second
 quarter of the base partition, or a 32 c-node block.
 Since jobs must allocate consecutive base partitions in all three dimensions, we have developed 
 an abbreviated format for describing the base partitions in one of these three-dimensional blocks. 
@@ -92,8 +92,8 @@ with endpoints bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721,
 bg730 and bg731).</p></a>
 
 <p>One new tool provided is <i>smap</i>.
-Smap is aware of system topography and provides a map of what base partitions are allocated 
-to jobs, partitions, etc. 
+Smap is aware of system topography and provides a map of what base partitions 
+are allocated to jobs, partitions, etc. 
 See the smap man page for details.
 A sample of smap output is provided below showing the location of five jobs. 
 Note the format of the list of base partitions allocated to each job.
@@ -152,7 +152,7 @@ The time for completing a bgjob has frequently been on the order of
 five minutes.
 In summary, your job may appear in SLURM as RUNNING for 15 minutes 
 before the script actually begins to 5 minutes after it completes.
-These delays are the result of the bluegene infrastructure issues and are 
+These delays are the result of the BlueGene infrastructure issues and are 
 not due to anything in SLURM.</p>
 
 <p>When using smap in default output  mode you can scroll through 
@@ -178,27 +178,19 @@ option <i>--with-db2-dir=PATH</i> to specify the parent directory.
 If you have the same version of the operating system on both the 
 Service Node (SN) and the Front End Nodes (FEN) then you can configure 
 and build one set of files on the SN and install them on both the SN and FEN.
-Note that if your FENs lack an installed <i>libdb2.so</i>, an smap 
-built on the SN will be unable to execute at all on those nodes (it 
-calls BG Bridge APIs, that dynamically load <i>libdb2.so</i> completely 
-out of our control).
-You can handle this in two different ways. 
-One option is to build two versions of smap (in the main SLURM RPM), 
-one for the SN and the other for the FENs. 
-The second option is to create a dummy <i>libdb2.so</i> on the FENs 
-(it can just point to libslurm.so) so that smap can be initiated. 
-Smap will discover if <i>libdb2.so</i> is invalid and avoid using 
-any BG Bridge function calls, which would fail. 
-In either case, all smap functionality will be provided on the FEN 
+Note that all smap functionality will be provided on the FEN 
 except for the ability to map SLURM node names to and from 
-row/rack/midplane data.</p> 
+row/rack/midplane data, which requires direct use of the Bridge API 
+calls only available on the SN.</p> 
 
 <p>If you have different versions of the operating system on the SN and FEN
 (as was the case for some early system installations), then you will need 
 to configure and build two sets of files for installation. 
-One set will be for the Service Node (SN), which has direct access to the BG Bridge APIs. 
+One set will be for the Service Node (SN), which has direct access to the 
+Bridge APIs. 
 The second set will be for the Front End Nodes (FEN), whick lack access to the 
-BG Bridge APIs and interact with using Remote Procedure Calls to the slurmctld daemon.
+Bridge APIs and interact with using Remote Procedure Calls to the slurmctld 
+daemon.
 You should see "#define HAVE_BG 1" and "#define HAVE_FRONT_END 1" in the "config.h" 
 file for both the SN and FEN builds. 
 You should also see "#define HAVE_BG_FILES 1" in config.h on the SN before 
@@ -206,7 +198,7 @@ building SLURM. </p>
 
 <p>The slurmctld daemon should execute on the system's service node.
 If an optional backup daemon is used, it must be in some location where 
-it is capable of executing BG Bridge APIs.
+it is capable of executing Bridge APIs.
 One slurmd daemon should be configured to execute on one of the front end nodes. 
 That one slurmd daemon represents communications channel for every base partition. 
 You can use the scontrol command to drain individual nodes as desired and 
@@ -329,7 +321,7 @@ each bgblocks must be explicitly defined in the <i>bluegene.conf</i>
 file, but these partitions can overlap each other.  
 In this mode <b>it is highly recommended that none of the bgblocks 
 have any passthroughs in the X-dimension associated to them</b>.
-Usually this is only an issue on larger bluegene systems.  
+Usually this is only an issue on larger BlueGene systems.  
 <b>It is advisable to use this mode with extreme caution.</b>
 Make sure you know what you doing to assure the bgblocks will 
 boot without dependency on the state of any base partition 
@@ -355,11 +347,12 @@ if resources are avaliable and prevent larger jobs from running.
 Bgblocks need not be assigned in the <i>bluegene.conf</i> file 
 for this mode.</p>
 
-<p>Blocks can be freed or set in an error state with scontrol.
-<br>(i.e. scontrol update BlockName=RMP0 state=error) 
-<br>This will end any job on the block and set the state of the block to ERROR
-making it so no job will run on the block.  To set it back to a usuable state 
-set state=free. 
+<p>Blocks can be freed or set in an error state with scontrol,
+(i.e. "<i>scontrol update BlockName=RMP0 state=error</i>").
+This will end any job on the block and set the state of the block to ERROR
+making it so no job will run on the block.  To set it back to a usuable 
+state set the state to free (i.e. 
+"<i>scontrol update BlockName=RMP0 state=free</i>"). 
 
 <p>One of these modes must be defined in the <i>bluegene.conf</i> file 
 with the option <i>LayoutMode=MODE</i> (where MODE=STATIC, DYNAMIC or OVERLAP).</p>
@@ -403,8 +396,8 @@ A sample <i>bluegene.conf</i> file is shown below.
 #                       equals this value multiplied by the number of 
 #                       base partitions in the bgblock.
 #
-# BridgeAPILogFile:  Pathname of file in which to write the BG 
-#                    BG Bridge API logs.
+# BridgeAPILogFile:  Pathname of file in which to write the 
+#                    Bridge API logs.
 # BridgeAPIVerbose:  How verbose the BG Bridge API logs should be
 #                    0: Log only error and warning messages
 #                    1: Log level 0 and information messages
@@ -487,7 +480,7 @@ which is automatically executed by <i>/etc/init.d/slurm</i>
 prior to initiating the SLURM daemons.</p>
 
 <p>When slurmctld is initially started on an idle system, the bgblocks 
-already defined in MMCS are read using the BG Bridge APIs. 
+already defined in MMCS are read using the Bridge APIs. 
 If these bgblocks do not correspond to those defined in the <i>bluegene.conf</i> 
 file, the old bgblocks with a prefix of "RMP" are destroyed and new ones 
 created. 
@@ -523,9 +516,10 @@ the slurmd at the same time.
 Failure to do so may result in errors being reported by both slurmd 
 and slurmctld due to bgblocks that previously existed being deleted.</p>
 
-<p>A new tool <i>sfree</i> has also been added to help admins free a  
-bgblock on request.  
-<br>For usage use <b>sfree -u</b> and for help <b>-h</b>.</p>
+<p>A new tool <i>sfree</i> has also been added to help system 
+administrators free a  bgblock on request (i.e. 
+"<i>sfree --bgblock=&lt;blockname&gt;</i>"). 
+Run <i>sfree --help</i> for more information.</p>
 
 <h4>Debugging</h4>
 
@@ -538,7 +532,7 @@ Once running in production, the configured <i>SlurmctldLog</i> and
 <i>SlurmdLog</i> files will provide historical system information.
 On BlueGene systems, there is also a <i>BridgeAPILogFile</i> defined 
 in <i>bluegene.conf</i> which can be configured to contain detailed 
-information about every BG Bridge API call issued.</p>
+information about every Bridge API call issued.</p>
 
 <p>Note that slurmcltld log messages of the sort 
 <i>Nodes bg[000x133] not responding</i> are indicative of the slurmd 
@@ -550,13 +544,13 @@ nodes, so the message is more meaningful there). </p>
 system. After running <b>configure</b>, manually define "HAVE_BG" 
 and "HAVE_FRONT_END" in the config.h file. The execute <b>make</b> 
 normally. These variables will build the code as if it were running 
-on an actual BlueGene computer, but avoid making calls to the BG
+on an actual BlueGene computer, but avoid making calls to the
 Bridge libary (that is controlled by the variable "HAVE_BG_FILES", 
 which is left undefined). You can use this to test configurations, 
 scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 March 2006</p>
+<p style="text-align:center;">Last modified 20 July 2006</p>
 
 <!--#include virtual="footer.txt"-->

@@ -49,7 +49,7 @@ if {![test_aix]} {
 exec $bin_chmod 700 $file_prog_get
 
 #
-# Spawn a job to test BNR functionality
+# Spawn a job to test PMI functionality
 #
 set timeout $max_job_delay
 if { [test_bluegene] } {
@@ -62,7 +62,10 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $srun -l -N$node_cnt -n4 -O -t1 $file_prog_get
+# Adjust time limits as needed for large task counts */
+#                   times are here  vv 
+set timeout [expr $max_job_delay +  60]
+spawn $srun -l -N$node_cnt -n8 -O -t1  $file_prog_get
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"

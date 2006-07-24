@@ -40,9 +40,8 @@
 #include "src/srun/core-format.h"
 #include "src/common/env.h"
 #include "src/srun/fname.h"
-//#include "src/common/mpi.h"
 
-#define MAX_THREADS	64
+#define MAX_THREADS	32
 #define MAX_USERNAME	9
 
 

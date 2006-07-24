@@ -4,7 +4,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-5 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
@@ -460,7 +460,7 @@ static void *_wdog(void *args)
 	int i, j, count;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
-	unsigned long usec = 1250000;
+	unsigned long usec = 125000;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
 	thd_complete_t thd_comp;
@@ -1194,8 +1194,7 @@ static void _list_delete_retry(void *retry_entry)
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * RET count of queued requests remaining (zero if none are old enough 
- * to re-issue)
+ * RET count of queued requests remaining
  */
 extern int agent_retry (int min_wait)
 {
@@ -1203,25 +1202,36 @@ extern int agent_retry (int min_wait)
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 
-	if (retry_list)
+	if (retry_list) {
+		static time_t last_msg_time = (time_t) 0;
 		list_size = list_count(retry_list);
+		if ((list_size > MAX_AGENT_CNT) 
+		&&  (difftime(now, last_msg_time) > 300)) {
+			/* Note sizable backlog of work */
+			info("WARNING: agent retry_list size is %d", 
+				list_size);
+			last_msg_time = now;
+		}
+	}
 	if (agent_cnt >= MAX_AGENT_CNT)		/* too much work already */
 		return list_size;
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
+		ListIterator retry_iter;
 		double age = 0;
-		queued_req_ptr = (queued_request_t *) list_peek(retry_list);
-		if (queued_req_ptr) {
+
+		retry_iter = list_iterator_create(retry_list);
+		while ((queued_req_ptr = (queued_request_t *) 
+				list_next(retry_iter))) {
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
-				queued_req_ptr = (queued_request_t *) 
-					list_pop(retry_list);
-			} else { /* too new */
-				queued_req_ptr = NULL;
-				list_size = 0;
+				list_remove(retry_iter);
+				list_size--;
+				break;
 			}
 		}
+		list_iterator_destroy(retry_iter);
 	}
 	slurm_mutex_unlock(&retry_mutex);
 
@@ -1279,7 +1289,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
-	list_prepend(retry_list, (void *)queued_req_ptr);
+	list_append(retry_list, (void *)queued_req_ptr);
 	slurm_mutex_unlock(&retry_mutex);
 }
 
