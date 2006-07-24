@@ -195,13 +195,14 @@ static bool run_scheduler = false;
  */
 void *agent(void *args)
 {
-	int i, rc, retries = 0;
+	int i, delay, rc, retries = 0;
 	pthread_attr_t attr_wdog;
 	pthread_t thread_wdog;
 	agent_arg_t *agent_arg_ptr = args;
 	agent_info_t *agent_info_ptr = NULL;
 	thd_t *thread_ptr;
 	task_info_t *task_specific_ptr;
+	time_t begin_time;
 
 	//info("I am here and agent_cnt is %d of %d",agent_cnt, MAX_AGENT_CNT);
 	slurm_mutex_lock(&agent_cnt_mutex);
@@ -216,6 +217,7 @@ void *agent(void *args)
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	/* basic argument value tests */
+	begin_time = time(NULL);
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
 
@@ -286,6 +288,11 @@ void *agent(void *args)
 		
 	/* wait for termination of remaining threads */
 	pthread_join(thread_wdog, NULL);
+	delay = (int) difftime(time(NULL), begin_time);
+	if (delay > (slurm_get_msg_timeout() * 2)) {
+		info("agent msg_type=%u ran for %d seconds",
+			agent_arg_ptr->msg_type,  delay);
+	}
 	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 	while (agent_info_ptr->threads_active != 0) {
 		pthread_cond_wait(&agent_info_ptr->thread_cond,
