@@ -487,12 +487,12 @@ try_again:
 		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
-	temp = bitmap2node_name(nodes_avail);
-	info("can pick from %s", temp);
-	xfree(temp);
-	temp = bitmap2node_name(nodes_idle);
-	info("can pick from %s", temp);
-	xfree(temp);
+/* 	temp = bitmap2node_name(nodes_avail); */
+/* 	info("can pick from %s", temp); */
+/* 	xfree(temp); */
+/* 	temp = bitmap2node_name(nodes_idle); */
+/* 	info("can pick from %s", temp); */
+/* 	xfree(temp); */
 
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
