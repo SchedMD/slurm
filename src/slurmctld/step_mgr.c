@@ -691,11 +691,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 	   && step_specs->task_dist == SLURM_DIST_ARBITRARY) {
 		step_ptr->step_node_list = xstrdup(step_specs->node_list);
 		xfree(step_specs->node_list);
+		step_specs->node_list = bitmap2node_name(nodeset);
 	} else {
 		step_ptr->step_node_list = bitmap2node_name(nodeset);
 		step_specs->node_list = xstrdup(step_ptr->step_node_list);
 	}
-	step_specs->node_list = bitmap2node_name(nodeset);
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
