@@ -356,8 +356,12 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 			break;
 		}
 	}
-	/* _strip_cr_nl(buf); */ /* not necessary */
+	
+	/* FIXME: had to add this for blank lines for some reason!!!!! */ 
+	_strip_cr_nl(buf); /* not necessary */
+
 	_strip_escapes(buf);
+	
 	
 	return lines;
 }
@@ -746,7 +750,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl,
 	char *ptr;
 	char *fn_start, *fn_stop;
 	char *filename;
-
+	
 	if (strncasecmp("include", line, strlen("include")) == 0) {
 		ptr = (char *)line + strlen("include");
 		if (!isspace(*ptr))
@@ -792,13 +796,14 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 	}
 
 	line_number = 1;
+	memset(line, 0, BUFFER_SIZE);
 	while((merged_lines = _get_next_line(line, BUFFER_SIZE, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;
 			continue;
 		}
-
+		
 		inc_rc =_parse_include_directive(hashtbl, line, &leftover);
 		if (inc_rc == 0) {
 			_parse_next_key(hashtbl, line, &leftover);
