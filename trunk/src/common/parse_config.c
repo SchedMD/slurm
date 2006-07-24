@@ -356,12 +356,8 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 			break;
 		}
 	}
-	
-	/* FIXME: had to add this for blank lines for some reason!!!!! */ 
-	_strip_cr_nl(buf); /* not necessary */
-
+	/* _strip_cr_nl(buf); */ /* not necessary */
 	_strip_escapes(buf);
-	
 	
 	return lines;
 }
@@ -666,9 +662,13 @@ static void _handle_keyvalue_match(s_p_values_t *v,
  */
 static int _line_is_space(const char *line)
 {
-	int len = strlen(line);
+	int len;
 	int i;
 
+	if (line == NULL) {
+		return 1;
+	}
+	len = strlen(line);
 	for (i = 0; i < len; i++) {
 		if (!isspace(line[i]))
 			return 0;
@@ -729,10 +729,13 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
 			xfree(value);
+			*leftover = line;
 			return 0;
 		}
 		xfree(key);
 		xfree(value);
+	} else {
+		*leftover = line;
 	}
 
 	return 1;
@@ -750,7 +753,8 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl,
 	char *ptr;
 	char *fn_start, *fn_stop;
 	char *filename;
-	
+
+	*leftover = NULL;
 	if (strncasecmp("include", line, strlen("include")) == 0) {
 		ptr = (char *)line + strlen("include");
 		if (!isspace(*ptr))
@@ -775,7 +779,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
-	char *leftover;
+	char *leftover = NULL;
 	int rc = SLURM_SUCCESS;
 	int line_number;
 	int merged_lines;
@@ -796,14 +800,13 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 	}
 
 	line_number = 1;
-	memset(line, 0, BUFFER_SIZE);
 	while((merged_lines = _get_next_line(line, BUFFER_SIZE, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;
 			continue;
 		}
-		
+
 		inc_rc =_parse_include_directive(hashtbl, line, &leftover);
 		if (inc_rc == 0) {
 			_parse_next_key(hashtbl, line, &leftover);
@@ -811,6 +814,8 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 			error("\"Include\" failed in file %s line %d",
 			      filename, line_number);
 			rc = SLURM_ERROR;
+			line_number += merged_lines;
+			continue;
 		}
 
 		/* Make sure that after parsing only whitespace is left over */
