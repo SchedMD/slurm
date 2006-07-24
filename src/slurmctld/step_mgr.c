@@ -408,7 +408,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
 	ListIterator step_iterator;
 	struct step_record *step_p;
-	char *temp;
+/*	char *temp; */
 		
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
