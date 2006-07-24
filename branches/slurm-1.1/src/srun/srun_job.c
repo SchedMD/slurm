@@ -181,7 +181,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	
 
 	ai->nodelist       = _normalize_hostlist(resp->node_list);
-	ai->nnodes	  = resp->node_cnt;
+	ai->nnodes         = opt.min_nodes;
 	ai->jobid          = resp->job_id;
 	ai->stepid         = NO_VAL;
 	ai->num_cpu_groups = resp->num_cpu_groups;
