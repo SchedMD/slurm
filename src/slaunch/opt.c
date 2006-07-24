@@ -1447,9 +1447,15 @@ static bool _opt_verify(void)
 		if (opt.num_tasks_set && opt.num_tasks < hostlist_count(hl)) {
 			/* shrink the hostlist */
 			int i, shrinkage;
+			char buf[8192];
+			info("need to shrink node list of len %d to %d",
+			     hostlist_count(hl), opt.num_tasks);
 			shrinkage = hostlist_count(hl) - opt.num_tasks;
 			for (i = 0; i < shrinkage; i++)
 				free(hostlist_pop(hl));
+			xfree(opt.nodelist);
+			hostlist_ranged_string(hl, 8192, buf);
+			opt.nodelist = xstrdup(buf);
 		}
 		hl_unique = hostlist_copy(hl);
 		hostlist_uniq(hl_unique);
