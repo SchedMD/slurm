@@ -1208,6 +1208,7 @@ extern int agent_retry (int min_wait)
 	int list_size = 0;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
+	ListIterator retry_iter;
 
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
@@ -1225,10 +1226,26 @@ extern int agent_retry (int min_wait)
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
-		ListIterator retry_iter;
+		/* first try to find a new (never tried) record */
+
+		retry_iter = list_iterator_create(retry_list);
+		while ((queued_req_ptr = (queued_request_t *)
+				list_next(retry_iter))) {
+ 			if (queued_req_ptr->last_attempt == 0)
+				list_remove(retry_iter);
+				list_size--;
+				break;
+			}
+		list_iterator_destroy(retry_iter);
+	}
+
+	if (retry_list && (queued_req_ptr == NULL)) {
+		/* now try to find a requeue request that is 
+		 * relatively old */
 		double age = 0;
 
 		retry_iter = list_iterator_create(retry_list);
+		/* next try to find an older record to retry */
 		while ((queued_req_ptr = (queued_request_t *) 
 				list_next(retry_iter))) {
 			age = difftime(now, queued_req_ptr->last_attempt);
