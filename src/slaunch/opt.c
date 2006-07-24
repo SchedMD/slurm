@@ -1444,6 +1444,13 @@ static bool _opt_verify(void)
 	}
 	if (opt.nodelist != NULL) {
 		hl = hostlist_create(opt.nodelist);
+		if (opt.num_tasks_set && opt.num_tasks < hostlist_count(hl)) {
+			/* shrink the hostlist */
+			int i, shrinkage;
+			shrinkage = hostlist_count(hl) - opt.num_tasks;
+			for (i = 0; i < shrinkage; i++)
+				free(hostlist_pop(hl));
+		}
 		hl_unique = hostlist_copy(hl);
 		hostlist_uniq(hl_unique);
 	}
@@ -1484,7 +1491,6 @@ static bool _opt_verify(void)
 			      opt.num_nodes, hostlist_count(hl_unique));
 			verified = false;
 		} else { /* num_nodes < hostlist_count */
-			/* FIXME - shrink the nodelist instead of an error */
 			error("Asked for fewer nodes (%d) "
 			      "than listed in the nodelist (%d)",
 			      opt.num_nodes, hostlist_count(hl_unique));
