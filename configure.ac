@@ -226,6 +226,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sacct/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
+		 src/sattach/Makefile
 		 src/srun/Makefile 
 		 src/slaunch/Makefile 
 		 src/slurmd/Makefile 
