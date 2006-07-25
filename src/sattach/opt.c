@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  opt.c - options processing for sbatch
+ *  opt.c - options processing for sattach
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -68,21 +68,17 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 
-#include "src/sbatch/opt.h"
+#include "src/sattach/opt.h"
 
 #include "src/common/mpi.h"
 
 /*---- global variables, defined in opt.h ----*/
-char **remote_argv;
-int remote_argc;
 int _verbose;
 opt_t opt;
 
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
-
-static List  _create_path_list(void);
 
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what);
@@ -107,11 +103,6 @@ static void  _print_version(void);
 
 static void _process_env_var(env_vars_t *e, const char *val);
 
-static uint16_t _parse_mail_type(const char *arg);
-
-/* search PATH for command returns full path */
-static char *_search_path(char *, bool, int);
-
 static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -127,7 +118,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-	if (_verbose > 3)
+	if (_verbose > 1)
 		_opt_list();
 
 	return 1;
@@ -165,9 +156,7 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default()
 {
-	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
-	int i;
 
 	if ((pw = getpwuid(getuid())) != NULL) {
 		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
@@ -177,80 +166,17 @@ static void _opt_default()
 
 	opt.gid = getgid();
 
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
-		fatal("getcwd failed: %m");
-	opt.cwd = xstrdup(buf);
-
 	opt.progname = NULL;
 
-	opt.nprocs = 1;
-	opt.nprocs_set = false;
-	opt.cpus_per_task = 1; 
-	opt.cpus_set = false;
-	opt.min_nodes = 1;
-	opt.max_nodes = 0;
-	opt.nodes_set = false;
-	opt.cpu_bind_type = 0;
-	opt.cpu_bind = NULL;
-	opt.mem_bind_type = 0;
-	opt.mem_bind = NULL;
-	opt.time_limit = -1;
-	opt.partition = NULL;
-
-	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
-	opt.dependency = NO_VAL;
-	opt.account  = NULL;
-
-	opt.distribution = SLURM_DIST_CYCLIC;
-
-	opt.overcommit = false;
-	opt.share = false;
-	opt.no_kill = false;
-	opt.kill_bad_exit = false;
-
-	opt.immediate	= false;
-	opt.no_requeue	= false;
-
-	opt.noshell	= false;
-	opt.max_wait	= slurm_get_wait_time();
-
-	opt.quit_on_intr = false;
-	opt.disable_status = false;
-	opt.test_only   = false;
 
 	opt.quiet = 0;
 	_verbose = 0;
 
-	/* constraint default (-1 is no constraint) */
-	opt.mincpus	    = -1;
-	opt.realmem	    = -1;
-	opt.tmpdisk	    = -1;
-
-	opt.hold	    = false;
-	opt.constraints	    = NULL;
-	opt.contiguous	    = false;
-        opt.exclusive       = false;
-	opt.nodelist	    = NULL;
-	opt.exc_nodes	    = NULL;
-	opt.max_launch_time = 120;/* 120 seconds to launch job             */
-	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
-	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
-
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		opt.geometry[i]	    = (uint16_t) NO_VAL;
-	opt.no_rotate	    = false;
-	opt.conn_type	    = -1;
-
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
-	opt.propagate	    = NULL;  /* propagate specific rlimits */
-
-	opt.task_prolog     = NULL;
-	opt.task_epilog     = NULL;
-
 	opt.ctrl_comm_ifhn  = xshort_hostname();
 
 }
@@ -299,9 +225,6 @@ static void _opt_env()
 static void
 _process_env_var(env_vars_t *e, const char *val)
 {
-	char *end = NULL;
-	enum task_dist_states dt;
-
 	debug2("now processing env var %s=%s", e->var, val);
 
 	if (e->set_flag) {
@@ -402,52 +325,88 @@ void set_options(const int argc, char **argv, int first)
 	}
 }
 
+/* Returns true if all characters in a string are whitespace characters,
+ * otherwise returns false;
+ */
+static bool
+_is_whitespace(const char *str)
+{
+	int i, len;
+
+	len = strlen(str);
+	for (i = 0; i < len; i++) {
+		if (!isspace(str[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static void _parse_jobid_stepid(char *jobid_str)
+{
+	char *ptr, *job, *step;
+	long jobid, stepid;
+
+	verbose("jobid/stepid string = %s\n", jobid_str);
+	job = xstrdup(jobid_str);
+	ptr = index(job, '.');
+	if (ptr == NULL) {
+		error("Did not find a period in the step ID string");
+		_usage();
+		xfree(job);
+		exit(1);
+	} else {
+		*ptr = '\0';
+		step = ptr + 1;
+	}
+
+	jobid = strtol(job, &ptr, 10);
+	if (!_is_whitespace(ptr)) {
+		error("\"%s\" does not look like a jobid", job);
+		_usage();
+		xfree(job);
+		exit(1);
+	}
+
+	stepid = strtol(step, &ptr, 10);
+	if (!_is_whitespace(ptr)) {
+		error("\"%s\" does not look like a stepid", step);
+		_usage();
+		xfree(job);
+		exit(1);
+	}
+
+	opt.jobid = (uint32_t) jobid;
+	opt.stepid = (uint32_t) stepid;
+
+	xfree(job);
+}
+
 /*
  * _opt_args() : set options via commandline args and popt
  */
 static void _opt_args(int argc, char **argv)
 {
-	int i;
 	char **rest = NULL;
+	int leftover;
 
-	set_options(argc, argv, 1);	
+	set_options(argc, argv, 1);
 
-#ifdef HAVE_AIX
-	if (opt.network == NULL) {
-		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
-#endif
-
-	remote_argc = 0;
+	leftover = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[remote_argc] != NULL)
-			remote_argc++;
+		while (rest[leftover] != NULL)
+			leftover++;
 	}
-	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
-	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = xstrdup(rest[i]);
-	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
-
-	if (opt.multi_prog) {
-		if (remote_argc < 1) {
-			error("configuration file not specified");
-			exit(1);
-		}
-		_load_multi(&remote_argc, remote_argv);
-
+	if (leftover != 1) {
+		error("too many parameters");
+		_usage();
+		exit(1);
 	}
-	else if (remote_argc > 0) {
-		char *fullpath;
-		char *cmd       = remote_argv[0];
-		int  mode       = R_OK;
 
-		if ((fullpath = _search_path(cmd, true, mode))) {
-			xfree(remote_argv[0]);
-			remote_argv[0] = fullpath;
-		} 
-	}
+	_parse_jobid_stepid(*(argv + optind));
+
 	if (!_opt_verify())
 		exit(1);
 }
@@ -472,23 +431,19 @@ static bool _opt_verify(void)
 
 static void _opt_list()
 {
-	char *str;
-
 	info("defined options for program `%s'", opt.progname);
 	info("--------------- ---------------------");
-
+	info("job ID         : %u", opt.jobid);
+	info("step ID        : %u", opt.stepid);
 	info("user           : `%s'", opt.user);
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
 	info("verbose        : %d", _verbose);
-	str = print_commandline();
-	xfree(str);
-
 }
 
 static void _usage(void)
 {
- 	printf("Usage: sattach <jobid.stepid>\n");
+ 	printf("Usage: sattach [options] <jobid.stepid>\n");
 }
 
 static void _help(void)

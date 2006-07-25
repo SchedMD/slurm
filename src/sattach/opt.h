@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  opt.h - definitions for srun option processing
+ *  opt.h - definitions for sattach option processing
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -44,8 +44,6 @@
 
 
 /* global variables relating to user options */
-extern char **remote_argv;
-extern int remote_argc;
 extern int _verbose;
 
 typedef struct sbatch_options {
@@ -62,6 +60,7 @@ typedef struct sbatch_options {
 	uint32_t stepid;
 	bool jobid_set;		/* true of jobid explicitly set */
 	int  quiet;
+	char *ctrl_comm_ifhn;
 } opt_t;
 
 extern opt_t opt;
