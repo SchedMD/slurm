@@ -697,6 +697,8 @@ static void _opt_default()
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
 
+	opt.relative = NO_VAL;
+	opt.relative_set = false;
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
@@ -1282,6 +1284,7 @@ void set_options(const int argc, char **argv, int first)
 			
 			//xfree(opt.relative);
 			opt.relative = _get_int(optarg, "relative");
+			opt.relative_set = true;
 			break;
 		case (int)'R':
 			opt.no_rotate = true;
@@ -1655,12 +1658,12 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.no_alloc && opt.relative) {
+	if (opt.no_alloc && opt.relative_set) {
 		error("do not specify -r,--relative with -Z,--no-allocate.");
 		verified = false;
 	}
 
-	if (opt.relative && (opt.exc_nodes || opt.nodelist)) {
+	if (opt.relative_set && (opt.exc_nodes || opt.nodelist)) {
 		error("-r,--relative not allowed with "
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;

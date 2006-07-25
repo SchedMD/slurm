@@ -457,7 +457,7 @@ try_again:
 		FREE_NULL_BITMAP(nodes_avail);
 		nodes_avail = selected_nodes;
 		goto create_idle;
-	} else if (step_spec->relative) {
+	} else if (step_spec->relative != (uint16_t)NO_VAL) {
 		/* Remove first (step_spec->relative) nodes from  
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
@@ -491,6 +491,7 @@ try_again:
 /* 			xfree(temp); */
 		} 
 		list_iterator_destroy (step_iterator);
+		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
 	/* temp = bitmap2node_name(nodes_avail); */
