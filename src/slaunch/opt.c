@@ -638,7 +638,8 @@ static void _opt_default()
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.time_limit = -1;
-	opt.relative = 0;
+	opt.relative = (uint16_t)NO_VAL;
+	opt.relative_set = false;
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
@@ -1476,26 +1477,31 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.no_alloc && opt.relative) {
-		error("do not specify -r/--relative with -Z/--no-allocate.");
-		verified = false;
-	}
+	if (opt.relative_set) {
+		if (opt.no_alloc) {
+			error("-r/--relative not allowed with"
+			      " -Z/--no-allocate.");
+			verified = false;
+		}
 
-	if (opt.relative_set && opt.nodelist) {
-		error("-r/--relative not allowed with -w/--nodelist.");
-		verified = false;
-	}
+		if (opt.nodelist != NULL) {
+			error("-r/--relative not allowed with"
+			      " -w/--nodelist.");
+			verified = false;
+		}
 
-	if (opt.relative_set && opt.task_layout_set) {
-		error("-r/--relative not allowed with -T/--task-layout");
-		verified = false;
-	}
+		if (opt.task_layout_set) {
+			error("-r/--relative not allowed with"
+			      " -T/--task-layout");
+			verified = false;
+		}
 
-	if (opt.relative_set && opt.task_layout_file_set) {
-		error("-r/--relative not allowed with -F/--task-layout-file");
-		verified = false;
+		if (opt.task_layout_file_set) {
+			error("-r/--relative not allowed with"
+			      " -F/--task-layout-file");
+			verified = false;
+		}
 	}
-
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 

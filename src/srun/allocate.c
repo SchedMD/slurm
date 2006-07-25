@@ -554,7 +554,7 @@ _step_req_create(srun_job_t *j)
 	r->node_list  = xstrdup(opt.nodelist);
 	r->network    = xstrdup(opt.network);
 	r->name       = xstrdup(opt.job_name);
-	r->relative   = opt.relative;
+	r->relative   = (uint16_t)opt.relative;
 	debug("requesting job %d, user %d, nodes %d (%s)", 
 	      r->job_id, r->user_id, r->node_count, r->node_list);
 	debug("cpus %d, tasks %d, name %s, relative %d", 

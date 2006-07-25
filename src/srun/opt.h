@@ -150,6 +150,7 @@ typedef struct srun_options {
 	char *alloc_nodelist;   /* grabbed from the environment */
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 	int  relative;		/* --relative -r N              */
+	bool relative_set;
 	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
