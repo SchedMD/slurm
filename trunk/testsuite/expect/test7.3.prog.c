@@ -46,7 +46,6 @@ int main (int argc, char *argv[])
 	job_desc_msg_t job_req;
 	resource_allocation_response_msg_t *job_resp;
 	job_step_create_request_msg_t step_req;
-	old_job_alloc_msg_t old_alloc;
 	slurm_step_ctx ctx = NULL;
 	char *task_argv[3];
 	char cwd[128];
@@ -83,11 +82,11 @@ int main (int argc, char *argv[])
 	    (strlen(job_resp->node_list) == 0)) {
 		printf("Waiting for resource allocation\n");
 		fflush(stdout);
-		old_alloc.job_id = job_resp->job_id;
 		while ((job_resp->node_list == NULL) ||
 		       (strlen(job_resp->node_list) == 0)) {
 			sleep(5);
-			if (slurm_confirm_allocation(&old_alloc, &job_resp) &&
+			if (slurm_allocation_lookup_lite(job_resp->job_id, 
+							 &job_resp) &&
 			    (slurm_get_errno() != ESLURM_JOB_PENDING)) {
 				slurm_perror("slurm_confirm_allocation");
 				exit(0);

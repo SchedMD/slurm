@@ -63,7 +63,8 @@ slurm_step_layout_t *distribute_tasks(const char *mlist,
 				      const char *tlist,
 				      uint32_t *cpus_per_node, 
 				      uint32_t *cpu_count_reps,
-				      uint32_t num_hosts, 
+				      uint16_t num_cpu_groups,
+				      uint16_t num_hosts, 
 				      uint32_t num_tasks,
 				      uint16_t task_dist);
 
@@ -76,7 +77,8 @@ extern slurm_step_layout_t *step_layout_copy(slurm_step_layout_t *step_layout);
 /* destroys structure for step layout */
 extern int step_layout_destroy(slurm_step_layout_t *step_layout);
 /* build maps for task layout on nodes */
-extern int task_layout(slurm_step_layout_t *step_layout);
+extern int task_layout(slurm_step_layout_t *step_layout, 
+		       const char *arbitrary_nodes, uint16_t task_dist);
 
 extern int step_layout_host_id (slurm_step_layout_t *s, int taskid);
 

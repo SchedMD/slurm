@@ -3246,15 +3246,20 @@ _pack_slurm_step_layout(slurm_step_layout_t *step_layout, Buf buffer)
 	packstr(step_layout->nodes, buffer);
 	pack16(step_layout->num_hosts, buffer);
 	pack32(step_layout->num_tasks, buffer);
+	pack16(step_layout->num_cpu_groups, buffer);
 	_pack_slurm_addr_array(step_layout->node_addr, 
 			       step_layout->num_hosts, buffer);
-	pack32_array(step_layout->cpus, step_layout->num_hosts, buffer);
+
+	pack32_array(step_layout->cpus_per_node, 
+		     step_layout->num_cpu_groups, buffer);
+	pack32_array(step_layout->cpu_count_reps, 
+		     step_layout->num_cpu_groups, buffer);
+
 	pack32_array(step_layout->tasks, step_layout->num_hosts, buffer);
 	pack32_array(step_layout->hostids, step_layout->num_tasks, buffer);
 	for(i=0; i<step_layout->num_hosts; i++) {
 		pack32_array(step_layout->tids[i], step_layout->tasks[i], 
 			     buffer);
-		packstr(step_layout->host[i], buffer);	
 	}
 }
 
@@ -3263,24 +3268,26 @@ _unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 {
 	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
-	int i;
+	int cpu_cnt = 0, cpu_inx = 0, i;
 	slurm_step_layout_t *step_layout;
+	hostlist_t hl = NULL;
 
 	step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	*layout = step_layout;
 
 	step_layout->nodes = NULL;
-	step_layout->arbitrary_nodes = NULL;
 	step_layout->num_hosts = 0;
 	step_layout->host = NULL;
 	step_layout->tids = NULL;
 	step_layout->cpus = NULL;
 	step_layout->tasks = NULL;
 	step_layout->hostids = NULL;
-	
+	step_layout->cpus_per_node = NULL;
+	step_layout->cpu_count_reps = NULL;
 	safe_unpackstr_xmalloc(&step_layout->nodes, &uint16_tmp, buffer);
 	safe_unpack16(&step_layout->num_hosts, buffer);
 	safe_unpack32(&step_layout->num_tasks, buffer);
+	safe_unpack16(&step_layout->num_cpu_groups, buffer);
 	
 	if (_unpack_slurm_addr_array(&(step_layout->node_addr), 
 				     &uint16_tmp, buffer))
@@ -3288,9 +3295,14 @@ _unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 	if (uint16_tmp != step_layout->num_hosts)
 		goto unpack_error;
 	
-	safe_unpack32_array(&(step_layout->cpus), 
+	safe_unpack32_array(&(step_layout->cpus_per_node), 
 			    &uint32_tmp, buffer);
-	if (uint32_tmp != step_layout->num_hosts)
+	if (uint32_tmp != step_layout->num_cpu_groups)
+		goto unpack_error;
+	
+	safe_unpack32_array(&(step_layout->cpu_count_reps), 
+			    &uint32_tmp, buffer);
+	if (uint32_tmp != step_layout->num_cpu_groups)
 		goto unpack_error;
 	
 	safe_unpack32_array(&(step_layout->tasks), 
@@ -3307,18 +3319,39 @@ _unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 				    * step_layout->num_hosts);
 	step_layout->host = xmalloc(sizeof(char *) 
 				    * step_layout->num_hosts);
+	step_layout->cpus  = xmalloc(sizeof(uint32_t) 
+				     * step_layout->num_hosts);
+	
+	hl = hostlist_create(step_layout->nodes);
 	for(i=0; i<step_layout->num_hosts; i++) {
 		safe_unpack32_array(&(step_layout->tids[i]), 
 				    &uint32_tmp, 
 				    buffer);
 		if (uint32_tmp != step_layout->tasks[i])
 			goto unpack_error;
-		safe_unpackstr_malloc(&step_layout->host[i], &uint16_tmp, 
-				      buffer);	
+
+		step_layout->host[i] = hostlist_shift(hl);
+		if(!step_layout->host[i]) {
+			error("hostlist incomplete for this job request");
+			goto unpack_error;
+		}
+		step_layout->cpus[i] = step_layout->cpus_per_node[cpu_inx];
+		
+		if ((++cpu_cnt) >= step_layout->cpu_count_reps[cpu_inx]) {
+			/* move to next record */
+			cpu_inx++;
+			cpu_cnt = 0;
+		}
 	}
+	hostlist_destroy(hl);
+	if(step_layout->num_cpu_groups != cpu_inx) {
+		error("we got %d cpu groups but was looking for %d",
+		      cpu_inx, step_layout->num_cpu_groups);
+	}		
 	return SLURM_SUCCESS;
 
 unpack_error:
+	hostlist_destroy(hl);			
 	step_layout_destroy(step_layout);
 	*layout = NULL;
 	return SLURM_ERROR;

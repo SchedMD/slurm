@@ -210,7 +210,8 @@ int srun(int ac, char **av)
 		if(!job->step_layout) {
 			fatal("step_layout not created correctly");
 		}
-		if(task_layout(job->step_layout) != SLURM_SUCCESS) {
+		if(task_layout(job->step_layout, opt.nodelist, 
+			       opt.distribution) != SLURM_SUCCESS) {
 			fatal("problem with task layout");
 		}
 		if (msg_thr_create(job) < 0)
