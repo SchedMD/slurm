@@ -80,9 +80,6 @@ opt_t opt;
 
 typedef struct env_vars env_vars_t;
 
-/* Get a decimal integer from arg */
-static int  _get_int(const char *arg, const char *what);
-
 static void  _help(void);
 
 /* fill in default options  */
@@ -236,30 +233,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		/* do nothing */
 		break;
 	}
-}
-
-/*
- *  Get a decimal integer from arg.
- *
- *  Returns the integer on success, exits program on failure.
- * 
- */
-static int
-_get_int(const char *arg, const char *what)
-{
-	char *p;
-	long int result = strtol(arg, &p, 10);
-
-	if ((*p != '\0') || (result < 0L)) {
-		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(1);
-	}
-
-	if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
-	}
-
-	return (int) result;
 }
 
 void set_options(const int argc, char **argv, int first)
