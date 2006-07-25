@@ -36,13 +36,19 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <stdint.h>
 
 #include <slurm/slurm.h>
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "src/sattach/opt.h"
+
 int main(int argc, char *argv[])
 {
-}
+	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
+	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
+}

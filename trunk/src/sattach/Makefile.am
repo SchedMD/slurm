@@ -7,7 +7,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sattach
 
-sattach_SOURCES = sattach.c
+sattach_SOURCES = sattach.c opt.h opt.c
 
 convenience_libs = \
 	$(top_builddir)/src/common/libcommon.la \
