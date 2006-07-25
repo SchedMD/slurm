@@ -102,7 +102,6 @@
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
 #define LONG_OPT_MINCPU      0x108
-#define LONG_OPT_CONT        0x109
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
@@ -189,7 +188,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-	if (_verbose > 3)
+	if (_verbose > 1)
 		_opt_list();
 
 	return 1;
@@ -675,10 +674,11 @@ static void _opt_default()
 	opt.tmpdisk	    = -1;
 
 	opt.constraints	    = NULL;
-	opt.contiguous	    = false;
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
-	opt.nodefile	    = NULL;
+	opt.task_layout	    = NULL;
+	opt.task_layout_set = false;
+	opt.task_layout_file_set = false;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
@@ -897,7 +897,7 @@ _get_int(const char *arg, const char *what)
 	return (int) result;
 }
 
-void set_options(const int argc, char **argv, int first)
+void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	static bool set_cwd=false, set_name=false;
@@ -908,8 +908,9 @@ void set_options(const int argc, char **argv, int first)
 		{"chdir",         required_argument, 0, 'D'},
 		{"local-error",   required_argument, 0, 'e'},
 		{"remote-error",  required_argument, 0, 'E'},
-		{"nodefile",      required_argument, 0, 'F'},
+		{"task-layout-file",required_argument,0,'F'},
 		{"geometry",      required_argument, 0, 'g'},
+		{"help",          no_argument,       0, 'h'},
 		{"local-input",   required_argument, 0, 'i'},
 		{"remote-input",  required_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
@@ -927,12 +928,12 @@ void set_options(const int argc, char **argv, int first)
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"time",          required_argument, 0, 't'},
 		{"unbuffered",    no_argument,       0, 'u'},
+		{"task-layout",   required_argument, 0, 'T'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
 		{"no-allocate",   no_argument,       0, 'Z'},
-		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
@@ -948,7 +949,6 @@ void set_options(const int argc, char **argv, int first)
 		{"uid",              required_argument, 0, LONG_OPT_UID},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
@@ -961,8 +961,8 @@ void set_options(const int argc, char **argv, int first)
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:Cd:D:e:E:F:g:i:I:J:kKlm:n:N:"
-		"o:O:Qr:R:t:uvVw:W:Z";
+	char *opt_string = "+c:Cd:D:e:E:F:g:hi:I:J:kKlm:n:N:"
+		"o:O:Qr:R:t:T:uvVw:W:Z";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -971,119 +971,91 @@ void set_options(const int argc, char **argv, int first)
 		exit (1);
 	}
 
-	if(opt.progname == NULL)
-		opt.progname = xbasename(argv[0]);
-	else if(!first)
-		argv[0] = opt.progname;
-	else
-		error("opt.progname is set but it is the first time through.");
+	opt.progname = xbasename(argv[0]);
+
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
-			
-		case (int)'?':
-			if(first) {
-				fprintf(stderr, "Try \"slaunch --help\" for "
-					"more information\n");
-				exit(1);
-			} 
-			break;
-		case (int)'c':
-			if(!first && opt.cpus_set)
-				break;
+		case '?':
+			_help();
+			exit(0);
+		case 'c':
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task");
 			break;
-		case (int)'C':
+		case 'C':
 			opt.overcommit = true;
 			break;
-		case (int)'d':
-			if(!first && opt.slurmd_debug)
-				break;
-			
+		case 'd':
 			opt.slurmd_debug = 
 				_get_int(optarg, "slurmd-debug");
 			break;
-		case (int)'D':
-			if(!first && set_cwd)
-				break;
-
+		case 'D':
 			set_cwd = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
-		case (int)'e':
-			if(!first && opt.local_efname)
-				break;
+		case 'e':
 			xfree(opt.local_efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.local_efname = xstrdup("/dev/null");
 			else
 				opt.local_efname = xstrdup(optarg);
 			break;
-		case (int)'F':
-			if(!first && opt.nodefile)
-				break;
-			
-			xfree(opt.nodefile);
-			opt.nodefile = xstrdup(optarg);
-#ifdef HAVE_BG
-			info("\tThe nodefile option should only be used if\n"
-			     "\tthe block you are asking for can be created.\n"
-			     "\tPlease consult smap before using this option\n"
-			     "\tor your job may be stuck with no way to run.");
-#endif
+		case 'F':
+		{
+			char *tmp;
+			xfree(opt.task_layout);
+			tmp = slurm_read_hostfile(optarg, 0);
+			if (tmp != NULL) {
+				opt.task_layout = xstrdup(tmp);
+				free(tmp);
+				opt.task_layout_file_set = true;
+			} else {
+				error("\"%s\" is not a valid task layout file");
+				exit(1);
+			}			
+		}
 			break;
-		case (int)'E':
-			if(!first && opt.remote_efname)
-				break;
+		case 'E':
 			xfree(opt.remote_efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.remote_efname = xstrdup("/dev/null");
 			else
 				opt.remote_efname = xstrdup(optarg);
 			break;
-		case (int)'g':
-			if(!first && opt.geometry)
-				break;
+		case 'g':
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
-		case (int)'i':
-			if(!first && opt.local_ifname)
-				break;
+		case 'h':
+			_help();
+			exit(0);
+		case 'i':
 			xfree(opt.local_ifname);
 			opt.local_ifname = xstrdup(optarg);
 			break;
-		case (int)'I':
-			if(!first && opt.remote_ifname)
-				break;
+		case 'I':
 			xfree(opt.remote_ifname);
 			opt.remote_ifname = xstrdup(optarg);
 			break;
-		case (int)'J':
-			if(!first && set_name)
-				break;
-
+		case 'J':
 			set_name = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
-		case (int)'k':
+		case 'k':
 			opt.no_kill = true;
 			break;
-		case (int)'K':
+		case 'K':
 			opt.kill_bad_exit = true;
 			break;
-		case (int)'l':
+		case 'l':
 			opt.labelio = true;
 			break;
-		case (int)'m':
-			if(!first && opt.distribution)
-				break;
-						
+		case 'm':
 			opt.distribution = _verify_dist_type(optarg);
 			if (opt.distribution == -1) {
 				error("distribution type `%s' " 
@@ -1093,79 +1065,57 @@ void set_options(const int argc, char **argv, int first)
 				opt.distribution_set = true;
 			}
 			break;
-		case (int)'n':
-			if(!first && opt.num_tasks_set)
-				break;
-						
+		case 'n':
 			opt.num_tasks_set = true;
 			opt.num_tasks = _get_int(optarg, "number of tasks");
 			break;
-		case (int)'N':
-			if(!first && opt.num_nodes_set)
-				break;
-						
+		case 'N':
 			opt.num_nodes_set = true;
 			opt.num_nodes = _get_int(optarg, "number of nodes");
 			break;
-		case (int)'o':
-			if(!first && opt.local_ofname)
-				break;			
-			
+		case 'o':
 			xfree(opt.local_ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.local_ofname = xstrdup("/dev/null");
 			else
 				opt.local_ofname = xstrdup(optarg);
 			break;
-		case (int)'O':
-			if(!first && opt.remote_ofname)
-				break;			
-			
+		case 'O':
 			xfree(opt.remote_ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.remote_ofname = xstrdup("/dev/null");
 			else
 				opt.remote_ofname = xstrdup(optarg);
 			break;
-		case (int) 'Q':
-			if(!first && opt.quiet)
-				break;
-			
+		case 'Q':
 			opt.quiet++;
 			break;
-		case (int)'r':
-			if(!first && opt.relative)
-				break;
-			
+		case 'r':
 			opt.relative_set = true;
 			opt.relative = _get_int(optarg, "relative start node");
 			break;
-		case (int)'R':
+		case 'R':
 			opt.no_rotate = true;
 			break;
-		case (int)'t':
-			if(!first && opt.time_limit)
-				break;
-			
+		case 't':
 			opt.time_limit = _get_int(optarg, "time");
 			break;
-		case (int)'u':
+		case 'T':
+			xfree(opt.task_layout);
+			opt.task_layout = xstrdup(optarg);
+			opt.task_layout_set = true;
+			break;
+		case 'u':
 			opt.unbuffered = true;
 			break;
-		case (int)'v':
-			if(!first && _verbose)
-				break;
-			
+		case 'v':
 			_verbose++;
 			break;
-		case (int)'V':
+		case 'V':
 			_print_version();
 			exit(0);
 			break;
-		case (int)'w':
-			if(!first && opt.nodelist)
-				break;
-			
+		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 			if (!_valid_node_list(&opt.nodelist))
@@ -1177,17 +1127,14 @@ void set_options(const int argc, char **argv, int first)
 			     "\tor your job may be stuck with no way to run.");
 #endif
 			break;
-		case (int)'W':
+		case 'W':
 			opt.max_wait = _get_int(optarg, "wait");
 			break;
-		case (int)'Z':
+		case 'Z':
 			opt.no_alloc = true;
 			uname(&name);
 			if (strcasecmp(name.sysname, "AIX") == 0)
 				opt.network = xstrdup("ip");
-			break;
-		case LONG_OPT_CONT:
-			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
                         opt.exclusive = true;
@@ -1268,9 +1215,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.max_launch_time = 120;
 			opt.msg_timeout     = 15;
 			break;
-		case LONG_OPT_HELP:
-			_help();
-			exit(0);
 		case LONG_OPT_USAGE:
 			_usage();
 			exit(0);
@@ -1317,13 +1261,6 @@ void set_options(const int argc, char **argv, int first)
 				exit (1);
 			}
 		}
-	}
-
-	if (!first) {
-		if (!_opt_verify())
-			exit(1);
-		if (_verbose > 3)
-			_opt_list();
 	}
 
 	spank_option_table_destroy (optz);
@@ -1378,7 +1315,7 @@ static void _opt_args(int argc, char **argv)
 	int i;
 	char **rest = NULL;
 
-	set_options(argc, argv, 1);	
+	set_options(argc, argv);
 
 #ifdef HAVE_AIX
 	if (opt.network == NULL) {
@@ -1429,88 +1366,99 @@ static void _opt_args(int argc, char **argv)
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	hostlist_t hl = NULL;
-	hostlist_t hl_unique = NULL;
+	hostlist_t task_l = NULL;
+	hostlist_t node_l = NULL;
 
-	if (opt.nodelist != NULL && opt.nodefile != NULL) {
-		error("The -w,--nodelist and -F,--nodefile parameters"
-		      " may not be used at the same time.");
+	if (opt.task_layout_set && opt.task_layout_file_set) {
+		error("Only one of -T/--task-layout or -F/--task-layout-file"
+		      " may be used.");
 		verified = false;
-	} else if (opt.nodefile != NULL) {
-		char *tmp;
-		tmp = slurm_read_hostfile(opt.nodefile, 0);
-		opt.nodelist = xstrdup(tmp);
-		free(tmp);
 	}
-	if (opt.nodelist != NULL) {
-		hl = hostlist_create(opt.nodelist);
-		if (opt.num_tasks_set && opt.num_tasks < hostlist_count(hl)) {
-			/* shrink the hostlist */
-			int i, shrinkage;
-			char buf[8192];
-			info("need to shrink node list of len %d to %d",
-			     hostlist_count(hl), opt.num_tasks);
-			shrinkage = hostlist_count(hl) - opt.num_tasks;
-			for (i = 0; i < shrinkage; i++)
-				free(hostlist_pop(hl));
-			xfree(opt.nodelist);
-			hostlist_ranged_string(hl, 8192, buf);
-			opt.nodelist = xstrdup(buf);
-		}
-		hl_unique = hostlist_copy(hl);
-		hostlist_uniq(hl_unique);
+	if (opt.task_layout_set && opt.nodelist) {
+		error("Only one of -T/--task-layout or -w/--nodelist"
+		      " may be used.");
+		verified = false;
+	}
+	if (opt.nodelist && opt.task_layout_file_set) {
+		error("Only one of -w/--nodelist or -F/--task-layout-file"
+		      " may be used.");
+		verified = false;
+	}
+	if (opt.task_layout_set && opt.num_nodes_set) {
+		error("only one of -F/--task-layout-file and -N/--node"
+		      " may be used.");
+		verified = false;
 	}
 
-	/* Automatically trigger arbitrary task distribution mode if a hostlist
-	   was specified, and the sorted unique hostlist does not match the
-	   unsorted hostlist */
-	if (!opt.distribution_set && opt.nodelist != NULL) {
-		if (hostlist_count(hl) != hostlist_count(hl_unique)) {
-			opt.distribution = SLURM_DIST_ARBITRARY;
-		} else {
-			/* They are the same length, but are they in the
-			   same order?  There is an easy way to tell;
-			   turn them both back into a strings and compare. */
-			char buf1[8192], buf2[8192];
-			buf1[0] = buf2[0] = '\0';
-			hostlist_ranged_string(hl, 8192, buf1);
-			hostlist_ranged_string(hl_unique, 8192, buf2);
-			if (strcmp(buf1, buf2) != 0) {
-				opt.distribution = SLURM_DIST_ARBITRARY;
+	if (opt.task_layout != NULL) {
+		task_l = hostlist_create(opt.task_layout);
+		if (opt.num_tasks_set) {
+			if (opt.num_tasks < hostlist_count(task_l)) {
+				/* shrink the hostlist */
+				int i, shrink;
+				char buf[8192];
+				shrink = hostlist_count(task_l) - opt.num_tasks;
+				for (i = 0; i < shrink; i++)
+					free(hostlist_pop(task_l));
+				xfree(opt.task_layout);
+				hostlist_ranged_string(task_l, 8192, buf);
+				opt.task_layout = xstrdup(buf);
+			} else if (opt.num_tasks > hostlist_count(task_l)) {
+				error("Asked for more tasks (%d) than listed"
+				      " in the task layout (%d)",
+
+				      opt.num_tasks, hostlist_count(task_l));
+				verified = false;
+			} else {
+				/* they are equal, no problemo! */
 			}
+		} else {
+			opt.num_tasks = hostlist_count(task_l);
+			opt.num_tasks_set = true;
+		}
+		node_l = hostlist_copy(task_l);
+		hostlist_uniq(node_l);
+		opt.num_nodes = hostlist_count(node_l);
+		opt.num_nodes_set = true;
+		/* task_layout and task_layout_file both implicitly trigger
+		   arbitrary task layout mode */
+		opt.distribution = SLURM_DIST_ARBITRARY;
+
+	} else if (opt.nodelist != NULL) {
+		hostlist_t tmp;
+		tmp = hostlist_create(opt.nodelist);
+		node_l = hostlist_copy(tmp);
+		hostlist_uniq(node_l);
+		if (hostlist_count(node_l) != hostlist_count(tmp)) {
+			error("Node names may only appear once in the"
+			      " nodelist (-w/--nodelist)");
+			verified = false;
+		}
+		hostlist_destroy(tmp);
+
+		if (opt.num_nodes_set
+		    && (opt.num_nodes != hostlist_count(node_l))) {
+			error("You asked for %d nodes (-N/--nodes), but there"
+			      " are %d nodes in the nodelist (-w/--nodelist)",
+			      opt.num_nodes, hostlist_count(node_l));
+			verified = false;
+		} else {
+			opt.num_nodes = hostlist_count(node_l);
+			opt.num_nodes_set = true;
 		}
 	}
 
-	if (!opt.num_nodes_set && opt.nodelist != NULL) {
-		/* Need to ask for at as many nodes as are in the
-		   nodelist, otherwise the controller gets confused. */
-		opt.num_nodes = hostlist_count(hl_unique);
-	}
-	if (!opt.num_nodes_set
-	    && opt.num_tasks_set && opt.num_tasks < opt.num_nodes)
+	if (!opt.num_nodes_set && opt.num_tasks_set
+	    && opt.num_tasks < opt.num_nodes)
 		opt.num_nodes = opt.num_tasks;
-	if (opt.nodelist
-	    && opt.num_nodes != hostlist_count(hl_unique)) {
-		if (opt.num_nodes > hostlist_count(hl_unique)) {
-			error("Asked for more nodes (%d) "
-			      "than listed in the nodelist (%d)",
-			      opt.num_nodes, hostlist_count(hl_unique));
-			verified = false;
-		} else { /* num_nodes < hostlist_count */
-			error("Asked for fewer nodes (%d) "
-			      "than listed in the nodelist (%d)",
-			      opt.num_nodes, hostlist_count(hl_unique));
-			verified = false;
-		}
-	}
+
 	if (!opt.num_tasks_set) {
 		if (opt.nodelist != NULL) {
-			opt.num_tasks = hostlist_count(hl);
+			opt.num_tasks = hostlist_count(node_l);
 		} else {
 			opt.num_tasks = opt.num_nodes;
 		}
 	}
-
 
 	if (!opt.jobid_set) {
 		error("A job ID MUST be specified on the command line,");
@@ -1518,33 +1466,33 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	/*
-	 *  Do not set slurmd debug level higher than DEBUG2,
-	 *   as DEBUG3 is used for slurmd IO operations, which
-	 *   are not appropriate to be sent back to slaunch. (because
-	 *   these debug messages cause the generation of more
-	 *   debug messages ad infinitum)
-	 */
-	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
-		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
-
 	if (opt.quiet && _verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
 
 	if (opt.no_alloc && !opt.nodelist) {
-		error("must specify a node list with -Z, --no-allocate.");
+		error("must specify a node list with -Z/--no-allocate.");
 		verified = false;
 	}
 
 	if (opt.no_alloc && opt.relative) {
-		error("do not specify -r,--relative with -Z,--no-allocate.");
+		error("do not specify -r/--relative with -Z/--no-allocate.");
 		verified = false;
 	}
 
-	if (opt.relative && opt.nodelist) {
-		error("-r,--relative not allowed with -w,--nodelist.");
+	if (opt.relative_set && opt.nodelist) {
+		error("-r/--relative not allowed with -w/--nodelist.");
+		verified = false;
+	}
+
+	if (opt.relative_set && opt.task_layout_set) {
+		error("-r/--relative not allowed with -T/--task-layout");
+		verified = false;
+	}
+
+	if (opt.relative_set && opt.task_layout_file_set) {
+		error("-r/--relative not allowed with -F/--task-layout-file");
 		verified = false;
 	}
 
@@ -1610,8 +1558,8 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	hostlist_destroy(hl);
-	hostlist_destroy(hl_unique);
+	hostlist_destroy(task_l);
+	hostlist_destroy(node_l);
 	return verified;
 }
 
@@ -1709,9 +1657,6 @@ static char *print_constraints()
 	if (opt.tmpdisk > 0)
 		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);
 
-	if (opt.contiguous == true)
-		xstrcat(buf, "contiguous ");
- 
         if (opt.exclusive == true)
                 xstrcat(buf, "exclusive ");
 
@@ -1836,7 +1781,7 @@ static void _usage(void)
 "               [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
 "               [--core=type] [-W sec]\n"
-"               [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
+"               [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "               [--mpi=type]\n"
 "               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
 "               [--cpu_bind=...] [--mem_bind=...]\n"
@@ -1900,7 +1845,6 @@ static void _help(void)
 "      --mincpus=n             minimum number of cpus per node\n"
 "      --mem=MB                minimum amount of real memory\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
-"      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"

@@ -158,7 +158,21 @@ int slaunch(int argc, char **argv)
 	step_req.task_dist = opt.distribution;
 	step_req.port = 0;      /* historical, used by srun */
 	step_req.host = NULL;   /* historical, used by srun */
-	step_req.node_list = opt.nodelist;
+
+	/* SLURM overloads the node_list parameter in the
+	 * job_step_create_request_msg_t.  It can either be a node list,
+	 * or when distribution type is SLURM_DIST_ARBITRARY, it is a list
+	 * of repeated nodenames which represent to which node each task
+	 * is assigned.
+	 */
+	if (opt.task_layout_set || opt.task_layout_file_set) {
+		step_req.node_list = opt.task_layout;
+	} else if (opt.nodelist != NULL) {
+		step_req.node_list = opt.nodelist;
+	} else {
+		step_req.node_list = NULL; /* let the controller pick nodes */
+	}
+
 	step_req.network = opt.network;
 	step_req.name = opt.job_name;
 	
