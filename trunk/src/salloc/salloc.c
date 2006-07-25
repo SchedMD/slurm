@@ -88,8 +88,6 @@ int main(int argc, char *argv[])
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = msg_thr_create(&desc.other_port);
 	desc.other_hostname = xshort_hostname();
-	verbose("other_port = %hu", desc.other_port);
-	verbose("other_hostname = %s", desc.other_hostname);
 
 	before = time(NULL);
 	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait);
