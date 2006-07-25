@@ -478,23 +478,24 @@ typedef struct job_info_msg {
 } job_info_msg_t;
 
 typedef struct slurm_step_layout {
-	char *nodes;
-	char *arbitrary_nodes;
-	char **host;		/* name for each host */
-
-	slurm_addr *node_addr;
-
-	uint32_t *cpus_per_node;
-	uint32_t *cpu_count_reps;
-	uint32_t *cpus;		/* count of processors on each host */
+	char *nodes;            /* list of nodes in step */	
+	char **host;		/* list separated for convience sake 
+     				   created from nodes */
+	slurm_addr *node_addr;  /* corisponding addresses */
+	uint16_t num_hosts;	/* node count */
+	uint32_t num_tasks;	/* number of tasks to execute */
+	
+	uint16_t num_cpu_groups;/* count of cpu reps */ 
+	uint32_t *cpus_per_node; /* consolidated list of cpus per node */
+	uint32_t *cpu_count_reps; /* how many host each cpus per 
+				     node refers to */ 
+	
 	uint32_t *tasks;	/* number of tasks on each host */
 	
 	uint32_t **tids;	/* host id => task id mapping */
 	uint32_t *hostids;      /* task id => host id mapping */
-	
-	uint16_t num_hosts;	/* node count */
-	uint32_t num_tasks;	/* number of tasks to execute */
-	uint16_t task_dist;	/* see enum task_dist_state */
+	uint32_t *cpus;		/* total count of processors on each host */
+		
 } slurm_step_layout_t;
 
 typedef struct job_step_specs {

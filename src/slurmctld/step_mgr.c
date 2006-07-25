@@ -725,6 +725,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					 step_ptr->step_node_list,
 					 job_ptr->cpus_per_node,
 					 job_ptr->cpu_count_reps,
+					 job_ptr->num_cpu_groups,
 					 step_specs->node_count,
 					 step_ptr->num_tasks,
 					 step_specs->task_dist);

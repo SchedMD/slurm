@@ -127,14 +127,13 @@ job_create_noalloc(void)
 	job = _job_create_structure(ai);
 	job->step_layout = step_layout_create(NULL, NULL, NULL);
 	job->step_layout->nodes = (char *)xstrdup(job->nodelist);
-	job->step_layout->arbitrary_nodes = NULL;
 	//job->step_layout->hl	= hostlist_create(job->nodelist);
 	job->step_layout->cpus_per_node = ai->cpus_per_node;
 	job->step_layout->cpu_count_reps = ai->cpu_count_reps;
 	job->step_layout->num_hosts = job->nhosts;
 	job->step_layout->num_tasks = job->ntasks;
 
-	task_layout(job->step_layout);
+	task_layout(job->step_layout, opt.nodelist, opt.distribution);
 
 	_job_fake_cred(job);
 	job_update_io_fnames(job);

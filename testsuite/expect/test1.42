@@ -82,6 +82,7 @@ if {$job_id1 == 0} {
 #
 set match_acct  0
 set match_state 0
+set timeout 30
 spawn $srun -v --dependency=$job_id1 $scontrol show job $job_id1
 expect {
 	-re "launching ($number).0" {
