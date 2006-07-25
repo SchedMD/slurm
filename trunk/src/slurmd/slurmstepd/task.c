@@ -274,6 +274,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	job->envtp->distribution = -1;
 	setup_env(job->envtp);
+	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	
 	job->env = job->envtp->env;
 	job->envtp->env = NULL;

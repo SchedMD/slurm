@@ -114,9 +114,10 @@ typedef struct slaunch_options {
 	int realmem;		/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
-	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* -w,--nodelist=node1,node2,...*/
-	char *nodefile;         /* -F,--nodefile=filename       */
+	char *task_layout;
+	bool task_layout_set;
+	bool task_layout_file_set;
 	int relative;		/* --relative -r N              */
 	bool relative_set;      /* true if --relative set explicitly */
 	bool no_alloc;		/* --no-allocate, -Z		*/
@@ -154,7 +155,7 @@ opt_t opt;
 int initialize_and_process_args(int argc, char *argv[]);
 
 /* set options based upon commandline args */
-void set_options(const int argc, char **argv, int first);
+void set_options(const int argc, char **argv);
 
 
 #endif	/* _HAVE_SLAUNCH_OPT_H */

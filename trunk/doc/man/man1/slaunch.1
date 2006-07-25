@@ -29,18 +29,33 @@ Specify the first node in the allocation on which this job step will be launched
 Specify that each task requires \fIncpus\fR number of CPUs.  Useful for applications in which each task will launch multiple threads and can therefore benefit from there being free processors on the node.
 .TP 
 \fB\-w\fR, \fB\-\-nodelist\fR[=]<\fInodelist\fR>
-Request a specific list of node names.  The list may be specified as a comma\-separated list of node names, or a range of node names (e.g. mynode[1\-5,7,...]).
+Request a specific list of node names.  The list may be specified as a comma\-separated list of node names, or a range of node names (e.g. mynode[1\-5,7,...]).  Duplicate node names are not permitted in the list.
+The order of the node names in the list is not important; the node names
+will be sorted my SLURM.
+.TP 
+\fB\-T\fR, \fB\-\-task\-layout\fR[=]<\fInodelist\fR>
+Request a specific task layout.  The nodelist can contain duplicate node
+names, and node names may appear in any order.  The order of node names in
+the nodelist IS significant.  Each node name in the nodes list represents
+one task, with the Nth node name in the nodelist designating on which node
+the Nth task should be launched.  For example, a nodelist of mynode[4,3,1\-2,4]
+means that tasks 0 and 4 will run on mynode4, task 1 will run on mynode3,
+task 2 will run on mynode1, and task 3 will run on mynode2.
 
-If the configured SLURM switch plugin supports the "arbitrary" method of task distribution, the nodelist may also contain nodenames more than once, and in any order.  Each node will then represent one task in the job step.  For example, given a nodelist "mynode[2,8,2,2,8]" tasks 0, 2, and 3 will run on mynode2, and tasks 1 and 4 will run on mynode8.
+NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
 
+.TP 
+\fB\-F\fR, \fB\-\-task\-layout\-file\fR[=]<\fIfilename\fR>
+Request a specific task layout.  This options much like the \-\-task\-layout option, except that instead of a nodelist you supply the name of a file.  The file contains a nodelist that may span multiple lines of the file.
+
+NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
 .TP 
 \fB\-\-nice\fR=<\fIadjustment\fR>
 Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
 
 
-
 .TP 
-\fB\-\-help\fR
+\fB\-h\fR, \fB\-\-help\fR
 Output help information and exit.
 .TP 
 \fB\-V\fR, \fB\-\-version\fR
