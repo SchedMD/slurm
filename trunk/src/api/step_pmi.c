@@ -34,8 +34,8 @@
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -116,7 +116,7 @@ static void _kvs_xmit_tasks(void)
 static void *_msg_thread(void *x)
 {
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
-	int rc, success = 0;
+	int rc, success = 0, timeout;
 	slurm_msg_t msg_send;
 	
 
@@ -129,7 +129,8 @@ static void *_msg_thread(void *x)
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
 	
-	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0) < 0) {
+	timeout = slurm_get_msg_timeout() * 8;
+	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		error("slurm_send_recv_rc_msg_only_one: %m");
 	} else if (rc != SLURM_SUCCESS) {
 		error("KVS_Barrier confirm from %s, rc=%d",
@@ -159,6 +160,8 @@ static void *_agent(void *x)
 	pthread_attr_t attr;
 
 	/* send the messages */
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	kvs_set.kvs_comm_recs = args->kvs_xmit_cnt;
 	kvs_set.kvs_comm_ptr  = args->kvs_xmit_ptr;
 	for (i=0; i<MSG_TRANSMITS; i++) {
@@ -174,19 +177,17 @@ static void *_agent(void *x)
 			msg_args = xmalloc(sizeof(struct msg_arg));
 			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
 			msg_args->kvs_ptr = &kvs_set;
-			slurm_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr, 
-						    PTHREAD_CREATE_DETACHED);
 			if (pthread_create(&msg_id, &attr, _msg_thread, 
 					(void *) msg_args)) {
 				fatal("pthread_create: %m");
 			}
-			slurm_attr_destroy(&attr);
 		}
+		slurm_mutex_lock(&agent_mutex);
 		while (agent_cnt > 0)
 			pthread_cond_wait(&agent_cond, &agent_mutex);
 		slurm_mutex_unlock(&agent_mutex);
 	}
+	slurm_attr_destroy(&attr);
 
 	/* Release allocated memory */
 	for (i=0; i<args->barrier_xmit_cnt; i++)
