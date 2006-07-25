@@ -535,21 +535,8 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	ret_types_t *ret;
 	ret_data_info_t *ret_data;
 	int timeout;
-/* 	slurm_addr *step_addrs; */ /* array of addresses */
-/* 	int num_step_addrs; */
 
 	debug("Entering _launch_tasks");
-/* 	if (_get_step_addresses(ctx, &step_addrs, &num_step_addrs) == -1) { */
-/* 		error("Unable to build address list for step nodes"); */
-/* 		return SLURM_ERROR; */
-/* 	} */
-	/* sanity check */
-/* 	if (num_step_addrs != ctx->step_req->node_count) { */
-/* 		error("%d addresses in step list, but %d nodes requested", */
-/* 		      num_step_addrs, ctx->step_req->node_count); */
-/* 		xfree(step_addrs); */
-/* 	} */
-
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 	buffer = slurm_pack_msg_no_header(&msg);
@@ -575,7 +562,6 @@ static int _launch_tasks(slurm_step_ctx ctx,
 		slurm_send_recv_rc_packed_msg(&msg, timeout);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_rc_packed_msg failed miserably: %m");
-/* 		xfree(step_addrs); */
 		return SLURM_ERROR;
 	}
 	ret_itr = list_iterator_create(ret_list);
@@ -606,7 +592,6 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	}
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
-/* 	xfree(step_addrs); */
 	return SLURM_SUCCESS;
 }
 
@@ -633,61 +618,3 @@ static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
 	/* no need to free sig, it is just a pointer into the credential */
 	return client_io;
 }
-
-#if 0
-/*
- * Given a step context, return an array of the addresses of all nodes
- * in the job step.
- *
- * IN ctx - step context
- * OUT address - array of slurmd node addresses (CALLER MUST xfree!)
- * OUT num_addresses - length of "address" array
- *
- * Returns 0 on success, -1 on error.
- */
-static int
-_get_step_addresses(const slurm_step_ctx ctx,
-		    slurm_addr **address, int *num_addresses)
-{
-	hostset_t alloc_nodes;
-	hostset_t step_nodes;
-	hostlist_iterator_t step_nodes_it;
-	slurm_addr *addrs;
-	int num_nodes;
-	char *hostname;
-	int i;
-	
-	info("_get_step_addresses alloc_resp->node_list = %s",
-	     ctx->alloc_resp->node_list);
-	info("_get_step_addresses step_resp->node_list = %s",
-	     ctx->step_resp->node_list);
-	alloc_nodes = hostset_create(ctx->alloc_resp->node_list);
-	if (alloc_nodes == NULL)
-		return -1;
-	step_nodes = hostset_create(ctx->step_resp->node_list);
-	if (step_nodes == NULL) {
-		hostset_destroy(alloc_nodes);
-		return -1;
-	}
-	step_nodes_it = hostset_iterator_create(step_nodes);
-
-	num_nodes = hostset_count(step_nodes);
-	addrs = xmalloc(sizeof(slurm_addr) * num_nodes);
-	for (i = 0; (hostname = hostlist_next(step_nodes_it)) != NULL; i++) {
-		int index = hostset_index(alloc_nodes, hostname, 0);
-		info("     packing %s address %d in step slot %d",
-		     hostname, index, i);
-		memcpy(&addrs[i], &ctx->alloc_resp->node_addr[index],
-		       sizeof(slurm_addr));
-		free(hostname);
-	}
-
-	hostlist_iterator_destroy(step_nodes_it);
-	hostset_destroy(step_nodes);
-	hostset_destroy(alloc_nodes);
-
-	*address = addrs;
-	*num_addresses = num_nodes;
-	return 0;
-}
-#endif
