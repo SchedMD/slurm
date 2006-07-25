@@ -50,5 +50,16 @@ int main(int argc, char *argv[])
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+	if (initialize_and_process_args(argc, argv) < 0) {
+		fatal("salloc parameter parsing");
+	}
+	/* reinit log with new verbosity (if changed by command line) */
+	if (_verbose || opt.quiet) {
+		logopt.stderr_level += _verbose;
+		logopt.stderr_level -= opt.quiet;
+		logopt.prefix_level = 1;
+		log_alter(logopt, 0, NULL);
+	}
 
+	return 0;
 }
