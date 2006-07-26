@@ -101,7 +101,7 @@ inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
 inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg);
-inline static void  _slurm_rpc_stat_jobacct(slurm_msg_t * msg);
+inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
@@ -287,9 +287,9 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_step_complete(msg);
 		slurm_free_step_complete_msg(msg->data);
 		break;
-	case MESSAGE_STAT_JOBACCT:
-		_slurm_rpc_stat_jobacct(msg);
-		slurm_free_stat_jobacct_msg(msg->data);
+	case REQUEST_STEP_LAYOUT:
+		_slurm_rpc_step_layout(msg);
+		slurm_free_job_step_id_msg(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -1658,16 +1658,15 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		(void) schedule_node_save();	/* Has own locking */
 }
 
-/* _slurm_rpc_step_complete - process step completion RPC to note the 
- *      completion of a job step on at least some nodes.
- *	If the job step is complete, it may 
- *	represent the termination of an entire job */
-static void  _slurm_rpc_stat_jobacct(slurm_msg_t * msg)
+/* _slurm_rpc_step_layout - return the step layout structure for
+ *      a job step, if it currently exists
+ */
+static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
-	stat_jobacct_msg_t *req = (stat_jobacct_msg_t *)msg->data;
+	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
 	slurm_step_layout_t *step_layout = NULL;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_read_lock = { 
@@ -1677,7 +1676,7 @@ static void  _slurm_rpc_stat_jobacct(slurm_msg_t * msg)
 	struct step_record *step_ptr = NULL;
 		
 	START_TIMER;
-	debug2("Processing RPC: MESSAGE_STAT_JOBACCT");
+	debug2("Processing RPC: REQUEST_STEP_LAYOUT");
 
 	lock_slurmctld(job_read_lock);
 	error_code = job_alloc_info(uid, req->job_id, &job_ptr);
@@ -1685,33 +1684,33 @@ static void  _slurm_rpc_stat_jobacct(slurm_msg_t * msg)
 	/* return result */
 	if (error_code || (job_ptr == NULL)) {
 		unlock_slurmctld(job_read_lock);
-		debug2("_slurm_rpc_stat_jobacct: JobId=%u, uid=%u: %s",
+		debug2("_slurm_rpc_step_layout: JobId=%u, uid=%u: %s",
 			req->job_id, uid, 
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 		return;
-	} else {
-		step_ptr = find_step_record(job_ptr, req->step_id);
-		if(!step_ptr) {
-			unlock_slurmctld(job_read_lock);
-			debug2("_slurm_rpc_stat_jobacct: "
-			       "JobId=%u.%u Not Found",
-			       req->job_id, req->step_id); 
-			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-			return;
-		}
-		step_layout = step_layout_copy(step_ptr->step_layout);
-		unlock_slurmctld(job_read_lock);
-
-		response_msg.msg_type    = RESPONSE_STEP_LAYOUT;
-		response_msg.data        = step_layout;
-		forward_init(&response_msg.forward, NULL);
-		response_msg.ret_list = NULL;
-		response_msg.forward_struct_init = 0;
-	
-		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		step_layout_destroy(step_layout);
 	}
+
+	step_ptr = find_step_record(job_ptr, req->step_id);
+	if(!step_ptr) {
+		unlock_slurmctld(job_read_lock);
+		debug2("_slurm_rpc_step_layout: "
+		       "JobId=%u.%u Not Found",
+		       req->job_id, req->step_id); 
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return;
+	}
+	step_layout = step_layout_copy(step_ptr->step_layout);
+	unlock_slurmctld(job_read_lock);
+
+	response_msg.msg_type    = RESPONSE_STEP_LAYOUT;
+	response_msg.data        = step_layout;
+	forward_init(&response_msg.forward, NULL);
+	response_msg.ret_list = NULL;
+	response_msg.forward_struct_init = 0;
+	
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	step_layout_destroy(step_layout);
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */

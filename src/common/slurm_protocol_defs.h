@@ -150,6 +150,7 @@ typedef enum {
 	REQUEST_COMPLETE_JOB_ALLOCATION,
 	REQUEST_COMPLETE_BATCH_SCRIPT,
 	MESSAGE_STAT_JOBACCT,
+	REQUEST_STEP_LAYOUT,
 	RESPONSE_STEP_LAYOUT,
 	REQUEST_JOB_REQUEUE,
 	
@@ -284,7 +285,10 @@ typedef struct job_id_msg {
 	uint32_t job_id;
 } job_id_msg_t;
 
-typedef struct job_step_id job_step_id_msg_t;
+typedef struct job_step_id_msg {
+	uint32_t job_id;
+	uint32_t step_id;
+} job_step_id_msg_t;
 
 typedef struct job_info_request_msg {
 	time_t last_update;
@@ -631,6 +635,8 @@ void inline slurm_free_job_info_members(job_info_t * job);
 void inline slurm_free_job_id_msg(job_id_msg_t * msg);
 void inline slurm_free_job_id_request_msg(job_id_request_msg_t * msg);
 void inline slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
+
+void inline slurm_free_job_step_id_msg(job_step_id_msg_t *msg);
 
 void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 

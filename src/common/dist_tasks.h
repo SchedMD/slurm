@@ -46,18 +46,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/pack.h"
 
-typedef struct slurm_step_layout {
-	char *node_list;            /* list of nodes in step */	
-	slurm_addr *node_addr;  /* corisponding addresses */
-	uint16_t node_cnt;	/* node count */
-	uint32_t task_cnt;	/* number of tasks to execute */
-	
-	uint32_t *tasks;	/* number of tasks on each host
-				   & num of cpus on each host allocated */
-	uint32_t **tids;	/* host id => task id mapping */
-} slurm_step_layout_t;
-
-
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
  *                    node. Distribution is influenced by number of cpus on
