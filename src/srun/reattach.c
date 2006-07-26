@@ -252,7 +252,8 @@ _get_step_info(srun_step_t *s)
 
 	xassert(s->stepid != NO_VAL);
 
-	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp, 1) < 0) {
+	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp, 1) 
+	    < 0) {
 		error("Unable to get step information for %u.%u: %m", 
 		      s->jobid, s->stepid);
 		goto done;
@@ -397,7 +398,7 @@ _p_reattach_task(void *arg)
 	int rc     = 0;
 	reattach_tasks_request_msg_t *req = t->msg->data;
 	int nodeid = req->srun_node_id; 
-	char *host = t->job->step_layout->host[nodeid];
+	char *host = nodelist_nth_host(t->job->step_layout->node_list, nodeid);
 	
 	t->state = THD_ACTIVE;
 	debug3("sending reattach request to %s", host);
@@ -411,7 +412,7 @@ _p_reattach_task(void *arg)
 		t->state = THD_DONE;
 		t->job->host_state[nodeid] = SRUN_HOST_UNREACHABLE;
 	}
-
+	free(host);
 	slurm_mutex_lock(&active_mutex);
 	active--;
 	pthread_cond_signal(&active_cond);
@@ -492,8 +493,8 @@ int reattach()
 		
 		job->client_io = client_io_handler_create(
 			fds,
-			job->step_layout->num_tasks,
-			job->step_layout->num_hosts,
+			job->step_layout->task_cnt,
+			job->step_layout->node_cnt,
 			sig,
 			opt.labelio);
 		if (!job->client_io

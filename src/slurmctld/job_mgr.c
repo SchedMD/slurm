@@ -860,7 +860,6 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16((uint16_t) step_ptr->step_id, buffer);
 	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
 	pack16((uint16_t)step_ptr->port, buffer);
-	pack32(step_ptr->num_tasks, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
 		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
@@ -870,44 +869,46 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
-	packstr(step_ptr->step_node_list,  buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 	pack16((uint16_t)step_ptr->batch_step, buffer);
-	if (!step_ptr->batch_step)
+	if (!step_ptr->batch_step) {
+		pack_slurm_step_layout(step_ptr->step_layout, buffer);
 		switch_pack_jobinfo(step_ptr->switch_job, buffer);
+	}
 	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
 }
 
 /* Unpack job step state information from a buffer */
 static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 {
-	struct step_record *step_ptr;
+	struct step_record *step_ptr = NULL;
 	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
-	uint32_t num_tasks, exit_code;
+	uint32_t exit_code;
 	time_t start_time;
-	char *step_node_list = NULL, *host = NULL;
+	char *host = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
-
+	slurm_step_layout_t *step_layout = NULL;
+	
 	safe_unpack16(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
-	safe_unpack32(&num_tasks, buffer);
 	safe_unpack32(&exit_code, buffer);
 	if (exit_code != NO_VAL) {
 		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
 		safe_unpack16(&bit_cnt, buffer);
 	}
-
+	
 	safe_unpack_time(&start_time, buffer);
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
-	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpack16(&batch_step, buffer);
 	if (!batch_step) {
+		if (unpack_slurm_step_layout(&step_layout, buffer))
+			goto unpack_error;
 		switch_alloc_jobinfo(&switch_tmp);
         	if (switch_unpack_jobinfo(switch_tmp, buffer))
                 	goto unpack_error;
@@ -929,22 +930,20 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	if (step_ptr == NULL)
 		goto unpack_error;
 
-	/* free any left-over values */
-	xfree(step_ptr->step_node_list);
-
 	/* set new values */
 	step_ptr->step_id      = step_id;
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
-	step_ptr->num_tasks    = num_tasks;
 	step_ptr->port         = port;
 	step_ptr->host         = host;
 	step_ptr->batch_step   = batch_step;
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
-	step_ptr->step_node_list = step_node_list;
-	step_node_list         =  NULL;	/* re-used, nothing left to free */
+
+	step_layout_destroy(step_ptr->step_layout);
+	step_ptr->step_layout = step_layout;
+	
 	step_ptr->time_last_active = time(NULL);
 	step_ptr->switch_job   = switch_tmp;
 	step_ptr->check_job    = check_tmp;
@@ -964,7 +963,8 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 		xfree(bit_fmt);
 	}
 
-	switch_g_job_step_allocated(switch_tmp, step_ptr->step_node_list);
+	switch_g_job_step_allocated(switch_tmp, 
+				    step_ptr->step_layout->node_list);
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
@@ -972,10 +972,10 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	xfree(host);
 	xfree(name);
 	xfree(network);
-	xfree(step_node_list);
 	xfree(bit_fmt);
 	if (switch_tmp)
 		switch_free_jobinfo(switch_tmp);
+	step_layout_destroy(step_layout);
 	return SLURM_FAILURE;
 }
 
@@ -2973,11 +2973,12 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
-		if ((step_ptr->step_node_list) && 		
-		    (node_name2bitmap(step_ptr->step_node_list, false, 
-			      &step_ptr->step_node_bitmap))) {
+		if (step_ptr->step_layout &&
+		    step_ptr->step_layout->node_list && 		
+		    (node_name2bitmap(step_ptr->step_layout->node_list, false, 
+				      &step_ptr->step_node_bitmap))) {
 			error("Invalid step_node_list (%s) for step_id %u.%u", 
-	   	 	      step_ptr->step_node_list, 
+	   	 	      step_ptr->step_layout->node_list, 
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}

@@ -1290,10 +1290,10 @@ void slurm_pack_slurm_addr(slurm_addr * slurm_address, Buf buffer)
 	_slurm_pack_slurm_addr(slurm_address, buffer);
 }
 
-/* slurm_pack_slurm_addr
+/* slurm_unpack_slurm_addr
  * unpacks a buffer into a slurm_addr after serialization transport
  * OUT slurm_address	- slurm_addr to unpack to
- * IN/OUT buffer	- buffer to upack the slurm_addr from
+ * IN/OUT buffer	- buffer to unpack the slurm_addr from
  * returns		- SLURM error code
  */
 int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
@@ -1301,6 +1301,59 @@ int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
 {
 	return _slurm_unpack_slurm_addr_no_alloc(slurm_address, buffer);
 }
+
+/* slurm_pack_slurm_addr_array
+ * packs an array of slurm_addrs into a buffer
+ * OUT slurm_address	- slurm_addr to pack
+ * IN size_val  	- how many to pack
+ * IN/OUT buffer	- buffer to pack the slurm_addr from
+ * returns		- SLURM error code
+ */
+void slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
+				 uint16_t size_val, Buf buffer)
+{
+	int i = 0;
+	uint16_t nl = htons(size_val);
+	pack16((uint16_t)nl, buffer);
+	
+	for (i = 0; i < size_val; i++) {
+		slurm_pack_slurm_addr(slurm_address + i, buffer);
+	}
+
+}
+
+/* slurm_unpack_slurm_addr_array
+ * unpacks an array of slurm_addrs from a buffer
+ * OUT slurm_address	- slurm_addr to unpack to
+ * IN size_val  	- how many to unpack
+ * IN/OUT buffer	- buffer to upack the slurm_addr from
+ * returns		- SLURM error code
+ */
+int slurm_unpack_slurm_addr_array(slurm_addr ** slurm_address,
+			    uint16_t * size_val, Buf buffer)
+{
+	int i = 0;
+	uint16_t nl;
+
+	*slurm_address = NULL;
+	safe_unpack16(&nl, buffer);
+	*size_val = ntohs(nl);
+	*slurm_address = xmalloc((*size_val) * sizeof(slurm_addr));
+
+	for (i = 0; i < *size_val; i++) {
+		if (slurm_unpack_slurm_addr_no_alloc((*slurm_address) + i,
+						     buffer))
+			goto unpack_error;
+
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(*slurm_address);
+	*slurm_address = NULL;
+	return SLURM_ERROR;
+}
+
 
 /**********************************************************************\
  * simplified communication routines 

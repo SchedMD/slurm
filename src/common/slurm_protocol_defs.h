@@ -150,6 +150,7 @@ typedef enum {
 	REQUEST_COMPLETE_JOB_ALLOCATION,
 	REQUEST_COMPLETE_BATCH_SCRIPT,
 	MESSAGE_STAT_JOBACCT,
+	RESPONSE_STEP_LAYOUT,
 	REQUEST_JOB_REQUEUE,
 	
 	REQUEST_LAUNCH_TASKS = 6001,
@@ -684,6 +685,7 @@ void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
 void inline slurm_free_node_select_msg(
 		node_info_select_request_msg_t *msg);
+extern int slurm_free_msg_data(uint32_t type, void *data);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);

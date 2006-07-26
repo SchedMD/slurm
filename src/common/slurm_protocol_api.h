@@ -512,6 +512,25 @@ void inline slurm_pack_slurm_addr(slurm_addr * slurm_address, Buf buffer);
 int inline slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
 					    Buf buffer);
 
+/* slurm_pack_slurm_addr_array
+ * packs an array of slurm_addrs into a buffer
+ * OUT slurm_address	- slurm_addr to pack
+ * IN size_val  	- how many to pack
+ * IN/OUT buffer	- buffer to pack the slurm_addr from
+ * returns		- SLURM error code
+ */
+void inline slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
+					uint16_t size_val, Buf buffer);
+/* slurm_unpack_slurm_addr_array
+ * unpacks an array of slurm_addrs from a buffer
+ * OUT slurm_address	- slurm_addr to unpack to
+ * IN size_val  	- how many to unpack
+ * IN/OUT buffer	- buffer to upack the slurm_addr from
+ * returns		- SLURM error code
+ */
+int inline slurm_unpack_slurm_addr_array(slurm_addr ** slurm_address,
+					 uint16_t * size_val, Buf buffer);
+
 /**********************************************************************\
  * simplified communication routines 
  * They open a connection do work then close the connection all within 

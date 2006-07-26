@@ -193,6 +193,7 @@ int srun(int ac, char **av)
 		_switch_standalone(job);
 
 	} else if (opt.allocate) {
+		int cpu_cnt = 0, cpu_inx = 0, i;
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
@@ -206,14 +207,25 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 		
 		job = job_create_allocation(resp);
-		job->step_layout = step_layout_create(resp, NULL, NULL);
-		if(!job->step_layout) {
-			fatal("step_layout not created correctly");
+		job->step_layout = xmalloc(sizeof(slurm_step_layout_t));
+		job->step_layout->node_list = xstrdup(resp->node_list);
+		job->step_layout->node_cnt = resp->node_cnt;
+		job->step_layout->tasks = xmalloc(sizeof(uint32_t) 
+						  * resp->node_cnt);
+		job->step_layout->task_cnt = 0;
+		for (i=0; i<job->step_layout->node_cnt; i++) {
+			job->step_layout->tasks[i] = 
+				resp->cpus_per_node[cpu_inx];
+			job->step_layout->task_cnt += 
+				job->step_layout->tasks[i];
+	
+			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) {
+				/* move to next record */
+				cpu_inx++;
+				cpu_cnt = 0;
+			}
 		}
-		if(task_layout(job->step_layout, opt.nodelist, 
-			       opt.distribution) != SLURM_SUCCESS) {
-			fatal("problem with task layout");
-		}
+		
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
@@ -318,8 +330,8 @@ int srun(int ac, char **av)
 		
 		job->client_io = client_io_handler_create(
 			fds,
-			job->step_layout->num_tasks,
-			job->step_layout->num_hosts,
+			job->step_layout->task_cnt,
+			job->step_layout->node_cnt,
 			sig,
 			opt.labelio);
 		if (!job->client_io
@@ -409,10 +421,10 @@ _task_count_string (srun_job_t *job)
 	char *str = xstrdup ("");
 	if(job->step_layout->tasks == NULL)
 		return (str);
-	last_val = job->step_layout->cpus[0];
+	last_val = job->step_layout->tasks[0];
 	last_cnt = 1;
 	for (i=1; i<job->nhosts; i++) {
-		if (last_val == job->step_layout->cpus[i])
+		if (last_val == job->step_layout->tasks[i])
 			last_cnt++;
 		else {
 			if (last_cnt > 1)
@@ -420,7 +432,7 @@ _task_count_string (srun_job_t *job)
 			else
 				sprintf(tmp, "%d,", last_val);
 			xstrcat(str, tmp);
-			last_val = job->step_layout->cpus[i];
+			last_val = job->step_layout->tasks[i];
 			last_cnt = 1;
 		}
 	}

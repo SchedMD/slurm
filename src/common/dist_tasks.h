@@ -44,6 +44,19 @@
 #endif
 
 #include "src/common/hostlist.h"
+#include "src/common/pack.h"
+
+typedef struct slurm_step_layout {
+	char *node_list;            /* list of nodes in step */	
+	slurm_addr *node_addr;  /* corisponding addresses */
+	uint16_t node_cnt;	/* node count */
+	uint32_t task_cnt;	/* number of tasks to execute */
+	
+	uint32_t *tasks;	/* number of tasks on each host
+				   & num of cpus on each host allocated */
+	uint32_t **tids;	/* host id => task id mapping */
+} slurm_step_layout_t;
+
 
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
@@ -59,29 +72,28 @@
  * RET a pointer to an integer array listing task counts per node
  * NOTE: allocates memory that should be xfreed by caller
  */
-slurm_step_layout_t *distribute_tasks(const char *mlist, 
-				      const char *tlist,
-				      uint32_t *cpus_per_node, 
-				      uint32_t *cpu_count_reps,
-				      uint16_t num_cpu_groups,
-				      uint16_t num_hosts, 
-				      uint32_t num_tasks,
-				      uint16_t task_dist);
+extern slurm_step_layout_t *distribute_tasks(const char *tlist,
+					     uint32_t *cpus_per_node, 
+					     uint32_t *cpu_count_reps,
+					     uint16_t num_cpu_groups,
+					     uint16_t num_hosts, 
+					     uint32_t num_tasks,
+					     uint16_t task_dist);
 
-/* creates structure for step layout */
-extern slurm_step_layout_t *step_layout_create(
-	resource_allocation_response_msg_t *alloc_resp,
-	job_step_create_response_msg_t *step_resp,
-	job_step_create_request_msg_t *step_req);
+/* copys structure for step layout */
 extern slurm_step_layout_t *step_layout_copy(slurm_step_layout_t *step_layout);
+
+/* pack and unpack structure */
+extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout, 
+				   Buf buffer);
+extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer);
+
 /* destroys structure for step layout */
 extern int step_layout_destroy(slurm_step_layout_t *step_layout);
-/* build maps for task layout on nodes */
-extern int task_layout(slurm_step_layout_t *step_layout, 
-		       const char *arbitrary_nodes, uint16_t task_dist);
 
 extern int step_layout_host_id (slurm_step_layout_t *s, int taskid);
 
-extern char * step_layout_host_name (slurm_step_layout_t *s, int hostid);
- 
+extern char *step_layout_host_name (slurm_step_layout_t *s, int hostid);
+extern char *nodelist_nth_host(const char *nodelist, int inx);
+
 #endif /* !_DIST_TASKS_H */
