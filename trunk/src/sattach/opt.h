@@ -59,7 +59,8 @@ typedef struct sbatch_options {
 	uint32_t jobid;
 	uint32_t stepid;
 	bool jobid_set;		/* true of jobid explicitly set */
-	int  quiet;
+	int quiet;
+	int verbose;
 	char *ctrl_comm_ifhn;
 } opt_t;
 
@@ -74,7 +75,7 @@ extern opt_t opt;
 int initialize_and_process_args(int argc, char *argv[]);
 
 /* set options based upon commandline args */
-void set_options(const int argc, char **argv, int first);
+void set_options(const int argc, char **argv);
 
 
 #endif	/* _HAVE_OPT_H */

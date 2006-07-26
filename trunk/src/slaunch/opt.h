@@ -45,7 +45,6 @@
 
 
 /* global variables relating to user options */
-int _verbose;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
@@ -103,6 +102,7 @@ typedef struct slaunch_options {
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
+	int  verbose;
 	bool parallel_debug;	/* slaunch controlled by debugger */
 	bool debugger_test;	/* --debugger-test		*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/

@@ -47,7 +47,6 @@
 /* global variables relating to user options */
 extern char **remote_argv;
 extern int remote_argc;
-extern int _verbose;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
@@ -102,6 +101,7 @@ typedef struct sbatch_options {
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	bool disable_status;    /* --disable-status, -X         */
 	int  quiet;
+	int  verbose;
 	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
@@ -150,7 +150,7 @@ extern opt_t opt;
 int initialize_and_process_args(int argc, char *argv[]);
 
 /* set options based upon commandline args */
-void set_options(const int argc, char **argv, int first);
+void set_options(const int argc, char **argv);
 
 
 #endif	/* _HAVE_OPT_H */
