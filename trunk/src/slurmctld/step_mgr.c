@@ -421,11 +421,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if ( step_spec->node_count == INFINITE)	/* use all nodes */
 		return nodes_avail;
-try_again:
+
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
-		error_code = node_name2bitmap (step_spec->node_list, false, 
-					       &selected_nodes);
+		error_code = node_name2bitmap(step_spec->node_list, false, 
+					      &selected_nodes);
 		if (error_code) {
 			info("_pick_step_nodes: invalid node list %s", 
 				step_spec->node_list);
@@ -448,15 +448,19 @@ try_again:
 				xfree(step_spec->node_list);
 				step_spec->task_dist = SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(selected_nodes);
-				goto try_again;
+			} else {
+				/* use selected nodes to run the job */
+				FREE_NULL_BITMAP(nodes_avail);
+				return selected_nodes;
 			}
+		} else {
+			/* set the nodes_avail to be the new set */
 			FREE_NULL_BITMAP(nodes_avail);
-			return selected_nodes;
+			nodes_avail = selected_nodes;
 		}
-		FREE_NULL_BITMAP(nodes_avail);
-		nodes_avail = selected_nodes;
-		goto create_idle;
-	} else if (step_spec->relative != (uint16_t)NO_VAL) {
+	}
+	
+	if (step_spec->relative != (uint16_t)NO_VAL) {
 		/* Remove first (step_spec->relative) nodes from  
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
@@ -475,7 +479,6 @@ try_again:
 		if ((nodes_picked == NULL))
 			fatal("bit_alloc malloc failure");
 	} else {
-	create_idle:
 		nodes_picked = bit_alloc(bit_size(nodes_avail));
 		nodes_idle = bit_alloc(bit_size(nodes_avail));
 		if ((nodes_picked == NULL) || (nodes_idle == NULL))
@@ -555,10 +558,15 @@ try_again:
 	if (step_spec->cpu_count) {
 		cpus_picked_cnt = count_cpus(nodes_picked);
 		if (nodes_idle
-		&&  (step_spec->cpu_count > cpus_picked_cnt)) {
+		    &&  (step_spec->cpu_count > cpus_picked_cnt)) {
 			int first_bit, last_bit;
 			first_bit = bit_ffs(nodes_idle);
+			if(first_bit == -1)
+				goto no_idle_bits;
 			last_bit  = bit_fls(nodes_idle);
+			if(last_bit == -1)
+				goto no_idle_bits;
+			
 			for (i = first_bit; i <= last_bit; i++) {
 				if (bit_test (nodes_idle, i) != 1)
 					continue;
@@ -573,11 +581,16 @@ try_again:
 			if (step_spec->cpu_count > cpus_picked_cnt)
 				goto cleanup;
 		}
+	no_idle_bits:
 		if (step_spec->cpu_count > cpus_picked_cnt) {
 			int first_bit, last_bit;
 			first_bit = bit_ffs(nodes_avail);
+			if(first_bit == -1)
+				goto cleanup;
 			last_bit  = bit_fls(nodes_avail);
- 			for (i = first_bit; i <= last_bit; i++) {
+ 			if(last_bit == -1)
+				goto cleanup;
+			for (i = first_bit; i <= last_bit; i++) {
 				if (bit_test (nodes_avail, i) != 1)
 					continue;
 				bit_set (nodes_picked, i);

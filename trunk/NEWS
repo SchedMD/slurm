@@ -27,6 +27,11 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.6
+========================
+ -- Improved task layout for relative positions
+ -- fixed heterogeous cpu overcommit issue
+
 * Changes in SLURM 1.1.5
 ========================
  -- Ignore partition's MaxNodes for SlurmUser and root.

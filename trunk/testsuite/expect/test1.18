@@ -86,7 +86,7 @@ if {$matches == 0} {
 #
 set matches     0
 set timeout     10
-spawn $srun --attach=$job_id --join
+spawn $srun -vv --attach=$job_id --join
 set attach_id $spawn_id
 expect {
         -i $attach_id
