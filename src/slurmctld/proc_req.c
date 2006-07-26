@@ -289,7 +289,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_STEP_LAYOUT:
 		_slurm_rpc_step_layout(msg);
-		slurm_free_job_step_id_msg(msg);
+		slurm_free_job_step_id_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);

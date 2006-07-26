@@ -201,7 +201,9 @@ int job_options_unpack (job_options_t opts, Buf buf)
  */
 const struct job_option_info * job_options_next (job_options_t opts)
 {
-	xassert (opts != NULL);
+	if (opts == NULL)
+		return NULL;
+
 	xassert (opts->magic == JOB_OPTIONS_MAGIC);
 	xassert (opts->options != NULL);
 	xassert (opts->iterator != NULL);
@@ -211,7 +213,9 @@ const struct job_option_info * job_options_next (job_options_t opts)
 
 void job_options_iterator_reset (job_options_t opts)
 {
-	xassert (opts != NULL);
+	if (opts == NULL)
+		return;
+
 	xassert (opts->magic == JOB_OPTIONS_MAGIC);
 	xassert (opts->options != NULL);
 	xassert (opts->iterator != NULL);

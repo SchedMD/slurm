@@ -244,6 +244,8 @@ int srun(int ac, char **av)
 		}
 		
 		job = job_step_create_allocation(job_id);
+		if(!job)
+			exit(1);
 		
 		job->old_job = true;
 		sig_setup_sigmask();
