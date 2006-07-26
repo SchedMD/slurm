@@ -269,24 +269,20 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	stat_jobacct_msg_t req;
+	job_step_id_msg_t req;
 	slurm_step_layout_t *step_layout = NULL;
 	int rc = SLURM_SUCCESS;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	req.job_id = jobid;
 	req.step_id = stepid;
-	req.jobacct = jobacct_g_alloc(NULL);
-	req_msg.msg_type = MESSAGE_STAT_JOBACCT;
+	req_msg.msg_type = REQUEST_STEP_LAYOUT;
 	req_msg.data     = &req;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
-		jobacct_g_free(req.jobacct);
 		return SLURM_ERROR;
 	}
 		
-	jobacct_g_free(req.jobacct);
-	
 	switch (resp_msg.msg_type) {
 	case RESPONSE_STEP_LAYOUT:
 		step_layout = (slurm_step_layout_t *)resp_msg.data;

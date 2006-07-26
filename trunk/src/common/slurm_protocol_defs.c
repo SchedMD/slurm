@@ -85,6 +85,11 @@ void slurm_free_job_id_msg(job_id_msg_t * msg)
 	xfree(msg);
 }
 
+void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
 {
 	xfree(msg);
