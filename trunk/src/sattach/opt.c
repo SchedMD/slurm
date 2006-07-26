@@ -258,29 +258,29 @@ void set_options(const int argc, char **argv, int first)
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			
-		case (int)'?':
+		case '?':
 			if(first) {
 				fprintf(stderr, "Try \"sbatch --help\" for more "
 					"information\n");
 				exit(1);
 			} 
 			break;
-		case (int)'h':
+		case 'h':
 			_help();
 			exit(0);
-		case (int) 'Q':
+		case  'Q':
 			if(!first && opt.quiet)
 				break;
 			
 			opt.quiet++;
 			break;
-		case (int)'v':
+		case 'v':
 			if(!first && _verbose)
 				break;
 			
 			_verbose++;
 			break;
-		case (int)'V':
+		case 'V':
 			_print_version();
 			exit(0);
 			break;
