@@ -1657,6 +1657,8 @@ failed:
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = NULL;
 	ret_data_info->data = NULL;
+	ret_data_info->nodeid = msg->srun_node_id;
+		
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		if(ret_type->msg_rc == msg_rc) {

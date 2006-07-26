@@ -234,7 +234,8 @@ int srun(int ac, char **av)
 		//info("after hack got back %s", resp->node_list);
 		//job = job_create_allocation(resp);
 		job = job_step_create_allocation(resp);
-		
+		if(!job)
+			exit(1);
 		job->old_job = true;
 		sig_setup_sigmask();
 		

@@ -554,7 +554,7 @@ _step_req_create(srun_job_t *j)
 	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
 	r->job_id     = j->jobid;
 	r->user_id    = opt.uid;
-	r->node_count = j->nhosts;
+	r->node_count = opt.min_nodes;
 	r->cpu_count  = opt.overcommit ? j->nhosts
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
@@ -565,7 +565,7 @@ _step_req_create(srun_job_t *j)
 		/* works now, better fix in 1.2 */
 		r->relative   = atoi(opt.relative);  
 	else 
-		r->relative   = 0;
+		r->relative   = (uint16_t)NO_VAL;
  		
 	switch (opt.distribution) {
 	case SLURM_DIST_CYCLIC:
