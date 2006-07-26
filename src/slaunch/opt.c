@@ -188,7 +188,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-	if (_verbose > 1)
+	if (opt.verbose > 1)
 		_opt_list();
 
 	return 1;
@@ -666,7 +666,7 @@ static void _opt_default()
 	opt.max_wait	= slurm_get_wait_time();
 
 	opt.quiet = 0;
-	_verbose = 0;
+	opt.verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
 
 	/* constraint default (-1 is no constraint) */
@@ -808,7 +808,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_DEBUG:
 		if (val != NULL) {
-			_verbose = (int) strtol(val, &end, 10);
+			opt.verbose = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid", e->var, val);
 		}
@@ -1112,7 +1112,7 @@ void set_options(const int argc, char **argv)
 			opt.unbuffered = true;
 			break;
 		case 'v':
-			_verbose++;
+			opt.verbose++;
 			break;
 		case 'V':
 			_print_version();
@@ -1469,7 +1469,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.quiet && _verbose) {
+	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
@@ -1740,7 +1740,7 @@ static void _opt_list()
 	info("mem_bind       : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	info("core format    : %s", core_format_name (opt.core_type));
-	info("verbose        : %d", _verbose);
+	info("verbose        : %d", opt.verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));

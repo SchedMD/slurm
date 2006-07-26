@@ -73,7 +73,6 @@
 #include "src/common/mpi.h"
 
 /*---- global variables, defined in opt.h ----*/
-int _verbose;
 opt_t opt;
 
 /*---- forward declarations of static functions  ----*/
@@ -115,7 +114,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-	if (_verbose > 1)
+	if (opt.verbose > 1)
 		_opt_list();
 
 	return 1;
@@ -169,7 +168,7 @@ static void _opt_default()
 	opt.jobid_set = false;
 
 	opt.quiet = 0;
-	_verbose = 0;
+	opt.verbose = 0;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -235,7 +234,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	}
 }
 
-void set_options(const int argc, char **argv, int first)
+void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	static struct option long_options[] = {
@@ -247,38 +246,25 @@ void set_options(const int argc, char **argv, int first)
 	};
 	char *opt_string = "+hQvV";
 
-	if(opt.progname == NULL)
-		opt.progname = xbasename(argv[0]);
-	else if(!first)
-		argv[0] = opt.progname;
-	else
-		error("opt.progname is set but it is the first time through.");
+	opt.progname = xbasename(argv[0]);
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			
 		case '?':
-			if(first) {
-				fprintf(stderr, "Try \"sbatch --help\" for more "
-					"information\n");
-				exit(1);
-			} 
+			fprintf(stderr, "Try \"sbatch --help\" for more "
+				"information\n");
+			exit(1);
 			break;
 		case 'h':
 			_help();
 			exit(0);
-		case  'Q':
-			if(!first && opt.quiet)
-				break;
-			
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'v':
-			if(!first && _verbose)
-				break;
-			
-			_verbose++;
+			opt.verbose++;
 			break;
 		case 'V':
 			_print_version();
@@ -288,13 +274,6 @@ void set_options(const int argc, char **argv, int first)
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
 		}
-	}
-
-	if (!first) {
-		if (!_opt_verify())
-			exit(1);
-		if (_verbose > 3)
-			_opt_list();
 	}
 }
 
@@ -364,7 +343,7 @@ static void _opt_args(int argc, char **argv)
 	char **rest = NULL;
 	int leftover;
 
-	set_options(argc, argv, 1);
+	set_options(argc, argv);
 
 	leftover = 0;
 	if (optind < argc) {
@@ -392,7 +371,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 
-	if (opt.quiet && _verbose) {
+	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
@@ -411,7 +390,7 @@ static void _opt_list()
 	info("user           : `%s'", opt.user);
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
-	info("verbose        : %d", _verbose);
+	info("verbose        : %d", opt.verbose);
 }
 
 static void _usage(void)

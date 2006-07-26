@@ -48,7 +48,6 @@ typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 /* global variables relating to user options */
 extern char **command_argv;
 extern int command_argc;
-extern int _verbose;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
@@ -96,6 +95,7 @@ typedef struct salloc_options {
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	int  quiet;
+	int  verbose;
 	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 
@@ -140,7 +140,7 @@ extern opt_t opt;
 int initialize_and_process_args(int argc, char *argv[]);
 
 /* set options based upon commandline args */
-void set_options(const int argc, char **argv, int first);
+void set_options(const int argc, char **argv);
 
 
 #endif	/* _HAVE_OPT_H */

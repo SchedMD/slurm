@@ -126,7 +126,6 @@
 /*---- global variables, defined in opt.h ----*/
 char **remote_argv;
 int remote_argc;
-int _verbose;
 opt_t opt;
 
 /*---- forward declarations of static functions  ----*/
@@ -196,7 +195,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-	if (_verbose > 3)
+	if (opt.verbose > 3)
 		_opt_list();
 
 	return 1;
@@ -713,7 +712,7 @@ static void _opt_default()
 	opt.test_only   = false;
 
 	opt.quiet = 0;
-	_verbose = 0;
+	opt.verbose = 0;
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus	    = -1;
@@ -839,7 +838,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_DEBUG:
 		if (val != NULL) {
-			_verbose = (int) strtol(val, &end, 10);
+			opt.verbose = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid", e->var, val);
 		}
@@ -933,7 +932,7 @@ _get_int(const char *arg, const char *what)
 	return (int) result;
 }
 
-void set_options(const int argc, char **argv, int first)
+void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	static bool set_cwd=false, set_name=false;
@@ -1005,48 +1004,32 @@ void set_options(const int argc, char **argv, int first)
 	char *opt_string = "+a:c:C:D:g:HIJ:kKm:n:N:"
 		"Op:P:qQr:R:st:U:vVw:W:x:XZ";
 
-	if(opt.progname == NULL)
-		opt.progname = xbasename(argv[0]);
-	else if(!first)
-		argv[0] = opt.progname;
-	else
-		error("opt.progname is set but it is the first time through.");
+	opt.progname = xbasename(argv[0]);
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			
 		case '?':
-			if(first) {
-				fprintf(stderr, "Try \"sbatch --help\" for more "
-					"information\n");
-				exit(1);
-			} 
+			fprintf(stderr, "Try \"sbatch --help\" for more "
+				"information\n");
+			exit(1);
 			break;
 		case 'c':
-			if(!first && opt.cpus_set)
-				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task");
 			break;
 		case 'C':
-			if(!first && opt.constraints)
-				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
 		case 'D':
-			if(!first && set_cwd)
-				break;
-
 			set_cwd = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
 		case 'g':
-			if(!first && opt.geometry)
-				break;
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
@@ -1057,9 +1040,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.immediate = true;
 			break;
 		case 'J':
-			if(!first && set_name)
-				break;
-
 			set_name = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
@@ -1071,9 +1051,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.kill_bad_exit = true;
 			break;
 		case 'm':
-			if(!first && opt.distribution)
-				break;
-						
 			opt.distribution = _verify_dist_type(optarg);
 			if (opt.distribution == -1) {
 				error("distribution type `%s' " 
@@ -1082,17 +1059,11 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case 'n':
-			if(!first && opt.nprocs_set)
-				break;
-						
 			opt.nprocs_set = true;
 			opt.nprocs = 
 				_get_int(optarg, "number of tasks");
 			break;
 		case 'N':
-			if(!first && opt.nodes_set)
-				break;
-						
 			opt.nodes_set = 
 				_verify_node_count(optarg, 
 						   &opt.min_nodes,
@@ -1107,31 +1078,19 @@ void set_options(const int argc, char **argv, int first)
 			opt.overcommit = true;
 			break;
 		case 'p':
-			if(!first && opt.partition)
-				break;
-						
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
 		case 'P':
-			if(!first && opt.dependency)
-				break;
-						
 			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case 'q':
 			opt.quit_on_intr = true;
 			break;
 		case  'Q':
-			if(!first && opt.quiet)
-				break;
-			
 			opt.quiet++;
 			break;
 		case 'r':
-			if(!first && opt.relative)
-				break;
-			
 			xfree(opt.relative);
 			opt.relative = xstrdup(optarg);
 			break;
@@ -1142,31 +1101,20 @@ void set_options(const int argc, char **argv, int first)
 			opt.share = true;
 			break;
 		case 't':
-			if(!first && opt.time_limit)
-				break;
-			
 			opt.time_limit = _get_int(optarg, "time");
 			break;
 		case 'U':
-			if(!first && opt.account)
-				break;
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
 		case 'v':
-			if(!first && _verbose)
-				break;
-			
-			_verbose++;
+			opt.verbose++;
 			break;
 		case 'V':
 			_print_version();
 			exit(0);
 			break;
 		case 'w':
-			if(!first && opt.nodelist)
-				break;
-			
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 			if (!_valid_node_list(&opt.nodelist))
@@ -1336,13 +1284,6 @@ void set_options(const int argc, char **argv, int first)
 			      opt_char);
 		}
 	}
-
-	if (!first) {
-		if (!_opt_verify())
-			exit(1);
-		if (_verbose > 3)
-			_opt_list();
-	}
 }
 
 /* Load the multi_prog config file into argv, pass the  entire file contents 
@@ -1394,7 +1335,7 @@ static void _opt_args(int argc, char **argv)
 	int i;
 	char **rest = NULL;
 
-	set_options(argc, argv, 1);	
+	set_options(argc, argv);
 
 #ifdef HAVE_AIX
 	if (opt.network == NULL) {
@@ -1444,7 +1385,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 
-	if (opt.quiet && _verbose) {
+	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
@@ -1754,7 +1695,7 @@ static void _opt_list()
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind       : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
-	info("verbose        : %d", _verbose);
+	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("no-requeue     : %s", tf_(opt.no_requeue));
 	info("overcommit     : %s", tf_(opt.overcommit));

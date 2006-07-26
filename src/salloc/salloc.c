@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
 		fatal("salloc parameter parsing");
 	}
 	/* reinit log with new verbosity (if changed by command line) */
-	if (_verbose || opt.quiet) {
-		logopt.stderr_level += _verbose;
+	if (opt.verbose || opt.quiet) {
+		logopt.stderr_level += opt.verbose;
 		logopt.stderr_level -= opt.quiet;
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
