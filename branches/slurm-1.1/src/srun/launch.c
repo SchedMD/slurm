@@ -189,6 +189,7 @@ launch(void *arg)
 	hostlist = hostlist_create(job->nodelist); 		
 	itr = hostlist_iterator_create(hostlist);
 	job->thr_count = 0;
+	
 	for (i = 0; i < job->step_layout->num_hosts; i++) {
 		if(!job->step_layout->host[i])
 			break;
@@ -204,7 +205,7 @@ launch(void *arg)
 		j=0; 
 		while((host = hostlist_next(itr)) != NULL) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
-  				free(host);
+				free(host);
 				break; 
 			}
   			j++; 
@@ -214,10 +215,7 @@ launch(void *arg)
 		/* debug2("using %d %s with %d tasks\n", j, */
 /* 		       job->step_layout->host[i], */
 /* 		       r.nprocs); */
-		memcpy(&m->address, 
-		       &job->slurmd_addr[j], 
-		       sizeof(slurm_addr));
-		
+		memcpy(&m->address, &job->slurmd_addr[j], sizeof(slurm_addr));
 		forward_set_launch(&m->forward,
 				   span[job->thr_count],
 				   &i,
@@ -516,7 +514,6 @@ static void * _p_launch_task(void *arg)
 		_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
 	
 again:
-	//ret_list = slurm_send_recv_rc_msg(req, opt.msg_timeout);
 	ret_list = slurm_send_recv_rc_packed_msg(req, opt.msg_timeout);
 	if(!ret_list) {
 		th->state = DSH_FAILED;
@@ -527,7 +524,6 @@ again:
 	while((ret_type = list_next(itr)) != NULL) {
 		data_itr = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(data_itr)) != NULL) {
-			
 			if(ret_type->msg_rc == SLURM_SUCCESS) {
 				_update_contacted_node(job, 
 						       ret_data_info->nodeid);

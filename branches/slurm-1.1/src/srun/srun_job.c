@@ -178,10 +178,10 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
 	hostlist_t hl = NULL;
 	char buf[8192];
+	int count = 0;
 	
-
 	ai->nodelist       = _normalize_hostlist(resp->node_list);
-	ai->nnodes         = opt.min_nodes;
+	ai->nnodes         = resp->node_cnt;
 	ai->jobid          = resp->job_id;
 	ai->stepid         = NO_VAL;
 	ai->num_cpu_groups = resp->num_cpu_groups;
@@ -189,8 +189,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->cpu_count_reps = resp->cpu_count_reps;
 	ai->addrs          = resp->node_addr;
 	ai->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
-
-
+	
 	if (opt.nodelist == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -235,9 +234,17 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
+		count = hostlist_count(hl);
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
+	}
+	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+		if(count != opt.nprocs) {
+			error("You asked for %d tasks but specified %d nodes",
+			      opt.nprocs, count);
+			goto error;
+		}
 	}
 	debug("node list is now %s inside of %s", opt.nodelist, ai->nodelist);
 	
@@ -245,7 +252,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
-	
+error:
    	xfree(ai);
 	return (job);
 
