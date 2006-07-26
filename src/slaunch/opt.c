@@ -979,8 +979,12 @@ void set_options(const int argc, char **argv)
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
-			_help();
-			exit(0);
+			if(first) {
+				fprintf(stderr, "Try \"slaunch --help\" for more "
+					"information\n");
+				exit(1);
+			} 
+			break;
 		case 'c':
 			opt.cpus_set = true;
 			opt.cpus_per_task = 

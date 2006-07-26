@@ -1016,27 +1016,27 @@ void set_options(const int argc, char **argv, int first)
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			
-		case (int)'?':
+		case '?':
 			if(first) {
 				fprintf(stderr, "Try \"sbatch --help\" for more "
 					"information\n");
 				exit(1);
 			} 
 			break;
-		case (int)'c':
+		case 'c':
 			if(!first && opt.cpus_set)
 				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task");
 			break;
-		case (int)'C':
+		case 'C':
 			if(!first && opt.constraints)
 				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
-		case (int)'D':
+		case 'D':
 			if(!first && set_cwd)
 				break;
 
@@ -1044,19 +1044,19 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
-		case (int)'g':
+		case 'g':
 			if(!first && opt.geometry)
 				break;
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
-		case (int)'H':
+		case 'H':
 			opt.hold = true;
 			break;
-		case (int)'I':
+		case 'I':
 			opt.immediate = true;
 			break;
-		case (int)'J':
+		case 'J':
 			if(!first && set_name)
 				break;
 
@@ -1064,13 +1064,13 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
-		case (int)'k':
+		case 'k':
 			opt.no_kill = true;
 			break;
-		case (int)'K':
+		case 'K':
 			opt.kill_bad_exit = true;
 			break;
-		case (int)'m':
+		case 'm':
 			if(!first && opt.distribution)
 				break;
 						
@@ -1081,7 +1081,7 @@ void set_options(const int argc, char **argv, int first)
 				exit(1);
 			}
 			break;
-		case (int)'n':
+		case 'n':
 			if(!first && opt.nprocs_set)
 				break;
 						
@@ -1089,7 +1089,7 @@ void set_options(const int argc, char **argv, int first)
 			opt.nprocs = 
 				_get_int(optarg, "number of tasks");
 			break;
-		case (int)'N':
+		case 'N':
 			if(!first && opt.nodes_set)
 				break;
 						
@@ -1103,67 +1103,67 @@ void set_options(const int argc, char **argv, int first)
 				exit(1);
 			}
 			break;
-		case (int)'O':
+		case 'O':
 			opt.overcommit = true;
 			break;
-		case (int)'p':
+		case 'p':
 			if(!first && opt.partition)
 				break;
 						
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
-		case (int)'P':
+		case 'P':
 			if(!first && opt.dependency)
 				break;
 						
 			opt.dependency = _get_int(optarg, "dependency");
 			break;
-		case (int)'q':
+		case 'q':
 			opt.quit_on_intr = true;
 			break;
-		case (int) 'Q':
+		case  'Q':
 			if(!first && opt.quiet)
 				break;
 			
 			opt.quiet++;
 			break;
-		case (int)'r':
+		case 'r':
 			if(!first && opt.relative)
 				break;
 			
 			xfree(opt.relative);
 			opt.relative = xstrdup(optarg);
 			break;
-		case (int)'R':
+		case 'R':
 			opt.no_rotate = true;
 			break;
-		case (int)'s':
+		case 's':
 			opt.share = true;
 			break;
-		case (int)'t':
+		case 't':
 			if(!first && opt.time_limit)
 				break;
 			
 			opt.time_limit = _get_int(optarg, "time");
 			break;
-		case (int)'U':
+		case 'U':
 			if(!first && opt.account)
 				break;
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
-		case (int)'v':
+		case 'v':
 			if(!first && _verbose)
 				break;
 			
 			_verbose++;
 			break;
-		case (int)'V':
+		case 'V':
 			_print_version();
 			exit(0);
 			break;
-		case (int)'w':
+		case 'w':
 			if(!first && opt.nodelist)
 				break;
 			
@@ -1178,19 +1178,19 @@ void set_options(const int argc, char **argv, int first)
 			     "\tor your job may be stuck with no way to run.");
 #endif
 			break;
-		case (int)'W':
+		case 'W':
 			opt.max_wait = _get_int(optarg, "wait");
 			break;
-		case (int)'x':
+		case 'x':
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(1);
 			break;
-		case (int)'X': 
+		case 'X': 
 			opt.disable_status = true;
 			break;
-		case (int)'Z':
+		case 'Z':
 			opt.no_alloc = true;
 			uname(&name);
 			if (strcasecmp(name.sysname, "AIX") == 0)
