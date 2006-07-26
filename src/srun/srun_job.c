@@ -98,6 +98,7 @@ job_create_noalloc(void)
 	uint32_t cpn = 1;
 	int i;
 	hostlist_t  hl = hostlist_create(opt.nodelist);
+	char *name;
 
 	if (!hl) {
 		error("Invalid node list `%s' specified", opt.nodelist);
@@ -115,8 +116,7 @@ job_create_noalloc(void)
 	/* if (opt.nprocs < ai->nnodes)
 		opt.nprocs = hostlist_count(hl);
 	*/
-	hostlist_destroy(hl);
-
+	
 	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
 	ai->cpus_per_node  = &cpn;
 	ai->cpu_count_reps = &ai->nnodes;
@@ -126,13 +126,24 @@ job_create_noalloc(void)
 	 */
 	job = _job_create_structure(ai);
 	job->step_layout = xmalloc(sizeof(slurm_step_layout_t));
-	job->step_layout->node_list = xstrdup(job->nodelist);
+	job->step_layout->node_list = xstrdup(ai->nodelist);
 	job->step_layout->node_cnt = ai->nnodes;
-	job->step_layout->tasks = xmalloc(sizeof(uint32_t));
+	job->step_layout->tasks = xmalloc(sizeof(uint32_t) * ai->nnodes);
+	job->step_layout->node_addr = 
+		xmalloc(sizeof(slurm_addr) * ai->nnodes);
+
 	job->step_layout->task_cnt = 0;
-	for (i=0; i<job->step_layout->node_cnt; i++)
+	for (i=0; i<job->step_layout->node_cnt; i++) {
 		job->step_layout->tasks[i] = cpn;
-	
+		name = hostlist_shift(hl);
+		if(!name) {
+			error("job_create_noalloc: "
+			      "We don't have the correct nodelist.");
+			goto error;			      
+		}
+		slurm_conf_get_addr(name, &job->step_layout->node_addr[i]);
+		free(name);
+	}
 	job->step_layout->node_cnt = job->nhosts;
 	job->step_layout->task_cnt = job->ntasks;
 	
@@ -140,6 +151,7 @@ job_create_noalloc(void)
 	job_update_io_fnames(job);
 
    error:
+	hostlist_destroy(hl);
 	xfree(ai);
 	return (job);
 
@@ -235,7 +247,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 {
 	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(*i));
-
+		
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->jobid          = resp->job_id;
