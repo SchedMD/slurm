@@ -40,6 +40,7 @@
 #include <sys/poll.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -149,10 +150,11 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 	int len;
 	char *executable = NULL;
 	int i;
-
+	char *name = NULL;
+	
 	/* some initialization */
 	if (MPIR_proctable_size == 0) {
-		MPIR_proctable_size = job->step_layout->num_tasks;
+		MPIR_proctable_size = job->step_layout->task_cnt;
 		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC)
 					 * MPIR_proctable_size);
 		totalview_jobid = NULL;
@@ -174,6 +176,7 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 			remote_argv[1] = NULL;
 		}
 	}
+	name = nodelist_nth_host(job->step_layout->node_list, nodeid);
 	for (i = 0; i < ntasks; i++) {
 		MPIR_PROCDESC *tv;
 		int taskid, pid;
@@ -182,15 +185,15 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 		safe_read(fd, &pid, sizeof(int));
 
 		tv = &MPIR_proctable[taskid];
-		tv->host_name = job->step_layout->host[nodeid];
+		tv->host_name = xstrdup(name);
 		tv->pid = pid;
 		tv->executable_name = executable;
 		tasks_recorded++;
 	}
-
+	free(name);
 	/* if all tasks are now accounted for, set the debug state and
 	   call the Breakpoint */
-	if (tasks_recorded == job->step_layout->num_tasks) {
+	if (tasks_recorded == job->step_layout->task_cnt) {
 		if (opt.multi_prog)
 			set_multi_name(ntasks);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
@@ -198,7 +201,7 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 		if (opt.debugger_test)
 			_dump_proctable(job);
 	}
-
+	
 	return;
 
 rwfail:
@@ -211,20 +214,14 @@ static void _update_step_layout(int fd, slurm_step_layout_t *layout,
 {
 	int msg_type = PIPE_UPDATE_STEP_LAYOUT;
 	int dummy = 0xdeadbeef;
-	int len = 0;
 	
 	safe_write(fd, &msg_type, sizeof(int)); /* read by par_thr() */
 	safe_write(fd, &dummy, sizeof(int));    /* read by par_thr() */
 
 	/* the rest are read by _handle_update_step_layout() */
 	safe_write(fd, &nodeid, sizeof(int));
-	safe_write(fd, &layout->num_hosts, sizeof(uint32_t));
-	safe_write(fd, &layout->num_tasks, sizeof(uint32_t));
-
-	len = strlen(layout->host[nodeid]) + 1;
-	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, layout->host[nodeid], len);
-
+	safe_write(fd, &layout->node_cnt, sizeof(uint32_t));
+	safe_write(fd, &layout->task_cnt, sizeof(uint32_t));
 	safe_write(fd, &layout->tasks[nodeid], sizeof(uint32_t));
 	safe_write(fd, layout->tids[nodeid],
 		   layout->tasks[nodeid]*sizeof(uint32_t));
@@ -238,26 +235,18 @@ rwfail:
 static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
 {
 	int nodeid;
-	int len = 0;
-
+	
 	safe_read(fd, &nodeid, sizeof(int));
-	safe_read(fd, &layout->num_hosts, sizeof(uint32_t));
-	safe_read(fd, &layout->num_tasks, sizeof(uint32_t));
-	xassert(nodeid >= 0 && nodeid <= layout->num_tasks);
+	safe_read(fd, &layout->node_cnt, sizeof(uint32_t));
+	safe_read(fd, &layout->task_cnt, sizeof(uint32_t));
+	xassert(nodeid >= 0 && nodeid <= layout->task_cnt);
 
 	/* If this is the first call to this function, then we probably need
 	   to intialize some of the arrays */
-	if (layout->host == NULL)
-		layout->host = xmalloc(layout->num_hosts * sizeof(char *));
 	if (layout->tasks == NULL)
-		layout->tasks = xmalloc(layout->num_hosts * sizeof(uint32_t *));
+		layout->tasks = xmalloc(layout->node_cnt * sizeof(uint32_t *));
 	if (layout->tids == NULL)
-		layout->tids = xmalloc(layout->num_hosts * sizeof(uint32_t *));
-
-	safe_read(fd, &len, sizeof(int));
-	/*xassert(layout->host[nodeid] == NULL);*/
-        layout->host[nodeid] = xmalloc(len);
-	safe_read(fd, layout->host[nodeid], len);
+		layout->tids = xmalloc(layout->node_cnt * sizeof(uint32_t *));
 
 	safe_read(fd, &layout->tasks[nodeid], sizeof(uint32_t));
 	xassert(layout->tids[nodeid] == NULL);
@@ -274,12 +263,12 @@ rwfail:
 static void _dump_proctable(srun_job_t *job)
 {
 	int node_inx, task_inx, taskid;
-	int num_tasks;
+	int task_cnt;
 	MPIR_PROCDESC *tv;
 
 	for (node_inx=0; node_inx<job->nhosts; node_inx++) {
-		num_tasks = job->step_layout->tasks[node_inx];
-		for (task_inx = 0; task_inx < num_tasks; task_inx++) {
+		task_cnt = job->step_layout->tasks[node_inx];
+		for (task_inx = 0; task_inx < task_cnt; task_inx++) {
 			taskid = job->step_layout->tids[node_inx][task_inx];
 			tv = &MPIR_proctable[taskid];
 			if (!tv)
@@ -543,13 +532,18 @@ static void
 _confirm_launch_complete(srun_job_t *job)
 {
 	int i;
+	char *name = NULL;
+
 	printf("job->nhosts %d\n",job->nhosts);
 		
 	for (i=0; i<job->nhosts; i++) {
 		printf("job->nhosts %d\n",job->nhosts);
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
+			name = nodelist_nth_host(job->step_layout->node_list,
+						 i);
 			error ("Node %s not responding, terminating job step",
-			       job->step_layout->host[i]);
+			       name);
+			free(name);
 			info("sending Ctrl-C to remaining tasks");
 			fwd_signal(job, SIGINT, opt.max_threads);
 			job->rc = 124;
@@ -616,7 +610,6 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 
 	for (i = 0; i < resp->ntasks; i++) {
 		job->step_layout->tids[resp->srun_node_id][i] = resp->gtids[i];
-		job->step_layout->hostids[resp->gtids[i]] = resp->srun_node_id;
 		info ("setting task%d on hostid %d\n", 
 		      resp->gtids[i], resp->srun_node_id);
 	}
@@ -733,7 +726,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 	int              status    = msg->return_code;
 	int              i;
 	char             buf[1024];
-
+	
 	if (!(host = step_layout_host_name(job->step_layout, task0)))
 		host = "Unknown host";
 	debug2("exited host %s", host);
@@ -771,9 +764,9 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}
-
+	
 	update_tasks_state(job, step_layout_host_id(job->step_layout, task0));
-
+		
 	_print_exit_status(job, hl, host, status);
 
 	hostlist_destroy(hl);

@@ -119,17 +119,17 @@ launch(void *arg)
 	hostlist_t hostlist = NULL;
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
-	int *span = set_span(job->step_layout->num_hosts, 0);
+	int *span = set_span(job->step_layout->node_cnt, 0);
 	slurm_msg_t *m = NULL;
 	Buf buffer = NULL;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
 	debug("going to launch %d tasks on %d hosts", 
-	      opt.nprocs, job->step_layout->num_hosts);
+	      opt.nprocs, job->step_layout->node_cnt);
 
 	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
-				* job->step_layout->num_hosts);
+				* job->step_layout->node_cnt);
 	my_envc = envcount(environ);
 
 	/* Common message contents */
@@ -143,7 +143,7 @@ launch(void *arg)
 	r.envc            = my_envc;
 	r.env             = environ;
 	r.cwd             = opt.cwd;
-	r.nnodes          = job->step_layout->num_hosts;
+	r.nnodes          = job->step_layout->node_cnt;
 	r.nprocs          = opt.nprocs;
 	r.slurmd_debug    = opt.slurmd_debug;
 	r.switch_job      = job->switch_job;
@@ -168,13 +168,13 @@ launch(void *arg)
 	
 	/* Node specific message contents */
 	if (slurm_mpi_single_task_per_node ()) {
-		for (i = 0; i < job->step_layout->num_hosts; i++)
+		for (i = 0; i < job->step_layout->node_cnt; i++)
 			job->step_layout->tasks[i] = 1;
 	} 
 	r.tasks_to_launch = job->step_layout->tasks;
 
 	r.global_task_ids = job->step_layout->tids;
-	r.cpus_allocated  = job->step_layout->cpus;
+	r.cpus_allocated  = job->step_layout->tasks;
 	
 	r.num_resp_port = job->njfds;
 	r.resp_port = xmalloc(sizeof(uint16_t) * r.num_resp_port);
@@ -193,19 +193,18 @@ launch(void *arg)
 	buffer = slurm_pack_msg_no_header(&msg_array_ptr[0]);
 	
 	//hostlist = hostlist_create(job->nodelist);
-	debug("sending to list %s", job->step_layout->nodes);
-	hostlist = hostlist_create(job->step_layout->nodes);
+	debug("sending to list %s", job->step_layout->node_list);
+	hostlist = hostlist_create(job->step_layout->node_list);
 	itr = hostlist_iterator_create(hostlist);
 	job->thr_count = 0;
 	i=0;
-	for(i=0; i<job->step_layout->num_hosts; i++) {
+	for(i=0; i<job->step_layout->node_cnt; i++) {
 		host = hostlist_next(itr);
-		if(!job->step_layout->host[i] || !host)
+		if(!host)
 			break;
+		debug("sending to %s id %d", host, i);
+		free(host);
 		
-		//for (i = 0; i < job->step_layout->num_hosts; i++) {
-		debug("sending to %s %s %d %d", job->step_layout->host[i],
-		       host, i, job->step_layout->num_hosts);
 		m = &msg_array_ptr[job->thr_count];
 		
 		m->srun_node_id    = (uint32_t)i;			
@@ -222,11 +221,12 @@ launch(void *arg)
 		forward_set_launch(&m->forward,
 				   span[job->thr_count],
 				   &i,
-				   job->step_layout,
+				   job->step_layout->node_cnt,
+				   job->step_layout->node_addr,
 				   itr,
 				   opt.msg_timeout);
 		job->thr_count++;
-		free(host);
+		
 	}
 	xfree(span);
 	hostlist_iterator_destroy(itr);
@@ -365,6 +365,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	int i;
 	thd_t *thd;
 	int rc = 0;
+	char *name = NULL;
 
 	/*
 	 * SigFunc *oldh;
@@ -384,7 +385,10 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	for (i = 0; i < job->thr_count; i++) {
 		if (job->step_layout->tasks[i] == 0)	{
 			/* No tasks for this node */
-			debug("Node %s is unused",job->step_layout->host[i]);
+			name = nodelist_nth_host(job->step_layout->node_list,
+						 i);
+			debug("Node %s is unused",name);
+			free(name);
 			job->host_state[i] = SRUN_HOST_REPLIED;
 			thd[i].thread = (pthread_t) NULL;
 			continue;
@@ -407,7 +411,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 		_spawn_launch_thr(&thd[i]);
 	}
-	for ( ; i < job->step_layout->num_hosts; i++)
+	for ( ; i < job->step_layout->node_cnt; i++)
 		_update_failed_node(job, i);
 
 	pthread_mutex_lock(&active_mutex);
@@ -510,12 +514,16 @@ static void * _p_launch_task(void *arg)
 	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
-	
+	char *name = NULL;
+		
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
-	if (_verbose)
-		_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
 	
+	if (_verbose) {
+		name = nodelist_nth_host(job->step_layout->node_list, nodeid);
+		_print_launch_msg(msg, name, nodeid);
+		free(name);
+	}
 again:
 	//ret_list = slurm_send_recv_rc_msg(req, opt.msg_timeout);
 	ret_list = slurm_send_recv_rc_packed_msg(req, opt.msg_timeout);
@@ -534,12 +542,17 @@ again:
 						       ret_data_info->nodeid);
 				continue;
 			}
-			errno = ret_type->err;
-			if (errno != EINTR)
-				verbose("first launch error on %s: %m",
-					job->step_layout->
-					host[ret_data_info->nodeid]);
 			
+			errno = ret_type->err;
+			if (errno != EINTR) {
+				name = nodelist_nth_host(
+					job->step_layout->node_list, 
+					ret_data_info->nodeid);
+				verbose("first launch error on %s: %m",
+					name);
+				free(name);
+			}
+
 			if ((errno != ETIMEDOUT) 
 			    && (job->state == SRUN_JOB_LAUNCHING)
 			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
@@ -550,16 +563,14 @@ again:
 				sleep(1);
 				goto again;
 			}
-			
+			name = nodelist_nth_host(job->step_layout->node_list, 
+						 ret_data_info->nodeid);
+				
 			if (errno == EINTR)
-				verbose("launch on %s canceled", 
-					job->step_layout->
-					host[ret_data_info->nodeid]);
+				verbose("launch on %s canceled", name);
 			else
-				error("second launch error on %s: %m", 
-				      job->step_layout->
-				      host[ret_data_info->nodeid]);
-			
+				error("second launch error on %s: %m", name);
+			free(name);
 			_update_failed_node(job, ret_data_info->nodeid);
 			
 			th->state = DSH_FAILED;

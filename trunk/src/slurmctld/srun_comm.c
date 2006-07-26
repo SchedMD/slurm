@@ -88,10 +88,6 @@ extern void srun_allocate (uint32_t job_id)
 		memcpy(msg_arg->cpu_count_reps, job_ptr->cpu_count_reps,
 				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		msg_arg->node_cnt	= job_ptr->node_cnt;
-		msg_arg->node_addr      = xmalloc(sizeof (slurm_addr) *
-				job_ptr->node_cnt);
-		memcpy(msg_arg->node_addr, job_ptr->node_addr,
-				(sizeof(slurm_addr) * job_ptr->node_cnt));
 		msg_arg->select_jobinfo = select_g_copy_jobinfo(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;

@@ -157,8 +157,9 @@ extern int forward_set (forward_t *forward,
  *                      a job launch
  * IN: forward     - forward_t *           - struct to store forward info
  * IN: span        - int                   - count of forwards to do
- * IN: step_layout - slurm_step_layout_t * - contains information about hosts
- *                                           from original message
+ * IN: pos         - int *                 - position in the node list
+ * IN: total       - int                   - total count of nodes in message
+ * IN: node_addr   - slurm_addr *          - contains addresses to forward to
  * IN: itr         - hostlist_iterator_t   - count into host list of hosts to 
  *                                           send messages to 
  * IN: timeout     - int32_t               - timeout if any to wait for 
@@ -200,7 +201,8 @@ while((host = hostlist_next(itr)) != NULL) {
 	forward_set_launch(&m->forward,
 			   span[job->thr_count],
 			   &i,
-			   job->step_layout,
+                           job->step_layout->node_cnt,
+			   job->step_layout->node_addr,
 			   itr,
 			   opt.msg_timeout);
 //increment the count of threads created		
@@ -214,7 +216,8 @@ hostlist_destroy(hostlist);
 extern int forward_set_launch (forward_t *forward, 
 			       int span,
 			       int *pos,
-			       slurm_step_layout_t *step_layout,
+			       int total,
+			       slurm_addr * node_addr,
 			       hostlist_iterator_t itr,
 			       int32_t timeout);
 

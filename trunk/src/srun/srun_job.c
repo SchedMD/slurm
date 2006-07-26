@@ -96,7 +96,7 @@ job_create_noalloc(void)
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
 	uint32_t cpn = 1;
-
+	int i;
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 
 	if (!hl) {
@@ -125,16 +125,17 @@ job_create_noalloc(void)
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
-	job->step_layout = step_layout_create(NULL, NULL, NULL);
-	job->step_layout->nodes = (char *)xstrdup(job->nodelist);
-	//job->step_layout->hl	= hostlist_create(job->nodelist);
-	job->step_layout->cpus_per_node = ai->cpus_per_node;
-	job->step_layout->cpu_count_reps = ai->cpu_count_reps;
-	job->step_layout->num_hosts = job->nhosts;
-	job->step_layout->num_tasks = job->ntasks;
-
-	task_layout(job->step_layout, opt.nodelist, opt.distribution);
-
+	job->step_layout = xmalloc(sizeof(slurm_step_layout_t));
+	job->step_layout->node_list = xstrdup(job->nodelist);
+	job->step_layout->node_cnt = ai->nnodes;
+	job->step_layout->tasks = xmalloc(sizeof(uint32_t));
+	job->step_layout->task_cnt = 0;
+	for (i=0; i<job->step_layout->node_cnt; i++)
+		job->step_layout->tasks[i] = cpn;
+	
+	job->step_layout->node_cnt = job->nhosts;
+	job->step_layout->task_cnt = job->ntasks;
+	
 	_job_fake_cred(job);
 	job_update_io_fnames(job);
 
@@ -447,10 +448,14 @@ void
 report_job_status(srun_job_t *job)
 {
 	int i;
+	hostlist_t hl = hostlist_create(job->nodelist);
+	char *name = NULL;
 
 	for (i = 0; i < job->nhosts; i++) {
-		info ("host:%s state:%s", job->step_layout->host[i], 
+		name = hostlist_shift(hl);
+		info ("host:%s state:%s", name, 
 		      _host_state_name(job->host_state[i]));
+		free(name);
 	}
 }
 

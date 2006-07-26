@@ -351,11 +351,7 @@ struct 	step_record {
 	uint16_t step_id;		/* step number */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
-	uint32_t num_tasks;		/* number of tasks required */
-	uint32_t num_cpus;		/* number of cpus required */
 	time_t start_time;      	/* step allocation time */
-	char *step_node_list;		/* list of nodes allocated to job 
-					   step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
 	time_t time_last_active;	/* time of last job activity */
@@ -1149,7 +1145,7 @@ extern int slurmctld_shutdown(void);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
- *	accoding to the step_specs.
+ *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * IN kill_job_when_step_done - if set kill the job on step completion
@@ -1163,6 +1159,21 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
 			 bool kill_job_when_step_done,
 			 bool batch_step );
 
+/*
+ * step_layout_create - creates a step_layout according to the inputs.
+ * IN job_ptr - job record step belongs to
+ * IN step_node_list - node list of hosts in step
+ * IN num_tasks - number of tasks in step
+ * IN task_dist - type of task distribution
+ * RET - NULL or slurm_step_layout_t *
+ * NOTE: you need to free the returned step_layout usually when the 
+ *       step is freed.
+ */
+extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
+					       char *step_node_list,
+					       uint16_t node_count,
+					       uint32_t num_tasks,
+					       uint16_t task_dist);
 /*
  * step_epilog_complete - note completion of epilog on some node and 
  *	release it's switch windows if appropriate. can perform partition 

@@ -465,7 +465,6 @@ find_node_record (char *name)
 	return (struct node_record *) NULL;
 }
 
-
 /* 
  * _hash_index - return a hash table index for the given node name 
  * IN name = the node's name

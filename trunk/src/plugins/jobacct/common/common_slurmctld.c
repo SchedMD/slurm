@@ -275,19 +275,24 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	if(quarter != (uint16_t)NO_VAL 
 	   && nodecard != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d.%d", step->step_node_list, quarter, nodecard);
+			 "%s.%d.%d", step->step_layout->node_list, 
+			 quarter, nodecard);
 	else if(quarter != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d", step->step_node_list, quarter);
+			 "%s.%d", step->step_layout->node_list, quarter);
 	else
-		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step->step_layout->node_list);
 	
 #else
-	if(!step->num_cpus)
+	if(!step->step_layout || !step->step_layout->task_cnt) {
 		cpus = step->job_ptr->num_procs;
-	else
-		cpus = step->num_cpus;
-	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+		snprintf(node_list, BUFFER_SIZE, "%s", step->job_ptr->nodes);
+	} else {
+		cpus = step->step_layout->task_cnt;
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step->step_layout->node_list);
+	}
 #endif
 	if (step->job_ptr->account && step->job_ptr->account[0])
 		account = step->job_ptr->account;
@@ -299,7 +304,7 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 step->step_id,	/* stepid */
 		 JOB_RUNNING,		/* completion status */
 		 0,     		/* completion code */
-		 step->num_tasks,	/* number of tasks */
+		 cpus,          	/* number of tasks */
 		 cpus,                  /* number of cpus */
 		 0,	        	/* elapsed seconds */
 		 0,                    /* total cputime seconds */
@@ -387,30 +392,36 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	if(quarter != (uint16_t)NO_VAL 
 	   && nodecard != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d.%d", step->step_node_list, quarter, nodecard);
+			 "%s.%d.%d", step->step_layout->node_list, 
+			 quarter, nodecard);
 	else if(quarter != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d", step->step_node_list, quarter);
+			 "%s.%d", step->step_layout->node_list, quarter);
 	else
-		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step->step_layout->node_list);
 	
 #else
-	if(!step->num_cpus)
+	if(!step->step_layout || !step->step_layout->task_cnt) {
 		cpus = step->job_ptr->num_procs;
-	else
-		cpus = step->num_cpus;
-	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+		snprintf(node_list, BUFFER_SIZE, "%s", step->job_ptr->nodes);
+	
+	} else {
+		cpus = step->step_layout->task_cnt;
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step->step_layout->node_list);
+	}
 #endif
 	/* figure out the ave of the totals sent */
-	if(step->num_tasks > 0) {
+	if(cpus > 0) {
 		ave_vsize = jobacct->tot_vsize;
-		ave_vsize /= step->num_tasks;
+		ave_vsize /= cpus;
 		ave_rss = jobacct->tot_rss;
-		ave_rss /= step->num_tasks;
+		ave_rss /= cpus;
 		ave_pages = jobacct->tot_pages;
-		ave_pages /= step->num_tasks;
+		ave_pages /= cpus;
 		ave_cpu = jobacct->tot_cpu;
-		ave_cpu /= step->num_tasks;	
+		ave_cpu /= cpus;	
 		ave_cpu /= 100;
 	} 
 	ave_cpu2 = jobacct->min_cpu;
@@ -426,7 +437,7 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 step->step_id,	/* stepid */
 		 comp_status,		/* completion status */
 		 step->exit_code,	/* completion code */
-		 step->num_tasks,	/* number of tasks */
+		 cpus,          	/* number of tasks */
 		 cpus,                  /* number of cpus */
 		 elapsed,	        /* elapsed seconds */
 		 /* total cputime seconds */

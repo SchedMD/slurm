@@ -97,7 +97,7 @@ static void  _run_srun_epilog (void);
 static int   _run_srun_script (char *script);
 #endif
 static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
-			      int stepid, slurm_step_layout_t *step_layout);
+			      int stepid, uint32_t *hostids);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
 static void _mpir_init(int num_tasks);
@@ -112,9 +112,10 @@ int slaunch(int argc, char **argv)
 	slurm_step_ctx step_ctx;
 	slurm_job_step_launch_t params;
 	int rc;
-
+	uint32_t *hostids = NULL;
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-
+	int task_cnt = 0, i, j;
+	
 	/* Initialize plugin stack, read options from plugins, etc. */
 	if (spank_init(NULL) < 0)
 		fatal("Plug-in initialization failed");
@@ -199,10 +200,21 @@ int slaunch(int argc, char **argv)
 	params.remote_output_filename = opt.remote_ofname;
 	params.remote_input_filename = opt.remote_ifname;
 	params.remote_error_filename = opt.remote_efname;
+	
+	/* set up the hostids */
+	for (i=0; i<step_ctx->step_resp->node_cnt; i++) {
+		task_cnt += step_ctx->step_resp->tasks[i];
+	}
+
+	hostids = xmalloc(sizeof(uint32_t) * task_cnt);
+	for (i=0; i < step_ctx->step_resp->node_cnt; i++) 
+		for (j=0; j<step_ctx->step_resp->tasks[i]; j++) 
+			hostids[step_ctx->step_resp->tids[i][j]] = i;
+		
+	
 	/* FIXME - don't peek into the step context, that's cheating! */
 	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
-			 (int)step_ctx->step_resp->job_step_id,
-			 step_ctx->step_resp->step_layout);
+			 (int)step_ctx->step_resp->job_step_id, hostids);
 	params.parallel_debug = opt.parallel_debug ? true : false;
 	params.task_start_callback = _task_start;
 	params.task_finish_callback = _task_finish;
@@ -423,7 +435,7 @@ static int _run_srun_script (char *script)
 
 static void
 _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
-		 slurm_step_layout_t *step_layout)
+		 uint32_t *hostids)
 {
 	bool err_shares_out = false;
 	fname_t *ifname, *ofname, *efname;
@@ -439,8 +451,9 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
 		cio_fds->in.fd = STDIN_FILENO;
 	} else if (ifname->type == IO_ONE) {
 		cio_fds->in.taskid = ifname->taskid;
-		cio_fds->in.nodeid = step_layout_host_id(
-			step_layout, ifname->taskid);
+		cio_fds->in.nodeid = hostids[ifname->taskid];
+// step_layout_host_id(
+			//		step_layout, ifname->taskid);
 	} else {
 		cio_fds->in.fd = open(ifname->name, O_RDONLY);
 		if (cio_fds->in.fd == -1)

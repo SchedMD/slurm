@@ -316,7 +316,6 @@ enum ctx_keys {
 	SLURM_STEP_CTX_CRED,
 	SLURM_STEP_CTX_SWITCH_JOB,
 	SLURM_STEP_CTX_NUM_HOSTS,
-	SLURM_STEP_CTX_CPUS,
 	SLURM_STEP_CTX_HOST
 };
 
@@ -477,27 +476,6 @@ typedef struct job_info_msg {
 	job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
-typedef struct slurm_step_layout {
-	char *nodes;            /* list of nodes in step */	
-	char **host;		/* list separated for convience sake 
-     				   created from nodes */
-	slurm_addr *node_addr;  /* corisponding addresses */
-	uint16_t num_hosts;	/* node count */
-	uint32_t num_tasks;	/* number of tasks to execute */
-	
-	uint16_t num_cpu_groups;/* count of cpu reps */ 
-	uint32_t *cpus_per_node; /* consolidated list of cpus per node */
-	uint32_t *cpu_count_reps; /* how many host each cpus per 
-				     node refers to */ 
-	
-	uint32_t *tasks;	/* number of tasks on each host */
-	
-	uint32_t **tids;	/* host id => task id mapping */
-	uint32_t *hostids;      /* task id => host id mapping */
-	uint32_t *cpus;		/* total count of processors on each host */
-		
-} slurm_step_layout_t;
-
 typedef struct job_step_specs {
 	uint32_t job_id;	/* job ID */
 	uint32_t user_id;	/* user the job runs as */
@@ -515,9 +493,13 @@ typedef struct job_step_specs {
 
 typedef struct job_step_create_response_msg {
 	uint32_t job_step_id;	/* assigned job step id */
-	char *node_list;	/* list of allocated nodes */
-	slurm_step_layout_t *step_layout; /* info about how the tasks 
-					     are to be layout in the step */ 
+	uint16_t node_cnt;     /* number of nodes in step */
+	char *node_list;            /* list of nodes in step */	
+	slurm_addr *node_addr;  /* corisponding addresses */
+	uint32_t *tasks;	/* number of tasks on each host */
+	
+	uint32_t **tids;	/* host id => task id mapping */
+
 	slurm_cred_t cred;      /* slurm job credential */
 	switch_jobinfo_t switch_job;	/* switch context, opaque data structure */
 } job_step_create_response_msg_t;
@@ -642,7 +624,6 @@ typedef struct resource_allocation_response_msg {
 	uint32_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint16_t node_cnt;	/* count of nodes */
-	slurm_addr *node_addr;	/* network addresses */
 	uint32_t error_code;	/* error code for warning message */
 	select_jobinfo_t select_jobinfo;	/* opaque data structure,
 			* use select_g_get_jobinfo() to access conents */

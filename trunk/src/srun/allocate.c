@@ -592,6 +592,7 @@ create_job_step(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
+	int i;
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
 		return -1;
@@ -605,7 +606,16 @@ create_job_step(srun_job_t *job)
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
 	job->switch_job = resp->switch_job;
-	job->step_layout = resp->step_layout;
+	job->step_layout = xmalloc(sizeof(slurm_step_layout_t));
+	job->step_layout->node_cnt = resp->node_cnt;
+	job->step_layout->node_list = resp->node_list;
+	job->step_layout->node_addr = resp->node_addr;
+	job->step_layout->tasks = resp->tasks;
+	job->step_layout->task_cnt = 0;
+	for(i=0; i<job->step_layout->node_cnt; i++)
+		job->step_layout->task_cnt += job->step_layout->tasks[i];
+	job->step_layout->tids = resp->tids;
+	
 	if(!job->step_layout) {
 		error("step_layout not returned");
 		return -1;

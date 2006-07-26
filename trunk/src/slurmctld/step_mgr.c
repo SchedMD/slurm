@@ -110,14 +110,14 @@ delete_all_step_records (struct job_record *job_ptr)
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		list_remove (step_iterator);
 		if (step_ptr->switch_job) {
-			switch_g_job_step_complete(step_ptr->switch_job,
-				step_ptr->step_node_list);
+			switch_g_job_step_complete(
+				step_ptr->switch_job,
+				step_ptr->step_layout->node_list);
 			switch_free_jobinfo(step_ptr->switch_job);
 		}
 		checkpoint_free_jobinfo(step_ptr->check_job);
 		xfree(step_ptr->host);
 		xfree(step_ptr->name);
-		xfree(step_ptr->step_node_list);
 		step_layout_destroy(step_ptr->step_layout);
 		jobacct_g_free(step_ptr->jobacct);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -159,13 +159,12 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			if (step_ptr->switch_job) {
 				switch_g_job_step_complete(
 					step_ptr->switch_job, 
-					step_ptr->step_node_list);
+					step_ptr->step_layout->node_list);
 				switch_free_jobinfo (step_ptr->switch_job);
 			}
 			checkpoint_free_jobinfo (step_ptr->check_job);
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
-			xfree(step_ptr->step_node_list);
 			step_layout_destroy(step_ptr->step_layout);
 			jobacct_g_free(step_ptr->jobacct);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -625,6 +624,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	bitstr_t *nodeset;
 	int node_count;
 	time_t now = time(NULL);
+	char *step_node_list = NULL;
 
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
@@ -690,18 +690,16 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* Here is where the node list is set for the job */
 	if(step_specs->node_list 
 	   && step_specs->task_dist == SLURM_DIST_ARBITRARY) {
-		step_ptr->step_node_list = xstrdup(step_specs->node_list);
+		step_node_list = xstrdup(step_specs->node_list);
 		xfree(step_specs->node_list);
 		step_specs->node_list = bitmap2node_name(nodeset);
 	} else {
-		step_ptr->step_node_list = bitmap2node_name(nodeset);
-		step_specs->node_list = xstrdup(step_ptr->step_node_list);
+		step_node_list = bitmap2node_name(nodeset);
+		step_specs->node_list = xstrdup(step_node_list);
 	}
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
-	step_ptr->num_tasks = step_specs->num_tasks;
-	step_ptr->num_cpus = step_specs->cpu_count;
 	step_ptr->time_last_active = now;
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
@@ -722,21 +720,18 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* a batch script does not need switch info */
 	if (!batch_step) {
 		step_ptr->step_layout = 
-			distribute_tasks(job_ptr->nodes,
-					 step_ptr->step_node_list,
-					 job_ptr->cpus_per_node,
-					 job_ptr->cpu_count_reps,
-					 job_ptr->num_cpu_groups,
-					 step_specs->node_count,
-					 step_ptr->num_tasks,
-					 step_specs->task_dist);
+			step_layout_create(step_ptr,
+					   step_node_list,
+					   step_specs->node_count,
+					   step_specs->num_tasks,
+					   step_specs->task_dist);
 		if (!step_ptr->step_layout)
 			return SLURM_ERROR;
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
 		
 		if (switch_build_jobinfo(step_ptr->switch_job, 
-					 step_ptr->step_node_list,
+					 step_ptr->step_layout->node_list,
 					 step_ptr->step_layout->tasks, 
 					 step_ptr->cyclic_alloc,
 					 step_ptr->network) < 0) {
@@ -744,12 +739,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
-		/* FIXME: this var should be removed all together once the 
-		   switch_build_jobinfo is rewritten to take the step_layout
-		   structure */
-		xfree(step_ptr->step_node_list);
-		step_ptr->step_node_list = 
-			xstrdup(step_ptr->step_layout->nodes);
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
@@ -759,19 +748,68 @@ step_create(job_step_create_request_msg_t *step_specs,
 	return SLURM_SUCCESS;
 }
 
+extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
+					       char *step_node_list,
+					       uint16_t node_count,
+					       uint32_t num_tasks,
+					       uint16_t task_dist)
+{
+	uint32_t cpus_per_node[node_count];
+	uint32_t cpu_count_reps[node_count];
+	int cpu_inx = -1;
+	int usable_cpus = 0, i;
+	int inx = 0;
+	struct job_record *job_ptr = step_ptr->job_ptr;
+	uint32_t node_cnt = job_ptr->cpu_count_reps[inx];
+	
+	/* set the correct cpus in use from the job */
+	
+	for (i = 0; i < job_ptr->node_cnt; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i)) {
+			while(i >= node_cnt)
+				node_cnt += 
+					job_ptr->cpu_count_reps[++inx];
+			
+			usable_cpus = job_ptr->cpus_per_node[inx];
+			if ((cpu_inx == -1) ||
+			    (cpus_per_node[cpu_inx] !=
+			     usable_cpus)) {
+				cpu_inx++;
+				cpus_per_node[cpu_inx] = usable_cpus;
+				cpu_count_reps[cpu_inx] = 1;
+			} else
+				cpu_count_reps[cpu_inx]++;
+		}
+	}
+	/* layout the tasks on the nodes */
+	return distribute_tasks(step_node_list,
+				cpus_per_node, cpu_count_reps, (cpu_inx+1),
+				node_count, num_tasks, task_dist);
+}
+
 /* Pack the data for a specific job step record
  * IN step - pointer to a job step record
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 {
+	int task_cnt;
+	char *node_list = NULL;
+
+	if(step->step_layout) {
+		task_cnt = step->step_layout->task_cnt;
+		node_list = step->step_layout->node_list;		
+	} else {
+		task_cnt = step->job_ptr->num_procs;
+		node_list = step->job_ptr->nodes;	
+	}
 	pack_job_step_info_members(step->job_ptr->job_id,
 				   step->step_id,
 				   step->job_ptr->user_id,
-				   step->num_tasks,
+				   task_cnt,
 				   step->start_time,
 				   step->job_ptr->partition,
-				   step->step_node_list, 
+				   node_list, 
 				   step->name, step->network, buffer);
 }
 
@@ -1116,12 +1154,12 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		/* release all switch windows */
 		if (step_ptr->switch_job) {
 			debug2("full switch release for step %u.%u, "
-				"nodes %s", req->job_id, 
-				req->job_step_id, 
-				step_ptr->step_node_list);
+			       "nodes %s", req->job_id, 
+			       req->job_step_id, 
+			       step_ptr->step_layout->node_list);
 			switch_g_job_step_complete(
 				step_ptr->switch_job,
-				step_ptr->step_node_list);
+				step_ptr->step_layout->node_list);
 			switch_free_jobinfo (step_ptr->switch_job);
 			step_ptr->switch_job = NULL;
 		}

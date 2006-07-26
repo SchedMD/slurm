@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include <slurm/slurm_errno.h>
+#include <stdlib.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -109,8 +110,10 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 
 	for (i = 0; i < job->nhosts; i++) {
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			debug2("%s has not yet replied\n", 
-			       job->step_layout->host[i]);
+			char *name = nodelist_nth_host(
+				job->step_layout->node_list, i);
+			debug2("%s has not yet replied\n", name);
+			free(name);
 			continue;
 		}
 		if (job_active_tasks_on_host(job, i) == 0)
@@ -198,7 +201,8 @@ static void * _p_signal_task(void *args)
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
-	char        *host = job->step_layout->host[info->host_inx];
+	char        *host = nodelist_nth_host(job->step_layout->node_list,
+					      info->host_inx);
 	char        *tmpchar = NULL;
 	List ret_list = NULL;
 	ListIterator itr;
@@ -275,6 +279,7 @@ done:
 	active--;
 	pthread_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
+	free(host);
 	xfree(args);
 	return NULL;
 }

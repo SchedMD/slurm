@@ -678,7 +678,6 @@ void slurm_free_resource_allocation_response_msg (
 		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
-		xfree(msg->node_addr);
 		xfree(msg);
 	}
 }
@@ -711,10 +710,18 @@ void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
 void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg)
 {
+	int i;
 	if (msg) {
 		slurm_cred_destroy(msg->cred);
-		step_layout_destroy(msg->step_layout);
-	
+		xfree(msg->node_list);
+		xfree(msg->node_addr);
+		for (i=0; i<msg->node_cnt; i++) {
+			xfree(msg->tids[i]);
+		}
+				
+		xfree(msg->tasks);
+		xfree(msg->tids);
+		
 		if (msg->switch_job)
 			switch_free_jobinfo(msg->switch_job);
 
@@ -979,3 +986,138 @@ void inline slurm_free_node_select_msg(
 {
 	xfree(msg);
 }
+
+
+extern int slurm_free_msg_data(uint32_t type, void *data)
+{
+	switch(type) {
+	case REQUEST_BUILD_INFO:
+		slurm_free_last_update_msg(data);
+		break;
+	case REQUEST_JOB_INFO:
+		slurm_free_job_info_request_msg(data);
+		break;
+	case REQUEST_NODE_INFO:
+		slurm_free_node_info_request_msg(data);
+		break;
+	case REQUEST_PARTITION_INFO:
+		slurm_free_part_info_request_msg(data);
+		break;
+	case MESSAGE_EPILOG_COMPLETE:
+		slurm_free_epilog_complete_msg(data);
+		break;
+	case REQUEST_CANCEL_JOB_STEP:
+		slurm_free_job_step_kill_msg(data);
+		break;
+	case REQUEST_COMPLETE_JOB_ALLOCATION:
+		slurm_free_complete_job_allocation_msg(data);
+		break;
+	case REQUEST_COMPLETE_BATCH_SCRIPT:
+		slurm_free_complete_batch_script_msg(data);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		slurm_free_job_step_create_request_msg(data);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		slurm_free_job_step_info_request_msg(data);
+		break;
+	case REQUEST_RESOURCE_ALLOCATION:
+	case REQUEST_JOB_WILL_RUN:
+	case REQUEST_SUBMIT_BATCH_JOB:
+	case REQUEST_UPDATE_JOB:
+		slurm_free_job_desc_msg(data);
+		break;
+	case MESSAGE_NODE_REGISTRATION_STATUS:
+		slurm_free_node_registration_status_msg(data);
+		break;
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_ALLOCATION_INFO:
+		slurm_free_job_alloc_info_msg(data);
+		break;
+	case SLURM_SUCCESS:		
+	case REQUEST_PING:		
+	case REQUEST_RECONFIGURE:
+	case REQUEST_CONTROL:
+	case REQUEST_SHUTDOWN_IMMEDIATE:
+		/* No body to free */
+		break;
+	case REQUEST_SHUTDOWN:
+		slurm_free_shutdown_msg(data);
+		break;
+	case REQUEST_UPDATE_NODE:
+		slurm_free_update_node_msg(data);
+		break;
+	case REQUEST_UPDATE_PARTITION:
+		slurm_free_update_part_msg(data);
+		break;
+	case REQUEST_DELETE_PARTITION:		
+		slurm_free_delete_part_msg(data);
+		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
+		slurm_free_node_registration_status_msg(data);
+		break;
+	case REQUEST_CHECKPOINT:
+		slurm_free_checkpoint_msg(data);
+		break;
+	case REQUEST_CHECKPOINT_COMP:
+		slurm_free_checkpoint_comp_msg(data);
+		break;
+	case REQUEST_SUSPEND:
+		slurm_free_suspend_msg(data);
+		break;
+	case REQUEST_JOB_READY:
+		slurm_free_job_id_msg(data);
+		break;
+	case REQUEST_NODE_SELECT_INFO:
+		slurm_free_node_select_msg(data);
+		break;
+	case REQUEST_STEP_COMPLETE:
+		slurm_free_step_complete_msg(data);
+		break;
+	case MESSAGE_STAT_JOBACCT:
+		slurm_free_stat_jobacct_msg(data);
+		break;
+	case REQUEST_BATCH_JOB_LAUNCH:
+		slurm_free_job_launch_msg(data);
+		break;
+	case REQUEST_LAUNCH_TASKS:
+		slurm_free_launch_tasks_request_msg(data);
+		break;
+	case REQUEST_SPAWN_TASK:
+		slurm_free_spawn_task_request_msg(data);
+		break;
+	case REQUEST_SIGNAL_TASKS:
+	case REQUEST_TERMINATE_TASKS:
+		slurm_free_kill_tasks_msg(data);
+		break;
+	case REQUEST_KILL_TIMELIMIT:
+		slurm_free_timelimit_msg(data);
+		break; 
+	case REQUEST_REATTACH_TASKS:
+		slurm_free_reattach_tasks_request_msg(data);
+		break;
+	case REQUEST_SIGNAL_JOB:
+		slurm_free_signal_job_msg(data);
+		break;
+	case REQUEST_TERMINATE_JOB:
+		slurm_free_kill_job_msg(data);
+		break;
+	case REQUEST_UPDATE_JOB_TIME:
+		slurm_free_update_job_time_msg(data);
+		break;
+	case REQUEST_JOB_ID:
+		slurm_free_job_id_request_msg(data);
+		break;
+	case REQUEST_FILE_BCAST:
+		slurm_free_file_bcast_msg(data);
+		break;
+	case RESPONSE_SLURM_RC:
+		slurm_free_return_code_msg(data);
+		break;
+	default:
+		error("invalid type trying to be freed %u", type);
+		break; 
+	}
+	return SLURM_SUCCESS;
+}
+

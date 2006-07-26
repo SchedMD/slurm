@@ -39,7 +39,8 @@ step_rec_t step;
 int thr_finished = 0;
 	
 void *_stat_thread(void *args);
-int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id);
+int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id, 
+		 uint32_t step_id);
 int _process_results();
 
 void *_stat_thread(void *args)
@@ -149,36 +150,37 @@ cleanup:
 	return NULL;
 }
 
-int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
+int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
+		 uint32_t step_id)
 {
 	slurm_msg_t *msg_array_ptr;
 	stat_jobacct_msg_t r;
 	int i;
-	int *span = set_span(job->node_cnt, 0);
+	int *span = set_span(step_layout->node_cnt, 0);
 	forward_t forward;
 	int thr_count = 0;
 	
 	debug("getting the stat of job %d on %d nodes", 
-	      job->job_id, job->node_cnt);
+	      job_id, step_layout->node_cnt);
 
 	memset(&step.sacct, 0, sizeof(sacct_t));
 	step.sacct.min_cpu = (float)NO_VAL;
-	step.header.jobnum = job->job_id;
+	step.header.jobnum = job_id;
 	step.header.partition = NULL;
 	step.header.blockid = NULL;
 	step.stepnum = step_id;
-	step.nodes = job->node_list;
+	step.nodes = step_layout->node_list;
 	step.stepname = NULL;
 	step.status = JOB_RUNNING;
 	step.ntasks = 0;
-	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->node_cnt);
+	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) * step_layout->node_cnt);
 	
 	/* Common message contents */
-	r.job_id      = job->job_id;
+	r.job_id      = job_id;
 	r.step_id     = step_id;
 	r.jobacct     = jobacct_g_alloc(NULL);
 
-	forward.cnt = job->node_cnt;
+	forward.cnt = step_layout->node_cnt;
 	/* we need this for forwarding, but not really anything else, so 
 	   this can be set to any sting as long as there are the same 
 	   number as hosts we are going to */
@@ -186,12 +188,12 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 	for(i=0; i < forward.cnt; i++) {
 		strncpy(&forward.name[i*MAX_SLURM_NAME], "-", MAX_SLURM_NAME);
 	}
-	forward.addr = job->node_addr;
+	forward.addr = step_layout->node_addr;
 	forward.node_id = NULL;
 	forward.timeout = 5000;
 	
 	thr_count = 0;
-	for (i = 0; i < job->node_cnt; i++) {
+	for (i = 0; i < forward.cnt; i++) {
 		pthread_attr_t attr;
 		pthread_t threadid;
 		slurm_msg_t *m = &msg_array_ptr[thr_count];
@@ -203,7 +205,7 @@ int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
 		m->orig_addr.sin_addr.s_addr = 0;
 		
 		memcpy(&m->address, 
-		       &job->node_addr[i], 
+		       &forward.addr[i], 
 		       sizeof(slurm_addr));
 		
 		forward_set(&m->forward,
@@ -268,7 +270,7 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	stat_jobacct_msg_t req;
-	resource_allocation_response_msg_t *job = NULL;
+	slurm_step_layout_t *step_layout = NULL;
 	int rc = SLURM_SUCCESS;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
@@ -286,8 +288,8 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	jobacct_g_free(req.jobacct);
 	
 	switch (resp_msg.msg_type) {
-	case RESPONSE_RESOURCE_ALLOCATION:
-		job = (resource_allocation_response_msg_t *)resp_msg.data;
+	case RESPONSE_STEP_LAYOUT:
+		step_layout = (slurm_step_layout_t *)resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -300,13 +302,13 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 		break;
 	}
 		
-	if(!job) {
+	if(!step_layout) {
 		error("didn't get the job record rc = %s", slurm_strerror(rc));
 		return rc;
 	}
 
-	_sacct_query(job, stepid);
-	slurm_free_resource_allocation_response_msg(job);	
+	_sacct_query(step_layout, jobid, stepid);
+	step_layout_destroy(step_layout);	
 	
 	_process_results();
 	return rc;
