@@ -290,7 +290,6 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 	slurm_pack_slurm_addr_array(step_layout->node_addr, 
 				    step_layout->node_cnt, buffer);
 
-	pack32_array(step_layout->tasks, step_layout->node_cnt, buffer);
 	for(i=0; i<step_layout->node_cnt; i++) {
 		pack32_array(step_layout->tids[i], step_layout->tasks[i], 
 			     buffer);
@@ -300,7 +299,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 {
 	uint16_t uint16_tmp;
-	uint32_t uint32_tmp;
+	uint32_t num_tids;
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 	
@@ -325,20 +324,14 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 	if (uint16_tmp != step_layout->node_cnt)
 		goto unpack_error;
 	
-	safe_unpack32_array(&(step_layout->tasks), 
-			    &uint32_tmp, buffer);
-	if (uint32_tmp != step_layout->node_cnt)
-		goto unpack_error;
-	
+	step_layout->tasks = xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
 	step_layout->tids = xmalloc(sizeof(uint32_t *) 
 				    * step_layout->node_cnt);
-	
-	for(i=0; i<step_layout->node_cnt; i++) {
+	for(i = 0; i < step_layout->node_cnt; i++) {
 		safe_unpack32_array(&(step_layout->tids[i]), 
-				    &uint32_tmp, 
+				    &num_tids,
 				    buffer);
-		if (uint32_tmp != step_layout->tasks[i])
-			goto unpack_error;
+		step_layout->tasks[i] = num_tids;
 	}
 				
 	return SLURM_SUCCESS;
@@ -356,11 +349,11 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 	if(step_layout) {
 		xfree(step_layout->node_list);
 		xfree(step_layout->node_addr);
-		for (i=0; i<step_layout->node_cnt; i++) {
+		xfree(step_layout->tasks);
+		for (i = 0; i < step_layout->node_cnt; i++) {
 			xfree(step_layout->tids[i]);
 		}
 		xfree(step_layout->tids);
-		xfree(step_layout->tasks);
 		
 		xfree(step_layout);
 	}
