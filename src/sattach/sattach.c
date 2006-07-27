@@ -40,14 +40,19 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/hostlist.h"
 
 #include "src/sattach/opt.h"
+
+void print_layout_info(slurm_step_layout_t *layout);
 
 int main(int argc, char *argv[])
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
+	slurm_step_layout_t *layout;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -61,5 +66,34 @@ int main(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
+	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
+	if (layout == NULL) {
+		error("Could not get job step info: %m");
+		return 1;
+	}
+
+	print_layout_info(layout);
+
+	slurm_job_step_layout_free(layout);
+
 	return 0;
+}
+
+void print_layout_info(slurm_step_layout_t *layout)
+{
+	hostlist_t nl;
+	int i, j;
+
+	info("node count = %d", layout->node_cnt);
+	info("total task count = %d", layout->task_cnt);
+	info("node names = \"%s\"", layout->node_list);
+	nl = hostlist_create(layout->node_list);
+	for (i = 0; i < layout->node_cnt; i++) {
+		char *name = hostlist_nth(nl, i);
+		info("%s: node %d, tasks %d", name, i, layout->tasks[i]);
+		for (j = 0; j < layout->tasks[i]; j++) {
+			info("\ttask %d", layout->tids[i][j]);
+		}
+		free(name);
+	}
 }
