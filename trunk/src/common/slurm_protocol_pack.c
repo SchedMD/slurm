@@ -220,6 +220,9 @@ static int _unpack_complete_batch_script_msg(
 static void _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer);
 static int _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer);
 
+static void _pack_job_step_id_msg(job_step_id_msg_t * msg, Buf buffer);
+static int _unpack_job_step_id_msg(job_step_id_msg_t ** msg_ptr, Buf buffer);
+
 static void _pack_step_complete_msg(step_complete_msg_t * msg,
 				    Buf buffer);
 static int _unpack_step_complete_msg(step_complete_msg_t **
@@ -544,6 +547,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_stat_jobacct_msg((stat_jobacct_msg_t *) msg->data, 
 				       buffer);
 		break;
+	case REQUEST_STEP_LAYOUT:
+		_pack_job_step_id_msg((job_step_id_msg_t *)msg->data, buffer);
+		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data, 
 					buffer);
@@ -833,6 +839,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case MESSAGE_STAT_JOBACCT:
 		rc = _unpack_stat_jobacct_msg(
 			(stat_jobacct_msg_t **) &(msg->data), buffer);
+		break;
+	case REQUEST_STEP_LAYOUT:
+		_unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data, 
+					buffer);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		unpack_slurm_step_layout((slurm_step_layout_t **)&msg->data, 
@@ -3051,6 +3061,35 @@ unpack_error:
 	return SLURM_ERROR;
 
 }
+
+static void 
+_pack_job_step_id_msg(job_step_id_msg_t * msg, Buf buffer)
+{
+	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->step_id, buffer);
+}
+
+
+static int 
+_unpack_job_step_id_msg(job_step_id_msg_t ** msg_ptr, Buf buffer)
+{
+	job_step_id_msg_t *msg;
+	
+	msg = xmalloc(sizeof(job_step_id_msg_t));
+	*msg_ptr = msg;	
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->step_id, buffer);
+	
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+
+}
+
 
 static void 
 _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
