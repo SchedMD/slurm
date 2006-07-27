@@ -501,7 +501,7 @@ typedef struct job_step_create_response_msg {
 	   is the number of tasks assigned to the corresponding node */
 	uint32_t *tasks;
 	
-	/* Array (of lenght "node_cnt") of task ID arrays.  The length
+	/* Array (of length "node_cnt") of task ID arrays.  The length
 	   of each subarray is designated by the corresponding value in
            the tasks array. */
 	uint32_t **tids;
@@ -520,7 +520,7 @@ typedef struct slurm_step_layout {
 	   is the number of tasks assigned to the corresponding node */
 	uint32_t *tasks;
 
-	/* Array (of lenght "node_cnt") of task ID arrays.  The length
+	/* Array (of length "node_cnt") of task ID arrays.  The length
 	   of each subarray is designated by the corresponding value in
            the tasks array. */
 	uint32_t **tids;	/* host id => task id mapping */
@@ -1269,6 +1269,19 @@ extern void slurm_print_job_step_info_msg PARAMS((
 extern void slurm_print_job_step_info PARAMS(( 
 	FILE * out, job_step_info_t * step_ptr, int one_liner ));
 
+/*
+ * slurm_job_step_layout_get - get the slurm_step_layout_t structure for
+ *      a particular job step
+ *
+ * IN job_id
+ * IN step_id
+ * RET pointer to a slurm_step_layout_t (free with
+ *   slurm_free_step_layout) on success, and NULL on error.
+ */
+extern slurm_step_layout_t *slurm_job_step_layout_get PARAMS((uint32_t job_id,
+	                                                    uint32_t step_id));
+
+void slurm_job_step_layout_free PARAMS((slurm_step_layout_t *layout));
 
 /*****************************************************************************\
  *	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

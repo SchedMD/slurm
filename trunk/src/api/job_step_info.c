@@ -150,3 +150,38 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
+extern slurm_step_layout_t *
+slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
+{
+	job_step_id_msg_t data;
+	slurm_msg_t req, resp;
+	int errnum;
+
+	req.msg_type = REQUEST_STEP_LAYOUT;
+	req.data = &data;
+	data.job_id = job_id;
+	data.step_id = step_id;
+
+	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
+		return NULL;
+	}
+
+	switch (resp.msg_type) {
+	case RESPONSE_STEP_LAYOUT:
+		return (slurm_step_layout_t *)resp.data;
+	case RESPONSE_SLURM_RC:
+		errnum = ((return_code_msg_t *)resp.data)->return_code;
+		slurm_free_return_code_msg(resp.data);
+		errno = errnum;
+		return NULL;
+	default:
+		errno = SLURM_UNEXPECTED_MSG_ERROR;
+		return NULL;
+	}
+}
+
+void
+slurm_job_step_layout_free(slurm_step_layout_t *layout)
+{
+	step_layout_destroy(layout);
+}
