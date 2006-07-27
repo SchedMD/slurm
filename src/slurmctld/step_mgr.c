@@ -457,6 +457,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			/* set the nodes_avail to be the new set */
 			FREE_NULL_BITMAP(nodes_avail);
 			nodes_avail = selected_nodes;
+			step_spec->node_count = bit_set_count(nodes_avail);
 		}
 	}
 	
@@ -496,8 +497,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
-	/* temp = bitmap2node_name(nodes_avail); */
-/* 	info("can pick from %s", temp); */
+/* 	temp = bitmap2node_name(nodes_avail); */
+/* 	info("can pick from %s %d", temp, step_spec->node_count); */
 /* 	xfree(temp); */
 /* 	temp = bitmap2node_name(nodes_idle); */
 /* 	info("can pick from %s", temp); */
