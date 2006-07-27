@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  dist_tasks.c - function to distribute tasks over nodes.
+ *  slurm_step_layout.c - function to distribute tasks over nodes.
  *  $Id: slurm.hp.elan.patch,v 1.1 2005/07/28 04:08:19 cholmes Exp $
  *****************************************************************************
  *
@@ -29,8 +29,8 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _DIST_TASKS_H
-#define _DIST_TASKS_H
+#ifndef _SLURM_STEP_LAYOUT_H
+#define _SLURM_STEP_LAYOUT_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -47,29 +47,49 @@
 #include "src/common/pack.h"
 
 /* 
- * distribute_tasks - determine how many tasks of a job will be run on each.
- *                    node. Distribution is influenced by number of cpus on
- *                    each host. 
- * IN mlist - hostlist corresponding to cpu arrays
- * IN num_cpu_groups - elements in below cpu arrays
+ * slurm_step_layout_create - determine how many tasks of a job will be 
+ *                    run on each node. Distribution is influenced 
+ *                    by number of cpus on each host. 
+ * IN tlist - hostlist corresponding to task layout
  * IN cpus_per_node - cpus per node
  * IN cpu_count_reps - how many nodes have same cpu count
- * IN tlist - hostlist of nodes on which to distribute tasks
- *               (assumed to be a subset of masterlist)
- * IN num_tasks - number of tasks to distribute across these cpus
- * RET a pointer to an integer array listing task counts per node
+ * IN node_cnt - number of nodes we have 
+ * IN task_cnt - number of tasks to distribute across these cpus
+ * IN task_dist - type of distribution we are using 
+ * RET a pointer to an slurm_step_layout_t structure
  * NOTE: allocates memory that should be xfreed by caller
  */
-extern slurm_step_layout_t *distribute_tasks(const char *tlist,
-					     uint32_t *cpus_per_node, 
-					     uint32_t *cpu_count_reps,
-					     uint16_t num_cpu_groups,
-					     uint16_t num_hosts, 
-					     uint32_t num_tasks,
-					     uint16_t task_dist);
+extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
+						     uint32_t *cpus_per_node, 
+						     uint32_t *cpu_count_reps,
+						     uint16_t node_cnt, 
+						     uint32_t task_cnt,
+						     uint16_t task_dist);
+
+/* 
+ * fake_slurm_step_layout_create - used when you don't allocate a job from the
+ *                    controller does not set up anything 
+ *                    that should really be used with a switch. 
+ *                    Or to really lay out tasks any any certain fashion. 
+ * IN tlist - hostlist corresponding to task layout
+ * IN cpus_per_node - cpus per node NULL if no allocation
+ * IN cpu_count_reps - how many nodes have same cpu count NULL if no allocation
+ * IN node_cnt - number of nodes we have 
+ * IN task_cnt - number of tasks to distribute across these cpus 0 
+ *               if using cpus_per_node
+ * RET a pointer to an slurm_step_layout_t structure
+ * NOTE: allocates memory that should be xfreed by caller
+ */
+extern slurm_step_layout_t *fake_slurm_step_layout_create(
+	const char *tlist,
+	uint32_t *cpus_per_node, 
+	uint32_t *cpu_count_reps,
+	uint16_t node_cnt, 
+	uint32_t task_cnt);
 
 /* copys structure for step layout */
-extern slurm_step_layout_t *step_layout_copy(slurm_step_layout_t *step_layout);
+extern slurm_step_layout_t *slurm_step_layout_copy(
+	slurm_step_layout_t *step_layout);
 
 /* pack and unpack structure */
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout, 
@@ -77,11 +97,10 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer);
 
 /* destroys structure for step layout */
-extern int step_layout_destroy(slurm_step_layout_t *step_layout);
+extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout);
 
-extern int step_layout_host_id (slurm_step_layout_t *s, int taskid);
+/* get info from the structure */
+extern int slurm_step_layout_host_id (slurm_step_layout_t *s, int taskid);
+extern char *slurm_step_layout_host_name (slurm_step_layout_t *s, int hostid);
 
-extern char *step_layout_host_name (slurm_step_layout_t *s, int hostid);
-extern char *nodelist_nth_host(const char *nodelist, int inx);
-
-#endif /* !_DIST_TASKS_H */
+#endif /* !_SLURM_STEP_LAYOUT_H */

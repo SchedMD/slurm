@@ -193,7 +193,6 @@ int srun(int ac, char **av)
 		_switch_standalone(job);
 
 	} else if (opt.allocate) {
-		int cpu_cnt = 0, cpu_inx = 0, i;
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
@@ -207,25 +206,14 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 		
 		job = job_create_allocation(resp);
-		job->step_layout = xmalloc(sizeof(slurm_step_layout_t));
-		job->step_layout->node_list = xstrdup(resp->node_list);
-		job->step_layout->node_cnt = resp->node_cnt;
-		job->step_layout->tasks = xmalloc(sizeof(uint32_t) 
-						  * resp->node_cnt);
-		job->step_layout->task_cnt = 0;
-		for (i=0; i<job->step_layout->node_cnt; i++) {
-			job->step_layout->tasks[i] = 
-				resp->cpus_per_node[cpu_inx];
-			job->step_layout->task_cnt += 
-				job->step_layout->tasks[i];
-	
-			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) {
-				/* move to next record */
-				cpu_inx++;
-				cpu_cnt = 0;
-			}
-		}
 		
+		job->step_layout = 
+			fake_slurm_step_layout_create(resp->node_list,
+						      resp->cpus_per_node,
+						      resp->cpu_count_reps,
+						      resp->node_cnt, 0);
+		if(!job->step_layout)
+			exit(1);
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
@@ -1083,7 +1071,7 @@ srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 		}
 		if (job->ifname->type == IO_ONE) {
 			cio_fds->in.taskid = job->ifname->taskid;
-			cio_fds->in.nodeid = step_layout_host_id(
+			cio_fds->in.nodeid = slurm_step_layout_host_id(
 				job->step_layout, job->ifname->taskid);
 		}
 	}

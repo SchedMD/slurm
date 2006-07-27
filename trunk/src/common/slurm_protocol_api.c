@@ -1892,7 +1892,7 @@ extern int *set_span(int total,  uint16_t tree_width)
 /*
  * Free a slurm message
  */
-void slurm_free_msg(slurm_msg_t * msg)
+extern void slurm_free_msg(slurm_msg_t * msg)
 {
 	(void) g_slurm_auth_destroy(msg->auth_cred);
 	if(msg->ret_list) {
@@ -1905,13 +1905,13 @@ void slurm_free_msg(slurm_msg_t * msg)
  * Free just the credential of a message 
  * Needed by the api.
  */
-void slurm_auth_cred_destroy(void *auth_cred)
+extern void slurm_auth_cred_destroy(void *auth_cred)
 {	
 	(void) g_slurm_auth_destroy(auth_cred);
 }
 
 
-int convert_to_kilo(int number, char *tmp)
+extern int convert_to_kilo(int number, char *tmp)
 {
 	int i;
 	if(number >= 1024) {
@@ -1926,6 +1926,14 @@ int convert_to_kilo(int number, char *tmp)
 		sprintf(tmp, "%d", number);
 
 	return SLURM_SUCCESS;
+}
+
+extern char *nodelist_nth_host(const char *nodelist, int inx)
+{
+	hostlist_t hl = hostlist_create(nodelist);
+	char *name = hostlist_nth(hl, inx);
+	hostlist_destroy(hl);
+	return name;
 }
 
 #if _DEBUG

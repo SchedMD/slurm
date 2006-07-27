@@ -491,25 +491,6 @@ typedef struct job_step_specs {
 	char *name;		/* name of the job step, default "" */
 } job_step_create_request_msg_t;
 
-typedef struct job_step_create_response_msg {
-	uint32_t job_step_id;	/* assigned job step id */
-	uint16_t node_cnt;     /* number of nodes in step */
-	char *node_list;            /* list of nodes in step */	
-	slurm_addr *node_addr;  /* corisponding addresses */
-
-	/* Array of length "node_cnt". Each element of the array
-	   is the number of tasks assigned to the corresponding node */
-	uint32_t *tasks;
-	
-	/* Array (of length "node_cnt") of task ID arrays.  The length
-	   of each subarray is designated by the corresponding value in
-           the tasks array. */
-	uint32_t **tids;
-
-	slurm_cred_t cred;      /* slurm job credential */
-	switch_jobinfo_t switch_job;	/* switch context, opaque data structure */
-} job_step_create_response_msg_t;
-
 typedef struct slurm_step_layout {
 	uint16_t node_cnt;	/* node count */
 	uint32_t task_cnt;	/* total number of tasks in the step */
@@ -525,6 +506,15 @@ typedef struct slurm_step_layout {
            the tasks array. */
 	uint32_t **tids;	/* host id => task id mapping */
 } slurm_step_layout_t;
+
+typedef struct job_step_create_response_msg {
+	uint32_t job_step_id;	/* assigned job step id */
+	slurm_step_layout_t *step_layout; /* information about how the 
+                                             step is laid out */
+	slurm_cred_t cred;      /* slurm job credential */
+	switch_jobinfo_t switch_job;	/* switch context, opaque 
+                                           data structure */
+} job_step_create_response_msg_t;
 
 typedef struct slurm_step_io_fds {
 	struct {

@@ -54,7 +54,7 @@ if {[is_super_user] == 0} {
 set host_0      ""
 set nodelist_name ""
 set timeout $max_job_delay
-spawn $srun -v -N1 -l $bin_hostname  
+spawn $srun -v -N1 -l $bin_printenv SLURMD_NODENAME  
 expect {
 	-re "on host ($alpha_numeric)," {
 		set nodelist_name $expect_out(1,string)
@@ -97,7 +97,7 @@ set include_node $nodelist_name
 set host_1      ""
 set slurm_user  1
 set timeout     10
-spawn $srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_hostname  
+spawn $srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_printenv SLURMD_NODENAME  
 expect {
 	-re "Invalid job credential" {
 		send_user "\nWARNING: Not SlurmUser or root.\n"
@@ -134,7 +134,7 @@ if {$slurm_user == 0} {
 	exit 0;
 }
 if {[string compare $host_0 $host_1]} {
-	send_user "\nFAILURE: host name value wrong\n"
+	send_user "\nFAILURE: host name value wrong $host_0 $host_1\n"
 	set exit_code 1
 }
 
@@ -164,7 +164,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	exec $bin_usleep 250000
 
 	set failures 0
-	spawn $srun -N1 --nodelist=$include_node -t1 -l $bin_hostname
+	spawn $srun -N1 --nodelist=$include_node -t1 -l $bin_printenv SLURMD_NODENAME
 	set   alloc $spawn_id
 
 	spawn $srun -N1 --nodelist=$include_node -Z $bin_usleep 500000

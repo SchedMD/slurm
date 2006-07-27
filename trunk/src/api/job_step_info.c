@@ -183,5 +183,5 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
 void
 slurm_job_step_layout_free(slurm_step_layout_t *layout)
 {
-	step_layout_destroy(layout);
+	slurm_step_layout_destroy(layout);
 }
