@@ -96,7 +96,7 @@ job_create_noalloc(void)
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
 	uint32_t cpn = 1;
-	int i;
+	int i, j, task_cnt=0;;
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 	char *name;
 
@@ -129,12 +129,17 @@ job_create_noalloc(void)
 	job->step_layout->node_list = xstrdup(ai->nodelist);
 	job->step_layout->node_cnt = ai->nnodes;
 	job->step_layout->tasks = xmalloc(sizeof(uint32_t) * ai->nnodes);
+	job->step_layout->tids  = xmalloc(sizeof(uint32_t *) * ai->nnodes);
 	job->step_layout->node_addr = 
 		xmalloc(sizeof(slurm_addr) * ai->nnodes);
 
 	job->step_layout->task_cnt = 0;
 	for (i=0; i<job->step_layout->node_cnt; i++) {
 		job->step_layout->tasks[i] = cpn;
+		job->step_layout->tids[i] = xmalloc(sizeof(uint32_t) * cpn);
+		for (j=0; j<cpn; j++) 
+			job->step_layout->tids[i][j] = task_cnt++;
+		
 		name = hostlist_shift(hl);
 		if(!name) {
 			error("job_create_noalloc: "
