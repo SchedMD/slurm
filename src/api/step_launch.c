@@ -224,7 +224,6 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	}
 
 	_launch_tasks(ctx, &launch);
-	xfree(launch.cpus_allocated);
 	return SLURM_SUCCESS;
 }
 
