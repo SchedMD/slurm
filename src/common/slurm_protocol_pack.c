@@ -1639,18 +1639,10 @@ static void
 _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 				   Buf buffer)
 {
-	int i;
 	xassert(msg != NULL);
 
 	pack32((uint32_t)msg->job_step_id, buffer);
-	pack16((uint16_t)msg->node_cnt, buffer);
-	packstr(msg->node_list, buffer);
-	slurm_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
-
-	pack32_array(msg->tasks, msg->node_cnt, buffer);
-	for(i=0; i<msg->node_cnt; i++) 
-		pack32_array(msg->tids[i], msg->tasks[i], buffer);
-	
+	pack_slurm_step_layout(msg->step_layout, buffer);
 	slurm_cred_pack(msg->cred, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
 
@@ -1661,35 +1653,16 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 				     Buf buffer)
 {
 	job_step_create_response_msg_t *tmp_ptr = NULL;
-	uint16_t uint16_tmp;
-	uint32_t uint32_tmp;
-	int i;
-
+	
 	/* alloc memory for structure */
 	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
 	safe_unpack32(&tmp_ptr->job_step_id, buffer);
-	
-	safe_unpack16(&tmp_ptr->node_cnt, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint16_tmp, buffer);
-	if (slurm_unpack_slurm_addr_array(
-		    &(tmp_ptr->node_addr), &uint16_tmp, buffer))
+	if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer))
 		goto unpack_error;
-	if (uint16_tmp != tmp_ptr->node_cnt)
-		goto unpack_error;
-	
-	safe_unpack32_array(&(tmp_ptr->tasks), &uint32_tmp, buffer);
-	if (uint32_tmp != tmp_ptr->node_cnt)
-		goto unpack_error;
-	tmp_ptr->tids = xmalloc(sizeof(uint32_t *) * tmp_ptr->node_cnt);
-	for(i=0; i<tmp_ptr->node_cnt; i++) {
-		safe_unpack32_array(&(tmp_ptr->tids[i]), &uint32_tmp, buffer);
-		if (uint32_tmp != tmp_ptr->tasks[i])
-			goto unpack_error;
-	}
-		
+			
 	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 

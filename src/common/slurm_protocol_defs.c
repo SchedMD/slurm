@@ -715,18 +715,9 @@ void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
 void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg)
 {
-	int i;
 	if (msg) {
+		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
-		xfree(msg->node_list);
-		xfree(msg->node_addr);
-		for (i=0; i<msg->node_cnt; i++) {
-			xfree(msg->tids[i]);
-		}
-				
-		xfree(msg->tasks);
-		xfree(msg->tids);
-		
 		if (msg->switch_job)
 			switch_free_jobinfo(msg->switch_job);
 

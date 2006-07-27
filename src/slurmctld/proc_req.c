@@ -999,7 +999,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid;
-	int i;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_STEP_CREATE");
@@ -1047,27 +1046,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 			req_step_msg->node_list, TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
-		job_step_resp.node_cnt = layout->node_cnt;
-		job_step_resp.node_list = xstrdup(layout->node_list);
-		job_step_resp.node_addr = xmalloc(sizeof(slurm_addr) *
-						  layout->node_cnt);
-		memcpy(job_step_resp.node_addr, layout->node_addr,
-		       (sizeof(slurm_addr) * layout->node_cnt));
+		job_step_resp.step_layout = slurm_step_layout_copy(layout);
 		
-		job_step_resp.tasks = 
-			xmalloc(sizeof(uint32_t) * layout->node_cnt);
-		memcpy(job_step_resp.tasks, layout->tasks, 
-		       (sizeof(uint32_t) * layout->node_cnt));
-
-		job_step_resp.tids = 
-			xmalloc(sizeof(uint32_t *) * layout->node_cnt);
-		for (i=0; i<layout->node_cnt; i++) {
-			job_step_resp.tids[i] = xmalloc(sizeof(uint32_t) * 
-							layout->tasks[i]);
-			memcpy(job_step_resp.tids[i], layout->tids[i], 
-			       (sizeof(uint32_t) * layout->tasks[i]));
-		}	
-	
 		job_step_resp.cred        = slurm_cred;
 		job_step_resp.switch_job  = switch_copy_jobinfo(
 						step_rec->switch_job);
@@ -1081,16 +1061,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		resp.forward_struct_init = 0;
 	
 		slurm_send_node_msg(msg->conn_fd, &resp);
+		slurm_step_layout_destroy(job_step_resp.step_layout);
 		slurm_cred_destroy(slurm_cred);
 		switch_free_jobinfo(job_step_resp.switch_job);
-		xfree(job_step_resp.node_list);
-		xfree(job_step_resp.node_addr);
-		for (i=0; i<job_step_resp.node_cnt; i++) {
-			xfree(job_step_resp.tids[i]);
-		}
-	
-		xfree(job_step_resp.tasks);
-		xfree(job_step_resp.tids);
 		
 		schedule_job_save();	/* Sets own locks */
 	}
@@ -1700,7 +1673,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
-	step_layout = step_layout_copy(step_ptr->step_layout);
+	step_layout = slurm_step_layout_copy(step_ptr->step_layout);
 	unlock_slurmctld(job_read_lock);
 
 	response_msg.msg_type    = RESPONSE_STEP_LAYOUT;
@@ -1710,7 +1683,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	response_msg.forward_struct_init = 0;
 	
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	step_layout_destroy(step_layout);
+	slurm_step_layout_destroy(step_layout);
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */

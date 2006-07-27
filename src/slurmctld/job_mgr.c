@@ -941,7 +941,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 
-	step_layout_destroy(step_ptr->step_layout);
+	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout = step_layout;
 	
 	step_ptr->time_last_active = time(NULL);
@@ -975,7 +975,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	xfree(bit_fmt);
 	if (switch_tmp)
 		switch_free_jobinfo(switch_tmp);
-	step_layout_destroy(step_layout);
+	slurm_step_layout_destroy(step_layout);
 	return SLURM_FAILURE;
 }
 

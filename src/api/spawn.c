@@ -95,10 +95,11 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	int i, rc = SLURM_SUCCESS;
 	uint16_t slurmd_debug = 0;
 	char *env_var;
-	hostlist_t hostlist = NULL;
-	hostlist_iterator_t itr = NULL;
+	/* hostlist_t hostlist = NULL; */
+/* 	hostlist_iterator_t itr = NULL; */
 	int task_cnt = 0;
 	uint32_t *cpus = NULL;
+	slurm_step_layout_t *step_layout = ctx->step_resp->step_layout;
 
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC) ||
@@ -119,8 +120,8 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	}
 
 	/* validate fd_array and bind them to ports */
-	sock_array = xmalloc(ctx->step_resp->node_cnt * sizeof(int));
-	for (i=0; i<ctx->step_resp->node_cnt; i++) {
+	sock_array = xmalloc(step_layout->node_cnt * sizeof(int));
+	for (i=0; i<step_layout->node_cnt; i++) {
 		if (fd_array[i] < 0) {
 			slurm_seterrno(EINVAL);
 			free(sock_array);
@@ -133,19 +134,19 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 			return SLURM_ERROR;
 		}
 		listen(fd_array[i], 5);
-		task_cnt += ctx->step_resp->tasks[i];
+		task_cnt += step_layout->tasks[i];
 	}
-	cpus = ctx->step_resp->tasks;
+	cpus = step_layout->tasks;
 
 	msg_array_ptr = xmalloc(sizeof(spawn_task_request_msg_t) *
-				ctx->step_resp->node_cnt);
+				step_layout->node_cnt);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * 
-				ctx->step_resp->node_cnt);
+				step_layout->node_cnt);
 
-	hostlist = hostlist_create(ctx->alloc_resp->node_list);		
-	itr = hostlist_iterator_create(hostlist);
+	//hostlist = hostlist_create(step_layout->node_list);
+	//itr = hostlist_iterator_create(hostlist);
 
-	for (i=0; i<ctx->step_resp->node_cnt; i++) {
+	for (i=0; i<step_layout->node_cnt; i++) {
 		spawn_task_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t              *m = &req_array_ptr[i];
 
@@ -159,28 +160,28 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->envc		= ctx->envc;
 		r->env		= ctx->env;
 		r->cwd		= ctx->cwd;
-		r->nnodes	= ctx->step_resp->node_cnt;
+		r->nnodes	= step_layout->node_cnt;
 		r->nprocs	= task_cnt;
 		r->switch_job	= ctx->step_resp->switch_job; 
 		r->slurmd_debug	= slurmd_debug;
 		/* Task specific message contents */
-		r->global_task_id	= ctx->step_resp->tids[i][0];
+		r->global_task_id	= step_layout->tids[i][0];
 		r->cpus_allocated	= cpus[i];
 		r->srun_node_id	= (uint32_t) i;
 		r->io_port	= ntohs(sock_array[i]);
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;
 		
-		memcpy(&m->address, &ctx->step_resp->node_addr[i], 
-			sizeof(slurm_addr));
+		memcpy(&m->address, &step_layout->node_addr[i], 
+		       sizeof(slurm_addr));
 #if		_DEBUG
 		printf("tid=%d, fd=%d, port=%u, node_id=%u\n",
-			ctx->step_resp->tids[i][0], 
+			step_layout->tids[i][0], 
 		       fd_array[i], r->io_port, i);
 #endif
 	}
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(hostlist);
+	//hostlist_iterator_destroy(itr);
+	//hostlist_destroy(hostlist);
 	rc = _p_launch(req_array_ptr, ctx);
 
 	xfree(msg_array_ptr);
@@ -326,20 +327,21 @@ static int _p_launch(slurm_msg_t *req, slurm_step_ctx ctx)
 {
 	int rc = SLURM_SUCCESS, i;
 	thd_t *thd;
+	slurm_step_layout_t *step_layout = ctx->step_resp->step_layout;
 
-	thd = xmalloc(sizeof(thd_t) * ctx->step_resp->node_cnt);
+	thd = xmalloc(sizeof(thd_t) * step_layout->node_cnt);
 	if (thd == NULL) {
 		slurm_seterrno(ENOMEM);
 		return SLURM_ERROR;
 	}
 
-	for (i=0; i<ctx->step_resp->node_cnt; i++) {
+	for (i=0; i<step_layout->node_cnt; i++) {
 		thd[i].state = DSH_NEW;
 		thd[i].req = &req[i];
 	}
 
 	/* start all the other threads (up to _MAX_THREAD_COUNT active) */
-	for (i=0; i<ctx->step_resp->node_cnt; i++) {
+	for (i=0; i<step_layout->node_cnt; i++) {
 		/* wait until "room" for another thread */
 		slurm_mutex_lock(&thread_mutex);
 		while (threads_active >= _MAX_THREAD_COUNT) {
@@ -368,7 +370,7 @@ static int _p_launch(slurm_msg_t *req, slurm_step_ctx ctx)
 
 	/* wait for all tasks to terminate */
 	slurm_mutex_lock(&thread_mutex);
-	for (i=0; i<ctx->step_resp->node_cnt; i++) {
+	for (i=0; i<step_layout->node_cnt; i++) {
 		while (thd[i].state < DSH_DONE) {
 			/* wait until another thread completes*/
 			pthread_cond_wait(&thread_cond, &thread_mutex);

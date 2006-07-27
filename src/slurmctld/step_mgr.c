@@ -118,7 +118,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		checkpoint_free_jobinfo(step_ptr->check_job);
 		xfree(step_ptr->host);
 		xfree(step_ptr->name);
-		step_layout_destroy(step_ptr->step_layout);
+		slurm_step_layout_destroy(step_ptr->step_layout);
 		jobacct_g_free(step_ptr->jobacct);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
@@ -165,7 +165,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			checkpoint_free_jobinfo (step_ptr->check_job);
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
-			step_layout_destroy(step_ptr->step_layout);
+			slurm_step_layout_destroy(step_ptr->step_layout);
 			jobacct_g_free(step_ptr->jobacct);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
@@ -796,9 +796,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 		}
 	}
 	/* layout the tasks on the nodes */
-	return distribute_tasks(step_node_list,
-				cpus_per_node, cpu_count_reps, (cpu_inx+1),
-				node_count, num_tasks, task_dist);
+	return slurm_step_layout_create(step_node_list,
+					cpus_per_node, cpu_count_reps, 
+					node_count, num_tasks, task_dist);
 }
 
 /* Pack the data for a specific job step record

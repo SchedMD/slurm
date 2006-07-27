@@ -114,7 +114,7 @@ int slaunch(int argc, char **argv)
 	int rc;
 	uint32_t *hostids = NULL;
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-	int task_cnt = 0, i, j;
+	int i, j;
 	
 	/* Initialize plugin stack, read options from plugins, etc. */
 	if (spank_init(NULL) < 0)
@@ -202,14 +202,12 @@ int slaunch(int argc, char **argv)
 	params.remote_error_filename = opt.remote_efname;
 	
 	/* set up the hostids */
-	for (i=0; i<step_ctx->step_resp->node_cnt; i++) {
-		task_cnt += step_ctx->step_resp->tasks[i];
-	}
-
-	hostids = xmalloc(sizeof(uint32_t) * task_cnt);
-	for (i=0; i < step_ctx->step_resp->node_cnt; i++) 
-		for (j=0; j<step_ctx->step_resp->tasks[i]; j++) 
-			hostids[step_ctx->step_resp->tids[i][j]] = i;
+	hostids = xmalloc(sizeof(uint32_t) * 
+			  step_ctx->step_resp->step_layout->task_cnt);
+	for (i=0; i < step_ctx->step_resp->step_layout->node_cnt; i++) 
+		for (j=0; j<step_ctx->step_resp->step_layout->tasks[i]; j++) 
+			hostids[step_ctx->step_resp->step_layout->tids[i][j]] 
+				= i;
 		
 	
 	/* FIXME - don't peek into the step context, that's cheating! */

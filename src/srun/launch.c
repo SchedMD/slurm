@@ -536,7 +536,13 @@ again:
 	while((ret_type = list_next(itr)) != NULL) {
 		data_itr = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(data_itr)) != NULL) {
-			
+			if(!ret_data_info->node_name) {
+				name = nodelist_nth_host(
+					job->step_layout->node_list, 
+					ret_data_info->nodeid);
+				ret_data_info->node_name = xstrdup(name);
+				free(name);
+			}
 			if(ret_type->msg_rc == SLURM_SUCCESS) {
 				_update_contacted_node(job, 
 						       ret_data_info->nodeid);
@@ -544,15 +550,10 @@ again:
 			}
 			
 			errno = ret_type->err;
-			if (errno != EINTR) {
-				name = nodelist_nth_host(
-					job->step_layout->node_list, 
-					ret_data_info->nodeid);
+			if (errno != EINTR) 
 				verbose("first launch error on %s: %m",
-					name);
-				free(name);
-			}
-
+					ret_data_info->node_name);
+			
 			if ((errno != ETIMEDOUT) 
 			    && (job->state == SRUN_JOB_LAUNCHING)
 			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
@@ -567,10 +568,12 @@ again:
 						 ret_data_info->nodeid);
 				
 			if (errno == EINTR)
-				verbose("launch on %s canceled", name);
+				verbose("launch on %s canceled", 
+					ret_data_info->node_name);
 			else
-				error("second launch error on %s: %m", name);
-			free(name);
+				error("second launch error on %s: %m", 
+				      ret_data_info->node_name);
+		       
 			_update_failed_node(job, ret_data_info->nodeid);
 			
 			th->state = DSH_FAILED;

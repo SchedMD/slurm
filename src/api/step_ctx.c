@@ -125,20 +125,20 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 		break;
 	case SLURM_STEP_CTX_TASKS:
 		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
-		*uint32_array_pptr = ctx->step_resp->tasks;
+		*uint32_array_pptr = ctx->step_resp->step_layout->tasks;
 		break;
 		
 	case SLURM_STEP_CTX_TID:
 		node_inx = va_arg(ap, uint32_t);
 		if ((node_inx < 0)
-		    || (node_inx > ctx->step_resp->node_cnt)) {
+		    || (node_inx > ctx->step_resp->step_layout->node_cnt)) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
 			break;
 		}
 		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
 		*uint32_array_pptr =
-			ctx->step_resp->tids[node_inx];
+			ctx->step_resp->step_layout->tids[node_inx];
 		break;
 		
 	case SLURM_STEP_CTX_RESP:
@@ -156,19 +156,19 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 		break;
 	case SLURM_STEP_CTX_NUM_HOSTS:
 		uint32_ptr = (uint32_t *) va_arg(ap, void *);
-		*uint32_ptr = ctx->step_resp->node_cnt;
+		*uint32_ptr = ctx->step_resp->step_layout->node_cnt;
 		break;
 	case SLURM_STEP_CTX_HOST:
 		node_inx = va_arg(ap, uint32_t);
 		if ((node_inx < 0)
-		    || (node_inx > ctx->step_resp->node_cnt)) {
+		    || (node_inx > ctx->step_resp->step_layout->node_cnt)) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
 			break;
 		}
 		char_array_pptr = (char **) va_arg(ap, void *);
-		*char_array_pptr = nodelist_nth_host(ctx->step_resp->node_list,
-						     node_inx);
+		*char_array_pptr = nodelist_nth_host(
+			ctx->step_resp->step_layout->node_list, node_inx);
 		break;
 	default:
 		slurm_seterrno(EINVAL);

@@ -304,7 +304,7 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	}
 
 	_sacct_query(step_layout, jobid, stepid);
-	step_layout_destroy(step_layout);	
+	slurm_step_layout_destroy(step_layout);	
 	
 	_process_results();
 	return rc;

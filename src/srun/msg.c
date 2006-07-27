@@ -727,7 +727,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 	int              i;
 	char             buf[1024];
 	
-	if (!(host = step_layout_host_name(job->step_layout, task0)))
+	if (!(host = slurm_step_layout_host_name(job->step_layout, task0)))
 		host = "Unknown host";
 	debug2("exited host %s", host);
 	if (!job->etimeout && !tasks_exited) 
@@ -765,7 +765,8 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		}
 	}
 	
-	update_tasks_state(job, step_layout_host_id(job->step_layout, task0));
+	update_tasks_state(job, slurm_step_layout_host_id(job->step_layout, 
+							  task0));
 		
 	_print_exit_status(job, hl, host, status);
 
