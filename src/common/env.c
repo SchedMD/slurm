@@ -528,3 +528,270 @@ int setup_env(env_t *env)
 	
 	return SLURM_SUCCESS;
 }
+
+#if 0
+/**********************************************************************
+ * FIXME - Not yet fully implemented, still in the planning phase
+ **********************************************************************/
+/*
+ * Create an array of pointers to environment variables strings relevant
+ * to a SLURM job allocation.  The array is terminated by a NULL pointer,
+ * and thus is suitable for use by execle() and other env_array_* functions.
+ *
+ * Sets the variables:
+ *	SLURM_JOB_ID
+ *	SLURM_JOB_NUM_NODES
+ *	SLURM_JOB_NODELIST
+ *	SLURM_JOB_CPUS_PER_NODE
+ *
+ * Sets OBSOLETE variables:
+ *	? probably only needed for users...
+ */
+char **
+env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
+{
+	char **ptr;
+
+	ptr = env_array_create();
+	env_array_append(&ptr, "SLURM_JOB_ID", "%u", alloc->job_id);
+	env_array_append(&ptr, "SLURM_JOB_NUM_NODES", "%u", alloc->node_cnt);
+	env_array_append(&ptr, "SLURM_JOB_NODELIST", "%s", alloc->node_list);
+	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", FIXME);
+
+	return ptr;
+}
+
+/*
+ * Create an array of pointers to environment variables strings relevant
+ * to a SLURM job step.  The array is terminated by a NULL pointer,
+ * and thus is suitable for use by execle() and other env_array_* functions.
+ *
+ * Sets variables:
+ *	SLURM_STEP_ID
+ *	SLURM_STEP_NUM_NODES
+ *	SLURM_STEP_NUM_TASKS
+ *	SLURM_STEP_TASKS_PER_NODE
+ *	SLURM_STEP_LAUNCHER_HOSTNAME
+ *	SLURM_STEP_LAUNCHER_PORT
+ *	SLURM_STEP_LAUNCHER_IPADDR
+ *
+ * Sets OBSOLETE variables:
+ *	SLURM_STEPID
+ *      SLURM_NNODES
+ *	SLURM_NPROCS
+ *	SLURM_NODELIST
+ *	SLURM_TASKS_PER_NODE
+ *	SLURM_SRUN_COMM_HOST
+ *	SLURM_SRUN_COMM_PORT
+ *	SLURM_LAUNCH_NODE_IPADDR
+ *
+ */
+char **
+env_array_create_for_step(const job_step_create_response_msg_t *step,
+			  const char *launcher_hostname,
+			  uint16_t launcher_port,
+			  const char *ip_addr_str)
+{
+	char **ptr;
+
+	ptr = env_array_create();
+	env_array_append(&ptr, "SLURM_STEP_ID", "%u", step->job_step_id);
+	env_array_append(&ptr, "SLURM_STEP_NUM_NODES",
+			 "%hu", step->step_layout->node_cnt);
+	env_array_append(&ptr, "SLURM_STEP_NUM_TASKS",
+			 "%s", step->step_layout->task_cnt);
+	env_array_append(&ptr, "SLURM_STEP_TASKS_PER_NODE", "%s", FIXME);
+	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_HOSTNAME",
+			 "%s", launcher_hostname);
+	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_PORT",
+			 "%hu", launcher_port);
+	env_array_appent(&ptr, "SLURM_STEP_LAUNCHER_IPADDR",
+			 "%s", ip_addr_str);
+
+	/* OBSOLETE */
+	env_array_append(&ptr, "SLURM_STEPID", "%u", step->job_step_id);
+	env_array_append(&ptr, "SLURM_NNODES",
+			 "%hu", step->step_layout->node_cnt);
+	env_array_append(&ptr, "SLURM_NPROCS",
+			 "%s", step->step_layout->task_cnt);
+	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", FIXME);
+	env_array_append(&ptr, "SLURM_SRUN_COMM_HOST",
+			 "%s", launcher_hostname);
+	env_array_append(&ptr, "SLURM_SRUN_COMM_PORT",
+			 "%hu", launcher_port);
+	env_array_appent(&ptr, "SLURM_LAUNCH_NODE_IPADDR",
+			 "%s", ip_addr_str);
+
+	return ptr;
+}
+
+/*
+ * Enviroment variables set elsewhere
+ * ----------------------------------
+ *
+ * Set by slurmstepd:
+ *	SLURM_STEP_NODEID
+ *	SLURM_STEP_PROCID
+ *	SLURM_STEP_LOCALID
+ *
+ * OBSOLETE set by slurmstepd:
+ *	SLURM_NODEID
+ *	SLURM_PROCID
+ *	SLURM_LOCALID
+ */
+
+/***********************************************************************
+ * Environment variable array support functions
+ ***********************************************************************/
+
+/*
+ * Return an empty environment variable array (contains a single
+ * pointer to NULL).
+ */
+char **env_array_create(void)
+{
+	char **env_array;
+
+	env_array = (char **)xmalloc(sizeof(char **));
+	env_array[0] = NULL;
+
+	return env_array;
+}
+/*
+ * Append a single environment variable to an environment variable array,
+ * if and only if a variable by that name does not already exist in the
+ * array.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_append(char ***array_ptr, const char *name,
+		     const char *value_fmt, ...)
+{
+	char buf[BUFSIZ];
+	char **ep = NULL;
+	char *str = NULL;
+	va_list ap;
+	int rc;
+
+	buf[0] = '\0';
+	if (array_ptr == NULL || *array == NULL) {
+		return 0;
+	}
+
+	va_start(ap, value_fmt);
+	vsnprintf (buf, BUFSIZ, value_fmt, ap);
+	va_end(ap);
+	
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		return 0;
+	}
+
+	xstrfmtcat (str, "%s=%s", name, buf);
+	ep = _extend_env(array_ptr);
+	*ep = str;
+	
+	return 1;
+}
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite(char ***array_ptr, const char *name,
+			const char *value_fmt, ...)
+{
+	char buf[BUFSIZ];
+	char **ep = NULL;
+	char *str = NULL;
+	va_list ap;
+	int rc;
+
+	buf[0] = '\0';
+	if (array_ptr == NULL || *array == NULL) {
+		return 0;
+	}
+
+	va_start(ap, value_fmt);
+	vsnprintf (buf, BUFSIZ, value_fmt, ap);
+	va_end(ap);
+	
+	xstrfmtcat (str, "%s=%s", name, buf);
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		xfree (*ep);
+	} else {
+		ep = _extend_env(array_ptr);
+	}
+
+	*ep = str;
+	
+	return 1;
+}
+
+char **env_array_copy(const char **array)
+{
+
+}
+
+/*
+ * Merge all of the environment variables in src_array into the
+ * array dest_array.  Any variables already found in dest_array
+ * will be overwritten with the value from src_array.
+ */
+void env_array_merge(char ***dest_array, const char **src_array)
+{
+	char **ptr;
+
+	if (src_array == NULL)
+		return;
+
+	for (ptr = array; *ptr != NULL; ptr++) {
+		env_array_overwrite(dest_array, *ptr);
+	}
+}
+
+void env_array_free(char **env_array)
+{
+	char **ptr;
+
+	if (array == NULL)
+		return;
+
+	for (ptr = array; *ptr != NULL; ptr++) {
+		xfree(*ptr);
+	}
+	xfree(array);
+}
+
+/*
+ * Work similarly to putenv() (from C stdlib), but uses setenv()
+ * under the covers.  This avoids having pointers from the global
+ * array "environ" to "string".
+ */
+static int _env_array_putenv(const char *string)
+{
+
+}
+
+/*
+ * Set all of the environment variables in a supplied environment
+ * variable array.
+ */
+void env_array_set_environment(char **env_array)
+{
+	char **ptr;
+
+	if (array == NULL)
+		return;
+
+	for (ptr = array; *ptr != NULL; ptr++) {
+		_env_array_putenv(*ptr);
+	}
+}
+
+#endif
