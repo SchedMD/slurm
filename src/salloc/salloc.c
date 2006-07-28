@@ -44,6 +44,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/read_config.h"
+#include "src/common/env.h"
 
 #include "src/salloc/opt.h"
 #include "src/salloc/msg.h"
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
 	time_t before, after;
 	salloc_msg_thread_t *msg_thr;
 	int rc;
+	char **env = NULL;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -108,9 +110,10 @@ int main(int argc, char *argv[])
 	/*
 	 * Run the user's command.
 	 */
-	setenvfs("SLURM_JOBID=%d", alloc->job_id);
-	setenvfs("SLURM_NNODES=%d", alloc->node_cnt);
+	env = env_array_create_for_job(alloc);
+	env_array_set_environment(env);
 	rc = run_command(command_argv);
+	env_array_free(env);
 
 	/*
 	 * Relinquish the job allocation.

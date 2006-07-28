@@ -732,7 +732,7 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLURM_JOBID",          OPT_INT,       &opt.jobid,         &opt.jobid_set },
+  {"SLURM_JOB_ID",         OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
   {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_set  },
@@ -745,8 +745,8 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_GEOMETRY",     OPT_GEOMETRY,  NULL,               NULL           },
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLURM_NNODES",         OPT_INT,       &opt.num_nodes,     NULL           },
-  {"SLAUNCH_NNODES",       OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
+  {"SLURM_JOB_NUM_NODES",  OPT_INT,       &opt.num_nodes,     NULL           },
+  {"SLAUNCH_NUM_NODES",    OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
   {"SLAUNCH_NO_ROTATE",    OPT_NO_ROTATE, NULL,               NULL           },
   {"SLAUNCH_NPROCS",       OPT_INT,       &opt.num_tasks,  &opt.num_tasks_set},
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
