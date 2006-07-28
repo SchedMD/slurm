@@ -1,9 +1,9 @@
 #! /bin/sh
 # Common stub for a few missing GNU programs while installing.
 
-scriptversion=2004-09-07.08
+scriptversion=2003-09-02.23
 
-# Copyright (C) 1996, 1997, 1999, 2000, 2002, 2003, 2004
+# Copyright (C) 1996, 1997, 1999, 2000, 2002, 2003 
 #   Free Software Foundation, Inc.
 # Originally by Fran,cois Pinard <pinard@iro.umontreal.ca>, 1996.
 
@@ -60,6 +60,11 @@ case "$1" in
     msg="probably too old"
   fi
   ;;
+esac
+
+# If it does not exist, or fails to run (possibly an outdated version),
+# try to emulate it.
+case "$1" in
 
   -h|--h|--he|--hel|--help)
     echo "\
@@ -87,12 +92,10 @@ Supported PROGRAM values:
   yacc         create \`y.tab.[ch]', if possible, from existing .[ch]
 
 Send bug reports to <bug-automake@gnu.org>."
-    exit 0
     ;;
 
   -v|--v|--ve|--ver|--vers|--versi|--versio|--version)
     echo "missing $scriptversion (GNU Automake)"
-    exit 0
     ;;
 
   -*)
@@ -101,42 +104,12 @@ Send bug reports to <bug-automake@gnu.org>."
     exit 1
     ;;
 
-esac
-
-# Now exit if we have it, but it failed.  Also exit now if we
-# don't have it and --version was passed (most likely to detect
-# the program).
-case "$1" in
-  lex|yacc)
-    # Not GNU programs, they don't have --version.
-    ;;
-
-  tar)
-    if test -n "$run"; then
-       echo 1>&2 "ERROR: \`tar' requires --run"
-       exit 1
-    elif test "x$2" = "x--version" || test "x$2" = "x--help"; then
-       exit 1
-    fi
-    ;;
-
-  *)
+  aclocal*)
     if test -z "$run" && ($1 --version) > /dev/null 2>&1; then
        # We have it, but it failed.
        exit 1
-    elif test "x$2" = "x--version" || test "x$2" = "x--help"; then
-       # Could not run --version or --help.  This is probably someone
-       # running `$TOOL --version' or `$TOOL --help' to check whether
-       # $TOOL exists and not knowing $TOOL uses missing.
-       exit 1
     fi
-    ;;
-esac
 
-# If it does not exist, or fails to run (possibly an outdated version),
-# try to emulate it.
-case "$1" in
-  aclocal*)
     echo 1>&2 "\
 WARNING: \`$1' is $msg.  You should only need it if
          you modified \`acinclude.m4' or \`${configure_ac}'.  You might want
@@ -146,6 +119,11 @@ WARNING: \`$1' is $msg.  You should only need it if
     ;;
 
   autoconf)
+    if test -z "$run" && ($1 --version) > /dev/null 2>&1; then
+       # We have it, but it failed.
+       exit 1
+    fi
+
     echo 1>&2 "\
 WARNING: \`$1' is $msg.  You should only need it if
          you modified \`${configure_ac}'.  You might want to install the
@@ -155,6 +133,11 @@ WARNING: \`$1' is $msg.  You should only need it if
     ;;
 
   autoheader)
+    if test -z "$run" && ($1 --version) > /dev/null 2>&1; then
+       # We have it, but it failed.
+       exit 1
+    fi
+
     echo 1>&2 "\
 WARNING: \`$1' is $msg.  You should only need it if
          you modified \`acconfig.h' or \`${configure_ac}'.  You might want
@@ -174,6 +157,11 @@ WARNING: \`$1' is $msg.  You should only need it if
     ;;
 
   automake*)
+    if test -z "$run" && ($1 --version) > /dev/null 2>&1; then
+       # We have it, but it failed.
+       exit 1
+    fi
+
     echo 1>&2 "\
 WARNING: \`$1' is $msg.  You should only need it if
          you modified \`Makefile.am', \`acinclude.m4' or \`${configure_ac}'.
@@ -185,6 +173,11 @@ WARNING: \`$1' is $msg.  You should only need it if
     ;;
 
   autom4te)
+    if test -z "$run" && ($1 --version) > /dev/null 2>&1; then
+       # We have it, but it failed.
+       exit 1
+    fi
+
     echo 1>&2 "\
 WARNING: \`$1' is needed, but is $msg.
          You might have modified some files without having the
@@ -261,6 +254,11 @@ WARNING: \`$1' is $msg.  You should only need it if
     ;;
 
   help2man)
+    if test -z "$run" && ($1 --version) > /dev/null 2>&1; then
+       # We have it, but it failed.
+       exit 1
+    fi
+
     echo 1>&2 "\
 WARNING: \`$1' is $msg.  You should only need it if
 	 you modified a dependency of a manual page.  You may need the
@@ -281,6 +279,11 @@ WARNING: \`$1' is $msg.  You should only need it if
     ;;
 
   makeinfo)
+    if test -z "$run" && (makeinfo --version) > /dev/null 2>&1; then
+       # We have makeinfo, but it failed.
+       exit 1
+    fi
+
     echo 1>&2 "\
 WARNING: \`$1' is $msg.  You should only need it if
          you modified a \`.texi' or \`.texinfo' file, or any other file
@@ -298,6 +301,10 @@ WARNING: \`$1' is $msg.  You should only need it if
 
   tar)
     shift
+    if test -n "$run"; then
+      echo 1>&2 "ERROR: \`tar' requires --run"
+      exit 1
+    fi
 
     # We have already tried tar in the generic part.
     # Look for gnutar/gtar before invocation to avoid ugly error
