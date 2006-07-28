@@ -73,7 +73,7 @@ libcommon_la_SOURCES = 			\
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	hostlist.c hostlist.h		\
-	dist_tasks.c dist_tasks.h	\
+	slurm_step_layout.c slurm_step_layout.h	\
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
 	job_options.c job_options.h	\

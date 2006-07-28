@@ -44,7 +44,6 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/checkpoint.h"
-#include "src/common/dist_tasks.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"

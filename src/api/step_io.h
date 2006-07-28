@@ -33,7 +33,7 @@
 
 #include "src/common/eio.h"
 #include "src/common/list.h"
-#include "src/common/dist_tasks.h"
+#include "src/common/slurm_step_layout.h"
 
 struct client_io {
 	/* input parameters - set (indirectly) by user */

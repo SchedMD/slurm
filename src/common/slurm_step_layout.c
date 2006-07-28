@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  dist_tasks.c - function to distribute tasks over nodes.
+ *  slurm_step_layout.c - functions to distribute tasks over nodes.
  *  $Id$
  *****************************************************************************
  *
@@ -45,7 +45,7 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/dist_tasks.h"
+#include "src/common/slurm_step_layout.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

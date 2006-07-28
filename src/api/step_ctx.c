@@ -44,7 +44,6 @@
 
 #include <slurm/slurm.h>
 
-#include "src/common/dist_tasks.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
