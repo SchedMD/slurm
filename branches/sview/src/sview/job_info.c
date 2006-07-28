@@ -231,6 +231,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 
 	if((error_code = get_new_info_job(&new_job_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA){
+		g_print("no change in job data\n");
 		if(!display_widget)
 			goto display_it;
 		return;
@@ -259,6 +260,7 @@ display_it:
 
 	tree_view = create_treeview(local_display_data, new_job_ptr);
 	
+	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 	gtk_table_attach_defaults(GTK_TABLE(table), 
 				  GTK_WIDGET(tree_view),
 				  0, 1, 0, 1); 

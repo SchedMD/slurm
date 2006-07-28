@@ -181,7 +181,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {

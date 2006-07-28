@@ -25,12 +25,21 @@
 \****************************************************************************/
 
 #include "sview.h"
+
+#define MAX_RETRIES 3		/* g_thread_create retries */
+
+typedef struct {
+	GtkTable *table;
+	int page_num;
+} page_thr_t;
+
 /* globals */
 sview_parameters_t params;
 int adding = 1;
 int fini = 0;
 bool toggled = FALSE;
 List popup_list;
+int page_running[PAGE_CNT];
 	
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
@@ -64,6 +73,25 @@ display_data_t main_display_data[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
+void *page_thr(void *arg)
+{
+	page_thr_t *page = (page_thr_t *)arg;
+	int num = page->page_num;
+	GtkTable *table = page->table;
+	xfree(page);
+
+	while(page_running[num]) {
+		gdk_threads_enter();		
+		(main_display_data[num].get_info)(table, 
+						  &main_display_data[num]);
+		gdk_flush();
+		gdk_threads_leave();
+		sleep(5);
+	}	
+		
+	return NULL;
+}
+
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
@@ -78,9 +106,14 @@ static void _page_switched(GtkNotebook     *notebook,
 	GtkBin *bin2 = GTK_BIN(&view->bin);
 	GtkTable *table = GTK_TABLE(bin2->child);
 	int i;
+	static int running=-1;
+	
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
 		return;
+	if(running != -1) {
+		page_running[running] = 0;
+	}
 	
 	for(i=0; i<PAGE_CNT; i++) {
 		if(main_display_data[i].id == -1)
@@ -95,8 +128,21 @@ static void _page_switched(GtkNotebook     *notebook,
 		g_print("page %d not found\n", page_num);
 		return;
 	} 
-	if(main_display_data[i].get_info)
-		(main_display_data[i].get_info)(table, &main_display_data[i]);
+	if(main_display_data[i].get_info) {
+		page_thr_t *page = xmalloc(sizeof(page_thr_t));
+		GError *error = NULL;
+		running = i;
+		page_running[i] = 1;
+
+		page->page_num = i;
+		page->table = table;
+		if (!g_thread_create(page_thr, page, FALSE, &error))
+		{
+			g_printerr ("Failed to create YES thread: %s\n", 
+				    error->message);
+			return;
+		}
+	}
 }
 
 static void _tab_pos(GtkRadioAction *action,
@@ -140,6 +186,8 @@ static void _init_pages()
 {
 	int i;
 	for(i=0; i<PAGE_CNT; i++) {
+		if(!main_display_data[i].get_info)
+			continue;
 		(main_display_data[i].get_info)(NULL, &main_display_data[i]);
 	}
 }
@@ -241,6 +289,8 @@ int main(int argc, char *argv[])
 	int i=0;
 	
 	_init_pages();
+	g_thread_init(NULL);
+	gdk_threads_init();
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
 	/* fill in all static info for pages */
@@ -285,8 +335,10 @@ int main(int argc, char *argv[])
 	gtk_widget_show_all (window);
 
 	/* Finished! */
+	gdk_threads_enter();
 	gtk_main ();
- 
+	gdk_threads_leave();
+
 	return 0;
 }
 

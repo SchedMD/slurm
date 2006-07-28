@@ -124,12 +124,13 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	
+		
 	if(display_data)
 		local_display_data = display_data;
-	if(!table)
+	if(!table) {
+		display_data_block->set_menu = local_display_data->set_menu;
 		return;
-	
+	}
 	if(new_part_ptr && new_bg_ptr && toggled)
 		goto got_toggled;
 	if (part_info_ptr) {
@@ -199,7 +200,6 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		}
 	}
 	
-
 	for (i=0; i<new_bg_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 			
@@ -264,7 +264,8 @@ got_toggled:
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
 	liststore = create_liststore(tree_view, display_data, SORTID_CNT);
-	
+	g_print("got %d records\n", recs);
+
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
@@ -272,6 +273,7 @@ got_toggled:
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
 		nodelist = list_create(_nodelist_del);
+		g_print("looking at nodes %s\n", part.nodes);
 		_make_nodelist(part.nodes,nodelist);	
 		
 		if (block_list) {
@@ -592,11 +594,11 @@ static int _addto_nodelist(List nodelist, int *start, int *end)
 	int *coord = NULL;
 	int x,y,z;
 	
-	assert(end[X] < DIM_SIZE[X]);
+//	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
-	assert(end[Y] < DIM_SIZE[Y]);
+	//assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
-	assert(end[Z] < DIM_SIZE[Z]);
+	//assert(end[Z] < DIM_SIZE[Z]);
 	assert(start[Z] >= 0);
 	
 	for (x = start[X]; x <= end[X]; x++) {

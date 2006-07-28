@@ -19,8 +19,8 @@ AC_DEFUN([X_AC_GTK],
     if test ! -z "$HAVEPKGCONFIG"; then
         $HAVEPKGCONFIG --exists libglade-2.0 gtk+-2.0 
         if test $? -eq 0 ; then
-            GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0`
-            GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0`
+            GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
+            GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
 	    ac_have_gtk="yes"
             if test ! -z "GLADE_STATIC"  ; then
                 GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
