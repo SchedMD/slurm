@@ -107,7 +107,7 @@ static int   _run_job_script(srun_job_t *job, env_t *env);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
-static char *_task_count_string(srun_job_t *job);
+static char *_uint32_array_to_str(int count, const uint32_t *array);
 static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (void);
 static int   _print_script_exit_status(const char *argv0, int status);
@@ -290,7 +290,8 @@ int srun(int ac, char **av)
 		env->select_jobinfo = job->select_jobinfo;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		env->task_count = _task_count_string (job);
+		env->task_count = _uint32_array_to_str(
+			job->nhosts, job->step_layout->tasks);
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
 	}
@@ -403,35 +404,47 @@ int srun(int ac, char **av)
 	exit(exitcode);
 }
 
-static char *
-_task_count_string (srun_job_t *job)
+/*
+ * Return a string representation of an array of uint32_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are seperated by a comma.  If sequential elements in the array
+ * contain the same value, the value is written out just once followed
+ * by "(xN)", where "N" is the number of times the value is repeated.
+ *
+ * Example:
+ *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
+ *
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+static char *_uint32_array_to_str(int array_len, const uint32_t *array)
 {
-	int i, last_val, last_cnt;
-	char tmp[16];
-	char *str = xstrdup ("");
-	if(job->step_layout->tasks == NULL)
-		return (str);
-	last_val = job->step_layout->tasks[0];
-	last_cnt = 1;
-	for (i=1; i<job->nhosts; i++) {
-		if (last_val == job->step_layout->tasks[i])
-			last_cnt++;
-		else {
-			if (last_cnt > 1)
-				sprintf(tmp, "%d(x%d),", last_val, last_cnt);
-			else
-				sprintf(tmp, "%d,", last_val);
-			xstrcat(str, tmp);
-			last_val = job->step_layout->tasks[i];
-			last_cnt = 1;
+	int i;
+	int previous = 0;
+	char *sep = ",";  /* seperator */
+	char *str = xstrdup("");
+
+	if(array == NULL)
+		return str;
+
+	for (i = 0; i < array_len; i++) {
+		if ((i+1 < array_len)
+		    && (array[i] == array[i+1])) {
+				previous++;
+				continue;
 		}
+
+		if (i == array_len-1) /* last time through loop */
+			sep = "";
+		if (previous > 0) {
+			xstrfmtcat(str, "%u(x%u)%s",
+				   array[i], previous+1, sep);
+		} else {
+			xstrfmtcat(str, "%u%s", array[i], sep);
+		}
+		previous = 0;
 	}
-	if (last_cnt > 1)
-		sprintf(tmp, "%d(x%d)", last_val, last_cnt);
-	else
-		sprintf(tmp, "%d", last_val);
-	xstrcat(str, tmp);
-	return (str);
+	
+	return str;
 }
 
 static void
@@ -904,7 +917,8 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->jobid = job->jobid;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		env->task_count = _task_count_string(job);
+		env->task_count = _uint32_array_to_str(
+			job->nhosts, job->step_layout->tasks);
 	}
 	
 	if (setup_env(env) != SLURM_SUCCESS) 

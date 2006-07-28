@@ -529,10 +529,89 @@ int setup_env(env_t *env)
 	return SLURM_SUCCESS;
 }
 
-#if 0
 /**********************************************************************
- * FIXME - Not yet fully implemented, still in the planning phase
+ * From here on are the new environment variable management functions,
+ * used by the "new" commands: salloc, sbatch, an slaunch.
  **********************************************************************/
+
+/*
+ * Return a string representation of an array of uint32_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are seperated by a comma.  If sequential elements in the array
+ * contain the same value, the value is written out just once followed
+ * by "(xN)", where "N" is the number of times the value is repeated.
+ *
+ * Example:
+ *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
+ *
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+static char *_uint32_array_to_str(int array_len, const uint32_t *array)
+{
+	int i;
+	int previous = 0;
+	char *sep = ",";  /* seperator */
+	char *str = xstrdup("");
+
+	if(array == NULL)
+		return str;
+
+	for (i = 0; i < array_len; i++) {
+		if ((i+1 < array_len)
+		    && (array[i] == array[i+1])) {
+				previous++;
+				continue;
+		}
+
+		if (i == array_len-1) /* last time through loop */
+			sep = "";
+		if (previous > 0) {
+			xstrfmtcat(str, "%u(x%u)%s",
+				   array[i], previous+1, sep);
+		} else {
+			xstrfmtcat(str, "%u%s", array[i], sep);
+		}
+		previous = 0;
+	}
+	
+	return str;
+}
+
+
+/*
+ * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
+ * in the future) is stored in a compressed format comprised of two
+ * equal-length arrays of uint32_t, and an integer holding the array length.
+ * In one array an element represents a count (number of cpus, number of tasks,
+ * etc.), and the corresponding element in the other array contains the
+ * number of times the count is repeated sequentially in the uncompressed
+ * something-per-node array.
+ *
+ * This function returns the string representation of the compressed
+ * array.  Free with xfree().
+ */
+static char *_uint32_compressed_to_str(uint32_t array_len,
+				       const uint32_t *array,
+				       const uint32_t *array_reps)
+{
+	int i;
+	char *sep = ","; /* seperator */
+	char *str = xstrdup("");
+
+	for (i = 0; i < array_len; i++) {
+		if (i == array_len-1) /* last time through loop */
+			sep = "";
+		if (array_reps[i] > 1) {
+			xstrfmtcat(str, "%u(x%u)%s",
+				   array[i], array_reps[i], sep);
+		} else {
+			xstrfmtcat(str, "%u%s", array[i], sep);
+		}
+	}
+
+	return str;
+}
+
 /*
  * Create an array of pointers to environment variables strings relevant
  * to a SLURM job allocation.  The array is terminated by a NULL pointer,
@@ -551,12 +630,18 @@ char **
 env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
 {
 	char **ptr;
+	char *tmp;
 
 	ptr = env_array_create();
 	env_array_append(&ptr, "SLURM_JOB_ID", "%u", alloc->job_id);
 	env_array_append(&ptr, "SLURM_JOB_NUM_NODES", "%u", alloc->node_cnt);
 	env_array_append(&ptr, "SLURM_JOB_NODELIST", "%s", alloc->node_list);
-	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", FIXME);
+
+	tmp = _uint32_compressed_to_str((uint32_t)alloc->num_cpu_groups,
+					alloc->cpus_per_node,
+					alloc->cpu_count_reps);
+	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+	xfree(tmp);
 
 	return ptr;
 }
@@ -593,19 +678,22 @@ env_array_create_for_step(const job_step_create_response_msg_t *step,
 			  const char *ip_addr_str)
 {
 	char **ptr;
+	char *tmp;
 
+	tmp = _uint32_array_to_str(step->step_layout->node_cnt,
+				   step->step_layout->tasks);
 	ptr = env_array_create();
 	env_array_append(&ptr, "SLURM_STEP_ID", "%u", step->job_step_id);
 	env_array_append(&ptr, "SLURM_STEP_NUM_NODES",
 			 "%hu", step->step_layout->node_cnt);
 	env_array_append(&ptr, "SLURM_STEP_NUM_TASKS",
-			 "%s", step->step_layout->task_cnt);
-	env_array_append(&ptr, "SLURM_STEP_TASKS_PER_NODE", "%s", FIXME);
+			 "%u", step->step_layout->task_cnt);
+	env_array_append(&ptr, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
 	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_HOSTNAME",
 			 "%s", launcher_hostname);
 	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_PORT",
 			 "%hu", launcher_port);
-	env_array_appent(&ptr, "SLURM_STEP_LAUNCHER_IPADDR",
+	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_IPADDR",
 			 "%s", ip_addr_str);
 
 	/* OBSOLETE */
@@ -613,15 +701,16 @@ env_array_create_for_step(const job_step_create_response_msg_t *step,
 	env_array_append(&ptr, "SLURM_NNODES",
 			 "%hu", step->step_layout->node_cnt);
 	env_array_append(&ptr, "SLURM_NPROCS",
-			 "%s", step->step_layout->task_cnt);
-	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", FIXME);
+			 "%u", step->step_layout->task_cnt);
+	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	env_array_append(&ptr, "SLURM_SRUN_COMM_HOST",
 			 "%s", launcher_hostname);
 	env_array_append(&ptr, "SLURM_SRUN_COMM_PORT",
 			 "%hu", launcher_port);
-	env_array_appent(&ptr, "SLURM_LAUNCH_NODE_IPADDR",
+	env_array_append(&ptr, "SLURM_LAUNCH_NODE_IPADDR",
 			 "%s", ip_addr_str);
 
+	xfree(tmp);
 	return ptr;
 }
 
@@ -657,6 +746,7 @@ char **env_array_create(void)
 
 	return env_array;
 }
+
 /*
  * Append a single environment variable to an environment variable array,
  * if and only if a variable by that name does not already exist in the
@@ -671,10 +761,9 @@ int env_array_append(char ***array_ptr, const char *name,
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
-	int rc;
 
 	buf[0] = '\0';
-	if (array_ptr == NULL || *array == NULL) {
+	if (array_ptr == NULL || *array_ptr == NULL) {
 		return 0;
 	}
 
@@ -709,10 +798,9 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
-	int rc;
 
 	buf[0] = '\0';
-	if (array_ptr == NULL || *array == NULL) {
+	if (array_ptr == NULL || *array_ptr == NULL) {
 		return 0;
 	}
 
@@ -735,7 +823,7 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 
 char **env_array_copy(const char **array)
 {
-
+	return NULL;
 }
 
 /*
@@ -745,37 +833,82 @@ char **env_array_copy(const char **array)
  */
 void env_array_merge(char ***dest_array, const char **src_array)
 {
-	char **ptr;
+/* 	char **ptr; */
 
 	if (src_array == NULL)
 		return;
 
-	for (ptr = array; *ptr != NULL; ptr++) {
-		env_array_overwrite(dest_array, *ptr);
-	}
+/* FIXME - split the env entry on the =, then give to overwrite */
+/* 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) { */
+/* 		env_array_overwrite(dest_array, *ptr); */
+/* 	} */
 }
 
+/*
+ * Free the memory used by an environment variable array.
+ */
 void env_array_free(char **env_array)
 {
 	char **ptr;
 
-	if (array == NULL)
+	if (env_array == NULL)
 		return;
 
-	for (ptr = array; *ptr != NULL; ptr++) {
+	for (ptr = env_array; *ptr != NULL; ptr++) {
 		xfree(*ptr);
 	}
-	xfree(array);
+	xfree(env_array);
+}
+
+/*
+ * Given an environment variable "name=value" string,
+ * copy the name portion into the "name" buffer, and the
+ * value portion into the "value" buffer.
+ *
+ * Return 1 on success, 0 on failure.
+ */
+static int _env_array_entry_splitter(const char *entry,
+				     char *name, int name_len,
+				     char *value, int value_len)
+{
+	char *ptr;
+	int len;
+
+	ptr = index(entry, '=');
+	len = ptr - entry;
+	if (len > name_len-1)
+		return 0;
+	strncpy(name, entry, len);
+	name[len] = '\0';
+
+	ptr = ptr + 1;
+	len = strlen(ptr);
+	if (len > value_len-1)
+		return 0;
+	strncpy(value, ptr, len);
+	value[len] = '\0';
+
+	return 1;
 }
 
 /*
  * Work similarly to putenv() (from C stdlib), but uses setenv()
  * under the covers.  This avoids having pointers from the global
- * array "environ" to "string".
+ * array "environ" into "string".
+ *
+ * Return 1 on success, 0 on failure.
  */
 static int _env_array_putenv(const char *string)
 {
+	char name[1024];
+	char value[1024];
 
+	if (!_env_array_entry_splitter(string, name, 1024, value, 1024))
+		return 0;
+	if (setenv(name, value, 1) == -1)
+		return 0;
+	
+	return 1;
 }
 
 /*
@@ -786,12 +919,10 @@ void env_array_set_environment(char **env_array)
 {
 	char **ptr;
 
-	if (array == NULL)
+	if (env_array == NULL)
 		return;
 
-	for (ptr = array; *ptr != NULL; ptr++) {
+	for (ptr = env_array; *ptr != NULL; ptr++) {
 		_env_array_putenv(*ptr);
 	}
 }
-
-#endif

@@ -131,6 +131,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 {
 	launch_tasks_request_msg_t launch;
 	int i;
+	char **env = NULL;
 
 	debug("Entering slurm_step_launch");
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
@@ -166,8 +167,13 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.argv = params->argv;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	launch.envc = params->envc;
-	launch.env = params->env;
+	env = env_array_create_for_step(ctx->step_resp,
+					"localhost",
+					15500,
+					"127.0.0.1");
+	env_array_merge(&env, params->env);
+	launch.envc = envcount(env);
+	launch.env = env;
 	launch.cwd = params->cwd;
 	launch.nnodes = ctx->step_req->node_count;
 	launch.nprocs = ctx->step_req->num_tasks;
@@ -224,6 +230,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	}
 
 	_launch_tasks(ctx, &launch);
+	env_array_free(env);
 	return SLURM_SUCCESS;
 }
 
