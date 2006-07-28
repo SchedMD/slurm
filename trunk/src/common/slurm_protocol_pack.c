@@ -51,7 +51,6 @@
 #include "src/common/xassert.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
-#include "src/common/dist_tasks.h"
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)

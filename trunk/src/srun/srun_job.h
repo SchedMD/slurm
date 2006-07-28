@@ -40,7 +40,6 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/dist_tasks.h"
 #include "src/common/global_srun.h"
 #include "src/api/step_io.h"
 

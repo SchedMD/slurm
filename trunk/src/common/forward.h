@@ -31,7 +31,6 @@
 
 #include <stdint.h>
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/dist_tasks.h"
 
 /*
  * forward_init    - initilize forward structure 
