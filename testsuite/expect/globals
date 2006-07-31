@@ -334,7 +334,7 @@ proc wait_for_job { job_id desired_state } {
     while 1 {
 	set fd [open "|$scontrol -o show job $job_id"]
 	gets $fd line
-	close $fd
+	catch {close $fd}
 	if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
 	    set state "NOT_FOUND"
 	}
@@ -597,7 +597,7 @@ proc available_nodes { partition } {
     set available -1
     set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
     gets $fd line
-    catch [close $fd]
+    catch {close $fd}
     regexp {\d+} $line available
     return $available
 }
@@ -624,7 +624,7 @@ proc default_partition {} {
 	    break
 	}
     }
-    catch [close $fd]
+    catch {close $fd}
 
     if {[string length $name] == 0} {
 	send_user "ERROR: could not identify the default partition"
