@@ -73,7 +73,8 @@ set job_id 0
 set matches 0
 set task_cnt 1
 # Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
-exec ./$test_prog 1 2 >$test_out
+catch {exec ./$test_prog 1 2 >$test_out}
+exec $bin_touch $test_out
 spawn $bin_cat $test_out
 expect {
 	-re "job_id ($number)" {
