@@ -757,6 +757,7 @@ static void *_thread_per_group_rpc(void *args)
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
 			(msg_type == REQUEST_TERMINATE_JOB) );
 	srun_agent = (	(msg_type == SRUN_PING)    ||
+			(msg_type == SRUN_JOB_COMPLETE) ||
 			(msg_type == SRUN_TIMEOUT) ||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
@@ -770,7 +771,8 @@ static void *_thread_per_group_rpc(void *args)
 		enum job_states    state   = JOB_END;
 		struct job_record *job_ptr = NULL;
 
-		if (msg_type == SRUN_PING) {
+		if ((msg_type == SRUN_PING)
+		|| (msg_type == SRUN_JOB_COMPLETE)) {
 			srun_ping_msg_t *msg = task_ptr->msg_args_ptr;
 			job_id  = msg->job_id;
 		} else if (msg_type == SRUN_TIMEOUT) {
