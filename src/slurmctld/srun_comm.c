@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  srun_comm.c - srun communications
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -256,6 +256,49 @@ extern void srun_timeout (struct job_record *job_ptr)
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->timeout  = job_ptr->end_time;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, 
+				msg_arg);
+	}	
+	list_iterator_destroy(step_iterator);
+}
+
+/*
+ * srun_complete - notify srun of a job's termination
+ * IN job_ptr - pointer to the slurmctld job record
+ */
+extern void srun_complete (struct job_record *job_ptr)
+{
+	slurm_addr * addr;
+	srun_job_complete_msg_t *msg_arg;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	xassert(job_ptr);
+
+	if (job_ptr->other_port
+	    && job_ptr->other_host && job_ptr->other_host[0]) {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->other_host);
+		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
+		msg_arg->job_id   = job_ptr->job_id;
+		msg_arg->step_id  = NO_VAL;
+		_srun_agent_launch(addr, job_ptr->other_host, SRUN_JOB_COMPLETE,
+				   msg_arg);
+	}
+
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
+		if ( (step_ptr->port    == 0)    || 
+		     (step_ptr->host    == NULL) ||
+		     (step_ptr->batch_step)      ||
+		     (step_ptr->host[0] == '\0') )
+			continue;
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
+		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
+		msg_arg->job_id   = job_ptr->job_id;
+		msg_arg->step_id  = step_ptr->step_id;
+		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE, 
 				msg_arg);
 	}	
 	list_iterator_destroy(step_iterator);

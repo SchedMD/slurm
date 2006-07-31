@@ -3878,6 +3878,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 
 	jobacct_g_job_complete_slurmctld(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
+	srun_complete(job_ptr);
 }
 
 /*

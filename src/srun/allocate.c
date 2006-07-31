@@ -321,6 +321,12 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			slurm_free_srun_ping_msg(msg->data);
 			break;
+		case SRUN_JOB_COMPLETE:
+			debug3("job complete received");
+			/* FIXME: do something here */
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_srun_job_complete_msg(msg->data);	
+			break;
 		case RESPONSE_RESOURCE_ALLOCATION:
 			debug2("resource allocation response received");
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
