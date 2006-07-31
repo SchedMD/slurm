@@ -171,6 +171,7 @@ typedef enum {
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
 	SRUN_NODE_FAIL,
+	SRUN_JOB_COMPLETE,
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,
@@ -528,6 +529,11 @@ typedef struct srun_ping_msg {
 	uint32_t step_id;	/* step_id or NO_VAL */
 } srun_ping_msg_t;
 
+typedef struct srun_job_complete_msg {
+        uint32_t job_id;        /* slurm job_id */
+        uint32_t step_id;       /* step_id or NO_VAL */
+} srun_job_complete_msg_t;
+
 typedef struct srun_node_fail_msg {
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* step_id or NO_VAL */
@@ -665,6 +671,7 @@ void inline slurm_free_signal_job_msg(signal_job_msg_t * msg);
 void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 void inline slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
+void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);

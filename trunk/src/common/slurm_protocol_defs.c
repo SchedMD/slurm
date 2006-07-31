@@ -439,6 +439,11 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 	}
 }
 
+void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
 	xfree(msg);

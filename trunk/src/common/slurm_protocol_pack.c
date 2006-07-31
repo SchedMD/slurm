@@ -618,6 +618,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(job_id_response_msg_t *)msg->data,
 			buffer);
 		break;
+	case SRUN_JOB_COMPLETE:
 	case SRUN_PING:
 		_pack_srun_ping_msg((srun_ping_msg_t *)msg->data, buffer);
 		break;
@@ -919,6 +920,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(job_id_response_msg_t **) & msg->data,
 			buffer);
 		break;
+	case SRUN_JOB_COMPLETE:
 	case SRUN_PING:
 		rc = _unpack_srun_ping_msg((srun_ping_msg_t **) & msg->data, 
 					   buffer);

@@ -328,22 +328,6 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	xassert(agent_arg_ptr);
 	xassert(agent_arg_ptr->slurm_addr);
 	xassert(agent_arg_ptr->node_names);
-	xassert((agent_arg_ptr->msg_type == SRUN_PING) ||
-		(agent_arg_ptr->msg_type == SRUN_TIMEOUT) || 
-		(agent_arg_ptr->msg_type == SRUN_NODE_FAIL) || 
-		(agent_arg_ptr->msg_type == REQUEST_SIGNAL_JOB) ||
-		(agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB) ||
-		(agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT) || 
-		(agent_arg_ptr->msg_type == REQUEST_UPDATE_JOB_TIME) ||
-		(agent_arg_ptr->msg_type == REQUEST_SIGNAL_TASKS) ||
-		(agent_arg_ptr->msg_type == REQUEST_TERMINATE_TASKS) || 
-		(agent_arg_ptr->msg_type == REQUEST_PING) || 
-		(agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) || 
-		(agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) || 
-		(agent_arg_ptr->msg_type == REQUEST_SUSPEND) || 
-		(agent_arg_ptr->msg_type == REQUEST_RECONFIGURE) ||
-	        (agent_arg_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
-		(agent_arg_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS));
 
 	if (agent_arg_ptr->node_count == 0)
 		return SLURM_FAILURE;	/* no messages to be sent */
