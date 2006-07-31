@@ -85,6 +85,11 @@ enum { TAB_CLICKED,
        ROW_CLICKED,
        POPUP_CLICKED
 };
+
+enum { ERROR_VIEW,
+       INFO_VIEW
+};
+
 /* Input parameters */
 typedef struct {
 	bool all_flag;
