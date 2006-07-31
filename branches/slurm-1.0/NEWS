@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.16
+=========================
+ -- For "srun --attach=X" to other users job, report an error and exit (it
+    previously just hung).
+
 * Changes in SLURM 1.0.15
 =========================
  -- In srun, reset stdin to blocking mode (if it was originally blocking before
