@@ -62,36 +62,45 @@ enum {
 };
 
 static display_data_t display_data_job[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_job},
+	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1, refresh_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1},	
+	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1, refresh_job},
 #endif
-	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1},
-	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1},
+	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1},
-	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested BP List", FALSE, -1},
-	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded BP List", FALSE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested BP List",
+	 FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded BP List",
+	 FALSE, -1, refresh_job},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE, -1},
-	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", FALSE, -1},
-	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", FALSE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", 
+	 FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", 
+	 FALSE, -1, refresh_job},
 #endif
-	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1},
-	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, -1},
-	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1},
-	{G_TYPE_STRING, SORTID_SUSPEND, "Suspend Time", FALSE, -1},
-	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, -1},
-	{G_TYPE_STRING, SORTID_NUM_PROCS, "Num Processors", FALSE, -1},
-	{G_TYPE_INT, SORTID_SHARED, "Shared", FALSE, -1},
-	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", FALSE, -1},
-	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", FALSE, -1},
-	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", FALSE, -1},	
+	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_SUSPEND, "Suspend Time", 
+	 FALSE, -1, refresh_job},
+	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_NUM_PROCS, "Num Processors", 
+	 FALSE, -1, refresh_job},
+	{G_TYPE_INT, SORTID_SHARED, "Shared", FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", 
+	 FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", 
+	 FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", 
+	 FALSE, -1, refresh_job},	
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -306,6 +315,12 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 	return;	
 }
 
+void *_popup_thr_job(void *arg)
+{
+	popup_thr(arg);		
+	return NULL;
+}
+
 extern int get_new_info_job(job_info_msg_t **info_ptr)
 {
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
@@ -333,6 +348,10 @@ extern int get_new_info_job(job_info_msg_t **info_ptr)
 extern void refresh_job(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
+	xassert(popup_win != NULL);
+	xassert(popup_win->spec_info != NULL);
+	xassert(popup_win->spec_info->title != NULL);
+	g_print("hey got here job for %s\n", popup_win->spec_info->title);
 	specific_info_job(popup_win);
 }
 
@@ -352,6 +371,11 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	if(!table) {
 		display_data_job->set_menu = local_display_data->set_menu;
 		return;
+	}
+	if(new_job_ptr && toggled) {
+		gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		goto display_it;
 	}
 
 	if((error_code = get_new_info_job(&new_job_ptr))
@@ -378,9 +402,11 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 		return;
 	}
 display_it:
-	if(view == ERROR_VIEW && display_widget)
+	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
-	else {
+		display_widget = NULL;
+	}
+	if(!display_widget) {
 		tree_view = create_treeview(local_display_data, new_job_ptr);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
@@ -395,7 +421,7 @@ display_it:
 	}
 	view = INFO_VIEW;
 	_update_info_job(new_job_ptr, tree_view, NULL);
-
+	toggled = FALSE;
 	job_info_ptr = new_job_ptr;
 	return;
 }
@@ -410,11 +436,16 @@ extern void specific_info_job(popup_info_t *popup_win)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	
-	g_print("got here\n");
 	now_time = time(NULL);
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
-	g_print("got here\n");
+
+	if(new_job_ptr && popup_win->toggled) {
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+		goto display_it;
+	}
+
 	if((error_code = get_new_info_job(&new_job_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
@@ -440,9 +471,12 @@ extern void specific_info_job(popup_info_t *popup_win)
 		return;
 	}
 display_it:
-	if(spec_info->view == ERROR_VIEW && spec_info->display_widget)
+	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
 		gtk_widget_destroy(spec_info->display_widget);
-	else {
+		spec_info->display_widget = NULL;
+	}
+
+	if(!spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data, new_job_ptr);
 		
 		spec_info->display_widget = 
@@ -453,11 +487,12 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the liststore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, display_data_job, SORTID_CNT);
+		create_liststore(tree_view, popup_win->display_data, SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;
 	_update_info_job(new_job_ptr, tree_view, spec_info);
-
+	popup_win->toggled = 0;
+	
 	job_info_ptr = new_job_ptr;
 	return;
 }
@@ -545,25 +580,33 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
-	int job_id = -1;
-	gtk_tree_model_get(model, iter, SORTID_JOBID, &job_id, -1);
-	
-	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	int jobid = -1;
+	GError *error = NULL;
+
+	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
 	switch(id) {
-		case PART_PAGE:
-		snprintf(title, 100, "Partition(s) with node %s", name);
+	case PART_PAGE:
+		snprintf(title, 100, "Partition with job %d", jobid);
+		break;
+	case NODE_PAGE:
+#ifdef HAVE_BG
+		snprintf(title, 100, 
+			 "Base partition(s) running job %d", jobid);
+#else
+		snprintf(title, 100, "Node(s) running job %d", jobid);
+#endif
 		break;
 	case BLOCK_PAGE: 
-		snprintf(title, 100, "Blocks(s) with node %s", name);
+		snprintf(title, 100, "Block with job %d", jobid);
 		break;
 	case ADMIN_PAGE: 
-		snprintf(title, 100, "Admin Page for node %s", name);
+		snprintf(title, 100, "Admin Page for job %d", jobid);
 		break;
 	case SUBMIT_PAGE: 
-		snprintf(title, 100, "Submit job on node %s", name);
+		snprintf(title, 100, "Submit job on job %d", jobid);
 		break;
 	default:
-		g_print("nodes got %d\n", id);
+		g_print("jobs got id %d\n", id);
 	}
 	
 	itr = list_iterator_create(popup_list);
@@ -576,22 +619,20 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	list_iterator_destroy(itr);
 	
 	if(!popup_win) 
-		popup_win = create_popup_info(NODE_PAGE, title);
+		popup_win = create_popup_info(JOB_PAGE, title);
 	
-	toggled = true;
-
 	switch(id) {
-	case JOB_PAGE:
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		snprintf(title, 100, "Jobs(s) with node %s", name);
+	case NODE_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
+		popup_win->spec_info->data = name;
 		break;
 	case PART_PAGE:
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
 		popup_win->spec_info->data = name;
-		specific_info_part(popup_win);
 		break;
 	case BLOCK_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		gtk_tree_model_get(model, iter, SORTID_BLOCK, &name, -1);
+		popup_win->spec_info->data = name;
 		break;
 	case ADMIN_PAGE: 
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
@@ -602,6 +643,10 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("nodes got %d\n", id);
 	}
-	
-	toggled = false;	
+	if (!g_thread_create(_popup_thr_job, popup_win, FALSE, &error))
+	{
+		g_printerr ("Failed to create part popup thread: %s\n", 
+			    error->message);
+		return;
+	}
 }

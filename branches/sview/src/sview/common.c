@@ -114,11 +114,13 @@ static void _toggle_state_changed(GtkCheckMenuItem *menuitem,
 static void _popup_state_changed(GtkCheckMenuItem *menuitem, 
 				 display_data_t *display_data)
 {
+	popup_info_t *popup_win = (popup_info_t *) display_data->user_data;
+	popup_win->toggled = 1;
 	if(display_data->show)
 		display_data->show = FALSE;
 	else
 		display_data->show = TRUE;
-	toggled = TRUE;
+	
 	g_print(" got %s\n", display_data->name);
 	(display_data->refresh)(NULL, display_data->user_data);
 }
@@ -459,6 +461,8 @@ extern popup_info_t *create_popup_info(int type, char *title)
 	
 	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
 	popup_win->popup = gtk_dialog_new();
+	popup_win->toggled = 0;
+
 	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
 				    600, 400);
 	gtk_window_set_title(GTK_WINDOW(popup_win->popup), "Sview");
@@ -561,6 +565,10 @@ extern void destroy_popup_info(void *arg)
 {
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	if(popup_win) {
+		popup_win->toggled = -1;
+		/* wait for thread to finish */
+		while(popup_win->toggled == -1)
+			sleep(1);
 		destroy_specific_info(popup_win->spec_info);
 		xfree(popup_win->display_data);
 		xfree(popup_win);
@@ -588,3 +596,35 @@ extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 	return FALSE;
 }
 
+extern void *popup_thr(popup_info_t *popup_win)
+{
+	void (*specifc_info) (popup_info_t *popup_win) = NULL;
+	switch(popup_win->type) {
+	case PART_PAGE:
+		specifc_info = specific_info_part;
+		break;
+	case JOB_PAGE:
+		specifc_info = specific_info_job;
+		break;
+	case NODE_PAGE:
+		specifc_info = specific_info_node;
+		break;
+	case BLOCK_PAGE: 
+	case ADMIN_PAGE: 
+	case SUBMIT_PAGE: 
+	default:
+		g_print("thread got unknown type %d\n", popup_win->type);
+		return NULL;
+	}
+	/* when popup is killed toggled will be set to -1 */
+	while(popup_win->toggled != -1) {
+		gdk_threads_enter();
+		(specifc_info)(popup_win);
+		gdk_flush();
+		gdk_threads_leave();
+		sleep(5);
+	}	
+	popup_win->toggled = 0;
+	g_print("done with popup thread\n");	
+	return NULL;
+}

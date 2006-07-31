@@ -45,7 +45,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
+	 TRUE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part},
@@ -132,6 +133,13 @@ static void _append_part_record(partition_info_t *part_ptr,
 	//g_print("Took %s\n",TIME_STR);
 	
 }
+
+void *_popup_thr_part(void *arg)
+{
+	popup_thr(arg);		
+	return NULL;
+}
+
 
 extern int get_new_info_part(partition_info_msg_t **part_ptr)
 {
@@ -326,7 +334,8 @@ display_it:
 		name = strdup((char *)spec_info->data);
 		break;
 	default:
-		g_print("Unkown type");
+		g_print("Unkown type\n");
+		return;
 		break;
 	} 
 
@@ -357,7 +366,8 @@ display_it:
 				found = 1;
 			break;
 		default:
-			g_print("Unkown type");
+			g_print("Unkown type\n");
+			return;
 			break;
 		}
 		
@@ -434,7 +444,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
-				
+	GError *error = NULL;
+					
 	gtk_tree_model_get(model, iter, SORTID_NAME, &part, -1);
 	switch(id) {
 	case JOB_PAGE:
@@ -443,7 +454,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE:
 #ifdef HAVE_BG
 		snprintf(title, 100, 
-			 "Base partitions(s) in partition %s", part);
+			 "Base partition(s) in partition %s", part);
 #else
 		snprintf(title, 100, "Node(s) in partition %s", part);
 #endif
@@ -472,19 +483,18 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	if(!popup_win) 
 		popup_win = create_popup_info(PART_PAGE, title);
-	
-	toggled = true;
-			
+
+	popup_win->type = id;
+
 	switch(id) {
 	case JOB_PAGE:
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		popup_win->spec_info->data = name;
-		specific_info_job(popup_win);
+		popup_win->spec_info->data = part;
+		//specific_info_job(popup_win);
 		break;
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
 		popup_win->spec_info->data = name;
-		specific_info_node(popup_win);
+		//specific_info_node(popup_win);
 		break;
 	case BLOCK_PAGE: 
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
@@ -498,6 +508,10 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("part got %d\n", id);
 	}
-	
-	toggled = false;	
+	if (!g_thread_create(_popup_thr_part, popup_win, FALSE, &error))
+	{
+		g_printerr ("Failed to create part popup thread: %s\n", 
+			    error->message);
+		return;
+	}		
 }

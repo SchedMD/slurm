@@ -73,7 +73,7 @@ display_data_t main_display_data[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
-void *page_thr(void *arg)
+void *_page_thr(void *arg)
 {
 	page_thr_t *page = (page_thr_t *)arg;
 	int num = page->page_num;
@@ -136,7 +136,7 @@ static void _page_switched(GtkNotebook     *notebook,
 
 		page->page_num = i;
 		page->table = table;
-		if (!g_thread_create(page_thr, page, FALSE, &error))
+		if (!g_thread_create(_page_thr, page, FALSE, &error))
 		{
 			g_printerr ("Failed to create YES thread: %s\n", 
 				    error->message);
@@ -348,7 +348,6 @@ extern void refresh_main(GtkAction *action, gpointer user_data)
 	if(page == -1)
 		g_error("no pages in notebook for refresh\n");
 	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
-	toggled = FALSE;
 }
 
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event, 
@@ -362,3 +361,4 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 				     display_data, TAB_CLICKED);
 	} 
 }
+

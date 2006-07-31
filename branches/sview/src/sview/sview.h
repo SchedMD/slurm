@@ -137,7 +137,7 @@ struct display_data {
 };
 
 struct specific_info {
-	int type;
+	int type; /* calling window type */
 	int view;
 	void *data;
 	char *title;
@@ -145,6 +145,8 @@ struct specific_info {
 };
 
 struct popup_info {
+	int type; /* window type */
+	int toggled;
 	GtkWidget *popup;
 	GtkWidget *event_box;
 	GtkWidget *button;
@@ -204,7 +206,7 @@ extern void row_clicked_block(GtkTreeView *tree_view,
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // job_info.c
-extern int get_new_info_job(job_info_msg_t **info_ptr);
+extern void refresh_job(GtkAction *action, gpointer user_data);
 extern void get_info_job(GtkTable *table, display_data_t *display_data);
 extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, GtkTreePath *path, 
@@ -273,4 +275,6 @@ extern void redo_popup(GtkWidget *widget, GdkEventButton *event,
 extern void destroy_specific_info(void *arg);
 extern void destroy_popup_info(void *arg);
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
+extern void *popup_thr(popup_info_t *popup_win);
+
 #endif
