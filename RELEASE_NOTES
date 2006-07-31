@@ -54,7 +54,7 @@ See the file NEWS for more details.
 * Support stackable plugins to be called before and/or after execution of 
   each task spawned as part of a user's job step (see "man slurm.conf" 
   parameter "PlugStackConfig")
-* Configuration paramter "JobAcctLoc" changed to "JobAcctLogFile"
+* Slurm.conf paramter "JobAcctLoc" has been changed to "JobAcctLogFile"
 
 BLUEGENE SPECIFIC UPDATES
 * Resource allocations based upon c-node counts rather than base partition 
