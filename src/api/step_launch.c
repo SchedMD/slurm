@@ -171,7 +171,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 					"localhost",
 					15500,
 					"127.0.0.1");
-	env_array_merge(&env, params->env);
+	env_array_merge(&env, (const char **)params->env);
 	launch.envc = envcount(env);
 	launch.env = env;
 	launch.cwd = params->cwd;
