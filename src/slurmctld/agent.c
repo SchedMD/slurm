@@ -1197,6 +1197,7 @@ extern int agent_retry (int min_wait)
 	agent_arg_t *agent_arg_ptr;
 	ListIterator retry_iter;
 
+	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
 		uint32_t msg_type[5], i = 0;
@@ -1221,21 +1222,23 @@ extern int agent_retry (int min_wait)
 			last_msg_time = now;
 		}
 	}
-	if (agent_cnt >= MAX_AGENT_CNT)		/* too much work already */
+	if (agent_cnt >= MAX_AGENT_CNT) {	/* too much work already */
+		slurm_mutex_unlock(&retry_mutex);
 		return list_size;
+	}
 
-	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		/* first try to find a new (never tried) record */
 
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
- 			if (queued_req_ptr->last_attempt == 0)
+ 			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
 				list_size--;
 				break;
 			}
+		}
 		list_iterator_destroy(retry_iter);
 	}
 
