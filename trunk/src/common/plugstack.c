@@ -283,12 +283,12 @@ _spank_plugin_find (const char *path, const char *file)
 	 * Ensure PATH ends with a :
 	 */
 	if (dir[pathlen - 1] != ':') {
-	       dir[pathlen] = ':';
-	       dir[pathlen+1] = '\0';
+		dir[pathlen] = ':';
+		dir[pathlen+1] = '\0';
 	}
 
 	entry = dir;
-	while ((p = strchr(dir, ':'))) {
+	while ((p = strchr(entry, ':'))) {
 		char *fq_path;
 		*(p++) = '\0';
 
@@ -297,9 +297,8 @@ _spank_plugin_find (const char *path, const char *file)
 			xstrcatchar (fq_path, '/');
 		xstrcat (fq_path, file);
 
-		if (access (fq_path, F_OK) == 0) {
+		if (plugin_peek (fq_path, NULL, 0, NULL) != SLURM_ERROR)
 			return (fq_path);
-		}
 
 		xfree (fq_path);
 		entry = p;
