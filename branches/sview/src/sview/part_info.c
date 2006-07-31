@@ -478,6 +478,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	switch(id) {
 	case JOB_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		popup_win->spec_info->data = name;
+		specific_info_job(popup_win);
 		break;
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);

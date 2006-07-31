@@ -138,6 +138,7 @@ struct display_data {
 
 struct specific_info {
 	int type;
+	int view;
 	void *data;
 	char *title;
 	GtkWidget *display_widget;	
