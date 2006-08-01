@@ -351,7 +351,7 @@ test17.3   Confirm that sbatch reports a proper version number
 test17.4   Confirm that as sbatch job executes as the appropriate user and
            group.
 test17.5   Confirm that sbatch stdout, and stderr options work (--output 
-           and --error option respectively).
+           and --error option respectively, including use of %j specification)
 test17.6   Confirm that a job executes with the proper task count (--nprocs
            and --overcommit options).
 test17.7   Confirm that sbatch sets appropriate working directory (--chdir
@@ -365,7 +365,12 @@ test17.10  Test of processors, memory, and temporary disk space
            option).
 test17.11  Test of shared and contiguous options (--shared and --contiguous).
            Also uses --hold option.
-
+test17.12  Verify node configuration specification (--constraint option)
+test17.13  Verify the appropriate job environment variables are set
+test17.14  Verify that user environment variables are propagated to the job
+test17.15  Verify that user user limits are propagated to the job
+test17.TBD Verify that SLURM directed environment variables are processed:
+           SBATCH_NNODES, etc.
 
 test18.#   Testing of slaunch options.
 ======================================

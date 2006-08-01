@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Confirm that sbatch stdout, and stderr options work (--output 
-#          and --error option respectively).
+#          and --error option respectively, including use of %j specification)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -36,6 +36,8 @@ set test_id     "17.5"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
+set file_out_j  "test$test_id.j.%j.output"
+set file_err_j  "test$test_id.j.%j.error"
 set exit_code   0
 
 print_header $test_id
@@ -49,14 +51,11 @@ exit 0
 # Build stdin file
 #
 exec $bin_rm -f $file_in $file_out $file_err
-set file [open $file_in "w"]
-puts $file "
+make_bash_script $file_in "
   $bin_id
   $bin_sleep aaa
   exit 0
 "
-close $file
-exec $bin_chmod 700 $file_in
 
 #
 # Spawn a shell via sbatch that uses stdout/err and confirm their contents
@@ -131,6 +130,56 @@ if {[wait_for_file $file_err] == 0} {
 if {$got_stderr == 0} {
 	send_user "\nFAILURE: Unexpected stderr contents\n"
 	set exit_code 1
+}
+
+#
+# Spawn a shell via sbatch that uses stdout/err with %j in their names
+#
+set job_id 0
+spawn $sbatch -N1 --output=$file_out_j --error=$file_err_j -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+set file_out_j_glob  "test$test_id.j.$job_id.output"
+set file_err_j_glob  "test$test_id.j.$job_id.error"
+if {[wait_for_file $file_out_j_glob] == 0} {
+	exec $bin_rm file_out_j_glob
+} else {
+	send_user "\nFAILURE: file format of %t in stdout failed\n"
+	set exit_code 1
+}
+if {[wait_for_file $file_err_j_glob] == 0} {
+        exec $bin_rm file_err_j_glob
+} else {
+        send_user "\nFAILURE: file format of %t in stderr failed\n"
+        set exit_code 1
 }
 
 #

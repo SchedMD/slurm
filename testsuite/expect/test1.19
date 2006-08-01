@@ -81,17 +81,9 @@ for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
 	set file_out_t_glob  "test$test_id.t.$task_id.output"
 	if {[wait_for_file $file_out_t_glob] != 0} {
 		set exit_code 1
-	}
-	spawn $bin_rm -i $file_out_t_glob
-	expect {
-		-re "\[Rr\]emove .*?" {
-			send "y\n"
-			incr file_cnt
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	} else {
+		exec $bin_rm -f $file_out_t_glob
+		incr file_cnt
 	}
 }
 if {$file_cnt != $task_cnt} {
@@ -135,19 +127,9 @@ if {$srun_exit == 0} {
 }
 
 set file_err_j_glob  "test$test_id.j.$job_id.error"
-set file_cnt    0
-spawn $bin_rm -i $file_err_j_glob
-expect {
-	-re "\[Rr\]emove .*?" {
-		send "y\n"
-		incr file_cnt
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$file_cnt != 1} {
+if {[wait_for_file $file_err_j_glob] == 0} {
+	exec $bin_rm -f $file_err_j_glob
+} else {
 	send_user "\nFAILURE: file format of %j in stderr failed\n"
 	set exit_code 1
 }
@@ -176,26 +158,13 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	exit 1
 }
-set file_cnt 0
 set task_id  0
 set file_out_J_glob  "test$test_id.J.$job_id.$task_id.output"
 if {[wait_for_file $file_out_J_glob] != 0} {
-	set exit_code 1
-}
-spawn $bin_rm -i $file_out_J_glob
-expect {
-	-re "\[Rr\]emove .*?" {
-		send "y\n"
-		incr file_cnt
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$file_cnt != 1} {
 	send_user "\nFAILURE: file format of %J in stdout failed\n"
 	set exit_code 1
+} else {
+	exec $bin_rm -f $file_out_J_glob
 }
 
 #
@@ -237,17 +206,8 @@ for {set node_id 0} {$node_id < 2} {incr node_id} {
 		exec $bin_sleep 1
 	}
 	if [file exists $file_out_n_glob] {
-		spawn $bin_rm -i $file_out_n_glob
-		expect {
-			-re "\[Rr\]emove .*?" {
-				send "y\n"
-				incr file_cnt
-				exp_continue
-			}
-			eof {
-				wait
-			}
-		}
+		exec $bin_rm -f $file_out_n_glob
+		incr file_cnt
 	}
 }
 
@@ -321,17 +281,8 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 		exec $bin_sleep 1
 	}
 	if [file exists $file_out_s_glob] {
-		spawn $bin_rm -i $file_out_s_glob
-		expect {
-			-re "\[Rr\]emove .*?" {
-				send "y\n"
-				incr file_cnt
-				exp_continue
-			}
-			eof {
-				wait
-			}
-		}
+		exec $bin_rm -f $file_out_s_glob
+		incr file_cnt
 	}
 }
 
