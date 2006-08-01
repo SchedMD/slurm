@@ -35,6 +35,8 @@ period?</a></li>
 access to compute nodes?</a></li>
 <li><a href="#time">Why are jobs allocated nodes and then unable to initiate 
 programs on some nodes?</a></li>
+<li><a href="#ping"> Why does <i>slurmctld</i> log that some nodes
+are not responding even if they are not in any partition?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -326,6 +328,13 @@ If you check in the <i>SlurmdLog</i> on the nodes of interest, you
 will likely see messages of this sort: "<i>Invalid job credential from 
 &lt;some IP address&gt;: Job credential expired</i>." Make the times 
 consistent across all of the nodes and all should be well.
+
+<p><a name="ping"><b>11. Why does <i>slurmctld</i> log that some nodes 
+are not responding even if they are not in any partition?</b></a><br>
+The <i>slurmctld</i> daemon periodically pings the <i>slurmd</i> 
+daemon on every configured node, even if not associated with any 
+partition. You can control the frequency of this ping with the 
+<i>SlurmdTimeout</i> configuration parameter in <i>slurm.conf</i>.
  
 <p class="footer"><a href="#top">top</a></p>
 
