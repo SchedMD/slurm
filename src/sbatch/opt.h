@@ -92,7 +92,6 @@ typedef struct sbatch_options {
 
 	bool hold;		/* --hold, -H			*/
 	bool noshell;		/* --noshell                    */
-	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	bool no_requeue;	/* --no-requeue			*/
@@ -130,6 +129,9 @@ typedef struct sbatch_options {
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
+	char *ifname;		/* input file name		*/
+	char *ofname;		/* output file name		*/
+	char *efname;		/* error file name		*/
 } opt_t;
 
 extern opt_t opt;

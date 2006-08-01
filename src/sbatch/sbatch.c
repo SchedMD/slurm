@@ -152,11 +152,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)
 		desc->min_tmp_disk = opt.tmpdisk;
-	if (opt.overcommit) { 
-		desc->num_procs = opt.min_nodes;
-		desc->overcommit = opt.overcommit;
-	} else
-		desc->num_procs = opt.nprocs * opt.cpus_per_task;
+	desc->num_procs = opt.nprocs * opt.cpus_per_task;
 	if (opt.nprocs_set)
 		desc->num_tasks = opt.nprocs;
 	if (opt.cpus_set)
@@ -172,9 +168,9 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->env_size = envcount (environ);
 /* 	desc->argv = remote_argv; */
 /* 	desc->argc = remote_argc; */
-/* 	desc->err  = opt.efname; */
-/* 	desc->in   = opt.ifname; */
-/* 	desc->out  = opt.ofname; */
+	desc->err  = opt.efname;
+	desc->in   = opt.ifname;
+	desc->out  = opt.ofname;
 	desc->work_dir = opt.cwd;
 	desc->no_requeue = opt.no_requeue;
 
