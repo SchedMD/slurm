@@ -1031,7 +1031,7 @@ void set_options(const int argc, char **argv)
 		case 'e':
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
-				opt.efname = NULL;
+				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
 			break;
@@ -1045,7 +1045,7 @@ void set_options(const int argc, char **argv)
 		case 'i':
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
-				opt.ifname = NULL;
+				opt.ifname = xstrdup("/dev/null");
 			else
 				opt.ifname = xstrdup(optarg);
 			break;
@@ -1090,7 +1090,7 @@ void set_options(const int argc, char **argv)
 		case 'o':
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
-				opt.ofname = NULL;
+				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
 			break;
