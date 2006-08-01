@@ -189,11 +189,14 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 					   &part_name, -1);
 			if(!strcmp(part_name, part.name)) {
 				/* update with new info */
+				g_free(part_name);
 				_update_part_record(&part, 
 						    GTK_LIST_STORE(model), 
 						    &iter);
 				goto found;
 			}
+			g_free(part_name);
+				
 			/* see what line we were on to add the next one 
 			   to the list */
 			gtk_tree_model_get(model, &iter, SORTID_POS, 
@@ -493,33 +496,32 @@ extern void row_clicked_part(GtkTreeView *tree_view,
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
-	char *part = NULL;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 					
-	gtk_tree_model_get(model, iter, SORTID_NAME, &part, -1);
+	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 	switch(id) {
 	case JOB_PAGE:
-		snprintf(title, 100, "Job(s) in partition %s", part);
+		snprintf(title, 100, "Job(s) in partition %s", name);
 		break;
 	case NODE_PAGE:
 #ifdef HAVE_BG
 		snprintf(title, 100, 
-			 "Base partition(s) in partition %s", part);
+			 "Base partition(s) in partition %s", name);
 #else
-		snprintf(title, 100, "Node(s) in partition %s", part);
+		snprintf(title, 100, "Node(s) in partition %s", name);
 #endif
 		break;
 	case BLOCK_PAGE: 
-		snprintf(title, 100, "Block(s) in partition %s", part);
+		snprintf(title, 100, "Block(s) in partition %s", name);
 		break;
 	case ADMIN_PAGE: 
-		snprintf(title, 100, "Admin page for partition %s", part);
+		snprintf(title, 100, "Admin page for partition %s", name);
 		break;
 	case SUBMIT_PAGE: 
-		snprintf(title, 100, "Submit job in partition %s", part);
+		snprintf(title, 100, "Submit job in partition %s", name);
 		break;
 	default:
 		g_print("part got %d\n", id);
@@ -539,10 +541,11 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	switch(id) {
 	case JOB_PAGE:
-		popup_win->spec_info->data = part;
+		popup_win->spec_info->data = name;
 		//specific_info_job(popup_win);
 		break;
 	case NODE_PAGE:
+		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
 		popup_win->spec_info->data = name;
 		//specific_info_node(popup_win);

@@ -149,11 +149,13 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 					   &name, -1);
 			if(!strcmp(name, node.name)) {
 				/* update with new info */
+				g_free(name);
 				_update_node_record(&node, 
 						    GTK_LIST_STORE(model), 
 						    &iter);
 				goto found;
 			}
+			g_free(name);
 			/* see what line we were on to add the next one 
 			   to the list */
 			gtk_tree_model_get(model, &iter, SORTID_POS, 

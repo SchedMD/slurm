@@ -150,6 +150,7 @@ static void _selected_page(GtkMenuItem *menuitem,
 		g_print("common got %d %d\n", display_data->extra,
 			display_data->id);
 	}
+	xfree(treedata);
 }
 
 static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
@@ -470,7 +471,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 
 	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
 				    600, 400);
-	gtk_window_set_title(GTK_WINDOW(popup_win->popup), "Sview");
+	gtk_window_set_title(GTK_WINDOW(popup_win->popup), title);
 	
 	popup = popup_win->popup;
 
@@ -562,6 +563,14 @@ extern void destroy_specific_info(void *arg)
 	specific_info_t *spec_info = (specific_info_t *)arg;
 	if(spec_info) {
 		xfree(spec_info->title);
+		if(spec_info->data) {
+			g_free(spec_info->data);
+			spec_info->data = NULL;
+		}
+		if(spec_info->display_widget) {
+			gtk_widget_destroy(spec_info->display_widget);
+			spec_info->display_widget = NULL;
+		}
 		xfree(spec_info);
 	}
 }
@@ -571,9 +580,25 @@ extern void destroy_popup_info(void *arg)
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	if(popup_win) {
 		*popup_win->running = 0;
-		/* /\* wait for thread to finish *\/ */
-/* 		while(popup_win->toggled == -1) */
-/* 			sleep(1); */
+		/* these are all childern of each other so must 
+		   be freed in this order */
+		if(popup_win->table) {
+			gtk_widget_destroy(GTK_WIDGET(popup_win->table));
+			popup_win->table = NULL;
+		}
+		if(popup_win->button) {
+			gtk_widget_destroy(popup_win->button);
+			popup_win->button = NULL;
+		}
+		if(popup_win->event_box) {
+			gtk_widget_destroy(popup_win->event_box);
+			popup_win->event_box = NULL;
+		}
+		if(popup_win->popup) {
+			gtk_widget_destroy(popup_win->popup);
+			popup_win->popup = NULL;
+		}
+		
 		destroy_specific_info(popup_win->spec_info);
 		xfree(popup_win->display_data);
 		xfree(popup_win);
