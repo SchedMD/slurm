@@ -33,6 +33,8 @@ error messages?</a></li>
 period?</a></li>
 <li><a href="#pam">How can PAM be used to control a user's limits on or 
 access to compute nodes?</a></li>
+<li><a href="#time">Why are jobs allocated nodes and then unable to initiate 
+programs on some nodes?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -311,9 +313,22 @@ root, which can always login. pam_slurm is available for download from
 <a href="ftp://ftp.llnl.gov/pub/linux/pam_slurm/">ftp://ftp.llnl.gov/pub/linux/pam_slurm</a>
 The use of pam_slurm does not require <i>UsePAM</i> being set. The 
 two uses of PAM are independent.
+
+<p><a name="time"><b>10. Why are jobs allocated nodes and then unable 
+to initiate programs on some nodes?</b></a><br>
+This typically indicates that the time on some nodes is not consistent 
+with the node on which the <i>slurmctld</i> daemon executes. In order to 
+initiate a job step (or batch job), the <i>slurmctld</i> daemon generates 
+a credential containing a time stamp. If the <i>slurmd</i> daemon 
+receives a credential containing a time stamp later than the current 
+time or more than a few minutes in the past, it will be rejected. 
+If you check in the <i>SlurmdLog</i> on the nodes of interest, you 
+will likely see messages of this sort: "<i>Invalid job credential from 
+&lt;some IP address&gt;: Job credential expired</i>." Make the times 
+consistent across all of the nodes and all should be well.
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 May 2006</p>
+<p style="text-align:center;">Last modified 1 August 2006</p>
 
 <!--#include virtual="footer.txt"-->
