@@ -356,6 +356,9 @@ test17.6   Confirm that a job executes with the proper task count (--nprocs
            and --overcommit options).
 test17.7   Confirm that sbatch sets appropriate working directory (--chdir
            option)
+test17.8   Confirm that sbatch sets appropriate time limit (--time
+           option)
+test17.9   Confirm that sbatch sets appropriate job name (--job-name option)
 
 
 test18.#   Testing of slaunch options.
