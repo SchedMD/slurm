@@ -79,7 +79,6 @@
 #define OPT_DEBUG       0x03
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
-#define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
 #define OPT_NO_ROTATE	0x0a
@@ -696,7 +695,6 @@ static void _opt_default()
 
 	opt.distribution = SLURM_DIST_CYCLIC;
 
-	opt.overcommit = false;
 	opt.share = false;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
@@ -742,6 +740,10 @@ static void _opt_default()
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
 
+	opt.ifname = NULL;
+	opt.ofname = NULL;
+	opt.efname = NULL;
+
 	opt.ctrl_comm_ifhn  = xshort_hostname();
 
 }
@@ -780,7 +782,6 @@ env_vars_t env_vars[] = {
   {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
-  {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
@@ -875,10 +876,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
-	case OPT_OVERCOMMIT:
-		opt.overcommit = true;
-		break;
-
 	case OPT_CONN_TYPE:
 		opt.conn_type = _verify_conn_type(val);
 		break;
@@ -942,8 +939,10 @@ void set_options(const int argc, char **argv)
 		{"constraint",    required_argument, 0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
+		{"error",         required_argument, 0, 'e'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
+		{"input",         required_argument, 0, 'i'},
 		{"immediate",     no_argument,       0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
@@ -951,7 +950,7 @@ void set_options(const int argc, char **argv)
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"overcommit",    no_argument,       0, 'O'},
+		{"output",        required_argument, 0, 'o'},
 		{"partition",     required_argument, 0, 'p'},
 		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
@@ -1001,8 +1000,8 @@ void set_options(const int argc, char **argv)
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:D:g:HIJ:kKm:n:N:"
-		"Op:P:qQr:R:st:U:vVw:W:x:XZ";
+	char *opt_string = "+a:c:C:D:e:g:Hi:IJ:kKm:n:N:"
+		"o:Op:P:qQr:R:st:U:vVw:W:x:XZ";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -1029,12 +1028,26 @@ void set_options(const int argc, char **argv)
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
+		case 'e':
+			xfree(opt.efname);
+			if (strncasecmp(optarg, "none", (size_t)4) == 0)
+				opt.efname = NULL;
+			else
+				opt.efname = xstrdup(optarg);
+			break;
 		case 'g':
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
 		case 'H':
 			opt.hold = true;
+			break;
+		case 'i':
+			xfree(opt.ifname);
+			if (strncasecmp(optarg, "none", (size_t)4) == 0)
+				opt.ifname = NULL;
+			else
+				opt.ifname = xstrdup(optarg);
 			break;
 		case 'I':
 			opt.immediate = true;
@@ -1074,8 +1087,12 @@ void set_options(const int argc, char **argv)
 				exit(1);
 			}
 			break;
-		case 'O':
-			opt.overcommit = true;
+		case 'o':
+			xfree(opt.ofname);
+			if (strncasecmp(optarg, "none", (size_t)4) == 0)
+				opt.ofname = NULL;
+			else
+				opt.ofname = xstrdup(optarg);
 			break;
 		case 'p':
 			xfree(opt.partition);
@@ -1087,7 +1104,7 @@ void set_options(const int argc, char **argv)
 		case 'q':
 			opt.quit_on_intr = true;
 			break;
-		case  'Q':
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'r':
@@ -1698,7 +1715,6 @@ static void _opt_list()
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("no-requeue     : %s", tf_(opt.no_requeue));
-	info("overcommit     : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
 	else
@@ -1745,7 +1761,8 @@ static void _usage(void)
  	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [-D path] [--immediate] [--overcommit] [--no-kill]\n"
+"              [-D path] [--immediate] [--no-kill]\n"
+"              [--input file] [--output file] [--error file]\n"
 "              [--share] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose]\n"
 "              [-W sec]\n"
@@ -1771,13 +1788,15 @@ static void _help(void)
 "  -n, --ntasks=ntasks         number of tasks to run\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+"  -i, --input=in              file for batch script's standard input\n"
+"  -o, --output=out            file for batch script's standard output\n"
+"  -e, --error=err             file for batch script's standard error\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
-"  -O, --overcommit            overcommit resources\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
