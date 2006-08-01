@@ -451,6 +451,11 @@ find_node_record (char *name)
 				return node_ptr;
 			node_ptr = node_ptr->node_next;
 		}
+
+		if ((node_record_count == 1)
+		&&  (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
+			return (&node_record_table_ptr[0]);
+
 		error ("find_node_record: lookup failure for %s", name);
 	} 
 
