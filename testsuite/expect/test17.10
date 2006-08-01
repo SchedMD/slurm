@@ -34,7 +34,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.12"
+set test_id     "17.10"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
@@ -46,6 +46,10 @@ set matches     0
 
 print_header $test_id
 
+# DISABLE FOR NOW
+send_user "\nFAILURE: sbatch does not yet support --output option\n"
+exit 0
+
 #
 # Delete left-over input script
 # Build input script file
@@ -56,17 +60,16 @@ make_bash_script $file_in "
 "
 
 #
-# Spawn a srun batch job with constraints and stdout/err
+# Spawn a sbatch job with constraints and stdout/err
 #
-spawn $srun --batch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in
+spawn $sbatch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -74,7 +77,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
