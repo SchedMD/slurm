@@ -1,16 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of wait option (--wait option).
+#          Verify node configuration specification (--constraint option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.15.input
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -34,11 +32,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.15"
+set test_id     "17.12"
 set exit_code   0
 set file_in     "test$test_id.input"
-set matches     0
-
 print_header $test_id
 
 #
@@ -47,30 +43,28 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-    if ((\$SLURM_PROCID == 1))
-        then exit
-    fi
-    $bin_sleep 300
+  $bin_sleep 10
 "
 
 #
-# Spawn a shell via srun and send exit command to task 1 only
+# Submit a job with invalid constraint requirement
 #
+set err_msg     0
 set timeout $max_job_delay
-spawn $srun -n10 -N1 -O -W2 -t5 $file_in
+spawn $sbatch -N1 --constraint=invalid,constraint -t1 $file_in  
 expect {
-	-re "First task exited" {
+	-re "configuration is not available" {
 		send_user "This error is expected, no worries\n"
-		incr matches
+		set err_msg 1
 		exp_continue
 	}
-	-re "task.0,2-9.: running" {	# bracket escape not working
-		incr matches
+	-re "Submitted batch job ($number)" {
+		send_user "\nFAILURE: sbatch job submitted with invalid constraint\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -78,11 +72,11 @@ expect {
 		wait
 	}
 }
-
-if {$matches != 2} {
-	send_user "\nFAILURE: problem with wait option\n"
-	set exit_code 1
+if {$err_msg != 1} {
+	send_user "\nFAILURE: job failed to report required error\n"
+	set exit_code   1	
 }
+
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"

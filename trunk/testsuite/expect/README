@@ -359,6 +359,12 @@ test17.7   Confirm that sbatch sets appropriate working directory (--chdir
 test17.8   Confirm that sbatch sets appropriate time limit (--time
            option)
 test17.9   Confirm that sbatch sets appropriate job name (--job-name option)
+test17.10  Test of processors, memory, and temporary disk space
+           constraints options (--mincpus, --mem, and --tmp options).
+           Also test that priority zero job is not started (--hold
+           option).
+test17.11  Test of shared and contiguous options (--shared and --contiguous).
+           Also uses --hold option.
 
 
 test18.#   Testing of slaunch options.
