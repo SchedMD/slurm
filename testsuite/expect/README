@@ -350,8 +350,12 @@ test17.3   Confirm that sbatch reports a proper version number
            (--version option).
 test17.4   Confirm that as sbatch job executes as the appropriate user and
            group.
-test17.5   Confirm that sbatch stdout, and stderr options  work (--output 
+test17.5   Confirm that sbatch stdout, and stderr options work (--output 
            and --error option respectively).
+test17.6   Confirm that a job executes with the proper task count (--nprocs
+           and --overcommit options).
+test17.7   Confirm that sbatch sets appropriate working directory (--chdir
+           option)
 
 
 test18.#   Testing of slaunch options.
