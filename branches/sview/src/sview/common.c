@@ -121,7 +121,6 @@ static void _popup_state_changed(GtkCheckMenuItem *menuitem,
 	else
 		display_data->show = TRUE;
 	
-	g_print(" got %s\n", display_data->name);
 	(display_data->refresh)(NULL, display_data->user_data);
 }
 
@@ -222,6 +221,8 @@ extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
 	while(display_data++) {
 		if(display_data->id == -1)
 			break;
+		if(!display_data->name)
+			continue;
 		menuitem = gtk_check_menu_item_new_with_label(
 			display_data->name); 
 	
@@ -250,6 +251,8 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	while(display_data++) {
 		if(display_data->id == -1)
 			break;
+		if(!display_data->name)
+			continue;
 		
 		display_data->user_data = treedata;
 		menuitem = gtk_menu_item_new_with_label(display_data->name); 
@@ -268,7 +271,8 @@ extern void make_popup_fields_menu(popup_info_t *popup_win, GtkMenu *menu)
 	while(display_data++) {
 		if(display_data->id == -1)
 			break;
-		
+		if(!display_data->name)
+			continue;
 		display_data->user_data = popup_win;
 		menuitem = 
 			gtk_check_menu_item_new_with_label(display_data->name);
@@ -447,7 +451,7 @@ extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	gtk_tree_path_free(path);
 }
 
-extern popup_info_t *create_popup_info(int type, char *title)
+extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 {
 	GtkScrolledWindow *window = NULL;
 	GtkBin *bin = NULL;
@@ -462,6 +466,7 @@ extern popup_info_t *create_popup_info(int type, char *title)
 	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
 	popup_win->popup = gtk_dialog_new();
 	popup_win->toggled = 0;
+	popup_win->type = dest_type;
 
 	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
 				    600, 400);
@@ -565,10 +570,10 @@ extern void destroy_popup_info(void *arg)
 {
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	if(popup_win) {
-		popup_win->toggled = -1;
-		/* wait for thread to finish */
-		while(popup_win->toggled == -1)
-			sleep(1);
+		*popup_win->running = 0;
+		/* /\* wait for thread to finish *\/ */
+/* 		while(popup_win->toggled == -1) */
+/* 			sleep(1); */
 		destroy_specific_info(popup_win->spec_info);
 		xfree(popup_win->display_data);
 		xfree(popup_win);
@@ -599,6 +604,7 @@ extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 extern void *popup_thr(popup_info_t *popup_win)
 {
 	void (*specifc_info) (popup_info_t *popup_win) = NULL;
+	int running = 1;
 	switch(popup_win->type) {
 	case PART_PAGE:
 		specifc_info = specific_info_part;
@@ -616,15 +622,37 @@ extern void *popup_thr(popup_info_t *popup_win)
 		g_print("thread got unknown type %d\n", popup_win->type);
 		return NULL;
 	}
+	/* this will switch to 0 when popup is closed. */
+	popup_win->running = &running;
 	/* when popup is killed toggled will be set to -1 */
-	while(popup_win->toggled != -1) {
+	while(running) {
 		gdk_threads_enter();
 		(specifc_info)(popup_win);
 		gdk_flush();
 		gdk_threads_leave();
 		sleep(5);
 	}	
-	popup_win->toggled = 0;
-	g_print("done with popup thread\n");	
 	return NULL;
+}
+
+extern void remove_old(GtkTreeModel *model, int updated)
+{
+	GtkTreePath *path = gtk_tree_path_new_first();
+	GtkTreeIter iter;
+	int i;
+	
+	/* remove all old partitions */
+	if (gtk_tree_model_get_iter(model, &iter, path)) {
+		while(1) {
+			gtk_tree_model_get(model, &iter, updated, &i, -1);
+			if(!i) 
+				gtk_list_store_remove(GTK_LIST_STORE(model), 
+						      &iter);
+			
+			if(!gtk_tree_model_iter_next(model, &iter)) {
+				break;
+			}
+		}
+	}
+	gtk_tree_path_free(path);
 }

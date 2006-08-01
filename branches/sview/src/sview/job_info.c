@@ -204,10 +204,25 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 	job_info_t job;
 	int line = 0;
 	char name[30];
-	char *host, *host2;
+	char *host = NULL, *host2 = NULL;
 	hostlist_t hostlist = NULL;
-	hostlist_t hostlist2 = NULL;
 	int found = 0;
+	
+	if(spec_info) {
+		switch(spec_info->type) {
+		case NODE_PAGE:
+			hostlist = hostlist_create(
+				(char *)spec_info->data);	
+			host = hostlist_shift(hostlist);
+			hostlist_destroy(hostlist);
+			if(host == NULL) {
+				g_print("nodelist was empty");
+				return;
+			
+			}
+			break;
+		}
+	}
 
 	for (i = 0; i < job_info_ptr->record_count; i++) {
 		job = job_info_ptr->job_array[i];
@@ -258,8 +273,6 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 		    && (!(job.job_state & JOB_COMPLETING))) 
 			continue;	/* job has completed */
 
-		g_print("not in the list adding line %d\n", 
-			line);
 		if(spec_info) {
 			switch(spec_info->type) {
 			case PART_PAGE:
@@ -277,20 +290,12 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 					continue;
 				break;
 			case NODE_PAGE:
-				if(!job.nodes)
+				if(!job.nodes || !host)
 					continue;
-				hostlist = hostlist_create(
-					(char *)spec_info->data);	
-				host = hostlist_shift(hostlist);
-				hostlist_destroy(hostlist);
-				if(host == NULL) {
-					g_print("nodelist was empty");
-					return;
-				}
 				
-				hostlist2 = hostlist_create(job.nodes);	
+				hostlist = hostlist_create(job.nodes);	
 				found = 0;
-				while((host2 = hostlist_shift(hostlist2))) { 
+				while((host2 = hostlist_shift(hostlist))) { 
 					if(!strcmp(host, host2)) {
 						free(host2);
 						found = 1;
@@ -298,8 +303,7 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 					}
 					free(host2);
 				}
-				free(host);
-				hostlist_destroy(hostlist2);
+				hostlist_destroy(hostlist);
 				if(!found)
 					continue;
 				break;
@@ -311,7 +315,10 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 				   &iter, line);
 	found:
 		;
-	}	
+	}
+	if(host)
+		free(host);
+	gtk_tree_path_free(path);			
 	return;	
 }
 
@@ -351,7 +358,6 @@ extern void refresh_job(GtkAction *action, gpointer user_data)
 	xassert(popup_win != NULL);
 	xassert(popup_win->spec_info != NULL);
 	xassert(popup_win->spec_info->title != NULL);
-	g_print("hey got here job for %s\n", popup_win->spec_info->title);
 	specific_info_job(popup_win);
 }
 
@@ -420,7 +426,7 @@ display_it:
 		create_liststore(tree_view, display_data_job, SORTID_CNT);
 	}
 	view = INFO_VIEW;
-	_update_info_job(new_job_ptr, tree_view, NULL);
+	_update_info_job(new_job_ptr, GTK_TREE_VIEW(display_widget), NULL);
 	toggled = FALSE;
 	job_info_ptr = new_job_ptr;
 	return;
@@ -429,7 +435,6 @@ display_it:
 extern void specific_info_job(popup_info_t *popup_win)
 {
 	int error_code = SLURM_SUCCESS;
-	static int view = -1;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
 	char error_char[50];
@@ -456,7 +461,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 		return;
 	}
 	if (error_code != SLURM_SUCCESS) {
-		view = ERROR_VIEW;
+		spec_info->view = ERROR_VIEW;
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		
@@ -487,10 +492,12 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the liststore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, popup_win->display_data, SORTID_CNT);
+		create_liststore(tree_view, popup_win->display_data, 
+				 SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;
-	_update_info_job(new_job_ptr, tree_view, spec_info);
+	_update_info_job(new_job_ptr, 
+			 GTK_TREE_VIEW(spec_info->display_widget), spec_info);
 	popup_win->toggled = 0;
 	
 	job_info_ptr = new_job_ptr;
@@ -619,8 +626,10 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	list_iterator_destroy(itr);
 	
 	if(!popup_win) 
-		popup_win = create_popup_info(JOB_PAGE, title);
-	
+		popup_win = create_popup_info(JOB_PAGE, id, title);
+
+	popup_win->type = id;
+
 	switch(id) {
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
@@ -641,7 +650,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 		break;
 	default:
-		g_print("nodes got %d\n", id);
+		g_print("jobs got %d\n", id);
 	}
 	if (!g_thread_create(_popup_thr_job, popup_win, FALSE, &error))
 	{

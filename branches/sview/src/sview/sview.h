@@ -147,6 +147,7 @@ struct specific_info {
 struct popup_info {
 	int type; /* window type */
 	int toggled;
+	int *running;
 	GtkWidget *popup;
 	GtkWidget *event_box;
 	GtkWidget *button;
@@ -266,7 +267,7 @@ extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path,
 				 int type);
 extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
 			const display_data_t *display_data);
-extern popup_info_t *create_popup_info(int type, char *title);
+extern popup_info_t *create_popup_info(int type, int dest_type, char *title);
 extern void setup_popup_info(popup_info_t *popup_win, 
 			     display_data_t *display_data, 
 			     int cnt);
@@ -276,5 +277,6 @@ extern void destroy_specific_info(void *arg);
 extern void destroy_popup_info(void *arg);
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
 extern void *popup_thr(popup_info_t *popup_win);
+extern void remove_old(GtkTreeModel *model, int updated);
 
 #endif

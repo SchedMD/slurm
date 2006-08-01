@@ -41,6 +41,7 @@ enum {
 	SORTID_WEIGHT, 
 	SORTID_FEATURES, 
 	SORTID_REASON,
+	SORTID_UPDATED, 
 	SORTID_CNT
 };
 
@@ -54,6 +55,7 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1, refresh_node},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1, refresh_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_node},
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_node},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -71,35 +73,132 @@ static display_data_t options_data_node[] = {
 
 static display_data_t *local_display_data = NULL;
 
+static void _update_node_record(node_info_t *node_ptr,
+				GtkListStore *liststore, GtkTreeIter *iter)
+{
+	char tmp_cnt[7];
+
+	gtk_list_store_set(liststore, iter, SORTID_NAME, node_ptr->name, -1);
+	gtk_list_store_set(liststore, iter, SORTID_STATE, 
+			   node_state_string(node_ptr->node_state), -1);
+	gtk_list_store_set(liststore, iter, SORTID_CPUS, node_ptr->cpus, -1);
+
+	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
+	gtk_list_store_set(liststore, iter, SORTID_MEMORY, tmp_cnt, -1);
+	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
+	gtk_list_store_set(liststore, iter, SORTID_DISK, tmp_cnt, -1);
+	gtk_list_store_set(liststore, iter, SORTID_WEIGHT, 
+			   node_ptr->weight, -1);
+	gtk_list_store_set(liststore, iter, SORTID_FEATURES, 
+			   node_ptr->features, -1);
+	gtk_list_store_set(liststore, iter, SORTID_REASON, 
+			   node_ptr->reason, -1);
+	gtk_list_store_set(liststore, iter, SORTID_UPDATED, 1, -1);	
+	
+	return;
+}
+
 static void _append_node_record(node_info_t *node_ptr,
 				GtkListStore *liststore, GtkTreeIter *iter,
 				int line)
 {
-	char tmp_cnt[7];
-
 	gtk_list_store_append(liststore, iter);
 	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_NAME, node_ptr->name, -1);
-	gtk_list_store_set(liststore, iter,
-			   SORTID_STATE,
-			   node_state_string(node_ptr->node_state), -1);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_CPUS, node_ptr->cpus, -1);
+	_update_node_record(node_ptr, liststore, iter);
+}
 
-	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_MEMORY, tmp_cnt, -1);
-	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_DISK, tmp_cnt, -1);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_WEIGHT, node_ptr->weight, -1);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_FEATURES, node_ptr->features, -1);
-	gtk_list_store_set(liststore, iter, 
-			   SORTID_REASON, node_ptr->reason, -1);
+static void _update_info_node(node_info_msg_t *node_info_ptr, 
+			      GtkTreeView *tree_view,
+			      specific_info_t *spec_info)
+{
+	GtkTreePath *path = gtk_tree_path_new_first();
+	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+	GtkTreeIter iter;
+	node_info_t node;
+	int i, line = 0;
+	char *name;
+	hostlist_t hostlist = NULL;	
+	hostlist_iterator_t itr = NULL;
 	
+	if(spec_info) {
+		hostlist = hostlist_create((char *)spec_info->data);
+		itr = hostlist_iterator_create(hostlist);
+	}
+
+	/* get the iter, or find out the list is empty goto add */
+	if (gtk_tree_model_get_iter(model, &iter, path)) {
+		/* make sure all the partitions are still here */
+		while(1) {
+			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 
+					   SORTID_UPDATED, 0, -1);	
+			if(!gtk_tree_model_iter_next(model, &iter)) {
+				break;
+			}
+		}
+	}
+	for (i = 0; i < node_info_ptr->record_count; i++) {
+		node = node_info_ptr->node_array[i];
+		/* get the iter, or find out the list is empty goto add */
+		if (!gtk_tree_model_get_iter(model, &iter, path)) {
+			goto adding;
+		}
+		while(1) {
+			/* search for the node name and check to see if 
+			   it is in the list */
+			gtk_tree_model_get(model, &iter, SORTID_NAME, 
+					   &name, -1);
+			if(!strcmp(name, node.name)) {
+				/* update with new info */
+				_update_node_record(&node, 
+						    GTK_LIST_STORE(model), 
+						    &iter);
+				goto found;
+			}
+			/* see what line we were on to add the next one 
+			   to the list */
+			gtk_tree_model_get(model, &iter, SORTID_POS, 
+					   &line, -1);
+			if(!gtk_tree_model_iter_next(model, &iter)) {
+				line++;
+				break;
+			}
+		}
+	adding:
+		if(spec_info) {
+			int found = 0;
+			char *host = NULL;
+			while((host = hostlist_next(itr))) { 
+				if(!strcmp(host, node.name)) {
+					free(host);
+					found = 1;
+					break; 
+				}
+				free(host);
+			}
+			hostlist_iterator_reset(itr);
+			if(!found)
+				continue;
+		}
+		
+		_append_node_record(&node, GTK_LIST_STORE(model), &iter, i);
+	found:
+		;
+	}
+       	gtk_tree_path_free(path);
+	/* remove all old nodes */
+	remove_old(model, SORTID_UPDATED);
+	if(spec_info) {
+		hostlist_iterator_destroy(itr);
+		hostlist_destroy(hostlist);
+	}
+	
+	
+}
+
+void *_popup_thr_node(void *arg)
+{
+	popup_thr(arg);		
+	return NULL;
 }
 
 extern int get_new_info_node(node_info_msg_t **info_ptr)
@@ -129,17 +228,18 @@ extern int get_new_info_node(node_info_msg_t **info_ptr)
 extern void refresh_node(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
+	xassert(popup_win != NULL);
+	xassert(popup_win->spec_info != NULL);
+	xassert(popup_win->spec_info->title != NULL);
 	specific_info_node(popup_win);
 }
 
 extern void get_info_node(GtkTable *table, display_data_t *display_data)
 {
-	int error_code = SLURM_SUCCESS, i, recs;
+	int error_code = SLURM_SUCCESS;
+	static int view = -1;
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
-	node_info_t node;
 	char error_char[50];
-	GtkTreeIter iter;
-	GtkListStore *liststore = NULL;
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
@@ -150,21 +250,25 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		display_data_node->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(new_node_ptr && toggled)
-		goto got_toggled;
-
-	if((error_code = get_new_info_node(&new_node_ptr))
-	   == SLURM_NO_CHANGE_IN_DATA) {
-		if(!display_widget)
-			goto display_it;
-		return;
+	if(new_node_ptr && toggled) {
+		gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		goto display_it;
 	}
 
-got_toggled:
-	if(display_widget)
-		gtk_widget_destroy(display_widget);
+	if((error_code = get_new_info_node(&new_node_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		if(!display_widget || view == ERROR_VIEW)
+			goto display_it;
+		_update_info_node(new_node_ptr, GTK_TREE_VIEW(display_widget), 
+				  NULL);
+		return;
+	} 
 
 	if (error_code != SLURM_SUCCESS) {
+		view = ERROR_VIEW;
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
@@ -176,61 +280,64 @@ got_toggled:
 		return;
 	}
 display_it:
-	if (new_node_ptr)
-		recs = new_node_ptr->record_count;
-	else
-		recs = 0;
-	tree_view = create_treeview(local_display_data, new_node_ptr);
-
-	display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
-	gtk_table_attach_defaults(GTK_TABLE(table),
-				  GTK_WIDGET(tree_view),
-				  0, 1, 0, 1);
-	
-	liststore = create_liststore(tree_view, display_data_node, SORTID_CNT);
-
-	for (i = 0; i < recs; i++) {
-		node = new_node_ptr->node_array[i];
-		_append_node_record(&node, liststore, &iter, i);
+	if(view == ERROR_VIEW && display_widget) {
+		gtk_widget_destroy(display_widget);
+		display_widget = NULL;
 	}
+	if(!display_widget) {
+		tree_view = create_treeview(local_display_data, new_node_ptr);
 		
-	//ba_system_ptr->ycord++;
-	
-		node_info_ptr = new_node_ptr;
+		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+		gtk_table_attach_defaults(GTK_TABLE(table),
+					  GTK_WIDGET(tree_view),
+					  0, 1, 0, 1);		
+		gtk_widget_show(GTK_WIDGET(tree_view));
+		/* since this function sets the model of the tree_view 
+		   to the liststore we don't really care about 
+		   the return value */
+		create_liststore(tree_view, display_data_node, SORTID_CNT);
+	}
+	view = INFO_VIEW;
+	_update_info_node(new_node_ptr, GTK_TREE_VIEW(display_widget), NULL);
+	toggled = FALSE;
+		
+	node_info_ptr = new_node_ptr;
 	return;
 	
 }
 
 extern void specific_info_node(popup_info_t *popup_win)
 {
-	int error_code = SLURM_SUCCESS, i, recs;
+	int error_code = SLURM_SUCCESS;
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
-	node_info_t node;
 	char error_char[50];
-	GtkTreeIter iter;
-	GtkListStore *liststore = NULL;
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	hostlist_t hostlist = hostlist_create((char *)spec_info->data);	
-	hostlist_iterator_t itr = hostlist_iterator_create(hostlist);
-	char *host = NULL;
-	int found = 0;
 	
-	if(spec_info->display_widget)
-		gtk_widget_destroy(spec_info->display_widget);
-	else 
+	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
 	
-
-	if(new_node_ptr && toggled)
+	if(new_node_ptr && popup_win->toggled) {
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
 		goto display_it;
+	}
 	
 	if((error_code = get_new_info_node(&new_node_ptr))
-	   == SLURM_NO_CHANGE_IN_DATA) 
-		goto display_it;
-	
+	   == SLURM_NO_CHANGE_IN_DATA) {
+		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
+			goto display_it;
+		_update_info_node(new_node_ptr, 
+				  GTK_TREE_VIEW(spec_info->display_widget), 
+				  spec_info);
+		return;
+	}  
+			
 	if (error_code != SLURM_SUCCESS) {
+		spec_info->view = ERROR_VIEW;
+		if(spec_info->display_widget)
+			gtk_widget_destroy(spec_info->display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
@@ -243,42 +350,30 @@ extern void specific_info_node(popup_info_t *popup_win)
 	}
 display_it:	
 	
-	if (new_node_ptr)
-		recs = new_node_ptr->record_count;
-	else
-		recs = 0;
-
-	tree_view = create_treeview(local_display_data, new_node_ptr);
-
-	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
-	gtk_table_attach_defaults(GTK_TABLE(popup_win->table),
-				  GTK_WIDGET(tree_view),
-				  0, 1, 0, 1);
-	
-	liststore = create_liststore(tree_view, popup_win->display_data, 
-				     SORTID_CNT);
-
-	for (i = 0; i < recs; i++) {
-		node = new_node_ptr->node_array[i];
-		found = 0;
-		while((host = hostlist_next(itr)) != NULL) { 
-			if(!strcmp(host, node.name)) {
-  				free(host);
-				found = 1;
-				break; 
-			}
-			free(host);
-  		}
-		hostlist_iterator_reset(itr);
-		if(found) 
-			_append_node_record(&node, liststore, &iter, i);
-		
+	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
 	}
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(hostlist);
+	if(!spec_info->display_widget) {
+		tree_view = create_treeview(local_display_data, new_node_ptr);
+		
+		spec_info->display_widget = 
+			gtk_widget_ref(GTK_WIDGET(tree_view));
+		gtk_table_attach_defaults(GTK_TABLE(popup_win->table),
+					  GTK_WIDGET(tree_view),
+					  0, 1, 0, 1);
+		
+		/* since this function sets the model of the tree_view 
+		   to the liststore we don't really care about 
+		   the return value */
+		create_liststore(tree_view, popup_win->display_data, 
+				 SORTID_CNT);
+	}
+	spec_info->view = INFO_VIEW;
+	_update_info_node(new_node_ptr, 
+			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
+	popup_win->toggled = 0;
 	
-	//ba_system_ptr->ycord++;
-
 	node_info_ptr = new_node_ptr;
 	return;
 	
@@ -344,6 +439,8 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
+	GError *error = NULL;
+
 #ifdef HAVE_BG
 	char *node = "base partition";
 #else
@@ -380,32 +477,13 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	list_iterator_destroy(itr);
 	
 	if(!popup_win) 
-		popup_win = create_popup_info(NODE_PAGE, title);
+		popup_win = create_popup_info(NODE_PAGE, id, title);
+	popup_win->spec_info->data = name;
 	
-	toggled = true;
-
-	switch(id) {
-	case JOB_PAGE:
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		snprintf(title, 100, "Jobs(s) with node %s", name);
-		break;
-	case PART_PAGE:
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		popup_win->spec_info->data = name;
-		specific_info_part(popup_win);
-		break;
-	case BLOCK_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		break;
-	case ADMIN_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		break;
-	case SUBMIT_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		break;
-	default:
-		g_print("nodes got %d\n", id);
+	if (!g_thread_create(_popup_thr_node, popup_win, FALSE, &error))
+	{
+		g_printerr ("Failed to create part popup thread: %s\n", 
+			    error->message);
+		return;
 	}
-	
-	toggled = false;	
 }
