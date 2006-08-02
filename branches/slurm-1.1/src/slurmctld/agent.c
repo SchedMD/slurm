@@ -805,9 +805,8 @@ static void *_thread_per_group_rpc(void *args)
 		if (job_ptr)
 			state = job_ptr->job_state;	
 		unlock_slurmctld(job_read_lock);
-		if ((state == JOB_RUNNING)
-		||  ((msg_type == SRUN_NODE_FAIL) &&
-		     ((state == JOB_NODE_FAIL) || (state & JOB_COMPLETING)))) {
+		if ((state == JOB_RUNNING) || (state & JOB_COMPLETING)
+		||  ((msg_type == SRUN_NODE_FAIL) && (state == JOB_NODE_FAIL))) {
 			; /* proceed with the communication */
 		} else {
 			/* don't try to communicate with defunct job */
