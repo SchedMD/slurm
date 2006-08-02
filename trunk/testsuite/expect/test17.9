@@ -38,17 +38,12 @@ set name_set    "my_name"
 
 print_header $test_id
 
-# DISABLE FOR NOW
-send_user "\nFAILURE: sbatch does not yet support --output option\n"
-exit 0
-
 #
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
 exec $bin_rm -f $file_in
-set file [open $file_in "w"]
-puts $file "
+make_bash_script $file_in "
   $bin_id
 "
 

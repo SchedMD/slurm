@@ -45,10 +45,6 @@ set env($test_env_name) $test_env_val
 
 print_header $test_id
 
-# DISABLE FOR NOW
-send_user "\nFAILURE: sbatch does not yet support --output option\n"
-exit 0
-
 #
 # Delete left-over input script
 # Build input script file
@@ -94,7 +90,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output
 #
-if {[wait_for_file $file_out] == 0} {
+if {[wait_for_file $file_out] != 0} {
 	send_user "\nFAILURE: Output file $file_out is missing\n"
 	exit 1
 }

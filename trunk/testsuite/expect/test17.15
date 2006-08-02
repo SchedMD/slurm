@@ -50,10 +50,6 @@ set matches          0
 
 print_header $test_id
 
-# DISABLE FOR NOW
-send_user "\nFAILURE: sbatch does not yet support --output option\n"
-exit 0
-
 #
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output 

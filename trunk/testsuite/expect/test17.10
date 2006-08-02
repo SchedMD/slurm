@@ -46,10 +46,6 @@ set matches     0
 
 print_header $test_id
 
-# DISABLE FOR NOW
-send_user "\nFAILURE: sbatch does not yet support --output option\n"
-exit 0
-
 #
 # Delete left-over input script
 # Build input script file
