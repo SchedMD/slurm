@@ -44,10 +44,6 @@ set got_login_grps       0
 
 print_header $test_id
 
-# DISABLE FOR NOW
-send_user "\nFAILURE: sbatch does not yet support --output option\n"
-exit 0
-
 #
 # Execute 'id' to determine my user and group ID...
 #
@@ -137,7 +133,7 @@ if {[string compare $login_grp_info $job_grp_info] != 0} {
 }
 
 if {$exit_code == 0} {
-	rm -f $file_in $file_out
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
