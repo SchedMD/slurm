@@ -1165,6 +1165,8 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
  * IN step_node_list - node list of hosts in step
  * IN num_tasks - number of tasks in step
  * IN task_dist - type of task distribution
+ * IN overcommit - flag: 0 disables, 1 enables committing more tasks
+ *	than available processors
  * RET - NULL or slurm_step_layout_t *
  * NOTE: you need to free the returned step_layout usually when the 
  *       step is freed.
@@ -1173,7 +1175,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint16_t node_count,
 					       uint32_t num_tasks,
-					       uint16_t task_dist);
+					       uint16_t task_dist,
+					       uint8_t overcommit);
 /*
  * step_epilog_complete - note completion of epilog on some node and 
  *	release it's switch windows if appropriate. can perform partition 

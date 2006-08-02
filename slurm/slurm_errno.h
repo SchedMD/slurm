@@ -134,6 +134,8 @@ enum {
 	ESLURM_DISABLED,
 	ESLURM_DEPENDENCY,
 	ESLURM_BATCH_ONLY,
+	ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED,
+	ESLURM_TASKDIST_REQUIRES_OVERCOMMIT,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
