@@ -47,7 +47,6 @@ set can_not_run 0
 set timeout $max_job_delay
 
 spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID
-
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
@@ -79,7 +78,7 @@ if {[string compare $host_0 ""] == 0} {
 
 set alloc_fail 0
 set task_cnt2  0
-	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID
+spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number):" {
 		incr task_cnt2
