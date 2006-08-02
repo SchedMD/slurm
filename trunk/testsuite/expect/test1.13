@@ -6,11 +6,8 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.11.input, test1.11.output, and test1.11.error
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -44,6 +41,7 @@ print_header $test_id
 # Spawn a srun immediate execution job with hold (priority==0) option, 
 # The job can't run immediately with a priority of zero
 #
+set timeout 10
 spawn $srun --immediate --hold -t1 $bin_pwd
 expect {
 	-re "Unable to allocate resources" {
@@ -69,11 +67,13 @@ if {$matches != 1} {
 
 #
 # Spawn a srun immediate execution job, it should run or fail immediately
+# Note the small value of timeout
 #
 set matches 0
 spawn $srun --immediate -v -t1 $bin_pwd
 expect {
-	-re "Immediate execution impossible" {
+	-re "error" {
+		send_user "This error is not unexpected, no worries\n"
 		incr matches
 		exp_continue
 	}
