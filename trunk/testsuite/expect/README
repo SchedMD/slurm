@@ -383,6 +383,19 @@ test17.22  Test of running non-existant job, confirm timely termination.
 test17.23  Test of nice value specification (--nice option).
 test17.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
+**NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
+           The test will print "WARNING" and terminate with an exit code of
+           zero if the cluster configuration does not permit proper testing.
+test17.TBD Confirm that a job executes with the proper node count
+           (--nodes option).
+test17.TBD Confirm that a job executes with the specified nodes
+           (--nodelist and --exclude options).
+test17.TBD Test of contiguous option with multiple nodes (--contiguous option).
+test17.TBD Test of partition specification on job submission (--partition
+           option).
+**NOTE**   The above tests for mutliple processor/partition systems only
+
+
 
 test18.#   Testing of slaunch options.
 ======================================
