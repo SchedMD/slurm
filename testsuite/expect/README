@@ -379,6 +379,8 @@ test17.19  Test the launch of a batch job within an existing job allocation.
            This logic is used by LSF
 test17.20  Test of mail options (--mail-type and --mail-user options)
 test17.21  Tests #SLURM entry functionality in a batch script
+test17.22  Test of running non-existant job, confirm timely termination.
+test17.23  Test of nice value specification (--nice option).
 test17.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 
