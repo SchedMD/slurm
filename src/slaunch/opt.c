@@ -91,6 +91,7 @@
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
 #define OPT_MULTI       0x0f
+#define OPT_CPUS_PER_NODE 0x10
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -119,6 +120,17 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
+
+typedef struct resource_allocation_response_msg_flags {
+	bool job_id;
+	bool node_list;
+	bool cpu_info;
+	bool node_cnt;
+} resource_allocation_response_msg_flags_t;
+
+resource_allocation_response_msg_t alloc_info;
+resource_allocation_response_msg_t *alloc_info_ptr = &alloc_info;
+resource_allocation_response_msg_flags_t alloc_info_set;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -512,6 +524,102 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	return 0;
 }
 
+/*
+ *  Parse the next greatest of:
+ *     CPUS(REPS),
+ *  or
+ *     CPUS(REPS)
+ *  or
+ *     CPUS,
+ *  or
+ *     CPUS
+ *  moving "ptr" past the parsed cpu/reps pair
+ *
+ * Return 1 after succesfully parsing a new number or pair, and 0 otherwise.
+ */
+static int _parse_cpu_rep_pair(char **ptr, uint32_t *cpu, uint32_t *rep)
+{
+	char *endptr;
+
+	*rep = 1;
+	*cpu = strtol(*ptr, &endptr, 10);
+	if (*cpu == 0 && endptr == *ptr) {
+		/* no more numbers */
+		return 0;
+	}
+
+	if (endptr[0] == (char)',') {
+		*ptr = endptr+1;
+		return 1;
+	} else if (endptr[0] == (char)'('
+		   && endptr[1] == (char)'x') {
+		*ptr = endptr+2;
+		*rep = strtol(*ptr, &endptr, 10);
+		if (*rep == 0 && endptr == *ptr) {
+			error("was expecting a number at \"%s\"", *ptr);
+			return 0;
+		}
+		if (endptr[0] != (char)')') {
+			error("was expecting a closing parenthasis at \"%s\"",
+			      endptr);
+			return 0;
+		}
+		endptr = endptr+1;
+
+		/* finally, swallow the next comma, if there is one */
+		if (endptr[0] == (char)',') {
+			*ptr = endptr + 1;
+		} else {
+			*ptr = endptr;
+		}
+		return 1;
+	} else {
+		*ptr = endptr;
+		return 1;
+	}
+}
+
+
+/* Take a string representing cpus-per-node in compressed representation,
+ * and set alloc_info variables pertaining to cpus-per-node.
+ */
+static int _set_cpus_per_node(const char *str)
+{
+	char *ptr = (char *)str;
+	uint16_t num_cpus_groups = 0;
+	uint32_t *cpus = NULL;
+	uint32_t *cpus_reps = NULL;
+	uint32_t cpu, rep;
+
+	while (_parse_cpu_rep_pair(&ptr, &cpu, &rep)) {
+		num_cpus_groups++;
+		xrealloc(cpus, sizeof(uint32_t)*num_cpus_groups);
+		xrealloc(cpus_reps, sizeof(uint32_t)*num_cpus_groups);
+		cpus[num_cpus_groups-1] = cpu;
+		cpus_reps[num_cpus_groups-1] = rep;
+	}
+	if (num_cpus_groups == 0)
+		return 0;
+
+	alloc_info.num_cpu_groups = num_cpus_groups;
+	alloc_info.cpus_per_node = cpus;
+	alloc_info.cpu_count_reps = cpus_reps;
+
+	return 1;
+}
+
+static uint32_t _total_cpus(resource_allocation_response_msg_t *alloc)
+{
+	uint32_t cpus = 0;
+	int i;
+
+	for (i = 0; i < alloc->num_cpu_groups; i++) {
+		cpus += alloc->cpus_per_node[i] * alloc->cpu_count_reps[i];
+	}
+
+	return cpus;
+}
+
 /* return command name from its full path name */
 static char * _base_name(char* command)
 {
@@ -732,7 +840,13 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLURM_JOB_ID",         OPT_INT,       &opt.jobid,         &opt.jobid_set },
+  {"SLURM_JOB_ID",        OPT_INT,
+   &alloc_info.job_id, &alloc_info_set.job_id},
+  {"SLURM_JOB_NUM_NODES", OPT_INT,
+   &alloc_info.node_cnt, &alloc_info_set.node_cnt},
+  {"SLURM_JOB_NODELIST",  OPT_STRING,
+   &alloc_info.node_list, &alloc_info_set.node_list},
+  {"SLURM_JOB_CPUS_PER_NODE", OPT_CPUS_PER_NODE, NULL, NULL},
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
   {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_set  },
@@ -745,7 +859,6 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_GEOMETRY",     OPT_GEOMETRY,  NULL,               NULL           },
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLURM_JOB_NUM_NODES",  OPT_INT,       &opt.num_nodes,     NULL           },
   {"SLAUNCH_NUM_NODES",    OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
   {"SLAUNCH_NO_ROTATE",    OPT_NO_ROTATE, NULL,               NULL           },
   {"SLAUNCH_NPROCS",       OPT_INT,       &opt.num_tasks,  &opt.num_tasks_set},
@@ -759,7 +872,6 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
   {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
   {"SLAUNCH_SRUN_MULTI",   OPT_MULTI,     NULL,               NULL           },
-
   {NULL, 0, NULL, NULL}
 };
 
@@ -774,6 +886,11 @@ static void _opt_env()
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;
 
+	alloc_info_set.job_id = false;
+	alloc_info_set.node_list = false;
+	alloc_info_set.cpu_info = false;
+	alloc_info_set.node_cnt = false;
+	
 	while (e->var) {
 		if ((val = getenv(e->var)) != NULL) 
 			_process_env_var(e, val);
@@ -865,6 +982,12 @@ _process_env_var(env_vars_t *e, const char *val)
 			fatal("\"%s=%s\" -- invalid MPI type, "
 			      "--mpi=list for acceptable types.",
 			      e->var, val);
+		}
+		break;
+
+	case OPT_CPUS_PER_NODE:
+		if (_set_cpus_per_node(val)) {
+			alloc_info_set.cpu_info = true;
 		}
 		break;
 
@@ -1372,6 +1495,64 @@ static bool _opt_verify(void)
 	hostlist_t task_l = NULL;
 	hostlist_t node_l = NULL;
 
+	/* This rather confusing "if" statement assures that we look up
+	 * the resource_allocation_response_msg_t structure on the
+	 * controller if either of the following situations exist:
+	 * 
+	 * 1) We could not completely construct the
+	 *    resource_allocation_response_msg_t structure from SLURM_JOB_*
+	 *    environment variables.
+	 * 2) The user specified a job id other than the one found
+	 *    in the SLURM_JOB_* environment variables.
+	 */
+	if (!(alloc_info_set.job_id
+	      && alloc_info_set.node_list
+	      && alloc_info_set.cpu_info
+	      && alloc_info_set.node_cnt)
+	    || (opt.jobid_set
+		&& alloc_info_set.job_id
+		&& (opt.jobid != alloc_info.job_id))
+	    || (opt.jobid_set && !alloc_info_set.job_id)) {
+
+		uint32_t jobid;
+		if (opt.jobid_set) {
+			jobid = opt.jobid;
+		} else if (alloc_info_set.job_id) {
+			jobid = alloc_info.job_id;
+		} else {
+			error("No job id specified!");
+			verified = false;
+			exit(1);
+		}
+		verbose("Need to look up allocation info with the controller");
+
+		if (slurm_allocation_lookup_lite(jobid, &alloc_info_ptr) < 0) {
+			error("Unable to look up job ID %u: %m", jobid);
+			verified = false;
+			exit(1);
+		} else {
+			alloc_info_set.job_id = true;
+			alloc_info_set.node_list = true;
+			alloc_info_set.cpu_info = true;
+			alloc_info_set.node_cnt = true;
+		}
+
+	} else {
+		alloc_info_ptr = &alloc_info;
+	}
+
+	/*
+	 * Now set default options based on allocation info.
+	 */
+	if (!opt.jobid_set && alloc_info_set.job_id)
+		opt.jobid = alloc_info_ptr->job_id;
+	if (!opt.num_nodes_set && alloc_info_set.node_cnt)
+		opt.num_nodes = alloc_info_ptr->node_cnt;
+
+
+	/*
+	 * Finally, make sure that all of the other options play well together.
+	 */
 	if (opt.task_layout_set && opt.task_layout_file_set) {
 		error("Only one of -T/--task-layout or -F/--task-layout-file"
 		      " may be used.");
@@ -1463,9 +1644,9 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (!opt.jobid_set) {
+	if (!opt.jobid_set && !alloc_info_set.job_id) {
 		error("A job ID MUST be specified on the command line,");
-		error("or through the SLURM_JOBID environment variable.");
+		error("or through the SLAUNCH_JOBID environment variable.");
 		verified = false;
 	}
 
@@ -1533,6 +1714,18 @@ static bool _opt_verify(void)
 		error("%s: invalid number of nodes (-N %d)\n",
 		      opt.progname, opt.num_nodes);
 		verified = false;
+	}
+
+	if (!opt.overcommit) {
+		/* make sure that the user isn't asking for more tasks
+		   than there are available cpus in the allocation */
+		uint32_t cpus = _total_cpus(alloc_info_ptr);
+		if (opt.num_tasks > cpus) {
+			error("Asking for more tasks (%u) than total available"
+			      " cpus (%u)", opt.num_tasks, cpus);
+			error("Perhaps you meant to use --overcommit?");
+			verified = false;
+		}
 	}
 
 	core_format_enable (opt.core_type);

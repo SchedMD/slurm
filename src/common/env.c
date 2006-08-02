@@ -648,6 +648,47 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
 
 /*
  * Create an array of pointers to environment variables strings relevant
+ * to a SLURM batch job allocation.  The array is terminated by a NULL pointer,
+ * and thus is suitable for use by execle() and other env_array_* functions.
+ *
+ * Sets the variables:
+ *	SLURM_JOB_ID
+ *	SLURM_JOB_NUM_NODES
+ *	SLURM_JOB_NODELIST
+ *	SLURM_JOB_CPUS_PER_NODE
+ *
+ * Sets OBSOLETE variables:
+ *	? probably only needed for users...
+ */
+char **
+env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
+{
+	char **ptr;
+	char *tmp;
+	uint32_t num_nodes = 0;
+	int i;
+
+	/* there is no explicit node count in the batch structure,
+	   so we need to calculate the node count */
+	for (i = 0; i < batch->num_cpu_groups; i++) {
+		num_nodes += batch->cpu_count_reps;
+	}
+
+	ptr = env_array_create();
+	env_array_append(&ptr, "SLURM_JOB_ID", "%u", batch->job_id);
+	env_array_append(&ptr, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
+	env_array_append(&ptr, "SLURM_JOB_NODELIST", "%s", batch->nodes);
+	tmp = _uint32_compressed_to_str((uint32_t)batch->num_cpu_groups,
+					batch->cpus_per_node,
+					batch->cpu_count_reps);
+	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+	xfree(tmp);
+
+	return ptr;
+}
+
+/*
+ * Create an array of pointers to environment variables strings relevant
  * to a SLURM job step.  The array is terminated by a NULL pointer,
  * and thus is suitable for use by execle() and other env_array_* functions.
  *
@@ -827,24 +868,6 @@ char **env_array_copy(const char **array)
 }
 
 /*
- * Merge all of the environment variables in src_array into the
- * array dest_array.  Any variables already found in dest_array
- * will be overwritten with the value from src_array.
- */
-void env_array_merge(char ***dest_array, const char **src_array)
-{
-/* 	char **ptr; */
-
-	if (src_array == NULL)
-		return;
-
-/* FIXME - split the env entry on the =, then give to overwrite */
-/* 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) { */
-/* 		env_array_overwrite(dest_array, *ptr); */
-/* 	} */
-}
-
-/*
  * Free the memory used by an environment variable array.
  */
 void env_array_free(char **env_array)
@@ -900,10 +923,10 @@ static int _env_array_entry_splitter(const char *entry,
  */
 static int _env_array_putenv(const char *string)
 {
-	char name[1024];
-	char value[1024];
+	char name[BUFSIZ];
+	char value[BUFSIZ];
 
-	if (!_env_array_entry_splitter(string, name, 1024, value, 1024))
+	if (!_env_array_entry_splitter(string, name, BUFSIZ, value, BUFSIZ))
 		return 0;
 	if (setenv(name, value, 1) == -1)
 		return 0;
@@ -926,3 +949,24 @@ void env_array_set_environment(char **env_array)
 		_env_array_putenv(*ptr);
 	}
 }
+
+/*
+ * Merge all of the environment variables in src_array into the
+ * array dest_array.  Any variables already found in dest_array
+ * will be overwritten with the value from src_array.
+ */
+void env_array_merge(char ***dest_array, const char **src_array)
+{
+	char **ptr;
+	char name[BUFSIZ];
+	char value[BUFSIZ];
+
+	if (src_array == NULL)
+		return;
+
+	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
+		_env_array_entry_splitter(*ptr, &name, BUFSIZ, &value, BUFSIZ);
+		env_array_overwrite(dest_array, name, value);
+	}
+}
+
