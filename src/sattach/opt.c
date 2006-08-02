@@ -277,24 +277,6 @@ void set_options(const int argc, char **argv)
 	}
 }
 
-/* Returns true if all characters in a string are whitespace characters,
- * otherwise returns false;
- */
-static bool
-_is_whitespace(const char *str)
-{
-	int i, len;
-
-	len = strlen(str);
-	for (i = 0; i < len; i++) {
-		if (!isspace(str[i])) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 static void _parse_jobid_stepid(char *jobid_str)
 {
 	char *ptr, *job, *step;
@@ -314,7 +296,7 @@ static void _parse_jobid_stepid(char *jobid_str)
 	}
 
 	jobid = strtol(job, &ptr, 10);
-	if (!_is_whitespace(ptr)) {
+	if (!xstring_is_whitespace(ptr)) {
 		error("\"%s\" does not look like a jobid", job);
 		_usage();
 		xfree(job);
@@ -322,7 +304,7 @@ static void _parse_jobid_stepid(char *jobid_str)
 	}
 
 	stepid = strtol(step, &ptr, 10);
-	if (!_is_whitespace(ptr)) {
+	if (!xstring_is_whitespace(ptr)) {
 		error("\"%s\" does not look like a stepid", step);
 		_usage();
 		xfree(job);
