@@ -4,7 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.6
 ========================
  -- Improved task layout for relative positions
- -- fixed heterogeous cpu overcommit issue
+ -- Fixed heterogeous cpu overcommit issue
+ -- Fix bug where srun would hang if it ran on one node and that 
+    node's slurmd died
 
 * Changes in SLURM 1.1.5
 ========================
