@@ -1437,6 +1437,7 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
+
 static void
 _pack_job_step_create_request_msg(job_step_create_request_msg_t
 				  * msg, Buf buffer)
@@ -1456,6 +1457,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	packstr(msg->name, buffer);
 	packstr(msg->network, buffer);
 	packstr(msg->node_list, buffer);
+	pack8((uint8_t)msg->overcommit, buffer);
 }
 
 static int
@@ -1483,6 +1485,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
+	safe_unpack8(&(tmp_ptr->overcommit), buffer);
 
 	return SLURM_SUCCESS;
 

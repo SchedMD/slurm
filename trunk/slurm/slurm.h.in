@@ -489,6 +489,8 @@ typedef struct job_step_specs {
 	char *node_list;	/* list of required nodes */
 	char *network;		/* network use spec */
 	char *name;		/* name of the job step, default "" */
+	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
+				   0 to disallow overcommit. */
 } job_step_create_request_msg_t;
 
 typedef struct slurm_step_layout {

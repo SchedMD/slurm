@@ -157,6 +157,7 @@ int slaunch(int argc, char **argv)
 	step_req.cpu_count = 0; /* FIXME */
 	step_req.relative = opt.relative;
 	step_req.task_dist = opt.distribution;
+	step_req.overcommit = opt.overcommit ? 1 : 0;
 	step_req.port = 0;      /* historical, used by srun */
 	step_req.host = NULL;   /* historical, used by srun */
 
