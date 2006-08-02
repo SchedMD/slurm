@@ -87,7 +87,8 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t *cpus_per_node, uint32_t *cpu_count_reps, 
 	uint16_t num_hosts, 
 	uint32_t num_tasks,
-	uint16_t task_dist) 
+	uint16_t task_dist,
+	uint8_t overcommit) 
 {
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout = 
@@ -429,8 +430,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			hostlist_destroy(hl);
 			return SLURM_ERROR;
 		}
-		slurm_conf_get_addr(name, 
-				    &step_layout->node_addr[i]);
+		slurm_conf_get_addr(name, &step_layout->node_addr[i]);
 							
 		debug2("host %d = %s", i, name);
 		free(name);

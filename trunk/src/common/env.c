@@ -671,7 +671,7 @@ env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
 	/* there is no explicit node count in the batch structure,
 	   so we need to calculate the node count */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
-		num_nodes += batch->cpu_count_reps;
+		num_nodes += batch->cpu_count_reps[i];
 	}
 
 	ptr = env_array_create();
@@ -965,7 +965,7 @@ void env_array_merge(char ***dest_array, const char **src_array)
 		return;
 
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
-		_env_array_entry_splitter(*ptr, &name, BUFSIZ, &value, BUFSIZ);
+		_env_array_entry_splitter(*ptr, name, BUFSIZ, value, BUFSIZ);
 		env_array_overwrite(dest_array, name, value);
 	}
 }

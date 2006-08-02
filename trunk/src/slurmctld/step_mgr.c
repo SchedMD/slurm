@@ -669,6 +669,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (step_specs->task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
+	if (step_specs->task_dist == SLURM_DIST_ARBITRARY
+	    && (!strcmp(slurmctld_conf.switch_type, "switch/elan"))) {
+		return ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED;
+	}
+
 	if (job_ptr->kill_on_step_done)
 		/* Don't start more steps, job already being cancelled */
 		return ESLURM_ALREADY_DONE;
@@ -700,7 +705,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		fatal ("create_step_record failed with no memory");
 
 	/* set the step_record values */
-	/* Here is where the node list is set for the job */
+	/* Here is where the node list is set for the step */
 	if(step_specs->node_list 
 	   && step_specs->task_dist == SLURM_DIST_ARBITRARY) {
 		step_node_list = xstrdup(step_specs->node_list);
@@ -737,7 +742,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   step_node_list,
 					   step_specs->node_count,
 					   step_specs->num_tasks,
-					   step_specs->task_dist);
+					   step_specs->task_dist,
+					   step_specs->overcommit);
 		if (!step_ptr->step_layout)
 			return SLURM_ERROR;
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
@@ -765,7 +771,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint16_t node_count,
 					       uint32_t num_tasks,
-					       uint16_t task_dist)
+					       uint16_t task_dist,
+					       uint8_t overcommit)
 {
 	uint32_t cpus_per_node[node_count];
 	uint32_t cpu_count_reps[node_count];
@@ -775,8 +782,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	uint32_t node_cnt = job_ptr->cpu_count_reps[inx];
 	
-	/* set the correct cpus in use from the job */
-	
+	/* build the cpus-per-node arrays for the subset of nodes
+	   used by this job step */
 	for (i = 0; i < job_ptr->node_cnt; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
 			while(i >= node_cnt)
@@ -797,7 +804,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
 					cpus_per_node, cpu_count_reps, 
-					node_count, num_tasks, task_dist);
+					node_count, num_tasks, task_dist,
+					overcommit);
 }
 
 /* Pack the data for a specific job step record

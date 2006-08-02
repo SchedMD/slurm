@@ -175,6 +175,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Immediate execution impossible, job dependency problem"},
  	{ ESLURM_BATCH_ONLY,
 	  "Only batch jobs are accepted or processed"		},
+	{ ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED,
+	  "Current SwitchType does not permit arbitrary task distribution"},
+	{ ESLURM_TASKDIST_REQUIRES_OVERCOMMIT,
+	  "Requested more tasks than available processors"	},
 
 	/* slurmd error codes */
 
