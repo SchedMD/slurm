@@ -202,9 +202,15 @@ static char *xget_script_string(void)
 			error("Unable to open file %s", remote_argv[0]);
 			return NULL;
 		}
-	}	
+	}
 	script = script_from_stream(fs);
 	fclose(fs);
+
+	if (xstring_is_whitespace(script)) {
+		error("Batch script contains only whitespace!");
+		xfree(script);
+		return NULL;
+	}
 
 	return script;
 }

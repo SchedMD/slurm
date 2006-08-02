@@ -43,6 +43,7 @@
 #endif
 
 #include <stdarg.h>
+#include <ctype.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -69,6 +70,7 @@ strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
 strong_alias(xshort_hostname,   slurm_xshort_hostname);
+strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -341,3 +343,21 @@ char *xshort_hostname(void)
 
 	return xstrdup(path_name);
 }
+
+/* Returns true if all characters in a string are whitespace characters,
+ * otherwise returns false;
+ */
+bool xstring_is_whitespace(const char *str)
+{
+	int i, len;
+
+	len = strlen(str);
+	for (i = 0; i < len; i++) {
+		if (!isspace(str[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+

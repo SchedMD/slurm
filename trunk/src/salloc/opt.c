@@ -529,24 +529,6 @@ _str_to_nodes(const char *num_str, char **leftover)
 	return (int)num;
 }
 
-/* Returns true if all characters in a string are whitespace characters,
- * otherwise returns false;
- */
-static bool
-_is_whitespace(const char *str)
-{
-	int i, len;
-
-	len = strlen(str);
-	for (i = 0; i < len; i++) {
-		if (!isspace(str[i])) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 /* 
  * verify that a node count in arg is of a known form (count or min-max)
  * OUT min, max specified minimum and maximum node counts
@@ -563,7 +545,7 @@ _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	if ((ptr = index(arg, '-')) != NULL) {
 		min_str = xstrndup(arg, ptr-arg);
 		*min_nodes = _str_to_nodes(min_str, &leftover);
-		if (!_is_whitespace(leftover)) {
+		if (!xstring_is_whitespace(leftover)) {
 			error("\"%s\" is not a valid node count", min_str);
 			xfree(min_str);
 			return false;
@@ -574,7 +556,7 @@ _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 
 		max_str = xstrndup(ptr+1, strlen(arg)-((ptr+1)-arg));
 		*max_nodes = _str_to_nodes(max_str, &leftover);
-		if (!_is_whitespace(leftover)) {
+		if (!xstring_is_whitespace(leftover)) {
 			error("\"%s\" is not a valid node count", max_str);
 			xfree(max_str);
 			return false;
@@ -582,7 +564,7 @@ _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 		xfree(max_str);
 	} else {
 		*min_nodes = *max_nodes = _str_to_nodes(arg, &leftover);
-		if (!_is_whitespace(leftover)) {
+		if (!xstring_is_whitespace(leftover)) {
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}

@@ -113,4 +113,10 @@ void _xstrsubstitute(char **str, const char *pattern, const char *replacement);
  */
 char *xshort_hostname(void);
 
+/* 
+ * Return true if all characters in a string are whitespace characters,
+ * otherwise return false.  ("str" must be terminated by a null character)
+ */
+bool xstring_is_whitespace(const char *str);
+
 #endif /* !_XSTRING_H */
