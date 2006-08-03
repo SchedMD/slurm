@@ -8,9 +8,7 @@ bin_PROGRAMS = sbatch
 
 sbatch_SOURCES = sbatch.c opt.c opt.h
 
-convenience_libs = \
-	$(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
 sbatch_LDADD = \
 	$(convenience_libs) 

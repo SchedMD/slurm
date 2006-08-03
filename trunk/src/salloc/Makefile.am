@@ -8,10 +8,7 @@ bin_PROGRAMS = salloc
 
 salloc_SOURCES = salloc.c opt.c opt.h msg.c msg.h
 
-convenience_libs = \
-	$(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la \
-	$(top_builddir)/src/common/libeio.la
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
 salloc_LDADD = \
 	$(convenience_libs) 

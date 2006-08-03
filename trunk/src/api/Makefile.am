@@ -40,10 +40,14 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
-lib_LTLIBRARIES = libslurm.la \
-	libpmi.la
+lib_LTLIBRARIES = libslurm.la libpmi.la
 
-libslurm_la_SOURCES =    \
+# Note that libslurmhelper is mostly the same as libslurm, except that
+# it exports ALL symbols, including those from libcommon, libeio, etc.
+# Also, libslurmhelper is a convenience library, it is not installed.
+noinst_LTLIBRARIES = libslurmhelper.la
+
+slurmapi_src =           \
 	allocate.c       \
 	cancel.c         \
 	checkpoint.c     \
@@ -67,6 +71,8 @@ libslurm_la_SOURCES =    \
 	reconfigure.c    \
 	update_config.c
 
+libslurm_la_SOURCES = $(slurmapi_src)
+libslurmhelper_la_SOURCES = $(slurmapi_src)
 libpmi_la_SOURCES = pmi.c
 
 BUILT_SOURCES = 	\
@@ -74,11 +80,14 @@ BUILT_SOURCES = 	\
 
 common_dir = $(top_builddir)/src/common
 
-libslurm_la_LIBADD	= 		\
+slurmapi_add = 				\
 	$(common_dir)/libcommon.la	\
 	$(common_dir)/libspank.la       \
 	$(common_dir)/libeio.la		\
 	-lpthread
+
+libslurm_la_LIBADD = $(slurmapi_add)
+libslurmhelper_la_LIBADD = $(slurmapi_add)
 
 libpmi_la_LIBADD	= libslurm.la 
 
@@ -86,6 +95,10 @@ libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \
 	-version-info $(current):$(rev):$(age) \
 	$(OTHER_FLAGS)
+libslurmhelper_la_LDFLAGs = \
+	$(LIB_LDFLAGS) \
+	-version-info $(current):$(rev):$(age)
+
 libpmi_la_LBFLAGS = $(LIB_LDFLAGS)
 
 force:
