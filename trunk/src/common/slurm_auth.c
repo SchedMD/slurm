@@ -290,7 +290,6 @@ slurm_auth_init( void )
 	if (strcmp(auth_type, "auth/dummy") == 0) {
 		info( "warning: %s plugin selected", auth_type);
 		auth_dummy = true;
-		xfree(auth_type);
 		goto done;
 	}
 
@@ -298,7 +297,6 @@ slurm_auth_init( void )
         if ( g_context == NULL ) {
                 error( "cannot create a context for %s", auth_type );
                 retval = SLURM_ERROR;
-		xfree(auth_type);
                 goto done;
         }
         
@@ -309,9 +307,9 @@ slurm_auth_init( void )
                 g_context = NULL;
                 retval = SLURM_ERROR;
         }
-	xfree(auth_type);
 
  done:
+	xfree(auth_type);
         slurm_mutex_unlock( &context_lock );
         return retval;
 }
