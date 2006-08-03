@@ -7,7 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed heterogeous cpu overcommit issue
  -- Fix bug where srun would hang if it ran on one node and that 
     node's slurmd died
- -- fix bug where srun wouldn't send the correct amount of nodes requested.
+ -- Fix bug where srun task layout would be bad when min-max node range is 
+    specified (e.g. "srun -N1-4 ...")
 
 * Changes in SLURM 1.1.5
 ========================
