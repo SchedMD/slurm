@@ -992,7 +992,7 @@ void set_options(const int argc, char **argv)
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:D:g:HIJ:km:N:Op:qQR:st:U:vVw:W:x:";
+	char *opt_string = "+a:c:C:D:g:HIJ:km:n:N:Op:qQR:st:U:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -1541,8 +1541,8 @@ static void _opt_list()
 static void _usage(void)
 {
  	printf(
-"Usage: salloc [-N numnodes|[min nodes]-[max nodes]]\n"
-"              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
+"Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
+"              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate] [--overcommit] [--no-kill]\n"
 "              [--share] [-m dist] [-J jobname]\n"
 "              [--verbose]\n"
@@ -1566,6 +1566,7 @@ static void _help(void)
 "\n"
 "Parallel run options:\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+"  -n, --procs=N               number of processors required\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
