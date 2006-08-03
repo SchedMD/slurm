@@ -1,3 +1,2 @@
-# $Id$
 
 SUBDIRS = slurmd slurmstepd

@@ -1,4 +1,3 @@
-# $Id: Makefile.am,v 1.1 2005/11/04 02:17:53 palermo Exp $
 # Makefile for task/affinity plugin
 
 AUTOMAKE_OPTIONS = foreign

@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8519 2006-07-10 15:22:21Z jette $
 #
 # Makefile for smap
 # NOTE: smap is only built and installed if HAVE_SOME_CURSES is set.

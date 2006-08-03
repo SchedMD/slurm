@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am,v 1.4 2004/07/26 23:43:53 jette Exp $
 # Makefile for mpi/mvapich plugin
 
 SOURCES = $(mpi_mvapich_la_SOURCES)

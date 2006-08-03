@@ -13,8 +13,6 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-
-# $Id: Makefile.am 5331 2005-09-07 21:39:04Z morrone $
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@

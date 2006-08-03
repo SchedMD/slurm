@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 7750 2006-04-11 16:51:40Z da $
 # Makefile for jobacct/linux plugin
 
 SOURCES = $(jobacct_linux_la_SOURCES)

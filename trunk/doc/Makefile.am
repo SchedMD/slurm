@@ -1,4 +1,3 @@
-# $Id$
 
 SUBDIRS = man html
 

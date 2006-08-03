@@ -1,4 +1,3 @@
-# $Id: Makefile.am 4954 2005-05-26 22:04:39Z morrone $
 # Makefile for proctrack/sgi_job plugin
 
 AUTOMAKE_OPTIONS = foreign

@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for hold scheduler plugin
 
 AUTOMAKE_OPTIONS = foreign

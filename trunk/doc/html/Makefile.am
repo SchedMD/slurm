@@ -1,4 +1,3 @@
-# $Id: Makefile.am 7041 2006-01-17 16:36:04Z jette $
 
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 

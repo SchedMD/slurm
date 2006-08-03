@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 4767 2005-04-21 21:56:25Z da $
 # Makefile for switch/federation plugin
 
 SOURCES = $(switch_federation_la_SOURCES) $(EXTRA_switch_federation_la_SOURCES)

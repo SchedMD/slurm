@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 5062 2005-06-21 01:50:29Z morrone $
 # Makefile for auth/munge plugin
 
 SOURCES = $(auth_munge_la_SOURCES)

@@ -1,4 +1,3 @@
-# $Id: Makefile.am 8423 2006-06-20 17:48:33Z morrone $
 #
 
 AUTOMAKE_OPTIONS = foreign

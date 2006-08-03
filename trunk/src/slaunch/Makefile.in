@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8570 2006-07-13 21:12:58Z morrone $
 #
 
 SOURCES = $(slaunch_SOURCES)

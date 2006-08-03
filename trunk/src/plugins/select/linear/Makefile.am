@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for select/linear plugin
 
 AUTOMAKE_OPTIONS = foreign

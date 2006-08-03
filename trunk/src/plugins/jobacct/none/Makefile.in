@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 5235 2005-08-12 00:20:17Z morrone $
 # Makefile for jobacct/none plugin
 
 SOURCES = $(jobacct_none_la_SOURCES)

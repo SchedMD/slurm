@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 4176 2004-11-16 20:40:23Z jette $
 # Makefile for scheduler plugins
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
