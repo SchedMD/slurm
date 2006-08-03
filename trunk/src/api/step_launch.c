@@ -53,6 +53,7 @@
 #include "src/common/eio.h"
 #include "src/common/net.h"
 #include "src/common/fd.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/forward.h"
 #include "src/common/plugstack.h"
 #include "src/common/slurm_cred.h"
@@ -480,7 +481,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 static void
 _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 {
-	uid_t req_uid = slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	uid_t uid = getuid();
 	int rc;
 	
