@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Allocation granted!
 	 */
-	info("Granted job allocation %d", alloc->job_id);
+	verbose("Granted job allocation %d", alloc->job_id);
 	if (opt.bell == BELL_ALWAYS
 	    || (opt.bell == BELL_AFTER_DELAY
 		&& ((after - before) > DEFAULT_BELL_DELAY))) {
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Relinquish the job allocation.
 	 */
-	info("Relinquishing job allocation %d", alloc->job_id);
+	verbose("Relinquishing job allocation %d", alloc->job_id);
 	if (slurm_complete_job(alloc->job_id, 0) != 0)
 		fatal("Unable to clean up job allocation %d: %m",
 		      alloc->job_id);
