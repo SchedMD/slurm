@@ -210,10 +210,13 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	}
 	
 	if (opt.exc_nodes) {
-		hl = hostlist_create(ai->nodelist);
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
 		char *node_name = NULL;
-
+		if(opt.nodelist)
+			hl = hostlist_create(opt.nodelist);
+		else
+			hl = hostlist_create(ai->nodelist);
+		
 		while ((node_name = hostlist_shift(exc_hl))) {
 			int inx = hostlist_find(hl, node_name);
 			if (inx >= 0) {
@@ -221,6 +224,10 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				hostlist_delete_nth(hl, inx);
 			}
 			free(node_name);
+		}
+		if(!hostlist_count(hl)) {
+			error("Hostlist is now nothing!  Can't run job.");
+			return NULL;
 		}
 		hostlist_destroy(exc_hl);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
@@ -233,6 +240,10 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 /* 		opt.nodelist = ai->nodelist; */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
+		if(!hostlist_count(hl)) {
+			error("1 Hostlist is now nothing!  Can't run job.");
+			return NULL;
+		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
 		hostlist_destroy(hl);
@@ -247,7 +258,8 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		}
 	}
 	debug("node list is now %s inside of %s", opt.nodelist, ai->nodelist);
-	
+	if(!opt.max_nodes)
+		opt.max_nodes = opt.min_nodes;
 	/* 
 	 * Create job, then fill in host addresses
 	 */
@@ -289,31 +301,35 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
  * Create an srun job structure from a resource allocation response msg
  */
 static srun_job_t *
-_job_create_structure(allocation_info_t *info)
+_job_create_structure(allocation_info_t *ainfo)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
 	int i;
 	
-	_set_nprocs(info);
+	_set_nprocs(ainfo);
 	debug2("creating job with %d tasks", opt.nprocs);
 
 	slurm_mutex_init(&job->state_mutex);
 	pthread_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
- 	job->nodelist = xstrdup(info->nodelist); 
-	job->stepid  = info->stepid;
+ 	job->nodelist = xstrdup(ainfo->nodelist); 
+	job->stepid  = ainfo->stepid;
 	
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;
 #else
-	job->nhosts   = info->nnodes;
+	job->nhosts   = ainfo->nnodes;
 #endif
+	if(opt.min_nodes > job->nhosts) {
+		error("Only allocated %d nodes asked for %d",
+		      job->nhosts, opt.min_nodes);
+		return NULL;
+	}	
 
-
-	job->select_jobinfo = info->select_jobinfo;
-	job->jobid   = info->jobid;
+	job->select_jobinfo = ainfo->select_jobinfo;
+	job->jobid   = ainfo->jobid;
 	
 	job->ntasks  = opt.nprocs;
 	job->task_prolog = xstrdup(opt.task_prolog);
@@ -360,8 +376,8 @@ _job_create_structure(allocation_info_t *info)
 	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 	
 	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
-	if (info->addrs)
-		memcpy( job->slurmd_addr, info->addrs,
+	if (ainfo->addrs)
+		memcpy( job->slurmd_addr, ainfo->addrs,
 			sizeof(slurm_addr)*job->nhosts);
 
 	/* ntask task states and statii*/
@@ -560,17 +576,17 @@ _estimate_nports(int nclients, int cli_per_port)
 }
 
 static int
-_compute_task_count(allocation_info_t *info)
+_compute_task_count(allocation_info_t *ainfo)
 {
 	int i, cnt = 0;
 
 	if (opt.cpus_set) {
-		for (i = 0; i < info->num_cpu_groups; i++)
-			cnt += ( info->cpu_count_reps[i] *
-				 (info->cpus_per_node[i]/opt.cpus_per_task));
+		for (i = 0; i < ainfo->num_cpu_groups; i++)
+			cnt += ( ainfo->cpu_count_reps[i] *
+				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
 	}
 
-	return (cnt < info->nnodes) ? info->nnodes : cnt;
+	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
 }
 
 static void

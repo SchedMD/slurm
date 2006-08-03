@@ -336,6 +336,10 @@ int srun(int ac, char **av)
 		info("Force Terminated job");
 		srun_job_destroy(job, 0);
 		exit(1);
+	} else if (job->state == SRUN_JOB_CANCELLED) {
+		info("Cancelling job");
+		srun_job_destroy(job, NO_VAL);
+		exit(1);
 	} 
 
 	/*
@@ -347,6 +351,8 @@ int srun(int ac, char **av)
 		error ("Waiting on message thread: %m");
 	debug("done");
 	
+	/* have to check if job was cancelled here just to make sure 
+	   state didn't change when we were waiting for the message thread */
 	if (job->state == SRUN_JOB_CANCELLED) {
 		info("Cancelling job");
 		srun_job_destroy(job, NO_VAL);

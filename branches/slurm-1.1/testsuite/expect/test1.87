@@ -262,37 +262,19 @@ if {$matches < 2} {
 
 #
 # Get two nodes relative (starting at) node 3
-# Since there is only one node left, we check for a warning message
+# Since there is only one node left, we check for a error message
 #
-set matches 0
-set warning 0
+set error 0
 send "$srun -l -N2 -n2 -O --relative=3 $bin_hostname\n"
 expect {
-	-re "Warning:" {
-		set warning 1
+	-re "error:" {
+		send_user "This error is expected, no worries\n"
+		incr error
 		exp_continue
 	}
 	-re "($number): ($alpha_numeric)" {
-		if { $host_num == 0 } {
-			if {[string compare $expect_out(2,string) $host_3] == 0} {
-				incr matches
-			} else {
-				send_user "\nFAILURE: wrong node responded\n"
-				set exit_code   1	
-			}
-		}
-		if { $host_num == 1 } {
-			if {[string compare $expect_out(2,string) $host_3] == 0} {
-				incr matches
-			} else {
-				send_user "\nFAILURE: wrong node responded\n"
-				set exit_code   1	
-			}
-		}
-		if { $host_num > 1 } {
-			send_user "\nFAILURE: too many tasks responded\n"
-			set exit_code   1	
-		}
+		send_user "\nFAILURE: running where we shouldn't be able to run\n"
+		set exit_code   1	
 		exp_continue
 	}
 	-re "Unable to contact" {
@@ -311,12 +293,9 @@ expect {
 		wait
 	}
 }
-if {$matches < 2} {
-	send_user "\nFAILURE: required nodes failed to respond\n"
-	set exit_code   1
-}
-if {$warning < 1} {
-	send_user "\nFAILURE: warning message missing for inconsistent node count\n"
+
+if {$error == 0} {
+	send_user "\nFAILURE: No error for inconsistent node count\n"
 	set exit_code   1
 }
 
