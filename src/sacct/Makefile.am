@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for sacct
 
 AUTOMAKE_OPTIONS = foreign

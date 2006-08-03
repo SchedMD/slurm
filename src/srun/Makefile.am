@@ -1,4 +1,3 @@
-# $Id$
 #
 
 AUTOMAKE_OPTIONS = foreign

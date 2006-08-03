@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for select/cons_res plugin
 
 AUTOMAKE_OPTIONS = foreign

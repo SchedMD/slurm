@@ -1,4 +1,3 @@
-# $Id: Makefile.am 7555 2006-03-21 18:00:02Z da $
 # Makefile for jobacct/aix plugin
 
 AUTOMAKE_OPTIONS = foreign

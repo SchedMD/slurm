@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for select/bluegene plugin
 
 CPPFLAGS =  -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"

@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 5071 2005-06-23 21:38:11Z jette $
 # Makefile for checkpoint/aix plugin
 
 SOURCES = $(checkpoint_aix_la_SOURCES) $(EXTRA_checkpoint_aix_la_SOURCES)

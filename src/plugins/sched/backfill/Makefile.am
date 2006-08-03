@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for backfill scheduler plugin
 
 AUTOMAKE_OPTIONS = foreign

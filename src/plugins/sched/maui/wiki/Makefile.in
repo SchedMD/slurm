@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 3802 2004-07-26 23:43:53Z jette $
 # Makefile for sched/wiki plugins
 
 SOURCES = $(sched_wiki_la_SOURCES) $(EXTRA_sched_wiki_la_SOURCES)

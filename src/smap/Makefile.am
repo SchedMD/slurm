@@ -1,4 +1,3 @@
-# $Id$
 #
 # Makefile for smap
 # NOTE: smap is only built and installed if HAVE_SOME_CURSES is set.

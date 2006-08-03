@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8500 2006-07-06 21:27:24Z jette $
 # Makefile for select/cons_res plugin
 
 SOURCES = $(select_cons_res_la_SOURCES)

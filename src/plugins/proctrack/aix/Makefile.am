@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for proctrack/aix plugin
 
 AUTOMAKE_OPTIONS = foreign

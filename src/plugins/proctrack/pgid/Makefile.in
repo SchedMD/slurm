@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 5208 2005-07-29 02:44:57Z morrone $
 # Makefile for proctrack/pgid plugin
 
 SOURCES = $(proctrack_pgid_la_SOURCES)

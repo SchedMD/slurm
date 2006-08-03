@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for switch/none plugin
 
 AUTOMAKE_OPTIONS = foreign

@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 3602 2004-04-23 20:54:03Z jette $
 # Makefile for scontrol
 
 SOURCES = $(scontrol_SOURCES)

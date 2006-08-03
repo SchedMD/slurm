@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for sched/wiki plugins
 
 AUTOMAKE_OPTIONS = foreign

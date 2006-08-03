@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for auth/munge plugin
 
 AUTOMAKE_OPTIONS = foreign

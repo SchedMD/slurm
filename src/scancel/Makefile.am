@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for scancel
 
 AUTOMAKE_OPTIONS = foreign

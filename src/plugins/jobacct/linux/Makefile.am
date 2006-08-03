@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for jobacct/linux plugin
 
 AUTOMAKE_OPTIONS = foreign

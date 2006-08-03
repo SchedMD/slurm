@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 4954 2005-05-26 22:04:39Z morrone $
 # Makefile for auth/authd plugin
 
 SOURCES = $(auth_authd_la_SOURCES)

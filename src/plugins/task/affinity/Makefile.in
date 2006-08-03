@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am,v 1.1 2005/11/04 02:17:53 palermo Exp $
 # Makefile for task/affinity plugin
 
 SOURCES = $(task_affinity_la_SOURCES) $(EXTRA_task_affinity_la_SOURCES)

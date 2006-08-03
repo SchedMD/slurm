@@ -1,4 +1,3 @@
-# $Id: Makefile.am,v 1.4 2004/07/26 23:43:53 jette Exp $
 # Makefile for mpi/none plugin
 
 AUTOMAKE_OPTIONS = foreign

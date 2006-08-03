@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for checkpoint/none plugin
 
 AUTOMAKE_OPTIONS = foreign

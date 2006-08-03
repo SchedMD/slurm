@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 3613 2004-05-03 21:51:40Z jette $
 # Makefile for auth plugins
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
