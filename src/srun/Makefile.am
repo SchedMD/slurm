@@ -30,11 +30,7 @@ srun_SOURCES = \
 	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
-convenience_libs =  \
-	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/common/libspank.la   \
-	$(top_builddir)/src/common/libeio.la      \
-	$(top_builddir)/src/api/libslurm.la
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
 srun_LDADD = \
 	$(convenience_libs) 
