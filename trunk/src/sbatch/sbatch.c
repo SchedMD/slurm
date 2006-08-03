@@ -33,6 +33,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <slurm/slurm.h>
 
@@ -43,13 +46,15 @@
 #include "src/sbatch/opt.h"
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
-static char *xget_script_string(void);
+static void *get_script_buffer(const char *filename, int *size);
 
 int main(int argc, char *argv[])
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t desc;
 	submit_response_msg_t *resp;
+	char *script_name;
+	int script_size;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -68,7 +73,12 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	desc.script = xget_script_string();
+	if (remote_argv == NULL || remote_argv[0] == NULL)
+		script_name = NULL;
+	else
+		script_name = remote_argv[0];
+
+	desc.script = (char *)get_script_buffer(script_name, &script_size);
 	if (desc.script == NULL)
 		exit(2);
 
@@ -177,40 +187,85 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	return 0;
 }
 
-static char *script_from_stream(FILE *fs)
+/*
+ * Checks if the buffer starts with a shebang (#!).
+ */
+static bool has_shebang(const void *buf, int size)
 {
-	char *script = NULL;
-	char buf[1024];
+	char *str = (char *)buf;
 
-	while(fgets(buf, 1024, fs) != NULL) {
-		xstrcat(script, buf);
-	}
+	if (size < 2)
+		return false;
 
-	return script;
+	if (str[0] != '#' || str[1] != '!')
+		return false;
+
+	return true;
 }
 
-static char *xget_script_string(void)
+static void *get_script_buffer(const char *filename, int *size)
 {
-	FILE* fs;
-	char *script;
+	int fd;
+	char *buf = NULL;
+	int buf_size = BUFSIZ;
+	int buf_left;
+	int script_size = 0;
+	char *ptr = NULL;
+	int tmp_size;
 
-	if (remote_argv == NULL || remote_argv[0] == NULL) {
-		fs = stdin;
+	/*
+	 * First figure out whether we are reading from STDIN_FILENO
+	 * or from a file.
+	 */
+	if (filename == NULL) {
+		fd = STDIN_FILENO;
 	} else {
-		fs = fopen(remote_argv[0], "r");
-		if (fs == NULL) {
-			error("Unable to open file %s", remote_argv[0]);
-			return NULL;
+		fd = open(filename, O_RDONLY);
+		if (fd == -1) {
+			error("Unable to open file %s", filename);
+			goto fail;
 		}
 	}
-	script = script_from_stream(fs);
-	fclose(fs);
 
-	if (xstring_is_whitespace(script)) {
+	/*
+	 * Then read in the script.
+	 */
+	buf = ptr = xmalloc(buf_size);
+	buf_left = buf_size;
+	while((tmp_size = read(fd, ptr, buf_left)) > 0) {
+		buf_left -= tmp_size;
+		script_size += tmp_size;
+		if (buf_left == 0) {
+			buf_size += BUFSIZ;
+			xrealloc(buf, buf_size);
+		}
+		ptr = buf + script_size;
+		buf_left = buf_size - script_size;
+	}
+	close(fd);
+
+	/*
+	 * Finally we perform some sanity tests on the script.
+	 */
+	if (script_size == 0) {
+		error("Batch script is empty!");
+		goto fail;
+	} else if (xstring_is_whitespace(buf)) {
 		error("Batch script contains only whitespace!");
-		xfree(script);
-		return NULL;
+		goto fail;
+	} else if (!has_shebang(buf, script_size)) {
+		error("This does not look like a batch script.  The first");
+		error("line must start with #! followed by the path"
+		      " to an interpreter.");
+		error("For instance: #!/bin/sh");
+		goto fail;
 	}
 
-	return script;
+
+	*size = script_size;
+	return buf;
+fail:
+	xfree(buf);
+	*size = 0;
+	return NULL;
 }
