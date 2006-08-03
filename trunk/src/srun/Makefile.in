@@ -77,10 +77,7 @@ am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	sigstr.$(OBJEXT) allocate.$(OBJEXT) core-format.$(OBJEXT) \
 	multi_prog.$(OBJEXT) srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/common/libspank.la \
-	$(top_builddir)/src/common/libeio.la \
-	$(top_builddir)/src/api/libslurm.la
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurmhelper.la
 srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -297,12 +294,7 @@ srun_SOURCES = \
 	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
-convenience_libs = \
-	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/common/libspank.la   \
-	$(top_builddir)/src/common/libeio.la      \
-	$(top_builddir)/src/api/libslurm.la
-
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 srun_LDADD = \
 	$(convenience_libs) 
 
