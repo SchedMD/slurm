@@ -203,6 +203,60 @@ proc get_line_cnt { file_name } {
 
 ################################################################
 #
+# Proc: kill_salloc
+#
+# Purpose:  Kill all salloc commands associated with this user.
+#	Issue two SIGINT, sleep 1 and a SIGKILL
+#
+# Returns: A non-zero return code indicates a failure.
+#
+# Note: usleep is used to avoid pkill race error message (the
+# processes terminate after the process table is read and before
+# the signal is sent to the detected processses)
+#
+################################################################
+
+proc kill_salloc {  } {
+	global bin_id bin_pkill bin_sleep bin_usleep number
+
+	spawn $bin_id -u
+	expect {
+		-re "($number)" {
+			set uid $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $bin_pkill -INT -u $uid salloc
+	expect {
+		eof {
+			wait
+		}
+	}
+	exec $bin_usleep 1000
+	spawn $bin_pkill -INT -u $uid salloc
+	expect {
+		eof {
+			wait
+		}
+	}
+	exec $bin_sleep  1
+	spawn $bin_pkill -KILL -u $uid salloc
+	expect {
+		eof {
+			wait
+		}
+	}
+
+	return 0
+}
+
+
+################################################################
+#
 # Proc: kill_srun
 #
 # Purpose:  Kill all srun commands associated with this user.

@@ -333,6 +333,12 @@ test15.1   Confirm salloc usage option works (--usage option).
 test15.2   Confirm salloc help option works (--help option).
 test15.3   Confirm that salloc reports a proper version number
            (--version option).
+test15.4   Confirm that a job executes with appropriate user id and group id.
+test15.5   Confirm that job time limit function works (--time option).
+test15.6   Test of salloc verbose mode (--verbose option).
+test15.7   Test of processors, memory, and temporary disk space
+           constraints options (--mincpus, --mem, and --tmp options).
+           Also test that priority zero job is not started (--hold option).
 
 
 test16.#   Testing of sattach options.
