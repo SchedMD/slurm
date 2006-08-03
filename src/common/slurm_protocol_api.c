@@ -1910,15 +1910,6 @@ extern void slurm_auth_cred_destroy(void *auth_cred)
 	(void) g_slurm_auth_destroy(auth_cred);
 }
 
-/* 
- * get the uid from a credential of a message 
- * Needed by the api.
- */
-extern uid_t slurm_auth_get_uid(void *auth_cred)
-{	
-	return g_slurm_auth_get_uid(auth_cred);
-}
-
 
 extern int convert_to_kilo(int number, char *tmp)
 {

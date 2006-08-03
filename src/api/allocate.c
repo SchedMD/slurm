@@ -52,6 +52,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/fd.h"
+#include "src/common/slurm_auth.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_ALLOC_WAIT 60	/* seconds */
@@ -595,7 +596,7 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 static int
 _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 {
-	uid_t req_uid   = slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid   = g_slurm_auth_get_uid(msg->auth_cred);
 	uid_t uid       = getuid();
 	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	int rc = 0;
