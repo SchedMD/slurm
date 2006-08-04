@@ -256,20 +256,30 @@ job_step_create_allocation(uint32_t job_id)
 				      tasks_per_node);
 				goto error;
 			}
-			while(tasks_per_node[i]!='x' && tasks_per_node[i])
+			while(tasks_per_node[i]!='x' 
+			      && tasks_per_node[i]!=',' 
+			      && tasks_per_node[i])
 				i++;
-			if(tasks_per_node[i])
-				i++;
+
+			if(tasks_per_node[i] == ',' || !tasks_per_node[i]) {
+				if(tasks_per_node[i])
+					i++;	
+				ai->cpu_count_reps[ai->num_cpu_groups] = 1;
+				ai->num_cpu_groups++;
+				continue;
+			}
+
+			i++;
 			if(tasks_per_node[i] >= '0' 
 			   && tasks_per_node[i] <= '9')
 				ai->cpu_count_reps[ai->num_cpu_groups] = 
 					atoi(&tasks_per_node[i]);
-			else if (tasks_per_node[i]){
+			else {
 				error("1 problem with tasks_per_node %s", 
 				      tasks_per_node);
 				goto error;
-			} else 
-				ai->cpu_count_reps[ai->num_cpu_groups] = 1;
+			}
+				
 			while(tasks_per_node[i]!=',' && tasks_per_node[i])
 				i++;
 			if(tasks_per_node[i] == ',') {
