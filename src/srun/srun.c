@@ -205,6 +205,8 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 		
 		job = job_create_allocation(resp);
+		if(!job)
+			exit(1);
 		job->step_layout = step_layout_create(resp, NULL, NULL);
 		if(!job->step_layout) {
 			fatal("step_layout not created correctly");
