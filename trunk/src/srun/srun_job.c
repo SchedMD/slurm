@@ -166,6 +166,7 @@ job_step_create_allocation(uint32_t job_id)
 				      hostfile);
 				opt.nodelist = xstrdup(nodelist);
 				free(nodelist);
+				opt.distribution = SLURM_DIST_ARBITRARY;
 			}
 		}
 	}
@@ -257,16 +258,18 @@ job_step_create_allocation(uint32_t job_id)
 			}
 			while(tasks_per_node[i]!='x' && tasks_per_node[i])
 				i++;
-			i++;
+			if(tasks_per_node[i])
+				i++;
 			if(tasks_per_node[i] >= '0' 
 			   && tasks_per_node[i] <= '9')
 				ai->cpu_count_reps[ai->num_cpu_groups] = 
 					atoi(&tasks_per_node[i]);
-			else {
+			else if (tasks_per_node[i]){
 				error("1 problem with tasks_per_node %s", 
 				      tasks_per_node);
 				goto error;
-			}
+			} else 
+				ai->cpu_count_reps[ai->num_cpu_groups] = 1;
 			while(tasks_per_node[i]!=',' && tasks_per_node[i])
 				i++;
 			if(tasks_per_node[i] == ',') {

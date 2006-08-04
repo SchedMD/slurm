@@ -414,6 +414,7 @@ job_desc_msg_create_from_opts (char *script)
 				      hostfile);
 				j->req_nodes = xstrdup(nodelist);
 				free(nodelist);
+				opt.distribution = SLURM_DIST_ARBITRARY;
 			}
 		}
 	}
