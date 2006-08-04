@@ -65,9 +65,9 @@ static struct io_operations message_socket_ops = {
 
 static void *_msg_thr_internal(void *arg)
 {
-	verbose("Entering _msg_thr_internal");
+	debug("Entering _msg_thr_internal");
 	eio_handle_mainloop((eio_handle_t *)arg);
-	verbose("Leaving _msg_thr_internal");
+	debug("Leaving _msg_thr_internal");
 
 	return NULL;
 }
