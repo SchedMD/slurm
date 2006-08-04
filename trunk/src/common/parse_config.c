@@ -766,10 +766,13 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl,
 			ptr++;
 		fn_stop = *leftover = ptr;
 		filename = xstrndup(fn_start, fn_stop-fn_start);
-		if (s_p_parse_file(hashtbl, filename) == SLURM_SUCCESS)
+		if (s_p_parse_file(hashtbl, filename) == SLURM_SUCCESS) {
+			xfree(filename);
 			return 1;
-		else
+		} else {
+			xfree(filename);
 			return -1;
+		}
 	} else {
 		return 0;
 	}
@@ -807,7 +810,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 			continue;
 		}
 
-		inc_rc =_parse_include_directive(hashtbl, line, &leftover);
+		inc_rc = _parse_include_directive(hashtbl, line, &leftover);
 		if (inc_rc == 0) {
 			_parse_next_key(hashtbl, line, &leftover);
 		} else if (inc_rc < 0) {
