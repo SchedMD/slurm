@@ -79,7 +79,7 @@ static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 
 inline static void _normalize_debug_level(uint16_t *level);
-static void _init_slurm_conf(char *file_name);
+static void _init_slurm_conf(const char *file_name);
 
 #define NAME_HASH_LEN 512
 typedef struct names_ll_s {
@@ -1045,26 +1045,27 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 
 /* caller must lock conf_lock */
 static void
-_init_slurm_conf(char *file_name)
+_init_slurm_conf(const char *file_name)
 {
+	char *name = (char *)file_name;
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
 	default_slurmd_port = 0;
 
-	if (file_name == NULL) {
-		file_name = getenv("SLURM_CONF");
-		if (file_name == NULL)
-			file_name = default_slurm_config_file;
+	if (name == NULL) {
+		name = getenv("SLURM_CONF");
+		if (name == NULL)
+			name = default_slurm_config_file;
 	}
        	if(conf_initialized) {
 		error("the conf_hashtbl is already inited");	
 	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
-	if(s_p_parse_file(conf_hashtbl, file_name) == SLURM_ERROR)
+	if(s_p_parse_file(conf_hashtbl, name) == SLURM_ERROR)
 		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	validate_and_set_defaults(conf_ptr, conf_hashtbl);
-	conf_ptr->slurm_conf = xstrdup(file_name);
+	conf_ptr->slurm_conf = xstrdup(name);
 }
 
 /* caller must lock conf_lock */
@@ -1099,7 +1100,7 @@ _destroy_slurm_conf()
  *       was already initialied, return SLURM_ERROR.
  */
 extern int
-slurm_conf_init(char *file_name)
+slurm_conf_init(const char *file_name)
 {
 	pthread_mutex_lock(&conf_lock);
 
@@ -1115,6 +1116,28 @@ slurm_conf_init(char *file_name)
 	return SLURM_SUCCESS;
 }
 
+static int _internal_reinit(const char *file_name)
+{
+	char *name = (char *)file_name;
+
+	if (name == NULL) {
+		name = getenv("SLURM_CONF");
+		if (name == NULL)
+			name = default_slurm_config_file;
+	}
+
+	if (conf_initialized) {
+		/* could check modified time on slurm.conf here */
+		_destroy_slurm_conf();
+	}
+	
+	_init_slurm_conf(name);
+	
+	conf_initialized = true;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * slurm_conf_reinit - reload the slurm configuration from a file.
  * IN file_name - name of the slurm configuration file to be read
@@ -1126,28 +1149,35 @@ slurm_conf_init(char *file_name)
  * RET SLURM_SUCCESS if conf file is reinitialized, otherwise SLURM_ERROR.
  */
 extern int 
-slurm_conf_reinit(char *file_name)
+slurm_conf_reinit(const char *file_name)
 {
+	int rc;
+
 	pthread_mutex_lock(&conf_lock);
-
-	if (file_name == NULL) {
-		file_name = getenv("SLURM_CONF");
-		if (file_name == NULL)
-			file_name = default_slurm_config_file;
-	}
-
-	if (conf_initialized) {
-		/* could check modified time on slurm.conf here */
-		_destroy_slurm_conf();
-	}
-	
-	_init_slurm_conf(file_name);
-	
-	conf_initialized = true;
-
+	rc = _internal_reinit(file_name);
 	pthread_mutex_unlock(&conf_lock);
-	return SLURM_SUCCESS;
 
+	return rc;
+}
+
+/*
+ * slurm_conf_reinit_nolock - reload the slurm configuration from a file.
+ *	This does the same thing as slurm_conf_reinit, but it performs
+ *	no internal locking.  You are responsible for calling slurm_conf_lock()
+ *	before calling this function, and calling slurm_conf_unlock()
+ *	afterwards.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	Unlike slurm_conf_init, slurm_conf_reinit will always reread the
+ *	file and reinitialize the configuration structures.
+ * RET SLURM_SUCCESS if conf file is reinitialized, otherwise SLURM_ERROR.
+ */
+extern int 
+slurm_conf_reinit_nolock(const char *file_name)
+{
+	return _internal_reinit(file_name);
 }
 
 extern void
