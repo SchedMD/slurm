@@ -405,7 +405,6 @@ test17.TBD Test of partition specification on job submission (--partition
 **NOTE**   The above tests for mutliple processor/partition systems only
 
 
-
 test18.#   Testing of slaunch options.
 ======================================
 test18.1   Confirm slaunch usage option works (--usage option).
@@ -417,4 +416,6 @@ test18.4   Confirm that a job executes with the proper task count (--nprocs
 test18.5   Confirm that slauch local stdin, stdout, and stderr options work
            (options --local-input, --local-output and --local-error
            respectively).
+test18.6   Test of slaunch verbose mode (-v option).
+test18.7   Test of srun/slurmd debug mode (--debug option).
 

@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of srun/slurmd debug mode (-d option).
+#          Test of slaunch debug mode (-d option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.10"
+set test_id     "18.7"
 set debug_get   0
 set debug_set   4
 set exit_code   0
@@ -44,15 +44,15 @@ print_header $test_id
 #
 set debug_offset [expr $debug_set - 2]
 set timeout $max_job_delay
-spawn $srun -N1 -d$debug_offset -t1 /invalid_executable  
+spawn $salloc -N1 -t1 $slaunch -d$debug_offset /invalid_executable  
 expect {
 	-re "debug level = ($number)" {
 		set debug_get $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		kill_salloc
 		set exit_code 1
 		exp_continue
 	}
