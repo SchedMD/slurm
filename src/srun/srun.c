@@ -261,7 +261,7 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp);
 		if(!job)
 			exit(1);
-		if (create_job_step(job, resp) < 0) {
+		if (create_job_step(job) < 0) {
 			srun_job_destroy(job, 0);
 			exit(1);
 		}
