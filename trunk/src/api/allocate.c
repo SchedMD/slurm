@@ -588,11 +588,6 @@ static void _destroy_allocation_response_socket(listen_t *listen)
  * IN msg: message recieved
  * OUT resp: resource allocation response message
  * RET 1 if resp is filled in, 0 otherwise */
-/* FIXME - If the controller and protocol allowed seperate hostname/port
-   for allocation response and another for the pinger, then we wouldn't
-   need to handle the ping rpc here.  In fact, since this listening socket
-   goes away when the allocation is granted, we will probably trigger the
-   inactive limit prematurely! */
 static int
 _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 {
@@ -608,11 +603,6 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 	}
 
 	switch (msg->msg_type) {
-		case SRUN_PING:
-			debug3("slurmctld ping received");
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			slurm_free_srun_ping_msg(msg->data);
-			break;
 		case RESPONSE_RESOURCE_ALLOCATION:
 			debug2("resource allocation response received");
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
