@@ -1,13 +1,13 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of srun/slurmd debug mode (-d option).
+#          Test of slaunch verbose mode (-v option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -31,35 +31,38 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.10"
-set debug_get   0
-set debug_set   4
+set test_id     "18.6"
 set exit_code   0
+set verbosity   0
 
 print_header $test_id
 
 #
-# Submit a slurm job that will bogus executable
-# Debug debug level is 2, value set with --debug has that offset
+# Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
-set debug_offset [expr $debug_set - 2]
 set timeout $max_job_delay
-spawn $srun -N1 -d$debug_offset -t1 /invalid_executable  
+spawn $salloc -N1 -t1 $slaunch -vv $bin_hostname
 expect {
-	-re "debug level = ($number)" {
-		set debug_get $expect_out(1,string)
+	-re "debug:" {
+		set verbosity 1
 		exp_continue
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: slurm not responding\n"
+		kill_salloc
 		set exit_code 1
 		exp_continue
 	}
+	eof {
+		wait
+	}
 }
-
-if {$debug_get != $debug_set} {
-	send_user "\nFAILURE: Did not log at proper level ($debug_get != $debug_set)\n"
+if {$verbosity != 1} {
+	send_user "\nFAILURE: Did not report debug message verbosity on\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
