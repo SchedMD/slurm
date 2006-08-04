@@ -52,10 +52,11 @@ if { [test_front_end] } {
 }
 
 #find out if we have enough nodes to test functionality
-spawn $scontrol show partition $partition
+set def_part [default_partition]
+spawn $scontrol show partition $def_part
 expect {
 	-re "not found" {
-		send_user "\nFAILURE: partition $partition doesn't exist\n"
+		send_user "\nFAILURE: partition $def_part doesn't exist\n"
 		exit 1
 	}
 	-re "TotalNodes=($number)" {
