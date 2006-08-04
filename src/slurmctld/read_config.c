@@ -294,6 +294,11 @@ static int _state_str2int(const char *state_str)
 	return state_val;
 }
 
+#ifdef HAVE_BG
+/* Used to get the general name of the machine, used primarily 
+ * for bluegene systems.  Not in general use because some systems 
+ * have multiple prefix's such as foo[1-1000],bar[1-1000].
+ */
 /* Caller must be holding slurm_conf_lock() */
 static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 {
@@ -319,7 +324,7 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 	}
 	debug3("Prefix is %s %s %d", conf->node_prefix, nodenames, i);
 }
-
+#endif /* HAVE_BG */
 /* 
  * _build_single_nodeline_info - rom the slurm.conf reader, build table,
  * 	and set values
@@ -366,7 +371,9 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		goto cleanup;
 	}
 
+#ifdef HAVE_BG
 	_set_node_prefix(node_ptr->nodenames, conf);
+#endif
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
