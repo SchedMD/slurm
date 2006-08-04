@@ -660,6 +660,7 @@ int read_slurm_conf(int recover)
 	conf = slurm_conf_lock();
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
+		slurm_conf_unlock();
 		return error_code;
 	}
 	_build_all_nodeline_info(conf);
