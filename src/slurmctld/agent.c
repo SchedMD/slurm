@@ -457,10 +457,11 @@ static void *_wdog(void *args)
 	thd_complete_t thd_comp;
 
 
-	if ( (agent_ptr->msg_type == SRUN_PING) ||
-	     (agent_ptr->msg_type == SRUN_TIMEOUT) ||
-	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
-	     (agent_ptr->msg_type == SRUN_NODE_FAIL) )
+	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)
+	||   (agent_ptr->msg_type == SRUN_PING)
+	||   (agent_ptr->msg_type == SRUN_TIMEOUT)
+	||   (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)
+	||   (agent_ptr->msg_type == SRUN_NODE_FAIL) )
 		srun_agent = true;
 
 	thd_comp.max_delay = 0;
