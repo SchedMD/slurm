@@ -2,7 +2,7 @@
  *  job_info.c - get/print the job state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -44,6 +44,7 @@
 #include "src/api/job_info.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -375,7 +376,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		if(ret_list)
 			list_destroy(ret_list);
 		if(resp_msg.auth_cred)
-			slurm_auth_cred_destroy(resp_msg.auth_cred);
+			g_slurm_auth_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
 	if(list_count(ret_list)>0) {
@@ -383,7 +384,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		      list_count(ret_list));
 	}
 	list_destroy(ret_list);
-	slurm_auth_cred_destroy(resp_msg.auth_cred);	
+	g_slurm_auth_destroy(resp_msg.auth_cred);	
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
 		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;
