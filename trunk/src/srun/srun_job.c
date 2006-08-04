@@ -144,9 +144,10 @@ job_step_create_allocation(uint32_t job_id)
 {
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
-	uint32_t cpn = 1;
 	hostlist_t hl = NULL;
 	char buf[8192];
+	int count = 0;
+	char *tasks_per_node = xstrdup(getenv("SLURM_TASKS_PER_NODE"));
 	
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
@@ -168,13 +169,21 @@ job_step_create_allocation(uint32_t job_id)
 			}
 		}
 	}
-	
 	ai->nodelist       = opt.alloc_nodelist;
+	/* hl = hostlist_create(ai->nodelist); */
+/* 	hostlist_uniq(hl); */
+/* 	ai->nnodes = hostlist_count(hl); */
+/* 	hostlist_destroy(hl); */
+/* 	info("using %s %d not %d", ai->nodelist, ai->nnodes, opt.min_nodes); */
+
 	if (opt.exc_nodes) {
-		hl = hostlist_create(ai->nodelist);
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
 		char *node_name = NULL;
-
+		if(opt.nodelist)
+			hl = hostlist_create(opt.nodelist);
+		else
+			hl = hostlist_create(ai->nodelist);
+		info("using %s or %s", opt.nodelist, ai->nodelist);
 		while ((node_name = hostlist_shift(exc_hl))) {
 			int inx = hostlist_find(hl, node_name);
 			if (inx >= 0) {
@@ -183,9 +192,15 @@ job_step_create_allocation(uint32_t job_id)
 			}
 			free(node_name);
 		}
+		if(!hostlist_count(hl)) {
+			error("Hostlist is now nothing!  Can't run job.");
+			return NULL;
+		}
 		hostlist_destroy(exc_hl);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
+		xfree(opt.nodelist);
+		opt.nodelist = xstrdup(buf);
 		xfree(ai->nodelist);
 		ai->nodelist = xstrdup(buf);
 	}
@@ -194,24 +209,86 @@ job_step_create_allocation(uint32_t job_id)
 /* 		opt.nodelist = ai->nodelist; */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
+		if(!hostlist_count(hl)) {
+			error("1 Hostlist is now nothing!  Can't run job.");
+			return NULL;
+		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
+		count = hostlist_count(hl);
 		hostlist_destroy(hl);
 		xfree(ai->nodelist);
 		ai->nodelist = xstrdup(buf);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
 	}
-	ai->nnodes         = opt.min_nodes;
-	debug("node list is now %s", ai->nodelist);
-	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
-	ai->cpus_per_node  = &cpn;
-	ai->cpu_count_reps = &ai->nnodes;
+	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+		if(count != opt.nprocs) {
+			error("You asked for %d tasks but specified %d nodes",
+			      opt.nprocs, count);
+			goto error;
+		}
+	}
+
+	hl = hostlist_create(ai->nodelist);
+	hostlist_uniq(hl);
+	ai->nnodes = hostlist_count(hl);
+	hostlist_destroy(hl);
 	
+	//ai->nnodes         = opt.min_nodes;
+	/* info("node list is now %s %s %d procs",  */
+/* 	     ai->nodelist, opt.nodelist, */
+/* 	     opt.nprocs); */
+	if(tasks_per_node) {
+		int i = 0;
+		
+		ai->num_cpu_groups = 0;
+		ai->cpus_per_node = xmalloc(sizeof(uint32_t) * ai->nnodes);
+		ai->cpu_count_reps =xmalloc(sizeof(uint32_t) * ai->nnodes);
+		
+		while(tasks_per_node[i]) {
+			if(tasks_per_node[i] >= '0' 
+			   && tasks_per_node[i] <= '9')
+				ai->cpus_per_node[ai->num_cpu_groups] =
+					atoi(&tasks_per_node[i]);
+			else {
+				error("problem with tasks_per_node %s", 
+				      tasks_per_node);
+				goto error;
+			}
+			while(tasks_per_node[i]!='x' && tasks_per_node[i])
+				i++;
+			i++;
+			if(tasks_per_node[i] >= '0' 
+			   && tasks_per_node[i] <= '9')
+				ai->cpu_count_reps[ai->num_cpu_groups] = 
+					atoi(&tasks_per_node[i]);
+			else {
+				error("1 problem with tasks_per_node %s", 
+				      tasks_per_node);
+				goto error;
+			}
+			while(tasks_per_node[i]!=',' && tasks_per_node[i])
+				i++;
+			if(tasks_per_node[i] == ',') {
+				i++;	
+			}
+			ai->num_cpu_groups++;
+		}
+		xfree(tasks_per_node);
+	} else {
+		uint32_t cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
+		info("SLURM_TASKS_PER_NODE not set! "
+		     "Guessing %d cpus per node", cpn);
+		ai->cpus_per_node  = &cpn;
+		ai->cpu_count_reps = &ai->nnodes;
+	}
+	if(!opt.max_nodes)
+		opt.max_nodes = opt.min_nodes;
 	/* 
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
-	
+error:
    	xfree(ai);
 	return (job);
 
@@ -247,30 +324,34 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
  * Create an srun job structure from a resource allocation response msg
  */
 static srun_job_t *
-_job_create_structure(allocation_info_t *info)
+_job_create_structure(allocation_info_t *ainfo)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
 	
-	_set_nprocs(info);
+	_set_nprocs(ainfo);
 	debug2("creating job with %d tasks", opt.nprocs);
 
 	slurm_mutex_init(&job->state_mutex);
 	pthread_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
- 	job->nodelist = xstrdup(info->nodelist); 
-	job->stepid  = info->stepid;
+ 	job->nodelist = xstrdup(ainfo->nodelist); 
+	job->stepid  = ainfo->stepid;
 	
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;
 #else
-	job->nhosts   = info->nnodes;
+	job->nhosts   = ainfo->nnodes;
 #endif
+	if(opt.min_nodes > job->nhosts) {
+		error("Only allocated %d nodes asked for %d",
+		      job->nhosts, opt.min_nodes);
+		return NULL;
+	}	
 
-
-	job->select_jobinfo = info->select_jobinfo;
-	job->jobid   = info->jobid;
+	job->select_jobinfo = ainfo->select_jobinfo;
+	job->jobid   = ainfo->jobid;
 	
 	job->ntasks  = opt.nprocs;
 	job->task_prolog = xstrdup(opt.task_prolog);
@@ -488,17 +569,17 @@ _estimate_nports(int nclients, int cli_per_port)
 }
 
 static int
-_compute_task_count(allocation_info_t *info)
+_compute_task_count(allocation_info_t *ainfo)
 {
 	int i, cnt = 0;
 
 	if (opt.cpus_set) {
-		for (i = 0; i < info->num_cpu_groups; i++)
-			cnt += ( info->cpu_count_reps[i] *
-				 (info->cpus_per_node[i]/opt.cpus_per_task));
+		for (i = 0; i < ainfo->num_cpu_groups; i++)
+			cnt += ( ainfo->cpu_count_reps[i] *
+				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
 	}
 
-	return (cnt < info->nnodes) ? info->nnodes : cnt;
+	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
 }
 
 static void

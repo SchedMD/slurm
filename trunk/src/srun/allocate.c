@@ -551,10 +551,27 @@ static job_step_create_request_msg_t *
 _step_req_create(srun_job_t *j)
 {
 	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
+	hostlist_t hl;
 	r->job_id     = j->jobid;
 	r->user_id    = opt.uid;
-	r->node_count = j->nhosts;
-	r->cpu_count  = opt.overcommit ? j->nhosts
+
+	/* get the correct number of hosts to run tasks on */
+	if(opt.nodelist) {
+		hl = hostlist_create(opt.nodelist);
+		hostlist_uniq(hl);
+		r->node_count = hostlist_count(hl);
+		hostlist_destroy(hl);
+	} else if((opt.max_nodes > 0) && (opt.max_nodes <j->nhosts))
+		r->node_count = opt.max_nodes;
+	else 
+		r->node_count = j->nhosts;
+	/* info("send %d or %d? sending %d", opt.max_nodes, */
+/* 		     j->nhosts, r->node_count); */
+	if(r->node_count > j->nhosts) {
+		error("Asking for more nodes that allocated");
+		return NULL;
+	}
+	r->cpu_count  = opt.overcommit ? r->node_count
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
 	r->node_list  = xstrdup(opt.nodelist);
@@ -578,8 +595,8 @@ _step_req_create(srun_job_t *j)
 		r->task_dist = SLURM_DIST_CYCLIC;
 		break;
 	default:
-		r->task_dist = ((opt.nprocs <= j->nhosts)
-				? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK);
+		r->task_dist = (opt.nprocs <= r->node_count) 
+			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		break;
 
 	}
