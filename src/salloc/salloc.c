@@ -51,9 +51,8 @@
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
-static int run_command(char **command);
-
-static int signals_to_block[] = {SIGINT, SIGTERM, SIGQUIT, 0};
+static int fork_command(char **command);
+static void _ignore_signal(int);
 
 int main(int argc, char *argv[])
 {
@@ -62,8 +61,14 @@ int main(int argc, char *argv[])
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
 	salloc_msg_thread_t *msg_thr;
-	int rc;
 	char **env = NULL;
+	int status;
+	int errnum = 0;
+	pid_t pid;
+	pid_t rc_pid = 0;
+	int rc = 0;
+
+	xsignal(SIGINT, _ignore_signal);
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -76,8 +81,6 @@ int main(int argc, char *argv[])
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
-
-	xsignal_block(signals_to_block);
 
 	/*
 	 * Request a job allocation
@@ -112,19 +115,63 @@ int main(int argc, char *argv[])
 	 */
 	env = env_array_create_for_job(alloc);
 	env_array_set_environment(env);
-	rc = run_command(command_argv);
 	env_array_free(env);
+	pid = fork_command(command_argv);
+
+	/*
+	 * Wait for command to exit, OR for waitpid to be interrupted by a
+	 * signal.  Either way, we are going to release the allocation next.
+	 */
+	if (pid > 0) {
+		rc_pid = waitpid(pid, &status, 0);
+		errnum = errno;
+		if (rc_pid == -1 && errnum != EINTR)
+			error("waitpid for %s failed: %m", command_argv[0]);
+	}
 
 	/*
 	 * Relinquish the job allocation.
 	 */
-	verbose("Relinquishing job allocation %d", alloc->job_id);
+	if (pid > 0 && rc_pid == -1 && errnum == EINTR) {
+		info("Relinquishing job allocation %d", alloc->job_id);
+	} else {
+		verbose("Relinquishing job allocation %d", alloc->job_id);
+	}
 	if (slurm_complete_job(alloc->job_id, 0) != 0)
-		fatal("Unable to clean up job allocation %d: %m",
+		error("Unable to clean up job allocation %d: %m",
 		      alloc->job_id);
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	msg_thr_destroy(msg_thr);
+
+	/*
+	 * If the earlier waitpid was interrupted by a signal,
+	 * wait indefinitely for the process to exit.
+	 */
+	if (pid > 0 && rc_pid == -1 && errnum == EINTR) {
+		while ((rc_pid = waitpid(pid, &status, 0)) == -1
+		       && errno == EINTR) {
+			/* just keep spinning */
+			info("Job already released, waiting for command");
+		}
+		if (rc_pid == -1)
+			error("second waitpid for %s failed: %m",
+			      command_argv[0]);
+	}
+
+	/*
+	 * Figure out what return code we should use.  If the user's command
+	 * exitted normally, return the user's return code.
+	 */
+	rc = 1;
+	if (rc_pid != -1) {
+		if (WIFEXITED(status)) {
+			rc = WEXITSTATUS(status);
+		} else if (WIFSIGNALED(status)) {
+			verbose("Command \"%s\" was terminated by signal %d",
+				WTERMSIG(status));
+		}
+	}
 
 	return rc;
 }
@@ -221,36 +268,27 @@ static void ring_terminal_bell(void)
 	fflush(stdout);
 }
 
-/* returns the exit status of the command */
-static int run_command(char **command)
+/* returns the pid of the forked command, or <0 on error */
+static pid_t fork_command(char **command)
 {
 	pid_t pid;
-	int status;
-	int rc = 0;
 
 	pid = fork();
 	if (pid < 0) {
 		error("fork failed: %m");
-	} else if (pid > 0) {
-		/* parent */
-		while ((rc = waitpid(pid, &status, 0)) == -1
-		       && errno == EINTR) {
-			/* just keep spinning */
-		}
-		if (rc == -1) {
-			error("waitpid for %s failed: %m", command[0]);
-			rc = 1;
-		} else {
-			if (WIFEXITED(status))
-				rc = WEXITSTATUS(status);
-			else
-				rc = 1;
-		}
-	} else {
+	} else if (pid == 0) {
 		/* child */
-		xsignal_unblock(signals_to_block);
 		execvp(command[0], command);
-	}
 
-	return rc;
+		/* should only get here if execvp failed */
+		error("Unable to exec command \"%s\"", command[0]);
+		exit(1);
+	}
+	/* parent returns */
+	return pid;
+}
+
+static void _ignore_signal(int foo)
+{
+	/* do nothing */
 }

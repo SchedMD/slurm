@@ -241,7 +241,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
-			info("Pending job allocation %u", job_id);
+			verbose("Pending job allocation %u", job_id);
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
@@ -645,12 +645,13 @@ _accept_msg_connection(int listen_fd, resource_allocation_response_msg_t **resp)
 	msg->ret_list = NULL;
 	msg->conn_fd = conn_fd;
 	
-  again:
 	ret_list = slurm_receive_msg(conn_fd, msg, 0);
 
 	if (!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
-			goto again;
+			slurm_close_accepted_conn(conn_fd);
+			*resp = NULL;
+			return 0;
 		}
 		if (ret_list)
 			list_destroy(ret_list);
