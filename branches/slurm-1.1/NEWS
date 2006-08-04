@@ -9,6 +9,10 @@ documents those changes that are of interest to users and admins.
     node's slurmd died
  -- Fix bug where srun task layout would be bad when min-max node range is 
     specified (e.g. "srun -N1-4 ...")
+ -- Made slurmctld_conf.node_prefix only be set on Bluegene systems.
+ -- Fixed a race condition in the controller to make it so a plugin thread
+    wouldn't be able to access the slurmctld_conf 
+    structure before it was filled.
 
 * Changes in SLURM 1.1.5
 ========================
