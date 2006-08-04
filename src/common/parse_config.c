@@ -692,10 +692,49 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 	return 1;
 }
 
+/*
+ * Returns 1 if the line contained an include directive and the included
+ * file was parsed without error.  Returns -1 if the line was an include
+ * directive but the included file contained errors.  Returns 0 if
+ * no include directive is found.
+ */
+static int _parse_include_directive(s_p_hashtbl_t *hashtbl,
+				    const char *line, char **leftover)
+{
+	char *ptr;
+	char *fn_start, *fn_stop;
+	char *filename;
+
+	*leftover = NULL;
+	if (strncasecmp("include", line, strlen("include")) == 0) {
+		ptr = (char *)line + strlen("include");
+		if (!isspace(*ptr))
+			return 0;
+		while (isspace(*ptr))
+			ptr++;
+		fn_start = ptr;
+		while (!isspace(*ptr))
+			ptr++;
+		fn_stop = *leftover = ptr;
+		filename = xstrndup(fn_start, fn_stop-fn_start);
+		if (s_p_parse_file(hashtbl, filename) == SLURM_SUCCESS) {
+			xfree(filename);
+			return 1;
+		} else {
+			xfree(filename);
+			return -1;
+		}
+	} else {
+		return 0;
+	}
+}
+
 int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
+	char *leftover = NULL;
+	int inc_rc;
 
 	if(!filename) {
 		error("s_p_parse_file: No filename given.");
@@ -715,7 +754,13 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 		if (line[0] == '\0')
 			continue;
 
-		s_p_parse_line(hashtbl, line);
+		inc_rc = _parse_include_directive(hashtbl, line, &leftover);
+		if (inc_rc < 0) {
+			error("\"Include\" failed in file %s",
+			      filename);
+		} else if (inc_rc == 0) {
+			s_p_parse_line(hashtbl, line);
+		}
 	}
 
 	fclose(f);
