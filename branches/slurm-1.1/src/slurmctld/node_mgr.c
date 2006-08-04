@@ -177,7 +177,6 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 			(struct node_record *) xmalloc (new_buffer_size);
 	else if (old_buffer_size != new_buffer_size)
 		xrealloc (node_record_table_ptr, new_buffer_size);
-
 	node_ptr = node_record_table_ptr + (node_record_count++);
 	strcpy (node_ptr->name, node_name);
 	node_ptr->last_response = (time_t)0;

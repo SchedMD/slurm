@@ -641,7 +641,8 @@ typedef struct slurm_ctl_conf {
 	char *job_credential_public_certificate;/* path to public certificate*/
 	char *srun_prolog;      /* srun prolog program */
 	char *srun_epilog;      /* srun epilog program */
-	char *node_prefix;      /* prefix of nodes in partition */
+	char *node_prefix;      /* prefix of nodes in partition only set in 
+				   bluegene clusters NULL otherwise */
 	uint16_t tree_width;    /* number of threads per node to span */
 	uint16_t use_pam;	/* enable/disable PAM support */
 } slurm_ctl_conf_t;
