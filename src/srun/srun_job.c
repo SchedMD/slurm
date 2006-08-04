@@ -357,12 +357,14 @@ _job_create_structure(allocation_info_t *ainfo)
 #else
 	job->nhosts   = ainfo->nnodes;
 #endif
+
+#ifndef HAVE_BG
 	if(opt.min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt.min_nodes);
 		return NULL;
 	}	
-
+#endif
 	job->select_jobinfo = ainfo->select_jobinfo;
 	job->jobid   = ainfo->jobid;
 	

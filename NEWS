@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.7
 ========================
+ -- BLUEGENE - fixed issue with doing an allocation for nodes since asking 
+    for 32,128, or 512 all mean 1 to the controller. 
  -- Add "Include" directive to slurm.conf files.  If "Include" is found
     at the beginning of a line followed by whitespace and then
     the full path to a file, that file is included inline with the current
