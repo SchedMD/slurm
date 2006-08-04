@@ -256,7 +256,7 @@ static int _init_all_slurm_conf(void)
 	int error_code;
 	char *conf_name = xstrdup(slurmctld_conf.slurm_conf);
 
-	slurm_conf_reinit(conf_name);
+	slurm_conf_reinit_nolock(conf_name);
 	xfree(conf_name);
 
 	if ((error_code = init_node_conf()))
@@ -656,12 +656,12 @@ int read_slurm_conf(int recover)
 	old_node_table_ptr = 
 		node_record_table_ptr;  /* save node states for reconfig RPC */
 	node_record_table_ptr = NULL;
+
+	conf = slurm_conf_lock();
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
 		return error_code;
 	}
-
-	conf = slurm_conf_lock();
 	_build_all_nodeline_info(conf);
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
