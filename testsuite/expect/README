@@ -414,4 +414,7 @@ test18.3   Confirm that slaunch reports a proper version number
            (--version option).
 test18.4   Confirm that a job executes with the proper task count (--nprocs
            and --overcommit options).
+test18.5   Confirm that slauch local stdin, stdout, and stderr options work
+           (options --local-input, --local-output and --local-error
+           respectively).
 
