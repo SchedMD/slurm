@@ -1901,15 +1901,6 @@ extern void slurm_free_msg(slurm_msg_t * msg)
 	}
 	xfree(msg);
 }
-/* 
- * Free just the credential of a message 
- * Needed by the api.
- */
-extern void slurm_auth_cred_destroy(void *auth_cred)
-{	
-	(void) g_slurm_auth_destroy(auth_cred);
-}
-
 
 extern int convert_to_kilo(int number, char *tmp)
 {
