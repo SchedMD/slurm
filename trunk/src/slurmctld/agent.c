@@ -542,15 +542,15 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		srun_timeout_msg_t *msg = *agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = msg->step_id;
-	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
-		srun_node_fail_msg_t *msg = *agent_ptr->msg_args_pptr;
-		job_id  = msg->job_id;
-		step_id = msg->step_id;
 	} else if (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) {
 		resource_allocation_response_msg_t *msg =
 			*agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
+	} else if (agent_ptr->msg_type == SRUN_JOB_COMPLETE) {
+		return;		/* no need to note srun response */
+	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
+		return;		/* no need to note srun response */
 	} else {
 		error("_notify_slurmctld_jobs invalid msg_type %u",
 			agent_ptr->msg_type);
