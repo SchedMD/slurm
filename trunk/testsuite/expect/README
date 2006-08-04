@@ -341,7 +341,7 @@ test15.7   Test of processors, memory, and temporary disk space
            Also test that priority zero job is not started (--hold option).
 test15.8   Test of immediate allocation option (--immediate option).
 test15.9   Confirm that salloc exit code processing.
-test15.10  Confirm that a job executes with the proper processor count (--nprocs)
+test15.10  Confirm that a job allocates the proper procesor count (--nprocs)
 
 
 test16.#   Testing of sattach options.
@@ -412,5 +412,6 @@ test18.1   Confirm slaunch usage option works (--usage option).
 test18.2   Confirm slaunch help option works (--help option).
 test18.3   Confirm that slaunch reports a proper version number
            (--version option).
-
+test18.4   Confirm that a job executes with the proper task count (--nprocs
+           and --overcommit options).
 
