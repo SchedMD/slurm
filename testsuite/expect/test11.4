@@ -53,6 +53,10 @@ if { ![file exists mpi-testscripts/allred] } {
 	exit 1
 }
 
+if { [string length $partition] == 0 } {
+	set partition [default_partition]
+}
+
 #
 # execute poe with a an mpi script
 #

@@ -66,7 +66,10 @@ cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
 
-cset partition "pdebug"
+# If length of string partition is zero, use output of function 
+#	default_partition, otherwise use the partition explicitly 
+#	named in your globals.local file (or below) for poe commands
+cset partition ""
 
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
