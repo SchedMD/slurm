@@ -55,7 +55,7 @@ extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	jobacct->pid = pid;
 	jobacct->min_cpu = 0;
-	debug2("adding task %u pid %d on node %uto jobacct", 
+	debug2("adding task %u pid %d on node %u to jobacct", 
 	       jobacct_id->taskid, pid, jobacct_id->nodeid);
 	list_push(task_list, jobacct);
 	slurm_mutex_unlock(&jobacct_lock);
