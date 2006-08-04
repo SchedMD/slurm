@@ -256,7 +256,7 @@ static int _init_all_slurm_conf(void)
 	int error_code;
 	char *conf_name = xstrdup(slurmctld_conf.slurm_conf);
 
-	slurm_conf_reinit(conf_name);
+	slurm_conf_reinit_nolock(conf_name);
 	xfree(conf_name);
 
 	if ((error_code = init_node_conf()))
@@ -294,6 +294,11 @@ static int _state_str2int(const char *state_str)
 	return state_val;
 }
 
+#ifdef HAVE_BG
+/* Used to get the general name of the machine, used primarily 
+ * for bluegene systems.  Not in general use because some systems 
+ * have multiple prefix's such as foo[1-1000],bar[1-1000].
+ */
 /* Caller must be holding slurm_conf_lock() */
 static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 {
@@ -319,7 +324,7 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 	}
 	debug3("Prefix is %s %s %d", conf->node_prefix, nodenames, i);
 }
-
+#endif /* HAVE_BG */
 /* 
  * _build_single_nodeline_info - rom the slurm.conf reader, build table,
  * 	and set values
@@ -366,7 +371,9 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		goto cleanup;
 	}
 
+#ifdef HAVE_BG
 	_set_node_prefix(node_ptr->nodenames, conf);
+#endif
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
@@ -656,12 +663,13 @@ int read_slurm_conf(int recover)
 	old_node_table_ptr = 
 		node_record_table_ptr;  /* save node states for reconfig RPC */
 	node_record_table_ptr = NULL;
-	if ((error_code = _init_all_slurm_conf())) {
-		node_record_table_ptr = old_node_table_ptr;
-		return error_code;
-	}
 
 	conf = slurm_conf_lock();
+	if ((error_code = _init_all_slurm_conf())) {
+		node_record_table_ptr = old_node_table_ptr;
+		slurm_conf_unlock();
+		return error_code;
+	}
 	_build_all_nodeline_info(conf);
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
