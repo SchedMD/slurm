@@ -102,14 +102,8 @@ for {set i 0} {$i<2} {incr i} {
 	#
 	set node0 ""
 	set node1 ""
-	spawn $srun -N2 -l $bin_hostname
+	spawn $srun -N2 -l $bin_printenv SLURMD_NODENAME
 	expect {
-		-re "Invalid node name specified" {
-			send_user "\nWARNING: Appears you are using "
-			send_user "multiple slurmd testing.\n"
-			send_user "This test won't work in that fashion.\n"
-			exit 0	
-		}
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
