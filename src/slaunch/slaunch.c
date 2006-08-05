@@ -84,6 +84,8 @@
 /* FIXME doesn't belong here, we don't want to expose ctx contents */
 #include "src/api/step_ctx.h"
 
+extern char **environ;
+
 /*
  * declaration of static funcs
  */
@@ -192,8 +194,8 @@ int slaunch(int argc, char **argv)
 	params.argc = opt.argc;
 	params.argv = opt.argv;
 	params.multi_prog = opt.multi_prog ? true : false;
-	params.envc = 0; /* FIXME */
-	params.env = NULL; /* FIXME */
+	params.envc = envcount(environ);
+	params.env = environ;
 	params.cwd = opt.cwd;
 	params.slurmd_debug = opt.slurmd_debug;
 	params.buffered_stdio = opt.unbuffered ? false : true;

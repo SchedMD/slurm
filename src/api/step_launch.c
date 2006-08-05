@@ -42,6 +42,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <netdb.h> /* for gethostbyname */
 
 #include <slurm/slurm.h>
 
@@ -167,11 +168,23 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.argv = params->argv;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	env = env_array_create_for_step(ctx->step_resp,
-					"localhost",
-					15500,
-					"127.0.0.1");
 	env_array_merge(&env, (const char **)params->env);
+	{
+		/* FIXME - hostname and IP need to be user settable */
+		char **step_env = NULL;
+		char *launcher_hostname = xshort_hostname();
+		struct hostent *ent = gethostbyname(launcher_hostname);
+
+		info("ip str is = \"%s\"", ent->h_addr_list[0]);
+		step_env = env_array_create_for_step(
+			ctx->step_resp,
+			launcher_hostname,
+			ctx->launch_state->resp_port[0],
+			ent->h_addr_list[0]);
+		xfree(launcher_hostname);
+		env_array_merge(&env, step_env);
+		env_array_free(step_env);
+	}
 	launch.envc = envcount(env);
 	launch.env = env;
 	launch.cwd = params->cwd;
@@ -241,7 +254,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
 
-	/* First wait for all tasks to complete */
+	/* First wait for all tasks to start */
 	pthread_mutex_lock(&sls->lock);
 	while ((sls->tasks_start_success + sls->tasks_start_failure)
 	       < sls->tasks_requested) {
