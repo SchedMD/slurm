@@ -658,6 +658,7 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
  *	SLURM_JOB_CPUS_PER_NODE
  *
  * Sets OBSOLETE variables:
+ *	SLURM_JOBID
  *	? probably only needed for users...
  */
 char **
@@ -683,6 +684,9 @@ env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
 					batch->cpu_count_reps);
 	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	xfree(tmp);
+
+	/* OBSOLETE */
+	env_array_append(&ptr, "SLURM_JOBID", "%u", batch->job_id);
 
 	return ptr;
 }
@@ -734,8 +738,8 @@ env_array_create_for_step(const job_step_create_response_msg_t *step,
 			 "%s", launcher_hostname);
 	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_PORT",
 			 "%hu", launcher_port);
-	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_IPADDR",
-			 "%s", ip_addr_str);
+/* 	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_IPADDR", */
+/* 			 "%s", ip_addr_str); */
 
 	/* OBSOLETE */
 	env_array_append(&ptr, "SLURM_STEPID", "%u", step->job_step_id);
@@ -748,8 +752,8 @@ env_array_create_for_step(const job_step_create_response_msg_t *step,
 			 "%s", launcher_hostname);
 	env_array_append(&ptr, "SLURM_SRUN_COMM_PORT",
 			 "%hu", launcher_port);
-	env_array_append(&ptr, "SLURM_LAUNCH_NODE_IPADDR",
-			 "%s", ip_addr_str);
+/* 	env_array_append(&ptr, "SLURM_LAUNCH_NODE_IPADDR", */
+/* 			 "%s", ip_addr_str); */
 
 	xfree(tmp);
 	return ptr;
@@ -804,8 +808,12 @@ int env_array_append(char ***array_ptr, const char *name,
 	va_list ap;
 
 	buf[0] = '\0';
-	if (array_ptr == NULL || *array_ptr == NULL) {
+	if (array_ptr == NULL) {
 		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
 	}
 
 	va_start(ap, value_fmt);
@@ -841,8 +849,12 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 	va_list ap;
 
 	buf[0] = '\0';
-	if (array_ptr == NULL || *array_ptr == NULL) {
+	if (array_ptr == NULL) {
 		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
 	}
 
 	va_start(ap, value_fmt);
