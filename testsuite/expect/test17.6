@@ -45,7 +45,7 @@ print_header $test_id
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out
+file delete $file_in $file_out
 make_bash_script $file_in "
   $srun -n $task_cnt --overcommit $bin_id
 "
@@ -101,7 +101,7 @@ if {$task_cnt != $tasks} {
 	set exit_code 1
 }
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
+	file delete $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
