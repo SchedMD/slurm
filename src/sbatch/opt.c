@@ -180,6 +180,7 @@ static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
                                         mem_bind_type_t *mem_bind_type);
 static int   _verify_conn_type(const char *arg);
+static char *_fullpath(const char *filename);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -1033,7 +1034,7 @@ void set_options(const int argc, char **argv)
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
-				opt.efname = xstrdup(optarg);
+				opt.efname = _fullpath(optarg);
 			break;
 		case 'g':
 			if (_verify_geometry(optarg, opt.geometry))
@@ -1047,7 +1048,7 @@ void set_options(const int argc, char **argv)
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
-				opt.ifname = xstrdup(optarg);
+				opt.ifname = _fullpath(optarg);
 			break;
 		case 'I':
 			opt.immediate = true;
@@ -1092,7 +1093,7 @@ void set_options(const int argc, char **argv)
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
-				opt.ofname = xstrdup(optarg);
+				opt.ofname = _fullpath(optarg);
 			break;
 		case 'p':
 			xfree(opt.partition);
@@ -1677,6 +1678,30 @@ print_geometry()
 	}
 
 	return rc;
+}
+
+
+/*
+ * Return an absolute path for the "filename".  If "filename" is already
+ * an absolute path, it returns a copy.  Free the returned with xfree().
+ */
+static char *_fullpath(const char *filename)
+{
+	char cwd[BUFSIZ];
+	char *ptr = NULL;
+
+	if (filename[0] == '/') {
+		return xstrdup(filename);
+	} else {
+		if (getcwd(cwd, BUFSIZ) == NULL) {
+			error("could not get current working directory");
+			return NULL;
+		}
+		ptr = xstrdup(cwd);
+		xstrcat(ptr, "/");
+		xstrcat(ptr, filename);
+		return ptr;
+	}
 }
 
 #define tf_(b) (b == true) ? "true" : "false"
