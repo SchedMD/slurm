@@ -58,7 +58,7 @@ display_data_t main_display_data[] = {
 	 set_menus_node, row_clicked_node, NULL},
 #else
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
-	 refresh_main, get_info_block, NULL, 
+	 refresh_main, get_info_block, specific_info_block, 
 	 set_menus_block, row_clicked_block, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
 	 refresh_main, get_info_node, specific_info_node, 
@@ -78,12 +78,12 @@ void *_page_thr(void *arg)
 	page_thr_t *page = (page_thr_t *)arg;
 	int num = page->page_num;
 	GtkTable *table = page->table;
+	display_data_t *display_data = &main_display_data[num];
 	xfree(page);
 
 	while(page_running[num]) {
-		gdk_threads_enter();		
-		(main_display_data[num].get_info)(table, 
-						  &main_display_data[num]);
+		gdk_threads_enter();
+		(display_data->get_info)(table, display_data);
 		gdk_flush();
 		gdk_threads_leave();
 		sleep(5);
@@ -291,6 +291,7 @@ int main(int argc, char *argv[])
 	_init_pages();
 	g_thread_init(NULL);
 	gdk_threads_init();
+	gdk_threads_enter();
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
 	/* fill in all static info for pages */
@@ -335,7 +336,6 @@ int main(int argc, char *argv[])
 	gtk_widget_show_all (window);
 
 	/* Finished! */
-	gdk_threads_enter();
 	gtk_main ();
 	gdk_threads_leave();
 

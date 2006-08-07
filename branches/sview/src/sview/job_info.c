@@ -118,7 +118,6 @@ static display_data_t options_data_job[] = {
 };
 
 static display_data_t *local_display_data = NULL;
-time_t now_time;
 
 static void _update_job_record(job_info_t *job_ptr, GtkListStore *liststore,
 			       GtkTreeIter *iter)
@@ -126,7 +125,7 @@ static void _update_job_record(job_info_t *job_ptr, GtkListStore *liststore,
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[7];
 	char tmp_char[50];
-	time_t time;
+	time_t now_time = time(NULL);
 	uint32_t node_cnt = 0;
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
@@ -157,10 +156,9 @@ static void _update_job_record(job_info_t *job_ptr, GtkListStore *liststore,
 		sprintf(time_buf,"0:00:00");
 		nodes = "waiting...";
 	} else {
-		time = now_time - job_ptr->start_time;
-		snprint_time(time_buf, sizeof(time_buf), time);
-		nodes = job_ptr->nodes;
-	
+		now_time -= job_ptr->start_time;
+		snprint_time(time_buf, sizeof(time_buf), now_time);
+		nodes = job_ptr->nodes;	
 	}
 	gtk_list_store_set(liststore, iter, 
 			   SORTID_TIME, time_buf, -1);
@@ -328,6 +326,15 @@ void *_popup_thr_job(void *arg)
 	return NULL;
 }
 
+extern void refresh_job(GtkAction *action, gpointer user_data)
+{
+	popup_info_t *popup_win = (popup_info_t *)user_data;
+	xassert(popup_win != NULL);
+	xassert(popup_win->spec_info != NULL);
+	xassert(popup_win->spec_info->title != NULL);
+	specific_info_job(popup_win);
+}
+
 extern int get_new_info_job(job_info_msg_t **info_ptr)
 {
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
@@ -337,7 +344,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr)
 	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
-				&new_job_ptr, show_flags);
+					     &new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg(job_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -352,57 +359,47 @@ extern int get_new_info_job(job_info_msg_t **info_ptr)
 	return error_code;
 }
 
-extern void refresh_job(GtkAction *action, gpointer user_data)
-{
-	popup_info_t *popup_win = (popup_info_t *)user_data;
-	xassert(popup_win != NULL);
-	xassert(popup_win->spec_info != NULL);
-	xassert(popup_win->spec_info->title != NULL);
-	specific_info_job(popup_win);
-}
-
 extern void get_info_job(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
 	static int view = -1;
-	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
-	char error_char[50];
+	static job_info_msg_t *job_info_ptr = NULL;
+	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	
-	now_time = time(NULL);
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
 		display_data_job->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(new_job_ptr && toggled) {
+	if(job_info_ptr && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_job(&new_job_ptr))
+	if((error_code = get_new_info_job(&job_info_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA){
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		_update_info_job(new_job_ptr, GTK_TREE_VIEW(display_widget), 
+		_update_info_job(job_info_ptr, GTK_TREE_VIEW(display_widget), 
 				 NULL);
-		return;
+		goto end_it;
 	}
 
 	if (error_code != SLURM_SUCCESS) {
-		view = ERROR_VIEW;
+		if(view == ERROR_VIEW)
+			goto end_it;
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
+		view = ERROR_VIEW;
 		sprintf(error_char, "slurm_load_job: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
-		gtk_table_attach_defaults(GTK_TABLE(table), 
-					  label,
-					  0, 1, 0, 1); 
+		gtk_table_attach_defaults(table, label, 0, 1, 0, 1); 
 		gtk_widget_show(label);	
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		return;
@@ -413,7 +410,7 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		tree_view = create_treeview(local_display_data, new_job_ptr);
+		tree_view = create_treeview(local_display_data, job_info_ptr);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table), 
@@ -426,41 +423,43 @@ display_it:
 		create_liststore(tree_view, display_data_job, SORTID_CNT);
 	}
 	view = INFO_VIEW;
-	_update_info_job(new_job_ptr, GTK_TREE_VIEW(display_widget), NULL);
+	_update_info_job(job_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
+end_it:
 	toggled = FALSE;
-	job_info_ptr = new_job_ptr;
+	
 	return;
 }
 
 extern void specific_info_job(popup_info_t *popup_win)
 {
 	int error_code = SLURM_SUCCESS;
-	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
+	static job_info_msg_t *job_info_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
-	char error_char[50];
+	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	
-	now_time = time(NULL);
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
 
-	if(new_job_ptr && popup_win->toggled) {
+	if(job_info_ptr && popup_win->toggled) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_job(&new_job_ptr))
+	if((error_code = get_new_info_job(&job_info_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		_update_info_job(new_job_ptr, 
+		_update_info_job(job_info_ptr, 
 				 GTK_TREE_VIEW(spec_info->display_widget), 
 				 spec_info);
-		return;
+		goto end_it;
 	}
 	if (error_code != SLURM_SUCCESS) {
+		if(spec_info->view == ERROR_VIEW)
+			goto end_it;
 		spec_info->view = ERROR_VIEW;
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
@@ -473,7 +472,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 					  0, 1, 0, 1); 
 		gtk_widget_show(label);	
 		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
-		return;
+		goto end_it;
 	}
 display_it:
 	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
@@ -482,7 +481,7 @@ display_it:
 	}
 
 	if(!spec_info->display_widget) {
-		tree_view = create_treeview(local_display_data, new_job_ptr);
+		tree_view = create_treeview(local_display_data, job_info_ptr);
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
@@ -496,11 +495,10 @@ display_it:
 				 SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;
-	_update_info_job(new_job_ptr, 
+	_update_info_job(job_info_ptr, 
 			 GTK_TREE_VIEW(spec_info->display_widget), spec_info);
+end_it:
 	popup_win->toggled = 0;
-	
-	job_info_ptr = new_job_ptr;
 	return;
 }
 

@@ -75,24 +75,6 @@ static display_data_t options_data_part[] = {
 
 static display_data_t *local_display_data = NULL;
 
-/*
- * diff_tv_str - build a string showing the time difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
- */
-inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
-		char *tv_str, int len_tv_str)
-{
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
-	if (delta_t > 1000000)
-		info("Warning: Note very large processing time: %s",tv_str); 
-}
-
 
 static void _update_part_record(partition_info_t *part_ptr,
 				GtkListStore *liststore, GtkTreeIter *iter)
@@ -256,6 +238,14 @@ void *_popup_thr_part(void *arg)
 	return NULL;
 }
 
+extern void refresh_part(GtkAction *action, gpointer user_data)
+{
+	popup_info_t *popup_win = (popup_info_t *)user_data;
+	xassert(popup_win != NULL);
+	xassert(popup_win->spec_info != NULL);
+	xassert(popup_win->spec_info->title != NULL);
+	specific_info_part(popup_win);
+}
 
 extern int get_new_info_part(partition_info_msg_t **part_ptr)
 {
@@ -282,22 +272,12 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr)
 	return error_code;
 }
 
-extern void refresh_part(GtkAction *action, gpointer user_data)
-{
-	popup_info_t *popup_win = (popup_info_t *)user_data;
-	xassert(popup_win != NULL);
-	xassert(popup_win->spec_info != NULL);
-	xassert(popup_win->spec_info->title != NULL);
-	specific_info_part(popup_win);
-}
-
 extern void get_info_part(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
 	static int view = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
-	static partition_info_msg_t *new_part_ptr = NULL;
-	char error_char[50];
+	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
@@ -308,34 +288,32 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		display_data_part->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(new_part_ptr && toggled) {
+	if(part_info_ptr && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
 	}
 	
-	if((error_code = get_new_info_part(&new_part_ptr))
+	if((error_code = get_new_info_part(&part_info_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		_update_info_part(new_part_ptr, GTK_TREE_VIEW(display_widget), 
-				  NULL);
-		return;
+		goto end_it;
 	}
 	
 	if (error_code != SLURM_SUCCESS) {
-		view = ERROR_VIEW;
+		if(view == ERROR_VIEW)
+			goto end_it;
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
+		view = ERROR_VIEW;
 		sprintf(error_char, "slurm_load_partitions: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
-		gtk_table_attach_defaults(GTK_TABLE(table), 
-					  label,
-					  0, 1, 0, 1); 
-		gtk_widget_show(label);	
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
-		return;
+		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
+		gtk_widget_show(label);
+		goto end_it;
 	}
 display_it:	
 	if(view == ERROR_VIEW && display_widget) {
@@ -343,10 +321,10 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		tree_view = create_treeview(local_display_data, new_part_ptr);
+		tree_view = create_treeview(local_display_data, part_info_ptr);
 
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
-		gtk_table_attach_defaults(GTK_TABLE(table),
+		gtk_table_attach_defaults(table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
 		gtk_widget_show(GTK_WIDGET(tree_view));
@@ -356,10 +334,10 @@ display_it:
 		create_liststore(tree_view, display_data_part, SORTID_CNT);
 	}
 	view = INFO_VIEW;
-	_update_info_part(new_part_ptr, GTK_TREE_VIEW(display_widget), NULL);
+	_update_info_part(part_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
+end_it:
 	toggled = FALSE;
 	
-	part_info_ptr = new_part_ptr;
 	return;
 }
 
@@ -367,36 +345,38 @@ extern void specific_info_part(popup_info_t *popup_win)
 {
 	int error_code = SLURM_SUCCESS;
 	static partition_info_msg_t *part_info_ptr = NULL;
-	static partition_info_msg_t *new_part_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
-	char error_char[50];
+	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_part, SORTID_CNT);
 	
-	if(new_part_ptr && popup_win->toggled) {
+	if(part_info_ptr && popup_win->toggled) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_part(&new_part_ptr))
+	if((error_code = get_new_info_part(&part_info_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA)  {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		_update_info_part(new_part_ptr, 
+		_update_info_part(part_info_ptr, 
 				  GTK_TREE_VIEW(spec_info->display_widget), 
 				  spec_info);
 		return;
 	}
 		
 	if (error_code != SLURM_SUCCESS) {
-		spec_info->view = ERROR_VIEW;
-		if(spec_info->display_widget)
+		if(spec_info->view == ERROR_VIEW)
+			goto end_it;
+		if(spec_info->display_widget) {
 			gtk_widget_destroy(spec_info->display_widget);
-
+			spec_info->display_widget = NULL;
+		}
+		spec_info->view = ERROR_VIEW;
 		sprintf(error_char, "slurm_load_partitions: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
@@ -405,7 +385,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 					  0, 1, 0, 1); 
 		gtk_widget_show(label);			
 		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
-		return;
+		goto end_it;
 	}
 display_it:	
 			
@@ -415,11 +395,11 @@ display_it:
 	}
 	
 	if(!spec_info->display_widget) {
-		tree_view = create_treeview(local_display_data, new_part_ptr);
+		tree_view = create_treeview(local_display_data, part_info_ptr);
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
-		gtk_table_attach_defaults(GTK_TABLE(popup_win->table),
+		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
 		
@@ -430,11 +410,11 @@ display_it:
 				 SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;
-	_update_info_part(new_part_ptr, 
+	_update_info_part(part_info_ptr, 
 			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
+end_it:
 	popup_win->toggled = 0;
 		
-	part_info_ptr = new_part_ptr;
 	return;
 }
 
@@ -463,7 +443,8 @@ extern void row_clicked_part(GtkTreeView *tree_view,
 			     GtkTreeViewColumn *column,
 			     gpointer user_data)
 {
-	partition_info_msg_t *new_part_ptr = (partition_info_msg_t *)user_data;
+	partition_info_msg_t *part_info_ptr = 
+		(partition_info_msg_t *)user_data;
 	partition_info_t *part_ptr = NULL;
 	int line = get_row_number(tree_view, path);
 	GtkWidget *popup = NULL;
@@ -474,7 +455,7 @@ extern void row_clicked_part(GtkTreeView *tree_view,
 		return;
 	}
 	
-	part_ptr = &new_part_ptr->partition_array[line];
+	part_ptr = &part_info_ptr->partition_array[line];
 	if(!(info = slurm_sprint_partition_info(part_ptr, 0))) {
 		info = xmalloc(100);
 		sprintf(info, "Problem getting partition info for %s", 
@@ -551,7 +532,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		//specific_info_node(popup_win);
 		break;
 	case BLOCK_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		popup_win->spec_info->data = name;
 		break;
 	case ADMIN_PAGE: 
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);

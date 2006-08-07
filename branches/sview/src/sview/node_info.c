@@ -203,6 +203,15 @@ void *_popup_thr_node(void *arg)
 	return NULL;
 }
 
+extern void refresh_node(GtkAction *action, gpointer user_data)
+{
+	popup_info_t *popup_win = (popup_info_t *)user_data;
+	xassert(popup_win != NULL);
+	xassert(popup_win->spec_info != NULL);
+	xassert(popup_win->spec_info->title != NULL);
+	specific_info_node(popup_win);
+}
+
 extern int get_new_info_node(node_info_msg_t **info_ptr)
 {
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
@@ -227,21 +236,12 @@ extern int get_new_info_node(node_info_msg_t **info_ptr)
 	return error_code;
 }
 
-extern void refresh_node(GtkAction *action, gpointer user_data)
-{
-	popup_info_t *popup_win = (popup_info_t *)user_data;
-	xassert(popup_win != NULL);
-	xassert(popup_win->spec_info != NULL);
-	xassert(popup_win->spec_info->title != NULL);
-	specific_info_node(popup_win);
-}
-
 extern void get_info_node(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
 	static int view = -1;
-	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
-	char error_char[50];
+	static node_info_msg_t *node_info_ptr = NULL;
+	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
@@ -252,34 +252,34 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		display_data_node->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(new_node_ptr && toggled) {
+	if(node_info_ptr && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_node(&new_node_ptr))
+	if((error_code = get_new_info_node(&node_info_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		_update_info_node(new_node_ptr, GTK_TREE_VIEW(display_widget), 
-				  NULL);
-		return;
+		goto end_it;
 	} 
 
 	if (error_code != SLURM_SUCCESS) {
+		if(view == ERROR_VIEW)
+			goto end_it;
 		view = ERROR_VIEW;
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
-		gtk_table_attach_defaults(GTK_TABLE(table), 
+		gtk_table_attach_defaults(table, 
 					  label,
 					  0, 1, 0, 1); 
 		gtk_widget_show(label);	
-		display_widget = gtk_widget_ref(GTK_WIDGET(label));
-		return;
+		display_widget = gtk_widget_ref(label);
+		goto end_it;
 	}
 display_it:
 	if(view == ERROR_VIEW && display_widget) {
@@ -287,7 +287,7 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		tree_view = create_treeview(local_display_data, new_node_ptr);
+		tree_view = create_treeview(local_display_data, node_info_ptr);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table),
@@ -300,10 +300,9 @@ display_it:
 		create_liststore(tree_view, display_data_node, SORTID_CNT);
 	}
 	view = INFO_VIEW;
-	_update_info_node(new_node_ptr, GTK_TREE_VIEW(display_widget), NULL);
+	_update_info_node(node_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
+end_it:
 	toggled = FALSE;
-		
-	node_info_ptr = new_node_ptr;
 	return;
 	
 }
@@ -311,26 +310,26 @@ display_it:
 extern void specific_info_node(popup_info_t *popup_win)
 {
 	int error_code = SLURM_SUCCESS;
-	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
+	static node_info_msg_t *node_info_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
-	char error_char[50];
+	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
 	
-	if(new_node_ptr && popup_win->toggled) {
+	if(node_info_ptr && popup_win->toggled) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 		goto display_it;
 	}
 	
-	if((error_code = get_new_info_node(&new_node_ptr))
+	if((error_code = get_new_info_node(&node_info_ptr))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		_update_info_node(new_node_ptr, 
+		_update_info_node(node_info_ptr, 
 				  GTK_TREE_VIEW(spec_info->display_widget), 
 				  spec_info);
 		return;
@@ -357,7 +356,7 @@ display_it:
 		spec_info->display_widget = NULL;
 	}
 	if(!spec_info->display_widget) {
-		tree_view = create_treeview(local_display_data, new_node_ptr);
+		tree_view = create_treeview(local_display_data, node_info_ptr);
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
@@ -372,11 +371,11 @@ display_it:
 				 SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;
-	_update_info_node(new_node_ptr, 
+	_update_info_node(node_info_ptr, 
 			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
 	popup_win->toggled = 0;
 	
-	node_info_ptr = new_node_ptr;
+	node_info_ptr = node_info_ptr;
 	return;
 	
 }
