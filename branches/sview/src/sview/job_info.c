@@ -485,7 +485,7 @@ display_it:
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
-		gtk_table_attach_defaults(GTK_TABLE(popup_win->table), 
+		gtk_table_attach_defaults(popup_win->table, 
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1); 
 		/* since this function sets the model of the tree_view 

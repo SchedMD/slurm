@@ -329,13 +329,12 @@ extern void specific_info_node(popup_info_t *popup_win)
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		_update_info_node(node_info_ptr, 
-				  GTK_TREE_VIEW(spec_info->display_widget), 
-				  spec_info);
-		return;
+		goto end_it;
 	}  
 			
 	if (error_code != SLURM_SUCCESS) {
+		if(spec_info->view == ERROR_VIEW)
+			goto end_it;
 		spec_info->view = ERROR_VIEW;
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
@@ -360,7 +359,7 @@ display_it:
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
-		gtk_table_attach_defaults(GTK_TABLE(popup_win->table),
+		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
 		
@@ -373,9 +372,9 @@ display_it:
 	spec_info->view = INFO_VIEW;
 	_update_info_node(node_info_ptr, 
 			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
+end_it:
 	popup_win->toggled = 0;
 	
-	node_info_ptr = node_info_ptr;
 	return;
 	
 }

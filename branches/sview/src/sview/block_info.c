@@ -66,7 +66,7 @@ enum {
 };
 
 static display_data_t display_data_block[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
 	 TRUE, -1, refresh_block},
 	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
@@ -86,7 +86,7 @@ static display_data_t options_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, BLOCK_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -619,7 +619,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
 		nodelist = list_create(_nodelist_del);
-		g_print("looking at nodes %s\n", part.nodes);
 		_make_nodelist(part.nodes, nodelist);	
 		
 		itr = list_iterator_create(block_list);
@@ -637,6 +636,11 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	return block_list;
 }
 	
+void *_popup_thr_block(void *arg)
+{
+	popup_thr(arg);		
+	return NULL;
+}
 
 extern void refresh_block(GtkAction *action, gpointer user_data)
 {
@@ -715,7 +719,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 					  label,
 					  0, 1, 0, 1); 
 		gtk_widget_show(label);	
-		display_widget = gtk_widget_ref(GTK_WIDGET(label));
+		display_widget = gtk_widget_ref(label);
 		goto end_it;
 	}
 
@@ -780,7 +784,111 @@ end_it:
 
 extern void specific_info_block(popup_info_t *popup_win)
 {
+	int part_error_code = SLURM_SUCCESS;
+	int block_error_code = SLURM_SUCCESS;
+	static partition_info_msg_t *part_info_ptr = NULL;
+	static node_select_info_msg_t *node_select_ptr = NULL;
+	specific_info_t *spec_info = popup_win->spec_info;
+	char error_char[100];
+	GtkWidget *label = NULL;
+	GtkTreeView *tree_view = NULL;
+	static List block_list = NULL;
+	
+	if(!spec_info->display_widget) {
+		setup_popup_info(popup_win, display_data_block, SORTID_CNT);
+	}
 
+	if(block_list && popup_win->toggled) {
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+		goto display_it;
+	}
+	
+	if((part_error_code = get_new_info_part(&part_info_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		goto get_node_select;
+	}
+	
+	if (part_error_code != SLURM_SUCCESS) {
+		if(spec_info->view == ERROR_VIEW)
+			goto end_it;
+		spec_info->view = ERROR_VIEW;
+		if(spec_info->display_widget)
+			gtk_widget_destroy(spec_info->display_widget);
+		sprintf(error_char, "slurm_load_partitions: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(popup_win->table, 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		spec_info->display_widget = gtk_widget_ref(label);
+		goto end_it;
+	}
+
+get_node_select:
+	if((block_error_code = get_new_info_node_select(&node_select_ptr))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		if((!spec_info->display_widget 
+		    || spec_info->view == ERROR_VIEW) 
+		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)) {
+			goto display_it;
+		}
+		goto end_it;
+	}
+	
+	if (block_error_code != SLURM_SUCCESS) {
+		if(spec_info->view == ERROR_VIEW)
+			goto end_it;
+		spec_info->view = ERROR_VIEW;
+		if(spec_info->display_widget)
+			gtk_widget_destroy(spec_info->display_widget);
+		sprintf(error_char, "slurm_load_node_select: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(popup_win->table, 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		spec_info->display_widget = gtk_widget_ref(label);
+		goto end_it;
+	}
+	
+display_it:
+	if (block_list) 
+		/* clear the old list */
+		list_destroy(block_list);
+	block_list = _create_block_list(part_info_ptr, node_select_ptr);
+	if(!block_list)
+		return;
+
+	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+	}
+	if(!spec_info->display_widget) {
+		tree_view = create_treeview(local_display_data, block_list);
+		spec_info->display_widget = 
+			gtk_widget_ref(GTK_WIDGET(tree_view));
+		gtk_table_attach_defaults(popup_win->table, 
+					  GTK_WIDGET(tree_view),
+					  0, 1, 0, 1); 
+		gtk_widget_show(GTK_WIDGET(tree_view));
+		/* since this function sets the model of the tree_view 
+		   to the liststore we don't really care about 
+		   the return value */
+		create_liststore(tree_view, 
+				 popup_win->display_data, SORTID_CNT);
+	}
+	spec_info->view = INFO_VIEW;
+	_update_info_block(block_list, 
+			   GTK_TREE_VIEW(spec_info->display_widget), 
+			   spec_info);
+	
+end_it:
+	popup_win->toggled = 0;
+	
+	return;
 }
 
 extern void set_menus_block(void *arg, GtkTreePath *path, 
@@ -841,7 +949,76 @@ extern void row_clicked_block(GtkTreeView *tree_view,
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+	char title[100];
+	ListIterator itr = NULL;
+	popup_info_t *popup_win = NULL;
+	GError *error = NULL;
+	int i=0;
 
 	gtk_tree_model_get(model, iter, SORTID_BLOCK, &name, -1);
+	switch(id) {
+	case JOB_PAGE:
+		snprintf(title, 100, "Jobs(s) in block %s", name);
+		break;
+	case PART_PAGE:
+		snprintf(title, 100, "Partition(s) containing block %s", name);
+		break;
+	case NODE_PAGE:
+		snprintf(title, 100, "Base Partition(s) in block %s", name);
+		break;
+	case ADMIN_PAGE: 
+		snprintf(title, 100, "Admin Page for %s", name);
+		break;
+	case SUBMIT_PAGE: 
+		snprintf(title, 100, "Submit job on %s", name);
+		break;
+	default:
+		g_print("Block got %d\n", id);
+	}
+	
+	itr = list_iterator_create(popup_list);
+	while((popup_win = list_next(itr))) {
+		if(popup_win->spec_info)
+			if(!strcmp(popup_win->spec_info->title, title)) {
+				break;
+			} 
+	}
+	list_iterator_destroy(itr);
+	
+	if(!popup_win) 
+		popup_win = create_popup_info(BLOCK_PAGE, id, title);
+	
+	switch(id) {
+	case JOB_PAGE:
+		popup_win->spec_info->data = name;
+		break;
+	case PART_PAGE:
+		g_free(name);
+		gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
+		popup_win->spec_info->data = name;
+		break;
+	case NODE_PAGE: 
+		g_free(name);
+		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
+		/* strip off the quarter and nodecard part */
+		while(name[i]) {
+			if(name[i] == '.') {
+				name[i] = '\0';
+				break;
+			}
+			i++;
+		}
+		popup_win->spec_info->data = name;
+		break;
+	default:
+		g_print("block got %d\n", id);
+	}
 
+	
+	if (!g_thread_create(_popup_thr_block, popup_win, FALSE, &error))
+	{
+		g_printerr ("Failed to create part popup thread: %s\n", 
+			    error->message);
+		return;
+	}
 }

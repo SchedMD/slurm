@@ -51,7 +51,7 @@ display_data_t main_display_data[] = {
 	 set_menus_job, row_clicked_job, NULL},
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
-	 refresh_main, get_info_block, NULL, 
+	 refresh_main, get_info_block, specific_info_block, 
 	 set_menus_block, row_clicked_block, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Base Partitions", TRUE, -1,
 	 refresh_main, get_info_node, specific_info_node, 

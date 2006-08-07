@@ -531,6 +531,7 @@ extern void setup_popup_info(popup_info_t *popup_win,
 			 "button-press-event",
 			 G_CALLBACK(redo_popup),
 			 popup_win);
+	
 	g_signal_connect(G_OBJECT(popup_win->button), 
 			 "pressed",
 			 G_CALLBACK(popup_win->display_data->refresh),
@@ -641,6 +642,8 @@ extern void *popup_thr(popup_info_t *popup_win)
 		specifc_info = specific_info_node;
 		break;
 	case BLOCK_PAGE: 
+		specifc_info = specific_info_block;
+		break;
 	case ADMIN_PAGE: 
 	case SUBMIT_PAGE: 
 	default:

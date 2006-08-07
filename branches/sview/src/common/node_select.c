@@ -922,7 +922,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
-		return jobinfo->bg_block_id;
+		snprintf(buf, size, "%s", jobinfo->bg_block_id);
 		break;
 	default:
 		error("select_g_sprint_jobinfo: bad mode %d", mode);

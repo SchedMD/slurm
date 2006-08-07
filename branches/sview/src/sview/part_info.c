@@ -131,7 +131,6 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 	
 	if(spec_info) {
 		switch(spec_info->type) {
-		case BLOCK_PAGE:
 		case NODE_PAGE:
 			hostlist = hostlist_create((char *)spec_info->data);
 			host = hostlist_shift(hostlist);
@@ -191,7 +190,6 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 	adding:
 		if(spec_info) {
 			switch(spec_info->type) {
-			case BLOCK_PAGE:
 			case NODE_PAGE:
 				if(!part.nodes || !host)
 					continue;
@@ -210,6 +208,7 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 				if(!found)
 					continue;
 				break;
+			case BLOCK_PAGE:
 			case JOB_PAGE:
 				if(strcmp(part.name, (char *)spec_info->data)) 
 					continue;
