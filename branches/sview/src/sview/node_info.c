@@ -74,37 +74,37 @@ static display_data_t options_data_node[] = {
 static display_data_t *local_display_data = NULL;
 
 static void _update_node_record(node_info_t *node_ptr,
-				GtkListStore *liststore, GtkTreeIter *iter)
+				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char tmp_cnt[7];
 
-	gtk_list_store_set(liststore, iter, SORTID_NAME, node_ptr->name, -1);
-	gtk_list_store_set(liststore, iter, SORTID_STATE, 
+	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
 			   node_state_string(node_ptr->node_state), -1);
-	gtk_list_store_set(liststore, iter, SORTID_CPUS, node_ptr->cpus, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_CPUS, node_ptr->cpus, -1);
 
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
-	gtk_list_store_set(liststore, iter, SORTID_MEMORY, tmp_cnt, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_MEMORY, tmp_cnt, -1);
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
-	gtk_list_store_set(liststore, iter, SORTID_DISK, tmp_cnt, -1);
-	gtk_list_store_set(liststore, iter, SORTID_WEIGHT, 
+	gtk_tree_store_set(treestore, iter, SORTID_DISK, tmp_cnt, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, 
 			   node_ptr->weight, -1);
-	gtk_list_store_set(liststore, iter, SORTID_FEATURES, 
+	gtk_tree_store_set(treestore, iter, SORTID_FEATURES, 
 			   node_ptr->features, -1);
-	gtk_list_store_set(liststore, iter, SORTID_REASON, 
+	gtk_tree_store_set(treestore, iter, SORTID_REASON, 
 			   node_ptr->reason, -1);
-	gtk_list_store_set(liststore, iter, SORTID_UPDATED, 1, -1);	
+	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
 	
 	return;
 }
 
 static void _append_node_record(node_info_t *node_ptr,
-				GtkListStore *liststore, GtkTreeIter *iter,
+				GtkTreeStore *treestore, GtkTreeIter *iter,
 				int line)
 {
-	gtk_list_store_append(liststore, iter);
-	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
-	_update_node_record(node_ptr, liststore, iter);
+	gtk_tree_store_append(treestore, iter, NULL);
+	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
+	_update_node_record(node_ptr, treestore, iter);
 }
 
 static void _update_info_node(node_info_msg_t *node_info_ptr, 
@@ -129,7 +129,7 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		/* make sure all the partitions are still here */
 		while(1) {
-			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 
+			gtk_tree_store_set(GTK_TREE_STORE(model), &iter, 
 					   SORTID_UPDATED, 0, -1);	
 			if(!gtk_tree_model_iter_next(model, &iter)) {
 				break;
@@ -151,7 +151,7 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 				/* update with new info */
 				g_free(name);
 				_update_node_record(&node, 
-						    GTK_LIST_STORE(model), 
+						    GTK_TREE_STORE(model), 
 						    &iter);
 				goto found;
 			}
@@ -182,7 +182,7 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 				continue;
 		}
 		
-		_append_node_record(&node, GTK_LIST_STORE(model), &iter, i);
+		_append_node_record(&node, GTK_TREE_STORE(model), &iter, i);
 	found:
 		;
 	}
@@ -295,9 +295,9 @@ display_it:
 					  0, 1, 0, 1);		
 		gtk_widget_show(GTK_WIDGET(tree_view));
 		/* since this function sets the model of the tree_view 
-		   to the liststore we don't really care about 
+		   to the treestore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, display_data_node, SORTID_CNT);
+		create_treestore(tree_view, display_data_node, SORTID_CNT);
 	}
 	view = INFO_VIEW;
 	_update_info_node(node_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
@@ -364,9 +364,9 @@ display_it:
 					  0, 1, 0, 1);
 		
 		/* since this function sets the model of the tree_view 
-		   to the liststore we don't really care about 
+		   to the treestore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, popup_win->display_data, 
+		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;

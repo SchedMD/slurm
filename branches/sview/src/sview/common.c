@@ -337,26 +337,27 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 extern GtkTreeView *create_treeview(display_data_t *local, gpointer user_data)
 {
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
-	g_signal_connect(G_OBJECT(tree_view), "row-activated",
-			 G_CALLBACK(local->row_clicked),
-			 user_data);
+	/* g_signal_connect(G_OBJECT(tree_view), "row-activated", */
+/* 			 G_CALLBACK(local->row_clicked), */
+/* 			 user_data); */
 
 	local->user_data = user_data;
-	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
+	g_signal_connect(G_OBJECT(tree_view), "button_press_event",
 			 G_CALLBACK(_set_up_button),
 			 local);
 	
+
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
 	return tree_view;
 
 }
 
-extern GtkListStore *create_liststore(GtkTreeView *tree_view, 
+extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data,
 				      int count)
 {
-	GtkListStore *liststore = NULL;
+	GtkTreeStore *treestore = NULL;
 	GType types[count];
 	int i=0;
 	
@@ -364,8 +365,8 @@ extern GtkListStore *create_liststore(GtkTreeView *tree_view,
 	for(i=0; i<count; i++)
 		types[i] = display_data[i].type;
 
-	liststore = gtk_list_store_newv(count, types);
-	if(!liststore)
+	treestore = gtk_tree_store_newv(count, types);
+	if(!treestore)
 		return NULL;
 
 	for(i=1; i<count; i++) {
@@ -373,7 +374,7 @@ extern GtkListStore *create_liststore(GtkTreeView *tree_view,
 			switch(display_data[i].type) {
 			case G_TYPE_INT:
 				gtk_tree_sortable_set_sort_func(
-					GTK_TREE_SORTABLE(liststore), 
+					GTK_TREE_SORTABLE(treestore), 
 					i, 
 					_sort_iter_compare_func_int,
 					GINT_TO_POINTER(i), 
@@ -382,7 +383,7 @@ extern GtkListStore *create_liststore(GtkTreeView *tree_view,
 				break;
 			case G_TYPE_STRING:
 				gtk_tree_sortable_set_sort_func(
-				GTK_TREE_SORTABLE(liststore), 
+				GTK_TREE_SORTABLE(treestore), 
 				i, 
 				_sort_iter_compare_func_char,
 				GINT_TO_POINTER(i), 
@@ -394,17 +395,16 @@ extern GtkListStore *create_liststore(GtkTreeView *tree_view,
 			}
 		}
 	}
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(liststore), 
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(treestore), 
 					     1, 
 					     GTK_SORT_ASCENDING);
 
 	load_header(tree_view, display_data);
-	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(liststore));
-	g_object_unref(GTK_TREE_MODEL(liststore));
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
+	g_object_unref(GTK_TREE_MODEL(treestore));
 
-	return liststore;
+	return treestore;
 }
-
 
 extern void right_button_pressed(GtkTreeView *tree_view, 
 				 GtkTreePath *path,
@@ -439,9 +439,15 @@ extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	selection = gtk_tree_view_get_selection(tree_view);
 	gtk_tree_selection_unselect_all(selection);
 	gtk_tree_selection_select_path(selection, path);
-             	
-	/* single click with the right mouse button? */
-	if(event->button == 3) {
+			 	
+	/* expand/collapse row 
+	   or right mouse button
+	   or double click?
+	*/
+	if(event->x <= 20) {	
+		if(!gtk_tree_view_expand_row(tree_view, path, FALSE))
+			gtk_tree_view_collapse_row(tree_view, path);
+	} else if(event->button == 3) {
 		right_button_pressed(tree_view, path, event, 
 				     display_data, ROW_CLICKED);
 	} else if(event->type==GDK_2BUTTON_PRESS ||

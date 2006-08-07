@@ -77,17 +77,17 @@ static display_data_t *local_display_data = NULL;
 
 
 static void _update_part_record(partition_info_t *part_ptr,
-				GtkListStore *liststore, GtkTreeIter *iter)
+				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char time_buf[20];
 	char tmp_cnt[7];
 
-	gtk_list_store_set(liststore, iter, SORTID_NAME, part_ptr->name, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
 	if (part_ptr->state_up) 
-		gtk_list_store_set(liststore, iter, SORTID_AVAIL, "up", -1);
+		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "up", -1);
 	else
-		gtk_list_store_set(liststore, iter, SORTID_AVAIL, "down", -1);
+		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "down", -1);
 		
 	if (part_ptr->max_time == INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
@@ -96,23 +96,23 @@ static void _update_part_record(partition_info_t *part_ptr,
 			     (part_ptr->max_time * 60));
 	}
 	
-	gtk_list_store_set(liststore, iter, SORTID_TIMELIMIT, time_buf, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
 		
        	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
-	gtk_list_store_set(liststore, iter, SORTID_NODES, tmp_cnt, -1);
-	gtk_list_store_set(liststore, iter, SORTID_NODELIST, 
+	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   part_ptr->nodes, -1);
-	gtk_list_store_set(liststore, iter, SORTID_UPDATED, 1, -1);	
+	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
 
 	return;
 }
 static void _append_part_record(partition_info_t *part_ptr,
-				GtkListStore *liststore, GtkTreeIter *iter,
+				GtkTreeStore *treestore, GtkTreeIter *iter,
 				int line)
 {
-	gtk_list_store_append(liststore, iter);
-	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
-	_update_part_record(part_ptr, liststore, iter);
+	gtk_tree_store_append(treestore, iter, NULL);
+	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
+	_update_part_record(part_ptr, treestore, iter);
 }
 
 static void _update_info_part(partition_info_msg_t *part_info_ptr, 
@@ -147,7 +147,7 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		/* make sure all the partitions are still here */
 		while(1) {
-			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 
+			gtk_tree_store_set(GTK_TREE_STORE(model), &iter, 
 					   SORTID_UPDATED, 0, -1);	
 			if(!gtk_tree_model_iter_next(model, &iter)) {
 				break;
@@ -172,7 +172,7 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 				/* update with new info */
 				g_free(part_name);
 				_update_part_record(&part, 
-						    GTK_LIST_STORE(model), 
+						    GTK_TREE_STORE(model), 
 						    &iter);
 				goto found;
 			}
@@ -218,7 +218,7 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 				continue;
 			}
 		}
-		_append_part_record(&part, GTK_LIST_STORE(model), 
+		_append_part_record(&part, GTK_TREE_STORE(model), 
 				    &iter, line);
 	found:
 		;
@@ -328,9 +328,9 @@ display_it:
 					  0, 1, 0, 1);
 		gtk_widget_show(GTK_WIDGET(tree_view));
 		/* since this function sets the model of the tree_view 
-		   to the liststore we don't really care about 
+		   to the treestore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, display_data_part, SORTID_CNT);
+		create_treestore(tree_view, display_data_part, SORTID_CNT);
 	}
 	view = INFO_VIEW;
 	_update_info_part(part_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
@@ -403,9 +403,9 @@ display_it:
 					  0, 1, 0, 1);
 		
 		/* since this function sets the model of the tree_view 
-		   to the liststore we don't really care about 
+		   to the treestore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, popup_win->display_data, 
+		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;

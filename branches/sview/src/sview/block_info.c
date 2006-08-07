@@ -103,7 +103,7 @@ static void _nodelist_del(void *object);
 static int _in_slurm_partition(List slurm_nodes, List bg_nodes);
 static int _make_nodelist(char *nodes, List nodelist);
 static void _append_block_record(db2_block_info_t *block_ptr,
-				GtkListStore *liststore, GtkTreeIter *iter, 
+				GtkTreeStore *treestore, GtkTreeIter *iter, 
 				int line);
 
 
@@ -358,27 +358,27 @@ static char* _convert_node_use(enum node_use_type node_use)
 }
 
 static void _update_block_record(db2_block_info_t *block_ptr, 
-				 GtkListStore *liststore, GtkTreeIter *iter)
+				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char *nodes = NULL;
 	char tmp_cnt[7];
 	char tmp_nodes[30];
 	
-	gtk_list_store_set(liststore, iter, SORTID_BLOCK, 
+	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
 			   block_ptr->bg_block_name, -1);
-	gtk_list_store_set(liststore, iter, SORTID_PARTITION, 
+	gtk_tree_store_set(treestore, iter, SORTID_PARTITION, 
 			   block_ptr->slurm_part_name, -1);
-	gtk_list_store_set(liststore, iter, SORTID_STATE, 
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
 			   _part_state_str(block_ptr->state), -1);
-	gtk_list_store_set(liststore, iter, SORTID_USER, 
+	gtk_tree_store_set(treestore, iter, SORTID_USER, 
 			   block_ptr->bg_user_name, -1);
-	gtk_list_store_set(liststore, iter, SORTID_CONN, 
+	gtk_tree_store_set(treestore, iter, SORTID_CONN, 
 			   _convert_conn_type(block_ptr->bg_conn_type), -1);
-	gtk_list_store_set(liststore, iter, SORTID_USE, 
+	gtk_tree_store_set(treestore, iter, SORTID_USE, 
 			   _convert_node_use(block_ptr->bg_node_use), -1);
 	
 	convert_to_kilo(block_ptr->node_cnt, tmp_cnt);
-	gtk_list_store_set(liststore, iter, SORTID_NODES, tmp_cnt, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
 	nodes = block_ptr->nodes;			
 	if(block_ptr && (block_ptr->quarter != (uint16_t) NO_VAL)) {
@@ -391,20 +391,20 @@ static void _update_block_record(db2_block_info_t *block_ptr,
 				block_ptr->quarter);
 		nodes = tmp_nodes;
 	} 
-	gtk_list_store_set(liststore, iter, SORTID_NODELIST, nodes, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, nodes, -1);
 
-	gtk_list_store_set(liststore, iter, SORTID_UPDATED, 1, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	
 	return;
 }
 	
 static void _append_block_record(db2_block_info_t *block_ptr,
-				 GtkListStore *liststore, GtkTreeIter *iter,
+				 GtkTreeStore *treestore, GtkTreeIter *iter,
 				 int line)
 {
-	gtk_list_store_append(liststore, iter);
-	gtk_list_store_set(liststore, iter, SORTID_POS, line, -1);
-	_update_block_record(block_ptr, liststore, iter);
+	gtk_tree_store_append(treestore, iter, NULL);
+	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
+	_update_block_record(block_ptr, treestore, iter);
 }
 
 static void _update_info_block(List block_list, 
@@ -445,7 +445,7 @@ static void _update_info_block(List block_list,
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		/* make sure all the partitions are still here */
 		while(1) {
-			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 
+			gtk_tree_store_set(GTK_TREE_STORE(model), &iter, 
 					   SORTID_UPDATED, 0, -1);	
 			if(!gtk_tree_model_iter_next(model, &iter)) {
 				break;
@@ -476,7 +476,7 @@ static void _update_info_block(List block_list,
 				/* update with new info */
 				g_free(name);
 				_update_block_record(block_ptr, 
-						     GTK_LIST_STORE(model), 
+						     GTK_TREE_STORE(model), 
 						     &iter);
 				goto found;
 			}
@@ -533,7 +533,7 @@ static void _update_info_block(List block_list,
 		   part.root_only = 
 		   (int) letters[block_ptr->letter_num%62];
 		*/
-		_append_block_record(block_ptr, GTK_LIST_STORE(model), 
+		_append_block_record(block_ptr, GTK_TREE_STORE(model), 
 				     &iter, line);
 	found:
 		;
@@ -770,9 +770,9 @@ display_it:
 					  0, 1, 0, 1); 
 		gtk_widget_show(GTK_WIDGET(tree_view));
 		/* since this function sets the model of the tree_view 
-		   to the liststore we don't really care about 
+		   to the treestore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, display_data_block, SORTID_CNT);
+		create_treestore(tree_view, display_data_block, SORTID_CNT);
 	}
 	view = INFO_VIEW;
 	_update_info_block(block_list, GTK_TREE_VIEW(display_widget), NULL);
@@ -875,9 +875,9 @@ display_it:
 					  0, 1, 0, 1); 
 		gtk_widget_show(GTK_WIDGET(tree_view));
 		/* since this function sets the model of the tree_view 
-		   to the liststore we don't really care about 
+		   to the treestore we don't really care about 
 		   the return value */
-		create_liststore(tree_view, 
+		create_treestore(tree_view, 
 				 popup_win->display_data, SORTID_CNT);
 	}
 	spec_info->view = INFO_VIEW;

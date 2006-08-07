@@ -210,6 +210,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 // job_info.c
 extern void refresh_job(GtkAction *action, gpointer user_data);
 extern int get_new_info_job(job_info_msg_t **info_ptr);
+extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr);
 extern void get_info_job(GtkTable *table, display_data_t *display_data);
 extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, GtkTreePath *path, 
@@ -262,7 +263,7 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 extern GtkScrolledWindow *create_scrolled_window();
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
 extern GtkTreeView *create_treeview(display_data_t *local, gpointer user_data);
-extern GtkListStore *create_liststore(GtkTreeView *tree_view, 
+extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data, int count);
 extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 
 				 GdkEventButton *event, 
