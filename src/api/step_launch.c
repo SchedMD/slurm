@@ -175,7 +175,6 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		char *launcher_hostname = xshort_hostname();
 		struct hostent *ent = gethostbyname(launcher_hostname);
 
-		info("ip str is = \"%s\"", ent->h_addr_list[0]);
 		step_env = env_array_create_for_step(
 			ctx->step_resp,
 			launcher_hostname,
