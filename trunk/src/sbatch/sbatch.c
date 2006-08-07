@@ -176,8 +176,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->environment = environ;
 	desc->env_size = envcount (environ);
-/* 	desc->argv = remote_argv; */
-/* 	desc->argc = remote_argc; */
+	desc->argv = remote_argv;
+	desc->argc = remote_argc;
 	desc->err  = opt.efname;
 	desc->in   = opt.ifname;
 	desc->out  = opt.ofname;
