@@ -161,7 +161,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count);
 
 	/* Start tasks on compute nodes */
-	launch.job_id = ctx->alloc_resp->job_id;
+	launch.job_id = ctx->step_req->job_id;
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
 	launch.argc = params->argc;
