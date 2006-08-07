@@ -69,14 +69,9 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 {
 	struct slurm_step_ctx_struct *ctx;
 	job_step_create_response_msg_t *step_resp = NULL;
-	job_alloc_info_response_msg_t *alloc_resp = NULL;
-	
-	if (slurm_allocation_lookup(step_req->job_id, &alloc_resp) < 0)
-		return NULL;
 	
 	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
-		slurm_free_job_alloc_info_response_msg(alloc_resp);
 		return NULL;	/* slurm errno already set */
 	}
 	
@@ -87,7 +82,6 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = _copy_step_req(step_req);
 	ctx->step_resp	= step_resp;
-	ctx->alloc_resp	= alloc_resp;
 
 	return (slurm_step_ctx)ctx;
 }
@@ -270,7 +264,6 @@ slurm_step_ctx_destroy (slurm_step_ctx ctx)
 	}
 	_free_step_req(ctx->step_req);
 	slurm_free_job_step_create_response_msg(ctx->step_resp);
-	slurm_free_job_alloc_info_response_msg(ctx->alloc_resp);
 	if (ctx->argv)
 		_xfree_char_array(&ctx->argv, ctx->argc);
 	if (ctx->env_set)
