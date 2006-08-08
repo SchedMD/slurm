@@ -456,7 +456,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		
 		if(job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
-
+		if(job_desc->min_nodes < job_desc->num_procs)
+			job_desc->min_nodes = job_desc->num_procs;
+		if(job_desc->max_nodes < job_desc->num_procs)
+			job_desc->max_nodes = job_desc->num_procs;
 		/* See if min_nodes is greater than one base partition */
 		if(job_desc->min_nodes > bluegene_bp_node_cnt) {
 			/*
@@ -476,22 +479,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = procs_per_node * tmp;
 		} else { 
-			/* this means it is either a quarter or smaller */
-			tmp = job_desc->min_nodes % bluegene_nodecard_node_cnt;
-			if(tmp > 0) {
-				if(job_desc->min_nodes 
-				   < bluegene_nodecard_node_cnt)
-					job_desc->min_nodes = 
-						bluegene_nodecard_node_cnt;
-				else if(job_desc->min_nodes 
-				   < bluegene_quarter_node_cnt)
-					job_desc->min_nodes = 
-						bluegene_quarter_node_cnt;
-				else 
-					job_desc->min_nodes = 
-						bluegene_bp_node_cnt;
-			}
+			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt)
+				job_desc->min_nodes = 
+					bluegene_nodecard_node_cnt;
+			else if(job_desc->min_nodes 
+				<= bluegene_quarter_node_cnt)
+				job_desc->min_nodes = 
+					bluegene_quarter_node_cnt;
+			else 
+				job_desc->min_nodes = 
+					bluegene_bp_node_cnt;
+			
 			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
+			
 			job_desc->num_procs = procs_per_node/tmp;
 			job_desc->min_nodes = 1;
 		}
@@ -510,20 +510,17 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = tmp;
 			tmp = NO_VAL;
 		} else {
-			tmp = job_desc->max_nodes % bluegene_nodecard_node_cnt;
-			if(tmp > 0) {
-				if(job_desc->max_nodes 
-				   < bluegene_nodecard_node_cnt)
-					job_desc->max_nodes = 
-						bluegene_nodecard_node_cnt;
-				else if(job_desc->max_nodes 
-				   < bluegene_quarter_node_cnt)
-					job_desc->max_nodes = 
-						bluegene_quarter_node_cnt;
-				else 
-					job_desc->max_nodes = 
-						bluegene_bp_node_cnt;
-			}
+			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt)
+				job_desc->max_nodes = 
+					bluegene_nodecard_node_cnt;
+			else if(job_desc->max_nodes 
+				<= bluegene_quarter_node_cnt)
+				job_desc->max_nodes = 
+					bluegene_quarter_node_cnt;
+			else 
+				job_desc->max_nodes = 
+					bluegene_bp_node_cnt;
+		
 			tmp = bluegene_bp_node_cnt/job_desc->max_nodes;
 			tmp = procs_per_node/tmp;
 			
