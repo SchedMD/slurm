@@ -1,11 +1,9 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Confirm that a job executes with various launch thread fanouts
-#          (--threads option).
+#          Test of wait option (--wait option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
@@ -33,35 +31,52 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.22"
+set test_id     "18.9"
 set exit_code   0
+set file_in     "test$test_id.input"
+set job_id      0
+set matches     0
 
 print_header $test_id
 
 #
-# Submit a job with one thread fanout
+# Delete left-over input script
+# Build input script file
 #
-set host_0      ""
-set timeout $max_job_delay
-if { [test_bluegene] } {
-	set node_cnt 32-32k
-} else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-64
-	}
-}
+exec $bin_rm -f $file_in
+make_bash_script $file_in "
+    if ((\$SLURM_PROCID == 1))
+        then exit
+    fi
+    $bin_sleep 300
+"
 
-spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname  
+#
+# Spawn tasks via slaunch and immediately exit task 1 only
+#
+set timeout $max_job_delay
+spawn $salloc -N1 -t2 -v $slaunch -n10 --overcommit -W2 $file_in
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "First task exited" {
+		send_user "This error is expected, no worries\n"
+		incr matches
+		exp_continue
+	}
+	-re "task.0,2-9.: running" {	# bracket escape not working
+		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: slaunch not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -70,45 +85,12 @@ expect {
 	}
 }
 
-#
-# Verify node registration
-#
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+if {$matches != 2} {
+	send_user "\nFAILURE: problem with slaunch wait option\n"
+	set exit_code 1
 }
-
-#
-# Submit a job with 32 thread fanout
-#
-set host_0      ""
-set timeout $max_job_delay
-spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname  
-expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Verify node registration
-#
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
-}
-
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

@@ -54,10 +54,10 @@ make_bash_script $file_in "
 "
 
 #
-# Spawn a shell via srun and send exit command to task 1 only
+# Spawn tasks via srun and immediately exit task 1 only
 #
 set timeout $max_job_delay
-spawn $srun -n10 -N1 -O -W2 -t5 $file_in
+spawn $srun -n10 -N1 -O -W2 -t2 $file_in
 expect {
 	-re "First task exited" {
 		send_user "This error is expected, no worries\n"
@@ -80,7 +80,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: problem with wait option\n"
+	send_user "\nFAILURE: problem with srun wait option\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {

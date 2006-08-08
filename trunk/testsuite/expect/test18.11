@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test srun stdout/err file name formatting (--output and --error 
-#          options with %j, %J, %n, %s and %t specifications).
+#          Test slaunch stdout/err file name formatting (--local-output and 
+#          --local-error options with %j, %J, %n, %s and %t specifications).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -32,7 +32,7 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.19"
+set test_id          "18.11"
 set exit_code        0
 set file_err_j       "test$test_id.j.%j.error"
 set file_in          "test$test_id.input"
@@ -46,7 +46,7 @@ set task_cnt         5
 print_header $test_id
 
 #
-# Spawn a program that generates "task_id" (%t) in stdout file names
+# Spawn a program that includes "task_id" (%t) in stdout file names
 # and confirm they are created
 #
 for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
@@ -54,16 +54,21 @@ for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
 	exec $bin_rm -f $file_out_t_glob
 }
 set timeout $max_job_delay
-spawn $srun --output=$file_out_t -N1 -n$task_cnt -O -v -t1 $bin_id
+spawn $salloc -N1 -t1 -v $slaunch --local-output=$file_out_t -n$task_cnt --overcommit $bin_id
 expect {
-	-re "jobid ($number).*" {
+	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		exit 1
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
+		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -73,6 +78,7 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	exit 1
 }
+
 set file_cnt 0
 for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
 	set file_out_t_glob  "test$test_id.t.$task_id.output"
@@ -89,25 +95,29 @@ if {$file_cnt != $task_cnt} {
 }
 
 #
-# Spawn a shell via srun that includes "jobid" (%j) in stderr 
-# file name and confirm it is created
+# Spawn a program that includes "jobid" (%j) in stderr file name
+# and confirm it is created
 #
-set job_id   0
-set srun_exit 0
-spawn $srun --error=$file_err_j --output=/dev/null -N1 -n$task_cnt -O -v -t1 $bin_sleep aaa 
+set job_id    0
+set matches   0
+spawn $salloc -N1 -t1 -v $slaunch --local-output=/dev/null --local-error=$file_err_j -n$task_cnt --overcommit $bin_sleep aaa
 expect {
-	-re "jobid ($number).*" {
+	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "exit code $number" {
 		send_user "This error is expected, no worries\n"
-		set srun_exit 1
+		set matches 1
 		exp_continue;
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		exit 1
 	}
 	eof {
@@ -118,7 +128,7 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	exit 1
 }
-if {$srun_exit == 0} {
+if {$matches == 0} {
 	send_user "\nFAILURE: exit code failed to indicate an error\n"
 	set exit_code 1
 }
@@ -132,19 +142,23 @@ if {[wait_for_file $file_err_j_glob] == 0} {
 }
 
 #
-# Spawn a shell via srun that includes "job_id.step_id" (%J) in stdout
-#  file name and confirm it is created
+# Spawn a program that includes "job_id.step_id" (%J) in stdout
+# file name and confirm it is created
 #
 set job_id   0
-spawn $srun --output=$file_out_J -N1 -v -t1 $bin_hostname
+spawn $salloc -N1 -t1 -v $slaunch --local-output=$file_out_J $bin_hostname
 expect {
-	-re "jobid ($number).*" {
+	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		exit 1
 	}
 	eof {
@@ -165,7 +179,7 @@ if {[wait_for_file $file_out_J_glob] != 0} {
 }
 
 #
-# Spawn a shell via srun that includes "node_id" (%n) in stdout
+# Spawn a program that includes "node_id" (%n) in stdout
 #  file name and confirm it is created
 #
 set node_id 0
@@ -173,15 +187,19 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 exec $bin_rm -f $file_out_n_glob
 
 set job_id   0
-spawn $srun --output=$file_out_n -N1 -n2 -O -v -t1 $bin_hostname
+spawn $salloc -N1 -t1 -v $slaunch --local-output=$file_out_n -n2 --overcommit $bin_hostname
 expect {
-	-re "jobid ($number).*" {
+	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		exit 1
 	}
 	eof {
@@ -214,13 +232,12 @@ if {$file_cnt != 1} {
 }
 
 #
-# Spawn a shell via srun that includes "step_id" (%s) in stdout
-#  file name and confirm it is created. Use two step batch job.
+# Spawn a program that includes "step_id" (%s) in stdout
+# file name and confirm it is created. Use two step batch job.
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $srun -n4 -O --output=$file_out_s $bin_hostname
-  $srun -n4 -O --output=$file_out_s $bin_hostname
+  $slaunch -n4 --overcommit --local-output=$file_out_s $bin_hostname
+  $slaunch -n4 --overcommit --local-output=$file_out_s $bin_hostname
 "
 
 for {set step_id 0} {$step_id < 4} {incr step_id} {
@@ -241,9 +258,9 @@ if { [test_bluegene] } {
 }
 
 set job_id   0
-spawn $srun --batch --output=/dev/null -N$node_cnt -n$task_cnt -O -t1 $file_in
+spawn $sbatch --output=/dev/null -N$node_cnt -t1 $file_in
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -265,7 +282,6 @@ if {$job_id == 0} {
 		set exit_code 1
 	}
 }
-exec $bin_rm -f $file_in
 
 set file_cnt 0
 for {set step_id 0} {$step_id < 3} {incr step_id} {
@@ -292,6 +308,7 @@ if {$file_cnt != 2} {
 # Post-processing
 #
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
