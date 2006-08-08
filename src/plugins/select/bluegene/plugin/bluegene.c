@@ -455,6 +455,8 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 }
 /* All changes to the bg_list target_name must 
    be done before this function is called. 
+   also slurm_conf_lock() must be called before calling this
+   function along with slurm_conf_unlock() afterwards.		
 */
 extern int update_block_user(bg_record_t *bg_record, int set) 
 {
