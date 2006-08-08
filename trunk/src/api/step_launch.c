@@ -181,7 +181,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 			ctx->launch_state->resp_port[0],
 			ent->h_addr_list[0]);
 		xfree(launcher_hostname);
-		env_array_merge(&env, step_env);
+		env_array_merge(&env, (const char **) step_env);
 		env_array_free(step_env);
 	}
 	launch.envc = envcount(env);
