@@ -260,11 +260,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		return;
 	}
 	if(bg_record->state == RM_PARTITION_DEALLOCATING) {
+		slurm_mutex_unlock(&block_state_mutex);
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record);
-	}
-	slurm_mutex_unlock(&block_state_mutex);
-		
+	} else 
+		slurm_mutex_unlock(&block_state_mutex);
+
+	
 	if(bg_record->state == RM_PARTITION_FREE) {
 		num_block_to_free = 0;
 		num_block_freed = 0;
