@@ -1853,24 +1853,23 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	int node_count=0;
 	int x,y,z;
 	char node_name_tmp[255];
-	debug3("%d%d%dx%d%d%d",
-	       start[X],
-	       start[Y],
-	       start[Z],
-	       end[X],
-	       end[Y],
-	       end[Z]);
-	debug3("%d%d%d",
-	       DIM_SIZE[X],
-	       DIM_SIZE[Y],
-	       DIM_SIZE[Z]);
-	     
-	assert(end[X] < DIM_SIZE[X]);
-	assert(start[X] >= 0);
-	assert(end[Y] < DIM_SIZE[Y]);
-	assert(start[Y] >= 0);
-	assert(end[Z] < DIM_SIZE[Z]);
-	assert(start[Z] >= 0);
+
+	if ((start[X] < 0) || (start[Y] < 0) || (start[Z] < 0)) {
+		fatal("bluegene.conf starting coordinate is invalid: %d%d%d",
+			start[X], start[Y], start[Z]);
+	}
+	if ((end[X] >= DIM_SIZE[X]) || (end[Y] >= DIM_SIZE[Y])
+	||  (end[Z] >= DIM_SIZE[Z])) {
+		fatal("bluegene.conf matrix size exceeds space defined in " 
+			"slurm.conf %d%d%dx%d%d%d => %d%d%d",
+			start[X], start[Y], start[Z], 
+			end[X], end[Y], end[Z], 
+			DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
+	}
+	debug3("bluegene.conf: %d%d%dx%d%d%d",
+		start[X], start[Y], start[Z], end[X], end[Y], end[Z]);
+	debug3("slurm.conf:    %d%d%d",
+		DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]); 
 	
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
