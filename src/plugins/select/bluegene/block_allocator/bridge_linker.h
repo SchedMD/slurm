@@ -111,6 +111,6 @@ extern status_t bridge_destroy_block(pm_partition_id_t pid);
 
 /* say message */
 
-extern void bridge_set_log_params(FILE * stream, unsigned int level);
+extern int bridge_set_log_params(char *api_file_name, unsigned int level);
 #endif /* HAVE_BG_FILES */
 #endif /* _BRIDGE_LINKER_H_ */
