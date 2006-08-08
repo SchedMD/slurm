@@ -1651,11 +1651,11 @@ extern int read_bg_conf(void)
 		fatal("can't stat bluegene.conf file %s: %m", bg_conf);
 	if (last_config_update) {
 		_reopen_bridge_log();
-		last_config_update = config_stat.st_mtime; 
 		if(last_config_update == config_stat.st_mtime)
-			debug("bluegene.conf unchanged");
+			debug("%s unchanged", bg_conf);
 		else
-			debug("bluegene.conf changed, doing nothing");
+			debug("%s changed, doing nothing", bg_conf);
+		last_config_update = config_stat.st_mtime; 
 		return SLURM_SUCCESS;
 	}
 	last_config_update = config_stat.st_mtime; 
