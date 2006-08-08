@@ -244,6 +244,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(!bg_record) {
 		error("block %s not found in bg_list",
 		      bg_update_ptr->bg_block_id);
+		(void) slurm_fail_job(bg_update_ptr->job_id);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
@@ -294,7 +295,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		
 		if(bg_record->job_running <= -1) {
 			slurm_mutex_unlock(&job_start_mutex);
-			debug("job already finished before boot");
+			debug("job %d already finished before boot",
+			      bg_update_ptr->job_id);
 			return;
 		}
 		if((rc = boot_block(bg_record))

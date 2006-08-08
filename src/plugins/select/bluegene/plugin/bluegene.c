@@ -1127,7 +1127,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			
 			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 				request->start[i] = bg_record->start[i];
-			debug2("allocating %d%d%d %d",
+			debug2("allocating %s %d%d%d %d",
 			       bg_record->nodes,
 			       request->start[X],
 			       request->start[Y],
