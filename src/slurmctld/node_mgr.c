@@ -561,7 +561,7 @@ static int _list_find_config (void *config_entry, void *key)
 {
 	if (strcmp (key, "universal_key") == 0)
 		return 1;
-	return SLURM_SUCCESS;
+	return 0;
 }
 
 
