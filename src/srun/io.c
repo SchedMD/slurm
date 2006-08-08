@@ -1030,6 +1030,7 @@ io_node_fail(char *nodelist, srun_job_t *job)
 	hostlist_t fail_list = hostlist_create(nodelist);
 	char *node_name;
 	int node_inx;
+	int rc = SLURM_SUCCESS;
 
 	if (!fail_list) {
 		error("Invalid node list `%s' specified", nodelist);
@@ -1043,11 +1044,18 @@ io_node_fail(char *nodelist, srun_job_t *job)
 				continue;
 			break;
 		}
+		if(node_inx < job->nhosts) 
+			job->ioserver[node_inx]->shutdown = true;
+		else {
+			error("Invalid node name `%s' specified for job", 
+			      node_name);
+			rc = SLURM_ERROR;
+		}
 	}
 
 	eio_signal_wakeup(job->eio);
 	hostlist_destroy(fail_list);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int

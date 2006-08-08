@@ -848,6 +848,8 @@ static void *_thread_per_group_rpc(void *args)
 				thread_ptr->node_name,
 				MAX_SLURM_NAME);
 			fwd_msg.forward_mutex = NULL;
+			memcpy(&fwd_msg.addr, &thread_ptr->slurm_addr, 
+			       sizeof(slurm_addr));
 			if(forward_msg_to_next(&fwd_msg, errno)) {
 				msg.address = fwd_msg.addr;
 				forward_init(&msg.forward, 
@@ -877,6 +879,8 @@ static void *_thread_per_group_rpc(void *args)
 				thread_ptr->node_name,
 				MAX_SLURM_NAME);
 			fwd_msg.forward_mutex = NULL;
+			memcpy(&fwd_msg.addr, &thread_ptr->slurm_addr, 
+			       sizeof(slurm_addr));
 			if(forward_msg_to_next(&fwd_msg, errno)) {
 				msg.address = fwd_msg.addr;
 				forward_init(&msg.forward, 
@@ -1100,8 +1104,11 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 					ret_data_info->node_name, 
 					MAX_SLURM_NAME);
 				
-				if ((++(*spot)) == count)
+				if ((++(*spot)) == count) {
+					list_iterator_destroy(data_itr);
+					list_iterator_destroy(itr);
 					return 1;
+				}
 			}
 		}
 		list_iterator_destroy(data_itr);
