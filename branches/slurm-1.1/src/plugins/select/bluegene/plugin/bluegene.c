@@ -2636,31 +2636,17 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 
 static int _reopen_bridge_log(void)
 {
-	static FILE *fp = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (bridge_api_file == NULL)
-		return SLURM_SUCCESS;
-
-	if(fp)
-		fclose(fp);
-	fp = fopen(bridge_api_file, "a");
+		return rc;
 	
-	if (fp == NULL) { 
-		error("can't open file for bridgeapi.log at %s: %m", 
-		      bridge_api_file);
-		return SLURM_ERROR;
-	}
-
 #ifdef HAVE_BG_FILES
-	bridge_set_log_params(fp, bridge_api_verb);
-#else
-	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", 
-		    bridge_api_verb) < 20) {
-		error("can't write to bridgeapi.log: %m");
-		return SLURM_ERROR;
-	}
+	rc = bridge_set_log_params(bridge_api_file, bridge_api_verb);
 #endif
+	debug3("Bridge api file set to %s, verbose level %d\n", 
+	       bridge_api_file, bridge_api_verb);
 	
-	return SLURM_SUCCESS;
+	return rc;
 }
 
