@@ -342,6 +342,12 @@ test15.7   Test of processors, memory, and temporary disk space
 test15.8   Test of immediate allocation option (--immediate option).
 test15.9   Confirm that salloc exit code processing.
 test15.10  Confirm that a job allocates the proper procesor count (--nprocs)
+test15.11  Test of processors, memory, and temporary disk space
+           constraints options (--mincpus, --mem, and --tmp options).
+test15.12  Verify node configuration specification (--constraint option).
+test15.13  Verify the appropriate job environment variables are set
+test15.TBD Verify that SLURM directed environment variables are processed:
+           SBATCH_NNODES, etc.
 
 
 test16.#   Testing of sattach options.
@@ -417,5 +423,20 @@ test18.5   Confirm that slauch local stdin, stdout, and stderr options work
            (options --local-input, --local-output and --local-error
            respectively).
 test18.6   Test of slaunch verbose mode (-v option).
-test18.7   Test of srun/slurmd debug mode (--debug option).
+test18.7   Test of slaunch/slurmd debug mode (--debug option).
+test18.8   Confirm that slaunch buffering can be disabled (--unbuffered option).
+test18.9   Test of wait option (--wait option).
+test18.10  Test slaunch stdout/err disabling (--output and --error options
+           with argument of "none").
+test18.11  Test slaunch stdout/err file name formatting (--local-output and 
+           --local-error options with %j, %J, %n, %s and %t specifications).
+test18.12  Test slaunch stdin routing to specific task (--local-input option
+           with numeric argument).
+test18.13  Confirm that a job executes with various launch thread fanouts
+           (--threads option).
+test18.14  Verify the appropriate job environment variables are set
+test18.15  Verify that user environment variables are propagated to the job
+test18.16  Verify that user user limits are propagated to the job
+test18.TBD Verify that SLURM directed environment variables are processed:
+           SBATCH_NNODES, etc.
 

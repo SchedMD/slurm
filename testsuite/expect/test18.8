@@ -1,11 +1,9 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Confirm that a job executes with various launch thread fanouts
-#          (--threads option).
+#          Confirm that slaunch buffering can be disabled (--unbuffered option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
@@ -33,35 +31,38 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.22"
-set exit_code   0
+set test_id            "18.8"
+set exit_code          0
+set job_id             0
+set matches            0
+set scratch_file       "scratch.$test_id"
 
 print_header $test_id
 
 #
-# Submit a job with one thread fanout
+# Create a scratch file
 #
-set host_0      ""
-set timeout $max_job_delay
-if { [test_bluegene] } {
-	set node_cnt 32-32k
-} else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-64
-	}
-}
+exec $bin_touch $scratch_file
 
-spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname  
+#
+# Submit a slurm job that will execute 'rm -i'
+# The --unbuffered option will send the message which lacks a '\n'
+#
+set timeout $max_job_delay
+spawn $salloc -v -t1 $slaunch --unbuffered $bin_rm -i $scratch_file
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "\[Rr\]emove .*\?" {
+		set matches 1
+		send "y\n"
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: slaunch not responding\n"
+		kill_salloc
 		set exit_code 1
 		exp_continue
 	}
@@ -71,43 +72,14 @@ expect {
 }
 
 #
-# Verify node registration
+# Confirm message send before '\n' (unbuffered).
 #
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+ 
+if {$matches != 1} {
+	send_user "\nFAILURE: slaunch --unbuffered option failure\n"
+	exec $bin_rm -f $scratch_file
+	set exit_code 1
 }
-
-#
-# Submit a job with 32 thread fanout
-#
-set host_0      ""
-set timeout $max_job_delay
-spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname  
-expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Verify node registration
-#
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
-}
-
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }

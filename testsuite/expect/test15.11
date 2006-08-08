@@ -1,11 +1,12 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Confirm that a job executes with various launch thread fanouts
-#          (--threads option).
+#          Test of processors, memory, and temporary disk space 
+#          constraints options (--mincpus, --mem, and --tmp options).
+#          Also test that priority zero job is not started (--hold 
+#          option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
@@ -33,81 +34,91 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.22"
+set test_id     "15.11"
 set exit_code   0
+set job_id      0
+
+set cpu_cnt     1
+set mem_size    13
+set tmp_size    2
+set matches     0
 
 print_header $test_id
 
 #
-# Submit a job with one thread fanout
+# Spawn a salloc job with constraints
 #
-set host_0      ""
-set timeout $max_job_delay
-if { [test_bluegene] } {
-	set node_cnt 32-32k
-} else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-64
+spawn $salloc --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $bin_bash
+expect {
+	-re "Pending job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		exit 1
 	}
 }
+if {$job_id == 0} {
+	send_user "\nFAILURE: salloc submit failure\n"
+	exit 1
+}
 
-spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname  
+#
+# Confirm constraints are registered and wait for job completion
+#
+spawn $scontrol show job $job_id
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
+	-re "Priority=($number)" {
+		set read_prio $expect_out(1,string)
+		if {$read_prio == 0} {
+			incr matches
+			send_user "match of Priority\n"
+		}
+		exp_continue
+	}
+	-re "JobState=PENDING" {
+		incr matches
+		send_user "match of JobState\n"
+		exp_continue
+	}
+	-re "MinProcs=($number)" {
+		set read_proc $expect_out(1,string)
+		if {$read_proc == $cpu_cnt} {
+			incr matches
+			send_user "match of MinProcs\n"
+		}
+		exp_continue
+	}
+	-re "MinMemory=($number)" {
+		set read_mem $expect_out(1,string)
+		if {$read_mem == $mem_size} {
+			incr matches
+			send_user "match of MinMemory\n"
+		}
+		exp_continue
+	}
+	-re "MinTmpDisk=($number)" {
+		set read_disk $expect_out(1,string)
+		if {$read_disk == $tmp_size} {
+			incr matches
+			send_user "match of MinTmpDisk\n"
+		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
 	}
 }
+cancel_job $job_id
 
-#
-# Verify node registration
-#
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+if {$matches != 5} {
+	send_user "\nFAILURE: Did not get proper constraints\n"
+	set exit_code 1
 }
-
-#
-# Submit a job with 32 thread fanout
-#
-set host_0      ""
-set timeout $max_job_delay
-spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname  
-expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Verify node registration
-#
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
-}
-
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
