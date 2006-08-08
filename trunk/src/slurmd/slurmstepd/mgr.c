@@ -1509,7 +1509,6 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
 		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
 
-
 	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->hostname);
 	/* 
 	 * reinitialize log 
@@ -1525,6 +1524,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 			return;
 		}
 	}
+	verbose("debug level = %d", conf->log_opts.stderr_level);
 }
 
 
