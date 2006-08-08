@@ -27,6 +27,14 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.8
+========================
+ -- added bug fixes (fault-tolerance and memory leaks) from Hongjia Cao 
+    <hjcao@nudt.edu.cn>
+ -- fixed some potential BLUEGENE issues with the bridge log file not having
+    a mutex around the fclose and fopen.
+ -- BLUEGENE - srun -n procs now regristers correctly
+
 * Changes in SLURM 1.1.7
 ========================
  -- BLUEGENE - fixed issue with doing an allocation for nodes since asking 

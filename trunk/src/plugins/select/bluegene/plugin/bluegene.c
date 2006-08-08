@@ -455,6 +455,8 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 }
 /* All changes to the bg_list target_name must 
    be done before this function is called. 
+   also slurm_conf_lock() must be called before calling this
+   function along with slurm_conf_unlock() afterwards.		
 */
 extern int update_block_user(bg_record_t *bg_record, int set) 
 {
@@ -1651,11 +1653,11 @@ extern int read_bg_conf(void)
 		fatal("can't stat bluegene.conf file %s: %m", bg_conf);
 	if (last_config_update) {
 		_reopen_bridge_log();
-		last_config_update = config_stat.st_mtime; 
 		if(last_config_update == config_stat.st_mtime)
-			debug("bluegene.conf unchanged");
+			debug("%s unchanged", bg_conf);
 		else
-			debug("bluegene.conf changed, doing nothing");
+			debug("%s changed, doing nothing", bg_conf);
+		last_config_update = config_stat.st_mtime; 
 		return SLURM_SUCCESS;
 	}
 	last_config_update = config_stat.st_mtime; 
@@ -2636,31 +2638,17 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 
 static int _reopen_bridge_log(void)
 {
-	static FILE *fp = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (bridge_api_file == NULL)
-		return SLURM_SUCCESS;
-
-	if(fp)
-		fclose(fp);
-	fp = fopen(bridge_api_file, "a");
+		return rc;
 	
-	if (fp == NULL) { 
-		error("can't open file for bridgeapi.log at %s: %m", 
-		      bridge_api_file);
-		return SLURM_ERROR;
-	}
-
 #ifdef HAVE_BG_FILES
-	bridge_set_log_params(fp, bridge_api_verb);
-#else
-	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", 
-		    bridge_api_verb) < 20) {
-		error("can't write to bridgeapi.log: %m");
-		return SLURM_ERROR;
-	}
+	rc = bridge_set_log_params(bridge_api_file, bridge_api_verb);
 #endif
+	debug3("Bridge api file set to %s, verbose level %d\n", 
+	       bridge_api_file, bridge_api_verb);
 	
-	return SLURM_SUCCESS;
+	return rc;
 }
 

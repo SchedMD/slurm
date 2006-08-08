@@ -546,14 +546,31 @@ extern status_t bridge_destroy_block(pm_partition_id_t pid)
 
 }
 
-extern void bridge_set_log_params(FILE * stream, unsigned int level)
+extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 {
+	static FILE *fp = NULL;
+	int rc = SLURM_SUCCESS;
+
 	if(!bridge_init())
-		return;
+		return SLURM_ERROR;
 	
 	slurm_mutex_lock(&api_file_mutex);
-	(*(bridge_api.set_log_params))(stream, level);
+	if(fp)
+		fclose(fp);
+	fp = fopen(api_file_name, "a");
+	
+	if (fp == NULL) { 
+		error("can't open file for bridgeapi.log at %s: %m", 
+		      api_file_name);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	
+	(*(bridge_api.set_log_params))(fp, level);
+end_it:
 	slurm_mutex_unlock(&api_file_mutex);
+	return rc;
 }
 #endif /* HAVE_BG_FILES */
 
