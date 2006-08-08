@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- fixed some potential BLUEGENE issues with the bridge log file not having
     a mutex around the fclose and fopen.
  -- BLUEGENE - srun -n procs now regristers correctly
+ -- fixed problem with reattach double allocating step_layout->tids
 
 * Changes in SLURM 1.1.7
 ========================
