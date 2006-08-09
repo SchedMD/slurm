@@ -288,6 +288,8 @@ proc wait_for_file { file_name } {
 			exec $bin_sleep 1
 		}
 		if [file exists $file_name] {
+#			Add small delay for I/O buffering
+			exec $bin_sleep 1
 			return 0
 		}
 	}
