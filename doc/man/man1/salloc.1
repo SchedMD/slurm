@@ -30,7 +30,9 @@ If the resources needed to satisy a job allocation are not immediately available
 Request a specific partition for the resource allocation.  If not specified, the default behaviour is to allow the slurm controller to select the default partition as designated by the system administrator.
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
-
+.TP 
+\fB\-K\fR, \fB\-\-kill\-command\fR[=\fIsignal\fR]
+salloc always runs a user\-specified command once the allocation is granted.  salloc will wait indefinitely for that command to exit.  If you specify the \-\-kill\-command option salloc will send a signal to your command any time that the SLURM controller tells salloc that its job allocation has been revoked. The job allocation can be revoked for a couple of reasons: someone used \fBscancel\fR to revoke the allocation, or the allocation reached its time limit.  If you do not specify a signal name or number, the default signal is SIGTERM.
 .TP 
 \fB\-\-bell\fR
 Force salloc to ring the terminal bell when the job allocation is granted.  By default, salloc only rings the bell if the allocation is pending for more than ten seconds.
