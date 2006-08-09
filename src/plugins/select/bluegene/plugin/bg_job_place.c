@@ -140,9 +140,15 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		target_size = 1;
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 			target_size *= (uint16_t)req_geometry[i];
-		if(target_size != min_nodes)
-			error("min_nodes not set correctly %u should be %d",
-			      min_nodes, target_size);
+		if(target_size != min_nodes) {
+			debug2("min_nodes not set correctly %u should be %u "
+			      "from %u%u%u",
+			      min_nodes, target_size, 
+			      req_geometry[X],
+			      req_geometry[Y],
+			      req_geometry[Z]);
+			min_nodes = target_size;
+		}
 		if(!req_nodes)
 			req_nodes = req_nodes;
 	}

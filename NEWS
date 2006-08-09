@@ -27,13 +27,18 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.9
+========================
+
 * Changes in SLURM 1.1.8
 ========================
- -- added bug fixes (fault-tolerance and memory leaks) from Hongjia Cao 
+ -- Added bug fixes (fault-tolerance and memory leaks) from Hongjia Cao 
     <hjcao@nudt.edu.cn>
- -- fixed some potential BLUEGENE issues with the bridge log file not having
+ -- Gixed some potential BLUEGENE issues with the bridge log file not having
     a mutex around the fclose and fopen.
  -- BLUEGENE - srun -n procs now regristers correctly
+ -- Fixed problem with reattach double allocating step_layout->tids
+ -- BLUEGENE - fix race condition where job is finished before it starts.
 
 * Changes in SLURM 1.1.7
 ========================
@@ -54,8 +59,8 @@ documents those changes that are of interest to users and admins.
     specified (e.g. "srun -N1-4 ...")
  -- Made slurmctld_conf.node_prefix only be set on Bluegene systems.
  -- Fixed a race condition in the controller to make it so a plugin thread
-    wouldn't be able to access the slurmctld_conf 
-    structure before it was filled.
+    wouldn't be able to access the slurmctld_conf structure before it was 
+    filled.
 
 * Changes in SLURM 1.1.5
 ========================
