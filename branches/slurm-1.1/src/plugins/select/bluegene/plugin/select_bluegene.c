@@ -422,7 +422,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
 	uint32_t *nodes = (uint32_t *)data;
-	int tmp;
+	int tmp, i;
+	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
@@ -453,9 +454,22 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		select_g_set_jobinfo(job_desc->select_jobinfo,
 				     SELECT_DATA_MAX_PROCS, 
 				     &tmp);
-		
+	
 		if(job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
+		select_g_get_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_GEOMETRY, &req_geometry);
+
+		if(req_geometry[0] != 0 
+		   && req_geometry[0] != (uint16_t)NO_VAL) {
+			job_desc->min_nodes = 1;
+			for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+				job_desc->min_nodes *= 
+					(uint16_t)req_geometry[i];
+			job_desc->min_nodes *= bluegene_bp_node_cnt;
+			job_desc->max_nodes = job_desc->min_nodes;
+		}
+
 		if(job_desc->min_nodes < job_desc->num_procs)
 			job_desc->min_nodes = job_desc->num_procs;
 		if(job_desc->max_nodes < job_desc->num_procs)
