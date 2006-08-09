@@ -346,6 +346,7 @@ test15.11  Test of processors, memory, and temporary disk space
            constraints options (--mincpus, --mem, and --tmp options).
 test15.12  Verify node configuration specification (--constraint option).
 test15.13  Verify the appropriate job environment variables are set
+test15.14  Verify signal propagation.
 test15.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 

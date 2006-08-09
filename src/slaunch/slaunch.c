@@ -141,6 +141,7 @@ int slaunch(int argc, char **argv)
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
+	verbose ("slaunch pid %d", getpid());
 
 	(void)_set_rlimit_env();
 	_set_prio_process_env();
