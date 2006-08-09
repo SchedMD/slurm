@@ -241,23 +241,37 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		
 	bg_record = 
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
+
+	slurm_mutex_lock(&block_state_mutex);
 	if(!bg_record) {
+		slurm_mutex_unlock(&block_state_mutex);
 		error("block %s not found in bg_list",
 		      bg_update_ptr->bg_block_id);
+		(void) slurm_fail_job(bg_update_ptr->job_id);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
-
+	if(bg_record->job_running <= -1) {
+		slurm_mutex_unlock(&block_state_mutex);
+		slurm_mutex_unlock(&job_start_mutex);
+		debug("job %d finished during the queueing job "
+		      "(everything is ok)",
+		      bg_update_ptr->job_id);
+		return;
+	}
 	if(bg_record->state == RM_PARTITION_DEALLOCATING) {
+		slurm_mutex_unlock(&block_state_mutex);
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record);
-	}
+	} else 
+		slurm_mutex_unlock(&block_state_mutex);
+
 	
 	if(bg_record->state == RM_PARTITION_FREE) {
 		num_block_to_free = 0;
 		num_block_freed = 0;
-		slurm_mutex_lock(&block_state_mutex);
 		delete_list = list_create(NULL);
+		slurm_mutex_lock(&block_state_mutex);
 		itr = list_iterator_create(bg_list);
 		while ((found_record = (bg_record_t*) 
 			list_next(itr)) != NULL) {
@@ -294,7 +308,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		
 		if(bg_record->job_running <= -1) {
 			slurm_mutex_unlock(&job_start_mutex);
-			debug("job already finished before boot");
+			debug("job %d already finished before boot",
+			      bg_update_ptr->job_id);
 			return;
 		}
 		if((rc = boot_block(bg_record))
@@ -321,8 +336,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	
 	if(bg_record->job_running <= -1) {
 		slurm_mutex_unlock(&job_start_mutex);
-		debug("job finished during the start of the boot "
-		      "(everything is ok)");
+		debug("job %d finished during the start of the boot "
+		      "(everything is ok)",
+		      bg_update_ptr->job_id);
 		return;
 	}
 	slurm_mutex_lock(&block_state_mutex);
