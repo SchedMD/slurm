@@ -438,6 +438,7 @@ test18.13  Confirm that a job executes with various launch thread fanouts
 test18.14  Verify the appropriate job environment variables are set
 test18.15  Verify that user environment variables are propagated to the job
 test18.16  Verify that user user limits are propagated to the job
+test18.17  Test of salloc and slaunch exit code reporting
 test18.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 
