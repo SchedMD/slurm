@@ -46,8 +46,15 @@
 #include "src/common/read_config.h"
 #include "src/common/env.h"
 
+#include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 #include "src/salloc/msg.h"
+
+char **command_argv;
+int command_argc;
+pid_t command_pid = -1;
+enum possible_allocation_states allocation_state = NOT_GRANTED;
+pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
@@ -116,7 +123,16 @@ int main(int argc, char *argv[])
 	env = env_array_create_for_job(alloc);
 	env_array_set_environment(env);
 	env_array_free(env);
-	pid = fork_command(command_argv);
+	pthread_mutex_lock(&allocation_state_lock);
+	if (allocation_state == REVOKED) {
+		error("Allocation was revoked before command could be run");
+		pthread_mutex_unlock(&allocation_state_lock);
+		return 1;
+	} else {
+		allocation_state = GRANTED;
+		command_pid = pid = fork_command(command_argv);
+	}
+	pthread_mutex_unlock(&allocation_state_lock);
 
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
@@ -132,14 +148,22 @@ int main(int argc, char *argv[])
 	/*
 	 * Relinquish the job allocation.
 	 */
-	if (pid > 0 && rc_pid == -1 && errnum == EINTR) {
-		info("Relinquishing job allocation %d", alloc->job_id);
-	} else {
-		verbose("Relinquishing job allocation %d", alloc->job_id);
+	pthread_mutex_lock(&allocation_state_lock);
+	if (allocation_state != REVOKED) {
+		if (pid > 0 && rc_pid == -1 && errnum == EINTR) {
+			info("Relinquishing job allocation %d",
+			     alloc->job_id);
+		} else {
+			verbose("Relinquishing job allocation %d",
+				alloc->job_id);
+		}
+		if (slurm_complete_job(alloc->job_id, 0) != 0)
+			error("Unable to clean up job allocation %d: %m",
+			      alloc->job_id);
+		else
+			allocation_state == REVOKED;
 	}
-	if (slurm_complete_job(alloc->job_id, 0) != 0)
-		error("Unable to clean up job allocation %d: %m",
-		      alloc->job_id);
+	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	msg_thr_destroy(msg_thr);
@@ -169,7 +193,7 @@ int main(int argc, char *argv[])
 			rc = WEXITSTATUS(status);
 		} else if (WIFSIGNALED(status)) {
 			verbose("Command \"%s\" was terminated by signal %d",
-				WTERMSIG(status));
+				command_argv[0], WTERMSIG(status));
 		}
 	}
 

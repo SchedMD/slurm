@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <sys/types.h>
+#include <signal.h>
 
 #include <slurm/slurm.h>
 
@@ -47,6 +49,8 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/eio.h"
 
+#include "src/salloc/salloc.h"
+#include "src/salloc/opt.h"
 #include "src/salloc/msg.h"
 
 struct salloc_msg_thread {
@@ -229,9 +233,6 @@ static void _handle_node_fail(slurm_msg_t *msg)
  * Job has been notified of it's approaching time limit. 
  * Job will be killed shortly after timeout.
  * This RPC can arrive multiple times with the same or updated timeouts.
- * FIXME: We may want to signal the job or perform other action for this.
- * FIXME: How much lead time do we want for this message? Some jobs may 
- *	require tens of minutes to gracefully terminate.
  */
 static void _handle_timeout(slurm_msg_t *msg)
 {
@@ -241,13 +242,38 @@ static void _handle_timeout(slurm_msg_t *msg)
 	debug3("received timeout message");
 	if (to->timeout != last_timeout) {
 		last_timeout = to->timeout;
-		info("Job time limit to be reached at %s",
+		info("Job allocation time limit to be reached at %s",
 		     ctime(&to->timeout));
 	}
 
-
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_free_srun_timeout_msg(msg->data);
+}
+
+static void _handle_job_complete(slurm_msg_t *msg)
+{
+	srun_job_complete_msg_t *comp = (srun_job_complete_msg_t *)msg->data;
+	debug3("job complete message received");
+
+	if (comp->step_id == NO_VAL) {
+		info("Job allocation %u has been revoked.", comp->job_id);
+		pthread_mutex_lock(&allocation_state_lock);
+		if (allocation_state == GRANTED
+		    && command_pid > -1
+		    && opt.kill_command_signal_set) {
+			verbose("Sending signal %d to command \"%s\", pid %d",
+				opt.kill_command_signal,
+				command_argv[0], command_pid);
+			kill(command_pid, opt.kill_command_signal);
+		}
+		allocation_state = REVOKED;
+		pthread_mutex_unlock(&allocation_state_lock);
+	} else {
+		verbose("Job step %u.%u is finished.",
+			comp->job_id, comp->step_id);
+	}
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	slurm_free_srun_job_complete_msg(msg->data);
 }
 
 static void
@@ -269,10 +295,7 @@ _handle_msg(slurm_msg_t *msg)
 		slurm_free_srun_ping_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
-		debug3("job complete received");
-		/* FIXME: do something here */
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		slurm_free_srun_job_complete_msg(msg->data);
+		_handle_job_complete(msg);
 		break;
 	case SRUN_TIMEOUT:
 		_handle_timeout(msg);

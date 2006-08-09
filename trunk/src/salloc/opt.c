@@ -68,6 +68,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 
+#include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
 #include "src/common/mpi.h"
@@ -120,8 +121,6 @@
 #define LONG_OPT_NO_BELL     0x125
 
 /*---- global variables, defined in opt.h ----*/
-char **command_argv;
-int command_argc;
 opt_t opt;
 
 /*---- forward declarations of static functions  ----*/
@@ -151,14 +150,11 @@ static void  _opt_list(void);
 static bool _opt_verify(void);
 
 static void  _print_version(void);
-
 static void _process_env_var(env_vars_t *e, const char *val);
-
 static uint16_t _parse_mail_type(const char *arg);
 static char *_print_mail_type(const uint16_t type);
-
+static int _parse_signal(const char *signal_name);
 static long  _to_bytes(const char *arg);
-
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static enum  task_dist_states _verify_dist_type(const char *arg);
@@ -718,6 +714,8 @@ static void _opt_default()
 	opt.overcommit = false;
 	opt.share = false;
 	opt.no_kill = false;
+	opt.kill_command_signal = SIGTERM;
+	opt.kill_command_signal_set = false;
 
 	opt.immediate	= false;
 	opt.no_requeue	= false;
@@ -947,6 +945,7 @@ void set_options(const int argc, char **argv)
 		{"immediate",     no_argument,       0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
+		{"kill-command",  optional_argument, 0, 'K'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
@@ -992,7 +991,7 @@ void set_options(const int argc, char **argv)
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:D:g:HIJ:km:n:N:Op:qQR:st:U:vVw:W:x:";
+	char *opt_string = "+a:c:C:D:g:HIJ:kK::m:n:N:Op:qQR:st:U:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -1034,6 +1033,14 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'k':
 			opt.no_kill = true;
+			break;
+		case 'K': /* argument is optional */
+			if (optarg) {
+				opt.kill_command_signal = _parse_signal(optarg);
+				if (opt.kill_command_signal == 0)
+					exit(1);
+			}
+			opt.kill_command_signal_set = true;
 			break;
 		case 'm':
 			opt.distribution = _verify_dist_type(optarg);
@@ -1465,6 +1472,61 @@ print_geometry()
 	}
 
 	return rc;
+}
+
+/*
+ * Takes a string containing the number or name of a signal and returns
+ * the signal number.  The signal name is case insensitive, and may be of
+ * the form "SIGHUP" or just "HUP".
+ *
+ * Allowed signal names are HUP, INT, QUIT, KILL, TERM, USR1, USR2, and CONT.
+ */
+static int _parse_signal(const char *signal_name)
+{
+	char *sig_name[] = {"HUP", "INT", "QUIT", "KILL", "TERM",
+			    "USR1", "USR2", "CONT", NULL};
+	int sig_num[] = {SIGHUP, SIGINT, SIGQUIT, SIGKILL, SIGTERM,
+			       SIGUSR1, SIGUSR2, SIGCONT};
+	char *ptr;
+	long tmp;
+	int sig;
+	int i;
+
+	tmp = strtol(signal_name, &ptr, 10);
+	if (ptr != signal_name) { /* found a number */
+		if (xstring_is_whitespace(ptr)) {
+			sig = (int)tmp;
+		} else {
+			goto fail;
+		}
+	} else {
+		ptr = (char *)signal_name;
+		while (isspace(*ptr))
+			ptr++;
+		if (strncasecmp(ptr, "SIG", 3) == 0)
+			ptr += 3;
+		for (i = 0; ; i++) {
+			if (sig_name[i] == NULL) {
+				goto fail;
+			}
+			if (strncasecmp(ptr, sig_name[i],
+					strlen(sig_name[i])) == 0) {
+				/* found the signal name */
+				if (!xstring_is_whitespace(
+					    ptr + strlen(sig_name[i]))) {
+					goto fail;
+				}
+				sig = sig_num[i];
+				break;
+			}
+		}
+	}
+
+	return sig;
+
+fail:
+	error("\"%s\" is not a valid signal", signal_name);
+	return 0;
 }
 
 #define tf_(b) (b == true) ? "true" : "false"

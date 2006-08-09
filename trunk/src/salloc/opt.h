@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  opt.h - definitions for srun option processing
+ *  opt.h - definitions for salloc option processing
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -45,10 +45,6 @@
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
-/* global variables relating to user options */
-extern char **command_argv;
-extern int command_argc;
-
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
@@ -90,6 +86,8 @@ typedef struct salloc_options {
 	bool noshell;		/* --noshell                    */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
+	int kill_command_signal;/* --kill-command, -K           */
+	bool kill_command_signal_set;
 	bool no_requeue;	/* --no-requeue			*/
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
