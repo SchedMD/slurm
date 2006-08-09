@@ -916,30 +916,20 @@ extern void row_clicked_block(GtkTreeView *tree_view,
 			      GtkTreeViewColumn *column,
 			      gpointer user_data)
 {
-	partition_info_msg_t *new_part_ptr = (partition_info_msg_t *)user_data;
-	partition_info_t *part_ptr = NULL;
-	int line = get_row_number(tree_view, path);
+	List block_list = (List)user_data;
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
-	char *info = NULL;
-	if(line == -1) {
-		g_error("problem getting line number");
+	char *info_label = "No extra info avaliable.";
+	if (!block_list) {
+		g_print("No block_list given\n");
 		return;
 	}
 	
-	part_ptr = &new_part_ptr->partition_array[line];
-	if(!(info = slurm_sprint_partition_info(part_ptr, 0))) {
-		info = xmalloc(100);
-		sprintf(info, "Problem getting partition info for %s", 
-			part_ptr->name);
-	} 
-
 	popup = gtk_dialog_new();
 
-	label = gtk_label_new(info);
+	label = gtk_label_new(info_label);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
 			   label, TRUE, TRUE, 0);
-	xfree(info);
 	gtk_widget_show(label);
 	
 	gtk_widget_show(popup);

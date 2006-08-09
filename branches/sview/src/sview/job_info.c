@@ -33,6 +33,12 @@
 #define _DEBUG 0
 DEF_TIMERS;
 
+typedef struct {
+	job_info_msg_t *job_info_ptr;
+	job_step_info_response_msg_t *step_info_ptr;
+} job_and_step_info_t;
+
+
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_JOBID, 
@@ -171,8 +177,8 @@ static void _update_job_record(job_info_t *job_ptr,
 	}
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_TIME, time_buf, -1);
-	
 	convert_to_kilo(job_ptr->num_nodes, tmp_cnt);
+	g_print("got %d nodes translate to %s\n", job_ptr->num_nodes, tmp_cnt);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NODES, tmp_cnt, -1);
 	convert_to_kilo(job_ptr->num_procs, tmp_cnt);
@@ -282,13 +288,13 @@ static void _append_job_record(job_info_t *job_ptr,
 }
 
 static void _append_step_record(job_step_info_t *step_ptr,
-			       GtkTreeStore *treestore, GtkTreeIter *iter,
-			       int line)
+				GtkTreeStore *treestore, GtkTreeIter *iter,
+				int jobid)
 {
 	GtkTreeIter step_iter;
 
 	gtk_tree_store_append(treestore, &step_iter, iter);
-	gtk_tree_store_set(treestore, &step_iter, SORTID_POS, line, -1);
+	gtk_tree_store_set(treestore, &step_iter, SORTID_POS, jobid, -1);
 	_update_step_record(step_ptr, treestore, &step_iter);
 }
 
@@ -300,7 +306,6 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 {
 	job_step_info_t step;
 	int stepid = 0;
-	int line=0;
 	int i;
 	
 	for (i = 0; i < step_info_ptr->job_step_count; i++) {
@@ -323,20 +328,15 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 						   GTK_TREE_STORE(model), 
 						   step_iter);
 				goto found;
-			}
+			}			
 			
-			/* see what line we were on to add the next one 
-			   to the list */
-			gtk_tree_model_get(model, step_iter, SORTID_POS, 
-					   &line, -1);
 			if(!gtk_tree_model_iter_next(model, step_iter)) {
-				line++;
 				break;
 			}
 		}
 	adding:
 		_append_step_record(&step, GTK_TREE_STORE(model), 
-				    iter, line);
+				    iter, jobid);
 	found:
 		;
 	}
@@ -546,6 +546,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	static int view = -1;
 	static job_info_msg_t *job_info_ptr = NULL;
 	static job_step_info_response_msg_t *step_info_ptr = NULL;
+	static job_and_step_info_t job_and_step_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -614,7 +615,10 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		tree_view = create_treeview(local_display_data, job_info_ptr);
+		job_and_step_info.job_info_ptr = job_info_ptr;
+		job_and_step_info.step_info_ptr = step_info_ptr;
+		tree_view = create_treeview(local_display_data, 
+					    &job_and_step_info);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table), 
@@ -641,6 +645,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	int step_error_code = SLURM_SUCCESS;
 	static job_info_msg_t *job_info_ptr = NULL;
 	static job_step_info_response_msg_t *step_info_ptr = NULL;
+	static job_and_step_info_t job_and_step_info;
 	specific_info_t *spec_info = popup_win->spec_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
@@ -712,8 +717,11 @@ display_it:
 	}
 
 	if(!spec_info->display_widget) {
-		tree_view = create_treeview(local_display_data, job_info_ptr);
-		
+		job_and_step_info.job_info_ptr = job_info_ptr;
+		job_and_step_info.step_info_ptr = step_info_ptr;
+		tree_view = create_treeview(local_display_data, 
+					    &job_and_step_info);
+				
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(popup_win->table, 
@@ -758,16 +766,21 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 			    GtkTreeViewColumn *column,
 			    gpointer user_data)
 {
-	job_info_msg_t *job_info_ptr = (job_info_msg_t *)user_data;
+	job_and_step_info_t *job_and_step_info_ptr = 
+		(job_and_step_info_t *)user_data;
+	job_info_msg_t *job_info_ptr = job_and_step_info_ptr->job_info_ptr;
+	job_step_info_response_msg_t *step_info_ptr =
+		job_and_step_info_ptr->step_info_ptr;
 	job_info_t *job_ptr = NULL;
-	int job_id = 0, i;
+	job_step_info_t *step_ptr = NULL;
+	int job_id = 0, i, pos = 0;
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
 	GtkTreeIter iter;
 	char *info = NULL;
 	bool found = false;
-
+	
 	if(!model) {
 		g_error("error getting the model from the tree_view");
 		return;
@@ -776,8 +789,9 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
 		g_error("error getting iter from model");
 		return;
-	}	
+	}
 	gtk_tree_model_get(model, &iter, SORTID_JOBID, &job_id, -1);
+	gtk_tree_model_get(model, &iter, SORTID_POS, &pos, -1);
 	
 	for (i = 0; i < job_info_ptr->record_count; i++) {
 		if(job_info_ptr->job_array[i].job_id == job_id) {
@@ -792,10 +806,32 @@ extern void row_clicked_job(GtkTreeView *tree_view,
 			break;
 		}
 	}
-
-	if(!found) {
+	if(!found && pos > 0) {
+		for (i = 0; i < step_info_ptr->job_step_count; i++) {
+			if((step_info_ptr->job_steps[i].job_id == pos)
+			   && step_info_ptr->job_steps[i].step_id == job_id) {
+				step_ptr = &step_info_ptr->job_steps[i];
+				if(!(info = slurm_sprint_job_step_info(
+					     step_ptr, 0))) {
+					info = xmalloc(100);
+					sprintf(info, 
+						"Problem getting job "
+						"info for %d.%d",
+						step_ptr->job_id, 
+						step_ptr->step_id);
+				}
+			}
+			found = true;
+			break;
+		}
+		if(!found) {
+			info = xmalloc(100);
+			sprintf(info, "Job step %d.%d was not found!",
+				pos, job_id);
+		}
+	} else if(!found) {
 		info = xmalloc(100);
-		sprintf(info, "Job %d was not found!", job_ptr->job_id);
+		sprintf(info, "Job %d was not found!", job_id);
 	}
 
 	popup = gtk_dialog_new();
