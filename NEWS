@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.9
+========================
+
 * Changes in SLURM 1.1.8
 ========================
  -- added bug fixes (fault-tolerance and memory leaks) from Hongjia Cao 
