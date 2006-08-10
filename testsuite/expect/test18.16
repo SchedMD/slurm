@@ -125,7 +125,7 @@ make_bash_script $file_in "
   ./$file_prog_get
 "
 
-spawn $salloc -N1 -t1 -v $slaunch ./$file_in
+spawn $salloc -N1 -t1 $slaunch ./$file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

@@ -56,7 +56,7 @@ make_bash_script $test_script "
 set job_id 0
 set sum    0
 set timeout $max_job_delay
-spawn $salloc -N1 -t1 -v $slaunch -n2 --overcommit $exit_script
+spawn $salloc -N1 -t1 $slaunch -n2 --overcommit $exit_script
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
