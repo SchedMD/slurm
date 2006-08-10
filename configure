@@ -463,7 +463,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os PROJECT SLURM_API_VERSION SLURM_API_CURRENT SLURM_API_MAJOR SLURM_API_AGE SLURM_API_REVISION VERSION SLURM_MAJOR SLURM_MINOR SLURM_MICRO RELEASE SLURM_VERSION INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CMD_LDFLAGS LIB_LDFLAGS SO_LDFLAGS INSTALL_DIRS HAVE_AIX_TRUE HAVE_AIX_FALSE HAVE_AIX PROCTRACKDIR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE HAVE_AIX_PROCTRACK_TRUE HAVE_AIX_PROCTRACK_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL WITH_GNU_LD_TRUE WITH_GNU_LD_FALSE HAVE_SCHED_SETAFFINITY_TRUE HAVE_SCHED_SETAFFINITY_FALSE NUMA_LIBS HAVE_NUMA_TRUE HAVE_NUMA_FALSE PAM_LIBS HAVE_PAM_TRUE HAVE_PAM_FALSE LIBOBJS HAVE_UNSETENV_TRUE HAVE_UNSETENV_FALSE PTHREAD_CC PTHREAD_LIBS PTHREAD_CFLAGS BG_INCLUDES SEMAPHORE_SOURCES SEMAPHORE_LIBS NCURSES HAVE_SOME_CURSES_TRUE HAVE_SOME_CURSES_FALSE HAVE_SOME_CURSES DEBUG_MODULES_TRUE DEBUG_MODULES_FALSE SLURMCTLD_PORT SLURMD_PORT ELAN_LIBS HAVE_ELAN_TRUE HAVE_ELAN_FALSE HAVE_ELAN FEDERATION_LDFLAGS HAVE_FEDERATION_TRUE HAVE_FEDERATION_FALSE HAVE_FEDERATION HAVE_SGI_JOB_TRUE HAVE_SGI_JOB_FALSE READLINE_LIBS SSL_LDFLAGS SSL_LIBS SSL_CPPFLAGS MUNGE_LIBS MUNGE_CPPFLAGS MUNGE_LDFLAGS WITH_MUNGE_TRUE WITH_MUNGE_FALSE AUTHD_LIBS AUTHD_CFLAGS WITH_AUTHD_TRUE WITH_AUTHD_FALSE LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os PROJECT SLURM_API_VERSION SLURM_API_CURRENT SLURM_API_MAJOR SLURM_API_AGE SLURM_API_REVISION VERSION SLURM_MAJOR SLURM_MINOR SLURM_MICRO RELEASE SLURM_VERSION INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CMD_LDFLAGS LIB_LDFLAGS SO_LDFLAGS INSTALL_DIRS HAVE_AIX_TRUE HAVE_AIX_FALSE HAVE_AIX PROCTRACKDIR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE HAVE_AIX_PROCTRACK_TRUE HAVE_AIX_PROCTRACK_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL WITH_GNU_LD_TRUE WITH_GNU_LD_FALSE HAVE_SCHED_SETAFFINITY_TRUE HAVE_SCHED_SETAFFINITY_FALSE NUMA_LIBS HAVE_NUMA_TRUE HAVE_NUMA_FALSE PAM_LIBS HAVE_PAM_TRUE HAVE_PAM_FALSE LIBOBJS HAVE_UNSETENV_TRUE HAVE_UNSETENV_FALSE PTHREAD_CC PTHREAD_LIBS PTHREAD_CFLAGS BG_INCLUDES SEMAPHORE_SOURCES SEMAPHORE_LIBS NCURSES HAVE_SOME_CURSES_TRUE HAVE_SOME_CURSES_FALSE HAVE_SOME_CURSES HAVEPKGCONFIG GTK2_CFLAGS GTK2_LIBS HAVE_GTK_TRUE HAVE_GTK_FALSE DEBUG_MODULES_TRUE DEBUG_MODULES_FALSE SLURMCTLD_PORT SLURMD_PORT ELAN_LIBS HAVE_ELAN_TRUE HAVE_ELAN_FALSE HAVE_ELAN FEDERATION_LDFLAGS HAVE_FEDERATION_TRUE HAVE_FEDERATION_FALSE HAVE_FEDERATION HAVE_SGI_JOB_TRUE HAVE_SGI_JOB_FALSE READLINE_LIBS SSL_LDFLAGS SSL_LIBS SSL_CPPFLAGS MUNGE_LIBS MUNGE_CPPFLAGS MUNGE_LDFLAGS WITH_MUNGE_TRUE WITH_MUNGE_FALSE AUTHD_LIBS AUTHD_CFLAGS WITH_AUTHD_TRUE WITH_AUTHD_FALSE LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -24116,6 +24116,86 @@ fi
 
 
 
+    # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_HAVEPKGCONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $HAVEPKGCONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_HAVEPKGCONFIG="$HAVEPKGCONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_HAVEPKGCONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_path_HAVEPKGCONFIG" && ac_cv_path_HAVEPKGCONFIG="$PATH"
+  ;;
+esac
+fi
+HAVEPKGCONFIG=$ac_cv_path_HAVEPKGCONFIG
+
+if test -n "$HAVEPKGCONFIG"; then
+  echo "$as_me:$LINENO: result: $HAVEPKGCONFIG" >&5
+echo "${ECHO_T}$HAVEPKGCONFIG" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+    if test ! -z "$HAVEPKGCONFIG"; then
+        $HAVEPKGCONFIG --exists libglade-2.0 gtk+-2.0
+        if test $? -eq 0 ; then
+            GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
+            GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
+	    ac_have_gtk="yes"
+            if test ! -z "GLADE_STATIC"  ; then
+                GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
+            fi
+            GUI_LIBS="$GUI_LIBS $GTK2_LIBS"
+			SETUP_GTK="setup.gtk2"
+			GTK_SUBDIR=gtk2
+			XMLVER="2"
+
+
+        else
+            { { echo "$as_me:$LINENO: error: *** Either libglade-2.0 or gtk+-2.0 are not available." >&5
+echo "$as_me: error: *** Either libglade-2.0 or gtk+-2.0 are not available." >&2;}
+   { (exit 1); exit 1; }; }
+        fi
+    else
+        { { echo "$as_me:$LINENO: error: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&5
+echo "$as_me: error: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&2;}
+   { (exit 1); exit 1; }; }
+    fi
+
+
+
+
+if test "x$ac_have_gtk" = "xyes"; then
+  HAVE_GTK_TRUE=
+  HAVE_GTK_FALSE='#'
+else
+  HAVE_GTK_TRUE='#'
+  HAVE_GTK_FALSE=
+fi
+
+
+
 
 
 
@@ -25377,7 +25457,7 @@ _ACEOF
 
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/maui/Makefile src/plugins/sched/maui/wiki/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/maui/Makefile src/plugins/sched/maui/wiki/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -25559,6 +25639,13 @@ if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; th
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_SOME_CURSES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"HAVE_SOME_CURSES\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_GTK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_GTK\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -26070,6 +26157,7 @@ do
   "src/squeue/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/squeue/Makefile" ;;
   "src/sinfo/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/sinfo/Makefile" ;;
   "src/smap/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/smap/Makefile" ;;
+  "src/sview/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/sview/Makefile" ;;
   "src/plugins/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/Makefile" ;;
   "src/plugins/auth/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/auth/Makefile" ;;
   "src/plugins/auth/authd/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/plugins/auth/authd/Makefile" ;;
@@ -26331,6 +26419,11 @@ s,@NCURSES@,$NCURSES,;t t
 s,@HAVE_SOME_CURSES_TRUE@,$HAVE_SOME_CURSES_TRUE,;t t
 s,@HAVE_SOME_CURSES_FALSE@,$HAVE_SOME_CURSES_FALSE,;t t
 s,@HAVE_SOME_CURSES@,$HAVE_SOME_CURSES,;t t
+s,@HAVEPKGCONFIG@,$HAVEPKGCONFIG,;t t
+s,@GTK2_CFLAGS@,$GTK2_CFLAGS,;t t
+s,@GTK2_LIBS@,$GTK2_LIBS,;t t
+s,@HAVE_GTK_TRUE@,$HAVE_GTK_TRUE,;t t
+s,@HAVE_GTK_FALSE@,$HAVE_GTK_FALSE,;t t
 s,@DEBUG_MODULES_TRUE@,$DEBUG_MODULES_TRUE,;t t
 s,@DEBUG_MODULES_FALSE@,$DEBUG_MODULES_FALSE,;t t
 s,@SLURMCTLD_PORT@,$SLURMCTLD_PORT,;t t
