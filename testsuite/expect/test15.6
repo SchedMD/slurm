@@ -40,16 +40,29 @@ print_header $test_id
 
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
+# NOTE on debug levels
+# 0: info
+# 1: verbose  (-v)
+# 2: debug    (-vv)
+# 3: debug2   (-vvv)
 #
 set timeout $max_job_delay
-spawn $salloc -N1 -v -t1 $bin_id  
+spawn $salloc -vv -N1 -t1 $bin_id  
 expect {
-	-re "Granted job" {
-		incr verbosity
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "debug($number)" {
+		if {$verbosity < 3} {
+			set verbosity 3
+		}
 		exp_continue
 	}
 	-re "debug" {
-		incr verbosity
+		if {$verbosity < 2} {
+			set verbosity 2 
+		}
 		exp_continue
 	}
 	-re "Unable to contact" {
@@ -58,7 +71,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		kill_salloc
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -66,7 +83,7 @@ expect {
 		wait
 	}
 }
-if {$verbosity != 1} {
+if {$verbosity != 2} {
 	send_user "\nFAILURE: Did not report job id with verbosity on\n"
 	set exit_code 1
 }
