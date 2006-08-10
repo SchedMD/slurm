@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -33,6 +33,7 @@ source ./globals
 
 set test_id     "18.6"
 set exit_code   0
+set job_id      0
 set verbosity   0
 
 print_header $test_id
@@ -43,6 +44,10 @@ print_header $test_id
 set timeout $max_job_delay
 spawn $salloc -N1 -t1 $slaunch -vv $bin_hostname
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "debug:" {
 		set verbosity 1
 		exp_continue
@@ -53,7 +58,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: slurm not responding\n"
-		kill_salloc
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
