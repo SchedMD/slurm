@@ -679,10 +679,14 @@ extern void remove_old(GtkTreeModel *model, int updated)
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		while(1) {
 			gtk_tree_model_get(model, &iter, updated, &i, -1);
-			if(!i) 
-				gtk_list_store_remove(GTK_LIST_STORE(model), 
-						      &iter);
-			
+			if(!i) {
+				if(!gtk_tree_store_remove(
+					   GTK_TREE_STORE(model), 
+					   &iter))
+					break;
+				else
+					continue;
+			}
 			if(!gtk_tree_model_iter_next(model, &iter)) {
 				break;
 			}
