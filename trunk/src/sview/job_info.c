@@ -993,10 +993,12 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
 		popup_win->spec_info->data = name;
 		break;
+#ifdef HAVE_BG
 	case BLOCK_PAGE: 
 		gtk_tree_model_get(model, iter, SORTID_BLOCK, &name, -1);
 		popup_win->spec_info->data = name;
 		break;
+#endif
 	case ADMIN_PAGE: 
 		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 		break;
