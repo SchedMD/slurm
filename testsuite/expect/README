@@ -439,6 +439,7 @@ test18.14  Verify the appropriate job environment variables are set
 test18.15  Verify that user environment variables are propagated to the job
 test18.16  Verify that user user limits are propagated to the job
 test18.17  Test of salloc and slaunch exit code reporting
+test18.18  Test of parallel launch of slaunch ("slaunch slaunch id").
 test18.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 
