@@ -163,7 +163,18 @@ int env_array_append(char ***array_ptr, const char *name,
  * Return 1 on success, and 0 on error.
  */
 int env_array_overwrite(char ***array_ptr, const char *name,
-			const char *value_fmt, ...);
+			const char *value);
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.  The "value_fmt" string may contain printf-style options.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite_fmt(char ***array_ptr, const char *name,
+			    const char *value_fmt, ...);
 
 /*
  * Set all of the environment variables in a supplied environment
