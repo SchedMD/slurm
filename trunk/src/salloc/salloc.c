@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
 		else
-			allocation_state == REVOKED;
+			allocation_state = REVOKED;
 	}
 	pthread_mutex_unlock(&allocation_state_lock);
 
