@@ -517,22 +517,6 @@ finished:
 	destroy_job(temp);
 }
 
-void convert_num(float num, char *buf)
-{
-	char *unit = "\0KMGP";
-	int count = 0;
-	if(num == (float)NO_VAL) {
-		snprintf(buf, 20, "'N/A'");
-		return;
-	}
-		
-	while(num>1024) {
-		num /= 1024;
-		count++;
-	}
-	snprintf(buf, 20, "%.2f%c", num, unit[count]);
-}
-
 void find_hostname(uint32_t pos, char *hosts, char *host)
 {
 	hostlist_t hostlist = NULL;

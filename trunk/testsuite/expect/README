@@ -23,14 +23,15 @@
 ############################################################################
 
 This directory contains a battery of SLURM regression tests. The tests make use 
-of the "expect" scripting language. You must copy "globals.example" to a new 
-file "globals" and modify that file to identify locations of files to be used 
-in testing, especially the variable "slurm_dir". These tests expect single 
-node jobs submitted to the default partition to respond within a one minutes. 
-If that is not the case, modify the value of "max_job_delay" in the "globals" 
-file to an appropriate value or the tests will report failures due to timeouts. 
+of the "expect" scripting language. You can create "globals.local" and 
+identify locations of files to be used in testing, especially the 
+variable "slurm_dir". These tests expect single node jobs submitted to the 
+default partition to respond within a one minutes. 
+If that is not the case, modify the value of "max_job_delay" in the 
+"globals.local" file to an appropriate value or the tests will report 
+failures due to timeouts. 
 If there are file propagation delays (e.g. due to NFS), the value of 
-"max_file_delay" in the "globals" file may need modification.
+"max_file_delay" in the "globals.local" file may need modification.
 
 Each test can be executed independently. Upon successful completion, the test 
 will print "SUCCESS" and terminate with an exit code of zero. Upon failure, 

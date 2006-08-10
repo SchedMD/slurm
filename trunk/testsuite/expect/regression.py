@@ -62,7 +62,7 @@ def main(argv=None):
 
     # Sanity check
     if not os.path.isfile('globals'):
-        print >>sys.stderr, 'ERROR: copy "globals.example" to "globals" and modify as needed'
+        print >>sys.stderr, 'ERROR: "globals" not here as needed'
         return -1
 
     # Read the current working directory and build a sorted list

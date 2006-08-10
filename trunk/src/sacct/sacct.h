@@ -274,7 +274,6 @@ void process_start(char *f[], int lc, int show_full, int len);
 void process_step(char *f[], int lc, int show_full, int len);
 void process_suspend(char *f[], int lc, int show_full, int len);
 void process_terminated(char *f[], int lc, int show_full, int len);
-void convert_num(float num, char *buf);
 void find_hostname(uint32_t pos, char *hosts, char *host);
 void aggregate_sacct(sacct_t *dest, sacct_t *from);
 void destroy_acct_header(void *object);

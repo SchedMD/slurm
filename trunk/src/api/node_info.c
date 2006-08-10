@@ -42,7 +42,9 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
+#define HUGE_BUF 4096
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
  *	based upon message as loaded using slurm_load_node
@@ -79,8 +81,30 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 void
 slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 {
+	char *print_this = slurm_sprint_node_table(node_ptr, one_liner);
+	fprintf ( out, "%s", print_this);
+	xfree(print_this);
+}
+
+/*
+ * slurm_sprint_node_table - output information about a specific Slurm nodes
+ *	based upon message as loaded using slurm_load_node
+ * IN node_ptr - an individual node information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+char *
+slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
+{
 	uint16_t my_state = node_ptr->node_state;
 	char *comp_str = "", *drain_str = "";
+	char tmp2[100];
+	char *out = xmalloc(HUGE_BUF);
+	int len = 0;
+	int lentmp2 = 0;
+	int tmplen = 0;
+	int j;
 
 	if (my_state & NODE_STATE_COMPLETING) {
 		my_state &= (~NODE_STATE_COMPLETING);
@@ -92,21 +116,76 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 	}
 
 	/****** Line 1 ******/
-	fprintf ( out, "NodeName=%s State=%s%s%s CPUs=%u ", 
+	sprintf ( tmp2, "NodeName=%s State=%s%s%s CPUs=%u ", 
 		node_ptr->name, node_state_string(my_state),
 		comp_str, drain_str, node_ptr->cpus);
-	fprintf ( out, "RealMemory=%u TmpDisk=%u", 
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out, "%s", tmp2);
+	len += lentmp2;
+
+	sprintf ( tmp2, "RealMemory=%u TmpDisk=%u", 
 		node_ptr->real_memory, node_ptr->tmp_disk);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+
 	if (one_liner)
-		fprintf ( out, " ");
+		sprintf ( tmp2, " ");
 	else
-		fprintf ( out, "\n   ");
+		sprintf ( tmp2, "\n   ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+
 
 	/****** Line 2 ******/
-	fprintf ( out, "Weight=%u Features=%s " , 
+	sprintf ( tmp2, "Weight=%u Features=%s " , 
 		node_ptr->weight, node_ptr->features);
-	fprintf ( out, "Reason=%s", node_ptr->reason);
-	fprintf ( out, "\n");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+
+	sprintf ( tmp2, "Reason=%s", node_ptr->reason);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+
+	sprintf ( tmp2, "\n");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+
+	return out;
 }
 
 
