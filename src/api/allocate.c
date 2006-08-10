@@ -241,7 +241,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
-			verbose("Pending job allocation %u", job_id);
+			info("Pending job allocation %u", job_id);
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
