@@ -42,7 +42,7 @@ print_header $test_id
 # Spawn a program via slaunch with stdout forwarding disabled
 #
 set timeout $max_job_delay
-spawn $salloc -t1 -v $slaunch --local-output=none $bin_id
+spawn $salloc -t1 $slaunch --local-output=none $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -80,8 +80,12 @@ set job_id    0
 set matches   0
 spawn $salloc -t1 -v $slaunch --local-error=none -t1 $bin_sleep aaa
 expect {
+	-re "Pending job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "invalid" {
-		send_user "\nFAILURE: srun improperly forwarded stderr\n"
+		send_user "\nFAILURE: slaunch improperly forwarded stderr\n"
 		set exit_code 1
 		exp_continue
 	}

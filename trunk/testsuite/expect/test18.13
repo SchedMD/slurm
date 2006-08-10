@@ -54,7 +54,7 @@ if { [test_bluegene] } {
 }
 
 set job_id 0
-spawn $salloc -v -t1 -N$node_cnt $slaunch -l --threads=1 $bin_hostname  
+spawn $salloc -t1 -N$node_cnt $slaunch -l --threads=1 $bin_hostname  
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
