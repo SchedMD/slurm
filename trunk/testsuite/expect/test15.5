@@ -88,13 +88,18 @@ if {$inactive_limit < $sleep_time} {
 #
 # Ideally the job gets a "job exceeded timelimit" followed by a 
 # "Terminated" message, but if the timing is bad only the "Terminated" 
-# message gets sent. This is due to slaunch recognizing job termination 
+# message gets sent. This is due to salloc recognizing job termination 
 # prior to the message from slurmd being processed.
 #
 set timeout [expr $max_job_delay + $sleep_time]
+set job_id    0
 set timed_out 0
 spawn $salloc -t1 $bin_sleep $sleep_time
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "job exceeded timelimit" {
 		set timed_out 1
 		exp_continue
@@ -107,9 +112,17 @@ expect {
 		send_user "\nFAILURE: slurm appears to be down\n"
 		exit 1
 	}
+	-re "Job allocation $number has been revoked" {
+		set timed_out 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		kill_salloc
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -125,8 +138,13 @@ if {$timed_out == 1} {
 }
 
 set completions 0
-spawn $salloc -t4 $bin_sleep $sleep_time
+set job_id      0
+spawn $salloc -t4 -v $bin_sleep $sleep_time
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "job exceeded timelimit" {
 		set completions -1
 		exp_continue
@@ -143,9 +161,17 @@ expect {
 		set completions -1
 		exp_continue
 	}
+	-re "Job allocation $number has been revoked" {
+		set completions -1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		kill_salloc
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -160,7 +186,6 @@ if {$completions != 1} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

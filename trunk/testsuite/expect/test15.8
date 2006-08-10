@@ -42,8 +42,12 @@ print_header $test_id
 # The job can't run immediately with a priority of zero
 #
 set timeout 10
-spawn $salloc --immediate --hold -t1 $bin_pwd
+spawn $salloc --immediate --hold -t1 -v $bin_pwd
 expect {
+	-re "Pending job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "Failed to allocate resources" {
 		send_user "This error is expected, no worries\n"
 		incr matches
@@ -51,7 +55,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		kill_salloc
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -69,21 +77,27 @@ if {$matches != 1} {
 # Spawn a salloc immediate execution job, it should run or fail immediately
 # Note the small value of timeout
 #
+set job_id  0
 set matches 0
-spawn $salloc --immediate -v -t1 $bin_pwd
+spawn $salloc --immediate -t1 $bin_pwd
 expect {
 	-re "error" {
 		send_user "This error is not unexpected, no worries\n"
 		incr matches
 		exp_continue
 	}
-	-re "Granted job allocation" {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		kill_salloc
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
