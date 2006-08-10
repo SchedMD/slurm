@@ -2,7 +2,7 @@
  *  partition_info.c - get/print the partition state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -39,8 +39,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
-
-#define HUGE_BUF 4096
+#include "src/common/xstring.h"
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 
@@ -95,246 +94,101 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				    int one_liner )
 {
 	int j;
-	char tmp1[7];
-	char tmp2[100];
-	int len = 0;
-	int lentmp2 = 0;
-	int tmplen = 0;
-	char *out = xmalloc(HUGE_BUF);
-	/****** Line 1 ******/
-	sprintf ( tmp2, "PartitionName=%s ", part_ptr->name);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out, "%s", tmp2);
-	len += lentmp2;
+	char tmp1[7], tmp2[7], tmp3[7];
+	char tmp_line[128];
+	char *out = NULL;
 
+	/****** Line 1 ******/
 	convert_to_kilo(part_ptr->total_nodes, tmp1);
-	sprintf ( tmp2, "TotalNodes=%s ", tmp1);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
-	convert_to_kilo(part_ptr->total_cpus, tmp1);
-	sprintf ( tmp2, "TotalCPUs=%s ", tmp1);	
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+	convert_to_kilo(part_ptr->total_cpus, tmp2);
+	snprintf(tmp_line, sizeof(tmp_line),
+		"PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
+		part_ptr->name, tmp1, tmp2);
+	xstrcat(out, tmp_line);
 	if (part_ptr->root_only)
-		sprintf ( tmp2, "RootOnly=YES");
+		sprintf(tmp_line, "RootOnly=YES");
 	else
-		sprintf ( tmp2, "RootOnly=NO");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		sprintf(tmp_line, "RootOnly=NO");
+	xstrcat(out, tmp_line);
 	if (one_liner)
-		sprintf ( tmp2, " ");
+		xstrcat(out, " ");
 	else
-		sprintf ( tmp2, "\n   ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
+		xstrcat(out, "\n   ");
 	
 	/****** Line 2 ******/
 	if (part_ptr->default_part)
-		sprintf ( tmp2, "Default=YES ");
+		sprintf(tmp_line, "Default=YES ");
 	else
-		sprintf ( tmp2, "Default=NO ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		sprintf(tmp_line, "Default=NO ");
+	xstrcat(out, tmp_line);
 	if (part_ptr->shared == SHARED_NO)
-		sprintf ( tmp2, "Shared=NO ");
+		sprintf(tmp_line, "Shared=NO ");
 	else if (part_ptr->shared == SHARED_YES)
-		sprintf ( tmp2, "Shared=YES ");
+		sprintf(tmp_line, "Shared=YES ");
 	else
-		sprintf ( tmp2, "Shared=FORCE ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		sprintf(tmp_line, "Shared=FORCE ");
+	xstrcat(out, tmp_line);
 	if (part_ptr->state_up)
-		sprintf ( tmp2, "State=UP ");
+		sprintf(tmp_line, "State=UP ");
 	else
-		sprintf ( tmp2, "State=DOWN ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		sprintf(tmp_line, "State=DOWN ");
+	xstrcat(out, tmp_line);
 	if (part_ptr->max_time == INFINITE)
-		sprintf ( tmp2, "MaxTime=UNLIMITED ");
+		sprintf(tmp_line, "MaxTime=UNLIMITED ");
 	else
-		sprintf ( tmp2, "MaxTime=%u ", part_ptr->max_time);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		sprintf(tmp_line, "MaxTime=%u ", part_ptr->max_time);
+	xstrcat(out, tmp_line);
 	if (part_ptr->hidden)
-		sprintf ( tmp2, "Hidden=YES");
+		sprintf(tmp_line, "Hidden=YES");
 	else
-		sprintf ( tmp2, "Hidden=NO");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		sprintf(tmp_line, "Hidden=NO");
+	xstrcat(out, tmp_line);
 	if (one_liner)
-		sprintf ( tmp2, " ");
+		xstrcat(out, " ");
 	else
-		sprintf ( tmp2, "\n   ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
+		xstrcat(out, "\n   ");
 	
 	/****** Line 3 ******/
 	convert_to_kilo(part_ptr->min_nodes, tmp1);
-	sprintf ( tmp2, "MinNodes=%s ", tmp1);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+	sprintf(tmp_line, "MinNodes=%s ", tmp1);
+	xstrcat(out, tmp_line);
 	if (part_ptr->max_nodes == INFINITE)
-		sprintf ( tmp2, "MaxNodes=UNLIMITED ");
+		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
 	else {
 		convert_to_kilo(part_ptr->max_nodes, tmp1);
-		sprintf ( tmp2, "MaxNodes=%s ", tmp1);
+		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
 	}
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+	xstrcat(out, tmp_line);
 	if ((part_ptr->allow_groups == NULL) || 
 	    (part_ptr->allow_groups[0] == '\0'))
-		sprintf ( tmp2, "AllowGroups=ALL");
-	else
-		sprintf ( tmp2, "AllowGroups=%s", part_ptr->allow_groups);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
+		sprintf(tmp_line, "AllowGroups=ALL");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line), 
+			"AllowGroups=%s", part_ptr->allow_groups);
 	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+	xstrcat(out, tmp_line);
 	if (one_liner)
-		sprintf ( tmp2, " ");
+		xstrcat(out, " ");
 	else
-		sprintf ( tmp2, "\n   ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+		xstrcat(out, "\n   ");
 	
 	/****** Line 4 ******/
 #ifdef HAVE_BG
-	sprintf ( tmp2, "BasePartitions=%s BPIndices=", part_ptr->nodes);
+	sprintf(tmp_line, "BasePartitions=%s BPIndices=", part_ptr->nodes);
 #else
-	sprintf ( tmp2, "Nodes=%s NodeIndices=", part_ptr->nodes);
+	sprintf(tmp_line, "Nodes=%s NodeIndices=", part_ptr->nodes);
 #endif
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-	
+	xstrcat(out, tmp_line);
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
-			sprintf( tmp2, ",%d", part_ptr->node_inx[j]);
+			sprintf(tmp_line, ",%d", part_ptr->node_inx[j]);
 		else
-			sprintf( tmp2, "%d", part_ptr->node_inx[j]);
-		lentmp2 = strlen(tmp2);
-		tmplen += lentmp2;
-		if(tmplen>HUGE_BUF) {
-			j = len + HUGE_BUF;
-			xrealloc(out, j);
-		}
-		sprintf ( out+len, "%s", tmp2);
-		len += lentmp2;	
+			sprintf(tmp_line, "%d", part_ptr->node_inx[j]);
+		xstrcat(out, tmp_line);
 		if (part_ptr->node_inx[j] == -1)
 			break;
 	}
-	sprintf( tmp2, "\n\n");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
+	xstrcat(out, "\n\n");
 	
 	return out;
 }
