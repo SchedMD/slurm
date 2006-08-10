@@ -2,7 +2,7 @@
  *  job_step_info.c - get/print the job step state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, 
  *             Joey Ekstrom <ekstrom1@llnl.gov>,  et. al.
@@ -40,8 +40,8 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-#define HUGE_BUF 4096
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm 
  *	job steps based upon message as loaded using slurm_get_job_steps
@@ -99,54 +99,28 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			    int one_liner )
 {
 	char time_str[32];
-	int j;
-	char tmp2[100];
-	char *out = xmalloc(HUGE_BUF);
-	int len = 0;
-	int lentmp2 = 0;
-	int tmplen = 0;
+	char tmp_line[128];
+	char *out = NULL;
 
 	/****** Line 1 ******/
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
 		sizeof(time_str));
-	sprintf ( tmp2, "StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
 		job_step_ptr->job_id, job_step_ptr->step_id, 
 		job_step_ptr->user_id, job_step_ptr->num_tasks, time_str);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out, "%s", tmp2);
-	len += lentmp2;
-
+	out = xstrdup(tmp_line);
 	if (one_liner)
-		sprintf ( tmp2, " ");
+		xstrcat(out, " ");
 	else
-		sprintf ( tmp2, "\n   ");
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
-
+		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
-	sprintf ( tmp2, "Partition=%s Nodes=%s Name=%s Network=%s\n\n", 
+	snprintf(tmp_line, sizeof(tmp_line),
+		"Partition=%s Nodes=%s Name=%s Network=%s\n\n", 
 		job_step_ptr->partition, job_step_ptr->nodes,
 		job_step_ptr->name, job_step_ptr->network);
-	lentmp2 = strlen(tmp2);
-	tmplen += lentmp2;
-	if(tmplen>HUGE_BUF) {
-		j = len + HUGE_BUF;
-		xrealloc(out, j);
-	}
-	sprintf ( out+len, "%s", tmp2);
-	len += lentmp2;
+	xstrcat(out, tmp_line);
 
 	return out;
 }

@@ -50,7 +50,6 @@
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
 
-#define HUGE_BUF 4096
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
  *	jobs based upon message as loaded using slurm_load_jobs
@@ -103,7 +102,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int j;
 	char time_str[32], select_buf[128];
 	struct group *group_info = NULL;
-	char tmp1[7], tmp3[7];
+	char tmp1[7], tmp2[7], tmp3[7];
 	char tmp_line[128];
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
@@ -122,11 +121,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #endif	
 
 	/****** Line 1 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "JobId=%u ", job_ptr->job_id);
-	out = xstrdup(tmp_line);
-	snprintf(tmp_line, sizeof(tmp_line), "UserId=%s(%u) ", 
+	snprintf(tmp_line, sizeof(tmp_line), 
+		"JobId=%u UserId=%s(%u) ", 
+		job_ptr->job_id, 
 		uid_to_string((uid_t) job_ptr->user_id), job_ptr->user_id);
-	xstrcat(out, tmp_line);
+	out = xstrdup(tmp_line);
 	group_info = getgrgid((gid_t) job_ptr->group_id );
 	if ( group_info && group_info->gr_name[ 0 ] ) {
 		snprintf(tmp_line, sizeof(tmp_line), "GroupId=%s(%u)",
@@ -236,11 +235,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #endif
 	xstrcat(out, tmp_line);
 	convert_to_kilo(job_ptr->shared, tmp1);
-	convert_to_kilo(job_ptr->contiguous, tmp3);
-	sprintf(tmp_line, "Shared=%s Contiguous=%s ", tmp1, tmp3);
-	xstrcat(out, tmp_line);
-	convert_to_kilo(job_ptr->cpus_per_task, tmp1);
-	sprintf (tmp_line, "CPUs/task=%s", tmp1);
+	convert_to_kilo(job_ptr->contiguous, tmp2);
+	convert_to_kilo(job_ptr->cpus_per_task, tmp3);
+	snprintf(tmp_line, sizeof(tmp_line),
+		"Shared=%s Contiguous=%s CPUs/task=%s", tmp1, tmp2, tmp3);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -249,13 +247,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 8 ******/
 	convert_to_kilo(job_ptr->min_procs, tmp1);
-	convert_to_kilo(job_ptr->min_memory, tmp3);
-	snprintf(tmp_line, sizeof(tmp_line), "MinProcs=%s MinMemory=%s ", 
-		tmp1, tmp3);
-	xstrcat(out, tmp_line);
-	convert_to_kilo(job_ptr->min_tmp_disk, tmp1);
-	snprintf(tmp_line, sizeof(tmp_line), "Features=%s MinTmpDisk=%s", 
-		job_ptr->features, tmp1);
+	convert_to_kilo(job_ptr->min_memory, tmp2);
+	convert_to_kilo(job_ptr->min_tmp_disk, tmp3);
+	snprintf(tmp_line, sizeof(tmp_line), 
+		"MinProcs=%s MinMemory=%s Features=%s MinTmpDisk=%s", 
+		tmp1, tmp2, job_ptr->features, tmp3);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -274,10 +270,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 10 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s ", 
-		nodelist, job_ptr->req_nodes);
-	xstrcat(out, tmp_line);
-	snprintf(tmp_line, sizeof(tmp_line), "Req%sIndices=", nodelist);
+	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s Req%sIndices=", 
+		nodelist, job_ptr->req_nodes, nodelist);
 	xstrcat(out, tmp_line);
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
@@ -294,10 +288,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 11 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "Exc%s=%s ", 
-		nodelist, job_ptr->exc_nodes);
-	xstrcat(out, tmp_line);
-	snprintf(tmp_line, sizeof(tmp_line), "Exc%sIndices=", nodelist);
+	snprintf(tmp_line, sizeof(tmp_line), "Exc%s=%s Exc%sIndices=", 
+		nodelist, job_ptr->exc_nodes, nodelist);
 	xstrcat(out, tmp_line);
 	for (j = 0; job_ptr->exc_node_inx; j++) {
 		if (j > 0)
@@ -338,9 +330,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, "\n   ");
 		xstrcat(out, select_buf);
 	}
-
-	sprintf(tmp_line, "\n\n");
 	xstrcat(out, select_buf);
+	xstrcat(out, "\n\n");
 
 	return out;
 
