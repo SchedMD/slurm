@@ -840,8 +840,8 @@ int env_array_append(char ***array_ptr, const char *name,
  *
  * Return 1 on success, and 0 on error.
  */
-int env_array_overwrite(char ***array_ptr, const char *name,
-			const char *value_fmt, ...)
+int env_array_overwrite_fmt(char ***array_ptr, const char *name,
+			    const char *value_fmt, ...)
 {
 	char buf[BUFSIZ];
 	char **ep = NULL;
@@ -874,8 +874,44 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 	return 1;
 }
 
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite(char ***array_ptr, const char *name,
+			const char *value)
+{
+	char **ep = NULL;
+	char *str = NULL;
+
+	if (array_ptr == NULL) {
+		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
+	}
+
+	xstrfmtcat (str, "%s=%s", name, value);
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		xfree (*ep);
+	} else {
+		ep = _extend_env(array_ptr);
+	}
+
+	*ep = str;
+	
+	return 1;
+}
+
 char **env_array_copy(const char **array)
 {
+	error("env_array_copy not implented");
 	return NULL;
 }
 
