@@ -32,10 +32,10 @@ AC_DEFUN([X_AC_GTK],
 	    AC_SUBST(GTK2_CFLAGS)
    	    AC_SUBST(GTK2_LIBS)
         else
-            AC_MSG_ERROR([*** Either libglade-2.0 or gtk+-2.0 are not available.])
+            AC_MSG_WARN([*** Either libglade-2.0 or gtk+-2.0 are not available.])
         fi
     else
-        AC_MSG_ERROR([*** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0.])
+        AC_MSG_WARN([*** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0.])
     fi
 
 ])
