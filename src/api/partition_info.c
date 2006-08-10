@@ -38,6 +38,9 @@
 #include "src/api/job_info.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+
+#define HUGE_BUF 4096
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 
@@ -74,88 +77,266 @@ void slurm_print_partition_info_msg ( FILE* out,
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr, 
 				  int one_liner )
 {
+	char *print_this = slurm_sprint_partition_info(part_ptr, one_liner);
+	fprintf ( out, "%s", print_this);
+	xfree(print_this);
+}
+
+
+/*
+ * slurm_sprint_partition_info - output information about a specific Slurm 
+ *	partition based upon message as loaded using slurm_load_partitions
+ * IN part_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+char *slurm_sprint_partition_info ( partition_info_t * part_ptr, 
+				    int one_liner )
+{
 	int j;
 	char tmp1[7];
-
+	char tmp2[100];
+	int len = 0;
+	int lentmp2 = 0;
+	int tmplen = 0;
+	char *out = xmalloc(HUGE_BUF);
 	/****** Line 1 ******/
-	fprintf ( out, "PartitionName=%s ", part_ptr->name);
+	sprintf ( tmp2, "PartitionName=%s ", part_ptr->name);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out, "%s", tmp2);
+	len += lentmp2;
 
 	convert_to_kilo(part_ptr->total_nodes, tmp1);
-	fprintf ( out, "TotalNodes=%s ", tmp1);
-
+	sprintf ( tmp2, "TotalNodes=%s ", tmp1);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	convert_to_kilo(part_ptr->total_cpus, tmp1);
-	fprintf ( out, "TotalCPUs=%s ", tmp1);
+	sprintf ( tmp2, "TotalCPUs=%s ", tmp1);	
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (part_ptr->root_only)
-		fprintf ( out, "RootOnly=YES");
+		sprintf ( tmp2, "RootOnly=YES");
 	else
-		fprintf ( out, "RootOnly=NO");
+		sprintf ( tmp2, "RootOnly=NO");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (one_liner)
-		fprintf ( out, " ");
+		sprintf ( tmp2, " ");
 	else
-		fprintf ( out, "\n   ");
-
+		sprintf ( tmp2, "\n   ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	/****** Line 2 ******/
 	if (part_ptr->default_part)
-		fprintf ( out, "Default=YES ");
+		sprintf ( tmp2, "Default=YES ");
 	else
-		fprintf ( out, "Default=NO ");
+		sprintf ( tmp2, "Default=NO ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (part_ptr->shared == SHARED_NO)
-		fprintf ( out, "Shared=NO ");
+		sprintf ( tmp2, "Shared=NO ");
 	else if (part_ptr->shared == SHARED_YES)
-		fprintf ( out, "Shared=YES ");
+		sprintf ( tmp2, "Shared=YES ");
 	else
-		fprintf ( out, "Shared=FORCE ");
+		sprintf ( tmp2, "Shared=FORCE ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (part_ptr->state_up)
-		fprintf ( out, "State=UP ");
+		sprintf ( tmp2, "State=UP ");
 	else
-		fprintf ( out, "State=DOWN ");
+		sprintf ( tmp2, "State=DOWN ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (part_ptr->max_time == INFINITE)
-		fprintf ( out, "MaxTime=UNLIMITED ");
+		sprintf ( tmp2, "MaxTime=UNLIMITED ");
 	else
-		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
+		sprintf ( tmp2, "MaxTime=%u ", part_ptr->max_time);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (part_ptr->hidden)
-		fprintf ( out, "Hidden=YES");
+		sprintf ( tmp2, "Hidden=YES");
 	else
-		fprintf ( out, "Hidden=NO");
+		sprintf ( tmp2, "Hidden=NO");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (one_liner)
-		fprintf ( out, " ");
+		sprintf ( tmp2, " ");
 	else
-		fprintf ( out, "\n   ");
-
+		sprintf ( tmp2, "\n   ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	/****** Line 3 ******/
 	convert_to_kilo(part_ptr->min_nodes, tmp1);
-	fprintf ( out, "MinNodes=%s ", tmp1);
+	sprintf ( tmp2, "MinNodes=%s ", tmp1);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (part_ptr->max_nodes == INFINITE)
-		fprintf ( out, "MaxNodes=UNLIMITED ");
+		sprintf ( tmp2, "MaxNodes=UNLIMITED ");
 	else {
 		convert_to_kilo(part_ptr->max_nodes, tmp1);
-		fprintf ( out, "MaxNodes=%s ", tmp1);
+		sprintf ( tmp2, "MaxNodes=%s ", tmp1);
 	}
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if ((part_ptr->allow_groups == NULL) || 
 	    (part_ptr->allow_groups[0] == '\0'))
-		fprintf ( out, "AllowGroups=ALL");
+		sprintf ( tmp2, "AllowGroups=ALL");
 	else
-		fprintf ( out, "AllowGroups=%s", part_ptr->allow_groups);
+		sprintf ( tmp2, "AllowGroups=%s", part_ptr->allow_groups);
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	if (one_liner)
-		fprintf ( out, " ");
+		sprintf ( tmp2, " ");
 	else
-		fprintf ( out, "\n   ");
-
+		sprintf ( tmp2, "\n   ");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
+	
 	/****** Line 4 ******/
 #ifdef HAVE_BG
-	fprintf ( out, "BasePartitions=%s BPIndices=", part_ptr->nodes);
+	sprintf ( tmp2, "BasePartitions=%s BPIndices=", part_ptr->nodes);
 #else
-	fprintf ( out, "Nodes=%s NodeIndices=", part_ptr->nodes);
+	sprintf ( tmp2, "Nodes=%s NodeIndices=", part_ptr->nodes);
 #endif
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	len += lentmp2;
+	
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
-			fprintf( out, ",%d", part_ptr->node_inx[j]);
+			sprintf( tmp2, ",%d", part_ptr->node_inx[j]);
 		else
-			fprintf( out, "%d", part_ptr->node_inx[j]);
+			sprintf( tmp2, "%d", part_ptr->node_inx[j]);
+		lentmp2 = strlen(tmp2);
+		tmplen += lentmp2;
+		if(tmplen>HUGE_BUF) {
+			j = len + HUGE_BUF;
+			xrealloc(out, j);
+		}
+		sprintf ( out+len, "%s", tmp2);
+		len += lentmp2;	
 		if (part_ptr->node_inx[j] == -1)
 			break;
 	}
-	fprintf( out, "\n\n");
+	sprintf( tmp2, "\n\n");
+	lentmp2 = strlen(tmp2);
+	tmplen += lentmp2;
+	if(tmplen>HUGE_BUF) {
+		j = len + HUGE_BUF;
+		xrealloc(out, j);
+	}
+	sprintf ( out+len, "%s", tmp2);
+	
+	return out;
 }
 
 

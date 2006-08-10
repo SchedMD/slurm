@@ -59,6 +59,16 @@ enum controller_id {
 	SECONDARY_CONTROLLER = 2
 };
 
+/* unit types */
+enum {
+	UNIT_NONE,
+	UNIT_KILO,
+	UNIT_MEGA,
+	UNIT_GIGA,
+	UNIT_PETA,
+	UNIT_UNKNOWN
+};
+
 /**********************************************************************\
  * protocol configuration functions                
 \**********************************************************************/
@@ -623,4 +633,5 @@ extern int convert_to_kilo(int number, char *tmp);
 
 /* must free this memory with free not xfree */
 extern char *nodelist_nth_host(const char *nodelist, int inx);
+void convert_num_unit(float num, char *buf, int orig_type);
 #endif

@@ -1168,6 +1168,17 @@ extern void slurm_print_job_info PARAMS(( FILE*, job_info_t * job_ptr,
 					  int one_liner ));
 
 /*
+ * slurm_sprint_job_info - output information about a specific Slurm 
+ *	job based upon message as loaded using slurm_load_jobs
+ * IN job_ptr - an individual job information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+extern char *slurm_sprint_job_info PARAMS(( job_info_t * job_ptr, 
+				            int one_liner ));
+
+/*
  * slurm_get_end_time - get the expected end time for a given slurm job
  * IN jobid     - slurm job id
  * end_time_ptr - location in which to store scheduled end time for job 
@@ -1273,6 +1284,16 @@ extern void slurm_print_job_step_info PARAMS((
  */
 extern slurm_step_layout_t *slurm_job_step_layout_get PARAMS((uint32_t job_id,
 	                                                    uint32_t step_id));
+/*
+ * slurm_sprint_job_step_info - output information about a specific Slurm 
+ *	job step based upon message as loaded using slurm_get_job_steps
+ * IN job_ptr - an individual job step information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+extern char *slurm_sprint_job_step_info PARAMS(( job_step_info_t * step_ptr, 
+					         int one_liner ));
 
 void slurm_job_step_layout_free PARAMS((slurm_step_layout_t *layout));
 
@@ -1320,6 +1341,17 @@ extern void slurm_print_node_info_msg PARAMS((
  */
 extern void slurm_print_node_table PARAMS(( 
 	FILE * out, node_info_t * node_ptr, int one_liner ));
+
+/*
+ * slurm_sprint_node_table - output information about a specific Slurm nodes
+ *	based upon message as loaded using slurm_load_node
+ * IN node_ptr - an individual node information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+extern char *slurm_sprint_node_table PARAMS(( node_info_t * node_ptr, 
+					     int one_liner ));
 
 /*
  * slurm_update_node - issue RPC to a node's configuration per request, 
@@ -1384,6 +1416,16 @@ extern void slurm_print_partition_info_msg PARAMS((
 extern void slurm_print_partition_info PARAMS(( 
 	FILE *out , partition_info_t * part_ptr, int one_liner ));
 
+/*
+ * slurm_sprint_partition_info - output information about a specific Slurm 
+ *	partition based upon message as loaded using slurm_load_partitions
+ * IN part_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * with formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+extern char *slurm_sprint_partition_info PARAMS(( 
+		partition_info_t * part_ptr, int one_liner ));
 /*
  * slurm_update_partition - issue RPC to update a partition's configuration
  *	per request, only usable by user root
