@@ -16,6 +16,10 @@ documents those changes that are of interest to users and admins.
  -- remove old_job_alloc_msg_t and function slurm_confirm_alloc	
  -- Slurm configuration files now support an "Include" directive to
     include other files inline.
+ -- BLUEGENE New --enable-bluegene-emulation configure parameter to allow 
+    running system in bluegene emulation mode.  Only
+    really useful for developers.
+ -- New added new tool sview GUI for displaying slurm info.
 
 * Changes in SLURM 1.2.0-pre1
 =============================
