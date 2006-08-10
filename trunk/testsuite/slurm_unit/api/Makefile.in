@@ -50,6 +50,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
+	$(top_srcdir)/auxdir/x_ac_gtk.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
@@ -131,6 +132,9 @@ EXEEXT = @EXEEXT@
 F77 = @F77@
 FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FFLAGS = @FFLAGS@
+GTK2_CFLAGS = @GTK2_CFLAGS@
+GTK2_LIBS = @GTK2_LIBS@
+HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_AIX_FALSE = @HAVE_AIX_FALSE@
 HAVE_AIX_PROCTRACK_FALSE = @HAVE_AIX_PROCTRACK_FALSE@
@@ -142,6 +146,8 @@ HAVE_ELAN_TRUE = @HAVE_ELAN_TRUE@
 HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_FEDERATION_FALSE = @HAVE_FEDERATION_FALSE@
 HAVE_FEDERATION_TRUE = @HAVE_FEDERATION_TRUE@
+HAVE_GTK_FALSE = @HAVE_GTK_FALSE@
+HAVE_GTK_TRUE = @HAVE_GTK_TRUE@
 HAVE_NUMA_FALSE = @HAVE_NUMA_FALSE@
 HAVE_NUMA_TRUE = @HAVE_NUMA_TRUE@
 HAVE_PAM_FALSE = @HAVE_PAM_FALSE@
