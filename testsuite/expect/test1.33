@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -40,16 +40,15 @@ print_header $test_id
 #
 # Delete left-over scripts and build new ones
 #
-exec $bin_rm -f $exit_script $test_script
 make_bash_script $exit_script "
-RC=`expr \$SLURM_PROCID + 10`
-exit \$RC
+  RC=`expr \$SLURM_PROCID + 10`
+  exit \$RC
 "
 
 make_bash_script $test_script "
-$srun -N1 -n2 -O $exit_script
-#RC=\$?
-echo srun_exit_code_\$?
+  $srun -N1 -n2 -O $exit_script
+# RC=\$?
+  echo srun_exit_code_\$?
 "
 
 #
