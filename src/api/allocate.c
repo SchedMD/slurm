@@ -144,6 +144,10 @@ slurm_allocate_resources (job_desc_msg_t *req,
  * IN req - description of resource allocation request
  * IN timeout - amount of time to wait for a response before giving up.
  *	A timeout of zero will wait indefinitely.
+ * IN pending_callback - If the allocation cannot be granted immediately,
+ *      the controller will put the job in the PENDING state.  If
+ *      pending callback is not NULL, it will be called with the job_id
+ *      of the pending job as the sole parameter.
  * 
  * RET allocation structure on success, NULL on error set errno to
  *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
@@ -153,7 +157,8 @@ slurm_allocate_resources (job_desc_msg_t *req,
  */
 resource_allocation_response_msg_t *
 slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
-				   time_t timeout)
+				   time_t timeout,
+				   void(*pending_callback)(uint32_t job_id))
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -241,7 +246,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
-			info("Pending job allocation %u", job_id);
+			if (pending_callback != NULL)
+				pending_callback(job_id);
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 

@@ -62,6 +62,7 @@ static bool exit_flag = false;
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
 static int fork_command(char **command);
+static void _pending_callback(uint32_t job_id);
 static void _ignore_signal(int);
 static void _exit_on_signal(int);
 
@@ -112,7 +113,8 @@ int main(int argc, char *argv[])
 	desc.other_hostname = xshort_hostname();
 
 	before = time(NULL);
-	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait);
+	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
+						  _pending_callback);
 	if (alloc == NULL) {
 		if (errno == EINTR) {
 			error("Interrupted by signal."
@@ -123,7 +125,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	after = time(NULL);
-
+	
 	/*
 	 * Allocation granted!
 	 */
@@ -314,6 +316,11 @@ static pid_t fork_command(char **command)
 	}
 	/* parent returns */
 	return pid;
+}
+
+static void _pending_callback(uint32_t job_id)
+{
+	info("Pending job allocation %u", job_id);
 }
 
 static void _ignore_signal(int signo)
