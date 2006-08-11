@@ -94,7 +94,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				    int one_liner )
 {
 	int j;
-	char tmp1[7], tmp2[7], tmp3[7];
+	char tmp1[7], tmp2[7];
 	char tmp_line[128];
 	char *out = NULL;
 
