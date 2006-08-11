@@ -834,21 +834,18 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	case SRUN_JOB_COMPLETE:
 		debug3("job complete received");
 		/* FIXME: do something here */
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
 		verbose("timeout received");
 		to = msg->data;
 		timeout_handler(to->timeout);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
 		verbose("node_fail received");
 		nf = msg->data;
 		_node_fail_handler(nf->nodelist, job);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_node_fail_msg(msg->data);
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:

@@ -324,7 +324,6 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 		case SRUN_JOB_COMPLETE:
 			debug3("job complete received");
 			/* FIXME: do something here */
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			slurm_free_srun_job_complete_msg(msg->data);	
 			break;
 		case RESPONSE_RESOURCE_ALLOCATION:
@@ -337,7 +336,6 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			debug2("timeout received");
 			to = msg->data;
 			timeout_handler(to->timeout);
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			slurm_free_srun_timeout_msg(msg->data);
 			break;
 		default:

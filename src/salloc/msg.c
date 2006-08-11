@@ -225,7 +225,6 @@ static void _handle_node_fail(slurm_msg_t *msg)
 
 	error("Node failure on %s", nf->nodelist);
 
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_free_srun_node_fail_msg(msg->data);
 }
 
@@ -246,7 +245,6 @@ static void _handle_timeout(slurm_msg_t *msg)
 		     ctime(&to->timeout));
 	}
 
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_free_srun_timeout_msg(msg->data);
 }
 
@@ -272,7 +270,6 @@ static void _handle_job_complete(slurm_msg_t *msg)
 		verbose("Job step %u.%u is finished.",
 			comp->job_id, comp->step_id);
 	}
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_free_srun_job_complete_msg(msg->data);
 }
 
