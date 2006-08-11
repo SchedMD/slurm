@@ -24147,6 +24147,10 @@ fi
 
 
 
+### Set to "no" if any test fails
+    ac_have_gtk="yes"
+
+### Check for pkg-config program
     # Extract the first word of "pkg-config", so it can be a program name with args.
 set dummy pkg-config; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -24187,31 +24191,110 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
+    if test -z "$HAVEPKGCONFIG"; then
+        { echo "$as_me:$LINENO: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&5
+echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&2;}
+        ac_have_gtk="no"
+    fi
 
-    if test ! -z "$HAVEPKGCONFIG"; then
-        $HAVEPKGCONFIG --exists libglade-2.0 gtk+-2.0
-        if test $? -eq 0 ; then
-            GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
-            GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
-	    ac_have_gtk="yes"
-            if test ! -z "GLADE_STATIC"  ; then
-                GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
-            fi
-            GUI_LIBS="$GUI_LIBS $GTK2_LIBS"
-			SETUP_GTK="setup.gtk2"
-			GTK_SUBDIR=gtk2
-			XMLVER="2"
+### Check for libglade package
+    if test "$ac_have_gtk" == "yes"; then
+        $HAVEPKGCONFIG --exists libglade-2.0
+        if ! test $? -eq 0 ; then
+            { echo "$as_me:$LINENO: WARNING: *** libbglade-2.0 is not available." >&5
+echo "$as_me: WARNING: *** libbglade-2.0 is not available." >&2;}
+            ac_have_gtk="no"
+        fi
+    fi
+
+
+### Check for gtk2 package
+    if test "$ac_have_gtk" == "yes" ; then
+        $HAVEPKGCONFIG --exists gtk+-2.0
+        if ! test $? -eq 0 ; then
+            { echo "$as_me:$LINENO: WARNING: *** gtk+-2.0 is not available." >&5
+echo "$as_me: WARNING: *** gtk+-2.0 is not available." >&2;}
+            ac_have_gtk="no"
+        fi
+    fi
+
+### Run a test program
+    if test "$ac_have_gtk" == "yes" ; then
+        GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
+        GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
+        if test ! -z "GLADE_STATIC"  ; then
+            GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
+        fi
+        save_CFLAGS="$CFLAGS"
+        save_LIBS="$LIBS"
+        CFLAGS="$GTK2_CFLAGS $save_CFLAGS"
+        LIBS="$GTK2_LIBS $save_LIBS"
+        cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+          #include <gtk/gtk.h>
+
+int
+main ()
+{
+
+          int main()
+          {
+            (void) gtk_action_group_new ("MenuActions");
+            (void) gtk_ui_manager_new ();
+          }
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  :
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_have_gtk="no"
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+	CFLAGS="$save_CFLAGS"
+        LIBS="$save_LIBS"
+        if test "$ac_have_gtk" == "yes"; then
+            echo "$as_me:$LINENO: result: GTK test program built properly." >&5
+echo "${ECHO_T}GTK test program built properly." >&6
 
 
         else
-            { echo "$as_me:$LINENO: WARNING: *** Either libglade-2.0 or gtk+-2.0 are not available." >&5
-echo "$as_me: WARNING: *** Either libglade-2.0 or gtk+-2.0 are not available." >&2;}
+            { echo "$as_me:$LINENO: WARNING: *** GTK test program execution failed." >&5
+echo "$as_me: WARNING: *** GTK test program execution failed." >&2;}
         fi
-    else
-        { echo "$as_me:$LINENO: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&5
-echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&2;}
     fi
-
 
 
 
