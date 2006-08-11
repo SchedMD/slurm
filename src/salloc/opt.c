@@ -940,6 +940,7 @@ void set_options(const int argc, char **argv)
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
+		{"dependency",    required_argument, 0, 'D'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"immediate",     no_argument,       0, 'I'},
@@ -950,7 +951,6 @@ void set_options(const int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
-		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
