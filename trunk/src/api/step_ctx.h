@@ -39,6 +39,7 @@
 
 #include "src/common/slurm_step_layout.h"
 #include "src/common/eio.h"
+#include "src/common/bitstring.h"
 
 #include "src/api/step_io.h"
 
@@ -48,9 +49,8 @@ struct step_launch_state {
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
 	int tasks_requested;
-	int tasks_start_success;
-	int tasks_start_failure;
-	int tasks_exited;
+	bitstr_t *tasks_started; /* or attempted to start, but failed */
+	bitstr_t *tasks_exited;  /* or never started correctly */
 
 	/* message thread variables */
 	eio_handle_t *msg_handle;
@@ -60,6 +60,8 @@ struct step_launch_state {
 
 	/* client side io variables */
 	client_io_t *client_io;
+	slurm_step_layout_t *layout; /* a pointer into the ctx
+					step_resp, do not free */
 
 	/* user registered callbacks */
 	void (*task_start_callback)(launch_tasks_response_msg_t *);
@@ -84,4 +86,6 @@ struct slurm_step_ctx_struct {
 
 	/* Used by slurm_step_launch(), but not slurm_spawn() */
 	struct step_launch_state *launch_state;
+	int slurmctld_socket_fd; /* set to -1 if slaunch message handler
+				    should not attempt to handle */
 };

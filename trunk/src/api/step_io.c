@@ -909,15 +909,25 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 	net_set_low_water(fd, 1);
 	debug3("msg.stdout_objs = %d", msg.stdout_objs);
 	debug3("msg.stderr_objs = %d", msg.stderr_objs);
+	/* sanity checks, just print warning */
+	if (cio->ioserver[msg.nodeid] != NULL) {
+		error("IO: Node %d already established stream!", msg.nodeid);
+	} else if (bit_test(cio->ioservers_ready_bits, msg.nodeid)) {
+		error("IO: Hey, you told me node %d was down!", msg.nodeid);
+	}
+
 	cio->ioserver[msg.nodeid] = _create_server_eio_obj(fd, cio,
 							   msg.stdout_objs,
 							   msg.stderr_objs);
+	pthread_mutex_lock(&cio->ioservers_lock);
+	bit_set(cio->ioservers_ready_bits, msg.nodeid);
+	cio->ioservers_ready = bit_set_count(cio->ioservers_ready_bits);
 	/* Normally using eio_new_initial_obj while the eio mainloop
 	 * is running is not safe, but since this code is running
 	 * inside of the eio mainloop there should be no problem.
 	 */
 	eio_new_initial_obj(cio->eio, cio->ioserver[msg.nodeid]);
-	cio->ioservers_ready++;
+	pthread_mutex_unlock(&cio->ioservers_lock);
 
 	return SLURM_SUCCESS;
 
@@ -1167,7 +1177,9 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	cio->listenport = (int *) xmalloc(cio->num_listen * sizeof(int));
 
 	cio->ioserver = (eio_obj_t **)xmalloc(num_nodes*sizeof(eio_obj_t *));
+	cio->ioservers_ready_bits = bit_alloc(num_nodes);
 	cio->ioservers_ready = 0;
+	pthread_mutex_init(&cio->ioservers_lock, NULL);
 
 	_init_stdio_eio_objs(fds, cio);
 
@@ -1242,6 +1254,37 @@ client_io_handler_destroy(client_io_t *cio)
 	/* FIXME - need to make certain that IO engine is shutdown before
 	   freeing anything */
 
+	bit_free(cio->ioservers_ready_bits);
+	pthread_mutex_destroy(&cio->ioservers_lock);
 	xfree(cio->io_key);
+	xfree(cio);
 }
 
+void
+client_io_handler_downnodes(client_io_t *cio,
+			    const int* node_ids, int num_node_ids)
+{
+	int i;
+	int node_id;
+
+	if (cio == NULL)
+		return;
+	pthread_mutex_lock(&cio->ioservers_lock);
+	for (i = 0; i < num_node_ids; i++) {
+		node_id = node_id;
+		verbose ("Clearing downnode %d", node_id); /* FIXME - remove */
+		if (node_id >= cio->num_nodes || node_id < 0)
+			continue;
+		if (bit_test(cio->ioservers_ready_bits, node_id)
+		    && cio->ioserver[node_id] != NULL) {
+			cio->ioserver[node_id]->shutdown = true;
+		} else {
+			bit_set(cio->ioservers_ready_bits, node_id);
+			cio->ioservers_ready =
+				bit_set_count(cio->ioservers_ready_bits);
+		}
+	}
+	pthread_mutex_unlock(&cio->ioservers_lock);
+
+	eio_signal_wakeup(cio->eio);
+}
