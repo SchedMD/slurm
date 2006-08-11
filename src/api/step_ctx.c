@@ -65,14 +65,43 @@ static void _free_step_req(job_step_create_request_msg_t *step_req);
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
 extern slurm_step_ctx
-slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
+slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 {
-	struct slurm_step_ctx_struct *ctx;
+	struct slurm_step_ctx_struct *ctx = NULL;
+	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
+	int sock = -1;
+	int port = 0;
+	int errnum = 0;
 	
+	/* First copy the user's user_step_req struct in case we
+	 * need to modify anything before contacting the slurmctld
+	 */
+	step_req =
+		_copy_step_req((job_step_create_request_msg_t *)user_step_req);
+
+	/* If step_req->host is NULL, then the user wants us
+	 * to handle messages from the controller on our own.  We handle
+	 * the messages in the step_launch.c mesage handler, but we
+	 * need to open the socket right now so we can tell the
+	 * controller which port to use.
+	 */
+	if (step_req->host == NULL) {
+		if (net_stream_listen(&sock, &port) < 0) {
+			errnum = errno;
+			error("unable to intialize step context socket: %m");
+			_free_step_req(step_req);
+			goto fail;
+		}
+		step_req->port = ntohs((uint16_t)port);
+		step_req->host = xshort_hostname();
+	}
+
 	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
-		return NULL;	/* slurm errno already set */
+		errnum = errno;
+		_free_step_req(step_req);
+		goto fail;
 	}
 	
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
@@ -80,9 +109,12 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
-	ctx->step_req   = _copy_step_req(step_req);
+	ctx->step_req   = step_req; /* is already a copy of user_step_req */
 	ctx->step_resp	= step_resp;
+	ctx->slurmctld_socket_fd = sock;
 
+fail:
+	errno = errnum;
 	return (slurm_step_ctx)ctx;
 }
 

@@ -28,11 +28,13 @@
 #define _HAVE_STEP_IO_H
 
 #include <stdint.h>
+#include <pthread.h>
 
 #include <slurm/slurm.h>
 
 #include "src/common/eio.h"
 #include "src/common/list.h"
+#include "src/common/bitstring.h"
 #include "src/common/slurm_step_layout.h"
 
 struct client_io {
@@ -50,6 +52,8 @@ struct client_io {
 	int *listenport;	/* Array of stdio listen ports 	  */
 
 	eio_handle_t *eio;      /* Event IO handle for stdio traffic */
+	pthread_mutex_t ioservers_lock;
+	bitstr_t *ioservers_ready_bits; /* length "num_nodes" */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
 	eio_obj_t *stdin_obj;
@@ -82,6 +86,20 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds,
 				      bool label);
 
 int client_io_handler_start(client_io_t *cio);
+
+/*
+ * Tell the client IO handler that a set of remote nodes are now considered
+ * "down", and no further communication from that node should be expected.
+ * This will prevent the IO handler from stalling while it waits for a node
+ * to phone home.
+ *
+ * IN cio - the client_io_t handle
+ * IN node_ids - an array of integers representing the ID of a node
+ *               within a job step.
+ * IN num_node_ids - the length of the node_ids array
+ */
+void client_io_handler_downnodes(client_io_t *cio,
+				 const int *node_ids, int num_node_ids);
 
 int client_io_handler_finish(client_io_t *cio);
 

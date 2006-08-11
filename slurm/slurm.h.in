@@ -998,7 +998,7 @@ extern int slurm_terminate_job_step PARAMS((
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
 extern slurm_step_ctx slurm_step_ctx_create PARAMS((
-	job_step_create_request_msg_t *step_req));
+	const job_step_create_request_msg_t *step_req));
 
 /*
  * slurm_step_ctx_get - get parameters from a job step context.

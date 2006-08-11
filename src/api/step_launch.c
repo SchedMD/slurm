@@ -77,7 +77,8 @@ static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
  * Message handler declarations
  **********************************************************************/
 static uid_t  slurm_uid;
-static int _msg_thr_create(struct step_launch_state *sls, int num_nodes);
+static int _msg_thr_create(struct step_launch_state *sls, int num_nodes,
+			   int slurmctld_socket_fd);
 static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int _message_socket_accept(eio_obj_t *obj, List objs);
@@ -151,14 +152,15 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	pthread_mutex_init(&ctx->launch_state->lock, NULL);
 	pthread_cond_init(&ctx->launch_state->cond, NULL);
 	ctx->launch_state->tasks_requested = ctx->step_req->num_tasks;
-	ctx->launch_state->tasks_start_success = 0;
-	ctx->launch_state->tasks_start_failure = 0;
-	ctx->launch_state->tasks_exited = 0;
+	ctx->launch_state->tasks_started = bit_alloc(ctx->step_req->num_tasks);
+	ctx->launch_state->tasks_exited = bit_alloc(ctx->step_req->num_tasks);
 	ctx->launch_state->task_start_callback = params->task_start_callback;
 	ctx->launch_state->task_finish_callback = params->task_finish_callback;
+	ctx->launch_state->layout = ctx->step_resp->step_layout;
 
 	/* Create message receiving sockets and handler thread */
-	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count);
+	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count,
+			ctx->slurmctld_socket_fd);
 
 	/* Start tasks on compute nodes */
 	launch.job_id = ctx->step_req->job_id;
@@ -255,8 +257,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 
 	/* First wait for all tasks to start */
 	pthread_mutex_lock(&sls->lock);
-	while ((sls->tasks_start_success + sls->tasks_start_failure)
-	       < sls->tasks_requested) {
+	while (bit_set_count(sls->tasks_started) < sls->tasks_requested) {
 		pthread_cond_wait(&sls->cond, &sls->lock);
 	}
 	pthread_mutex_unlock(&sls->lock);
@@ -272,9 +273,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 
 	/* First wait for all tasks to complete */
 	pthread_mutex_lock(&sls->lock);
-	while (((sls->tasks_start_success + sls->tasks_start_failure)
-		< sls->tasks_requested)
-	       || (sls->tasks_exited < sls->tasks_start_success)) {
+	while (bit_set_count(sls->tasks_exited) < sls->tasks_requested) {
 		pthread_cond_wait(&sls->cond, &sls->lock);
 	}
 
@@ -315,7 +314,8 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
+static int _msg_thr_create(struct step_launch_state *sls, int num_nodes,
+			   int slurmctld_socket_fd)
 {
 	int sock = -1;
 	int port = -1;
@@ -335,6 +335,13 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		}
 		sls->resp_port[i] = port;
 		obj = eio_obj_create(sock, &message_socket_ops, (void *)sls);
+		eio_new_initial_obj(sls->msg_handle, obj);
+	}
+	/* finally, add the listening port that we told the slurmctld about
+	   eariler in the step context creation phase */
+	if (slurmctld_socket_fd > -1) {
+		obj = eio_obj_create(slurmctld_socket_fd,
+				     &message_socket_ops, (void *)sls);
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
 
@@ -445,13 +452,13 @@ static void
 _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
+	int i;
 
 	pthread_mutex_lock(&sls->lock);
 
-	if (msg->return_code == SLURM_SUCCESS)
-		sls->tasks_start_success += msg->count_of_pids;
-	else
-		sls->tasks_start_failure += msg->count_of_pids;
+	for (i = 0; i < msg->count_of_pids; i++) {
+		bit_set(sls->tasks_started, msg->task_ids[i]);
+	}
 
 	if (sls->task_start_callback != NULL)
 		(sls->task_start_callback)(msg);
@@ -465,9 +472,14 @@ static void
 _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+	int i;
+
 	pthread_mutex_lock(&sls->lock);
 
-	sls->tasks_exited += msg->num_tasks;
+	for (i = 0; i < msg->num_tasks; i++) {
+		info("task %d done", msg->task_id_list[i]);
+		bit_set(sls->tasks_exited, msg->task_id_list[i]);
+	}
 
 	if (sls->task_finish_callback != NULL)
 		(sls->task_finish_callback)(msg);
@@ -477,17 +489,62 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 }
 
 static void
+
+/*
+ * Take the list of node names of down nodes and convert into an
+ * array of nodeids for the step.  The nodeid array is passed to
+ * client_io_handler_downnodes to notify the IO handler to expect no
+ * further IO from that node.
+ */
 _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
-	/*srun_node_fail_msg_t *nf = fail_msg->data;*/
+	srun_node_fail_msg_t *nf = fail_msg->data;
+	hostset_t fail_nodes, all_nodes;
+	hostlist_iterator_t fail_itr;
+	char *node;
+	int num_node_ids;
+	int *node_ids;
+	int i, j;
+	int node_id, num_tasks;
+
+	slurm_send_rc_msg(fail_msg, SLURM_SUCCESS);
+
+	fail_nodes = hostset_create(nf->nodelist);
+	fail_itr = hostset_iterator_create(fail_nodes);
+	num_node_ids = hostset_count(fail_nodes);
+	node_ids = xmalloc(sizeof(int) * num_node_ids);
 
 	pthread_mutex_lock(&sls->lock);
+	all_nodes = hostset_create(sls->layout->node_list);
+	/* find the index number of each down node */
+	for (i = 0; i < num_node_ids; i++) {
+		node = hostlist_next(fail_itr);
+		node_id = node_ids[i] = hostset_index(all_nodes, node, 0);
+		free(node);
 
-	/* does nothing yet */
+		/* find all of the task that should run on this node and
+		 * mark them as having started and exited.  If they haven't
+		 * started yet, they never will, and likewise for exiting.
+		 */
+		num_tasks = sls->layout->tasks[node_id];
+		for (j = 0; j < num_tasks; j++) {
+			debug2("marking task %d done on failed node %d",
+			       sls->layout->tids[node_id][j], node_id);
+			bit_set(sls->tasks_started,
+				sls->layout->tids[node_id][j]);
+			bit_set(sls->tasks_exited,
+				sls->layout->tids[node_id][j]);
+		}
+	}
 
+	client_io_handler_downnodes(sls->client_io, node_ids, num_node_ids);
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
-	slurm_send_rc_msg(fail_msg, SLURM_SUCCESS);
+
+	xfree(node_ids);
+	hostlist_iterator_destroy(fail_itr);
+	hostset_destroy(fail_nodes);
+	hostset_destroy(all_nodes);
 }
 
 static void
