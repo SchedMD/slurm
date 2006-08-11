@@ -234,7 +234,11 @@ job_step_create_allocation(uint32_t job_id)
 	hostlist_uniq(hl);
 	ai->nnodes = hostlist_count(hl);
 	hostlist_destroy(hl);
-	
+	if (ai->nnodes == 0) {
+		error("No nodes in allocation, can't run job");
+		goto error;
+	}
+
 	//ai->nnodes         = opt.min_nodes;
 	/* info("node list is now %s %s %d procs",  */
 /* 	     ai->nodelist, opt.nodelist, */
