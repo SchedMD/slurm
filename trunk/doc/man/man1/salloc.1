@@ -55,16 +55,21 @@ Same as \fB\-\-bell\fR.
 .TP 
 \fBSALLOC_NO_BELL\fR
 Same as \fB\-\-no\-bell\fR.
+.SH "SIGNALS"
+.LP 
+While salloc is waiting for a PENDING job allocation, most signals will cause salloc to revoke the allocation request and exit.
+
+However, if the allocation has been granted and salloc has already started the command speficied in its command line parameters salloc will ignore most signals.  salloc will not exit or release the allocation until the command exits.  The noteable exception is SIGHUP; a HUP signal will cause salloc to release the allocation and exit without waiting for the command to finish.
 .SH "EXAMPLES"
 .LP 
 To get an allocation, and open a new xterm in which slaunch commands may be typed interactively:
 .IP 
 $ salloc \-N16 xterm
-.br
+.br 
 salloc: Granted job allocation 65537
-.br
+.br 
 (at this point the xterm appears, and salloc waits for xterm to exit)
-.br
+.br 
 salloc: Relinquishing job allocation 65537
 .LP 
 To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):

@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -56,10 +57,13 @@ pid_t command_pid = -1;
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static bool exit_flag = false;
+
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
 static int fork_command(char **command);
 static void _ignore_signal(int);
+static void _exit_on_signal(int);
 
 int main(int argc, char *argv[])
 {
@@ -75,7 +79,13 @@ int main(int argc, char *argv[])
 	pid_t rc_pid = 0;
 	int rc = 0;
 
+	xsignal(SIGHUP, _exit_on_signal);
 	xsignal(SIGINT, _ignore_signal);
+	xsignal(SIGQUIT, _ignore_signal);
+	xsignal(SIGPIPE, _ignore_signal);
+	xsignal(SIGTERM, _ignore_signal);
+	xsignal(SIGUSR1, _ignore_signal);
+	xsignal(SIGUSR2, _ignore_signal);
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -103,8 +113,15 @@ int main(int argc, char *argv[])
 
 	before = time(NULL);
 	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait);
-	if (alloc == NULL) 
-		fatal("Failed to allocate resources: %m");
+	if (alloc == NULL) {
+		if (errno == EINTR) {
+			error("Interrupted by signal."
+			      "  Allocation request rescinded.");
+		} else {
+			error("Failed to allocate resources: %m");
+		}
+		exit(1);
+	}
 	after = time(NULL);
 
 	/*
@@ -139,24 +156,26 @@ int main(int argc, char *argv[])
 	 * signal.  Either way, we are going to release the allocation next.
 	 */
 	if (pid > 0) {
-		rc_pid = waitpid(pid, &status, 0);
+		while ((rc_pid = waitpid(pid, &status, 0)) == -1) {
+			if (exit_flag) {
+				verbose("waitpid sees exit_flag");
+				break;
+			}
+			if (errno == EINTR)
+				continue;
+			
+		}
 		errnum = errno;
 		if (rc_pid == -1 && errnum != EINTR)
 			error("waitpid for %s failed: %m", command_argv[0]);
 	}
 
 	/*
-	 * Relinquish the job allocation.
+	 * Relinquish the job allocation (if not already revoked).
 	 */
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
-		if (pid > 0 && rc_pid == -1 && errnum == EINTR) {
-			info("Relinquishing job allocation %d",
-			     alloc->job_id);
-		} else {
-			info("Relinquishing job allocation %d",
-				alloc->job_id);
-		}
+		info("Relinquishing job allocation %d", alloc->job_id);
 		if (slurm_complete_job(alloc->job_id, 0) != 0)
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
@@ -167,21 +186,6 @@ int main(int argc, char *argv[])
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	msg_thr_destroy(msg_thr);
-
-	/*
-	 * If the earlier waitpid was interrupted by a signal,
-	 * wait indefinitely for the process to exit.
-	 */
-	if (pid > 0 && rc_pid == -1 && errnum == EINTR) {
-		while ((rc_pid = waitpid(pid, &status, 0)) == -1
-		       && errno == EINTR) {
-			/* just keep spinning */
-			info("Job already released, waiting for command");
-		}
-		if (rc_pid == -1)
-			error("second waitpid for %s failed: %m",
-			      command_argv[0]);
-	}
 
 	/*
 	 * Figure out what return code we should use.  If the user's command
@@ -312,7 +316,12 @@ static pid_t fork_command(char **command)
 	return pid;
 }
 
-static void _ignore_signal(int foo)
+static void _ignore_signal(int signo)
 {
 	/* do nothing */
+}
+
+static void _exit_on_signal(int signo)
+{
+	exit_flag = true;
 }
