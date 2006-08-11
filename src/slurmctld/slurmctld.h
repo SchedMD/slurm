@@ -354,7 +354,6 @@ struct 	step_record {
 	time_t start_time;      	/* step allocation time */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
-	time_t time_last_active;	/* time of last job activity */
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */

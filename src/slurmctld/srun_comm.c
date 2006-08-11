@@ -158,8 +158,6 @@ extern void srun_ping (void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
 	slurm_addr * addr;
 	time_t now = time(NULL);
 	time_t old = now - (slurmctld_conf.inactive_limit / 2);
@@ -186,29 +184,6 @@ extern void srun_ping (void)
 			_srun_agent_launch(addr, job_ptr->other_host,
 					   SRUN_PING, msg_arg);
 		}
-
-		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) 
-				list_next(step_iterator))) {
-			if ( (step_ptr->time_last_active > old) ||
-			     (step_ptr->port    == 0)    || 
-			     (step_ptr->host    == NULL) ||
-			     (step_ptr->batch_step)      ||
-			     (step_ptr->host[0] == '\0') )
-				continue;
-			debug3("sending message to host=%s, port=%u\n", 
-			       step_ptr->host,
-			       step_ptr->port);
-
-			addr = xmalloc(sizeof(struct sockaddr_in));
-			slurm_set_addr(addr, step_ptr->port, step_ptr->host);
-			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
-			msg_arg->job_id  = job_ptr->job_id;
-			msg_arg->step_id = step_ptr->step_id;
-			_srun_agent_launch(addr, step_ptr->host, SRUN_PING, 
-				msg_arg);
-		}	
-		list_iterator_destroy(step_iterator);
 	}
 
 	list_iterator_destroy(job_iterator);
@@ -312,15 +287,10 @@ extern void srun_complete (struct job_record *job_ptr)
 extern void srun_response(uint32_t job_id, uint32_t step_id)
 {
 	struct job_record  *job_ptr = find_job_record (job_id);
-	struct step_record *step_ptr;
 	time_t now = time(NULL);
 
 	if (job_ptr == NULL)
 		return;
 	job_ptr->time_last_active = now;
-
-	if ((step_id != NO_VAL) &&
-	    ((step_ptr = find_step_record(job_ptr, (uint16_t) step_id))))
-		step_ptr->time_last_active = now;
 }
 

@@ -718,7 +718,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
-	step_ptr->time_last_active = now;
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;

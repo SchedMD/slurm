@@ -944,7 +944,6 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout = step_layout;
 	
-	step_ptr->time_last_active = time(NULL);
 	step_ptr->switch_job   = switch_tmp;
 	step_ptr->check_job    = check_tmp;
 
@@ -2411,8 +2410,6 @@ void job_time_limit(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
 	time_t now = time(NULL);
 	time_t old = now - slurmctld_conf.inactive_limit;
 
@@ -2445,24 +2442,6 @@ void job_time_limit(void)
 		/* Give srun command warning message about pending timeout */
 		if (job_ptr->end_time <= (now + PERIODIC_TIMEOUT * 2))
 			srun_timeout (job_ptr);
-
-		/* test for and purge inactive job steps */
-		if (slurmctld_conf.inactive_limit == 0)
-			continue;
-		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) 
-				list_next(step_iterator))) {
-			if (step_ptr->time_last_active > old)
-				continue;
-			last_job_update = now;
-			info("Inactivity time limit reached for StepId=%u.%u",
-				job_ptr->job_id, step_ptr->step_id);
-			job_step_signal(job_ptr->job_id, step_ptr->step_id, 
-		    		SIGKILL, 0);
-			job_step_complete(job_ptr->job_id, step_ptr->step_id,
-				0, false, 0);
-		}	
-		list_iterator_destroy(step_iterator);
 	}
 
 	list_iterator_destroy(job_iterator);
@@ -4142,8 +4121,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	struct job_record *job_ptr = NULL;
-	struct step_record *step_ptr = NULL;
-	ListIterator step_iterator;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
@@ -4216,15 +4193,9 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 				- job_ptr->pre_sus_time;
 		}
 	}
-	
+
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *)
-			list_next(step_iterator))) {
-		step_ptr->time_last_active = now;
-	}
-	list_iterator_destroy(step_iterator);
 	
     reply:
 	jobacct_g_suspend_slurmctld(job_ptr);
