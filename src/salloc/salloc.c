@@ -160,7 +160,6 @@ int main(int argc, char *argv[])
 	if (pid > 0) {
 		while ((rc_pid = waitpid(pid, &status, 0)) == -1) {
 			if (exit_flag) {
-				verbose("waitpid sees exit_flag");
 				break;
 			}
 			if (errno == EINTR)
