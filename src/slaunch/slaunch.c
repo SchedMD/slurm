@@ -85,6 +85,7 @@
 #include "src/api/step_ctx.h"
 
 extern char **environ;
+slurm_step_ctx step_ctx;
 
 /*
  * declaration of static funcs
@@ -111,7 +112,6 @@ int slaunch(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_step_create_request_msg_t step_req;
-	slurm_step_ctx step_ctx;
 	slurm_job_step_launch_t params;
 	int rc;
 	uint32_t *hostids = NULL;
@@ -520,10 +520,36 @@ _task_start(launch_tasks_response_msg_t *msg)
 }
 
 static void
+_handle_max_wait(int signo)
+{
+	uint32_t job_id, step_id;
+
+	info("First task exited %ds ago", opt.max_wait);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
+	info("Terminating job step");
+	slurm_kill_job_step(job_id, step_id, SIGKILL);
+}
+
+static void
 _task_finish(task_exit_msg_t *msg)
 {
+	static bool first_done = true;
+
 	verbose("%d tasks finished (rc=%d)",
 		msg->num_tasks, msg->return_code);
+
+	/* If these are the first tasks to finish we need to start a timer
+	 * to kill off the job step if the other tasks don't finish
+	 * within opt.max_wait seconds.
+	 */
+	if (first_done && opt.max_wait > 0) {
+		first_done = false;
+		info("First task has exited");
+		xsignal(SIGALRM, _handle_max_wait);
+		verbose("starting alarm of %d seconds", opt.max_wait);
+		alarm(opt.max_wait);
+	}
 }
 
 

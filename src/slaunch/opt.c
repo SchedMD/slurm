@@ -1047,7 +1047,7 @@ void set_options(const int argc, char **argv)
 		{"local-output",  required_argument, 0, 'o'},
 		{"remote-output", required_argument, 0, 'O'},
 		{"overcommit",    no_argument,       0, 'C'},
-		{"quiet",            no_argument,    0, 'Q'},
+		{"quiet",            no_argument,    0, 'q'},
 		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"time",          required_argument, 0, 't'},
@@ -1086,7 +1086,7 @@ void set_options(const int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+c:Cd:D:e:E:F:g:hi:I:J:kKlm:n:N:"
-		"o:O:Qr:R:t:T:uvVw:W:Z";
+		"o:O:qr:R:t:T:uvVw:W:Z";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1213,7 +1213,7 @@ void set_options(const int argc, char **argv)
 			else
 				opt.remote_ofname = xstrdup(optarg);
 			break;
-		case 'Q':
+		case 'q':
 			opt.quiet++;
 			break;
 		case 'r':

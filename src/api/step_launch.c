@@ -477,7 +477,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	pthread_mutex_lock(&sls->lock);
 
 	for (i = 0; i < msg->num_tasks; i++) {
-		info("task %d done", msg->task_id_list[i]);
+		debug("task %d done", msg->task_id_list[i]);
 		bit_set(sls->tasks_exited, msg->task_id_list[i]);
 	}
 
@@ -560,33 +560,43 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 
 	switch (msg->msg_type) {
 	case RESPONSE_LAUNCH_TASKS:
-		debug2("received task launch\n");
+		debug2("received task launch");
 		_launch_handler(sls, msg);
 		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
 	case MESSAGE_TASK_EXIT:
-		debug2("received task exit\n");
+		debug2("received task exit");
 		_exit_handler(sls, msg);
 		slurm_free_task_exit_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
-		debug2("received srun node fail\n");
+		debug2("received srun node fail");
 		_node_fail_handler(sls, msg);
 		slurm_free_srun_node_fail_msg(msg->data);
 		break;
+	case SRUN_TIMEOUT:
+		debug2("received job step timeout message");
+		/* FIXME - does nothing yet */
+		slurm_free_srun_timeout_msg(msg->data);
+		break;
+	case SRUN_JOB_COMPLETE:
+		debug2("received job step complete message");
+		/* FIXME - does nothing yet */
+		slurm_free_srun_job_complete_msg(msg->data);
+		break;
 	case PMI_KVS_PUT_REQ:
-		debug2("PMI_KVS_PUT_REQ received\n");
+		debug2("PMI_KVS_PUT_REQ received");
 		rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
 		slurm_send_rc_msg(msg, rc);
 		break;
 	case PMI_KVS_GET_REQ:
-		debug2("PMI_KVS_GET_REQ received\n");
+		debug2("PMI_KVS_GET_REQ received");
 		rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
 		break;
 	default:
-		error("received spurious message type: %d\n",
+		error("received spurious message type: %d",
 		      msg->msg_type);
 		break;
 	}

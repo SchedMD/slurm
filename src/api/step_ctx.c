@@ -144,6 +144,10 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 
 	va_start(ap, ctx_key);
 	switch (ctx_key) {
+	case SLURM_STEP_CTX_JOBID:
+		uint32_ptr = (uint32_t *) va_arg(ap, void *);
+		*uint32_ptr = ctx->job_id;
+		break;
 	case SLURM_STEP_CTX_STEPID:
 		uint32_ptr = (uint32_t *) va_arg(ap, void *);
 		*uint32_ptr = ctx->step_resp->job_step_id;
