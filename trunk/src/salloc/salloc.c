@@ -63,8 +63,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
 static int fork_command(char **command);
 static void _pending_callback(uint32_t job_id);
-static void _ignore_signal(int);
-static void _exit_on_signal(int);
+static void _ignore_signal(int signo);
+static void _exit_on_signal(int signo);
 
 int main(int argc, char *argv[])
 {
@@ -159,12 +159,10 @@ int main(int argc, char *argv[])
 	 */
 	if (pid > 0) {
 		while ((rc_pid = waitpid(pid, &status, 0)) == -1) {
-			if (exit_flag) {
+			if (exit_flag)
 				break;
-			}
 			if (errno == EINTR)
 				continue;
-			
 		}
 		errnum = errno;
 		if (rc_pid == -1 && errnum != EINTR)

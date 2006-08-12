@@ -316,7 +316,8 @@ enum ctx_keys {
 	SLURM_STEP_CTX_CRED,
 	SLURM_STEP_CTX_SWITCH_JOB,
 	SLURM_STEP_CTX_NUM_HOSTS,
-	SLURM_STEP_CTX_HOST
+	SLURM_STEP_CTX_HOST,
+	SLURM_STEP_CTX_JOBID
 };
 
 /*****************************************************************************\
