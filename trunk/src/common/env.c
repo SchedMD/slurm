@@ -624,6 +624,7 @@ static char *_uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_CPUS_PER_NODE
  *
  * Sets OBSOLETE variables:
+ *	SLURM_JOBID
  *	? probably only needed for users...
  */
 char **
@@ -642,6 +643,9 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
 					alloc->cpu_count_reps);
 	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	xfree(tmp);
+
+	/* obsolete */
+	env_array_append(&ptr, "SLURM_JOBID", "%u", alloc->job_id);
 
 	return ptr;
 }

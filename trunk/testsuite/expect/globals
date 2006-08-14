@@ -207,6 +207,25 @@ proc get_line_cnt { file_name } {
 
 ################################################################
 #
+# Proc: slow_kill
+#
+# Purpose:  Kill a process slowly, first trying SIGINT, pausing for
+#       a second, then sending SIGKILL.
+#
+# Returns: A non-zero return code indicates a failure.
+#
+################################################################
+
+proc slow_kill { pid } {
+	exec $bin_kill -INT $pid
+	sleep  1
+	exec $bin_kill -KILL $pid
+	return 0
+}
+
+
+################################################################
+#
 # Proc: kill_salloc
 #
 # Purpose:  Kill all salloc commands associated with this user.

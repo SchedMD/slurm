@@ -44,32 +44,34 @@ print_header $test_id
 #
 set timeout $max_job_delay
 set match 0
-spawn $salloc -t1 $bin_bash
+set salloc_pid [spawn $salloc -t1 $bin_bash]
+
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		send "$bin_echo MY_ID=\$SLURM_JOBID \n"
+		array unset expect_out
 		exp_continue
 	}
-	-re "MY_ID=($number)" {
-		set slurm_jobid $expect_out(1,string)
-		send "exit 2\n"
+	-re "MY_ID=($number)?" {
+		foreach name [array names expect_out] {
+			if {$name == "1,string"} {
+				# SLURM_JOBID is set
+				set slurm_jobid $expect_out(1,string)
+				break
+			}
+		}
+		send "exit 0\n"
 		exp_continue
 	}
-	-re "MY_ID=" {
-#		$SLURM_JOBID is not set
-		send "exit 2\n"
-		exp_continue
-	}
-	-re "\[Ee\]xit 2" {
-		send_user "\nThis error was expected, no worries\n"
+	-re "\[Ee\]xit 0" {
 		set match 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
