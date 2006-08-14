@@ -216,12 +216,13 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	if (rc == SLURM_SOCKET_ERROR) {
+		int errnum = errno;
 		destroy_forward(&req_msg.forward);
 		destroy_forward(&resp_msg.forward);
 		if (!req->immediate)
 			_destroy_allocation_response_socket(listen);
 		xfree(req);
-		errno = SLURM_SOCKET_ERROR;
+		errno = errnum;
 		return NULL;
 	}
 
