@@ -94,7 +94,7 @@ if {$inactive_limit < $sleep_time} {
 set timeout [expr $max_job_delay + $sleep_time]
 set job_id    0
 set timed_out 0
-spawn $salloc -t1 $bin_sleep $sleep_time
+spawn $salloc -t1 --kill-command $bin_sleep $sleep_time
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
