@@ -48,17 +48,7 @@ expect {
 		exp_continue
 	}
 	-re "SLURM_($alpha_under)=($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) "JOB_CPUS_PER_NODE"]
-		    == 0} {
-			incr matches
-			exp_continue
-		}
                 if {[string compare $expect_out(1,string) "JOB_ID"] == 0
-		&& $expect_out(2,string) > 0} {
-			incr matches
-			exp_continue
-		}
-                if {[string compare $expect_out(1,string) "JOBID"] == 0
 		&& $expect_out(2,string) > 0} {
 			incr matches
 			exp_continue
@@ -69,6 +59,27 @@ expect {
 			exp_continue
                 }
 		if {[string compare $expect_out(1,string) "JOB_NODELIST"] == 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "JOB_CPUS_PER_NODE"]
+		    == 0} {
+			incr matches
+			exp_continue
+		}
+
+		# The following are "obsolete"
+                if {[string compare $expect_out(1,string) "JOBID"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+                if {[string compare $expect_out(1,string) "NNODES"] == 0
+		&& $expect_out(2,string) > 0} {
+                        incr matches
+			exp_continue
+                }
+		if {[string compare $expect_out(1,string) "NODELIST"] == 0} {
 			incr matches
 			exp_continue
 		}
@@ -88,8 +99,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 5} {
-	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 5)\n"
+if {$matches != 7} {
+	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 7)\n"
 	set exit_code 1
 }
 
