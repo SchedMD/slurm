@@ -37,7 +37,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.84"
+set test_id     "18.29"
 set exit_code   0
 set file_in     "test$test_id.input"
 
@@ -63,14 +63,19 @@ set cpu_count      0
 set cpus_per_node  0
 set fat_nodes      0
 set host           ""
+set job_id         0
 set timeout        $max_job_delay
 set node_cnt       1
 set task_cnt       1
 
-spawn $srun -N$node_cnt --cpus-per-task=$task_cnt -l -t1 $bin_hostname  
+spawn $salloc -N$node_cnt -t1 $slaunch --cpus-per-task=$task_cnt -l $file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_JOB_CPUS_PER_NODE=($number)" {
+		set cpus_per_node $expect_out(1,string)
 		exp_continue
 	}
 	-re "($number): ($alpha_numeric)" {
@@ -87,8 +92,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -112,7 +121,7 @@ if {$cpus_per_node != $cpu_count} {
 	send_user "FAILURE: should have run $cpus_per_node tasks (one per CPU) instead of $cpu_count tasks\n"
 	exit 1
 }
-if {$cpu_count < 2} {
+if {$cpus_per_node < 2} {
 	send_user "\nWARNING: The node only has one CPU\n"
 	exit $exit_code
 }
@@ -120,9 +129,14 @@ if {$cpu_count < 2} {
 #
 # Submit a 1 node job to determine the node's CPU count
 #
+set job_id    0
 set read_cpus 0
-spawn $srun -N1 --cpus-per-task=2 --nodelist=$host -l -t1 $bin_hostname  
+spawn $salloc -N1 -t1 $slaunch --cpus-per-task=2 --nodelist=$host -l $bin_hostname  
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
 		send_user "multiple slurmd testing.\n"
@@ -135,7 +149,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
