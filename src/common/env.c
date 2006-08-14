@@ -627,6 +627,7 @@ static char *_uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
+ *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
 char **
@@ -644,13 +645,14 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
 					alloc->cpus_per_node,
 					alloc->cpu_count_reps);
 	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
-	xfree(tmp);
 
 	/* obsolete */
 	env_array_append(&ptr, "SLURM_JOBID", "%u", alloc->job_id);
 	env_array_append(&ptr, "SLURM_NNODES", "%u", alloc->node_cnt);
 	env_array_append(&ptr, "SLURM_NODELIST", "%s", alloc->node_list);
+	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", tmp);
 
+	xfree(tmp);
 	return ptr;
 }
 
@@ -669,6 +671,7 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
+ *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
 char **
@@ -693,13 +696,14 @@ env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
 	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
-	xfree(tmp);
 
 	/* OBSOLETE */
 	env_array_append(&ptr, "SLURM_JOBID", "%u", batch->job_id);
 	env_array_append(&ptr, "SLURM_NNODES", "%u", num_nodes);
 	env_array_append(&ptr, "SLURM_NODELIST", "%s", batch->nodes);
+	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", tmp);
 
+	xfree(tmp);
 	return ptr;
 }
 
