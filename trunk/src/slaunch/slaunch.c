@@ -545,7 +545,7 @@ _task_finish(task_exit_msg_t *msg)
 	 */
 	if (first_done && opt.max_wait > 0) {
 		first_done = false;
-		info("First task has exited");
+		debug2("First task has exited");
 		xsignal(SIGALRM, _handle_max_wait);
 		verbose("starting alarm of %d seconds", opt.max_wait);
 		alarm(opt.max_wait);

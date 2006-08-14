@@ -41,12 +41,12 @@ set task_id          3
 print_header $test_id
 
 #
-# Spawn a shell via slaunch with stdout forwarding disabled
+# Spawn a shell via slaunch
 #
 set timeout $max_job_delay
 spawn $salloc -v -N1 -t1 $slaunch -n10 --overcommit --wait=2 --local-input=3 $bin_bash
 expect {
-	-re "Submitted batch job ($number)" {
+	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		send "$bin_env\n"
 		exp_continue
