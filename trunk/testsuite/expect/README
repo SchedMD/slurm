@@ -358,6 +358,7 @@ test15.17  Test the launch of a batch job within an existing job allocation.
 test15.18  Test of running non-existant job, confirm timely termination.
 test15.19  Confirm that a job executes with the proper node count
            (--nodes option).
+test15.20  Test of contiguous option with multiple nodes (--contiguous option).
 
 
 test16.#   Testing of sattach options.
