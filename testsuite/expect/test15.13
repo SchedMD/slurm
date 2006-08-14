@@ -83,6 +83,11 @@ expect {
 			incr matches
 			exp_continue
 		}
+		if {[string compare $expect_out(1,string) "TASKS_PER_NODE"]
+		    == 0} {
+			incr matches
+			exp_continue
+		}
 		exp_continue
 	}
 	timeout {
@@ -99,8 +104,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 7} {
-	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 7)\n"
+if {$matches != 8} {
+	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 8)\n"
 	set exit_code 1
 }
 
