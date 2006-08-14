@@ -37,86 +37,75 @@ set exit_script    "./test$test_id.exit.bash"
 set test_script    "./test$test_id.bash"
 print_header $test_id
 
+set timeout $max_job_delay
+
 #
 # Delete left-over scripts and build new ones
 #
-make_bash_script $exit_script "
-  RC=`expr \$SLURM_PROCID + 10`
-  exit \$RC
-"
-
-make_bash_script $test_script "
-  $salloc -N1 -t1 -v $slaunch -n2 --overcommit $exit_script
-  echo salloc_exit_code_\$?
-"
+make_bash_script $exit_script {exit $((SLURM_PROCID + 10))}
 
 #
-# Spawn program and check for exit code messages from slaunch
+# Check the return code of slaunch.  To do so, we spawn
+# salloc and slaunch command seperately.
 #
-set job_id 0
-set sum    0
-set timeout $max_job_delay
-spawn $salloc -N1 -t1 $slaunch -n2 --overcommit $exit_script
+set job_id  0
+set matches 0
+
+# First start salloc and wait for the allocation
+set salloc_pid [spawn $salloc -N1 -t1 --kill-command sleep 300]
+set salloc_spawn_id $spawn_id
+set spawn_id $salloc_spawn_id
 expect {
 	-re "Granted job allocation ($number)" {
+	    send_user "got job id\n"
 		set job_id $expect_out(1,string)
-		exp_continue
 	}
+	timeout {
+		if {$job_id == 0} {
+			slow_kill $salloc_pid
+		} else {
+			cancel_job $job_id
+		}
+	}
+}
+
+# Then spawn slaunch using the job allocation from the previous salloc
+set slaunch_pid [spawn $slaunch --jobid=$job_id -n2 --overcommit $exit_script]
+set slaunch_spawn_id $spawn_id
+set spawn_id $slaunch_spawn_id
+set sum 0
+expect {
 	-re "exit code ($number)" {
 		send_user "This error is expected, no worries\n"
 		incr sum $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
-		if {$job_id == 0} {
-			kill_salloc
-		} else {
-			cancel_job $job_id
-		}
+		send_user "\nFAILURE: slaunch not responding\n"
+		slow_kill $slaunch_pid
 		set exit_code 1
 		exp_continue
 	}
 	eof {
-		wait
+		set slaunch_rc [lindex [wait] 3]
 	}
 }
 if {$sum != 21} {
-	send_user "\nFAILURE: slaunch failed to report exit code\n"
+	send_user "\nFAILURE: slaunch failed to report individual task error codes\n"
 	set exit_code 1
 }
-exit $exit_code
-#
-# Spawn program to check the exit code of slaunch itself
-#
-set job_id  0
-set matches 0
-spawn $test_script
-expect {
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "salloc_exit_code_11" {
-		send_user "Above error are expected, no worries\n"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		if {$job_id == 0} {
-			kill_salloc
-		} else {
-			cancel_job $job_id
-		}
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: salloc's exit code is bad\n"
+send_user "slaunch rc = $slaunch_rc\n"
+if {$slaunch_rc != 11} {
+	send_user "\nFAILURE: slaunch's return code was not the maximum task return code\n"
 	set exit_code 1
 }
+
+# signal the entire process group of salloc to kill the "sleep 300"
+exec $bin_kill -s INT "-$salloc_pid"
+set salloc_rc [lindex [wait -i $salloc_spawn_id] 3]
+# We don't care about salloc's return code (it is probably 1 because
+# we are killing the sleep command with SIGINT.
+#send_user "salloc rc = $salloc_rc\n"
 
 #
 # Post-processing
