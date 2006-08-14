@@ -62,6 +62,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
@@ -86,6 +87,7 @@
 
 extern char **environ;
 slurm_step_ctx step_ctx;
+int global_rc;
 
 /*
  * declaration of static funcs
@@ -247,7 +249,7 @@ cleanup:
 	slurm_step_ctx_destroy(step_ctx);
 	_mpir_cleanup();
 
-	return 0;
+	return global_rc;
 }
 
 /* Set SLURM_UMASK environment variable with current state */
@@ -535,9 +537,23 @@ static void
 _task_finish(task_exit_msg_t *msg)
 {
 	static bool first_done = true;
+	int rc;
 
-	verbose("%d tasks finished (rc=%d)",
+	verbose("%d tasks finished (rc=%u)",
 		msg->num_tasks, msg->return_code);
+	if (WIFEXITED(msg->return_code)) {
+		rc = WEXITSTATUS(msg->return_code);
+		if (rc != 0) {
+			/* FIXME - needs to print task id list, not
+			   just the first id in the list */
+			error("task%u: Exited with exit code %d",
+			      msg->task_id_list[0], rc);
+		}
+	} else {
+		debug("tasks did not exit normally");
+		rc = 1;
+	}
+	global_rc = MAX(global_rc, rc);
 
 	/* If these are the first tasks to finish we need to start a timer
 	 * to kill off the job step if the other tasks don't finish
