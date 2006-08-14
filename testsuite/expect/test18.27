@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.80"
+set test_id     "18.27"
 set exit_code   0
 
 print_header $test_id
@@ -46,15 +46,20 @@ if { [test_xcpu] } {
 #
 # Submit a two node job with block distribution
 #
+set job_id      0
 set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID  
+spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=block $bin_printenv SLURM_NODEID  
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "More ($alpha) requested than permitted" {
-		send_user "\nWARNING: can't test srun task distribution\n"
+		send_user "\nWARNING: can't test slaunch task distribution\n"
 		exit 0
 	}
 	-re "(\[0-3\]): ($alpha_numeric)" {
@@ -73,8 +78,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -114,15 +123,20 @@ if {[test_front_end] != 0} {
 #
 # Submit a two node job with cyclic distribution
 #
+set job_id      0
 set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID  
+spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=cyclic $bin_printenv SLURM_NODEID  
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "More ($alpha) requested than permitted" {
-		send_user "\nWARNING: can't test srun task distribution\n"
+		send_user "\nWARNING: can't test slaunch task distribution\n"
 		exit 0
 	}
 	-re "(\[0-3\]): ($alpha_numeric)" {
@@ -141,8 +155,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
