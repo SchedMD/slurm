@@ -359,6 +359,9 @@ test15.18  Test of running non-existant job, confirm timely termination.
 test15.19  Confirm that a job executes with the proper node count
            (--nodes option).
 test15.20  Test of contiguous option with multiple nodes (--contiguous option).
+test15.21  Test of contiguous option with multiple nodes (--contiguous option).
+test15.22  Test of partition specification on job submission (--partition  
+           option).
 
 
 test16.#   Testing of sattach options.
