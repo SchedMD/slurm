@@ -62,6 +62,7 @@ if { [test_bluegene] } {
 	}
 }
 
+# First test uses srun based task launch
 # Adjust time limits as needed for large task counts */
 #                   times are here  vv 
 set timeout [expr $max_job_delay +  60]
@@ -88,6 +89,41 @@ expect {
 	}
 }
 
+# Second test uses slaunch based task launch
+# Adjust time limits as needed for large task counts */
+#                   times are here  vv 
+set timeout [expr $max_job_delay +  60]
+set job_id 0
+spawn $salloc -N$node_cnt         -t1 $slaunch -n8 --overcommit -l $file_prog_get
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "FAILURE" {
+		send_user "\nFAILURE: some error occured\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occured\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
         exec $bin_rm -f $file_prog_get
