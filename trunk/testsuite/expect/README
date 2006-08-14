@@ -450,6 +450,7 @@ test18.19  Test of slaunch signal forwarding (actually using scancel, for
 test18.20  Run "slaunch cat" and read slaunch's stdout SLOWLY, creating
            stdout back pressure in slaunch.
 test18.21  Test of slaunch's --kill-on-bad-exit option.
+test18.22  Test of slaunch task-prolog and task-epilog option.
 test18.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 
