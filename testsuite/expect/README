@@ -356,6 +356,8 @@ test15.16  Verify that SLURM directed environment variables are processed:
 test15.17  Test the launch of a batch job within an existing job allocation.
            This logic is used by LSF
 test15.18  Test of running non-existant job, confirm timely termination.
+test15.19  Confirm that a job executes with the proper node count
+           (--nodes option).
 
 
 test16.#   Testing of sattach options.
@@ -458,6 +460,8 @@ test18.24  Test propagation of umask to spawned tasks.
 test18.25  Test of hostfile option (-hostfile).
 test18.26  Test of running different executables with different arguments
            for each task (--multi-prog option).
+test18.27  Confirm that a job executes with the proper task distribution
+           (--nodes and --distribution options).
 test18.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 
