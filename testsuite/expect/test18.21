@@ -1,16 +1,13 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of srun's --kill-on-bad-exit option.
+#          Test of slaunch's --kill-on-bad-exit option.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.46.input, test1.46.output, and test1.46.error
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -34,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.46"
+set test_id     "18.21"
 set exit_code   0
 set file_in     "test$test_id.prog"
 set matches     0
@@ -73,11 +70,16 @@ exec $bin_make -f /dev/null $file_in
 exec $bin_chmod 700 $file_in
 
 #
-# Spawn a shell via srun and send exit command to task 1 only
+# Spawn a shell via sattach/slaunch and send exit command to task 1 only
 #
 set timeout $max_job_delay
-spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 $file_in
+set job_id  0
+spawn $salloc -t1 -N1 $slaunch -n10 --overcommit --kill-on-bad-exit $file_in
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "exit code 2" {
 		send_user "This error is expected, no worries\n"
 		incr matches
@@ -88,8 +90,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id_1 != 0} {
+			cancel_job $job_id_1
+		} else {
+			kill_salloc
+		}
 		set exit_code 1
 		exp_continue
 	}

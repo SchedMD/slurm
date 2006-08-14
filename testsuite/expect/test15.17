@@ -1,16 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of srun's --kill-on-bad-exit option.
+#          Test the launch of a batch job within an existing job allocation.
+#          This logic is used by LSF
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.46.input, test1.46.output, and test1.46.error
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -34,62 +32,58 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.46"
-set exit_code   0
-set file_in     "test$test_id.prog"
-set matches     0
+set test_id      "15.17"
+set file_in      "test$test_id.input"
+set exit_code    0
+set job_id_1     0
+set job_id_2     0
 
 print_header $test_id
 
 #
-# Delete left-over input script
 # Build input script file
 #
-# We have the last of the tasks exit.  proctrack/linuxproc will not
-# signal processes named "slurmstepd" and later user tasks could still
-# be named "slurmstepd" when the termination signal comes in.
-#
 exec $bin_rm -f $file_in
-set fd [open "$file_in.c" w]
-puts $fd {
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-main()
-{
-    char *id = getenv("SLURM_PROCID");
-    if (atoi(id) == 9) {
-        exit(2);
-    }
-    sleep(15);
-    printf("SHOULD_NOT_BE_HERE\n");
-}
-}
-close $fd
-# Add delay due to sporatic error "Clock skew detected"
-exec $bin_sleep 1
-exec $bin_make -f /dev/null $file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$bin_hostname"
 
 #
-# Spawn a shell via srun and send exit command to task 1 only
+# Spawn a sbatch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 $file_in
+if { [test_bluegene] } {
+	set node_cnt 1-2048
+} else {
+	if { [test_xcpu] } {
+		set node_cnt 1-1
+	} else {
+		set node_cnt 1-4
+	}
+}
+
+spawn $salloc -N$node_cnt -t1 $bin_bash
 expect {
-	-re "exit code 2" {
-		send_user "This error is expected, no worries\n"
-		incr matches
+	-re "Granted job allocation ($number)" {
+		set job_id_1 $expect_out(1,string)
+		send "$sbatch --jobid=$job_id_1 -o none -e none $file_in \n"
 		exp_continue
 	}
-	-re "SHOULD_NOT_BE_HERE" {
-		set matches -10
+	-re "Submitted batch job ($number)" {
+		set job_id_2 $expect_out(1,string)
+		send "exit \n"
+		exp_continue
+	}
+	-re "jobid ($number).0 submitted" {
+		set job_id_2 $expect_out(1,string)
+		send "exit \n"
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id_1 != 0} {
+			cancel_job $job_id_1
+		} else {
+			kill_salloc
+		}
 		set exit_code 1
 		exp_continue
 	}
@@ -98,12 +92,22 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	send_user "\nFAILURE: problem with --kill-on-bad-exit option\n"
-	set exit_code 1
+if {$job_id_1 == 0} {
+	send_user "\nFAILURE: job allocation failure\n"
+	exit 1
 }
+if {$job_id_1 != $job_id_2} {
+	send_user "\nFAILURE: batch job did not run in existing allocation\n"
+	exit 1
+}
+
+if [file exists none] {
+	send_user "\nFAILURE: created file 'none', should have mapped to no file\n"
+	exit 1
+}
+
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_in.c
 	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in
 }
 exit $exit_code
