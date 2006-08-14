@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 ############################################################################
-# Purpose: Test of srun functionality
+# Purpose: Test of slaunch functionality
 #          Test of hostfile option (-hostfile).
 #          
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.52"
+set test_id     "18.25"
 set exit_code   0
 set num_nodes   2
 set num_tasks   2
@@ -99,11 +99,14 @@ for {set i 0} {$i<2} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	set job_id 0
-	set node0  ""
-	set node1  ""
-	spawn $srun -N2 -l $bin_printenv SLURMD_NODENAME
+	set node0 ""
+	set node1 ""
+	spawn $salloc -N2 $slaunch -l $bin_printenv SLURMD_NODENAME
 	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
@@ -120,7 +123,7 @@ for {set i 0} {$i<2} {incr i} {
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			if {$job_id == 0} {
-				kill_srun
+				kill_salloc
 			} else {
 				cancel_job $job_id
 			}
