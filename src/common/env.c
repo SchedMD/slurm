@@ -625,6 +625,8 @@ static char *_uint32_compressed_to_str(uint32_t array_len,
  *
  * Sets OBSOLETE variables:
  *	SLURM_JOBID
+ *	SLURM_NNODES
+ *	SLURM_NODELIST
  *	? probably only needed for users...
  */
 char **
@@ -646,6 +648,8 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
 
 	/* obsolete */
 	env_array_append(&ptr, "SLURM_JOBID", "%u", alloc->job_id);
+	env_array_append(&ptr, "SLURM_NNODES", "%u", alloc->node_cnt);
+	env_array_append(&ptr, "SLURM_NODELIST", "%s", alloc->node_list);
 
 	return ptr;
 }
@@ -663,6 +667,8 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
  *
  * Sets OBSOLETE variables:
  *	SLURM_JOBID
+ *	SLURM_NNODES
+ *	SLURM_NODELIST
  *	? probably only needed for users...
  */
 char **
@@ -691,6 +697,8 @@ env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
 
 	/* OBSOLETE */
 	env_array_append(&ptr, "SLURM_JOBID", "%u", batch->job_id);
+	env_array_append(&ptr, "SLURM_NNODES", "%u", num_nodes);
+	env_array_append(&ptr, "SLURM_NODELIST", "%s", batch->nodes);
 
 	return ptr;
 }
