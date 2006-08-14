@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.82"
+set test_id     "15.20"
 set exit_code   0
 
 print_header $test_id
@@ -50,6 +50,7 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
+set job_id      0
 set timeout $max_job_delay
 
 if { [test_bluegene] } {
@@ -64,15 +65,19 @@ if {$available < $node_cnt} {
     exit $exit_code
 }
 
-spawn $srun -N$node_cnt -l -t1 $bin_hostname  
+spawn $salloc -N$node_cnt -t1 $slaunch -l $bin_hostname  
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "$bin_echo MY_ID=\$SLURM_JOBID \n"
+		exp_continue
+	}
 	-re "More ($alpha) requested than permitted" {
-		send_user "\nWARNING: can't test srun task distribution\n"
+		send_user "\nWARNING: can't test salloc task distribution\n"
 		exit $exit_code
 	}
 	-re "configuration not available" {
 		send_user "WARNING: partition too small for test\n"
-		kill_srun
 		exit 0
 	}
 	-re "($number): ($alpha_numeric)" {
@@ -91,8 +96,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		exit 1
 	}
 	eof {
@@ -145,9 +154,14 @@ set include_node $host_2
 set host_0      ""
 set host_1      ""
 set host_2      ""
+set job_id      0
 set timeout $max_job_delay
-spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_hostname  
+spawn $salloc -N2 -t1 --exclude=$exclude_node $slaunch -l $bin_hostname  
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
 		send_user "multiple slurmd testing.\n"
@@ -168,8 +182,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		exit 1
 	}
 	eof {
@@ -209,9 +227,14 @@ if {$dup_hostname == 1} {
 #
 set host_0      ""
 set host_1      ""
+set job_id      0
 set timeout $max_job_delay
-spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_hostname  
+spawn $salloc -N1 -t1 --nodelist=$include_node $slaunch -l $bin_hostname  
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
@@ -222,8 +245,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
 		set exit_code 1
 		exp_continue
 	}
