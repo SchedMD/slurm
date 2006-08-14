@@ -32,6 +32,7 @@
 ############################################################################
 source ./globals
 
+slow_kill 45984
 set test_id      "15.17"
 set file_in      "test$test_id.input"
 set exit_code    0
@@ -60,7 +61,7 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $salloc -N$node_cnt -t1 $bin_bash
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id_1 $expect_out(1,string)
@@ -82,7 +83,7 @@ expect {
 		if {$job_id_1 != 0} {
 			cancel_job $job_id_1
 		} else {
-			kill_salloc
+			slow_kill $salloc_pid
 		}
 		set exit_code 1
 		exp_continue

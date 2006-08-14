@@ -217,9 +217,12 @@ proc get_line_cnt { file_name } {
 ################################################################
 
 proc slow_kill { pid } {
-	exec $bin_kill -INT $pid
+	global bin_kill
+
+	catch {exec $bin_kill -INT $pid}
 	sleep  1
-	exec $bin_kill -KILL $pid
+	catch {exec $bin_kill -KILL $pid}
+
 	return 0
 }
 
