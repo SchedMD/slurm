@@ -354,6 +354,7 @@ test15.16  Verify that SLURM directed environment variables are processed:
            SALLOC_BELL and SALLOC_NO_BELL (can't really confirm from Expect)
 test15.17  Test the launch of a batch job within an existing job allocation.
            This logic is used by LSF
+test15.18  Test of running non-existant job, confirm timely termination.
 
 
 test16.#   Testing of sattach options.
@@ -451,6 +452,7 @@ test18.20  Run "slaunch cat" and read slaunch's stdout SLOWLY, creating
            stdout back pressure in slaunch.
 test18.21  Test of slaunch's --kill-on-bad-exit option.
 test18.22  Test of slaunch task-prolog and task-epilog option.
+test18.23  Test of running non-existant job, confirm timely termination.
 test18.TBD Verify that SLURM directed environment variables are processed:
            SBATCH_NNODES, etc.
 
