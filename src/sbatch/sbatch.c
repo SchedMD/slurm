@@ -99,6 +99,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	extern char **environ;
 
+	if (opt.jobid_set)
+		desc->job_id = opt.jobid;
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate;
