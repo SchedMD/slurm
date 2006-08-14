@@ -1271,7 +1271,7 @@ client_io_handler_downnodes(client_io_t *cio,
 		return;
 	pthread_mutex_lock(&cio->ioservers_lock);
 	for (i = 0; i < num_node_ids; i++) {
-		node_id = node_id;
+		node_id = node_ids[i];
 		verbose ("Clearing downnode %d", node_id); /* FIXME - remove */
 		if (node_id >= cio->num_nodes || node_id < 0)
 			continue;
