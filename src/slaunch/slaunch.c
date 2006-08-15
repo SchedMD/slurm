@@ -170,15 +170,15 @@ int slaunch(int argc, char **argv)
 	step_req.user_id = getuid();
 	step_req.node_count = opt.num_nodes;
 	step_req.num_tasks = opt.num_tasks;
-	if (opt.overcommit)
-		step_req.cpu_count = 0;
-	else
+	if (opt.cpus_per_task_set)
 		step_req.cpu_count = opt.num_tasks * opt.cpus_per_task;
+	else
+		step_req.cpu_count = 0; /* let the controller figure it out */
 	step_req.relative = opt.relative;
 	step_req.task_dist = opt.distribution;
 	step_req.overcommit = opt.overcommit ? 1 : 0;
-	step_req.port = 0;      /* historical, used by srun */
-	step_req.host = NULL;   /* historical, used by srun */
+	step_req.host = NULL; /* let the SLURM API set this */
+	step_req.port = 0;    /* let the SLURM API set this */
 
 	/* SLURM overloads the node_list parameter in the
 	 * job_step_create_request_msg_t.  It can either be a node list,

@@ -69,7 +69,7 @@ typedef struct slaunch_options {
 	int  num_tasks;		/* --ntasks=n,      -n n	*/
 	bool num_tasks_set;	/* true if ntasks explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
-	bool cpus_set;		/* true if cpus_per_task explicitly set */
+	bool cpus_per_task_set; /* true if cpus_per_task explicitly set */
 	int  num_nodes;		/* --nodes=n,       -N n	*/ 
 	bool num_nodes_set;	/* true if num_nodes explicitly set */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
