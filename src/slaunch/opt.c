@@ -1720,12 +1720,12 @@ static bool _opt_verify(void)
 		/* make sure that the user isn't asking for more tasks
 		   than there are available cpus in the allocation */
 		uint32_t cpus = _total_cpus(alloc_info_ptr);
-		if (opt.num_tasks > cpus) {
-			error("Asking for more tasks (%u) than total available"
-			      " cpus (%u)", opt.num_tasks, cpus);
-			error("Perhaps you meant to use --overcommit?");
-			verified = false;
-		}
+		/* if (opt.num_tasks > cpus) { */
+/* 			error("Asking for more tasks (%u) than total available" */
+/* 			      " cpus (%u)", opt.num_tasks, cpus); */
+/* 			error("Perhaps you meant to use --overcommit?"); */
+/* 			verified = false; */
+/* 		} */
 	}
 
 	core_format_enable (opt.core_type);

@@ -673,6 +673,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    && (!strcmp(slurmctld_conf.switch_type, "switch/elan"))) {
 		return ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED;
 	}
+	
+	/* if the overcommit flag is checked we 0 out the cpu_count
+	 * which makes it so we don't check to see the available cpus
+	 */	 
+	if (step_specs->overcommit)
+		step_specs->cpu_count = 0;
 
 	if (job_ptr->kill_on_step_done)
 		/* Don't start more steps, job already being cancelled */
@@ -741,8 +747,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   step_node_list,
 					   step_specs->node_count,
 					   step_specs->num_tasks,
-					   step_specs->task_dist,
-					   step_specs->overcommit);
+					   step_specs->task_dist);
 		if (!step_ptr->step_layout)
 			return SLURM_ERROR;
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
@@ -770,8 +775,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint16_t node_count,
 					       uint32_t num_tasks,
-					       uint16_t task_dist,
-					       uint8_t overcommit)
+					       uint16_t task_dist)
 {
 	uint32_t cpus_per_node[node_count];
 	uint32_t cpu_count_reps[node_count];
@@ -815,8 +819,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
 					cpus_per_node, cpu_count_reps, 
-					node_count, num_tasks, task_dist,
-					overcommit);
+					node_count, num_tasks, task_dist);
 }
 
 /* Pack the data for a specific job step record

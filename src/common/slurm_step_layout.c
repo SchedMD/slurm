@@ -87,8 +87,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t *cpus_per_node, uint32_t *cpu_count_reps, 
 	uint16_t num_hosts, 
 	uint32_t num_tasks,
-	uint16_t task_dist,
-	uint8_t overcommit) 
+	uint16_t task_dist) 
 {
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout = 
