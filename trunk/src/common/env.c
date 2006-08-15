@@ -927,8 +927,11 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 
 char **env_array_copy(const char **array)
 {
-	error("env_array_copy not implented");
-	return NULL;
+	char **ptr = NULL;
+
+	env_array_merge(&ptr, array);
+
+	return ptr;
 }
 
 /*

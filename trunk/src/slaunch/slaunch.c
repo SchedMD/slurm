@@ -127,7 +127,9 @@ int slaunch(int argc, char **argv)
 	int rc;
 	uint32_t *hostids = NULL;
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+	char **env;
 	int i, j;
+
 	
 	/* Initialize plugin stack, read options from plugins, etc. */
 	if (spank_init(NULL) < 0)
@@ -167,8 +169,7 @@ int slaunch(int argc, char **argv)
 	step_req.user_id = getuid();
 	step_req.node_count = opt.num_nodes;
 	step_req.num_tasks = opt.num_tasks;
-/* 	step_req.cpu_count = opt.cpus_per_task; */
-	step_req.cpu_count = 0; /* FIXME */
+	step_req.cpu_count = opt.num_tasks * opt.cpus_per_task;
 	step_req.relative = opt.relative;
 	step_req.task_dist = opt.distribution;
 	step_req.overcommit = opt.overcommit ? 1 : 0;
@@ -207,8 +208,12 @@ int slaunch(int argc, char **argv)
 	params.argc = opt.argc;
 	params.argv = opt.argv;
 	params.multi_prog = opt.multi_prog ? true : false;
-	params.envc = envcount(environ);
-	params.env = environ;
+	env = env_array_copy(environ);
+	/* FIXME - should find a better place to set this than here */
+	env_array_overwrite_fmt(&env, "SLURM_CPUS_PER_TASK",
+				"%d", opt.cpus_per_task);
+	params.envc = envcount(env);
+	params.env = env;
 	params.cwd = opt.cwd;
 	params.slurmd_debug = opt.slurmd_debug;
 	params.buffered_stdio = opt.unbuffered ? false : true;
