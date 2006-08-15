@@ -446,8 +446,6 @@ test18.11  Test slaunch stdout/err file name formatting (--local-output and
            --local-error options with %j, %J, %n, %s and %t specifications).
 test18.12  Test slaunch stdin routing to specific task (--local-input option
            with numeric argument).
-test18.13  Confirm that a job executes with various launch thread fanouts
-           (--threads option).
 test18.14  Verify the appropriate job environment variables are set
 test18.15  Verify that user environment variables are propagated to the job
 test18.16  Verify that user user limits are propagated to the job
