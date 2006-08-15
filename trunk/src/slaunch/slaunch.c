@@ -563,7 +563,7 @@ _task_finish(task_exit_msg_t *msg)
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
 			for (i = 0; i < msg->num_tasks; i++) {
-				error("task %u exited with return code %d",
+				error("task %u exited with exit code %d",
 				      msg->task_id_list[i], rc);
 				bit_set(task_state.finish_abnormal,
 					msg->task_id_list[i]);
