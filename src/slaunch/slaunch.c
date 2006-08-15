@@ -211,7 +211,7 @@ int slaunch(int argc, char **argv)
 	params.argc = opt.argc;
 	params.argv = opt.argv;
 	params.multi_prog = opt.multi_prog ? true : false;
-	env = env_array_copy(environ);
+	env = env_array_copy((const char **)environ);
 	/* FIXME - should find a better place to set this than here */
 	env_array_overwrite_fmt(&env, "SLURM_CPUS_PER_TASK",
 				"%d", opt.cpus_per_task);
