@@ -73,8 +73,8 @@
 
 #define POS_LOC 0
 
-enum { PART_PAGE, 
-       JOB_PAGE, 
+enum { JOB_PAGE, 
+       PART_PAGE, 
        NODE_PAGE, 
        BLOCK_PAGE, 
        SUBMIT_PAGE,

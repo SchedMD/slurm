@@ -43,12 +43,12 @@ int page_running[PAGE_CNT];
 	
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
-	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1, 
-	 refresh_main, get_info_part, specific_info_part, 
-	 set_menus_part, row_clicked_part, NULL},
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
 	 refresh_main, get_info_job, specific_info_job, 
 	 set_menus_job, row_clicked_job, NULL},
+	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1, 
+	 refresh_main, get_info_part, specific_info_part, 
+	 set_menus_part, row_clicked_part, NULL},
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
 	 refresh_main, get_info_block, specific_info_block, 
@@ -192,6 +192,16 @@ static void _init_pages()
 	}
 }
 
+static gboolean _delete(GtkWidget *widget,
+                        GtkWidget *event,
+                        gpointer data)
+{
+	gtk_main_quit ();
+	list_destroy(popup_list);
+	fini = 1;
+	return FALSE;
+}
+
 /* Our menu*/
 static const char *ui_description =
 "<ui>"
@@ -208,6 +218,7 @@ static const char *ui_description =
 "      <separator/>"
 "      <menuitem action='NextPage'/>"
 "      <menuitem action='PrevPage'/>"
+"      <menuitem action='Exit'/>"
 "    </menu>"
 "    <menu action='Help'>"
 "      <menuitem action='About'/>"
@@ -224,6 +235,8 @@ static GtkActionEntry entries[] = {
 	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
 	{"Refresh", NULL, "Refresh", 
 	 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
+	{"Exit", NULL, "E_xit", 
+	 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 	{"Help", NULL, "_Help"},
 	{"About", NULL, "_About"}
 };
@@ -270,16 +283,6 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 
 	/* Finally, return the actual menu bar created by the item factory. */
 	return gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
-}
-
-static gboolean _delete(GtkWidget *widget,
-                        GtkWidget *event,
-                        gpointer data)
-{
-	gtk_main_quit ();
-	list_destroy(popup_list);
-	fini = 1;
-	return FALSE;
 }
 
 int main(int argc, char *argv[])
