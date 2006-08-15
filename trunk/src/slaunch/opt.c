@@ -608,18 +608,6 @@ static int _set_cpus_per_node(const char *str)
 	return 1;
 }
 
-/* static uint32_t _total_cpus(resource_allocation_response_msg_t *alloc) */
-/* { */
-/* 	uint32_t cpus = 0; */
-/* 	int i; */
-
-/* 	for (i = 0; i < alloc->num_cpu_groups; i++) { */
-/* 		cpus += alloc->cpus_per_node[i] * alloc->cpu_count_reps[i]; */
-/* 	} */
-
-/* 	return cpus; */
-/* } */
-
 /* return command name from its full path name */
 static char * _base_name(char* command)
 {
@@ -738,7 +726,7 @@ static void _opt_default()
 	opt.num_tasks = 1;
 	opt.num_tasks_set = false;
 	opt.cpus_per_task = 1; 
-	opt.cpus_set = false;
+	opt.cpus_per_task_set = false;
 	opt.num_nodes = 1;
 	opt.num_nodes_set = false;
 	opt.cpu_bind_type = 0;
@@ -849,7 +837,7 @@ env_vars_t env_vars[] = {
   {"SLURM_JOB_CPUS_PER_NODE", OPT_CPUS_PER_NODE, NULL, NULL},
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
-  {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_set  },
+  {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_per_task_set},
   {"SLAUNCH_CONN_TYPE",    OPT_CONN_TYPE, NULL,               NULL           },
   {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
   {"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
@@ -1107,7 +1095,7 @@ void set_options(const int argc, char **argv)
 			exit(1);
 			break;
 		case 'c':
-			opt.cpus_set = true;
+			opt.cpus_per_task_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task");
 			break;
@@ -1632,6 +1620,11 @@ static bool _opt_verify(void)
 		}
 	}
 
+	if (opt.overcommit && opt.cpus_per_task_set) {
+		error("--overcommit and -c/--cpus-per-task are incompatible");
+		verified = false;
+	}
+
 	if (!opt.num_nodes_set && opt.num_tasks_set
 	    && opt.num_tasks < opt.num_nodes)
 		opt.num_nodes = opt.num_tasks;
@@ -1907,7 +1900,7 @@ static void _opt_list()
 	info("num_tasks      : %d %s", opt.num_tasks,
 		opt.num_tasks_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,
-		opt.cpus_set ? "(set)" : "(default)");
+		opt.cpus_per_task_set ? "(set)" : "(default)");
 	info("nodes          : %d %s",
 	     opt.num_nodes, opt.num_nodes_set ? "(set)" : "(default)");
 	info("jobid          : %u %s", opt.jobid, 
