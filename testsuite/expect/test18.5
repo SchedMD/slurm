@@ -61,8 +61,7 @@ exec $bin_chmod 700 $file_in
 # Spawn a shell via slaunch that uses stdin/out/err and confirm their contents
 #
 set timeout $max_job_delay
-set io_options "--local-input=$file_in --local-output=$file_out --local-error=$file_err"
-set salloc_pid [spawn $salloc -N1 -t1 $slaunch $io_options $bin_bash]
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --local-input=$file_in --local-output=$file_out --local-error=$file_err $bin_bash]
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
