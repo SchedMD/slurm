@@ -285,6 +285,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	if (opt.share)
 		desc->shared = 1;
+	desc->job_id = opt.jobid;
 
 	return 0;
 }
