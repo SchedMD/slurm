@@ -48,8 +48,6 @@ if { [test_xcpu] } {
 #
 set job_id      0
 set timeout $max_job_delay
-
-# intialize the lists
 set expected_layout [list 0 0 1 1]
 set tested_layout [list -1 -1 -1 -1] 
 spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=block $bin_printenv SLURM_NODEID  
@@ -103,8 +101,6 @@ if {[test_front_end] != 0} {
 #
 set job_id      0
 set timeout $max_job_delay
-
-# initialize the lists
 set expected_layout [list 0 1 0 1]
 set tested_layout [list -1 -1 -1 -1] 
 spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=cyclic $bin_printenv SLURM_NODEID  
