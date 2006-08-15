@@ -49,10 +49,7 @@ print_header $test_id
 # Spawn a program that includes "task_id" (%t) in stdout file names
 # and confirm they are created
 #
-for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
-	set file_out_t_glob  "test$test_id.t.$task_id.output"
-	exec $bin_rm -f $file_out_t_glob
-}
+file delete [glob -nocomplain "test$test_id.s.*.output"]
 set timeout $max_job_delay
 spawn $salloc -N1 -t1 $slaunch --remote-output=$file_out_t -n$task_cnt --overcommit $bin_id
 expect {
@@ -85,7 +82,7 @@ for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
 	if {[wait_for_file $file_out_t_glob] != 0} {
 		set exit_code 1
 	} else {
-		exec $bin_rm -f $file_out_t_glob
+		file delete $file_out_t_glob
 		incr file_cnt
 	}
 }
@@ -106,7 +103,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "exit code $number" {
+	-re "exited with return code $number" {
 		send_user "This error is expected, no worries\n"
 		set matches 1
 		exp_continue;
@@ -135,7 +132,7 @@ if {$matches == 0} {
 
 set file_err_j_glob  "test$test_id.j.$job_id.error"
 if {[wait_for_file $file_err_j_glob] == 0} {
-	exec $bin_rm -f $file_err_j_glob
+	file delete $file_err_j_glob
 } else {
 	send_user "\nFAILURE: file format of %j in stderr failed\n"
 	set exit_code 1
@@ -175,7 +172,7 @@ if {[wait_for_file $file_out_J_glob] != 0} {
 	send_user "\nFAILURE: file format of %J in stdout failed\n"
 	set exit_code 1
 } else {
-	exec $bin_rm -f $file_out_J_glob
+	file delete $file_out_J_glob
 }
 
 #
@@ -184,7 +181,7 @@ if {[wait_for_file $file_out_J_glob] != 0} {
 #
 set node_id 0
 set file_out_n_glob  "test$test_id.n.$node_id.output"
-exec $bin_rm -f $file_out_n_glob
+file delete $file_out_n_glob
 
 set job_id   0
 spawn $salloc -N1 -t1 $slaunch --remote-output=$file_out_n -n2 --overcommit $bin_hostname
@@ -221,7 +218,7 @@ for {set node_id 0} {$node_id < 2} {incr node_id} {
 		exec $bin_sleep 1
 	}
 	if [file exists $file_out_n_glob] {
-		exec $bin_rm -f $file_out_n_glob
+		file delete $file_out_n_glob
 		incr file_cnt
 	}
 }
@@ -240,10 +237,7 @@ make_bash_script $file_in "
   $slaunch -n4 --overcommit --remote-output=$file_out_s $bin_hostname
 "
 
-for {set step_id 0} {$step_id < 4} {incr step_id} {
-	set file_out_s_glob  "test$test_id.s.$step_id.output"
-	exec $bin_rm -f $file_out_s_glob
-}
+file delete [glob -nocomplain "test$test_id.s.\[0-4].output"]
 
 if { [test_bluegene] } {
 	set node_cnt 32-2048
@@ -258,15 +252,15 @@ if { [test_bluegene] } {
 }
 
 set job_id   0
-spawn $sbatch --output=/dev/null -N$node_cnt -t1 $file_in
+set sbatch_pid [spawn $sbatch --output=/dev/null -N$node_cnt -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
@@ -294,7 +288,7 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 		exec $bin_sleep 1
 	}
 	if [file exists $file_out_s_glob] {
-		exec $bin_rm -f $file_out_s_glob
+		file delete $file_out_s_glob
 		incr file_cnt
 	}
 }
@@ -308,7 +302,7 @@ if {$file_cnt != 2} {
 # Post-processing
 #
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	file delete $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

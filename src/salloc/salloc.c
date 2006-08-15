@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Run the user's command.
 	 */
-	env = env_array_create_for_job(alloc);
+	env_array_for_job(&env, alloc);
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
