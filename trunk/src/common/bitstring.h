@@ -166,4 +166,7 @@ void    bit_copybits(bitstr_t *dest, bitstr_t *src);
 bitstr_t *bit_copy(bitstr_t *b);
 bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 int 	*bitfmt2int (char *bit_str_ptr);
+bitoff_t bit_get_bit_num(bitstr_t *b, int pos);
+int      bit_get_pos_num(bitstr_t *b, bitoff_t pos);
+
 #endif /* !_BITSTRING_H_ */
