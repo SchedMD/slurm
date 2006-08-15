@@ -880,6 +880,10 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	int len = 0;
 	int x,y,z;
 	
+	start1[X] = 0;
+	start1[Y] = 0;
+	start1[Z] = 0;
+	
 	geo[X] = 0;
 	geo[Y] = 0;
 	geo[Z] = 0;

@@ -167,6 +167,11 @@ char **env_array_create(void);
  */
 void env_array_merge(char ***dest_array, const char **src_array);
 
+/* 
+ * Copy env_array must be freed by env_array_free 
+ */
+char **env_array_copy(const char **array);
+
 /*
  * Free the memory used by an environment variable array.
  */
