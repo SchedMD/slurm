@@ -1621,7 +1621,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.overcommit && opt.cpus_per_task_set) {
-		error("--overcommit and -c/--cpus-per-task are incompatible");
+		error("--overcommit/-C and --cpus-per-task/-c are incompatible");
 		verified = false;
 	}
 
