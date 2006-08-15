@@ -179,7 +179,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		env_array_for_step(&env,
 				   ctx->step_resp,
 				   launcher_hostname,
-				   ctx->launch_state->resp_port[0],
+				   htons(ctx->launch_state->resp_port[0]),
 				   ent->h_addr_list[0]);
 		xfree(launcher_hostname);
 	}
