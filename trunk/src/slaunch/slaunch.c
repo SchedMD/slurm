@@ -88,6 +88,12 @@
 extern char **environ;
 slurm_step_ctx step_ctx;
 int global_rc;
+struct {
+	bitstr_t *start_success;
+	bitstr_t *start_failure;
+	bitstr_t *finish_normal;
+	bitstr_t *finish_abnormal;
+} task_state;
 
 /*
  * declaration of static funcs
@@ -105,6 +111,9 @@ static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
 			      int stepid, uint32_t *hostids);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
+static void _task_state_struct_init(int num_tasks);
+static void _task_state_struct_print(void);
+static void _task_state_struct_free(void);
 static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
 static void _mpir_set_executable_names(const char *executable_name);
@@ -192,6 +201,7 @@ int slaunch(int argc, char **argv)
 	/*
 	 * Use the job step context to launch the tasks.
 	 */
+	_task_state_struct_init(opt.num_tasks);
 	slurm_job_step_launch_t_init(&params);
 	params.gid = opt.gid;
 	params.argc = opt.argc;
@@ -248,6 +258,7 @@ cleanup:
 	/* Clean up. */
 	slurm_step_ctx_destroy(step_ctx);
 	_mpir_cleanup();
+	_task_state_struct_free();
 
 	return global_rc;
 }
@@ -513,10 +524,15 @@ _task_start(launch_tasks_response_msg_t *msg)
 	for (i = 0; i < msg->count_of_pids; i++) {
 		taskid = msg->task_ids[i];
 		table = &MPIR_proctable[taskid];
-
 		table->host_name = xstrdup(msg->node_name);
 		/* table->executable_name is set elsewhere */
 		table->pid = msg->local_pids[i];
+
+		if (msg->return_code == 0) {
+			bit_set(task_state.start_success, taskid);
+		} else {
+			bit_set(task_state.start_failure, taskid);
+		}
 	}
 
 }
@@ -527,6 +543,7 @@ _handle_max_wait(int signo)
 	uint32_t job_id, step_id;
 
 	info("First task exited %ds ago", opt.max_wait);
+	_task_state_struct_print();
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	info("Terminating job step");
@@ -537,20 +554,34 @@ static void
 _task_finish(task_exit_msg_t *msg)
 {
 	static bool first_done = true;
-	int rc;
+	int rc = 0;
+	int i;
 
 	verbose("%d tasks finished (rc=%u)",
 		msg->num_tasks, msg->return_code);
 	if (WIFEXITED(msg->return_code)) {
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
-			/* FIXME - needs to print task id list, not
-			   just the first id in the list */
-			error("task%u: Exited with exit code %d",
-			      msg->task_id_list[0], rc);
+			for (i = 0; i < msg->num_tasks; i++) {
+				error("task %u exited with return code %d",
+				      msg->task_id_list[i], rc);
+				bit_set(task_state.finish_abnormal,
+					msg->task_id_list[i]);
+			}
+		} else {
+			for (i = 0; i < msg->num_tasks; i++) {
+				bit_set(task_state.finish_normal,
+					msg->task_id_list[i]);
+			}
 		}
-	} else {
-		debug("tasks did not exit normally");
+	} else if (WIFSIGNALED(msg->return_code)) {
+		for (i = 0; i < msg->num_tasks; i++) {
+			verbose("task %u killed by signal %d",
+				msg->task_id_list[i],
+				WTERMSIG(msg->return_code));
+			bit_set(task_state.finish_abnormal,
+				msg->task_id_list[i]);
+		}
 		rc = 1;
 	}
 	global_rc = MAX(global_rc, rc);
@@ -568,6 +599,82 @@ _task_finish(task_exit_msg_t *msg)
 	}
 }
 
+static void
+_task_state_struct_init(int num_tasks)
+{
+	task_state.start_success = bit_alloc(num_tasks);
+	task_state.start_failure = bit_alloc(num_tasks);
+	task_state.finish_normal = bit_alloc(num_tasks);
+	task_state.finish_abnormal = bit_alloc(num_tasks);
+}
+
+/*
+ * Tasks will most likely have bits set in multiple of the task_state
+ * bit strings (e.g. a task can start normally and then later exit normally)
+ * so we ensure that a task is only "seen" once.
+ */
+static void
+_task_state_struct_print(void)
+{
+	bitstr_t *tmp, *seen, *not_seen;
+	char buf[BUFSIZ];
+	int len;
+
+	len = bit_size(task_state.finish_abnormal); /* all the same length */
+	tmp = bit_alloc(len);
+	seen = bit_alloc(len);
+	not_seen = bit_alloc(len);
+	bit_not(not_seen);
+
+	if (bit_set_count(task_state.finish_abnormal) > 0) {
+		bit_copybits(tmp, task_state.finish_abnormal);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: exited abnormally", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+
+	if (bit_set_count(task_state.finish_normal) > 0) {
+		bit_copybits(tmp, task_state.finish_normal);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: exited", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+
+	if (bit_set_count(task_state.start_failure) > 0) {
+		bit_copybits(tmp, task_state.start_failure);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: failed to start", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+
+	if (bit_set_count(task_state.start_success) > 0) {
+		bit_copybits(tmp, task_state.start_success);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: running", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+}
+
+static void
+_task_state_struct_free(void)
+{
+	bit_free(task_state.start_success);
+	bit_free(task_state.start_failure);
+	bit_free(task_state.finish_normal);
+	bit_free(task_state.finish_abnormal);
+}
 
 /**********************************************************************
  * Functions for manipulating the MPIR_* global variables which
