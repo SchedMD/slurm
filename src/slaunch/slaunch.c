@@ -74,6 +74,7 @@
 #include "src/common/mpi.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/plugstack.h"
+#include "src/common/env.h"
 
 #include "src/slaunch/opt.h"
 #include "src/slaunch/sigstr.h"

@@ -925,6 +925,9 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 	return 1;
 }
 
+/* 
+ * Copy env_array must be freed by env_array_free 
+ */
 char **env_array_copy(const char **array)
 {
 	char **ptr = NULL;
