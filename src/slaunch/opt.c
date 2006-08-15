@@ -608,17 +608,17 @@ static int _set_cpus_per_node(const char *str)
 	return 1;
 }
 
-static uint32_t _total_cpus(resource_allocation_response_msg_t *alloc)
-{
-	uint32_t cpus = 0;
-	int i;
+/* static uint32_t _total_cpus(resource_allocation_response_msg_t *alloc) */
+/* { */
+/* 	uint32_t cpus = 0; */
+/* 	int i; */
 
-	for (i = 0; i < alloc->num_cpu_groups; i++) {
-		cpus += alloc->cpus_per_node[i] * alloc->cpu_count_reps[i];
-	}
+/* 	for (i = 0; i < alloc->num_cpu_groups; i++) { */
+/* 		cpus += alloc->cpus_per_node[i] * alloc->cpu_count_reps[i]; */
+/* 	} */
 
-	return cpus;
-}
+/* 	return cpus; */
+/* } */
 
 /* return command name from its full path name */
 static char * _base_name(char* command)
@@ -1494,7 +1494,7 @@ static bool _opt_verify(void)
 	bool verified = true;
 	hostlist_t task_l = NULL;
 	hostlist_t node_l = NULL;
-
+	
 	/* This rather confusing "if" statement assures that we look up
 	 * the resource_allocation_response_msg_t structure on the
 	 * controller if either of the following situations exist:
