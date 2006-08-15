@@ -169,7 +169,10 @@ int slaunch(int argc, char **argv)
 	step_req.user_id = getuid();
 	step_req.node_count = opt.num_nodes;
 	step_req.num_tasks = opt.num_tasks;
-	step_req.cpu_count = opt.num_tasks * opt.cpus_per_task;
+	if (opt.overcommit)
+		step_req.cpu_count = 0;
+	else
+		step_req.cpu_count = opt.num_tasks * opt.cpus_per_task;
 	step_req.relative = opt.relative;
 	step_req.task_dist = opt.distribution;
 	step_req.overcommit = opt.overcommit ? 1 : 0;
