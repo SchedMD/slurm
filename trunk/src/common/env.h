@@ -32,6 +32,7 @@
 #include <sys/utsname.h>
 
 #include "src/common/macros.h"
+#include "src/common/slurm_protocol_api.h"
 
 typedef struct env_options {
 	int nprocs;		/* --nprocs=n,      -n n	*/
@@ -79,9 +80,11 @@ int     setup_env(env_t *env);
  * Newer environment variable handling scheme
  **********************************************************************/
 /*
- * Create an array of pointers to environment variables strings relevant
- * to a SLURM job allocation.  The array is terminated by a NULL pointer,
- * and thus is suitable for use by execle() and other env_array_* functions.
+ * Set in "dest" the environment variables relevant to a SLURM job
+ * allocation, overwriting any environment variables of the same name.
+ * If the address pointed to by "dest" is NULL, memory will automatically be
+ * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
+ * suitable for use by execle() and other env_array_* functions.
  *
  * Sets the variables:
  *	SLURM_JOB_ID
@@ -92,13 +95,37 @@ int     setup_env(env_t *env);
  * Sets OBSOLETE variables:
  *	? probably only needed for users...
  */
-char **
-env_array_create_for_job(const resource_allocation_response_msg_t *alloc);
+void env_array_for_job(char ***dest,
+		       const resource_allocation_response_msg_t *alloc);
 
 /*
- * Create an array of pointers to environment variables strings relevant
- * to a SLURM job step.  The array is terminated by a NULL pointer,
- * and thus is suitable for use by execle() and other env_array_* functions.
+ * Set in "dest" the environment variables relevant to a SLURM batch
+ * job allocation, overwriting any environment variables of the same name.
+ * If the address pointed to by "dest" is NULL, memory will automatically be
+ * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
+ * suitable for use by execle() and other env_array_* functions.
+ *
+ * Sets the variables:
+ *	SLURM_JOB_ID
+ *	SLURM_JOB_NUM_NODES
+ *	SLURM_JOB_NODELIST
+ *	SLURM_JOB_CPUS_PER_NODE
+ *
+ * Sets OBSOLETE variables:
+ *	SLURM_JOBID
+ *	SLURM_NNODES
+ *	SLURM_NODELIST
+ *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
+ *	? probably only needed for users...
+ */
+void env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch);
+
+/*
+ * Set in "dest the environment variables relevant to a SLURM job step,
+ * overwriting any environment variables of the same name.  If the address
+ * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
+ * The array is terminated by a NULL pointer, and thus is suitable for
+ * use by execle() and other env_array_* functions.
  *
  * Sets variables:
  *	SLURM_STEP_ID
@@ -120,11 +147,12 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc);
  *	SLURM_LAUNCH_NODE_IPADDR
  *
  */
-char **
-env_array_create_for_step(const job_step_create_response_msg_t *step,
-			  const char *launcher_hostname,
-			  uint16_t launcher_port,
-			  const char *ip_addr_str);
+void
+env_array_for_step(char ***dest,
+		   const job_step_create_response_msg_t *step,
+		   const char *launcher_hostname,
+		   uint16_t launcher_port,
+		   const char *ip_addr_str);
 
 /*
  * Return an empty environment variable array (contains a single

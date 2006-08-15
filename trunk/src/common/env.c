@@ -613,9 +613,11 @@ static char *_uint32_compressed_to_str(uint32_t array_len,
 }
 
 /*
- * Create an array of pointers to environment variables strings relevant
- * to a SLURM job allocation.  The array is terminated by a NULL pointer,
- * and thus is suitable for use by execle() and other env_array_* functions.
+ * Set in "dest" the environment variables relevant to a SLURM job
+ * allocation, overwriting any environment variables of the same name.
+ * If the address pointed to by "dest" is NULL, memory will automatically be
+ * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
+ * suitable for use by execle() and other env_array_* functions.
  *
  * Sets the variables:
  *	SLURM_JOB_ID
@@ -630,36 +632,37 @@ static char *_uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-char **
-env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
+void
+env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
 {
-	char **ptr;
 	char *tmp;
 
-	ptr = env_array_create();
-	env_array_append(&ptr, "SLURM_JOB_ID", "%u", alloc->job_id);
-	env_array_append(&ptr, "SLURM_JOB_NUM_NODES", "%u", alloc->node_cnt);
-	env_array_append(&ptr, "SLURM_JOB_NODELIST", "%s", alloc->node_list);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
+				alloc->node_cnt);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
+				alloc->node_list);
 
 	tmp = _uint32_compressed_to_str((uint32_t)alloc->num_cpu_groups,
 					alloc->cpus_per_node,
 					alloc->cpu_count_reps);
-	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 
 	/* obsolete */
-	env_array_append(&ptr, "SLURM_JOBID", "%u", alloc->job_id);
-	env_array_append(&ptr, "SLURM_NNODES", "%u", alloc->node_cnt);
-	env_array_append(&ptr, "SLURM_NODELIST", "%s", alloc->node_list);
-	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", alloc->node_cnt);
+	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
+	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 
 	xfree(tmp);
-	return ptr;
 }
 
 /*
- * Create an array of pointers to environment variables strings relevant
- * to a SLURM batch job allocation.  The array is terminated by a NULL pointer,
- * and thus is suitable for use by execle() and other env_array_* functions.
+ * Set in "dest" the environment variables strings relevant to a SLURM batch
+ * job allocation, overwriting any environment variables of the same name.
+ * If the address pointed to by "dest" is NULL, memory will automatically be
+ * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
+ * suitable for use by execle() and other env_array_* functions.
  *
  * Sets the variables:
  *	SLURM_JOB_ID
@@ -674,10 +677,9 @@ env_array_create_for_job(const resource_allocation_response_msg_t *alloc)
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-char **
-env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
+void
+env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
 {
-	char **ptr;
 	char *tmp;
 	uint32_t num_nodes = 0;
 	int i;
@@ -688,29 +690,29 @@ env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
 		num_nodes += batch->cpu_count_reps[i];
 	}
 
-	ptr = env_array_create();
-	env_array_append(&ptr, "SLURM_JOB_ID", "%u", batch->job_id);
-	env_array_append(&ptr, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
-	env_array_append(&ptr, "SLURM_JOB_NODELIST", "%s", batch->nodes);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 	tmp = _uint32_compressed_to_str((uint32_t)batch->num_cpu_groups,
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
-	env_array_append(&ptr, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 
 	/* OBSOLETE */
-	env_array_append(&ptr, "SLURM_JOBID", "%u", batch->job_id);
-	env_array_append(&ptr, "SLURM_NNODES", "%u", num_nodes);
-	env_array_append(&ptr, "SLURM_NODELIST", "%s", batch->nodes);
-	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
+	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
+	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 
 	xfree(tmp);
-	return ptr;
 }
 
 /*
- * Create an array of pointers to environment variables strings relevant
- * to a SLURM job step.  The array is terminated by a NULL pointer,
- * and thus is suitable for use by execle() and other env_array_* functions.
+ * Set in "dest the environment variables relevant to a SLURM job step,
+ * overwriting any environment variables of the same name.  If the address
+ * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
+ * The array is terminated by a NULL pointer, and thus is suitable for
+ * use by execle() and other env_array_* functions.
  *
  * Sets variables:
  *	SLURM_STEP_ID
@@ -732,47 +734,45 @@ env_array_create_for_batch_job(const batch_job_launch_msg_t *batch)
  *	SLURM_LAUNCH_NODE_IPADDR
  *
  */
-char **
-env_array_create_for_step(const job_step_create_response_msg_t *step,
-			  const char *launcher_hostname,
-			  uint16_t launcher_port,
-			  const char *ip_addr_str)
+void
+env_array_for_step(char ***dest, 
+		   const job_step_create_response_msg_t *step,
+		   const char *launcher_hostname,
+		   uint16_t launcher_port,
+		   const char *ip_addr_str)
 {
-	char **ptr;
 	char *tmp;
 
 	tmp = _uint32_array_to_str(step->step_layout->node_cnt,
 				   step->step_layout->tasks);
-	ptr = env_array_create();
-	env_array_append(&ptr, "SLURM_STEP_ID", "%u", step->job_step_id);
-	env_array_append(&ptr, "SLURM_STEP_NUM_NODES",
+	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
+	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",
 			 "%hu", step->step_layout->node_cnt);
-	env_array_append(&ptr, "SLURM_STEP_NUM_TASKS",
+	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
 			 "%u", step->step_layout->task_cnt);
-	env_array_append(&ptr, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
-	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_HOSTNAME",
+	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_HOSTNAME",
 			 "%s", launcher_hostname);
-	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_PORT",
+	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
 			 "%hu", launcher_port);
-/* 	env_array_append(&ptr, "SLURM_STEP_LAUNCHER_IPADDR", */
+/* 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_IPADDR", */
 /* 			 "%s", ip_addr_str); */
 
 	/* OBSOLETE */
-	env_array_append(&ptr, "SLURM_STEPID", "%u", step->job_step_id);
-	env_array_append(&ptr, "SLURM_NNODES",
+	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
+	env_array_overwrite_fmt(dest, "SLURM_NNODES",
 			 "%hu", step->step_layout->node_cnt);
-	env_array_append(&ptr, "SLURM_NPROCS",
+	env_array_overwrite_fmt(dest, "SLURM_NPROCS",
 			 "%u", step->step_layout->task_cnt);
-	env_array_append(&ptr, "SLURM_TASKS_PER_NODE", "%s", tmp);
-	env_array_append(&ptr, "SLURM_SRUN_COMM_HOST",
+	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_HOST",
 			 "%s", launcher_hostname);
-	env_array_append(&ptr, "SLURM_SRUN_COMM_PORT",
+	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
 			 "%hu", launcher_port);
-/* 	env_array_append(&ptr, "SLURM_LAUNCH_NODE_IPADDR", */
+/* 	env_array_overwrite_fmt(dest, "SLURM_LAUNCH_NODE_IPADDR", */
 /* 			 "%s", ip_addr_str); */
 
 	xfree(tmp);
-	return ptr;
 }
 
 /*

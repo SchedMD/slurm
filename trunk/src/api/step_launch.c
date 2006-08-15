@@ -173,18 +173,15 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	env_array_merge(&env, (const char **)params->env);
 	{
 		/* FIXME - hostname and IP need to be user settable */
-		char **step_env = NULL;
 		char *launcher_hostname = xshort_hostname();
 		struct hostent *ent = gethostbyname(launcher_hostname);
 
-		step_env = env_array_create_for_step(
-			ctx->step_resp,
-			launcher_hostname,
-			ctx->launch_state->resp_port[0],
-			ent->h_addr_list[0]);
+		env_array_for_step(&env,
+				   ctx->step_resp,
+				   launcher_hostname,
+				   ctx->launch_state->resp_port[0],
+				   ent->h_addr_list[0]);
 		xfree(launcher_hostname);
-		env_array_merge(&env, (const char **) step_env);
-		env_array_free(step_env);
 	}
 	launch.envc = envcount(env);
 	launch.env = env;

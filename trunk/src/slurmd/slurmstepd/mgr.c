@@ -268,6 +268,10 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 		return NULL;
 	}
 	
+	/* this is the new way of setting environment variables */
+	env_array_for_batch_job(&job->env, msg);
+
+	/* this is the old way of setting environment variables */
 	job->envtp->nprocs = msg->nprocs;
 	job->envtp->overcommit = msg->overcommit;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
