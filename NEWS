@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     running system in bluegene emulation mode.  Only
     really useful for developers.
  -- New added new tool sview GUI for displaying slurm info.
+ -- fixed bug in step layout to lay out tasks correctly
 
 * Changes in SLURM 1.2.0-pre1
 =============================
