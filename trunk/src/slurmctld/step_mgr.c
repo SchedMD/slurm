@@ -808,6 +808,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				cpu_count_reps[cpu_inx] = 1;
 			} else
 				cpu_count_reps[cpu_inx]++;
+			if(pos == node_count)
+				break;
 		}
 	}
 	/* layout the tasks on the nodes */
