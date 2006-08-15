@@ -103,11 +103,12 @@ allocate_nodes(void)
 
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
-	if (j->job_id != NO_VAL) {
+	if (getenv("SLURM_JOBID") != NULL) {
 		info("WARNING: Creating SLURM job allocation from within "
 			"another allocation");
 		info("WARNING: You are attempting to initiate a second job");
-		j->job_id = NO_VAL;
+		if (!opt.jobid_set)	/* Let slurmctld set jobid */
+			j->job_id = NO_VAL;
 	}
 	
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
