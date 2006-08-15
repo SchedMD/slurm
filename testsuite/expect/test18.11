@@ -103,7 +103,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "exited with return code $number" {
+	-re "exit code $number" {
 		send_user "This error is expected, no worries\n"
 		set matches 1
 		exp_continue;
