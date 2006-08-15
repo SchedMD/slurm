@@ -778,22 +778,32 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int cpu_inx = -1;
 	int usable_cpus = 0, i;
 	int inx = 0;
+	int pos = -1;
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	uint32_t node_cnt = job_ptr->cpu_count_reps[inx];
 	
 	/* build the cpus-per-node arrays for the subset of nodes
 	   used by this job step */
-	for (i = 0; i < job_ptr->node_cnt; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
-			while(i >= node_cnt)
+			pos = bit_get_pos_num(step_ptr->step_node_bitmap, i);
+			if (pos == -1)
+				return NULL;
+			while(pos >= node_cnt) {
 				node_cnt += 
 					job_ptr->cpu_count_reps[++inx];
-			
+			}
+			debug2("got inx of %d cpus = %d pos = %d", 
+			       inx, job_ptr->cpus_per_node[inx], pos);
 			usable_cpus = job_ptr->cpus_per_node[inx];
+			
+			
+			//if(cpus_per_node[cpu_inx] != usable_cpus) {
 			if ((cpu_inx == -1) ||
 			    (cpus_per_node[cpu_inx] !=
 			     usable_cpus)) {
 				cpu_inx++;
+				
 				cpus_per_node[cpu_inx] = usable_cpus;
 				cpu_count_reps[cpu_inx] = 1;
 			} else

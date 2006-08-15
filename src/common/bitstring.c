@@ -69,6 +69,8 @@ strong_alias(bit_noc,		slurm_bit_noc);
 strong_alias(bit_nffs,		slurm_bit_nffs);
 strong_alias(bit_copybits,	slurm_bit_copybits);
 strong_alias(bit_unfmt,		slurm_bit_unfmt);
+strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
+strong_alias(bit_get_pos_num,	slurm_bit_get_pos_num);
 
 /* 
  * Allocate a bitstring.
@@ -839,3 +841,63 @@ bitfmt2int (char *bit_str_ptr)
 	return bit_int_ptr;
 }
 
+/* Find the bit set at pos (0 - bitstr_bits) in bitstr b.
+ *   b (IN)             bitstring to search
+ *   pos (IN)           bit to search for
+ *   RETURN             number bit is set in bitstring (-1 on error)
+ */
+
+bitoff_t
+bit_get_bit_num(bitstr_t *b, int pos)
+{
+	bitoff_t bit;
+	int cnt = 0;
+	bitoff_t bit_cnt;
+	
+	_assert_bitstr_valid(b);
+	bit_cnt = _bitstr_bits(b);
+	assert(pos <= bit_cnt);
+
+	for (bit = 0; bit < bit_cnt; bit++) {
+		if (bit_test(b, bit)) {	/* we got one */
+			if(cnt == pos)
+				break;			
+			cnt++;			
+		}
+	}
+
+	if(bit >= bit_cnt)
+		bit = -1;
+
+	return bit;
+}
+
+/* Find want nth the bit pos is set in bitstr b.
+ *   b (IN)             bitstring to search
+ *   pos (IN)           bit to search to
+ *   RETURN             number bit is set in bitstring (-1 on error)
+ */
+
+int
+bit_get_pos_num(bitstr_t *b, bitoff_t pos)
+{
+	bitoff_t bit;
+	int cnt = -1;
+	bitoff_t bit_cnt;
+	
+	_assert_bitstr_valid(b);
+	bit_cnt = _bitstr_bits(b);
+	assert(pos <= bit_cnt);
+	
+	if (!bit_test(b, pos)) {
+		error("bit %d not set", pos);
+		return cnt;
+	}
+	for (bit = 0; bit <= pos; bit++) {
+		if (bit_test(b, bit)) {	/* we got one */
+			cnt++;			
+		}
+	}
+
+	return cnt;
+}
