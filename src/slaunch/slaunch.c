@@ -547,12 +547,10 @@ _task_start(launch_tasks_response_msg_t *msg)
 }
 
 static void
-_handle_max_wait(int signo)
+_terminate_job_step(slurm_step_ctx ctx)
 {
 	uint32_t job_id, step_id;
 
-	info("First task exited %ds ago", opt.max_wait);
-	_task_state_struct_print();
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	info("Terminating job step");
@@ -560,9 +558,18 @@ _handle_max_wait(int signo)
 }
 
 static void
+_handle_max_wait(int signo)
+{
+	info("First task exited %ds ago", opt.max_wait);
+	_task_state_struct_print();
+	_terminate_job_step(step_ctx);
+}
+
+static void
 _task_finish(task_exit_msg_t *msg)
 {
 	static bool first_done = true;
+	static bool first_error = true;
 	int rc = 0;
 	int i;
 
@@ -595,11 +602,14 @@ _task_finish(task_exit_msg_t *msg)
 	}
 	global_rc = MAX(global_rc, rc);
 
-	/* If these are the first tasks to finish we need to start a timer
-	 * to kill off the job step if the other tasks don't finish
-	 * within opt.max_wait seconds.
-	 */
-	if (first_done && opt.max_wait > 0) {
+	if (first_error && rc > 0 && opt.kill_bad_exit) {
+		first_error = false;
+		_terminate_job_step(step_ctx);
+	} else if (first_done && opt.max_wait > 0) {
+		/* If these are the first tasks to finish we need to
+		 * start a timer to kill off the job step if the other
+		 * tasks don't finish within opt.max_wait seconds.
+		 */
 		first_done = false;
 		debug2("First task has exited");
 		xsignal(SIGALRM, _handle_max_wait);
