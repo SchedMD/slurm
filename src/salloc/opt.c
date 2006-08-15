@@ -89,6 +89,7 @@
 #define OPT_MEM_BIND    0x0e
 #define OPT_BELL        0x0f
 #define OPT_NO_BELL     0x10
+#define OPT_JOBID       0x11
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -119,6 +120,7 @@
 #define LONG_OPT_NO_REQUEUE  0x123
 #define LONG_OPT_BELL        0x124
 #define LONG_OPT_NO_BELL     0x125
+#define LONG_OPT_JOBID       0x126
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -706,6 +708,7 @@ static void _opt_default()
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
+	opt.jobid = NO_VAL;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
@@ -785,6 +788,7 @@ env_vars_t env_vars[] = {
   {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
   {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
+  {"SLURM_JOBID",         OPT_JOBID,      NULL,               NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
   {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
@@ -903,6 +907,11 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NO_BELL:
 		opt.bell = BELL_NEVER;
 		break;
+	case OPT_JOBID:
+		info("WARNING: Creating SLURM job allocation from within "
+			"another allocation");
+		info("WARNING: You are attempting to initiate a second job");
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -989,6 +998,7 @@ void set_options(const int argc, char **argv)
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{"bell",             no_argument,       0, LONG_OPT_BELL},
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
+		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:c:C:D:g:HIJ:kK::m:n:N:Op:qQR:st:U:vVw:W:x:";
@@ -1237,6 +1247,9 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_NO_BELL:
 			opt.bell = BELL_NEVER;
+			break;
+		case LONG_OPT_JOBID:
+			opt.jobid = _get_int(optarg, "jobid");
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1554,6 +1567,8 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	if (opt.jobid != NO_VAL)
+		info("jobid          : %u", opt.jobid);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	info("cpu_bind       : %s", 
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
@@ -1606,7 +1621,7 @@ static void _usage(void)
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate] [--overcommit] [--no-kill]\n"
-"              [--share] [-m dist] [-J jobname]\n"
+"              [--share] [-m dist] [-J jobname] [--jobid=id]\n"
 "              [--verbose]\n"
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
@@ -1640,6 +1655,7 @@ static void _help(void)
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|hostfile)\n"
 "  -J, --job-name=jobname      name of job\n"
+"      --jobid=id              specify jobid to use\n"
 "      --mpi=type              type of MPI being used\n"
 "  -W, --wait=sec              seconds to wait for allocation if not\n"
 "                              immediately available\n"
