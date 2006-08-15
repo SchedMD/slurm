@@ -46,30 +46,19 @@ if { [test_xcpu] } {
 #
 # Submit a two node job with block distribution
 #
-set host_0      ""
-set host_1      ""
-set host_2      ""
-set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID  
+set expected_layout [list 0 0 1 1]
+set tested_layout [list -1 -1 -1 -1] 
+spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
-	-re "(\[0-3\]): ($alpha_numeric)" {
-		if { $expect_out(1,string) == 0 } {
-			set host_0 $expect_out(2,string)
-		}
-		if { $expect_out(1,string) == 1 } {
-			set host_1 $expect_out(2,string)
-		}
-		if { $expect_out(1,string) == 2 } {
-			set host_2 $expect_out(2,string)
-		}
-		if { $expect_out(1,string) == 3 } {
-			set host_3 $expect_out(2,string)
-		}
+	-re "($number): ($number)" {
+		set index $expect_out(1,string)
+		set value $expect_out(2,string)
+		lset tested_layout $index $value
 		exp_continue
 	}
 	timeout {
@@ -86,26 +75,13 @@ expect {
 #
 # Verify block distribution of tasks
 #
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
-	set exit_code   1	
+send_user "Expected layout was: $expected_layout\n"
+send_user "Tested layout was  : $tested_layout\n"
+if {[string compare $expected_layout $tested_layout] != 0} {
+	send_user "\FAILURE: failed to distribute tasks in block fashion\n"
+	set exit_code 1
 }
-if {[string compare $host_1 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 1\n"
-	set exit_code   1	
-}
-if {[string compare $host_0 $host_1] != 0} {
-	send_user "\nFAILURE: failed to distributed tasks by block\n"
-	set exit_code   1
-}
-if {[string compare $host_0 $host_2] == 0} {
-	send_user "\nFAILURE: failed to distributed tasks by block\n"
-	set exit_code   1
-}
-if {[string compare $host_0 $host_3] == 0} {
-	send_user "\nFAILURE: failed to distributed tasks by block\n"
-	set exit_code   1
-}
+
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
 	exit $exit_code
@@ -114,30 +90,19 @@ if {[test_front_end] != 0} {
 #
 # Submit a two node job with cyclic distribution
 #
-set host_0      ""
-set host_1      ""
-set host_2      ""
-set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID  
+set expected_layout [list 0 1 0 1]
+set tested_layout [list -1 -1 -1 -1] 
+spawn $srun -O -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
-	-re "(\[0-3\]): ($alpha_numeric)" {
-		if { $expect_out(1,string) == 0 } {
-			set host_0 $expect_out(2,string)
-		}
-		if { $expect_out(1,string) == 1 } {
-			set host_1 $expect_out(2,string)
-		}
-		if { $expect_out(1,string) == 2 } {
-			set host_2 $expect_out(2,string)
-		}
-		if { $expect_out(1,string) == 3 } {
-			set host_3 $expect_out(2,string)
-		}
+	-re "($number): ($number)" {
+		set index $expect_out(1,string)
+		set value $expect_out(2,string)
+		lset tested_layout $index $value
 		exp_continue
 	}
 	timeout {
@@ -154,17 +119,11 @@ expect {
 #
 # Verify cyclic distribution of tasks
 #
-if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
-}
-if {[string compare $host_1 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 1\n"
-	set exit_code   1	
-}
-if {[string compare $host_0 $host_1] == 0} {
-	send_user "\nFAILURE: failed to distributed tasks cyclic\n"
-	set exit_code   1	
+send_user "Expected layout was: $expected_layout\n"
+send_user "Tested layout was  : $tested_layout\n"
+if {[string compare $expected_layout $tested_layout] != 0} {
+	send_user "\FAILURE: failed to distribute tasks in cyclic fashion\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
