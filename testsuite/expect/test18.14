@@ -67,7 +67,7 @@ expect {
 	}
 }
 
-# These are the variables for which we are checking existence
+# These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
 array set good_vars {
@@ -109,11 +109,8 @@ foreach {slurm_var check_flag} [array get good_vars] {
     }
 }
 
-
-
-
 if {$good < $total} {
-	send_user "\nFAILURE: Not all SLURM environment variables set ($good of $total)\n"
+	send_user "\nFAILURE: Only $good of $total SLURM environment variables set\n"
 	set exit_code 1
 }
 
