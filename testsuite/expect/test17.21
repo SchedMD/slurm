@@ -37,7 +37,7 @@ set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_acct    "TEST_ACCT"
 set job_name    "TEST_NAME"
-set delay       1
+set delay       10
 
 print_header $test_id
 
@@ -83,6 +83,7 @@ expect {
 		wait
 	}
 }
+exec $scancel $job_id
 if {$matches != 2} {
 	send_user "\nFAILURE: did not set job name and account from batch script\n"
 	set exit_code 1
@@ -90,26 +91,27 @@ if {$matches != 2} {
 
 #
 # Build input script file
-# NOTE: The initial sleep is so that all of the submissions have time 
-#   to occur before contending with a multitude of job step creations.
-#   This is especially important on very slow systems (e.g. AIX).
 #
 make_bash_script $file_in "
   #SLURM -N1000000k
   $bin_sleep $delay
 "
 
-set matches 0
-spawn $sbatch -o $file_out $file_in
+set sbatch_pid [spawn $sbatch -o $file_out $file_in]
 expect {
 	-re "More .* requested than permitted" {	
 		send_user "This error was expected, no worries\n\n"
-		incr matches
 		exp_continue
 	}	
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\nFAILURE: Test B was supposed to fail submission\n"
+		set exit_code 1
+		exec scancel $job_id
+	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		set exit_code 1
 		exp_continue
 	}
@@ -117,27 +119,27 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	send_user "\nFAILURE: srun didn't read the correct options from batch file\n"
-	set exit_code 1
-}
 
 make_bash_script $file_in "
   #SLURM -N650000
   $bin_sleep $delay
 "
 
-spawn $sbatch -N1 -o $file_out $file_in
+set sbatch_pid [spawn $sbatch -N1 -o $file_out $file_in]
 expect {
 	-re "More nodes requested than permitted" {
-		send_user "\nFAILURE: srun read from the batch file options"
+		send_user "\nFAILURE: sbatch read from the batch file options"
 		send_user "over writing the commandline options\n"
 		set exit_code 1
 		exp_continue
 	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exec scancel $job_id
+	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		set exit_code 1
 		exp_continue
 	}
