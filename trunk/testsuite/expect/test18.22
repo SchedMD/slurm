@@ -176,8 +176,8 @@ if {$matches != $tasks} {
 	
 
 if {$exit_code == 0} {
-#	file delete $task_prolog $task_epilog $file_in 
-#	file delete $file_out_pre $file_out_post
+	file delete $task_prolog $task_epilog $file_in 
+	file delete $file_out_pre $file_out_post
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
