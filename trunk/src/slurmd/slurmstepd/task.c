@@ -332,7 +332,8 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		job->env[0] = (char *)NULL;
 	}
 	if (job->multi_prog)
-		task_exec(job->argv[1], job->env);
+		task_exec(job->argv[1], job->env,
+			  (int)job->task[i]->gtid);
 	else
 		execve(job->argv[0], job->argv, job->env);
 
