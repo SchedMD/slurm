@@ -121,6 +121,8 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 	ptr->parallel_debug = false;
 	ptr->task_start_callback = NULL;
 	ptr->task_finish_callback = NULL;
+	ptr->task_prolog = NULL;
+	ptr->task_epilog = NULL;
 }
 
 /*
@@ -190,8 +192,8 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.nprocs = ctx->step_req->num_tasks;
 	launch.slurmd_debug = params->slurmd_debug;
 	launch.switch_job = ctx->step_resp->switch_job;
-	launch.task_prolog = NULL; /* FIXME - opt.task_prolog */
-	launch.task_epilog = NULL; /* FIXME - opt.task_epilog */
+	launch.task_prolog = params->task_prolog;
+	launch.task_epilog = params->task_epilog;
 	launch.cpu_bind_type = 0; /* FIXME opt.cpu_bind_type; */
 	launch.cpu_bind = NULL; /* FIXME opt.cpu_bind; */
 	launch.mem_bind_type = 0; /* FIXME opt.mem_bind_type; */

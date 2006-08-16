@@ -564,6 +564,8 @@ typedef struct {
 	bool parallel_debug;
 	void (*task_start_callback)(launch_tasks_response_msg_t *);
 	void (*task_finish_callback)(task_exit_msg_t *);
+	char *task_prolog;
+	char *task_epilog;
 } slurm_job_step_launch_t;
 
 typedef struct {
