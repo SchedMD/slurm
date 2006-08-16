@@ -27,8 +27,11 @@
 #ifndef _SLURMD_TASK_EXEC_H
 #define _SLURMD_TASK_EXEC_H
 
-/* Execute a program based upon the config_data (contents of config_file)
- * and the environment variables supplied */
-extern int task_exec(char *config_data, char **prog_env);
+/* Execute a single task based upon the config_data (contents of config_file)
+ * and the environment variables supplied.
+ *
+ * "task_rank" is the task's GLOBAL rank within the job step.
+ */
+extern int task_exec(char *config_data, char **prog_env, int task_rank);
 
 #endif /* !_SLURMD_TASK_EXEC_H */
