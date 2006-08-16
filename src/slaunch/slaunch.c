@@ -228,6 +228,8 @@ int slaunch(int argc, char **argv)
 	params.remote_output_filename = opt.remote_ofname;
 	params.remote_input_filename = opt.remote_ifname;
 	params.remote_error_filename = opt.remote_efname;
+	params.task_prolog = opt.task_prolog;
+	params.task_epilog = opt.task_epilog;
 	
 	/* set up the hostids */
 	hostids = xmalloc(sizeof(uint32_t) * 
