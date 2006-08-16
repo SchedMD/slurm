@@ -37,6 +37,21 @@ set matches     0
 
 print_header $test_id
 
+# These are the variables for which we are checking existence.
+# If the number following a variable name is 1, then we check to make
+# certain that the value of the env variable is greater than 0
+array set good_vars {
+    SLURM_JOB_ID 1
+    SLURM_JOB_NUM_NODES 1
+    SLURM_JOB_NODELIST 0
+    SLURM_JOB_CPUS_PER_NODE 1
+
+    SLURM_JOBID 1
+    SLURM_NNODES 0
+    SLURM_NODELIST 0
+    SLURM_TASKS_PER_NODE 1
+}
+
 #
 # Spawn a job via salloc to print environment variables
 #
@@ -64,18 +79,6 @@ expect {
 	eof {
 		wait
 	}
-}
-
-array set good_vars {
-    SLURM_JOB_ID 1
-    SLURM_JOB_NUM_NODES 1
-    SLURM_JOB_NODELIST 0
-    SLURM_JOB_CPUS_PER_NODE 1
-
-    SLURM_JOBID 1
-    SLURM_NNODES 0
-    SLURM_NODELIST 0
-    SLURM_TASKS_PER_NODE 1
 }
 
 set total 0

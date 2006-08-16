@@ -37,27 +37,6 @@ set matches          0
 
 print_header $test_id
 
-#
-# Spawn a job via srun to print environment variables
-#
-set timeout $max_job_delay
-spawn $srun -N1 -n1 -t1 $bin_env
-expect {
-	-re "(SLURM_$alpha_under)=($alpha_numeric)" {
-		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
@@ -78,6 +57,27 @@ array set good_vars {
     SLURM_TASKS_PER_NODE 1
     SLURM_TASK_PID 1
     SLURM_UMASK 0
+}
+
+#
+# Spawn a job via srun to print environment variables
+#
+set timeout $max_job_delay
+spawn $srun -N1 -n1 -t1 $bin_env
+expect {
+	-re "(SLURM_$alpha_under)=($alpha_numeric)" {
+		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
 }
 
 set total 0
