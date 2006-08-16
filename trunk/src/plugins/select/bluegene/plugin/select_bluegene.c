@@ -470,10 +470,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
 
-		if(job_desc->min_nodes < job_desc->num_procs)
-			job_desc->min_nodes = job_desc->num_procs;
-		if(job_desc->max_nodes < job_desc->num_procs)
-			job_desc->max_nodes = job_desc->num_procs;
+		if(job_desc->num_procs != NO_VAL) {
+			if(job_desc->min_nodes < job_desc->num_procs)
+				job_desc->min_nodes = job_desc->num_procs;
+			if(job_desc->max_nodes < job_desc->num_procs)
+				job_desc->max_nodes = job_desc->num_procs;
+		}
 		/* See if min_nodes is greater than one base partition */
 		if(job_desc->min_nodes > bluegene_bp_node_cnt) {
 			/*
