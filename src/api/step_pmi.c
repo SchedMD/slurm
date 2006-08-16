@@ -42,7 +42,6 @@
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
 #define MSG_TRANSMITS    2	/* transmit KVS messages this number times */
-#define MSG_PARALLELISM 50	/* count of simultaneous KVS message threads */
 
 /* Global variables */
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -71,6 +70,7 @@ struct msg_arg {
 	struct kvs_comm_set *kvs_ptr;
 };
 int agent_cnt = 0;		/* number of active message agents */
+int agent_max_cnt = 0;		/* maximum number of active agents */
 
 static void *_agent(void *x);
 static struct kvs_comm *_find_kvs_by_name(char *name);
@@ -178,7 +178,7 @@ static void *_agent(void *x)
 			if (args->barrier_xmit_ptr[j].port == 0)
 				continue;
 			slurm_mutex_lock(&agent_mutex);
-			while (agent_cnt >= MSG_PARALLELISM)
+			while (agent_cnt >= agent_max_cnt)
 				pthread_cond_wait(&agent_cond, &agent_mutex);
 			agent_cnt++;
 			slurm_mutex_unlock(&agent_mutex);
@@ -380,3 +380,12 @@ fini:	pthread_mutex_unlock(&kvs_mutex);
 	return rc;
 }
 
+/*
+ * Set the maximum number of threads to be used by the PMI server code.
+ * The PMI server code is used interally by the slurm_step_launch() function
+ * to support MPI libraries that bootstrap themselves using PMI.
+ */
+extern void slurm_pmi_server_max_threads(int max_threads)
+{
+	agent_max_cnt = max_threads;
+}
