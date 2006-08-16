@@ -256,7 +256,7 @@ int slaunch(int argc, char **argv)
 	slurm_step_launch_wait_start(step_ctx);
 
 	if (opt.multi_prog)
-		mpir_set_multi_name(step_req.num_tasks);
+		mpir_set_multi_name(step_req.num_tasks, params.argv[0]);
 	else
 		_mpir_set_executable_names(params.argv[0]);
 	MPIR_debug_state = MPIR_DEBUG_SPAWNED;

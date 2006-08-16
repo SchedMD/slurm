@@ -136,11 +136,15 @@ expect {
 		exp_continue
 	}
 	-re "executable:(/bin/)($alpha)" {
-		if {[string compare $expect_out(2,string) "date"] != 0} {
+		if {[string compare $expect_out(2,string) "date"] == 0} {
 			incr matches
 		}
-		if {[string compare $expect_out(2,string) "hostname"] != 0} {
+		if {[string compare $expect_out(2,string) "hostname"] == 0} {
 			incr matches
+		}
+		if { $matches == 4} {
+			# set the debugged processes running again
+			exec $scancel -s CONT $job_id.0
 		}
 		exp_continue
 	}
