@@ -72,9 +72,10 @@
 #include "src/common/optz.h"
 #include "src/common/read_config.h" /* getnodename() */
 #include "src/common/hostlist.h"
+#include "src/common/mpi.h"
+#include "src/api/step_pmi.h"
 
 #include "src/slaunch/attach.h"
-#include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
@@ -120,6 +121,7 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
+#define LONG_OPT_PMI_THREADS 0x123
 
 typedef struct resource_allocation_response_msg_flags {
 	bool job_id;
@@ -1071,6 +1073,7 @@ void set_options(const int argc, char **argv)
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
+		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+c:Cd:D:e:E:F:g:hi:I:J:kKlm:n:N:"
@@ -1369,6 +1372,15 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
+			break;
+		case LONG_OPT_PMI_THREADS: /* undocumented option */
+		{
+			int max = _get_int(optarg, "pmi-threads");
+			if (max <= 0)
+				error("--pmi-threads must be a positive integer");
+			else
+				slurm_pmi_server_max_threads(max);
+		}
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
