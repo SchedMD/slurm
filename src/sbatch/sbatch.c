@@ -106,6 +106,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->immediate = opt.immediate;
 	desc->name = opt.job_name;
 	desc->req_nodes = opt.nodelist;
+	/* FIXME - SLURM_HOSTFILE is the wrong env name, and should be
+	   done like in slaunch */
 	if (desc->req_nodes == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -205,6 +207,22 @@ static bool has_shebang(const void *buf, int size)
 	return true;
 }
 
+/*
+ * Checks if the buffer contains a NULL character (\0).
+ */
+static bool contains_null_char(const void *buf, int size)
+{
+	char *str = (char *)buf;
+	int i;
+
+	for (i = 0; i < size; i++) {
+		if (str[i] == '\0')
+			return true;
+	}
+
+	return false;
+}
+
 static void *get_script_buffer(const char *filename, int *size)
 {
 	int fd;
@@ -261,8 +279,11 @@ static void *get_script_buffer(const char *filename, int *size)
 		      " to an interpreter.");
 		error("For instance: #!/bin/sh");
 		goto fail;
+	} else if (contains_null_char(buf, script_size)) {
+		error("The SLURM controller does not allow scripts that");
+		error("contain a NULL character '\\0'.");
+		goto fail;
 	}
-
 
 	*size = script_size;
 	return buf;
