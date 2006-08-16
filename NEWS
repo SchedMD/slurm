@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- BLUEGENE - fix to handle a NO_VAL sent in as num procs in the job 
     description.
+ -- Fix bug in slurmstepd code for parsing --multi-prog command script.
+    Parser was failing for commands with no arguments.
 
 * Changes in SLURM 1.1.8
 ========================

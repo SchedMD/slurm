@@ -122,28 +122,6 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
 	}
 }
 
-/* Return this tasks rank from environment variable, 
- * Use SLURM_PROCID if available, otherwise use PMI_RANK */
-static int
-_get_rank(char **prog_env)
-{
-	int i, pmi_rank = 0;
-
-	for (i=0; ; i++) {
-		if (prog_env[i] == NULL)
-			break;
-		if (strncmp(prog_env[i], "SLURM_PROCID=", 13) == 0)
-			return atoi(&prog_env[i][13]);
-		if (strncmp(prog_env[i], "PMI_RANK=", 9) == 0)
-			pmi_rank = atoi(&prog_env[i][9]);
-	}
-	if (pmi_rank)
-		return pmi_rank;
-
-	error("Task rank unknown.");
-	return -1;
-}
-
 /* Given a program name, translate it to a fully qualified pathname
  * as needed based upon the PATH environment variable */
 static char *
@@ -194,17 +172,16 @@ _build_path(char* fname, char **prog_env)
 }
 
 extern int
-task_exec(char *config_data, char **prog_env)
+task_exec(char *config_data, char **prog_env, int task_rank)
 {
 	char *line;
 	int line_num = 0;
-	int task_rank, task_offset;
+	int task_offset;
 	char* p, *s, *ptrptr;
 	char* rank_spec, *prog_spec = NULL, *args_spec;
-	int prog_argc;
+	int prog_argc = 0;
 	char* prog_argv[(BUF_SIZE - 4)/ 2];
 
-	task_rank = _get_rank(prog_env);
 	if (task_rank < 0)
 		return -1;
 
@@ -256,16 +233,22 @@ task_exec(char *config_data, char **prog_env)
 			return -1;
 		}
 		
+		prog_argv[0] = prog_spec; 
+		prog_argv[1] = NULL;
+		prog_argc = 1;
+
 		while (*p != '\0' && !isspace (*p))
 			p ++;
-		*p ++ = '\0';
+
+		/* If *p is already \0, then we are at the end of line;
+		   therre are no command line parameters. */
+		if (*p != '\0')
+			*p++ = '\0';
 
 		while (*p != '\0' && isspace (*p))
 			p ++;
-		args_spec = p;
 
-		prog_argv[0] = prog_spec; 
-		prog_argc = 1;
+		args_spec = p;
 		while (*args_spec != '\0') { 
 			/* Only simple quote and escape supported */
 			prog_argv[prog_argc ++] = args_spec;
