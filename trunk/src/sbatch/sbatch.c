@@ -47,6 +47,7 @@
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
+static int set_umask_env(void);
 
 int main(int argc, char *argv[])
 {
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
+	set_umask_env();
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
 		exit(1);
@@ -189,6 +191,23 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->no_requeue = opt.no_requeue;
 
 	return 0;
+}
+
+/* Set SLURM_UMASK environment variable with current state */
+static int set_umask_env(void)
+{
+	char mask_char[5];
+	mode_t mask = (int)umask(0);
+	umask(mask);
+
+	sprintf(mask_char, "0%d%d%d", 
+		((mask>>6)&07), ((mask>>3)&07), mask&07);
+	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
+		error ("unable to set SLURM_UMASK in environment");
+		return SLURM_FAILURE;
+	}
+	debug ("propagating UMASK=%s", mask_char); 
+	return SLURM_SUCCESS;
 }
 
 /*
