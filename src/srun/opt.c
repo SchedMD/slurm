@@ -68,6 +68,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
+#include "src/api/pmi_server.h"
 
 #include "src/srun/opt.h"
 #include "src/srun/attach.h"
