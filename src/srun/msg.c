@@ -57,11 +57,11 @@
 #include "src/common/mpi.h"
 #include "src/common/forward.h"
 #include "src/common/global_srun.h"
+#include "src/api/pmi_server.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/msg.h"
-#include "src/srun/pmi.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/attach.h"
 #include "src/srun/allocate.h"

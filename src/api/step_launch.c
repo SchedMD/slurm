@@ -60,7 +60,7 @@
 #include "src/common/slurm_cred.h"
 
 #include "src/api/step_ctx.h"
-#include "src/api/step_pmi.h"
+#include "src/api/pmi_server.h"
 
 /**********************************************************************
  * General declarations for step launch code

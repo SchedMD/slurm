@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _SRUN_PMI_H
-#define _SRUN_PMI_H
+#ifndef _SLAUNCH_PMI_H
+#define _SLAUNCH_PMI_H
 
 #include "src/api/slurm_pmi.h"
 
@@ -36,5 +36,12 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr);
 /* Note that a task has reached a barrier,
  * transmit the kvs values to the task */
 extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr);
+
+/*
+ * Set the maximum number of threads to be used by the PMI server code.
+ * The PMI server code is used interally by the slurm_step_launch() function
+ * to support MPI libraries that bootstrap themselves using PMI.
+ */
+extern void pmi_server_max_threads(int max_threads);
 
 #endif

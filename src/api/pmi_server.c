@@ -70,7 +70,7 @@ struct msg_arg {
 	struct kvs_comm_set *kvs_ptr;
 };
 int agent_cnt = 0;		/* number of active message agents */
-int agent_max_cnt = 0;		/* maximum number of active agents */
+int agent_max_cnt = 32;		/* maximum number of active agents */
 
 static void *_agent(void *x);
 static struct kvs_comm *_find_kvs_by_name(char *name);
@@ -385,7 +385,10 @@ fini:	pthread_mutex_unlock(&kvs_mutex);
  * The PMI server code is used interally by the slurm_step_launch() function
  * to support MPI libraries that bootstrap themselves using PMI.
  */
-extern void slurm_pmi_server_max_threads(int max_threads)
+extern void pmi_server_max_threads(int max_threads)
 {
-	agent_max_cnt = max_threads;
+	if (max_threads <= 0)
+		error("pmi server max threads must be greater than zero");
+	else
+		agent_max_cnt = max_threads;
 }
