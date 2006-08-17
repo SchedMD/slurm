@@ -89,7 +89,6 @@
 #define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_HELP        0x100
 #define LONG_OPT_USAGE       0x101
 #define LONG_OPT_XTO         0x102
 #define LONG_OPT_LAUNCH      0x103
@@ -119,12 +118,9 @@
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
-#define LONG_OPT_MULTI       0x122
 #define LONG_OPT_NO_REQUEUE  0x123
 
 /*---- global variables, defined in opt.h ----*/
-char **remote_argv;
-int remote_argc;
 opt_t opt;
 
 /*---- forward declarations of static functions  ----*/
@@ -141,16 +137,14 @@ static int  _get_int(const char *arg, const char *what);
 
 static void  _help(void);
 
-/* load a multi-program configuration file */
-static void _load_multi(int *argc, char **argv);
-
 /* fill in default options  */
 static void _opt_default(void);
 
+/* set options from batch script */
+static void _opt_batch_script(const void *body, int size);
+
 /* set options based upon env vars  */
 static void _opt_env(void);
-
-static void _opt_args(int argc, char **argv);
 
 /* list known options and their settings  */
 static void  _opt_list(void);
@@ -181,26 +175,9 @@ static int   _verify_mem_bind(const char *arg, char **mem_bind,
                                         mem_bind_type_t *mem_bind_type);
 static int   _verify_conn_type(const char *arg);
 static char *_fullpath(const char *filename);
+static void _set_options(int argc, char **argv);
 
 /*---[ end forward declarations of static functions ]---------------------*/
-
-int initialize_and_process_args(int argc, char *argv[])
-{
-	/* initialize option defaults */
-	_opt_default();
-
-	/* initialize options with env vars */
-	_opt_env();
-
-	/* initialize options with argv */
-	_opt_args(argc, argv);
-
-	if (opt.verbose > 3)
-		_opt_list();
-
-	return 1;
-
-}
 
 static void _print_version(void)
 {
@@ -666,6 +643,9 @@ static void _opt_default()
 	} else
 		error("who are you?");
 
+	opt.script_argc = 0;
+	opt.script_argv = NULL;
+
 	opt.gid = getgid();
 
 	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
@@ -813,7 +793,6 @@ static void _opt_env()
 	}
 }
 
-
 static void
 _process_env_var(env_vars_t *e, const char *val)
 {
@@ -906,114 +885,348 @@ _process_env_var(env_vars_t *e, const char *val)
 	}
 }
 
+
+/*---[ command line option processing ]-----------------------------------*/
+
+static struct option long_options[] = {
+	{"cpus-per-task", required_argument, 0, 'c'},
+	{"constraint",    required_argument, 0, 'C'},
+	{"slurmd-debug",  required_argument, 0, 'd'},
+	{"chdir",         required_argument, 0, 'D'},
+	{"error",         required_argument, 0, 'e'},
+	{"geometry",      required_argument, 0, 'g'},
+	{"help",          no_argument,       0, 'h'},
+	{"hold",          no_argument,       0, 'H'},
+	{"input",         required_argument, 0, 'i'},
+	{"immediate",     no_argument,       0, 'I'},
+	{"job-name",      required_argument, 0, 'J'},
+	{"no-kill",       no_argument,       0, 'k'},
+	{"kill-on-bad-exit", no_argument,    0, 'K'},
+	{"distribution",  required_argument, 0, 'm'},
+	{"ntasks",        required_argument, 0, 'n'},
+	{"nodes",         required_argument, 0, 'N'},
+	{"output",        required_argument, 0, 'o'},
+	{"partition",     required_argument, 0, 'p'},
+	{"dependency",    required_argument, 0, 'P'},
+	{"quit-on-interrupt", no_argument,   0, 'q'},
+	{"quiet",            no_argument,    0, 'Q'},
+	{"relative",      required_argument, 0, 'r'},
+	{"no-rotate",     no_argument,       0, 'R'},
+	{"share",         no_argument,       0, 's'},
+	{"time",          required_argument, 0, 't'},
+	{"account",       required_argument, 0, 'U'},
+	{"verbose",       no_argument,       0, 'v'},
+	{"version",       no_argument,       0, 'V'},
+	{"nodelist",      required_argument, 0, 'w'},
+	{"wait",          required_argument, 0, 'W'},
+	{"exclude",       required_argument, 0, 'x'},
+	{"disable-status", no_argument,      0, 'X'},
+	{"no-allocate",   no_argument,       0, 'Z'},
+	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
+	{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
+	{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
+	{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
+	{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
+	{"mem",              required_argument, 0, LONG_OPT_MEM},
+	{"mpi",              required_argument, 0, LONG_OPT_MPI},
+	{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
+	{"tmp",              required_argument, 0, LONG_OPT_TMP},
+	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
+	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
+	{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
+	{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
+	{"uid",              required_argument, 0, LONG_OPT_UID},
+	{"gid",              required_argument, 0, LONG_OPT_GID},
+	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
+	{"usage",            no_argument,       0, LONG_OPT_USAGE},
+	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
+	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
+	{"network",          required_argument, 0, LONG_OPT_NETWORK},
+	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
+	{"begin",            required_argument, 0, LONG_OPT_BEGIN},
+	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
+	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
+	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
+	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
+	{"nice",             optional_argument, 0, LONG_OPT_NICE},
+	{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
+	{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
+	{NULL,               0,                 0, 0}
+};
+
+static char *opt_string =
+	"+a:c:C:D:e:g:hHi:IJ:kKm:n:N:o:Op:P:qQr:R:st:U:vVw:W:x:XZ";
+
+
 /*
- *  Get a decimal integer from arg.
+ * process_options_first_pass()
  *
- *  Returns the integer on success, exits program on failure.
- * 
+ * In this first pass we only look at the command line options, and we
+ * will only handle a few options (help, usage, quiet, verbose, version),
+ * and look for the script name and arguments (if provided).
+ *
+ * We will parse the environment variable options, batch script options,
+ * and all of the rest of the command line options in
+ * process_options_second_pass().
+ *
+ * Return a pointer to the batch script file name is provided on the command
+ * line, otherwise return NULL, and the script will need to be read from
+ * standard input.
  */
-static int
-_get_int(const char *arg, const char *what)
-{
-	char *p;
-	long int result = strtol(arg, &p, 10);
-
-	if ((*p != '\0') || (result < 0L)) {
-		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(1);
-	}
-
-	if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
-	}
-
-	return (int) result;
-}
-
-void set_options(const int argc, char **argv)
+char *process_options_first_pass(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	static bool set_cwd=false, set_name=false;
-	struct utsname name;
-	static struct option long_options[] = {
-		{"cpus-per-task", required_argument, 0, 'c'},
-		{"constraint",    required_argument, 0, 'C'},
-		{"slurmd-debug",  required_argument, 0, 'd'},
-		{"chdir",         required_argument, 0, 'D'},
-		{"error",         required_argument, 0, 'e'},
-		{"geometry",      required_argument, 0, 'g'},
-		{"hold",          no_argument,       0, 'H'},
-		{"input",         required_argument, 0, 'i'},
-		{"immediate",     no_argument,       0, 'I'},
-		{"job-name",      required_argument, 0, 'J'},
-		{"no-kill",       no_argument,       0, 'k'},
-		{"kill-on-bad-exit", no_argument,    0, 'K'},
-		{"distribution",  required_argument, 0, 'm'},
-		{"ntasks",        required_argument, 0, 'n'},
-		{"nodes",         required_argument, 0, 'N'},
-		{"output",        required_argument, 0, 'o'},
-		{"partition",     required_argument, 0, 'p'},
-		{"dependency",    required_argument, 0, 'P'},
-		{"quit-on-interrupt", no_argument,   0, 'q'},
-		{"quiet",            no_argument,    0, 'Q'},
-		{"relative",      required_argument, 0, 'r'},
-		{"no-rotate",     no_argument,       0, 'R'},
-		{"share",         no_argument,       0, 's'},
-		{"time",          required_argument, 0, 't'},
-		{"account",       required_argument, 0, 'U'},
-		{"verbose",       no_argument,       0, 'v'},
-		{"version",       no_argument,       0, 'V'},
-		{"nodelist",      required_argument, 0, 'w'},
-		{"wait",          required_argument, 0, 'W'},
-		{"exclude",       required_argument, 0, 'x'},
-		{"disable-status", no_argument,      0, 'X'},
-		{"no-allocate",   no_argument,       0, 'Z'},
-		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
-		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
-		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
-		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
-		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
-		{"mem",              required_argument, 0, LONG_OPT_MEM},
-		{"mpi",              required_argument, 0, LONG_OPT_MPI},
-		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
-		{"tmp",              required_argument, 0, LONG_OPT_TMP},
-		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
-		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
-		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
-		{"uid",              required_argument, 0, LONG_OPT_UID},
-		{"gid",              required_argument, 0, LONG_OPT_GID},
-		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-		{"help",             no_argument,       0, LONG_OPT_HELP},
-		{"usage",            no_argument,       0, LONG_OPT_USAGE},
-		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
-		{"network",          required_argument, 0, LONG_OPT_NETWORK},
-		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
-		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
-		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
-		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
-		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
-		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
-		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
-		{NULL,               0,                 0, 0}
-	};
-	char *opt_string = "+a:c:C:D:e:g:Hi:IJ:kKm:n:N:"
-		"o:Op:P:qQr:R:st:U:vVw:W:x:XZ";
+	char *str = NULL;
+
+	/* initialize option defaults */
+	_opt_default();
 
 	opt.progname = xbasename(argv[0]);
-	optind = 0;		
+	optind = 0;
+
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
-			
 		case '?':
 			fprintf(stderr, "Try \"sbatch --help\" for more "
 				"information\n");
 			exit(1);
+			break;
+		case 'h':
+			_help();
+			exit(0);
+			break;
+		case 'Q':
+			opt.quiet++;
+			break;
+		case 'v':
+			opt.verbose++;
+			break;
+		case 'V':
+			_print_version();
+			exit(0);
+			break;
+		default:
+			/* will be parsed in second pass function */
+			break;
+		}
+	}
+	xfree(str);
+
+	if (argc > optind) {
+		int i;
+		char **leftover;
+
+		opt.script_argc = argc - optind;
+		leftover = argv + optind;
+		opt.script_argv = (char **) xmalloc((opt.script_argc + 1)
+						    * sizeof(char *));
+		for (i = 0; i < opt.script_argc; i++)
+			opt.script_argv[i] = xstrdup(leftover[i]);
+		opt.script_argv[i] = NULL;
+	}
+	if (opt.script_argc > 0) {
+		char *fullpath;
+		char *cmd       = opt.script_argv[0];
+		int  mode       = R_OK;
+
+		if ((fullpath = _search_path(cmd, true, mode))) {
+			xfree(opt.script_argv[0]);
+			opt.script_argv[0] = fullpath;
+		} 
+	}
+
+	return opt.script_argv[0];
+}
+
+/* process options:
+ * 1. update options with option set in the script
+ * 2. update options with env vars
+ * 3. update options with commandline args
+ * 4. perform some verification that options are reasonable
+ */
+int process_options_second_pass(int argc, char *argv[],
+				const void *script_body, int script_size)
+{
+	/* set options from batch script */
+	_opt_batch_script(script_body, script_size);
+
+	/* set options from env vars */
+	_opt_env();
+
+	/* set options from command line */
+	_set_options(argc, argv);
+#ifdef HAVE_AIX
+	if (opt.network == NULL) {
+		opt.network = "us,sn_all,bulk_xfer";
+		setenv("SLURM_NETWORK", opt.network, 1);
+	}
+#endif
+
+	if (!_opt_verify())
+		exit(1);
+
+	if (opt.verbose > 3)
+		_opt_list();
+
+	return 1;
+
+}
+
+/*
+ * Free returned line with xfree();
+ */
+static char *_next_line(const void *body, int size, void **state)
+{
+	char *line;
+	char *current, *ptr;
+
+	if (*state == NULL) /* initial state */
+		*state = (void *)body;
+
+	if ((*state - body) >= size) /* final state */
+		return NULL;
+
+	ptr = current = (char *)*state;
+	while ((*ptr != '\n') && (ptr < ((char *)body+size)))
+		ptr++;
+	if (*ptr == '\n')
+		ptr++;
+	
+	line = xstrndup(current, (ptr-current));
+
+	*state = (void *)ptr;
+	return line;
+}
+
+/*
+ * FIXME - do we want to handle '#' comments under #SBATCH?
+ *
+ * IN - line
+ * OUT - skipped - number of characters parsed from line
+ * RET - xmalloc'ed argument string (may be shorter than "skipped")
+ *       or NULL if no arguments remaining
+ */
+static char *_next_argument(const char *line, int *skipped)
+{
+	char *ptr;
+	char argument[BUFSIZ];
+	bool escape_flag = false;
+	int i;
+
+	ptr = (char *)line;
+	*skipped = 0;
+
+	/* skip whitespace */
+	while (isspace(*ptr) && *ptr != '\0') {
+		ptr++;
+	}
+
+	if (*ptr == '\0')
+		return NULL;
+
+	/* copy argument into "argument" buffer, */
+	i = 0;
+	while (!isspace(*ptr) && *ptr != '\0') {
+		if (escape_flag) {
+			argument[i++] = *ptr;
+			escape_flag = false;
+			ptr++;
+		} else if (*ptr == '\\') {
+			escape_flag = true;
+			ptr++;
+		} else if (*ptr == '"') {
+			/* skip the opening quote */
+			ptr++;
+			/* include all characters between quotes */
+			while (*ptr != '"' && *ptr != '\n' && *ptr != '\0') {
+				if (*ptr == '\n' || *ptr == '\0') {
+					error("Unterminated quotes in batch"
+					      " script argument");
+					return NULL;
+				}
+				if (escape_flag) {
+					argument[i++] = *ptr;
+					escape_flag = false;
+					ptr++;
+				} else if (*ptr == '\\') {
+					escape_flag = true;
+					ptr++;
+				} else {
+					argument[i++] = *ptr;
+					ptr++;
+				}
+			}
+			if (*ptr == '"') {
+				/* skip closing quote */
+				ptr++;
+			}
+		} else {
+			argument[i++] = *ptr;
+			ptr++;
+		}
+	}
+
+	if (i > 0) {
+		*skipped = ptr - line;
+		return xstrndup(argument, i);
+	} else {
+		return NULL;
+	}
+}
+
+/*
+ * set options from batch script
+ *
+ * Build and argv-style array of options from the script "body",
+ * then pass the array to _set_options for() further parsing.
+ */
+static void _opt_batch_script(const void *body, int size)
+{
+	char *magic_word = "#SBATCH";
+	int argc = 0;
+	char **argv = NULL;
+	void *state = NULL;
+	char *line;
+	char *option;
+	char *ptr;
+	int skipped = 0;
+
+	while((line = _next_line(body, size, &state)) != NULL) {
+		if (strncmp(line, magic_word, sizeof(magic_word)) != 0) {
+			xfree(line);
+			continue;
+		}
+
+		/* this line starts with the magic word */
+		ptr = line + strlen(magic_word);
+		while ((option = _next_argument(ptr, &skipped)) != NULL) {
+			debug3("\tFound argument \"%s\" skipped = %d",
+			       option, skipped);
+			argc += 1;
+			xrealloc(argv, sizeof(char*) * argc);
+			argv[argc-1] = option;
+			ptr += skipped;
+		}
+		xfree(line);
+	}
+
+	if (argc > 0)
+		_set_options(argc, argv);
+}
+
+static void _set_options(int argc, char **argv)
+{
+	int opt_char, option_index = 0;
+	static bool set_cwd=false, set_name=false;
+	struct utsname name;
+
+	optind = 0;
+	while((opt_char = getopt_long(argc, argv, opt_string,
+				      long_options, &option_index)) != -1) {
+		switch (opt_char) {
+		case '?':
+			fatal("Try \"sbatch --help\" for more information");
 			break;
 		case 'c':
 			opt.cpus_set = true;
@@ -1040,6 +1253,9 @@ void set_options(const int argc, char **argv)
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
+		case 'h':
+			_help();
+			exit(0);
 		case 'H':
 			opt.hold = true;
 			break;
@@ -1232,9 +1448,6 @@ void set_options(const int argc, char **argv)
 			if (opt.egid == (gid_t) -1)
 				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
-		case LONG_OPT_HELP:
-			_help();
-			exit(0);
 		case LONG_OPT_USAGE:
 			_usage();
 			exit(0);
@@ -1291,9 +1504,6 @@ void set_options(const int argc, char **argv)
 			xfree(opt.ctrl_comm_ifhn);
 			opt.ctrl_comm_ifhn = xstrdup(optarg);
 			break;
-		case LONG_OPT_MULTI:
-			opt.multi_prog = true;
-			break;
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
 			break;
@@ -1302,97 +1512,10 @@ void set_options(const int argc, char **argv)
 			      opt_char);
 		}
 	}
-}
 
-/* Load the multi_prog config file into argv, pass the  entire file contents 
- * in order to avoid having to read the file on every node. We could parse
- * the infomration here too for loading the MPIR records for TotalView */
-static void _load_multi(int *argc, char **argv)
-{
-	int config_fd, data_read = 0, i;
-	struct stat stat_buf;
-	char *data_buf;
-
-	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
-		error("Could not open multi_prog config file %s",
-			argv[0]);
-		exit(1);
-	}
-	if (fstat(config_fd, &stat_buf) == -1) {
-		error("Could not stat multi_prog config file %s",
-			argv[0]);
-		exit(1);
-	}
-	if (stat_buf.st_size > 60000) {
-		error("Multi_prog config file %s is too large",
-			argv[0]);
-		exit(1);
-	}
-	data_buf = xmalloc(stat_buf.st_size);
-	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
-			- data_read)) != 0) {
-		if (i < 0) {
-			error("Error reading multi_prog config file %s", 
-				argv[0]);
-			exit(1);
-		} else
-			data_read += i;
-	}
-	close(config_fd);
-	for (i=1; i<*argc; i++)
-		xfree(argv[i]);
-	argv[1] = data_buf;
-	*argc = 2;
-}
-
-/*
- * _opt_args() : set options via commandline args and popt
- */
-static void _opt_args(int argc, char **argv)
-{
-	int i;
-	char **rest = NULL;
-
-	set_options(argc, argv);
-
-#ifdef HAVE_AIX
-	if (opt.network == NULL) {
-		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
-#endif
-
-	remote_argc = 0;
 	if (optind < argc) {
-		rest = argv + optind;
-		while (rest[remote_argc] != NULL)
-			remote_argc++;
+		fatal("Invalid argument: %s", argv[optind]);
 	}
-	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
-	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = xstrdup(rest[i]);
-	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
-
-	if (opt.multi_prog) {
-		if (remote_argc < 1) {
-			error("configuration file not specified");
-			exit(1);
-		}
-		_load_multi(&remote_argc, remote_argv);
-
-	}
-	else if (remote_argc > 0) {
-		char *fullpath;
-		char *cmd       = remote_argv[0];
-		int  mode       = R_OK;
-
-		if ((fullpath = _search_path(cmd, true, mode))) {
-			xfree(remote_argv[0]);
-			remote_argv[0] = fullpath;
-		} 
-	}
-	if (!_opt_verify())
-		exit(1);
 }
 
 /* 
@@ -1432,8 +1555,8 @@ static bool _opt_verify(void)
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (remote_argc > 0))
-		opt.job_name = _base_name(remote_argv[0]);
+	if ((opt.job_name == NULL) && (opt.script_argc > 0))
+		opt.job_name = _base_name(opt.script_argv[0]);
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
@@ -1654,8 +1777,8 @@ print_commandline()
 	char buf[256];
 
 	buf[0] = '\0';
-	for (i = 0; i < remote_argc; i++)
-		snprintf(buf, 256,  "%s", remote_argv[i]);
+	for (i = 0; i < opt.script_argc; i++)
+		snprintf(buf, 256,  "%s", opt.script_argv[i]);
 	return xstrdup(buf);
 }
 
@@ -1678,6 +1801,31 @@ print_geometry()
 	}
 
 	return rc;
+}
+
+
+/*
+ *  Get a decimal integer from arg.
+ *
+ *  Returns the integer on success, exits program on failure.
+ * 
+ */
+static int
+_get_int(const char *arg, const char *what)
+{
+	char *p;
+	long int result = strtol(arg, &p, 10);
+
+	if ((*p != '\0') || (result < 0L)) {
+		error ("Invalid numeric value \"%s\" for %s.", arg, what);
+		exit(1);
+	}
+
+	if (result > INT_MAX) {
+		error ("Numeric argument (%ld) to big for %s.", result, what);
+	}
+
+	return (int) result;
 }
 
 
@@ -1774,7 +1922,6 @@ static void _opt_list()
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
-	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1800,7 +1947,7 @@ static void _usage(void)
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--task-prolog=fname] [--task-epilog=fname]\n"
-"              [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]\n"
+"              [--ctrl-comm-ifhn=addr] [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1849,8 +1996,6 @@ static void _help(void)
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
-"      --multi-prog            if set the program name specified is the\n"
-"                              configuration specificaiton for multiple programs\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
 "      --no-shell              don't spawn shell in allocate mode\n"
 "\n"

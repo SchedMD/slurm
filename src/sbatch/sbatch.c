@@ -55,12 +55,11 @@ int main(int argc, char *argv[])
 	job_desc_msg_t desc;
 	submit_response_msg_t *resp;
 	char *script_name;
-	int script_size;
+	void *script_body;
+	int script_size = 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-	if (initialize_and_process_args(argc, argv) < 0) {
-		fatal("sbatch parameter parsing");
-	}
+	script_name = process_options_first_pass(argc, argv);
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
 		logopt.stderr_level += opt.verbose;
@@ -69,20 +68,22 @@ int main(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
+	script_body = get_script_buffer(script_name, &script_size);
+	if (script_body == NULL)
+		exit(1);
+
+	if (process_options_second_pass((argc - opt.script_argc), argv,
+					script_body, script_size) < 0) {
+		fatal("sbatch parameter parsing");
+	}
+
 	set_umask_env();
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
-		exit(1);
+		exit(2);
 	}
 
-	if (remote_argv == NULL || remote_argv[0] == NULL)
-		script_name = NULL;
-	else
-		script_name = remote_argv[0];
-
-	desc.script = (char *)get_script_buffer(script_name, &script_size);
-	if (desc.script == NULL)
-		exit(2);
+	desc.script = (char *)script_body;
 
 	if (slurm_submit_batch_job(&desc, &resp) == -1) {
 		error("Batch job submission failed: %m");
@@ -182,8 +183,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->environment = environ;
 	desc->env_size = envcount (environ);
-	desc->argv = remote_argv;
-	desc->argc = remote_argc;
+	desc->argv = opt.script_argv;
+	desc->argc = opt.script_argc;
 	desc->err  = opt.efname;
 	desc->in   = opt.ifname;
 	desc->out  = opt.ofname;
@@ -242,6 +243,9 @@ static bool contains_null_char(const void *buf, int size)
 	return false;
 }
 
+/*
+ * If "filename" is NULL, the batch script is read from standard input.
+ */
 static void *get_script_buffer(const char *filename, int *size)
 {
 	int fd;
