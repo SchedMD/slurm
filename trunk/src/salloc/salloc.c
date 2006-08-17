@@ -212,6 +212,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->immediate = opt.immediate ? 1 : 0;
 	desc->name = opt.job_name;
 	desc->req_nodes = opt.nodelist;
+	/* FIXME - SLURM_HOSTFILE is the wrong env name, and should be
+	   done like in slaunch */
 	if (desc->req_nodes == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
