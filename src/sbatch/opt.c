@@ -1079,21 +1079,32 @@ int process_options_second_pass(int argc, char *argv[],
 }
 
 /*
- * Free returned line with xfree();
+ * _next_line - Interpret the contents of a byte buffer as characters in
+ *	a file.  _next_line will find and return the next line in the buffer.
+ *
+ *	If "state" is NULL, it will start at the beginning of the buffer.
+ *	_next_line will update the "state" pointer to point at the
+ *	spot in the buffer where it left off.
+ *
+ * IN buf - buffer containing file contents
+ * IN size - size of buffer "buf"
+ * IN/OUT state - used by _next_line to determine where the last line ended
+ *
+ * RET - xmalloc'ed character string, or NULL if no lines remaining in buf.
  */
-static char *_next_line(const void *body, int size, void **state)
+static char *_next_line(const void *buf, int size, void **state)
 {
 	char *line;
 	char *current, *ptr;
 
 	if (*state == NULL) /* initial state */
-		*state = (void *)body;
+		*state = (void *)buf;
 
-	if ((*state - body) >= size) /* final state */
+	if ((*state - buf) >= size) /* final state */
 		return NULL;
 
 	ptr = current = (char *)*state;
-	while ((*ptr != '\n') && (ptr < ((char *)body+size)))
+	while ((*ptr != '\n') && (ptr < ((char *)buf+size)))
 		ptr++;
 	if (*ptr == '\n')
 		ptr++;
