@@ -1239,8 +1239,6 @@ static void _opt_batch_script(const void *body, int size)
 		while ((option = _get_argument(ptr, &skipped)) != NULL) {
 			debug2("\tFound argument \"%s\" skipped = %d",
 			       option, skipped);
-			info("\tFound argument \"%s\" skipped = %d",
-			       option, skipped);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
 			argv[argc-1] = option;
