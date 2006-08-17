@@ -73,7 +73,7 @@
 #include "src/common/read_config.h" /* getnodename() */
 #include "src/common/hostlist.h"
 #include "src/common/mpi.h"
-#include "src/api/step_pmi.h"
+#include "src/api/pmi_server.h"
 
 #include "src/slaunch/attach.h"
 
@@ -1379,7 +1379,7 @@ void set_options(const int argc, char **argv)
 			if (max <= 0)
 				error("--pmi-threads must be a positive integer");
 			else
-				slurm_pmi_server_max_threads(max);
+				pmi_server_max_threads(max);
 		}
 			break;
 		default:

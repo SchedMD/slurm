@@ -696,6 +696,7 @@ static void _opt_default()
 	opt.time_limit = -1;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
+	pmi_server_max_threads(opt.max_threads);
 
 	opt.relative = NO_VAL;
 	opt.relative_set = false;
@@ -780,6 +781,7 @@ static void _opt_default()
 	if ((opt.parallel_debug = _under_parallel_debugger())) {
 		opt.max_launch_time = 120;
 		opt.max_threads     = 1;
+		pmi_server_max_threads(opt.max_threads);
 		opt.msg_timeout     = 15;
 	}
 
@@ -1304,6 +1306,7 @@ void set_options(const int argc, char **argv, int first)
 			
 			opt.max_threads = 
 				_get_int(optarg, "max_threads");
+			pmi_server_max_threads(opt.max_threads);
 			break;
 		case (int)'u':
 			opt.unbuffered = true;
@@ -1441,6 +1444,7 @@ void set_options(const int argc, char **argv, int first)
 			MPIR_being_debugged  = 1;
 			opt.max_launch_time = 120;
 			opt.max_threads     = 1;
+			pmi_server_max_threads(opt.max_threads);
 			opt.msg_timeout     = 15;
 			break;
 		case LONG_OPT_HELP:
@@ -1748,6 +1752,7 @@ static bool _opt_verify(void)
 	if (opt.max_threads <= 0) {	/* set default */
 		error("Thread value invalid, reset to 1");
 		opt.max_threads = 1;
+		pmi_server_max_threads(opt.max_threads);
 	} else if (opt.max_threads > MAX_THREADS) {
 		error("Thread value exceeds defined limit, reset to %d", 
 			MAX_THREADS);

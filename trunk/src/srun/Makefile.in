@@ -73,7 +73,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
-	msg.$(OBJEXT) pmi.$(OBJEXT) signals.$(OBJEXT) launch.$(OBJEXT) \
+	msg.$(OBJEXT) signals.$(OBJEXT) launch.$(OBJEXT) \
 	attach.$(OBJEXT) reattach.$(OBJEXT) fname.$(OBJEXT) \
 	sigstr.$(OBJEXT) allocate.$(OBJEXT) core-format.$(OBJEXT) \
 	multi_prog.$(OBJEXT) srun.wrapper.$(OBJEXT)
@@ -281,7 +281,6 @@ srun_SOURCES = \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
 	msg.c msg.h \
-	pmi.c pmi.h \
 	signals.c signals.h \
 	launch.c    \
 	launch.h    \
@@ -384,7 +383,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reattach.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigstr.Po@am__quote@

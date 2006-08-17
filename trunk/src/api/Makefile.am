@@ -65,7 +65,7 @@ slurmapi_src =           \
 	step_ctx.c step_ctx.h \
 	step_io.c step_io.h \
 	step_launch.c    \
-	step_pmi.c step_pmi.h \
+	pmi_server.c pmi_server.h \
 	submit.c         \
 	suspend.c        \
 	reconfigure.c    \
