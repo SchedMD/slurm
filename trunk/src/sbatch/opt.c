@@ -1006,6 +1006,9 @@ char *process_options_first_pass(int argc, char **argv)
 			_print_version();
 			exit(0);
 			break;
+		case LONG_OPT_USAGE:
+			_usage();
+			exit(0);
 		default:
 			/* will be parsed in second pass function */
 			break;
@@ -1184,13 +1187,19 @@ static char *_next_argument(const char *line, int *skipped)
 static void _opt_batch_script(const void *body, int size)
 {
 	char *magic_word = "#SBATCH";
-	int argc = 0;
-	char **argv = NULL;
+	int argc;
+	char **argv;
 	void *state = NULL;
 	char *line;
 	char *option;
 	char *ptr;
 	int skipped = 0;
+	int i;
+
+	/* getopt_long skips over the first argument, so fill it in blank */
+	argc = 1;
+	argv = xmalloc(sizeof(char *));
+	argv[0] = "";
 
 	while((line = _next_line(body, size, &state)) != NULL) {
 		if (strncmp(line, magic_word, sizeof(magic_word)) != 0) {
@@ -1201,7 +1210,7 @@ static void _opt_batch_script(const void *body, int size)
 		/* this line starts with the magic word */
 		ptr = line + strlen(magic_word);
 		while ((option = _next_argument(ptr, &skipped)) != NULL) {
-			debug3("\tFound argument \"%s\" skipped = %d",
+			debug2("\tFound argument \"%s\" skipped = %d",
 			       option, skipped);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
@@ -1213,6 +1222,10 @@ static void _opt_batch_script(const void *body, int size)
 
 	if (argc > 0)
 		_set_options(argc, argv);
+
+	for (i = 1; i < argc; i++)
+		xfree(argv[i]);
+	xfree(argv);
 }
 
 static void _set_options(int argc, char **argv)
