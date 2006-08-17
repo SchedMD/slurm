@@ -1037,9 +1037,11 @@ char *process_options_first_pass(int argc, char **argv)
 			xfree(opt.script_argv[0]);
 			opt.script_argv[0] = fullpath;
 		} 
-	}
 
-	return opt.script_argv[0];
+		return opt.script_argv[0];
+	} else {
+		return NULL;
+	}
 }
 
 /* process options:
@@ -1102,19 +1104,48 @@ static char *_next_line(const void *body, int size, void **state)
 	return line;
 }
 
+/* Strip comments from a line by terminating the string
+ * where the comment begins.
+ * Everything after a non-escaped "#" is a comment.
+ */
+static void _strip_comments(char *line)
+{
+	int i;
+	int len = strlen(line);
+	int bs_count = 0;
+
+	for (i = 0; i < len; i++) {
+		/* if # character is preceded by an even number of
+		 * escape characters '\' */
+		if (line[i] == '#' && (bs_count%2) == 0) {
+			line[i] = '\0';
+ 			break;
+		} else if (line[i] == '\\') {
+			bs_count++;
+		} else {
+			bs_count = 0;
+		}
+	}
+}
+
 /*
- * FIXME - do we want to handle '#' comments under #SBATCH?
+ * _get_argument - scans a line for something that looks like a command line
+ *	argument, and return an xmalloc'ed string containing the argument.
+ *	Quotes can be used to group characters, including whitespace.
+ *	Quotes can be included in an argument be escaping the quotes;
+ *	preceding the quote with a backslash (\").
  *
  * IN - line
  * OUT - skipped - number of characters parsed from line
  * RET - xmalloc'ed argument string (may be shorter than "skipped")
  *       or NULL if no arguments remaining
  */
-static char *_next_argument(const char *line, int *skipped)
+static char *_get_argument(const char *line, int *skipped)
 {
 	char *ptr;
 	char argument[BUFSIZ];
 	bool escape_flag = false;
+	bool no_isspace_check = false;
 	int i;
 
 	ptr = (char *)line;
@@ -1128,50 +1159,35 @@ static char *_next_argument(const char *line, int *skipped)
 	if (*ptr == '\0')
 		return NULL;
 
+	_strip_comments(ptr);
+
 	/* copy argument into "argument" buffer, */
 	i = 0;
-	while (!isspace(*ptr) && *ptr != '\0') {
+	while ((no_isspace_check || !isspace(*ptr))
+	       && *ptr != '\n'
+	       && *ptr != '\0') {
+
 		if (escape_flag) {
-			argument[i++] = *ptr;
 			escape_flag = false;
+			argument[i] = *ptr;
 			ptr++;
+			i++;
 		} else if (*ptr == '\\') {
 			escape_flag = true;
 			ptr++;
 		} else if (*ptr == '"') {
-			/* skip the opening quote */
+			/* toggle the no_isspace_check flag */
+			no_isspace_check = no_isspace_check? false : true;
 			ptr++;
-			/* include all characters between quotes */
-			while (*ptr != '"' && *ptr != '\n' && *ptr != '\0') {
-				if (*ptr == '\n' || *ptr == '\0') {
-					error("Unterminated quotes in batch"
-					      " script argument");
-					return NULL;
-				}
-				if (escape_flag) {
-					argument[i++] = *ptr;
-					escape_flag = false;
-					ptr++;
-				} else if (*ptr == '\\') {
-					escape_flag = true;
-					ptr++;
-				} else {
-					argument[i++] = *ptr;
-					ptr++;
-				}
-			}
-			if (*ptr == '"') {
-				/* skip closing quote */
-				ptr++;
-			}
 		} else {
-			argument[i++] = *ptr;
+			argument[i] = *ptr;
 			ptr++;
+			i++;
 		}
 	}
 
+	*skipped = ptr - line;
 	if (i > 0) {
-		*skipped = ptr - line;
 		return xstrndup(argument, i);
 	} else {
 		return NULL;
@@ -1209,8 +1225,10 @@ static void _opt_batch_script(const void *body, int size)
 
 		/* this line starts with the magic word */
 		ptr = line + strlen(magic_word);
-		while ((option = _next_argument(ptr, &skipped)) != NULL) {
+		while ((option = _get_argument(ptr, &skipped)) != NULL) {
 			debug2("\tFound argument \"%s\" skipped = %d",
+			       option, skipped);
+			info("\tFound argument \"%s\" skipped = %d",
 			       option, skipped);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
