@@ -419,7 +419,7 @@ bit_fls(bitstr_t *b)
 		}
 		bit--;
 	}
-	while (bit > -1 && value == -1) {	/* test whole words */
+	while (bit >= 0 && value == -1) {	/* test whole words */
 		word = _bit_word(bit);
 		if (b[word] == 0) {
 			bit -= sizeof(bitstr_t) * 8;

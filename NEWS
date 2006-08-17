@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
     description.
  -- Fix bug in slurmstepd code for parsing --multi-prog command script.
     Parser was failing for commands with no arguments.
+ -- Fix bug to check unsigned ints correctly in bitstring.c
+ -- Alter node count covert to kilo to only convert number divisible by 
+    1024 or 512
 
 * Changes in SLURM 1.1.8
 ========================

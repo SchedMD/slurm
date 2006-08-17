@@ -1841,13 +1841,18 @@ void slurm_auth_cred_destroy(void *auth_cred)
 
 int convert_to_kilo(int number, char *tmp)
 {
-	int i;
+	int i, j;
 	if(number >= 1024) {
 		i = number % 1024;
 		if(i > 0) {
-			i *= 10;
-			i /= 1024;
-			sprintf(tmp, "%d.%dk", number/1024, i);
+			j = number % 512;
+			if(j > 0)
+				sprintf(tmp, "%d", number);
+			else {
+				i *= 10;
+				i /= 1024;
+				sprintf(tmp, "%d.%dk", number/1024, i);
+			}
 		} else 
 			sprintf(tmp, "%dk", number/1024);
 	} else
