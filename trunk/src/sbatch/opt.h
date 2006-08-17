@@ -45,8 +45,6 @@
 
 
 /* global variables relating to user options */
-extern char **remote_argv;
-extern int remote_argc;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
@@ -54,10 +52,12 @@ extern int remote_argc;
 			         "unknown"
 
 typedef struct sbatch_options {
+	char *progname;		/* argv[0] of this program or   */
 
-	char *progname;		/* argv[0] of this program or 
-				 * configuration file if multi_prog */
-	bool multi_prog;	/* multiple programs to execute */
+	/* batch script argv and argc, if provided on the command line */
+	int script_argc;
+	char **script_argv;
+
 	char user[MAX_USERNAME];/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
@@ -143,16 +143,30 @@ extern opt_t opt;
 #define constraints_given() opt.mincpus != -1 || opt.realmem != -1 ||\
                             opt.tmpdisk != -1 || opt.contiguous   
 
+/*
+ * process_options_first_pass()
+ *
+ * In this first pass we only look at the command line options, and we
+ * will only handle a few options (help, usage, quiet, verbose, version),
+ * and look for the script name and arguments (if provided).
+ *
+ * We will parse the environment variable options, batch script options,
+ * and all of the rest of the command line options in
+ * process_options_second_pass().
+ *
+ * Return a pointer to the batch script file name if provided on the command
+ * line, otherwise return NULL (in which case the script will need to be read
+ * from standard input).
+ */
+char *process_options_first_pass(int argc, char **argv);
+
 /* process options:
- * 1. set defaults
+ * 1. update options with option set in the script
  * 2. update options with env vars
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int initialize_and_process_args(int argc, char *argv[]);
-
-/* set options based upon commandline args */
-void set_options(const int argc, char **argv);
-
+int process_options_second_pass(int argc, char *argv[],
+				const void *script_body, int script_size);
 
 #endif	/* _HAVE_OPT_H */
