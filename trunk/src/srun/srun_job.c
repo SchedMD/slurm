@@ -151,6 +151,10 @@ job_step_create_allocation(uint32_t job_id)
 	
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
+
+	if(!opt.max_nodes)
+		opt.max_nodes = opt.min_nodes;
+
 	if (opt.nodelist == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -299,10 +303,18 @@ job_step_create_allocation(uint32_t job_id)
 		ai->cpus_per_node  = &cpn;
 		ai->cpu_count_reps = &ai->nnodes;
 	}
-	if(!opt.max_nodes)
-		opt.max_nodes = opt.min_nodes;
+
+	/* get the correct number of hosts to run tasks on */
+	if(opt.nodelist) {
+		hl = hostlist_create(opt.nodelist);
+		hostlist_uniq(hl);
+		ai->nnodes = hostlist_count(hl);
+		hostlist_destroy(hl);
+	} else if((opt.max_nodes > 0) && (opt.max_nodes <ai->nnodes))
+		ai->nnodes = opt.max_nodes;
+	
 	/* 
-	 * Create job, then fill in host addresses
+	 * Create job
 	 */
 	job = _job_create_structure(ai);
 error:

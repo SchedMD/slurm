@@ -412,23 +412,17 @@ bit_fls(bitstr_t *b)
 		return -1;
 
 	bit = _bitstr_bits(b) - 1;	/* zero origin */
-	info("bit %d", bit);
-		
+			
 	while (bit >= 0 && 		/* test partitial words */
 		(_bit_word(bit) == _bit_word(bit + 1))) {
-		info("testing %d gives us %d", bit, bit_test(b, bit));
 		if (bit_test(b, bit)) {
 			value = bit;
 			break;
 		}
 		bit--;
 	}
-	info("bit %d", bit);
-	while (bit > -1 && value == -1) {	/* test whole words */
-		
-
+	while (bit >= 0 && value == -1) {	/* test whole words */
 		word = _bit_word(bit);
-		info("word = %d bit %d value %d",word, bit, value);
 		if (b[word] == 0) {
 			bit -= sizeof(bitstr_t) * 8;
 			continue;

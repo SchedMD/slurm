@@ -551,20 +551,10 @@ static job_step_create_request_msg_t *
 _step_req_create(srun_job_t *j)
 {
 	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
-	hostlist_t hl;
 	r->job_id     = j->jobid;
 	r->user_id    = opt.uid;
 
-	/* get the correct number of hosts to run tasks on */
-	if(opt.nodelist) {
-		hl = hostlist_create(opt.nodelist);
-		hostlist_uniq(hl);
-		r->node_count = hostlist_count(hl);
-		hostlist_destroy(hl);
-	} else if((opt.max_nodes > 0) && (opt.max_nodes <j->nhosts))
-		r->node_count = opt.max_nodes;
-	else 
-		r->node_count = j->nhosts;
+	r->node_count = j->nhosts;
 	/* info("send %d or %d? sending %d", opt.max_nodes, */
 /* 		     j->nhosts, r->node_count); */
 	if(r->node_count > j->nhosts) {

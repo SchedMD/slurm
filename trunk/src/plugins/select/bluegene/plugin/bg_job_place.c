@@ -336,8 +336,8 @@ try_again:
 					   LAYOUT_DYNAMIC) {
 						temp_list = list_create(NULL);
 						list_push(temp_list, record);
-						free_block_list(temp_list);
 						num_block_to_free++;
+						free_block_list(temp_list);
 						list_destroy(temp_list);
 					} 
 					break;
@@ -409,7 +409,10 @@ try_again:
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&request_list_mutex);
 				slurm_mutex_unlock(&block_state_mutex);
-				return SLURM_SUCCESS;
+				if(test_only)
+					return SLURM_SUCCESS;
+				else
+					return SLURM_ERROR;
 			}				
 		}
 		list_iterator_destroy(itr);
