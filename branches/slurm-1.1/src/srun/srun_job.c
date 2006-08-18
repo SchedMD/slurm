@@ -181,15 +181,18 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	int count = 0;
 	
 	ai->nodelist       = _normalize_hostlist(resp->node_list);
-	ai->nnodes         = resp->node_cnt;
 	ai->jobid          = resp->job_id;
+	ai->nnodes         = resp->node_cnt;
 	ai->stepid         = NO_VAL;
 	ai->num_cpu_groups = resp->num_cpu_groups;
 	ai->cpus_per_node  = resp->cpus_per_node;
 	ai->cpu_count_reps = resp->cpu_count_reps;
 	ai->addrs          = resp->node_addr;
 	ai->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
-	
+
+	if(!opt.max_nodes)
+		opt.max_nodes = opt.min_nodes;
+
 	if (opt.nodelist == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -238,6 +241,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	
 /* 	if(!opt.nodelist)  */
 /* 		opt.nodelist = ai->nodelist; */
+	/* get the correct number of hosts to run tasks on */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
 		if(!hostlist_count(hl)) {
@@ -246,10 +250,17 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
+
+		hostlist_uniq(hl);
+		ai->nnodes = hostlist_count(hl);
+	
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
-	}
+		
+	} else if((opt.max_nodes > 0) && (opt.max_nodes <ai->nnodes))
+		ai->nnodes = opt.max_nodes;
+
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		if(count != opt.nprocs) {
 			error("You asked for %d tasks but specified %d nodes",
@@ -257,9 +268,9 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			goto error;
 		}
 	}
+
 	debug("node list is now %s inside of %s", opt.nodelist, ai->nodelist);
-	if(!opt.max_nodes)
-		opt.max_nodes = opt.min_nodes;
+	
 	/* 
 	 * Create job, then fill in host addresses
 	 */
@@ -307,7 +318,8 @@ _job_create_structure(allocation_info_t *ainfo)
 	int i;
 	
 	_set_nprocs(ainfo);
-	debug2("creating job with %d tasks", opt.nprocs);
+	debug2("creating job with %d nodes and %d tasks",
+	       ainfo->nnodes, opt.nprocs);
 
 	slurm_mutex_init(&job->state_mutex);
 	pthread_cond_init(&job->state_cond, NULL);

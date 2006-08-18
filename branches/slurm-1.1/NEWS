@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.10
 =========================
+ -- task distribution fix for steps that are smaller than job allocation.
 
 * Changes in SLURM 1.1.9
 ========================
