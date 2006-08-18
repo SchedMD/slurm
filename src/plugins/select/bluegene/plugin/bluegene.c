@@ -1582,6 +1582,7 @@ extern int free_block_list(List delete_list)
 	
 	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
 		/* push job onto queue in a FIFO */
+		debug("adding %s to be freed", found_record->bg_block_id);
 		if (list_push(*block_list, found_record) == NULL)
 			fatal("malloc failure in _block_op/list_push");
 		
