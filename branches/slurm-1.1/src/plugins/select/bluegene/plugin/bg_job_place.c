@@ -336,8 +336,8 @@ try_again:
 					   LAYOUT_DYNAMIC) {
 						temp_list = list_create(NULL);
 						list_push(temp_list, record);
-						free_block_list(temp_list);
 						num_block_to_free++;
+						free_block_list(temp_list);
 						list_destroy(temp_list);
 					} 
 					break;
