@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- task distribution fix for steps that are smaller than job allocation.
  -- BLUEGENE - fix to only send a success when block was created when trying
     to allocate the block.
+ -- fix so if slurm_send_recv_node_msg fails on the send the auth_cred returned
+    by the resp is NULL.
 
 * Changes in SLURM 1.1.9
 ========================

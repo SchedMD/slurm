@@ -1452,6 +1452,7 @@ List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
 	slurm_fd fd = -1;
 
+	resp->auth_cred = NULL;
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return NULL; 
 	
