@@ -562,11 +562,15 @@ typedef struct {
 	bool multi_prog;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	bool parallel_debug;
-	void (*task_start_callback)(launch_tasks_response_msg_t *);
-	void (*task_finish_callback)(task_exit_msg_t *);
 	char *task_prolog;
 	char *task_epilog;
 } slurm_job_step_launch_t;
+
+typedef struct {
+	void (*task_start)(launch_tasks_response_msg_t *);
+	void (*task_finish)(task_exit_msg_t *);
+} slurm_job_step_launch_callbacks_t;
+
 
 typedef struct {
 	uint32_t job_id;	/* job ID */
@@ -1077,7 +1081,8 @@ extern void slurm_job_step_launch_t_init PARAMS((slurm_job_step_launch_t *ptr));
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
 extern int slurm_step_launch PARAMS((slurm_step_ctx ctx,
-	const slurm_job_step_launch_t *params));
+	const slurm_job_step_launch_t *params,
+	const slurm_job_step_launch_callbacks_t *callbacks));
 
 /*
  * Block until all tasks have started.
@@ -1088,6 +1093,13 @@ extern int slurm_step_launch_wait_start PARAMS((slurm_step_ctx ctx));
  * Block until all tasks have finished (or failed to start altogether).
  */
 extern void slurm_step_launch_wait_finish PARAMS((slurm_step_ctx ctx));
+
+/*
+ * Abort an in-progress launch, or terminate the fully launched job step.
+ *
+ * Can be called from a signal handler.
+ */
+void slurm_step_launch_abort PARAMS((slurm_step_ctx ctx));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

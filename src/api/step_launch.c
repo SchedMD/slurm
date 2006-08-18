@@ -119,10 +119,34 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 	ptr->multi_prog = false;
 	ptr->slurmd_debug = 0;
 	ptr->parallel_debug = false;
-	ptr->task_start_callback = NULL;
-	ptr->task_finish_callback = NULL;
 	ptr->task_prolog = NULL;
 	ptr->task_epilog = NULL;
+}
+
+/*
+ * Initialize launch state structure inside of the step context.
+ */
+static void _init_launch_state(slurm_step_ctx ctx,
+			       const slurm_job_step_launch_callbacks_t *cb)
+{
+	ctx->launch_state = xmalloc(sizeof(struct step_launch_state));
+	pthread_mutex_init(&ctx->launch_state->lock, NULL);
+	pthread_cond_init(&ctx->launch_state->cond, NULL);
+	ctx->launch_state->tasks_requested = ctx->step_req->num_tasks;
+	ctx->launch_state->tasks_started = bit_alloc(ctx->step_req->num_tasks);
+	ctx->launch_state->tasks_exited = bit_alloc(ctx->step_req->num_tasks);
+	ctx->launch_state->layout = ctx->step_resp->step_layout;
+	if (cb != NULL) {
+		/* copy the user specified callback pointers */
+		memcpy(&(ctx->launch_state->callback), cb,
+		       sizeof(slurm_job_step_launch_callbacks_t));
+	} else {
+		/* set all callbacks to NULL */
+		memset(&(ctx->launch_state->callback), 0,
+		       sizeof(slurm_job_step_launch_callbacks_t));
+	}
+	ctx->launch_state->abort = false;
+	ctx->launch_state->abort_action_taken = false;
 }
 
 /*
@@ -131,7 +155,8 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
 int slurm_step_launch (slurm_step_ctx ctx,
-		       const slurm_job_step_launch_t *params)
+		       const slurm_job_step_launch_t *params,
+		       const slurm_job_step_launch_callbacks_t *callbacks)
 {
 	launch_tasks_request_msg_t launch;
 	int i;
@@ -145,20 +170,11 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		return SLURM_ERROR;
 	}
 
-	/* Initialize launch state structure */
-	ctx->launch_state = xmalloc(sizeof(struct step_launch_state));
+	_init_launch_state(ctx, callbacks);
 	if (ctx->launch_state == NULL) {
 		error("Failed to allocate memory for step launch state: %m");
 		return SLURM_ERROR;
 	}
-	pthread_mutex_init(&ctx->launch_state->lock, NULL);
-	pthread_cond_init(&ctx->launch_state->cond, NULL);
-	ctx->launch_state->tasks_requested = ctx->step_req->num_tasks;
-	ctx->launch_state->tasks_started = bit_alloc(ctx->step_req->num_tasks);
-	ctx->launch_state->tasks_exited = bit_alloc(ctx->step_req->num_tasks);
-	ctx->launch_state->task_start_callback = params->task_start_callback;
-	ctx->launch_state->task_finish_callback = params->task_finish_callback;
-	ctx->launch_state->layout = ctx->step_resp->step_layout;
 
 	/* Create message receiving sockets and handler thread */
 	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count,
@@ -258,6 +274,14 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 	pthread_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_started) < sls->tasks_requested) {
 		pthread_cond_wait(&sls->cond, &sls->lock);
+		if (sls->abort && !sls->abort_action_taken) {
+			slurm_kill_job_step(ctx->job_id,
+					    ctx->step_resp->job_step_id,
+					    SIGKILL);
+			sls->abort_action_taken = true;
+			pthread_mutex_unlock(&sls->lock);
+			return 0;
+		}
 	}
 	pthread_mutex_unlock(&sls->lock);
 	return 1;
@@ -274,6 +298,13 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 	pthread_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_exited) < sls->tasks_requested) {
 		pthread_cond_wait(&sls->cond, &sls->lock);
+		if (sls->abort && !sls->abort_action_taken) {
+			slurm_kill_job_step(ctx->job_id,
+					    ctx->step_resp->job_step_id,
+					    SIGKILL);
+			sls->abort_action_taken = true;
+			break;
+		}
 	}
 
 	/* Then shutdown the message handler thread */
@@ -291,6 +322,19 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 	pthread_mutex_destroy(&sls->lock);
 	pthread_cond_destroy(&sls->cond);
 	xfree(sls->resp_port);
+}
+
+/*
+ * Abort an in-progress launch, or terminate the fully launched job step.
+ *
+ * Can be called from a signal handler.
+ */
+void slurm_step_launch_abort(slurm_step_ctx ctx)
+{
+	struct step_launch_state *sls = ctx->launch_state;
+
+	sls->abort = true;
+	pthread_cond_signal(&sls->cond);
 }
 
 /**********************************************************************
@@ -459,8 +503,8 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 		bit_set(sls->tasks_started, msg->task_ids[i]);
 	}
 
-	if (sls->task_start_callback != NULL)
-		(sls->task_start_callback)(msg);
+	if (sls->callback.task_start != NULL)
+		(sls->callback.task_start)(msg);
 
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
@@ -480,8 +524,8 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 		bit_set(sls->tasks_exited, msg->task_id_list[i]);
 	}
 
-	if (sls->task_finish_callback != NULL)
-		(sls->task_finish_callback)(msg);
+	if (sls->callback.task_finish != NULL)
+		(sls->callback.task_finish)(msg);
 
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);

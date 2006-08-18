@@ -51,6 +51,8 @@ struct step_launch_state {
 	int tasks_requested;
 	bitstr_t *tasks_started; /* or attempted to start, but failed */
 	bitstr_t *tasks_exited;  /* or never started correctly */
+	bool abort;
+	bool abort_action_taken;
 
 	/* message thread variables */
 	eio_handle_t *msg_handle;
@@ -64,8 +66,7 @@ struct step_launch_state {
 					step_resp, do not free */
 
 	/* user registered callbacks */
-	void (*task_start_callback)(launch_tasks_response_msg_t *);
-	void (*task_finish_callback)(task_exit_msg_t *);
+	slurm_job_step_launch_callbacks_t callback;
 };
 
 struct slurm_step_ctx_struct {
