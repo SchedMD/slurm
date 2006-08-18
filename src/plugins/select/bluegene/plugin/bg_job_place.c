@@ -409,7 +409,10 @@ try_again:
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&request_list_mutex);
 				slurm_mutex_unlock(&block_state_mutex);
-				return SLURM_SUCCESS;
+				if(test_only)
+					return SLURM_SUCCESS;
+				else
+					return SLURM_ERROR;
 			}				
 		}
 		list_iterator_destroy(itr);
