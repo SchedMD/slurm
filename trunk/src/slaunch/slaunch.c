@@ -119,18 +119,28 @@ static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
 static void _mpir_set_executable_names(const char *executable_name);
 static void _mpir_dump_proctable(void);
+static void _ignore_signal(int signo);
+static void _exit_on_signal(int signo);
 
 int slaunch(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_step_create_request_msg_t step_req;
 	slurm_job_step_launch_t params;
+	slurm_job_step_launch_callbacks_t callbacks;
 	int rc;
 	uint32_t *hostids = NULL;
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	char **env;
 	int i, j;
 
+	xsignal(SIGHUP, _exit_on_signal);
+	xsignal(SIGINT, _exit_on_signal);
+	xsignal(SIGQUIT, _ignore_signal);
+	xsignal(SIGPIPE, _ignore_signal);
+	xsignal(SIGTERM, _exit_on_signal);
+	xsignal(SIGUSR1, _ignore_signal);
+	xsignal(SIGUSR2, _ignore_signal);
 	
 	/* Initialize plugin stack, read options from plugins, etc. */
 	if (spank_init(NULL) < 0)
@@ -244,12 +254,12 @@ int slaunch(int argc, char **argv)
 	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
 			 (int)step_ctx->step_resp->job_step_id, hostids);
 	params.parallel_debug = opt.parallel_debug ? true : false;
-	params.task_start_callback = _task_start;
-	params.task_finish_callback = _task_finish;
+	callbacks.task_start = _task_start;
+	callbacks.task_finish = _task_finish;
 
 	_mpir_init(step_req.num_tasks);
 
-	rc = slurm_step_launch(step_ctx, &params);
+	rc = slurm_step_launch(step_ctx, &params, &callbacks);
 	if (rc != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
@@ -558,7 +568,7 @@ _terminate_job_step(slurm_step_ctx ctx)
 
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
-	info("Terminating job step");
+	info("Terminating job step %u.%u");
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
@@ -753,3 +763,12 @@ _mpir_dump_proctable()
 	}
 }
 	
+static void _ignore_signal(int signo)
+{
+	/* do nothing */
+}
+
+static void _exit_on_signal(int signo)
+{
+	slurm_step_launch_abort(step_ctx);
+}
