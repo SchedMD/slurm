@@ -32,12 +32,23 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.10
+=========================
+ -- task distribution fix for steps that are smaller than job allocation.
+ -- BLUEGENE - fix to only send a success when block was created when trying
+    to allocate the block.
+ -- fix so if slurm_send_recv_node_msg fails on the send the auth_cred returned
+    by the resp is NULL.
+
 * Changes in SLURM 1.1.9
 ========================
  -- BLUEGENE - fix to handle a NO_VAL sent in as num procs in the job 
     description.
  -- Fix bug in slurmstepd code for parsing --multi-prog command script.
     Parser was failing for commands with no arguments.
+ -- Fix bug to check unsigned ints correctly in bitstring.c
+ -- Alter node count covert to kilo to only convert number divisible by 
+    1024 or 512
 
 * Changes in SLURM 1.1.8
 ========================
