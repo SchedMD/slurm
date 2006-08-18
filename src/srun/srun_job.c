@@ -68,6 +68,7 @@ typedef struct allocation_info {
 	uint32_t                stepid;
 	char                   *nodelist;
 	uint32_t                nnodes;
+	uint32_t                alloc_nnodes;
 	slurm_addr             *addrs;
 	uint16_t                num_cpu_groups;
 	uint32_t               *cpus_per_node;
@@ -126,6 +127,7 @@ job_create_noalloc(void)
 	ai->stepid         = (uint32_t) (lrand48());
 	ai->nodelist       = opt.nodelist;
 	ai->nnodes         = hostlist_count(hl);
+	ai->alloc_nnodes   = ai->nnodes;
 
 	/* if (opt.nprocs < ai->nnodes)
 		opt.nprocs = hostlist_count(hl);
@@ -183,6 +185,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->nodelist       = _normalize_hostlist(resp->node_list);
 	ai->jobid          = resp->job_id;
 	ai->nnodes         = resp->node_cnt;
+	ai->alloc_nnodes   = ai->nnodes;
 	ai->stepid         = NO_VAL;
 	ai->num_cpu_groups = resp->num_cpu_groups;
 	ai->cpus_per_node  = resp->cpus_per_node;
@@ -292,6 +295,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
+	i->alloc_nnodes   = i->nnodes;
 	i->jobid          = resp->job_id;
 	i->stepid         = NO_VAL;
 	i->num_cpu_groups = resp->num_cpu_groups;
@@ -389,10 +393,10 @@ _job_create_structure(allocation_info_t *ainfo)
 	/* "nhosts" number of IO protocol sockets */
 	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 	
-	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
+	job->slurmd_addr = xmalloc(ainfo->alloc_nnodes * sizeof(slurm_addr));
 	if (ainfo->addrs)
 		memcpy( job->slurmd_addr, ainfo->addrs,
-			sizeof(slurm_addr)*job->nhosts);
+			sizeof(slurm_addr)*ainfo->alloc_nnodes);
 
 	/* ntask task states and statii*/
 	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
