@@ -38,11 +38,7 @@ wiki_src =		../agent.cpp		\
 			wiki_wrapper.cpp
 
 
-if HAVE_AIX
-EXTRA_sched_wiki_la_SOURCES = $(wiki_src)
-else
 pkglib_LTLIBRARIES    = sched_wiki.la
 sched_wiki_la_SOURCES = $(wiki_src)
 sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 sched_wiki_la_LIBADD  = -lstdc++
-endif
