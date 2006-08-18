@@ -1203,7 +1203,7 @@ static void _opt_batch_script(const void *body, int size)
 	/* getopt_long skips over the first argument, so fill it in blank */
 	argc = 1;
 	argv = xmalloc(sizeof(char *));
-	argv[0] = "";
+	argv[0] = "sbatch";
 
 	while((line = _next_line(body, size, &state)) != NULL) {
 		if (strncmp(line, magic_word, sizeof(magic_word)) != 0) {
