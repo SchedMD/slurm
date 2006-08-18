@@ -1115,35 +1115,11 @@ static char *_next_line(const void *buf, int size, void **state)
 	return line;
 }
 
-/* Strip comments from a line by terminating the string
- * where the comment begins.
- * Everything after a non-escaped "#" is a comment.
- */
-static void _strip_comments(char *line)
-{
-	int i;
-	int len = strlen(line);
-	int bs_count = 0;
-
-	for (i = 0; i < len; i++) {
-		/* if # character is preceded by an even number of
-		 * escape characters '\' */
-		if (line[i] == '#' && (bs_count%2) == 0) {
-			line[i] = '\0';
- 			break;
-		} else if (line[i] == '\\') {
-			bs_count++;
-		} else {
-			bs_count = 0;
-		}
-	}
-}
-
 /*
  * _get_argument - scans a line for something that looks like a command line
  *	argument, and return an xmalloc'ed string containing the argument.
  *	Quotes can be used to group characters, including whitespace.
- *	Quotes can be included in an argument be escaping the quotes;
+ *	Quotes can be included in an argument be escaping the quotes,
  *	preceding the quote with a backslash (\").
  *
  * IN - line
@@ -1170,8 +1146,6 @@ static char *_get_argument(const char *line, int *skipped)
 	if (*ptr == '\0')
 		return NULL;
 
-	_strip_comments(ptr);
-
 	/* copy argument into "argument" buffer, */
 	i = 0;
 	while ((no_isspace_check || !isspace(*ptr))
@@ -1190,6 +1164,9 @@ static char *_get_argument(const char *line, int *skipped)
 			/* toggle the no_isspace_check flag */
 			no_isspace_check = no_isspace_check? false : true;
 			ptr++;
+		} else if (*ptr == '#') {
+			/* found an un-escaped #, rest of line is a comment */
+			break;
 		} else {
 			argument[i] = *ptr;
 			ptr++;
@@ -1237,8 +1214,7 @@ static void _opt_batch_script(const void *body, int size)
 		/* this line starts with the magic word */
 		ptr = line + strlen(magic_word);
 		while ((option = _get_argument(ptr, &skipped)) != NULL) {
-			debug2("\tFound argument \"%s\" skipped = %d",
-			       option, skipped);
+			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
 			argv[argc-1] = option;
