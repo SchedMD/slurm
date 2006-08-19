@@ -114,6 +114,8 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 	ctx->step_resp	= step_resp;
 	ctx->slurmctld_socket_fd = sock;
 
+	ctx->launch_state = step_launch_state_create(ctx);
+
 fail:
 	errno = errnum;
 	return (slurm_step_ctx)ctx;
@@ -306,6 +308,7 @@ slurm_step_ctx_destroy (slurm_step_ctx ctx)
 	if (ctx->env_set)
 		_xfree_char_array(&ctx->env, ctx->envc);
 	xfree(ctx->cwd);
+	step_launch_state_destroy(ctx->launch_state);
 	xfree(ctx);
 	return SLURM_SUCCESS;
 }

@@ -90,8 +90,8 @@ int client_io_handler_start(client_io_t *cio);
 /*
  * Tell the client IO handler that a set of remote nodes are now considered
  * "down", and no further communication from that node should be expected.
- * This will prevent the IO handler from stalling while it waits for a node
- * to phone home.
+ * This will prevent the IO handler from blocking indefinitely while it
+ * waits for a node to phone home.
  *
  * IN cio - the client_io_t handle
  * IN node_ids - an array of integers representing the ID of a node
@@ -100,6 +100,18 @@ int client_io_handler_start(client_io_t *cio);
  */
 void client_io_handler_downnodes(client_io_t *cio,
 				 const int *node_ids, int num_node_ids);
+
+/*
+ * Tell the client IO handler that the step has been aborted, and if
+ * any slurmstepd's have not yet establish IO connections, they should
+ * not be expected to ever make a connection.
+ *
+ * Calling this when an error occurs will prevent client_io_handler_finish()
+ * from blocking indefinitely.
+ *
+ * WARNING: This WILL abandon live IO connections.
+ */
+void client_io_handler_abort(client_io_t *cio);
 
 int client_io_handler_finish(client_io_t *cio);
 

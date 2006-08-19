@@ -1,12 +1,11 @@
 /*****************************************************************************\
- *  step_ctx.h - step context declarations
+ *  step_launch.h - launch a parallel job step
  *
- *  $Id: spawn.c 8334 2006-06-07 20:36:04Z morrone $
+ *  $Id: spawn.c 7973 2006-05-08 23:52:35Z morrone $
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>,
- *  Christopher J. Morrone <morrone2@llnl.gov>
+ *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -26,8 +25,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _STEP_CTX_H
-#define _STEP_CTX_H
+#ifndef _STEP_LAUNCH_H
+#define _STEP_LAUNCH_H
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -35,34 +34,48 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #include <slurm/slurm.h>
 
-#include "src/api/step_launch.h"
+#include "src/common/slurm_step_layout.h"
+#include "src/common/eio.h"
+#include "src/common/bitstring.h"
 
-#define STEP_CTX_MAGIC 0xc7a3
+#include "src/api/step_io.h"
 
-struct slurm_step_ctx_struct {
-	uint16_t magic;	/* magic number */
+struct step_launch_state {
+	pthread_mutex_t lock;
+	pthread_cond_t cond;
+	int tasks_requested;
+	bitstr_t *tasks_started; /* or attempted to start, but failed */
+	bitstr_t *tasks_exited;  /* or never started correctly */
+	bool abort;
+	bool abort_action_taken;
 
-	uint32_t job_id;	/* assigned job id */
-	uint32_t user_id;	/* user the job runs as */
-	
-	job_step_create_request_msg_t *step_req;
-	job_step_create_response_msg_t *step_resp;
+	/* message thread variables */
+	eio_handle_t *msg_handle;
+	pthread_t msg_thread;
+	uint16_t num_resp_port;
+	uint16_t *resp_port; /* array of message response ports */
 
-	char *cwd;		/* working directory */
-	uint32_t argc;		/* count of arguments */
-	char **argv;		/* argument list */
-	uint16_t env_set;	/* flag if user set env */
-	uint32_t envc;		/* count of env vars */
-	char **env;		/* environment variables */
+	/* client side io variables */
+	client_io_t *client_io;
+	slurm_step_layout_t *layout; /* a pointer into the ctx
+					step_resp, do not free */
 
-	/* Used by slurm_step_launch(), but not slurm_spawn() */
-	struct step_launch_state *launch_state;
-	int slurmctld_socket_fd; /* set to -1 if slaunch message handler
-				    should not attempt to handle */
+	/* user registered callbacks */
+	slurm_job_step_launch_callbacks_t callback;
 };
 
-#endif /* _STEP_CTX_H */
+/*
+ * Create a launch state structure for a specified step context, "ctx".
+ */
+struct step_launch_state * step_launch_state_create(slurm_step_ctx ctx);
 
+/*
+ * Free the memory associated with the a launch state structure.
+ */
+void step_launch_state_destroy(struct step_launch_state *sls);
+
+#endif /* _STEP_LAUNCH_H */
