@@ -109,7 +109,7 @@ static void  _run_srun_epilog (void);
 static int   _run_srun_script (char *script);
 #endif
 static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
-			      int stepid, uint32_t *hostids);
+			      int stepid, slurm_step_layout_t *step_layout);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
 static void _task_state_struct_init(int num_tasks);
@@ -128,11 +128,9 @@ int slaunch(int argc, char **argv)
 	job_step_create_request_msg_t step_req;
 	slurm_job_step_launch_t params;
 	slurm_job_step_launch_callbacks_t callbacks;
-	int rc;
-	uint32_t *hostids = NULL;
-	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	char **env;
-	int i, j;
+
+	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	xsignal(SIGQUIT, _ignore_signal);
 	xsignal(SIGPIPE, _ignore_signal);
@@ -246,26 +244,17 @@ int slaunch(int argc, char **argv)
 	params.task_prolog = opt.task_prolog;
 	params.task_epilog = opt.task_epilog;
 	
-	/* set up the hostids */
-	hostids = xmalloc(sizeof(uint32_t) * 
-			  step_ctx->step_resp->step_layout->task_cnt);
-	for (i=0; i < step_ctx->step_resp->step_layout->node_cnt; i++) 
-		for (j=0; j<step_ctx->step_resp->step_layout->tasks[i]; j++) 
-			hostids[step_ctx->step_resp->step_layout->tids[i][j]] 
-				= i;
-		
-	
 	/* FIXME - don't peek into the step context, that's cheating! */
 	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
-			 (int)step_ctx->step_resp->job_step_id, hostids);
+			 (int)step_ctx->step_resp->job_step_id,
+			 step_ctx->step_resp->step_layout);
 	params.parallel_debug = opt.parallel_debug ? true : false;
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
 
 	_mpir_init(step_req.num_tasks);
 
-	rc = slurm_step_launch(step_ctx, &params, &callbacks);
-	if (rc != SLURM_SUCCESS) {
+	if (slurm_step_launch(step_ctx, &params, &callbacks) != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
 	}
@@ -481,9 +470,27 @@ static int _run_srun_script (char *script)
 }
 #endif
 
+static int
+_taskid_to_nodeid(slurm_step_layout_t *layout, int taskid)
+{
+	int i, nodeid;
+
+	for (nodeid = 0; nodeid < layout->node_cnt; nodeid++) {
+		for (i = 0; i < layout->tasks[nodeid]; i++) {
+			if (layout->tids[nodeid][i] == taskid) {
+				debug3("task %d is on node %d",
+				       taskid, nodeid);
+				return nodeid;
+			}
+		}
+	}
+
+	return -1; /* node ID not found */
+}
+
 static void
 _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
-		 uint32_t *hostids)
+		 slurm_step_layout_t *step_layout)
 {
 	bool err_shares_out = false;
 	fname_t *ifname, *ofname, *efname;
@@ -499,9 +506,8 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
 		cio_fds->in.fd = STDIN_FILENO;
 	} else if (ifname->type == IO_ONE) {
 		cio_fds->in.taskid = ifname->taskid;
-		cio_fds->in.nodeid = hostids[ifname->taskid];
-// step_layout_host_id(
-			//		step_layout, ifname->taskid);
+		cio_fds->in.nodeid = _taskid_to_nodeid(step_layout,
+						       ifname->taskid);
 	} else {
 		cio_fds->in.fd = open(ifname->name, O_RDONLY);
 		if (cio_fds->in.fd == -1)
