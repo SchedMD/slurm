@@ -134,11 +134,8 @@ int slaunch(int argc, char **argv)
 	char **env;
 	int i, j;
 
-	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, _exit_on_signal);
 	xsignal(SIGQUIT, _ignore_signal);
 	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGTERM, _exit_on_signal);
 	xsignal(SIGUSR1, _ignore_signal);
 	xsignal(SIGUSR2, _ignore_signal);
 	
@@ -215,6 +212,14 @@ int slaunch(int argc, char **argv)
 		error("Failed creating job step context: %m");
 		exit(1);
 	}
+	/* Now we can register a few more signal handlers.  It
+	 * is only safe to have _exit_on_signal call
+	 * slurm_step_launch_abort after the the step context
+	 * has been created.
+	 */
+	xsignal(SIGHUP, _exit_on_signal);
+	xsignal(SIGINT, _exit_on_signal);
+	xsignal(SIGTERM, _exit_on_signal);
 
 	/*
 	 * Use the job step context to launch the tasks.
@@ -265,16 +270,20 @@ int slaunch(int argc, char **argv)
 		goto cleanup;
 	}
 
-	slurm_step_launch_wait_start(step_ctx);
-
-	if (opt.multi_prog)
-		mpir_set_multi_name(step_req.num_tasks, params.argv[0]);
-	else
-		_mpir_set_executable_names(params.argv[0]);
-	MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-	MPIR_Breakpoint();
-	if (opt.debugger_test)
-		_mpir_dump_proctable();
+	if (slurm_step_launch_wait_start(step_ctx)) {
+		/* Only set up MPIR structures if the step launched
+		   correctly. */
+		if (opt.multi_prog)
+			mpir_set_multi_name(step_req.num_tasks, params.argv[0]);
+		else
+			_mpir_set_executable_names(params.argv[0]);
+		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
+		MPIR_Breakpoint();
+		if (opt.debugger_test)
+			_mpir_dump_proctable();
+	} else {
+		info("Job step aborted before step completely launched.");
+	}
 
 	slurm_step_launch_wait_finish(step_ctx);
 
@@ -568,7 +577,7 @@ _terminate_job_step(slurm_step_ctx ctx)
 
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
-	info("Terminating job step %u.%u");
+	info("Terminating job step %u.%u", job_id, step_id);
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 

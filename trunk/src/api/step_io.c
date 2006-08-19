@@ -1251,8 +1251,8 @@ client_io_handler_destroy(client_io_t *cio)
 {
 	xassert(cio);
 
-	/* FIXME - need to make certain that IO engine is shutdown before
-	   freeing anything */
+	/* FIXME - need to make certain that IO engine is shutdown
+	   (by calling client_io_handler_finish()) before freeing anything */
 
 	bit_free(cio->ioservers_ready_bits);
 	pthread_mutex_destroy(&cio->ioservers_lock);
@@ -1286,4 +1286,28 @@ client_io_handler_downnodes(client_io_t *cio,
 	pthread_mutex_unlock(&cio->ioservers_lock);
 
 	eio_signal_wakeup(cio->eio);
+}
+
+void
+client_io_handler_abort(client_io_t *cio)
+{
+	struct server_io_info *info;
+	int i;
+
+	pthread_mutex_lock(&cio->ioservers_lock);
+	for (i = 0; i < cio->num_nodes; i++) {
+		if (!bit_test(cio->ioservers_ready_bits, i)) {
+			bit_set(cio->ioservers_ready_bits, i);
+			cio->ioservers_ready =
+				bit_set_count(cio->ioservers_ready_bits);
+		} else if (cio->ioserver[i] != NULL) {
+			info = (struct server_io_info *)cio->ioserver[i]->arg;
+			/* Trick the server eio_obj_t into closing its
+			 * connection. */
+			info->remote_stdout_objs = 0;
+			info->remote_stderr_objs = 0;
+			cio->ioserver[i]->shutdown = true;
+		}
+	}
+	pthread_mutex_unlock(&cio->ioservers_lock);
 }
