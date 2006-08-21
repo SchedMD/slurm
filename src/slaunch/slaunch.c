@@ -99,17 +99,17 @@ struct {
 /*
  * declaration of static funcs
  */
-static void  _set_prio_process_env(void);
-static int   _set_rlimit_env(void);
-static int   _set_umask_env(void);
+static void _set_prio_process_env(char ***env);
+static int  _set_rlimit_env(char ***env);
+static int  _set_umask_env(char ***env);
+static char **_init_task_environment(void);
 #if 0
-static int   _become_user (uid_t uid, gid_t gid);
-static void  _run_srun_prolog (void);
-static void  _run_srun_epilog (void);
-static int   _run_srun_script (char *script);
+static int  _become_user(uid_t uid, gid_t gid);
 #endif
-static void  _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid,
-			      int stepid, slurm_step_layout_t *step_layout);
+static void _run_slaunch_prolog(char **env);
+static void _run_slaunch_epilog(char **env);
+static int  _run_slaunch_script(char *script, char **env);
+static void _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
 static void _task_state_struct_init(int num_tasks);
@@ -161,10 +161,6 @@ int slaunch(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 	verbose ("slaunch pid %d", getpid());
-
-	(void)_set_rlimit_env();
-	_set_prio_process_env();
-	(void)_set_umask_env();
 
 	/*
 	 * Create a job step context.
@@ -219,6 +215,9 @@ int slaunch(int argc, char **argv)
 	xsignal(SIGINT, _exit_on_signal);
 	xsignal(SIGTERM, _exit_on_signal);
 
+	/* set up environment variables */
+	env = _init_task_environment();
+
 	/*
 	 * Use the job step context to launch the tasks.
 	 */
@@ -228,10 +227,6 @@ int slaunch(int argc, char **argv)
 	params.argc = opt.argc;
 	params.argv = opt.argv;
 	params.multi_prog = opt.multi_prog ? true : false;
-	env = env_array_copy((const char **)environ);
-	/* FIXME - should find a better place to set this than here */
-	env_array_overwrite_fmt(&env, "SLURM_CPUS_PER_TASK",
-				"%d", opt.cpus_per_task);
 	params.envc = envcount(env);
 	params.env = env;
 	params.cwd = opt.cwd;
@@ -244,13 +239,12 @@ int slaunch(int argc, char **argv)
 	params.task_prolog = opt.task_prolog;
 	params.task_epilog = opt.task_epilog;
 	
-	/* FIXME - don't peek into the step context, that's cheating! */
-	_setup_local_fds(&params.local_fds, (int)step_ctx->job_id,
-			 (int)step_ctx->step_resp->job_step_id,
-			 step_ctx->step_resp->step_layout);
+	_setup_local_fds(&params.local_fds, step_ctx);
 	params.parallel_debug = opt.parallel_debug ? true : false;
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
+
+	_run_slaunch_prolog(env);
 
 	_mpir_init(step_req.num_tasks);
 
@@ -277,7 +271,7 @@ int slaunch(int argc, char **argv)
 	slurm_step_launch_wait_finish(step_ctx);
 
 cleanup:
-	/* Clean up. */
+	_run_slaunch_epilog(env);
 	slurm_step_ctx_destroy(step_ctx);
 	_mpir_cleanup();
 	_task_state_struct_free();
@@ -286,7 +280,7 @@ cleanup:
 }
 
 /* Set SLURM_UMASK environment variable with current state */
-static int _set_umask_env(void)
+static int _set_umask_env(char ***env)
 {
 	char mask_char[5];
 	mode_t mask = (int)umask(0);
@@ -294,7 +288,7 @@ static int _set_umask_env(void)
 
 	sprintf(mask_char, "0%d%d%d", 
 		((mask>>6)&07), ((mask>>3)&07), mask&07);
-	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
+	if (!env_array_overwrite_fmt(env, "SLURM_UMASK", "%s", mask_char)) {
 		error ("unable to set SLURM_UMASK in environment");
 		return SLURM_FAILURE;
 	}
@@ -309,7 +303,7 @@ static int _set_umask_env(void)
  * the propagation of the users nice value and the "PropagatePrioProcess"
  * config keyword.
  */
-static void  _set_prio_process_env(void)
+static void _set_prio_process_env(char ***env)
 {
 	int retval;
 
@@ -322,7 +316,8 @@ static void  _set_prio_process_env(void)
 		}
 	}
 
-	if (setenvf (NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
+	if (!env_array_overwrite_fmt(env, "SLURM_PRIO_PROCESS",
+				     "%d", retval)) {
 		error ("unable to set SLURM_PRIO_PROCESS in environment");
 		return;
 	}
@@ -332,7 +327,7 @@ static void  _set_prio_process_env(void)
 
 /* Set SLURM_RLIMIT_* environment variables with current resource 
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
-static int _set_rlimit_env(void)
+static int _set_rlimit_env(char ***env)
 {
 	int                  rc = SLURM_SUCCESS;
 	struct rlimit        rlim[1];
@@ -358,7 +353,7 @@ static int _set_rlimit_env(void)
 		else
 			format = "%lu";
 		
-		if (setenvf (NULL, name, format, cur) < 0) {
+		if (!env_array_overwrite_fmt(env, name, format, cur)) {
 			error ("unable to set %s in environment", name);
 			rc = SLURM_FAILURE;
 			continue;
@@ -382,6 +377,22 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
+static char **_init_task_environment(void)
+{
+	char **env;
+
+	env = env_array_copy((const char **)environ);
+
+	(void)_set_rlimit_env(&env);
+	_set_prio_process_env(&env);
+	(void)_set_umask_env(&env);
+
+	env_array_overwrite_fmt(&env, "SLURM_CPUS_PER_TASK",
+				"%d", opt.cpus_per_task);
+
+	return env;
+}
+
 #if 0
 static int _become_user (uid_t uid, gid_t gid)
 {
@@ -400,28 +411,29 @@ static int _become_user (uid_t uid, gid_t gid)
 
 	return (0);
 }
+#endif
 
-static void _run_srun_prolog (void)
+static void _run_slaunch_prolog (char **env)
 {
 	int rc;
 
 	if (opt.prolog && strcasecmp(opt.prolog, "none") != 0) {
-		rc = _run_srun_script(opt.prolog);
-		debug("srun prolog rc = %d", rc);
+		rc = _run_slaunch_script(opt.prolog, env);
+		debug("slaunch prolog rc = %d", rc);
 	}
 }
 
-static void _run_srun_epilog (void)
+static void _run_slaunch_epilog (char **env)
 {
 	int rc;
 
 	if (opt.epilog && strcasecmp(opt.epilog, "none") != 0) {
-		rc = _run_srun_script(opt.epilog);
-		debug("srun epilog rc = %d", rc);
+		rc = _run_slaunch_script(opt.epilog, env);
+		debug("slaunch epilog rc = %d", rc);
 	}
 }
 
-static int _run_srun_script (char *script)
+static int _run_slaunch_script (char *script, char **env)
 {
 	int status;
 	pid_t cpid;
@@ -437,21 +449,20 @@ static int _run_srun_script (char *script)
 	}
 
 	if ((cpid = fork()) < 0) {
-		error ("run_srun_script: fork: %m");
+		error ("run_slaunch_script: fork: %m");
 		return -1;
 	}
 	if (cpid == 0) {
-
-		/* set the scripts command line arguments to the arguments
+		/* set the script's command line arguments to the arguments
 		 * for the application, but shifted one higher
 		 */
-		args = xmalloc(sizeof(char *) * 1024);
+		args = xmalloc(sizeof(char *) * (opt.argc+2));
 		args[0] = script;
 		for (i = 0; i < opt.argc; i++) {
 			args[i+1] = opt.argv[i];
 		}
 		args[i+1] = NULL;
-		execv(script, args);
+		execve(script, args, env);
 		error("help! %m");
 		exit(127);
 	}
@@ -468,7 +479,6 @@ static int _run_srun_script (char *script)
 
 	/* NOTREACHED */
 }
-#endif
 
 static int
 _taskid_to_nodeid(slurm_step_layout_t *layout, int taskid)
@@ -489,15 +499,18 @@ _taskid_to_nodeid(slurm_step_layout_t *layout, int taskid)
 }
 
 static void
-_setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
-		 slurm_step_layout_t *step_layout)
+_setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 {
 	bool err_shares_out = false;
 	fname_t *ifname, *ofname, *efname;
+	uint32_t job_id, step_id;
 
-	ifname = fname_create(opt.local_ifname, jobid, stepid);
-	ofname = fname_create(opt.local_ofname, jobid, stepid);
-	efname = fname_create(opt.local_efname, jobid, stepid);
+	slurm_step_ctx_get(ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(ctx, SLURM_STEP_CTX_STEPID, &step_id);
+
+	ifname = fname_create(opt.local_ifname, (int)job_id, (int)step_id);
+	ofname = fname_create(opt.local_ofname, (int)job_id, (int)step_id);
+	efname = fname_create(opt.local_efname, (int)job_id, (int)step_id);
 
 	/*
 	 * create stdin file descriptor
@@ -506,8 +519,10 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, int jobid, int stepid,
 		cio_fds->in.fd = STDIN_FILENO;
 	} else if (ifname->type == IO_ONE) {
 		cio_fds->in.taskid = ifname->taskid;
-		cio_fds->in.nodeid = _taskid_to_nodeid(step_layout,
-						       ifname->taskid);
+		/* FIXME - don't peek into the step context, that's cheating! */
+		cio_fds->in.nodeid =
+			_taskid_to_nodeid(step_ctx->step_resp->step_layout,
+					  ifname->taskid);
 	} else {
 		cio_fds->in.fd = open(ifname->name, O_RDONLY);
 		if (cio_fds->in.fd == -1)
