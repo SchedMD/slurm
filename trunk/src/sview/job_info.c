@@ -267,16 +267,27 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	time_t now_time = time(NULL);
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
-	
+	enum job_states state;
+
 	if(!step_ptr->nodes 
 	   || !strcasecmp(step_ptr->nodes,"waiting...")) {
 		sprintf(time_buf,"0:00:00");
 		nodes = "waiting...";
+		state = JOB_PENDING;
 	} else {
 		now_time -= step_ptr->start_time;
 		snprint_time(time_buf, sizeof(time_buf), now_time);
-		nodes = step_ptr->nodes;	
+		nodes = step_ptr->nodes;
+		convert_to_kilo(_nodes_in_list(nodes), tmp_cnt);
+		gtk_tree_store_set(treestore, iter, 
+				   SORTID_NODES, tmp_cnt, -1);
+		state = JOB_RUNNING;
 	}
+
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_STATE,
+			   job_state_string(state), -1);
+	
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_TIME, time_buf, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
@@ -303,13 +314,13 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   uid_to_string((uid_t)step_ptr->user_id), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NAME, step_ptr->name, -1);
-	/* gtk_tree_store_set(treestore, iter,  */
-/* 			   SORTID_STATE,  */
-/* 			   job_state_string(step_ptr->job_state), -1); */
-	
+		
 	convert_to_kilo(step_ptr->num_tasks, tmp_cnt);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_TASKS, tmp_cnt, -1);
+
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_NUM_PROCS, tmp_cnt, -1);
 
 	if(quarter != (uint16_t) NO_VAL) {
 		if(nodecard != (uint16_t) NO_VAL)
