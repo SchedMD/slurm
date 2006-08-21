@@ -53,14 +53,14 @@ display_data_t main_display_data[] = {
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
 	 refresh_main, get_info_block, specific_info_block, 
 	 set_menus_block, row_clicked_block, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Base Partitions", TRUE, -1,
+	{G_TYPE_NONE, NODE_PAGE, "Base Partitions", FALSE, -1,
 	 refresh_main, get_info_node, specific_info_node, 
 	 set_menus_node, row_clicked_node, NULL},
 #else
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
 	 refresh_main, get_info_block, specific_info_block, 
 	 set_menus_block, row_clicked_block, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Nodes", TRUE, -1,
+	{G_TYPE_NONE, NODE_PAGE, "Nodes", FALSE, -1,
 	 refresh_main, get_info_node, specific_info_node, 
 	 set_menus_node, row_clicked_node, NULL},
 #endif
