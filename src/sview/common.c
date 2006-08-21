@@ -664,7 +664,7 @@ extern void *popup_thr(popup_info_t *popup_win)
 		(specifc_info)(popup_win);
 		gdk_flush();
 		gdk_threads_leave();
-		sleep(5);
+		sleep(global_sleep_time);
 	}	
 	return NULL;
 }

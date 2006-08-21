@@ -314,7 +314,14 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr)
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	int error_code = SLURM_SUCCESS;
-
+	time_t now = time(NULL);
+	static time_t last;
+		
+	if((now - last) < global_sleep_time) {
+		*part_ptr = part_info_ptr;
+		return error_code;
+	}
+	last = now;
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
 						   &new_part_ptr, SHOW_ALL);

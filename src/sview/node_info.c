@@ -217,6 +217,14 @@ extern int get_new_info_node(node_info_msg_t **info_ptr)
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_SUCCESS;
+	time_t now = time(NULL);
+	static time_t last;
+		
+	if((now - last) < global_sleep_time) {
+		*info_ptr = node_info_ptr;
+		return error_code;
+	}
+	last = now;
 
 	show_flags |= SHOW_ALL;
 	if (node_info_ptr) {

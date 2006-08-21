@@ -593,7 +593,14 @@ extern int get_new_info_job(job_info_msg_t **info_ptr)
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_SUCCESS;
-
+	time_t now = time(NULL);
+	static time_t last;
+		
+	if((now - last) < global_sleep_time) {
+		*info_ptr = job_info_ptr;
+		return error_code;
+	}
+	last = now;
 	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
@@ -618,7 +625,14 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr)
 	static job_step_info_response_msg_t *new_step_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_SUCCESS;
-
+	time_t now = time(NULL);
+	static time_t last;
+		
+	if((now - last) < global_sleep_time) {
+		*info_ptr = old_step_ptr;
+		return error_code;
+	}
+	last = now;
 	show_flags |= SHOW_ALL;
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps(old_step_ptr->last_update, 

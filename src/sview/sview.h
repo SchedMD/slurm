@@ -165,6 +165,7 @@ extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
 extern bool toggled;
 extern List popup_list;
+extern int global_sleep_time;
 	
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
