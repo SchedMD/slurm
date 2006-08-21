@@ -28,6 +28,7 @@
 
 #include "sacct.h"
 #include "src/common/parse_time.h"
+#include "slurm.h"
 #define FORMAT_STRING_SIZE 32
 
 void _elapsed_time(long secs, long usecs, char *str);
@@ -806,16 +807,26 @@ void print_status(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-10s", "Status");
+		printf("%-20s", "Status");
 		break;
 	case UNDERSCORE:
-		printf("%-10s", "----------");
+		printf("%-20s", "--------------------");
 		break;
 	case JOB:
-		printf("%-10s", decode_status_int(job->status));
+		if ( job->status == JOB_CANCELLED) {
+			printf ("%-10s by %6u",decode_status_int(job->status), job->requid);
+		}
+		else {
+			printf("%-20s", decode_status_int(job->status));
+		}
 		break;
 	case JOBSTEP:
-		printf("%-10s", decode_status_int(step->status));
+		if ( step->status == JOB_CANCELLED) {
+			printf ("%-10s by %6u",decode_status_int(step->status), step->requid);
+		}
+		else {
+			printf("%-20s", decode_status_int(step->status));
+		}
 		break;
 	} 
 }

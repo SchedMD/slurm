@@ -275,6 +275,10 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		     job_id, step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
+	
+	/* save user ID of the one who requested the job be cancelled */
+	if(signal == SIGKILL)
+		step_ptr->requid = uid;
 
 	signal_step_tasks(step_ptr, signal);
 	return SLURM_SUCCESS;

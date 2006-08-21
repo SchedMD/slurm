@@ -344,6 +344,7 @@ struct job_record {
                                            each of the ntask_cnt hosts */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
+	uint32_t requid;            	/* requester user ID */
 };
 
 struct 	step_record {
@@ -367,6 +368,7 @@ struct 	step_record {
 					   step */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					    in the step */
+	uint32_t requid;            	/* requester user ID */
 };
 
 extern List job_list;			/* list of job_record entries */

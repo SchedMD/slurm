@@ -1519,6 +1519,10 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	/* save user ID of the one who requested the job be cancelled */
+	if(signal == SIGKILL)
+		job_ptr->requid = uid;
+	
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
 		last_job_update		= now;

@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>,et. al.
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -799,7 +799,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { 
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid;
-
+	
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_CANCEL_JOB_STEP");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -852,6 +852,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			schedule_job_save();
 		}
 	}
+ 
 }
 
 /* _slurm_rpc_complete_job_allocation - process RPC to note the
