@@ -34,10 +34,18 @@ DEF_TIMERS;
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_NAME, 
+	SORTID_DEFAULT, 
 	SORTID_AVAIL, 
 	SORTID_TIMELIMIT, 
+	SORTID_JOB_SIZE,
+	SORTID_ROOT, 
+	SORTID_SHARE, 
+	SORTID_GROUPS,
 	SORTID_NODES, 
+	SORTID_CPUS, 
+	SORTID_DISK, 
 	SORTID_NODELIST, 
+	SORTID_STATE,
 	SORTID_UPDATED, 
 	SORTID_CNT
 };
@@ -45,10 +53,18 @@ enum {
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
 	 TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_DISK, "Disk", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part},
 #else
@@ -75,6 +91,26 @@ static display_data_t options_data_part[] = {
 
 static display_data_t *local_display_data = NULL;
 
+static int 
+_build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
+{
+	char tmp_min[7];
+	char tmp_max[7];
+	convert_to_kilo(min, tmp_min);
+	convert_to_kilo(max, tmp_max);
+	
+	if (max == min)
+		return snprintf(buffer, buf_size, "%s", tmp_max);
+	else if (range) {
+		if (max == INFINITE)
+			return snprintf(buffer, buf_size, "%s-infinite", 
+					tmp_min);
+		else
+			return snprintf(buffer, buf_size, "%s-%s", 
+					tmp_min, tmp_max);
+	} else
+		return snprintf(buffer, buf_size, "%s+", tmp_min);
+}
 
 static void _update_part_record(partition_info_t *part_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter)
@@ -84,6 +120,9 @@ static void _update_part_record(partition_info_t *part_ptr,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
+	if(part_ptr->default_part)
+		gtk_tree_store_set(treestore, iter, SORTID_DEFAULT, "*", -1);
+	
 	if (part_ptr->state_up) 
 		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "up", -1);
 	else
@@ -97,9 +136,33 @@ static void _update_part_record(partition_info_t *part_ptr,
 	}
 	
 	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
-		
-       	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
+	
+	_build_min_max_string(time_buf, sizeof(time_buf), 
+			      part_ptr->min_nodes, 
+			      part_ptr->max_nodes, true);
+	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
+
+	if(part_ptr->root_only)
+		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "yes", -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "no", -1);
+	
+	if(part_ptr->shared > 1)
+		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "force", -1);
+	else if(part_ptr->shared)
+		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "yes", -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "no", -1);
+	
+	if(part_ptr->allow_groups)
+		gtk_tree_store_set(treestore, iter, SORTID_GROUPS,
+				   part_ptr->allow_groups, -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_GROUPS, "all", -1);
+
+	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   part_ptr->nodes, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
