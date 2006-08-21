@@ -346,8 +346,8 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* max rss node */
 		 0,	/* max pages node */
 		 0,	/* min cpu node */
-		account,
-		step->requid); /* requester user id */
+		 account,
+		 step->requid); /* requester user id */
 		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
