@@ -116,7 +116,6 @@ typedef struct slaunch_options {
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *nodelist;		/* -w,--nodelist=node1,node2,...*/
 	char *task_layout;
-	bool task_layout_set;
 	char *task_layout_byid;
 	bool task_layout_byid_set;
 	bool task_layout_byname_set;

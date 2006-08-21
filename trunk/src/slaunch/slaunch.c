@@ -190,7 +190,9 @@ int slaunch(int argc, char **argv)
 	 * of repeated nodenames which represent to which node each task
 	 * is assigned.
 	 */
-	if (opt.task_layout_set || opt.task_layout_file_set) {
+	if (opt.task_layout_byid_set
+	    || opt.task_layout_byname_set
+	    || opt.task_layout_file_set) {
 		step_req.node_list = opt.task_layout;
 	} else if (opt.nodelist != NULL) {
 		step_req.node_list = opt.nodelist;
