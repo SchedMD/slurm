@@ -712,7 +712,6 @@ static void _opt_default()
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.task_layout = NULL;
-	opt.task_layout_set = false;
 	opt.task_layout_file_set = false;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
@@ -1065,7 +1064,6 @@ void set_options(const int argc, char **argv)
 				opt.task_layout = xstrdup(tmp);
 				free(tmp);
 				opt.task_layout_file_set = true;
-				opt.task_layout_set = true;
 			} else {
 				error("\"%s\" is not a valid task layout file");
 				exit(1);
@@ -1150,7 +1148,6 @@ void set_options(const int argc, char **argv)
 			xfree(opt.task_layout);
 			opt.task_layout_byid = xstrdup(optarg);
 			opt.task_layout_byid_set = true;
-			opt.task_layout_set = true;
 			break;
 		case 'u':
 			opt.unbuffered = true;
@@ -1181,7 +1178,6 @@ void set_options(const int argc, char **argv)
 			xfree(opt.task_layout);
 			opt.task_layout = xstrdup(optarg);
 			opt.task_layout_byname_set = true;
-			opt.task_layout_set = true;
 			break;
 		case 'Z':
 			opt.no_alloc = true;
@@ -1533,16 +1529,29 @@ static bool _opt_verify(void)
 
 
 	/*
-	 * Finally, make sure that all of the other options play well together.
+	 * Now, all the rest of the checks and setup.
 	 */
-	if (opt.task_layout_set && opt.task_layout_file_set) {
-		error("Only one of -T/--task-layout or -F/--task-layout-file"
-		      " may be used.");
+	if (opt.task_layout_byid_set && opt.task_layout_file_set) {
+		error("-T/--task-layout-byid and -F/--task-layout-file"
+		      " are incompatible.");
 		verified = false;
 	}
-	if (opt.task_layout_set && opt.nodelist) {
-		error("Only one of -T/--task-layout or -w/--nodelist"
-		      " may be used.");
+	if (opt.task_layout_byname_set && opt.task_layout_file_set) {
+		error("-Y/--task-layout-byname and -F/--task-layout-file"
+		      " are incompatible.");
+		verified = false;
+	}
+	if (opt.task_layout_byname_set && opt.task_layout_byid_set) {
+		error("-Y/--task-layout-byname and -T/--task-layout-byid"
+		      " are incompatible.");
+		verified = false;
+	}
+
+	if (opt.nodelist && (opt.task_layout_byid_set
+			     || opt.task_layout_byname_set
+			     || opt.task_layout_file_set)) {
+		error("-w/--nodelist is incompatible with task layout"
+		      " options.");
 		verified = false;
 	}
 	if (opt.nodelist && opt.task_layout_file_set) {
@@ -1550,9 +1559,10 @@ static bool _opt_verify(void)
 		      " may be used.");
 		verified = false;
 	}
-	if (opt.task_layout_set && opt.num_nodes_set) {
-		error("only one of -F/--task-layout-file and -N/--node"
-		      " may be used.");
+	if (opt.num_nodes_set && (opt.task_layout_byid_set
+				  || opt.task_layout_byname_set
+				  || opt.task_layout_file_set)) {
+		error("-N/--node is incompatible with task layout options.");
 		verified = false;
 	}
 
@@ -1669,9 +1679,15 @@ static bool _opt_verify(void)
 			verified = false;
 		}
 
-		if (opt.task_layout_set) {
+		if (opt.task_layout_byid_set) {
 			error("-r/--relative not allowed with"
-			      " -T/--task-layout");
+			      " -T/--task-layout-byid");
+			verified = false;
+		}
+
+		if (opt.task_layout_byname_set) {
+			error("-r/--relative not allowed with"
+			      " -Y/--task-layout-byname");
 			verified = false;
 		}
 
