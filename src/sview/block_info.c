@@ -61,6 +61,7 @@ enum {
 	SORTID_USE,
 	SORTID_NODES, 
 	SORTID_NODELIST, 
+	SORTID_POINTER,
 	SORTID_UPDATED, 
 	SORTID_CNT
 };
@@ -78,6 +79,7 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, -1, refresh_block},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block},
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block},
+	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_block},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_block},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
@@ -364,6 +366,7 @@ static void _update_block_record(db2_block_info_t *block_ptr,
 	char tmp_cnt[7];
 	char tmp_nodes[30];
 	
+	gtk_tree_store_set(treestore, iter, SORTID_POINTER, block_ptr, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
 			   block_ptr->bg_block_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_PARTITION, 

@@ -204,6 +204,25 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 	return line;
 }
 
+extern void *get_pointer(GtkTreeView *tree_view, GtkTreePath *path, int loc)
+{
+	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+	GtkTreeIter iter;
+	void *ptr = NULL;
+	
+	if(!model) {
+		g_error("error getting the model from the tree_view");
+		return ptr;
+	}
+	
+	if (!gtk_tree_model_get_iter(model, &iter, path)) {
+		g_error("error getting iter from model");
+		return ptr;
+	}	
+	gtk_tree_model_get(model, &iter, loc, &ptr, -1);
+	return ptr;
+}
+
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data)
 {
 	while(display_data++) {
@@ -450,10 +469,6 @@ extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	} else if(event->button == 3) {
 		right_button_pressed(tree_view, path, event, 
 				     display_data, ROW_CLICKED);
-	} else if(event->type==GDK_2BUTTON_PRESS ||
-		  event->type==GDK_3BUTTON_PRESS) {
-		(display_data->row_clicked)(tree_view, path, 
-					    NULL, display_data->user_data);
 	}
 	gtk_tree_path_free(path);
 }
@@ -694,3 +709,4 @@ extern void remove_old(GtkTreeModel *model, int updated)
 	}
 	gtk_tree_path_free(path);
 }
+

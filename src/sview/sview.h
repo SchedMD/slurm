@@ -74,11 +74,13 @@
 #define POS_LOC 0
 
 enum { JOB_PAGE, 
+       STEP_PAGE, 
        PART_PAGE, 
        NODE_PAGE, 
        BLOCK_PAGE, 
        SUBMIT_PAGE,
        ADMIN_PAGE,
+       INFO_PAGE,
        PAGE_CNT 
 };
 enum { TAB_CLICKED,
@@ -129,10 +131,6 @@ struct display_data {
 	void (*specific)    (popup_info_t *popup_win);
 	void (*set_menu)    (void *arg, GtkTreePath *path,
 			     GtkMenu *menu, int type);
-	void (*row_clicked) (GtkTreeView *tree_view,
-			     GtkTreePath *path,
-			     GtkTreeViewColumn *column,
-			     gpointer user_data);
 	gpointer user_data;
 };
 
@@ -189,10 +187,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data);
 extern void specific_info_part(popup_info_t *popup_win);
 extern void set_menus_part(void *arg, GtkTreePath *path, 
 			   GtkMenu *menu, int type);
-extern void row_clicked_part(GtkTreeView *tree_view,
-			     GtkTreePath *path,
-			     GtkTreeViewColumn *column,
-			     gpointer user_data);
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // block_info.c
@@ -202,10 +196,6 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data);
 extern void specific_info_block(popup_info_t *popup_win);
 extern void set_menus_block(void *arg, GtkTreePath *path, 
 			    GtkMenu *menu, int type);
-extern void row_clicked_block(GtkTreeView *tree_view,
-			      GtkTreePath *path,
-			      GtkTreeViewColumn *column,
-			      gpointer user_data);
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // job_info.c
@@ -216,21 +206,12 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data);
 extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, GtkTreePath *path, 
 			  GtkMenu *menu, int type);
-extern void row_clicked_job(GtkTreeView *tree_view,
-			    GtkTreePath *path,
-			    GtkTreeViewColumn *column,
-			    gpointer user_data);
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // admin_info.c
 extern void get_info_admin(GtkTable *table, display_data_t *display_data);
 extern void set_menus_admin(void *arg, GtkTreePath *path, 
 			    GtkMenu *menu, int type);
-extern void row_clicked_admin(GtkTreeView *tree_view,
-			      GtkTreePath *path,
-			      GtkTreeViewColumn *column,
-			      gpointer user_data);
-
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
 extern int get_new_info_node(node_info_msg_t **info_ptr);
@@ -238,21 +219,12 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data);
 extern void specific_info_node(popup_info_t *popup_win);
 extern void set_menus_node(void *arg, GtkTreePath *path, 
 			   GtkMenu *menu, int type);
-extern void row_clicked_node(GtkTreeView *tree_view,
-			     GtkTreePath *path,
-			     GtkTreeViewColumn *column,
-			     gpointer user_data);
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // submit_info.c
 extern void get_info_submit(GtkTable *table, display_data_t *display_data);
 extern void set_menus_submit(void *arg, GtkTreePath *path, 
 			     GtkMenu *menu, int type);
-extern void row_clicked_submit(GtkTreeView *tree_view,
-			       GtkTreePath *path,
-			       GtkTreeViewColumn *column,
-			       gpointer user_data);
-
 // common.c
 extern void snprint_time(char *buf, size_t buf_size, time_t time);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);

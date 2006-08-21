@@ -46,6 +46,7 @@ enum {
 	SORTID_DISK, 
 	SORTID_NODELIST, 
 	SORTID_STATE,
+	SORTID_POINTER,
 	SORTID_UPDATED, 
 	SORTID_CNT
 };
@@ -70,6 +71,7 @@ static display_data_t display_data_part[] = {
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part},
 #endif
+	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part},
 
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -77,6 +79,7 @@ static display_data_t display_data_part[] = {
 
 static display_data_t options_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, PART_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PART_PAGE},
@@ -117,7 +120,9 @@ static void _update_part_record(partition_info_t *part_ptr,
 {
 	char time_buf[20];
 	char tmp_cnt[7];
-
+	partition_info_t *ptr = xmalloc(sizeof(partition_info_t));
+	memcpy(ptr, part_ptr, sizeof(partition_info_t));
+	gtk_tree_store_set(treestore, iter, SORTID_POINTER, ptr, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
 	if(part_ptr->default_part)
@@ -191,7 +196,7 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 	char *host = NULL, *host2 = NULL, *part_name = NULL;
 	hostlist_t hostlist = NULL;
 	int found = 0;
-	
+
 	if(spec_info) {
 		switch(spec_info->type) {
 		case NODE_PAGE:
@@ -376,7 +381,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
-		sprintf(error_char, "slurm_load_partitions: %s",
+		snprintf(error_char, 100, "slurm_load_partitions: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
@@ -446,8 +451,8 @@ extern void specific_info_part(popup_info_t *popup_win)
 			spec_info->display_widget = NULL;
 		}
 		spec_info->view = ERROR_VIEW;
-		sprintf(error_char, "slurm_load_partitions: %s",
-			slurm_strerror(slurm_get_errno()));
+		snprintf(error_char, 100, "slurm_load_partitions: %s",
+			 slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(popup_win->table, 
 					  label,
@@ -550,8 +555,12 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-					
+	partition_info_t *ptr = NULL;
+				
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	gtk_tree_model_get(model, iter, 
+				   SORTID_POINTER, &ptr, -1);
+	g_print("storing partition %s\n", ptr->name);
 	switch(id) {
 	case JOB_PAGE:
 		snprintf(title, 100, "Job(s) in partition %s", name);
@@ -573,6 +582,9 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case SUBMIT_PAGE: 
 		snprintf(title, 100, "Submit job in partition %s", name);
 		break;
+	case INFO_PAGE: 
+		snprintf(title, 100, "Full info for partition %s", name);
+		break;
 	default:
 		g_print("part got %d\n", id);
 	}
@@ -586,9 +598,12 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 	list_iterator_destroy(itr);
 
-	if(!popup_win) 
-		popup_win = create_popup_info(PART_PAGE, id, title);
-
+	if(!popup_win) {
+		if(id == INFO_PAGE)
+			popup_win = create_popup_info(id, PART_PAGE, title);
+		else
+			popup_win = create_popup_info(PART_PAGE, id, title);
+	}
 	switch(id) {
 	case JOB_PAGE:
 		popup_win->spec_info->data = name;
@@ -604,10 +619,11 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->data = name;
 		break;
 	case ADMIN_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 		break;
 	case SUBMIT_PAGE: 
-		gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		break;
+	case INFO_PAGE:
+		popup_win->spec_info->data = name;
 		break;
 	default:
 		g_print("part got %d\n", id);
