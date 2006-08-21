@@ -107,7 +107,7 @@ expect {
 		set job_id $expect_out(1,string)
 		send_user "\nFAILURE: Test B was supposed to fail submission\n"
 		set exit_code 1
-		exec scancel $job_id
+		exec $scancel $job_id
 	    exit 1
 	}
 	timeout {
@@ -136,7 +136,7 @@ expect {
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		exec scancel $job_id
+		exec $scancel $job_id
 	}
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
