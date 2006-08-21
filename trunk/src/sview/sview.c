@@ -40,6 +40,7 @@ int fini = 0;
 bool toggled = FALSE;
 List popup_list;
 int page_running[PAGE_CNT];
+int global_sleep_time = 5;
 	
 GtkWidget *main_notebook = NULL;
 display_data_t main_display_data[] = {
@@ -86,7 +87,7 @@ void *_page_thr(void *arg)
 		(display_data->get_info)(table, display_data);
 		gdk_flush();
 		gdk_threads_leave();
-		sleep(5);
+		sleep(global_sleep_time);
 	}	
 		
 	return NULL;

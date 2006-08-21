@@ -656,7 +656,14 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr)
 	static node_select_info_msg_t *bg_info_ptr = NULL;
 	static node_select_info_msg_t *new_bg_ptr = NULL;
 	int error_code = SLURM_SUCCESS;
-
+	time_t now = time(NULL);
+	static time_t last;
+		
+	if((now - last) < global_sleep_time) {
+		*node_select_ptr = bg_info_ptr;
+		return error_code;
+	}
+	last = now;
 	if (bg_info_ptr) {
 		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
 						    &new_bg_ptr);
