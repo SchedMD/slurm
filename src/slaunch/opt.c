@@ -85,9 +85,6 @@
 #define OPT_DISTRIB     0x04
 #define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
-#define OPT_CONN_TYPE	0x08
-#define OPT_NO_ROTATE	0x0a
-#define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
@@ -109,7 +106,6 @@
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_DEBUG_TS    0x110
-#define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
 #define LONG_OPT_PROPAGATE   0x116
@@ -142,6 +138,9 @@ typedef struct env_vars env_vars_t;
 static char * _base_name(char* command);
 
 static List  _create_path_list(void);
+
+/* Get a POSITIVE decimal integer from arg */
+static int  _get_pos_int(const char *arg, const char *what);
 
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what);
@@ -181,10 +180,8 @@ static bool  _valid_node_list(char **node_list_pptr);
 static enum  task_dist_states _verify_dist_type(const char *arg);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
 					cpu_bind_type_t *cpu_bind_type);
-static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
                                         mem_bind_type_t *mem_bind_type);
-static int   _verify_conn_type(const char *arg);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -268,63 +265,6 @@ static enum task_dist_states _verify_dist_type(const char *arg)
 		result = SLURM_DIST_ARBITRARY;
 
 	return result;
-}
-
-/*
- * verify that a connection type in arg is of known form
- * returns the connection_type or -1 if not recognized
- */
-static int _verify_conn_type(const char *arg)
-{
-	int len = strlen(arg);
-
-	if (!strncasecmp(arg, "MESH", len))
-		return SELECT_MESH;
-	else if (!strncasecmp(arg, "TORUS", len))
-		return SELECT_TORUS;
-	else if (!strncasecmp(arg, "NAV", len))
-		return SELECT_NAV;
-
-	error("invalid --conn-type argument %s ignored.", arg);
-	return -1;
-}
-
-/*
- * verify geometry arguments, must have proper count
- * returns -1 on error, 0 otherwise
- */
-static int _verify_geometry(const char *arg, uint16_t *geometry)
-{
-	char* token, *delimiter = ",x", *next_ptr;
-	int i, rc = 0;
-	char* geometry_tmp = xstrdup(arg);
-	char* original_ptr = geometry_tmp;
-
-	token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-		if (token == NULL) {
-			error("insufficient dimensions in --geometry");
-			rc = -1;
-			break;
-		}
-		geometry[i] = (uint16_t)atoi(token);
-		if (geometry[i] == 0 || geometry[i] == (uint16_t)NO_VAL) {
-			error("invalid --geometry argument");
-			rc = -1;
-			break;
-		}
-		geometry_tmp = next_ptr;
-		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-	}
-	if (token != NULL) {
-		error("too many dimensions in --geometry");
-		rc = -1;
-	}
-
-	if (original_ptr)
-		xfree(original_ptr);
-
-	return rc;
 }
 
 /*
@@ -706,7 +646,6 @@ static void _opt_default()
 {
 	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
-	int i;
 
 	if ((pw = getpwuid(getuid())) != NULL) {
 		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
@@ -772,17 +711,12 @@ static void _opt_default()
 	opt.constraints	    = NULL;
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
-	opt.task_layout	    = NULL;
+	opt.task_layout = NULL;
 	opt.task_layout_set = false;
 	opt.task_layout_file_set = false;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
-
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		opt.geometry[i]	    = (uint16_t) NO_VAL;
-	opt.no_rotate	    = false;
-	opt.conn_type	    = -1;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -837,17 +771,14 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
   {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_per_task_set},
-  {"SLAUNCH_CONN_TYPE",    OPT_CONN_TYPE, NULL,               NULL           },
   {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
   {"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
   {"SLAUNCH_MEM_BIND",     OPT_MEM_BIND,  NULL,               NULL           },
   {"SLAUNCH_DEBUG",        OPT_DEBUG,     NULL,               NULL           },
   {"SLAUNCH_DISTRIBUTION", OPT_DISTRIB,   NULL,               NULL           },
-  {"SLAUNCH_GEOMETRY",     OPT_GEOMETRY,  NULL,               NULL           },
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
   {"SLAUNCH_NUM_NODES",    OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
-  {"SLAUNCH_NO_ROTATE",    OPT_NO_ROTATE, NULL,               NULL           },
   {"SLAUNCH_NPROCS",       OPT_INT,       &opt.num_tasks,  &opt.num_tasks_set},
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
   {"SLAUNCH_REMOTE_CWD",   OPT_STRING,    &opt.cwd,           NULL           },
@@ -949,21 +880,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_type = core_format_type (val);
 		break;
 	    
-	case OPT_CONN_TYPE:
-		opt.conn_type = _verify_conn_type(val);
-		break;
-	
-	case OPT_NO_ROTATE:
-		opt.no_rotate = true;
-		break;
-
-	case OPT_GEOMETRY:
-		if (_verify_geometry(val, opt.geometry)) {
-			error("\"%s=%s\" -- invalid geometry, ignoring...",
-			      e->var, val);
-		}
-		break;
-
 	case OPT_MPI:
 		if (srun_mpi_init((char *)val) == SLURM_ERROR) {
 			fatal("\"%s=%s\" -- invalid MPI type, "
@@ -985,6 +901,30 @@ _process_env_var(env_vars_t *e, const char *val)
 }
 
 /*
+ *  Get a POSITIVE decimal integer from arg.
+ *
+ *  Returns the integer on success, exits program on failure.
+ * 
+ */
+static int
+_get_pos_int(const char *arg, const char *what)
+{
+	char *p;
+	long int result = strtol(arg, &p, 10);
+
+	if ((*p != '\0') || (result < 0L)) {
+		error ("Invalid numeric value \"%s\" for %s.", arg, what);
+		exit(1);
+	}
+
+	if (result > INT_MAX) {
+		error ("Numeric argument (%ld) to big for %s.", result, what);
+	}
+
+	return (int) result;
+}
+
+/*
  *  Get a decimal integer from arg.
  *
  *  Returns the integer on success, exits program on failure.
@@ -996,7 +936,7 @@ _get_int(const char *arg, const char *what)
 	char *p;
 	long int result = strtol(arg, &p, 10);
 
-	if ((*p != '\0') || (result < 0L)) {
+	if (*p != '\0') {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		exit(1);
 	}
@@ -1020,7 +960,6 @@ void set_options(const int argc, char **argv)
 		{"local-error",   required_argument, 0, 'e'},
 		{"remote-error",  required_argument, 0, 'E'},
 		{"task-layout-file",required_argument,0,'F'},
-		{"geometry",      required_argument, 0, 'g'},
 		{"help",          no_argument,       0, 'h'},
 		{"local-input",   required_argument, 0, 'i'},
 		{"remote-input",  required_argument, 0, 'I'},
@@ -1036,14 +975,14 @@ void set_options(const int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'C'},
 		{"quiet",            no_argument,    0, 'q'},
 		{"relative",      required_argument, 0, 'r'},
-		{"no-rotate",     no_argument,       0, 'R'},
 		{"time",          required_argument, 0, 't'},
 		{"unbuffered",    no_argument,       0, 'u'},
-		{"task-layout",   required_argument, 0, 'T'},
+		{"task-layout-byid", required_argument, 0, 'T'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
+		{"task-layout-byname", required_argument, 0, 'Y'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
@@ -1061,7 +1000,6 @@ void set_options(const int argc, char **argv)
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
-		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
@@ -1073,8 +1011,8 @@ void set_options(const int argc, char **argv)
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:Cd:D:e:E:F:g:hi:I:J:kKlm:n:N:"
-		"o:O:qr:R:t:T:uvVw:W:Z";
+	char *opt_string = "+c:Cd:D:e:E:F:hi:I:J:kKlm:n:N:"
+		"o:O:qr:t:T:uvVw:W:Y:Z";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1097,14 +1035,14 @@ void set_options(const int argc, char **argv)
 		case 'c':
 			opt.cpus_per_task_set = true;
 			opt.cpus_per_task = 
-				_get_int(optarg, "cpus-per-task");
+				_get_pos_int(optarg, "cpus-per-task");
 			break;
 		case 'C':
 			opt.overcommit = true;
 			break;
 		case 'd':
 			opt.slurmd_debug = 
-				_get_int(optarg, "slurmd-debug");
+				_get_pos_int(optarg, "slurmd-debug");
 			break;
 		case 'D':
 			set_cwd = true;
@@ -1127,6 +1065,7 @@ void set_options(const int argc, char **argv)
 				opt.task_layout = xstrdup(tmp);
 				free(tmp);
 				opt.task_layout_file_set = true;
+				opt.task_layout_set = true;
 			} else {
 				error("\"%s\" is not a valid task layout file");
 				exit(1);
@@ -1139,10 +1078,6 @@ void set_options(const int argc, char **argv)
 				opt.remote_efname = xstrdup("/dev/null");
 			else
 				opt.remote_efname = xstrdup(optarg);
-			break;
-		case 'g':
-			if (_verify_geometry(optarg, opt.geometry))
-				exit(1);
 			break;
 		case 'h':
 			_help();
@@ -1181,11 +1116,11 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'n':
 			opt.num_tasks_set = true;
-			opt.num_tasks = _get_int(optarg, "number of tasks");
+			opt.num_tasks = _get_pos_int(optarg, "number of tasks");
 			break;
 		case 'N':
 			opt.num_nodes_set = true;
-			opt.num_nodes = _get_int(optarg, "number of nodes");
+			opt.num_nodes = _get_pos_int(optarg, "number of nodes");
 			break;
 		case 'o':
 			xfree(opt.local_ofname);
@@ -1208,15 +1143,13 @@ void set_options(const int argc, char **argv)
 			opt.relative_set = true;
 			opt.relative = _get_int(optarg, "relative start node");
 			break;
-		case 'R':
-			opt.no_rotate = true;
-			break;
 		case 't':
-			opt.time_limit = _get_int(optarg, "time");
+			opt.time_limit = _get_pos_int(optarg, "time");
 			break;
 		case 'T':
 			xfree(opt.task_layout);
-			opt.task_layout = xstrdup(optarg);
+			opt.task_layout_byid = xstrdup(optarg);
+			opt.task_layout_byid_set = true;
 			opt.task_layout_set = true;
 			break;
 		case 'u':
@@ -1242,7 +1175,13 @@ void set_options(const int argc, char **argv)
 #endif
 			break;
 		case 'W':
-			opt.max_wait = _get_int(optarg, "wait");
+			opt.max_wait = _get_pos_int(optarg, "wait");
+			break;
+		case 'Y':
+			xfree(opt.task_layout);
+			opt.task_layout = xstrdup(optarg);
+			opt.task_layout_byname_set = true;
+			opt.task_layout_set = true;
 			break;
 		case 'Z':
 			opt.no_alloc = true;
@@ -1270,7 +1209,7 @@ void set_options(const int argc, char **argv)
 				      optarg);
 			break;
 		case LONG_OPT_MINCPU:
-			opt.mincpus = _get_int(optarg, "mincpus");
+			opt.mincpus = _get_pos_int(optarg, "mincpus");
 			break;
 		case LONG_OPT_MEM:
 			opt.realmem = (int) _to_bytes(optarg);
@@ -1295,20 +1234,20 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_JOBID:
-			opt.jobid = _get_int(optarg, "jobid");
+			opt.jobid = _get_pos_int(optarg, "jobid");
 			opt.jobid_set = true;
 			break;
 		case LONG_OPT_TIMEO:
 			opt.msg_timeout = 
-				_get_int(optarg, "msg-timeout");
+				_get_pos_int(optarg, "msg-timeout");
 			break;
 		case LONG_OPT_LAUNCH:
 			opt.max_launch_time = 
-				_get_int(optarg, "max-launch-time");
+				_get_pos_int(optarg, "max-launch-time");
 			break;
 		case LONG_OPT_XTO:
 			opt.max_exit_timeout = 
-				_get_int(optarg, "max-exit-timeout");
+				_get_pos_int(optarg, "max-exit-timeout");
 			break;
 		case LONG_OPT_UID:
 			opt.euid = uid_from_string (optarg);
@@ -1332,9 +1271,6 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_USAGE:
 			_usage();
 			exit(0);
-		case LONG_OPT_CONNTYPE:
-			opt.conn_type = _verify_conn_type(optarg);
-			break;
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
@@ -1372,7 +1308,7 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_PMI_THREADS: /* undocumented option */
 		{
-			int max = _get_int(optarg, "pmi-threads");
+			int max = _get_pos_int(optarg, "pmi-threads");
 			if (max <= 0)
 				error("--pmi-threads must be a positive integer");
 			else
@@ -1388,6 +1324,55 @@ void set_options(const int argc, char **argv)
 
 	spank_option_table_destroy (optz);
 }
+
+static char *_nodelist_byid(const char *userstr, const char *alloc_nodelist)
+{
+	hostlist_t tid_l, alloc_l, step_l;
+	hostlist_iterator_t itr;
+	char *host_id_str, *endptr;
+	long host_id;
+	char *node;
+	char *step_nodelist = NULL;
+
+	step_l = hostlist_create(NULL);
+	alloc_l = hostlist_create(alloc_nodelist);
+	tid_l = hostlist_create(userstr);
+	itr = hostlist_iterator_create(tid_l);
+	while ((host_id_str = hostlist_next(itr)) != NULL) {
+		host_id = strtol(host_id_str, &endptr, 10);
+		if (endptr == host_id_str || !xstring_is_whitespace(endptr)) {
+			error("\"%s\" is not a valid relative node number",
+			      host_id_str);
+			free(host_id_str);
+			goto cleanup;
+		}
+		free(host_id_str);
+		if (host_id > (hostlist_count(alloc_l) - 1)
+		    || host_id < -(hostlist_count(alloc_l))) {
+			error("\"%ld\" is out of the range of valid node IDs",
+			      host_id);
+			goto cleanup;
+		}
+
+		if (host_id < 0)
+			host_id += hostlist_count(alloc_l);
+		node = hostlist_nth(alloc_l, (int)host_id);
+		hostlist_push(step_l, node);
+		free(node);
+	}
+
+	step_nodelist = (char *)xmalloc(BUFSIZ);
+	if (hostlist_ranged_string(step_l, BUFSIZ, step_nodelist) == -1) {
+		error("truncation");
+	}
+cleanup:
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(tid_l);
+	hostlist_destroy(alloc_l);
+
+	return step_nodelist;
+}
+
 
 /* Load the multi_prog config file into argv, pass the  entire file contents 
  * in order to avoid having to read the file on every node. We could parse
@@ -1571,6 +1556,15 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (opt.task_layout_byid_set) {
+		if (opt.task_layout != NULL)
+			xfree(opt.task_layout);
+		opt.task_layout = _nodelist_byid(opt.task_layout_byid,
+						 alloc_info.node_list);
+		if (opt.task_layout == NULL)
+			verified = false;
+	}
+
 	if (opt.task_layout != NULL) {
 		task_l = hostlist_create(opt.task_layout);
 		if (opt.num_tasks_set) {
@@ -1601,7 +1595,7 @@ static bool _opt_verify(void)
 		hostlist_uniq(node_l);
 		opt.num_nodes = hostlist_count(node_l);
 		opt.num_nodes_set = true;
-		/* task_layout and task_layout_file both implicitly trigger
+		/* task_layout parameters implicitly trigger
 		   arbitrary task layout mode */
 		opt.distribution = SLURM_DIST_ARBITRARY;
 
@@ -1686,6 +1680,11 @@ static bool _opt_verify(void)
 			      " -F/--task-layout-file");
 			verified = false;
 		}
+
+		/* convert a negative relative number into a positive number
+		   that the slurmctld will accept */
+		if (opt.relative < 0 && opt.relative >= -(alloc_info.node_cnt))
+			opt.relative += alloc_info.node_cnt;
 	}
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
@@ -1872,27 +1871,6 @@ print_commandline()
 	return xstrdup(buf);
 }
 
-static char *
-print_geometry()
-{
-	int i;
-	char buf[32], *rc = NULL;
-
-	if ((SYSTEM_DIMENSIONS == 0)
-	||  (opt.geometry[0] == (uint16_t)NO_VAL))
-		return NULL;
-
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-		if (i > 0)
-			snprintf(buf, sizeof(buf), "x%u", opt.geometry[i]);
-		else
-			snprintf(buf, sizeof(buf), "%u", opt.geometry[i]);
-		xstrcat(rc, buf);
-	}
-
-	return rc;
-}
-
 #define tf_(b) (b == true) ? "true" : "false"
 
 static void _opt_list()
@@ -1936,12 +1914,6 @@ static void _opt_list()
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type >= 0)
-		info("conn_type      : %u", opt.conn_type);
-	str = print_geometry();
-	info("geometry       : %s", str);
-	xfree(str);
-	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
@@ -1976,9 +1948,6 @@ static void _usage(void)
 "               [--mpi=type]\n"
 "               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
 "               [--cpu_bind=...] [--mem_bind=...]\n"
-#ifdef HAVE_BG		/* Blue gene specific options */
-"               [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
-#endif
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
 "               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
@@ -2075,14 +2044,6 @@ static void _help(void)
   "\n"
 #endif
 
-#ifdef HAVE_BG				/* Blue gene specific options */
-  "Blue Gene related options:\n"
-  "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-  "  -R, --no-rotate             disable geometry rotation\n"
-  "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-  "                              if not set, then tries to fit TORUS else MESH\n"
-  "\n"
-#endif
 "Help options:\n"
 "      --help                  show this help message\n"
 "      --usage                 display brief usage message\n"
