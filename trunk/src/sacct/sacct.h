@@ -144,12 +144,14 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_MAX_PAGES_NODE,
 	F_MIN_CPU_NODE,
 	F_STEP_ACCOUNT,
+	F_STEP_REQUID,
 	JOB_STEP_LENGTH
 };
 
 /* JOB_TERM / JOB_SUSPEND fields */
 enum {	F_TOT_ELAPSED = HEADER_LENGTH,
 	F_TERM_STATUS,
+	F_REQUID,
 	JOB_TERM_LENGTH
 };
 
@@ -205,6 +207,7 @@ typedef struct job_rec {
 	sacct_t sacct;
 	List    steps;
 	char    *account;
+	uint32_t requid;
 } job_rec_t;
 
 typedef struct step_rec {
@@ -223,6 +226,7 @@ typedef struct step_rec {
 	struct rusage   rusage;
 	sacct_t         sacct;
 	char            *account;
+	uint32_t requid;
 } step_rec_t;
 
 typedef struct selected_step_t {

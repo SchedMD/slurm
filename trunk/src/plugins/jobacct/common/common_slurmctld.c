@@ -84,7 +84,8 @@ const char *_jobstep_format =
 "%u "	/* max rss node */
 "%u "	/* max pages node */
 "%u "	/* min cpu node */
-"%s";	/* account */
+"%s "   /* account */
+"%u";   /* requester user id */
 
 /*
  * Print the record to the log file.
@@ -238,11 +239,11 @@ extern int common_job_complete_slurmctld(struct job_record *job_ptr)
 		debug("jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	
-	snprintf(buf, BUFFER_SIZE, "%d %u %d",
+	snprintf(buf, BUFFER_SIZE, "%d %u %d %u",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING));
+		 job_ptr->job_state & (~JOB_COMPLETING),
+		 job_ptr->requid);
 	
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
 }
@@ -345,7 +346,8 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* max rss node */
 		 0,	/* max pages node */
 		 0,	/* min cpu node */
-		 account);
+		account,
+		step->requid); /* requester user id */
 		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
@@ -482,7 +484,8 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->max_rss_id.nodeid,	/* max rss task */
 		 jobacct->max_pages_id.nodeid,	/* max pages task */
 		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
-		 account);
+		 account,
+		 step->requid); /* requester user id */
 		 
 	return _print_record(step->job_ptr, now, buf);	
 }
