@@ -117,6 +117,9 @@ typedef struct slaunch_options {
 	char *nodelist;		/* -w,--nodelist=node1,node2,...*/
 	char *task_layout;
 	bool task_layout_set;
+	char *task_layout_byid;
+	bool task_layout_byid_set;
+	bool task_layout_byname_set;
 	bool task_layout_file_set;
 	int relative;		/* --relative -r N              */
 	bool relative_set;      /* true if --relative set explicitly */
@@ -127,9 +130,6 @@ typedef struct slaunch_options {
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
 
-	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
-	bool no_rotate;		/* --no_rotate, -R		*/
-	int16_t conn_type;	/* --conn-type 			*/
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
