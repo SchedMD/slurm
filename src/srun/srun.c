@@ -367,7 +367,9 @@ int srun(int ac, char **av)
 	/*
 	 *  We want to make sure we get the correct state of the job
 	 *  and not finish before all the messages have been sent.
-	 */	
+	 */
+	if (job->state == SRUN_JOB_FAILED)
+		close(job->forked_msg->msg_par->msg_pipe[1]);
 	debug("Waiting for message thread");
 	if (pthread_join(job->jtid, NULL) < 0)
 		error ("Waiting on message thread: %m");
