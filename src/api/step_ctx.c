@@ -112,9 +112,9 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = step_req; /* is already a copy of user_step_req */
 	ctx->step_resp	= step_resp;
-	ctx->slurmctld_socket_fd = sock;
 
 	ctx->launch_state = step_launch_state_create(ctx);
+	ctx->launch_state->slurmctld_socket_fd = sock;
 
 fail:
 	errno = errnum;
