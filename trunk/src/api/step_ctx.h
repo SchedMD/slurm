@@ -60,8 +60,6 @@ struct slurm_step_ctx_struct {
 
 	/* Used by slurm_step_launch(), but not slurm_spawn() */
 	struct step_launch_state *launch_state;
-	int slurmctld_socket_fd; /* set to -1 if slaunch message handler
-				    should not attempt to handle */
 };
 
 #endif /* _STEP_CTX_H */

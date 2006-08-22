@@ -78,8 +78,7 @@ static client_io_t *_setup_step_client_io(slurm_step_ctx ctx,
  * Message handler declarations
  **********************************************************************/
 static uid_t  slurm_uid;
-static int _msg_thr_create(struct step_launch_state *sls, int num_nodes,
-			   int slurmctld_socket_fd);
+static int _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int _message_socket_accept(eio_obj_t *obj, List objs);
@@ -157,8 +156,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	}
 
 	/* Create message receiving sockets and handler thread */
-	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count,
-			ctx->slurmctld_socket_fd);
+	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count);
 
 	/* Start tasks on compute nodes */
 	launch.job_id = ctx->step_req->job_id;
@@ -367,6 +365,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx ctx)
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	if (sls != NULL) {
+		sls->slurmctld_socket_fd = -1;
 		sls->tasks_requested = ctx->step_req->num_tasks;
 		sls->tasks_started = bit_alloc(ctx->step_req->num_tasks);
 		sls->tasks_exited = bit_alloc(ctx->step_req->num_tasks);
@@ -419,8 +418,7 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-static int _msg_thr_create(struct step_launch_state *sls, int num_nodes,
-			   int slurmctld_socket_fd)
+static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 {
 	int sock = -1;
 	int port = -1;
@@ -444,8 +442,8 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes,
 	}
 	/* finally, add the listening port that we told the slurmctld about
 	   eariler in the step context creation phase */
-	if (slurmctld_socket_fd > -1) {
-		obj = eio_obj_create(slurmctld_socket_fd,
+	if (sls->slurmctld_socket_fd > -1) {
+		obj = eio_obj_create(sls->slurmctld_socket_fd,
 				     &message_socket_ops, (void *)sls);
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
