@@ -212,10 +212,11 @@ extern void refresh_node(GtkAction *action, gpointer user_data)
 	xassert(popup_win != NULL);
 	xassert(popup_win->spec_info != NULL);
 	xassert(popup_win->spec_info->title != NULL);
+	popup_win->force_refresh = 1;
 	specific_info_node(popup_win);
 }
 
-extern int get_new_info_node(node_info_msg_t **info_ptr)
+extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 {
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
 	uint16_t show_flags = 0;
@@ -223,7 +224,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr)
 	time_t now = time(NULL);
 	static time_t last;
 		
-	if((now - last) < global_sleep_time) {
+	if(!force && ((now - last) < global_sleep_time)) {
 		*info_ptr = node_info_ptr;
 		return error_code;
 	}
@@ -269,7 +270,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_node(&node_info_ptr))
+	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
@@ -314,6 +315,7 @@ display_it:
 	_update_info_node(node_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
 end_it:
 	toggled = FALSE;
+	force_refresh = 1;
 	return;
 	
 }
@@ -336,7 +338,8 @@ extern void specific_info_node(popup_info_t *popup_win)
 		goto display_it;
 	}
 	
-	if((error_code = get_new_info_node(&node_info_ptr))
+	if((error_code = get_new_info_node(&node_info_ptr, 
+					   popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
@@ -385,6 +388,7 @@ display_it:
 			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
 end_it:
 	popup_win->toggled = 0;
+	popup_win->force_refresh = 0;
 	
 	return;
 	

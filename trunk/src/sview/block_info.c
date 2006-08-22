@@ -651,10 +651,12 @@ extern void refresh_block(GtkAction *action, gpointer user_data)
 	xassert(popup_win != NULL);
 	xassert(popup_win->spec_info != NULL);
 	xassert(popup_win->spec_info->title != NULL);
+	popup_win->force_refresh = 1;
 	specific_info_block(popup_win);
 }
 
-extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr)
+extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
+				    int force)
 {
 	static node_select_info_msg_t *bg_info_ptr = NULL;
 	static node_select_info_msg_t *new_bg_ptr = NULL;
@@ -662,7 +664,7 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr)
 	time_t now = time(NULL);
 	static time_t last;
 		
-	if((now - last) < global_sleep_time) {
+	if(!force && ((now - last) < global_sleep_time)) {
 		*node_select_ptr = bg_info_ptr;
 		return error_code;
 	}
@@ -711,7 +713,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		goto display_it;
 	}
 	
-	if((part_error_code = get_new_info_part(&part_info_ptr))
+	if((part_error_code = get_new_info_part(&part_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		goto get_node_select;
 	}
@@ -734,7 +736,8 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	}
 
 get_node_select:
-	if((block_error_code = get_new_info_node_select(&node_select_ptr))
+	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
+							force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!display_widget || view == ERROR_VIEW) 
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
@@ -788,6 +791,7 @@ display_it:
 	_update_info_block(block_list, GTK_TREE_VIEW(display_widget), NULL);
 end_it:
 	toggled = FALSE;
+	force_refresh = FALSE;
 	
 	return;
 }
@@ -814,7 +818,8 @@ extern void specific_info_block(popup_info_t *popup_win)
 		goto display_it;
 	}
 	
-	if((part_error_code = get_new_info_part(&part_info_ptr))
+	if((part_error_code = get_new_info_part(&part_info_ptr, 
+						popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		goto get_node_select;
 	}
@@ -837,7 +842,8 @@ extern void specific_info_block(popup_info_t *popup_win)
 	}
 
 get_node_select:
-	if((block_error_code = get_new_info_node_select(&node_select_ptr))
+	if((block_error_code = get_new_info_node_select(&node_select_ptr,
+							popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!spec_info->display_widget 
 		    || spec_info->view == ERROR_VIEW) 
@@ -897,6 +903,7 @@ display_it:
 	
 end_it:
 	popup_win->toggled = 0;
+	popup_win->force_refresh = 0;
 	
 	return;
 }

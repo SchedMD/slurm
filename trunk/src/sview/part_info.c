@@ -46,7 +46,6 @@ enum {
 	SORTID_DISK, 
 	SORTID_NODELIST, 
 	SORTID_STATE,
-	SORTID_POINTER,
 	SORTID_UPDATED, 
 	SORTID_CNT
 };
@@ -71,7 +70,6 @@ static display_data_t display_data_part[] = {
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part},
 #endif
-	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part},
 
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -120,9 +118,7 @@ static void _update_part_record(partition_info_t *part_ptr,
 {
 	char time_buf[20];
 	char tmp_cnt[7];
-	partition_info_t *ptr = xmalloc(sizeof(partition_info_t));
-	memcpy(ptr, part_ptr, sizeof(partition_info_t));
-	gtk_tree_store_set(treestore, iter, SORTID_POINTER, ptr, -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
 	if(part_ptr->default_part)
@@ -299,6 +295,59 @@ static void _update_info_part(partition_info_msg_t *part_info_ptr,
 	remove_old(model, SORTID_UPDATED);
 }
 
+void _display_info_part(partition_info_msg_t *part_info_ptr,
+			popup_info_t *popup_win)
+{
+	specific_info_t *spec_info = popup_win->spec_info;
+	char *name = (char *)spec_info->data;
+	int i, found = 0;
+	partition_info_t part;
+	char *info = NULL;
+	char *not_found = NULL;
+	GtkWidget *label = NULL;
+	
+	if(!spec_info->data) {
+		info = xstrdup("No pointer given!");
+		goto finished;
+	}
+
+	if(spec_info->display_widget) {
+		not_found = 
+			xstrdup(GTK_LABEL(spec_info->display_widget)->text);
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+	}
+	for (i = 0; i < part_info_ptr->record_count; i++) {
+		part = part_info_ptr->partition_array[i];
+		if (!part.nodes || (part.nodes[0] == '\0'))
+			continue;	/* empty partition */
+		if(!strcmp(part.name, name)) {
+			if(!(info = slurm_sprint_partition_info(&part, 0))) {
+				info = xmalloc(100);
+				sprintf(info, 
+					"Problem getting partition "
+					"info for %s", 
+					part.name);
+			}
+			found = 1;
+			break;
+		}
+	}
+	if(!found) {
+		info = xstrdup("PARTITION DOESN'T EXSIST\n");
+		xstrcat(info, not_found);
+	}
+finished:
+	label = gtk_label_new(info);
+	xfree(info);
+	xfree(not_found);
+	gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1); 
+	gtk_widget_show(label);	
+	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+	
+	return;
+}
+
 void *_popup_thr_part(void *arg)
 {
 	popup_thr(arg);		
@@ -311,10 +360,11 @@ extern void refresh_part(GtkAction *action, gpointer user_data)
 	xassert(popup_win != NULL);
 	xassert(popup_win->spec_info != NULL);
 	xassert(popup_win->spec_info->title != NULL);
+	popup_win->force_refresh = 1;
 	specific_info_part(popup_win);
 }
 
-extern int get_new_info_part(partition_info_msg_t **part_ptr)
+extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
@@ -322,7 +372,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr)
 	time_t now = time(NULL);
 	static time_t last;
 		
-	if((now - last) < global_sleep_time) {
+	if(!force && ((now - last) < global_sleep_time)) {
 		*part_ptr = part_info_ptr;
 		return error_code;
 	}
@@ -368,7 +418,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		goto display_it;
 	}
 	
-	if((error_code = get_new_info_part(&part_info_ptr))
+	if((error_code = get_new_info_part(&part_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
@@ -411,6 +461,7 @@ display_it:
 	_update_info_part(part_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
 end_it:
 	toggled = FALSE;
+	force_refresh = 0;
 	
 	return;
 }
@@ -433,14 +484,13 @@ extern void specific_info_part(popup_info_t *popup_win)
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_part(&part_info_ptr))
+	if((error_code = get_new_info_part(&part_info_ptr, 
+					   popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA)  {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		_update_info_part(part_info_ptr, 
-				  GTK_TREE_VIEW(spec_info->display_widget), 
-				  spec_info);
-		return;
+		
+		goto update_it;
 	}
 		
 	if (error_code != SLURM_SUCCESS) {
@@ -468,7 +518,7 @@ display_it:
 		spec_info->display_widget = NULL;
 	}
 	
-	if(!spec_info->display_widget) {
+	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data, part_info_ptr);
 		
 		spec_info->display_widget = 
@@ -483,11 +533,19 @@ display_it:
 		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
+update_it:
 	spec_info->view = INFO_VIEW;
-	_update_info_part(part_info_ptr, 
-			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
+	if(spec_info->type == INFO_PAGE) {
+		_display_info_part(part_info_ptr, popup_win);
+	} else {
+		_update_info_part(part_info_ptr, 
+				  GTK_TREE_VIEW(spec_info->display_widget), 
+				  spec_info);
+	}
+	
 end_it:
 	popup_win->toggled = 0;
+	popup_win->force_refresh = 0;
 		
 	return;
 }
@@ -555,12 +613,9 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-	partition_info_t *ptr = NULL;
-				
+					
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-	gtk_tree_model_get(model, iter, 
-				   SORTID_POINTER, &ptr, -1);
-	g_print("storing partition %s\n", ptr->name);
+	
 	switch(id) {
 	case JOB_PAGE:
 		snprintf(title, 100, "Job(s) in partition %s", name);
