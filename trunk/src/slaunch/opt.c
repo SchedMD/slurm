@@ -176,7 +176,6 @@ static long  _to_bytes(const char *arg);
 static bool  _under_parallel_debugger(void);
 
 static void  _usage(void);
-static bool  _valid_node_list(char **node_list_pptr);
 static enum  task_dist_states _verify_dist_type(const char *arg);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
 					cpu_bind_type_t *cpu_bind_type);
@@ -206,46 +205,6 @@ int initialize_and_process_args(int argc, char *argv[])
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
-}
-
-/*
- * If the node list supplied is a file name, translate that into 
- *	a list of nodes, we orphan the data pointed to
- * RET true if the node list is a valid one
- */
-static bool _valid_node_list(char **node_list_pptr)
-{
-	FILE *fd;
-	char *node_list;
-	int c;
-	bool last_space;
-
-	if (strchr(*node_list_pptr, '/') == NULL)
-		return true;	/* not a file name */
-
-	fd = fopen(*node_list_pptr, "r");
-	if (fd == NULL) {
-		error ("Unable to open file %s: %m", *node_list_pptr);
-		return false;
-	}
-
-	node_list = xstrdup("");
-	last_space = false;
-	while ((c = fgetc(fd)) != EOF) {
-		if (isspace(c)) {
-			last_space = true;
-			continue;
-		}
-		if (last_space && (node_list[0] != '\0'))
-			xstrcatchar(node_list, ',');
-		last_space = false;
-		xstrcatchar(node_list, (char)c);
-	}
-	(void) fclose(fd);
-
-        /*  free(*node_list_pptr);	orphanned */
-	*node_list_pptr = node_list;
-	return true;
 }
 
 /* 
@@ -711,6 +670,7 @@ static void _opt_default()
 	opt.constraints	    = NULL;
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
+	opt.nodelist_byid   = NULL;
 	opt.task_layout = NULL;
 	opt.task_layout_file_set = false;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
@@ -966,6 +926,7 @@ void set_options(const int argc, char **argv)
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-on-bad-exit", no_argument,    0, 'K'},
 		{"label",         no_argument,       0, 'l'},
+		{"nodelist-byid", required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -1010,7 +971,7 @@ void set_options(const int argc, char **argv)
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:Cd:D:e:E:F:hi:I:J:kKlm:n:N:"
+	char *opt_string = "+c:Cd:D:e:E:F:hi:I:J:kKlL:m:n:N:"
 		"o:O:qr:t:T:uvVw:W:Y:Z";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1102,6 +1063,10 @@ void set_options(const int argc, char **argv)
 		case 'l':
 			opt.labelio = true;
 			break;
+		case 'L':
+			xfree(opt.nodelist_byid);
+			opt.nodelist_byid = xstrdup(optarg);
+			break;
 		case 'm':
 			opt.distribution = _verify_dist_type(optarg);
 			if (opt.distribution == -1) {
@@ -1162,8 +1127,6 @@ void set_options(const int argc, char **argv)
 		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-			if (!_valid_node_list(&opt.nodelist))
-				exit(1);
 #ifdef HAVE_BG
 			info("\tThe nodelist option should only be used if\n"
 			     "\tthe block you are asking for can be created.\n"
@@ -1527,6 +1490,25 @@ static bool _opt_verify(void)
 	if (!opt.num_nodes_set && alloc_info_set.node_cnt)
 		opt.num_nodes = alloc_info_ptr->node_cnt;
 
+	if (opt.task_layout_byid_set && opt.task_layout == NULL) {
+		opt.task_layout = _nodelist_byid(opt.task_layout_byid,
+						 alloc_info.node_list);
+		if (opt.task_layout == NULL)
+			verified = false;
+	}
+	if (opt.nodelist_byid != NULL && opt.nodelist == NULL) {
+		hostlist_t hl;
+		char *nodenames;
+		char buf[BUFSIZ];
+
+		nodenames = _nodelist_byid(opt.nodelist_byid,
+					   alloc_info.node_list);
+		hl = hostlist_create(nodenames);
+		xfree(nodenames);
+		hostlist_uniq(hl);
+		hostlist_ranged_string(hl, BUFSIZ, buf);
+		opt.nodelist = xstrdup(buf);
+	}
 
 	/*
 	 * Now, all the rest of the checks and setup.
@@ -1564,15 +1546,6 @@ static bool _opt_verify(void)
 				  || opt.task_layout_file_set)) {
 		error("-N/--node is incompatible with task layout options.");
 		verified = false;
-	}
-
-	if (opt.task_layout_byid_set) {
-		if (opt.task_layout != NULL)
-			xfree(opt.task_layout);
-		opt.task_layout = _nodelist_byid(opt.task_layout_byid,
-						 alloc_info.node_list);
-		if (opt.task_layout == NULL)
-			verified = false;
 	}
 
 	if (opt.task_layout != NULL) {
