@@ -115,6 +115,7 @@ typedef struct slaunch_options {
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *nodelist;		/* -w,--nodelist=node1,node2,...*/
+	char *nodelist_byid;
 	char *task_layout;
 	char *task_layout_byid;
 	bool task_layout_byid_set;

@@ -28,25 +28,26 @@ Specify the first node in the allocation on which this job step will be launched
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
 Specify that each task requires \fIncpus\fR number of CPUs.  Useful for applications in which each task will launch multiple threads and can therefore benefit from there being free processors on the node.
+
 .TP 
-\fB\-w\fR, \fB\-\-nodelist\fR[=]<\fInodelist\fR>
+\fB\-w\fR, \fB\-\-nodelist\-byname\fR[=]<\fInode name list\fR>
 Request a specific list of node names.  The list may be specified as a comma\-separated list of node names, or a range of node names (e.g. mynode[1\-5,7,...]).  Duplicate node names are not permitted in the list.
 The order of the node names in the list is not important; the node names
 will be sorted my SLURM.
+.TP 
+\fB\-L\fR, \fB\-\-nodelist\-byid\fR[=]<\fInode index list\fR>
+Request a specific set of nodes in a job allaction for use by the job step.  The list may be specified as a comma\-separated list relative node indices in the job allocation (e.g., "0,[2\-5],\-2,8").  Duplicate indices are permitted, but are ignored.  The order of the node indices in the list is not important; the node indices will be sorted my SLURM.
 
 .TP 
-\fB\-T\fR, \fB\-\-task\-layout\-byid\fR[=]<\fInodeid list\fR>
-Request a specific task layout using relative node IDs within the job allocaiont.  The nodelist can contain duplicate node IDs, and node names may appear in any order.  The order of IDs in
-the nodelist IS significant.  Each node ID in the list represents
-one task, with the Nth node ID in the nodelist designating on which node
-the Nth task should be launched.
+\fB\-T\fR, \fB\-\-task\-layout\-byid\fR[=]<\fInode index list\fR>
+Request a specific task layout using node indices within the job allocation.  The node index list can contain duplicate indices, and the indices may appear in any order.  The order of indices in the nodelist IS significant.  Each node index in the list represents one task, with the Nth node index in the list designating on which node the Nth task should be launched.
 
-For example, given an allocation of nodes "linux[0\-15]" and a node id list "4,\-1,[1\-3]" task 0 will run on "linux4", task 1 will run on "linux15", task 2 on "linux1", task 3 on "linux2", and task 4 on "linux3".
+For example, given an allocation of nodes "linux[0\-15]" and a node index list "4,\-1,[1\-3]" task 0 will run on "linux4", task 1 will run on "linux15", task 2 on "linux1", task 3 on "linux2", and task 4 on "linux3".
 
 NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
 
 .TP 
-\fB\-Y\fR, \fB\-\-task\-layout\-byname\fR[=]<\fInodename list\fR>
+\fB\-Y\fR, \fB\-\-task\-layout\-byname\fR[=]<\fInode name list\fR>
 Request a specific task layout.  The nodelist can contain duplicate node
 names, and node names may appear in any order.  The order of node names in
 the nodelist IS significant.  Each node name in the nodes list represents
