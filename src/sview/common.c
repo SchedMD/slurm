@@ -152,13 +152,6 @@ static void _selected_page(GtkMenuItem *menuitem,
 	xfree(treedata);
 }
 
-static void _set_up_button(GtkTreeView *tree_view, GdkEventButton *event, 
-			   const display_data_t *display_data)
-{
-	//local_display_data->user_data = user_data;
-	row_clicked(tree_view, event, display_data);
-}
-
 extern void snprint_time(char *buf, size_t buf_size, time_t time)
 {
 	if (time == INFINITE) {
@@ -352,16 +345,13 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 }
 
-extern GtkTreeView *create_treeview(display_data_t *local, gpointer user_data)
+extern GtkTreeView *create_treeview(display_data_t *local)
 {
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
-	/* g_signal_connect(G_OBJECT(tree_view), "row-activated", */
-/* 			 G_CALLBACK(local->row_clicked), */
-/* 			 user_data); */
 
-	local->user_data = user_data;
+	local->user_data = NULL;
 	g_signal_connect(G_OBJECT(tree_view), "button_press_event",
-			 G_CALLBACK(_set_up_button),
+			 G_CALLBACK(row_clicked),
 			 local);
 	
 

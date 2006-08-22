@@ -239,7 +239,7 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkMenu *menu, display_data_t *display_data);
 extern GtkScrolledWindow *create_scrolled_window();
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
-extern GtkTreeView *create_treeview(display_data_t *local, gpointer user_data);
+extern GtkTreeView *create_treeview(display_data_t *local);
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data, int count);
 extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 

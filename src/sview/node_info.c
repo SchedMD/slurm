@@ -306,7 +306,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
 	static int view = -1;
-	static node_info_msg_t *node_info_ptr = NULL;
+	node_info_msg_t *node_info_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -318,7 +318,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		display_data_node->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(node_info_ptr && toggled) {
+	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
@@ -353,13 +353,12 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		tree_view = create_treeview(local_display_data, node_info_ptr);
+		tree_view = create_treeview(local_display_data);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table),
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);		
-		gtk_widget_show(GTK_WIDGET(tree_view));
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
@@ -424,14 +423,13 @@ display_it:
 		spec_info->display_widget = NULL;
 	}
 	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
-		tree_view = create_treeview(local_display_data, node_info_ptr);
+		tree_view = create_treeview(local_display_data);
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
-					  0, 1, 0, 1);
-		
+					  0, 1, 0, 1);		
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
