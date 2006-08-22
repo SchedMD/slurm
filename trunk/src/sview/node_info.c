@@ -200,6 +200,60 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 	
 }
 
+void _display_info_node(node_info_msg_t *node_info_ptr,
+			popup_info_t *popup_win)
+{
+	specific_info_t *spec_info = popup_win->spec_info;
+	char *name = (char *)spec_info->data;
+	int i, found = 0;
+	node_info_t node;
+	char *info = NULL;
+	char *not_found = NULL;
+	GtkWidget *label = NULL;
+	
+	if(!spec_info->data) {
+		info = xstrdup("No pointer given!");
+		goto finished;
+	}
+
+	if(spec_info->display_widget) {
+		not_found = 
+			xstrdup(GTK_LABEL(spec_info->display_widget)->text);
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+	}
+	for (i = 0; i < node_info_ptr->record_count; i++) {
+		node = node_info_ptr->node_array[i];
+		if (!node.name || (node.name[0] == '\0'))
+			continue;	/* bad node */
+		if(!strcmp(node.name, name)) {
+			if(!(info = slurm_sprint_node_table(&node, 0))) {
+				info = xmalloc(100);
+				sprintf(info, 
+					"Problem getting node info for %s",
+					node.name);
+			}
+			found = 1;
+			break;
+		}		
+	}
+	if(!found) {
+		char *temp = "NODE NOT FOUND\n";
+		if(!not_found || strncmp(temp, not_found, strlen(temp))) 
+			info = xstrdup(temp);
+		xstrcat(info, not_found);
+	}
+finished:
+	label = gtk_label_new(info);
+	xfree(info);
+	xfree(not_found);
+	gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1); 
+	gtk_widget_show(label);	
+	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+	
+	return;
+}
+
 void *_popup_thr_node(void *arg)
 {
 	popup_thr(arg);		
@@ -274,7 +328,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		goto end_it;
+		goto update_it;
 	} 
 
 	if (error_code != SLURM_SUCCESS) {
@@ -311,6 +365,7 @@ display_it:
 		   the return value */
 		create_treestore(tree_view, display_data_node, SORTID_CNT);
 	}
+update_it:
 	view = INFO_VIEW;
 	_update_info_node(node_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
 end_it:
@@ -343,7 +398,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		goto end_it;
+		goto update_it;
 	}  
 			
 	if (error_code != SLURM_SUCCESS) {
@@ -368,7 +423,7 @@ display_it:
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 	}
-	if(!spec_info->display_widget) {
+	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data, node_info_ptr);
 		
 		spec_info->display_widget = 
@@ -383,9 +438,15 @@ display_it:
 		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
+update_it:
 	spec_info->view = INFO_VIEW;
-	_update_info_node(node_info_ptr, 
-			  GTK_TREE_VIEW(spec_info->display_widget), spec_info);
+	if(spec_info->type == INFO_PAGE) {
+		_display_info_node(node_info_ptr, popup_win);
+	} else {
+		_update_info_node(node_info_ptr, 
+				  GTK_TREE_VIEW(spec_info->display_widget),
+				  spec_info);
+	}
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
@@ -412,40 +473,6 @@ extern void set_menus_node(void *arg, GtkTreePath *path,
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);
 	}
-}
-
-extern void row_clicked_node(GtkTreeView *tree_view,
-			     GtkTreePath *path,
-			     GtkTreeViewColumn *column,
-			     gpointer user_data)
-{
-	node_info_msg_t *node_info_ptr = (node_info_msg_t *)user_data;
-	node_info_t *node_ptr = NULL;
-	int line = get_row_number(tree_view, path);
-	GtkWidget *popup = NULL;
-	GtkWidget *label = NULL;
-	char *info = NULL;
-	if(line == -1) {
-		g_error("problem getting line number");
-		return;
-	}
-	
-	node_ptr = &node_info_ptr->node_array[line];
-	if(!(info = slurm_sprint_node_table(node_ptr, 0))) {
-		info = xmalloc(100);
-		sprintf(info, "Problem getting node info for %s",
-			node_ptr->name);
-	}
-
-	popup = gtk_dialog_new();
-
-	label = gtk_label_new(info);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   label, TRUE, TRUE, 0);
-	xfree(info);
-	gtk_widget_show(label);
-	
-	gtk_widget_show(popup);	
 }
 
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
@@ -477,6 +504,9 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case SUBMIT_PAGE: 
 		snprintf(title, 100, "Submit job on %s %s", node, name);
+		break;
+	case INFO_PAGE: 
+		snprintf(title, 100, "Full Info for %s %s", node, name);
 		break;
 	default:
 		g_print("%s got %d\n", node, id);
