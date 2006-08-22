@@ -34,11 +34,6 @@
 DEF_TIMERS;
 
 typedef struct {
-	job_info_msg_t *job_info_ptr;
-	job_step_info_response_msg_t *step_info_ptr;
-} job_and_step_info_t;
-
-typedef struct {
 	int jobid;
 	int stepid;
 } job_step_num_t;
@@ -752,7 +747,6 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	static int view = -1;
 	static job_info_msg_t *job_info_ptr = NULL;
 	static job_step_info_response_msg_t *step_info_ptr = NULL;
-	static job_and_step_info_t job_and_step_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -820,10 +814,7 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		job_and_step_info.job_info_ptr = job_info_ptr;
-		job_and_step_info.step_info_ptr = step_info_ptr;
-		tree_view = create_treeview(local_display_data, 
-					    &job_and_step_info);
+		tree_view = create_treeview(local_display_data);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table), 
@@ -853,7 +844,6 @@ extern void specific_info_job(popup_info_t *popup_win)
 	int step_error_code = SLURM_SUCCESS;
 	static job_info_msg_t *job_info_ptr = NULL;
 	static job_step_info_response_msg_t *step_info_ptr = NULL;
-	static job_and_step_info_t job_and_step_info;
 	specific_info_t *spec_info = popup_win->spec_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
@@ -925,10 +915,7 @@ display_it:
 	}
 	
 	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
-		job_and_step_info.job_info_ptr = job_info_ptr;
-		job_and_step_info.step_info_ptr = step_info_ptr;
-		tree_view = create_treeview(local_display_data, 
-					    &job_and_step_info);
+		tree_view = create_treeview(local_display_data);
 				
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
