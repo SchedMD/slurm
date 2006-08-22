@@ -334,7 +334,9 @@ void _display_info_part(partition_info_msg_t *part_info_ptr,
 		}
 	}
 	if(!found) {
-		info = xstrdup("PARTITION DOESN'T EXSIST\n");
+		char *temp = "PARTITION DOESN'T EXSIST\n";
+		if(!not_found || strncmp(temp, not_found, strlen(temp))) 
+			info = xstrdup(temp);
 		xstrcat(info, not_found);
 	}
 finished:
@@ -422,7 +424,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		goto end_it;
+		goto update_it;
 	}
 	
 	if (error_code != SLURM_SUCCESS) {
@@ -457,6 +459,7 @@ display_it:
 		   the return value */
 		create_treestore(tree_view, display_data_part, SORTID_CNT);
 	}
+update_it:
 	view = INFO_VIEW;
 	_update_info_part(part_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
 end_it:
@@ -568,42 +571,6 @@ extern void set_menus_part(void *arg, GtkTreePath *path,
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);
 	}
-}
-
-extern void row_clicked_part(GtkTreeView *tree_view,
-			     GtkTreePath *path,
-			     GtkTreeViewColumn *column,
-			     gpointer user_data)
-{
-	partition_info_msg_t *part_info_ptr = 
-		(partition_info_msg_t *)user_data;
-	partition_info_t *part_ptr = NULL;
-	int line = get_row_number(tree_view, path);
-	GtkWidget *popup = NULL;
-	GtkWidget *label = NULL;
-	char *info = NULL;
-	if(line == -1) {
-		g_error("problem getting line number");
-		return;
-	}
-	
-	part_ptr = &part_info_ptr->partition_array[line];
-	if(!(info = slurm_sprint_partition_info(part_ptr, 0))) {
-		info = xmalloc(100);
-		sprintf(info, "Problem getting partition info for %s", 
-			part_ptr->name);
-	} 
-
-	popup = gtk_dialog_new();
-
-	label = gtk_label_new(info);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   label, TRUE, TRUE, 0);
-	xfree(info);
-	gtk_widget_show(label);
-	
-	gtk_widget_show(popup);
-	
 }
 
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)

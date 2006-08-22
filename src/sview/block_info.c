@@ -552,21 +552,29 @@ static void _update_info_block(List block_list,
 }
 
 static List _create_block_list(partition_info_msg_t *part_info_ptr,
-			       node_select_info_msg_t *node_select_ptr)
+			       node_select_info_msg_t *node_select_ptr,
+			       int changed)
 {
 	int i, j, last_count = -1;
-	List block_list = list_create(_block_list_del);
+	static List block_list = NULL;
 	ListIterator itr;
 	List nodelist = NULL;
 	partition_info_t part;
 	db2_block_info_t *block_ptr = NULL;
 	db2_block_info_t *found_block = NULL;
 	
+	if(!changed && block_list) {
+		return block_list;
+	}
+	
+	if(block_list) {
+		list_destroy(block_list);
+	}
+	block_list = list_create(_block_list_del);
 	if (!block_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
-
 	for (i=0; i<node_select_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 			
@@ -638,6 +646,61 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 	return block_list;
 }
+void _display_info_block(List block_list,
+			 popup_info_t *popup_win)
+{
+	specific_info_t *spec_info = popup_win->spec_info;
+	/* char *name = (char *)spec_info->data; */
+/* 	int i, found = 0; */
+/* 	db2_block_info_t *block_ptr = NULL; */
+	char *info = NULL;
+	char *not_found = NULL;
+	GtkWidget *label = NULL;
+	
+	if(!spec_info->data) {
+		info = xstrdup("No pointer given!");
+		goto finished;
+	}
+
+	if(spec_info->display_widget) {
+		not_found = 
+			xstrdup(GTK_LABEL(spec_info->display_widget)->text);
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+	}
+	/* this is here for if later we have more stats on a bluegene
+	   block */
+	/* itr = list_iterator_create(block_list); */
+/* 	while ((block_ptr = (db2_block_info_t*) list_next(itr))) { */
+/* 		if(!strcmp(block_ptr->bg_block_name, name)) { */
+/* 			if(!(info = slurm_sprint_block_info(&block_ptr, 0))) { */
+/* 				info = xmalloc(100); */
+/* 				sprintf(info,  */
+/* 					"Problem getting block " */
+/* 					"info for %s",  */
+/* 					block_ptr->bg_block_name); */
+/* 			} */
+/* 			found = 1; */
+/* 			break; */
+/* 		} */
+/* 	} */
+/* 	if(!found) { */
+/* 		char *temp = "BLOCK DOESN'T EXSIST\n"; */
+/* 		if(!not_found || strncmp(temp, not_found, strlen(temp)))  */
+/* 			info = xstrdup(temp); */
+/* 		xstrcat(info, not_found); */
+/* 	} */
+	info = xstrdup("No extra info avaliable.");
+finished:
+	label = gtk_label_new(info);
+	xfree(info);
+	xfree(not_found);
+	gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1); 
+	gtk_widget_show(label);	
+	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+	
+	return;
+}
 	
 void *_popup_thr_block(void *arg)
 {
@@ -699,8 +762,9 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	static List block_list = NULL;
-	
+	List block_list = NULL;
+	int changed = 1;
+
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
@@ -742,7 +806,8 @@ get_node_select:
 		if((!display_widget || view == ERROR_VIEW) 
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
-		goto end_it;
+		changed = 0;
+		goto display_it;
 	}
 
 	if (block_error_code != SLURM_SUCCESS) {
@@ -763,11 +828,9 @@ get_node_select:
 	}
 		
 display_it:
-	if (block_list) 
-		/* clear the old list */
-		list_destroy(block_list);
 	
-	block_list = _create_block_list(part_info_ptr, node_select_ptr);
+	block_list = _create_block_list(part_info_ptr, node_select_ptr,
+					changed);
 	if(!block_list)
 		return;
 
@@ -806,8 +869,9 @@ extern void specific_info_block(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	static List block_list = NULL;
-	
+	List block_list = NULL;
+	int changed = 1;
+
 	if(!spec_info->display_widget) {
 		setup_popup_info(popup_win, display_data_block, SORTID_CNT);
 	}
@@ -842,15 +906,17 @@ extern void specific_info_block(popup_info_t *popup_win)
 	}
 
 get_node_select:
-	if((block_error_code = get_new_info_node_select(&node_select_ptr,
-							popup_win->force_refresh))
+	if((block_error_code = 
+	    get_new_info_node_select(&node_select_ptr,
+				     popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!spec_info->display_widget 
 		    || spec_info->view == ERROR_VIEW) 
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)) {
 			goto display_it;
 		}
-		goto end_it;
+		changed = 0;
+		goto display_it;
 	}
 	
 	if (block_error_code != SLURM_SUCCESS) {
@@ -871,10 +937,9 @@ get_node_select:
 	}
 	
 display_it:
-	if (block_list) 
-		/* clear the old list */
-		list_destroy(block_list);
-	block_list = _create_block_list(part_info_ptr, node_select_ptr);
+	
+	block_list = _create_block_list(part_info_ptr, node_select_ptr,
+					changed);
 	if(!block_list)
 		return;
 
@@ -882,7 +947,7 @@ display_it:
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 	}
-	if(!spec_info->display_widget) {
+	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data, block_list);
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
@@ -896,11 +961,15 @@ display_it:
 		create_treestore(tree_view, 
 				 popup_win->display_data, SORTID_CNT);
 	}
+
 	spec_info->view = INFO_VIEW;
-	_update_info_block(block_list, 
-			   GTK_TREE_VIEW(spec_info->display_widget), 
-			   spec_info);
-	
+	if(spec_info->type == INFO_PAGE) {
+		_display_info_block(block_list, popup_win);
+	} else {
+		_update_info_block(block_list, 
+				   GTK_TREE_VIEW(spec_info->display_widget), 
+				   spec_info);
+	}
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
@@ -928,31 +997,6 @@ extern void set_menus_block(void *arg, GtkTreePath *path,
 	}
 }
 
-extern void row_clicked_block(GtkTreeView *tree_view,
-			      GtkTreePath *path,
-			      GtkTreeViewColumn *column,
-			      gpointer user_data)
-{
-	List block_list = (List)user_data;
-	GtkWidget *popup = NULL;
-	GtkWidget *label = NULL;
-	char *info_label = "No extra info avaliable.";
-	if (!block_list) {
-		g_print("No block_list given\n");
-		return;
-	}
-	
-	popup = gtk_dialog_new();
-
-	label = gtk_label_new(info_label);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   label, TRUE, TRUE, 0);
-	gtk_widget_show(label);
-	
-	gtk_widget_show(popup);
-	
-}
-
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
@@ -978,6 +1022,9 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case SUBMIT_PAGE: 
 		snprintf(title, 100, "Submit job on %s", name);
+		break;
+	case INFO_PAGE: 
+		snprintf(title, 100, "Full info for block %s", name);
 		break;
 	default:
 		g_print("Block got %d\n", id);
@@ -1015,6 +1062,9 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			}
 			i++;
 		}
+		popup_win->spec_info->data = name;
+		break;
+	case INFO_PAGE:
 		popup_win->spec_info->data = name;
 		break;
 	default:
