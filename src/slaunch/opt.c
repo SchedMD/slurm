@@ -57,6 +57,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <regex.h>
 
 #include "src/slaunch/opt.h"
 
@@ -1284,52 +1285,182 @@ void set_options(const int argc, char **argv)
 	spank_option_table_destroy (optz);
 }
 
-static char *_nodelist_byid(const char *userstr, const char *alloc_nodelist)
+/*
+ * Use the supplied compiled regular expression "re" to convert a string
+ * into first and last numbers in the range.
+ *
+ * If there is only a single number in the "token" string, both
+ * "first" and "last" will be set to the same value.
+ *
+ * Returns 1 on success, 0 on failure
+ */
+static int _get_range(regex_t *re, char *token, int *first, int *last,
+		      int num_nodes)
 {
-	hostlist_t tid_l, alloc_l, step_l;
-	hostlist_iterator_t itr;
-	char *host_id_str, *endptr;
-	long host_id;
-	char *node;
-	char *step_nodelist = NULL;
-
-	step_l = hostlist_create(NULL);
-	alloc_l = hostlist_create(alloc_nodelist);
-	tid_l = hostlist_create(userstr);
-	itr = hostlist_iterator_create(tid_l);
-	while ((host_id_str = hostlist_next(itr)) != NULL) {
-		host_id = strtol(host_id_str, &endptr, 10);
-		if (endptr == host_id_str || !xstring_is_whitespace(endptr)) {
-			error("\"%s\" is not a valid relative node number",
-			      host_id_str);
-			free(host_id_str);
-			goto cleanup;
-		}
-		free(host_id_str);
-		if (host_id > (hostlist_count(alloc_l) - 1)
-		    || host_id < -(hostlist_count(alloc_l))) {
-			error("\"%ld\" is out of the range of valid node IDs",
-			      host_id);
-			goto cleanup;
-		}
-
-		if (host_id < 0)
-			host_id += hostlist_count(alloc_l);
-		node = hostlist_nth(alloc_l, (int)host_id);
-		hostlist_push(step_l, node);
-		free(node);
+	size_t nmatch = 8;
+	regmatch_t pmatch[8];
+	long f, l;
+	bool first_set = false;
+	char *ptr;
+	
+	*first = *last = 0;
+	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
+	if (regexec(re, token, nmatch, pmatch, 0) == REG_NOMATCH) {
+		error("\"%s\" is not a valid node index range", token);
+		return 0;
 	}
 
-	step_nodelist = (char *)xmalloc(BUFSIZ);
-	if (hostlist_ranged_string(step_l, BUFSIZ, step_nodelist) == -1) {
-		error("truncation");
+	/* convert the second, possibly only, number */
+	ptr = (char *)(xstrndup(token + pmatch[3].rm_so,
+				pmatch[3].rm_eo - pmatch[3].rm_so));
+	l = strtol(ptr, NULL, 10);
+	xfree(ptr);
+	if ((l >= 0 && l >= num_nodes)
+	    || (l < 0 && l < -num_nodes)) {
+		error("\"%ld\" is beyond the range of the"
+		      " %d available nodes", l, num_nodes);
+		return 0;
 	}
+	*last = (int)l;
+	*first = (int)l;
+
+	/* convert the first number, if it exists */
+	if (pmatch[2].rm_so != -1) {
+		first_set = true;
+		ptr = (char *)(xstrndup(token + pmatch[2].rm_so,
+					pmatch[2].rm_eo - pmatch[2].rm_so));
+		f = strtol(ptr, NULL, 10);
+		xfree(ptr);
+		if ((f >= 0 && f >= num_nodes)
+		    || (f < 0 && f < -num_nodes)) {
+			error("\"%ld\" is beyond the range of the"
+			      " %d available nodes", f, num_nodes);
+			return 0;
+		}
+		*first = (int)f;
+	}
+
+	return 1;
+}
+
+/*
+ * Convert a node index list into a nodelist string.
+ *
+ * A nodelist string is a string of single numbers and/or ranges seperated
+ * by commas.  For instance:  2,6,-3,8,-3-2,16,2--4,7-9,0
+ *
+ * If both numbers in a range are of the same sign (both positive, or both
+ * negative), then the range counts directly from the first number to the
+ * second number; it will not wrap around the "end" of the node list.
+ *
+ * If the numbers in a range differ in sign, the range wraps around the
+ * end of the list of nodes.
+ *
+ * Examples: Given a node allocation of foo[1-16]:
+ *
+ *	-2-3  (negative 2 to positive 3) becomes foo[15-16,1-4]
+ *	3--2  (positive 3 to negative 2) becomes foo[4,3,2,1,16,15]
+ *	-3--2 becomes foo[14-15]
+ *	-2--3 becomes foo[15,14]
+ *	2-3   becomes foo[3-4]
+ *	3-2   becomes foo[4,3]
+ */
+static char *_node_indices_to_nodelist(const char *indices_list)
+{
+	char *list;
+	int list_len;
+	char *start, *end;
+	hostlist_t node_l, alloc_l;
+	regex_t range_re;
+	char *range_re_pattern =
+		"^[[:space:]]*"
+		"((-?[[:digit:]]+)[[:space:]]*-)?" /* optional start */
+		"[[:space:]]*"
+		"(-?[[:digit:]]+)[[:space:]]*$";
+	char *nodelist = NULL;
+	int i, idx;
+
+	if (!(alloc_info_set.job_id
+	      && alloc_info_set.node_list
+	      && alloc_info_set.cpu_info
+	      && alloc_info_set.node_cnt)) {
+		error("Global job allocation info must be set before calling"
+		      " _node_indices_to_nodelist");
+		return NULL;
+	}
+
+	/* intialize the regular expression */
+	if (regcomp(&range_re, range_re_pattern, REG_EXTENDED) != 0) {
+		error("Node index range regex compilation failed\n");
+		return NULL;
+	}
+
+	/* Now break the string up into tokens between commas,
+	   feed each token into the regular expression, and make
+	   certain that the range numbers are valid. */
+	node_l = hostlist_create(NULL);
+	alloc_l = hostlist_create(alloc_info.node_list);
+	list = xstrdup(indices_list);
+	start = (char *)list;
+	list_len = strlen(list);
+	while (start != NULL && start < (list + list_len)) {
+		int first = 0;
+		int last = 0;
+
+		/* Find the next index range in the list */
+		end = strchr(start,',');
+		if (end == NULL) {
+			end = list + list_len;
+		}
+		*end = '\0';
+
+		/* Use the regexp to get the range numbers */
+		if (!_get_range(&range_re, start, &first, &last,
+				hostlist_count(alloc_l))) {
+			goto cleanup;
+		}
+		
+		/* Now find all nodes in this range, and add them to node_l */
+		if (first <= last) {
+			char *node;
+			for (i = first; i <= last; i++) {
+				if (i < 0)
+					idx = i + hostlist_count(alloc_l);
+				else
+					idx = i;
+				node = hostlist_nth(alloc_l, idx);
+				hostlist_push(node_l, node);
+				free(node);
+			}
+		} else { /* first > last */
+			char *node;
+			for (i = first; i >= last; i--) {
+				if (i < 0)
+					idx = i + hostlist_count(alloc_l);
+				else
+					idx = i;
+				node = hostlist_nth(alloc_l, idx);
+				hostlist_push(node_l, node);
+				free(node);
+			}
+		}
+		start = end+1;
+	}
+
+	i = 2048;
+	nodelist = NULL;
+	do {
+		i *= 2;
+		xrealloc(nodelist, i);
+	} while (hostlist_ranged_string(node_l, i, nodelist) == -1);
+
 cleanup:
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(tid_l);
+	xfree(list);
 	hostlist_destroy(alloc_l);
+	hostlist_destroy(node_l);
+	regfree(&range_re);
 
-	return step_nodelist;
+	return nodelist;
 }
 
 
@@ -1491,23 +1622,27 @@ static bool _opt_verify(void)
 		opt.num_nodes = alloc_info_ptr->node_cnt;
 
 	if (opt.task_layout_byid_set && opt.task_layout == NULL) {
-		opt.task_layout = _nodelist_byid(opt.task_layout_byid,
-						 alloc_info.node_list);
+		opt.task_layout = _node_indices_to_nodelist(
+			opt.task_layout_byid);
 		if (opt.task_layout == NULL)
 			verified = false;
 	}
 	if (opt.nodelist_byid != NULL && opt.nodelist == NULL) {
 		hostlist_t hl;
 		char *nodenames;
-		char buf[BUFSIZ];
 
-		nodenames = _nodelist_byid(opt.nodelist_byid,
-					   alloc_info.node_list);
-		hl = hostlist_create(nodenames);
-		xfree(nodenames);
-		hostlist_uniq(hl);
-		hostlist_ranged_string(hl, BUFSIZ, buf);
-		opt.nodelist = xstrdup(buf);
+		nodenames = _node_indices_to_nodelist(opt.nodelist_byid);
+		if (nodenames == NULL) {
+			verified = false;
+		} else {
+			hl = hostlist_create(nodenames);
+			hostlist_uniq(hl);
+			/* assumes that the sorted unique hostlist must be a
+			   shorter string than unsorted (or equal lenght) */
+			hostlist_ranged_string(hl, strlen(nodenames)+1,
+					       nodenames);
+			opt.nodelist = nodenames;
+		}
 	}
 
 	/*
