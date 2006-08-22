@@ -145,6 +145,7 @@ struct specific_info {
 struct popup_info {
 	int type; /* window type */
 	int toggled;
+	int force_refresh;
 	int *running;
 	GtkWidget *popup;
 	GtkWidget *event_box;
@@ -162,6 +163,7 @@ extern void parse_command_line(int argc, char *argv[]);
 extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
 extern bool toggled;
+extern bool force_refresh;
 extern List popup_list;
 extern int global_sleep_time;
 	
@@ -182,7 +184,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 
 // part_info.c
 extern void refresh_part(GtkAction *action, gpointer user_data);
-extern int get_new_info_part(partition_info_msg_t **part_ptr);
+extern int get_new_info_part(partition_info_msg_t **part_ptr, int force);
 extern void get_info_part(GtkTable *table, display_data_t *display_data);
 extern void specific_info_part(popup_info_t *popup_win);
 extern void set_menus_part(void *arg, GtkTreePath *path, 
@@ -191,7 +193,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
-extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr);
+extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
+				    int force);
 extern void get_info_block(GtkTable *table, display_data_t *display_data);
 extern void specific_info_block(popup_info_t *popup_win);
 extern void set_menus_block(void *arg, GtkTreePath *path, 
@@ -200,8 +203,9 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // job_info.c
 extern void refresh_job(GtkAction *action, gpointer user_data);
-extern int get_new_info_job(job_info_msg_t **info_ptr);
-extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr);
+extern int get_new_info_job(job_info_msg_t **info_ptr, int force);
+extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr, 
+				 int force);
 extern void get_info_job(GtkTable *table, display_data_t *display_data);
 extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, GtkTreePath *path, 
@@ -214,7 +218,7 @@ extern void set_menus_admin(void *arg, GtkTreePath *path,
 			    GtkMenu *menu, int type);
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
-extern int get_new_info_node(node_info_msg_t **info_ptr);
+extern int get_new_info_node(node_info_msg_t **info_ptr, int force);
 extern void get_info_node(GtkTable *table, display_data_t *display_data);
 extern void specific_info_node(popup_info_t *popup_win);
 extern void set_menus_node(void *arg, GtkTreePath *path, 

@@ -38,6 +38,7 @@ sview_parameters_t params;
 int adding = 1;
 int fini = 0;
 bool toggled = FALSE;
+bool force_refresh = FALSE;
 List popup_list;
 int page_running[PAGE_CNT];
 int global_sleep_time = 5;
@@ -114,7 +115,9 @@ static void _page_switched(GtkNotebook     *notebook,
 	GtkTable *table = GTK_TABLE(bin2->child);
 	int i;
 	static int running=-1;
-	
+	page_thr_t *page_thr = NULL;
+	GError *error = NULL;
+		
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
 		return;
@@ -136,14 +139,18 @@ static void _page_switched(GtkNotebook     *notebook,
 		return;
 	} 
 	if(main_display_data[i].get_info) {
-		page_thr_t *page = xmalloc(sizeof(page_thr_t));
-		GError *error = NULL;
 		running = i;
 		page_running[i] = 1;
+		if(toggled || force_refresh) {
+			(main_display_data[i].get_info)(
+				table, &main_display_data[i]);
+			return;
+		}
 
-		page->page_num = i;
-		page->table = table;
-		if (!g_thread_create(_page_thr, page, FALSE, &error))
+		page_thr = xmalloc(sizeof(page_thr_t));		
+		page_thr->page_num = i;
+		page_thr->table = table;
+		if (!g_thread_create(_page_thr, page_thr, FALSE, &error))
 		{
 			g_printerr ("Failed to create YES thread: %s\n", 
 				    error->message);
@@ -357,6 +364,7 @@ extern void refresh_main(GtkAction *action, gpointer user_data)
 	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook));
 	if(page == -1)
 		g_error("no pages in notebook for refresh\n");
+	force_refresh = 1;
 	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
 }
 

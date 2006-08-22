@@ -115,12 +115,11 @@ static void _popup_state_changed(GtkCheckMenuItem *menuitem,
 				 display_data_t *display_data)
 {
 	popup_info_t *popup_win = (popup_info_t *) display_data->user_data;
-	popup_win->toggled = 1;
 	if(display_data->show)
 		display_data->show = FALSE;
 	else
 		display_data->show = TRUE;
-	
+	popup_win->toggled = 1;
 	(display_data->refresh)(NULL, display_data->user_data);
 }
 
@@ -488,6 +487,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
 	popup_win->popup = gtk_dialog_new();
 	popup_win->toggled = 0;
+	popup_win->force_refresh = 0;
 	popup_win->type = dest_type;
 
 	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
