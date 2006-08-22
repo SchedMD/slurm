@@ -1344,9 +1344,9 @@ static int _get_range(regex_t *re, char *token, int *first, int *last,
 }
 
 /*
- * Convert a node index list into a nodelist string.
+ * Convert a node index string into a nodelist string.
  *
- * A nodelist string is a string of single numbers and/or ranges seperated
+ * A node index string is a string of single numbers and/or ranges seperated
  * by commas.  For instance:  2,6,-3,8,-3-2,16,2--4,7-9,0
  *
  * If both numbers in a range are of the same sign (both positive, or both
