@@ -1913,8 +1913,14 @@ extern char *nodelist_nth_host(const char *nodelist, int inx)
 
 void convert_num_unit(float num, char *buf, int orig_type)
 {
-#ifdef HAVE_BG
 	char *unit = "\0KMGP?";
+	int i = (int)num % 512;
+	
+	if(i > 0) {
+		sprintf(buf, "%d", (int)num);
+		return;
+	}
+	
 	while(num>1024) {
 		num /= 1024;
 		orig_type++;
@@ -1923,10 +1929,6 @@ void convert_num_unit(float num, char *buf, int orig_type)
 	if(orig_type < UNIT_NONE || orig_type > UNIT_PETA)
 		orig_type = UNIT_UNKNOWN;
 	sprintf(buf, "%.2f%c", num, unit[orig_type]);
-#else
-	sprintf(buf, "%d", (int)num);
-#endif
-
 }
 
 #if _DEBUG
