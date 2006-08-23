@@ -90,7 +90,6 @@ static display_data_t options_data_block[] = {
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, BLOCK_PAGE},
-	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, BLOCK_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -1014,9 +1013,6 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case NODE_PAGE:
 		snprintf(title, 100, "Base Partition(s) in block %s", name);
-		break;
-	case ADMIN_PAGE: 
-		snprintf(title, 100, "Admin Page for %s", name);
 		break;
 	case SUBMIT_PAGE: 
 		snprintf(title, 100, "Submit job on %s", name);

@@ -122,7 +122,6 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #endif
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, PART_PAGE},
-	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, PART_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -1139,9 +1138,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case BLOCK_PAGE: 
 		snprintf(title, 100, "Block(s) in partition %s", name);
 		break;
-	case ADMIN_PAGE: 
-		snprintf(title, 100, "Admin page for partition %s", name);
-		break;
 	case SUBMIT_PAGE: 
 		snprintf(title, 100, "Submit job in partition %s", name);
 		break;
@@ -1180,8 +1176,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case BLOCK_PAGE: 
 		popup_win->spec_info->data = name;
-		break;
-	case ADMIN_PAGE: 
 		break;
 	case SUBMIT_PAGE: 
 		break;

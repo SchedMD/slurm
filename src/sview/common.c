@@ -655,7 +655,6 @@ extern void *popup_thr(popup_info_t *popup_win)
 	case BLOCK_PAGE: 
 		specifc_info = specific_info_block;
 		break;
-	case ADMIN_PAGE: 
 	case SUBMIT_PAGE: 
 	default:
 		g_print("thread got unknown type %d\n", popup_win->type);
