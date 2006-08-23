@@ -602,7 +602,7 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		convert_to_kilo(job->num_procs, tmp_char);
+		convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right, true);
 	}
 	if (suffix)
@@ -626,7 +626,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 #endif
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
-		convert_to_kilo(node_cnt, tmp_char);
+		convert_num_unit((float)node_cnt, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -679,7 +679,7 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("SHARED", width, right_justify, true);
 	else {
-		convert_to_kilo(job->shared, tmp_char);
+		convert_num_unit((float)job->shared, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -695,7 +695,7 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CONTIGUOUS", width, right_justify, true);
 	else {
-		convert_to_kilo(job->contiguous, tmp_char);
+		convert_num_unit((float)job->contiguous, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	
@@ -712,7 +712,7 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_PROCS", width, right_justify, true);
 	else {
-		convert_to_kilo(job->min_procs, tmp_char);
+		convert_num_unit((float)job->min_procs, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 		
@@ -729,7 +729,7 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
-		convert_to_kilo(job->min_memory, tmp_char);
+		convert_num_unit((float)job->min_memory, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	
@@ -747,7 +747,8 @@ _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
-		convert_to_kilo(job->min_tmp_disk, tmp_char);
+		convert_num_unit((float)job->min_tmp_disk, 
+				 tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 		

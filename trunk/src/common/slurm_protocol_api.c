@@ -1903,28 +1903,6 @@ extern void slurm_free_msg(slurm_msg_t * msg)
 	xfree(msg);
 }
 
-extern int convert_to_kilo(int number, char *tmp)
-{
-	int i, j;
-	if(number >= 1024) {
-		i = number % 1024;
-		if(i > 0) {
-			j = number % 512;
-			if(j > 0)
-				sprintf(tmp, "%d", number);
-			else {
-				i *= 10;
-				i /= 1024;
-				sprintf(tmp, "%d.%dk", number/1024, i);
-			}
-		} else 
-			sprintf(tmp, "%dk", number/1024);
-	} else
-		sprintf(tmp, "%d", number);
-
-	return SLURM_SUCCESS;
-}
-
 extern char *nodelist_nth_host(const char *nodelist, int inx)
 {
 	hostlist_t hl = hostlist_create(nodelist);
@@ -1935,8 +1913,8 @@ extern char *nodelist_nth_host(const char *nodelist, int inx)
 
 void convert_num_unit(float num, char *buf, int orig_type)
 {
+#ifdef HAVE_BG
 	char *unit = "\0KMGP?";
-		
 	while(num>1024) {
 		num /= 1024;
 		orig_type++;
@@ -1945,6 +1923,10 @@ void convert_num_unit(float num, char *buf, int orig_type)
 	if(orig_type < UNIT_NONE || orig_type > UNIT_PETA)
 		orig_type = UNIT_UNKNOWN;
 	sprintf(buf, "%.2f%c", num, unit[orig_type]);
+#else
+	sprintf(buf, "%d", (int)num);
+#endif
+
 }
 
 #if _DEBUG

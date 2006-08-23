@@ -263,7 +263,7 @@ static int _print_text_job(job_info_t * job_ptr)
 #endif
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
 		_get_node_cnt(job_ptr);
-	convert_to_kilo(node_cnt, tmp_cnt);
+	convert_num_unit((float)node_cnt, tmp_cnt, UNIT_NONE);
 
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,

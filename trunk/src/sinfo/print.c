@@ -161,8 +161,8 @@ _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 {
 	char tmp_min[7];
 	char tmp_max[7];
-	convert_to_kilo(min, tmp_min);
-	convert_to_kilo(max, tmp_max);
+	convert_num_unit((float)min, tmp_min, UNIT_NONE);
+	convert_num_unit((float)max, tmp_max, UNIT_NONE);
 	
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -362,7 +362,7 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 	char tmp[7];
 	if (sinfo_data) {
-		convert_to_kilo(sinfo_data->nodes_tot, tmp);
+		convert_num_unit((float)sinfo_data->nodes_tot, tmp, UNIT_NONE);
 	
 		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
 		_print_str(id, width, right_justify, true);
@@ -381,8 +381,10 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 	char tmpa[7];
 	char tmpi[7];
 	if (sinfo_data) {
-		convert_to_kilo(sinfo_data->nodes_alloc, tmpa);
-		convert_to_kilo(sinfo_data->nodes_idle, tmpi);
+		convert_num_unit((float)sinfo_data->nodes_alloc, 
+				 tmpa, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->nodes_idle, 
+				 tmpi, UNIT_NONE);
 	
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s", 
 		         tmpa, tmpi);
@@ -404,10 +406,14 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[7];
 	char tmpt[7];
 	if (sinfo_data) {
-		convert_to_kilo(sinfo_data->nodes_alloc, tmpa);
-		convert_to_kilo(sinfo_data->nodes_idle, tmpi);
-		convert_to_kilo(sinfo_data->nodes_other, tmpo);
-		convert_to_kilo(sinfo_data->nodes_tot, tmpt);
+		convert_num_unit((float)sinfo_data->nodes_alloc, 
+				 tmpa, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->nodes_idle, 
+				 tmpi, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->nodes_other, 
+				 tmpo, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->nodes_tot,
+				 tmpt, UNIT_NONE);
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s", 
 		         tmpa, tmpi, tmpo, tmpt);
 		_print_str(id, width, right_justify, true);

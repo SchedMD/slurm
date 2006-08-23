@@ -226,17 +226,17 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 7 ******/
-	convert_to_kilo(job_ptr->num_procs, tmp1);
-	convert_to_kilo(job_ptr->num_nodes, tmp3);
+	convert_num_unit((float)job_ptr->num_procs, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->num_nodes, tmp3, UNIT_NONE);
 #ifdef HAVE_BG
 	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp3);
 #else
 	sprintf(tmp_line, "ReqProcs=%s MinNodes=%s ", tmp1, tmp3);
 #endif
 	xstrcat(out, tmp_line);
-	convert_to_kilo(job_ptr->shared, tmp1);
-	convert_to_kilo(job_ptr->contiguous, tmp2);
-	convert_to_kilo(job_ptr->cpus_per_task, tmp3);
+	convert_num_unit((float)job_ptr->shared, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->contiguous, tmp2, UNIT_NONE);
+	convert_num_unit((float)job_ptr->cpus_per_task, tmp3, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
 		"Shared=%s Contiguous=%s CPUs/task=%s", tmp1, tmp2, tmp3);
 	xstrcat(out, tmp_line);
@@ -246,9 +246,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 8 ******/
-	convert_to_kilo(job_ptr->min_procs, tmp1);
-	convert_to_kilo(job_ptr->min_memory, tmp2);
-	convert_to_kilo(job_ptr->min_tmp_disk, tmp3);
+	convert_num_unit((float)job_ptr->min_procs, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->min_memory, tmp2, UNIT_NONE);
+	convert_num_unit((float)job_ptr->min_tmp_disk, tmp3, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"MinProcs=%s MinMemory=%s Features=%s MinTmpDisk=%s", 
 		tmp1, tmp2, job_ptr->features, tmp3);

@@ -222,11 +222,11 @@ static void _update_job_record(job_info_t *job_ptr,
 	
 
 
-	convert_to_kilo(node_cnt, tmp_cnt);
+	convert_num_unit((float)node_cnt, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NODES, tmp_cnt, -1);
 
-	convert_to_kilo(job_ptr->num_procs, tmp_cnt);
+	convert_num_unit((float)job_ptr->num_procs, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NUM_PROCS, tmp_cnt, -1);
 	
@@ -277,7 +277,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 		now_time -= step_ptr->start_time;
 		snprint_time(time_buf, sizeof(time_buf), now_time);
 		nodes = step_ptr->nodes;
-		convert_to_kilo(_nodes_in_list(nodes), tmp_cnt);
+		convert_num_unit((float)_nodes_in_list(nodes), 
+				 tmp_cnt, UNIT_NONE);
 		gtk_tree_store_set(treestore, iter, 
 				   SORTID_NODES, tmp_cnt, -1);
 		state = JOB_RUNNING;
@@ -310,7 +311,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NAME, step_ptr->name, -1);
 		
-	convert_to_kilo(step_ptr->num_tasks, tmp_cnt);
+	convert_num_unit((float)step_ptr->num_tasks, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_TASKS, tmp_cnt, -1);
 

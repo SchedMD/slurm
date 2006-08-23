@@ -32,6 +32,7 @@
 DEF_TIMERS;
 
 typedef struct {
+	partition_info_t* part_ptr;
 	uint16_t node_state;
 
 	uint32_t nodes_alloc;
@@ -78,6 +79,7 @@ enum {
 	SORTID_DISK, 
 	SORTID_NODELIST, 
 	SORTID_STATE,
+	SORTID_STATE_NUM,
 	SORTID_UPDATED, 
 	SORTID_CNT
 };
@@ -97,6 +99,7 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_DISK, "Disk", FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_part},
+	{G_TYPE_INT, SORTID_STATE, NULL, FALSE, -1, refresh_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part},
 #else
@@ -124,13 +127,20 @@ static display_data_t options_data_part[] = {
 
 static display_data_t *local_display_data = NULL;
 
+static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
+				    GtkTreeStore *treestore,
+				    GtkTreeIter *iter);
+static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
+				    GtkTreeStore *treestore, GtkTreeIter *iter,
+				    int line);
+
 static int 
 _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 {
 	char tmp_min[7];
 	char tmp_max[7];
-	convert_to_kilo(min, tmp_min);
-	convert_to_kilo(max, tmp_max);
+	convert_num_unit((float)min, tmp_min, UNIT_NONE);
+	convert_num_unit((float)max, tmp_max, UNIT_NONE);
 	
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -146,11 +156,16 @@ _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 }
 
 static void _subdivide_part(sview_part_info_t *sview_part_info,
-			      GtkTreeModel *model, 
-			      GtkTreeIter *sub_iter,
-			      GtkTreeIter *iter)
+			    GtkTreeModel *model, 
+			    GtkTreeIter *sub_iter,
+			    GtkTreeIter *iter)
 {
 	GtkTreeIter *first_sub_iter = NULL;
+	ListIterator itr = NULL;
+	uint16_t state;
+	int i = 0, line = 0;
+	sview_part_sub_t *sview_part_sub = NULL;
+
 	/* make sure all the steps are still here */
 	if (sub_iter) {
 		first_sub_iter = gtk_tree_iter_copy(sub_iter);
@@ -163,12 +178,71 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 		}
 		sub_iter = gtk_tree_iter_copy(first_sub_iter);
 	}
-	
-	
+	itr = list_iterator_create(sview_part_info->sub_list);
+	while((sview_part_sub = list_next(itr))) {
+		if (!sub_iter) {
+			i = NO_VAL;
+			goto adding;
+		}
+		while(1) {
+			/* search for the jobid and check to see if 
+			   it is in the list */
+			gtk_tree_model_get(model, sub_iter, SORTID_STATE_NUM, 
+					   &state, -1);
+			if(state == sview_part_sub->node_state) {
+				/* update with new info */
+				_update_part_sub_record(sview_part_sub,
+							GTK_TREE_STORE(model), 
+							sub_iter);
+				goto found;
+			}			
+			
+			/* see what line we were on to add the next one 
+			   to the list */
+			gtk_tree_model_get(model, sub_iter, SORTID_POS, 
+					   &line, -1);
+			if(!gtk_tree_model_iter_next(model, sub_iter)) {
+				sub_iter = NULL;
+				line++;
+				break;
+			}
+		}
+	adding:
+		_append_part_sub_record(sview_part_sub, GTK_TREE_STORE(model), 
+					iter, line);
+		if(i == NO_VAL)
+			line++;
+	found:
+		;
+	}
+	if(first_sub_iter) {
+		if(sub_iter)
+			gtk_tree_iter_free(sub_iter);
+		sub_iter = gtk_tree_iter_copy(first_sub_iter);
+		/* clear all steps that aren't active */
+		while(1) {
+			gtk_tree_model_get(model, sub_iter, 
+					   SORTID_UPDATED, &i, -1);
+			if(!i) {
+				if(!gtk_tree_store_remove(
+					   GTK_TREE_STORE(model), 
+					   sub_iter))
+					break;
+				else
+					continue;
+			}
+			if(!gtk_tree_model_iter_next(model, sub_iter)) {
+				break;
+			}
+		}
+		gtk_tree_iter_free(first_sub_iter);
+	}
+	return;
 }
 
 static void _update_part_record(sview_part_info_t *sview_part_info,
-				GtkTreeStore *treestore, GtkTreeIter *iter)
+				GtkTreeStore *treestore, 
+				GtkTreeIter *iter)
 {
 	char time_buf[20];
 	char tmp_cnt[7];
@@ -218,7 +292,9 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		gtk_tree_store_set(treestore, iter, SORTID_GROUPS, "all", -1);
 
-	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
+	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
+
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
@@ -237,6 +313,68 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	return;
 }
+
+static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
+				    GtkTreeStore *treestore, GtkTreeIter *iter)
+{
+	char time_buf[20];
+	char tmp_cnt[7];
+	partition_info_t *part_ptr = sview_part_sub->part_ptr;
+			     
+	
+	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
+
+	if(part_ptr->default_part)
+		gtk_tree_store_set(treestore, iter, SORTID_DEFAULT, "*", -1);
+	
+	if (part_ptr->state_up) 
+		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "up", -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "down", -1);
+		
+	if (part_ptr->max_time == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		snprint_time(time_buf, sizeof(time_buf), 
+			     (part_ptr->max_time * 60));
+	}
+	
+	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
+	
+	_build_min_max_string(time_buf, sizeof(time_buf), 
+			      part_ptr->min_nodes, 
+			      part_ptr->max_nodes, true);
+	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
+
+	if(part_ptr->root_only)
+		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "yes", -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "no", -1);
+	
+	if(part_ptr->shared > 1)
+		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "force", -1);
+	else if(part_ptr->shared)
+		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "yes", -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "no", -1);
+	
+	if(part_ptr->allow_groups)
+		gtk_tree_store_set(treestore, iter, SORTID_GROUPS,
+				   part_ptr->allow_groups, -1);
+	else
+		gtk_tree_store_set(treestore, iter, SORTID_GROUPS, "all", -1);
+
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
+
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
+			   part_ptr->nodes, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
+	
+		
+	return;
+}
+
 static void _append_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeStore *treestore, GtkTreeIter *iter,
 				int line)
@@ -244,6 +382,17 @@ static void _append_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_append(treestore, iter, NULL);
 	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
 	_update_part_record(sview_part_info, treestore, iter);
+}
+
+static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
+				    GtkTreeStore *treestore, GtkTreeIter *iter,
+				    int line)
+{
+	GtkTreeIter sub_iter;
+	
+	gtk_tree_store_append(treestore, &sub_iter, iter);
+	gtk_tree_store_set(treestore, &sub_iter, SORTID_POS, line, -1);
+	_update_part_sub_record(sview_part_sub, treestore, &sub_iter);
 }
 
 static void _update_info_part(List info_list, 
@@ -491,7 +640,8 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
  *                          the given partition
  * sview_part_sub OUT     - ptr to an inited sview_part_sub_t
  */
-static sview_part_sub_t *_create_sview_part_sub(node_info_t *node_ptr, 
+static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
+						node_info_t *node_ptr, 
 						int node_scaling)
 {
 	sview_part_sub_t *sview_part_sub_ptr = 
@@ -501,11 +651,18 @@ static sview_part_sub_t *_create_sview_part_sub(node_info_t *node_ptr,
 	if(!node_scaling)
 		node_scaling = 1;
 
-	if (!node_ptr) {
-		g_print("got no node_ptr!\n");
+	if (!part_ptr) {
+		g_print("got no part_ptr!\n");
+		xfree(sview_part_sub_ptr);
 		return NULL;
 	}
-	
+	if (!node_ptr) {
+		g_print("got no node_ptr!\n");
+		xfree(sview_part_sub_ptr);
+		return NULL;
+	}
+	sview_part_sub_ptr->part_ptr = part_ptr;
+		
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	sview_part_sub_ptr->node_state = node_ptr->node_state;
 	if ((base_state == NODE_STATE_ALLOCATED)
@@ -593,17 +750,21 @@ static List _create_info_list(partition_info_msg_t *part_info_ptr,
 			itr = list_iterator_create(sview_part_info->sub_list);
 			while((sview_part_sub = list_next(itr))) {
 				if(sview_part_sub->node_state
-				   == node_ptr->node_state)
+				   == node_ptr->node_state) {
 					_update_sview_part_sub(
 						sview_part_sub, 
 						node_ptr,
 						part_ptr->node_scaling);
+					found = 1;
+					break;
+				}
 			}
 			list_iterator_destroy(itr);
 
 			if(!found) {
 				sview_part_sub = 
 					_create_sview_part_sub(
+						part_ptr,
 						node_ptr,
 						part_ptr->node_scaling);
 				list_push(sview_part_info->sub_list, 

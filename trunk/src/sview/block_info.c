@@ -380,7 +380,7 @@ static void _update_block_record(db2_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_USE, 
 			   _convert_node_use(block_ptr->bg_node_use), -1);
 	
-	convert_to_kilo(block_ptr->node_cnt, tmp_cnt);
+	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
 	nodes = block_ptr->nodes;			
