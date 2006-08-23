@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     to allocate the block.
  -- fix so if slurm_send_recv_node_msg fails on the send the auth_cred returned
     by the resp is NULL.
+ -- Fix switch/federation plugin so backup controller can assume control 
+    repeatedly without leaking or corrupting memory.
 
 * Changes in SLURM 1.1.9
 ========================

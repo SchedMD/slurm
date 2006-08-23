@@ -1271,8 +1271,7 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 	if(n->adapter_list) {
 		adapter = n->adapter_list;
 		for (i = 0; i < n->adapter_count; i++) {
-			if (adapter[i].window_list)
-				xfree(adapter[i].window_list);
+			xfree(adapter[i].window_list);
 		}
 		xfree(n->adapter_list);
 	}
@@ -2416,6 +2415,22 @@ fed_init(void)
 	return SLURM_SUCCESS;
 }
 
+static void
+_free_libstate(fed_libstate_t *lp)
+{
+	int i;
+
+	if (!lp)
+		return;
+	if (lp->node_list != NULL) {
+		for (i = 0; i < lp->node_count; i++)
+			fed_free_nodeinfo(&lp->node_list[i], true);
+		xfree(lp->node_list);
+	}
+	xfree(lp->hash_table);
+	xfree(lp);
+}
+
 int
 fed_fini(void)
 {
@@ -2450,7 +2465,11 @@ fed_libstate_save(Buf buffer)
 {
 	_lock();
 	_pack_libstate(fed_state, buffer);
-	/*_free_libstate(fed_state);*/
+
+	/* Clean up fed_state since backup slurmctld can repeatedly 
+	 * save and restore state */
+	_free_libstate(fed_state);
+	fed_state = NULL;	/* freed above */
 	_unlock();
 }
 

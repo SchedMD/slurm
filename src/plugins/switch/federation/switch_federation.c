@@ -148,7 +148,9 @@ int switch_p_slurmd_step_init( void )
 }
 
 /*
- * switch functions for global state save/restore
+ * Switch functions for global state save
+ * NOTE: Clears current switch state as needed for backup 
+ * controller to repeatedly assume control primary server
  */
 int switch_p_libstate_save ( char * dir_name )
 {
