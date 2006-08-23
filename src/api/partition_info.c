@@ -99,8 +99,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char *out = NULL;
 
 	/****** Line 1 ******/
-	convert_to_kilo(part_ptr->total_nodes, tmp1);
-	convert_to_kilo(part_ptr->total_cpus, tmp2);
+	convert_num_unit((float)part_ptr->total_nodes, tmp1, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_cpus, tmp2, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
 		"PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
 		part_ptr->name, tmp1, tmp2);
@@ -149,13 +149,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 3 ******/
-	convert_to_kilo(part_ptr->min_nodes, tmp1);
+	convert_num_unit((float)part_ptr->min_nodes, tmp1, UNIT_NONE);
 	sprintf(tmp_line, "MinNodes=%s ", tmp1);
 	xstrcat(out, tmp_line);
 	if (part_ptr->max_nodes == INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
 	else {
-		convert_to_kilo(part_ptr->max_nodes, tmp1);
+		convert_num_unit((float)part_ptr->max_nodes, tmp1, UNIT_NONE);
 		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
 	}
 	xstrcat(out, tmp_line);

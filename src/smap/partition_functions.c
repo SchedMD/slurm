@@ -524,7 +524,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[7];
 
-	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
 
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, 

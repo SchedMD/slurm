@@ -629,7 +629,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 extern int *set_span(int total, uint16_t tree_width);
 
 extern void slurm_free_msg(slurm_msg_t * msg);
-extern int convert_to_kilo(int number, char *tmp);
 
 /* must free this memory with free not xfree */
 extern char *nodelist_nth_host(const char *nodelist, int inx);
