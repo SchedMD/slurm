@@ -89,8 +89,9 @@ To build and run on AIX:
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
 4. export MP_RMLIB=./slurm_ll_api.so
    export CHECKPOINT=yes
-5. poe hostname -resd yes -rmpool debug -euilib ip -euidevice en0
-6. To debug, set SLURM_LL_API_DEBUG=2 before running poe.
+5. poe hostname -rmpool debug
+6. To debug, set SLURM_LL_API_DEBUG=3 before running poe - will create a file
+     /tmp/slurm.*
    It can also be helpful to use poe options "-ilevel 6 -pmdlog yes"
    There will be a log file create named /tmp/mplog.<jobid>.<taskid>
 7. If you update proctrack, be sure to run "slibclean" to clear cached
