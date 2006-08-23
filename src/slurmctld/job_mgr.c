@@ -2489,7 +2489,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		if ((submit_uid != 0) && 
 		    (submit_uid != slurmctld_conf.slurm_user_id)) {
 			info("attempt by uid %u to set job_id", submit_uid);
-			return ESLURM_DUPLICATE_JOB_ID;
+			return ESLURM_INVALID_JOB_ID;
 		}
 		if (job_desc_msg->job_id == 0) {
 			info("attempt by uid %u to set zero job_id", submit_uid);
