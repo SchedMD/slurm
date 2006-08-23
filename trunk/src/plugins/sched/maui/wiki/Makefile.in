@@ -16,7 +16,7 @@
 
 # Makefile for sched/wiki plugins
 
-SOURCES = $(sched_wiki_la_SOURCES) $(EXTRA_sched_wiki_la_SOURCES)
+SOURCES = $(sched_wiki_la_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -78,32 +78,13 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 sched_wiki_la_DEPENDENCIES =
-am__sched_wiki_la_SOURCES_DIST = ../agent.cpp ../agent.h \
-	../comparator.h ../condition.h ../courier.cpp ../courier.h \
-	../dstring.cpp ../dstring.h ../mailbag.h ../message.h \
-	../prefix_courier.cpp ../prefix_courier.h ../receptionist.cpp \
-	../receptionist.h wiki_canceljob.cpp wiki_command.cpp \
-	wiki_mailbag.cpp wiki_mailbag.h wiki_message.cpp \
-	wiki_message.h wiki_parser.cpp wiki_parser.h wiki_request.cpp \
-	wiki_response.cpp wiki_startjob.cpp wiki_status.cpp \
-	wiki_wrapper.cpp
 am__objects_1 = agent.lo courier.lo dstring.lo prefix_courier.lo \
 	receptionist.lo wiki_canceljob.lo wiki_command.lo \
 	wiki_mailbag.lo wiki_message.lo wiki_parser.lo wiki_request.lo \
 	wiki_response.lo wiki_startjob.lo wiki_status.lo \
 	wiki_wrapper.lo
-@HAVE_AIX_FALSE@am_sched_wiki_la_OBJECTS = $(am__objects_1)
-am__EXTRA_sched_wiki_la_SOURCES_DIST = ../agent.cpp ../agent.h \
-	../comparator.h ../condition.h ../courier.cpp ../courier.h \
-	../dstring.cpp ../dstring.h ../mailbag.h ../message.h \
-	../prefix_courier.cpp ../prefix_courier.h ../receptionist.cpp \
-	../receptionist.h wiki_canceljob.cpp wiki_command.cpp \
-	wiki_mailbag.cpp wiki_mailbag.h wiki_message.cpp \
-	wiki_message.h wiki_parser.cpp wiki_parser.h wiki_request.cpp \
-	wiki_response.cpp wiki_startjob.cpp wiki_status.cpp \
-	wiki_wrapper.cpp
+am_sched_wiki_la_OBJECTS = $(am__objects_1)
 sched_wiki_la_OBJECTS = $(am_sched_wiki_la_OBJECTS)
-@HAVE_AIX_FALSE@am_sched_wiki_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -123,9 +104,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link --tag=CC $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(sched_wiki_la_SOURCES) $(EXTRA_sched_wiki_la_SOURCES)
-DIST_SOURCES = $(am__sched_wiki_la_SOURCES_DIST) \
-	$(am__EXTRA_sched_wiki_la_SOURCES_DIST)
+SOURCES = $(sched_wiki_la_SOURCES)
+DIST_SOURCES = $(sched_wiki_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -338,11 +318,10 @@ wiki_src = ../agent.cpp		\
 			wiki_status.cpp		\
 			wiki_wrapper.cpp
 
-@HAVE_AIX_TRUE@EXTRA_sched_wiki_la_SOURCES = $(wiki_src)
-@HAVE_AIX_FALSE@pkglib_LTLIBRARIES = sched_wiki.la
-@HAVE_AIX_FALSE@sched_wiki_la_SOURCES = $(wiki_src)
-@HAVE_AIX_FALSE@sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_AIX_FALSE@sched_wiki_la_LIBADD = -lstdc++
+pkglib_LTLIBRARIES = sched_wiki.la
+sched_wiki_la_SOURCES = $(wiki_src)
+sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_wiki_la_LIBADD = -lstdc++
 all: all-am
 
 .SUFFIXES:
@@ -404,7 +383,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 sched_wiki.la: $(sched_wiki_la_OBJECTS) $(sched_wiki_la_DEPENDENCIES) 
-	$(CXXLINK) $(am_sched_wiki_la_rpath) $(sched_wiki_la_LDFLAGS) $(sched_wiki_la_OBJECTS) $(sched_wiki_la_LIBADD) $(LIBS)
+	$(CXXLINK) -rpath $(pkglibdir) $(sched_wiki_la_LDFLAGS) $(sched_wiki_la_OBJECTS) $(sched_wiki_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
