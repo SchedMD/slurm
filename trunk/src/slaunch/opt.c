@@ -90,7 +90,6 @@
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
 #define OPT_MULTI       0x0f
-#define OPT_CPUS_PER_NODE 0x10
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -119,17 +118,6 @@
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_PMI_THREADS 0x123
-
-typedef struct resource_allocation_response_msg_flags {
-	bool job_id;
-	bool node_list;
-	bool cpu_info;
-	bool node_cnt;
-} resource_allocation_response_msg_flags_t;
-
-resource_allocation_response_msg_t alloc_info;
-resource_allocation_response_msg_t *alloc_info_ptr = &alloc_info;
-resource_allocation_response_msg_flags_t alloc_info_set;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -480,9 +468,10 @@ static int _parse_cpu_rep_pair(char **ptr, uint32_t *cpu, uint32_t *rep)
 
 
 /* Take a string representing cpus-per-node in compressed representation,
- * and set alloc_info variables pertaining to cpus-per-node.
+ * and set variables in "alloc_info" pertaining to cpus-per-node.
  */
-static int _set_cpus_per_node(const char *str)
+static int _set_cpus_per_node(const char *str,
+			      resource_allocation_response_msg_t *alloc_info)
 {
 	char *ptr = (char *)str;
 	uint16_t num_cpus_groups = 0;
@@ -500,9 +489,9 @@ static int _set_cpus_per_node(const char *str)
 	if (num_cpus_groups == 0)
 		return 0;
 
-	alloc_info.num_cpu_groups = num_cpus_groups;
-	alloc_info.cpus_per_node = cpus;
-	alloc_info.cpu_count_reps = cpus_reps;
+	alloc_info->num_cpu_groups = num_cpus_groups;
+	alloc_info->cpus_per_node = cpus;
+	alloc_info->cpu_count_reps = cpus_reps;
 
 	return 1;
 }
@@ -721,15 +710,8 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLURM_JOB_ID",        OPT_INT,
-   &alloc_info.job_id, &alloc_info_set.job_id},
-  {"SLURM_JOB_NUM_NODES", OPT_INT,
-   &alloc_info.node_cnt, &alloc_info_set.node_cnt},
-  {"SLURM_JOB_NODELIST",  OPT_STRING,
-   &alloc_info.node_list, &alloc_info_set.node_list},
-  {"SLURM_JOB_CPUS_PER_NODE", OPT_CPUS_PER_NODE, NULL, NULL},
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
-  {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           }, 
+  {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           },
   {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_per_task_set},
   {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
   {"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
@@ -764,11 +746,6 @@ static void _opt_env()
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;
 
-	alloc_info_set.job_id = false;
-	alloc_info_set.node_list = false;
-	alloc_info_set.cpu_info = false;
-	alloc_info_set.node_cnt = false;
-	
 	while (e->var) {
 		if ((val = getenv(e->var)) != NULL) 
 			_process_env_var(e, val);
@@ -848,12 +825,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
-	case OPT_CPUS_PER_NODE:
-		if (_set_cpus_per_node(val)) {
-			alloc_info_set.cpu_info = true;
-		}
-		break;
-
 	default:
 		/* do nothing */
 		break;
@@ -872,13 +843,13 @@ _get_pos_int(const char *arg, const char *what)
 	char *p;
 	long int result = strtol(arg, &p, 10);
 
-	if ((*p != '\0') || (result < 0L)) {
+	if (p == arg || !xstring_is_whitespace(p) || (result < 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		exit(1);
 	}
 
 	if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
+		error ("Numeric argument %ld to big for %s.", result, what);
 	}
 
 	return (int) result;
@@ -896,13 +867,15 @@ _get_int(const char *arg, const char *what)
 	char *p;
 	long int result = strtol(arg, &p, 10);
 
-	if (*p != '\0') {
+	if (p == arg || !xstring_is_whitespace(p)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		exit(1);
 	}
 
 	if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
+		error ("Numeric argument %ld to big for %s.", result, what);
+	} else if (result < INT_MIN) {
+		error ("Numeric argument %ld to small for %s.", result, what);
 	}
 
 	return (int) result;
@@ -1365,7 +1338,8 @@ static int _get_range(regex_t *re, char *token, int *first, int *last,
  *	2-3   becomes foo[3-4]
  *	3-2   becomes foo[4,3]
  */
-static char *_node_indices_to_nodelist(const char *indices_list)
+static char *_node_indices_to_nodelist(const char *indices_list,
+			   resource_allocation_response_msg_t *alloc_info)
 {
 	char *list;
 	int list_len;
@@ -1380,15 +1354,6 @@ static char *_node_indices_to_nodelist(const char *indices_list)
 	char *nodelist = NULL;
 	int i, idx;
 
-	if (!(alloc_info_set.job_id
-	      && alloc_info_set.node_list
-	      && alloc_info_set.cpu_info
-	      && alloc_info_set.node_cnt)) {
-		error("Global job allocation info must be set before calling"
-		      " _node_indices_to_nodelist");
-		return NULL;
-	}
-
 	/* intialize the regular expression */
 	if (regcomp(&range_re, range_re_pattern, REG_EXTENDED) != 0) {
 		error("Node index range regex compilation failed\n");
@@ -1399,7 +1364,7 @@ static char *_node_indices_to_nodelist(const char *indices_list)
 	   feed each token into the regular expression, and make
 	   certain that the range numbers are valid. */
 	node_l = hostlist_create(NULL);
-	alloc_l = hostlist_create(alloc_info.node_list);
+	alloc_l = hostlist_create(alloc_info->node_list);
 	list = xstrdup(indices_list);
 	start = (char *)list;
 	list_len = strlen(list);
@@ -1557,6 +1522,89 @@ static void _opt_args(int argc, char **argv)
 		exit(1);
 }
 
+static bool
+_allocation_lookup_env(resource_allocation_response_msg_t **alloc_info)
+{
+	char *ptr, *val;
+	resource_allocation_response_msg_t *alloc;
+	long l;
+
+	alloc = (resource_allocation_response_msg_t *)xmalloc(
+		sizeof(resource_allocation_response_msg_t));
+
+	/* get SLURM_JOB_ID */
+	val = getenv("SLURM_JOB_ID");
+	if (val == NULL)
+		goto fail1;
+	l = strtol(val, &ptr, 10);
+	if (ptr == val || !xstring_is_whitespace(ptr) || l < 0)
+		goto fail1;
+	alloc->job_id = (uint32_t)l;
+
+	/* get SLURM_JOB_NUM_NODES */
+	val = getenv("SLURM_JOB_NUM_NODES");
+	if (val == NULL)
+		goto fail1;
+	l = strtol(val, &ptr, 10);
+	if (ptr == val || !xstring_is_whitespace(ptr) || l < 1)
+		goto fail1;
+	alloc->node_cnt = (uint16_t)l;
+
+	/* get SLURM_JOB_NODELIST */
+	val = getenv("SLURM_JOB_NODELIST");
+	if (val == NULL)
+		goto fail1;
+	alloc->node_list = xstrdup(val);
+
+	/* get SLURM_JOB_CPUS_PER_NODE */
+	val = getenv("SLURM_JOB_CPUS_PER_NODE");
+	if (val == NULL)
+		goto fail2;
+	if (!_set_cpus_per_node(val, alloc))
+		goto fail2;
+
+	*alloc_info = alloc;
+	return true;
+
+fail2:
+	xfree(alloc->node_list);
+fail1:
+	xfree(alloc);
+	*alloc_info = NULL;
+	return false;
+}
+
+static bool
+_set_allocation_info(resource_allocation_response_msg_t **alloc_info)
+{
+	bool env_flag;
+
+	/* First, try to set the allocation info from the environment */
+	env_flag = _allocation_lookup_env(alloc_info);
+
+	/* If that fails, we need to try to get the allocation info
+	 * from the slurmctld.  We also need to talk to the slurmctld if
+	 * opt.job_id is set and does not match the information from the
+	 * environment variables.
+	 */
+	if (!env_flag || (env_flag
+			  && opt.jobid_set
+			  && opt.jobid != (*alloc_info)->job_id)) {
+		verbose("Need to look up allocation info with the controller");
+		if (slurm_allocation_lookup_lite(opt.jobid, alloc_info) < 0) {
+			error("Unable to look up job ID %u: %m", opt.jobid);
+			return false;
+		}
+	} else if (!env_flag && !opt.jobid_set) {
+		error("A job ID MUST be specified on the command line,");
+		error("or through the SLAUNCH_JOBID environment variable.");
+		return false;
+	}
+
+	return true;
+}
+
+
 /* 
  * _opt_verify : perform some post option processing verification
  *
@@ -1566,64 +1614,24 @@ static bool _opt_verify(void)
 	bool verified = true;
 	hostlist_t task_l = NULL;
 	hostlist_t node_l = NULL;
-	
-	/* This rather confusing "if" statement assures that we look up
-	 * the resource_allocation_response_msg_t structure on the
-	 * controller if either of the following situations exist:
-	 * 
-	 * 1) We could not completely construct the
-	 *    resource_allocation_response_msg_t structure from SLURM_JOB_*
-	 *    environment variables.
-	 * 2) The user specified a job id other than the one found
-	 *    in the SLURM_JOB_* environment variables.
-	 */
-	if (!(alloc_info_set.job_id
-	      && alloc_info_set.node_list
-	      && alloc_info_set.cpu_info
-	      && alloc_info_set.node_cnt)
-	    || (opt.jobid_set
-		&& alloc_info_set.job_id
-		&& (opt.jobid != alloc_info.job_id))
-	    || (opt.jobid_set && !alloc_info_set.job_id)) {
+	resource_allocation_response_msg_t *alloc_info;
 
-		uint32_t jobid;
-		if (opt.jobid_set) {
-			jobid = opt.jobid;
-		} else if (alloc_info_set.job_id) {
-			jobid = alloc_info.job_id;
-		} else {
-			error("No job id specified!");
-			verified = false;
-			exit(1);
-		}
-		verbose("Need to look up allocation info with the controller");
-
-		if (slurm_allocation_lookup_lite(jobid, &alloc_info_ptr) < 0) {
-			error("Unable to look up job ID %u: %m", jobid);
-			verified = false;
-			exit(1);
-		} else {
-			alloc_info_set.job_id = true;
-			alloc_info_set.node_list = true;
-			alloc_info_set.cpu_info = true;
-			alloc_info_set.node_cnt = true;
-		}
-
-	} else {
-		alloc_info_ptr = &alloc_info;
+	if (!_set_allocation_info(&alloc_info)) {
+		/* error messages printed under _set_allocation_info */
+		exit(1);
 	}
 
 	/*
 	 * Now set default options based on allocation info.
 	 */
-	if (!opt.jobid_set && alloc_info_set.job_id)
-		opt.jobid = alloc_info_ptr->job_id;
-	if (!opt.num_nodes_set && alloc_info_set.node_cnt)
-		opt.num_nodes = alloc_info_ptr->node_cnt;
+	if (!opt.jobid_set)
+		opt.jobid = alloc_info->job_id;
+	if (!opt.num_nodes_set)
+		opt.num_nodes = alloc_info->node_cnt;
 
 	if (opt.task_layout_byid_set && opt.task_layout == NULL) {
 		opt.task_layout = _node_indices_to_nodelist(
-			opt.task_layout_byid);
+			opt.task_layout_byid, alloc_info);
 		if (opt.task_layout == NULL)
 			verified = false;
 	}
@@ -1631,7 +1639,8 @@ static bool _opt_verify(void)
 		hostlist_t hl;
 		char *nodenames;
 
-		nodenames = _node_indices_to_nodelist(opt.nodelist_byid);
+		nodenames = _node_indices_to_nodelist(opt.nodelist_byid,
+						      alloc_info);
 		if (nodenames == NULL) {
 			verified = false;
 		} else {
@@ -1758,12 +1767,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (!opt.jobid_set && !alloc_info_set.job_id) {
-		error("A job ID MUST be specified on the command line,");
-		error("or through the SLAUNCH_JOBID environment variable.");
-		verified = false;
-	}
-
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
@@ -1807,8 +1810,8 @@ static bool _opt_verify(void)
 
 		/* convert a negative relative number into a positive number
 		   that the slurmctld will accept */
-		if (opt.relative < 0 && opt.relative >= -(alloc_info.node_cnt))
-			opt.relative += alloc_info.node_cnt;
+		if (opt.relative < 0 && opt.relative >= -(alloc_info->node_cnt))
+			opt.relative += alloc_info->node_cnt;
 	}
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
@@ -1872,6 +1875,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	/* FIXME - figure out the proper way to free alloc_info */
 	hostlist_destroy(task_l);
 	hostlist_destroy(node_l);
 	return verified;
