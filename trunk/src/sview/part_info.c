@@ -35,10 +35,7 @@ typedef struct {
 	partition_info_t* part_ptr;
 	uint16_t node_state;
 
-	uint32_t nodes_alloc;
-	uint32_t nodes_idle;
-	uint32_t nodes_other;
-	uint32_t nodes_tot;
+	uint32_t node_cnt;
 	uint32_t min_cpus;
 	uint32_t max_cpus;
 	uint32_t min_disk;
@@ -77,8 +74,10 @@ enum {
 	SORTID_NODES, 
 	SORTID_CPUS, 
 	SORTID_DISK, 
-	SORTID_NODELIST, 
+	SORTID_MEM, 
 	SORTID_STATE,
+	SORTID_WEIGHT,
+	SORTID_NODELIST, 
 	SORTID_STATE_NUM,
 	SORTID_UPDATED, 
 	SORTID_CNT
@@ -97,14 +96,16 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_DISK, "Disk", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_DISK, "Temp Disk", FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_MEM, "MEM", FALSE, -1, refresh_part},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_part},
-	{G_TYPE_INT, SORTID_STATE, NULL, FALSE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", TRUE, -1, refresh_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part},
 #endif
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part},
 
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -153,6 +154,22 @@ _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 					tmp_min, tmp_max);
 	} else
 		return snprintf(buffer, buf_size, "%s+", tmp_min);
+}
+
+/*
+ * _str_tolower - convert string to all lower case
+ * upper_str IN - upper case input string
+ * RET - lower case version of upper_str, caller must be xfree
+ */ 
+static char *_str_tolower(char *upper_str)
+{
+	int i = strlen(upper_str) + 1;
+	char *lower_str = xmalloc(i);
+
+	for (i=0; upper_str[i]; i++)
+		lower_str[i] = tolower((int) upper_str[i]);
+
+	return lower_str;
 }
 
 static void _subdivide_part(sview_part_info_t *sview_part_info,
@@ -320,8 +337,9 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	char time_buf[20];
 	char tmp_cnt[7];
 	partition_info_t *part_ptr = sview_part_sub->part_ptr;
-			     
-	
+	char *upper = NULL, *lower = NULL;		     
+	char tmp[1024];
+
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
 	if(part_ptr->default_part)
@@ -332,43 +350,40 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	else
 		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "down", -1);
 		
-	if (part_ptr->max_time == INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "infinite");
-	else {
-		snprint_time(time_buf, sizeof(time_buf), 
-			     (part_ptr->max_time * 60));
-	}
-	
-	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
+	upper = node_state_string_compact(sview_part_sub->node_state);
+	lower = _str_tolower(upper);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
+			   lower, -1);
+	xfree(lower);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM,
+			   sview_part_sub->node_state, -1);
 	
 	_build_min_max_string(time_buf, sizeof(time_buf), 
-			      part_ptr->min_nodes, 
-			      part_ptr->max_nodes, true);
-	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
-
-	if(part_ptr->root_only)
-		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "yes", -1);
-	else
-		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "no", -1);
+			      sview_part_sub->min_cpus, 
+			      sview_part_sub->max_cpus, false);
+	gtk_tree_store_set(treestore, iter, SORTID_CPUS, time_buf, -1);
 	
-	if(part_ptr->shared > 1)
-		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "force", -1);
-	else if(part_ptr->shared)
-		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "yes", -1);
-	else
-		gtk_tree_store_set(treestore, iter, SORTID_SHARE, "no", -1);
-	
-	if(part_ptr->allow_groups)
-		gtk_tree_store_set(treestore, iter, SORTID_GROUPS,
-				   part_ptr->allow_groups, -1);
-	else
-		gtk_tree_store_set(treestore, iter, SORTID_GROUPS, "all", -1);
+	_build_min_max_string(time_buf, sizeof(time_buf), 
+			      sview_part_sub->min_disk, 
+			      sview_part_sub->max_disk, false);
+	gtk_tree_store_set(treestore, iter, SORTID_DISK, time_buf, -1);
 
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+	_build_min_max_string(time_buf, sizeof(time_buf), 
+			      sview_part_sub->min_mem, 
+			      sview_part_sub->max_mem, false);
+	gtk_tree_store_set(treestore, iter, SORTID_MEM, time_buf, -1);
+
+	_build_min_max_string(time_buf, sizeof(time_buf), 
+			      sview_part_sub->min_weight, 
+			      sview_part_sub->max_weight, false);
+	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, time_buf, -1);
+
+	convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
-
+	
+	hostlist_ranged_string(sview_part_sub->hl, sizeof(tmp), tmp);
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
-			   part_ptr->nodes, -1);
+			   tmp, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
 	
 		
@@ -576,14 +591,12 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 				   node_info_t *node_ptr, 
 				   int node_scaling)
 {
-	uint16_t base_state;
-	
 	list_append(sview_part_sub->node_ptr_list, node_ptr);
 
 	if(!node_scaling)
 		node_scaling = 1;
 	
-	if (sview_part_sub->nodes_tot == 0) {	/* first node added */
+	if (sview_part_sub->node_cnt == 0) {	/* first node added */
 		sview_part_sub->node_state = node_ptr->node_state;
 		sview_part_sub->features   = node_ptr->features;
 		sview_part_sub->reason     = node_ptr->reason;
@@ -622,17 +635,8 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 			sview_part_sub->max_weight = node_ptr->weight;
 	}
 
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if (node_ptr->node_state & NODE_STATE_DRAIN)
-		sview_part_sub->nodes_other += node_scaling;
-	else if ((base_state == NODE_STATE_ALLOCATED)
-	||       (node_ptr->node_state & NODE_STATE_COMPLETING))
-		sview_part_sub->nodes_alloc += node_scaling;
-	else if (base_state == NODE_STATE_IDLE)
-		sview_part_sub->nodes_idle += node_scaling;
-	else 
-		sview_part_sub->nodes_other += node_scaling;
-	sview_part_sub->nodes_tot += node_scaling;
+	sview_part_sub->node_cnt += node_scaling;
+	hostlist_push(sview_part_sub->hl, node_ptr->name);
 }
 
 /* 
@@ -646,7 +650,6 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 {
 	sview_part_sub_t *sview_part_sub_ptr = 
 		xmalloc(sizeof(sview_part_sub_t));
-	uint16_t base_state;
 	
 	if(!node_scaling)
 		node_scaling = 1;
@@ -663,16 +666,9 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 	}
 	sview_part_sub_ptr->part_ptr = part_ptr;
 		
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	sview_part_sub_ptr->node_state = node_ptr->node_state;
-	if ((base_state == NODE_STATE_ALLOCATED)
-	    ||  (node_ptr->node_state & NODE_STATE_COMPLETING))
-		sview_part_sub_ptr->nodes_alloc = node_scaling;
-	else if (base_state == NODE_STATE_IDLE)
-		sview_part_sub_ptr->nodes_idle = node_scaling;
-	else 
-		sview_part_sub_ptr->nodes_other = node_scaling;
-	sview_part_sub_ptr->nodes_tot = node_scaling;
+	sview_part_sub_ptr->node_cnt = node_scaling;
+	
 	sview_part_sub_ptr->min_cpus = node_ptr->cpus;
 	sview_part_sub_ptr->max_cpus = node_ptr->cpus;
 
