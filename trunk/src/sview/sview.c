@@ -42,8 +42,10 @@ bool force_refresh = FALSE;
 List popup_list;
 int page_running[PAGE_CNT];
 int global_sleep_time = 5;
-	
+bool admin_mode = FALSE;
 GtkWidget *main_notebook = NULL;
+GtkWidget *main_statusbar = NULL;
+
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
 	 refresh_main, get_info_job, specific_info_job, 
@@ -71,9 +73,6 @@ display_data_t main_display_data[] = {
 #endif
 	{G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", TRUE, -1,
 	 refresh_main, NULL, 
-	 NULL, NULL, NULL},
-	{G_TYPE_NONE, ADMIN_PAGE, "Admin", TRUE, -1,
-	 refresh_main,  NULL,
 	 NULL, NULL, NULL},
 	{G_TYPE_NONE, INFO_PAGE, NULL, FALSE, -1,
 	 refresh_main, NULL, NULL,
@@ -121,6 +120,7 @@ static void _page_switched(GtkNotebook     *notebook,
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
 		return;
+	
 	if(running != -1) {
 		page_running[running] = 0;
 	}
@@ -150,6 +150,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		page_thr = xmalloc(sizeof(page_thr_t));		
 		page_thr->page_num = i;
 		page_thr->table = table;
+		
 		if (!g_thread_create(_page_thr, page_thr, FALSE, &error))
 		{
 			g_printerr ("Failed to create YES thread: %s\n", 
@@ -159,41 +160,68 @@ static void _page_switched(GtkNotebook     *notebook,
 	}
 }
 
+static void _set_admin_mode(GtkToggleAction *action)
+{
+	if(admin_mode) {
+		admin_mode = FALSE;
+		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 0);
+	} else {
+		admin_mode = TRUE;
+		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 0,
+				   "Admin mode activated! "
+				   "Think before you alter anything.");
+	}
+}
+
+static void _change_refresh(GtkToggleAction *action, gpointer user_data)
+{
+	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *label = gtk_label_new_with_mnemonic("Interval in Seconds ");
+	GtkObject *adjustment = gtk_adjustment_new(global_sleep_time,
+						   1, 10000,
+						   5, 60,
+						   1);
+	GtkWidget *spin_button = 
+		gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Refresh Interval",
+		GTK_WINDOW (user_data),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		GTK_STOCK_CANCEL,
+		GTK_RESPONSE_CANCEL,
+		NULL);//gtk_dialog_new();
+	int response = 0;
+
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   table, FALSE, FALSE, 0);
+	
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);	
+	gtk_table_attach_defaults(GTK_TABLE(table), spin_button, 1, 2, 0, 1);
+	
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		global_sleep_time = 
+			gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
+		g_print("new time is %d\n", global_sleep_time);
+	}
+
+	gtk_widget_destroy(popup);
+	return;
+}
+
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkNotebook *notebook)
 {
 	gtk_notebook_set_tab_pos(notebook, 
 				 gtk_radio_action_get_current_value(action));
-}
-
-static void _next_page(GtkAction *action,
-		       GtkNotebook *notebook)
-{
-	int page = gtk_notebook_get_current_page(notebook);
-	int cnt = gtk_notebook_get_n_pages(notebook);
-	
-	cnt--;
-	
-	if(page < cnt)
-		gtk_notebook_next_page(notebook);
-	else
-		gtk_notebook_set_current_page(notebook, 0);
-}
-
-static void _prev_page(GtkAction *action,
-		       GtkNotebook *notebook)
-{
-	int page = gtk_notebook_get_current_page(notebook);
-	int cnt = gtk_notebook_get_n_pages(notebook);
-
-	cnt--;
-
-	if(page != 0)
-		gtk_notebook_prev_page(notebook);
-	else
-		gtk_notebook_set_current_page(notebook, cnt);
-	//gtk_notebook_prev_page(notebook);
 }
 
 static void _init_pages()
@@ -216,56 +244,6 @@ static gboolean _delete(GtkWidget *widget,
 	return FALSE;
 }
 
-/* Our menu*/
-static const char *ui_description =
-"<ui>"
-"  <menubar name='MainMenu'>"
-"    <menu action='Options'>"
-"      <menuitem action='Refresh'/>"
-"      <separator/>"
-"      <menu action='Tab Pos'>"
-"        <menuitem action='Top'/>"
-"        <menuitem action='Bottom'/>"
-"        <menuitem action='Left'/>"
-"        <menuitem action='Right'/>"
-"      </menu>"
-"      <separator/>"
-"      <menuitem action='NextPage'/>"
-"      <menuitem action='PrevPage'/>"
-"      <menuitem action='Exit'/>"
-"    </menu>"
-"    <menu action='Help'>"
-"      <menuitem action='About'/>"
-"    </menu>"
-"  </menubar>"
-"</ui>";
-
-static GtkActionEntry entries[] = {
-	{"Options", NULL, "_Options"},
-	{"Tab Pos", NULL, "_Tab Pos"},
-	{"NextPage", NULL, "_NextPage", 
-	 "<control>N", "Moves to next page", G_CALLBACK(_next_page)},
-	{"PrevPage", NULL, "_PrevPage", 
-	 "<control>P", "Moves to previous page", G_CALLBACK(_prev_page)},
-	{"Refresh", NULL, "Refresh", 
-	 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
-	{"Exit", NULL, "E_xit", 
-	 "<control>x", "Exits Program", G_CALLBACK(_delete)},
-	{"Help", NULL, "_Help"},
-	{"About", NULL, "_About"}
-};
-
-static GtkRadioActionEntry radio_entries[] = {
-	{"Top", NULL, "_Top", 
-	 "<control>T", "Move tabs to top", 2},
-	{"Bottom", NULL, "_Bottom", 
-	 "<control>B", "Move tabs to the bottom", 3},
-	{"Left", NULL, "_Left", 
-	 "<control>L", "Move tabs to the Left", 4},
-	{"Right", NULL, "_Right", 
-	 "<control>R", "Move tabs to the Right", 1}
-};
-
 /* Returns a menubar widget made from the above menu */
 static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 {
@@ -273,14 +251,76 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	GtkUIManager *ui_manager = NULL;
 	GtkAccelGroup *accel_group = NULL;
 	GError *error = NULL;
-	
+
+	/* Our menu*/
+	const char *ui_description =
+		"<ui>"
+		"  <menubar name='MainMenu'>"
+		"    <menu action='Options'>"
+		"      <menuitem action='Set Refresh Interval'/>"
+		"      <menuitem action='Refresh'/>"
+		"      <separator/>"
+		"      <menuitem action='Admin Mode'/>"
+		"      <separator/>"
+		"      <menu action='Tab Pos'>"
+		"        <menuitem action='Top'/>"
+		"        <menuitem action='Bottom'/>"
+		"        <menuitem action='Left'/>"
+		"        <menuitem action='Right'/>"
+		"      </menu>"
+		"      <separator/>"
+		"      <menuitem action='Exit'/>"
+		"    </menu>"
+		"    <menu action='Help'>"
+		"      <menuitem action='About'/>"
+		"    </menu>"
+		"  </menubar>"
+		"</ui>";
+
+	GtkActionEntry entries[] = {
+		{"Options", NULL, "_Options"},
+		{"Tab Pos", NULL, "_Tab Pos"},
+		{"Set Refresh Interval", NULL, "Set _Refresh Interval", 
+		 "<control>r", "Change Refresh Interval", 
+		 G_CALLBACK(_change_refresh)},
+		{"Refresh", NULL, "Refresh", 
+		 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
+		{"Exit", NULL, "E_xit", 
+		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
+		{"Help", NULL, "_Help"},
+		{"About", NULL, "_About"}
+	};
+
+	GtkRadioActionEntry radio_entries[] = {
+		{"Top", NULL, "_Top", 
+		 "<control>T", "Move tabs to top", 2},
+		{"Bottom", NULL, "_Bottom", 
+		 "<control>B", "Move tabs to the bottom", 3},
+		{"Left", NULL, "_Left", 
+		 "<control>L", "Move tabs to the Left", 4},
+		{"Right", NULL, "_Right", 
+		 "<control>R", "Move tabs to the Right", 1}
+	};
+
+	GtkToggleActionEntry toggle_entries[] = {
+		{"Admin Mode", NULL,          
+		 "_Admin Mode", "<control>a", 
+		 "Allows user to change or update information", 
+		 G_CALLBACK(_set_admin_mode), 
+		 FALSE} 
+	};
+
+		
 	/* Make an accelerator group (shortcut keys) */
 	action_group = gtk_action_group_new ("MenuActions");
 	gtk_action_group_add_actions(action_group, entries, 
-				     G_N_ELEMENTS(entries), notebook);
+				     G_N_ELEMENTS(entries), window);
 	gtk_action_group_add_radio_actions(action_group, radio_entries, 
 					   G_N_ELEMENTS(radio_entries), 
 					   0, G_CALLBACK(_tab_pos), notebook);
+	gtk_action_group_add_toggle_actions(action_group, toggle_entries, 
+					   G_N_ELEMENTS(toggle_entries), 
+					   NULL);
 	ui_manager = gtk_ui_manager_new ();
 	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
 
@@ -333,11 +373,16 @@ int main(int argc, char *argv[])
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
 	
+	main_statusbar = gtk_statusbar_new();
+	gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(main_statusbar), 
+					  FALSE);
 	/* Pack it all together */
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
 			   menubar, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(window)->vbox), 
-			 main_notebook, TRUE, TRUE, 0);	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox), 
+			   main_notebook, TRUE, TRUE, 0);	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
+			   main_statusbar, FALSE, FALSE, 0);	
 	
 	for(i=0; i<PAGE_CNT; i++) {
 		if(main_display_data[i].id == -1)

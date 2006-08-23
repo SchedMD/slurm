@@ -79,7 +79,6 @@ enum { JOB_PAGE,
        NODE_PAGE, 
        BLOCK_PAGE, 
        SUBMIT_PAGE,
-       ADMIN_PAGE,
        INFO_PAGE,
        PAGE_CNT 
 };
@@ -166,6 +165,7 @@ extern bool toggled;
 extern bool force_refresh;
 extern List popup_list;
 extern int global_sleep_time;
+extern bool admin_mode;
 	
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
@@ -212,10 +212,6 @@ extern void set_menus_job(void *arg, GtkTreePath *path,
 			  GtkMenu *menu, int type);
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
-// admin_info.c
-extern void get_info_admin(GtkTable *table, display_data_t *display_data);
-extern void set_menus_admin(void *arg, GtkTreePath *path, 
-			    GtkMenu *menu, int type);
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
 extern int get_new_info_node(node_info_msg_t **info_ptr, int force);

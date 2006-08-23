@@ -69,7 +69,6 @@ static display_data_t options_data_node[] = {
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, NODE_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, NODE_PAGE},
-	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, NODE_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -496,9 +495,6 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case BLOCK_PAGE: 
 		snprintf(title, 100, "Blocks(s) with %s %s", node, name);
-		break;
-	case ADMIN_PAGE: 
-		snprintf(title, 100, "Admin Page for %s %s", node, name);
 		break;
 	case SUBMIT_PAGE: 
 		snprintf(title, 100, "Submit job on %s %s", node, name);

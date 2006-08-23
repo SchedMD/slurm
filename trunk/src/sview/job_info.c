@@ -127,7 +127,6 @@ static display_data_t options_data_job[] = {
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
 #endif
-	{G_TYPE_STRING, ADMIN_PAGE, "Admin", TRUE, JOB_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -1019,13 +1018,6 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			snprintf(title, 100, "Block with job %d.%d",
 				 jobid, stepid);
 		break;
-	case ADMIN_PAGE: 
-		if(stepid == NO_VAL)
-			snprintf(title, 100, "Admin Page for job %d", jobid);
-		else
-			snprintf(title, 100, "Admin Page for job %d.%d",
-				 jobid, stepid);		
-		break;
 	case SUBMIT_PAGE: 
 		if(stepid == NO_VAL)
 			snprintf(title, 100, "Submit job on job %d", jobid);
@@ -1076,8 +1068,6 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->data = name;
 		break;
 #endif
-	case ADMIN_PAGE: 
-		break;
 	case SUBMIT_PAGE: 
 		break;
 	case INFO_PAGE:
