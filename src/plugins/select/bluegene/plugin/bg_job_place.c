@@ -243,7 +243,7 @@ try_again:
 			/* We use the proccessor count per partition here
 			   mostly to see if we can run on a smaller partition. 
 			 */
-			convert_to_kilo(proc_cnt, tmp_char);
+			convert_num_unit((float)proc_cnt, tmp_char, UNIT_NONE);
 			debug("block %s CPU count (%s) not suitable",
 			      record->bg_block_id, 
 			      tmp_char);
@@ -258,7 +258,8 @@ try_again:
 		if ((record->bp_count < min_nodes)
 		    ||  (req_nodes != 0 && record->bp_count > req_nodes)
 		    ||  (record->bp_count < target_size)) {
-			convert_to_kilo(record->node_cnt, tmp_char);
+			convert_num_unit((float)record->node_cnt, tmp_char,
+					 UNIT_NONE);
 			debug("block %s node count (%s) not suitable",
 			      record->bg_block_id,
 			      tmp_char);
