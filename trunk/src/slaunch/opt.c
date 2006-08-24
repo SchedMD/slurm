@@ -98,16 +98,12 @@
 #define LONG_OPT_LAUNCH      0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
-#define LONG_OPT_TMP         0x106
-#define LONG_OPT_MEM         0x107
-#define LONG_OPT_MINCPU      0x108
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_NETWORK     0x114
-#define LONG_OPT_EXCLUSIVE   0x115
 #define LONG_OPT_PROPAGATE   0x116
 #define LONG_OPT_PROLOG      0x117
 #define LONG_OPT_EPILOG      0x118
@@ -159,8 +155,6 @@ static void _process_env_var(env_vars_t *e, const char *val);
 
 /* search PATH for command returns full path */
 static char *_search_path(char *, bool, int);
-
-static long  _to_bytes(const char *arg);
 
 static bool  _under_parallel_debugger(void);
 
@@ -518,56 +512,6 @@ static char * _base_name(char* command)
 }
 
 /*
- * _to_bytes(): verify that arg is numeric with optional "G" or "M" at end
- * if "G" or "M" is there, multiply by proper power of 2 and return
- * number in bytes
- */
-static long _to_bytes(const char *arg)
-{
-	char *buf;
-	char *endptr;
-	int end;
-	int multiplier = 1;
-	long result;
-
-	buf = xstrdup(arg);
-
-	end = strlen(buf) - 1;
-
-	if (isdigit(buf[end])) {
-		result = strtol(buf, &endptr, 10);
-
-		if (*endptr != '\0')
-			result = -result;
-
-	} else {
-
-		switch (toupper(buf[end])) {
-
-		case 'G':
-			multiplier = 1024;
-			break;
-
-		case 'M':
-			/* do nothing */
-			break;
-
-		default:
-			multiplier = -1;
-		}
-
-		buf[end] = '\0';
-
-		result = multiplier * strtol(buf, &endptr, 10);
-
-		if (*endptr != '\0')
-			result = -result;
-	}
-
-	return result;
-}
-
-/*
  * print error message to stderr with opt.progname prepended
  */
 #undef USE_ARGERROR
@@ -651,14 +595,6 @@ static void _opt_default()
 	opt.quiet = 0;
 	opt.verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
-
-	/* constraint default (-1 is no constraint) */
-	opt.mincpus	    = -1;
-	opt.realmem	    = -1;
-	opt.tmpdisk	    = -1;
-
-	opt.constraints	    = NULL;
-        opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.nodelist_byid   = NULL;
 	opt.task_layout = NULL;
@@ -918,14 +854,10 @@ void set_options(const int argc, char **argv)
 		{"wait",          required_argument, 0, 'W'},
 		{"task-layout-byname", required_argument, 0, 'Y'},
 		{"no-allocate",   no_argument,       0, 'Z'},
-		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 		{"core",             required_argument, 0, LONG_OPT_CORE},
-		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
-		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
-		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
@@ -1122,9 +1054,6 @@ void set_options(const int argc, char **argv)
 			if (strcasecmp(name.sysname, "AIX") == 0)
 				opt.network = xstrdup("ip");
 			break;
-                case LONG_OPT_EXCLUSIVE:
-                        opt.exclusive = true;
-                        break;
                 case LONG_OPT_CPU_BIND:
 			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
 							&opt.cpu_bind_type))
@@ -1141,29 +1070,11 @@ void set_options(const int argc, char **argv)
 				error ("--core=\"%s\" Invalid -- ignoring.\n",
 				      optarg);
 			break;
-		case LONG_OPT_MINCPU:
-			opt.mincpus = _get_pos_int(optarg, "mincpus");
-			break;
-		case LONG_OPT_MEM:
-			opt.realmem = (int) _to_bytes(optarg);
-			if (opt.realmem < 0) {
-				error("invalid memory constraint %s", 
-				      optarg);
-				exit(1);
-			}
-			break;
 		case LONG_OPT_MPI:
 			if (srun_mpi_init((char *)optarg) == SLURM_ERROR) {
 				fatal("\"--mpi=%s\" -- long invalid MPI type, "
 				      "--mpi=list for acceptable types.",
 				      optarg);
-			}
-			break;
-		case LONG_OPT_TMP:
-			opt.tmpdisk = _to_bytes(optarg);
-			if (opt.tmpdisk < 0) {
-				error("invalid tmp value %s", optarg);
-				exit(1);
 			}
 			break;
 		case LONG_OPT_JOBID:
@@ -1813,9 +1724,6 @@ static bool _opt_verify(void)
 		if (opt.relative < 0 && opt.relative >= -(alloc_info->node_cnt))
 			opt.relative += alloc_info->node_cnt;
 	}
-	if (opt.mincpus < opt.cpus_per_task)
-		opt.mincpus = opt.cpus_per_task;
-
 	if ((opt.job_name == NULL) && (opt.argc > 0))
 		opt.job_name = _base_name(opt.argv[0]);
 
@@ -1958,35 +1866,6 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 }
 
 
-/* helper function for printing options
- * 
- * warning: returns pointer to memory allocated on the stack.
- */
-static char *print_constraints()
-{
-	char *buf = xstrdup("");
-
-	if (opt.mincpus > 0)
-		xstrfmtcat(buf, "mincpus=%d ", opt.mincpus);
-
-	if (opt.realmem > 0)
-		xstrfmtcat(buf, "mem=%dM ", opt.realmem);
-
-	if (opt.tmpdisk > 0)
-		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);
-
-        if (opt.exclusive == true)
-                xstrcat(buf, "exclusive ");
-
-	if (opt.nodelist != NULL)
-		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
-
-	if (opt.constraints != NULL)
-		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
-
-	return buf;
-}
-
 static char * 
 print_commandline()
 {
@@ -2039,9 +1918,7 @@ static void _opt_list()
 	else
 		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
-	str = print_constraints();
-	info("constraints    : %s", str);
-	xfree(str);
+	info("required nodes : %s", opt.nodelist);
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
@@ -2072,7 +1949,6 @@ static void _usage(void)
 "               [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
 "               [--core=type] [-W sec]\n"
-"               [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "               [--mpi=type]\n"
 "               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
 "               [--cpu_bind=...] [--mem_bind=...]\n"
@@ -2129,17 +2005,8 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "\n"
-"Constraint options:\n"
-"      --mincpus=n             minimum number of cpus per node\n"
-"      --mem=MB                minimum amount of real memory\n"
-"      --tmp=MB                minimum amount of temporary disk\n"
-"  -C, --constraint=list       specify a list of constraints\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
-"\n"
-"Consumable resources related options:\n" 
-"      --exclusive             allocate nodes in exclusive mode when\n" 
-"                              cpu consumable resource is enabled\n"
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
 "      --cpu_bind=             Bind tasks to CPUs\n" 

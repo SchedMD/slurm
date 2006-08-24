@@ -108,12 +108,6 @@ typedef struct slaunch_options {
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/
-
-	/* constraint options */
-	int mincpus;		/* --mincpus=n			*/
-	int realmem;		/* --mem=n			*/
-	long tmpdisk;		/* --tmp=n			*/
-	char *constraints;	/* --constraints=, -C constraint*/
 	char *nodelist;		/* -w,--nodelist=node1,node2,...*/
 	char *nodelist_byid;
 	char *task_layout;
@@ -128,7 +122,6 @@ typedef struct slaunch_options {
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
-        bool exclusive;         /* --exclusive                  */
 
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
