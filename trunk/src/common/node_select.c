@@ -900,7 +900,8 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		if (jobinfo->max_procs == NO_VAL)
 			sprintf(max_procs_char, "None");
 		else
-			convert_to_kilo(jobinfo->max_procs, max_procs_char);
+			convert_num_unit((float)jobinfo->max_procs, 
+					 max_procs_char, UNIT_NONE);
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(start_char, "None");
 		else {
@@ -920,7 +921,8 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		if (jobinfo->max_procs == NO_VAL)
 			sprintf(max_procs_char, "None");
 		else
-			convert_to_kilo(jobinfo->max_procs, max_procs_char);
+			convert_num_unit((float)jobinfo->max_procs,
+					 max_procs_char, UNIT_NONE);
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(start_char, "None");
 		else {
