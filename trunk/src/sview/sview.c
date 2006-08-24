@@ -99,6 +99,16 @@ void *_page_thr(void *arg)
 	return NULL;
 }
 
+void *_refresh_thr(void *arg)
+{
+	sleep(5);
+	gdk_threads_enter();
+	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 1);
+	gdk_flush();
+	gdk_threads_leave();
+	return NULL;	
+}
+
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
@@ -153,7 +163,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		
 		if (!g_thread_create(_page_thr, page_thr, FALSE, &error))
 		{
-			g_printerr ("Failed to create YES thread: %s\n", 
+			g_printerr ("Failed to create page thread: %s\n", 
 				    error->message);
 			return;
 		}
@@ -191,8 +201,10 @@ static void _change_refresh(GtkToggleAction *action, gpointer user_data)
 		GTK_RESPONSE_OK,
 		GTK_STOCK_CANCEL,
 		GTK_RESPONSE_CANCEL,
-		NULL);//gtk_dialog_new();
+		NULL);
+	GError *error = NULL;
 	int response = 0;
+	char *temp = NULL;
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 	
@@ -209,10 +221,20 @@ static void _change_refresh(GtkToggleAction *action, gpointer user_data)
 	{
 		global_sleep_time = 
 			gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
-		g_print("new time is %d\n", global_sleep_time);
+		temp = g_strdup_printf("Refresh Interval set to %d seconds.",
+				       global_sleep_time);
+		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 1,
+				   temp);
+		g_free(temp);
+		if (!g_thread_create(_refresh_thr, NULL, FALSE, &error))
+		{
+			g_printerr ("Failed to create refresh thread: %s\n", 
+				    error->message);
+		}
 	}
 
 	gtk_widget_destroy(popup);
+	
 	return;
 }
 
