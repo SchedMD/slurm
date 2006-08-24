@@ -28,8 +28,11 @@ abbreviation for the type of scheduler. We recommend, for example:</p>
 scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
 <li><b>backfill</b>&#151;Raise the priority of jobs if doing so results in their starting earlier 
 without any delay in the expected initiation time of any higher priority job.</li>
-<li><b>wiki</b>&#151;Use <a href="http://supercluster.org/maui">The Maui Scheduler</a>
-(Wiiki version) as an external entity to control SLURM job scheduling.</li>
+<li><b>wiki</b>&#151;Use 
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> (Wiki version) or 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 

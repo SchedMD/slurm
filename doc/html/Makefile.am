@@ -18,6 +18,7 @@ generated_html = \
 	jobcompplugins.html \
 	mail.html \
 	maui.html \
+	moab.html \
 	mpiplugins.html \
 	news.html \
 	overview.html \

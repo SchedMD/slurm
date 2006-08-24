@@ -64,8 +64,10 @@ individual processors and memory) or linear (to dedicate entire nodes).</li>
 process group ID, and RMS (Quadrics Linux kernel patch).</li>
 
 <li><a href="schedplugins.html">Scheduler</a>: 
-<a href="http://supercluster.org/maui">The Maui Scheduler</a>, 
-backfill, or FIFO (default).</li>
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a>, 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a>, backfill, or FIFO (default).</li>
 
 <li><a href="switchplugins.html">Switch or interconnect</a>: 
 <a href="http://www.quadrics.com/">Quadrics</a> 
@@ -143,6 +145,6 @@ PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
 PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
-<p style="text-align:center;">Last modified 5 April 2005</p>
+<p style="text-align:center;">Last modified 24 August 2006</p>
 
 <!--#include virtual="footer.txt"-->
