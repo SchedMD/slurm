@@ -813,8 +813,6 @@ _get_int(const char *arg, const char *what)
 void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	static bool set_cwd=false, set_name=false;
-	struct utsname name;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
@@ -903,7 +901,6 @@ void set_options(const int argc, char **argv)
 				_get_pos_int(optarg, "slurmd-debug");
 			break;
 		case 'D':
-			set_cwd = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
@@ -948,7 +945,6 @@ void set_options(const int argc, char **argv)
 			opt.remote_ifname = xstrdup(optarg);
 			break;
 		case 'J':
-			set_name = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;

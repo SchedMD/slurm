@@ -39,17 +39,8 @@
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
-//#include "src/common/mpi.h"
 
 #define MAX_USERNAME	9
-
-
-/* global variables relating to user options */
-
-#define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
-		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
-			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
-			         "unknown"
 
 typedef struct sbatch_options {
 	char *progname;		/* argv[0] of this program or   */
@@ -74,8 +65,6 @@ typedef struct sbatch_options {
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
-	enum task_dist_states
-		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true of jobid explicitly set */
@@ -93,7 +82,6 @@ typedef struct sbatch_options {
 	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
-	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/
@@ -107,7 +95,6 @@ typedef struct sbatch_options {
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 	char *relative;		/* --relative -r N              */
-	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
 
@@ -123,13 +110,6 @@ typedef struct sbatch_options {
 } opt_t;
 
 extern opt_t opt;
-
-/* return whether any constraints were specified by the user 
- * (if new constraints are added above, might want to add them to this
- *  macro or move this to a function if it gets a little complicated)
- */
-#define constraints_given() opt.mincpus != -1 || opt.realmem != -1 ||\
-                            opt.tmpdisk != -1 || opt.contiguous   
 
 /*
  * process_options_first_pass()
