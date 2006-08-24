@@ -71,10 +71,6 @@ typedef struct sbatch_options {
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
-	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
-	char *cpu_bind;		/* binding map for map/mask_cpu */
-	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
-	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
@@ -91,14 +87,10 @@ typedef struct sbatch_options {
 	int immediate;		/* -i, --immediate      	*/
 
 	bool hold;		/* --hold, -H			*/
-	bool noshell;		/* --noshell                    */
 	bool no_kill;		/* --no-kill, -k		*/
-	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	bool no_requeue;	/* --no-requeue			*/
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
-	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
-	bool disable_status;    /* --disable-status, -X         */
 	int  quiet;
 	int  verbose;
 	bool test_only;		/* --test-only			*/
@@ -115,9 +107,6 @@ typedef struct sbatch_options {
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 	char *relative;		/* --relative -r N              */
-	bool no_alloc;		/* --no-allocate, -Z		*/
-	int  max_launch_time;   /* Undocumented                 */
-	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
@@ -128,7 +117,6 @@ typedef struct sbatch_options {
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
-	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	char *ifname;		/* input file name		*/
 	char *ofname;		/* output file name		*/
 	char *efname;		/* error file name		*/

@@ -66,10 +66,6 @@ typedef struct salloc_options {
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
-	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
-	char *cpu_bind;		/* binding map for map/mask_cpu */
-	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
-	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
@@ -84,15 +80,12 @@ typedef struct salloc_options {
 	int immediate;		/* -i, --immediate      	*/
 
 	bool hold;		/* --hold, -H			*/
-	bool noshell;		/* --noshell                    */
-	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	int kill_command_signal;/* --kill-command, -K           */
 	bool kill_command_signal_set;
 	bool no_requeue;	/* --no-requeue			*/
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
-	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	int  quiet;
 	int  verbose;
 	bool test_only;		/* --test-only			*/
@@ -106,8 +99,6 @@ typedef struct salloc_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	int  max_launch_time;   /* Undocumented                 */
-	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */

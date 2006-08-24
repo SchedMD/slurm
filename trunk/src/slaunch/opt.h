@@ -117,7 +117,6 @@ typedef struct slaunch_options {
 	bool task_layout_file_set;
 	int relative;		/* --relative -r N              */
 	bool relative_set;      /* true if --relative set explicitly */
-	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */

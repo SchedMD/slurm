@@ -623,8 +623,6 @@ static void _opt_default()
 		opt.max_launch_time = 120;
 		opt.msg_timeout     = 15;
 	}
-
-	opt.no_alloc = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -656,13 +654,8 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_DISTRIBUTION", OPT_DISTRIB,   NULL,               NULL           },
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLAUNCH_NUM_NODES",    OPT_INT,       &opt.num_nodes,  &opt.num_nodes_set},
-  {"SLAUNCH_NPROCS",       OPT_INT,       &opt.num_tasks,  &opt.num_tasks_set},
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
   {"SLAUNCH_REMOTE_CWD",   OPT_STRING,    &opt.cwd,           NULL           },
-  {"SLAUNCH_STDERRMODE",   OPT_STRING,    &opt.local_efname,  NULL           },
-  {"SLAUNCH_STDINMODE",    OPT_STRING,    &opt.local_ifname,  NULL           },
-  {"SLAUNCH_STDOUTMODE",   OPT_STRING,    &opt.local_ofname,  NULL           },
   {"SLAUNCH_TIMELIMIT",    OPT_INT,       &opt.time_limit,    NULL           },
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
@@ -838,22 +831,21 @@ void set_options(const int argc, char **argv)
 		{"label",         no_argument,       0, 'l'},
 		{"nodelist-byid", required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
-		{"ntasks",        required_argument, 0, 'n'},
+		{"tasks",         required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"local-output",  required_argument, 0, 'o'},
 		{"remote-output", required_argument, 0, 'O'},
 		{"overcommit",    no_argument,       0, 'C'},
-		{"quiet",            no_argument,    0, 'q'},
+		{"quiet",         no_argument,       0, 'q'},
 		{"relative",      required_argument, 0, 'r'},
 		{"time",          required_argument, 0, 't'},
 		{"unbuffered",    no_argument,       0, 'u'},
 		{"task-layout-byid", required_argument, 0, 'T'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
-		{"nodelist",      required_argument, 0, 'w'},
+		{"nodelist-byname", required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
 		{"task-layout-byname", required_argument, 0, 'Y'},
-		{"no-allocate",   no_argument,       0, 'Z'},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 		{"core",             required_argument, 0, LONG_OPT_CORE},
@@ -877,8 +869,8 @@ void set_options(const int argc, char **argv)
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+c:Cd:D:e:E:F:hi:I:J:kKlL:m:n:N:"
-		"o:O:qr:t:T:uvVw:W:Y:Z";
+	char *opt_string =
+		"+c:Cd:D:e:E:F:hi:I:J:kKlL:m:n:N:o:O:qr:t:T:uvVw:W:Y:";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -1047,12 +1039,6 @@ void set_options(const int argc, char **argv)
 			xfree(opt.task_layout);
 			opt.task_layout = xstrdup(optarg);
 			opt.task_layout_byname_set = true;
-			break;
-		case 'Z':
-			opt.no_alloc = true;
-			uname(&name);
-			if (strcasecmp(name.sysname, "AIX") == 0)
-				opt.network = xstrdup("ip");
 			break;
                 case LONG_OPT_CPU_BIND:
 			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
@@ -1619,7 +1605,6 @@ static bool _opt_verify(void)
 			} else if (opt.num_tasks > hostlist_count(task_l)) {
 				error("Asked for more tasks (%d) than listed"
 				      " in the task layout (%d)",
-
 				      opt.num_tasks, hostlist_count(task_l));
 				verified = false;
 			} else {
@@ -1679,22 +1664,11 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.quiet && opt.verbose) {
-		error ("don't specify both --verbose (-v) and --quiet (-Q)");
-		verified = false;
-	}
-
-	if (opt.no_alloc && !opt.nodelist) {
-		error("must specify a node list with -Z/--no-allocate.");
+		error ("don't specify both --verbose (-v) and --quiet (-q)");
 		verified = false;
 	}
 
 	if (opt.relative_set) {
-		if (opt.no_alloc) {
-			error("-r/--relative not allowed with"
-			      " -Z/--no-allocate.");
-			verified = false;
-		}
-
 		if (opt.nodelist != NULL) {
 			error("-r/--relative not allowed with"
 			      " -w/--nodelist.");
@@ -1991,7 +1965,7 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --slurmd-debug=level    slurmd debug level\n"
 "      --core=type             change default corefile format type\n"
 "                              (type=\"list\" to list of valid formats)\n"
@@ -2004,9 +1978,7 @@ static void _help(void)
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
-"\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
-"  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
 "      --cpu_bind=             Bind tasks to CPUs\n" 
