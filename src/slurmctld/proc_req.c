@@ -458,6 +458,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	uid_t uid;
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
+	bool job_waiting = false;
 	struct job_record *job_ptr;
 
 	START_TIMER;
@@ -483,9 +484,12 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if ((error_code == SLURM_SUCCESS) ||
-	    ((immediate == 0) && 
-	     (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE))) {
+	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
+	||  (error_code == ESLURM_JOB_HELD))
+		job_waiting = true;
+
+	if ((error_code == SLURM_SUCCESS)
+	||  ((immediate == 0) && job_waiting)) { 
 		xassert(job_ptr);
 		info("_slurm_rpc_allocate_resources JobId=%u NodeList=%s %s",
 			job_ptr->job_id, job_ptr->nodes, TIME_STR);
@@ -1767,8 +1771,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if ((error_code != SLURM_SUCCESS) &&
-	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
+	if ((error_code != SLURM_SUCCESS)
+	&&  (error_code != ESLURM_JOB_HELD)
+	&&  (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		info("_slurm_rpc_submit_batch_job: %s",
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);

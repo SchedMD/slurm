@@ -121,7 +121,7 @@ allocate_nodes(void)
 	
 	if ((rc == 0) && (resp->node_list == NULL)) {
 		if (resp->error_code)
-			info("Warning: %s", slurm_strerror(resp->error_code));
+			verbose("Warning: %s", slurm_strerror(resp->error_code));
 		_wait_for_resources(&resp);
 	}
 	/* For diagnosing a node problem, administrators need to sometimes

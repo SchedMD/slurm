@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm_errno.c - error codes and functions for slurm
  ******************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -179,6 +179,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Current SwitchType does not permit arbitrary task distribution"},
 	{ ESLURM_TASKDIST_REQUIRES_OVERCOMMIT,
 	  "Requested more tasks than available processors"	},
+	{ ESLURM_JOB_HELD,
+	  "Job is in held state, pending scheduler release"	},
 
 	/* slurmd error codes */
 
