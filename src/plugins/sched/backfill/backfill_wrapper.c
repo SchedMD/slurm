@@ -122,10 +122,10 @@ slurm_sched_plugin_schedule( void )
 /* TAG(                   slurm_sched_plugin_initial_priority           ) */
 /**************************************************************************/
 u_int32_t
-slurm_sched_plugin_initial_priority( u_int32_t max_prio )
+slurm_sched_plugin_initial_priority( u_int32_t last_prio )
 {
-	if (max_prio >= 2)
-		return (max_prio - 1);
+	if (last_prio >= 2)
+		return (last_prio - 1);
 	else
 		return 1;
 }
