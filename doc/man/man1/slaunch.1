@@ -13,10 +13,10 @@ slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on 
 .LP 
 .TP 
 \fB\-\-jobid\fR <\fIJOBID\fP>
-The job allocation under which the parallel application should be launched.
+The job allocation under which the parallel application should be launched.  If slaunch is running under salloc or a batch script, slaunch can automatically determint the jobid from the SLURM_JOB_ID environment variable.  Otherwise, you will need to tell slaunch which job allocation to use.
 .TP 
-\fB\-n\fR, \fB\-\-ntasks\fR[=]<\fInumber\fR>
-Specify the number of processes to launch.  The default is one process per node, but note that the \-c parameter will change this default.
+\fB\-n\fR, \fB\-\-tasks\fR[=]<\fInumber\fR>
+Specify the number of processes to launch.  The default is one process per node.
 .TP 
 \fB\-N\fR, \fB\-\-nodes\fR[=]<\fInumber\fR>
 Specify the number of nodes to be used by this job step.  By default,

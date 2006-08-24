@@ -84,14 +84,9 @@
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
-#define OPT_CPU_BIND    0x0d
-#define OPT_MEM_BIND    0x0e
 #define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_USAGE       0x101
-#define LONG_OPT_XTO         0x102
-#define LONG_OPT_LAUNCH      0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
@@ -102,7 +97,6 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
-#define LONG_OPT_NOSHELL     0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_TEST_ONLY   0x113
@@ -115,9 +109,6 @@
 #define LONG_OPT_TASK_PROLOG 0x11c
 #define LONG_OPT_TASK_EPILOG 0x11d
 #define LONG_OPT_NICE        0x11e
-#define LONG_OPT_CPU_BIND    0x11f
-#define LONG_OPT_MEM_BIND    0x120
-#define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_NO_REQUEUE  0x123
 
 /*---- global variables, defined in opt.h ----*/
@@ -168,11 +159,7 @@ static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static enum  task_dist_states _verify_dist_type(const char *arg);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
-static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
-					cpu_bind_type_t *cpu_bind_type);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
-static int   _verify_mem_bind(const char *arg, char **mem_bind,
-                                        mem_bind_type_t *mem_bind_type);
 static int   _verify_conn_type(const char *arg);
 static char *_fullpath(const char *filename);
 static void _set_options(int argc, char **argv);
@@ -298,202 +285,6 @@ static int _verify_geometry(const char *arg, uint16_t *geometry)
 		xfree(original_ptr);
 
 	return rc;
-}
-
-/*
- * verify cpu_bind arguments
- * returns -1 on error, 0 otherwise
- */
-static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
-		cpu_bind_type_t *cpu_bind_type)
-{
-    	char *buf = xstrdup(arg);
-	char *pos = buf;
-	/* we support different launch policy names
-	 * we also allow a verbose setting to be specified
-	 *     --cpu_bind=v
-	 *     --cpu_bind=rank,v
-	 *     --cpu_bind=rank
-	 *     --cpu_bind={MAP_CPU|MAP_MASK}:0,1,2,3,4
-	 */
-	if (*pos) {
-		/* parse --cpu_bind command line arguments */
-		bool fl_cpubind_verbose = 0;
-	        char *cmd_line_affinity = NULL;
-	        char *cmd_line_mapping  = NULL;
-		char *mappos = strchr(pos,':');
-		if (!mappos) {
-		    	mappos = strchr(pos,'=');
-		}
-		if (strncasecmp(pos, "quiet", 5) == 0) {
-			fl_cpubind_verbose=0;
-			pos+=5;
-		} else if (*pos=='q' || *pos=='Q') {
-			fl_cpubind_verbose=0;
-			pos++;
-		}
-		if (strncasecmp(pos, "verbose", 7) == 0) {
-			fl_cpubind_verbose=1;
-			pos+=7;
-		} else if (*pos=='v' || *pos=='V') {
-			fl_cpubind_verbose=1;
-			pos++;
-		}
-		if (*pos==',') {
-			pos++;
-		}
-		if (*pos) {
-			char *vpos=NULL;
-			cmd_line_affinity = pos;
-			if (((vpos=strstr(pos,",q")) !=0  ) ||
-			    ((vpos=strstr(pos,",Q")) !=0  )) {
-				*vpos='\0';
-				fl_cpubind_verbose=0;
-			}
-			if (((vpos=strstr(pos,",v")) !=0  ) ||
-			    ((vpos=strstr(pos,",V")) !=0  )) {
-				*vpos='\0';
-				fl_cpubind_verbose=1;
-			}
-		}
-		if (mappos) {
-			*mappos='\0'; 
-			mappos++;
-			cmd_line_mapping=mappos;
-		}
-
-		/* convert parsed command line args into interface */
-		if (cmd_line_mapping) {
-			xfree(*cpu_bind);
-			*cpu_bind = xstrdup(cmd_line_mapping);
-		}
-		if (fl_cpubind_verbose) {
-		        *cpu_bind_type |= CPU_BIND_VERBOSE;
-		}
-		if (cmd_line_affinity) {
-			*cpu_bind_type &= CPU_BIND_VERBOSE;	/* clear any
-								 * previous type */
-			if ((strcasecmp(cmd_line_affinity, "no") == 0) ||
-			    (strcasecmp(cmd_line_affinity, "none") == 0)) {
-				*cpu_bind_type |= CPU_BIND_NONE;
-			} else if (strcasecmp(cmd_line_affinity, "rank") == 0) {
-				*cpu_bind_type |= CPU_BIND_RANK;
-			} else if ((strcasecmp(cmd_line_affinity, "map_cpu") == 0) ||
-			           (strcasecmp(cmd_line_affinity, "mapcpu") == 0)) {
-				*cpu_bind_type |= CPU_BIND_MAPCPU;
-			} else if ((strcasecmp(cmd_line_affinity, "mask_cpu") == 0) ||
-			           (strcasecmp(cmd_line_affinity, "maskcpu") == 0)) {
-				*cpu_bind_type |= CPU_BIND_MASKCPU;
-			} else {
-				error("unrecognized --cpu_bind argument \"%s\"", 
-					cmd_line_affinity);
-				xfree(buf);
-				return 1;
-			}
-		}
-	}
-
-	xfree(buf);
-	return 0;
-}
-
-/*
- * verify mem_bind arguments
- * returns -1 on error, 0 otherwise
- */
-static int _verify_mem_bind(const char *arg, char **mem_bind, 
-		mem_bind_type_t *mem_bind_type)
-{
-	char *buf = xstrdup(arg);
-	char *pos = buf;
-	/* we support different launch policy names
-	 * we also allow a verbose setting to be specified
-	 *     --mem_bind=v
-	 *     --mem_bind=rank,v
-	 *     --mem_bind=rank
-	 *     --mem_bind={MAP_CPU|MAP_MASK}:0,1,2,3,4
-	 */
-	if (*pos) {
-		/* parse --mem_bind command line arguments */
-		bool fl_membind_verbose = 0;
-		char *cmd_line_affinity = NULL;
-		char *cmd_line_mapping  = NULL;
-		char *mappos = strchr(pos,':');
-		if (!mappos) {
-			mappos = strchr(pos,'=');
-		}
-		if (strncasecmp(pos, "quiet", 5) == 0) {
-			fl_membind_verbose = 0;
-			pos+=5;
-		} else if (*pos=='q' || *pos=='Q') {
-			fl_membind_verbose = 0;
-			pos++;
-		}
-		if (strncasecmp(pos, "verbose", 7) == 0) {
-			fl_membind_verbose = 1;
-			pos+=7;
-		} else if (*pos=='v' || *pos=='V') {
-			fl_membind_verbose = 1;
-			pos++;
-		}
-		if (*pos==',') {
-			pos++;
-		}
-		if (*pos) {
-			char *vpos=NULL;
-			cmd_line_affinity = pos;
-			if (((vpos=strstr(pos,",q")) !=0  ) ||
-			    ((vpos=strstr(pos,",Q")) !=0  )) {
-				*vpos='\0';
-				fl_membind_verbose = 0;
-			}
-			if (((vpos=strstr(pos,",v")) !=0  ) ||
-			    ((vpos=strstr(pos,",V")) !=0  )) {
-				*vpos='\0';
-				fl_membind_verbose = 1;
-			}
-		}
-		if (mappos) {
-			*mappos='\0';
-			mappos++;
-			cmd_line_mapping=mappos;
-		}
-
-		/* convert parsed command line args into interface */
-		if (cmd_line_mapping) {
-			xfree(*mem_bind);
-			*mem_bind = xstrdup(cmd_line_mapping);
-		}
-		if (fl_membind_verbose) {
-			*mem_bind_type |= MEM_BIND_VERBOSE;
-		}
-		if (cmd_line_affinity) {
-			*mem_bind_type &= MEM_BIND_VERBOSE;	/* clear any
-								 * previous type */
-			if ((strcasecmp(cmd_line_affinity, "no") == 0) ||
-			    (strcasecmp(cmd_line_affinity, "none") == 0)) {
-				*mem_bind_type |= MEM_BIND_NONE;
-			} else if (strcasecmp(cmd_line_affinity, "rank") == 0) {
-				*mem_bind_type |= MEM_BIND_RANK;
-			} else if (strcasecmp(cmd_line_affinity, "local") == 0) {
-				*mem_bind_type |= MEM_BIND_LOCAL;
-			} else if ((strcasecmp(cmd_line_affinity, "map_mem") == 0) ||
-			           (strcasecmp(cmd_line_affinity, "mapmem") == 0)) {
-				*mem_bind_type |= MEM_BIND_MAPCPU;
-			} else if ((strcasecmp(cmd_line_affinity, "mask_mem") == 0) ||
-			           (strcasecmp(cmd_line_affinity, "maskmem") == 0)) {
-				*mem_bind_type |= MEM_BIND_MASKCPU;
-			} else {
-				error("unrecognized --mem_bind argument \"%s\"",
-					cmd_line_affinity);
-				xfree(buf);
-				return 1;
-			}
-		}
-	}
-
-	xfree(buf);
-	return 0;
 }
 
 /* 
@@ -661,10 +452,6 @@ static void _opt_default()
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
-	opt.cpu_bind_type = 0;
-	opt.cpu_bind = NULL;
-	opt.mem_bind_type = 0;
-	opt.mem_bind = NULL;
 	opt.time_limit = -1;
 	opt.partition = NULL;
 
@@ -678,16 +465,10 @@ static void _opt_default()
 
 	opt.share = false;
 	opt.no_kill = false;
-	opt.kill_bad_exit = false;
 
 	opt.immediate	= false;
 	opt.no_requeue	= false;
-
-	opt.noshell	= false;
 	opt.max_wait	= slurm_get_wait_time();
-
-	opt.quit_on_intr = false;
-	opt.disable_status = false;
 	opt.test_only   = false;
 
 	opt.quiet = 0;
@@ -704,8 +485,6 @@ static void _opt_default()
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
-	opt.max_launch_time = 120;/* 120 seconds to launch job             */
-	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
@@ -724,9 +503,6 @@ static void _opt_default()
 	opt.ifname = NULL;
 	opt.ofname = NULL;
 	opt.efname = NULL;
-
-	opt.ctrl_comm_ifhn  = xshort_hostname();
-
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -748,30 +524,23 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
-  {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-  {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-  {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-  {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
-  {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
-  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
-  {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
-  {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
-  {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
-  {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
-  {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
-  {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
-  {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
-  {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
-  {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
-  {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
-
+  {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
+  {"SBATCH_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
+  {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
+  {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
+  {"SBATCH_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
+  {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
+  {"SBATCH_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
+  {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
+  {"SBATCH_NNODES",        OPT_NODES,      NULL,               NULL           },
+  {"SBATCH_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
+  {"SBATCH_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
+  {"SBATCH_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
+  {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
+  {"SBATCH_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
+  {"SBATCH_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
+  {"SBATCH_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
+  {"SBATCH_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -834,18 +603,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			opt.distribution = dt;
 		break;
 
-	case OPT_CPU_BIND:
-		if (_verify_cpu_bind(val, &opt.cpu_bind,
-				     &opt.cpu_bind_type))
-			exit(1);
-		break;
-
-	case OPT_MEM_BIND:
-		if (_verify_mem_bind(val, &opt.mem_bind,
-				&opt.mem_bind_type))
-			exit(1);
-		break;
-
 	case OPT_NODES:
 		opt.nodes_set = _verify_node_count( val, 
 						    &opt.min_nodes, 
@@ -901,44 +658,35 @@ static struct option long_options[] = {
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"no-kill",       no_argument,       0, 'k'},
-	{"kill-on-bad-exit", no_argument,    0, 'K'},
 	{"distribution",  required_argument, 0, 'm'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"partition",     required_argument, 0, 'p'},
 	{"dependency",    required_argument, 0, 'P'},
-	{"quit-on-interrupt", no_argument,   0, 'q'},
-	{"quiet",            no_argument,    0, 'Q'},
+	{"quiet",         no_argument,       0, 'q'},
 	{"relative",      required_argument, 0, 'r'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
 	{"time",          required_argument, 0, 't'},
+	{"usage",         no_argument,       0, 'u'},
 	{"account",       required_argument, 0, 'U'},
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
 	{"nodelist",      required_argument, 0, 'w'},
 	{"wait",          required_argument, 0, 'W'},
 	{"exclude",       required_argument, 0, 'x'},
-	{"disable-status", no_argument,      0, 'X'},
-	{"no-allocate",   no_argument,       0, 'Z'},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
-	{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
-	{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
-	{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 	{"tmp",              required_argument, 0, LONG_OPT_TMP},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
-	{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
-	{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-	{"usage",            no_argument,       0, LONG_OPT_USAGE},
 	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"network",          required_argument, 0, LONG_OPT_NETWORK},
@@ -949,13 +697,12 @@ static struct option long_options[] = {
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"nice",             optional_argument, 0, LONG_OPT_NICE},
-	{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 	{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{NULL,               0,                 0, 0}
 };
 
 static char *opt_string =
-	"+a:c:C:D:e:g:hHi:IJ:kKm:n:N:o:Op:P:qQr:R:st:U:vVw:W:x:XZ";
+	"+a:c:C:D:e:g:hHi:IJ:km:n:N:o:Op:P:qr:R:st:uU:vVw:W:x:";
 
 
 /*
@@ -996,9 +743,12 @@ char *process_options_first_pass(int argc, char **argv)
 			_help();
 			exit(0);
 			break;
-		case 'Q':
+		case 'q':
 			opt.quiet++;
 			break;
+		case 'u':
+			_usage();
+			exit(0);
 		case 'v':
 			opt.verbose++;
 			break;
@@ -1006,9 +756,6 @@ char *process_options_first_pass(int argc, char **argv)
 			_print_version();
 			exit(0);
 			break;
-		case LONG_OPT_USAGE:
-			_usage();
-			exit(0);
 		default:
 			/* will be parsed in second pass function */
 			break;
@@ -1200,7 +947,7 @@ static void _opt_batch_script(const void *body, int size)
 	int skipped = 0;
 	int i;
 
-	/* getopt_long skips over the first argument, so fill it in blank */
+	/* getopt_long skips over the first argument, so fill it in */
 	argc = 1;
 	argv = xmalloc(sizeof(char *));
 	argv[0] = "sbatch";
@@ -1234,8 +981,7 @@ static void _opt_batch_script(const void *body, int size)
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	static bool set_cwd=false, set_name=false;
-	struct utsname name;
+	static bool set_cwd=false;
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
@@ -1286,15 +1032,11 @@ static void _set_options(int argc, char **argv)
 			opt.immediate = true;
 			break;
 		case 'J':
-			set_name = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
 		case 'k':
 			opt.no_kill = true;
-			break;
-		case 'K':
-			opt.kill_bad_exit = true;
 			break;
 		case 'm':
 			opt.distribution = _verify_dist_type(optarg);
@@ -1335,9 +1077,6 @@ static void _set_options(int argc, char **argv)
 			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case 'q':
-			opt.quit_on_intr = true;
-			break;
-		case 'Q':
 			opt.quiet++;
 			break;
 		case 'r':
@@ -1353,6 +1092,9 @@ static void _set_options(int argc, char **argv)
 		case 't':
 			opt.time_limit = _get_int(optarg, "time");
 			break;
+		case 'u':
+			_usage();
+			exit(0);
 		case 'U':
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
@@ -1385,31 +1127,12 @@ static void _set_options(int argc, char **argv)
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(1);
 			break;
-		case 'X': 
-			opt.disable_status = true;
-			break;
-		case 'Z':
-			opt.no_alloc = true;
-			uname(&name);
-			if (strcasecmp(name.sysname, "AIX") == 0)
-				opt.network = xstrdup("ip");
-			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
                         opt.exclusive = true;
                         break;
-                case LONG_OPT_CPU_BIND:
-			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
-							&opt.cpu_bind_type))
-				exit(1);
-			break;
-		case LONG_OPT_MEM_BIND:
-			if (_verify_mem_bind(optarg, &opt.mem_bind,
-					&opt.mem_bind_type))
-				exit(1);
-			break;
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
 			break;
@@ -1428,9 +1151,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 			}
 			break;
-		case LONG_OPT_NOSHELL:
-			opt.noshell = true;
-			break;
 		case LONG_OPT_TMP:
 			opt.tmpdisk = _to_bytes(optarg);
 			if (opt.tmpdisk < 0) {
@@ -1446,14 +1166,6 @@ static void _set_options(int argc, char **argv)
 			opt.msg_timeout = 
 				_get_int(optarg, "msg-timeout");
 			break;
-		case LONG_OPT_LAUNCH:
-			opt.max_launch_time = 
-				_get_int(optarg, "max-launch-time");
-			break;
-		case LONG_OPT_XTO:
-			opt.max_exit_timeout = 
-				_get_int(optarg, "max-exit-timeout");
-			break;
 		case LONG_OPT_UID:
 			opt.euid = uid_from_string (optarg);
 			if (opt.euid == (uid_t) -1)
@@ -1464,9 +1176,6 @@ static void _set_options(int argc, char **argv)
 			if (opt.egid == (gid_t) -1)
 				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
-		case LONG_OPT_USAGE:
-			_usage();
-			exit(0);
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = _verify_conn_type(optarg);
 			break;
@@ -1516,10 +1225,6 @@ static void _set_options(int argc, char **argv)
 				exit(1);
 			}
 			break;
-		case LONG_OPT_CTRL_COMM_IFHN:
-			xfree(opt.ctrl_comm_ifhn);
-			opt.ctrl_comm_ifhn = xstrdup(optarg);
-			break;
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
 			break;
@@ -1543,22 +1248,7 @@ static bool _opt_verify(void)
 	bool verified = true;
 
 	if (opt.quiet && opt.verbose) {
-		error ("don't specify both --verbose (-v) and --quiet (-Q)");
-		verified = false;
-	}
-
-	if (opt.no_alloc && !opt.nodelist) {
-		error("must specify a node list with -Z, --no-allocate.");
-		verified = false;
-	}
-
-	if (opt.no_alloc && opt.exc_nodes) {
-		error("can not specify --exclude list with -Z, --no-allocate.");
-		verified = false;
-	}
-
-	if (opt.no_alloc && opt.relative) {
-		error("do not specify -r,--relative with -Z,--no-allocate.");
+		error ("don't specify both --verbose (-v) and --quiet (-q)");
 		verified = false;
 	}
 
@@ -1617,12 +1307,6 @@ static bool _opt_verify(void)
 		}
 
 	} /* else if (opt.nprocs_set && !opt.nodes_set) */
-
-	/*
-	 * --wait always overrides hidden max_exit_timeout
-	 */
-	if (opt.max_wait)
-		opt.max_exit_timeout = opt.max_wait;
 
 	if (opt.time_limit == 0)
 		opt.time_limit = INFINITE;
@@ -1897,10 +1581,6 @@ static void _opt_list()
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
-	info("cpu_bind       : %s", 
-	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
-	info("mem_bind       : %s",
-	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("no-requeue     : %s", tf_(opt.no_requeue));
@@ -1937,7 +1617,6 @@ static void _opt_list()
 	info("mail_user      : %s", opt.mail_user);
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
-	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1956,14 +1635,13 @@ static void _usage(void)
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--mpi=type] [--account=name] [--dependency=jobid]\n"
-"              [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
-"              [--cpu_bind=...] [--mem_bind=...]\n"
+"              [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--task-prolog=fname] [--task-epilog=fname]\n"
-"              [--ctrl-comm-ifhn=addr] [--no-requeue]\n"
+"              [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1986,8 +1664,6 @@ static void _help(void)
 "  -D, --chdir=path            change remote current working directory\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -k, --no-kill               do not kill job on node failure\n"
-"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
-"                              non-zero exit code\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|hostfile)\n"
@@ -1996,10 +1672,8 @@ static void _help(void)
 "      --mpi=type              type of MPI being used\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
-"  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
-"  -X, --disable-status        Disable Ctrl-C status feature\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --slurmd-debug=level    slurmd debug level\n"
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
@@ -2011,9 +1685,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
-"      --no-shell              don't spawn shell in allocate mode\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
@@ -2023,33 +1695,10 @@ static void _help(void)
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
-"  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
-"                              cpu consumable resource is enabled\n"
-"\n"
-"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
-"      --cpu_bind=             Bind tasks to CPUs\n" 
-"             q[uiet],           quietly bind before task runs (default)\n"
-"             v[erbose],         verbosely report binding before task runs\n"
-"             no[ne]             don't bind tasks to CPUs (default)\n"
-"             rank               bind by task rank\n"
-"             map_cpu:<list>     bind by mapping CPU IDs to tasks as specified\n"
-"                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-"             mask_cpu:<list>    bind by setting CPU masks on tasks as specified\n"
-"                                where <list> is <mask1>,<mask2>,...<maskN>\n"
-"      --mem_bind=             Bind tasks to memory\n"
-"             q[uiet],           quietly bind before task runs (default)\n"
-"             v[erbose],         verbosely report binding before task runs\n"
-"             no[ne]             don't bind tasks to memory (default)\n"
-"             rank               bind by task rank\n"
-"             local              bind to memory local to processor\n"
-"             map_mem:<list>     bind by mapping memory of CPU IDs to tasks as specified\n"
-"                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-"             mask_mem:<list>    bind by setting menory of CPU masks on tasks as specified\n"
-"                                where <list> is <mask1>,<mask2>,...<maskN>\n");
-
+"                              cpu consumable resource is enabled\n");
 	printf("\n");
 
         printf(
@@ -2068,8 +1717,8 @@ static void _help(void)
   "\n"
 #endif
 "Help options:\n"
-"      --help                  show this help message\n"
-"      --usage                 display brief usage message\n"
+"  -h, --help                  show this help message\n"
+"  -u, --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
