@@ -188,10 +188,10 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.switch_job = ctx->step_resp->switch_job;
 	launch.task_prolog = params->task_prolog;
 	launch.task_epilog = params->task_epilog;
-	launch.cpu_bind_type = 0; /* FIXME opt.cpu_bind_type; */
-	launch.cpu_bind = NULL; /* FIXME opt.cpu_bind; */
-	launch.mem_bind_type = 0; /* FIXME opt.mem_bind_type; */
-	launch.mem_bind = NULL; /* FIXME opt.mem_bind; */
+	launch.cpu_bind_type = params->cpu_bind_type;
+	launch.cpu_bind = params->cpu_bind;
+	launch.mem_bind_type = params->mem_bind_type;
+	launch.mem_bind = params->mem_bind;
 	launch.multi_prog = params->multi_prog ? 1 : 0;
 
 	launch.options = job_options_create();

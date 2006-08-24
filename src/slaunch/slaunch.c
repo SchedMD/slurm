@@ -240,6 +240,10 @@ int slaunch(int argc, char **argv)
 	params.remote_error_filename = opt.remote_efname;
 	params.task_prolog = opt.task_prolog;
 	params.task_epilog = opt.task_epilog;
+	params.cpu_bind = opt.cpu_bind;
+	params.cpu_bind_type = opt.cpu_bind_type;
+	params.mem_bind = opt.mem_bind;
+	params.mem_bind_type = opt.mem_bind_type;
 	
 	_setup_local_fds(&params.local_fds, step_ctx);
 	params.parallel_debug = opt.parallel_debug ? true : false;

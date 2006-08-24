@@ -564,6 +564,10 @@ typedef struct {
 	bool parallel_debug;
 	char *task_prolog;
 	char *task_epilog;
+	cpu_bind_type_t cpu_bind_type;
+	char *cpu_bind;
+	mem_bind_type_t mem_bind_type;
+	char *mem_bind;
 } slurm_job_step_launch_t;
 
 typedef struct {
