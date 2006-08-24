@@ -3,17 +3,16 @@
 <h1>Maui Scheduler Integration Guide</h1>
 <h2>Overview</h2>
 <p>Maui configuration is quite complicated and is really beyond the scope
-of any documents we could supply with SLURM.  We don't intend SLURM to
-be a "wrapper" for Maui, or to subordinate Maui.  The best (and
-practically only) resource for configuration Maui is the online
-documents at the site of Maui's developers: 
+of any documents we could supply with SLURM.  
+The best resource for Maui configuration information is the 
+online documents at Cluster Resources Inc.: 
 <a href="http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml">
 http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml</a>.
 
 <h2>Configuration</h2>
 <p>First, download the Maui scheduler kit from their web site
-<a href="http://www.clusterresources.com/products/maui">
-http://www.clusterresources.com/products/maui</a>. 
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php</a>. 
 Note: maui-3.2.6p9 has been validated with SLURM, other versions 
 should also work properly.</p>
 
@@ -88,6 +87,6 @@ setenv MAUIHOMEDIR /root/MAUI/maui-3.2.6p9
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 January 2005</p>
+<p style="text-align:center;">Last modified 24 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

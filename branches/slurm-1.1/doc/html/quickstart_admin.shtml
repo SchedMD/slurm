@@ -204,8 +204,11 @@ SLURM's default scheduler is FIFO (First-In First-Out). A backfill scheduler
 plugin is also available. Backfill scheduling will initiate a lower-priority job 
 if doing so does not delay the expected initiation time of higher priority jobs; 
 essentially using smaller jobs to fill holes in the resource allocation plan. 
-SLURM also supports a plugin for use of <a href="http://supercluster.org/maui">
-The Maui Scheduler</a>, which offers sophisticated scheduling algorithms. 
+SLURM also supports a plugin for use of 
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> or 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a> which offer sophisticated scheduling algorithms. 
 Motivated users can even develop their own scheduler plugin if so desired. </p>
 
 <h3>Node selection</h3>
