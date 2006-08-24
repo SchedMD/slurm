@@ -837,9 +837,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	if (fail_reason != WAIT_NO_REASON) {
 		if (detail_ptr)
 			detail_ptr->wait_reason = fail_reason;
-		if (job_ptr->priority != 0)	/* not user/admin hold */
-			job_ptr->priority = 1;	/* sys hold, move to end of queue */
 		last_job_update = time(NULL);
+		if (job_ptr->priority == 0)	/* user/admin hold */
+			return ESLURM_JOB_HELD;
+		job_ptr->priority = 1;	/* sys hold, move to end of queue */
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 

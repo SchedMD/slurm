@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm_errno.h - error codes and functions for slurm
  ******************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, 
  *	Jim Garlick <garlick@llnl.gov>, et. al.
@@ -134,6 +134,7 @@ enum {
 	ESLURM_DISABLED,
 	ESLURM_DEPENDENCY,
 	ESLURM_BATCH_ONLY,
+	ESLURM_JOB_HELD,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
