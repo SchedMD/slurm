@@ -22,6 +22,9 @@ Specify the number of processes to launch.  The default is one process per node.
 Specify the number of nodes to be used by this job step.  By default,
 slaunch will use all of the nodes in the specified job allocation.
 .TP 
+\fB\-d\fR, \fB\-\-dependency\fR[=]<\fIjobid\fR>
+Defer the start of this job until the specified \fIjobid\fR has completed.  Many jobs can share the same dependency and these jobs may even belong to different  users.   The  value may be changed after job submission using the scontrol command.
+.TP 
 \fB\-r\fR, \fB\-\-relative\fR[=]<\fInumber\fR>
 Specify the first node in the allocation on which this job step will be launched.  Counting starts at zero, thus the first node in the job allocation is node 0.  The option to \-\-relative may also be a negative number.  \-1 is the last node in the allocation, \-2 is the next to last node, etc.  By default, the controller will select the starting node (assuming that there are no other nodelist or task layout options that specify specific nodes).
 

@@ -77,7 +77,6 @@
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
 #define OPT_DEBUG       0x03
-#define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
@@ -87,7 +86,6 @@
 #define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -97,9 +95,7 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
-#define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
-#define LONG_OPT_TEST_ONLY   0x113
 #define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
 #define LONG_OPT_PROPAGATE   0x116
@@ -157,7 +153,6 @@ static long  _to_bytes(const char *arg);
 
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
-static enum  task_dist_states _verify_dist_type(const char *arg);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_conn_type(const char *arg);
@@ -209,25 +204,6 @@ static bool _valid_node_list(char **node_list_pptr)
         /*  free(*node_list_pptr);	orphanned */
 	*node_list_pptr = node_list;
 	return true;
-}
-
-/* 
- * verify that a distribution type in arg is of a known form
- * returns the task_dist_states, or -1 on unrecognized state
- */
-static enum task_dist_states _verify_dist_type(const char *arg)
-{
-	int len = strlen(arg);
-	enum task_dist_states result = -1;
-
-	if (strncasecmp(arg, "cyclic", len) == 0)
-		result = SLURM_DIST_CYCLIC;
-	else if (strncasecmp(arg, "block", len) == 0)
-		result = SLURM_DIST_BLOCK;
-	else if (strncasecmp(arg, "arbitrary", len) == 0)
-		result = SLURM_DIST_ARBITRARY;
-
-	return result;
 }
 
 /*
@@ -461,15 +437,12 @@ static void _opt_default()
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
-	opt.distribution = SLURM_DIST_CYCLIC;
-
 	opt.share = false;
 	opt.no_kill = false;
 
 	opt.immediate	= false;
 	opt.no_requeue	= false;
 	opt.max_wait	= slurm_get_wait_time();
-	opt.test_only   = false;
 
 	opt.quiet = 0;
 	opt.verbose = 0;
@@ -485,7 +458,6 @@ static void _opt_default()
         opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
-	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
@@ -528,7 +500,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SBATCH_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
@@ -566,7 +537,6 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	enum task_dist_states dt;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -592,15 +562,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid", e->var, val);
 		}
-		break;
-
-	case OPT_DISTRIB:
-		dt = _verify_dist_type(val);
-		if (dt == -1) {
-			error("\"%s=%s\" -- invalid distribution type. " 
-			      "ignoring...", e->var, val);
-		} else 
-			opt.distribution = dt;
 		break;
 
 	case OPT_NODES:
@@ -648,7 +609,7 @@ _process_env_var(env_vars_t *e, const char *val)
 static struct option long_options[] = {
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"constraint",    required_argument, 0, 'C'},
-	{"slurmd-debug",  required_argument, 0, 'd'},
+	{"dependency",    required_argument, 0, 'd'},
 	{"chdir",         required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"geometry",      required_argument, 0, 'g'},
@@ -658,12 +619,10 @@ static struct option long_options[] = {
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"no-kill",       no_argument,       0, 'k'},
-	{"distribution",  required_argument, 0, 'm'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"partition",     required_argument, 0, 'p'},
-	{"dependency",    required_argument, 0, 'P'},
 	{"quiet",         no_argument,       0, 'q'},
 	{"relative",      required_argument, 0, 'r'},
 	{"no-rotate",     no_argument,       0, 'R'},
@@ -683,12 +642,9 @@ static struct option long_options[] = {
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"tmp",              required_argument, 0, LONG_OPT_TMP},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
-	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"network",          required_argument, 0, LONG_OPT_NETWORK},
 	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"begin",            required_argument, 0, LONG_OPT_BEGIN},
@@ -702,7 +658,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:c:C:D:e:g:hHi:IJ:km:n:N:o:Op:P:qr:R:st:uU:vVw:W:x:";
+	"+a:c:C:d:D:e:g:hHi:IJ:kn:N:o:Op:qr:R:st:uU:vVw:W:x:";
 
 
 /*
@@ -981,7 +937,6 @@ static void _opt_batch_script(const void *body, int size)
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	static bool set_cwd=false;
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
@@ -999,8 +954,10 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
+		case 'd':
+			opt.dependency = _get_int(optarg, "dependency");
+			break;
 		case 'D':
-			set_cwd = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
@@ -1038,14 +995,6 @@ static void _set_options(int argc, char **argv)
 		case 'k':
 			opt.no_kill = true;
 			break;
-		case 'm':
-			opt.distribution = _verify_dist_type(optarg);
-			if (opt.distribution == -1) {
-				error("distribution type `%s' " 
-				      "is not recognized", optarg);
-				exit(1);
-			}
-			break;
 		case 'n':
 			opt.nprocs_set = true;
 			opt.nprocs = 
@@ -1072,9 +1021,6 @@ static void _set_options(int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case 'P':
-			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case 'q':
 			opt.quiet++;
@@ -1162,10 +1108,6 @@ static void _set_options(int argc, char **argv)
 			opt.jobid = _get_int(optarg, "jobid");
 			opt.jobid_set = true;
 			break;
-		case LONG_OPT_TIMEO:
-			opt.msg_timeout = 
-				_get_int(optarg, "msg-timeout");
-			break;
 		case LONG_OPT_UID:
 			opt.euid = uid_from_string (optarg);
 			if (opt.euid == (uid_t) -1)
@@ -1178,9 +1120,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = _verify_conn_type(optarg);
-			break;
-		case LONG_OPT_TEST_ONLY:
-			opt.test_only = true;
 			break;
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
@@ -1580,7 +1519,6 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
-	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("no-requeue     : %s", tf_(opt.no_requeue));
@@ -1665,8 +1603,6 @@ static void _help(void)
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -s, --share                 share nodes with other jobs\n"
-"  -m, --distribution=type     distribution method for processes to nodes\n"
-"                              (type = block|cyclic|hostfile)\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              run under already allocated job\n"
 "      --mpi=type              type of MPI being used\n"
@@ -1674,8 +1610,7 @@ static void _help(void)
 "                              before killing job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --slurmd-debug=level    slurmd debug level\n"
-"  -P, --dependency=jobid      defer job until specified jobid completes\n"
+"  -d, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"

@@ -45,11 +45,6 @@
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
-#define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
-		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
-			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
-			         "unknown"
-
 typedef struct salloc_options {
 
 	char *progname;		/* argv[0] of this program or 
@@ -88,7 +83,6 @@ typedef struct salloc_options {
 	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
-	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 
 	/* constraint options */
@@ -99,7 +93,6 @@ typedef struct salloc_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
 
@@ -113,13 +106,6 @@ typedef struct salloc_options {
 } opt_t;
 
 extern opt_t opt;
-
-/* return whether any constraints were specified by the user 
- * (if new constraints are added above, might want to add them to this
- *  macro or move this to a function if it gets a little complicated)
- */
-#define constraints_given() opt.mincpus != -1 || opt.realmem != -1 ||\
-                            opt.tmpdisk != -1 || opt.contiguous   
 
 /* process options:
  * 1. set defaults
