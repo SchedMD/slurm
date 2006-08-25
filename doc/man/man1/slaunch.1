@@ -36,7 +36,7 @@ The order of the node names in the list is not important; the node names
 will be sorted my SLURM.
 .TP 
 \fB\-L\fR, \fB\-\-nodelist\-byid\fR[=]<\fInode index list\fR>
-Request a specific set of nodes in a job allaction for use by the job step.  The list may be specified as a comma\-separated list relative node indices in the job allocation (e.g., "0,2\-5,\-2,8").  Duplicate indices are permitted, but are ignored.  The order of the node indices in the list is not important; the node indices will be sorted my SLURM.
+Request a specific set of nodes in a job alloction on which to run the tasks of the job step.  The list may be specified as a comma\-separated list relative node indices in the job allocation (e.g., "0,2\-5,\-2,8").  Duplicate indices are permitted, but are ignored.  The order of the node indices in the list is not important; the node indices will be sorted my SLURM.
 
 .TP 
 \fB\-T\fR, \fB\-\-task\-layout\-byid\fR[=]<\fInode index list\fR>
@@ -57,12 +57,78 @@ means that tasks 0 and 4 will run on mynode4, task 1 will run on mynode3,
 task 2 will run on mynode1, and task 3 will run on mynode2.
 
 NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
-
 .TP 
 \fB\-F\fR, \fB\-\-task\-layout\-file\fR[=]<\fIfilename\fR>
 Request a specific task layout.  This options much like the \-\-task\-layout option, except that instead of a nodelist you supply the name of a file.  The file contains a nodelist that may span multiple lines of the file.
 
 NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
+
+.TP 
+\fB\-i\fR, \fB\-\-local\-input\fR[=]\fIfilename pattern\fR
+slaunch will open a local file with file name "filename pattern" and
+transmit the contents to the standard input of the remote tasks.  If the
+filename pattern contains "%j" it will be replaced with the job allocation
+number, "%s" is replaced with the job step number, and "%J" is replaced
+with the the job allocation number AND job step number in the form "65538.2".
+By default, slaunch will transmit its own standard input to the standard
+input of all remote tasks.
+.TP 
+\fB\-o\fR, \fB\-\-local\-output\fR[=]\fIfilename pattern\fR
+slaunch will open a local file with file name "filename pattern" and
+write to the file the standard output of any tasks that is sent back to
+slaunch.  If the filename pattern contains "%j" it will be replaced with
+the job allocation number, "%s" is replaced with the job step number, and
+"%J" is replaced with the the job allocation number AND job step number in
+the form "65538.2".B y default, task standard output traffic is written
+to slaunch's standard output.
+.TP 
+\fB\-e\fR, \fB\-\-local\-error\fR[=]\fIfilename pattern\fR
+slaunch will open a local file with file name "filename pattern" and
+write to the file the standard error of any tasks that is sent back to
+slaunch.  If the filename pattern contains "%j" it will be replaced with
+the job allocation number, "%s" is replaced with the job step number, and
+"%J" is replaced with the the job allocation number AND job step number in
+the form "65538.2".B y default, task standard error traffic is written
+to slaunch's standard output.
+
+.TP
+\fB\-I\fR, \fB\-\-remote\-input\fR[=]\fIfilename pattern\fR
+.PD 0
+.TP
+\fB\-O\fR, \fB\-\-remote\-output\fR[=]\fIfilename pattern\fR
+.PD 0
+.TP
+\fB\-E\fR, \fB\-\-remote\-error\fR[=]\fIfilename pattern\fR
+.PD
+These options connect each remotely running task's standard input, standard output, or standard error directly to the file name specified in the "\fIfilename pattern\fR".  Unlike hte "\-\-local\-" options, no standard IO traffic will be transferred between slaunch and the tasks (for the specified input, output, or error stream) if the task is directly connected to a file.  The pattern may contain one or more replacement symbols, which are a percent sign "%" followed by a letter (e.g. %t).  If a replacement symbol is expanded to a different string for each task, then each task will obviously be connected to a different file.  The supported replacement symbols are:
+
+.RS 10
+.TP 
+%J
+Job allocation number and job step number in the form "jobid.stepid".  For instance, "128.0".
+.TP 
+%j
+Job allocation number.
+.TP 
+%s
+Job step number.
+.TP 
+%N
+Node name. (Will result in a separate file per node.)
+.TP 
+%n
+Relative node index number within the job step.  All nodes used by the job step will be number sequentially starting at zero.  (Will result in a separate file per node.)
+.TP 
+%t
+Task rank number.  (Will result in a separate file per task.)
+
+.RS -10
+
+.TP 
+\fB\-D\fR, \fB\-\-workdir\fR=\fIpath\fR
+Set the working directory of the tasks to \fIpath\fR before execution.
+The default task working directory is slaunch's working directory.
+
 .TP 
 \fB\-\-nice\fR=<\fIadjustment\fR>
 Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
@@ -77,7 +143,7 @@ Output version information and exit.
 .SH "ENVIRONMENT VARIABLES"
 .LP 
 .TP 
-\fBSLURM_JOBID\fP
+\fBSLAUNCH_JOBID\fP
 Same as \fB\-\-jobid\fR.
 .SH "EXAMPLES"
 .LP 

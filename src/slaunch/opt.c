@@ -816,7 +816,7 @@ void set_options(const int argc, char **argv)
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
-		{"chdir",         required_argument, 0, 'D'},
+		{"workdir",       required_argument, 0, 'D'},
 		{"local-error",   required_argument, 0, 'e'},
 		{"remote-error",  required_argument, 0, 'E'},
 		{"task-layout-file",required_argument,0,'F'},
@@ -1945,7 +1945,7 @@ static void _help(void)
 "  -E, --remote-error=err      location of remote stderr redirection\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -t, --time=minutes          time limit\n"
-"  -D, --chdir=path            change remote current working directory\n"
+"  -D, --workdir=path          the working directory for the launched tasks\n"
 "  -C, --overcommit            overcommit resources\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
