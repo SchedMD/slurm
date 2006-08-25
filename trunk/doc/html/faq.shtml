@@ -86,7 +86,11 @@ jobs will be limited. The backfill scheduler does not alter job specifications
 of required or excluded nodes, so jobs which specify nodes will substantially 
 reduce the effectiveness of backfill scheduling. See the <a href="#backfill">
 backfill</a> section for more details. If the scheduler type is <b>wiki</b>, 
-this represents <a href="http://supercluster.org/maui">The Maui Scheduler</a>. 
+this represents 
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> or 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a>. 
 Please refer to its documentation for help. For any scheduler, you can check priorities 
 of jobs using the command <span class="commandline">scontrol show job</span>.</p>
 <p><a name="sharing"><b>4. Why does the srun --overcommit option not permit multiple jobs 
@@ -338,6 +342,6 @@ partition. You can control the frequency of this ping with the
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 August 2006</p>
+<p style="text-align:center;">Last modified 24 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

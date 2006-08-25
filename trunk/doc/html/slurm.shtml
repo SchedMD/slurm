@@ -11,7 +11,10 @@ work. </p>
 
 <p>SLURM is not a sophisticated batch system, but it does provide an Applications 
 Programming Interface (API) for integration with external schedulers such as 
-<a href="http://supercluster.org/maui">The Maui Scheduler</a>. 
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> and 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a>.
 While other resource managers do exist, SLURM is unique in several respects: 
 <ul>
 <li>Its source code is freely available under the 
@@ -42,6 +45,6 @@ distinct sites in 34 countries.
 SLURM is also distributed and supported by <a href="http://www.hp.com">
 Hewlett-Packard</a> as the resource manager in their XC System Software.</p>
 
-<p style="text-align:center;">Last modified 20 January 2006</p>
+<p style="text-align:center;">Last modified 24 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

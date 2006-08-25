@@ -236,12 +236,12 @@ slurm_sched_schedule( void )
 /*  TAG(                   slurm_sched_initital_priority                )  */
 /* *********************************************************************** */
 uint32_t
-slurm_sched_initial_priority( uint32_t max_prio )
+slurm_sched_initial_priority( u_int32_t last_prio )
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_sched_context->ops.initial_priority))( max_prio );
+	return (*(g_sched_context->ops.initial_priority))( last_prio );
 }
 /* *********************************************************************** */
 /*  TAG(                   slurm_sched_job_is_pending                   )  */

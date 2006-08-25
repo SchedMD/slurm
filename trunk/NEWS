@@ -42,6 +42,7 @@ documents those changes that are of interest to users and admins.
  -- Fix switch/federation plugin so backup controller can assume control 
     repeatedly without leaking or corrupting memory.
  -- Add new error code (for Maui/Moab scheduler): ESLURM_JOB_HELD
+ -- Add support for sched/wiki specific configuration file "wiki.conf".
 
 * Changes in SLURM 1.1.9
 ========================
