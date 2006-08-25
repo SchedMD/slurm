@@ -1381,14 +1381,15 @@ void node_did_resp (char *name)
 		node_ptr = &node_record_table_ptr[i];
 		_node_did_resp(node_ptr);
 	}
+	debug2("node_did_resp %s",name);
 #else
-	debug2("updating %s",name);
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
 		return;
 	}
 	_node_did_resp(node_ptr);
+	debug2("node_did_resp %s",name);
 #endif
 }
 

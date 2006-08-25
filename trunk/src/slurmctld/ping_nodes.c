@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/read_config.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
@@ -48,7 +49,7 @@
 #define MAX_REG_FREQUENCY 20
 
 /* Spawn no more than MAX_REG_THREADS for node re-registration */
-#define MAX_REG_THREADS (MAX_SERVER_THREADS - 2)
+#define MAX_REG_THREADS   DEFAULT_TREE_WIDTH
 
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
@@ -122,6 +123,7 @@ void ping_nodes (void)
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
 	uint16_t base_state, no_resp_flag;
+	bool restart_flag;
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
 	hostlist_t down_hostlist = NULL;
@@ -190,9 +192,10 @@ void ping_nodes (void)
 		}
 
 		if (node_ptr->last_response == (time_t) 0) {
-			no_resp_flag = 1;
+			restart_flag = true;	/* system just restarted */
 			node_ptr->last_response = slurmctld_conf.last_update;
-		}
+		} else
+			restart_flag = false;
 
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		if (i > 0)
@@ -205,7 +208,7 @@ void ping_nodes (void)
 		 * counter and gets updated configuration information 
 		 * once in a while). We limit these requests since they 
 		 * can generate a flood of incomming RPCs. */
-		if ((base_state == NODE_STATE_UNKNOWN) || no_resp_flag ||
+		if ((base_state == NODE_STATE_UNKNOWN) || restart_flag ||
 		    ((i >= offset) && (i < (offset + MAX_REG_THREADS)))) {
 			(void) hostlist_push_host(reg_hostlist, node_ptr->name);
 			if ((reg_agent_args->node_count+1) > 
@@ -227,6 +230,11 @@ void ping_nodes (void)
 		}
 
 		if (node_ptr->last_response >= still_live_time)
+			continue;
+
+		/* Do not keep pinging down nodes since this can induce
+		 * huge delays in hierarchical communication fail-over */
+		if (no_resp_flag)
 			continue;
 
 		(void) hostlist_push_host(ping_hostlist, node_ptr->name);
