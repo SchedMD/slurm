@@ -280,7 +280,9 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 	/* Wait for all tasks to complete */
 	pthread_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_exited) < sls->tasks_requested) {
-		if (sls->abort) {
+		if (!sls->abort) {
+			pthread_cond_wait(&sls->cond, &sls->lock);
+		} else {
 			if (!sls->abort_action_taken) {
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->job_step_id,
@@ -322,8 +324,6 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 				client_io_handler_abort(sls->client_io);
 				break;
 			}
-		} else {
-			pthread_cond_wait(&sls->cond, &sls->lock);
 		}
 	}
 
