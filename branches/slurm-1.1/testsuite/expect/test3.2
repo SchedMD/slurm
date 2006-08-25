@@ -34,11 +34,12 @@ source ./globals
 set test_id        "3.2"
 set authorized     1
 set exit_code      0
-set job_runnable 0
+set job_runnable   0
 set part_name      ""
 set part_old_state ""
 set part_new_state ""
 set read_state     ""
+set timeout        $max_job_delay
 
 print_header $test_id
 
@@ -63,7 +64,7 @@ proc run_job { part_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			send_user "\nsrun not responding\n"
 			kill_srun
 			return 1
 		}
