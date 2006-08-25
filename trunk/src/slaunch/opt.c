@@ -92,28 +92,33 @@
 #define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_HELP        0x100
-#define LONG_OPT_USAGE       0x101
+#define LONG_OPT_USAGE       0x100
 #define LONG_OPT_XTO         0x102
 #define LONG_OPT_LAUNCH      0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
-#define LONG_OPT_UID         0x10a
-#define LONG_OPT_GID         0x10b
-#define LONG_OPT_MPI         0x10c
-#define LONG_OPT_CORE	     0x10e
-#define LONG_OPT_DEBUG_TS    0x110
-#define LONG_OPT_NETWORK     0x114
-#define LONG_OPT_PROPAGATE   0x116
-#define LONG_OPT_PROLOG      0x117
-#define LONG_OPT_EPILOG      0x118
-#define LONG_OPT_TASK_PROLOG 0x11c
-#define LONG_OPT_TASK_EPILOG 0x11d
-#define LONG_OPT_CPU_BIND    0x11f
-#define LONG_OPT_MEM_BIND    0x120
-#define LONG_OPT_CTRL_COMM_IFHN 0x121
-#define LONG_OPT_MULTI       0x122
-#define LONG_OPT_PMI_THREADS 0x123
+#define LONG_OPT_UID         0x106
+#define LONG_OPT_GID         0x107
+#define LONG_OPT_MPI         0x108
+#define LONG_OPT_CORE	     0x109
+#define LONG_OPT_DEBUG_TS    0x10a
+#define LONG_OPT_NETWORK     0x10b
+#define LONG_OPT_PROPAGATE   0x10c
+#define LONG_OPT_PROLOG      0x10d
+#define LONG_OPT_EPILOG      0x10e
+#define LONG_OPT_TASK_PROLOG 0x10f
+#define LONG_OPT_TASK_EPILOG 0x110
+#define LONG_OPT_CPU_BIND    0x111
+#define LONG_OPT_MEM_BIND    0x112
+#define LONG_OPT_CTRL_COMM_IFHN 0x113
+#define LONG_OPT_MULTI       0x114
+#define LONG_OPT_PMI_THREADS 0x115
+#define LONG_OPT_LIN_TASKID  0x116
+#define LONG_OPT_LOUT_TASKID 0x117
+#define LONG_OPT_LERR_TASKID 0x118
+#define LONG_OPT_RIN_TASKID  0x119
+#define LONG_OPT_ROUT_TASKID 0x11a
+#define LONG_OPT_RERR_TASKID 0x11b
 
 /*---- forward declarations of static functions  ----*/
 
@@ -581,6 +586,12 @@ static void _opt_default()
 	opt.remote_ofname = NULL;
 	opt.remote_ifname = NULL;
 	opt.remote_efname = NULL;
+	opt.local_input_taskid = (uint32_t)-1;
+	opt.local_output_taskid = (uint32_t)-1;
+	opt.local_error_taskid = (uint32_t)-1;
+	opt.remote_input_taskid = (uint32_t)-1;
+	opt.remote_output_taskid = (uint32_t)-1;
+	opt.remote_error_taskid = (uint32_t)-1;
 
 	opt.core_type = CORE_DEFAULT;
 
@@ -779,6 +790,7 @@ _get_pos_int(const char *arg, const char *what)
 
 	if (result > INT_MAX) {
 		error ("Numeric argument %ld to big for %s.", result, what);
+		exit(1);
 	}
 
 	return (int) result;
@@ -865,6 +877,12 @@ void set_options(const int argc, char **argv)
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
+		{"local-input-taskid",required_argument,0, LONG_OPT_LIN_TASKID},
+		{"local-output-taskid",required_argument,0,LONG_OPT_LOUT_TASKID},
+		{"local-error-taskid",required_argument,0, LONG_OPT_LERR_TASKID},
+		{"remote-input-taskid",required_argument,0,LONG_OPT_RIN_TASKID},
+		{"remote-output-taskid",required_argument,0,LONG_OPT_ROUT_TASKID},
+		{"remote-error-taskid",required_argument,0,LONG_OPT_RERR_TASKID},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string =
@@ -1133,13 +1151,35 @@ void set_options(const int argc, char **argv)
 			opt.multi_prog = true;
 			break;
 		case LONG_OPT_PMI_THREADS: /* undocumented option */
-		{
-			int max = _get_pos_int(optarg, "pmi-threads");
-			if (max <= 0)
-				error("--pmi-threads must be a positive integer");
-			else
-				pmi_server_max_threads(max);
-		}
+			pmi_server_max_threads(_get_pos_int(optarg,
+							    "pmi-threads"));
+			break;
+		case LONG_OPT_LIN_TASKID:
+			opt.local_input_taskid =
+				_get_pos_int(optarg, "local-input-taskid");
+			break;
+		case LONG_OPT_LOUT_TASKID:
+			opt.local_output_taskid =
+				_get_pos_int(optarg, "local-output-taskid");
+			break;
+		case LONG_OPT_LERR_TASKID:
+			opt.local_error_taskid =
+				_get_pos_int(optarg, "local-error-taskid");
+			break;
+		case LONG_OPT_RIN_TASKID:
+			opt.remote_input_taskid =
+				_get_pos_int(optarg, "remote-input-taskid");
+			error("not yet implemented");
+			break;
+		case LONG_OPT_ROUT_TASKID:
+			opt.remote_output_taskid =
+				_get_pos_int(optarg, "remote-output-taskid");
+			error("not yet implemented");
+			break;
+		case LONG_OPT_RERR_TASKID:
+			opt.remote_error_taskid =
+				_get_pos_int(optarg, "remote-error-taskid");
+			error("not yet implemented");
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -1937,12 +1977,12 @@ static void _help(void)
 "  -n, --ntasks=ntasks         number of tasks to run\n"
 "  -N, --nodes=N               number of nodes on which to run\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"  -i, --local-input=in        location of local stdin redirection\n"
-"  -o, --local-output=out      location of local stdout redirection\n"
-"  -e, --local-error=err       location of local stderr redirection\n"
-"  -I, --remote-input=in       location of remote stdin redirection\n"
-"  -O, --remote-output=out     location of remote stdout redirection\n"
-"  -E, --remote-error=err      location of remote stderr redirection\n"
+"  -i, --local-input=in        location of local stdin file\n"
+"  -o, --local-output=out      location of local stdout file\n"
+"  -e, --local-error=err       location of local stderr file\n"
+"  -I, --remote-input=in       location of remote stdin file\n"
+"  -O, --remote-output=out     location of remote stdout file\n"
+"  -E, --remote-error=err      location of remote stderr file\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -t, --time=minutes          time limit\n"
 "  -D, --workdir=path          the working directory for the launched tasks\n"
