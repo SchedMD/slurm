@@ -154,6 +154,11 @@ struct popup_info {
 	display_data_t *display_data;
 };
 
+typedef struct {
+	int jobid;
+	int stepid;
+} job_step_num_t;
+
 extern sview_parameters_t params;
 extern int text_line_cnt;
 
@@ -255,5 +260,6 @@ extern void destroy_popup_info(void *arg);
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
 extern void *popup_thr(popup_info_t *popup_win);
 extern void remove_old(GtkTreeModel *model, int updated);
-
+extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
+					int count);
 #endif

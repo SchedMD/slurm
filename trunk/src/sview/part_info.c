@@ -485,9 +485,16 @@ static void _update_info_part(List info_list,
 		if(spec_info) {
 			switch(spec_info->type) {
 			case NODE_PAGE:
-				if(!part_ptr->nodes || !host)
+				if(!part_ptr->nodes)
 					continue;
-				
+
+				hostlist = hostlist_create(
+					(char *)spec_info->data);
+				host = hostlist_shift(hostlist);
+				hostlist_destroy(hostlist);
+				if(!host) 
+					continue;
+			
 				hostlist = hostlist_create(part_ptr->nodes);
 				found = 0;
 				while((host2 = hostlist_shift(hostlist))) { 
@@ -502,6 +509,7 @@ static void _update_info_part(List info_list,
 				if(!found)
 					continue;
 				break;
+			case PART_PAGE:
 			case BLOCK_PAGE:
 			case JOB_PAGE:
 				if(strcmp(part_ptr->name, 
@@ -827,12 +835,6 @@ finished:
 	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
 	
 	return;
-}
-
-void *_popup_thr_part(void *arg)
-{
-	popup_thr(arg);		
-	return NULL;
 }
 
 extern void refresh_part(GtkAction *action, gpointer user_data)
@@ -1185,7 +1187,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("part got %d\n", id);
 	}
-	if (!g_thread_create(_popup_thr_part, popup_win, FALSE, &error))
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
 	{
 		g_printerr ("Failed to create part popup thread: %s\n", 
 			    error->message);

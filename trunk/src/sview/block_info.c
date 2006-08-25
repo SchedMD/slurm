@@ -429,20 +429,6 @@ static void _update_info_block(List block_list,
 		return;
 	}
 
-	if(spec_info) {
-		switch(spec_info->type) {
-		case NODE_PAGE:
-			hostlist = hostlist_create((char *)spec_info->data);
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(host == NULL) {
-				g_print("nodelist was empty");
-				return;
-			}		
-			break;
-		}
-	}
-
 	/* get the iter, or find out the list is empty goto add */
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		/* make sure all the partitions are still here */
@@ -502,9 +488,16 @@ static void _update_info_block(List block_list,
 					continue;
 				break;
 			case NODE_PAGE:
-				if(!block_ptr->nodes || !host)
+				if(!block_ptr->nodes)
 					continue;
-				
+
+				hostlist = hostlist_create(
+					(char *)spec_info->data);
+				host = hostlist_shift(hostlist);
+				hostlist_destroy(hostlist);
+				if(!host) 
+					continue;
+
 				hostlist = hostlist_create(block_ptr->nodes);
 				found = 0;
 				while((host2 = hostlist_shift(hostlist))) { 
@@ -519,6 +512,7 @@ static void _update_info_block(List block_list,
 				if(!found)
 					continue;
 				break;
+			case BLOCK_PAGE:
 			case JOB_PAGE:
 				if(strcmp(block_ptr->bg_block_name, 
 					  (char *)spec_info->data)) 
@@ -701,12 +695,6 @@ finished:
 	return;
 }
 	
-void *_popup_thr_block(void *arg)
-{
-	popup_thr(arg);		
-	return NULL;
-}
-
 extern void refresh_block(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
@@ -1066,7 +1054,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 
 	
-	if (!g_thread_create(_popup_thr_block, popup_win, FALSE, &error))
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
 	{
 		g_printerr ("Failed to create part popup thread: %s\n", 
 			    error->message);
