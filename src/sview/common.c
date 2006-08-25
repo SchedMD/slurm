@@ -40,8 +40,9 @@ static int _sort_iter_compare_func_char(GtkTreeModel *model,
 {
 	int sortcol = GPOINTER_TO_INT(userdata);
 	int ret = 0;
+	int len1 = 0, len2 = 0;
 	gchar *name1 = NULL, *name2 = NULL;
-
+	
 	gtk_tree_model_get(model, a, sortcol, &name1, -1);
 	gtk_tree_model_get(model, b, sortcol, &name2, -1);
 	
@@ -54,7 +55,29 @@ static int _sort_iter_compare_func_char(GtkTreeModel *model,
 	}
 	else
 	{
-		ret = g_utf8_collate(name1,name2);
+		/* sort like a human would 
+		   meaning snowflake2 would be greater than
+		   snowflake12 */
+		len1 = strlen(name1);
+		len2 = strlen(name2);
+		while((ret < len1) && (!g_ascii_isdigit(name1[ret]))) 
+			ret++;
+		if(ret < len1) {
+			if(!g_ascii_strncasecmp(name1, name2, ret)) {
+				if(len1 > len2)
+					ret = 1;
+				else if(len1 < len2)
+					ret = -1;
+				else {
+					ret = g_ascii_strcasecmp(name1, name2);
+				}
+			} else {
+				ret = g_ascii_strcasecmp(name1, name2);
+			}
+			
+		} else {
+			ret = g_ascii_strcasecmp(name1, name2);
+		}
 	}
 cleanup:
 	g_free(name1);
@@ -88,10 +111,10 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	GtkCellRenderer     *renderer;
 	renderer = gtk_cell_renderer_text_new();
 	col = gtk_tree_view_column_new();	
-	gtk_tree_view_column_pack_start (col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute (col, renderer, 
-					    "text", display_data->id);
-	gtk_tree_view_column_set_title (col, display_data->name);
+	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_add_attribute(col, renderer, 
+					   "text", display_data->id);
+	gtk_tree_view_column_set_title(col, display_data->name);
 	gtk_tree_view_column_set_reorderable(col, true);
 	gtk_tree_view_column_set_resizable(col, true);
 	gtk_tree_view_column_set_expand(col, true);
@@ -391,11 +414,11 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 				break;
 			case G_TYPE_STRING:
 				gtk_tree_sortable_set_sort_func(
-				GTK_TREE_SORTABLE(treestore), 
-				i, 
-				_sort_iter_compare_func_char,
-				GINT_TO_POINTER(i), 
-				NULL); 
+					GTK_TREE_SORTABLE(treestore), 
+					i, 
+					_sort_iter_compare_func_char,
+					GINT_TO_POINTER(i), 
+					NULL); 
 				break;
 			default:
 				g_print("unknown type %d",
@@ -699,3 +722,30 @@ extern void remove_old(GtkTreeModel *model, int updated)
 	gtk_tree_path_free(path);
 }
 
+extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
+					int count)
+{
+	GtkListStore *store = NULL;
+	GtkWidget *combo = NULL;
+	GtkTreeIter iter;
+	GtkCellRenderer *renderer = NULL;
+	int i=0;
+	
+	store = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
+	for(i=0; i<count; i++) {
+		if(display_data[i].id == -1)
+			break;
+		gtk_list_store_append(store, &iter);
+		gtk_list_store_set(store, &iter, 0, display_data[i].id,
+				   1, display_data[i].name, -1);
+	}
+	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	g_object_unref(store);	
+	renderer = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
+	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo), renderer,
+				      "text", 1);
+	
+	gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+	return combo;
+}

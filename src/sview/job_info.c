@@ -33,12 +33,6 @@
 #define _DEBUG 0
 DEF_TIMERS;
 
-typedef struct {
-	int jobid;
-	int stepid;
-} job_step_num_t;
-
-
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_JOBID, 
@@ -449,22 +443,8 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 	char *host = NULL, *host2 = NULL;
 	hostlist_t hostlist = NULL;
 	int found = 0;
-	
-	if(spec_info) {
-		switch(spec_info->type) {
-		case NODE_PAGE:
-			hostlist = hostlist_create(
-				(char *)spec_info->data);	
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(host == NULL) {
-				g_print("nodelist was empty\n");
-				return;
-			
-			}
-			break;
-		}
-	}
+	job_step_num_t *job_step = NULL;
+
 	/* make sure all the jobs are still here */
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		while(1) {
@@ -527,6 +507,12 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 
 		if(spec_info) {
 			switch(spec_info->type) {
+			case JOB_PAGE:
+				job_step = (job_step_num_t *)spec_info->data;
+				if(job.job_id != job_step->jobid) {
+					continue;
+				}
+				break;	
 			case PART_PAGE:
 				if(strcmp((char *)spec_info->data,
 					  job.partition))
@@ -542,9 +528,16 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 					continue;
 				break;
 			case NODE_PAGE:
-				if(!job.nodes || !host)
+				if(!job.nodes)
 					continue;
-				
+
+				hostlist = hostlist_create(
+					(char *)spec_info->data);	
+				host = hostlist_shift(hostlist);
+				hostlist_destroy(hostlist);
+				if(!host)
+					continue;
+
 				hostlist = hostlist_create(job.nodes);	
 				found = 0;
 				while((host2 = hostlist_shift(hostlist))) { 
@@ -562,7 +555,7 @@ static void _update_info_job(job_info_msg_t *job_info_ptr,
 			default:
 				continue;
 			}
-		}		
+		}	
 		_append_job_record(&job, step_info_ptr, GTK_TREE_STORE(model), 
 				   &iter, line);
 	found:
@@ -654,12 +647,6 @@ finished:
 	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
 	
 	return;
-}
-
-void *_popup_thr_job(void *arg)
-{
-	popup_thr(arg);		
-	return NULL;
 }
 
 extern void refresh_job(GtkAction *action, gpointer user_data)
@@ -1080,7 +1067,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("jobs got %d\n", id);
 	}
-	if (!g_thread_create(_popup_thr_job, popup_win, FALSE, &error))
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
 	{
 		g_printerr ("Failed to create part popup thread: %s\n", 
 			    error->message);

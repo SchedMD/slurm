@@ -186,7 +186,7 @@ static void _set_admin_mode(GtkToggleAction *action)
 static void _change_refresh(GtkToggleAction *action, gpointer user_data)
 {
 	GtkWidget *table = gtk_table_new(1, 2, FALSE);
-	GtkWidget *label = gtk_label_new_with_mnemonic("Interval in Seconds ");
+	GtkWidget *label = gtk_label_new("Interval in Seconds ");
 	GtkObject *adjustment = gtk_adjustment_new(global_sleep_time,
 						   1, 10000,
 						   5, 60,
@@ -360,12 +360,129 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	/* Finally, return the actual menu bar created by the item factory. */
 	return gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
 }
+void *_popup_thr_main(void *arg)
+{
+	popup_thr(arg);		
+	return NULL;
+}
+
+
+/* Creates a tree model containing the completions */
+void _search_entry(GtkEntry *entry, GtkComboBox *combo)
+{
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	int id;
+	char *data = xstrdup(gtk_entry_get_text(entry));
+	char title[100];
+	ListIterator itr = NULL;
+	popup_info_t *popup_win = NULL;
+	GError *error = NULL;
+	job_step_num_t *job_step = NULL;
+
+	gtk_entry_set_text(entry, "");
+
+	if(!strlen(data)) {
+		g_print("nothing given to search for.\n");
+		return;
+	}
+	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
+		g_print("nothing selected\n");
+		return;
+	}
+	model = gtk_combo_box_get_model(combo);
+	if(!model) {
+		g_print("nothing selected\n");
+		return;
+	}
+	
+	gtk_tree_model_get(model, &iter, 0, &id, -1);
+	
+	switch(id) {
+	case JOB_PAGE:
+		snprintf(title, 100, "Job %s info", data);
+		break;
+	case PART_PAGE:
+		snprintf(title, 100, "Partition %s info", data);
+		break;
+	case BLOCK_PAGE:
+		snprintf(title, 100, "BG Block %s info", data);
+		break;
+	case NODE_PAGE:
+#ifdef HAVE_BG
+		snprintf(title, 100, 
+			 "Base partition(s) %s info", data);
+#else
+		snprintf(title, 100, "Node(s) %s info", data);
+#endif
+		break;
+	default:
+		g_print("unknown selection %s\n", data);
+		break;
+	}
+
+	itr = list_iterator_create(popup_list);
+	while((popup_win = list_next(itr))) {
+		if(popup_win->spec_info)
+			if(!strcmp(popup_win->spec_info->title, title)) {
+				break;
+			} 
+	}
+	list_iterator_destroy(itr);
+
+	if(!popup_win) {
+		popup_win = create_popup_info(id, id, title);
+	}
+
+	switch(id) {
+	case JOB_PAGE:
+		id = atoi(data);
+		xfree(data);
+		job_step = g_malloc(sizeof(job_step_num_t));
+		job_step->jobid = id;
+		job_step->stepid = NO_VAL;
+		popup_win->spec_info->data = job_step;
+		break;
+	case PART_PAGE:
+	case BLOCK_PAGE:
+	case NODE_PAGE:
+		popup_win->spec_info->data = data;
+		break;
+	default:
+		g_print("unknown selection %d\n", id);
+		return;
+	}
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
+	{
+		g_printerr ("Failed to create main popup thread: %s\n", 
+			    error->message);
+		return;
+	}
+	return;
+}
+
 
 int main(int argc, char *argv[])
 {
-	GtkWidget *window;
-	GtkWidget *menubar;
+	GtkWidget *window = NULL;
+	GtkWidget *menubar = NULL;
+	GtkWidget *table = NULL;
+	GtkWidget *label = NULL;
+	GtkWidget *combo = NULL;
+	GtkWidget *entry = NULL;
+	
 	int i=0;
+	display_data_t pulldown_display_data[] = {
+		{G_TYPE_NONE, JOB_PAGE, "Job", TRUE, -1},
+		{G_TYPE_NONE, PART_PAGE, "Partition", TRUE, -1},
+#ifdef HAVE_BG
+		{G_TYPE_NONE, BLOCK_PAGE, "BG Block", TRUE, -1},
+		{G_TYPE_NONE, NODE_PAGE, "Base Partitions", TRUE, -1},	
+#else
+		{G_TYPE_NONE, NODE_PAGE, "Node", TRUE, -1},
+#endif
+		{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	};
 	
 	_init_pages();
 	g_thread_init(NULL);
@@ -387,10 +504,32 @@ int main(int argc, char *argv[])
 	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
 			 NULL);
-	
+	table = gtk_table_new(1, 4, FALSE);
+	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 1);	
 	/* Create a menu */
 	menubar = _get_menubar_menu(window, main_notebook);
+	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
+
+	label = gtk_label_new("Search ");
+	gtk_table_attach(GTK_TABLE(table), label, 1, 2, 0, 1,
+			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
+			 0, 0);
 	
+	combo = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+	gtk_table_attach(GTK_TABLE(table), combo, 2, 3, 0, 1,
+			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
+			 0, 0);
+	
+	entry = gtk_entry_new ();
+	gtk_table_attach(GTK_TABLE(table), entry, 3, 4, 0, 1,
+			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
+			 0, 0);
+	
+	g_signal_connect(G_OBJECT(entry), "activate",
+			 G_CALLBACK(_search_entry),
+			 combo);
+	  
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
@@ -400,7 +539,7 @@ int main(int argc, char *argv[])
 					  FALSE);
 	/* Pack it all together */
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
-			   menubar, FALSE, FALSE, 0);
+			   table, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox), 
 			   main_notebook, TRUE, TRUE, 0);	
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),

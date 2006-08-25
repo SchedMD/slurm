@@ -41,7 +41,6 @@ enum {
 	SORTID_WEIGHT, 
 	SORTID_FEATURES, 
 	SORTID_REASON,
-	SORTID_POINTER, 
 	SORTID_UPDATED, 
 	SORTID_CNT
 };
@@ -56,7 +55,6 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1, refresh_node},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1, refresh_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_node},
-	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_node},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_node},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
@@ -79,7 +77,6 @@ static void _update_node_record(node_info_t *node_ptr,
 {
 	char tmp_cnt[7];
 
-	gtk_tree_store_set(treestore, iter, SORTID_POINTER, node_ptr, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
 			   node_state_string(node_ptr->node_state), -1);
@@ -251,12 +248,6 @@ finished:
 	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
 	
 	return;
-}
-
-void *_popup_thr_node(void *arg)
-{
-	popup_thr(arg);		
-	return NULL;
 }
 
 extern void refresh_node(GtkAction *action, gpointer user_data)
@@ -519,7 +510,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win = create_popup_info(NODE_PAGE, id, title);
 	popup_win->spec_info->data = name;
 	
-	if (!g_thread_create(_popup_thr_node, popup_win, FALSE, &error))
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
 	{
 		g_printerr ("Failed to create part popup thread: %s\n", 
 			    error->message);
