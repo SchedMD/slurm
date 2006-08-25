@@ -662,7 +662,10 @@ static int _file_write(eio_obj_t *obj, List objs)
 	/*
 	 * Write message to file.
 	 */
-	if (!info->eof) {
+	if (info->taskid != (uint32_t)-1
+	    && info->out_msg->header.gtaskid != info->taskid) {
+		/* we are ignoring messages not from info->taskid */
+	} else if (!info->eof) {
 		ptr = info->out_msg->data + (info->out_msg->length
 					     - info->out_remaining);
 		if ((n = _write_msg(obj->fd, ptr,

@@ -64,64 +64,95 @@ Request a specific task layout.  This options much like the \-\-task\-layout opt
 NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
 
 .TP 
-\fB\-i\fR, \fB\-\-local\-input\fR[=]\fIfilename pattern\fR
-slaunch will open a local file with file name "filename pattern" and
-transmit the contents to the standard input of the remote tasks.  If the
-filename pattern contains "%j" it will be replaced with the job allocation
-number, "%s" is replaced with the job step number, and "%J" is replaced
-with the the job allocation number AND job step number in the form "65538.2".
-By default, slaunch will transmit its own standard input to the standard
-input of all remote tasks.
-.TP 
-\fB\-o\fR, \fB\-\-local\-output\fR[=]\fIfilename pattern\fR
-slaunch will open a local file with file name "filename pattern" and
-write to the file the standard output of any tasks that is sent back to
-slaunch.  If the filename pattern contains "%j" it will be replaced with
-the job allocation number, "%s" is replaced with the job step number, and
-"%J" is replaced with the the job allocation number AND job step number in
-the form "65538.2".B y default, task standard output traffic is written
-to slaunch's standard output.
-.TP 
-\fB\-e\fR, \fB\-\-local\-error\fR[=]\fIfilename pattern\fR
-slaunch will open a local file with file name "filename pattern" and
-write to the file the standard error of any tasks that is sent back to
-slaunch.  If the filename pattern contains "%j" it will be replaced with
-the job allocation number, "%s" is replaced with the job step number, and
-"%J" is replaced with the the job allocation number AND job step number in
-the form "65538.2".B y default, task standard error traffic is written
-to slaunch's standard output.
-
+\fB\-i\fR, \fB\-\-local\-input\fR[=]<\fIfilename pattern\fR>
+.PD 0 
 .TP
-\fB\-I\fR, \fB\-\-remote\-input\fR[=]\fIfilename pattern\fR
+\fB\-o\fR, \fB\-\-local\-output\fR[=]<\fIfilename pattern\fR>
 .PD 0
-.TP
-\fB\-O\fR, \fB\-\-remote\-output\fR[=]\fIfilename pattern\fR
-.PD 0
-.TP
-\fB\-E\fR, \fB\-\-remote\-error\fR[=]\fIfilename pattern\fR
+.TP 
+\fB\-e\fR, \fB\-\-local\-error\fR[=]<\fIfilename pattern\fR>
 .PD
-These options connect each remotely running task's standard input, standard output, or standard error directly to the file name specified in the "\fIfilename pattern\fR".  Unlike hte "\-\-local\-" options, no standard IO traffic will be transferred between slaunch and the tasks (for the specified input, output, or error stream) if the task is directly connected to a file.  The pattern may contain one or more replacement symbols, which are a percent sign "%" followed by a letter (e.g. %t).  If a replacement symbol is expanded to a different string for each task, then each task will obviously be connected to a different file.  The supported replacement symbols are:
+Open a local file with file name "filename pattern" for standard
+input, output, or error.  The filename pattern may contain
+one or more replacement symbols, which are a percent sign "%" followed 
+by a letter (e.g. %J).
 
+Supported replacement symbols are:
+.PD 0
 .RS 10
 .TP 
-%J
+\fB%J\fR
 Job allocation number and job step number in the form "jobid.stepid".  For instance, "128.0".
+.PD 0
 .TP 
-%j
+\fB%j\fR
 Job allocation number.
+.PD 0
 .TP 
-%s
+\fB%s\fR
 Job step number.
-.TP 
-%N
-Node name. (Will result in a separate file per node.)
-.TP 
-%n
-Relative node index number within the job step.  All nodes used by the job step will be number sequentially starting at zero.  (Will result in a separate file per node.)
-.TP 
-%t
-Task rank number.  (Will result in a separate file per task.)
+.RS -10
 
+.TP 
+\fB\-\-local\-input-taskid\fR[=]<\fItask number\fR>
+.PD 0
+.TP
+\fB\-\-local\-output-taskid\fR[=]<\fItask number\fR>
+.PD 0
+.TP 
+\fB\-\-local\-error-taskid\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task.  These options perform the filtering
+locally.  All tasks are still capable of sending or receiving standard IO
+over the network, so the "sattach" command can still access the standard
+IO streams of the other tasks.
+
+.TP
+\fB\-I\fR, \fB\-\-remote\-input\fR[=]<\fIfilename pattern\fR>
+.PD 0
+.TP
+\fB\-O\fR, \fB\-\-remote\-output\fR[=]<\fIfilename pattern\fR>
+.PD 0
+.TP
+\fB\-E\fR, \fB\-\-remote\-error\fR[=]<\fIfilename pattern\fR>
+.PD
+Instruct SLURM to connect each remotely running task's standard input,
+standard output, or standard error directly to the file name specified
+in the "\fIfilename pattern\fR".  Unlike the "\-\-local\-" options, no
+standard IO traffic will be transferred between slaunch and the tasks
+if the stream is directly connected to a file.  The filename pattern may contain
+one or more replacement symbols, which are a percent sign "%" followed 
+by a letter (e.g. %t).  If a replacement symbol is expanded to a
+different string for each task, then each task will be connected to a
+different file.
+
+Supported replacement symbols are:
+.PD 0
+.RS 10
+.TP 
+\fB%J\fR
+Job allocation number and job step number in the form "jobid.stepid".  For instance, "128.0".
+.PD 0
+.TP 
+\fB%j\fR
+Job allocation number.
+.PD 0
+.TP 
+\fB%s\fR
+Job step number.
+.PD 0
+.TP 
+\fB%N\fR
+Node name. (Will result in a separate file per node.)
+.PD 0
+.TP 
+\fB%n\fR
+Relative node index number within the job step.  All nodes used by the job step will be number sequentially starting at zero.  (Will result in a separate file per node.)
+.PD 0
+.TP 
+\fB%t\fR
+Task rank number.  (Will result in a separate file per task.)
 .RS -10
 
 .TP 

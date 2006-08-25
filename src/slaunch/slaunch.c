@@ -523,16 +523,17 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 	 */
 	if (ifname->name == NULL) {
 		cio_fds->in.fd = STDIN_FILENO;
-	} else if (ifname->type == IO_ONE) {
-		cio_fds->in.taskid = ifname->taskid;
-		/* FIXME - don't peek into the step context, that's cheating! */
-		cio_fds->in.nodeid =
-			_taskid_to_nodeid(step_ctx->step_resp->step_layout,
-					  ifname->taskid);
 	} else {
 		cio_fds->in.fd = open(ifname->name, O_RDONLY);
 		if (cio_fds->in.fd == -1)
 			fatal("Could not open stdin file: %m");
+	}
+	if (opt.local_input_taskid != (uint32_t)-1) {
+		cio_fds->in.taskid = opt.local_input_taskid;
+		/* FIXME - don't peek into the step context, that's cheating! */
+		cio_fds->in.nodeid =
+			_taskid_to_nodeid(step_ctx->step_resp->step_layout,
+					  opt.local_input_taskid);
 	}
 
 	/*
@@ -546,6 +547,11 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 		if (cio_fds->out.fd == -1)
 			fatal("Could not open stdout file: %m");
 	}
+	if (opt.local_output_taskid != (uint32_t)-1) {
+		cio_fds->out.taskid = opt.local_output_taskid;
+	}
+
+	/* FIXME - need to change condition for shared output and error */
 	if (ofname->name != NULL
 	    && efname->name != NULL
 	    && !strcmp(ofname->name, efname->name)) {
@@ -559,6 +565,7 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 	if (err_shares_out) {
 		debug3("stdout and stderr sharing a file");
 		cio_fds->err.fd = cio_fds->out.fd;
+		cio_fds->err.taskid = cio_fds->out.taskid;
 	} else {
 		if (efname->name == NULL) {
 			cio_fds->err.fd = STDERR_FILENO;
@@ -567,6 +574,9 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
 			if (cio_fds->err.fd == -1)
 				fatal("Could not open stderr file: %m");
+		}
+		if (opt.local_error_taskid != (uint32_t)-1) {
+			cio_fds->err.taskid = opt.local_error_taskid;
 		}
 	}
 }

@@ -86,7 +86,7 @@ fname_create(char *format, int jobid, int stepid)
 		 *  to the taskid requested, so that tasks with
 		 *  no IO can open /dev/null.
 		 */
-		fname->name   = xstrdup (format);
+		fname->name = xstrdup (format);
 		return fname;
 	}
 
