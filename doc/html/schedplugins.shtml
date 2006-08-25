@@ -28,8 +28,11 @@ abbreviation for the type of scheduler. We recommend, for example:</p>
 scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
 <li><b>backfill</b>&#151;Raise the priority of jobs if doing so results in their starting earlier 
 without any delay in the expected initiation time of any higher priority job.</li>
-<li><b>wiki</b>&#151;Use <a href="http://supercluster.org/maui">The Maui Scheduler</a>
-(Wiiki version) as an external entity to control SLURM job scheduling.</li>
+<li><b>wiki</b>&#151;Use 
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> (Wiki version) or 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 
@@ -76,10 +79,10 @@ be stubbed.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
-<p class="commandline">uint32_t slurm_sched_plugin_initial_priority (uint32_t max_prio);</p>
+<p class="commandline">uint32_t slurm_sched_plugin_initial_priority (uint32_t last_prio);</p>
 <p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> max_prio</span>&nbsp; 
-&nbsp;&nbsp;(input) maximum priority of any previously submitted job. This can be used to 
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> last_prio</span>&nbsp; 
+&nbsp;&nbsp;(input) default priority of the previously submitted job. This can be used to 
 provide First-In-First-Out scheduling by assigning the new job a priority lower than this value.
 This could also be used to establish an initial priority of zero for all jobs, representing a 
 "held" state. The scheduler plugin can then decide where and when to initiate pending jobs 
@@ -115,6 +118,6 @@ releases of SLURM may revise this API. A scheduler plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 July 2004</p>
+<p style="text-align:center;">Last modified 24 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

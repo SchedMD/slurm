@@ -67,12 +67,13 @@ hostnames to Elan IDs. The libelanhosts source is available from
 <ul>
 <li><a href="http://www.llnl.gov/LCdocs/dpcs/">Livermore Computing Resource Manager (LCRM/DPCS)</a></li>
 <li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
-<li><a href="http://www.supercluster.org/maui/">Maui Scheduler</a></li>
+<li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+Maui Scheduler</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a></li>
 </ul>
 </ul>
 
-<p style="text-align:center;">Last modified 26 May 2006</p>
+<p style="text-align:center;">Last modified 24 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

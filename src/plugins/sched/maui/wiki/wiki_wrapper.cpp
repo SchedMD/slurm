@@ -28,12 +28,16 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <slurm/slurm_errno.h>
 
 extern "C" {
+#       include "src/common/log.h"
 #	include "src/common/plugin.h"
-#	include "src/common/log.h"
+#	include "src/common/read_config.h"
+#	include "src/common/xmalloc.h"
 }
 
 #include "../receptionist.h"
@@ -57,6 +61,11 @@ static pthread_t receptionist_thread;
 static bool thread_running = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+extern "C" void  _get_wiki_conf_path(char *buf, int size);
+extern "C" void  _parse_wiki_config(void);
+#define PRIO_HOLD      0
+#define PRIO_DECREMENT 1
+static int init_prio_mode = PRIO_HOLD;
 
 // **************************************************************************
 //  TAG(                    receptionist_thread_entry                    ) 
@@ -123,6 +132,7 @@ int init( void )
 		return SLURM_ERROR;
 	}
 
+	_parse_wiki_config( );
 	pthread_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	pthread_create( &receptionist_thread,
@@ -131,8 +141,73 @@ int init( void )
 			NULL );
 	thread_running = true;
 	pthread_mutex_unlock( &thread_flag_mutex );
-	
+
 	return SLURM_SUCCESS;
+}
+
+// **************************************************************************
+//  TAG(                      _get_wiki_conf_path                          )
+// **************************************************************************
+extern "C" void _get_wiki_conf_path(char *buf, int size)
+{
+	char *val = getenv("SLURM_CONF");
+	int i;
+
+	if (!val)
+		val = default_slurm_config_file;
+
+	/* Replace file name on end of path */
+	i = strlen(val) - strlen("slurm.conf") + strlen("wiki.conf") + 1;
+	if (i > size)
+		fatal("_get_wiki_conf_path: buffer too small");
+	strcpy(buf, val);
+	val = strrchr(buf, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = buf;
+	strcpy(val, "wiki.conf");
+
+	return;
+}
+
+// **************************************************************************
+//  TAG(                      _parse_wiki_config                        )
+// **************************************************************************
+extern "C" void _parse_wiki_config(void)
+{
+	s_p_options_t options[] = { {"JobPriority", S_P_STRING}, {NULL} };
+	s_p_hashtbl_t *tbl;
+	char *priority_mode;
+	struct stat buf;
+
+	/* need to define wiki_conf as static array rather than perform
+	 * malloc due to memory corruption problem in gcc v3.2 */
+	static char wiki_conf[256];
+
+	_get_wiki_conf_path(wiki_conf, sizeof(wiki_conf));
+	if (stat(wiki_conf, &buf) == -1) {
+		debug("No wiki.conf file (%s)", wiki_conf);
+		return;
+	}
+
+	debug("Reading wiki.conf file (%s)",wiki_conf);
+	tbl = s_p_hashtbl_create(options);
+	if (s_p_parse_file(tbl, wiki_conf) == SLURM_ERROR)
+		fatal("something wrong with opening/reading wiki.conf file");
+
+	if (s_p_get_string(&priority_mode, "JobPriority", tbl)) {
+		if (strcasecmp(priority_mode, "hold") == 0)
+			init_prio_mode = PRIO_HOLD;
+		else if (strcasecmp(priority_mode, "run") == 0)
+			init_prio_mode = PRIO_DECREMENT;
+		else
+			error("Invalid value for JobPriority in wiki.conf");	
+		xfree(priority_mode);
+	}
+	s_p_hashtbl_destroy(tbl);
+
+	return;
 }
 
 // **************************************************************************
@@ -166,15 +241,26 @@ slurm_sched_plugin_schedule( void )
 //  TAG(                   slurm_sched_plugin_initial_priority              ) 
 // **************************************************************************
 extern "C" u_int32_t
-slurm_sched_plugin_initial_priority( u_int32_t max_prio )
+slurm_sched_plugin_initial_priority( u_int32_t last_prio )
 {
-	// *
-	// Wiki is a polling scheduler, so the initial priority is
-	// always zero to keep SLURM from spontaneously starting
-	// the job.  The scheduler will suggest which job's priority
-	// should be made non-zero and thus allowed to proceed.
-	// *
-	return 0;
+	// Two modes of operation are currently supported:
+	//
+	// PRIO_HOLD: Wiki is a polling scheduler, so the initial priority
+	// is always zero to keep SLURM from spontaneously starting the
+	// job.  The scheduler will suggest which job's priority should
+	// be made non-zero and thus allowed to proceed.
+	//
+	// PRIO_DECREMENT: Set the job priority to one less than the last
+	// job and let Wiki change priorities of jobs as desired to re-order 
+	// the queue)
+	//
+	if (init_prio_mode == PRIO_DECREMENT) {
+		if (last_prio >= 2)
+			return (last_prio - 1);
+		else
+			return 1;
+	} else 
+		return 0;
 }
 
 // **************************************************************************
