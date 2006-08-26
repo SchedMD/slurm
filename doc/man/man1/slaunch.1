@@ -130,15 +130,21 @@ data to standard output or error, this can be performance limiting.)
 .PD
 Instruct SLURM to connect each task's standard input, standard output,
 or standard error directly to the file name specified
-in the "\fIfilename pattern\fR".  Unlike the \-\-slaunch\-[input|output|error]
-options, standard IO traffic is NOT transferred between the tasks and slaunch
-for the specified input, output, or error stream.
+in the "\fIfilename pattern\fR".
+
+By default, the standard IO streams of all tasks are received and transmitted
+over the network to commands like slaunch and sattach.  These options disable
+the networked standard IO streams and instead connect the standard IO streams
+of the tasks directly to files on the local node of each task (although the file
+may, of course, be located on a networked filesystem).
+
+Whether or not the tasks share a file depends on whether or not the file lives
+on a local filesystem or a shared network filesytem, and on whether or not
+the filename pattern expands to the same file name for each task.
 
 The filename pattern may
 contain one or more replacement symbols, which are a percent sign "%" followed 
-by a letter (e.g. %t).  If a replacement symbol is expanded to a
-different string for each task, then each task will be connected to a
-different file.
+by a letter (e.g. %t).
 
 Supported replacement symbols are:
 .PD 0

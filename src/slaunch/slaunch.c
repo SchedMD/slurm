@@ -528,12 +528,12 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 		if (cio_fds->in.fd == -1)
 			fatal("Could not open stdin file: %m");
 	}
-	if (opt.local_input_taskid != (uint32_t)-1) {
-		cio_fds->in.taskid = opt.local_input_taskid;
+	if (opt.local_input_filter != (uint32_t)-1) {
+		cio_fds->in.taskid = opt.local_input_filter;
 		/* FIXME - don't peek into the step context, that's cheating! */
 		cio_fds->in.nodeid =
 			_taskid_to_nodeid(step_ctx->step_resp->step_layout,
-					  opt.local_input_taskid);
+					  opt.local_input_filter);
 	}
 
 	/*
@@ -547,8 +547,8 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 		if (cio_fds->out.fd == -1)
 			fatal("Could not open stdout file: %m");
 	}
-	if (opt.local_output_taskid != (uint32_t)-1) {
-		cio_fds->out.taskid = opt.local_output_taskid;
+	if (opt.local_output_filter != (uint32_t)-1) {
+		cio_fds->out.taskid = opt.local_output_filter;
 	}
 
 	/* FIXME - need to change condition for shared output and error */
@@ -575,8 +575,8 @@ _setup_local_fds(slurm_step_io_fds_t *cio_fds, slurm_step_ctx ctx)
 			if (cio_fds->err.fd == -1)
 				fatal("Could not open stderr file: %m");
 		}
-		if (opt.local_error_taskid != (uint32_t)-1) {
-			cio_fds->err.taskid = opt.local_error_taskid;
+		if (opt.local_error_filter != (uint32_t)-1) {
+			cio_fds->err.taskid = opt.local_error_filter;
 		}
 	}
 }
