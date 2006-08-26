@@ -88,15 +88,15 @@ typedef struct slaunch_options {
 	char *local_ofname;	/* --local-output, -o filename  */
 	char *local_ifname;	/* --local-input,  -i filename  */
 	char *local_efname;	/* --local-error, -e filename   */
-	uint32_t local_input_taskid;
-	uint32_t local_output_taskid;
-	uint32_t local_error_taskid;
+	uint32_t local_input_filter;
+	uint32_t local_output_filter;
+	uint32_t local_error_filter;
 	char *remote_ofname;	/* --remote-output filename     */
 	char *remote_ifname;	/* --remote-input filename      */
 	char *remote_efname;	/* --remote-error filename      */
-	uint32_t remote_input_taskid;
-	uint32_t remote_output_taskid;
-	uint32_t remote_error_taskid;
+	uint32_t remote_input_filter;
+	uint32_t remote_output_filter;
+	uint32_t remote_error_filter;
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	core_format_t core_type;/* --core= 	        	*/
