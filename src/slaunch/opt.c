@@ -113,12 +113,12 @@
 #define LONG_OPT_CTRL_COMM_IFHN 0x113
 #define LONG_OPT_MULTI       0x114
 #define LONG_OPT_PMI_THREADS 0x115
-#define LONG_OPT_LIN_TASKID  0x116
-#define LONG_OPT_LOUT_TASKID 0x117
-#define LONG_OPT_LERR_TASKID 0x118
-#define LONG_OPT_RIN_TASKID  0x119
-#define LONG_OPT_ROUT_TASKID 0x11a
-#define LONG_OPT_RERR_TASKID 0x11b
+#define LONG_OPT_LIN_FILTER  0x116
+#define LONG_OPT_LOUT_FILTER 0x117
+#define LONG_OPT_LERR_FILTER 0x118
+#define LONG_OPT_RIN_FILTER  0x119
+#define LONG_OPT_ROUT_FILTER 0x11a
+#define LONG_OPT_RERR_FILTER 0x11b
 
 /*---- forward declarations of static functions  ----*/
 
@@ -586,12 +586,12 @@ static void _opt_default()
 	opt.remote_ofname = NULL;
 	opt.remote_ifname = NULL;
 	opt.remote_efname = NULL;
-	opt.local_input_taskid = (uint32_t)-1;
-	opt.local_output_taskid = (uint32_t)-1;
-	opt.local_error_taskid = (uint32_t)-1;
-	opt.remote_input_taskid = (uint32_t)-1;
-	opt.remote_output_taskid = (uint32_t)-1;
-	opt.remote_error_taskid = (uint32_t)-1;
+	opt.local_input_filter = (uint32_t)-1;
+	opt.local_output_filter = (uint32_t)-1;
+	opt.local_error_filter = (uint32_t)-1;
+	opt.remote_input_filter = (uint32_t)-1;
+	opt.remote_output_filter = (uint32_t)-1;
+	opt.remote_error_filter = (uint32_t)-1;
 
 	opt.core_type = CORE_DEFAULT;
 
@@ -829,12 +829,12 @@ void set_options(const int argc, char **argv)
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"workdir",       required_argument, 0, 'D'},
-		{"local-error",   required_argument, 0, 'e'},
-		{"remote-error",  required_argument, 0, 'E'},
+		{"slaunch-error", required_argument, 0, 'e'},
+		{"task-error",    required_argument, 0, 'E'},
 		{"task-layout-file",required_argument,0,'F'},
 		{"help",          no_argument,       0, 'h'},
-		{"local-input",   required_argument, 0, 'i'},
-		{"remote-input",  required_argument, 0, 'I'},
+		{"slaunch-input", required_argument, 0, 'i'},
+		{"task-input",    required_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-on-bad-exit", no_argument,    0, 'K'},
@@ -843,8 +843,8 @@ void set_options(const int argc, char **argv)
 		{"distribution",  required_argument, 0, 'm'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"local-output",  required_argument, 0, 'o'},
-		{"remote-output", required_argument, 0, 'O'},
+		{"slaunch-output",required_argument, 0, 'o'},
+		{"task-output",   required_argument, 0, 'O'},
 		{"overcommit",    no_argument,       0, 'C'},
 		{"quiet",         no_argument,       0, 'q'},
 		{"relative",      required_argument, 0, 'r'},
@@ -877,12 +877,12 @@ void set_options(const int argc, char **argv)
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
-		{"local-input-taskid",required_argument,0, LONG_OPT_LIN_TASKID},
-		{"local-output-taskid",required_argument,0,LONG_OPT_LOUT_TASKID},
-		{"local-error-taskid",required_argument,0, LONG_OPT_LERR_TASKID},
-		{"remote-input-taskid",required_argument,0,LONG_OPT_RIN_TASKID},
-		{"remote-output-taskid",required_argument,0,LONG_OPT_ROUT_TASKID},
-		{"remote-error-taskid",required_argument,0,LONG_OPT_RERR_TASKID},
+		{"slaunch-input-filter",required_argument,0, LONG_OPT_LIN_FILTER},
+		{"slaunch-output-filter",required_argument,0,LONG_OPT_LOUT_FILTER},
+		{"slaunch-error-filter",required_argument,0, LONG_OPT_LERR_FILTER},
+		{"task-input-filter",required_argument,0,LONG_OPT_RIN_FILTER},
+		{"task-output-filter",required_argument,0,LONG_OPT_ROUT_FILTER},
+		{"task-error-filter",required_argument,0,LONG_OPT_RERR_FILTER},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string =
@@ -1154,32 +1154,32 @@ void set_options(const int argc, char **argv)
 			pmi_server_max_threads(_get_pos_int(optarg,
 							    "pmi-threads"));
 			break;
-		case LONG_OPT_LIN_TASKID:
-			opt.local_input_taskid =
-				_get_pos_int(optarg, "local-input-taskid");
+		case LONG_OPT_LIN_FILTER:
+			opt.local_input_filter =
+				_get_pos_int(optarg, "slaunch-input-filter");
 			break;
-		case LONG_OPT_LOUT_TASKID:
-			opt.local_output_taskid =
-				_get_pos_int(optarg, "local-output-taskid");
+		case LONG_OPT_LOUT_FILTER:
+			opt.local_output_filter =
+				_get_pos_int(optarg, "slaunch-output-filter");
 			break;
-		case LONG_OPT_LERR_TASKID:
-			opt.local_error_taskid =
-				_get_pos_int(optarg, "local-error-taskid");
+		case LONG_OPT_LERR_FILTER:
+			opt.local_error_filter =
+				_get_pos_int(optarg, "slaunch-error-filter");
 			break;
-		case LONG_OPT_RIN_TASKID:
-			opt.remote_input_taskid =
-				_get_pos_int(optarg, "remote-input-taskid");
-			error("not yet implemented");
+		case LONG_OPT_RIN_FILTER:
+			opt.remote_input_filter =
+				_get_pos_int(optarg, "task-input-filter");
+			error("task-input-filter not yet implemented");
 			break;
-		case LONG_OPT_ROUT_TASKID:
-			opt.remote_output_taskid =
-				_get_pos_int(optarg, "remote-output-taskid");
-			error("not yet implemented");
+		case LONG_OPT_ROUT_FILTER:
+			opt.remote_output_filter =
+				_get_pos_int(optarg, "task-output-filter");
+			error("task-output-filter not yet implemented");
 			break;
-		case LONG_OPT_RERR_TASKID:
-			opt.remote_error_taskid =
-				_get_pos_int(optarg, "remote-error-taskid");
-			error("not yet implemented");
+		case LONG_OPT_RERR_FILTER:
+			opt.remote_error_filter =
+				_get_pos_int(optarg, "task-error-filter");
+			error("task-error-filter not yet implemented");
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -1977,12 +1977,12 @@ static void _help(void)
 "  -n, --ntasks=ntasks         number of tasks to run\n"
 "  -N, --nodes=N               number of nodes on which to run\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"  -i, --local-input=in        location of local stdin file\n"
-"  -o, --local-output=out      location of local stdout file\n"
-"  -e, --local-error=err       location of local stderr file\n"
-"  -I, --remote-input=in       location of remote stdin file\n"
-"  -O, --remote-output=out     location of remote stdout file\n"
-"  -E, --remote-error=err      location of remote stderr file\n"
+"  -i, --slaunch-input=file    slaunch will read stdin from \"file\"\n"
+"  -o, --slaunch-output=file   slaunch will write stdout to \"file\"\n"
+"  -e, --slaunch-error=file    slaunch will write stderr to \"file\"\n"
+"  -I, --task-input=file       connect task stdin to \"file\"\n"
+"  -O, --task-output=file      connect task stdout to \"file\"\n"
+"  -E, --task-error=file       connect task stderr to \"file\"\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -t, --time=minutes          time limit\n"
 "  -D, --workdir=path          the working directory for the launched tasks\n"
