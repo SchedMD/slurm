@@ -64,18 +64,26 @@ Request a specific task layout.  This options much like the \-\-task\-layout opt
 NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
 
 .TP 
-\fB\-i\fR, \fB\-\-local\-input\fR[=]<\fIfilename pattern\fR>
+\fB\-i\fR, \fB\-\-slaunch\-input\fR[=]<\fIfilename pattern\fR>
 .PD 0 
 .TP
-\fB\-o\fR, \fB\-\-local\-output\fR[=]<\fIfilename pattern\fR>
+\fB\-o\fR, \fB\-\-slaunch\-output\fR[=]<\fIfilename pattern\fR>
 .PD 0
 .TP 
-\fB\-e\fR, \fB\-\-local\-error\fR[=]<\fIfilename pattern\fR>
+\fB\-e\fR, \fB\-\-slaunch\-error\fR[=]<\fIfilename pattern\fR>
 .PD
-Open a local file with file name "filename pattern" for standard
-input, output, or error.  The filename pattern may contain
-one or more replacement symbols, which are a percent sign "%" followed 
-by a letter (e.g. %J).
+Change slaunch's standard input, standard output, or standard error
+to be a file of name "filename pattern".  These options are similar to using
+shell IO redirection capabilities, but with the additional ability to replace
+certain symbols in the filename with useful SLURM information.  Symbols are
+listed below.
+
+By default, slaunch broadcasts its standard input over the network to the
+standard input of all tasks.  Likewise, standard output and standard error
+from all tasks are collected over the network by slaunch and printed on
+its standard output or standard error, respectively.  If you want to see
+traffic from fewer tasks, see the \-\-slaunch\-[input|output|error]\-filter
+options.
 
 Supported replacement symbols are:
 .PD 0
@@ -94,35 +102,40 @@ Job step number.
 .RS -10
 
 .TP 
-\fB\-\-local\-input-taskid\fR[=]<\fItask number\fR>
+\fB\-\-slaunch\-input\-filter\fR[=]<\fItask number\fR>
 .PD 0
 .TP
-\fB\-\-local\-output-taskid\fR[=]<\fItask number\fR>
+\fB\-\-slaunch\-output\-filter\fR[=]<\fItask number\fR>
 .PD 0
 .TP 
-\fB\-\-local\-error-taskid\fR[=]<\fItask number\fR>
+\fB\-\-slaunch\-error\-filter\fR[=]<\fItask number\fR>
 .PD
 Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  These options perform the filtering
-locally.  All tasks are still capable of sending or receiving standard IO
-over the network, so the "sattach" command can still access the standard
-IO streams of the other tasks.
+locally in slaunch.  All tasks are still capable of sending or receiving
+standard IO over the network, so the "sattach" command can still access the
+standard IO streams of the other tasks.  (NOTE: for -output and -error,
+the streams from all tasks WILL be transmitted to slaunch, but it will only
+print the streams for the selected task.  If your tasks print a great deal of
+data to standard output or error, this can be performance limiting.)
 
 .TP
-\fB\-I\fR, \fB\-\-remote\-input\fR[=]<\fIfilename pattern\fR>
+\fB\-I\fR, \fB\-\-task\-input\fR[=]<\fIfilename pattern\fR>
 .PD 0
 .TP
-\fB\-O\fR, \fB\-\-remote\-output\fR[=]<\fIfilename pattern\fR>
+\fB\-O\fR, \fB\-\-task\-output\fR[=]<\fIfilename pattern\fR>
 .PD 0
 .TP
-\fB\-E\fR, \fB\-\-remote\-error\fR[=]<\fIfilename pattern\fR>
+\fB\-E\fR, \fB\-\-task\-error\fR[=]<\fIfilename pattern\fR>
 .PD
-Instruct SLURM to connect each remotely running task's standard input,
-standard output, or standard error directly to the file name specified
-in the "\fIfilename pattern\fR".  Unlike the "\-\-local\-" options, no
-standard IO traffic will be transferred between slaunch and the tasks
-if the stream is directly connected to a file.  The filename pattern may contain
-one or more replacement symbols, which are a percent sign "%" followed 
+Instruct SLURM to connect each task's standard input, standard output,
+or standard error directly to the file name specified
+in the "\fIfilename pattern\fR".  Unlike the \-\-slaunch\-[input|output|error]
+options, standard IO traffic is NOT transferred between the tasks and slaunch
+for the specified input, output, or error stream.
+
+The filename pattern may
+contain one or more replacement symbols, which are a percent sign "%" followed 
 by a letter (e.g. %t).  If a replacement symbol is expanded to a
 different string for each task, then each task will be connected to a
 different file.
