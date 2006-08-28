@@ -37,6 +37,7 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -44,6 +45,7 @@
 #include <sys/types.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
@@ -59,6 +61,8 @@ static bool thread_running = false;
 static bool thread_shutdown = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t msg_thread_id;
+static char *err_msg;
+static int   err_code;
 
 int init_prio_mode = PRIO_HOLD;
 char *auth_key = NULL;
@@ -71,7 +75,9 @@ static void	_proc_msg(slurm_fd new_fd, char *msg);
 static size_t	_read_bytes(int fd, char *buf, const size_t size);
 static char *	_recv_msg(slurm_fd new_fd);
 static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size);
+static void	_send_reply(slurm_fd new_fd, char *response);
 static void	_sig_handler(int signal);
+static int	_start_job(slurm_fd new_fd, char *cmd_ptr);
 static size_t	_write_bytes(int fd, char *buf, const size_t size);
 
 /*****************************************************************************\
@@ -143,6 +149,8 @@ static void *_msg_thread(void *no_data)
 		 * RPC, but that leaks memory on some systems when 
 		 * done from a plugin. 
 		 * FIXME: Maintain a pool of and reuse them. */
+		err_code = 0;
+		err_msg = "";
 		msg = _recv_msg(new_fd);
 		_proc_msg(new_fd, msg);
 		xfree(msg);
@@ -283,17 +291,23 @@ static char *	_recv_msg(slurm_fd new_fd)
 	char *buf;
 
 	if (_read_bytes((int) new_fd, header, 9) != 9) {
+		err_code = 240;
+		err_msg = "failed to read message header";
 		error("wiki: failed to read message header %m");
 		return NULL;
 	}
 
 	if (sscanf(header, "%ul", &size) != 1) {
+		err_code = 244;
+		err_msg = "malformed message header";
 		error("wiki: malformed message header (%s)", header);
 		return NULL;
 	}
 
 	buf = xmalloc(size);
 	if (_read_bytes((int) new_fd, buf, size) != size) {
+		err_code = 246;
+		err_msg = "unable to read all message data";
 		error("wiki: unable to read data message");
 		xfree(buf);
 		return NULL;
@@ -341,14 +355,20 @@ static int	_parse_msg(char *msg, char **req)
 	char *ts_ptr = strstr(msg, "TS=");
 
 	if (!auth_ptr) {
+		err_code = 300;
+		err_msg = "request lacks AUTH";
 		error("wiki: request lacks AUTH=");
 		return -1;
 	}
 	if (!dt_ptr) {
+		err_code = 300;
+		err_msg = "request lacks DT";
 		error("wiki: request lacks DT=");
 		return -1;
 	}
 	if (!ts_ptr) {
+		err_code = 300;
+		err_msg = "request lacks TS";
 		error("wiki: request lacks TS=");
 		return -1;
 	}
@@ -356,6 +376,8 @@ static int	_parse_msg(char *msg, char **req)
 	if (auth_key) {
 		checksum(sum, ts_ptr);
 		if (strncmp(sum, msg, 19) != 0) {
+			err_code = 422;
+			err_msg = "bad checksum";
 			error("wiki: message checksum error");
 			return -1;
 		}
@@ -371,31 +393,117 @@ static int	_parse_msg(char *msg, char **req)
 static void	_proc_msg(slurm_fd new_fd, char *msg)
 {
 	char *req, *cmd_ptr;
+	char response[128];
+
+	if (new_fd < 0)
+		return;
 
 	if (!msg)
-		return;
+		goto err_msg;
 
 	debug3("wiki msg recv:%s", msg);
 	if (_parse_msg(msg, &req) != 0)
-		return;
+		goto err_msg;
 
 	cmd_ptr = strstr(req, "CMD=");
 	if (cmd_ptr == NULL) {
+		err_code = 300;
+		err_msg = "request lacks CMD"; 
 		error("wiki: request lacks CMD");
-		return;
+		goto err_msg;
 	}
 	cmd_ptr +=4;
 	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
+		_start_job(new_fd, cmd_ptr);
+		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 	} else if (strncmp(cmd_ptr, "RESUMEJOB", 9) == 0) {
 	} else if (strncmp(cmd_ptr, "JOBADDTASK", 10) == 0) {
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 	} else {
+		err_code = 300;
+		err_msg = "unsupported request type";
 		error("wiki: unrecognized request type: %s", req);
+		goto err_msg;
+	}
+	return;
+
+ err_msg:
+	snprintf(response, sizeof(response), 
+		"SC=%d;RESPONSE=%s", err_code, err_msg);
+	_send_reply(new_fd, response);
+	return;
+}
+
+static void	_send_reply(slurm_fd new_fd, char *response)
+{
+/* FIXME */
+}
+
+static int	_start_job(slurm_fd new_fd, char *cmd_ptr)
+{
+	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
+	int i;
+	uint32_t jobid;
+	hostlist_t hl;
+	char host_string[1024];
+	static char reply_msg[128];
+
+	arg_ptr = strstr(cmd_ptr, "ARG=");
+	if (arg_ptr == NULL) {
+		err_code = 300;
+		err_msg = "STARTJOB lacks ARG";
+		error("wiki: STARTJOB lacks ARG");
+		return -1;
+	}
+	jobid = strtol(arg_ptr+4, &tmp_char, 10);
+	if (!isspace(tmp_char[0])) {
+		err_code = 300;
+		err_msg = "Invalid ARG value";
+		error("wiki: STARTJOB has invalid jobid");
+		return -1;
 	}
 
-	/* send the reply */
+	task_ptr = strstr(cmd_ptr, "TASKLIST=");
+	if (task_ptr == NULL) {
+		err_code = 300;
+		err_msg = "STARTJOB lacks TASKLIST";
+		error("wiki: STARTJOB lacks TASKLIST");
+		return -1;
+	}
+	node_ptr = task_ptr + 9;
+	for (i=0; node_ptr[i]!='\0'; i++) {
+		if (node_ptr[i] == ':')
+			node_ptr[i] = ',';
+	}
+	hl = hostlist_create(node_ptr);
+	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
+	hostlist_destroy(hl);
+	if (i < 0) {
+		err_code = 300;
+		err_msg = "STARTJOB has invalid TASKLIST";
+		error("wiki: STARTJOB has invalid TASKLIST");
+		return -1;
+	}
+	if (sched_set_nodelist(jobid, host_string) != SLURM_SUCCESS) {
+		err_code = 734;
+		err_msg = "failed to assign nodes";
+		error("wiki: failed to assign nodes to job %u", jobid);
+		return -1;
+	}
+
+	if (sched_start_job(jobid, (uint32_t) 1) != SLURM_SUCCESS) {
+		err_code = 730;
+		err_msg = "failed to start job";
+		error("wiki: failed to start job %u", jobid);
+		return -1;
+	}
+
+	snprintf(reply_msg, sizeof(reply_msg), 
+		"job %u started successfully", jobid);
+	err_msg = reply_msg;
+	return 0;
 }
