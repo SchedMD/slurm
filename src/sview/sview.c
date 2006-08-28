@@ -71,7 +71,7 @@ display_data_t main_display_data[] = {
 	 refresh_main, get_info_node, specific_info_node, 
 	 set_menus_node, NULL},
 #endif
-	{G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", TRUE, -1,
+	{G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", FALSE, -1,
 	 refresh_main, NULL, 
 	 NULL, NULL, NULL},
 	{G_TYPE_NONE, INFO_PAGE, NULL, FALSE, -1,
