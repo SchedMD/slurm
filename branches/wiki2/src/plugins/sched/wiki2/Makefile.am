@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = sched_wiki2.la
 
-sched_wiki2_la_SOURCES =
+sched_wiki2_la_SOURCES = \
 	crypto.c	\
 	crypto.h	\
 	msg.c		\
