@@ -14,7 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Tweak slurmctld's node ping logic to better handle failed nodes with 
     hierarchical communications fail-over logic.
  -- Add support for sched/wiki specific configuration file "wiki.conf".
-
+ 
 * Changes in SLURM 1.1.9
 ========================
  -- BLUEGENE - fix to handle a NO_VAL sent in as num procs in the job 
