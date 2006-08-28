@@ -56,7 +56,7 @@ proc run_cat_backpressure { input_file output_file } {
 	set iter 0
 
 	set output [open $output_file w]
-	set slaunch_output [open "| $salloc -N1 -t2 $slaunch --remote-error=$file_err $bin_cat $input_file" r]
+	set slaunch_output [open "| $salloc -N1 -t2 $slaunch --task-error=$file_err $bin_cat $input_file" r]
 	while {![eof $slaunch_output]} {
 		puts -nonewline $output [read $slaunch_output 1]
 		incr iter
