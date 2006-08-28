@@ -330,7 +330,7 @@ JobAcctType=jobacct/none
 #
 # Example:
 #
-# SlurmctldTimeout=300	# Defaults to 300 seconds
+# SlurmctldTimeout=120	# Defaults to 120 seconds
 # SlurmdTimeout=300	# Defaults to 300 seconds
 # InactiveLimit=600	# Defaults to 0 (unlimited)
 # MinJobAge=30		# Defaults to 300 seconds
