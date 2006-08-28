@@ -37,7 +37,7 @@
  */
 #define PRIO_HOLD      0
 #define PRIO_DECREMENT 1
-extern int	init_prio_mode = PRIO_HOLD;
+extern int	init_prio_mode;
 
 extern char *	auth_key;
 

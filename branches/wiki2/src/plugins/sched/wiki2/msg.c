@@ -24,12 +24,35 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif  /* HAVE_INTTYPES_H */
+#else   /* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif  /*  HAVE_CONFIG_H */
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/common/log.h"
+#include "src/common/parse_config.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/slurmctld/sched_plugin.h"
+#include "./crypto.h"
 #include "./msg.h"
 
 static bool thread_running = false;
@@ -57,7 +80,6 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size);
 extern int spawn_msg_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
-	struct sockaddr_in sockaddr;
 
 	pthread_mutex_lock( &thread_flag_mutex );
 	if (thread_running) {
@@ -72,6 +94,7 @@ extern int spawn_msg_thread(void)
 			_msg_thread, NULL))
 		fatal("pthread_create %m");
 
+	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
 	pthread_mutex_unlock(&thread_flag_mutex);
 	return SLURM_SUCCESS;
@@ -85,7 +108,7 @@ extern void term_msg_thread(void)
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		thread_shutdown = true;
-		pthread_kill(msg_thread_id, SIGUSR1)
+		pthread_kill(msg_thread_id, SIGUSR1);
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
@@ -97,10 +120,10 @@ static void *_msg_thread(void *no_data)
 {
 	slurm_fd sock_fd, new_fd;
 	slurm_addr cli_addr;
-	int sigarray[] = {SIGUSR1, 0};
+	int sig_array[] = {SIGUSR1, 0};
 	char *msg;
 
-	if ((sock_fd = slurm_init_msg_engine_port(sched_get_port()) 
+	if ((sock_fd = slurm_init_msg_engine_port(sched_get_port())) 
 			== SLURM_SOCKET_ERROR)
 		fatal("wiki: slurm_init_msg_engine_port %m");
 
@@ -182,7 +205,7 @@ static void _parse_wiki_config(void)
 	}
 
 	debug("Reading wiki.conf file (%s)",wiki_conf);
-	tbl = s_p_hashtbl_create(options);JobPriority
+	tbl = s_p_hashtbl_create(options);
 	if (s_p_parse_file(tbl, wiki_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading wiki.conf file");
 
@@ -257,7 +280,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 {
 	char header[10];
 	uint32_t size;
-	char *buf, *dummy;
+	char *buf;
 
 	if (_read_bytes((int) new_fd, header, 9) != 9) {
 		error("wiki: failed to read message header %m");
@@ -296,8 +319,8 @@ static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size)
 	}
 
 	data_sent = _write_bytes((int) new_fd, buf, size);
-	if (data_sent != size)
-		error("wiki: unable to write data message (%lu of %lu) %m"
+	if (data_sent != size) {
+		error("wiki: unable to write data message (%lu of %lu) %m",
 			data_sent, size);
 	}
 
@@ -348,7 +371,6 @@ static int	_parse_msg(char *msg, char **req)
 static void	_proc_msg(slurm_fd new_fd, char *msg)
 {
 	char *req, *cmd_ptr;
-	char *ts_ptr = strstr(msg, "TS=");
 
 	if (!msg)
 		return;
