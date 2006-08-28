@@ -179,6 +179,11 @@ for plugin in auth_munge auth_authd sched_wiki; do
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
 
+# Temporary, until wiki2 becomes wiki (see code above)
+LIST=./sched_wiki.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki.so &&
+  echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
+
 LIST=./switch_elan.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_elan.so &&
