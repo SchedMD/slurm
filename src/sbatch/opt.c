@@ -70,8 +70,6 @@
 
 #include "src/sbatch/opt.h"
 
-#include "src/common/mpi.h"
-
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -82,7 +80,6 @@
 #define OPT_CONN_TYPE	0x08
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
-#define OPT_MPI         0x0c
 #define OPT_MULTI       0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
@@ -93,7 +90,6 @@
 #define LONG_OPT_CONT        0x109
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
-#define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_NETWORK     0x114
@@ -511,7 +507,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
   {"SBATCH_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SBATCH_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SBATCH_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -589,14 +584,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
-	case OPT_MPI:
-		if (srun_mpi_init((char *)val) == SLURM_ERROR) {
-			fatal("\"%s=%s\" -- invalid MPI type, "
-			      "--mpi=list for acceptable types.",
-			      e->var, val);
-		}
-		break;
-
 	default:
 		/* do nothing */
 		break;
@@ -639,7 +626,6 @@ static struct option long_options[] = {
 	{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
-	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"tmp",              required_argument, 0, LONG_OPT_TMP},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
@@ -1088,13 +1074,6 @@ static void _set_options(int argc, char **argv)
 				error("invalid memory constraint %s", 
 				      optarg);
 				exit(1);
-			}
-			break;
-		case LONG_OPT_MPI:
-			if (srun_mpi_init((char *)optarg) == SLURM_ERROR) {
-				fatal("\"--mpi=%s\" -- long invalid MPI type, "
-				      "--mpi=list for acceptable types.",
-				      optarg);
 			}
 			break;
 		case LONG_OPT_TMP:
@@ -1572,7 +1551,7 @@ static void _usage(void)
 "              [--jobid=id] [--verbose]\n"
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"              [--account=name] [--dependency=jobid]\n"
 "              [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
@@ -1605,7 +1584,6 @@ static void _help(void)
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              run under already allocated job\n"
-"      --mpi=type              type of MPI being used\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
@@ -1614,7 +1592,6 @@ static void _help(void)
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"      --mpi=type              specifies version of MPI to use\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"

@@ -239,6 +239,20 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 		if (!mappos) {
 		    	mappos = strchr(pos,'=');
 		}
+		if (strncasecmp(pos, "help", 4) == 0) {
+			printf("CPU bind options:\n"
+	"\tq[uiet],        quietly bind before task runs (default)\n"
+	"\tv[erbose],      verbosely report binding before task runs\n"
+	"\tno[ne]          don't bind tasks to CPUs (default)\n"
+	"\trank            bind by task rank\n"
+	"\tmap_cpu:<list>  bind by mapping CPU IDs to tasks as specified\n"
+	"\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+	"\tmask_cpu:<list> bind by setting CPU masks on tasks as specified\n"
+	"\t                where <list> is <mask1>,<mask2>,...<maskN>\n");
+			return 1;
+			
+		}
+
 		if (strncasecmp(pos, "quiet", 5) == 0) {
 			fl_cpubind_verbose=0;
 			pos+=5;
@@ -335,6 +349,20 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 		char *mappos = strchr(pos,':');
 		if (!mappos) {
 			mappos = strchr(pos,'=');
+		}
+		if (strncasecmp(pos, "help", 4) == 0) {
+			printf("Memory bind options:\n"
+	"\tq[uiet],        quietly bind before task runs (default)\n"
+	"\tv[erbose],      verbosely report binding before task runs\n"
+	"\tno[ne]          don't bind tasks to memory (default)\n"
+	"\trank            bind by task rank\n"
+	"\tlocal           bind to memory local to processor\n"
+	"\tmap_mem:<list>  bind by mapping memory of CPU IDs to tasks as specified\n"
+	"\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+	"\tmask_mem:<list> bind by setting menory of CPU masks on tasks as specified\n"
+	"\t                where <list> is <mask1>,<mask2>,...<maskN>\n");
+			return 1;
+			
 		}
 		if (strncasecmp(pos, "quiet", 5) == 0) {
 			fl_membind_verbose = 0;
@@ -569,7 +597,6 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
-	opt.time_limit = -1;
 	opt.relative = (uint16_t)NO_VAL;
 	opt.relative_set = false;
 
@@ -667,7 +694,6 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
   {"SLAUNCH_REMOTE_CWD",   OPT_STRING,    &opt.cwd,           NULL           },
-  {"SLAUNCH_TIMELIMIT",    OPT_INT,       &opt.time_limit,    NULL           },
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
   {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
@@ -835,8 +861,7 @@ void set_options(const int argc, char **argv)
 		{"help",          no_argument,       0, 'h'},
 		{"slaunch-input", required_argument, 0, 'i'},
 		{"task-input",    required_argument, 0, 'I'},
-		{"job-name",      required_argument, 0, 'J'},
-		{"no-kill",       no_argument,       0, 'k'},
+		{"name",          required_argument, 0, 'J'},
 		{"kill-on-bad-exit", no_argument,    0, 'K'},
 		{"label",         no_argument,       0, 'l'},
 		{"nodelist-byid", required_argument, 0, 'L'},
@@ -848,7 +873,6 @@ void set_options(const int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'C'},
 		{"quiet",         no_argument,       0, 'q'},
 		{"relative",      required_argument, 0, 'r'},
-		{"time",          required_argument, 0, 't'},
 		{"unbuffered",    no_argument,       0, 'u'},
 		{"task-layout-byid", required_argument, 0, 'T'},
 		{"verbose",       no_argument,       0, 'v'},
@@ -886,7 +910,7 @@ void set_options(const int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string =
-		"+c:Cd:D:e:E:F:hi:I:J:kKlL:m:n:N:o:O:qr:t:T:uvVw:W:Y:";
+		"+c:Cd:D:e:E:F:hi:I:J:KlL:m:n:N:o:O:qr:T:uvVw:W:Y:";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -966,9 +990,6 @@ void set_options(const int argc, char **argv)
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
-		case 'k':
-			opt.no_kill = true;
-			break;
 		case 'K':
 			opt.kill_bad_exit = true;
 			break;
@@ -1017,9 +1038,6 @@ void set_options(const int argc, char **argv)
 		case 'r':
 			opt.relative_set = true;
 			opt.relative = _get_int(optarg, "relative start node");
-			break;
-		case 't':
-			opt.time_limit = _get_pos_int(optarg, "time");
 			break;
 		case 'T':
 			xfree(opt.task_layout);
@@ -1776,9 +1794,6 @@ static bool _opt_verify(void)
 	if (opt.max_wait)
 		opt.max_exit_timeout = opt.max_wait;
 
-	if (opt.time_limit == 0)
-		opt.time_limit = INFINITE;
-
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
 
@@ -1923,10 +1938,6 @@ static void _opt_list()
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));
 	info("overcommit     : %s", tf_(opt.overcommit));
-	if (opt.time_limit == INFINITE)
-		info("time_limit     : INFINITE");
-	else
-		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
 	info("required nodes : %s", opt.nodelist);
 	info("network        : %s", opt.network);
@@ -1970,6 +1981,8 @@ static void _usage(void)
 
 static void _help(void)
 {
+	slurm_ctl_conf_t *conf;
+
         printf (
 "Usage: slaunch [OPTIONS...] executable [args...]\n"
 "\n"
@@ -1996,8 +2009,6 @@ static void _help(void)
 "                              (type = block|cyclic|hostfile)\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              run under already allocated job\n"
-"      --mpi=type              type of MPI being used\n"
-"  -b, --batch                 submit as batch job for later execution\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
@@ -2011,32 +2022,19 @@ static void _help(void)
 "      --epilog=program        run \"program\" after launching job step\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from slaunch\n"
+"      --ctrl-comm-ifhn=addr   hostname for PMI communications with slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
-"  -w, --nodelist=hosts...     request a specific list of hosts\n"
-"\n"
-"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
-"      --cpu_bind=             Bind tasks to CPUs\n" 
-"             q[uiet],           quietly bind before task runs (default)\n"
-"             v[erbose],         verbosely report binding before task runs\n"
-"             no[ne]             don't bind tasks to CPUs (default)\n"
-"             rank               bind by task rank\n"
-"             map_cpu:<list>     bind by mapping CPU IDs to tasks as specified\n"
-"                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-"             mask_cpu:<list>    bind by setting CPU masks on tasks as specified\n"
-"                                where <list> is <mask1>,<mask2>,...<maskN>\n"
-"      --mem_bind=             Bind tasks to memory\n"
-"             q[uiet],           quietly bind before task runs (default)\n"
-"             v[erbose],         verbosely report binding before task runs\n"
-"             no[ne]             don't bind tasks to memory (default)\n"
-"             rank               bind by task rank\n"
-"             local              bind to memory local to processor\n"
-"             map_mem:<list>     bind by mapping memory of CPU IDs to tasks as specified\n"
-"                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-"             mask_mem:<list>    bind by setting menory of CPU masks on tasks as specified\n"
-"                                where <list> is <mask1>,<mask2>,...<maskN>\n");
-
+"  -w, --nodelist=hosts...     request a specific list of hosts\n");
+	conf = slurm_conf_lock();
+	if (conf->task_plugin != NULL
+	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
+		printf(
+"      --cpu_bind=             Bind tasks to CPUs(\"--cpu_bind=help\" for options\n"
+"      --mem_bind=             Bind tasks to memory(\"--mem_bind=help\" for options\n"
+			);
+	}
+	slurm_conf_unlock();
 	spank_print_options (stdout, 6, 30);
 	printf("\n");
 
@@ -2048,7 +2046,7 @@ static void _help(void)
 #endif
 
 "Help options:\n"
-"      --help                  show this help message\n"
+"  -h, --help                  show this help message\n"
 "      --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
