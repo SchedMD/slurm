@@ -76,7 +76,6 @@ typedef struct slaunch_options {
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
-	int  time_limit;	/* --time,   -t			*/
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
 	bool distribution_set;

@@ -71,8 +71,6 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
-#include "src/common/mpi.h"
-
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -1278,7 +1276,7 @@ static void _usage(void)
 "              [--verbose]\n"
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"              [--account=name] [--dependency=jobid]\n"
 "              [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
@@ -1305,7 +1303,6 @@ static void _help(void)
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              specify jobid to use\n"
-"      --mpi=type              type of MPI being used\n"
 "  -W, --wait=sec              seconds to wait for allocation if not\n"
 "                              immediately available\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
@@ -1314,7 +1311,6 @@ static void _help(void)
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"      --mpi=type              specifies version of MPI to use\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"

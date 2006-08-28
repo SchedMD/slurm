@@ -8,7 +8,15 @@ slaunch \- Launch a parallel application under a SLURM job allocation.
 slaunch [\fIoptions\fP] <\fIcommand\fP> [\fIcommand args\fR]
 .SH "DESCRIPTION"
 .LP 
-slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance) on the nodes, or subset of nodes, in a \fBjob allocation\fR.   A valid job allocation is a prerequisite of running slaunch.  The ID of the job allocation may be passed to slaunch through either the \fB\-\-jobid\fR command line parameter or the \fBSLURM_JOBID\fR environment variable.  The \fBsalloc\fR and \fBsbatch\fR commands may be used to request a job allocation, and each of those commands automatically set the \fBSLURM_JOBID\fR environment variable.
+slaunch launches a parallel application (a \fBjob step\fR in SLURM parlance)
+on the nodes, or subset of nodes, in a \fBjob allocation\fR.   A valid job
+allocation is a prerequisite of running slaunch.  The ID of the job allocation
+may be passed to slaunch through either the \fB\-\-jobid\fR command line
+parameter or the \fBSLAUNCH_JOBID\fR environment variable.  The \fBsalloc\fR
+and \fBsbatch\fR commands may be used to request a job allocation, and each
+of those commands automatically set the \fBSLURM_JOB_ID\fR environment variable,
+which is also understood by slaunch.  Users should not set SLURM_JOB_ID on their
+own; use SLAUNCH_JOBID instead.
 .SH "OPTIONS"
 .LP 
 .TP 
@@ -28,6 +36,85 @@ Specify the first node in the allocation on which this job step will be launched
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
 Specify that each task requires \fIncpus\fR number of CPUs.  Useful for applications in which each task will launch multiple threads and can therefore benefit from there being free processors on the node.
+
+.TP
+\fB\-J\fR, \fB\-\-name\fR[=]<\fIname\fR>
+Set the name of the job step.  By default, the job step's name will be the
+name of the executable which slaunch is launching.
+
+.TP
+\fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
+Terminate the job step if any task exits with a non-zero exit code.  By default
+slaunch will not terminate a job step because of a task with a non-zero exit
+code.
+
+.TP
+\fB\-l\fR, \fB\-\-label\fR
+Prepend each line of task standard output or standard error with the task
+number of its origin.
+
+.TP
+\fB\-u\fR, \fB\-\-unbuffered\fR
+Do not line buffer standard output or standard error from remote tasks.
+This option cannot be used with \-\-label.
+
+.TP
+\fB\-C\fR, \fB\-\-overcommit\fR
+Permit the allocation of more tasks to a node than there are available processors.
+Normally SLURM will only allow up to N tasks on a node with N processors, but
+this option will allow more than N tasks to be assigned to a node.
+
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Suppress informational messages from slaunch. Errors will still be displayed.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Increase the verbosity of slaunch's informational messages.  Multiple \-v's
+will further increase slaunch's verbosity.
+
+.TP
+\fB\-d\fR, \fB\-\-slurmd-debug\fR[=]<\fIlevel\fR>
+Specify a debug level for slurmd(8). \fIlevel\fR may be an integer value
+between 0 [quiet, only errors are displayed] and 4 [verbose operation]. 
+The slurmd debug information is copied onto the stderr of
+the job.  By default only errors are displayed. 
+
+.TP
+\fB\-W\fR, \fB\-\-wait\fR[=]<\fIseconds\fR>
+slaunch will wait the specified number of seconds after the first tasks exits
+before killing all tasks in the job step.  If the value is 0, slaunch will
+wait indefinitely for all tasks to exit.  The default value is give by the
+WaitTime parameter in the slurm configuration file (see \fBslurm.conf(5)\fR).
+
+The \-\-wait option can be used to insure that a job step terminates in a timely
+fashion in the event that one or more tasks terminate prematurely.
+
+.TP
+\fB\-m\fR, \fB\-\-distribution\fR[=]<\fI(cyclic|block|arbitrary)\fR>
+Select a task distribution pattern.  (The default is cyclic.)
+.RS
+.TP
+.B cyclic
+The cyclic method distributes processes in a round-robin fashion across
+the allocated nodes. That is, task zero will be allocated to the first
+node, task one to the second, and so on.
+.TP
+.B block
+The block method of distribution will allocate tasks in-order to
+the cpus on a node. If the number of tasks exceeds the number of 
+cpus on all of the nodes in the allocation then all nodes will be 
+utilized. For example, consider an allocation of three nodes each with 
+two cpus. A four\-task block distribution request will distribute 
+those tasks to the nodes with tasks zero and one on the first 
+node, task two on the second node, and task three on the third node.
+.TP
+.B arbitrary
+The arbitrary method of distribution allows the user to manually specify any
+arbitrary layout of tasks on nodes.  Normally the arbitrary task distribution
+method will be invoked implicitly by using one of the options
+\-\-task\-layout\-byid, \-\-task\-layout\-byname, or \-\-task\-layout\-file.
+.RE
 
 .TP 
 \fB\-w\fR, \fB\-\-nodelist\-byname\fR[=]<\fInode name list\fR>
@@ -56,12 +143,17 @@ the Nth task should be launched.  For example, a nodelist of mynode[4,3,1\-2,4]
 means that tasks 0 and 4 will run on mynode4, task 1 will run on mynode3,
 task 2 will run on mynode1, and task 3 will run on mynode2.
 
-NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
+NOTE: This option implicitly sets the task distribution method to "arbitrary".
+Some network switch layers do not permit arbitrary task layout.
+
 .TP 
 \fB\-F\fR, \fB\-\-task\-layout\-file\fR[=]<\fIfilename\fR>
-Request a specific task layout.  This options much like the \-\-task\-layout option, except that instead of a nodelist you supply the name of a file.  The file contains a nodelist that may span multiple lines of the file.
+Request a specific task layout.  This options much like the \-\-task\-layout
+option, except that instead of a nodelist you supply the name of a file.
+The file contains a nodelist that may span multiple lines of the file.
 
-NOTE: This option implicitly sets the task distribution method to "arbitrary".  Some network switch layers do not permit arbitrary task layout.
+NOTE: This option implicitly sets the task distribution method to "arbitrary".
+Some network switch layers do not permit arbitrary task layout.
 
 .TP 
 \fB\-i\fR, \fB\-\-slaunch\-input\fR[=]<\fIfilename pattern\fR>
@@ -175,21 +267,97 @@ Task rank number.  (Will result in a separate file per task.)
 .RS -10
 
 .TP 
-\fB\-D\fR, \fB\-\-workdir\fR=\fIpath\fR
+\fB\-D\fR, \fB\-\-workdir\fR[=]<\fIpath\fR>
 Set the working directory of the tasks to \fIpath\fR before execution.
 The default task working directory is slaunch's working directory.
 
 .TP 
-\fB\-\-nice\fR=<\fIadjustment\fR>
+\fB\-\-mpi\fR[=]<\fImpi_type\fR>
+Identify the type of MPI to be used.
+
+.TP 
+\fB\-\-nice\fR[=]<\fIadjustment\fR>
 Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
 
+.TP
+\fB\-\-uid\fR[=]<\fIuser\fR>
+Attempt to submit and/or run a job as \fIuser\fR instead of the
+invoking user id. The invoking user's credentials will be used
+to check access permissions for the target partition. User root
+may use this option to run jobs as a normal user in a RootOnly
+partition for example. If run as root, \fBslaunch\fR will drop
+its permissions to the uid specified after node allocation is
+successful. \fIuser\fR may be the user name or numerical user ID.
+
+.TP
+\fB\-\-gid\fR[=]<\fIgroup\fR>
+If \fBslaunch\fR is run as root, and the \fB\-\-gid\fR option is used, 
+submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR 
+may be the group name or the numerical group ID.
+
+.TP
+\fB\-\-core\fR[=]<\fItype\fR>
+Adjust corefile format for parallel job. If possible, slaunch will set
+up the environment for the job such that a corefile format other than
+full core dumps is enabled. If run with type = "list", slaunch will
+print a list of supported corefile format types to stdout and exit.
+
+.TP
+\fB\-\-propagate\fR[=\fIrlimits\fR]
+Allows users to specify which of the modifiable (soft) resource limits
+to propagate to the compute nodes and apply to their jobs.  If
+\fIrlimits\fR is not specified, then all resource limits will be
+propagated.
+
+.TP
+\fB\-\-prolog\fR[=]<\fIexecutable\fR>
+\fBslaunch\fR will run \fIexecutable\fR just before launching the job step.
+The command line arguments for \fIexecutable\fR will be the command
+and arguments of the job step.  If \fIexecutable\fR is "none", then
+no prolog will be run.  This parameter overrides the SrunProlog
+parameter in slurm.conf.
+
+.TP
+\fB\-\-epilog\fR[=]<\fIexecutable\fR>
+\fBslaunch\fR will run \fIexecutable\fR just after the job step completes.
+The command line arguments for \fIexecutable\fR will be the command
+and arguments of the job step.  If \fIexecutable\fR is "none", then
+no epilog will be run.  This parameter overrides the SrunEpilog
+parameter in slurm.conf.
+
+.TP
+\fB\-\-task\-prolog\fR[=]<\fIexecutable\fR>
+The \fBslurmd\fR daemon will run \fIexecutable\fR just before launching 
+each task. This will be executed after any TaskProlog parameter 
+in slurm.conf is executed.
+Besides the normal environment variables, this has SLURM_TASK_PID
+available to identify the process ID of the task being started.
+Standard output from this program of the form
+"export NAME=value" will be used to set environment variables
+for the task being spawned.
+
+.TP
+\fB\-\-task\-epilog\fR[=]<\fIexecutable\fR>
+The \fBslurmd\fR daemon will run \fIexecutable\fR just after each task
+terminates. This will be before after any TaskEpilog parameter      
+in slurm.conf is executed. This is meant to be a very short-lived 
+program. If it fails to terminate within a few seconds, it will 
+be killed along with any descendant processes.
+
+.TP
+\fB\-\-ctrl\-comm\-ifhn\fR[=]<\fIaddr\fR>
+Specify the address or hostname to be used for PMI communications only
+(MPCIH2 communication bootstrapping mechanism).
+Defaults to short hostname of the node on which slaunch is running.
 
 .TP 
 \fB\-h\fR, \fB\-\-help\fR
 Output help information and exit.
+
 .TP 
 \fB\-V\fR, \fB\-\-version\fR
 Output version information and exit.
+
 .SH "ENVIRONMENT VARIABLES"
 .LP 
 .TP 
@@ -200,6 +368,7 @@ Same as \fB\-\-jobid\fR.
 To launch a job step (parallel program) in an existing job allocation:
 .IP 
 slaunch \-\-jobid 66777 \-N2 \-n8 myprogram
+
 .LP 
 To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):
 .IP 
