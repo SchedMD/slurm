@@ -29,6 +29,7 @@
 #  include "config.h"
 #endif
 
+#include <slurm/slurm.h>
 #include <src/common/xassert.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
@@ -84,13 +85,19 @@ static struct job_option_info * job_option_info_unpack (Buf buf)
 	uint32_t type;
 	uint16_t len;
 
-	unpack32 (&type, buf);
-	unpackstr_xmalloc (&ji->option, &len, buf);
-	unpackstr_xmalloc (&ji->optarg, &len, buf);
+	if (unpack32 (&type, buf) != SLURM_SUCCESS)
+		goto error;
+	if (unpackstr_xmalloc (&ji->option, &len, buf) != SLURM_SUCCESS)
+		goto error;
+	if (unpackstr_xmalloc (&ji->optarg, &len, buf) != SLURM_SUCCESS)
+		goto error;
 
 	ji->type = (int) type;
-
 	return (ji);
+
+    error:
+	job_option_info_destroy (ji);
+	return (NULL);
 }
 
 
@@ -182,7 +189,8 @@ int job_options_unpack (job_options_t opts, Buf buf)
 	char *   tag;
 	int      i;
 
-	unpackstr_xmalloc (&tag, &len, buf);
+	if (unpackstr_xmalloc (&tag, &len, buf) != SLURM_SUCCESS)
+		return (SLURM_ERROR);
 
 	if (strncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0)
 		return (-1);
@@ -190,7 +198,10 @@ int job_options_unpack (job_options_t opts, Buf buf)
 	unpack32 (&count, buf);
 
 	for (i = 0; i < count; i++) {
-		list_append (opts->options, job_option_info_unpack (buf));
+		struct job_option_info *ji;
+		if ((ji = job_option_info_unpack (buf)) == NULL)
+			return (SLURM_ERROR);
+		list_append (opts->options, ji);
 	}
 
 	return (0);
