@@ -41,7 +41,7 @@ set job_id2     0
 print_header $test_id
 
 global env
-set env(SLURM_ACCOUNT) QA_ACCT
+set env(SALLOC_ACCOUNT) QA_ACCT
 
 #
 # Build input script file
