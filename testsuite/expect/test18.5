@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Confirm that slauch local stdin, stdout, and stderr options work 
-#          (options --local-input, --local-output and --local-error 
+#          (options --slaunch-input, --slaunch-output and --slaunch-error 
 #          respectively).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -61,7 +61,7 @@ exec $bin_chmod 700 $file_in
 # Spawn a shell via slaunch that uses stdin/out/err and confirm their contents
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 -t1 $slaunch --local-input=$file_in --local-output=$file_out --local-error=$file_err $bin_bash]
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --slaunch-input=$file_in --slaunch-output=$file_out --slaunch-error=$file_err $bin_bash]
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
@@ -148,7 +148,7 @@ if {$got_sleep_err == 0} {
 #
 # Spawn a program to run for a while with no input, output or error
 #
-spawn $salloc -N1 -t1 $slaunch --local-input=none --local-output=none --local-error=none $bin_od -c $srun
+spawn $salloc -N1 -t1 $slaunch --slaunch-input=none --slaunch-output=none --slaunch-error=none $bin_od -c $srun
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"

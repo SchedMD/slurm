@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test slaunch stdout/err file name formatting (--remote-output and 
-#          --remote-error options with %j, %J, %n, %s and %t specifications).
+#          Test slaunch stdout/err file name formatting (--task-output and 
+#          --task-error options with %j, %J, %n, %s and %t specifications).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -51,7 +51,7 @@ print_header $test_id
 #
 file delete [glob -nocomplain "test$test_id.s.*.output"]
 set timeout $max_job_delay
-spawn $salloc -N1 -t1 $slaunch --remote-output=$file_out_t -n$task_cnt --overcommit $bin_id
+spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_t -n$task_cnt --overcommit $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -97,7 +97,7 @@ if {$file_cnt != $task_cnt} {
 #
 set job_id    0
 set matches   0
-spawn $salloc -N1 -t1 $slaunch --remote-output=/dev/null --remote-error=$file_err_j -n$task_cnt --overcommit $bin_sleep aaa
+spawn $salloc -N1 -t1 $slaunch --task-output=/dev/null --task-error=$file_err_j -n$task_cnt --overcommit $bin_sleep aaa
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -143,7 +143,7 @@ if {[wait_for_file $file_err_j_glob] == 0} {
 # file name and confirm it is created
 #
 set job_id   0
-spawn $salloc -N1 -t1 $slaunch --remote-output=$file_out_J $bin_hostname
+spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_J $bin_hostname
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -184,7 +184,7 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 file delete $file_out_n_glob
 
 set job_id   0
-spawn $salloc -N1 -t1 $slaunch --remote-output=$file_out_n -n2 --overcommit $bin_hostname
+spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_n -n2 --overcommit $bin_hostname
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -233,8 +233,8 @@ if {$file_cnt != 1} {
 # file name and confirm it is created. Use two step batch job.
 #
 make_bash_script $file_in "
-  $slaunch -n4 --overcommit --remote-output=$file_out_s $bin_hostname
-  $slaunch -n4 --overcommit --remote-output=$file_out_s $bin_hostname
+  $slaunch -n4 --overcommit --task-output=$file_out_s $bin_hostname
+  $slaunch -n4 --overcommit --task-output=$file_out_s $bin_hostname
 "
 
 file delete [glob -nocomplain "test$test_id.s.\[0-4].output"]
