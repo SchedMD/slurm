@@ -78,12 +78,10 @@ typedef struct salloc_options {
 	bool no_kill;		/* --no-kill, -k		*/
 	int kill_command_signal;/* --kill-command, -K           */
 	bool kill_command_signal_set;
-	bool no_requeue;	/* --no-requeue			*/
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
-	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
@@ -93,7 +91,6 @@ typedef struct salloc_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
 
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/

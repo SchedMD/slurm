@@ -148,8 +148,6 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->mail_user = xstrdup(opt.mail_user);
 	if (opt.begin)
 		desc->begin_time = opt.begin;
-	if (opt.network)
-		desc->network = xstrdup(opt.network);
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
 

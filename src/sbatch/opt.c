@@ -92,7 +92,6 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_CONNTYPE    0x111
-#define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
 #define LONG_OPT_BEGIN       0x119
 #define LONG_OPT_MAIL_TYPE   0x11a
@@ -620,7 +619,6 @@ static struct option long_options[] = {
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-	{"network",          required_argument, 0, LONG_OPT_NETWORK},
 	{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
@@ -736,12 +734,6 @@ int process_options_second_pass(int argc, char *argv[],
 
 	/* set options from command line */
 	_set_options(argc, argv);
-#ifdef HAVE_AIX
-	if (opt.network == NULL) {
-		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
-#endif
 
 	if (!_opt_verify())
 		exit(1);
@@ -1078,13 +1070,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = _verify_conn_type(optarg);
-			break;
-		case LONG_OPT_NETWORK:
-			xfree(opt.network);
-			opt.network = xstrdup(optarg);
-#ifdef HAVE_AIX
-			setenv("SLURM_NETWORK", opt.network, 1);
-#endif
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg);
@@ -1476,7 +1461,6 @@ static void _opt_list()
 	info("geometry       : %s", str);
 	xfree(str);
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
-	info("network        : %s", opt.network);
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -1556,12 +1540,6 @@ static void _help(void)
 	printf("\n");
 
         printf(
-#ifdef HAVE_AIX				/* AIX/Federation specific options */
-  "AIX related options:\n"
-  "  --network=type              communication protocol to be used\n"
-  "\n"
-#endif
-
 #ifdef HAVE_BG				/* Blue gene specific options */
   "Blue Gene related options:\n"
   "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
