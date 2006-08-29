@@ -53,7 +53,7 @@ make_bash_script $file_in "
 # Submit a slurm job that will execute 'pwd'
 #
 set job_id 0
-spawn $sbatch -N1 --output=$file_out --chdir=$tmp_dir -t1 $file_in
+spawn $sbatch -N1 --output=$file_out --workdir=$tmp_dir -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
