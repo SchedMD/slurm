@@ -24016,9 +24016,8 @@ fi
       NCURSES="-lcurses"
       ac_have_some_curses="yes"
    else
-      { { echo "$as_me:$LINENO: error: Can not build slurm without curses or ncurses library" >&5
-echo "$as_me: error: Can not build slurm without curses or ncurses library" >&2;}
-   { (exit 1); exit 1; }; }
+      { echo "$as_me:$LINENO: WARNING: Can not build smap without curses or ncurses library" >&5
+echo "$as_me: WARNING: Can not build smap without curses or ncurses library" >&2;}
       ac_have_some_curses="no"
    fi
 

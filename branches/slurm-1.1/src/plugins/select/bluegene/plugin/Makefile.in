@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 7222 2006-02-14 23:59:45Z jette $
+# $Id: Makefile.am 8509 2006-07-07 18:33:24Z da $
 # Makefile for select/bluegene plugin
 
 
