@@ -36,6 +36,9 @@
 static char *	_dump_all_jobs(int *job_cnt);
 static char *	_dump_job(struct job_record *job_ptr);
 static char *	_get_group_name(gid_t gid);
+static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
+static uint32_t	_get_job_min_mem(struct job_record *job_ptr);
+static uint32_t	_get_job_min_nodes(struct job_record *job_ptr);
 static char *	_get_job_state(struct job_record *job_ptr);
 static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
 static uint32_t	_get_job_tasks(struct job_record *job_ptr);
@@ -142,7 +145,7 @@ static char *	_dump_job(struct job_record *job_ptr)
 		return NULL;
 
 	snprintf(tmp, sizeof(tmp), 
-		"%u:UPDATETIME=%u;STATE=%s;WCLIMIT=%u",
+		"%u:UPDATETIME=%u;STATE=%s;WCLIMIT=%u;",
 		job_ptr->job_id, 
 		(uint32_t) job_ptr->time_last_active,
 		_get_job_state(job_ptr),
@@ -157,12 +160,42 @@ static char *	_dump_job(struct job_record *job_ptr)
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
-		"UNAME=%s;GNAME=%s;",
+		"UNAME=%s;GNAME=%s;PARTITION=%s;NODES=%u;",
 		uid_to_string((uid_t) job_ptr->user_id),
-		_get_group_name(job_ptr->group_id));
+		_get_group_name(job_ptr->group_id),
+		job_ptr->partition,
+		_get_job_min_nodes(job_ptr));
+	xstrcat(buf, tmp);
+
+	snprintf(tmp, sizeof(tmp),
+		"RMEM=%u;RDISK=%u;",
+		_get_job_min_mem(job_ptr),
+		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
 	return buf;
+}
+
+static uint32_t _get_job_min_mem(struct job_record *job_ptr)
+{
+	if (job_ptr->details)
+		return job_ptr->details->min_memory;
+	return (uint32_t) 0;
+}
+
+static uint32_t _get_job_min_disk(struct job_record *job_ptr)
+	
+{
+	if (job_ptr->details)
+		return job_ptr->details->min_tmp_disk;
+	return (uint32_t) 0;
+}
+
+static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
+{
+	if (job_ptr->details)
+		return job_ptr->details->min_nodes;
+	return (uint32_t) 1;
 }
 
 static char *	_get_group_name(gid_t gid)
