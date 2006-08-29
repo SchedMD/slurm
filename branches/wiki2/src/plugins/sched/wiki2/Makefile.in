@@ -76,7 +76,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 sched_wiki2_la_LIBADD =
-am_sched_wiki2_la_OBJECTS = crypto.lo msg.lo sched_wiki.lo
+am_sched_wiki2_la_OBJECTS = crypto.lo msg.lo sched_wiki.lo start_job.lo
 sched_wiki2_la_OBJECTS = $(am_sched_wiki2_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -275,7 +275,8 @@ sched_wiki2_la_SOURCES = \
 	crypto.h	\
 	msg.c		\
 	msg.h		\
-	sched_wiki.c
+	sched_wiki.c	\
+	start_job.c
 
 sched_wiki2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
@@ -350,6 +351,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crypto.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_wiki.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/start_job.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

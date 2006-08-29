@@ -35,6 +35,38 @@
  * PRIO_DECREMENT: Set the job priority to one less than the last job and let 
  * Wiki change priorities of jobs as desired to re-order the queue
  */
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif  /* HAVE_INTTYPES_H */
+#else   /* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif  /*  HAVE_CONFIG_H */
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <slurm/slurm_errno.h>
+
+#include "src/common/hostlist.h"
+#include "src/common/log.h"
+#include "src/common/parse_config.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
+#include "src/slurmctld/sched_plugin.h"
+
 #define PRIO_HOLD      0
 #define PRIO_DECREMENT 1
 extern int	init_prio_mode;
@@ -43,3 +75,7 @@ extern char *	auth_key;
 
 extern int	spawn_msg_thread(void);
 extern void	term_msg_thread(void);
+
+/* Functions called from within msg.c (rather than creating a bunch 
+ * more header files with one function definition each */
+extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);

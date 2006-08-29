@@ -24,36 +24,6 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <slurm/slurm_errno.h>
-
-#include "src/common/hostlist.h"
-#include "src/common/log.h"
-#include "src/common/parse_config.h"
-#include "src/common/read_config.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
-#include "src/slurmctld/sched_plugin.h"
 #include "./crypto.h"
 #include "./msg.h"
 
@@ -77,7 +47,6 @@ static char *	_recv_msg(slurm_fd new_fd);
 static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size);
 static void	_send_reply(slurm_fd new_fd, char *response);
 static void	_sig_handler(int signal);
-static int	_start_job(slurm_fd new_fd, char *cmd_ptr);
 static size_t	_write_bytes(int fd, char *buf, const size_t size);
 
 /*****************************************************************************\
@@ -416,7 +385,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
-		_start_job(new_fd, cmd_ptr);
+		start_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
@@ -441,69 +410,4 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 static void	_send_reply(slurm_fd new_fd, char *response)
 {
 /* FIXME */
-}
-
-static int	_start_job(slurm_fd new_fd, char *cmd_ptr)
-{
-	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
-	int i;
-	uint32_t jobid;
-	hostlist_t hl;
-	char host_string[1024];
-	static char reply_msg[128];
-
-	arg_ptr = strstr(cmd_ptr, "ARG=");
-	if (arg_ptr == NULL) {
-		err_code = 300;
-		err_msg = "STARTJOB lacks ARG";
-		error("wiki: STARTJOB lacks ARG");
-		return -1;
-	}
-	jobid = strtol(arg_ptr+4, &tmp_char, 10);
-	if (!isspace(tmp_char[0])) {
-		err_code = 300;
-		err_msg = "Invalid ARG value";
-		error("wiki: STARTJOB has invalid jobid");
-		return -1;
-	}
-
-	task_ptr = strstr(cmd_ptr, "TASKLIST=");
-	if (task_ptr == NULL) {
-		err_code = 300;
-		err_msg = "STARTJOB lacks TASKLIST";
-		error("wiki: STARTJOB lacks TASKLIST");
-		return -1;
-	}
-	node_ptr = task_ptr + 9;
-	for (i=0; node_ptr[i]!='\0'; i++) {
-		if (node_ptr[i] == ':')
-			node_ptr[i] = ',';
-	}
-	hl = hostlist_create(node_ptr);
-	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
-	hostlist_destroy(hl);
-	if (i < 0) {
-		err_code = 300;
-		err_msg = "STARTJOB has invalid TASKLIST";
-		error("wiki: STARTJOB has invalid TASKLIST");
-		return -1;
-	}
-	if (sched_set_nodelist(jobid, host_string) != SLURM_SUCCESS) {
-		err_code = 734;
-		err_msg = "failed to assign nodes";
-		error("wiki: failed to assign nodes to job %u", jobid);
-		return -1;
-	}
-
-	if (sched_start_job(jobid, (uint32_t) 1) != SLURM_SUCCESS) {
-		err_code = 730;
-		err_msg = "failed to start job";
-		error("wiki: failed to start job %u", jobid);
-		return -1;
-	}
-
-	snprintf(reply_msg, sizeof(reply_msg), 
-		"job %u started successfully", jobid);
-	err_msg = reply_msg;
-	return 0;
 }

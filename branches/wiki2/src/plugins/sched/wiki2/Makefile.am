@@ -15,5 +15,6 @@ sched_wiki2_la_SOURCES = \
 	crypto.h	\
 	msg.c		\
 	msg.h		\
-	sched_wiki.c
+	sched_wiki.c	\
+	start_job.c
 sched_wiki2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
