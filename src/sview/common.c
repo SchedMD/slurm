@@ -377,6 +377,7 @@ extern GtkScrolledWindow *create_scrolled_window()
 
 	return scrolled_window;
 }
+
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 {
 	GtkScrolledWindow *scrolled_window = create_scrolled_window();

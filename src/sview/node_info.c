@@ -327,16 +327,12 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 	if(!strcmp("drain", new_text)) {
 		state = NODE_STATE_DRAIN;
 		node_msg->reason = get_reason();
-	} else if(!strcmp("NoResp", new_text)) {
-		state = NODE_STATE_NO_RESPOND;
 	} else if(!strcmp("resume", new_text)) {
 		state = NODE_RESUME;
 	} else {
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
 			lower = str_tolower(upper);
-			if(!strcmp(upper, "?"))
-				break;
 			if(!strcmp(lower, new_text)) {
 				state = i;
 				xfree(lower);
@@ -349,6 +345,8 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 	
 	rc = slurm_update_node(node_msg);
 	xfree(node_msg->reason);
+	if(rc != SLURM_SUCCESS)
+		return rc;
 	gtk_tree_store_set(treestore, iter, text_column, new_text,
 			   num_column,	state, -1);
 	return rc;
