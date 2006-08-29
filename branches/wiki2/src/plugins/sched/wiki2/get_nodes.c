@@ -28,7 +28,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static void	_dump_all_nodes(void);
+static int	_dump_all_nodes(void);
 static void	_dump_node(struct node_record *node_ptr);
 static char *	_get_node_state(uint16_t state);
 
@@ -54,6 +54,7 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
+	int node_rec_cnt = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -75,7 +76,7 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 		; /* No updates */
 	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
-		_dump_all_nodes();
+		node_rec_cnt = _dump_all_nodes();
 	} else {
 		struct node_record *node_ptr;
 		char *node_name, *tmp2_char;
@@ -84,23 +85,30 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
 			_dump_node(node_ptr);
+			node_rec_cnt++;
 			node_name = strtok_r(NULL, ":", &tmp2_char);
 		}
 	}
 	unlock_slurmctld(node_read_lock);
+
+	/* Prepend ("ARG=%d", node_rec_cnt) to reply message */
+	/* send the reply, with time stamp and checksum */
+
 	return 0;
 }
 
-static void	_dump_all_nodes(void)
+static int	_dump_all_nodes(void)
 {
-	int i;
+	int i, node_cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
 		_dump_node(node_ptr);
+		node_cnt++;
 	}
+	return node_cnt;
 }
 
 static void	_dump_node(struct node_record *node_ptr)
@@ -155,8 +163,9 @@ static void	_dump_node(struct node_record *node_ptr)
 			header,
 			node_ptr->part_pptr[i]->name,
 			cpu_cnt);
-/* FIXME: Modify to support shared nodes and consumable resources */
-		if (node_ptr->node_state == NODE_STATE_IDLE)
+/* FIXME: Modify to support consumable resources */
+		if ((node_ptr->node_state == NODE_STATE_IDLE)
+		||  (node_ptr->part_pptr[i]->shared == 2))
 			cpu_avail = cpu_cnt;
 		else
 			cpu_avail = 0;
