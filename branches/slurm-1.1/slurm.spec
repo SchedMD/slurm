@@ -14,6 +14,7 @@ Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
 Requires: openssl >= 0.9.6
+BuildRequires: openssl-devel >= 0.96
 
 #
 # If "--with debug" is set compile with --enable-debug 
