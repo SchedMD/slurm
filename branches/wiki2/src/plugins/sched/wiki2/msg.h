@@ -65,6 +65,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/sched_plugin.h"
 
 #define PRIO_HOLD      0

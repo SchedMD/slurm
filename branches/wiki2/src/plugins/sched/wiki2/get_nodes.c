@@ -28,8 +28,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static int	_dump_all_nodes(void);
-static void	_dump_node(struct node_record *node_ptr);
+static char *	_dump_all_nodes(int *node_cnt);
+static char *	_dump_node(struct node_record *node_ptr);
 static char *	_get_node_state(uint16_t state);
 
 /*
@@ -49,7 +49,7 @@ static char *	_get_node_state(uint16_t state);
 extern int	get_nodes(char *cmd_ptr, slurm_fd fd, 
 			int *err_code, char **err_msg)
 {
-	char *arg_ptr, *tmp_char;
+	char *arg_ptr, *tmp_char, *tmp_buf, *buf = NULL;
 	time_t update_time;
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
@@ -76,7 +76,7 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 		; /* No updates */
 	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
-		node_rec_cnt = _dump_all_nodes();
+		buf = _dump_all_nodes(&node_rec_cnt);
 	} else {
 		struct node_record *node_ptr;
 		char *node_name, *tmp2_char;
@@ -84,7 +84,11 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
-			_dump_node(node_ptr);
+			tmp_buf = _dump_node(node_ptr);
+			if (node_rec_cnt > 0)
+				xstrcat(buf, "#");
+			xstrcat(buf, tmp_buf);
+			xfree(tmp_buf);
 			node_rec_cnt++;
 			node_name = strtok_r(NULL, ":", &tmp2_char);
 		}
@@ -92,37 +96,47 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 	unlock_slurmctld(node_read_lock);
 
 	/* Prepend ("ARG=%d", node_rec_cnt) to reply message */
-	/* send the reply, with time stamp and checksum */
-
+	tmp_buf = xmalloc(strlen(buf) + 32);
+	sprintf(tmp_buf, "SC=0 ARG=%d#%s", node_rec_cnt, buf);
+	xfree(buf);
+	*err_code = 0;
+	*err_msg = tmp_buf;
 	return 0;
 }
 
-static int	_dump_all_nodes(void)
+static char *	_dump_all_nodes(int *node_cnt)
 {
-	int i, node_cnt = 0;
+	int i, cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
+	char *tmp_buf, *buf = NULL;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
-		_dump_node(node_ptr);
-		node_cnt++;
+		tmp_buf = _dump_node(node_ptr);
+		if (cnt > 0)
+			xstrcat(buf, "#");
+		xstrcat(buf, tmp_buf);
+		xfree(tmp_buf);
+		cnt++;
 	}
-	return node_cnt;
+	*node_cnt = cnt;
+	return buf;
 }
 
-static void	_dump_node(struct node_record *node_ptr)
+static char *	_dump_node(struct node_record *node_ptr)
 {
-	char tmp[512];
+	char tmp[512], *buf = NULL;
 	int i;
 	uint32_t cpu_cnt;
 
 	if (!node_ptr)
-		return;
+		return NULL;
 
 	snprintf(tmp, sizeof(tmp), "%s;STATE=%s;",
 		node_ptr->name, 
 		_get_node_state(node_ptr->node_state));
+	xstrcat(buf, tmp);
 
 	if (slurmctld_conf.fast_schedule) {
 		cpu_cnt = node_ptr->config_ptr->cpus;
@@ -139,6 +153,7 @@ static void	_dump_node(struct node_record *node_ptr)
 			node_ptr->tmp_disk,
 			node_ptr->cpus);
 	}
+	xstrcat(buf, tmp);
 
 	if (node_ptr->config_ptr
 	&&  node_ptr->config_ptr->feature) {
@@ -150,8 +165,12 @@ static void	_dump_node(struct node_record *node_ptr)
 			||  (tmp[i] == '|'))
 				tmp[i] = ':';
 		}
+		xstrcat(buf, tmp);
 	}
-		
+
+#if 0
+/* This add new fields, add after basic functionality with 
+ * Moab has been confirmed */
 	for (i=0; i<node_ptr->part_cnt; i++) {
 		char *header;
 		uint32_t cpu_avail;
@@ -163,6 +182,7 @@ static void	_dump_node(struct node_record *node_ptr)
 			header,
 			node_ptr->part_pptr[i]->name,
 			cpu_cnt);
+		xstrcat(buf, tmp);
 /* FIXME: Modify to support consumable resources */
 		if ((node_ptr->node_state == NODE_STATE_IDLE)
 		||  (node_ptr->part_pptr[i]->shared == 2))
@@ -177,7 +197,10 @@ static void	_dump_node(struct node_record *node_ptr)
 			header,
 			node_ptr->part_pptr[i]->name,
 			cpu_cnt);
+		xstrcat(buf, tmp);
 	}
+#endif
+	return buf;
 }
 
 static char *	_get_node_state(uint16_t state)

@@ -390,7 +390,6 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
 		if (get_nodes(cmd_ptr, new_fd, &err_code, &err_msg))
 			goto err_msg;
-		/* sends own reply on success */
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
 		start_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
@@ -415,6 +414,11 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		error("wiki: unrecognized request type: %s", req);
 		goto err_msg;
 	}
+
+	/* Message is pre-formatted by get_jobs and get_nodes
+	 * only if no error. Send message and xfree the buffer. */
+	_send_reply(new_fd, err_msg);
+	xfree(err_msg);
 	return;
 
  err_msg:
