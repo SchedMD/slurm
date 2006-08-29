@@ -78,4 +78,11 @@ extern void	term_msg_thread(void);
 
 /* Functions called from within msg.c (rather than creating a bunch 
  * more header files with one function definition each */
+extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	get_jobs(char *cmd_ptr, slurm_fd fd);
+extern int 	get_nodes(char *cmd_ptr, slurm_fd fd);
+extern int	job_add_task(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg);

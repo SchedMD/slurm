@@ -282,7 +282,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 		return NULL;
 	}
 
-	
+	return buf;
 }
 
 /*****************************************************************************\
@@ -383,15 +383,29 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	}
 	cmd_ptr +=4;
 	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
+		(void) get_jobs(cmd_ptr, new_fd);
+		/* sends own reply */
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
+		(void) get_nodes(cmd_ptr, new_fd);
+		/* sends own reply */
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
 		start_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
+		cancel_job(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
+		suspend_job(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "RESUMEJOB", 9) == 0) {
+		resume_job(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "JOBADDTASK", 10) == 0) {
+		job_add_task(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
+		job_release_task(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else {
 		err_code = 300;
 		err_msg = "unsupported request type";
