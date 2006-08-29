@@ -108,7 +108,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	unlock_slurmctld(job_read_lock);
 
-	/* Prepend ("ARG=%d", node_rec_cnt) to reply message */
+	/* Prepend ("ARG=%d", job_rec_cnt) to reply message */
 	tmp_buf = xmalloc(strlen(buf) + 32);
 	sprintf(tmp_buf, "SC=0 ARG=%d#%s", job_rec_cnt, buf);
 	xfree(buf);

@@ -26,6 +26,7 @@
 
 #include "./crypto.h"
 #include "./msg.h"
+#include "src/common/uid.h"
 
 static bool thread_running = false;
 static bool thread_shutdown = false;
@@ -432,5 +433,16 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 
 static void	_send_reply(slurm_fd new_fd, char *response)
 {
-/* FIXME */
+	size_t i;
+	char *buf;
+
+	i = strlen(response);
+	i += 100;	/* leave room for header */
+	buf = xmalloc(i);
+
+	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
+		(uint32_t) time(NULL), uid_to_string(getuid()), response);
+	checksum(buf, (buf+20));   /* overwrite "CK=dummy..." above */
+
+	(void) _send_msg(new_fd, buf, i);
 }
