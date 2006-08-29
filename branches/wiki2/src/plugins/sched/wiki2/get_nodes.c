@@ -36,7 +36,6 @@ static char *	_get_node_state(uint16_t state);
  * get_nodes - get information on specific node(s) changed since some time
  * cmd_ptr IN - CMD=GETNODES ARG=[<UPDATETIME>:<NODEID>[:<NODEID>]...]
  *                               [<UPDATETIME>:ALL]
- * fd IN - file in which to write response
  * RET 0 on success, -1 on failure
  *
  * Response format
@@ -46,8 +45,7 @@ static char *	_get_node_state(uint16_t state);
  *                    ACLASS=<part>:<cpus>[,<part>:<cpus>];
  *         [#<NODEID>;...];
  */
-extern int	get_nodes(char *cmd_ptr, slurm_fd fd, 
-			int *err_code, char **err_msg)
+extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *tmp_char, *tmp_buf, *buf = NULL;
 	time_t update_time;
@@ -63,7 +61,7 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 		error("wiki: GETNODES lacks ARG");
 		return -1;
 	}
-	update_time = (uint32_t) strtol(arg_ptr+4, &tmp_char, 10);
+	update_time = (time_t) strtol(arg_ptr+4, &tmp_char, 10);
 	if (tmp_char[0] != ':') {
 		*err_code = 300;
 		*err_msg = "Invalid ARG value";

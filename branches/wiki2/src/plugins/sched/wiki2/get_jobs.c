@@ -25,71 +25,114 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/list.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
+static char *	_dump_all_jobs(int *job_cnt);
+static char *	_dump_job(struct job_record *job_ptr);
+
+/*
+ * get_jobs - get information on specific job(s) changed since some time
+ * cmd_ptr IN - CMD=GETJOBS ARG=[<UPDATETIME>:<JOBID>[:<JOBID>]...]
+ *                              [<UPDATETIME>:ALL]
+ * RET 0 on success, -1 on failure
+ *
+ * Response format
+ * ARG=<cnt>#<JOBID>;UPDATE_TIME=<uts>;STATE=<state>;UCLIMIT=<time_limit>;
+ *                    TASKS=<cpus>;QUEUETIME=<submit_time>;STARTTIME=<time>;
+ *                    UNAME=<user>;GNAME=<group>;PARTITIONMASK=<part>;
+ *                    NODES=<node_cnt>;RMEM=<mem_size>;RDISK=<disk_space>;
+ *         [#<JOBID>;...];
+ */
 /* RET 0 on success, -1 on failure */
-extern int	get_jobs(char *cmd_ptr, slurm_fd fd)
+extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 {
-#if 0
-	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
-	int i;
-	uint32_t jobid;
-	hostlist_t hl;
-	char host_string[1024];
-	static char reply_msg[128];
+	char *arg_ptr, *tmp_char, *tmp_buf, *buf = NULL;
+	time_t update_time;
+	/* Locks: read job, partition */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
+	int job_rec_cnt = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
 		*err_code = 300;
-		*err_msg = "STARTJOB lacks ARG";
-		error("wiki: STARTJOB lacks ARG");
+		*err_msg = "GETJOBS lacks ARG";
+		error("wiki: GETJOBS lacks ARG");
 		return -1;
 	}
-	jobid = strtol(arg_ptr+4, &tmp_char, 10);
-	if (!isspace(tmp_char[0])) {
+	update_time = (time_t) strtol(arg_ptr+4, &tmp_char, 10);
+	if (tmp_char[0] != ':') {
 		*err_code = 300;
 		*err_msg = "Invalid ARG value";
-		error("wiki: STARTJOB has invalid jobid");
+		error("wiki: GETJOBS has invalid ARG value");
 		return -1;
 	}
+	tmp_char++;
+	lock_slurmctld(job_read_lock);
+	if (update_time > last_job_update) {
+		; /* No updates */
+	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
+		/* report all jobs */
+		buf = _dump_all_jobs(&job_rec_cnt);
+	} else {
+		struct job_record *job_ptr;
+		char *job_name, *tmp2_char;
+		uint32_t job_id;
 
-	task_ptr = strstr(cmd_ptr, "TASKLIST=");
-	if (task_ptr == NULL) {
-		*err_code = 300;
-		*err_msg = "STARTJOB lacks TASKLIST";
-		error("wiki: STARTJOB lacks TASKLIST");
-		return -1;
+		job_name = strtok_r(tmp_char, ":", &tmp2_char);
+		while (job_name) {
+			job_id = (uint32_t) strtol(job_name, NULL, 10);
+			job_ptr = find_job_record(job_id);
+			tmp_buf = _dump_job(job_ptr);
+			if (job_rec_cnt > 0)
+				xstrcat(buf, "#");
+			xstrcat(buf, tmp_buf);
+			xfree(tmp_buf);
+			job_rec_cnt++;
+			job_name = strtok_r(NULL, ":", &tmp2_char);
+		}
 	}
-	node_ptr = task_ptr + 9;
-	for (i=0; node_ptr[i]!='\0'; i++) {
-		if (node_ptr[i] == ':')
-			node_ptr[i] = ',';
-	}
-	hl = hostlist_create(node_ptr);
-	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
-	hostlist_destroy(hl);
-	if (i < 0) {
-		*err_code = 300;
-		*err_msg = "STARTJOB has invalid TASKLIST";
-		error("wiki: STARTJOB has invalid TASKLIST");
-		return -1;
-	}
-	if (sched_set_nodelist(jobid, host_string) != SLURM_SUCCESS) {
-		*err_code = 734;
-		*err_msg = "failed to assign nodes";
-		error("wiki: failed to assign nodes to job %u", jobid);
-		return -1;
-	}
+	unlock_slurmctld(job_read_lock);
 
-	if (sched_start_job(jobid, (uint32_t) 1) != SLURM_SUCCESS) {
-		*err_code = 730;
-		*err_msg = "failed to start job";
-		error("wiki: failed to start job %u", jobid);
-		return -1;
-	}
-
-	snprintf(reply_msg, sizeof(reply_msg), 
-		"job %u started successfully", jobid);
-	*err_msg = reply_msg;
-#endif
+	/* Prepend ("ARG=%d", node_rec_cnt) to reply message */
+	tmp_buf = xmalloc(strlen(buf) + 32);
+	sprintf(tmp_buf, "SC=0 ARG=%d#%s", job_rec_cnt, buf);
+	xfree(buf);
+	*err_code = 0;
+	*err_msg = tmp_buf;
 	return 0;
+}
+
+static char *   _dump_all_jobs(int *job_cnt)
+{
+	int cnt = 0;
+	struct job_record *job_ptr;
+	ListIterator job_iterator;
+	char *tmp_buf, *buf = NULL;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		tmp_buf = _dump_job(job_ptr);
+		if (cnt > 0)
+			xstrcat(buf, "#");
+		xstrcat(buf, tmp_buf);
+		xfree(tmp_buf);
+		cnt++;
+	}
+	*job_cnt = cnt;
+	return buf;
+}
+
+static char *	_dump_job(struct job_record *job_ptr)
+{
+	char tmp[512], *buf = NULL;
+	int i;
+
+	if (!job_ptr)
+		return NULL;
+
+/* FIXME */
+	return NULL;
 }
