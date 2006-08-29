@@ -35,6 +35,7 @@ enum {
 	SORTID_POS = POS_LOC,
 	SORTID_NAME, 
 	SORTID_STATE,
+	SORTID_STATE_NUM,
 	SORTID_CPUS, 
 	SORTID_MEMORY, 
 	SORTID_DISK, 
@@ -51,6 +52,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, -1, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -86,10 +89,17 @@ static void _update_node_record(node_info_t *node_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char tmp_cnt[7];
-
+	char *upper = NULL, *lower = NULL;		     
+	
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
-			   node_state_string(node_ptr->node_state), -1);
+
+	upper = node_state_string(node_ptr->node_state);
+	lower = str_tolower(upper);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, lower, -1);
+	xfree(lower);
+
+	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, 
+			   node_ptr->node_state, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_CPUS, node_ptr->cpus, -1);
 
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
@@ -347,7 +357,43 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 extern GtkListStore *create_model_node(int type)
 {
 	GtkListStore *model = NULL;
+	GtkTreeIter iter;
+	char *upper = NULL, *lower = NULL;		     
+	int i=0;
 	
+	switch(type) {
+		case SORTID_STATE:
+		model = gtk_list_store_new(2, G_TYPE_STRING,
+					   G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "drain",
+				   1, i,
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "NoResp",
+				   1, i,
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "resume",
+				   1, i,
+				   -1);	
+		for(i = 0; i < NODE_STATE_END; i++) {
+			upper = node_state_string(i);
+			gtk_list_store_append(model, &iter);
+			lower = str_tolower(upper);
+			gtk_list_store_set(model, &iter,
+					   0, lower,
+					   1, i,
+					   -1);
+			xfree(lower);
+		}
+						
+		break;
+
+	}
 	return model;
 }
 
@@ -356,7 +402,26 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 			    const char *new_text,
 			    gpointer data)
 {
-	g_print("Something node related altered\n");
+	GtkTreeStore *treestore = GTK_TREE_STORE(data);
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeIter iter;
+	update_node_msg_t node_msg;
+	
+	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
+						       "column"));
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
+	switch(column) {
+	case SORTID_STATE:
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+				   SORTID_NAME, 
+				   &node_msg.node_names, -1);
+		update_state_node(treestore, &iter, 
+				  SORTID_STATE, SORTID_STATE_NUM,
+				  new_text, &node_msg);
+		g_free(node_msg.node_names);
+	}
+	gtk_tree_path_free (path);
+	
 	g_static_mutex_unlock(&sview_mutex);
 }
 
