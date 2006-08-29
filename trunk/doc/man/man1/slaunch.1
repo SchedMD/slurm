@@ -267,17 +267,13 @@ Task rank number.  (Will result in a separate file per task.)
 .RS -10
 
 .TP 
-\fB\-D\fR, \fB\-\-workdir\fR[=]<\fIpath\fR>
-Set the working directory of the tasks to \fIpath\fR before execution.
+\fB\-D\fR, \fB\-\-workdir\fR[=]<\fIdirectory\fR>
+Set the working directory of the tasks to \fIdirectory\fR before execution.
 The default task working directory is slaunch's working directory.
 
 .TP 
 \fB\-\-mpi\fR[=]<\fImpi_type\fR>
 Identify the type of MPI to be used.
-
-.TP 
-\fB\-\-nice\fR[=]<\fIadjustment\fR>
-Run  the  job  with  an  adjusted  scheduling priority.  With no adjustment value the scheduling priority is  decreased  by  100.  The adjustment range is from \-10000 (highest priority) to 10000 (lowest priority). Only privileged users can specify a  negative adjustment. NOTE: This option is presently ignored if SchedulerType=sched/maui.
 
 .TP
 \fB\-\-uid\fR[=]<\fIuser\fR>
@@ -352,11 +348,15 @@ Defaults to short hostname of the node on which slaunch is running.
 
 .TP 
 \fB\-h\fR, \fB\-\-help\fR
-Output help information and exit.
+Display help information and exit.
+
+.TP
+\fB\-u\fR, \fB\-\-usage\fR
+Display brief usage message and exit.
 
 .TP 
 \fB\-V\fR, \fB\-\-version\fR
-Output version information and exit.
+Display version information and exit.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP 
