@@ -725,10 +725,12 @@ extern void *popup_thr(popup_info_t *popup_win)
 	popup_win->running = &running;
 	/* when popup is killed toggled will be set to -1 */
 	while(running) {
+		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
 		(specifc_info)(popup_win);
 		gdk_flush();
 		gdk_threads_leave();
+		g_static_mutex_unlock(&sview_mutex);
 		sleep(global_sleep_time);
 	}	
 	return NULL;
