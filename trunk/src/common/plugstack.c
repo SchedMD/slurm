@@ -387,6 +387,7 @@ static int _spank_stack_create(const char *path, List * listp)
 		line++;
 	}
 
+	fclose(fp);
 	return (0);
 
       fail_immediately:
@@ -394,6 +395,7 @@ static int _spank_stack_create(const char *path, List * listp)
 		list_destroy(*listp);
 		*listp = NULL;
 	}
+	fclose(fp);
 	return (-1);
 }
 

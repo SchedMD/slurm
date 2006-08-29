@@ -20,11 +20,7 @@ Note: Moab version 4.5.0 or higher and SLURM version 0.6.10 or higher.</p>
 <pre>
 SchedulerType=sched/wiki
 SchedulerPort=7321
-SchedulerAuth=change_me
 </pre>
-In this case, "SchedulerAuth" has been set to <i>change_me</i>, which was 
-the key specified when Maui was configured above. 
-Just make sure the numbers match.
 Running multiple jobs per mode can be accomplished using the
 <i>SelectType=select/cons_res</i> and/or specifying 
 <i>Shared=yes</i> on selected partitions.</p>
@@ -55,7 +51,7 @@ JobPriority=run
 <p>Moab has support for SLURM's WIKI interface by default.
 Specify this interface in the moab.cfg file as follows:
 <pre>
-RMCFG[slurm]         TYPE=wiki:slurm
+RMCFG[slurm]         TYPE=wiki:slurm AUTHTYPE=NONE
 </pre>
 </p>
 

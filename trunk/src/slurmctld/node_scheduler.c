@@ -552,6 +552,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						FREE_NULL_BITMAP(
 							partially_idle_node_bitmap);
 					}
+					FREE_NULL_BITMAP(total_bitmap);
 					return error_code;
                                 }
                         }
@@ -594,7 +595,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 if (cr_enabled) 
                                         FREE_NULL_BITMAP(
 						partially_idle_node_bitmap);
-                                return error_code;
+				FREE_NULL_BITMAP(total_bitmap);
+				FREE_NULL_BITMAP(avail_bitmap);
+				return error_code;
                         }
 			if ((job_ptr->details->req_node_bitmap) &&
 			    (!bit_super_set(job_ptr->details->req_node_bitmap, 
