@@ -94,14 +94,11 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_CONNTYPE    0x111
-#define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
-#define LONG_OPT_PROPAGATE   0x116
 #define LONG_OPT_BEGIN       0x119
 #define LONG_OPT_MAIL_TYPE   0x11a
 #define LONG_OPT_MAIL_USER   0x11b
 #define LONG_OPT_NICE        0x11e
-#define LONG_OPT_NO_REQUEUE  0x123
 #define LONG_OPT_BELL        0x124
 #define LONG_OPT_NO_BELL     0x125
 #define LONG_OPT_JOBID       0x126
@@ -477,7 +474,6 @@ static void _opt_default()
 	opt.kill_command_signal_set = false;
 
 	opt.immediate	= false;
-	opt.no_requeue	= false;
 	opt.max_wait	= 0;
 
 	opt.quiet = 0;
@@ -503,8 +499,6 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
-	opt.propagate	    = NULL;  /* propagate specific rlimits */
-
 	opt.bell            = BELL_AFTER_DELAY;
 }
 
@@ -535,7 +529,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
   {"SALLOC_NNODES",        OPT_NODES,      NULL,               NULL           },
-  {"SALLOC_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SALLOC_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
@@ -674,6 +667,7 @@ void set_options(const int argc, char **argv)
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
+		{"tasks",         required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"partition",     required_argument, 0, 'p'},
 		{"quiet",         no_argument,       0, 'q'},
@@ -695,13 +689,10 @@ void set_options(const int argc, char **argv)
 		{"uid",              required_argument, 0, LONG_OPT_UID},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-		{"network",          required_argument, 0, LONG_OPT_NETWORK},
-		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{"bell",             no_argument,       0, LONG_OPT_BELL},
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
@@ -862,18 +853,6 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = _verify_conn_type(optarg);
 			break;
-		case LONG_OPT_NETWORK:
-			xfree(opt.network);
-			opt.network = xstrdup(optarg);
-#ifdef HAVE_AIX
-			setenv("SLURM_NETWORK", opt.network, 1);
-#endif
-			break;
-		case LONG_OPT_PROPAGATE:
-			xfree(opt.propagate);
-			if (optarg) opt.propagate = xstrdup(optarg);
-			else	    opt.propagate = xstrdup("ALL");
-			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg);
 			if (opt.begin == 0) {
@@ -902,9 +881,6 @@ void set_options(const int argc, char **argv)
 				exit(1);
 			}
 			break;
-		case LONG_OPT_NO_REQUEUE:
-			opt.no_requeue = true;
-			break;
 		case LONG_OPT_BELL:
 			opt.bell = BELL_ALWAYS;
 			break;
@@ -931,13 +907,6 @@ static void _opt_args(int argc, char **argv)
 	char **rest = NULL;
 
 	set_options(argc, argv);
-
-#ifdef HAVE_AIX
-	if (opt.network == NULL) {
-		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
-#endif
 
 	command_argc = 0;
 	if (optind < argc) {
@@ -1034,11 +1003,6 @@ static bool _opt_verify(void)
 
         if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 	        opt.gid = opt.egid;
-
-	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
-		error( "--propagate=%s is not valid.", opt.propagate );
-		verified = false;
-	}
 
 	return verified;
 }
@@ -1228,7 +1192,6 @@ static void _opt_list()
 		info("jobid          : %u", opt.jobid);
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
-	info("no-requeue     : %s", tf_(opt.no_requeue));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
 	else
@@ -1250,9 +1213,6 @@ static void _opt_list()
 	info("geometry       : %s", str);
 	xfree(str);
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
-	info("network        : %s", opt.network);
-	info("propagate      : %s",
-	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -1277,12 +1237,10 @@ static void _usage(void)
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=jobid]\n"
-"              [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1310,11 +1268,9 @@ static void _help(void)
 "  -d, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
-"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --no-requeue            if set, do not permit the job to be requeued\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
@@ -1332,11 +1288,6 @@ static void _help(void)
 	printf("\n");
 
         printf(
-#ifdef HAVE_AIX				/* AIX/Federation specific options */
-  "AIX related options:\n"
-  "  --network=type              communication protocol to be used\n"
-  "\n"
-#endif
 
 #ifdef HAVE_BG				/* Blue gene specific options */
   "Blue Gene related options:\n"

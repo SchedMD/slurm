@@ -41,7 +41,8 @@ sbatch does not launch tasks, it requests an allocation of resources and submits
 a batch script.  However this \-\-tasks option advizes the SLURM controller
 that job steps run within this allocation will launch a maximum of \fInumber\fR
 tasks.  This option, possibly with collaboration with the \-\-cpus\-per\-task
-option, will directly impact the number of processors granted to the job allocation.
+option, will directly impact the number of processors granted to the job
+allocation.
 
 .TP 
 \fB\-d\fR, \fB\-\-dependency\fR[=]<\fIjobid\fR>
@@ -70,7 +71,7 @@ interval between signals is specified by the SLURM configuration parameter
 .TP 
 \fB\-I\fR,\fB\-\-immediate\fR
 The batch script will only be submitted to the controller if the resources
-necessary to grant its job allocation will be granted immediately.  If the
+necessary to grant its job allocation are immediately available.  If the
 job allocation will have to wait in a queue of pending jobs, the batch script
 will not be submitted.
 
@@ -292,22 +293,6 @@ Display brief usage message and exit.
 .TP 
 \fB\-V\fR, \fB\-\-version\fR
 Display version information and exit.
-
-.PP
-The following options support AIX systems, but may be applicable to 
-other systems as well. Since POE is used to launch tasks, these 
-options are not normally used or are specified using the \fBSLURM_NETWORK\fR
-environment variable.
-.TP
-\fB\-\-network\fR[=]<\fItype\fR>
-Specify the communication protocol to be used. 
-The interpretation of \fItype\fR is system dependent. 
-For systems with an IBM Federation switch, the following 
-comma\-separated and case insensitive types are recongnized:
-\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
-\fBBULK_XFER\fR and adapter names. For more information, on 
-IBM systems see \fIpoe\fR documenation on the environment variables 
-\fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
 
 .PP
 The following options support Blue Gene systems, but may be 
