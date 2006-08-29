@@ -25,6 +25,7 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 static void	_dump_all_nodes(void);
@@ -50,6 +51,9 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 {
 	char *arg_ptr, *tmp_char;
 	time_t update_time;
+	/* Locks: read node, read partition */
+	slurmctld_lock_t node_read_lock = {
+		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -66,6 +70,7 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 		return -1;
 	}
 	tmp_char++;
+	lock_slurmctld(node_read_lock);
 	if (update_time > last_node_update) {
 		; /* No updates */
 	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
@@ -82,6 +87,7 @@ extern int	get_nodes(char *cmd_ptr, slurm_fd fd,
 			node_name = strtok_r(NULL, ":", &tmp2_char);
 		}
 	}
+	unlock_slurmctld(node_read_lock);
 	return 0;
 }
 
