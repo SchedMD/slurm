@@ -107,7 +107,10 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate;
-	desc->name = opt.job_name;
+	if (opt.job_name != NULL)
+		desc->name = opt.job_name;
+	else
+		desc->name = xstrdup("sbatch");
 	desc->req_nodes = opt.nodelist;
 	/* FIXME - SLURM_HOSTFILE is the wrong env name, and should be
 	   done like in slaunch */

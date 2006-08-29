@@ -79,12 +79,8 @@ typedef struct sbatch_options {
 	bool no_kill;		/* --no-kill, -k		*/
 	bool no_requeue;	/* --no-requeue			*/
 	bool share;		/* --share,   -s		*/
-	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
-	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
-	char *task_epilog;	/* --task-epilog=		*/
-	char *task_prolog;	/* --task-prolog=		*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
@@ -94,7 +90,6 @@ typedef struct sbatch_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	char *relative;		/* --relative -r N              */
 	char *network;		/* --network=			*/
         bool exclusive;         /* --exclusive                  */
 

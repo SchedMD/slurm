@@ -94,12 +94,9 @@
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
-#define LONG_OPT_PROPAGATE   0x116
 #define LONG_OPT_BEGIN       0x119
 #define LONG_OPT_MAIL_TYPE   0x11a
 #define LONG_OPT_MAIL_USER   0x11b
-#define LONG_OPT_TASK_PROLOG 0x11c
-#define LONG_OPT_TASK_EPILOG 0x11d
 #define LONG_OPT_NICE        0x11e
 #define LONG_OPT_NO_REQUEUE  0x123
 
@@ -438,7 +435,6 @@ static void _opt_default()
 
 	opt.immediate	= false;
 	opt.no_requeue	= false;
-	opt.max_wait	= slurm_get_wait_time();
 
 	opt.quiet = 0;
 	opt.verbose = 0;
@@ -463,11 +459,6 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
-	opt.propagate	    = NULL;  /* propagate specific rlimits */
-
-	opt.task_prolog     = NULL;
-	opt.task_epilog     = NULL;
-
 	opt.ifname = NULL;
 	opt.ofname = NULL;
 	opt.efname = NULL;
@@ -506,7 +497,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SBATCH_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
   {"SBATCH_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
-  {"SBATCH_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -597,21 +587,21 @@ static struct option long_options[] = {
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"constraint",    required_argument, 0, 'C'},
 	{"dependency",    required_argument, 0, 'd'},
-	{"chdir",         required_argument, 0, 'D'},
+	{"workdir",       required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
+	{"nodefile",      required_argument, 0, 'F'},
 	{"geometry",      required_argument, 0, 'g'},
 	{"help",          no_argument,       0, 'h'},
-	{"hold",          no_argument,       0, 'H'},
+	{"hold",          no_argument,       0, 'H'}, /* undocumented */
 	{"input",         required_argument, 0, 'i'},
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"no-kill",       no_argument,       0, 'k'},
-	{"ntasks",        required_argument, 0, 'n'},
+	{"tasks",         required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"partition",     required_argument, 0, 'p'},
 	{"quiet",         no_argument,       0, 'q'},
-	{"relative",      required_argument, 0, 'r'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
 	{"time",          required_argument, 0, 't'},
@@ -620,7 +610,6 @@ static struct option long_options[] = {
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
 	{"nodelist",      required_argument, 0, 'w'},
-	{"wait",          required_argument, 0, 'W'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
@@ -632,19 +621,16 @@ static struct option long_options[] = {
 	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 	{"network",          required_argument, 0, LONG_OPT_NETWORK},
-	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
-	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"nice",             optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{NULL,               0,                 0, 0}
 };
 
 static char *opt_string =
-	"+a:c:C:d:D:e:g:hHi:IJ:kn:N:o:Op:qr:R:st:uU:vVw:W:x:";
+	"+a:c:C:d:D:e:F:g:hHi:IJ:kn:N:o:Op:qR:st:uU:vVw:x:";
 
 
 /*
@@ -1011,10 +997,6 @@ static void _set_options(int argc, char **argv)
 		case 'q':
 			opt.quiet++;
 			break;
-		case 'r':
-			xfree(opt.relative);
-			opt.relative = xstrdup(optarg);
-			break;
 		case 'R':
 			opt.no_rotate = true;
 			break;
@@ -1049,9 +1031,6 @@ static void _set_options(int argc, char **argv)
 			     "\tPlease consult smap before using this option\n"
 			     "\tor your job may be stuck with no way to run.");
 #endif
-			break;
-		case 'W':
-			opt.max_wait = _get_int(optarg, "wait");
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
@@ -1107,11 +1086,6 @@ static void _set_options(int argc, char **argv)
 			setenv("SLURM_NETWORK", opt.network, 1);
 #endif
 			break;
-		case LONG_OPT_PROPAGATE:
-			xfree(opt.propagate);
-			if (optarg) opt.propagate = xstrdup(optarg);
-			else	    opt.propagate = xstrdup("ALL");
-			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg);
 			break;
@@ -1123,14 +1097,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MAIL_USER:
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
-			break;
-		case LONG_OPT_TASK_PROLOG:
-			xfree(opt.task_prolog);
-			opt.task_prolog = xstrdup(optarg);
-			break;
-		case LONG_OPT_TASK_EPILOG:
-			xfree(opt.task_epilog);
-			opt.task_epilog = xstrdup(optarg);
 			break;
 		case LONG_OPT_NICE:
 			if (optarg)
@@ -1167,12 +1133,6 @@ static bool _opt_verify(void)
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-q)");
-		verified = false;
-	}
-
-	if (opt.relative && (opt.exc_nodes || opt.nodelist)) {
-		error("-r,--relative not allowed with "
-		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
 	}
 
@@ -1237,11 +1197,6 @@ static bool _opt_verify(void)
 
         if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 	        opt.gid = opt.egid;
-
-	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
-		error( "--propagate=%s is not valid.", opt.propagate );
-		verified = false;
-	}
 
 	return verified;
 }
@@ -1505,7 +1460,6 @@ static void _opt_list()
 		info("time_limit     : INFINITE");
 	else
 		info("time_limit     : %d", opt.time_limit);
-	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
@@ -1523,8 +1477,6 @@ static void _opt_list()
 	xfree(str);
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("network        : %s", opt.network);
-	info("propagate      : %s",
-	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -1532,8 +1484,6 @@ static void _opt_list()
 	}
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
-	info("task_prolog    : %s", opt.task_prolog);
-	info("task_epilog    : %s", opt.task_epilog);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1552,12 +1502,10 @@ static void _usage(void)
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=jobid]\n"
-"              [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--task-prolog=fname] [--task-epilog=fname]\n"
 "              [--no-requeue]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
@@ -1574,7 +1522,6 @@ static void _help(void)
 "  -i, --input=in              file for batch script's standard input\n"
 "  -o, --output=out            file for batch script's standard output\n"
 "  -e, --error=err             file for batch script's standard error\n"
-"  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
@@ -1584,16 +1531,11 @@ static void _help(void)
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              run under already allocated job\n"
-"  -W, --wait=sec              seconds to wait after first task exits\n"
-"                              before killing job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
-"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"      --task-prolog=program   run \"program\" before launching task\n"
-"      --task-epilog=program   run \"program\" after launching task\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
