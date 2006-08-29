@@ -45,37 +45,46 @@ int global_sleep_time = 5;
 bool admin_mode = FALSE;
 GtkWidget *main_notebook = NULL;
 GtkWidget *main_statusbar = NULL;
+GtkWidget *main_window = NULL;
+GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
-	 refresh_main, get_info_job, specific_info_job, 
+	 refresh_main, create_model_job, admin_edit_job,
+	 get_info_job, specific_info_job, 
 	 set_menus_job, NULL},
 	{G_TYPE_NONE, STEP_PAGE, NULL, FALSE, -1,
-	 refresh_main, NULL,
+	 refresh_main, NULL, NULL, NULL,
 	 NULL, NULL, NULL},
 	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1, 
-	 refresh_main, get_info_part, specific_info_part, 
+	 refresh_main, create_model_part, admin_edit_part,
+	 get_info_part, specific_info_part, 
 	 set_menus_part, NULL},
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
-	 refresh_main, get_info_block, specific_info_block, 
+	 refresh_main, NULL, NULL,
+	 get_info_block, specific_info_block, 
 	 set_menus_block, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Base Partitions", FALSE, -1,
-	 refresh_main, get_info_node, specific_info_node, 
+	 refresh_main, NULL, NULL,
+	 get_info_node, specific_info_node, 
 	 set_menus_node, NULL},
 #else
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
-	 refresh_main, get_info_block, specific_info_block, 
+	 refresh_main, NULL, NULL,
+	 get_info_block, specific_info_block, 
 	 set_menus_block, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Nodes", FALSE, -1,
-	 refresh_main, get_info_node, specific_info_node, 
+	 refresh_main, NULL, NULL,
+	 get_info_node, specific_info_node, 
 	 set_menus_node, NULL},
 #endif
 	{G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", FALSE, -1,
-	 refresh_main, NULL, 
+	 refresh_main, NULL, NULL, NULL,
 	 NULL, NULL, NULL},
 	{G_TYPE_NONE, INFO_PAGE, NULL, FALSE, -1,
 	 refresh_main, NULL, NULL,
+	 NULL, NULL,
 	 NULL, NULL},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
@@ -89,10 +98,12 @@ void *_page_thr(void *arg)
 	xfree(page);
 
 	while(page_running[num]) {
+		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
 		(display_data->get_info)(table, display_data);
 		gdk_flush();
 		gdk_threads_leave();
+		g_static_mutex_unlock(&sview_mutex);
 		sleep(global_sleep_time);
 	}	
 		
@@ -464,7 +475,6 @@ void _search_entry(GtkEntry *entry, GtkComboBox *combo)
 
 int main(int argc, char *argv[])
 {
-	GtkWidget *window = NULL;
 	GtkWidget *menubar = NULL;
 	GtkWidget *table = NULL;
 	GtkWidget *label = NULL;
@@ -492,13 +502,13 @@ int main(int argc, char *argv[])
 	gtk_init (&argc, &argv);
 	/* fill in all static info for pages */
 	/* Make a window */
-	window = gtk_dialog_new();
-	g_signal_connect(G_OBJECT(window), "delete_event",
+	main_window = gtk_dialog_new();
+	g_signal_connect(G_OBJECT(main_window), "delete_event",
 			 G_CALLBACK(_delete), NULL);
-	gtk_window_set_title(GTK_WINDOW(window), "Sview");
-	gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
-	gtk_container_set_border_width(GTK_CONTAINER(GTK_DIALOG(window)->vbox),
-				       1);
+	gtk_window_set_title(GTK_WINDOW(main_window), "Sview");
+	gtk_window_set_default_size(GTK_WINDOW(main_window), 600, 400);
+	gtk_container_set_border_width(
+		GTK_CONTAINER(GTK_DIALOG(main_window)->vbox), 1);
 	/* Create the main notebook, place the position of the tabs */
 	main_notebook = gtk_notebook_new();
 	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
@@ -508,7 +518,7 @@ int main(int argc, char *argv[])
 	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 1);	
 	/* Create a menu */
-	menubar = _get_menubar_menu(window, main_notebook);
+	menubar = _get_menubar_menu(main_window, main_notebook);
 	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
 
 	label = gtk_label_new("Search ");
@@ -521,7 +531,7 @@ int main(int argc, char *argv[])
 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
 			 0, 0);
 	
-	entry = gtk_entry_new ();
+	entry = gtk_entry_new();
 	gtk_table_attach(GTK_TABLE(table), entry, 3, 4, 0, 1,
 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
 			 0, 0);
@@ -538,11 +548,11 @@ int main(int argc, char *argv[])
 	gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(main_statusbar), 
 					  FALSE);
 	/* Pack it all together */
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
 			   table, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox), 
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox), 
 			   main_notebook, TRUE, TRUE, 0);	
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(window)->vbox),
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
 			   main_statusbar, FALSE, FALSE, 0);	
 	
 	for(i=0; i<PAGE_CNT; i++) {
@@ -556,7 +566,7 @@ int main(int argc, char *argv[])
 	/* tell signal we are done adding */
 	adding = 0;
 	popup_list = list_create(destroy_popup_info);
-	gtk_widget_show_all (window);
+	gtk_widget_show_all (main_window);
 
 	/* Finished! */
 	gtk_main ();

@@ -126,6 +126,11 @@ struct display_data {
 	bool show;
 	int extra;
 	void (*refresh)     (GtkAction *action, gpointer user_data);
+	GtkListStore *(*create_model)(int type);
+	void (*admin_edit)  (GtkCellRendererText *cell,
+			     const char *path_string,
+			     const char *new_text,
+			     gpointer data);
 	void (*get_info)    (GtkTable *table, display_data_t *display_data);
 	void (*specific)    (popup_info_t *popup_win);
 	void (*set_menu)    (void *arg, GtkTreePath *path,
@@ -171,7 +176,8 @@ extern bool force_refresh;
 extern List popup_list;
 extern int global_sleep_time;
 extern bool admin_mode;
-	
+extern GtkWidget *main_window;
+extern GStaticMutex sview_mutex;	
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -189,6 +195,11 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 
 // part_info.c
 extern void refresh_part(GtkAction *action, gpointer user_data);
+extern GtkListStore *create_model_part(int type);
+extern void admin_edit_part(GtkCellRendererText *cell,
+			    const char *path_string,
+			    const char *new_text,
+			    gpointer data);
 extern int get_new_info_part(partition_info_msg_t **part_ptr, int force);
 extern void get_info_part(GtkTable *table, display_data_t *display_data);
 extern void specific_info_part(popup_info_t *popup_win);
@@ -198,6 +209,11 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
+extern GtkListStore *create_model_block(int type);
+extern void admin_edit_block(GtkCellRendererText *cell,
+			     const char *path_string,
+			     const char *new_text,
+			     gpointer data);
 extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 				    int force);
 extern void get_info_block(GtkTable *table, display_data_t *display_data);
@@ -208,6 +224,11 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // job_info.c
 extern void refresh_job(GtkAction *action, gpointer user_data);
+extern GtkListStore *create_model_job(int type);
+extern void admin_edit_job(GtkCellRendererText *cell,
+			   const char *path_string,
+			   const char *new_text,
+			   gpointer data);
 extern int get_new_info_job(job_info_msg_t **info_ptr, int force);
 extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr, 
 				 int force);
@@ -219,6 +240,15 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
 
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
+extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter, 
+			     int text_column, int num_column,
+			     const char *new_text,
+			     update_node_msg_t *node_msg);
+extern GtkListStore *create_model_node(int type);
+extern void admin_edit_node(GtkCellRendererText *cell,
+			    const char *path_string,
+			    const char *new_text,
+			    gpointer data);
 extern int get_new_info_node(node_info_msg_t **info_ptr, int force);
 extern void get_info_node(GtkTable *table, display_data_t *display_data);
 extern void specific_info_node(popup_info_t *popup_win);
@@ -247,8 +277,8 @@ extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path,
 				 GdkEventButton *event, 
 				 const display_data_t *display_data,
 				 int type);
-extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
-			const display_data_t *display_data);
+extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
+			    const display_data_t *display_data);
 extern popup_info_t *create_popup_info(int type, int dest_type, char *title);
 extern void setup_popup_info(popup_info_t *popup_win, 
 			     display_data_t *display_data, 
@@ -262,4 +292,6 @@ extern void *popup_thr(popup_info_t *popup_win);
 extern void remove_old(GtkTreeModel *model, int updated);
 extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 					int count);
+extern char *str_tolower(char *upper_str);
+extern char *get_reason();
 #endif

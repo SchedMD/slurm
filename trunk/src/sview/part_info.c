@@ -85,28 +85,45 @@ enum {
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
-	 TRUE, -1, refresh_part},
+	 TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_DISK, "Temp Disk", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_MEM, "MEM", FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DISK, "Temp Disk", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MEM, "MEM", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part},
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 #endif
-	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part},
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
@@ -153,22 +170,6 @@ _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 					tmp_min, tmp_max);
 	} else
 		return snprintf(buffer, buf_size, "%s+", tmp_min);
-}
-
-/*
- * _str_tolower - convert string to all lower case
- * upper_str IN - upper case input string
- * RET - lower case version of upper_str, caller must be xfree
- */ 
-static char *_str_tolower(char *upper_str)
-{
-	int i = strlen(upper_str) + 1;
-	char *lower_str = xmalloc(i);
-
-	for (i=0; upper_str[i]; i++)
-		lower_str[i] = tolower((int) upper_str[i]);
-
-	return lower_str;
 }
 
 static void _subdivide_part(sview_part_info_t *sview_part_info,
@@ -349,8 +350,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	else
 		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "down", -1);
 		
-	upper = node_state_string_compact(sview_part_sub->node_state);
-	lower = _str_tolower(upper);
+	upper = node_state_string(sview_part_sub->node_state);
+	lower = str_tolower(upper);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
 			   lower, -1);
 	xfree(lower);
@@ -605,8 +606,8 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	
 	if (sview_part_sub->node_cnt == 0) {	/* first node added */
 		sview_part_sub->node_state = node_ptr->node_state;
-		sview_part_sub->features   = node_ptr->features;
-		sview_part_sub->reason     = node_ptr->reason;
+		sview_part_sub->features   = xstrdup(node_ptr->features);
+		sview_part_sub->reason     = xstrdup(node_ptr->reason);
 		sview_part_sub->min_cpus   = node_ptr->cpus;
 		sview_part_sub->max_cpus   = node_ptr->cpus;
 		sview_part_sub->min_disk   = node_ptr->tmp_disk;
@@ -688,8 +689,8 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 	sview_part_sub_ptr->min_weight = node_ptr->weight;
 	sview_part_sub_ptr->max_weight = node_ptr->weight;
 
-	sview_part_sub_ptr->features = node_ptr->features;
-	sview_part_sub_ptr->reason   = node_ptr->reason;
+	sview_part_sub_ptr->features = xstrdup(node_ptr->features);
+	sview_part_sub_ptr->reason   = xstrdup(node_ptr->reason);
 
 	sview_part_sub_ptr->hl = hostlist_create(node_ptr->name);
 	
@@ -877,6 +878,103 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	part_info_ptr = new_part_ptr;
 	*part_ptr = new_part_ptr;
 	return error_code;
+}
+
+extern GtkListStore *create_model_part(int type)
+{
+	GtkListStore *model = NULL;
+	GtkTreeIter iter;
+	char *upper = NULL, *lower = NULL;		     
+	int i=0;
+	switch(type) {
+	case SORTID_AVAIL:
+		model = gtk_list_store_new(2, G_TYPE_STRING,
+					   G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "up",
+				   1, i,
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "down",
+				   1, i,
+				   -1);	
+		break;
+	case SORTID_STATE:
+		model = gtk_list_store_new(2, G_TYPE_STRING,
+					   G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "drain",
+				   1, i,
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "NoResp",
+				   1, i,
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "resume",
+				   1, i,
+				   -1);	
+		for(i = 0; i < NODE_STATE_END; i++) {
+			upper = node_state_string(i);
+			gtk_list_store_append(model, &iter);
+			lower = str_tolower(upper);
+			gtk_list_store_set(model, &iter,
+					   0, lower,
+					   1, i,
+					   -1);
+			xfree(lower);
+		}
+						
+		break;
+
+	}
+	return model;
+}
+
+extern void admin_edit_part(GtkCellRendererText *cell,
+			    const char *path_string,
+			    const char *new_text,
+			    gpointer data)
+{
+	GtkTreeStore *treestore = GTK_TREE_STORE(data);
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeIter iter;
+	update_node_msg_t node_msg;
+	update_part_msg_t part_msg;
+
+	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
+						       "column"));
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
+	switch(column) {
+	case SORTID_AVAIL:
+		slurm_init_part_desc_msg(&part_msg);
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+				   SORTID_NAME, 
+				   &part_msg.name, -1);
+		if (!strcasecmp(new_text, "up"))
+			part_msg.state_up = 1;
+		else
+			part_msg.state_up = 0;
+		slurm_update_partition(&part_msg);	
+		break;
+	case SORTID_STATE:
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+				   SORTID_NODELIST, 
+				   &node_msg.node_names, -1);
+		update_state_node(treestore, &iter, 
+				  SORTID_STATE, SORTID_STATE_NUM,
+				  new_text, &node_msg);
+		g_free(node_msg.node_names);
+		break;			
+	}
+	gtk_tree_path_free (path);
+	
+	g_static_mutex_unlock(&sview_mutex);
 }
 
 extern void get_info_part(GtkTable *table, display_data_t *display_data)

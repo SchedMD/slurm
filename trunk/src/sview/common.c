@@ -26,6 +26,7 @@
 \*****************************************************************************/
 
 #include "src/sview/sview.h"
+#include "src/common/parse_time.h"
 
 typedef struct {
 	GtkTreeModel *model;
@@ -104,13 +105,48 @@ static int _sort_iter_compare_func_int(GtkTreeModel *model,
 	return ret;
 }
 
+static void _editing_started(GtkCellRenderer *cell,
+			     GtkCellEditable *editable,
+			     const gchar     *path,
+			     gpointer         data)
+{
+	g_static_mutex_lock(&sview_mutex);
+}
+
+static void _editing_canceled(GtkCellRenderer *cell,
+			       gpointer         data)
+{
+	g_static_mutex_unlock(&sview_mutex);
+
+}
+
 static void _add_col_to_treeview(GtkTreeView *tree_view, 
 				 display_data_t *display_data)
 {
-	GtkTreeViewColumn   *col;
-	GtkCellRenderer     *renderer;
-	renderer = gtk_cell_renderer_text_new();
-	col = gtk_tree_view_column_new();	
+	GtkTreeViewColumn *col = gtk_tree_view_column_new();
+	GtkCellRenderer *renderer = gtk_cell_renderer_combo_new();
+	GtkListStore *model = (display_data->create_model)(display_data->id);
+		
+	if(model) {
+		g_object_set(renderer,
+			     "model", model,
+			     "text-column", 0,
+			     "has-entry", FALSE,
+			     "editable", TRUE,
+			     NULL);
+
+		g_signal_connect(renderer, "editing-started",
+				 G_CALLBACK(_editing_started), NULL);
+		g_signal_connect(renderer, "editing-canceled",
+				 G_CALLBACK(_editing_canceled), NULL);
+  		g_signal_connect(renderer, "edited",
+				 G_CALLBACK(display_data->admin_edit), 
+				 gtk_tree_view_get_model(tree_view));
+		
+		g_object_set_data(G_OBJECT(renderer), "column", 
+				  GINT_TO_POINTER(display_data->id));
+	}
+
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, 
 					   "text", display_data->id);
@@ -429,9 +465,9 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(treestore), 
 					     1, 
 					     GTK_SORT_ASCENDING);
-
-	load_header(tree_view, display_data);
+	
 	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
+	load_header(tree_view, display_data);
 	g_object_unref(GTK_TREE_MODEL(treestore));
 
 	return treestore;
@@ -455,34 +491,36 @@ extern void right_button_pressed(GtkTreeView *tree_view,
 	}
 }
 
-extern void row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
+extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
 			const display_data_t *display_data)
 {
 	GtkTreePath *path = NULL;
 	GtkTreeSelection *selection = NULL;
-	
-        if(!gtk_tree_view_get_path_at_pos(tree_view,
+	gboolean did_something = FALSE;
+	/*  right click? */
+	if(!gtk_tree_view_get_path_at_pos(tree_view,
 					  (gint) event->x, 
 					  (gint) event->y,
 					  &path, NULL, NULL, NULL)) {
-		return;
+		return did_something;
 	}
 	selection = gtk_tree_view_get_selection(tree_view);
 	gtk_tree_selection_unselect_all(selection);
 	gtk_tree_selection_select_path(selection, path);
-			 	
-	/* expand/collapse row 
-	   or right mouse button
-	   or double click?
-	*/
+	
 	if(event->x <= 20) {	
 		if(!gtk_tree_view_expand_row(tree_view, path, FALSE))
 			gtk_tree_view_collapse_row(tree_view, path);
+		did_something = TRUE;
 	} else if(event->button == 3) {
 		right_button_pressed(tree_view, path, event, 
 				     display_data, ROW_CLICKED);
-	}
+		did_something = TRUE;
+	} else if(!admin_mode)
+		did_something = TRUE;
 	gtk_tree_path_free(path);
+	
+	return did_something;
 }
 
 extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
@@ -748,4 +786,87 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 	
 	gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
 	return combo;
+}
+
+/*
+ * str_tolower - convert string to all lower case
+ * upper_str IN - upper case input string
+ * RET - lower case version of upper_str, caller must be xfree
+ */ 
+extern char *str_tolower(char *upper_str)
+{
+	int i = strlen(upper_str) + 1;
+	char *lower_str = xmalloc(i);
+
+	for (i=0; upper_str[i]; i++)
+		lower_str[i] = tolower((int) upper_str[i]);
+
+	return lower_str;
+}
+
+extern char *get_reason()
+{
+	char *reason_str = NULL;
+	int len = 0;
+	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *label = gtk_label_new("Reason ");
+	GtkWidget *entry = gtk_entry_new();
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"State change Reason",
+		GTK_WINDOW(main_window),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		GTK_STOCK_CANCEL,
+		GTK_RESPONSE_CANCEL,
+		NULL);
+	//GError *error = NULL;
+	int response = 0;
+	char *user_name = NULL;
+	char time_buf[64], time_str[32];
+	time_t now = time(NULL);
+			
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   table, FALSE, FALSE, 0);
+	
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);	
+	gtk_table_attach_defaults(GTK_TABLE(table), entry, 1, 2, 0, 1);
+	
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		reason_str = xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
+		len = strlen(reason_str) - 1;
+		/* Append user, date and time */
+		xstrcat(reason_str, " [");
+		user_name = getlogin();
+		if (user_name)
+			xstrcat(reason_str, user_name);
+		else {
+			sprintf(time_buf, "%d", getuid());
+			xstrcat(reason_str, time_buf);
+		}
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+		snprintf(time_buf, sizeof(time_buf), "@%s]", time_str); 
+		xstrcat(reason_str, time_buf);
+		/* maybe later we will update the status bar */
+		/* temp = g_strdup_printf("Refresh Interval set to %d seconds.", */
+/* 				       global_sleep_time); */
+/* 		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 1, */
+/* 				   temp); */
+/* 		g_free(temp); */
+/* 		if (!g_thread_create(_refresh_thr, NULL, FALSE, &error)) */
+/* 		{ */
+/* 			g_printerr ("Failed to create refresh thread: %s\n",  */
+/* 				    error->message); */
+/* 		} */
+	}
+
+	gtk_widget_destroy(popup);	
+	
+	return reason_str;
 }

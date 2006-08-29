@@ -65,49 +65,77 @@ enum {
 };
 
 static display_data_t display_data_job[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_job},
-	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1, refresh_job},
-	{G_TYPE_INT, SORTID_ALLOC, NULL, FALSE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1, refresh_job},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_ALLOC, NULL, FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 #endif
-	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested BP List",
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded BP List",
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", 
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", 
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 #endif
-	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, -1, refresh_job},
-	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1, refresh_job},
+	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_SUSPEND, "Suspend Time", 
-	 FALSE, -1, refresh_job},
-	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NUM_PROCS, "Num Processors", 
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TASKS, "Num Tasks", 
-	 FALSE, -1, refresh_job},
-	{G_TYPE_INT, SORTID_SHARED, "Shared", FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_SHARED, "Shared", FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", 
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", 
-	 FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", 
-	 FALSE, -1, refresh_job},	
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_job},
+	 FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},	
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -725,6 +753,22 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	old_step_ptr = new_step_ptr;
 	*info_ptr = new_step_ptr;
 	return error_code;
+}
+
+extern GtkListStore *create_model_job(int type)
+{
+	GtkListStore *model = NULL;
+	
+	return model;
+}
+
+extern void admin_edit_job(GtkCellRendererText *cell,
+			   const char *path_string,
+			   const char *new_text,
+			   gpointer data)
+{
+	g_print("Something job related altered\n");
+	g_static_mutex_unlock(&sview_mutex);
 }
 
 extern void get_info_job(GtkTable *table, display_data_t *display_data)
