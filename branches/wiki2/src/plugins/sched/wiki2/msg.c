@@ -386,8 +386,9 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		(void) get_jobs(cmd_ptr, new_fd);
 		/* sends own reply */
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
-		(void) get_nodes(cmd_ptr, new_fd);
-		/* sends own reply */
+		if (get_nodes(cmd_ptr, new_fd, &err_code, &err_msg))
+			goto err_msg;
+		/* sends own reply on success */
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
 		start_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */

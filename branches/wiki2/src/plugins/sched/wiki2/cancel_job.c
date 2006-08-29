@@ -33,7 +33,7 @@
 extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *tmp_char;
-	int i, cancel_type;
+	int cancel_type;
 	uint32_t jobid;
 	static char reply_msg[128];
 

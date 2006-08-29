@@ -27,6 +27,7 @@
 #include "./msg.h"
 #include "src/slurmctld/slurmctld.h"
 
+static void	_dump_all_nodes(void);
 static void	_dump_node(struct node_record *node_ptr);
 static char *	_get_node_state(uint16_t state);
 
@@ -39,15 +40,14 @@ static char *	_get_node_state(uint16_t state);
  *
  * Response format
  * ARG=<cnt>#<NODEID>;STATE=<state>;CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
- *                    FEATURE=<feature:feature>;PARTITION=<part>[#<NODEID;...];
+ *                    FEATURE=<feature:feature>;
+ *                    CCLASS=<part>:<cpus>[,<part>:<cpus>];
+ *                    ACLASS=<part>:<cpus>[,<part>:<cpus>];
+ *         [#<NODEID>;...];
  */
-extern int	get_nodes(char *cmd_ptr, slurm_fd fd)
+extern int	get_nodes(char *cmd_ptr, slurm_fd fd, 
+			int *err_code, char **err_msg)
 {
-/* FIXME */
-int err;
-int *err_code = &err;
-char **err_msg = &cmd_ptr;
-
 	char *arg_ptr, *tmp_char;
 	time_t update_time;
 
@@ -66,15 +66,35 @@ char **err_msg = &cmd_ptr;
 		return -1;
 	}
 	tmp_char++;
-	if (strncmp(tmp_char, "ALL", 3) == 0) {
+	if (update_time > last_node_update) {
+		; /* No updates */
+	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
+		_dump_all_nodes();
 	} else {
-		*err_code = 300;
-		*err_msg = "Support for individual node data not available";
-		error("wiki: GETNODES list individual nodes");
-		return -1;
+		struct node_record *node_ptr;
+		char *node_name, *tmp2_char;
+
+		node_name = strtok_r(tmp_char, ":", &tmp2_char);
+		while (node_name) {
+			node_ptr = find_node_record(node_name);
+			_dump_node(node_ptr);
+			node_name = strtok_r(NULL, ":", &tmp2_char);
+		}
 	}
 	return 0;
+}
+
+static void	_dump_all_nodes(void)
+{
+	int i;
+	struct node_record *node_ptr = node_record_table_ptr;
+
+	for (i=0; i<node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == NULL)
+			continue;
+		_dump_node(node_ptr);
+	}
 }
 
 static void	_dump_node(struct node_record *node_ptr)
