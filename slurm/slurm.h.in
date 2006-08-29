@@ -352,7 +352,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from job's allocation, default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
-				 * 0 otherwise */
+				 * 0 if job needs exclusive access to the node,
+				 * or NO_VAL to accept the system default. */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
@@ -397,10 +398,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * NICE_OFFSET == no change */
 	char *account;		/* charge to specified account */
 	char *network;		/* network use spec */
-	uint16_t exclusive;	/* 1 if job requires exclusive nodes,
-				 * 0 otherwise, default=0. Only useful
-				 * when Consumable Resources are
-				 * enabled */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */

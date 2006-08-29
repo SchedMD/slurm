@@ -970,7 +970,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		/* Build number of tasks for each hosts */
 		job->ntask = (int *) xmalloc(job->nhosts * sizeof(int));
 
-		if (job_ptr->details->exclusive) {
+		if (job_ptr->details->shared == 0) {
 			/* Nodes need to be allocated in dedicated
 			   mode. User has specified the --exclusive
 			   switch */

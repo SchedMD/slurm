@@ -78,7 +78,7 @@ typedef struct sbatch_options {
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool no_requeue;	/* --no-requeue			*/
-	bool share;		/* --share,   -s		*/
+	uint16_t shared;	/* --share,   -s		*/
 	int  quiet;
 	int  verbose;
 
@@ -90,7 +90,6 @@ typedef struct sbatch_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-        bool exclusive;         /* --exclusive                  */
 
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool no_rotate;		/* --no_rotate, -R		*/

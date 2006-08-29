@@ -2226,7 +2226,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
 	/* load the data values */
 	pack16((uint16_t)job_desc_ptr->contiguous, buffer);
-        pack16((uint16_t)job_desc_ptr->exclusive, buffer);
 	pack16((uint16_t)job_desc_ptr->kill_on_node_fail, buffer);
 	packstr(job_desc_ptr->features, buffer);
 	pack32((uint32_t)job_desc_ptr->job_id, buffer);
@@ -2321,7 +2320,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	/* load the data values */
 	safe_unpack16(&job_desc_ptr->contiguous, buffer);
-        safe_unpack16(&job_desc_ptr->exclusive, buffer);
 	safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->features, &uint16_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->job_id, buffer);

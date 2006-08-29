@@ -719,7 +719,7 @@ static void _opt_default()
 	opt.unbuffered = false;
 	opt.overcommit = false;
 	opt.batch = false;
-	opt.share = false;
+	opt.shared = (uint16_t)NO_VAL;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
 
@@ -748,7 +748,6 @@ static void _opt_default()
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
 	opt.contiguous	    = false;
-        opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
@@ -1293,7 +1292,7 @@ void set_options(const int argc, char **argv, int first)
 			opt.no_rotate = true;
 			break;
 		case (int)'s':
-			opt.share = true;
+			opt.shared = 1;
 			break;
 		case (int)'t':
 			if(!first && opt.time_limit)
@@ -1365,7 +1364,7 @@ void set_options(const int argc, char **argv, int first)
 			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
-                        opt.exclusive = true;
+                        opt.shared = 0;
                         break;
                 case LONG_OPT_CPU_BIND:
 			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
@@ -1923,9 +1922,6 @@ static char *print_constraints()
 	if (opt.contiguous == true)
 		xstrcat(buf, "contiguous ");
  
-        if (opt.exclusive == true)
-                xstrcat(buf, "exclusive ");
-
 	if (opt.nodelist != NULL)
 		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
 

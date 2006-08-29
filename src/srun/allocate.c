@@ -445,7 +445,6 @@ job_desc_msg_create_from_opts (char *script)
 	j->dependency     = opt.dependency;
 	if (opt.nice)
 		j->nice   = NICE_OFFSET + opt.nice;
-	j->exclusive      = opt.exclusive;
 	j->group_id       = opt.gid;
 	j->mail_type      = opt.mail_type;
 	if (opt.mail_user)
@@ -499,8 +498,7 @@ job_desc_msg_create_from_opts (char *script)
 		j->kill_on_node_fail   = 0;
 	if (opt.time_limit > -1)
 		j->time_limit          = opt.time_limit;
-	if (opt.share)
-		j->shared              = 1;
+	j->shared = opt.shared;
 
 	/* srun uses the same listening port for the allocation response
 	 * message as all other messages */

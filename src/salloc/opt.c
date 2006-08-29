@@ -468,7 +468,7 @@ static void _opt_default()
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
-	opt.share = false;
+	opt.shared = (uint16_t)NO_VAL;
 	opt.no_kill = false;
 	opt.kill_command_signal = SIGTERM;
 	opt.kill_command_signal_set = false;
@@ -487,7 +487,6 @@ static void _opt_default()
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
 	opt.contiguous	    = false;
-        opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 
@@ -776,7 +775,7 @@ void set_options(const int argc, char **argv)
 			opt.no_rotate = true;
 			break;
 		case 's':
-			opt.share = true;
+			opt.shared = 1;
 			break;
 		case 't':
 			opt.time_limit = _get_int(optarg, "time");
@@ -820,7 +819,7 @@ void set_options(const int argc, char **argv)
 			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
-                        opt.exclusive = true;
+                        opt.shared = 0;
                         break;
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
@@ -1060,9 +1059,6 @@ static char *print_constraints()
 	if (opt.contiguous == true)
 		xstrcat(buf, "contiguous ");
  
-        if (opt.exclusive == true)
-                xstrcat(buf, "exclusive ");
-
 	if (opt.nodelist != NULL)
 		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
 

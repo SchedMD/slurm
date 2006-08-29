@@ -142,7 +142,6 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->dependency = opt.dependency;
 	if (opt.nice)
 		desc->nice = NICE_OFFSET + opt.nice;
-	desc->exclusive = opt.exclusive;
 	desc->mail_type = opt.mail_type;
 	if (opt.mail_user)
 		desc->mail_user = xstrdup(opt.mail_user);
@@ -179,8 +178,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->kill_on_node_fail = 0;
 	if (opt.time_limit > -1)
 		desc->time_limit = opt.time_limit;
-	if (opt.share)
-		desc->shared = 1;
+	desc->shared = opt.shared;
 
 	desc->environment = environ;
 	desc->env_size = envcount (environ);
