@@ -239,12 +239,13 @@ void set_options(const int argc, char **argv)
 	int opt_char, option_index = 0;
 	static struct option long_options[] = {
 		{"help",          no_argument,       0, 'h'},
-		{"quiet",         no_argument,       0, 'Q'},
+		{"quiet",         no_argument,       0, 'q'},
+		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{NULL}
 	};
-	char *opt_string = "+hQvV";
+	char *opt_string = "+hquvV";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -260,9 +261,12 @@ void set_options(const int argc, char **argv)
 		case 'h':
 			_help();
 			exit(0);
-		case 'Q':
+		case 'q':
 			opt.quiet++;
 			break;
+		case 'u':
+			_usage();
+			exit(0);
 		case 'v':
 			opt.verbose++;
 			break;
@@ -391,8 +395,8 @@ static void _help(void)
 
 	printf(
 "Help options:\n"
-"      -h, --help              show this help message\n"
-"      --usage                 display brief usage message\n"
+"  -h, --help                  show this help message\n"
+"  -u, --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
