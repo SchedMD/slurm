@@ -67,20 +67,31 @@ enum {
 };
 
 static display_data_t display_data_block[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_block},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
-	 TRUE, -1, refresh_block},
+	 TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
-	 TRUE, -1, refresh_block},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_block},
-	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_block},
+	 TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type", 
-	 TRUE, -1, refresh_block},
-	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, -1, refresh_block},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block},
-	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_block},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_block},
+	 TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -736,6 +747,22 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 	bg_info_ptr = new_bg_ptr;
 	*node_select_ptr = new_bg_ptr;
 	return error_code;
+}
+
+extern GtkListStore *create_model_block(int type)
+{
+	GtkListStore *model = NULL;
+	
+	return model;
+}
+
+extern void admin_edit_block(GtkCellRendererText *cell,
+			     const char *path_string,
+			     const char *new_text,
+			     gpointer data)
+{
+	g_print("Something block related altered\n");
+	g_static_mutex_unlock(&sview_mutex);
 }
 
 extern void get_info_block(GtkTable *table, display_data_t *display_data)

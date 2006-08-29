@@ -46,16 +46,26 @@ enum {
 };
 
 static display_data_t display_data_node[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_node},
-	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_node},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_node},
-	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, -1, refresh_node},
-	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", TRUE, -1, refresh_node},
-	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", TRUE, -1, refresh_node},
-	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1, refresh_node},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1, refresh_node},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_node},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_node},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", TRUE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", TRUE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_node,
+	 create_model_node, admin_edit_node},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -290,6 +300,64 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	node_info_ptr = new_node_ptr;
 	*info_ptr = new_node_ptr;
 	return error_code;
+}
+
+extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter, 
+			     int text_column, int num_column,
+			     const char *new_text,
+			     update_node_msg_t *node_msg)
+{
+	uint16_t state = (uint16_t) NO_VAL;
+	char *upper = NULL, *lower = NULL;		     
+	int i = 0;
+	int rc = SLURM_SUCCESS;
+
+	node_msg->reason = NULL;
+
+	if(!strcmp("drain", new_text)) {
+		state = NODE_STATE_DRAIN;
+		node_msg->reason = get_reason();
+	} else if(!strcmp("NoResp", new_text)) {
+		state = NODE_STATE_NO_RESPOND;
+	} else if(!strcmp("resume", new_text)) {
+		state = NODE_RESUME;
+	} else {
+		for(i = 0; i < NODE_STATE_END; i++) {
+			upper = node_state_string(i);
+			lower = str_tolower(upper);
+			if(!strcmp(upper, "?"))
+				break;
+			if(!strcmp(lower, new_text)) {
+				state = i;
+				xfree(lower);
+				break;
+			}
+			xfree(lower);
+		}
+	}
+	node_msg->node_state = (uint16_t)state;
+	
+	rc = slurm_update_node(node_msg);
+	xfree(node_msg->reason);
+	gtk_tree_store_set(treestore, iter, text_column, new_text,
+			   num_column,	state, -1);
+	return rc;
+}
+			
+extern GtkListStore *create_model_node(int type)
+{
+	GtkListStore *model = NULL;
+	
+	return model;
+}
+
+extern void admin_edit_node(GtkCellRendererText *cell,
+			    const char *path_string,
+			    const char *new_text,
+			    gpointer data)
+{
+	g_print("Something node related altered\n");
+	g_static_mutex_unlock(&sview_mutex);
 }
 
 extern void get_info_node(GtkTable *table, display_data_t *display_data)
