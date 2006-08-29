@@ -2350,8 +2350,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->shared = job_desc->shared;
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
-        if (job_desc->exclusive != (uint16_t) NO_VAL)
-                detail_ptr->exclusive = job_desc->exclusive;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
 		detail_ptr->cpus_per_task = job_desc->cpus_per_task;
 	if (job_desc->no_requeue != (uint16_t) NO_VAL)
@@ -2503,8 +2501,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	}
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
-        if (job_desc_msg->exclusive == (uint16_t) NO_VAL)
-                job_desc_msg->exclusive = 0;
 	if (job_desc_msg->kill_on_node_fail == (uint16_t) NO_VAL)
 		job_desc_msg->kill_on_node_fail = 1;
 	if (job_desc_msg->shared == (uint16_t) NO_VAL)

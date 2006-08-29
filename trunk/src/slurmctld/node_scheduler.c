@@ -429,10 +429,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
                 debug3(" Is this Job %u in exclusive mode? %d cr_enabled %d", 
 		       job_ptr->job_id, 
-		       job_ptr->details->exclusive, 
+		       job_ptr->details->shared ? 0 : 1,
 		       cr_enabled);
 
-		if (job_ptr->details->exclusive) {
+		if (job_ptr->details->shared == 0) {
 			partially_idle_node_bitmap = bit_copy(idle_node_bitmap);
 		} else {
 			/* Update partially_idle_node_bitmap to reflect the

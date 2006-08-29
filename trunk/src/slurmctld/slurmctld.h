@@ -248,10 +248,6 @@ struct job_details {
 	char *features;			/* required features */
 	uint16_t shared;		/* set node can be shared */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
-        uint16_t exclusive;             /* set if requires exclusive
-                                         * nodes, Only useful when
-                                         * Consumable Resources are
-                                         * enabled */
 	uint16_t wait_reason;		/* reason job still pending, see
 					 * slurm.h:enum job_wait_reason */
 	uint32_t num_tasks;		/* number of tasks to start */

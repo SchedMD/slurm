@@ -128,7 +128,7 @@ typedef struct srun_options {
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	bool no_requeue;	/* --no-requeue			*/
-	bool share;		/* --share,   -s		*/
+	uint16_t shared;	/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	bool disable_status;    /* --disable-status, -X         */
@@ -156,7 +156,6 @@ typedef struct srun_options {
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
-        bool exclusive;         /* --exclusive                  */
 
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool no_rotate;		/* --no_rotate, -R		*/

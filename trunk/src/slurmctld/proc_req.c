@@ -420,7 +420,7 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = step_rec->job_ptr->user_id;
 	cred_arg.hostlist = step_rec->step_layout->node_list;
-        if(step_rec->job_ptr->details->exclusive)
+        if(step_rec->job_ptr->details->shared == 0)
                 cred_arg.ntask_cnt = 0;
         else
                 cred_arg.ntask_cnt = step_rec->job_ptr->ntask_cnt;
