@@ -282,6 +282,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 		return NULL;
 	}
 
+	debug("wiki msg recv:%s", buf);
 	return buf;
 }
 
@@ -294,6 +295,8 @@ static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size)
 {
 	char header[10];
 	size_t data_sent;
+
+	debug("wiki msg send:%s", buf);
 
 	(void) sprintf(header, "%08ul\n", (uint32_t) size);
 	if (_write_bytes((int) new_fd, header, 9) != 9) {
@@ -370,7 +373,6 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	if (!msg)
 		goto err_msg;
 
-	debug3("wiki msg recv:%s", msg);
 	if (_parse_msg(msg, &req) != 0)
 		goto err_msg;
 
