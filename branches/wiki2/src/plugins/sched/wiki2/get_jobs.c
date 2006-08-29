@@ -24,13 +24,22 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <grp.h>
+#include <sys/types.h>
+
 #include "./msg.h"
 #include "src/common/list.h"
+#include "src/common/uid.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 static char *	_dump_all_jobs(int *job_cnt);
 static char *	_dump_job(struct job_record *job_ptr);
+static char *	_get_group_name(gid_t gid);
+static char *	_get_job_state(struct job_record *job_ptr);
+static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
+static uint32_t	_get_job_tasks(struct job_record *job_ptr);
+static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
 
 /*
  * get_jobs - get information on specific job(s) changed since some time
@@ -128,11 +137,87 @@ static char *   _dump_all_jobs(int *job_cnt)
 static char *	_dump_job(struct job_record *job_ptr)
 {
 	char tmp[512], *buf = NULL;
-	int i;
 
 	if (!job_ptr)
 		return NULL;
 
-/* FIXME */
-	return NULL;
+	snprintf(tmp, sizeof(tmp), 
+		"%u:UPDATETIME=%u;STATE=%s;WCLIMIT=%u",
+		job_ptr->job_id, 
+		(uint32_t) job_ptr->time_last_active,
+		_get_job_state(job_ptr),
+		(uint32_t) _get_job_time_limit(job_ptr));
+	xstrcat(buf, tmp);
+
+	snprintf(tmp, sizeof(tmp),
+		"TASKS=%u;QUEUETIME=%u;STARTTIME=%u;",
+		_get_job_tasks(job_ptr),
+		_get_job_submit_time(job_ptr),
+		(uint32_t) job_ptr->start_time);
+	xstrcat(buf, tmp);
+
+	snprintf(tmp, sizeof(tmp),
+		"UNAME=%s;GNAME=%s;",
+		uid_to_string((uid_t) job_ptr->user_id),
+		_get_group_name(job_ptr->group_id));
+	xstrcat(buf, tmp);
+
+	return buf;
 }
+
+static char *	_get_group_name(gid_t gid)
+{
+	struct group *grp;
+
+	grp = getgrgid(gid);
+	if (grp)
+		return grp->gr_name;
+	return "nobody";
+}
+
+static uint32_t _get_job_submit_time(struct job_record *job_ptr)
+{
+	if (job_ptr->details)
+		return (uint32_t) job_ptr->details->submit_time;
+	return (uint32_t) 0;
+}
+
+static uint32_t _get_job_tasks(struct job_record *job_ptr)
+{
+	if ((job_ptr->details)
+	&&  (job_ptr->details->req_tasks != (uint16_t) NO_VAL))
+		return (uint32_t) job_ptr->details->req_tasks;
+	return (uint32_t) 1;
+}
+
+static uint32_t	_get_job_time_limit(struct job_record *job_ptr)
+{
+	uint32_t limit = job_ptr->time_limit;
+
+	if ((limit == NO_VAL) || (limit == INFINITE))
+		return (uint32_t) 0;
+	else
+		return (limit * 60);	/* seconds, not minutes */
+}
+
+static char *	_get_job_state(struct job_record *job_ptr)
+{
+	uint16_t state = job_ptr->job_state;
+	uint16_t base_state = state & (~JOB_COMPLETING);
+
+	if (base_state == JOB_PENDING)
+		return "Idle";
+	if ((base_state == JOB_RUNNING)
+	||  (state & JOB_COMPLETING))
+		return "Running";
+	if (base_state == JOB_COMPLETE)
+		return "Completed";
+#if 0
+	if ((base_state == JOB_CANCELLED)
+	||  (base_state == JOB_FAILED)
+	||  (base_state == JOB_TIMEOUT)
+	||  (base_state == JOB_NODE_FAIL))
+#endif
+	return "Removed";
+}
+

@@ -30,7 +30,7 @@
 
 static char *	_dump_all_nodes(int *node_cnt);
 static char *	_dump_node(struct node_record *node_ptr);
-static char *	_get_node_state(uint16_t state);
+static char *	_get_node_state(struct node_record *node_ptr);
 
 /*
  * get_nodes - get information on specific node(s) changed since some time
@@ -39,11 +39,11 @@ static char *	_get_node_state(uint16_t state);
  * RET 0 on success, -1 on failure
  *
  * Response format
- * ARG=<cnt>#<NODEID>;STATE=<state>;CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
+ * ARG=<cnt>#<NODEID>:STATE=<state>;CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
  *                    FEATURE=<feature:feature>;
  *                    CCLASS=<part>:<cpus>[,<part>:<cpus>];
  *                    ACLASS=<part>:<cpus>[,<part>:<cpus>];
- *         [#<NODEID>;...];
+ *         [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 {
@@ -131,9 +131,9 @@ static char *	_dump_node(struct node_record *node_ptr)
 	if (!node_ptr)
 		return NULL;
 
-	snprintf(tmp, sizeof(tmp), "%s;STATE=%s;",
+	snprintf(tmp, sizeof(tmp), "%s:STATE=%s;",
 		node_ptr->name, 
-		_get_node_state(node_ptr->node_state));
+		_get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 
 	if (slurmctld_conf.fast_schedule) {
@@ -201,8 +201,9 @@ static char *	_dump_node(struct node_record *node_ptr)
 	return buf;
 }
 
-static char *	_get_node_state(uint16_t state)
+static char *	_get_node_state(struct node_record *node_ptr)
 {
+	uint16_t state = node_ptr->node_state;
 	uint16_t base_state = state & NODE_STATE_FLAGS;
 
 	if (state & NODE_STATE_DRAIN)
