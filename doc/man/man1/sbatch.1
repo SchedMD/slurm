@@ -52,11 +52,19 @@ different  users.   The  value may be changed after job submission using the
 scontrol command.
 
 .TP
-\fB\-s\fR, \fB\-\-share\fR
-The job allocation can share nodes with other running jobs. This may result
-the allocation being granted sooner than if the \-\-share option was not set and
-allow higher system utilization, but application performance will likely suffer
-due to competition for resources within a node.
+\fB\-s\fR, \fB\-\-shared\fR
+The job allocation can share nodes with other running jobs.  (The default
+shared/exclusive behaviour depends on system configuration.)
+This may result the allocation being granted sooner than if the \-\-shared
+option was not set and allow higher system utilization, but application
+performance will likely suffer due to competition for resources within a node.
+
+.TP
+\fB\-\-exclusive\fR
+The job allocation cannot share nodes with other running jobs.  This is
+the oposite of \-\-shared, whichever option is seen last on the command line
+will win.  (The default shared/exclusive behaviour depends on system
+configuration.)
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR[=]<\fIminutes\fR>
