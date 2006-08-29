@@ -11,10 +11,17 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = sched_wiki2.la
 
 sched_wiki2_la_SOURCES = \
+	cancel_job.c	\
 	crypto.c	\
 	crypto.h	\
+	get_jobs.c	\
+	get_nodes.c	\
+	job_add_task.c	\
+	job_release_task.c \
 	msg.c		\
 	msg.h		\
+	resume_job.c	\
 	sched_wiki.c	\
-	start_job.c
+	start_job.c	\
+	suspend_job.c
 sched_wiki2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
