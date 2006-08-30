@@ -112,26 +112,6 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	else
 		desc->name = xstrdup("sbatch");
 	desc->req_nodes = opt.nodelist;
-	/* FIXME - SLURM_HOSTFILE is the wrong env name, and should be
-	   done like in slaunch */
-	if (desc->req_nodes == NULL) {
-		char *nodelist = NULL;
-		char *hostfile = getenv("SLURM_HOSTFILE");
-		
-		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
-			if (nodelist == NULL) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				return -1;
-			} else {
-				debug("loading nodes from hostfile %s",
-				      hostfile);
-				desc->req_nodes = xstrdup(nodelist);
-				free(nodelist);
-			}
-		}
-	}
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
 	desc->min_nodes = opt.min_nodes;

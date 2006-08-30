@@ -144,7 +144,6 @@ static char *_search_path(char *, bool, int);
 static long  _to_bytes(const char *arg);
 
 static void  _usage(void);
-static bool  _valid_node_list(char **node_list_pptr);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_conn_type(const char *arg);
@@ -156,46 +155,6 @@ static void _set_options(int argc, char **argv);
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
-}
-
-/*
- * If the node list supplied is a file name, translate that into 
- *	a list of nodes, we orphan the data pointed to
- * RET true if the node list is a valid one
- */
-static bool _valid_node_list(char **node_list_pptr)
-{
-	FILE *fd;
-	char *node_list;
-	int c;
-	bool last_space;
-
-	if (strchr(*node_list_pptr, '/') == NULL)
-		return true;	/* not a file name */
-
-	fd = fopen(*node_list_pptr, "r");
-	if (fd == NULL) {
-		error ("Unable to open file %s: %m", *node_list_pptr);
-		return false;
-	}
-
-	node_list = xstrdup("");
-	last_space = false;
-	while ((c = fgetc(fd)) != EOF) {
-		if (isspace(c)) {
-			last_space = true;
-			continue;
-		}
-		if (last_space && (node_list[0] != '\0'))
-			xstrcatchar(node_list, ',');
-		last_space = false;
-		xstrcatchar(node_list, (char)c);
-	}
-	(void) fclose(fd);
-
-        /*  free(*node_list_pptr);	orphanned */
-	*node_list_pptr = node_list;
-	return true;
 }
 
 /*
@@ -482,18 +441,14 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SBATCH_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
-  {"SBATCH_NNODES",        OPT_NODES,      NULL,               NULL           },
   {"SBATCH_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SBATCH_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SBATCH_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SBATCH_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
   {"SBATCH_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {NULL, 0, NULL, NULL}
 };
@@ -900,6 +855,7 @@ static void _opt_batch_script(const void *body, int size)
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
+	char *tmp;
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
@@ -930,6 +886,17 @@ static void _set_options(int argc, char **argv)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = _fullpath(optarg);
+			break;
+		case 'F':
+			xfree(opt.nodelist);
+			tmp = slurm_read_hostfile(optarg, 0);
+			if (tmp != NULL) {
+				opt.nodelist = xstrdup(tmp);
+				free(tmp);
+			} else {
+				error("\"%s\" is not a valid node file");
+				exit(1);
+			}
 			break;
 		case 'g':
 			if (_verify_geometry(optarg, opt.geometry))
@@ -1014,8 +981,6 @@ static void _set_options(int argc, char **argv)
 		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-			if (!_valid_node_list(&opt.nodelist))
-				exit(1);
 #ifdef HAVE_BG
 			info("\tThe nodelist option should only be used if\n"
 			     "\tthe block you are asking for can be created.\n"
@@ -1026,8 +991,6 @@ static void _set_options(int argc, char **argv)
 		case 'x':
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(1);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;

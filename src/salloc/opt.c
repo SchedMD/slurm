@@ -170,46 +170,6 @@ static void _print_version(void)
 }
 
 /*
- * If the node list supplied is a file name, translate that into 
- *	a list of nodes, we orphan the data pointed to
- * RET true if the node list is a valid one
- */
-static bool _valid_node_list(char **node_list_pptr)
-{
-	FILE *fd;
-	char *node_list;
-	int c;
-	bool last_space;
-
-	if (strchr(*node_list_pptr, '/') == NULL)
-		return true;	/* not a file name */
-
-	fd = fopen(*node_list_pptr, "r");
-	if (fd == NULL) {
-		error ("Unable to open file %s: %m", *node_list_pptr);
-		return false;
-	}
-
-	node_list = xstrdup("");
-	last_space = false;
-	while ((c = fgetc(fd)) != EOF) {
-		if (isspace(c)) {
-			last_space = true;
-			continue;
-		}
-		if (last_space && (node_list[0] != '\0'))
-			xstrcatchar(node_list, ',');
-		last_space = false;
-		xstrcatchar(node_list, (char)c);
-	}
-	(void) fclose(fd);
-
-        /*  free(*node_list_pptr);	orphanned */
-	*node_list_pptr = node_list;
-	return true;
-}
-
-/*
  * verify that a connection type in arg is of known form
  * returns the connection_type or -1 if not recognized
  */
@@ -521,15 +481,12 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SALLOC_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SALLOC_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
-  {"SALLOC_NNODES",        OPT_NODES,      NULL,               NULL           },
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SALLOC_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SALLOC_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
@@ -655,10 +612,12 @@ _get_int(const char *arg, const char *what)
 void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
+	char *tmp;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
 		{"dependency",    required_argument, 0, 'd'},
+		{"nodefile",      required_argument, 0, 'F'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"help",          no_argument,       0, 'h'},
 		{"hold",          no_argument,       0, 'H'},
@@ -697,7 +656,7 @@ void set_options(const int argc, char **argv)
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:d:g:hHIJ:kK::n:N:p:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+a:c:C:d:F:g:hHIJ:kK::n:N:p:qR:st:uU:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -721,6 +680,17 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'd':
 			opt.dependency = _get_int(optarg, "dependency");
+			break;
+		case 'F':
+			xfree(opt.nodelist);
+			tmp = slurm_read_hostfile(optarg, 0);
+			if (tmp != NULL) {
+				opt.nodelist = xstrdup(tmp);
+				free(tmp);
+			} else {
+				error("\"%s\" is not a valid node file");
+				exit(1);
+			}
 			break;
 		case 'g':
 			if (_verify_geometry(optarg, opt.geometry))
@@ -797,8 +767,6 @@ void set_options(const int argc, char **argv)
 		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-			if (!_valid_node_list(&opt.nodelist))
-				exit(1);
 #ifdef HAVE_BG
 			info("\tThe nodelist option should only be used if\n"
 			     "\tthe block you are asking for can be created.\n"
@@ -812,8 +780,6 @@ void set_options(const int argc, char **argv)
 		case 'x':
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(1);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;

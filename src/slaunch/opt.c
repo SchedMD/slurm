@@ -684,7 +684,6 @@ struct env_vars {
 env_vars_t env_vars[] = {
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           },
-  {"SLAUNCH_CPUS_PER_TASK",OPT_INT,       &opt.cpus_per_task, &opt.cpus_per_task_set},
   {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
   {"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
   {"SLAUNCH_MEM_BIND",     OPT_MEM_BIND,  NULL,               NULL           },
@@ -693,11 +692,9 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
   {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
-  {"SLAUNCH_REMOTE_CWD",   OPT_STRING,    &opt.cwd,           NULL           },
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
   {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
-  {"SLAUNCH_SRUN_MULTI",   OPT_MULTI,     NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -851,6 +848,7 @@ _get_int(const char *arg, const char *what)
 void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
+	char *tmp;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
@@ -954,8 +952,6 @@ void set_options(const int argc, char **argv)
 				opt.local_efname = xstrdup(optarg);
 			break;
 		case 'F':
-		{
-			char *tmp;
 			xfree(opt.task_layout);
 			tmp = slurm_read_hostfile(optarg, 0);
 			if (tmp != NULL) {
@@ -966,7 +962,6 @@ void set_options(const int argc, char **argv)
 				error("\"%s\" is not a valid task layout file");
 				exit(1);
 			}			
-		}
 			break;
 		case 'E':
 			xfree(opt.remote_efname);
