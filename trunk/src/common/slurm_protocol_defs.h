@@ -472,13 +472,13 @@ typedef struct job_time_msg {
 typedef struct reattach_tasks_request_msg {
 	uint32_t     job_id;
 	uint32_t     job_step_id;
-	uint32_t     srun_node_id;
-	uint16_t     resp_port;
-	uint16_t     io_port;
-	char        *ofname;
-	char        *efname;
-	char        *ifname;
-	slurm_cred_t cred;
+	uint16_t     num_resp_port;
+	uint16_t    *resp_port; /* array of available response ports */
+	uint16_t     num_io_port;
+	uint16_t    *io_port;   /* array of available client IO ports */
+	slurm_cred_t cred;      /* used only a weak authentication mechanism
+				   for the slurmstepd to use when connecting
+				   back to the client */
 } reattach_tasks_request_msg_t;
 
 typedef struct reattach_tasks_response_msg {
