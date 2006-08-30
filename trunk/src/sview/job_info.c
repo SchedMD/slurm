@@ -387,10 +387,14 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 	job_step_info_t step;
 	int stepid = 0;
 	int i;
-	GtkTreeIter *first_step_iter = NULL;
+	GtkTreeIter first_step_iter;
+	int set = 0;
+
+	memset(&first_step_iter, 0, sizeof(GtkTreeIter));
+
 	/* make sure all the steps are still here */
 	if (step_iter) {
-		first_step_iter = gtk_tree_iter_copy(step_iter);
+		first_step_iter = *step_iter;
 		while(1) {
 			gtk_tree_store_set(GTK_TREE_STORE(model), step_iter, 
 					   SORTID_UPDATED, 0, -1);	
@@ -398,7 +402,7 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 				break;
 			}
 		}
-		step_iter = gtk_tree_iter_copy(first_step_iter);
+		memcpy(step_iter, &first_step_iter, sizeof(GtkTreeIter));
 	}
 	for (i = 0; i < step_info_ptr->job_step_count; i++) {
 		step = step_info_ptr->job_steps[i];
@@ -433,10 +437,8 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 	found:
 		;
 	}
-	if(first_step_iter) {
-		if(step_iter)
-			gtk_tree_iter_free(step_iter);
-		step_iter = gtk_tree_iter_copy(first_step_iter);
+	if(set) {
+		step_iter = &first_step_iter;
 		/* clear all steps that aren't active */
 		while(1) {
 			gtk_tree_model_get(model, step_iter, 
@@ -453,7 +455,6 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 				break;
 			}
 		}
-		gtk_tree_iter_free(first_step_iter);
 	}
 	return;
 }			       
@@ -792,7 +793,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 		display_data_job->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(job_info_ptr && toggled) {
+	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
@@ -886,7 +887,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
 
-	if(job_info_ptr && popup_win->toggled) {
+	if(spec_info->display_widget && popup_win->toggled) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 		goto display_it;
