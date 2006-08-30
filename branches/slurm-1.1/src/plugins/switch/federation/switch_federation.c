@@ -46,6 +46,7 @@
 bool fed_need_state_save = false;
 
 static void _spawn_state_save_thread(char *dir);
+static int  _switch_p_libstate_save(char * dir_name, bool free_flag);
 
 /* Type for error string table entries */
 typedef struct {
@@ -154,13 +155,19 @@ int switch_p_slurmd_step_init( void )
  */
 int switch_p_libstate_save ( char * dir_name )
 {
+	return _switch_p_libstate_save(dir_name, true);
+}
+
+/* save and purge the libstate if free_flag is true */
+static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
+{
 	Buf buffer;
 	char *file_name;
 	int ret = SLURM_SUCCESS;
 	int state_fd;
 	
 	buffer = init_buf(FED_LIBSTATE_LEN);
-	(void)fed_libstate_save(buffer);
+	(void)fed_libstate_save(buffer, free_flag);
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/fed_state");
 	(void)unlink(file_name);
@@ -202,7 +209,7 @@ int switch_p_libstate_save ( char * dir_name )
  *
  * NOTE: switch_p_libstate_restore is only called by slurmctld, and only
  * once at start-up.  We exploit (abuse?) this fact to spawn a pthread to
- * periodically call switch_p_libstate_save().
+ * periodically call _switch_p_libstate_save().
  */
 int switch_p_libstate_restore ( char * dir_name, bool recover )
 {
@@ -636,7 +643,7 @@ static void *_state_save_thread(void *arg)
 		sleep(300);
 		if (fed_need_state_save) {
 			fed_need_state_save = false;
-			switch_p_libstate_save(dir_name);
+			_switch_p_libstate_save(dir_name, false);
 		}
 	}
 }
