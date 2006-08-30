@@ -82,7 +82,8 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_update_partition.3
 
 man5_MANS = man5/bluegene.conf.5 \
-	man5/slurm.conf.5
+	man5/slurm.conf.5 \
+	man5/wiki.conf.5
 
 man8_MANS = man8/slurmctld.8 \
 	man8/slurmd.8 \

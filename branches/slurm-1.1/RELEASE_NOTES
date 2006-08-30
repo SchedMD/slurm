@@ -1,3 +1,23 @@
+RELEASE NOTES FOR SLURM VERSION 1.1.10
+30 August 2006
+
+* There is a new version of the Wiki scheduler plugin to interface with
+  the Maui Scheduler and Moab. It can be accessed with the slurm.conf 
+  parameter "SchedulerType=sched/wiki2" (it will replace "sched/wiki" 
+  in SLURM version 1.2, but will co-exist in version 1.1.10+). Key 
+  differences include:
+  - Node and job data returned is correct (several errors in old plugin)
+  - Node data includes partition information (CCLASS field)
+  - Improved error handling
+  - Support added for configuration file ("wiki.conf" in same directory
+    as "slurm.conf" file, see "man wiki.conf" for details)
+  - Support added for job suspend/resume
+  - Authentication of communcations now supported
+  - Improved performance
+  - Memory leaks fixed
+
+
+
 RELEASE NOTES FOR SLURM VERSION 1.1
 15 May 2006
 See the file NEWS for more details.
