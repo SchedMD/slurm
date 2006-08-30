@@ -65,7 +65,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	/* Locks: read job, partition */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
-	int job_rec_cnt = 0;
+	int job_rec_cnt = 0, buf_size = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -109,7 +109,9 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	unlock_slurmctld(job_read_lock);
 
 	/* Prepend ("ARG=%d", job_rec_cnt) to reply message */
-	tmp_buf = xmalloc(strlen(buf) + 32);
+	if (buf)
+		buf_size = strlen(buf);
+	tmp_buf = xmalloc(buf_size + 32);
 	sprintf(tmp_buf, "SC=0 ARG=%d#%s", job_rec_cnt, buf);
 	xfree(buf);
 	*err_code = 0;
