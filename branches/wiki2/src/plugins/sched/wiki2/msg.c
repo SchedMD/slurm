@@ -274,7 +274,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 		return NULL;
 	}
 
-	buf = xmalloc(size);
+	buf = xmalloc(size + 1);	/* need '\0' on end to print */
 	if (_read_bytes((int) new_fd, buf, size) != size) {
 		err_code = 246;
 		err_msg = "unable to read all message data";

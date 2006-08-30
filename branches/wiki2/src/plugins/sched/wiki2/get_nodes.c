@@ -136,6 +136,9 @@ static char *	_dump_node(struct node_record *node_ptr)
 		_get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 
+#if 0
+	/* For now report actual resources on system 
+	 * rather than what the sys admins configured */
 	if (slurmctld_conf.fast_schedule) {
 		cpu_cnt = node_ptr->config_ptr->cpus;
 		snprintf(tmp, sizeof(tmp),
@@ -144,13 +147,13 @@ static char *	_dump_node(struct node_record *node_ptr)
 			node_ptr->config_ptr->tmp_disk,
 			node_ptr->config_ptr->cpus);
 	} else {
-		cpu_cnt = node_ptr->cpus;
-		snprintf(tmp, sizeof(tmp),
-			"CMEMORY=%u;CDISK=%u;CPROC=%u;",
-			node_ptr->real_memory,
-			node_ptr->tmp_disk,
-			node_ptr->cpus);
-	}
+#endif
+	cpu_cnt = node_ptr->cpus;
+	snprintf(tmp, sizeof(tmp),
+		"CMEMORY=%u;CDISK=%u;CPROC=%u;",
+		node_ptr->real_memory,
+		node_ptr->tmp_disk,
+		node_ptr->cpus);
 	xstrcat(buf, tmp);
 
 	if (node_ptr->config_ptr
