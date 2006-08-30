@@ -254,6 +254,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/hold/Makefile
 		 src/plugins/sched/maui/Makefile
 		 src/plugins/sched/maui/wiki/Makefile
+		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/block_allocator/Makefile
