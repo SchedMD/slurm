@@ -25,6 +25,13 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/bitstring.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
+
+static char *	_copy_nodelist_no_dup(char *node_list);
+static int	_start_job(uint32_t jobid, char *hostlist, 
+			int *err_code, char **err_msg);
 
 /* RET 0 on success, -1 on failure */
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
@@ -72,22 +79,102 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: STARTJOB has invalid TASKLIST");
 		return -1;
 	}
-	if (sched_set_nodelist(jobid, host_string) != SLURM_SUCCESS) {
-		*err_code = 734;
-		*err_msg = "failed to assign nodes";
-		error("wiki: failed to assign nodes to job %u", jobid);
+	if (_start_job(jobid, host_string, err_code, err_msg) != 0)
 		return -1;
-	}
-
-	if (sched_start_job(jobid, (uint32_t) 1) != SLURM_SUCCESS) {
-		*err_code = 730;
-		*err_msg = "failed to start job";
-		error("wiki: failed to start job %u", jobid);
-		return -1;
-	}
 
 	snprintf(reply_msg, sizeof(reply_msg), 
 		"job %u started successfully", jobid);
 	*err_msg = reply_msg;
 	return 0;
 }
+
+static int	_start_job(uint32_t jobid, char *hostlist,
+			int *err_code, char **err_msg)
+{
+	int rc = 0;
+	struct job_record *job_ptr;
+	/* Write lock on job info, read lock on node info */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+	char *new_node_list;
+	bitstr_t *new_bitmap;
+
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(jobid);
+	if (job_ptr == NULL) {
+		*err_code = 700;
+		*err_msg = "No such job";
+		error("wiki: Failed to find job %u", jobid);
+		rc = -1;
+		goto fini;
+	}
+
+	if ((job_ptr->details == NULL)
+	||  (job_ptr->job_state != JOB_PENDING)) {
+		*err_code = 700;
+		*err_msg = "Job not pending, can't update";
+		error("wiki: Attempt to change state of non-pending job %u",
+			jobid);
+		rc = -1;
+		goto fini;
+	}
+
+	new_node_list = _copy_nodelist_no_dup(hostlist);
+	if (hostlist && (new_node_list == NULL)) {
+		*err_code = 700;
+		*err_msg = "Invalid TASKLIST";
+		error("wiki: Attempt to set invalid node list for job %u, %s",
+			jobid, hostlist);
+		rc = -1;
+		goto fini;
+	}
+
+	if (node_name2bitmap(new_node_list, false, &new_bitmap) != 0) {
+		*err_code = 700;
+		*err_msg = "Invalid TASKLIST";
+		error("wiki: Attempt to set invalid node list for job %u, %s",
+			jobid, hostlist);
+		xfree(hostlist);
+		rc = -1;
+		goto fini;
+	}
+
+	/* Remove any excluded nodes, incompatable with Wiki */
+	if (job_ptr->details->exc_nodes) {
+		error("wiki: clearing exc_nodes for job %u", jobid);
+		xfree(job_ptr->details->exc_nodes);
+		if (job_ptr->details->exc_node_bitmap)
+			bit_free(job_ptr->details->exc_node_bitmap);
+	}
+
+	/* start it now */
+	xfree(job_ptr->details->req_nodes);
+	job_ptr->details->req_nodes = new_node_list;
+	if (job_ptr->details->req_node_bitmap)
+		bit_free(job_ptr->details->req_node_bitmap);
+	job_ptr->details->req_node_bitmap = new_bitmap;
+	job_ptr->priority = 1000000;
+
+ fini:	unlock_slurmctld(job_write_lock);
+	return rc;
+}
+
+static char *	_copy_nodelist_no_dup(char *node_list)
+{
+	int   new_size = 128;
+	char *new_str;
+	hostlist_t hl = hostlist_create( node_list );
+
+	if (hl == NULL)
+		return NULL;
+
+	hostlist_uniq(hl);
+	new_str = xmalloc(new_size);
+	while (hostlist_ranged_string(hl, new_size, new_str) == -1) {
+		new_size *= 2;
+		xrealloc(new_str, new_size);
+	}
+	hostlist_destroy(hl);
+	return new_str;
+}
+
