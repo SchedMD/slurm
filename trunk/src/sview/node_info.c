@@ -51,7 +51,7 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_node,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_node,
 	 create_model_node, admin_edit_node},

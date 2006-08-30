@@ -88,28 +88,28 @@ enum {
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
-	 TRUE, -1, refresh_part,
+	 TRUE, 1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_MIN_NODES, "Min Nodes", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", FALSE, 1, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_MAX_NODES, "Max Nodes", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_MAX_NODES, "Max Nodes", FALSE, 1, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
@@ -119,15 +119,15 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MEM, "MEM", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, 1, refresh_part,
 	 create_model_part, admin_edit_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, 1, refresh_part,
 	 create_model_part, admin_edit_part},
 #endif
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part,
@@ -303,10 +303,23 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			      part_ptr->min_nodes, 
 			      part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
+	
+	if (part_ptr->min_nodes == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		convert_num_unit((float)part_ptr->min_nodes, 
+				 time_buf, UNIT_NONE);
+	}
 	gtk_tree_store_set(treestore, iter, SORTID_MIN_NODES, 
-			   part_ptr->min_nodes, -1);
+			   time_buf, -1);
+	if (part_ptr->max_nodes == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		convert_num_unit((float)part_ptr->max_nodes, 
+				 time_buf, UNIT_NONE);
+	}
 	gtk_tree_store_set(treestore, iter, SORTID_MAX_NODES, 
-			   part_ptr->max_nodes, -1);
+			   time_buf, -1);
 
 	if(part_ptr->root_only)
 		gtk_tree_store_set(treestore, iter, SORTID_ROOT, "yes", -1);
@@ -388,10 +401,20 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			      part_ptr->min_nodes, 
 			      part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
+
+	convert_num_unit((float)part_ptr->min_nodes, 
+			 time_buf, UNIT_NONE);
+
 	gtk_tree_store_set(treestore, iter, SORTID_MIN_NODES, 
-			   part_ptr->min_nodes, -1);
+			   time_buf, -1);
+	if (part_ptr->max_nodes == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		convert_num_unit((float)part_ptr->max_nodes, 
+				 time_buf, UNIT_NONE);
+	}
 	gtk_tree_store_set(treestore, iter, SORTID_MAX_NODES, 
-			   part_ptr->max_nodes, -1);
+			   time_buf, -1);
 	
 	_build_min_max_string(time_buf, sizeof(time_buf), 
 			      sview_part_sub->min_cpus, 
@@ -947,6 +970,7 @@ extern GtkListStore *create_model_part(int type)
 				   -1);	
 
 		break;
+	case SORTID_TIMELIMIT:
 	case SORTID_MIN_NODES:
 		break;
 	case SORTID_MAX_NODES:
@@ -1037,6 +1061,10 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	char *type = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
+	
+	if(!new_text || !strcmp(new_text, ""))
+		goto no_input;
+
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
 	if(column != SORTID_STATE) {
@@ -1067,14 +1095,26 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		}
 		type = "hidden";
 		break;
-	case SORTID_MIN_NODES:
-		if (!strcasecmp(new_text, "infinite")) {
-			part_msg.min_nodes = INFINITE;
-		} else {
-			part_msg.min_nodes = 
+	case SORTID_TIMELIMIT:
+		if ((strcasecmp(new_text,"infinite") == 0))
+			part_msg.max_time = INFINITE;
+		else
+			part_msg.max_time = 
 				(uint32_t)strtol(new_text, (char **)NULL, 10);
-		}
+		temp = (char *)new_text;
+		type = "timelimit";
+		if((int32_t)part_msg.max_time <= 0
+		   && part_msg.max_time != INFINITE)
+			goto print_error;
+		break;
+	case SORTID_MIN_NODES:
+		part_msg.min_nodes = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		
+		temp = (char *)new_text;
 		type = "min_nodes";
+		if((int32_t)part_msg.max_time <= 0)
+			goto print_error;
 		break;
 	case SORTID_MAX_NODES:
 		if (!strcasecmp(new_text, "infinite")) {
@@ -1083,7 +1123,11 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			part_msg.max_nodes = 
 				(uint32_t)strtol(new_text, (char **)NULL, 10);
 		}
+		temp = (char *)new_text;
 		type = "max_nodes";
+		if((int32_t)part_msg.max_time <= 0 
+		   && part_msg.max_nodes != INFINITE)
+			goto print_error;
 		break;
 	case SORTID_ROOT:
 		if (!strcasecmp(new_text, "yes")) {
@@ -1108,6 +1152,8 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		type = "groups";
 		break;
 	case SORTID_NODELIST:
+		temp = (char *)new_text;
+		part_msg.nodes = temp;
 		type = "nodelist";
 		break;
 	case SORTID_AVAIL:
@@ -1142,11 +1188,20 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 					       new_text);
 			display_edit_note(temp);
 			g_free(temp);
+		} else {
+		print_error:
+			temp = g_strdup_printf("Partition %s %s can't be "
+					       "set to %s",
+					       part_msg.name,
+					       type,
+					       new_text);
+			display_edit_note(temp);
+			g_free(temp);
 		}
 		g_free(part_msg.name);
 		
 	}
-
+no_input:
 	gtk_tree_path_free (path);
 	
 	g_static_mutex_unlock(&sview_mutex);
