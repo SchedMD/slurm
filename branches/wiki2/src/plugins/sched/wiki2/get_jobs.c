@@ -218,7 +218,8 @@ static uint32_t _get_job_submit_time(struct job_record *job_ptr)
 static uint32_t _get_job_tasks(struct job_record *job_ptr)
 {
 	if ((job_ptr->details)
-	&&  (job_ptr->details->req_tasks != (uint16_t) NO_VAL))
+	&&  (job_ptr->details->req_tasks != (uint16_t) NO_VAL)
+	&&  (job_ptr->details->req_tasks != 0))
 		return (uint32_t) job_ptr->details->req_tasks;
 	return (uint32_t) 1;
 }

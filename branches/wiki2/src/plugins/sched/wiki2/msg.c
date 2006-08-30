@@ -333,6 +333,9 @@ static int	_parse_msg(char *msg, char **req)
 		*req = cmd_ptr;
 		return 0;
 	}
+/* FIXME: skip authentication for now */
+*req = cmd_ptr;
+return 0;
 
 	if (!auth_ptr) {
 		err_code = 300;

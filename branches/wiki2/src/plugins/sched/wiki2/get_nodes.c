@@ -204,7 +204,7 @@ static char *	_dump_node(struct node_record *node_ptr)
 static char *	_get_node_state(struct node_record *node_ptr)
 {
 	uint16_t state = node_ptr->node_state;
-	uint16_t base_state = state & NODE_STATE_FLAGS;
+	uint16_t base_state = state & (~NODE_STATE_FLAGS);
 
 	if (state & NODE_STATE_DRAIN)
 		return "Draining";
