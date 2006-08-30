@@ -91,6 +91,11 @@ enum { ERROR_VIEW,
        INFO_VIEW
 };
 
+enum { STATUS_ADMIN_MODE,
+       STATUS_REFRESH,
+       STATUS_ADMIN_EDIT
+};
+
 /* Input parameters */
 typedef struct {
 	bool all_flag;
@@ -176,6 +181,7 @@ extern bool force_refresh;
 extern List popup_list;
 extern int global_sleep_time;
 extern bool admin_mode;
+extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
 extern GStaticMutex sview_mutex;	
 
@@ -294,4 +300,6 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 					int count);
 extern char *str_tolower(char *upper_str);
 extern char *get_reason();
+extern void display_edit_note(char *edit_note);
+
 #endif

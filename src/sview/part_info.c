@@ -1034,6 +1034,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	update_part_msg_t part_msg;
 	
 	char *temp = NULL;
+	char *type = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -1054,6 +1055,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			part_msg.default_part = 0;
 			temp = "";
 		}
+		type = "default";
 		break;
 	case SORTID_HIDDEN:
 		if (!strcasecmp(new_text, "yes")) {
@@ -1063,6 +1065,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			part_msg.hidden = 0;
 			temp = "";
 		}
+		type = "hidden";
 		break;
 	case SORTID_MIN_NODES:
 		if (!strcasecmp(new_text, "infinite")) {
@@ -1071,6 +1074,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			part_msg.min_nodes = 
 				(uint32_t)strtol(new_text, (char **)NULL, 10);
 		}
+		type = "min_nodes";
 		break;
 	case SORTID_MAX_NODES:
 		if (!strcasecmp(new_text, "infinite")) {
@@ -1079,6 +1083,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			part_msg.max_nodes = 
 				(uint32_t)strtol(new_text, (char **)NULL, 10);
 		}
+		type = "max_nodes";
 		break;
 	case SORTID_ROOT:
 		if (!strcasecmp(new_text, "yes")) {
@@ -1087,6 +1092,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			part_msg.default_part = 0;
 		}
 		temp = (char *)new_text;
+		type = "root";
 		break;
 	case SORTID_SHARE:
 		if (!strcasecmp(new_text, "yes")) {
@@ -1096,10 +1102,13 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		} else {
 			part_msg.default_part = SHARED_FORCE;
 		}
+		type = "share";
 		break;
 	case SORTID_GROUPS:
+		type = "groups";
 		break;
 	case SORTID_NODELIST:
+		type = "nodelist";
 		break;
 	case SORTID_AVAIL:
 		slurm_init_part_desc_msg(&part_msg);
@@ -1111,6 +1120,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		else
 			part_msg.state_up = 0;
 		temp = (char *)new_text;
+		type = "availability";
 		break;
 	case SORTID_STATE:
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
@@ -1124,8 +1134,16 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 
 	if(column != SORTID_STATE) {
-		if(slurm_update_partition(&part_msg) == SLURM_SUCCESS)
+		if(slurm_update_partition(&part_msg) == SLURM_SUCCESS) {
 			gtk_tree_store_set(treestore, &iter, column, temp, -1);
+			temp = g_strdup_printf("Partition %s %s changed to %s",
+					       part_msg.name,
+					       type,
+					       new_text);
+			display_edit_note(temp);
+			g_free(temp);
+		}
+		g_free(part_msg.name);
 		
 	}
 
