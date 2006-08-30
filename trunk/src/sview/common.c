@@ -120,6 +120,17 @@ static void _editing_canceled(GtkCellRenderer *cell,
 
 }
 
+static void *_editing_thr(void *arg)
+{
+	sleep(5);
+	gdk_threads_enter();
+	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT);
+	gdk_flush();
+	gdk_threads_leave();
+	return NULL;	
+}
+
+
 static void _add_col_to_treeview(GtkTreeView *tree_view, 
 				 display_data_t *display_data)
 {
@@ -823,7 +834,6 @@ extern char *get_reason()
 		GTK_STOCK_CANCEL,
 		GTK_RESPONSE_CANCEL,
 		NULL);
-	//GError *error = NULL;
 	int response = 0;
 	char *user_name = NULL;
 	char time_buf[64], time_str[32];
@@ -856,20 +866,25 @@ extern char *get_reason()
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 		snprintf(time_buf, sizeof(time_buf), "@%s]", time_str); 
 		xstrcat(reason_str, time_buf);
-		/* maybe later we will update the status bar */
-		/* temp = g_strdup_printf("Refresh Interval set to %d seconds.", */
-/* 				       global_sleep_time); */
-/* 		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 1, */
-/* 				   temp); */
-/* 		g_free(temp); */
-/* 		if (!g_thread_create(_refresh_thr, NULL, FALSE, &error)) */
-/* 		{ */
-/* 			g_printerr ("Failed to create refresh thread: %s\n",  */
-/* 				    error->message); */
-/* 		} */
 	}
 
 	gtk_widget_destroy(popup);	
 	
 	return reason_str;
+}
+
+extern void display_edit_note(char *edit_note)
+{
+	GError *error = NULL;
+	
+	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT);
+	gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT,
+			   edit_note);
+		
+	if (!g_thread_create(_editing_thr, NULL, FALSE, &error))
+	{
+		g_printerr ("Failed to create edit thread: %s\n",
+			    error->message);
+	}
+	return;
 }

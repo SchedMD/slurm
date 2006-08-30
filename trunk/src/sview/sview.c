@@ -114,7 +114,7 @@ void *_refresh_thr(void *arg)
 {
 	sleep(5);
 	gdk_threads_enter();
-	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 1);
+	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_REFRESH);
 	gdk_flush();
 	gdk_threads_leave();
 	return NULL;	
@@ -185,10 +185,12 @@ static void _set_admin_mode(GtkToggleAction *action)
 {
 	if(admin_mode) {
 		admin_mode = FALSE;
-		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 0);
+		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 
+				  STATUS_ADMIN_MODE);
 	} else {
 		admin_mode = TRUE;
-		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 0,
+		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 
+				   STATUS_ADMIN_MODE,
 				   "Admin mode activated! "
 				   "Think before you alter anything.");
 	}
@@ -234,7 +236,10 @@ static void _change_refresh(GtkToggleAction *action, gpointer user_data)
 			gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
 		temp = g_strdup_printf("Refresh Interval set to %d seconds.",
 				       global_sleep_time);
-		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 1,
+		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 
+				  STATUS_REFRESH);
+		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 
+				   STATUS_REFRESH,
 				   temp);
 		g_free(temp);
 		if (!g_thread_create(_refresh_thr, NULL, FALSE, &error))

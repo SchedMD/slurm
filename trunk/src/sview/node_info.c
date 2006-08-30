@@ -343,12 +343,16 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 	}
 	node_msg->node_state = (uint16_t)state;
 	
-	rc = slurm_update_node(node_msg);
+	if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
+	       	gtk_tree_store_set(treestore, iter, text_column, new_text,
+				   num_column,	state, -1);
+		upper = g_strdup_printf("Node(s) %s state changed to %s",
+					node_msg->node_names,
+					new_text);
+		display_edit_note(upper);
+		g_free(upper);
+	}
 	xfree(node_msg->reason);
-	if(rc != SLURM_SUCCESS)
-		return rc;
-	gtk_tree_store_set(treestore, iter, text_column, new_text,
-			   num_column,	state, -1);
 	return rc;
 }
 			
