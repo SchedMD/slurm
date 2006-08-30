@@ -406,9 +406,8 @@ void slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg)
 void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->ofname);
-		xfree(msg->efname);
-		xfree(msg->ifname);
+		xfree(msg->resp_port);
+		xfree(msg->io_port);
 		slurm_cred_destroy(msg->cred);
 		xfree(msg);
 	}

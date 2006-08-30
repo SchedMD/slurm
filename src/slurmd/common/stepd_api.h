@@ -69,6 +69,7 @@ typedef struct {
 	uid_t uid;
 	uint32_t jobid;
 	uint32_t stepid;
+	uint32_t nodeid;
 } slurmstepd_info_t;
 
 /*

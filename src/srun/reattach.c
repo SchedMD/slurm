@@ -69,7 +69,8 @@ typedef struct thd {
         pthread_attr_t	attr;			/* thread attributes */
         state_t		state;      		/* thread state */
 	slurm_msg_t    *msg;
-	srun_job_t          *job;
+	srun_job_t     *job;
+	uint32_t        nodeid;
 } thd_t;
 
 static void		 _p_reattach(slurm_msg_t *req, srun_job_t *job);
@@ -319,23 +320,14 @@ _attach_to_job(srun_job_t *job)
 
 		r->job_id          = job->jobid;
 		r->job_step_id     = job->stepid;
-		r->srun_node_id    = (uint32_t) i;
-		r->io_port         = 
-			ntohs(job->client_io->
-			      listenport[i%job->client_io->num_listen]);
-		r->resp_port       = 
-			ntohs(job->
-			      jaddr[i%job->njfds].sin_port);
+		r->num_io_port     = 1;
+		r->io_port         = (uint16_t *)xmalloc(sizeof(uint16_t));
+		r->io_port[0]      = ntohs(job->client_io->listenport[
+					   i%job->client_io->num_listen]);
+		r->num_resp_port   = 1;
+		r->resp_port	   = (uint16_t *)xmalloc(sizeof(uint16_t));
+		r->resp_port[0]    = ntohs(job->jaddr[i%job->njfds].sin_port);
 		r->cred            = job->cred;
-
-
-		/* XXX: redirecting output to files not yet
-		 * supported
-		 */
-		r->ofname          = NULL;
-		r->efname          = NULL;
-		r->ifname          = NULL;
-
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
 		forward_init(&m->forward, NULL);
@@ -368,6 +360,7 @@ _p_reattach(slurm_msg_t *msg, srun_job_t *job)
 
 		thd[i].msg = &msg[i];
 		thd[i].job = job;
+		thd[i].nodeid = i;
 
 		slurm_attr_init(&thd[i].attr);
 		if (pthread_attr_setdetachstate(&thd[i].attr,
@@ -397,8 +390,8 @@ _p_reattach_task(void *arg)
 	thd_t *t   = (thd_t *) arg;
 	int rc     = 0;
 	reattach_tasks_request_msg_t *req = t->msg->data;
-	int nodeid = req->srun_node_id; 
-	char *host = nodelist_nth_host(t->job->step_layout->node_list, nodeid);
+	char *host = nodelist_nth_host(t->job->step_layout->node_list,
+				       t->nodeid);
 	
 	t->state = THD_ACTIVE;
 	debug3("sending reattach request to %s", host);
@@ -407,10 +400,10 @@ _p_reattach_task(void *arg)
 	if (rc < 0) {
 		error("reattach: %s: %m", host);
 		t->state = THD_FAILED;
-		t->job->host_state[nodeid] = SRUN_HOST_REPLIED;
+		t->job->host_state[t->nodeid] = SRUN_HOST_REPLIED;
 	} else {
 		t->state = THD_DONE;
-		t->job->host_state[nodeid] = SRUN_HOST_UNREACHABLE;
+		t->job->host_state[t->nodeid] = SRUN_HOST_UNREACHABLE;
 	}
 	free(host);
 	slurm_mutex_lock(&active_mutex);

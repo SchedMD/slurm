@@ -2489,15 +2489,18 @@ static void
 _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 				 Buf buffer)
 {
+	int i;
+
 	xassert(msg != NULL);
 	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->job_step_id, buffer);
-	pack32((uint32_t)msg->srun_node_id, buffer);
-	pack16((uint16_t)msg->resp_port, buffer);
-	pack16((uint16_t)msg->io_port, buffer);
-	packstr(msg->ofname, buffer);
-	packstr(msg->efname, buffer);
-	packstr(msg->ifname, buffer);
+	pack16((uint16_t)msg->num_resp_port, buffer);
+	for(i = 0; i < msg->num_resp_port; i++)
+		pack16((uint16_t)msg->resp_port[i], buffer);
+	pack16((uint16_t)msg->num_io_port, buffer);
+	for(i = 0; i < msg->num_io_port; i++)
+		pack16((uint16_t)msg->io_port[i], buffer);
+
 	slurm_cred_pack(msg->cred, buffer);
 }
 
@@ -2505,8 +2508,8 @@ static int
 _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 				   Buf buffer)
 {
-	uint16_t uint16_tmp;
 	reattach_tasks_request_msg_t *msg;
+	int i;
 
 	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(*msg));
@@ -2514,12 +2517,18 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack32(&msg->srun_node_id, buffer);
-	safe_unpack16(&msg->resp_port, buffer);
-	safe_unpack16(&msg->io_port, buffer);
-	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
+	safe_unpack16(&msg->num_resp_port, buffer);
+	if (msg->num_resp_port > 0) {
+		msg->resp_port = xmalloc(sizeof(uint16_t)*msg->num_resp_port);
+		for (i = 0; i < msg->num_resp_port; i++)
+			safe_unpack16(&msg->resp_port[i], buffer);
+	}
+	safe_unpack16(&msg->num_io_port, buffer);
+	if (msg->num_io_port > 0) {
+		msg->io_port = xmalloc(sizeof(uint16_t)*msg->num_io_port);
+		for (i = 0; i < msg->num_io_port; i++)
+			safe_unpack16(&msg->io_port[i], buffer);
+	}
 
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;

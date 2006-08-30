@@ -1413,6 +1413,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	uid_t             req_uid;
 	slurmstepd_info_t *step = NULL;
 	slurm_addr *cli = &msg->orig_addr;
+	uint32_t nodeid = (uint32_t)NO_VAL;
 	
 	memset(&resp_msg, 0, sizeof(slurm_msg_t));
 	fd = stepd_connect(conf->spooldir, conf->node_name,
@@ -1429,6 +1430,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	} 
+	nodeid = step->nodeid;
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
@@ -1446,13 +1448,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	 * Set response address by resp_port and client address
 	 */
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
-	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
+	port = req->resp_port[nodeid % req->num_resp_port];
+	slurm_set_addr(&resp_msg.address, port, NULL); 
 	
 	/* 
 	 * Set IO address by io_port and client address
 	 */
 	memcpy(&ioaddr, cli, sizeof(slurm_addr));
-	slurm_set_addr(&ioaddr, req->io_port, NULL);
+	port = req->io_port[nodeid % req->num_io_port];
+	slurm_set_addr(&ioaddr, port, NULL);
 
 	/*
 	 * Get the signature of the job credential.  slurmstepd will need
@@ -1480,7 +1484,7 @@ done:
 	resp_msg.forward      = msg->forward;
 	resp_msg.ret_list     = msg->ret_list;
 	resp->node_name       = xstrdup(conf->node_name);
-	resp->srun_node_id    = req->srun_node_id;
+	resp->srun_node_id    = nodeid;
 	resp->return_code     = rc;
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
