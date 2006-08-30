@@ -25,15 +25,20 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 #define TYPE_ADMIN   0
 #define TYPE_TIMEOUT 1
+
+static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg);
+static int	_timeout_job(uint32_t jobid, int *err_code, char **err_msg);
 
 /* RET 0 on success, -1 on failure */
 extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *tmp_char;
-	int cancel_type;
+	int cancel_type = TYPE_ADMIN;
 	uint32_t jobid;
 	static char reply_msg[128];
 
@@ -65,11 +70,12 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	
-	if (sched_cancel_job(jobid) != SLURM_SUCCESS) {
-		*err_code = 700;
-		*err_msg = "failed to cancel job";
-		error("wiki: failed to cancel job %u", jobid);
-		return -1;
+	if (cancel_type == TYPE_ADMIN) {
+		if (_cancel_job(jobid, err_code, err_msg) != 0)
+			return -1;
+	} else {
+		if (_timeout_job(jobid, err_code, err_msg) != 0)
+			return -1;
 	}
 
 	snprintf(reply_msg, sizeof(reply_msg), 
@@ -77,3 +83,54 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 	*err_msg = reply_msg;
 	return 0;
 }
+
+/* Cancel a job now */
+static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
+{
+	int rc = 0, slurm_rc;
+	/* Write lock on job info */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	slurm_rc = job_signal(jobid, SIGKILL, 0, 0);
+	if (slurm_rc != SLURM_SUCCESS) {
+		*err_code = 700;
+		*err_msg = "No such job";
+		error("wiki: Failed to find job %u (%m)", jobid);
+		rc = -1;
+		goto fini;
+	}
+
+	debug("wiki: cancel job %u", jobid);
+
+ fini:	unlock_slurmctld(job_write_lock);
+	return rc;
+}
+
+/* Set timeout for specific job, the job will be purged soon */
+static int	_timeout_job(uint32_t jobid, int *err_code, char **err_msg)
+{
+	int rc = 0;
+	struct job_record *job_ptr;
+	/* Write lock on job info */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(jobid);
+	if (job_ptr == NULL) {
+		*err_code = 700;
+		*err_msg = "No such job";
+		error("wiki: Failed to find job %u", jobid);
+		rc = -1;
+		goto fini;
+	}
+
+	job_ptr->end_time = time(NULL);
+	debug("wiki: set end time for job %u", jobid);
+
+ fini:	unlock_slurmctld(job_write_lock);
+	return rc;
+}
+
