@@ -160,7 +160,7 @@ static char *	_dump_job(struct job_record *job_ptr)
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
-		"UNAME=%s;GNAME=%s;PARTITION=%s;NODES=%u;",
+		"UNAME=%s;GNAME=%s;PARTITIONMASK=%s;NODES=%u;",
 		uid_to_string((uid_t) job_ptr->user_id),
 		_get_group_name(job_ptr->group_id),
 		job_ptr->partition,
