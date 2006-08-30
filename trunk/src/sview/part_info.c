@@ -68,19 +68,19 @@ enum {
 	SORTID_HIDDEN,
 	SORTID_AVAIL, 
 	SORTID_TIMELIMIT, 
+	SORTID_NODES, 
+	SORTID_STATE,
+	SORTID_NODELIST, 
 	SORTID_JOB_SIZE,
 	SORTID_MIN_NODES,
 	SORTID_MAX_NODES,
 	SORTID_ROOT, 
 	SORTID_SHARE, 
 	SORTID_GROUPS,
-	SORTID_NODES, 
 	SORTID_CPUS, 
 	SORTID_DISK, 
 	SORTID_MEM, 
-	SORTID_STATE,
 	SORTID_WEIGHT,
-	SORTID_NODELIST, 
 	SORTID_STATE_NUM,
 	SORTID_UPDATED, 
 	SORTID_CNT
@@ -99,6 +99,17 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
 	 TRUE, 1, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_part,
+	 create_model_part, admin_edit_part},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, 1, refresh_part,
+	 create_model_part, admin_edit_part},
+#else
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, 1, refresh_part,
+	 create_model_part, admin_edit_part},
+#endif
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", FALSE, 1, refresh_part,
@@ -111,25 +122,14 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DISK, "Temp Disk", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MEM, "MEM", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_part,
-	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, 1, refresh_part,
-	 create_model_part, admin_edit_part},
-#else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, 1, refresh_part,
-	 create_model_part, admin_edit_part},
-#endif
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part,
@@ -206,42 +206,56 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 		sub_iter = gtk_tree_iter_copy(first_sub_iter);
 	}
 	itr = list_iterator_create(sview_part_info->sub_list);
-	while((sview_part_sub = list_next(itr))) {
-		if (!sub_iter) {
-			i = NO_VAL;
-			goto adding;
-		}
-		while(1) {
-			/* search for the jobid and check to see if 
-			   it is in the list */
-			gtk_tree_model_get(model, sub_iter, SORTID_STATE_NUM, 
-					   &state, -1);
-			if(state == sview_part_sub->node_state) {
-				/* update with new info */
-				_update_part_sub_record(sview_part_sub,
-							GTK_TREE_STORE(model), 
-							sub_iter);
-				goto found;
-			}			
-			
-			/* see what line we were on to add the next one 
-			   to the list */
-			gtk_tree_model_get(model, sub_iter, SORTID_POS, 
-					   &line, -1);
-			if(!gtk_tree_model_iter_next(model, sub_iter)) {
-				sub_iter = NULL;
-				line++;
-				break;
+	if(list_count(sview_part_info->sub_list) == 1) {
+		sview_part_sub = list_next(itr);
+		_update_part_sub_record(sview_part_sub,
+					GTK_TREE_STORE(model), 
+					iter);
+	} else {
+		while((sview_part_sub = list_next(itr))) {
+			if (!sub_iter) {
+				i = NO_VAL;
+				goto adding;
 			}
+			while(1) {
+				/* search for the jobid and check to see if 
+				   it is in the list */
+				gtk_tree_model_get(model, sub_iter, 
+						   SORTID_STATE_NUM, 
+						   &state, -1);
+				if(state == sview_part_sub->node_state) {
+					/* update with new info */
+					_update_part_sub_record(
+						sview_part_sub,
+						GTK_TREE_STORE(model), 
+						sub_iter);
+					goto found;
+				}			
+				
+				/* see what line we were on to add the
+				   next one to the list */
+				gtk_tree_model_get(model, sub_iter, 
+						   SORTID_POS, 
+						   &line, -1);
+				if(!gtk_tree_model_iter_next(model, 
+							     sub_iter)) {
+					sub_iter = NULL;
+					line++;
+					break;
+				}
+			}
+		adding:
+			_append_part_sub_record(sview_part_sub, 
+						GTK_TREE_STORE(model), 
+						iter, line);
+			if(i == NO_VAL)
+				line++;
+		found:
+			;
 		}
-	adding:
-		_append_part_sub_record(sview_part_sub, GTK_TREE_STORE(model), 
-					iter, line);
-		if(i == NO_VAL)
-			line++;
-	found:
-		;
 	}
+	list_iterator_destroy(itr);
+
 	if(first_sub_iter) {
 		if(sub_iter)
 			gtk_tree_iter_free(sub_iter);
@@ -346,6 +360,14 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   part_ptr->nodes, -1);
+
+	/* clear out info for the main listing */
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, "", -1);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, -1, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_CPUS, "", -1);
+	gtk_tree_store_set(treestore, iter, SORTID_DISK, "", -1);
+	gtk_tree_store_set(treestore, iter, SORTID_MEM, "", -1);
+	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
 	
 	childern = gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
@@ -372,14 +394,6 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
-	if(part_ptr->default_part)
-		gtk_tree_store_set(treestore, iter, SORTID_DEFAULT, "*", -1);
-	
-	if (part_ptr->state_up) 
-		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "up", -1);
-	else
-		gtk_tree_store_set(treestore, iter, SORTID_AVAIL, "down", -1);
-		
 	upper = node_state_string(sview_part_sub->node_state);
 	lower = str_tolower(upper);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
@@ -387,34 +401,6 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	xfree(lower);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM,
 			   sview_part_sub->node_state, -1);
-	
-	if (part_ptr->max_time == INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "infinite");
-	else {
-		snprint_time(time_buf, sizeof(time_buf), 
-			     (part_ptr->max_time * 60));
-	}
-	
-	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
-	
-	_build_min_max_string(time_buf, sizeof(time_buf), 
-			      part_ptr->min_nodes, 
-			      part_ptr->max_nodes, true);
-	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
-
-	convert_num_unit((float)part_ptr->min_nodes, 
-			 time_buf, UNIT_NONE);
-
-	gtk_tree_store_set(treestore, iter, SORTID_MIN_NODES, 
-			   time_buf, -1);
-	if (part_ptr->max_nodes == INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "infinite");
-	else {
-		convert_num_unit((float)part_ptr->max_nodes, 
-				 time_buf, UNIT_NONE);
-	}
-	gtk_tree_store_set(treestore, iter, SORTID_MAX_NODES, 
-			   time_buf, -1);
 	
 	_build_min_max_string(time_buf, sizeof(time_buf), 
 			      sview_part_sub->min_cpus, 
