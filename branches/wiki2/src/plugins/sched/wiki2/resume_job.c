@@ -25,12 +25,44 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/slurmctld/slurmctld.h"
 
 /* RET 0 on success, -1 on failure */
 extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	*err_code = 810;
-	*err_msg = "RESUMEJOB command not supported";
-	error("wiki: RESUMEJOB command not supported");
-	return -1;
+	char *arg_ptr, *tmp_char;
+	int slurm_rc;
+	suspend_msg_t msg;
+	uint32_t jobid;
+	static char reply_msg[128];
+
+	arg_ptr = strstr(cmd_ptr, "ARG=");
+	if (arg_ptr == NULL) {
+		*err_code = 300;
+		*err_msg = "RESUMEJOB lacks ARG";
+		error("wiki: RESUMEJOB lacks ARG");
+		return -1;
+	}
+	jobid = strtol(arg_ptr+4, &tmp_char, 10);
+	if (!isspace(tmp_char[0])) {
+		*err_code = 300;
+		*err_msg = "Invalid ARG value";
+		error("wiki: RESUMEJOB has invalid jobid");
+		return -1;
+	}
+
+	msg.job_id = jobid;
+	msg.op = RESUME_JOB;
+	slurm_rc = job_suspend(&msg, 0, -1);
+	if (slurm_rc != SLURM_SUCCESS) {
+		*err_code = 700;
+		*err_msg = "No such job";
+		error("wiki: Failed to resume job %u (%m)", jobid);
+		return -1;
+	}
+
+	snprintf(reply_msg, sizeof(reply_msg),
+		"job %u resumed successfully", jobid);
+	*err_msg = reply_msg;
+	return 0;
 }

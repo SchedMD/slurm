@@ -4078,7 +4078,8 @@ static int _resume_job_nodes(struct job_record *job_ptr)
  * job_suspend - perform some suspend/resume operation
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply
+ * IN conn_fd - file descriptor on which to send reply, 
+ *              -1 if none
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid, 
@@ -4174,13 +4175,15 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
     reply:
 	jobacct_g_suspend_slurmctld(job_ptr);
 
-	rc_msg.return_code = rc;
-	resp_msg.msg_type  = RESPONSE_SLURM_RC;
-	resp_msg.data      = &rc_msg;
-	forward_init(&resp_msg.forward, NULL);
-	resp_msg.ret_list = NULL;
-	resp_msg.forward_struct_init = 0;
-	slurm_send_node_msg(conn_fd, &resp_msg);
+	if (conn_fd >= 0) {
+		rc_msg.return_code = rc;
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		resp_msg.data      = &rc_msg;
+		forward_init(&resp_msg.forward, NULL);
+		resp_msg.ret_list = NULL;
+		resp_msg.forward_struct_init = 0;
+		slurm_send_node_msg(conn_fd, &resp_msg);
+	}
 	return rc;
 }
 
