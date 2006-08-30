@@ -28,6 +28,7 @@
 #include "src/common/bitstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 static char *	_copy_nodelist_no_dup(char *node_list);
 static int	_start_job(uint32_t jobid, char *hostlist, 
@@ -156,6 +157,12 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	job_ptr->priority = 1000000;
 
  fini:	unlock_slurmctld(job_write_lock);
+	/* functions below provide their own locking */
+	if (rc == 0) {	/* New job to start ASAP */
+		(void) schedule();
+		schedule_node_save();
+		schedule_job_save();
+	}
 	return rc;
 }
 
