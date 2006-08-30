@@ -592,8 +592,11 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	bin2 = GTK_BIN(&view->bin);
 	popup_win->table = GTK_TABLE(bin2->child);
 	
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			 GTK_WIDGET(window), TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   GTK_WIDGET(window), TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   main_statusbar, FALSE, FALSE, 0);
+	
 	popup_win->spec_info->type = type;
 	popup_win->spec_info->title = xstrdup(title);
 	g_signal_connect(G_OBJECT(popup_win->popup), "delete_event",

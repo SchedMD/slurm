@@ -187,15 +187,18 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 			    GtkTreeIter *sub_iter,
 			    GtkTreeIter *iter)
 {
-	GtkTreeIter *first_sub_iter = NULL;
+	GtkTreeIter first_sub_iter;
 	ListIterator itr = NULL;
 	uint16_t state;
 	int i = 0, line = 0;
 	sview_part_sub_t *sview_part_sub = NULL;
+	int set = 0;
+
+	memset(&first_sub_iter, 0, sizeof(GtkTreeIter));
 
 	/* make sure all the steps are still here */
 	if (sub_iter) {
-		first_sub_iter = gtk_tree_iter_copy(sub_iter);
+		first_sub_iter = *sub_iter;
 		while(1) {
 			gtk_tree_store_set(GTK_TREE_STORE(model), sub_iter, 
 					   SORTID_UPDATED, 0, -1);	
@@ -203,7 +206,8 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				break;
 			}
 		}
-		sub_iter = gtk_tree_iter_copy(first_sub_iter);
+		memcpy(sub_iter, &first_sub_iter, sizeof(GtkTreeIter));
+		set = 1;
 	}
 	itr = list_iterator_create(sview_part_info->sub_list);
 	if(list_count(sview_part_info->sub_list) == 1) {
@@ -256,10 +260,8 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 	}
 	list_iterator_destroy(itr);
 
-	if(first_sub_iter) {
-		if(sub_iter)
-			gtk_tree_iter_free(sub_iter);
-		sub_iter = gtk_tree_iter_copy(first_sub_iter);
+	if(set) {
+		sub_iter = &first_sub_iter;
 		/* clear all steps that aren't active */
 		while(1) {
 			gtk_tree_model_get(model, sub_iter, 
@@ -276,7 +278,6 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				break;
 			}
 		}
-		gtk_tree_iter_free(first_sub_iter);
 	}
 	return;
 }
@@ -352,8 +353,6 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				   part_ptr->allow_groups, -1);
 	else
 		gtk_tree_store_set(treestore, iter, SORTID_GROUPS, "all", -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
 	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
@@ -469,20 +468,6 @@ static void _update_info_part(List info_list,
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
 
-	if(spec_info) {
-		switch(spec_info->type) {
-		case NODE_PAGE:
-			hostlist = hostlist_create((char *)spec_info->data);
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(host == NULL) {
-				g_print("nodelist was empty");
-				return;
-			}		
-			break;
-		}
-	}
- 
 	/* get the iter, or find out the list is empty goto add */
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		/* make sure all the partitions are still here */
@@ -578,6 +563,7 @@ static void _update_info_part(List info_list,
 	gtk_tree_path_free(path);
 	/* remove all old partitions */
 	remove_old(model, SORTID_UPDATED);
+	return;
 }
 
 static void _info_list_del(void *object)
@@ -1214,6 +1200,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		return;
 	}
 	if(display_widget && toggled) {
+		g_print("I am destroying the widget in part\n");
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
@@ -1275,6 +1262,7 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
+		g_print("I am creating the widget in part\n");
 		tree_view = create_treeview(local_display_data);
 
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
