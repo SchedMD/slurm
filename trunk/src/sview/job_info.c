@@ -412,6 +412,9 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 		   empty goto add */
 		if (!step_iter) {
 			goto adding;
+		} else {
+			memcpy(step_iter, &first_step_iter, 
+			       sizeof(GtkTreeIter));
 		}
 		while(1) {
 			/* search for the jobid and check to see if 

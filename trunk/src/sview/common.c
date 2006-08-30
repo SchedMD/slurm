@@ -594,8 +594,6 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
 			   GTK_WIDGET(window), TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   main_statusbar, FALSE, FALSE, 0);
 	
 	popup_win->spec_info->type = type;
 	popup_win->spec_info->title = xstrdup(title);

@@ -220,7 +220,12 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 			if (!sub_iter) {
 				i = NO_VAL;
 				goto adding;
+			} else {
+				memcpy(sub_iter, &first_sub_iter, 
+				       sizeof(GtkTreeIter));
+			
 			}
+			
 			while(1) {
 				/* search for the jobid and check to see if 
 				   it is in the list */
@@ -243,7 +248,6 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 						   &line, -1);
 				if(!gtk_tree_model_iter_next(model, 
 							     sub_iter)) {
-					sub_iter = NULL;
 					line++;
 					break;
 				}
@@ -486,7 +490,7 @@ static void _update_info_part(List info_list,
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
-		}
+		} 
 		while(1) {
 			/* search for the jobid and check to see if 
 			   it is in the list */
@@ -1200,7 +1204,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		return;
 	}
 	if(display_widget && toggled) {
-		g_print("I am destroying the widget in part\n");
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
@@ -1262,7 +1265,6 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		g_print("I am creating the widget in part\n");
 		tree_view = create_treeview(local_display_data);
 
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
