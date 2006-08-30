@@ -328,7 +328,7 @@ static int	_parse_msg(char *msg, char **req)
 	char *ts_ptr = strstr(msg, "TS=");
 	char *cmd_ptr = strstr(msg, "CMD=");
 
-	if (cmd_ptr && (strncmp(cmd_ptr,"CMD=GET", 7) == 0)) {
+	if (!auth_key && cmd_ptr) {
 		/* No authentication required */
 		*req = cmd_ptr;
 		return 0;
