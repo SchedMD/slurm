@@ -184,6 +184,7 @@ done
 LIST=./sched_wiki.files
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki.so &&
   echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
+echo "%{_mandir}/man5/wiki.*"                     >> $LIST
 
 LIST=./switch_elan.files
 touch $LIST
