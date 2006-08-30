@@ -169,12 +169,8 @@ static char *	_dump_node(struct node_record *node_ptr)
 		xstrcat(buf, tmp);
 	}
 
-#if 0
-/* This add new fields, add after basic functionality with 
- * Moab has been confirmed */
 	for (i=0; i<node_ptr->part_cnt; i++) {
 		char *header;
-		uint32_t cpu_avail;
 		if (i == 0)
 			header = "CCLASS=";
 		else
@@ -184,7 +180,10 @@ static char *	_dump_node(struct node_record *node_ptr)
 			node_ptr->part_pptr[i]->name,
 			cpu_cnt);
 		xstrcat(buf, tmp);
+#if 0
 /* FIXME: Modify to support consumable resources */
+uint32_t cpu_avail;	move to top of block
+
 		if ((node_ptr->node_state == NODE_STATE_IDLE)
 		||  (node_ptr->part_pptr[i]->shared == 2))
 			cpu_avail = cpu_cnt;
@@ -199,8 +198,9 @@ static char *	_dump_node(struct node_record *node_ptr)
 			node_ptr->part_pptr[i]->name,
 			cpu_cnt);
 		xstrcat(buf, tmp);
-	}
 #endif
+	}
+
 	return buf;
 }
 
