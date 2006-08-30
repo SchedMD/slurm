@@ -326,6 +326,13 @@ static int	_parse_msg(char *msg, char **req)
 	char *auth_ptr = strstr(msg, "AUTH=");
 	char *dt_ptr = strstr(msg, "DT=");
 	char *ts_ptr = strstr(msg, "TS=");
+	char *cmd_ptr = strstr(msg, "CMD=");
+
+	if (cmd_ptr && (strncmp(cmd_ptr,"CMD=GET", 7) == 0)) {
+		/* No authentication required */
+		*req = cmd_ptr;
+		return 0;
+	}
 
 	if (!auth_ptr) {
 		err_code = 300;
@@ -434,7 +441,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 static void	_send_reply(slurm_fd new_fd, char *response)
 {
 	size_t i;
-	char *buf;
+	char *buf, sum[20];
 
 	i = strlen(response);
 	i += 100;	/* leave room for header */
@@ -442,7 +449,8 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 
 	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
 		(uint32_t) time(NULL), uid_to_string(getuid()), response);
-	checksum(buf, (buf+20));   /* overwrite "CK=dummy..." above */
+	checksum(sum, (buf+20));   /* overwrite "CK=dummy..." above */
+	memcpy(buf, sum, 19);
 
 	(void) _send_msg(new_fd, buf, i);
 }
