@@ -110,11 +110,13 @@ void *_page_thr(void *arg)
 	return NULL;
 }
 
-void *_refresh_thr(void *arg)
+void *_refresh_thr(gpointer arg)
 {
+	int msg_id = GPOINTER_TO_INT(arg);
 	sleep(5);
 	gdk_threads_enter();
-	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_REFRESH);
+	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar), 
+			     STATUS_REFRESH, msg_id);
 	gdk_flush();
 	gdk_threads_leave();
 	return NULL;	
@@ -238,11 +240,12 @@ static void _change_refresh(GtkToggleAction *action, gpointer user_data)
 				       global_sleep_time);
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 
 				  STATUS_REFRESH);
-		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 
-				   STATUS_REFRESH,
-				   temp);
+		response = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 
+					      STATUS_REFRESH,
+					      temp);
 		g_free(temp);
-		if (!g_thread_create(_refresh_thr, NULL, FALSE, &error))
+		if (!g_thread_create(_refresh_thr, GINT_TO_POINTER(response),
+				     FALSE, &error))
 		{
 			g_printerr ("Failed to create refresh thread: %s\n", 
 				    error->message);

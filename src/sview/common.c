@@ -117,14 +117,15 @@ static void _editing_canceled(GtkCellRenderer *cell,
 			       gpointer         data)
 {
 	g_static_mutex_unlock(&sview_mutex);
-
 }
 
-static void *_editing_thr(void *arg)
+static void *_editing_thr(gpointer arg)
 {
+	int msg_id = GPOINTER_TO_INT(arg);
 	sleep(5);
 	gdk_threads_enter();
-	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT);
+	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar), 
+			     STATUS_ADMIN_EDIT, msg_id);
 	gdk_flush();
 	gdk_threads_leave();
 	return NULL;	
@@ -135,29 +136,35 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 				 display_data_t *display_data)
 {
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
-	GtkCellRenderer *renderer = gtk_cell_renderer_combo_new();
 	GtkListStore *model = (display_data->create_model)(display_data->id);
-		
-	if(model) {
+	GtkCellRenderer *renderer = NULL;
+	if(model && display_data->extra != -1) {
+		renderer = gtk_cell_renderer_combo_new();
 		g_object_set(renderer,
 			     "model", model,
 			     "text-column", 0,
-			     "has-entry", FALSE,
+			     "has-entry", display_data->extra,
 			     "editable", TRUE,
 			     NULL);
-
-		g_signal_connect(renderer, "editing-started",
-				 G_CALLBACK(_editing_started), NULL);
-		g_signal_connect(renderer, "editing-canceled",
-				 G_CALLBACK(_editing_canceled), NULL);
-  		g_signal_connect(renderer, "edited",
-				 G_CALLBACK(display_data->admin_edit), 
-				 gtk_tree_view_get_model(tree_view));
-		
-		g_object_set_data(G_OBJECT(renderer), "column", 
-				  GINT_TO_POINTER(display_data->id));
-	}
-
+	} else if(display_data->extra == 1) {
+		renderer = gtk_cell_renderer_text_new();
+		g_object_set(renderer,
+			     "editable", TRUE,
+			     NULL);
+	} else
+		renderer = gtk_cell_renderer_combo_new();
+	
+	g_signal_connect(renderer, "editing-started",
+			 G_CALLBACK(_editing_started), NULL);
+	g_signal_connect(renderer, "editing-canceled",
+			 G_CALLBACK(_editing_canceled), NULL);
+	
+	g_signal_connect(renderer, "edited",
+			 G_CALLBACK(display_data->admin_edit), 
+			 gtk_tree_view_get_model(tree_view));
+	g_object_set_data(G_OBJECT(renderer), "column", 
+			  GINT_TO_POINTER(display_data->id));
+	
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, 
 					   "text", display_data->id);
@@ -876,12 +883,13 @@ extern char *get_reason()
 extern void display_edit_note(char *edit_note)
 {
 	GError *error = NULL;
-	
+	int msg_id = 0;
 	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT);
-	gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT,
-			   edit_note);
-		
-	if (!g_thread_create(_editing_thr, NULL, FALSE, &error))
+	msg_id = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 
+				    STATUS_ADMIN_EDIT,
+				    edit_note);
+	if (!g_thread_create(_editing_thr, GINT_TO_POINTER(msg_id),
+			     FALSE, &error))
 	{
 		g_printerr ("Failed to create edit thread: %s\n",
 			    error->message);
