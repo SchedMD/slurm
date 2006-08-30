@@ -327,7 +327,9 @@ static int	_parse_msg(char *msg, char **req)
 	char *dt_ptr = strstr(msg, "DT=");
 	char *ts_ptr = strstr(msg, "TS=");
 	char *cmd_ptr = strstr(msg, "CMD=");
-
+	time_t ts, now = time(NULL);
+	uint32_t delta_t;
+	
 	if (!auth_key && cmd_ptr) {
 		/* No authentication required */
 		*req = cmd_ptr;
@@ -343,16 +345,29 @@ return 0;
 		error("wiki: request lacks AUTH=");
 		return -1;
 	}
+
 	if (!dt_ptr) {
 		err_code = 300;
 		err_msg = "request lacks DT";
 		error("wiki: request lacks DT=");
 		return -1;
 	}
+
 	if (!ts_ptr) {
 		err_code = 300;
 		err_msg = "request lacks TS";
 		error("wiki: request lacks TS=");
+		return -1;
+	}
+	ts = strtol((ts_ptr+3), NULL, 10); 
+	if (ts < now)
+		delta_t = (uint32_t) difftime(now, ts);
+	else
+		delta_t = (uint32_t) difftime(ts, now);
+	if (delta_t > 300) {
+		err_code = 350;
+		err_msg = "TS value too far from NOW";
+		error("wiki: TS delta_t=%u", delta_t);
 		return -1;
 	}
 
