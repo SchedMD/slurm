@@ -56,7 +56,7 @@ extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg)
 	slurm_rc = job_suspend(&msg, 0, -1);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = 700;
-		*err_msg = "No such job";
+		*err_msg = slurm_strerror(slurm_rc);
 		error("wiki: Failed to resume job %u (%m)", jobid);
 		return -1;
 	}

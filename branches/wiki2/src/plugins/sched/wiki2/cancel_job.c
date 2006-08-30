@@ -96,8 +96,8 @@ static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
 	slurm_rc = job_signal(jobid, SIGKILL, 0, 0);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = 700;
-		*err_msg = "No such job";
-		error("wiki: Failed to find job %u (%m)", jobid);
+		*err_msg = slurm_strerror(slurm_rc);
+		error("wiki: Failed to signal job %u (%m)", jobid);
 		rc = -1;
 		goto fini;
 	}
