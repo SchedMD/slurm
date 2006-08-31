@@ -72,7 +72,7 @@ BUILT_SOURCES = 	\
 common_dir = $(top_builddir)/src/common
 
 libslurm_la_LIBADD	= $(common_dir)/libcommon.la -lpthread
-libpmi_la_LIBADD	= libslurm.la
+libpmi_la_LIBADD	= $(top_builddir)/src/api/libslurm.la
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \
