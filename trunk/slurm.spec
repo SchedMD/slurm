@@ -13,8 +13,7 @@ Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
-Requires: openssl >= 0.9.6
-BuildRequires: openssl-devel >= 0.96
+BuildRequires: openssl-devel >= 0.9.6
 
 #
 # If "--with debug" is set compile with --enable-debug 
@@ -179,6 +178,12 @@ for plugin in auth_munge auth_authd sched_wiki; do
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
+
+# Temporary, until wiki2 becomes wiki (see code above)
+LIST=./sched_wiki.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki.so &&
+  echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
+echo "%{_mandir}/man5/wiki.*"                     >> $LIST
 
 LIST=./switch_elan.files
 touch $LIST

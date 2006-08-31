@@ -89,7 +89,7 @@ slurmapi_add = 				\
 libslurm_la_LIBADD = $(slurmapi_add)
 libslurmhelper_la_LIBADD = $(slurmapi_add)
 
-libpmi_la_LIBADD	= libslurm.la 
+libpmi_la_LIBADD	= $(top_builddir)/src/api/libslurm.la
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \

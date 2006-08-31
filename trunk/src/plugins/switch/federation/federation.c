@@ -2461,15 +2461,17 @@ _pack_libstate(fed_libstate_t *lp, Buf buffer)
 
 /* Used by: slurmctld */
 void
-fed_libstate_save(Buf buffer)
+fed_libstate_save(Buf buffer, bool free_flag)
 {
 	_lock();
 	_pack_libstate(fed_state, buffer);
 
 	/* Clean up fed_state since backup slurmctld can repeatedly 
 	 * save and restore state */
-	_free_libstate(fed_state);
-	fed_state = NULL;	/* freed above */
+	if (free_flag) {
+		_free_libstate(fed_state);
+		fed_state = NULL;	/* freed above */
+	}
 	_unlock();
 }
 

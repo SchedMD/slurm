@@ -88,7 +88,7 @@ int fed_fini(void);
 int fed_unload_table(fed_jobinfo_t *jp);
 int fed_unpack_libstate(fed_libstate_t *lp, Buf buffer);
 int fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data);
-void fed_libstate_save(Buf buffer);
+void fed_libstate_save(Buf buffer, bool free_flag);
 int fed_libstate_restore(Buf buffer);
 int fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl);
 int fed_job_step_allocated(fed_jobinfo_t *jp, hostlist_t hl);
