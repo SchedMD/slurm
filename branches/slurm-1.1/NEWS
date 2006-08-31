@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.11
+=========================
+ - Update file headers adding permission to link with OpenSSL.
+
 * Changes in SLURM 1.1.10
 =========================
  -- task distribution fix for steps that are smaller than job allocation.
