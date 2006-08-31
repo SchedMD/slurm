@@ -19,6 +19,7 @@ EXTRA_DIST =			\
 	COPYING			\
 	AUTHORS			\
 	INSTALL			\
+	LICENSE.OpenSSL		\
 	NEWS			\
 	ChangeLog		\
 	META			\
