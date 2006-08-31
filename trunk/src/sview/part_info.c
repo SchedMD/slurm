@@ -88,7 +88,7 @@ enum {
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, 0, refresh_part,
+	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
@@ -97,8 +97,7 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, 0, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
-	 TRUE, 1, refresh_part,
-	 create_model_part, admin_edit_part},
+	 TRUE, 1, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_part,
