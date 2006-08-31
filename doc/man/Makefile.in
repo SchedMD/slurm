@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 8147 2006-05-22 21:36:42Z grondo $
+# $Id: Makefile.am 9128 2006-08-30 23:19:10Z jette $
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -328,7 +328,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 
 man5_MANS = man5/bluegene.conf.5 \
 	man5/slurm.conf.5 \
-	man5/wiki.conf
+	man5/wiki.conf.5
 
 man8_MANS = man8/slurmctld.8 \
 	man8/slurmd.8 \
