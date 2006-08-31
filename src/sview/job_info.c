@@ -29,6 +29,7 @@
 #include "src/common/uid.h"
 #include "src/common/node_select.h"
 #include "src/sview/sview.h"
+#include "src/common/parse_time.h"
 
 #define _DEBUG 0
 DEF_TIMERS;
@@ -49,6 +50,7 @@ enum {
 	SORTID_NODELIST,
 	SORTID_REQ_NODELIST,
 	SORTID_EXC_NODELIST,
+	SORTID_CONTIGUOUS,
 	SORTID_SUBMIT,
 	SORTID_START,
 	SORTID_END,
@@ -56,11 +58,24 @@ enum {
 	SORTID_SUSPEND,
 	SORTID_PRIORITY,
 	SORTID_NUM_PROCS,
+	SORTID_TASKS,
 	SORTID_SHARED,
 	SORTID_CPUS_PER_TASK,
-	SORTID_TASKS,
+	SORTID_REQ_PROCS,
+	SORTID_MIN_NODES,
+	SORTID_MIN_PROCS,
+	SORTID_MIN_MEM,
+	SORTID_TMP_DISK,
+	SORTID_NICE,
 	SORTID_ACCOUNT,
 	SORTID_REASON,
+	SORTID_FEATURES,
+	SORTID_DEPENDENCY,
+#ifdef HAVE_BG
+	SORTID_GEOMETRY,
+	SORTID_ROTATE,
+	SORTID_CONNECTION,
+#endif
 	SORTID_UPDATED,
 	SORTID_CNT
 };
@@ -72,7 +87,7 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_ALLOC, NULL, FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, -1, refresh_job,
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", TRUE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1, refresh_job,
@@ -80,9 +95,9 @@ static display_data_t display_data_job[] = {
 #endif
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_job,
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_job,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -92,51 +107,67 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested BP List",
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded BP List",
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 #endif
+	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, 0, 
+	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, -1, refresh_job,
+	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time limit", FALSE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_SUSPEND, "Suspend Time", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, -1, refresh_job,
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NUM_PROCS, "Num Processors", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TASKS, "Num Tasks", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_SHARED, "Shared", FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_REQ_PROCS, "Requested Procs", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_MIN_PROCS, "Min Procs", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_MIN_MEM, "Min Memory", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NICE, "Nice", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", 
-	 FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},	
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},	
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_DEPENDENCY, "Dependency", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, SORTID_GEOMETRY, "Geometry", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_ROTATE, "Rotate", 
+	 FALSE, 0, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_CONNECTION, "Connection", 
+	 FALSE, 0, refresh_job, create_model_job, admin_edit_job},
+#endif
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -243,8 +274,6 @@ static void _update_job_record(job_info_t *job_ptr,
 #endif
 	if(!node_cnt)
 		node_cnt = _get_node_cnt(job_ptr);
-	
-
 
 	convert_num_unit((float)node_cnt, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, 
@@ -765,7 +794,95 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 extern GtkListStore *create_model_job(int type)
 {
 	GtkListStore *model = NULL;
+	GtkTreeIter iter;
 	
+	switch(type) {
+	case SORTID_TIMELIMIT:
+		break;
+	case SORTID_PRIORITY:
+		break;
+	case SORTID_NICE:
+		break;
+	case SORTID_NUM_PROCS:
+		break;
+	case SORTID_MIN_NODES:
+		break;
+	case SORTID_MIN_PROCS:
+		break;
+	case SORTID_MIN_MEM:
+		break;
+	case SORTID_TMP_DISK:
+		break;
+	case SORTID_PARTITION:
+		break;
+	case SORTID_NAME:
+		break;
+	case SORTID_SHARED:
+		model = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "yes",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "no",
+				   -1);	
+		break;
+	case SORTID_CONTIGUOUS:
+		model = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "yes",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "no",
+				   -1);	
+		break;
+	case SORTID_REQ_NODELIST:
+		break;
+	case SORTID_FEATURES:
+		break;
+	case SORTID_ACCOUNT:
+		break;
+	case SORTID_DEPENDENCY:
+		break;
+#ifdef HAVE_BG
+	case SORTID_GEOMETRY:
+		break;
+	case SORTID_ROTATE:
+		model = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "yes",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "no",
+				   -1);	
+		break;
+	case SORTID_CONNECTION:
+		model = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "torus",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "mesh",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "nav",
+				   -1);	
+		break;
+#endif
+	case SORTID_START:
+		break;
+	default:
+		break;
+	}
+
 	return model;
 }
 
@@ -774,7 +891,270 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 			   const char *new_text,
 			   gpointer data)
 {
-	g_print("Something job related altered\n");
+	GtkTreeStore *treestore = GTK_TREE_STORE(data);
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeIter iter;
+	job_desc_msg_t job_msg;
+	
+	char *temp = NULL;
+	char *type = NULL;
+	int stepid = NO_VAL;
+	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
+						       "column"));
+	
+	if(!new_text || !strcmp(new_text, ""))
+		goto no_input;
+
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
+
+	slurm_init_job_desc_msg (&job_msg);	
+	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+			   SORTID_JOBID, &job_msg.job_id, -1);
+	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+			   SORTID_ALLOC, &stepid, -1);
+	if(stepid)
+		stepid = NO_VAL;
+	else {
+		stepid = job_msg.job_id;
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+				   SORTID_POS, &job_msg.job_id, -1);
+	}
+	
+	switch(column) {
+	case SORTID_TIMELIMIT:
+		if ((strcasecmp(new_text,"infinite") == 0))
+			job_msg.time_limit = INFINITE;
+		else
+			job_msg.time_limit = 
+				(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "timelimit";
+		if((int32_t)job_msg.time_limit <= 0
+		   && job_msg.time_limit != INFINITE)
+			goto print_error;
+		break;
+	case SORTID_PRIORITY:
+		job_msg.priority = 
+				(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "priority";
+		if((int32_t)job_msg.priority < 0)
+			goto print_error;
+		break;
+	case SORTID_NICE:
+		job_msg.nice = (uint32_t)strtol(new_text, (char **)NULL, 10);
+		if (abs(job_msg.nice) > NICE_OFFSET) {
+			//error("Invalid nice value, must be between "
+			//      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
+			goto print_error;
+		}
+		job_msg.nice += NICE_OFFSET;
+		temp = (char *)new_text;
+		type = "nice";
+		break;
+	case SORTID_REQ_PROCS:
+		job_msg.num_procs = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "requested procs";
+		if((int32_t)job_msg.num_procs <= 0)
+			goto print_error;
+		break;
+	case SORTID_MIN_NODES:
+		job_msg.min_nodes = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "min nodes";
+		if((int32_t)job_msg.min_nodes <= 0)
+			goto print_error;
+		break;
+	case SORTID_MIN_PROCS:
+		job_msg.min_procs = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "min procs";
+		if((int32_t)job_msg.min_procs <= 0)
+			goto print_error;
+		break;
+	case SORTID_MIN_MEM:
+		job_msg.min_memory = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "min memory";
+		if((int32_t)job_msg.min_memory <= 0)
+			goto print_error;
+		break;
+	case SORTID_TMP_DISK:
+		job_msg.min_tmp_disk = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "min tmp disk";
+		if((int32_t)job_msg.min_tmp_disk <= 0)
+			goto print_error;
+		break;
+	case SORTID_PARTITION:
+		temp = (char *)new_text;
+		job_msg.partition = temp;
+		type = "partition";
+		break;
+	case SORTID_NAME:
+		temp = (char *)new_text;
+		job_msg.name = temp;
+		type = "name";
+		break;
+	case SORTID_SHARED:
+		if (!strcasecmp(new_text, "yes")) {
+			job_msg.shared = 1;
+			temp = "*";
+		} else {
+			job_msg.shared = 0;
+			temp = "";
+		}
+		type = "shared";
+		break;
+	case SORTID_CONTIGUOUS:
+		if (!strcasecmp(new_text, "yes")) {
+			job_msg.contiguous = 1;
+			temp = "*";
+		} else {
+			job_msg.contiguous = 0;
+			temp = "";
+		}
+		type = "contiguous";	
+		break;
+	case SORTID_REQ_NODELIST:
+		temp = (char *)new_text;
+		job_msg.req_nodes = temp;
+		type = "requested nodelist";
+		break;
+	case SORTID_FEATURES:
+		temp = (char *)new_text;
+		job_msg.features = temp;
+		type = "features";
+		break;
+	case SORTID_ACCOUNT:
+		temp = (char *)new_text;
+		job_msg.account = temp;
+		type = "account";
+		break;
+	case SORTID_DEPENDENCY:
+		job_msg.dependency = 
+			(uint32_t)strtol(new_text, (char **)NULL, 10);
+		temp = (char *)new_text;
+		type = "dependency";
+		if((int32_t)job_msg.dependency <= 0)
+			goto print_error;
+		break;
+#ifdef HAVE_BG
+	case SORTID_GEOMETRY:
+		{
+			char* token, *delimiter = ",x", *next_ptr;
+			int j;
+			uint16_t geo[SYSTEM_DIMENSIONS];
+			char* geometry_tmp = xstrdup(new_text);
+			char* original_ptr = geometry_tmp;
+		}
+		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+		for (j=0; j<SYSTEM_DIMENSIONS; j++) {
+			if (token == NULL) {
+				//error("insufficient dimensions in "
+				//      "Geometry");
+				goto print_error;
+			}
+			geo[j] = (uint16_t) atoi(token);
+			if (geo[j] <= 0) {
+				//error("invalid --geometry argument");
+				xfree(original_ptr);
+				goto print_error;
+				break;
+			}
+			geometry_tmp = next_ptr;
+			token = strtok_r(geometry_tmp, delimiter, 
+					 &next_ptr);
+		}
+		if (token != NULL) {
+			//error("too many dimensions in Geometry");
+			xfree(original_ptr);
+			goto print_error;
+		}
+		
+		if (rc != 0) {
+			for (j=0; j<SYSTEM_DIMENSIONS; j++)
+				geo[j] = (uint16_t) NO_VAL;
+			exit_code = 1;
+		} else
+			update_cnt++;
+		select_g_set_jobinfo(job_msg.select_jobinfo,
+				     SELECT_DATA_GEOMETRY,
+				     (void *) &geo);
+		temp = (char *)new_text;
+		type = "geometry";
+		break;
+	case SORTID_ROTATE:
+		{
+			uint16_t rotate;
+		}
+		if (!strcasecmp(new_text, "yes")) {
+			rotate = 1;
+			temp = "*";
+		} else {
+			rotate = 0;
+			temp = "";
+		}
+		select_g_set_jobinfo(job_msg.select_jobinfo,
+				     SELECT_DATA_ROTATE,
+				     (void *) &rotate);
+		temp = (char *)new_text;
+		type = "rotate";	
+		break;
+	case SORTID_CONNECTION:
+		{
+			uint16_t conn_type;
+		}
+		if (!strcasecmp(new_text, "torus")) {
+			conn_type = SELECT_TORUS;
+		} else if (!strcasecmp(new_text, "mesh")) {
+			conn_type = SELECT_MESH;
+		} else {
+			conn_type = SELECT_NAV;
+		}
+		select_g_set_jobinfo(job_msg.select_jobinfo,
+				     SELECT_DATA_CONN_TYPE,
+				     (void *) &conn_type);
+		temp = (char *)new_text;
+		type = "connection";
+		break;
+#endif
+	case SORTID_START:
+		temp = (char *)new_text;
+		job_msg.begin_time = parse_time(temp);
+		type = "start time";
+		break;
+	default:
+		break;
+	}
+	if(slurm_update_job(&job_msg) == SLURM_SUCCESS) {
+		gtk_tree_store_set(treestore, &iter, column, temp, -1);
+		temp = g_strdup_printf("Job %d %s changed to %s",
+				       job_msg.job_id,
+				       type,
+				       new_text);
+		display_edit_note(temp);
+		g_free(temp);
+	} else {
+	print_error:
+		temp = g_strdup_printf("Job %d %s can't be "
+				       "set to %s",
+				       job_msg.job_id,
+				       type,
+				       new_text);
+		display_edit_note(temp);
+		g_free(temp);
+	}
+
+no_input:
+	gtk_tree_path_free (path);
+		
 	g_static_mutex_unlock(&sview_mutex);
 }
 
@@ -853,7 +1233,7 @@ display_it:
 	}
 	if(!display_widget) {
 		tree_view = create_treeview(local_display_data);
-		
+				
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table), 
 					  GTK_WIDGET(tree_view),

@@ -152,7 +152,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 			     "editable", TRUE,
 			     NULL);
 	} else
-		renderer = gtk_cell_renderer_combo_new();
+		renderer = gtk_cell_renderer_text_new();
 	
 	g_signal_connect(renderer, "editing-started",
 			 G_CALLBACK(_editing_started), NULL);
@@ -290,17 +290,6 @@ extern void *get_pointer(GtkTreeView *tree_view, GtkTreePath *path, int loc)
 	}	
 	gtk_tree_model_get(model, &iter, loc, &ptr, -1);
 	return ptr;
-}
-
-extern void load_header(GtkTreeView *tree_view, display_data_t *display_data)
-{
-	while(display_data++) {
-		if(display_data->id == -1)
-			break;
-		else if(!display_data->show) 
-			continue;
-		_add_col_to_treeview(tree_view, display_data);
-	}
 }
 
 extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
@@ -450,43 +439,44 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	/*set up the types defined in the display_data_t */
 	for(i=0; i<count; i++)
 		types[i] = display_data[i].type;
-
 	treestore = gtk_tree_store_newv(count, types);
-	if(!treestore)
+	if(!treestore) {
+		g_error("Can't great treestore.\n");
 		return NULL;
-
+	}
+	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
 	for(i=1; i<count; i++) {
-		if(display_data[i].show) {
-			switch(display_data[i].type) {
-			case G_TYPE_INT:
-				gtk_tree_sortable_set_sort_func(
-					GTK_TREE_SORTABLE(treestore), 
-					i, 
-					_sort_iter_compare_func_int,
-					GINT_TO_POINTER(i), 
-					NULL); 
-				
-				break;
-			case G_TYPE_STRING:
-				gtk_tree_sortable_set_sort_func(
-					GTK_TREE_SORTABLE(treestore), 
-					i, 
-					_sort_iter_compare_func_char,
-					GINT_TO_POINTER(i), 
-					NULL); 
-				break;
-			default:
-				g_print("unknown type %d",
-					(int)display_data[i].type);
-			}
+		if(!display_data[i].show) 
+			continue;
+		
+		_add_col_to_treeview(tree_view, &display_data[i]);
+		switch(display_data[i].type) {
+		case G_TYPE_INT:
+			gtk_tree_sortable_set_sort_func(
+				GTK_TREE_SORTABLE(treestore), 
+				i, 
+				_sort_iter_compare_func_int,
+				GINT_TO_POINTER(i), 
+				NULL); 
+			
+			break;
+		case G_TYPE_STRING:
+			gtk_tree_sortable_set_sort_func(
+				GTK_TREE_SORTABLE(treestore), 
+				i, 
+				_sort_iter_compare_func_char,
+				GINT_TO_POINTER(i), 
+				NULL); 
+			break;
+		default:
+			g_print("unknown type %d",
+				(int)display_data[i].type);
 		}
 	}
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(treestore), 
 					     1, 
 					     GTK_SORT_ASCENDING);
 	
-	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
-	load_header(tree_view, display_data);
 	g_object_unref(GTK_TREE_MODEL(treestore));
 
 	return treestore;
