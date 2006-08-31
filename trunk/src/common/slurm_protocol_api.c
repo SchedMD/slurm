@@ -1916,7 +1916,7 @@ void convert_num_unit(float num, char *buf, int orig_type)
 	char *unit = "\0KMGP?";
 	int i = (int)num % 512;
 	
-	if(i > 0) {
+	if(i > 0 || (int)num == 0) {
 		sprintf(buf, "%d", (int)num);
 		return;
 	}
@@ -1928,7 +1928,11 @@ void convert_num_unit(float num, char *buf, int orig_type)
        
 	if(orig_type < UNIT_NONE || orig_type > UNIT_PETA)
 		orig_type = UNIT_UNKNOWN;
-	sprintf(buf, "%.2f%c", num, unit[orig_type]);
+	i = (int)num;
+	if(i == num)
+		sprintf(buf, "%d%c", i, unit[orig_type]);
+	else
+		sprintf(buf, "%.2f%c", num, unit[orig_type]);
 }
 
 #if _DEBUG
