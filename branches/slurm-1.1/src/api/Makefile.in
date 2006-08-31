@@ -14,8 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 7685 2006-04-04 20:27:46Z jette $
-#
 # Makefile for slurm API library
 
 SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES)

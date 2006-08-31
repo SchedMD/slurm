@@ -1,5 +1,3 @@
-# $Id$
-#
 # Makefile for slurm API library
 
 AUTOMAKE_OPTIONS = foreign
