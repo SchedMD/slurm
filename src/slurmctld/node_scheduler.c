@@ -470,12 +470,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                         total_cpus = count_cpus(
 				job_ptr->details->req_node_bitmap);
                 }
-		if (total_nodes > req_nodes) {
-			info("_pick_best_nodes: required nodes exceed limit");
-                        if (cr_enabled) 
-                                FREE_NULL_BITMAP(partially_idle_node_bitmap);
-			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-		}
 		if (total_nodes > max_nodes) {
 			/* exceeds node limit */
                         if (cr_enabled) 
