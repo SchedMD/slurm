@@ -4101,8 +4101,12 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		 * release and reuse of switch
 		 * windows associated with a job */
 		rc = ESLURM_NOT_SUPPORTED;
-		goto reply;
 	}
+#ifdef HAVE_BG
+	rc = ESLURM_NOT_SUPPORTED;
+#endif
+	if (rc)
+		goto reply;
 
 	/* find the job */
 	job_ptr = find_job_record (sus_ptr->job_id);
