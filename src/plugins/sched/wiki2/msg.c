@@ -346,9 +346,6 @@ static int	_parse_msg(char *msg, char **req)
 		*req = cmd_ptr;
 		return 0;
 	}
-/* FIXME: skip authentication for now */
-*req = cmd_ptr;
-return 0;
 
 	if (!auth_ptr) {
 		err_code = 300;
@@ -383,7 +380,7 @@ return 0;
 	}
 
 	if (auth_key) {
-		checksum(sum, ts_ptr);
+		checksum(sum, auth_key, ts_ptr);
 		if (strncmp(sum, msg, 19) != 0) {
 			err_code = 422;
 			err_msg = "bad checksum";
@@ -478,7 +475,7 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 
 	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
 		(uint32_t) time(NULL), uid_to_string(getuid()), response);
-	checksum(sum, (buf+20));   /* overwrite "CK=dummy..." above */
+	checksum(sum, auth_key, (buf+20));   /* overwrite "CK=dummy..." above */
 	memcpy(buf, sum, 19);
 
 	(void) _send_msg(new_fd, buf, i);
