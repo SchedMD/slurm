@@ -114,15 +114,15 @@ static uint16_t compute_crc( uint16_t crc, uint8_t onech )
  * RETURNS
  * None.
  **************************************************************/
-extern void checksum( char *sum, const char * const key )
+extern void checksum( char *sum, const char * key, const char * buf )
 {
 	uint32_t crc = 0;
 	uint32_t lword, irword;
-	int idx, key_len = strlen(key);
+	int idx, buf_len = strlen(buf);
 	uint32_t seed = (uint32_t) strtol( key, NULL, 0 );
 
-	for ( idx = 0; idx < key_len; ++idx ) {
-		crc = (uint32_t) compute_crc( crc, key[idx] );
+	for ( idx = 0; idx < buf_len; ++idx ) {
+		crc = (uint32_t) compute_crc( crc, buf[idx] );
 	}
 
 	lword = crc;
