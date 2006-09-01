@@ -13,7 +13,7 @@ managing a queue of pending work.
 
 SLURM is provided "as is" and with no warranty. This software is
 distributed under the GNU General Public License, please see the files
-COPYING and DISCLAIMER for details.
+COPYING, DISCLAIMER, and LICENSE.OpenSSL for details.
 
 This README presents an introduction to compiling, installing, and
 using SLURM.

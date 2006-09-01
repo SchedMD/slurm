@@ -13,6 +13,17 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under 
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
  *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -335,9 +346,6 @@ static int	_parse_msg(char *msg, char **req)
 		*req = cmd_ptr;
 		return 0;
 	}
-/* FIXME: skip authentication for now */
-*req = cmd_ptr;
-return 0;
 
 	if (!auth_ptr) {
 		err_code = 300;
@@ -372,7 +380,7 @@ return 0;
 	}
 
 	if (auth_key) {
-		checksum(sum, ts_ptr);
+		checksum(sum, auth_key, ts_ptr);
 		if (strncmp(sum, msg, 19) != 0) {
 			err_code = 422;
 			err_msg = "bad checksum";
@@ -467,7 +475,7 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 
 	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
 		(uint32_t) time(NULL), uid_to_string(getuid()), response);
-	checksum(sum, (buf+20));   /* overwrite "CK=dummy..." above */
+	checksum(sum, auth_key, (buf+20));   /* overwrite "CK=dummy..." above */
 	memcpy(buf, sum, 19);
 
 	(void) _send_msg(new_fd, buf, i);
