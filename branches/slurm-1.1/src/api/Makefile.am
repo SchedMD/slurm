@@ -67,16 +67,14 @@ libpmi_la_SOURCES = pmi.c
 BUILT_SOURCES = 	\
 	$(VERSION_SCRIPT)
 
-common_dir = $(top_builddir)/src/common
-
-libslurm_la_LIBADD	= $(common_dir)/libcommon.la -lpthread
-libpmi_la_LIBADD	= $(top_builddir)/src/api/libslurm.la
+libslurm_la_LIBADD	= $(top_builddir)/src/common/libcommon.la -lpthread
+libpmi_la_LIBADD	= $(top_builddir)/src/api/libslurm.la -lslurm
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \
 	-version-info $(current):$(rev):$(age) \
 	$(OTHER_FLAGS)
-libpmi_la_LBFLAGS = $(LIB_LDFLAGS)
+libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
