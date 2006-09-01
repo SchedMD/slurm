@@ -1588,7 +1588,7 @@ _update_job (int argc, char *argv[])
 				update_cnt++;
 			select_g_set_jobinfo(job_msg.select_jobinfo,
 					     SELECT_DATA_GEOMETRY,
-					     (void *) &geo);			
+					     (void *) &geo);
 		}
 
 		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
