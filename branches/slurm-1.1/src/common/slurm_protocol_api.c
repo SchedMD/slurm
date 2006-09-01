@@ -847,6 +847,7 @@ total_return:
 	
 	if(rc != SLURM_SUCCESS) {
 		msg->msg_type = REQUEST_PING;
+		msg->auth_cred = (void *) NULL;
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
 	errno = rc;
