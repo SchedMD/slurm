@@ -557,7 +557,7 @@ again:
 			if ((errno != ETIMEDOUT) 
 			    && (job->state == SRUN_JOB_LAUNCHING)
 			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
-			    &&  retry--) {
+			    &&  ((retry--) > 0)) {
 				list_iterator_destroy(data_itr);
 				list_iterator_destroy(itr);
 				list_destroy(ret_list);	
