@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  - Update file headers adding permission to link with OpenSSL.
  - Enable sched/wiki2 message authentication.
  - Fix libpmi compilation issue.
+ - Remove "gcc-c++ python" from slurm.spec BuildRequires.  It breaks
+   the AIX build, so we'll have to find another way to deal with that.
 
 * Changes in SLURM 1.1.10
 =========================
