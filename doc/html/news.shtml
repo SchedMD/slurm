@@ -77,11 +77,13 @@ Major enhancements include:
 <li>More complete support for resource management down to the core level
 on a node.</li>
 <li>Treat memory as a consumable resource on a compute node.</li>
-<li>Perl API to SLURM.</li>
+<li>Perl API to SLURM available.</li>
 <li>Graphical User Interfaces provided.</li>
 <li>Added support for OS X.</li>
-<li>Add Kerberos credential support including credential forwarding and refresh.</li>
 <li>Permit batch jobs to be requeued.</li>
+<li>Expanded support of Moab and Maui schedulers.</li>
+<li><i>Srun</i> command augmented by new commands for each operation:
+<i>salloc</i>, <i>slaunch</i>, <i>sbatch</i>, and <i>sattach</i>.</li>
 </ul>
 
 <h2><a name="13">Major Updates in SLURM Version 1.3 and beyond</a></h2>
@@ -92,9 +94,11 @@ to coordinate activies. Future development plans includes:
 <ul>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Convert state save functions to plugins for use of various databases.</li>
+<li>Add Kerberos credential support including credential forwarding 
+and refresh.</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 9 June 2006</p>
+<p style="text-align:center;">Last modified 31 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

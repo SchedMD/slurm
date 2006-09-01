@@ -5,4 +5,4 @@
 \*****************************************************************************/
 #include <stdint.h>
 
-extern void	checksum( char *sum, const char * const key );
+extern void	checksum( char *sum, const char *key, const char *buf );

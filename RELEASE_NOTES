@@ -33,7 +33,7 @@ See the file NEWS for more details.
   - Support added for configuration file ("wiki.conf" in same directory
     as "slurm.conf" file, see "man wiki.conf" for details)
   - Support added for job suspend/resume
-  - Authentication of communcations now supported
+  - Authentication of communications now supported
   - Improved performance
   - Memory leaks fixed
 
