@@ -185,6 +185,7 @@ static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 }
 
 
+#if 0
 /*
  * Take a string representing a node list, remove the first node in the list,
  * and return an xmalloc()ed string of the remaining nodes.
@@ -212,6 +213,43 @@ static char *_node_list_remove_first(const char *nodes)
 
 	hostlist_destroy(nodes_list);
 	return new_nodes;
+}
+#endif
+
+/*
+ * Take a NodeNode name list in hostlist_t string format, and expand
+ * it into one giant string of NodeNames, in which each NodeName is
+ * found at regular offsets of MAX_SLURM_NAME bytes into the string.
+ *
+ * Also, it trims off the first NodeName, which is not used because we
+ * send to that node directly.
+ *
+ * Free returned string with xfree();
+ */
+static char *_create_ugly_nodename_string(const char *node_list, uint32_t count)
+{
+	char *ugly_str;
+	hostlist_t nl;
+	hostlist_iterator_t itr;
+	char *node;
+	int i;
+
+	ugly_str = xmalloc(MAX_SLURM_NAME *count);
+	nl = hostlist_create(node_list);
+	itr = hostlist_iterator_create(nl);
+	
+	/* skip the first node */
+	free(hostlist_next(itr));
+
+	/* now add all remaining node names up to a maximum of "count" */
+	for (i = 0; (i < count) && ((node = hostlist_next(itr)) != NULL); i++) {
+		strcpy(ugly_str + (i*MAX_SLURM_NAME), node);
+		free(node);
+	}
+
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(nl);
+	return ugly_str;
 }
 
 /*
@@ -282,7 +320,8 @@ static int _attach_to_tasks(uint32_t jobid,
 	msg.forward.cnt = layout->node_cnt - 1;
 	msg.forward.node_id = _create_range_array(1, layout->node_cnt-1);
 	info("msg.forward.cnt = %d", msg.forward.cnt);
-	msg.forward.name = _node_list_remove_first(layout->node_list);
+	msg.forward.name = _create_ugly_nodename_string(layout->node_list,
+							layout->node_cnt-1);
 	info("msg.forward.name = %s", msg.forward.name);
 	msg.forward.addr = layout->node_addr + 1;
 	msg.forward.timeout = timeout * 1000; /* sec to msec */

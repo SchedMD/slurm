@@ -201,7 +201,12 @@ typedef enum {
 \*****************************************************************************/
 typedef struct forward {
 	slurm_addr *addr;	  /* array of network addresses */
-	char       *name;	  /* node names in hostlist_t string format */
+	 /* "name" must be a string of length (cnt * MAX_SLURM_NAME), with
+	  *  NodeName strings for each node available at regular offsets
+	  *  of MAX_SLURM_NAME characters into the string.
+	  *  FIXME - This is ugly, and scales poorly - CJM.
+	  */
+	char       *name;
 	uint32_t  *node_id;       /* ARRAY of node ids (relative to job) */
 	/* Or not, forwarding used to talk to non-job and non-jobstep sets of
            nodes, so what are the node_ids supposed to be then?!? - CJM */
