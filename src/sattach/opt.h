@@ -47,7 +47,6 @@
 extern int _verbose;
 
 typedef struct sbatch_options {
-
 	char *progname;		/* argv[0] of this program or 
 				 * configuration file if multi_prog */
 	char user[MAX_USERNAME];/* local username		*/

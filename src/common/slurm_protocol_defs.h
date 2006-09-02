@@ -200,12 +200,11 @@ typedef enum {
  * core api configuration struct 
 \*****************************************************************************/
 typedef struct forward {
-	slurm_addr *addr;	  /* array of network addresses 
-				     to forward to */	
-	char       *name;	  /* array of node names  
-				     to forward to */	
-	uint32_t  *node_id;       /* node id of this node (relative to job) */
-
+	slurm_addr *addr;	  /* array of network addresses */
+	char       *name;	  /* node names in hostlist_t string format */
+	uint32_t  *node_id;       /* ARRAY of node ids (relative to job) */
+	/* Or not, forwarding used to talk to non-job and non-jobstep sets of
+           nodes, so what are the node_ids supposed to be then?!? - CJM */
 	uint16_t   cnt;           /* number of addresses to forward */
 	uint32_t   timeout;       /* original timeout increments */
 	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
@@ -259,6 +258,8 @@ typedef struct slurm_msg {
 	void *auth_cred;
 	void *data;
 	uint32_t data_size;
+
+	/* The following were all added for the forward.c code */
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
 	forward_struct_t *forward_struct;
