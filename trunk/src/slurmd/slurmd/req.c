@@ -1442,6 +1442,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		goto done2;
 	} 
 	nodeid = step->nodeid;
+	debug2("_rpc_reattach_tasks: nodeid %d in the job step", nodeid);
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
@@ -1459,22 +1460,30 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	 * Set response address by resp_port and client address
 	 */
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
-	port = req->resp_port[nodeid % req->num_resp_port];
-	slurm_set_addr(&resp_msg.address, port, NULL); 
-	
+	if (req->num_resp_port > 0) {
+		port = req->resp_port[nodeid % req->num_resp_port];
+		slurm_set_addr(&resp_msg.address, port, NULL); 
+	}
+
 	/* 
 	 * Set IO address by io_port and client address
 	 */
 	memcpy(&ioaddr, cli, sizeof(slurm_addr));
-	port = req->io_port[nodeid % req->num_io_port];
-	slurm_set_addr(&ioaddr, port, NULL);
+
+	if (req->num_io_port > 0) {
+		port = req->io_port[nodeid % req->num_io_port];
+		slurm_set_addr(&ioaddr, port, NULL);
+	}
 
 	/*
 	 * Get the signature of the job credential.  slurmstepd will need
 	 * this to prove its identity when it connects back to srun.
 	 */
 	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
-	xassert(len == SLURM_IO_KEY_SIZE);
+	if (len != SLURM_IO_KEY_SIZE) {
+		error("Incorrect slurm cred signature length");
+		goto done3;
+	}
 
 	resp->gtids = NULL;
 	resp->local_pids = NULL;
@@ -1497,6 +1506,7 @@ done:
 	resp->node_name       = xstrdup(conf->node_name);
 	resp->srun_node_id    = nodeid;
 	resp->return_code     = rc;
+	debug2("node %s (id %u) sending rc = %d", conf->node_name, nodeid, rc);
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	//slurm_send_only_node_msg(&resp_msg);
