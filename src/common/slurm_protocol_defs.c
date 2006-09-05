@@ -1107,6 +1107,9 @@ extern int slurm_free_msg_data(uint32_t type, void *data)
 	case REQUEST_REATTACH_TASKS:
 		slurm_free_reattach_tasks_request_msg(data);
 		break;
+	case RESPONSE_REATTACH_TASKS:
+		slurm_free_reattach_tasks_response_msg(data);
+		break;		
 	case REQUEST_SIGNAL_JOB:
 		slurm_free_signal_job_msg(data);
 		break;
@@ -1130,5 +1133,32 @@ extern int slurm_free_msg_data(uint32_t type, void *data)
 		break; 
 	}
 	return SLURM_SUCCESS;
+}
+
+extern uint32_t slurm_get_return_code(uint32_t type, void *data)
+{
+	uint32_t rc = 0;
+
+	switch(type) {
+	case MESSAGE_EPILOG_COMPLETE:
+		rc = ((epilog_complete_msg_t *)data)->return_code;
+		break;
+	case MESSAGE_STAT_JOBACCT:
+		rc = ((stat_jobacct_msg_t *)data)->return_code;
+		break;
+	case RESPONSE_REATTACH_TASKS:
+		rc = ((reattach_tasks_response_msg_t *)data)->return_code;
+		break;
+	case RESPONSE_JOB_ID:
+		rc = ((job_id_response_msg_t *)data)->return_code;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *)data)->return_code;
+		break;
+	default:
+		error("don't know the rc for type %u returning %u", type, rc);
+		break; 
+	}
+	return rc;
 }
 

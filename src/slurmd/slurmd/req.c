@@ -1197,7 +1197,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	resp = xmalloc(sizeof(stat_jobacct_msg_t));
 	resp->job_id = req->job_id;
 	resp->step_id = req->step_id;
-	
+	resp->return_code = SLURM_SUCCESS;
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->step_id);
 	if (fd == -1) {
@@ -1283,6 +1283,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		if (stepd_pid_in_container(fd, req->job_pid)
 		    || req->job_pid == stepd_daemon_pid(fd)) {
 			resp.job_id = stepd->jobid;
+			resp.return_code = SLURM_SUCCESS;
 			found = true;
 			close(fd);
 			break;
@@ -1502,6 +1503,8 @@ done:
 	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
 	resp_msg.forward      = msg->forward;
+	resp_msg.forward_struct = msg->forward_struct;
+	resp_msg.forward_struct_init = msg->forward_struct_init;
 	resp_msg.ret_list     = msg->ret_list;
 	resp->node_name       = xstrdup(conf->node_name);
 	resp->srun_node_id    = nodeid;

@@ -176,8 +176,8 @@ void *_forward_thread(void *arg)
 		type->msg_rc = SLURM_ERROR;
 		ret_data_info->data = NULL;
 	} else {
-		type->type = msg.msg_type;
-		type->msg_rc = ((return_code_msg_t *)msg.data)->return_code;
+		type->type = msg.msg_type;		
+		type->msg_rc = slurm_get_return_code(type->type, msg.data);
 		ret_data_info->data = msg.data;
 		g_slurm_auth_destroy(msg.auth_cred);
 	}
@@ -275,6 +275,12 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	int thr_count = 0;
 	int *span = set_span(header->forward.cnt, 0);
 	
+	if(!forward_struct->ret_list) {
+		error("didn't get a ret_list from forward_struct");
+		xfree(span);
+		return SLURM_ERROR;
+	}
+		
 	slurm_mutex_init(&forward_struct->forward_mutex);
 	pthread_cond_init(&forward_struct->notify, NULL);
 	
@@ -292,6 +298,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		
 		forward_msg = &forward_struct->forward_msg[i];
 		forward_msg->ret_list = forward_struct->ret_list;
+		
 		forward_msg->timeout = forward_struct->timeout;
 		forward_msg->notify = &forward_struct->notify;
 		forward_msg->forward_mutex = &forward_struct->forward_mutex;
@@ -537,7 +544,7 @@ extern void forward_wait(slurm_msg_t * msg)
 	int count = 0;
 	ret_types_t *ret_type = NULL;
 	ListIterator itr;
-
+	
 	/* wait for all the other messages on the tree under us */
 	if(msg->forward_struct_init == FORWARD_INIT && msg->forward_struct) {
 		debug2("looking for %d", msg->forward_struct->fwd_cnt);
@@ -656,3 +663,4 @@ void destroy_ret_types(void *object)
 		xfree(ret_type);
 	}
 }
+

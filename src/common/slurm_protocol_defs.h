@@ -357,6 +357,7 @@ typedef struct step_complete_msg {
 
 typedef struct stat_jobacct_msg {
 	uint32_t job_id;
+	uint32_t return_code;
 	uint32_t step_id;
 	uint32_t num_tasks;
 	jobacctinfo_t *jobacct;
@@ -539,6 +540,7 @@ typedef struct job_id_request_msg {
 
 typedef struct job_id_response_msg {
 	uint32_t job_id;	/* slurm job_id */
+	uint32_t return_code;	/* slurm return code */
 } job_id_response_msg_t;
 
 typedef struct srun_ping_msg {
@@ -716,6 +718,7 @@ void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
 void inline slurm_free_node_select_msg(
 		node_info_select_request_msg_t *msg);
 extern int slurm_free_msg_data(uint32_t type, void *data);
+extern uint32_t slurm_get_return_code(uint32_t type, void *data);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);
