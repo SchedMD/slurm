@@ -77,8 +77,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_AIX_TRUE@select_cons_res_la_DEPENDENCIES =  \
-@HAVE_AIX_TRUE@	$(top_builddir)/src/common/libcommon.la
+select_cons_res_la_DEPENDENCIES =  \
+	$(top_builddir)/src/common/libcommon.la
 am_select_cons_res_la_OBJECTS = select_cons_res.lo
 select_cons_res_la_OBJECTS = $(am_select_cons_res_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
@@ -283,7 +283,7 @@ pkglib_LTLIBRARIES = select_cons_res.la
 # Consumable resources node selection plugin.
 select_cons_res_la_SOURCES = select_cons_res.c
 select_cons_res_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_AIX_TRUE@select_cons_res_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+select_cons_res_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:

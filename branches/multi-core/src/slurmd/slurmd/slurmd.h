@@ -74,6 +74,29 @@ typedef struct slurmd_config {
 	char         ***argv;           /* pointer to argument vector      */
 	int 	     *argc;             /* pointer to argument count       */
 	char         *hostname;		/* local hostname		   */
+	int          cpus;              /* lowest-level logical processors */
+	int          sockets;           /* sockets count                   */
+	int          cores;             /* core count                      */
+	int          threads;           /* thread per core count           */
+	int          conf_cpus;         /* conf file logical processors    */
+	int          conf_sockets;      /* conf file sockets count         */
+	int          conf_cores;        /* conf file core count            */
+	int          conf_threads;      /* conf file thread per core count */
+	int          actual_cpus;       /* actual logical processors       */
+	int          actual_sockets;    /* actual sockets count            */
+	int          actual_cores;      /* actual core count               */
+	int          actual_threads;    /* actual thread per core count    */
+	int          real_memory_size;  /* amount of real memory	   */
+	int          tmp_disk_space;    /* size of temporary disk	   */
+	uint32_t     block_map_size;	/* size of block map               */
+	uint32_t     *block_map;	/* abstract->machine block map     */
+	uint32_t     *block_map_inv;	/* machine->abstract (inverse) map */
+	uint32_t     lllp_reserved_size;/* size of lllp reserved array     */
+	uint32_t     *lllp_reserved;    /* count of Reserved lllps (socket,
+					 * core, threads) */
+        int          cr_type;           /* Consumable Resource Type:       *
+					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
+					 * CR_DEFAULT, etc.                */
         char         *node_name;        /* node name                       */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
@@ -102,6 +125,7 @@ typedef struct slurmd_config {
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_freq;
 	uint16_t	use_pam;
+	uint16_t        fast_schedule;	/* use config from file/slurmctld  */
 } slurmd_conf_t;
 
 slurmd_conf_t * conf;

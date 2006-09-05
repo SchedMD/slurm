@@ -98,6 +98,10 @@ typedef struct names_ll_s {
 	char *hostname;	/* NodeHostname */
 	char *address;	/* NodeAddr */
 	uint16_t port;
+	uint32_t cpus;
+	uint32_t sockets;
+	uint32_t cores;
+	uint32_t threads;
 	slurm_addr addr;
 	bool addr_initialized;
 	struct names_ll_s *next_alias;
@@ -166,6 +170,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SchedulerRootFilter", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
 	{"SelectType", S_P_STRING},
+	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmUser", S_P_STRING},
 	{"SlurmctldDebug", S_P_UINT16},
 	{"SlurmctldLogFile", S_P_STRING},
@@ -255,12 +260,15 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _nodename_options[] = {
 		{"NodeHostname", S_P_STRING},
 		{"NodeAddr", S_P_STRING},
+		{"CoresPerSocket", S_P_UINT32},
 		{"Feature", S_P_STRING},
 		{"Port", S_P_UINT16},
 		{"Procs", S_P_UINT32},
 		{"RealMemory", S_P_UINT32},
 		{"Reason", S_P_STRING},
+		{"Sockets", S_P_UINT32},
 		{"State", S_P_STRING},
+		{"ThreadsPerCore", S_P_UINT32},
 		{"TmpDisk", S_P_UINT32},
 		{"Weight", S_P_UINT32},
 		{NULL}
@@ -291,6 +299,11 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		return 0;
 	} else {
+		bool no_cpus    = false;
+		bool no_sockets = false;
+		bool no_cores   = false;
+		bool no_threads = false;
+
 		n = xmalloc(sizeof(slurm_conf_node_t));
 		dflt = default_nodename_tbl;
 
@@ -299,6 +312,12 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->hostnames = xstrdup(n->nodenames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
 			n->addresses = xstrdup(n->hostnames);
+
+		if (!s_p_get_uint32(&n->cores, "CoresPerSocket", tbl)
+		    && !s_p_get_uint32(&n->cores, "CoresPerSocket", dflt)) {
+			n->cores = 1;
+			no_cores = true;
+		}
 
 		if (!s_p_get_string(&n->feature, "Feature", tbl))
 			s_p_get_string(&n->feature, "Feature", dflt);
@@ -312,8 +331,10 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		}
 
 		if (!s_p_get_uint32(&n->cpus, "Procs", tbl)
-		    && !s_p_get_uint32(&n->cpus, "Procs", dflt))
+		    && !s_p_get_uint32(&n->cpus, "Procs", dflt)) {
 			n->cpus = 1;
+			no_cpus = true;
+		}
 
 		if (!s_p_get_uint32(&n->real_memory, "RealMemory", tbl)
 		    && !s_p_get_uint32(&n->real_memory, "RealMemory", dflt))
@@ -322,9 +343,21 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
 			s_p_get_string(&n->reason, "Reason", dflt);
 
+		if (!s_p_get_uint32(&n->sockets, "Sockets", tbl)
+		    && !s_p_get_uint32(&n->sockets, "Sockets", dflt)) {
+			n->sockets = 1;
+			no_sockets = true;
+		}
+
 		if (!s_p_get_string(&n->state, "State", tbl)
 		    && !s_p_get_string(&n->state, "State", dflt))
 			n->state = NULL;
+
+		if (!s_p_get_uint32(&n->threads, "ThreadsPerCore", tbl)
+		    && !s_p_get_uint32(&n->threads, "ThreadsPerCore", dflt)) {
+			n->threads = 1;
+			no_threads = true;
+		}
 
 		if (!s_p_get_uint32(&n->tmp_disk, "TmpDisk", tbl)
 		    && !s_p_get_uint32(&n->tmp_disk, "TmpDisk", dflt))
@@ -335,6 +368,35 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->weight = 1;
 
 		s_p_hashtbl_destroy(tbl);
+
+		if (n->cores == 0)	/* make sure cores is non-zero */
+			n->cores = 1;
+		if (n->threads == 0)	/* make sure threads is non-zero */
+			n->threads = 1;
+		 
+		if (!no_cpus    &&	/* infer missing Sockets= */
+		    no_sockets) {
+			n->sockets = n->cpus / (n->cores * n->threads);
+		}
+
+		if (n->sockets == 0)	/* make sure sockets is non-zero */
+			n->sockets = 1;
+
+		if (no_cpus     &&	/* infer missing Procs= */
+		    !no_sockets) {
+			n->cpus = n->sockets * n->cores * n->threads;
+		}
+
+		/* if only Procs= and Sockets= specified check for match */
+		if (!no_cpus    &&
+		    !no_sockets &&
+		    no_cores    &&
+		    no_threads) {
+			if (n->cpus != n->sockets) {
+				n->sockets = n->cpus;
+				warn("Procs doesn't match Sockets, setting Sockets to %d", n->sockets);
+			}
+		}
 
 		*dest = (void *)n;
 
@@ -598,7 +660,9 @@ static int _get_hash_idx(const char *s)
 }
 
 static void _push_to_hashtbls(char *alias, char *hostname,
-			      char *address, uint16_t port)
+			      char *address, uint16_t port,
+			      uint32_t cpus, uint32_t sockets,
+			      uint32_t cores, uint32_t threads)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -635,6 +699,10 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	new->hostname = xstrdup(hostname);
 	new->address = xstrdup(address);
 	new->port = port;
+	new->cpus	= cpus;
+	new->sockets	= sockets;
+	new->cores	= cores;
+	new->threads	= threads;
 	new->addr_initialized = false;
 	new->next_hostname = host_to_node_hashtbl[hostname_idx];
 	host_to_node_hashtbl[hostname_idx] = new;
@@ -708,7 +776,9 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		address = hostlist_shift(address_list);
 #endif
 
-		_push_to_hashtbls(alias, hostname, address, node_ptr->port);
+		_push_to_hashtbls(alias, hostname, address, node_ptr->port,
+					node_ptr->cpus, node_ptr->sockets,
+					node_ptr->cores, node_ptr->threads);
 
 		free(alias);
 #ifndef HAVE_FRONT_END
@@ -869,6 +939,43 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address)
 	return SLURM_FAILURE;
 }
 
+/*
+ * slurm_conf_get_cpus_sct -
+ * Return the cpus, sockets, cores, and threads for a given NodeName
+ * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
+ */
+extern int slurm_conf_get_cpus_sct(const char *node_name,
+			uint32_t *cpus, uint32_t *sockets,
+			uint32_t *cores, uint32_t *threads)
+{
+	int idx;
+	names_ll_t *p;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->alias, node_name) == 0) {
+		    	if (cpus)
+				*cpus    = p->cpus;
+			if (sockets)
+				*sockets = p->sockets;
+			if (cores)
+				*cores   = p->cores;
+			if (threads)
+				*threads = p->threads;
+			slurm_conf_unlock();
+			return SLURM_SUCCESS;
+		}
+		p = p->next_alias;
+	}
+	slurm_conf_unlock();
+
+	return SLURM_FAILURE;
+}
+
 
 /* getnodename - equivalent to gethostname, but return only the first 
  * component of the fully qualified name 
@@ -995,6 +1102,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
 	xfree( ctl_conf_ptr->select_type );
+        ctl_conf_ptr->select_type_param         = (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurm_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
@@ -1420,6 +1528,23 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
+
+	char *temp_str = NULL;
+        if (s_p_get_string(&temp_str,
+			   "SelectTypeParameters", hashtbl)) {
+		if ((parse_select_type_param(temp_str,
+					     &conf->select_type_param) < 0)) {
+			xfree(temp_str);
+			fatal("Bad SelectTypeParameter: %s",
+			      conf->select_type_param);
+		}
+		xfree(temp_str);
+	} else {
+		if (strcmp(conf->select_type,"select/cons_res") == 0)
+			conf->select_type_param = CR_DEFAULT;
+		else
+			conf->select_type_param = SELECT_TYPE_INFO_NONE;
+	}
 
 	if (!s_p_get_string( &conf->slurm_user_name, "SlurmUser", hashtbl)) {
 		conf->slurm_user_name = xstrdup("root");

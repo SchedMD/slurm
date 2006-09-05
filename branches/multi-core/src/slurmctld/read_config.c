@@ -80,6 +80,8 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
+static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr, 
+					select_type_plugin_info_t old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
 				char *old_auth_type, char *old_checkpoint_type,
 				char *old_sched_type, char *old_select_type,
@@ -545,6 +547,9 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		config_ptr = create_config_record();
 		config_ptr->nodes = xstrdup(node->nodenames);
 		config_ptr->cpus = node->cpus;
+		config_ptr->sockets = node->sockets;
+		config_ptr->cores = node->cores;
+		config_ptr->threads = node->threads;
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->tmp_disk = node->tmp_disk;
 		config_ptr->weight = node->weight;
@@ -664,9 +669,11 @@ int read_slurm_conf(int recover)
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
-	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
+	char *old_select_type   = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
 	slurm_ctl_conf_t *conf;
+	select_type_plugin_info_t old_select_type_p = 
+		slurmctld_conf.select_type_param;
 
 	/* initialization */
 	START_TIMER;
@@ -753,6 +760,11 @@ int read_slurm_conf(int recover)
 			old_sched_type, old_select_type,
 			old_switch_type);
 
+	/* Update plugin parameters as possible */
+	error_code = _preserve_select_type_param(
+		        &slurmctld_conf,
+			old_select_type_p);
+
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER;
 	debug("read_slurm_conf: finished loading configuration %s",
@@ -776,6 +788,9 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 		node_ptr->node_state    = old_node_table_ptr[i].node_state;
 		node_ptr->last_response = old_node_table_ptr[i].last_response;
 		node_ptr->cpus          = old_node_table_ptr[i].cpus;
+		node_ptr->sockets       = old_node_table_ptr[i].sockets;
+		node_ptr->cores         = old_node_table_ptr[i].cores;
+		node_ptr->threads       = old_node_table_ptr[i].threads;
 		node_ptr->real_memory   = old_node_table_ptr[i].real_memory;
 		node_ptr->tmp_disk      = old_node_table_ptr[i].tmp_disk;
 		if(node_ptr->reason == NULL) {
@@ -797,6 +812,28 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 		xfree(old_node_table_ptr[i].reason);
 	}
 	xfree(old_node_table_ptr);
+}
+
+
+/*
+ * _preserve_select_type_param - preserve original plugin parameters.
+ *	Daemons and/or commands must be restarted for some 
+ *	select plugin value changes to take effect.
+ * RET zero or error code
+ */
+static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr, 
+		   select_type_plugin_info_t old_select_type_p)
+{
+	int rc = SLURM_SUCCESS;
+	
+        /* SelectTypeParameters cannot change */ 
+	if (old_select_type_p) {
+		if (old_select_type_p != ctl_conf_ptr->select_type_param) {
+			ctl_conf_ptr->select_type_param = old_select_type_p;
+			rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
+		}
+	}
+	return rc;
 }
 
 /*

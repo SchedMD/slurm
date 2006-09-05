@@ -216,6 +216,34 @@
 #
 # SelectType=select/linear
 
+# o Define parameters to describe the SelectType plugin. For
+#    - select/bluegene - this parameter is currently ignored
+#    - select/linear   - this parameter is currently ignored
+#    - select/cons_res - the parameters available are
+#          - CR_Sockets - Sockets as a consumable resource.
+#          - CR_Cores   - Cores as a consumable resource. (Not yet implemented)
+#          - CR_Memory  - Memory as a consumable resource. (Not yet implemented)
+#          - CR_Default - CPUs as consumable resources. 
+#                       No notion of sockets, cores, or threads. 
+#                       On a multi-core system CPUs will be cores
+#                       On a multi-core/hyperthread system CPUs will 
+#                             be threads
+#                       On a single-core systems CPUs are CPUs. ;-)
+#
+# NB!: The -N extension for sockets, cores, and threads are ignored 
+#      when CR_Default is selected. 
+#
+# NB!: CR_Memory can be combined with either CR_Sockets, 
+#      CR_Cores, and CR_Default and only one of CR_Sockets, 
+#      CR_Cores and CR_Default can be selected at the time. 
+#      (Not yet implemented) 
+#
+#SelectTypeParameters=CR_Default (default value)
+#SelectTypeParameters=CR_Socket,CR_Memory  (CR_Memory not yet implemented)
+#SelectTypeParameters=CR_Core,CR_Memory   (Not yet implemented)
+#SelectTypeParameters=CR_Default,CR_Memory (CR_Memory not yet implemented)
+#
+#SelectTypeParameters=CR_Default
 
 #
 # "JobCompType"			:  Define the job completion logging
@@ -574,7 +602,23 @@ JobAcctType=jobacct/none
 #
 #     "RealMemory" : Amount of real memory (in Megabytes)
 #
-#     "Procs"      : Number of CPUs 
+#     "Procs"      : Number of logical processors on the node.
+#                    If Procs is omitted, it will be inferred from:
+#                           Sockets, CoresPerSocket, and ThreadsPerCore.
+#
+#     "Sockets"    : Number of physical processor sockets/chips on the node.
+#                    If Sockets is omitted, it will be inferred from:
+#                           Procs, CoresPerSocket, and ThreadsPerCore.
+#
+#     "CoresPerSocket"
+#                  : Number of cores in a single physical processor socket
+#                    The CoresPerSocket value describes physical cores, not
+#                    the logical number of processors per socket.
+#                    The default value is 1.
+#
+#     "ThreadsPerCore"
+#                  : Number of logical threads in a single physical core.
+#                    The default value is 1.
 #
 #     "State"      : Initial state (IDLE, DOWN, etc.)
 #
@@ -592,6 +636,9 @@ JobAcctType=jobacct/none
 # NodeName=DEFAULT Procs=2 TmpDisk=64000 State=UNKNOWN
 # NodeName=host[0-25] NodeAddr=ehost[0-25] Weight=16
 # NodeName=host26     NodeAddr=ehost26     Weight=32 Feature=graphics_card
+# NodeName=dualcore01  Procs=4 CoresPerSocket=2 ThreadsPerCore=1
+# NodeName=dualcore02  Procs=4 Sockets=2 CoresPerSocket=2 ThreadsPerCore=1
+# NodeName=multicore03 Procs=64 Sockets=8 CoresPerSocket=4 ThreadsPerCore=2
 
 #
 # o Partition Configuration

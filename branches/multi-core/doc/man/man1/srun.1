@@ -19,7 +19,7 @@ srun \- run parallel jobs
 Allocate resources and optionally initiate parallel jobs on
 clusters managed by SLURM.
 .TP
-parallel run options
+Parallel run options:
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=\fIntasks\fR
 Specify the number of processes to run. Request that \fBsrun\fR
@@ -49,6 +49,29 @@ allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section
 for more information.  If \fB\-N\fR is not specified, the default
 behaviour is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
+.TP
+\fB\-N\fR \fInodes\fR[:\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]]
+Request a specific allocation of resources with details as to the
+number and type of computational resources within a cluster :
+number of nodes, sockets (or physical processors) per node,
+cores per socket, and threads per core.
+The total amount of resources being requested is the product of all of
+the terms.
+As with --nodes, each value can be a single number or a range (e.g. min-max).
+An asterisk (*) can be used as a placeholder indicating that all available 
+resources of that type are to be utilized.
+As with nodes, the individual levels can also be specified in separate
+options if desired:
+.nf
+    \fB\--nodes\fR=\fInodes\fR
+    \fB\--sockets-per-node\fR=\fIsockets\fR
+    \fB\--cores-per-socket\fR=\fIcores\fR
+    \fB\--threads-per-core\fR=\fIthreads\fR
+.fi
+When the task/affinity plugin is enabled,
+specifying an allocation in this manner also instructs SLURM to use
+a CPU affinity mask to guarantee the request is filled as specified.
+See the "Affinity/Multi-core options" below for more details.
 .TP
 \fB\-r\fR, \fB\-\-relative\fR=\fIn\fR
 Run a job step relative to node \fIn\fR of the current allocation. 
@@ -463,7 +486,16 @@ Constraint Options. The following options all put constraints on the nodes
 that may be considered for the job:
 .TP
 \fB\-\-mincpus\fR=\fIn\fR
-Specify minimum number of cpus per node.
+Specify a minimum number of logical cpus/processors per node.
+.TP
+\fB\-\-minsockets\fR=\fIn\fR
+Specify a minimum number of sockets (physical processors) per node.
+.TP
+\fB\-\-mincores\fR=\fIn\fR
+Specify a minimum number of cores per socket.
+.TP
+\fB\-\-minthreads\fR=\fIn\fR
+Specify a minimum number of threads per core.
 .TP
 \fB\-\-mem\fR=\fIMB\fR
 Specify a minimum amount of real memory.
@@ -499,8 +531,7 @@ allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
 
 .PP
-Affinity/Multi-core Options (when the task/affinity or task/numa 
-plugin is enabled):
+Affinity/Multi-core Options (when the task/affinity plugin is enabled):
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs
@@ -539,14 +570,30 @@ the command line with:
         setenv SLURM_CPU_BIND verbose
 .fi
 .PP
-SLURM_CPU_BIND will not propagate into the tasks environment (binding
-by default only affects the first srun).  To propagate \-\-cpu_bind to
-successive srun commands, first do the following in each task:
+Note that the SLURM_CPU_BIND environment variable will propagate into the
+tasks' environment in order to perform binding in batch submissions.
+If you do not wish to propagate \-\-cpu_bind to successive srun commands,
+simply clear the variable in the task's script before executing srun:
 .PP
 .nf
- setenv SLURM_CPU_BIND \\
-   ${SLURM_CPU_BIND_VERBOSE},${SLURM_CPU_BIND_TYPE}${SLURM_CPU_BIND_LIST}
+        unsetenv SLURM_CPU_BIND
 .fi
+.PP
+In addition, to SLURM_CPU_BIND, the following informational environment
+variables are also set when SLURM_CPU_BIND is in use:
+.nf
+        SLURM_CPU_BIND_VERBOSE
+        SLURM_CPU_BIND_TYPE
+        SLURM_CPU_BIND_LIST
+.fi
+.PP
+When using \-\-cpus\-per\-task to run multithreaded tasks, be aware that
+CPU binding is inherited from the parent of the process.  This means that
+the multithreaded task should either specify or clear the CPU binding
+itself to avoid having all threads of the multithreaded task use the same
+mask/CPU as the parent.  Alternatively, fat masks (masks which specify more 
+than one allowed CPU) could be used for the tasks in order to provide
+multiple CPUs for the multithreaded tasks.
 
 .PP
 Affinity/Multi-core Options (when the task/affinity plugin is enabled and 
@@ -597,24 +644,30 @@ To have SLURM always report on the selected memory binding for all srun commands
 executed in a shell, you can also enable verbose mode separately from
 the command line with:
 .PP
-.PP
 .nf
         setenv SLURM_MEM_BIND verbose
 .fi
 .PP
-SLURM_MEM_BIND will not propagate into the tasks environment (binding
-by default only affects the first srun).  To propagate \-\-mem_bind to
-successive srun commands, first do the following in each task:
+Note that the SLURM_MEM_BIND environment variable will propagate into the
+tasks' environment in order to perform binding in batch submissions.
+If you do not wish to propagate \-\-mem_bind to successive srun commands,
+simply clear the variable in the task's script before executing srun:
 .PP
 .nf
- setenv SLURM_MEM_BIND \\
-   ${SLURM_MEM_BIND_VERBOSE},${SLURM_MEM_BIND_TYPE}${SLURM_MEM_BIND_LIST}
+        unsetenv SLURM_MEM_BIND
+.fi
+.PP
+In addition, to SLURM_MEM_BIND, the following informational environment
+variables are also set when SLURM_MEM_BIND is in use:
+.nf
+        SLURM_MEM_BIND_VERBOSE
+        SLURM_MEM_BIND_TYPE
+        SLURM_MEM_BIND_LIST
 .fi
 .PP
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
 of the individual SLURM_CPU_BIND* and SLURM_MEM_BIND* variables.
                                                                                   
-
 .PP
 The following options support AIX systems, but may be applicable to 
 other systems as well. Since POE is used to launch tasks, these 
