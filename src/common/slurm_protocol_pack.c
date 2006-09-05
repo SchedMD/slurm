@@ -2039,6 +2039,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16((uint16_t)build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
 	pack16((uint16_t)build_ptr->msg_timeout, buffer);
+	pack32((uint32_t)build_ptr->next_job_id, buffer);
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
@@ -2047,7 +2048,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
         packstr(build_ptr->propagate_rlimits, buffer);
         packstr(build_ptr->propagate_rlimits_except, buffer);
 	pack16((uint16_t)build_ptr->ret2service, buffer);
-	packstr(build_ptr->schedauth, buffer);
 	pack16((uint16_t)build_ptr->schedport, buffer);
 	pack16((uint16_t)build_ptr->schedrootfltr, buffer);
 	packstr(build_ptr->schedtype, buffer);
@@ -2123,6 +2123,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->msg_timeout, buffer);
+	safe_unpack32(&build_ptr->next_job_id, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, 
@@ -2134,7 +2135,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits_except,
                                &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->schedauth, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->schedport, buffer);
 	safe_unpack16(&build_ptr->schedrootfltr, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->schedtype, &uint16_tmp, buffer);
@@ -2202,7 +2202,6 @@ unpack_error:
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->propagate_rlimits);
 	xfree(build_ptr->propagate_rlimits_except);
-	xfree(build_ptr->schedauth);
 	xfree(build_ptr->schedtype);
 	xfree(build_ptr->select_type);
 	xfree(build_ptr->slurm_conf);

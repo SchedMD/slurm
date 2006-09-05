@@ -129,6 +129,8 @@ void slurm_print_ctl_conf ( FILE* out,
 #ifdef MULTIPLE_SLURMD
 	fprintf(out, "MULTIPLE_SLURMD   = %d\n", MULTIPLE_SLURMD);
 #endif
+	fprintf(out, "NEXT_JOB_ID       = %u\n",
+		slurm_ctl_conf_ptr->next_job_id);
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig   = %s\n",
@@ -145,8 +147,6 @@ void slurm_print_ctl_conf ( FILE* out,
                 slurm_ctl_conf_ptr->propagate_rlimits_except);
 	fprintf(out, "ReturnToService   = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
-	fprintf(out, "SchedulerAuth     = %s\n",
-		slurm_ctl_conf_ptr->schedauth);
 	fprintf(out, "SchedulerPort     = %u\n",
 		slurm_ctl_conf_ptr->schedport);
 	fprintf(out, "SchedulerRootFilter = %u\n",

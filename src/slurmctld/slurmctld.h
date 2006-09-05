@@ -575,6 +575,12 @@ extern char **get_job_env (struct job_record *job_ptr, uint16_t *env_size);
  */
 extern char *get_job_script (struct job_record *job_ptr);
 
+/*
+ * get_next_job_id - return the job_id to be used by default for
+ *	the next job
+ */
+extern uint32_t get_next_job_id(void);
+
 /* 
  * find_step_record - return a pointer to the step record with the given 
  *	job_id and step_id

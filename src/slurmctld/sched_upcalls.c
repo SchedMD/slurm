@@ -171,18 +171,7 @@ sched_get_port( void )
 const char *
 sched_get_auth( void )
 {
-	static char auth[128];
-	/* Locks: Read config */
-	slurmctld_lock_t config_read_lock = { 
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	lock_slurmctld(config_read_lock);
-	strncpy(auth, slurmctld_conf.schedauth, 128);
-	if (auth[127] != '\0') {
-		auth[127] = '\0';
-		error("slurmctld_conf.schedauth truncated");
-	}
-	unlock_slurmctld(config_read_lock);
+	static char auth[] = "";
 
 	return auth;
 }

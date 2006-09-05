@@ -926,7 +926,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
-	xfree (ctl_conf_ptr->schedauth);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
 	xfree (ctl_conf_ptr->slurm_conf);
@@ -983,6 +982,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
@@ -991,7 +991,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
-	xfree( ctl_conf_ptr->schedauth );
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
@@ -1404,8 +1403,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
-
-	s_p_get_string(&conf->schedauth, "SchedulerAuth", hashtbl);
 
 	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
 		if (conf->schedport == 0) {

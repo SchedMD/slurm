@@ -692,6 +692,7 @@ typedef struct slurm_ctl_conf {
 	char *control_machine;	/* name of slurmctld primary server */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
+	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
 				 * (only check configuration file, faster) */
 	uint16_t inactive_limit;/* seconds of inactivity before a
@@ -719,7 +720,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */
 	char *schedtype;	/* type of scheduler to use */
-	char *schedauth;	/* credential for scheduler (if needed) */
 	uint16_t schedport;	/* port for scheduler connection */
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
