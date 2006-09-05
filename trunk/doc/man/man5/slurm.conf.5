@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2006" "slurm.conf 1.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2006" "slurm.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -325,13 +325,6 @@ failure, etc.), its state will not automatically be changed.  The
 default value is 0, which means that a node will remain in the 
 DOWN state until a system administrator explicitly changes its state
 (even if the slurmd daemon registers and resumes communications).
-.TP
-\fBSchedulerAuth\fR
-An authentication token, if any, that must be used in a scheduler 
-communication protocol. The interpretation of this value depends 
-upon the value of \fBSchedulerType\fR.  In the Wiki scheduler plugin,
-this value must correspond to the checksum seed with which Maui was
-compiled.
 .TP
 \fBSchedulerPort\fR
 The port number on which slurmctld should listen for connection requests.
@@ -921,8 +914,6 @@ ReturnToService=0
 .br
 SchedulerType=sched/wiki
 .br
-SchedulerAuth=42
-.br
 SchedulerPort=7004
 .br
 SlurmctldLogFile=/var/log/slurmctld.log
@@ -1004,6 +995,7 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 .LP
+\fBbluegene.conf\fR(5),
 \fBgethostbyname\fR(3), \fBgroup\fR(5), \fBhostname\fR(1), 
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), \fBspank(8)\fR,
-\fBsyslog\fR(2)
+\fBsyslog\fR(2), \fBwiki.conf\fR(5)

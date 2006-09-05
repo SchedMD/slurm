@@ -2988,6 +2988,22 @@ void reset_first_job_id(void)
 }
 
 /*
+ * get_next_job_id - return the job_id to be used by default for 
+ *	the next job
+ */
+extern uint32_t get_next_job_id(void)
+{
+	uint32_t next_id;
+
+	if (job_id_sequence == 0)
+		job_id_sequence = slurmctld_conf.first_job_id;
+	next_id = job_id_sequence + 1;
+	if (next_id >= MIN_NOALLOC_JOBID)
+		next_id = slurmctld_conf.first_job_id;
+	return next_id;
+}
+
+/*
  * _set_job_id - set a default job_id, insure that it is unique
  * IN job_ptr - pointer to the job_record
  */

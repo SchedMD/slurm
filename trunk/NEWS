@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.2.0-pre3
+=============================
+ -- Remove configuration parameter ShedulerAuth (defunct).
+ -- Add NextJobId to "scontrol show config" output.
+
 * Changes in SLURM 1.2.0-pre2
 =============================
  -- Fixed task dist to work with hostfile and warn about asking for more tasks 
