@@ -400,7 +400,6 @@ _p_reattach_task(void *arg)
 {
 	thd_t *t   = (thd_t *) arg;
 	int rc     = 0;
-	reattach_tasks_request_msg_t *req = t->msg->data;
 	char *host = nodelist_nth_host(t->job->step_layout->node_list,
 				       t->nodeid);
 	
