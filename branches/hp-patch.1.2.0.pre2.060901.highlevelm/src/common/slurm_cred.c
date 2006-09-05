@@ -143,8 +143,8 @@ struct slurm_job_credential {
 	uid_t    uid;          /* user for which this cred is valid         */
 	time_t   ctime;        /* time of credential creation               */
 	char    *nodes;        /* list of hostnames for which the cred is ok*/
-        uint32_t alloc_lps_cnt;    /* Number of hosts in the list above         */
-        uint32_t *alloc_lps;       /* Number of tasks on each host              */
+        uint32_t alloc_lps_cnt;    /* Number of hosts in the list above     */
+        uint32_t *alloc_lps;       /* Number of tasks on each host          */
 
 	unsigned char *signature; /* credential signature                   */
 	unsigned int siglen;      /* signature length in bytes              */
