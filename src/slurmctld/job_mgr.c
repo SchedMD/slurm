@@ -4237,9 +4237,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc_msg.return_code = rc;
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;
 		resp_msg.data      = &rc_msg;
-		forward_init(&resp_msg.forward, NULL);
-		resp_msg.ret_list = NULL;
-		resp_msg.forward_struct_init = 0;
+		slurm_init_slurm_msg(&resp_msg, NULL);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
 	return rc;
@@ -4331,9 +4329,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	rc_msg.return_code = rc;
 	resp_msg.msg_type  = RESPONSE_SLURM_RC;
 	resp_msg.data      = &rc_msg;
-	forward_init(&resp_msg.forward, NULL);
-	resp_msg.ret_list = NULL;
-	resp_msg.forward_struct_init = 0;
+	slurm_init_slurm_msg(&resp_msg, NULL);
 	slurm_send_node_msg(conn_fd, &resp_msg);
 	return rc;
 }

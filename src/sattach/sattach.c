@@ -300,8 +300,10 @@ static int _attach_to_tasks(uint32_t jobid,
 	debug("Entering _attach_to_tasks");
 	/* Lets make sure that the slurm_msg_t are zeroed out at the start */
 	memset(&msg, 0, sizeof(slurm_msg_t));
+	slurm_init_slurm_msg(&msg, NULL);
 	memset(&dummy_resp_msg, 0, sizeof(slurm_msg_t));
-
+	slurm_init_slurm_msg(&dummy_resp_msg, NULL);
+	
 	timeout = slurm_get_msg_timeout();
 
 	reattach_msg.job_id = jobid;
@@ -315,8 +317,7 @@ static int _attach_to_tasks(uint32_t jobid,
 	msg.msg_type = REQUEST_REATTACH_TASKS;
 	msg.data = &reattach_msg;
 	msg.srun_node_id = 0;
-	msg.orig_addr.sin_addr.s_addr = 0;
-	forward_init(&msg.forward, NULL);
+	
 	msg.forward.cnt = layout->node_cnt - 1;
 	msg.forward.node_id = _create_range_array(1, layout->node_cnt-1);
 	info("msg.forward.cnt = %d", msg.forward.cnt);
@@ -325,9 +326,6 @@ static int _attach_to_tasks(uint32_t jobid,
 	info("msg.forward.name = %s", msg.forward.name);
 	msg.forward.addr = layout->node_addr + 1;
 	msg.forward.timeout = timeout * 1000; /* sec to msec */
-	msg.forward_struct = NULL;
-	msg.forward_struct_init = 0;
-	msg.ret_list = NULL;
 	memcpy(&msg.address, layout->node_addr + 0, sizeof(slurm_addr));
 
 	ret_list = slurm_send_recv_node_msg(&msg, &dummy_resp_msg, timeout);
@@ -481,10 +479,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	forward_init(&msg->forward, NULL);
-	msg->ret_list = NULL;
-	msg->conn_fd = fd;
-	msg->forward_struct_init = 0;
+	slurm_init_slurm_msg(msg, NULL);
 
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 

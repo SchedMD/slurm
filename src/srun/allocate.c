@@ -274,11 +274,9 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	debug2("got message connection from %s:%d", host, port);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	forward_init(&msg->forward, NULL);
-	msg->ret_list = NULL;
+	slurm_init_slurm_msg(msg, NULL);
 	msg->conn_fd = fd;
-	msg->forward_struct_init = 0;
-	
+		
   again:
 	ret_list = slurm_receive_msg(fd, msg, 0);
 

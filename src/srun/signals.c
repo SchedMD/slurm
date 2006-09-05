@@ -71,13 +71,6 @@ static int srun_sigarray[] = {
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
-typedef struct task_info {
-	slurm_msg_t *req_ptr;
-	srun_job_t *job_ptr;
-	int host_inx;
-} task_info_t;
-
-
 /* 
  * Static prototypes
  */

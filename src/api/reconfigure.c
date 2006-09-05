@@ -136,9 +136,8 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	List ret_list = NULL;
 	
 	/*always only going to 1 node */
-	forward_init(&req->forward, NULL);
-	req->ret_list = NULL;
-	req->forward_struct_init = 0;
+	slurm_init_slurm_msg(req, NULL);
+	slurm_init_slurm_msg(&resp_msg, NULL);
 		
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);

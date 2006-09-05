@@ -515,10 +515,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	forward_init(&msg->forward, NULL);
-	msg->ret_list = NULL;
-	msg->conn_fd = fd;
-	msg->forward_struct_init = 0;
+	slurm_init_slurm_msg(msg, NULL);
 
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 

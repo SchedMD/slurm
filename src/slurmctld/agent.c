@@ -817,12 +817,9 @@ static void *_thread_per_group_rpc(void *args)
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
+	slurm_init_slurm_msg(&msg, NULL);
 	forward_init(&msg.forward, &thread_ptr->forward);
-	msg.ret_list = NULL;
-	msg.orig_addr.sin_addr.s_addr = 0;
-	msg.srun_node_id = 0;
-	msg.forward_struct_init = 0;
-
+	
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {

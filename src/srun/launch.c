@@ -217,13 +217,12 @@ launch(void *arg)
 		free(host);
 		
 		m = &msg_array_ptr[job->thr_count];
+		slurm_init_slurm_msg(m, NULL);
 		
 		m->srun_node_id    = (uint32_t)i;			
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = &r;
-		m->ret_list = NULL;
-		m->orig_addr.sin_addr.s_addr = 0;
-		m->buffer = buffer;
+		m->buffer          = buffer;
 		
 		memcpy(&m->address, 
 		       &job->step_layout->node_addr[i], 

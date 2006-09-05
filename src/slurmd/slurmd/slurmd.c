@@ -360,14 +360,12 @@ _service_connection(void *arg)
 	conn_t *con = (conn_t *) arg;
 	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-
-	
+		
 	debug3("in the service_connection");
+	slurm_init_slurm_msg(msg, NULL);
 	msg->conn_fd = con->fd;
 	/* this could change if being forwarded to */
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
-	forward_init(&msg->forward, NULL);
-	msg->ret_list = NULL;
 	
 	ret_list = slurm_receive_msg(con->fd, msg, 0);	
 	if(!ret_list || errno != SLURM_SUCCESS) {
@@ -406,12 +404,8 @@ send_registration_msg(uint32_t status, bool startup)
 	slurm_node_registration_status_msg_t *msg = 
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 	
-	forward_init(&req.forward, NULL);
-	req.ret_list = NULL;
-	req.forward_struct_init = 0;
-	forward_init(&req.forward, NULL);
-	resp.ret_list = NULL;
-	resp.forward_struct_init = 0;
+	slurm_init_slurm_msg(&req, NULL);
+	slurm_init_slurm_msg(&resp, NULL);
 	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);

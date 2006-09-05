@@ -341,10 +341,8 @@ _attach_to_job(srun_job_t *job)
 		r->cred            = job->cred;
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		forward_init(&m->forward, NULL);
-		m->ret_list = NULL;
-		msg->forward_struct_init = 0;
-	
+		slurm_init_slurm_msg(m, NULL);
+		
 		memcpy(&m->address, &job->step_layout->node_addr[i], 
 		       sizeof(slurm_addr));
 	}
