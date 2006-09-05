@@ -1,0 +1,62 @@
+/*****************************************************************************\
+ *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
+ *  Written by Susanne M. Balle, <susanne.balle@hp.com>
+ *  UCRL-CODE-217948.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
+#ifndef _SLURMSTEPD_DIST_TASKS_H
+#define _SLURMSTEPD_DIST_TASKS_H
+/* Structures to create an object oriented version of a 4-D 
+   infrastructure --> task id mapping [node][cpu][core][taskid] = tid
+*/
+struct thread_gids {
+  int *gids;  /* Taskids for a specific thread */
+  int tasks;  /* Number of tasks for a specific thread */
+};
+
+struct core_gids {
+  struct thread_gids *threads; /* Taskids for a specific thread */
+};
+
+struct socket_gids {
+  struct core_gids *cores; /* Taskids for a specific core */
+};
+
+struct node_gids {
+  struct socket_gids *sockets; /* Taskids for a specific CPU */
+};
+
+struct slurm_lllp_context {
+#ifndef NDEBUG
+#  define LLLP_CTX_MAGIC 0x0d0d0d
+        int magic;
+#endif
+#if WITH_PTHREADS  
+        pthread_mutex_t mutex;
+#endif
+        List           job_list;   /* List of job bindings */
+};
+typedef struct slurm_lllp_context slurm_lllp_ctx_t;
+
+void cr_reserve_lllp(uint32_t job_id, launch_tasks_request_msg_t *req);
+void cr_release_lllp(uint32_t job_id);
+
+#endif /* !_SLURMSTEPD_DIST_TASKS_H */
+
