@@ -46,6 +46,7 @@
 #include <slurm/slurm.h>
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/forward.h"
 
 /*
  * slurm_init_job_desc_msg - initialize job descriptor with 
@@ -131,5 +132,4 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->shared 	= (uint16_t) NO_VAL;
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
 }
-
 

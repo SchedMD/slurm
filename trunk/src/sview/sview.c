@@ -257,6 +257,65 @@ static void _change_refresh(GtkToggleAction *action, gpointer user_data)
 	return;
 }
 
+static void _create_display_popup(GtkToggleAction *action, gpointer user_data)
+{
+	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *label = gtk_label_new("Interval in Seconds ");
+	GtkObject *adjustment = gtk_adjustment_new(global_sleep_time,
+						   1, 10000,
+						   5, 60,
+						   1);
+	GtkWidget *spin_button = 
+		gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Refresh Interval",
+		GTK_WINDOW (user_data),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		GTK_STOCK_CANCEL,
+		GTK_RESPONSE_CANCEL,
+		NULL);
+	GError *error = NULL;
+	int response = 0;
+	char *temp = NULL;
+
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   table, FALSE, FALSE, 0);
+	
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);	
+	gtk_table_attach_defaults(GTK_TABLE(table), spin_button, 1, 2, 0, 1);
+	
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		global_sleep_time = 
+			gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
+		temp = g_strdup_printf("Refresh Interval set to %d seconds.",
+				       global_sleep_time);
+		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 
+				  STATUS_REFRESH);
+		response = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar), 
+					      STATUS_REFRESH,
+					      temp);
+		g_free(temp);
+		if (!g_thread_create(_refresh_thr, GINT_TO_POINTER(response),
+				     FALSE, &error))
+		{
+			g_printerr ("Failed to create refresh thread: %s\n", 
+				    error->message);
+		}
+	}
+
+	gtk_widget_destroy(popup);
+	
+	return;
+}
+
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkNotebook *notebook)
@@ -296,55 +355,86 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	/* Our menu*/
 	const char *ui_description =
 		"<ui>"
-		"  <menubar name='MainMenu'>"
-		"    <menu action='Options'>"
-		"      <menuitem action='Set Refresh Interval'/>"
-		"      <menuitem action='Refresh'/>"
+		"  <menubar name='main'>"
+		"    <menu action='options'>"
+		"      <menuitem action='interval'/>"
+		"      <menuitem action='refresh'/>"
 		"      <separator/>"
-		"      <menuitem action='Admin Mode'/>"
+		"      <menuitem action='admin'/>"
+		"      <menuitem action='reconfig'/>"
 		"      <separator/>"
-		"      <menu action='Tab Pos'>"
-		"        <menuitem action='Top'/>"
-		"        <menuitem action='Bottom'/>"
-		"        <menuitem action='Left'/>"
-		"        <menuitem action='Right'/>"
+		"      <menu action='tab_pos'>"
+		"        <menuitem action='tab_top'/>"
+		"        <menuitem action='tab_bottom'/>"
+		"        <menuitem action='tab_left'/>"
+		"        <menuitem action='tab_right'/>"
 		"      </menu>"
 		"      <separator/>"
-		"      <menuitem action='Exit'/>"
+		"      <menuitem action='exit'/>"
 		"    </menu>"
-		"    <menu action='Help'>"
-		"      <menuitem action='About'/>"
+		"    <menu action='displays'>"
+		"      <menuitem action='config'/>"
+		"      <menuitem action='deamons'/>"
+		"      <menuitem action='nodes'/>"
+		"      <menuitem action='jobs'/>"
+		"      <menuitem action='steps'/>"
+		"      <menuitem action='partitions'/>"
+		"    </menu>"
+		"    <menu action='help'>"
+		"      <menuitem action='about'/>"
 		"    </menu>"
 		"  </menubar>"
 		"</ui>";
 
 	GtkActionEntry entries[] = {
-		{"Options", NULL, "_Options"},
-		{"Tab Pos", NULL, "_Tab Pos"},
-		{"Set Refresh Interval", NULL, "Set _Refresh Interval", 
+		{"options", NULL, "_Options"},
+		{"displays", NULL, "_Static Displays"},
+		{"tab_pos", NULL, "_Tab Pos"},
+		{"interval", NULL, "Set _Refresh Interval", 
 		 "<control>r", "Change Refresh Interval", 
 		 G_CALLBACK(_change_refresh)},
-		{"Refresh", NULL, "Refresh", 
+		{"refresh", NULL, "Refresh", 
 		 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
-		{"Exit", NULL, "E_xit", 
+		{"reconfig", NULL, "_SLURM Reconfigure", 
+		 "<control>s", "Reconfigures System", 
+		 G_CALLBACK(slurm_reconfigure)},
+		{"config", NULL, "Config _Info", 
+		 "<control>i", "Displays info from slurm.conf file", 
+		 G_CALLBACK(_create_display_popup)},
+		{"deamons", NULL, "_Deamons", 
+		 "<control>d", "Displays Deamons running on node", 
+		 G_CALLBACK(_create_display_popup)},
+		{"nodes", NULL, "_Nodes", 
+		 "<control>n", "Displays info about all nodes", 
+		 G_CALLBACK(_create_display_popup)},
+		{"jobs", NULL, "_Jobs", 
+		 "<control>j", "Displays info about all jobs", 
+		 G_CALLBACK(_create_display_popup)},
+		{"steps", NULL, "St_eps", 
+		 "<control>e", "Displays info about all job steps", 
+		 G_CALLBACK(_create_display_popup)},
+		{"partitions", NULL, "_Partitions", 
+		 "<control>p", "Displays info about all partitions", 
+		 G_CALLBACK(_create_display_popup)},
+		{"exit", NULL, "E_xit", 
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
-		{"Help", NULL, "_Help"},
-		{"About", NULL, "_About"}
+		{"help", NULL, "_Help"},
+		{"about", NULL, "_About"}
 	};
 
 	GtkRadioActionEntry radio_entries[] = {
-		{"Top", NULL, "_Top", 
+		{"tab_top", NULL, "_Top", 
 		 "<control>T", "Move tabs to top", 2},
-		{"Bottom", NULL, "_Bottom", 
+		{"tab_bottom", NULL, "_Bottom", 
 		 "<control>B", "Move tabs to the bottom", 3},
-		{"Left", NULL, "_Left", 
+		{"tab_left", NULL, "_Left", 
 		 "<control>L", "Move tabs to the Left", 4},
-		{"Right", NULL, "_Right", 
+		{"tab_right", NULL, "_Right", 
 		 "<control>R", "Move tabs to the Right", 1}
 	};
 
 	GtkToggleActionEntry toggle_entries[] = {
-		{"Admin Mode", NULL,          
+		{"admin", NULL,          
 		 "_Admin Mode", "<control>a", 
 		 "Allows user to change or update information", 
 		 G_CALLBACK(_set_admin_mode), 
@@ -377,7 +467,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	}
 
 	/* Finally, return the actual menu bar created by the item factory. */
-	return gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
+	return gtk_ui_manager_get_widget (ui_manager, "/main");
 }
 void *_popup_thr_main(void *arg)
 {

@@ -681,7 +681,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case PMI_KVS_PUT_RESP:
 		break;	/* no data in message */
 	default:
-		debug("No pack method for msg type %i", msg->msg_type);
+		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
 		break;
 
@@ -991,7 +991,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case PMI_KVS_PUT_RESP:
 		break;	/* no data */
 	default:
-		debug("No unpack method for msg type %i", msg->msg_type);
+		debug("No unpack method for msg type %u", msg->msg_type);
 		return EINVAL;
 		break;
 	}
@@ -3279,7 +3279,7 @@ _pack_ret_list(List ret_list,
 	while((ret_type = list_next(itr)) != NULL) {
 		pack32((uint32_t)ret_type->msg_rc, buffer);
 		pack32((uint32_t)ret_type->err, buffer);
-		pack32((uint32_t)ret_type->type, buffer);
+		pack16((uint16_t)ret_type->type, buffer);
 		
 		msg.msg_type = ret_type->type;
 
@@ -3314,7 +3314,7 @@ _unpack_ret_list(List *ret_list,
 		list_push(*ret_list, ret_type);
 		safe_unpack32((uint32_t *)&ret_type->msg_rc, buffer);
 		safe_unpack32((uint32_t *)&ret_type->err, buffer);
-		safe_unpack32((uint32_t *)&ret_type->type, buffer);
+		safe_unpack16((uint16_t *)&ret_type->type, buffer);
 		
 		msg.msg_type = ret_type->type;
 			

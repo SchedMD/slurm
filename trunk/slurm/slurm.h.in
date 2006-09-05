@@ -776,7 +776,6 @@ typedef struct partition_info update_part_msg_t;
  * slurm_spawn_kill functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 
-
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/

@@ -746,8 +746,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 /* 	ListIterator itr; */
 	
 	List ret_list = list_create(destroy_ret_types);
-	msg->forward_struct = NULL;
-	msg->forward_struct_init = 0;
+	slurm_init_slurm_msg(msg, NULL);
 
 	xassert(fd >= 0);
 	
@@ -1460,10 +1459,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	bool backup_controller_flag;
 	uint16_t slurmctld_timeout;
 
-	forward_init(&req->forward, NULL);
-	req->ret_list = NULL;
-	req->orig_addr.sin_addr.s_addr = 0; 
-	req->forward_struct_init = 0;
+	slurm_init_slurm_msg(req, NULL);
+	
 	if ((fd = slurm_open_controller_conn()) < 0) {
 		rc = -1;
 		goto cleanup;
@@ -1793,10 +1790,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	ret_types_t *ret_type = NULL;
 	int ret_c = 0;
 
-	forward_init(&req->forward, NULL);
-	req->ret_list = NULL;
-	req->orig_addr.sin_addr.s_addr = 0;
-	/* no need to init forward_struct_init here */
+	slurm_init_slurm_msg(req, NULL);
 		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return -1;
@@ -1834,10 +1828,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	ret_types_t *ret_type = NULL;
 	int ret_val = 0;
 
-	forward_init(&req->forward, NULL);
-	req->ret_list = NULL;
-	req->orig_addr.sin_addr.s_addr = 0; 
-	/* no need to init forward_struct_init here */
+	slurm_init_slurm_msg(req, NULL);
 		
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return -1;

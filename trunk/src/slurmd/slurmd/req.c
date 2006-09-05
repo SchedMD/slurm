@@ -943,6 +943,7 @@ _abort_job(uint32_t job_id)
 {
 	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
+	slurm_init_slurm_msg(&resp_msg, NULL);
 
 	resp.job_id       = job_id;
 	resp.job_rc       = 1;
@@ -950,8 +951,6 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
-	forward_init(&resp_msg.forward, NULL);
-	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
 
@@ -1195,6 +1194,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		}
 	} 
 	resp = xmalloc(sizeof(stat_jobacct_msg_t));
+	slurm_init_slurm_msg(&resp_msg, msg);
 	resp->job_id = req->job_id;
 	resp->step_id = req->step_id;
 	resp->return_code = SLURM_SUCCESS;
@@ -1216,11 +1216,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	
 	resp_msg.msg_type     = MESSAGE_STAT_JOBACCT;
 	resp_msg.data         = resp;
-	resp_msg.forward = msg->forward;
-	resp_msg.ret_list = msg->ret_list;
-	resp_msg.forward_struct_init = msg->forward_struct_init;
-	resp_msg.forward_struct = msg->forward_struct;
-	
+		
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_stat_jobacct_msg(resp);
 	return SLURM_SUCCESS;
@@ -1282,6 +1278,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 			continue;
 		if (stepd_pid_in_container(fd, req->job_pid)
 		    || req->job_pid == stepd_daemon_pid(fd)) {
+			slurm_init_slurm_msg(&resp_msg, msg);
 			resp.job_id = stepd->jobid;
 			resp.return_code = SLURM_SUCCESS;
 			found = true;
@@ -1299,11 +1296,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		resp_msg.address      = msg->address;
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
-		resp_msg.forward = msg->forward;
-		resp_msg.ret_list = msg->ret_list;
-		resp_msg.forward_struct_init = msg->forward_struct_init;
-		resp_msg.forward_struct = msg->forward_struct;
-	
+			
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
@@ -1428,6 +1421,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	uint32_t nodeid = (uint32_t)NO_VAL;
 	
 	memset(&resp_msg, 0, sizeof(slurm_msg_t));
+	slurm_init_slurm_msg(&resp_msg, msg);
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
@@ -1502,10 +1496,6 @@ done:
 	debug2("update step addrs rc = %d", rc);
 	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
-	resp_msg.forward      = msg->forward;
-	resp_msg.forward_struct = msg->forward_struct;
-	resp_msg.forward_struct_init = msg->forward_struct_init;
-	resp_msg.ret_list     = msg->ret_list;
 	resp->node_name       = xstrdup(conf->node_name);
 	resp->srun_node_id    = nodeid;
 	resp->return_code     = rc;
@@ -1761,6 +1751,8 @@ _epilog_complete(uint32_t jobid, int rc)
 	slurm_msg_t            msg;
 	epilog_complete_msg_t  req;
 
+	slurm_init_slurm_msg(&msg, NULL);
+	
 	_wait_state_completed(jobid, 5);
 
 	req.job_id      = jobid;
@@ -1773,8 +1765,6 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
-	forward_init(&msg.forward, NULL);
-	msg.ret_list = NULL;
 	
 	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");

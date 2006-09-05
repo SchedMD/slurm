@@ -409,7 +409,9 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	List ret_list;
 
 	memset(&req_msg, 0, sizeof(slurm_msg_t));
+	slurm_init_slurm_msg(&req_msg, NULL);
 	memset(&resp_msg, 0, sizeof(slurm_msg_t));
+	slurm_init_slurm_msg(&resp_msg, NULL);
 
 	/*
 	 *  Set request message address to slurmd on localhost
@@ -420,10 +422,6 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
-	forward_init(&req_msg.forward, NULL);
-	req_msg.ret_list = NULL;
-	req_msg.orig_addr.sin_addr.s_addr = 0; 
-	req_msg.forward_struct_init = 0;
 	
 	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 

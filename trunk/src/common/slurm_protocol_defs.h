@@ -278,13 +278,14 @@ typedef struct ret_data_info {
 	char *node_name;
 	slurm_addr addr;       
 	uint32_t nodeid;
-	void *data; /* what is this? - CJM */
+	void *data; /* used to hold the return message data (i.e. 
+		       return_code_msg_t */
 } ret_data_info_t;
 
 typedef struct ret_types {
-	uint32_t msg_rc;
+	uint32_t msg_rc; /* message return code */
 	uint32_t err;
-	uint32_t type;
+	slurm_msg_type_t type; /* message type */
 	List ret_data_list; /* list of ret_data_info_t pointers */
 } ret_types_t;
 
@@ -632,6 +633,18 @@ typedef struct slurm_node_registration_status_msg {
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
+/*****************************************************************************\
+ *	SLURM MESSAGE INITIALIZATION
+\*****************************************************************************/
+
+/*
+ * slurm_init_slurm_msg - initialize slurm message 
+ * OUT msg - user defined slurm message
+ * IN in_msg - NULL if fresh initialization, or already initialized message to
+ *             initialize from.  (Usually for reponse messages send in
+ *             the request message)
+ */
+extern void slurm_init_slurm_msg (slurm_msg_t * msg, slurm_msg_t * in_msg);
 
 /* free message functions */
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
@@ -717,8 +730,8 @@ void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
 void inline slurm_free_node_select_msg(
 		node_info_select_request_msg_t *msg);
-extern int slurm_free_msg_data(uint32_t type, void *data);
-extern uint32_t slurm_get_return_code(uint32_t type, void *data);
+extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
+extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);

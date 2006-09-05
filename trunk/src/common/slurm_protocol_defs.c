@@ -57,6 +57,7 @@
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/job_options.h"
+#include "src/common/forward.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
 static void _slurm_free_job_info_members (job_info_t * job);
@@ -70,6 +71,29 @@ static void _slurm_free_partition_info_members (partition_info_t * part);
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
 static void _slurm_free_job_step_info_members (job_step_info_t * msg);
 
+/*
+ * slurm_init_slurm_msg - initialize slurm message 
+ * OUT msg - user defined slurm message
+ * IN in_msg - NULL if fresh initialization, or already initialized message to
+ *             initialize from.  (Usually for reponse messages send in
+ *             the request message)
+ */
+void slurm_init_slurm_msg (slurm_msg_t * msg, slurm_msg_t * in_msg)
+{
+	if(in_msg) {
+		msg->forward = in_msg->forward;
+		msg->ret_list = msg->ret_list;
+		msg->forward_struct_init = msg->forward_struct_init;
+		msg->forward_struct = msg->forward_struct;
+	} else {
+		forward_init(&msg->forward, NULL);
+		msg->ret_list = NULL;
+		msg->forward_struct_init = 0;
+		msg->forward_struct = NULL;
+	}
+	msg->orig_addr.sin_addr.s_addr = 0; 
+	return;	
+}
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
 {
@@ -999,7 +1023,7 @@ void inline slurm_free_node_select_msg(
 }
 
 
-extern int slurm_free_msg_data(uint32_t type, void *data)
+extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	switch(type) {
 	case REQUEST_BUILD_INFO:
@@ -1135,7 +1159,7 @@ extern int slurm_free_msg_data(uint32_t type, void *data)
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_get_return_code(uint32_t type, void *data)
+extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 {
 	uint32_t rc = 0;
 

@@ -36,6 +36,7 @@ DEF_TIMERS;
 
 enum { 
 	SORTID_POS = POS_LOC,
+	SORTID_ACTION,
 	SORTID_JOBID, 
 	SORTID_ALLOC, 
 	SORTID_PARTITION, 
@@ -82,6 +83,8 @@ enum {
 
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_ACTION, "Action", TRUE, 0, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -797,6 +800,29 @@ extern GtkListStore *create_model_job(int type)
 	GtkTreeIter iter;
 	
 	switch(type) {
+	case SORTID_ACTION:
+		model = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "cancel",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "suspend",
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "resume",
+				   -1);			
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "checkpoint",
+				   -1);			
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "requeue",
+				   -1);			
+		break;
 	case SORTID_TIMELIMIT:
 		break;
 	case SORTID_PRIORITY:

@@ -8,6 +8,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0-pre2
 =============================
+ -- added function slurm_init_slurm_msg to be used to init any slurm_msg_t
+    you no longer need do any other type of initialization to the type.
+
+* Changes in SLURM 1.2.0-pre2
+=============================
  -- Fixed task dist to work with hostfile and warn about asking for more tasks 
     than you have nodes for in arbitray mode.
  -- Added "account" field to job and step accounting information and sacct output.

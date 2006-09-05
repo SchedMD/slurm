@@ -84,12 +84,10 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	if ((rc = _get_addr()) != SLURM_SUCCESS)
 		return rc; 
 
+	slurm_init_slurm_msg(&msg_send, NULL);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
-	forward_init(&msg_send.forward, NULL);
-	msg_send.ret_list = NULL;
-	msg_send.forward_struct_init = 0;
 	
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
@@ -155,14 +153,10 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	data.size = pmi_size;
 	data.port = port;
 	data.hostname = hostname;
+	slurm_init_slurm_msg(&msg_send, NULL);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
-
-	/* Send the RPC to the srun communcation manager */
-	forward_init(&msg_send.forward, NULL);
-	msg_send.ret_list = NULL;
-	msg_send.forward_struct_init = 0;
 
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
