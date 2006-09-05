@@ -36,6 +36,9 @@ documents those changes that are of interest to users and admins.
 =========================
  - Update file headers adding permission to link with OpenSSL.
  - Enable sched/wiki2 message authentication.
+ - Fix libpmi compilation issue.
+ - Remove "gcc-c++ python" from slurm.spec BuildRequires.  It breaks
+   the AIX build, so we'll have to find another way to deal with that.
 
 * Changes in SLURM 1.1.10
 =========================
@@ -296,6 +299,13 @@ documents those changes that are of interest to users and admins.
     patch_02222006).
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
+
+* Changes in SLURM 1.0.16
+=========================
+ -- For "srun --attach=X" to other users job, report an error and exit (it
+    previously just hung).
+ -- Make sure that "scancel -s KILL" terminates the job just like "scancel" 
+    including deletion of all job steps (Chris Holmes, HP, slurm,patch).
 
 * Changes in SLURM 1.0.15
 =========================

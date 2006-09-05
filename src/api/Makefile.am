@@ -99,7 +99,7 @@ libslurmhelper_la_LDFLAGs = \
 	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age)
 
-libpmi_la_LBFLAGS = $(LIB_LDFLAGS)
+libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
