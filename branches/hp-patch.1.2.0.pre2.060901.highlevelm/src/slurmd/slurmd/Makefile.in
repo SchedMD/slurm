@@ -74,7 +74,7 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
-am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
+am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) dist_tasks.$(OBJEXT) get_mach_stat.$(OBJEXT) \
 	read_proc.$(OBJEXT) reverse_tree_math.$(OBJEXT) xcpu.$(OBJEXT) \
 	proctrack.$(OBJEXT) setproctitle.$(OBJEXT) \
 	slurmstepd_init.$(OBJEXT) stepd_api.$(OBJEXT) \
@@ -297,6 +297,7 @@ slurmd_test_LDADD = $(slurmd_LDADD)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
+	dist_tasks.c dist_tasks.h \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
 	reverse_tree_math.c reverse_tree_math.h \
@@ -415,6 +416,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_proc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_math.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_script.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Po@am__quote@

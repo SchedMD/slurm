@@ -56,6 +56,7 @@
  * IN node_cnt - number of nodes we have 
  * IN task_cnt - number of tasks to distribute across these cpus
  * IN task_dist - type of distribution we are using 
+ * IN plane_size - plane size (only needed for the plane distribution)
  * RET a pointer to an slurm_step_layout_t structure
  * NOTE: allocates memory that should be xfreed by caller
  */
@@ -64,7 +65,8 @@ extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
 						     uint32_t *cpu_count_reps,
 						     uint16_t node_cnt, 
 						     uint32_t task_cnt,
-						     uint16_t task_dist);
+						     uint16_t task_dist,
+						     uint32_t plane_size);
 
 /* 
  * fake_slurm_step_layout_create - used when you don't allocate a job from the

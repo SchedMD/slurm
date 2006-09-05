@@ -78,6 +78,7 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	safeopen.c safeopen.h bitstring.c bitstring.h mpi.c mpi.h \
 	pack.c pack.h parse_config.c parse_config.h parse_spec.c \
 	parse_spec.h plugin.c plugin.h plugrack.c plugrack.h \
+	slurm_selecttype_info.c \
 	read_config.c read_config.h node_select.c node_select.h env.c \
 	env.h slurm_cred.h slurm_cred.c slurm_errno.c \
 	slurm_protocol_api.c slurm_protocol_api.h \
@@ -92,6 +93,7 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
 	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
 	getopt1.c unsetenv.c unsetenv.h hostlist.c hostlist.h \
+	slurm_resource_info.c slurm_resource_info.h \
 	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
 	checkpoint.h parse_time.c parse_time.h job_options.c \
 	job_options.h global_defaults.c slurm_xlator.h
@@ -100,6 +102,7 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo global_srun.lo strlcpy.lo list.lo net.lo fd.lo \
 	log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
 	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
+	slurm_selecttype_info.lo \
 	read_config.lo node_select.lo env.lo slurm_cred.lo \
 	slurm_errno.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
@@ -107,6 +110,7 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	util-net.lo slurm_auth.lo slurm_jobacct.lo slurm_jobcomp.lo \
 	switch.lo arg_desc.lo malloc.lo getopt.lo getopt1.lo \
 	$(am__objects_1) hostlist.lo slurm_step_layout.lo \
+	slurm_resource_info.lo \
 	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
@@ -124,11 +128,11 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) \
+LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(LIBTOOL) --mode=link --tag=CC $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
@@ -144,7 +148,6 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
-AR = @AR@
 AUTHD_CFLAGS = @AUTHD_CFLAGS@
 AUTHD_LIBS = @AUTHD_LIBS@
 AUTOCONF = @AUTOCONF@
@@ -159,7 +162,6 @@ CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
-CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -174,7 +176,6 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 ELAN_LIBS = @ELAN_LIBS@
 EXEEXT = @EXEEXT@
-F77 = @F77@
 FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FFLAGS = @FFLAGS@
 GTK2_CFLAGS = @GTK2_CFLAGS@
@@ -271,10 +272,8 @@ WITH_GNU_LD_FALSE = @WITH_GNU_LD_FALSE@
 WITH_GNU_LD_TRUE = @WITH_GNU_LD_TRUE@
 WITH_MUNGE_FALSE = @WITH_MUNGE_FALSE@
 WITH_MUNGE_TRUE = @WITH_MUNGE_TRUE@
-ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
-ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -352,6 +351,7 @@ libcommon_la_SOURCES = \
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
+	slurm_selecttype_info.c \
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
@@ -384,6 +384,8 @@ libcommon_la_SOURCES = \
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	hostlist.c hostlist.h		\
+	slurm_resource_info.c           \
+	slurm_resource_info.h           \
 	slurm_step_layout.c slurm_step_layout.h	\
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
@@ -496,6 +498,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
@@ -509,6 +512,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_socket_implementation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_resource_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@

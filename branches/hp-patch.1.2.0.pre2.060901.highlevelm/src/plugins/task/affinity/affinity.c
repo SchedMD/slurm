@@ -60,9 +60,9 @@ void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 		sprintf(suffix, "to mask 0x");
 		if (job->cpu_bind_type & CPU_BIND_RANK) {
 			strcpy(bind_type, "set to RANK");
-		} else if (job->cpu_bind_type & CPU_BIND_MAPCPU) {
+		} else if (job->cpu_bind_type & CPU_BIND_MAP) {
 			strcpy(bind_type, "set to MAP_CPU");
-		} else if (job->cpu_bind_type & CPU_BIND_MASKCPU) {
+		} else if (job->cpu_bind_type & CPU_BIND_MASK) {
 			strcpy(bind_type, "set to MASK_CPU");
 		} else if (job->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
 			strcpy(bind_type, "set to UNKNOWN");
@@ -91,8 +91,10 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	char *curstr, *selstr;
 	char mstr[1 + CPU_SETSIZE / 4];
 	int local_id = job->envtp->localid;
+	int buftype[1024];
 
-	debug3("get_cpuset (%d) %s\n", job->cpu_bind_type, job->cpu_bind);
+	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
+	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type, job->cpu_bind);
 	CPU_ZERO(mask);
 
 	if (job->cpu_bind_type & CPU_BIND_NONE) {
@@ -148,7 +150,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
-	if (job->cpu_bind_type & CPU_BIND_MASKCPU) {
+	if (job->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
 		if (str_to_cpuset(mask, mstr) < 0) {
 			error("str_to_cpuset %s", mstr);
@@ -157,7 +159,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 		return true;
 	}
 
-	if (job->cpu_bind_type & CPU_BIND_MAPCPU) {
+	if (job->cpu_bind_type & CPU_BIND_MAP) {
 		unsigned int mycpu = 0;
 		if (strncmp(mstr, "0x", 2) == 0) {
 			mycpu = strtoul (&(mstr[2]), NULL, 16);

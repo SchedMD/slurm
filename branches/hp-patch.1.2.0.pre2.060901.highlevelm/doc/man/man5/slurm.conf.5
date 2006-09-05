@@ -700,7 +700,25 @@ Size of real memory on the node in MegaBytes (e.g. "2048").
 The default value is 1.
 .TP
 \fBProcs\fR
-Number of processors on the node (e.g. "2").
+Number of logical processors on the node (e.g. "2").
+If Procs is omitted, it will be inferred from
+\fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+The default value is 1. 
+.TP
+\fBSockets\fR
+Number of physical processor sockets/chips on the node (e.g. "2").
+If Sockets is omitted, it will be inferred from
+\fBProcs\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+The default value is 1.
+.TP
+\fBCoresPerSocket\fR
+Number of cores in a single physical processor socket (e.g. "2").
+The CoresPerSocket value describes physical cores, not the
+logical number of processors per socket.
+The default value is 1.
+.TP
+\fBThreadsPerCore\fR
+Number of logical threads in a single physical core (e.g. "2").
 The default value is 1.
 .TP
 \fBReason\fR

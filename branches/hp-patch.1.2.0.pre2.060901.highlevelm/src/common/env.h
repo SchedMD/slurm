@@ -39,8 +39,8 @@ typedef struct env_options {
 	char *task_count;
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	enum task_dist_states
-		distribution;	/* --distribution=, -m dist	*/
+	task_dist_states_t distribution; /* --distribution=, -m dist	*/
+	int plane_size;         /* plane_size for SLURM_DIST_PLANE */
 	cpu_bind_type_t
 		cpu_bind_type;	/* --cpu_bind=			*/
 	char *cpu_bind;		/* binding map for map/mask_cpu	*/

@@ -257,9 +257,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 8 ******/
-	convert_num_unit((float)job_ptr->min_procs, tmp1, UNIT_NONE);
-	convert_num_unit((float)job_ptr->min_memory, tmp2, UNIT_NONE);
-	convert_num_unit((float)job_ptr->min_tmp_disk, tmp3, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_procs, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_memory, tmp2, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp3, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"MinProcs=%s MinMemory=%s Features=%s MinTmpDisk=%s", 
 		tmp1, tmp2, job_ptr->features, tmp3);

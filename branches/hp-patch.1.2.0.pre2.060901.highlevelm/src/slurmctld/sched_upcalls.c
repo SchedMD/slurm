@@ -810,7 +810,7 @@ sched_get_job_min_memory( sched_obj_list_t job_data,
 	if ( type ) *type = 'U';
 	details = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( details ) {
-		return (void *) &details->min_memory;
+		return (void *) &details->job_min_memory;
 	} else {
 		return (void *) &zero_32;
 	}
@@ -830,7 +830,7 @@ sched_get_job_min_disk( sched_obj_list_t job_data,
 	if ( type ) *type = 'U';
 	details = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( details ) {
-		return (void *) &details->min_tmp_disk;
+		return (void *) &details->job_min_tmp_disk;
 	} else {
 		return (void *) &zero_32;
 	}

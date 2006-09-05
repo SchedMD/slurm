@@ -56,6 +56,7 @@
 #include <slurm/slurm.h>
 #include <sys/wait.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_common.h"
@@ -397,6 +398,10 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  argc;
 	uint16_t  multi_prog;
 	uint32_t  *cpus_allocated;
+	uint32_t  max_sockets;
+	uint32_t  max_cores;
+	uint32_t  max_threads;
+	uint32_t  cpus_per_task;
 	char    **env;
 	char    **argv;
 	char     *cwd;
@@ -409,10 +414,13 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  num_io_port;
 	uint16_t  *io_port;  /* array of available client IO listen ports */
 
+        /* Distribution at the lowest level of logical processor (lllp) */
+	task_dist_states_t task_dist;  /* --distribution=, -m dist	*/
+	uint32_t plane_size; /* lllp distribution -> plane_size for
+			      * when -m plane=<# of lllp per plane> */      
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
 	slurm_addr orig_addr;	  /* where message really came from for io */ 
-	
 	/* stdout/err/in per task filenames */
 	char     *ofname;
 	char     *efname;
@@ -621,6 +629,9 @@ typedef struct slurm_node_registration_status_msg {
 	time_t timestamp;
 	char *node_name;
 	uint32_t cpus;
+	uint32_t sockets;
+	uint32_t cores;
+	uint32_t threads;
 	uint32_t real_memory_size;
 	uint32_t temporary_disk_space;
 	uint32_t job_count;	/* number of associate job_id's */
