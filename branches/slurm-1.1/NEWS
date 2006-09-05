@@ -3,7 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.12
 =========================
- - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS.
+ - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS request.
+ - Add srun option "--comment" (maps to job account until slurm v1.2, 
+   needed for Moab scheduler functionality).
 
 * Changes in SLURM 1.1.11
 =========================

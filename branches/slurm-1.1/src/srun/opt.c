@@ -135,6 +135,7 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
+#define LONG_OPT_COMMENT     0x123
 
 /*---- forward declarations of static functions  ----*/
 
@@ -1058,6 +1059,7 @@ void set_options(const int argc, char **argv, int first)
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
+		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1508,6 +1510,14 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
+			break;
+		case LONG_OPT_COMMENT:
+			/* Use account for Moab until job comment field
+			 * is actually available in slurm v1.2 */
+			if(!first && opt.account)
+				break;
+			xfree(opt.account);
+			opt.account = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
