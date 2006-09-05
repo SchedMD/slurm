@@ -119,7 +119,7 @@ extern void checksum( char *sum, const char * key, const char * buf )
 	uint32_t crc = 0;
 	uint32_t lword, irword;
 	int idx, buf_len = strlen(buf);
-	uint32_t seed = (uint32_t) strtol( key, NULL, 0 );
+	uint32_t seed = (uint32_t) strtoul( key, NULL, 0 );
 
 	for ( idx = 0; idx < buf_len; ++idx ) {
 		crc = (uint32_t) compute_crc( crc, buf[idx] );

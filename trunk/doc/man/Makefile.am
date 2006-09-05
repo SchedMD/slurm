@@ -12,7 +12,8 @@ man1_MANS =            \
 	man1/slurm.1 \
 	man1/smap.1 \
 	man1/squeue.1 \
-	man1/srun.1
+	man1/srun.1 \
+	man1/sbcast.1   
 
 man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_hostlist_destroy.3 \
@@ -90,7 +91,8 @@ man5_MANS = man5/bluegene.conf.5 \
 
 man8_MANS = man8/slurmctld.8 \
 	man8/slurmd.8 \
-	man8/spank.8
+	man8/spank.8 \
+	man8/slurmstepd.8
 
 dist-hook:
 	-rm -rf `find $(distdir) -name CVS`
