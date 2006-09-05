@@ -75,97 +75,92 @@ void *_forward_thread(void *arg)
 	char name[MAX_SLURM_NAME];
 
 	msg.forward.cnt = 0;
-start_again:
-	/* info("sending to %s with %d forwards",  */
-/* 	     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
-	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
-		error("forward_thread to %s: %m", fwd_msg->node_name);
-		slurm_mutex_lock(fwd_msg->forward_mutex);
-		if(forward_msg_to_next(fwd_msg, errno)) {
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-			free_buf(buffer);	
-			buffer = init_buf(0);
-			goto start_again;
+	while(1) { /* repeat until we are sure the message was sent */ 
+		/* info("sending to %s with %d forwards",  */
+		/*     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
+		if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
+			error("forward_thread to %s: %m", fwd_msg->node_name);
+			slurm_mutex_lock(fwd_msg->forward_mutex);
+			if(forward_msg_to_next(fwd_msg, errno)) {
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				free_buf(buffer);	
+				buffer = init_buf(0);
+				continue;
+			}
+			goto cleanup;
 		}
-		goto cleanup;
-		/* ret_list = list_create(destroy_ret_types); */
-/* 		no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno); */
-/* 		goto nothing_sent; */
-		
-	}
-	pack_header(&fwd_msg->header, buffer);
+		pack_header(&fwd_msg->header, buffer);
 	
-	/* add forward data to buffer */
-	if (remaining_buf(buffer) < fwd_msg->buf_len) {
-		buffer->size += (fwd_msg->buf_len + BUF_SIZE);
-		xrealloc(buffer->head, buffer->size);
-	}
-	if (fwd_msg->buf_len) {
-		memcpy(&buffer->head[buffer->processed], 
-		       fwd_msg->buf, fwd_msg->buf_len);
-		buffer->processed += fwd_msg->buf_len;
-	}
-	
-	/*
-	 * forward message
-	 */
-	if(_slurm_msg_sendto(fd, 
-			     get_buf_data(buffer), 
-			     get_buf_offset(buffer),
-			     SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0) {
-		error("forward_thread: slurm_msg_sendto: %m");
-		slurm_mutex_lock(fwd_msg->forward_mutex);
-		if(forward_msg_to_next(fwd_msg, errno)) {
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-			free_buf(buffer);	
-			buffer = init_buf(0);
-			goto start_again;
+		/* add forward data to buffer */
+		if (remaining_buf(buffer) < fwd_msg->buf_len) {
+			buffer->size += (fwd_msg->buf_len + BUF_SIZE);
+			xrealloc(buffer->head, buffer->size);
 		}
-		goto cleanup;
-	/* 	ret_list = list_create(destroy_ret_types); */
-/* 		no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno); */
-/* 		goto nothing_sent; */
-	}
+		if (fwd_msg->buf_len) {
+			memcpy(&buffer->head[buffer->processed], 
+			       fwd_msg->buf, fwd_msg->buf_len);
+			buffer->processed += fwd_msg->buf_len;
+		}
+	
+		/*
+		 * forward message
+		 */
+		if(_slurm_msg_sendto(fd, 
+				     get_buf_data(buffer), 
+				     get_buf_offset(buffer),
+				     SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0) {
+			error("forward_thread: slurm_msg_sendto: %m");
+			slurm_mutex_lock(fwd_msg->forward_mutex);
+			if(forward_msg_to_next(fwd_msg, errno)) {
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				free_buf(buffer);	
+				buffer = init_buf(0);
+				continue;
+			}
+			goto cleanup;
+		}
 
-	if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
-	    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
-		slurm_mutex_lock(fwd_msg->forward_mutex);
-		type = xmalloc(sizeof(ret_types_t));
-		list_push(fwd_msg->ret_list, type);
-		type->ret_data_list = list_create(destroy_data_info);
-		ret_data_info = xmalloc(sizeof(ret_data_info_t));
-		list_push(type->ret_data_list, ret_data_info);
-		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
-		ret_data_info->nodeid = fwd_msg->header.srun_node_id;
-		for(i=0; i<fwd_msg->header.forward.cnt; i++) {
+		if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
+		    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
+			slurm_mutex_lock(fwd_msg->forward_mutex);
+			type = xmalloc(sizeof(ret_types_t));
+			list_push(fwd_msg->ret_list, type);
+			type->ret_data_list = list_create(destroy_data_info);
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
 			list_push(type->ret_data_list, ret_data_info);
-			strncpy(name,
-				&fwd_msg->header.forward.
-				name[i * MAX_SLURM_NAME],
-				MAX_SLURM_NAME);
-			ret_data_info->node_name = xstrdup(name);
-			ret_data_info->nodeid = 
-				fwd_msg->header.forward.node_id[i];
+			ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+			ret_data_info->nodeid = fwd_msg->header.srun_node_id;
+			for(i=0; i<fwd_msg->header.forward.cnt; i++) {
+				ret_data_info = 
+					xmalloc(sizeof(ret_data_info_t));
+				list_push(type->ret_data_list, ret_data_info);
+				strncpy(name,
+					&fwd_msg->header.forward.
+					name[i * MAX_SLURM_NAME],
+					MAX_SLURM_NAME);
+				ret_data_info->node_name = xstrdup(name);
+				ret_data_info->nodeid = 
+					fwd_msg->header.forward.node_id[i];
+			}
+			goto cleanup;
 		}
-		goto cleanup;
-	}
 	
-	ret_list = slurm_receive_msg(fd, &msg, fwd_msg->timeout);
+		ret_list = slurm_receive_msg(fd, &msg, fwd_msg->timeout);
 
-	if(!ret_list || (fwd_msg->header.forward.cnt != 0 
-			 && list_count(ret_list) == 0)) {
-		slurm_mutex_lock(fwd_msg->forward_mutex);
-		if(forward_msg_to_next(fwd_msg, errno)) {
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-			free_buf(buffer);	
-			buffer = init_buf(0);
-			goto start_again;
+		if(!ret_list || (fwd_msg->header.forward.cnt != 0 
+				 && list_count(ret_list) == 0)) {
+			slurm_mutex_lock(fwd_msg->forward_mutex);
+			if(forward_msg_to_next(fwd_msg, errno)) {
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				free_buf(buffer);	
+				buffer = init_buf(0);
+				continue;
+			}
+			goto cleanup;
 		}
-		goto cleanup;
-		//no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno);
+		break;
 	}
-//nothing_sent:
+
 	type = xmalloc(sizeof(ret_types_t));
 	type->err = errno;
 	list_push(ret_list, type);
