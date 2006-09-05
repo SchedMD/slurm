@@ -208,8 +208,10 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		agent_args->node_count++;
 	}
 
-	if ((agent_args->node_count - down_node_cnt) == 0)
+	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
+		delete_all_step_records(job_ptr);
+	}
 	if (agent_args->node_count == 0) {
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
