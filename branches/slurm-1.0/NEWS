@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- For "srun --attach=X" to other users job, report an error and exit (it
     previously just hung).
+ -- Make sure that "scancel -s KILL" terminates the job just like "scancel" 
+    including deletion of all job steps (Chris Holmes, HP, slurm,patch).
 
 * Changes in SLURM 1.0.15
 =========================
