@@ -186,6 +186,12 @@ static char *	_dump_job(struct job_record *job_ptr)
 		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
+	if (job_ptr->account && job_ptr->account[0]) {
+		snprintf(tmp, sizeof(tmp),
+			"COMMENT=%s;", job_ptr->account);
+		xstrcat(buf, tmp);
+	}
+
 	return buf;
 }
 
