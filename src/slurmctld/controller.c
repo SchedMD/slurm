@@ -622,8 +622,8 @@ static void *_service_connection(void *arg)
 	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	
-	msg->conn_fd = newsockfd;
 	ret_list = slurm_receive_msg(newsockfd, msg, 0);	
+	msg->conn_fd = newsockfd;
 	if(!ret_list) {
 		error("slurm_receive_msg: %m");
 		/* close should only be called when the socket implementation is 

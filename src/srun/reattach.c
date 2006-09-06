@@ -339,9 +339,9 @@ _attach_to_job(srun_job_t *job)
 		r->resp_port	   = (uint16_t *)xmalloc(sizeof(uint16_t));
 		r->resp_port[0]    = ntohs(job->jaddr[i%job->njfds].sin_port);
 		r->cred            = job->cred;
+		slurm_msg_t_init(m);
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		slurm_init_slurm_msg(m, NULL);
 		
 		memcpy(&m->address, &job->step_layout->node_addr[i], 
 		       sizeof(slurm_addr));

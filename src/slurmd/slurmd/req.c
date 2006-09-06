@@ -943,7 +943,7 @@ _abort_job(uint32_t job_id)
 {
 	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&resp_msg);
 
 	resp.job_id       = job_id;
 	resp.job_rc       = 1;
@@ -1194,7 +1194,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		}
 	} 
 	resp = xmalloc(sizeof(stat_jobacct_msg_t));
-	slurm_init_slurm_msg(&resp_msg, msg);
+	slurm_msg_t_copy(&resp_msg, msg);
 	resp->job_id = req->job_id;
 	resp->step_id = req->step_id;
 	resp->return_code = SLURM_SUCCESS;
@@ -1278,7 +1278,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 			continue;
 		if (stepd_pid_in_container(fd, req->job_pid)
 		    || req->job_pid == stepd_daemon_pid(fd)) {
-			slurm_init_slurm_msg(&resp_msg, msg);
+			slurm_msg_t_copy(&resp_msg, msg);
 			resp.job_id = stepd->jobid;
 			resp.return_code = SLURM_SUCCESS;
 			found = true;
@@ -1420,8 +1420,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	slurm_addr *cli = &msg->orig_addr;
 	uint32_t nodeid = (uint32_t)NO_VAL;
 	
-	memset(&resp_msg, 0, sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(&resp_msg, msg);
+	slurm_msg_t_copy(&resp_msg, msg);
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
@@ -1751,7 +1750,7 @@ _epilog_complete(uint32_t jobid, int rc)
 	slurm_msg_t            msg;
 	epilog_complete_msg_t  req;
 
-	slurm_init_slurm_msg(&msg, NULL);
+	slurm_msg_t_init(&msg);
 	
 	_wait_state_completed(jobid, 5);
 

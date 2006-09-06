@@ -515,7 +515,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(msg, NULL);
+	slurm_msg_t_init(msg);
 
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 
@@ -722,6 +722,7 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	int timeout;
 
 	debug("Entering _launch_tasks");
+	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 	buffer = slurm_pack_msg_no_header(&msg);

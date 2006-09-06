@@ -759,6 +759,7 @@ static void *_thread_per_group_rpc(void *args)
 	int found = 0;
 	forward_msg_t fwd_msg;
 			
+
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -814,10 +815,10 @@ static void *_thread_per_group_rpc(void *args)
 	slurm_mutex_unlock(thread_mutex_ptr);
 
 	/* send request message */
+	slurm_msg_t_init(&msg);
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-	slurm_init_slurm_msg(&msg, NULL);
 	forward_init(&msg.forward, &thread_ptr->forward);
 	
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);

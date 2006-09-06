@@ -179,7 +179,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(msg, NULL);
+	slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 	
 	timeout = slurm_get_msg_timeout();

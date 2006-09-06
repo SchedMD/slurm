@@ -441,10 +441,10 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	msg.task_id_list = tid;
 	msg.num_tasks    = n;
 	msg.return_code  = status;
+	slurm_msg_t_init(&resp);
 	resp.data        = &msg;
 	resp.msg_type    = MESSAGE_TASK_EXIT;
 	resp.srun_node_id = job->nodeid;
-	slurm_init_slurm_msg(&resp, NULL);
 	
 
 	/*
@@ -1332,11 +1332,11 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
+	slurm_msg_t_init(&resp_msg);
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, 
 		       msg->resp_port[msg->srun_node_id % msg->num_resp_port],
 		       NULL); 
-	slurm_init_slurm_msg(&resp_msg, NULL);
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 		
@@ -1363,7 +1363,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 	debug("Sending launch resp rc=%d", rc);
 
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&resp_msg);
         resp_msg.address      = srun->resp_addr;
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
@@ -1398,7 +1398,7 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
 		
-	slurm_init_slurm_msg(&req_msg, NULL);
+	slurm_msg_t_init(&req_msg);
 	req.node_name	= conf->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;	

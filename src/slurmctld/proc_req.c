@@ -523,9 +523,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			select_g_copy_jobinfo(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_write_lock);
 
+		slurm_msg_t_init(&response_msg);
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data = &alloc_msg;
-		slurm_init_slurm_msg(&response_msg, NULL);
 	
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_ptr->job_id);
@@ -571,10 +571,10 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 		debug2("_slurm_rpc_dump_conf %s", TIME_STR);
 
 		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_BUILD_INFO;
 		response_msg.data = &config_tbl;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -613,11 +613,11 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		     dump_size, TIME_STR);
 
 		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -648,10 +648,10 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 	if (rc != SLURM_SUCCESS) {
 		slurm_send_rc_msg(msg, rc);
 	} else {
+		slurm_msg_t_init(&response_msg);
 		response_msg.address  = msg->address;
 		response_msg.msg_type = SRUN_TIMEOUT;
 		response_msg.data     = &timeout_msg;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
 	debug2("_slurm_rpc_end_time jobid=%u %s", 
@@ -688,11 +688,11 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		     dump_size, TIME_STR);
 
 		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_NODE_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
-		slurm_init_slurm_msg(&response_msg, NULL);
 	
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -729,11 +729,11 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 		     dump_size, TIME_STR);
 
 		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_PARTITION_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -1057,10 +1057,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 						step_rec->switch_job);
 		
 		unlock_slurmctld(job_write_lock);
+		slurm_msg_t_init(&resp);
 		resp.address = msg->address;
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
 		resp.data = &job_step_resp;
-		slurm_init_slurm_msg(&resp, NULL);
 		
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		slurm_step_layout_destroy(job_step_resp.step_layout);
@@ -1120,11 +1120,11 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	else {
 		slurm_msg_t response_msg;
 
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_STEP_INFO;
 		response_msg.data = resp_buffer;
 		response_msg.data_size = resp_buffer_size;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(resp_buffer);
 	}
@@ -1299,9 +1299,9 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 			select_g_copy_jobinfo(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
 
+		slurm_msg_t_init(&response_msg);
 		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO;
 		response_msg.data        = &job_info_resp_msg;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		select_g_free_jobinfo(&job_info_resp_msg.select_jobinfo);
@@ -1370,9 +1370,9 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 			select_g_copy_jobinfo(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
 
+		slurm_msg_t_init(&response_msg);
 		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO_LITE;
 		response_msg.data        = &job_info_resp_msg;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		select_g_free_jobinfo(&job_info_resp_msg.select_jobinfo);
@@ -1672,9 +1672,9 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	step_layout = slurm_step_layout_copy(step_ptr->step_layout);
 	unlock_slurmctld(job_read_lock);
 
+	slurm_msg_t_init(&response_msg);
 	response_msg.msg_type    = RESPONSE_STEP_LAYOUT;
 	response_msg.data        = step_layout;
-	slurm_init_slurm_msg(&response_msg, NULL);
 	
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	slurm_step_layout_destroy(step_layout);
@@ -1737,9 +1737,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				submit_msg.job_id     = job_desc_msg->job_id;
 				submit_msg.step_id    = step_id;
 				submit_msg.error_code = error_code;
+				slurm_msg_t_init(&response_msg);
 				response_msg.msg_type = 
 					RESPONSE_SUBMIT_BATCH_JOB;
-				slurm_init_slurm_msg(&response_msg, NULL);
 			
 				response_msg.data = &submit_msg;
 				slurm_send_node_msg(msg->conn_fd,
@@ -1771,9 +1771,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		submit_msg.job_id     = job_ptr->job_id;
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
+		slurm_msg_t_init(&response_msg);
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		schedule();		/* has own locks */
 		schedule_job_save();	/* has own locks */
@@ -2036,11 +2036,11 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 	} else {
 		debug2("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id, 
 		       result, TIME_STR);
-		rc_msg.return_code = result;
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_READY;
+		rc_msg.return_code = result;
 		response_msg.data = &rc_msg;
-		slurm_init_slurm_msg(&response_msg, NULL);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
 }
@@ -2066,11 +2066,11 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_NODE_SELECT_INFO;
 		response_msg.data = get_buf_data(buffer);
 		response_msg.data_size = get_buf_offset(buffer);
-		slurm_init_slurm_msg(&response_msg, NULL);
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
   
