@@ -42,6 +42,18 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.13
+=========================
+ - fixed some timeout issues in the controller hopefully stopping all the 
+   issues with excessive timeouts.
+ - unit conversion (i.e. 1024 => 1k) only happens on bgl systems.
+
+* Changes in SLURM 1.1.12
+=========================
+ - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS request.
+ - Add srun option "--comment" (maps to job account until slurm v1.2, 
+   needed for Moab scheduler functionality).
+
 * Changes in SLURM 1.1.11
 =========================
  - Update file headers adding permission to link with OpenSSL.

@@ -137,6 +137,7 @@
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_NO_REQUEUE  0x123
+#define LONG_OPT_COMMENT     0x124
 
 /*---- global variables, defined in opt.h ----*/
 char **remote_argv;
@@ -1074,6 +1075,7 @@ void set_options(const int argc, char **argv, int first)
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
+		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1530,6 +1532,14 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
+			break;
+		case LONG_OPT_COMMENT:
+			/* Use account for Moab until job comment field
+			 * is actually available in slurm v1.2 */
+			if(!first && opt.account)
+				break;
+			xfree(opt.account);
+			opt.account = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
