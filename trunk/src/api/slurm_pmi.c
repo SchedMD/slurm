@@ -97,7 +97,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * command is very overloaded. */
 	usleep(pmi_rank * PMI_TIME);
 	if (pmi_size > 10)
-		timeout = slurm_get_msg_timeout() * 8;
+		timeout = slurm_get_msg_timeout() * 8000;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_send_kvs_comm_set: %m");
@@ -166,7 +166,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * command is very overloaded. */
 	usleep(pmi_rank * PMI_TIME);
 	if (pmi_size > 10)
-		timeout = slurm_get_msg_timeout() * 8;
+		timeout = slurm_get_msg_timeout() * 8000;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");

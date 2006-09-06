@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -821,6 +821,17 @@ static void *_thread_per_group_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 	forward_init(&msg.forward, &thread_ptr->forward);
 	
+	if(msg.forward.timeout >= (slurm_get_msg_timeout() * 10000)) {
+		error("You are sending a message with timeout's greater "
+		      "than %d seconds, your's is %d seconds", 
+		      (slurm_get_msg_timeout() * 10), 
+		      (msg.forward.timeout/1000));
+	} else if(msg.forward.timeout < (slurm_get_msg_timeout() * 1000)) {
+		debug("You are sending a message with a very short timeout of "
+		      "%d microseconds", 
+		      msg.forward.timeout);
+	} 
+
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
