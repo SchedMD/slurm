@@ -67,8 +67,10 @@ static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
 			    slurm_cred_t fake_cred,
-			    uint16_t num_resp_port,
-			    uint16_t *resp_port);
+			    uint16_t num_resp_ports,
+			    uint16_t *resp_ports,
+			    int num_io_ports,
+			    uint16_t *io_ports);
 
 /**********************************************************************
  * Message handler declarations
@@ -112,6 +114,7 @@ int main(int argc, char *argv[])
 	slurm_step_layout_t *layout;
 	slurm_cred_t fake_cred;
 	struct message_thread_state mts;
+	client_io_t *io;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -137,12 +140,23 @@ int main(int argc, char *argv[])
 	memset(&mts, 0, sizeof(struct message_thread_state));
 	_msg_thr_create(&mts, layout->node_cnt);
 
+	io = client_io_handler_create(opt.fds, layout->task_cnt,
+				      layout->node_cnt, fake_cred,
+				      opt.labelio);
+
 	print_layout_info(layout);
 
+	client_io_handler_start(io);
+
 	_attach_to_tasks(opt.jobid, opt.stepid, layout, fake_cred,
-			 mts.num_resp_port, mts.resp_port);
+			 mts.num_resp_port, mts.resp_port, 
+			 io->num_listen, io->listenport);
+
+	sleep(300);
 
 	slurm_job_step_layout_free(layout);
+	client_io_handler_finish(io);
+	client_io_handler_destroy(io);
 
 	return 0;
 }
@@ -285,8 +299,10 @@ static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
 			    slurm_cred_t fake_cred,
-			    uint16_t num_resp_port,
-			    uint16_t *resp_port)
+			    uint16_t num_resp_ports,
+			    uint16_t *resp_ports,
+			    int num_io_ports,
+			    uint16_t *io_ports)
 {
 	slurm_msg_t msg, first_node_resp;
 	List ret_list = NULL;
@@ -305,10 +321,10 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	reattach_msg.job_id = jobid;
 	reattach_msg.job_step_id = stepid;
-	reattach_msg.num_resp_port = num_resp_port;
-	reattach_msg.resp_port = resp_port; /* array or response ports */
-	reattach_msg.num_io_port = 0; /* FIXME */
-	reattach_msg.io_port = NULL; /* FIXME */
+	reattach_msg.num_resp_port = num_resp_ports;
+	reattach_msg.resp_port = resp_ports; /* array of response ports */
+	reattach_msg.num_io_port = num_io_ports;
+	reattach_msg.io_port = io_ports;
 	reattach_msg.cred = fake_cred;
 
 	msg.msg_type = REQUEST_REATTACH_TASKS;
@@ -388,7 +404,7 @@ _estimate_nports(int nclients, int cli_per_port)
 static int _msg_thr_create(struct message_thread_state *mts, int num_nodes)
 {
 	int sock = -1;
-	int port = -1;
+	short port = -1;
 	eio_obj_t *obj;
 	int i;
 

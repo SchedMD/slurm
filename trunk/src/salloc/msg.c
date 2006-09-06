@@ -80,7 +80,7 @@ extern salloc_msg_thread_t *msg_thr_create(uint16_t *port)
 {
 	int sock = -1;
 	eio_obj_t *obj;
-	int port_tmp;
+	short port_tmp;
 	salloc_msg_thread_t *msg_thr = NULL;
 
 	debug("Entering _msg_thr_create()");
@@ -92,7 +92,7 @@ extern salloc_msg_thread_t *msg_thr_create(uint16_t *port)
 		xfree(msg_thr);
 		return NULL;
 	}
-	*port = ntohs((uint16_t)port_tmp);
+	*port = ntohs(port_tmp);
 	debug("port from net_stream_listen is %hu", *port);
 
 	obj = eio_obj_create(sock, &message_socket_ops, NULL);

@@ -153,6 +153,7 @@ static void argerror(const char *msg, ...)
 static void _opt_default()
 {
 	struct passwd *pw;
+	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 	if ((pw = getpwuid(getuid())) != NULL) {
 		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
@@ -164,17 +165,18 @@ static void _opt_default()
 
 	opt.progname = NULL;
 
-	opt.jobid    = NO_VAL;
+	opt.jobid = NO_VAL;
 	opt.jobid_set = false;
 
 	opt.quiet = 0;
 	opt.verbose = 0;
 
-	opt.euid	    = (uid_t) -1;
-	opt.egid	    = (gid_t) -1;
+	opt.euid = (uid_t) -1;
+	opt.egid = (gid_t) -1;
 	
+	opt.labelio = false;
 	opt.ctrl_comm_ifhn  = xshort_hostname();
-
+	memcpy(&opt.fds, &fds, sizeof(fds));
 }
 
 /*---[ env var processing ]-----------------------------------------------*/

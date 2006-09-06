@@ -428,6 +428,7 @@ int reattach()
 	List          steplist = _step_list_create(opt.attach);
 	srun_step_t  *s        = NULL;
 	srun_job_t        *job      = NULL;
+	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 	if ((steplist == NULL) || (list_count(steplist) == 0)) {
 		info("No job/steps in attach");
@@ -479,29 +480,15 @@ int reattach()
 		exit(1);
 	}
 
-	{
-		int siglen;
-		char *sig;
-		slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
-
-		srun_set_stdio_fds(job, &fds);
-
-		if (slurm_cred_get_signature(job->cred, &sig, &siglen)
-		    < 0) {
-			job_fatal(job, "Couldn't get cred signature");
-		}
-		
-		job->client_io = client_io_handler_create(
-			fds,
-			job->step_layout->task_cnt,
-			job->step_layout->node_cnt,
-			sig,
-			opt.labelio);
-		if (!job->client_io
-		    || (client_io_handler_start(job->client_io)
-			!= SLURM_SUCCESS))
-			job_fatal(job, "failed to start IO handler");
-	}
+	srun_set_stdio_fds(job, &fds);
+	job->client_io = client_io_handler_create(fds,
+						  job->step_layout->task_cnt,
+						  job->step_layout->node_cnt,
+						  job->cred,
+						  opt.labelio);
+	if (!job->client_io
+	    || (client_io_handler_start(job->client_io) != SLURM_SUCCESS))
+		job_fatal(job, "failed to start IO handler");
 
 	if (opt.join && sig_thr_create(job) < 0) {
 		error("Unable to create signals thread: %m");

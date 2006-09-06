@@ -1144,12 +1144,14 @@ client_io_t *
 client_io_handler_create(slurm_step_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 char *io_key,
+			 slurm_cred_t cred,
 			 bool label)
 {
 	client_io_t *cio;
 	int len;
 	int i;
+	int siglen;
+	char *sig;
 
 	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
 	if (cio == NULL)
@@ -1166,8 +1168,13 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 
 	len = sizeof(uint32_t) * num_tasks;
 
-	cio->io_key = (char *)xmalloc(SLURM_IO_KEY_SIZE);
-	memcpy(cio->io_key, io_key, SLURM_IO_KEY_SIZE);
+	if (slurm_cred_get_signature(cred, &sig, &siglen) < 0) {
+		error("client_io_handler_create, invalid credential");
+		return NULL;
+	}
+	cio->io_key = (char *)xmalloc(siglen);
+	memcpy(cio->io_key, sig, siglen);
+	/* no need to free "sig", it is just a pointer into the credential */
 
 	cio->eio = eio_handle_create();
 
@@ -1176,8 +1183,8 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	 * overstressing the TCP/IP backoff/retry algorithm
 	 */
 	cio->num_listen = _estimate_nports(num_nodes, 48);
-	cio->listensock = (int *) xmalloc(cio->num_listen * sizeof(int));
-	cio->listenport = (int *) xmalloc(cio->num_listen * sizeof(int));
+	cio->listensock = (int *)xmalloc(cio->num_listen * sizeof(int));
+	cio->listenport = (uint16_t *)xmalloc(cio->num_listen*sizeof(uint16_t));
 
 	cio->ioserver = (eio_obj_t **)xmalloc(num_nodes*sizeof(eio_obj_t *));
 	cio->ioservers_ready_bits = bit_alloc(num_nodes);
@@ -1190,8 +1197,9 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 		eio_obj_t *obj;
 
 		if (net_stream_listen(&cio->listensock[i],
-				      &cio->listenport[i]) < 0)
+				      (short *)&cio->listenport[i]) < 0) {
 			fatal("unable to initialize stdio listen socket: %m");
+		}
 		debug("initialized stdio listening socket, port %d\n",
 		      ntohs(cio->listenport[i]));
 		/*net_set_low_water(cio->listensock[i], 140);*/
