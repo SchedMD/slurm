@@ -754,6 +754,17 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
+	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
+		error("You are sending a message with timeout's greater "
+		      "than %d seconds, your's is %d seconds", 
+		      (slurm_get_msg_timeout() * 10), 
+		      (timeout/1000));
+	} else if(timeout < 1000) {
+		debug("You are sending a message with a very short timeout of "
+		      "%d milliseconds", timeout);
+	} 
+	
+
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
 	 *  length and allocate space on the heap for a buffer containing
@@ -815,8 +826,10 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			(timeout - header.forward.timeout);
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
-		debug3("forwarding messages to %d nodes!!!!", 
-		       msg->forward_struct->fwd_cnt);
+		debug3("forwarding messages to %d nodes!!!! "
+		       "with a timeout of %d", 
+		       msg->forward_struct->fwd_cnt,
+		       msg->forward_struct->timeout);
 		
 		if(forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
 			error("problem with forward msg");
@@ -1419,7 +1432,6 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	int retry = 0;
 	List ret_list = NULL;
 	int steps = 0;
-
 	resp->auth_cred = NULL;
 	if(slurm_send_node_msg(fd, req) >= 0) {
 		if (!timeout)
@@ -1728,7 +1740,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 			steps += 1;
 			timeout += (msg->forward.timeout*steps);
 		}
-
+				
 		ret_list = slurm_receive_msg(fd, &resp, timeout);
 	}
 	err = errno;

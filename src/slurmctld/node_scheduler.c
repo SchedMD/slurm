@@ -283,7 +283,7 @@ static int _match_feature(char *seek, char *available)
 
 /*
  * _pick_best_load - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request.
+ *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as the least loaded nodes
  * IN job_ptr - pointer to job being scheduled
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
@@ -411,7 +411,7 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
  *	4) If nodes _not_ shared then call select_g_job_test() to select the 
  *	   "best" of those based upon topology, else call _pick_best_load()
  *	   to pick the "best" nodes in terms of workload
- *	5) If request can't be satified now, execute select_g_job_test() 
+ *	5) If request can't be satisfied now, execute select_g_job_test() 
  *	   against the list of nodes that exist in any state (perhaps DOWN 
  *	   DRAINED or ALLOCATED) to determine if the request can
  *         ever be satified.
@@ -874,7 +874,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = _nodes_in_sets(job_ptr->details->req_node_bitmap, 
 					    node_set_ptr, node_set_size);
 		if (error_code) {
-			info("No nodes satify requirements for JobId=%u",
+			info("No nodes satisfy requirements for JobId=%u",
 			     job_ptr->job_id);
 			goto cleanup;
 		}

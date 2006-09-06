@@ -47,6 +47,8 @@ documents those changes that are of interest to users and admins.
  - fixed some timeout issues in the controller hopefully stopping all the 
    issues with excessive timeouts.
  - unit conversion (i.e. 1024 => 1k) only happens on bgl systems.
+ - Sched/wiki2 to report a job's COMPETETIME and SUSPENDTIME in GETJOBS 
+   response.
 
 * Changes in SLURM 1.1.12
 =========================
