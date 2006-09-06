@@ -268,7 +268,6 @@ typedef struct slurm_msg {
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
 	forward_struct_t *forward_struct;
-	uint16_t   forward_struct_init;
 	slurm_addr orig_addr;       
 	List ret_list;
 	Buf buffer;

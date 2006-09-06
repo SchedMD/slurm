@@ -301,7 +301,7 @@ static int _attach_to_tasks(uint32_t jobid,
 	slurm_msg_t_init(&msg);
 	slurm_msg_t_init(&first_node_resp);
 	
-	timeout = slurm_get_msg_timeout();
+	timeout = slurm_get_msg_timeout() * 1000; /* sec to msec */
 
 	reattach_msg.job_id = jobid;
 	reattach_msg.job_step_id = stepid;
@@ -320,7 +320,7 @@ static int _attach_to_tasks(uint32_t jobid,
 	msg.forward.name = _create_ugly_nodename_string(layout->node_list,
 							layout->node_cnt-1);
 	msg.forward.addr = layout->node_addr + 1;
-	msg.forward.timeout = timeout * 1000; /* sec to msec */
+	msg.forward.timeout = timeout;
 	memcpy(&msg.address, layout->node_addr + 0, sizeof(slurm_addr));
 
 	ret_list = slurm_send_recv_node_msg(&msg, &first_node_resp, timeout);
@@ -479,7 +479,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
-	timeout = slurm_get_msg_timeout() * 8;
+	timeout = slurm_get_msg_timeout() * 8000;
 again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {

@@ -546,7 +546,7 @@ extern void forward_wait(slurm_msg_t * msg)
 	ListIterator itr;
 	
 	/* wait for all the other messages on the tree under us */
-	if(msg->forward_struct_init == FORWARD_INIT && msg->forward_struct) {
+	if(msg->forward_struct) {
 		debug2("looking for %d", msg->forward_struct->fwd_cnt);
 		slurm_mutex_lock(&msg->forward_struct->forward_mutex);
 		count = 0;

@@ -294,12 +294,9 @@ int slurm_job_will_run (job_desc_msg_t *req)
 	int rc;
 
 	/* req.immediate = true;    implicit */
-
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
-	forward_init(&req_msg.forward, NULL);
-	req_msg.ret_list = NULL;
-	req_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_SOCKET_ERROR;
