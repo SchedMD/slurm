@@ -405,8 +405,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 }
 
 /* 
- * _pick_step_nodes - select nodes for a job step that satify its requirements
- *	we satify the super-set of constraints.
+ * _pick_step_nodes - select nodes for a job step that satisfy its requirements
+ *	we satisfy the super-set of constraints.
  * IN job_ptr - pointer to job to have new step started
  * IN step_spec - job step specification
  * global: node_record_table_ptr - pointer to global node table

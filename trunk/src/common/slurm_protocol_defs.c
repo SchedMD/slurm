@@ -75,7 +75,7 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg);
  * slurm_msg_t_init - initialize a slurm message 
  * OUT msg - pointer to the slurm_msg_t structure which will be initialized
  */
-extern void slurm_msg_t_init (slurm_msg_t *msg)
+extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
 	memset(msg, 0, sizeof(slurm_msg_t));
 

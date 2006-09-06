@@ -271,7 +271,7 @@ void ping_nodes (void)
 		hostlist_uniq(ping_hostlist);
 		hostlist_ranged_string(ping_hostlist, 
 			sizeof(host_str), host_str);
-		info("Spawning ping agent for %s", host_str);
+		verbose("Spawning ping agent for %s", host_str);
 		ping_begin();
 		agent_queue_request(ping_agent_args);
 	}
@@ -282,7 +282,7 @@ void ping_nodes (void)
 		hostlist_uniq(reg_hostlist);
 		hostlist_ranged_string(reg_hostlist, 
 			sizeof(host_str), host_str);
-		debug2 ("Spawning registration agent for %s %d hosts", 
+		verbose("Spawning registration agent for %s %d hosts", 
 			host_str, reg_agent_args->node_count);
 		ping_begin();
 		agent_queue_request(reg_agent_args);
