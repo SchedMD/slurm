@@ -362,7 +362,7 @@ _service_connection(void *arg)
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 		
 	debug3("in the service_connection");
-	slurm_init_slurm_msg(msg, NULL);
+	slurm_msg_t_init(msg);
 	msg->conn_fd = con->fd;
 	/* this could change if being forwarded to */
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
@@ -404,8 +404,8 @@ send_registration_msg(uint32_t status, bool startup)
 	slurm_node_registration_status_msg_t *msg = 
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 	
-	slurm_init_slurm_msg(&req, NULL);
-	slurm_init_slurm_msg(&resp, NULL);
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
 	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);

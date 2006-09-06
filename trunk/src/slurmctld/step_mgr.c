@@ -1003,7 +1003,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
 
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&resp_msg);
 	
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
@@ -1096,7 +1096,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&resp_msg);
 		
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);

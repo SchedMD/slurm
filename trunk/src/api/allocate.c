@@ -99,8 +99,8 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	bool host_set = false;
 	char host[64];
 
-	slurm_init_slurm_msg(&req_msg, NULL);
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
 	
 	/* 
 	 * set Node and session id for this request
@@ -182,8 +182,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	if (timeout == 0)
 		timeout = (time_t)-1;
 
-	slurm_init_slurm_msg(&req_msg, NULL);
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
 	
 	/* make a copy of the user's job description struct so that we
 	 * can make changes before contacting the controller */
@@ -324,14 +324,10 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
+	slurm_msg_t_init(&resp_msg);
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
-	forward_init(&req_msg.forward, NULL);
-	req_msg.ret_list = NULL;
-	req_msg.forward_struct_init = 0;
-	forward_init(&resp_msg.forward, NULL);
-	resp_msg.ret_list = NULL;
-	resp_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -369,11 +365,9 @@ slurm_allocation_lookup(uint32_t jobid,
 	slurm_msg_t resp_msg;
 
 	req.job_id = jobid;
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 	req_msg.data     = &req; 
-	forward_init(&req_msg.forward, NULL);
-	req_msg.ret_list = NULL;
-	req_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -413,11 +407,9 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 	slurm_msg_t resp_msg;
 
 	req.job_id = jobid;
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO_LITE;
 	req_msg.data     = &req; 
-	forward_init(&req_msg.forward, NULL);
-	req_msg.ret_list = NULL;
-	req_msg.forward_struct_init = 0;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

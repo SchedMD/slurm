@@ -87,6 +87,7 @@ slurm_ping (int primary)
 	int rc ;
 	slurm_msg_t request_msg ;
 
+	slurm_msg_t_init(&request_msg);
 	request_msg.msg_type = REQUEST_PING ;
 
 	if (primary == 1)
@@ -114,6 +115,7 @@ slurm_shutdown (uint16_t core)
 	slurm_msg_t req_msg;
 	shutdown_msg_t shutdown_msg;
 
+	slurm_msg_t_init(&req_msg);
 	shutdown_msg.core = core;
 	req_msg.msg_type  = REQUEST_SHUTDOWN;
 	req_msg.data      = &shutdown_msg;
@@ -136,8 +138,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	List ret_list = NULL;
 	
 	/*always only going to 1 node */
-	slurm_init_slurm_msg(req, NULL);
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&resp_msg);
 		
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);

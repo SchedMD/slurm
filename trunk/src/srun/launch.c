@@ -217,7 +217,7 @@ launch(void *arg)
 		free(host);
 		
 		m = &msg_array_ptr[job->thr_count];
-		slurm_init_slurm_msg(m, NULL);
+		slurm_msg_t_init(m);
 		
 		m->srun_node_id    = (uint32_t)i;			
 		m->msg_type        = REQUEST_LAUNCH_TASKS;

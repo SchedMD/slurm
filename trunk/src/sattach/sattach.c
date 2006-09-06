@@ -217,7 +217,7 @@ static char *_node_list_remove_first(const char *nodes)
 #endif
 
 /*
- * Take a NodeNode name list in hostlist_t string format, and expand
+ * Take a NodeName list in hostlist_t string format, and expand
  * it into one giant string of NodeNames, in which each NodeName is
  * found at regular offsets of MAX_SLURM_NAME bytes into the string.
  *
@@ -288,7 +288,7 @@ static int _attach_to_tasks(uint32_t jobid,
 			    uint16_t num_resp_port,
 			    uint16_t *resp_port)
 {
-	slurm_msg_t msg, dummy_resp_msg;
+	slurm_msg_t msg, first_node_resp;
 	List ret_list = NULL;
 	ListIterator ret_itr;
 	ListIterator ret_data_itr;
@@ -298,11 +298,8 @@ static int _attach_to_tasks(uint32_t jobid,
 	reattach_tasks_request_msg_t reattach_msg;
 
 	debug("Entering _attach_to_tasks");
-	/* Lets make sure that the slurm_msg_t are zeroed out at the start */
-	memset(&msg, 0, sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(&msg, NULL);
-	memset(&dummy_resp_msg, 0, sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(&dummy_resp_msg, NULL);
+	slurm_msg_t_init(&msg);
+	slurm_msg_t_init(&first_node_resp);
 	
 	timeout = slurm_get_msg_timeout();
 
@@ -320,15 +317,13 @@ static int _attach_to_tasks(uint32_t jobid,
 	
 	msg.forward.cnt = layout->node_cnt - 1;
 	msg.forward.node_id = _create_range_array(1, layout->node_cnt-1);
-	info("msg.forward.cnt = %d", msg.forward.cnt);
 	msg.forward.name = _create_ugly_nodename_string(layout->node_list,
 							layout->node_cnt-1);
-	info("msg.forward.name = %s", msg.forward.name);
 	msg.forward.addr = layout->node_addr + 1;
 	msg.forward.timeout = timeout * 1000; /* sec to msec */
 	memcpy(&msg.address, layout->node_addr + 0, sizeof(slurm_addr));
 
-	ret_list = slurm_send_recv_node_msg(&msg, &dummy_resp_msg, timeout);
+	ret_list = slurm_send_recv_node_msg(&msg, &first_node_resp, timeout);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_node_msg failed: %m");
 		xfree(msg.forward.node_id);
@@ -338,7 +333,7 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	ret_itr = list_iterator_create(ret_list);
 	while ((ret = list_next(ret_itr)) != NULL) {
-		debug("launch returned msg_rc=%d err=%d type=%d",
+		debug("Attach returned msg_rc=%d err=%d type=%d",
 		      ret->msg_rc, ret->err, ret->type);
 		if (ret->msg_rc != SLURM_SUCCESS) {
 			ret_data_itr =
@@ -479,7 +474,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(msg, NULL);
+	slurm_msg_t_init(msg);
 
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 

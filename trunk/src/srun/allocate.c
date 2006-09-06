@@ -274,7 +274,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	debug2("got message connection from %s:%d", host, port);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(msg, NULL);
+	slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 		
   again:

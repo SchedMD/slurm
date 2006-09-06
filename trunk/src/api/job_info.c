@@ -408,10 +408,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	job_id_request_msg_t req;
 	List ret_list;
 
-	memset(&req_msg, 0, sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(&req_msg, NULL);
-	memset(&resp_msg, 0, sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(&resp_msg, NULL);
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
 
 	/*
 	 *  Set request message address to slurmd on localhost

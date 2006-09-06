@@ -72,28 +72,41 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg);
 static void _slurm_free_job_step_info_members (job_step_info_t * msg);
 
 /*
- * slurm_init_slurm_msg - initialize slurm message 
- * OUT msg - user defined slurm message
- * IN in_msg - NULL if fresh initialization, or already initialized message to
- *             initialize from.  (Usually for reponse messages send in
- *             the request message)
+ * slurm_msg_t_init - initialize a slurm message 
+ * OUT msg - pointer to the slurm_msg_t structure which will be initialized
  */
-void slurm_init_slurm_msg (slurm_msg_t * msg, slurm_msg_t * in_msg)
+extern void slurm_msg_t_init (slurm_msg_t *msg)
 {
-	if(in_msg) {
-		msg->forward = in_msg->forward;
-		msg->ret_list = msg->ret_list;
-		msg->forward_struct_init = msg->forward_struct_init;
-		msg->forward_struct = msg->forward_struct;
-	} else {
-		forward_init(&msg->forward, NULL);
-		msg->ret_list = NULL;
-		msg->forward_struct_init = 0;
-		msg->forward_struct = NULL;
-	}
-	msg->orig_addr.sin_addr.s_addr = 0; 
+	memset(msg, 0, sizeof(slurm_msg_t));
+
+	msg->msg_type = (slurm_msg_type_t)NO_VAL;
+	msg->conn_fd = -1;
+
+	forward_init(&msg->forward, NULL);
+
 	return;	
 }
+
+/*
+ * slurm_msg_t_copy - initialize a slurm_msg_t structure "dest" with
+ *	values from the "src" slurm_msg_t structure.
+ * IN src - Pointer to the initialized message from which "dest" will
+ *	be initialized.
+ * OUT dest - Pointer to the slurm_msg_t which will be intialized.
+ * NOTE: the "dest" structure will contain pointers into the contents of "src".
+ */
+extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
+{
+	memset(dest, 0, sizeof(slurm_msg_t));
+
+	dest->forward = src->forward;
+	dest->ret_list = src->ret_list;
+	dest->forward_struct_init = src->forward_struct_init;
+	dest->forward_struct = src->forward_struct;
+	dest->orig_addr.sin_addr.s_addr = 0; 
+	return;	
+}
+
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
 {

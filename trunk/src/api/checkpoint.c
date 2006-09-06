@@ -97,6 +97,7 @@ extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
 	ckp_req.op       = CHECK_ABLE;
 	ckp_req.job_id   = job_id;
 	ckp_req.step_id  = step_id;
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_CHECKPOINT;
 	req_msg.data     = &ckp_req;
 
@@ -245,6 +246,7 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 	req.op       = CHECK_ERROR;
 	req.job_id   = job_id;
 	req.step_id  = step_id;
+	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_CHECKPOINT;
 	msg.data     = &req;
 

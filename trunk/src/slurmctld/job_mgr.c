@@ -4234,10 +4234,10 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	jobacct_g_suspend_slurmctld(job_ptr);
 
 	if (conn_fd >= 0) {
-		rc_msg.return_code = rc;
+		slurm_msg_t_init(&resp_msg);
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
-		slurm_init_slurm_msg(&resp_msg, NULL);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
 	return rc;
@@ -4326,10 +4326,10 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 //FIXME: Test accounting
 
     reply:
-	rc_msg.return_code = rc;
+	slurm_msg_t_init(&resp_msg);
 	resp_msg.msg_type  = RESPONSE_SLURM_RC;
+	rc_msg.return_code = rc;
 	resp_msg.data      = &rc_msg;
-	slurm_init_slurm_msg(&resp_msg, NULL);
 	slurm_send_node_msg(conn_fd, &resp_msg);
 	return rc;
 }

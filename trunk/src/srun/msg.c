@@ -913,7 +913,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_init_slurm_msg(msg, NULL);
+	slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 		
 	/* multiple jobs (easily induced via no_alloc) and highly

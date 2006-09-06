@@ -741,14 +741,13 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	int rc;
 	void *auth_cred = NULL;
 	Buf buffer;
-	/* int count = 0; */
 	ret_types_t *ret_type = NULL;
-/* 	ListIterator itr; */
-	
 	List ret_list = list_create(destroy_ret_types);
-	slurm_init_slurm_msg(msg, NULL);
 
 	xassert(fd >= 0);
+
+	slurm_msg_t_init(msg);
+	msg->conn_fd = fd;
 	
 	if (timeout == 0)
                 timeout  = slurm_get_msg_timeout();
@@ -1459,7 +1458,14 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	bool backup_controller_flag;
 	uint16_t slurmctld_timeout;
 
-	slurm_init_slurm_msg(req, NULL);
+	/* Just in case the caller didn't initialize his slurm_msg_t, and
+	 * since we KNOW that we are only sending to one node (the controller),
+	 * we initialize some forwarding variables to disable forwarding.
+	 */
+	forward_init(&req->forward, NULL);
+	req->ret_list = NULL;
+	req->forward_struct_init = 0;
+	req->forward_struct = NULL;
 	
 	if ((fd = slurm_open_controller_conn()) < 0) {
 		rc = -1;
@@ -1790,7 +1796,14 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	ret_types_t *ret_type = NULL;
 	int ret_c = 0;
 
-	slurm_init_slurm_msg(req, NULL);
+	/* Just in case the caller didn't initialize his slurm_msg_t, and
+	 * since we KNOW that we are only sending to one node,
+	 * we initialize some forwarding variables to disable forwarding.
+	 */
+	forward_init(&req->forward, NULL);
+	req->ret_list = NULL;
+	req->forward_struct_init = 0;
+	req->forward_struct = NULL;
 		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return -1;
@@ -1828,7 +1841,14 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	ret_types_t *ret_type = NULL;
 	int ret_val = 0;
 
-	slurm_init_slurm_msg(req, NULL);
+	/* Just in case the caller didn't initialize his slurm_msg_t, and
+	 * since we KNOW that we are only sending to one node (the controller),
+	 * we initialize some forwarding variables to disable forwarding.
+	 */
+	forward_init(&req->forward, NULL);
+	req->ret_list = NULL;
+	req->forward_struct_init = 0;
+	req->forward_struct = NULL;
 		
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return -1;
