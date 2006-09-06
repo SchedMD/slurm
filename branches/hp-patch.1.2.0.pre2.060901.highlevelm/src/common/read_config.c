@@ -66,6 +66,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/parse_config.h"
+#include "src/common/slurm_selecttype_info.h"
 
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
  * found in slurmctld.h */
@@ -394,7 +395,9 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		    no_threads) {
 			if (n->cpus != n->sockets) {
 				n->sockets = n->cpus;
-				warn("Procs doesn't match Sockets, setting Sockets to %d", n->sockets);
+				error("Procs doesn't match Sockets, "
+				      "setting Sockets to %d",
+				      n->sockets);
 			}
 		}
 

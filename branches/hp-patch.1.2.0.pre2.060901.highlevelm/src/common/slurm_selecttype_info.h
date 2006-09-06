@@ -25,38 +25,14 @@
  *
 \*****************************************************************************/
 
-#include "src/common/slurm_selecttype_info.h"
-#include "src/common/macros.h"
-#include "src/common/xstring.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-/*
- * Parse a comma separated list of SelectType Parameters
- *
- * Return SLURM_SUCCESS on success, or SLURM_ERROR otherwise
- */
-extern int parse_select_type_param(char *select_type_parameters, 
-				   select_type_plugin_info_t *param)
-{
-	int rc = SLURM_SUCCESS;	
-	char *str_parameters;
+#ifndef __SLURM_SELECTTYPE_INFO_H__
+#define __SLURM_SELECTTYPE_INFO_H__
 
-	char *st_str = xstrdup(select_type_parameters);
-	if ((str_parameters = strtok(st_str,",")) != NULL) {
-	  do {
-	    if (strcasecmp(str_parameters, "CR_default") == 0) {
-	      *param = CR_DEFAULT;
-	    } else if (strcasecmp(str_parameters, "CR_Socket") == 0) {
-	      *param = CR_SOCKET;
-	    } else {
-	      error( "Bad SelectType Parameter: %s\n", str_parameters );
-	      rc = SLURM_ERROR;
-	      xfree(str_parameters);
-	      return rc;
-	    }
-	  } while((str_parameters = strtok(NULL,",")));
-	}
-	xfree(str_parameters);
-	
-	return rc;
-}
+#include <stdio.h>
+#include <string.h>
+#include <slurm/slurm.h>
+
+extern int parse_select_type_param(char *select_type_parameters, 
+				   select_type_plugin_info_t *param);
+
+#endif /*__SLURM_SELECTTYPE_INFO_H__*/
