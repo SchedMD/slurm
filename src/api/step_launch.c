@@ -520,7 +520,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
-	timeout = slurm_get_msg_timeout() * 8;
+	timeout = slurm_get_msg_timeout() * 8000;
 again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
@@ -734,7 +734,7 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	msg.buffer = buffer;
 	memcpy(&msg.address, &ctx->step_resp->step_layout->node_addr[0],
 	       sizeof(slurm_addr));
-	timeout = slurm_get_msg_timeout();
+	timeout = slurm_get_msg_timeout() * 1000;
  	forward_set_launch(&msg.forward,
 			   ctx->step_resp->step_layout->node_cnt,
 			   &zero,

@@ -101,7 +101,6 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 
 	dest->forward = src->forward;
 	dest->ret_list = src->ret_list;
-	dest->forward_struct_init = src->forward_struct_init;
 	dest->forward_struct = src->forward_struct;
 	dest->orig_addr.sin_addr.s_addr = 0; 
 	return;	
