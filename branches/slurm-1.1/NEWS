@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.13
+=========================
+ - fixed some timeout issues in the controller hopefully stopping all the 
+   issues with excessive timeouts.
+ - unit conversion (i.e. 1024 => 1k) only happens on bgl systems.
+
 * Changes in SLURM 1.1.12
 =========================
  - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS request.
