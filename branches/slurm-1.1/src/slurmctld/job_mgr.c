@@ -493,6 +493,11 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->dependency, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
+#if 0
+//FIXME: Update in slurm v1.2
+Update JOB_STATE_VERSION
+	pack32(dump_job_ptr->exit_code, buffer);
+#endif
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -564,6 +569,13 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&alloc_sid, buffer);
 	safe_unpack32(&dependency, buffer);
 	safe_unpack32(&num_procs, buffer);
+#if 0
+//FIXME: Update in slurm v1.2
+//Also expose for get_job_info
+uint32_t exit_code;
+	safe_unpack32(&exit_code, buffer);
+job_ptr->exit_code = exit_code;
+#endif
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -637,6 +649,7 @@ static int _load_job_state(Buf buffer)
 	if ((details == DETAILS_FLAG) && 
 	    (_load_job_details(job_ptr, buffer))) {
 		job_ptr->job_state = JOB_FAILED;
+		job_ptr->exit_code = 1;
 		job_ptr->end_time = time(NULL);
 		goto unpack_error;
 	}
@@ -1346,6 +1359,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit-code = 1;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 		}
@@ -1376,6 +1390,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 					 * it is not runable anyway */
 	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
 		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		job_completion_logger(job_ptr);
 		if (!independent)
@@ -1400,6 +1415,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
 			job_ptr->job_state  = JOB_FAILED;
+			job_ptr->exit_code  = 1;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 		} else		/* job remains queued */
@@ -1411,6 +1427,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 
 	if (error_code) {	/* fundamental flaw in job request */
 		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		job_completion_logger(job_ptr);
 		return error_code;
@@ -1418,6 +1435,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 	} 
 	return SLURM_SUCCESS;
@@ -1453,6 +1471,7 @@ extern int job_fail(uint32_t job_id)
 			job_ptr->end_time       = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+		job_ptr->exit_code = 1;
 		deallocate_nodes(job_ptr, false, suspended);
 		job_completion_logger(job_ptr);
 		return SLURM_SUCCESS;
@@ -1653,8 +1672,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	} else {
 		if (job_return_code == NO_VAL)
 			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
-		else if (job_return_code)
+		else if (job_return_code) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
+			job_ptr->exit_code = job_return_code;
+		}
 		else if (job_comp_flag &&		/* job was running */
 			 (job_ptr->end_time < now))	/* over time limit */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
@@ -1883,6 +1904,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		if ((error_code = _copy_job_desc_to_file(job_desc,
 							 job_ptr->job_id))) {
 			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			error_code = ESLURM_WRITING_TO_FILE;
 			goto cleanup;
@@ -3453,6 +3475,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			      job_id_ptr[i], step_id_ptr[i], node_name);
 			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
@@ -3657,6 +3680,7 @@ static void _validate_job_files(List batch_dirs)
 			error("Script for job %u lost, state set to FAILED",
 			      job_ptr->job_id);
 			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 		}
