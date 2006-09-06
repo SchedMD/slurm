@@ -12,6 +12,8 @@
 #    also define HAVE_AIX and HAVE_LARGEFILE if appropriate.
 #  NOTE: AC_SYS_LARGEFILE may fail on AIX due to inconstencies within
 #    installed gcc header files.
+#  NOTE: AIX has python and c++ installed, but not via RPMs, so don't 
+#    check for them in slurm.spec
 ##*****************************************************************************
 
 
@@ -30,10 +32,12 @@ AC_DEFUN([X_AC_AIX],
             fi
             ac_have_aix="yes"
             ac_with_readline="no"
+            REQ_RPMS="openssl >= 0.9.6"
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
             AC_DEFINE(USE_ALIAS, 0, 
                       [Define slurm_ prefix function aliases for plusins]) ;;
       *)    ac_have_aix="no"
+            REQ_RPMS="gcc-c++ python openssl >= 0.9.6"
             AC_DEFINE(USE_ALIAS, 1, 
                       [Define slurm_ prefix function aliases for plugins]) ;;
    esac
@@ -41,6 +45,7 @@ AC_DEFUN([X_AC_AIX],
    AC_SUBST(CMD_LDFLAGS)
    AC_SUBST(LIB_LDFLAGS)
    AC_SUBST(SO_LDFLAGS)
+   AC_SUBST(REQ_RPMS)
    AM_CONDITIONAL(HAVE_AIX, test "x$ac_have_aix" = "xyes")
    AC_SUBST(HAVE_AIX, "$ac_have_aix")
 

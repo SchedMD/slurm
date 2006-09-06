@@ -1,4 +1,4 @@
-# $Id$
+# $Id: slurm.spec 9159 2006-09-01 21:04:08Z morrone $
 
 # Note that this package is not relocatable
 
@@ -13,8 +13,8 @@ Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
-Requires: openssl >= 0.9.6
-BuildRequires: openssl-devel >= 0.9.6
+Requires: $(REQ_RPMS)
+BuildRequires: $(REQ_RPMS)
 
 #
 # If "--with debug" is set compile with --enable-debug 
