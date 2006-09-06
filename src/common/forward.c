@@ -556,7 +556,7 @@ extern int forward_msg_to_next(forward_msg_t *fwd_msg, int err)
 
 /*
  * forward_set - divide a mesage up into components for forwarding
- * IN: forward     - forward_t *   - struct to store forward info
+ * OUT: forward    - forward_t *   - struct to store forward info
  * IN: span        - int           - count of forwards to do
  * IN/OUT: pos     - int *         - position in the original messages addr 
  *                                   structure
@@ -619,7 +619,7 @@ extern int forward_set(forward_t *forward,
 /*
  * forward_set_launch - add to the message possible forwards to go to during 
  *                      a job launch
- * IN: forward     - forward_t *           - struct to store forward info
+ * OUT: forward     - forward_t *          - struct to store forward info
  * IN: span        - int                   - count of forwards to do
  * IN: step_layout - slurm_step_layout_t * - contains information about hosts
  *                                           from original message
@@ -627,7 +627,7 @@ extern int forward_set(forward_t *forward,
  * IN: itr         - hostlist_iterator_t   - count into host list of hosts to 
  *                                           send messages to 
  * IN: timeout     - int32_t               - timeout if any to wait for 
- *                                           message responses
+ *                                           message responses in milliseconds
  * RET: SLURM_SUCCESS - int
  */
 extern int forward_set_launch(forward_t *forward, 

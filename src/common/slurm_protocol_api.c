@@ -713,6 +713,7 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  *       and list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
  * OUT msg	- a slurm_msg struct to be filled in by the function
+ * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
  *                forwarded the message to. List containing type (ret_types_t).
  */
@@ -734,7 +735,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	xassert(fd >= 0);
 	
-	if ((timeout*=1000) == 0)
+	if (timeout == 0)
 		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
@@ -792,9 +793,9 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		       msg->forward_struct->buf_len);
 		
 		msg->forward_struct->ret_list = ret_list;
-		/* convert back to milliseconds */ 
+		/* take out the amount of timeout from this hop */
 		msg->forward_struct->timeout = 
-			(timeout - header.forward.timeout)/1000;
+			(timeout - header.forward.timeout);
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		debug3("forwarding messages to %d nodes!!!!", 
@@ -1334,6 +1335,12 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
  * Send and recv a slurm request and response on the open slurm descriptor
  * with a list containing the responses of the children (if any) we 
  * forwarded the message to. List containing type (ret_types_t).
+ * IN open_fd	- file descriptor to receive msg on
+ * IN req	- a slurm_msg struct to be sent by the function
+ * OUT resp	- a slurm_msg struct to be filled in by the function
+ * IN timeout	- how long to wait in milliseconds
+ * RET List	- List containing the responses of the childern (if any) we 
+ *                forwarded the message to. List containing type (ret_types_t).
  */
 static List 
 _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, 
@@ -1346,7 +1353,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	resp->auth_cred = NULL;
 	if(slurm_send_node_msg(fd, req) >= 0) {
 		if (!timeout)
-			timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;
+			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(req->forward.cnt>0) {
 			steps = req->forward.cnt/slurm_get_tree_width();
@@ -1457,6 +1464,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
  * for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
+ * IN timeout	        - how long to wait in milliseconds
  * RET List		- return list from multiple nodes
  *                        List containing type (ret_types_t).
  */
@@ -1542,6 +1550,9 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 /*
  *  Send message and recv "return code" message on an already open
  *  slurm file descriptor return List containing type (ret_types_t).
+ * IN fd	- file descriptor to receive msg on
+ * IN req	- slurm_msg request
+ * IN timeout   - how long to wait in milliseconds
  */
 static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 {
@@ -1604,6 +1615,10 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
  *  Open a connection to req->address, send message (forward if told), 
  *  req must contain the message already packed in it's buffer variable,
  *  and receive List of type ret_types_t from all childern nodes
+ * IN msg	- a slurm_msg struct to be sent by the function
+ * IN timeout	- how long to wait in milliseconds
+ * RET List	- List containing the responses of the childern (if any) we 
+ *                forwarded the message to. List containing type (ret_types_t).
  */
 List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 {
@@ -1631,7 +1646,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 
 	if(slurm_add_header_and_send(fd, msg) >= 0) {
 		if (!timeout)
-			timeout = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;
+			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(msg->forward.cnt>0) {
 			steps = msg->forward.cnt/slurm_get_tree_width();
@@ -1698,6 +1713,10 @@ failed:
  *  Open a connection to the "address" specified in the the slurm msg "req"
  *    Then read back an "rc" message returning List containing 
  *    type (ret_types_t).
+ * IN req	- a slurm_msg struct to be sent by the function
+ * IN timeout	- how long to wait in milliseconds
+ * RET List	- List containing the responses of the childern (if any) we 
+ *                forwarded the message to. List containing type (ret_types_t).
  */
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 {
@@ -1713,6 +1732,10 @@ List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
  *  Open a connection to the "address" specified in the the slurm msg "req"
  *    Then read back an "rc" message returning the "return_code" specified
  *    in the response in the "rc" parameter.
+ * IN req	- a slurm_msg struct to be sent by the function
+ * OUT rc	- return code from the sent message
+ * IN timeout	- how long to wait in milliseconds
+ * RET int either 0 for success or -1 for failure.
  */
 int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 {
@@ -1791,6 +1814,15 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	return ret_val;
 }
 
+/* this is used to set how many nodes are going to be on each branch
+ * of the tree.  
+ * IN total       - total number of nodes to send to
+ * IN tree_width  - how wide the tree should be on each hop
+ * RET int *      - int array tree_width in length each space
+ *                  containing the number of nodes to send to each hop
+ *                  on the span. 
+ */
+
 extern int *set_span(int total,  uint16_t tree_width)
 {
 	int *span = NULL;
@@ -1848,12 +1880,13 @@ void slurm_free_msg(slurm_msg_t * msg)
  */
 void slurm_auth_cred_destroy(void *auth_cred)
 {	
-	(void) g_slurm_auth_destroy(auth_cred);
+	if(auth_cred)
+		(void) g_slurm_auth_destroy(auth_cred);
 }
-
 
 int convert_to_kilo(int number, char *tmp)
 {
+#ifdef HAVE_BG
 	int i, j;
 	if(number >= 1024) {
 		i = number % 1024;
@@ -1869,6 +1902,7 @@ int convert_to_kilo(int number, char *tmp)
 		} else 
 			sprintf(tmp, "%dk", number/1024);
 	} else
+#endif
 		sprintf(tmp, "%d", number);
 
 	return SLURM_SUCCESS;

@@ -109,7 +109,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 		msg[i].address = alloc_info->node_addr[i];
 	}
 
-	_p_send_recv_rc_msg(alloc_info->node_cnt, msg, rc_array, 10);
+	_p_send_recv_rc_msg(alloc_info->node_cnt, msg, rc_array, 10000);
 	
 	for (i = 0; i < alloc_info->node_cnt; i++) {
 		if (rc_array[i]) {
@@ -262,7 +262,7 @@ _signal_job_step(const job_step_info_t *step,
 		msg[i].address = address[i];
 	}
 
-	_p_send_recv_rc_msg(num_nodes, msg, rc_array, 10);
+	_p_send_recv_rc_msg(num_nodes, msg, rc_array, 10000);
 	
 	xfree(address);
 	xfree(msg);
@@ -421,7 +421,7 @@ slurm_terminate_job (uint32_t job_id)
 		msg[i].address = alloc_info->node_addr[i];
 	}
 
-	_p_send_recv_rc_msg(alloc_info->node_cnt, msg, rc_array, 10);
+	_p_send_recv_rc_msg(alloc_info->node_cnt, msg, rc_array, 10000);
 	
 	for (i = 0; i < alloc_info->node_cnt; i++) {
 		if (rc_array[i]) {
@@ -540,7 +540,7 @@ _terminate_job_step(const job_step_info_t *step,
 		msg[i].address = address[i];
 	}
 
-	_p_send_recv_rc_msg(num_nodes, msg, rc_array, 10);
+	_p_send_recv_rc_msg(num_nodes, msg, rc_array, 10000);
 
 	xfree(msg);
 	xfree(rc_array);
@@ -570,7 +570,7 @@ static int _terminate_batch_script_step(
 	msg.data = &rpc;
 	msg.address = allocation->node_addr[0];
 
-	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 10);
+	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 10000);
 	if (i != 0)
 		rc = i;
 
