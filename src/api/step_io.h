@@ -49,7 +49,7 @@ struct client_io {
 	pthread_t ioid;		/* stdio thread id 		  */
 	int num_listen;		/* Number of stdio listen sockets */
 	int *listensock;	/* Array of stdio listen sockets  */
-	int *listenport;	/* Array of stdio listen ports 	  */
+	uint16_t *listenport;	/* Array of stdio listen port numbers */
 
 	eio_handle_t *eio;      /* Event IO handle for stdio traffic */
 	pthread_mutex_t ioservers_lock;
@@ -79,10 +79,18 @@ struct client_io {
 
 typedef struct client_io client_io_t;
 
+/*
+ * IN cred - cred need not be a real job credential, it may be a "fake"
+ *	credential generated with slurm_cred_faker().  The credential is
+ *	sent to the slurmstepd (via the slurmd) which generates a signature
+ *	string from the credential.  The slurmstepd sends the signature back
+ *	back to the client when it establishes the IO connection as a sort
+ *	of validity check.
+ */
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds,
 				      int num_tasks,
 				      int num_nodes,
-				      char *io_key,
+				      slurm_cred_t cred,
 				      bool label);
 
 int client_io_handler_start(client_io_t *cio);

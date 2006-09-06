@@ -72,7 +72,7 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
 	int sock = -1;
-	int port = 0;
+	short port = 0;
 	int errnum = 0;
 	
 	/* First copy the user's user_step_req struct in case we
@@ -94,7 +94,7 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 			_free_step_req(step_req);
 			goto fail;
 		}
-		step_req->port = ntohs((uint16_t)port);
+		step_req->port = ntohs(port);
 		step_req->host = xshort_hostname();
 	}
 

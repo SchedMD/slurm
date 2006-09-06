@@ -37,6 +37,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
 
@@ -61,6 +63,8 @@ typedef struct sbatch_options {
 	int quiet;
 	int verbose;
 	char *ctrl_comm_ifhn;
+	bool labelio;
+	slurm_step_io_fds_t fds;
 } opt_t;
 
 extern opt_t opt;

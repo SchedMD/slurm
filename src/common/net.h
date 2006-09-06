@@ -39,13 +39,15 @@
 #ifndef _NET_H
 #define _NET_H
 
+#include <stdint.h>
+
 /* open a stream socket on an ephemereal port and put it into 
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
  *
  * NOTE: port is in network byte order!
  */
-int net_stream_listen(int *fd, int *port);
+int net_stream_listen(int *fd, short *port);
 
 /* accept the incoming connection on the stream socket fd
  */
