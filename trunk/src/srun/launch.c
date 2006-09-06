@@ -197,7 +197,7 @@ launch(void *arg)
 	r.num_io_port = job->client_io->num_listen;
 	r.io_port = xmalloc(sizeof(uint16_t) * r.num_io_port);
 	for (i = 0; i < r.num_io_port; i++) {
-		r.io_port[i] = ntohs(job->client_io->listenport[i]);
+		r.io_port[i] = job->client_io->listenport[i];
 	}
 
 	msg_array_ptr[0].msg_type = REQUEST_LAUNCH_TASKS;

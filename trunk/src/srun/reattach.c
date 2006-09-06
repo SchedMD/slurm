@@ -333,8 +333,8 @@ _attach_to_job(srun_job_t *job)
 		r->job_step_id     = job->stepid;
 		r->num_io_port     = 1;
 		r->io_port         = (uint16_t *)xmalloc(sizeof(uint16_t));
-		r->io_port[0]      = ntohs(job->client_io->listenport[
-					   i%job->client_io->num_listen]);
+		r->io_port[0]      = job->client_io->listenport[
+					   i%job->client_io->num_listen];
 		r->num_resp_port   = 1;
 		r->resp_port	   = (uint16_t *)xmalloc(sizeof(uint16_t));
 		r->resp_port[0]    = ntohs(job->jaddr[i%job->njfds].sin_port);

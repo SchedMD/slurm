@@ -1195,11 +1195,13 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 
 	for (i = 0; i < cio->num_listen; i++) {
 		eio_obj_t *obj;
+		short port;
 
 		if (net_stream_listen(&cio->listensock[i],
-				      (short *)&cio->listenport[i]) < 0) {
+				      &port) < 0) {
 			fatal("unable to initialize stdio listen socket: %m");
 		}
+		cio->listenport[i] = ntohs(port);
 		debug("initialized stdio listening socket, port %d\n",
 		      ntohs(cio->listenport[i]));
 		/*net_set_low_water(cio->listensock[i], 140);*/

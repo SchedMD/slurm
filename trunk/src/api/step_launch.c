@@ -228,7 +228,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.io_port = xmalloc(sizeof(uint16_t) * launch.num_io_port);
 	for (i = 0; i < launch.num_io_port; i++) {
 		launch.io_port[i] =
-			ntohs(ctx->launch_state->client_io->listenport[i]);
+			ctx->launch_state->client_io->listenport[i];
 	}
 	
 	launch.num_resp_port = ctx->launch_state->num_resp_port;
