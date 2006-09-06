@@ -1359,7 +1359,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit-code = 1;
+			job_ptr->exit_code = 1;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 		}
