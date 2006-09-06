@@ -53,6 +53,7 @@ static uint32_t	_get_job_min_mem(struct job_record *job_ptr);
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr);
 static char *	_get_job_state(struct job_record *job_ptr);
 static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
+static uint32_t	_get_job_suspend_time(struct job_record *job_ptr);
 static uint32_t	_get_job_tasks(struct job_record *job_ptr);
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
 
@@ -155,7 +156,7 @@ static char *   _dump_all_jobs(int *job_cnt)
 static char *	_dump_job(struct job_record *job_ptr)
 {
 	char tmp[512], *buf = NULL;
-	uint32_t end_time;
+	uint32_t end_time, suspend_time;
 
 	if (!job_ptr)
 		return NULL;
@@ -199,6 +200,13 @@ static char *	_dump_job(struct job_record *job_ptr)
 	if (end_time) {
 		snprintf(tmp, sizeof(tmp),
 			"COMPLETETIME=%u", end_time);
+		xstrcat(buf, tmp);
+	}
+
+	suspend_time = _get_job_suspend_time(job_ptr);
+	if (suspend_time) {
+		snprintf(tmp, sizeof(tmp),
+			"SUSPENDTIME=%u", suspend_time);
 		xstrcat(buf, tmp);
 	}
 
@@ -288,5 +296,16 @@ static uint32_t	_get_job_end_time(struct job_record *job_ptr)
 {
 	if (IS_JOB_FINISHED(job_ptr))
 		return (uint32_t) job_ptr->end_time;
+	return (uint32_t) 0;
+}
+
+/* returns how long job has been suspended, in seconds */
+static uint32_t	_get_job_suspend_time(struct job_record *job_ptr)
+{
+	if (job_ptr->job_state == JOB_SUSPENDED) {
+		time_t now = time(NULL);
+		return (uint32_t) difftime(now, 
+				job_ptr->suspend_time);
+	}
 	return (uint32_t) 0;
 }
