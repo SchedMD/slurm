@@ -140,7 +140,8 @@ launch(void *arg)
 	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
 				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
-
+	/* convert timeout from sec to milliseconds */
+	opt.msg_timeout *= 1000;
 	/* Common message contents */
 	r.job_id          = job->jobid;
 	r.uid             = opt.uid;
