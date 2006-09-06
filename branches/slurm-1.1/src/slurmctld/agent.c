@@ -841,17 +841,6 @@ static void *_thread_per_group_rpc(void *args)
 	msg.srun_node_id = 0;
 	msg.forward_struct_init = 0;
 
-	if(msg.forward.timeout >= (SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10)) {
-		error("You are sending a message with timeout's greater "
-		      "than %d seconds, your's is %d seconds", 
-		      (SLURM_MESSAGE_TIMEOUT_SEC_STATIC * 10), 
-		      (msg.forward.timeout/1000));
-	} else if(msg.forward.timeout < SLURM_MESSAGE_TIMEOUT_MSEC_STATIC) {
-		debug("You are sending a message with a very short timeout of "
-		      "%d seconds", 
-		      (msg.forward.timeout/1000));
-	} 
-
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
