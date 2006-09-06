@@ -47,6 +47,7 @@
 static char *	_dump_all_jobs(int *job_cnt);
 static char *	_dump_job(struct job_record *job_ptr);
 static char *	_get_group_name(gid_t gid);
+static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
 static uint32_t	_get_job_min_mem(struct job_record *job_ptr);
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr);
@@ -66,6 +67,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  *                    TASKS=<cpus>;QUEUETIME=<submit_time>;STARTTIME=<time>;
  *                    UNAME=<user>;GNAME=<group>;PARTITIONMASK=<part>;
  *                    NODES=<node_cnt>;RMEM=<mem_size>;RDISK=<disk_space>;
+ *                    COMMENT=<comment>;[COMPLETETIME=<end_time>;]
  *         [#<JOBID>;...];
  */
 /* RET 0 on success, -1 on failure */
@@ -153,6 +155,7 @@ static char *   _dump_all_jobs(int *job_cnt)
 static char *	_dump_job(struct job_record *job_ptr)
 {
 	char tmp[512], *buf = NULL;
+	uint32_t end_time;
 
 	if (!job_ptr)
 		return NULL;
@@ -189,6 +192,13 @@ static char *	_dump_job(struct job_record *job_ptr)
 	if (job_ptr->account && job_ptr->account[0]) {
 		snprintf(tmp, sizeof(tmp),
 			"COMMENT=%s;", job_ptr->account);
+		xstrcat(buf, tmp);
+	}
+
+	end_time = _get_job_end_time(job_ptr);
+	if (end_time) {
+		snprintf(tmp, sizeof(tmp),
+			"COMPLETETIME=%u", end_time);
 		xstrcat(buf, tmp);
 	}
 
@@ -263,6 +273,8 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		return "Running";
 	if (base_state == JOB_COMPLETE)
 		return "Completed";
+	if (base_state == JOB_SUSPENDED)
+		return "Suspended";
 #if 0
 	if ((base_state == JOB_CANCELLED)
 	||  (base_state == JOB_FAILED)
@@ -272,3 +284,9 @@ static char *	_get_job_state(struct job_record *job_ptr)
 	return "Removed";
 }
 
+static uint32_t	_get_job_end_time(struct job_record *job_ptr)
+{
+	if (IS_JOB_FINISHED(job_ptr))
+		return (uint32_t) job_ptr->end_time;
+	return (uint32_t) 0;
+}
