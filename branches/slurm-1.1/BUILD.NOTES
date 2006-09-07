@@ -66,8 +66,8 @@ To build and run on AIX:
 1. export OBJECT_MODE=32
 2. Build with:
    ./configure --enable-debug --prefix=<install-dir> \
-	--sysconfdir=<config-dir> --with-procrack=/admin/llnl/include \
-	--with-ssl=/opt/freeware --with-munge=/admin/llnl
+	--sysconfdir=<config-dir> --with-procrack=/opt/freeware/include \
+	--with-ssl=/opt/freeware --with-munge=/opt/freeware
    make
    make uninstall  # remove old shared libraries, aix caches them
    make install
@@ -78,14 +78,14 @@ To build and run on AIX:
 	# The system-wide macros for RPM are in /usr/lib/rpm/macros
 	# and this overrides a few of them
 	#
-	%_prefix                /admin/llnl
+	%_prefix                /opt/freeware
 	%_slurm_sysconfdir      %{_prefix}/etc/slurm
         %_defaultdocdir         %{_prefix}/doc
 
 	%_enable_debug    "--enable-debug"
 	%with_proctrack   "--with-proctrack=/admin/llnl/include"
 	%with_ssl         "--with-ssl=/opt/freeware"
-	%with_munge       "--with-munge=/admin/llnl"
+	%with_munge       "--with-munge=/opt/freeware"
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
 4. export MP_RMLIB=./slurm_ll_api.so
    export CHECKPOINT=yes
