@@ -1886,16 +1886,24 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 }
 
 
-static char * 
-print_commandline()
+static char *
+print_remote_command()
 {
 	int i;
-	char buf[256];
+	char *buf = NULL;
+	char *space;
 
-	buf[0] = '\0';
-	for (i = 0; i < opt.argc; i++)
-		snprintf(buf, 256,  "%s", opt.argv[i]);
-	return xstrdup(buf);
+	for (i = 0; i < opt.argc; i++) {
+		if (i == opt.argc-1) {
+			space = "";
+		} else {
+			space = " ";
+		}
+
+		xstrfmtcat(buf, "\"%s\"%s", opt.argv[i], space);
+	}
+
+	return buf;
 }
 
 #define tf_(b) (b == true) ? "true" : "false"
@@ -1944,8 +1952,8 @@ static void _opt_list()
 	info("task_epilog    : %s", opt.task_epilog);
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
-	str = print_commandline();
-	info("remote command : \"%s\"", str);
+	str = print_remote_command();
+	info("remote command : %s", str);
 	xfree(str);
 
 }
