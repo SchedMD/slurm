@@ -114,7 +114,7 @@ allocate_nodes(void)
 
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
-	if (j->job_id != NO_VAL) {
+	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
 		info("WARNING: Creating SLURM job allocation from within "
 			"another allocation");
 		info("WARNING: You are attempting to initiate a second job");
@@ -180,7 +180,7 @@ existing_allocation(void)
 		return NULL;
 
 	if (slurm_confirm_allocation(&job, &resp) < 0) {
-		if (opt.parallel_debug)
+		if (opt.parallel_debug || opt.jobid_set)
 			return NULL;	/* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE) 
 			error ("SLURM job %u has expired.", job.job_id); 
