@@ -260,26 +260,49 @@ enum jobacct_data_type {
 };
 
 /* Possible task distributions across the nodes */
-enum task_dist_states {
+typedef enum task_dist_states {
 	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
 	SLURM_DIST_BLOCK,	/* distribute tasks filling node by node */
-	SLURM_DIST_ARBITRARY	/* arbitrary task distribution  */
-};
+	SLURM_DIST_ARBITRARY,	/* arbitrary task distribution  */
+	SLURM_DIST_PLANE,	/* distribute tasks by filling up
+				   planes of lllp first and then by
+				   going across the nodes See
+				   documentation for more
+				   information */
+	SLURM_DIST_CYCLIC_CYCLIC,/* distribute tasks 1 per node,
+				   round robin, same for lowest
+				   level of logical processor (lllp) */
+	SLURM_DIST_CYCLIC_BLOCK, /* cyclic for node and block for lllp  */
+	SLURM_DIST_BLOCK_CYCLIC, /* block for node and cyclic for lllp  */
+	SLURM_DIST_BLOCK_BLOCK,	/* block for node and block for lllp  */
+	SLURM_NO_LLLP_DIST,	/* No distribution specified for lllp */
+	SLURM_DIST_UNKNOWN	/* unknown dist */
+} task_dist_states_t;
 
 typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
-	CPU_BIND_VERBOSE= 0x01,	/* =v, */
-	CPU_BIND_NONE	= 0x02,	/* =no */
-	CPU_BIND_RANK  	= 0x04,	/* =rank */
-	CPU_BIND_MAPCPU	= 0x08,	/* =map_cpu:<list of CPU IDs> */
-	CPU_BIND_MASKCPU= 0x10	/* =mask_cpu:<list of CPU masks> */
+	/* the following auto-binding flags are mutually exclusive */
+	CPU_BIND_TO_THREADS= 0x01, /* =threads */ 
+        CPU_BIND_TO_CORES  = 0x02, /* =cores */
+        CPU_BIND_TO_SOCKETS= 0x04, /* =sockets */
+	/* verbose can be set with any other flag */
+	CPU_BIND_VERBOSE   = 0x08, /* =v, */
+	/* the following manual binding flags are mutually exclusive */
+	/* CPU_BIND_NONE needs to be the first in this sub-list */
+	CPU_BIND_NONE	   = 0x10, /* =no */
+	CPU_BIND_RANK  	   = 0x20, /* =rank */
+	CPU_BIND_MAP	   = 0x40, /* =map_cpu:<list of CPU IDs> */
+	CPU_BIND_MASK	   = 0x80  /* =mask_cpu:<list of CPU masks> */
 } cpu_bind_type_t;
 
 typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
+	/* verbose can be set with any other flag */
 	MEM_BIND_VERBOSE= 0x01,	/* =v, */
+	/* the following manual binding flags are mutually exclusive */
+	/* MEM_BIND_NONE needs to be the first in this sub-list */
 	MEM_BIND_NONE   = 0x02,	/* =no */
 	MEM_BIND_RANK   = 0x04,	/* =rank */
-	MEM_BIND_MAPCPU = 0x08,	/* =map_mem:<list of CPU IDs> */
-	MEM_BIND_MASKCPU= 0x10,	/* =mask_mem:<list of CPU masks> */
+	MEM_BIND_MAP    = 0x08,	/* =map_mem:<list of CPU IDs> */
+	MEM_BIND_MASK   = 0x10,	/* =mask_mem:<list of CPU masks> */
 	MEM_BIND_LOCAL  = 0x20	/* =local */
 } mem_bind_type_t;
 
@@ -331,6 +354,22 @@ enum ctx_keys {
 	SLURM_STEP_CTX_JOBID
 };
 
+typedef enum select_type_plugin_info {
+	SELECT_TYPE_INFO_NONE, /* Initiatlization value */
+	CR_DEFAULT, /* Resources are shared down to the level of
+		    * logical processors which can be socket,
+		    * core, or thread depending on the system.*/
+	CR_SOCKET, /* Resources are shared down to the socket level. 
+		    *  Jobs will not be co-allocated within a sockets */
+	CR_CORE,   /* Resources are shared down to the core level
+		    * Jobs will not be co-allocated within a core */
+	CR_MEMORY, /* Memory as consumable resources, Memory is not
+		    * over-commited when selected as a CR.  Jobs will
+		    * not be co-allocated within a core */
+	CR_SOCKET_MEMORY, /* Socket and Memory are CRs */
+	CR_CORE_MEMORY,  /* Core and Memory are CRs */
+} select_type_plugin_info_t ;
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -349,10 +388,13 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID, default set by SLURM */
 	char *name;		/* name of the job, default "" */
-	uint32_t min_procs;	/* minimum processors per node, default=0 */
-	uint32_t min_memory;	/* minimum real memory per node, default=0 */
-	uint32_t min_tmp_disk;	/* minimum temporary disk per node, 
-				 * default=0 */
+	/* job constraints: */
+	uint32_t job_min_procs;    /* minimum processors per node, default=0 */
+	uint32_t job_min_sockets;  /* minimum sockets per node, default=0 */
+	uint32_t job_min_cores;    /* minimum cores per processor, default=0 */
+	uint32_t job_min_threads;  /* minimum threads per core, default=0 */
+	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
+	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	char *partition;	/* name of requested partition, 
 				 * default in SLURM config */
 	uint32_t priority;	/* relative priority of the job,  
@@ -373,6 +415,18 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job, 
 				 * default=0 */
+	uint32_t min_sockets;	/* minimum number of sockets per node required
+				 * by job, default=0 */
+	uint32_t max_sockets;	/* maximum number of sockets per node usable 
+				 * by job, default=0 */
+	uint32_t min_cores;	/* minimum number of cores per cpu required
+				 * by job, default=0 */
+	uint32_t max_cores;	/* maximum number of cores per cpu usable
+				 * by job, default=0 */
+	uint32_t min_threads;	/* minimum number of threads per core required
+				 * by job, default=0 */
+	uint32_t max_threads;	/* maximum number of threads per core usable
+				 * by job, default=0 */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	char *script;		/* the actual job script, default NONE */
 	char **argv;		/* arguments to the script */
@@ -409,6 +463,13 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * NICE_OFFSET == no change */
 	char *account;		/* charge to specified account */
 	char *network;		/* network use spec */
+	uint16_t exclusive;	/* 1 if job requires exclusive nodes,
+				 * 0 otherwise, default=0. Only useful
+				 * when Consumable Resources are
+				 * enabled */
+	task_dist_states_t task_dist; /* see enum task_dist_state */
+	uint32_t plane_size;	/* plane size when task_dist =
+				   SLURM_DIST_PLANE */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
@@ -458,9 +519,13 @@ typedef struct job_info {
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
-	uint32_t min_procs;	/* minimum processors required per node */
-	uint32_t min_memory;	/* minimum real memory required per node */
-	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */
+	/* job constraints: */
+	uint32_t job_min_procs;	   /* minimum processors per node, default=0 */
+	uint32_t job_min_sockets;  /* minimum sockets per node, default=0 */
+	uint32_t job_min_cores;    /* minimum cores per processor, default=0 */
+	uint32_t job_min_threads;  /* minimum threads per core, default=0 */
+	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
+	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table: 
 				 * start_range_1, end_range_1, 
@@ -492,7 +557,9 @@ typedef struct job_step_specs {
 	uint32_t cpu_count;	/* count of required processors */
 	uint32_t num_tasks;	/* number of tasks required */
 	uint16_t relative;	/* first node to use of job's allocation */
-	uint16_t task_dist;	/* see enum task_dist_state */
+	task_dist_states_t task_dist; /* see enum task_dist_state */
+	uint32_t plane_size;	/* plane size when task_dist =
+				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
 	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */
@@ -516,6 +583,11 @@ typedef struct slurm_step_layout {
 	   of each subarray is designated by the corresponding value in
            the tasks array. */
 	uint32_t **tids;	/* host id => task id mapping */
+
+	task_dist_states_t task_dist;
+                                /* see enum task_dist_state */
+	uint32_t plane_size;	/* plane size when task_dist =
+				   SLURM_DIST_PLANE */
 } slurm_step_layout_t;
 
 typedef struct job_step_create_response_msg {
@@ -607,6 +679,9 @@ typedef struct node_info {
 	uint16_t node_state;	/* see enum node_states */
 	uint32_t cpus;		/* configured count of cpus running on 
 				 * the node */
+        uint32_t sockets;       /* number of sockets per node */
+        uint32_t cores;         /* number of cores per CPU */
+        uint32_t threads;       /* number of threads per core */
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
@@ -724,6 +799,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
+	select_type_plugin_info_t select_type_param; /* Parameters 
+				 * describing the select_type plugin */
 	uint32_t slurm_user_id;	/* uid of slurm_user_name */
 	char *slurm_user_name;	/* user that slurmctld runs as */
 	uint16_t slurmctld_debug; /* slurmctld logging level */
@@ -1623,4 +1700,3 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 END_C_DECLS
 
 #endif
-

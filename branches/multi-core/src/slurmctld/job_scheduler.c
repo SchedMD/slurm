@@ -405,8 +405,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr)
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;
 	cred_arg.hostlist  = launch_msg_ptr->nodes;
-	cred_arg.ntask_cnt = 0;
-	cred_arg.ntask     = NULL;
+	cred_arg.alloc_lps_cnt = 0;
+	cred_arg.alloc_lps = NULL;
 
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 			 &cred_arg);

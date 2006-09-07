@@ -77,7 +77,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-task_affinity_la_LIBADD =
+task_affinity_la_LIBADD = \
+	$(top_builddir)/src/common/libcommon.la
 am__task_affinity_la_SOURCES_DIST = affinity.c affinity.h numa.c \
 	schedutils.c task_affinity.c
 @HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_OBJECTS =  \
@@ -304,6 +305,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @HAVE_SCHED_SETAFFINITY_FALSE@	schedutils.c \
 @HAVE_SCHED_SETAFFINITY_FALSE@	task_affinity.c
 
+task_affinity_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:

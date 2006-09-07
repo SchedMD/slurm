@@ -723,10 +723,45 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_PROCS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_procs, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_procs, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
-		
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_sockets(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MIN_SOCKETS", width, right_justify, true);
+	else
+		_print_int(job->job_min_sockets, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_cores(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MIN_CORES", width, right_justify, true);
+	else
+		_print_int(job->job_min_cores, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_threads(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MIN_THREADS", width, right_justify, true);
+	else
+		_print_int(job->job_min_threads, width, right_justify, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -740,7 +775,7 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_memory, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_memory, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	
@@ -758,7 +793,7 @@ _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_tmp_disk, 
+		convert_num_unit((float)job->job_min_tmp_disk, 
 				 tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}

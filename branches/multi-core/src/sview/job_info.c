@@ -995,27 +995,27 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 			goto print_error;
 		break;
 	case SORTID_MIN_PROCS:
-		job_msg.min_procs = 
+		job_msg.job_min_procs = 
 			(uint32_t)strtol(new_text, (char **)NULL, 10);
 		temp = (char *)new_text;
 		type = "min procs";
-		if((int32_t)job_msg.min_procs <= 0)
+		if((int32_t)job_msg.job_min_procs <= 0)
 			goto print_error;
 		break;
 	case SORTID_MIN_MEM:
-		job_msg.min_memory = 
+		job_msg.job_min_memory = 
 			(uint32_t)strtol(new_text, (char **)NULL, 10);
 		temp = (char *)new_text;
 		type = "min memory";
-		if((int32_t)job_msg.min_memory <= 0)
+		if((int32_t)job_msg.job_min_memory <= 0)
 			goto print_error;
 		break;
 	case SORTID_TMP_DISK:
-		job_msg.min_tmp_disk = 
+		job_msg.job_min_tmp_disk = 
 			(uint32_t)strtol(new_text, (char **)NULL, 10);
 		temp = (char *)new_text;
 		type = "min tmp disk";
-		if((int32_t)job_msg.min_tmp_disk <= 0)
+		if((int32_t)job_msg.job_min_tmp_disk <= 0)
 			goto print_error;
 		break;
 	case SORTID_PARTITION:

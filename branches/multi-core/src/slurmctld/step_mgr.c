@@ -681,6 +681,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_PLANE) &&
 	    (step_specs->task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
@@ -737,8 +742,18 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_specs->node_list = xstrdup(step_node_list);
 	}
 	step_ptr->step_node_bitmap = nodeset;
-	step_ptr->cyclic_alloc = 
-		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
+	
+	switch(step_specs->task_dist) {
+	case SLURM_DIST_CYCLIC: 
+	case SLURM_DIST_CYCLIC_CYCLIC: 
+	case SLURM_DIST_CYCLIC_BLOCK: 
+		step_ptr->cyclic_alloc = 1;
+		break;
+	default:
+		step_ptr->cyclic_alloc = 0;
+		break;
+	}
+
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
@@ -762,7 +777,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   step_node_list,
 					   step_specs->node_count,
 					   step_specs->num_tasks,
-					   step_specs->task_dist);
+					   step_specs->task_dist,
+					   step_specs->plane_size);
 		if (!step_ptr->step_layout)
 			return SLURM_ERROR;
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
@@ -790,7 +806,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint16_t node_count,
 					       uint32_t num_tasks,
-					       uint16_t task_dist)
+					       uint16_t task_dist,
+					       uint32_t plane_size)
 {
 	uint32_t cpus_per_node[node_count];
 	uint32_t cpu_count_reps[node_count];
@@ -834,7 +851,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
 					cpus_per_node, cpu_count_reps, 
-					node_count, num_tasks, task_dist);
+					node_count, num_tasks, task_dist,
+					plane_size);
 }
 
 /* Pack the data for a specific job step record

@@ -1494,19 +1494,37 @@ _update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0) {
-			job_msg.min_procs = 
+			job_msg.job_min_procs = 
 				(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "MinSockets=", 11) == 0) {
+			job_msg.job_min_sockets = 
+				(uint32_t) strtol(&argv[i][11], 
+						(char **) NULL, 10);
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinCores=", 9) == 0) {
+			job_msg.job_min_cores = 
+				(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinThreads=", 11) == 0) {
+			job_msg.job_min_threads = 
+				(uint32_t) strtol(&argv[i][11], 
+						(char **) NULL, 10);
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0) {
-			job_msg.min_memory = 
+			job_msg.job_min_memory = 
 				(uint32_t) strtol(&argv[i][10], 
 						(char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0) {
-			job_msg.min_tmp_disk = 
+			job_msg.job_min_tmp_disk = 
 				(uint32_t) strtol(&argv[i][11], 
 						(char **) NULL, 10);
 			update_cnt++;

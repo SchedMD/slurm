@@ -189,9 +189,7 @@ static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	arg.stepid   = stepid;
 	arg.uid      = uid;
 	arg.hostlist = nodelist;
-        arg.ntask_cnt = 0;    
-        arg.ntask    =  NULL; 
-	cred = slurm_cred_faker(&arg);
+ 	cred = slurm_cred_faker(&arg);
 
 	return cred;
 }

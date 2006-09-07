@@ -161,6 +161,8 @@ launch(void *arg)
 	r.switch_job      = job->switch_job;
 	r.task_prolog     = opt.task_prolog;
 	r.task_epilog     = opt.task_epilog;
+	r.task_dist       = opt.distribution;
+	r.plane_size      = opt.plane_size;
 	r.cpu_bind_type   = opt.cpu_bind_type;
 	r.cpu_bind        = opt.cpu_bind;
 	r.mem_bind_type   = opt.mem_bind_type;
@@ -187,6 +189,10 @@ launch(void *arg)
 
 	r.global_task_ids = job->step_layout->tids;
 	r.cpus_allocated  = job->step_layout->tasks;
+	r.max_sockets     = opt.max_sockets_per_node;
+	r.max_cores       = opt.max_cores_per_socket;
+	r.max_threads     = opt.max_threads_per_core;
+	r.cpus_per_task   = opt.cpus_per_task;
 	
 	r.num_resp_port = job->njfds;
 	r.resp_port = xmalloc(sizeof(uint16_t) * r.num_resp_port);

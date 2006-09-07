@@ -67,19 +67,28 @@ strong_alias(bit_not,		slurm_bit_not);
 strong_alias(bit_or,		slurm_bit_or);
 strong_alias(bit_set_count,	slurm_bit_set_count);
 strong_alias(bit_clear_count,	slurm_bit_clear_count);
+strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
+strong_alias(bit_and_set_count,	slurm_bit_and_set_count);
+strong_alias(int_and_set_count,	slurm_int_and_set_count);
+strong_alias(bit_rotate_copy,	slurm_bit_rotate_copy);
+strong_alias(bit_rotate,	slurm_bit_rotate);
 strong_alias(bit_fmt,		slurm_bit_fmt);
+strong_alias(bit_unfmt,		slurm_bit_unfmt);
+strong_alias(bitfmt2int,	slurm_bitfmt2int);
+strong_alias(bit_fmt_hexmask,	slurm_bit_fmt_hexmask);
+strong_alias(bit_unfmt_hexmask,	slurm_bit_unfmt_hexmask);
+strong_alias(bit_fmt_binmask,	slurm_bit_fmt_binmask);
+strong_alias(bit_unfmt_binmask,	slurm_bit_unfmt_binmask);
 strong_alias(bit_fls,		slurm_bit_fls);
 strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
 strong_alias(bit_super_set,	slurm_bit_super_set);
 strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
-strong_alias(bitfmt2int,	slurm_bitfmt2int);
 strong_alias(bit_nffc,		slurm_bit_nffc);
 strong_alias(bit_noc,		slurm_bit_noc);
 strong_alias(bit_nffs,		slurm_bit_nffs);
 strong_alias(bit_copybits,	slurm_bit_copybits);
-strong_alias(bit_unfmt,		slurm_bit_unfmt);
 strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
 strong_alias(bit_get_pos_num,	slurm_bit_get_pos_num);
 
@@ -561,6 +570,8 @@ bit_or(bitstr_t *b1, bitstr_t *b2) {
 		b1[_bit_word(bit)] |= b2[_bit_word(bit)];
 }
 
+
+
 /* 
  * return a copy of the supplied bitmap
  */
@@ -662,6 +673,150 @@ bit_clear_count(bitstr_t *b)
 {
 	_assert_bitstr_valid(b);
 	return (_bitstr_bits(b) - bit_set_count(b));
+}
+
+/* Return the count of the largest number of contiguous bits set in b.
+ *   b (IN)             bitstring to search
+ *   RETURN             the largest number of contiguous bits set in b
+ */
+int
+bit_nset_max_count(bitstr_t *b)
+{
+	bitoff_t bit;
+	int cnt = 0;
+	int maxcnt = 0;
+	uint32_t bitsize;
+
+	_assert_bitstr_valid(b);
+	bitsize = _bitstr_bits(b);
+
+	for (bit = 0; bit < bitsize; bit++) {
+		if (!bit_test(b, bit)) {	/* no longer continuous */
+			cnt = 0;
+		} else {
+			cnt++;
+			if (cnt > maxcnt) {
+				maxcnt = cnt;
+			}
+		}
+		if (cnt == 0 && ((bitsize - bit) < maxcnt)) {
+		    	break;			/* already found max */
+		}
+	}
+
+	return maxcnt;
+}
+
+/*
+ * And two bitstrings and count the number of set bits: SUM(b1 & b2)
+ *   b1 (IN)		first bitstring
+ *   b2 (IN)		second bitstring
+ */
+int
+bit_and_set_count(bitstr_t *b1, bitstr_t *b2) {
+	bitoff_t bit;
+	bitstr_t word;
+	int sum;
+
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	sum = 0;
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
+		word = b1[_bit_word(bit)] & b2[_bit_word(bit)];
+		sum += hweight(word);
+	}
+	return(sum);
+}
+
+/*
+ * And an integer vector and a bitstring and sum the elements corresponding
+ * to set entries in b2: SUM(i1 & b2)
+ * Note: if b2 is longer than i1, then elements are wrapped into i1
+ *   i1 (IN)		integer vector
+ *   b2 (IN)		bitstring
+ */
+int
+int_and_set_count(int *i1, int ilen, bitstr_t *b2) {
+	bitoff_t bit;
+	int sum;
+
+	_assert_bitstr_valid(b2);
+
+	sum = 0;
+	for (bit = 0; bit < _bitstr_bits(b2); bit++) {
+	    	if (bit_test(b2, bit))
+			sum += i1[bit % ilen];
+	}
+	return(sum);
+}
+
+/* 
+ * rotate b1 by n bits returning a rotated copy
+ *   b1 (IN)		bitmap to rotate
+ *   n  (IN)		rotation distance (+ = rotate left, - = rotate right)
+ *   nbits (IN)		size of the new copy (in which the rotation occurs)
+ *				note: nbits must be >= bit_size(b1)
+ *   RETURN		new rotated bitmap
+ */
+bitstr_t *
+bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits) {
+	bitoff_t bit, dst;
+	bitstr_t *new;
+	bitoff_t bitsize;
+	bitoff_t deltasize, wrapbits;
+
+	_assert_bitstr_valid(b1);
+	bitsize = bit_size(b1);
+	assert(nbits >= bitsize);
+	deltasize = nbits - bitsize;
+
+	/* normalize n to a single positive rotation */
+	n = n % nbits;
+	if (n < 0) {
+		n += nbits;
+	}
+
+	wrapbits = 0;	/* number of bits that will wrap around */
+	if (n > deltasize) {
+		wrapbits = n - deltasize;
+	}
+
+	new = bit_alloc(nbits);
+	bit_nclear(new,0,nbits-1);
+
+	/* bits shifting up */
+	for (bit = 0; bit < (bitsize-wrapbits); bit++) {
+		if (bit_test(b1, bit))
+			bit_set(new, bit+n);
+	}
+	/* continue bit into wrap-around bits, if any */
+	for (dst = 0; bit < bitsize; bit++, dst++) {
+		if (bit_test(b1, bit))
+			bit_set(new, dst);
+	}
+	return(new);
+}
+
+/* 
+ * rotate b1 by n bits
+ *   b1 (IN/OUT)	bitmap to rotate
+ *   n  (IN)		rotation distance (+ = rotate left, - = rotate right)
+ */
+void
+bit_rotate(bitstr_t *b1, int n) {
+	uint32_t bitsize;
+
+	if (n == 0)
+		return;
+
+	_assert_bitstr_valid(b1);
+	bitsize = bit_size(b1);
+
+	bitstr_t *new = bit_rotate_copy(b1, n, bitsize);
+	bit_copybits(b1, new);
+	bit_free(new);
 }
 
 /*
@@ -844,6 +999,156 @@ bitfmt2int (char *bit_str_ptr)
 	assert(bit_inx < (size*2+1));
 	bit_int_ptr[bit_inx] = -1;
 	return bit_int_ptr;
+}
+
+/* bit_fmt_hexmask
+ *
+ * Given a bitstr_t, allocate and return a string in the form of:
+ *                         "0x0123ABC\0"
+ *                            ^     ^
+ *                            |     |
+ *                           MSB   LSB
+ *   bitmap (IN)  bitmap to format
+ *   RETURN       formatted string
+ */
+char * bit_fmt_hexmask(bitstr_t * bitmap)
+{
+	char *retstr, *ptr;
+	char current;
+	bitoff_t i;
+	bitoff_t bitsize = bit_size(bitmap);
+
+	/* 4 bits per ASCII '0'-'F' */
+	bitoff_t charsize = (bitsize + 3) / 4;
+
+	retstr = xmalloc(charsize + 3);
+	if (!retstr) {
+		error("bit_fmt_hexmask: failed to alloc %d bytes", charsize+3);
+		return NULL;
+	}
+
+	retstr[0] = '0';  
+	retstr[1] = 'x';  
+	retstr[charsize + 2] = '\0';
+	ptr = &retstr[charsize + 1];
+	for (i=0; i < bitsize;) {
+		current = 0;
+		if (                 bit_test(bitmap,i++)) current |= 0x1;
+		if ((i < bitsize) && bit_test(bitmap,i++)) current |= 0x2;
+		if ((i < bitsize) && bit_test(bitmap,i++)) current |= 0x4;
+		if ((i < bitsize) && bit_test(bitmap,i++)) current |= 0x8;
+		current += '0';
+		if (current > '9') current += ('A' - '9');
+		*ptr-- = current;
+	}
+
+	return retstr;
+}
+
+/* bit_unfmt_hexmask
+ *
+ * Given a hex mask string "0x0123ABC\0", convert to a bitstr_t *
+ *                            ^     ^
+ *                            |     |
+ *                           MSB   LSB
+ *   bitmap (OUT)  bitmap to update
+ *   str (IN)      hex mask string to unformat
+ */
+int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str) 
+{
+	int bit_index = 0, len = strlen(str);
+	const char *curpos = str + len - 1;
+	char current;
+	bitoff_t bitsize = bit_size(bitmap);
+
+	if (strncmp(str, "0x", 2) == 0) {	/* Bypass 0x */
+		str += 2;
+		len -= 2;
+	}
+
+	while(curpos >= str) {
+		current = (int) *curpos; 
+		if (current <= '9') current -= '0';
+		if (current > '9') current -= ('A' - '9');
+		if ((current & 1) && (bit_index   < bitsize))
+			bit_set(bitmap, bit_index);
+		if ((current & 2) && (bit_index+1 < bitsize))
+			bit_set(bitmap, bit_index+1); 
+		if ((current & 4) && (bit_index+2 < bitsize))
+			bit_set(bitmap, bit_index+2);
+		if ((current & 8) && (bit_index+3 < bitsize))
+			bit_set(bitmap, bit_index+3);
+		len--;
+		curpos--;
+		bit_index+=4;
+	}
+	return 0;
+}
+
+/* bit_fmt_binmask
+ *
+ * Given a bitstr_t, allocate and return a binary string in the form of:
+ *                            "0001010\0"
+ *                             ^     ^
+ *                             |     |
+ *                            MSB   LSB
+ *   bitmap (IN)  bitmap to format
+ *   RETURN       formatted string
+ */
+char * bit_fmt_binmask(bitstr_t * bitmap)
+{
+	char *retstr, *ptr;
+	char current;
+	bitoff_t i;
+	bitoff_t bitsize = bit_size(bitmap);
+
+	/* 1 bits per ASCII '0'-'1' */
+	bitoff_t charsize = bitsize;
+
+	retstr = xmalloc(charsize + 1);
+	if (!retstr)  {
+		error("bit_fmt_binmask: failed to alloc %d bytes", charsize+1);
+		return NULL;
+	}
+
+	retstr[charsize] = '\0';
+	ptr = &retstr[charsize - 1];
+	for (i=0; i < bitsize;) {
+		current = 0;
+		if (bit_test(bitmap,i++)) current |= 0x1;
+		current += '0';
+		*ptr-- = current;
+	}
+
+	return retstr;
+}
+
+/* bit_unfmt_binmask
+ *
+ * Given a binary mask string "0001010\0", convert to a bitstr_t *
+ *                             ^     ^
+ *                             |     |
+ *                            MSB   LSB
+ *   bitmap (OUT)  bitmap to update
+ *   str (IN)      hex mask string to unformat
+ */
+int bit_unfmt_binmask(bitstr_t * bitmap, const char* str) 
+{
+	int bit_index = 0, len = strlen(str);
+	const char *curpos = str + len - 1;
+	char current;
+	bitoff_t bitsize = bit_size(bitmap);
+
+	while(curpos >= str) {
+		current = (int) *curpos; 
+		current -= '0';
+		if ((current & 1) && (bit_index   < bitsize))
+			bit_set(bitmap, bit_index);
+		len--;
+		curpos--;
+		bit_index++;
+	}
+	return 0;
 }
 
 /* Find the bit set at pos (0 - bitstr_bits) in bitstr b.
