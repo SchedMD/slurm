@@ -203,15 +203,15 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	/****** Line 7 ******/
 	convert_to_kilo(job_ptr->num_procs, tmp1);
-	convert_to_kilo(job_ptr->num_nodes, tmp2);
 #ifdef HAVE_BG
+	convert_to_kilo(job_ptr->num_nodes, tmp2);
 	fprintf ( out, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
 #else
+	sprintf(tmp2, "%d", job_ptr->num_nodes);
 	fprintf ( out, "ReqProcs=%s MinNodes=%s ", tmp1, tmp2);
 #endif
-	convert_to_kilo(job_ptr->shared, tmp1);
-	convert_to_kilo(job_ptr->contiguous, tmp2);
-	fprintf ( out, "Shared=%s Contiguous=%s ", tmp1, tmp2);
+	fprintf ( out, "Shared=%d Contiguous=%d ", 
+		  job_ptr->shared, job_ptr->contiguous);
 	
 	convert_to_kilo(job_ptr->cpus_per_task, tmp1);
 	fprintf ( out, "CPUs/task=%s", tmp1);

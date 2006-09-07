@@ -91,7 +91,11 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 	/****** Line 1 ******/
 	fprintf ( out, "PartitionName=%s ", part_ptr->name);
 
+#ifdef HAVE_BG
 	convert_to_kilo(part_ptr->total_nodes, tmp1);
+#else
+	sprintf(tmp1, "%d", part_ptr->total_nodes);
+#endif
 	fprintf ( out, "TotalNodes=%s ", tmp1);
 
 	convert_to_kilo(part_ptr->total_cpus, tmp1);
@@ -134,12 +138,20 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 		fprintf ( out, "\n   ");
 
 	/****** Line 3 ******/
+#ifdef HAVE_BG
 	convert_to_kilo(part_ptr->min_nodes, tmp1);
+#else
+	sprintf(tmp1, "%d", part_ptr->min_nodes);
+#endif
 	fprintf ( out, "MinNodes=%s ", tmp1);
 	if (part_ptr->max_nodes == INFINITE)
 		fprintf ( out, "MaxNodes=UNLIMITED ");
 	else {
+#ifdef HAVE_BG
 		convert_to_kilo(part_ptr->max_nodes, tmp1);
+#else
+		sprintf(tmp1, "%d", part_ptr->max_nodes);
+#endif
 		fprintf ( out, "MaxNodes=%s ", tmp1);
 	}
 	if ((part_ptr->allow_groups == NULL) || 

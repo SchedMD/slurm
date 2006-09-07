@@ -1899,7 +1899,6 @@ void slurm_auth_cred_destroy(void *auth_cred)
 
 int convert_to_kilo(int number, char *tmp)
 {
-#ifdef HAVE_BG
 	int i, j;
 	if(number >= 1024) {
 		i = number % 1024;
@@ -1915,7 +1914,6 @@ int convert_to_kilo(int number, char *tmp)
 		} else 
 			sprintf(tmp, "%dk", number/1024);
 	} else
-#endif
 		sprintf(tmp, "%d", number);
 
 	return SLURM_SUCCESS;

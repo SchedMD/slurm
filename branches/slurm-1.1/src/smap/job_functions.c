@@ -273,9 +273,12 @@ static int _print_text_job(job_info_t * job_ptr)
 	node_cnt = job_ptr->num_nodes;
 #endif
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
-		_get_node_cnt(job_ptr);
+		node_cnt = _get_node_cnt(job_ptr);
+#ifdef HAVE_BG
 	convert_to_kilo(node_cnt, tmp_cnt);
-
+#else
+	sprintf(tmp_cnt, "%d", node_cnt);
+#endif
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%c", job_ptr->num_procs);
