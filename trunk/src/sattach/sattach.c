@@ -418,7 +418,7 @@ static int _msg_thr_create(struct message_thread_state *mts, int num_nodes)
 			error("unable to intialize step launch listening socket: %m");
 			return SLURM_ERROR;
 		}
-		mts->resp_port[i] = ntohs(port);
+		mts->resp_port[i] = port;
 		obj = eio_obj_create(sock, &message_socket_ops, (void *)mts);
 		eio_new_initial_obj(mts->msg_handle, obj);
 	}

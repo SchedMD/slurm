@@ -106,8 +106,6 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	int i, rc = SLURM_SUCCESS;
 	uint16_t slurmd_debug = 0;
 	char *env_var;
-	/* hostlist_t hostlist = NULL; */
-/* 	hostlist_iterator_t itr = NULL; */
 	int task_cnt = 0;
 	uint32_t *cpus = NULL;
 	slurm_step_layout_t *step_layout = ctx->step_resp->step_layout;
@@ -154,9 +152,6 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * 
 				step_layout->node_cnt);
 
-	//hostlist = hostlist_create(step_layout->node_list);
-	//itr = hostlist_iterator_create(hostlist);
-
 	for (i=0; i<step_layout->node_cnt; i++) {
 		spawn_task_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t              *m = &req_array_ptr[i];
@@ -179,7 +174,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->global_task_id	= step_layout->tids[i][0];
 		r->cpus_allocated	= cpus[i];
 		r->srun_node_id	= (uint32_t) i;
-		r->io_port	= ntohs(sock_array[i]);
+		r->io_port	= sock_array[i];
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;
 		
@@ -191,8 +186,6 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		       fd_array[i], r->io_port, i);
 #endif
 	}
-	//hostlist_iterator_destroy(itr);
-	//hostlist_destroy(hostlist);
 	rc = _p_launch(req_array_ptr, ctx);
 
 	xfree(msg_array_ptr);
@@ -222,6 +215,9 @@ slurm_spawn_kill (slurm_step_ctx ctx, uint16_t signal)
 }
 
 
+/*
+ * Returns the port number in host byte order.
+ */
 static int _sock_bind_wild(int sockfd)
 {
 	socklen_t len;
@@ -237,7 +233,7 @@ static int _sock_bind_wild(int sockfd)
 	len = sizeof(sin);
 	if (getsockname(sockfd, (struct sockaddr *) &sin, &len) < 0)
 		return (-1);
-	return (sin.sin_port);
+	return ntohs(sin.sin_port);
 }
 
 

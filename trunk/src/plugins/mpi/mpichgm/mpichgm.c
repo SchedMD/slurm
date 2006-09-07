@@ -335,7 +335,7 @@ extern int gmpi_thr_create(srun_job_t *job)
 		return -1;
 	}
 	slurm_attr_destroy(&attr);
-	setenvf (NULL, "GMPI_PORT",  "%u", ntohs(port));
+	setenvf (NULL, "GMPI_PORT",  "%u", port);
 	setenvf (NULL, "GMPI_MAGIC", "%u", job->jobid);
 	setenvf (NULL, "GMPI_NP",    "%d", job->ntasks);
 	setenvf (NULL, "GMPI_SHMEM", "1");

@@ -172,7 +172,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		env_array_for_step(&env,
 				   ctx->step_resp,
 				   launcher_hostname,
-				   htons(ctx->launch_state->resp_port[0]),
+				   ctx->launch_state->resp_port[0],
 				   ent->h_addr_list[0]);
 		xfree(launcher_hostname);
 	}
@@ -234,7 +234,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.num_resp_port = ctx->launch_state->num_resp_port;
 	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.num_resp_port);
 	for (i = 0; i < launch.num_resp_port; i++) {
-		launch.resp_port[i] = ntohs(ctx->launch_state->resp_port[i]);
+		launch.resp_port[i] = ctx->launch_state->resp_port[i];
 	}
 
 	_launch_tasks(ctx, &launch);
