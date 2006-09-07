@@ -65,6 +65,7 @@ typedef struct sbatch_options {
 	char *ctrl_comm_ifhn;
 	bool labelio;
 	slurm_step_io_fds_t fds;
+	bool info_only;
 } opt_t;
 
 extern opt_t opt;
