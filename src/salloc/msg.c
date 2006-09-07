@@ -80,19 +80,17 @@ extern salloc_msg_thread_t *msg_thr_create(uint16_t *port)
 {
 	int sock = -1;
 	eio_obj_t *obj;
-	short port_tmp;
 	salloc_msg_thread_t *msg_thr = NULL;
 
 	debug("Entering _msg_thr_create()");
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	msg_thr = (salloc_msg_thread_t *)xmalloc(sizeof(salloc_msg_thread_t));
 
-	if (net_stream_listen(&sock, &port_tmp) < 0) {
+	if (net_stream_listen(&sock, (short *)port) < 0) {
 		error("unable to intialize step launch listening socket: %m");
 		xfree(msg_thr);
 		return NULL;
 	}
-	*port = ntohs(port_tmp);
 	debug("port from net_stream_listen is %hu", *port);
 
 	obj = eio_obj_create(sock, &message_socket_ops, NULL);

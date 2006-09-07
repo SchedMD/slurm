@@ -45,7 +45,8 @@
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
  *
- * NOTE: port is in network byte order!
+ * OUT fd - listening socket file descriptor number
+ * OUT port - TCP port number in host byte order
  */
 int net_stream_listen(int *fd, short *port);
 

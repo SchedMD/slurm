@@ -94,7 +94,7 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 			_free_step_req(step_req);
 			goto fail;
 		}
-		step_req->port = ntohs(port);
+		step_req->port = port;
 		step_req->host = xshort_hostname();
 	}
 

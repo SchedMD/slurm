@@ -570,8 +570,8 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 		return NULL;
 	}
 	listen->hostname = xstrdup(interface_hostname);
-	/* FIXME - screw it!  I can't seem to get the port number through slurm_*
-	   functions */
+	/* FIXME - screw it!  I can't seem to get the port number through
+	   slurm_* functions */
 	listen->port = ntohs(listen->address.sin_port);
 	fd_set_nonblocking(listen->fd);
 
