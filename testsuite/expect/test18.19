@@ -81,7 +81,7 @@ expect {
 set timeout $max_job_delay
 set job_id       0
 set slaunch_pid  0
-spawn $salloc -N1 -t1 $slaunch -v --unbuffered $file_prog
+spawn $salloc -N1 -t1 $slaunch -vv --unbuffered $file_prog
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

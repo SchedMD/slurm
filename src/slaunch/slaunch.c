@@ -129,6 +129,7 @@ int slaunch(int argc, char **argv)
 	slurm_job_step_launch_t params;
 	slurm_job_step_launch_callbacks_t callbacks;
 	char **env;
+	uint32_t job_id, step_id;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
@@ -160,7 +161,7 @@ int slaunch(int argc, char **argv)
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
-	verbose ("slaunch pid %d", getpid());
+	debug("slaunch pid %d", getpid());
 
 	/*
 	 * Create a job step context.
@@ -253,6 +254,10 @@ int slaunch(int argc, char **argv)
 	_run_slaunch_prolog(env);
 
 	_mpir_init(step_req.num_tasks);
+
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
+	verbose("Launching job step %u.%u", job_id, step_id);
 
 	if (slurm_step_launch(step_ctx, &params, &callbacks) != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
