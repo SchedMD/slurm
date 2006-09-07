@@ -1,0 +1,891 @@
+<!--#include virtual="header.txt"-->
+
+<h1> Multi-core/multi-thread support in SLURM</h1>
+
+<h3> (Draft Aug 17,2006)</h3>
+
+<h2>This is a first draft of the multi-core support in SLURM.
+We will enhance the documentation for the final 1.2 release. This draft is so
+that early testers have some preliminary documentation at their disposition.</h2>
+
+<h2>Definitions:</h2>
+
+<p>Figure 1 illustrates the notion of Socket, Core and Thread as it is defined in the
+multi-core/multi-thread support in SLURM.</p>
+
+<p align=center style='text-align:center;page-break-after:avoid'><img
+width=529 height=364 src="mc_support.jpg"></p>
+
+<p align=center>Figure 1 Socket vs Core vs Multi-threading (Courtesy of Richard Kaufmann,
+HP.)</p>
+
+<h2>Overview of new srun flags</h2>
+
+<p> The new flags allow users to
+better take advantage of the new architecture since users are able to
+explicitly specify the number of sockets, cores, and threads required by their
+application.</p>
+
+<p>It is important to note that many
+flags are only meaningful if the processes' affinity is set. In order for the
+affinity to be set the task/affinity plugin must be enabled. The affinity can
+be set to either a specific logical processor (socket, core, threads) or at a
+higher level than the lowest level of logical processor (core or thread). In
+the later case the processes are allowed to roam within a specific socket or
+core. We introduce the notion of fat masks to describe affinity masks which
+bind a process to more than one logical processor.</p>
+
+<table border=1 cellspacing=0 cellpadding=0>
+ <tr>
+  <td>
+  <p>--cpu_bind</p>
+  </td>
+  <td>
+  <p>Specify type of process affinity binding if any</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>--sockets-per-node</p>
+  </td>
+  <td>
+  <p>Number of sockets in a node to dedicate to a job (minimum or range)</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>--cores-per-cpu </p>
+  </td>
+  <td>
+  <p>Number of cores in a CPU to dedicate to a job (minimum or range)</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>--threads-per-core</p>
+  </td>
+  <td>
+  <p>Number of threads in a core
+  to dedicate to a job (minimum or range)</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>Extensions to -N </p>
+  </td>
+  <td>
+  <p>Specify -N [min-max]nodes:[min-max]sockets_per_node:[min-max]cores_per_sockets:[min-max]threads_per_cores</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>Extensions to --distribution (-m) </p>
+  </td>
+  <td>
+  <p>-m, --distribution=(hostfile|block|cyclic|plane=x|block:cyclic)</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>--mincores</p>
+  </td>
+  <td>
+  <p>Nodes must meet this minimum number of cores per socket</p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <p>--minthreads</p>
+  </td>
+  <td>
+  <p>Nodes must meet this minimum number of threads per core</p>
+  </td>
+ </tr>
+</table>
+
+<p>Figure 2 New srun flags to support the multi-core/multi-threaded environment</p>
+
+<p><b>--cpu_bind: Explicit binding interface</b></p>
+
+<p>The following srun flag provides a low-level core binding interface:</p>
+
+
+<p style='margin-left:.5in'>--cpu_bind= &nbsp;&nbsp; Bind tasks to CPUs</p>
+<p style='margin-left:1in'>q[uiet],&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; quietly perform binding before task runs (default)</p>
+<p style='margin-left:1in'>v[erbose],&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; verbosely report binding before task runs</p>
+<p style='margin-left:1in'>no[ne]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; don't bind tasks to CPUs</p>
+<p style='margin-left:1in'>thread,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bind at the thread level (currently the default. Could change!).</p>
+<p style='margin-left:1in'>core, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bind at the core level</p>
+<p style='margin-left:1in'>socket,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp; bind at the socket level</span></p>
+<p style='margin-left:1in'>rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bind by task rank</p>
+<p style='margin-left:1in'>map_cpu:&lt;list&gt; bind by mapping CPU IDs to tasks as specified</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; where &lt;list&gt; is &lt;cpuid1&gt;,&lt;cpuid2&gt;,...&lt;cpuidN&gt;</p>
+<p style='margin-left:1in'>mask_cpu:&lt;list&gt;bind by setting CPU masks on tasks as specified</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; where &lt;list&gt; is &lt;mask1&gt;,&lt;mask2&gt;,...&lt;maskN&gt;</p>
+
+<p>Examples:</p>
+
+<p style='margin-left:.5in'> srun –n 8 –N 4 –cpu_bind=mask_cpu:0x1,0x4 a.out </p>
+<p style='margin-left:.5in'><span lang=PT-BR style='font-size:
+12.0pt'>srun –n 8 –N 4 –cpu_bind=mask_cpu:0x3,0xD a.out </p>
+<p style='margin-left:.5in'>srun
+–n 8 –N 4:2:1:1 –m block:cyclic –cpu_bind=core&nbsp;&nbsp; a.out (+ high Level flags)</p>
+<p style='margin-left:.5in'>srun
+–n 8 –N 4:2:1:1 –m block:cyclic –cpu_bind=socket a.out (+ high Level flags)</p>
+
+<p>See also srun --help</p>
+
+<p><b>-N
+[min-max]nodes:[min-max]sockets_per_node
+:[min-max]cores_per_sockets:[min-max]threads_per_cores </b></p>
+
+<p>We have updated the node
+selection infrastructure with a mechanism that allows selection of logical
+processors at a finer granularity. Users are able to request a specific number
+of nodes, sockets,&nbsp; cores, and threads:</p>
+
+<p style='margin-left:.5in'>-N N[:S[:C[:T]]]expands to:</p>
+
+<p style='margin-left:1in'>--nodes=N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; number of nodes to allocate</p>
+<p style='margin-left:1in'>--sockets-per-node=S&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; number of sockets per node to allocate</p>
+<p style='margin-left:1in'>--cores-per-socket=C &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; number of cores per socket to allocate</p>
+<p style='margin-left:1in'>--threads-per-core=T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; number of threads per core to allocate</p>
+<p style='margin-left:1in'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; each field can be 'min[-max]' or wildcard '*'</p>
+<p style='margin-left:1in'>&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; total cpus requested = (N x S x C x T)</p>
+<p'>Examples:</p>
+
+<p style='margin-left:.5in'>srun –n 1]6 –N 4 &lt;additional args&gt; a.out</p>
+<p style='margin-left:.5in'>srun –n 16 –N 4:2:2:1 &lt;additional args&gt; a.out</p>
+<p style='margin-left:.5in'>srun –n 16 –N 4:2-2:2-2:1-1 &lt;additional args&gt; a.out</p>
+<p style='margin-left:.5in'>OR</p>
+<p style='margin-left:.5in'>srun –n 16 –N 4 –sockets-per-node 2-2 –cores-per-socket 2-2 –threads-per-core 1-1
+&lt;additional args&gt; a.out</p>
+<p style='margin-left:.5in'>srun –n 16 –N ‘2-4:1-2:*:1’ &lt;additional args&gt; a.out </p>
+<p style='margin-left:.5in'>srun –n 16 –N ‘4:2-2:*:1’ &lt;additional args&gt; a.out </p>
+<p style='margin-left:.5in'>srun –n 16 –N ‘4:4:1-1:1-1’ &lt;additional args&gt; a.out </p>
+
+<p>Note:</p>
+
+<ul>
+ <li>Adding –cpu_bind=no to the command
+     line will NOT bind the processes to the logical processes. </li>
+ <li>Binding is on by default
+     when the extensions to –N are used. The default binding on
+     multi-core/multi-threaded systems is equivalent to –cpu_bind=thread
+     (lowest level of logical processor). This is equal to –cpu_bind=core on a
+     single threaded system.</li>
+</ul>
+
+<p>See also srun –help</p>
+
+<p><b>New distributions: Extensions to –distribution</b></p>
+
+<p>-m, --distribution=type distribution
+method for processes to nodes and to lowest level of logical processors (type =
+block|cyclic|plane=x|hostfile:block|cyclic)</p>
+
+<p>The new plane distribution results in a block cyclic distribution of blocksize equal to x. In the
+following we use “lowest level of logical processors” to describe sockets,
+cores or threads depending of the architecture. The new distribution divides
+the cluster into planes (including a number of the lowest level of logical
+processors on each node) and then schedule first within each plane and then
+across planes.</p>
+
+<p>The second distribution (after ”:”) allows users to specify a distribution method for processes within a node
+and applies to the lowest level of logical processors (sockets, core or thread depending on the architecture).</p>
+
+<p>The binding is enabled automatically when high level flags are used as long as the task/affinity plug-in
+is enabled. To disable binding at the job level use –cpu_bind=no.</p>
+
+<p>The distribution flags can be combined with the other switches e.g.</p>
+
+<p style='margin-left:.5in'>srun –n 16 –N ‘4:2:*:1’ -m block:cyclic –cpu_bind=socket a.out </p>
+<p style='margin-left:.5in'>srun –n 16 –N ‘4:2:*:1’ -m plane=2 –cpu_bind=core a.out </p>
+<p style='margin-left:.5in'>srun –n 16 –N ‘4:2:*:1’ -m plane=2 a.out </p>
+
+<p>The default distribution on multi-core/multi-threaded systems is equivalent to -m block:cyclic with
+–cpu_bind=thread.</p>
+
+<p>See also srun –help</p>
+
+<h2>Motivation behind high-level srun flags</h2>
+
+<p >The motivation behind allowing users to use higher level <i>srun</i>
+flags instead of --cpu_bind is that the later can be difficult to use. The
+proposed high-level flags are easier to use than --cpu_bind because:</p>
+
+<ul>
+<li>Affinity mask generation happens automatically when using the high-level flags. </li>
+<li>The length and complexity of the --cpu_bind flag vs. the length of the combination of -N and --distribution flags make the
+high-level flags much easier to use.</li>
+</ul>
+
+<p>Also as illustrated in the example below it is much simpler to specify
+a different layout using the high-level flags since users do not have to
+recalculate mask or CPU IDs. The new approach is very effortless compared to
+rearranging the mask or map.</p>
+
+<p>Given a 32-process MPI job and a four dual-CPU dual-core node
+cluster, we want to use a block distribution across the four nodes and then a
+cyclic distribution within the node across the physical processors. We have had
+several requests from users that they would like this distribution to be the
+default distribution on multi-core clusters. Below we show how to obtain the
+wanted layout using 1) the new high-level flags and 2) --cpubind</p>
+
+<h3>High-Level flags</h3>
+
+<p >Using SLURM's new high-level flag, users can obtain the above
+described layout on XC with: </p>
+
+<p># mpirun -srun -n 32 -N 4:4:2 --distribution=block:cyclic a.out</p>
+<p>or </p>
+<p># mpirun -srun -n 32 -N 4:4:2 a.out</p>
+
+<p>(if –distribution=block:cyclic becomes the default distribution)</p>
+
+<p>The cores are shown as c0 and c1 and the processors are shown
+as p0 through p3. The resulting task IDs are: </p>
+
+<table border=1 cellspacing=0 cellpadding=0
+ style='margin-left:2.25in;border-collapse:collapse;border:none'>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p0</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>4</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>5</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p2</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>2</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>6</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>7</p>
+  </td>
+ </tr>
+</table>
+
+<p >The computation and assignment of the task IDs is transparent
+to the user. Users don't have to worry about the core numbering (Section
+Pinning processes to cores) or any setting any CPU affinities. By default CPU affinity
+will be set when using multi-core supporting flags. </p>
+
+<h3>Low-level flag –cpu_bind</h3>
+
+<p>Using SLURM's –cpu_bind flag, users must compute the CPU IDs or
+taskset masks as well as make sure they understand the core numbering on their
+system. Another problem arises when core numbering is not the same on all
+nodes. The &#8209;&#8209;cpu_bind option only allows users to specify a single
+mask for all the nodes. Using SLURM high-level flags remove this limitation
+since SLURM will correctly generate the appropriate masks for each requested nodes.</p>
+
+<h3>On a four dual-CPU dual-core node cluster with core block numbering </h3>
+
+<p>The cores are shown as c0 and c1 and the processors are shown
+as p0 through p3. The CPU IDs within a node in the block numbering are: (this
+information is available from the /proc/cpuinfo file on the system)</p>
+
+<table border=1 cellspacing=0 cellpadding=0
+ style='margin-left:135.75pt;border-collapse:collapse;border:none'>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p0</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>2</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>3</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p2</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>4</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>5</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>6</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>7</p>
+  </td>
+ </tr>
+</table>
+
+<p >&nbsp;resulting in the following taskset mapping for processor/cores
+and task IDs which users need to calculate: </p>
+
+<table border=1 cellspacing=0 cellpadding=0
+ style='margin-left:31.05pt;border-collapse:collapse;border:none'>
+ <tr style='height:9.4pt'>
+  <td width=247 colspan=6 valign=top style='width:185.15pt;border:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>taskset mapping for processor/cores</p>
+  </td>
+ </tr>
+ <tr style='height:9.35pt'>
+  <td width=32 valign=top style='width:23.85pt;border:none;padding:0in 5.4pt 0in 5.4pt;
+  height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>&nbsp;</p>
+  </td>
+  <td width=48 valign=top style='width:35.9pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c0</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-top:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>&nbsp;</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c0</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c1</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=32 valign=top style='width:23.85pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p0</p>
+  </td>
+  <td width=48 valign=top style='width:35.9pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x01</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x02</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p1</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x04</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x08</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=32 valign=top style='width:23.85pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p2</p>
+  </td>
+  <td width=48 valign=top style='width:35.9pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x10</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x20</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p3</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x40</p>
+  </td>
+  <td width=44 valign=top style='width:32.8pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0x80</p>
+  </td>
+ </tr>
+</table>
+
+<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0 align=left
+ style='border-collapse:collapse;border:none;margin-left:6.75pt;margin-right:
+ 6.75pt'>
+ <tr style='height:13.65pt'>
+  <td width=216 colspan=6 valign=top style='width:2.25in;border:none;
+  padding:0in 5.4pt 0in 5.4pt;height:13.65pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>task ids</p>
+  </td>
+ </tr>
+ <tr style='height:9.35pt'>
+  <td width=36 valign=top style='width:26.95pt;border:none;padding:0in 5.4pt 0in 5.4pt;
+  height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>&nbsp;</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-top:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>&nbsp;</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c0</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:solid windowtext 1.0pt;
+  border-left:none;border-bottom:solid windowtext 1.0pt;border-right:none;
+  padding:0in 5.4pt 0in 5.4pt;height:9.35pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>c1</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p0</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>4</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>5</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p2</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>2</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>6</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>p3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  align=center style='margin-bottom:0in;margin-bottom:.0001pt;
+  text-align:center'>7</p>
+  </td>
+ </tr>
+</table>
+
+<p> </p>
+<p>The above maps and task IDs can be translated into the
+following mpirun command:</p>
+
+<p># mpirun -srun -n 32 -N 4 --cpu_bind=mask_cpu:1,4,10,40,2,8,20,80 a.out</p>
+<p>or</p>
+<p# mpirun -srun -n 32 -N 4 --cpu_bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
+
+<h3>Same cluster but with its core numbered cyclic instead of block.</h3>
+
+<p>On a system with cyclically numbered cores, the correct mask
+argument to the <i>mpirun</i>/<i>srun</i> command looks like: (this will
+achieve the same layout as the command above on a system with core block
+numbering.)</p>
+
+<p>#mpirun -srun -n 32 -N 4 --cpu_bind=map_cpu:0,1,2,3,4,5,6,7 a.out</p>
+
+<h3>Block map_cpu on a system with cyclic core numbering</h3>
+
+<p>If users do not check their system’s core numbering before specifying
+the map_cpu list and thereby do not realize that the new system has cyclic core
+numbering instead of block numbering then they will not get the expected
+layout.. For example, if they decide to re-use their mpirun command from above:</p>
+
+<p># mpirun -srun -n 32 -N 4 --cpu_bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
+
+<p>they get the following unintentional task ID layout:</p>
+
+<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0
+ style='border-collapse:collapse;border:none'>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p0</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>2</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>4</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>6</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p2</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>1</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>5</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>7</p>
+  </td>
+ </tr>
+</table>
+
+<p>since the processor IDs within a node in the cyclic numbering are:</p>
+
+<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0
+ style='border-collapse:collapse;border:none'>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>&nbsp;</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c0</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>c1</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p0</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>0</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>4</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>1</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>5</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=36 valign=top style='width:26.95pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p2</p>
+  </td>
+  <td width=35 valign=top style='width:26.05pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>2</p>
+  </td>
+  <td width=37 valign=top style='width:28.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>6</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>p3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border:none;border-bottom:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>3</p>
+  </td>
+  <td width=36 valign=top style='width:27.0pt;border-top:none;border-left:none;
+  border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0in 5.4pt 0in 5.4pt'>
+  <p  style='margin-bottom:0in;margin-bottom:.0001pt'>7</p>
+  </td>
+ </tr>
+</table>
+
+<p>The important conclusion is that using the –cpu_bind flag is not trivial and that it assumes that users are experts.</p>
+
+<p style="text-align:center;">Last modified 17 Aug 2006</p>
+
+<!--#include virtual="footer.txt"-->
+
