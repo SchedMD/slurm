@@ -469,7 +469,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * enabled */
 	task_dist_states_t task_dist; /* see enum task_dist_state */
 	uint32_t plane_size;	/* plane size when task_dist =
-				   SLURM_DIST_PLANES */
+				   SLURM_DIST_PLANE */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
@@ -559,7 +559,7 @@ typedef struct job_step_specs {
 	uint16_t relative;	/* first node to use of job's allocation */
 	task_dist_states_t task_dist; /* see enum task_dist_state */
 	uint32_t plane_size;	/* plane size when task_dist =
-				   SLURM_DIST_PLANES */
+				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
 	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */

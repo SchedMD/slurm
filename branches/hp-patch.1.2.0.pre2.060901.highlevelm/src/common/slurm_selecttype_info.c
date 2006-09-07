@@ -43,18 +43,20 @@ extern int parse_select_type_param(char *select_type_parameters,
 
 	char *st_str = xstrdup(select_type_parameters);
 	if ((str_parameters = strtok(st_str,",")) != NULL) {
-	  do {
-	    if (strcasecmp(str_parameters, "CR_default") == 0) {
-	      *param = CR_DEFAULT;
-	    } else if (strcasecmp(str_parameters, "CR_Socket") == 0) {
-	      *param = CR_SOCKET;
-	    } else {
-	      error( "Bad SelectType Parameter: %s\n", str_parameters );
-	      rc = SLURM_ERROR;
-	      xfree(str_parameters);
-	      return rc;
-	    }
-	  } while((str_parameters = strtok(NULL,",")));
+		do {
+			if(strcasecmp(str_parameters, "CR_default") == 0) {
+				*param = CR_DEFAULT;
+			} else if(strcasecmp(str_parameters, "CR_Socket") 
+				  == 0) {
+				*param = CR_SOCKET;
+			} else {
+				error("Bad SelectType Parameter: %s\n", 
+				      str_parameters);
+				rc = SLURM_ERROR;
+				xfree(str_parameters);
+				return rc;
+			}
+		} while((str_parameters = strtok(NULL,",")));
 	}
 	xfree(str_parameters);
 	

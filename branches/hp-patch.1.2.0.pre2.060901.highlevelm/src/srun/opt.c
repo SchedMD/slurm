@@ -33,7 +33,7 @@
  *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
@@ -207,18 +207,18 @@ static bool  _under_parallel_debugger(void);
 
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
-static task_dist_states_t _verify_dist_type(const char *arg, int *psize);
+static task_dist_states_t _verify_dist_type(const char *arg, uint32_t *psize);
 static bool  _verify_node_cpu_core_thread_count(const char *arg,
-                                    int *min_nodes, int *max_nodes,
-                                    int *min_sockets, int *max_sockets,
-                                    int *min_cores, int *max_cores,
-                                    int *min_threads, int  *max_threads,
-				    cpu_bind_type_t *cpu_bind_type);
+						int *min_nodes, int *max_nodes,
+						int *min_sockets, int *max_sockets,
+						int *min_cores, int *max_cores,
+						int *min_threads, int  *max_threads,
+						cpu_bind_type_t *cpu_bind_type);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
-					cpu_bind_type_t *cpu_bind_type);
+			      cpu_bind_type_t *cpu_bind_type);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
-                                        mem_bind_type_t *mem_bind_type);
+			      mem_bind_type_t *mem_bind_type);
 static int   _verify_conn_type(const char *arg);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -260,7 +260,7 @@ static bool _valid_node_list(char **node_list_pptr)
 
 	if (strchr(*node_list_pptr, '/') == NULL)
 		return true;	/* not a file name */
-
+	
 	fd = fopen(*node_list_pptr, "r");
 	if (fd == NULL) {
 		error ("Unable to open file %s: %m", *node_list_pptr);
@@ -290,7 +290,8 @@ static bool _valid_node_list(char **node_list_pptr)
  * verify that a distribution type in arg is of a known form
  * returns the task_dist_states, or -1 if state is unknown
  */
-static task_dist_states_t _verify_dist_type(const char *arg, int *plane_size)
+static task_dist_states_t _verify_dist_type(const char *arg, 
+					    uint32_t *plane_size)
 {
 	int len = strlen(arg);
 	char *dist_str = NULL;
@@ -396,13 +397,26 @@ static int _verify_geometry(const char *arg, uint16_t *geometry)
 	return rc;
 }
 
+/* reset_str
+ * given a pointer to a string, if it is not NULL free it and set it to NULL
+ */
+static void
+reset_str(char **str)
+{
+	if (*str) {
+		xfree(*str);
+		*str=NULL;
+	}
+}
+
 /*
  * verify cpu_bind arguments
  * returns -1 on error, 0 otherwise
  */
 static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
-		cpu_bind_type_t *cpu_bind_type)
+			    cpu_bind_type_t *cpu_bind_type)
 {
+	char *buf, *p, *tok;
 	if (!arg) {
 	    	return 0;
 	}
@@ -416,38 +430,36 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 	 *     --cpu_bind=rank
 	 *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
 	 */
-    	char *buf = xstrdup(arg);
-    	char *p = buf;
-	/* change all ',' delimiters to ';' until a ':' is seen */
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	int saw_colon = 0;
 	while (*p) {
-	    	if (*p == ':') {
-		    	saw_colon = 1;
+	    	if (*p == ',') {
+			if (!isdigit(*(p+1)))
+				*p = ';';
 		}
-	    	if (!saw_colon && (*p == ',')) {
-			*p = ';';
-	    	}
 		*p++;
 	}
-	char *tok;
-	while (tok = strsep(&buf, ";")) {
+
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
 		if (strcasecmp(tok, "help") == 0) {
 			printf("CPU bind options:\n"
-	"\tq[uiet],        quietly bind before task runs (default)\n"
-	"\tv[erbose],      verbosely report binding before task runs\n"
-	"\tno[ne]          don't bind tasks to CPUs (default)\n"
-	"\trank            bind by task rank\n"
-	"\tmap_cpu:<list>  specify a CPU ID binding for each task\n"
-	"\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-	"\tmask_cpu:<list> specify a CPU ID binding mask for each task\n"
-	"\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
-        "\tsockets         auto-generated masks bind to sockets\n"
-        "\tcores           auto-generated masks bind to cores\n"
-        "\tthreads         auto-generated masks bind to threads\n");
+			       "\tq[uiet],        quietly bind before task runs (default)\n"
+			       "\tv[erbose],      verbosely report binding before task runs\n"
+			       "\tno[ne]          don't bind tasks to CPUs (default)\n"
+			       "\trank            bind by task rank\n"
+			       "\tmap_cpu:<list>  specify a CPU ID binding for each task\n"
+			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+			       "\tmask_cpu:<list> specify a CPU ID binding mask for each task\n"
+			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
+			       "\tsockets         auto-generated masks bind to sockets\n"
+			       "\tcores           auto-generated masks bind to cores\n"
+			       "\tthreads         auto-generated masks bind to threads\n");
 			return 1;
 		} else if ((strcasecmp(tok, "q") == 0) ||
-		    (strcasecmp(tok, "quiet") == 0)) {
+			   (strcasecmp(tok, "quiet") == 0)) {
 		        *cpu_bind_type &= ~CPU_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
@@ -458,23 +470,25 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
+			reset_str(cpu_bind);	/* clear existing list */
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type |=  CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
+			reset_str(cpu_bind);	/* clear existing list */
 		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type |=  CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*cpu_bind) { xfree(*cpu_bind); }
-				*cpu_bind = xstrdup(arg);
+			reset_str(cpu_bind);	/* clear existing list */
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
 				xfree(buf);
@@ -482,16 +496,16 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			}
 		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
 		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type |=  CPU_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*cpu_bind) { xfree(*cpu_bind); }
-				*cpu_bind = xstrdup(arg);
+			reset_str(cpu_bind);	/* clear existing list */
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
 				xfree(buf);
@@ -528,8 +542,9 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
  * returns -1 on error, 0 otherwise
  */
 static int _verify_mem_bind(const char *arg, char **mem_bind, 
-		mem_bind_type_t *mem_bind_type)
+			    mem_bind_type_t *mem_bind_type)
 {
+	char *buf, *p, *tok;
 	if (!arg) {
 	    	return 0;
 	}
@@ -540,38 +555,35 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	 *     --mem_bind=rank
 	 *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
 	 */
-    	char *buf = xstrdup(arg);
-    	char *p = buf;
-	/* change all ',' delimiters to ';' until a ':' is seen */
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	int saw_colon = 0;
 	while (*p) {
-	    	if (*p == ':') {
-		    	saw_colon = 1;
+	    	if (*p == ',') {
+			if (!isdigit(*(p+1)))
+				*p = ';';
 		}
-	    	if (!saw_colon && (*p == ',')) {
-			*p = ';';
-	    	}
 		*p++;
 	}
 
-	char *tok;
-	while (tok = strsep(&buf, ";")) {
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
 		if (strcasecmp(tok, "help") == 0) {
 			printf("Memory bind options:\n"
-	"\tq[uiet],        quietly bind before task runs (default)\n"
-	"\tv[erbose],      verbosely report binding before task runs\n"
-	"\tno[ne]          don't bind tasks to memory (default)\n"
-	"\trank            bind by task rank\n"
-	"\tlocal           bind to memory local to processor\n"
-	"\tmap_mem:<list>  specify a memory binding for each task\n"
-	"\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-	"\tmask_mem:<list> specify a memory binding mask for each tasks\n"
-	"\t                where <list> is <mask1>,<mask2>,...<maskN>\n");
+			       "\tq[uiet],        quietly bind before task runs (default)\n"
+			       "\tv[erbose],      verbosely report binding before task runs\n"
+			       "\tno[ne]          don't bind tasks to memory (default)\n"
+			       "\trank            bind by task rank\n"
+			       "\tlocal           bind to memory local to processor\n"
+			       "\tmap_mem:<list>  specify a memory binding for each task\n"
+			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+			       "\tmask_mem:<list> specify a memory binding mask for each tasks\n"
+			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n");
 			return 1;
 			
 		} else if ((strcasecmp(tok, "q") == 0) ||
-		    (strcasecmp(tok, "quiet") == 0)) {
+			   (strcasecmp(tok, "quiet") == 0)) {
 		        *mem_bind_type &= ~MEM_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
@@ -583,31 +595,34 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
+			reset_str(mem_bind);	/* clear existing list */
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type |=  MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
+			reset_str(mem_bind);	/* clear existing list */
 		} else if (strcasecmp(tok, "local") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type |=  MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
+			reset_str(mem_bind);	/* clear existing list */
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type |=  MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*mem_bind) { xfree(*mem_bind); }
-				*mem_bind = xstrdup(arg);
+			reset_str(mem_bind);	/* clear existing list */
+			if (list && *list) {
+				*mem_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--mem_bind=map_mem:<list>\"");
 				xfree(buf);
@@ -615,17 +630,17 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			}
 		} else if ((strncasecmp(tok, "mask_mem", 8) == 0) ||
 		           (strncasecmp(tok, "maskmem", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type |=  MEM_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*mem_bind) { xfree(*mem_bind); }
-				*mem_bind = xstrdup(arg);
+			reset_str(mem_bind);	/* clear existing list */
+			if (list && *list) {
+				*mem_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--mem_bind=mask_mem:<list>\"");
 				xfree(buf);
@@ -649,11 +664,11 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
  */
 static bool
 _verify_node_cpu_core_thread_count(const char *start_ptr, 
-				    int *min_nodes, int *max_nodes,
-				    int *min_sockets, int *max_sockets,
-				    int *min_cores, int *max_cores,
-				    int *min_threads, int  *max_threads,
-				    cpu_bind_type_t *cpu_bind_type)
+				   int *min_nodes, int *max_nodes,
+				   int *min_sockets, int *max_sockets,
+				   int *min_cores, int *max_cores,
+				   int *min_threads, int  *max_threads,
+				   cpu_bind_type_t *cpu_bind_type)
 {
 	bool tmp_val,ret_val;
 	int i,j;
@@ -959,41 +974,41 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           },
-  {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
-  {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-  {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
-  {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-  {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-  {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
-  {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
-  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
-  {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
-  {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
-  {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
-  {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL           },
-  {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL           },
-  {"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL           },
-  {"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
-  {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
-  {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-  {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
-  {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
-  {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL           },
-  {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL           },
-  {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
-  {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
-  {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
-  {"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
-  {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
-  {"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL           },
-  {NULL, 0, NULL, NULL}
+	{"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
+	{"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           },
+	{"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
+	{"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
+	{"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
+	{"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
+	{"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
+	{"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
+	{"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
+	{"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
+	{"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
+	{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
+	{"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
+	{"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
+	{"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
+	{"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL           },
+	{"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL           },
+	{"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL           },
+	{"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
+	{"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
+	{"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
+	{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
+	{"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
+	{"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
+	{"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
+	{"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL           },
+	{"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL           },
+	{"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
+	{"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
+	{"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
+	{"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
+	{"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
+	{"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
+	{"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL           },
+	{NULL, 0, NULL, NULL}
 };
 
 
@@ -1065,17 +1080,17 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_MEM_BIND:
 		if (_verify_mem_bind(val, &opt.mem_bind,
-				&opt.mem_bind_type))
+				     &opt.mem_bind_type))
 			exit(1);
 		break;
 
 	case OPT_NODES:
 		opt.nodes_set = _get_resource_range( val ,"OPT_NODES", 
-							&opt.min_nodes, 
-							&opt.max_nodes, false);
+						     &opt.min_nodes, 
+						     &opt.max_nodes, false);
 		if (opt.nodes_set == false) {
 			error("\"%s=%s\" -- invalid node count. ignoring...",
-				e->var, val);
+			      e->var, val);
 		}
 		break;
 
@@ -1445,7 +1460,8 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.distribution)
 				break;
 			opt.plane_size = 0;
-			opt.distribution = _verify_dist_type(optarg, &opt.plane_size);
+			opt.distribution = _verify_dist_type(optarg, 
+							     &opt.plane_size);
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
@@ -1605,19 +1621,19 @@ void set_options(const int argc, char **argv, int first)
                         break;
                 case LONG_OPT_CPU_BIND:
 			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
-							&opt.cpu_bind_type))
+					     &opt.cpu_bind_type))
 				exit(1);
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (_verify_mem_bind(optarg, &opt.mem_bind,
-					&opt.mem_bind_type))
+					     &opt.mem_bind_type))
 				exit(1);
 			break;
 		case LONG_OPT_CORE:
 			opt.core_type = core_format_type (optarg);
 			if (opt.core_type == CORE_INVALID)
 				error ("--core=\"%s\" Invalid -- ignoring.\n",
-				      optarg);
+				       optarg);
 			break;
 		case LONG_OPT_MINCPUS:
 			opt.job_min_cpus = _get_int(optarg, "mincpus");
@@ -1752,7 +1768,7 @@ void set_options(const int argc, char **argv, int first)
 				opt.nice = 100;
 			if (abs(opt.nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
+				      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(1);
 			}
 			break;
@@ -1823,25 +1839,25 @@ static void _load_multi(int *argc, char **argv)
 
 	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
 		error("Could not open multi_prog config file %s",
-			argv[0]);
+		      argv[0]);
 		exit(1);
 	}
 	if (fstat(config_fd, &stat_buf) == -1) {
 		error("Could not stat multi_prog config file %s",
-			argv[0]);
+		      argv[0]);
 		exit(1);
 	}
 	if (stat_buf.st_size > 60000) {
 		error("Multi_prog config file %s is too large",
-			argv[0]);
+		      argv[0]);
 		exit(1);
 	}
 	data_buf = xmalloc(stat_buf.st_size + 1);
 	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
-			- data_read)) != 0) {
+			 - data_read)) != 0) {
 		if (i < 0) {
 			error("Error reading multi_prog config file %s", 
-				argv[0]);
+			      argv[0]);
 			exit(1);
 		} else
 			data_read += i;
@@ -1872,13 +1888,13 @@ static void _opt_args(int argc, char **argv)
 	   The limitations of the plane distribution in the cons_res
 	   environment are more extensive and are documented in the
 	   SLURM reference guide.  */
-	if (opt.distribution == SLURM_DIST_PLANE) {
+	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
 		if ((opt.nprocs/opt.plane_size) < opt.min_nodes) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.nprocs) {
 #if(0)
-			  info("Too few processes ((n/plane_size) %d < N %d) and ((N-1)*(plane_size) %d >= n %d)) ",
-			       opt.nprocs/opt.plane_size, opt.min_nodes, 
-			       (opt.min_nodes-1)*opt.plane_size, opt.nprocs);
+				info("Too few processes ((n/plane_size) %d < N %d) and ((N-1)*(plane_size) %d >= n %d)) ",
+				     opt.nprocs/opt.plane_size, opt.min_nodes, 
+				     (opt.min_nodes-1)*opt.plane_size, opt.nprocs);
 #endif
 				error("Too few processes for the requested {plane,node} distribution");
 				exit(1);
@@ -2002,13 +2018,13 @@ static bool _opt_verify(void)
 		/* check for realistic arguments */
 		if (opt.nprocs <= 0) {
 			error("%s: invalid number of processes (-n %d)",
-				opt.progname, opt.nprocs);
+			      opt.progname, opt.nprocs);
 			verified = false;
 		}
 
 		if (opt.cpus_per_task <= 0) {
 			error("%s: invalid number of cpus per task (-c %d)\n",
-				opt.progname, opt.cpus_per_task);
+			      opt.progname, opt.cpus_per_task);
 			verified = false;
 		}
 
@@ -2052,7 +2068,7 @@ static bool _opt_verify(void)
 
 				opt.min_nodes = opt.nprocs;
 				if (   opt.max_nodes 
-				   && (opt.min_nodes > opt.max_nodes) )
+				       && (opt.min_nodes > opt.max_nodes) )
 					opt.max_nodes = opt.min_nodes;
 			}
 
@@ -2066,7 +2082,7 @@ static bool _opt_verify(void)
 		pmi_server_max_threads(opt.max_threads);
 	} else if (opt.max_threads > MAX_THREADS) {
 		error("Thread value exceeds defined limit, reset to %d", 
-			MAX_THREADS);
+		      MAX_THREADS);
 	}
 
 	if (opt.labelio && opt.unbuffered) {
@@ -2187,7 +2203,7 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 	char *path, *fullpath = NULL;
 
 	if (  (cmd[0] == '.' || cmd[0] == '/') 
-           && (access(cmd, access_mode) == 0 ) ) {
+	      && (access(cmd, access_mode) == 0 ) ) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", opt.cwd);
 		xstrcat(fullpath, cmd);
@@ -2207,7 +2223,7 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 		xfree(fullpath);
 		fullpath = NULL;
 	}
-  done:
+done:
 	list_destroy(l);
 	return fullpath;
 }
@@ -2273,7 +2289,7 @@ print_geometry()
 	char buf[32], *rc = NULL;
 
 	if ((SYSTEM_DIMENSIONS == 0)
-	||  (opt.geometry[0] == (uint16_t)NO_VAL))
+	    ||  (opt.geometry[0] == (uint16_t)NO_VAL))
 		return NULL;
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
@@ -2301,19 +2317,19 @@ static void _opt_list()
 	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
 	info("nprocs         : %d %s", opt.nprocs,
-		opt.nprocs_set ? "(set)" : "(default)");
+	     opt.nprocs_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,
-		opt.cpus_set ? "(set)" : "(default)");
+	     opt.cpus_set ? "(set)" : "(default)");
 	if (opt.max_nodes)
 		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
 	else {
 		info("nodes          : %d %s", opt.min_nodes,
-			opt.nodes_set ? "(set)" : "(default)");
+		     opt.nodes_set ? "(set)" : "(default)");
 	}
 	info("jobid          : %u %s", opt.jobid, 
-		opt.jobid_set ? "(set)" : "(default)");
+	     opt.jobid_set ? "(set)" : "(default)");
 	info("partition      : %s",
-		opt.partition == NULL ? "default" : opt.partition);
+	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
@@ -2386,27 +2402,27 @@ static bool _under_parallel_debugger (void)
 static void _usage(void)
 {
  	printf(
-"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
-"            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
-"            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
-"            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
-"            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
-"            [--contiguous] [--mem=MB] [--tmp=MB] [-C list]\n"
-"            [--mincpus=n] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
-"            [--mpi=type] [--account=name] [--dependency=jobid]\n"
-"            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
-"            [--cpu_bind=...] [--mem_bind=...]\n"
-"            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
-"            [--ntasks-per-core=n] [--print-request]\n"
+		"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
+		"            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
+		"            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
+		"            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
+		"            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
+		"            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
+		"            [--contiguous] [--mem=MB] [--tmp=MB] [-C list]\n"
+		"            [--mincpus=n] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
+		"            [--mpi=type] [--account=name] [--dependency=jobid]\n"
+		"            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
+		"            [--cpu_bind=...] [--mem_bind=...]\n"
+		"            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
+		"            [--ntasks-per-core=n] [--print-request]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+		"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
-"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
-"            [--prolog=fname] [--epilog=fname]\n"
-"            [--task-prolog=fname] [--task-epilog=fname]\n"
-"            [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]\n"
-"            [-w hosts...] [-x hosts...] executable [args...]\n");
+		"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
+		"            [--prolog=fname] [--epilog=fname]\n"
+		"            [--task-prolog=fname] [--task-epilog=fname]\n"
+		"            [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]\n"
+		"            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2414,111 +2430,111 @@ static void _help(void)
 	slurm_ctl_conf_t *conf;
 
         printf (
-"Usage: srun [OPTIONS...] executable [args...]\n"
-"\n"
-"Parallel run options:\n"
-"  -n, --ntasks=ntasks         number of tasks to run\n"
-"  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
-"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"  -i, --input=in              location of stdin redirection\n"
-"  -o, --output=out            location of stdout redirection\n"
-"  -e, --error=err             location of stderr redirection\n"
-"  -r, --relative=n            run job step relative to node n of allocation\n"
-"  -p, --partition=partition   partition requested\n"
-"  -H, --hold                  submit job in held state\n"
-"  -t, --time=minutes          time limit\n"
-"  -D, --chdir=path            change remote current working directory\n"
-"  -I, --immediate             exit if resources are not immediately available\n"
-"  -O, --overcommit            overcommit resources\n"
-"  -k, --no-kill               do not kill job on node failure\n"
-"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
-"                              non-zero exit code\n"
-"  -s, --share                 share nodes with other jobs\n"
-"  -l, --label                 prepend task number to lines of stdout/err\n"
-"  -u, --unbuffered            do not line-buffer stdout/err\n"
-"  -m, --distribution=type     distribution method for processes to nodes and to \n"
-"                              lowest level of logical processors \n"
-"                              (type = block|cyclic|plane=x|hostfile:block|cyclic)\n"
-"  -J, --job-name=jobname      name of job\n"
-"      --jobid=id              run under already allocated job\n"
-"      --mpi=type              type of MPI being used\n"
-"  -b, --batch                 submit as batch job for later execution\n"
-"  -T, --threads=threads       set srun launch fanout\n"
-"  -W, --wait=sec              seconds to wait after first task exits\n"
-"                              before killing job\n"
-"  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
-"  -X, --disable-status        Disable Ctrl-C status feature\n"
-"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --slurmd-debug=level    slurmd debug level\n"
-"      --core=type             change default corefile format type\n"
-"                              (type=\"list\" to list of valid formats)\n"
-"  -P, --dependency=jobid      defer job until specified jobid completes\n"
-"      --nice[=value]          decrease secheduling priority by value\n"
-"  -U, --account=name          charge job to specified account\n"
-"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"      --mpi=type              specifies version of MPI to use\n"
-"      --prolog=program        run \"program\" before launching job step\n"
-"      --epilog=program        run \"program\" after launching job step\n"
-"      --task-prolog=program   run \"program\" before launching task\n"
-"      --task-epilog=program   run \"program\" after launching task\n"
-"      --begin=time            defer job until HH:MM DD/MM/YY\n"
-"      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
-"      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
-"      --multi-prog            if set the program name specified is the\n"
-"                              configuration specificaiton for multiple programs\n"
-"      --no-requeue            if set, do not permit the job to be requeued\n"
-"\n"
-"Allocate only:\n"
-"  -A, --allocate              allocate resources and spawn a shell\n"
-"      --no-shell              don't spawn shell in allocate mode\n"
-"\n"
-"Attach to running job:\n"
-"  -a, --attach=jobid          attach to running job with specified id\n"
-"  -j, --join                  when used with --attach, allow forwarding of\n"
-"                              signals and stdin.\n"
-"\n"
-"Constraint options:\n"
-"      --mincpus=n             minimum number of logical cpus per node\n"
-"      --minsockets=n          minimum number of sockets per node\n"
-"      --mincores=n            minimum number of cores per cpu\n"
-"      --minthreads=n          minimum number of threads per core\n"
-"      --mem=MB                minimum amount of real memory\n"
-"      --tmp=MB                minimum amount of temporary disk\n"
-"      --contiguous            demand a contiguous range of nodes\n"
-"  -C, --constraint=list       specify a list of constraints\n"
-"  -w, --nodelist=hosts...     request a specific list of hosts\n"
-"  -x, --exclude=hosts...      exclude a specific list of hosts\n"
-"  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
-"\n"
-"Consumable resources related options:\n" 
-"      --exclusive             allocate nodes in exclusive mode when\n" 
-"                              cpu consumable resource is enabled\n"
-"\n"
-"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
-"  -N N[:S[:C[:T]]]            Expands to:\n"
-"      --nodes=N                 number of nodes to allocate\n"
-"      --sockets-per-node=S      number of sockets per node to allocate\n"
-"      --cores-per-socket=C      number of cores per socket to allocate\n"
-"      --threads-per-core=T      number of threads per core to allocate\n"
-"                              each field can be 'min[-max]' or wildcard '*'\n"
-"                                total cpus requested = (N x S x C x T)\n"
+		"Usage: srun [OPTIONS...] executable [args...]\n"
+		"\n"
+		"Parallel run options:\n"
+		"  -n, --ntasks=ntasks         number of tasks to run\n"
+		"  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+		"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+		"  -i, --input=in              location of stdin redirection\n"
+		"  -o, --output=out            location of stdout redirection\n"
+		"  -e, --error=err             location of stderr redirection\n"
+		"  -r, --relative=n            run job step relative to node n of allocation\n"
+		"  -p, --partition=partition   partition requested\n"
+		"  -H, --hold                  submit job in held state\n"
+		"  -t, --time=minutes          time limit\n"
+		"  -D, --chdir=path            change remote current working directory\n"
+		"  -I, --immediate             exit if resources are not immediately available\n"
+		"  -O, --overcommit            overcommit resources\n"
+		"  -k, --no-kill               do not kill job on node failure\n"
+		"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
+		"                              non-zero exit code\n"
+		"  -s, --share                 share nodes with other jobs\n"
+		"  -l, --label                 prepend task number to lines of stdout/err\n"
+		"  -u, --unbuffered            do not line-buffer stdout/err\n"
+		"  -m, --distribution=type     distribution method for processes to nodes and to \n"
+		"                              lowest level of logical processors \n"
+		"                              (type = block|cyclic|plane=x|hostfile:block|cyclic)\n"
+		"  -J, --job-name=jobname      name of job\n"
+		"      --jobid=id              run under already allocated job\n"
+		"      --mpi=type              type of MPI being used\n"
+		"  -b, --batch                 submit as batch job for later execution\n"
+		"  -T, --threads=threads       set srun launch fanout\n"
+		"  -W, --wait=sec              seconds to wait after first task exits\n"
+		"                              before killing job\n"
+		"  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
+		"  -X, --disable-status        Disable Ctrl-C status feature\n"
+		"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+		"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+		"  -d, --slurmd-debug=level    slurmd debug level\n"
+		"      --core=type             change default corefile format type\n"
+		"                              (type=\"list\" to list of valid formats)\n"
+		"  -P, --dependency=jobid      defer job until specified jobid completes\n"
+		"      --nice[=value]          decrease secheduling priority by value\n"
+		"  -U, --account=name          charge job to specified account\n"
+		"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
+		"      --mpi=type              specifies version of MPI to use\n"
+		"      --prolog=program        run \"program\" before launching job step\n"
+		"      --epilog=program        run \"program\" after launching job step\n"
+		"      --task-prolog=program   run \"program\" before launching task\n"
+		"      --task-epilog=program   run \"program\" after launching task\n"
+		"      --begin=time            defer job until HH:MM DD/MM/YY\n"
+		"      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
+		"      --mail-user=user        who to send email notification for job state changes\n"
+		"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
+		"      --multi-prog            if set the program name specified is the\n"
+		"                              configuration specificaiton for multiple programs\n"
+		"      --no-requeue            if set, do not permit the job to be requeued\n"
+		"\n"
+		"Allocate only:\n"
+		"  -A, --allocate              allocate resources and spawn a shell\n"
+		"      --no-shell              don't spawn shell in allocate mode\n"
+		"\n"
+		"Attach to running job:\n"
+		"  -a, --attach=jobid          attach to running job with specified id\n"
+		"  -j, --join                  when used with --attach, allow forwarding of\n"
+		"                              signals and stdin.\n"
+		"\n"
+		"Constraint options:\n"
+		"      --mincpus=n             minimum number of logical cpus per node\n"
+		"      --minsockets=n          minimum number of sockets per node\n"
+		"      --mincores=n            minimum number of cores per cpu\n"
+		"      --minthreads=n          minimum number of threads per core\n"
+		"      --mem=MB                minimum amount of real memory\n"
+		"      --tmp=MB                minimum amount of temporary disk\n"
+		"      --contiguous            demand a contiguous range of nodes\n"
+		"  -C, --constraint=list       specify a list of constraints\n"
+		"  -w, --nodelist=hosts...     request a specific list of hosts\n"
+		"  -x, --exclude=hosts...      exclude a specific list of hosts\n"
+		"  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
+		"\n"
+		"Consumable resources related options:\n" 
+		"      --exclusive             allocate nodes in exclusive mode when\n" 
+		"                              cpu consumable resource is enabled\n"
+		"\n"
+		"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
+		"  -N N[:S[:C[:T]]]            Expands to:\n"
+		"      --nodes=N                 number of nodes to allocate\n"
+		"      --sockets-per-node=S      number of sockets per node to allocate\n"
+		"      --cores-per-socket=C      number of cores per socket to allocate\n"
+		"      --threads-per-core=T      number of threads per core to allocate\n"
+		"                              each field can be 'min[-max]' or wildcard '*'\n"
+		"                                total cpus requested = (N x S x C x T)\n"
 #if 0 /* FIXME: not yet implemented */
-"\n"
-"      --ntasks-per-node=n     number of tasks to invoke on each node\n"
-"      --ntasks-per-socket=n   number of tasks to invoke on each socket\n"
-"      --ntasks-per-core=n     number of tasks to invoke on each core\n"
+		"\n"
+		"      --ntasks-per-node=n     number of tasks to invoke on each node\n"
+		"      --ntasks-per-socket=n   number of tasks to invoke on each socket\n"
+		"      --ntasks-per-core=n     number of tasks to invoke on each core\n"
 #endif
-"\n");
+		"\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
-"      --cpu_bind=             Bind tasks to CPUs\n"
-"                              (see \"--cpu_bind=help\" for options)\n"
-"      --mem_bind=             Bind memory to locality domains (ldom)\n"
-"                              (see \"--mem_bind=help\" for options)\n"
+			"      --cpu_bind=             Bind tasks to CPUs\n"
+			"                              (see \"--cpu_bind=help\" for options)\n"
+			"      --mem_bind=             Bind memory to locality domains (ldom)\n"
+			"                              (see \"--mem_bind=help\" for options)\n"
 			);
 	}
 	slurm_conf_unlock();
@@ -2527,27 +2543,27 @@ static void _help(void)
 
         printf(
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
-  "AIX related options:\n"
-  "  --network=type              communication protocol to be used\n"
-  "\n"
+		"AIX related options:\n"
+		"  --network=type              communication protocol to be used\n"
+		"\n"
 #endif
 
 #ifdef HAVE_BG				/* Blue gene specific options */
-  "Blue Gene related options:\n"
-  "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-  "  -R, --no-rotate             disable geometry rotation\n"
-  "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-  "                              if not set, then tries to fit TORUS else MESH\n"
-  "\n"
+		"Blue Gene related options:\n"
+		"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
+		"  -R, --no-rotate             disable geometry rotation\n"
+		"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
+		"                              if not set, then tries to fit TORUS else MESH\n"
+		"\n"
 #endif
-"Help options:\n"
-"      --help                  show this help message\n"
-"      --usage                 display brief usage message\n"
-"      --print-request         Display job's layout without scheduling it\n"
-"\n"
-"Other options:\n"
-"  -V, --version               output version information and exit\n"
-"\n"
-);
+		"Help options:\n"
+		"      --help                  show this help message\n"
+		"      --usage                 display brief usage message\n"
+		"      --print-request         Display job's layout without scheduling it\n"
+		"\n"
+		"Other options:\n"
+		"  -V, --version               output version information and exit\n"
+		"\n"
+		);
 
 }

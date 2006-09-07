@@ -262,8 +262,8 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address);
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern int slurm_conf_get_cpus_sct(const char *node_name,
-			uint32_t *procs, uint32_t *sockets,
-			uint32_t *cores, uint32_t *threads);
+				   uint32_t *procs, uint32_t *sockets,
+				   uint32_t *cores, uint32_t *threads);
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 

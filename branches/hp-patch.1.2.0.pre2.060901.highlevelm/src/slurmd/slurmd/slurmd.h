@@ -72,22 +72,22 @@ extern int devnull;
 typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */
-	int 	     *argc;             /* pointer to argument count       */
-	char         *hostname;		/* local hostname		   */
-	int          cpus;              /* lowest-level logical processors */
-	int          sockets;           /* sockets count                   */
-	int          cores;             /* core count                      */
-	int          threads;           /* thread per core count           */
-	int          conf_cpus;         /* conf file logical processors    */
-	int          conf_sockets;      /* conf file sockets count         */
-	int          conf_cores;        /* conf file core count            */
-	int          conf_threads;      /* conf file thread per core count */
-	int          actual_cpus;       /* actual logical processors       */
-	int          actual_sockets;    /* actual sockets count            */
-	int          actual_cores;      /* actual core count               */
-	int          actual_threads;    /* actual thread per core count    */
-	int          real_memory_size;  /* amount of real memory	   */
-	int          tmp_disk_space;    /* size of temporary disk	   */
+	int          *argc;             /* pointer to argument count       */
+	char         *hostname;	 	/* local hostname		   */
+	uint32_t     cpus;              /* lowest-level logical processors */
+	uint32_t     sockets;           /* sockets count                   */
+	uint32_t     cores;             /* core count                      */
+	uint32_t     threads;           /* thread per core count           */
+	uint32_t     conf_cpus;         /* conf file logical processors    */
+	uint32_t     conf_sockets;      /* conf file sockets count         */
+	uint32_t     conf_cores;        /* conf file core count            */
+	uint32_t     conf_threads;      /* conf file thread per core count */
+	uint32_t     actual_cpus;       /* actual logical processors       */
+	uint32_t     actual_sockets;    /* actual sockets count            */
+	uint32_t     actual_cores;      /* actual core count               */
+	uint32_t     actual_threads;    /* actual thread per core count    */
+	uint32_t     real_memory_size;  /* amount of real memory	   */
+	uint32_t     tmp_disk_space;    /* size of temporary disk	   */
 	uint32_t     block_map_size;	/* size of block map               */
 	uint32_t     *block_map;	/* abstract->machine block map     */
 	uint32_t     *block_map_inv;	/* machine->abstract (inverse) map */

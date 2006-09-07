@@ -214,6 +214,18 @@ static enum task_dist_states _verify_dist_type(const char *arg)
 	return result;
 }
 
+/* reset_str
+ * given a pointer to a string, if it is not NULL free it and set it to NULL
+ */
+static void
+reset_str(char **str)
+{
+	if (*str) {
+		xfree(*str);
+		*str=NULL;
+	}
+}
+
 /*
  * verify cpu_bind arguments
  * returns -1 on error, 0 otherwise
@@ -221,6 +233,7 @@ static enum task_dist_states _verify_dist_type(const char *arg)
 static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
 		cpu_bind_type_t *cpu_bind_type)
 {
+	char *buf, *p, *tok;
 	if (!arg) {
 	    	return 0;
 	}
@@ -234,22 +247,20 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 	 *     --cpu_bind=rank
 	 *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
 	 */
-    	char *buf = xstrdup(arg);
-    	char *p = buf;
-	/* change all ',' delimiters to ';' until a ':' is seen */
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	int saw_colon = 0;
 	while (*p) {
-	    	if (*p == ':') {
-		    	saw_colon = 1;
-		}
-	    	if (!saw_colon && (*p == ',')) {
+	    	if (*p == ',') {
+			if (!isdigit(*(p+1)))
 			*p = ';';
-	    	}
+		}
 		*p++;
 	}
-	char *tok;
-	while (tok = strsep(&buf, ";")) {
+
+	p = buf;
+	while (tok = strsep(&p, ";")) {
 		if (strcasecmp(tok, "help") == 0) {
 			printf("CPU bind options:\n"
 	"\tq[uiet],        quietly bind before task runs (default)\n"
@@ -276,23 +287,25 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
+			reset_str(cpu_bind);	/* clear existing list */
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type |=  CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
+			reset_str(cpu_bind);	/* clear existing list */
 		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type |=  CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*cpu_bind) { xfree(*cpu_bind); }
-				*cpu_bind = xstrdup(arg);
+			reset_str(cpu_bind);	/* clear existing list */
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
 				xfree(buf);
@@ -300,16 +313,16 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			}
 		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
 		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type |=  CPU_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*cpu_bind) { xfree(*cpu_bind); }
-				*cpu_bind = xstrdup(arg);
+			reset_str(cpu_bind);	/* clear existing list */
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
 				xfree(buf);
@@ -348,6 +361,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 static int _verify_mem_bind(const char *arg, char **mem_bind, 
 		mem_bind_type_t *mem_bind_type)
 {
+	char *buf, *p, *tok;
 	if (!arg) {
 	    	return 0;
 	}
@@ -358,23 +372,20 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	 *     --mem_bind=rank
 	 *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
 	 */
-    	char *buf = xstrdup(arg);
-    	char *p = buf;
-	/* change all ',' delimiters to ';' until a ':' is seen */
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	int saw_colon = 0;
 	while (*p) {
-	    	if (*p == ':') {
-		    	saw_colon = 1;
-		}
-	    	if (!saw_colon && (*p == ',')) {
+	    	if (*p == ',') {
+			if (!isdigit(*(p+1)))
 			*p = ';';
-	    	}
+		}
 		*p++;
 	}
 
-	char *tok;
-	while (tok = strsep(&buf, ";")) {
+	p = buf;
+	while (tok = strsep(&p, ";")) {
 		if (strcasecmp(tok, "help") == 0) {
 			printf("Memory bind options:\n"
 	"\tq[uiet],        quietly bind before task runs (default)\n"
@@ -401,31 +412,34 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
+			reset_str(mem_bind);	/* clear existing list */
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type |=  MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
+			reset_str(mem_bind);	/* clear existing list */
 		} else if (strcasecmp(tok, "local") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type |=  MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
+			reset_str(mem_bind);	/* clear existing list */
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type |=  MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*mem_bind) { xfree(*mem_bind); }
-				*mem_bind = xstrdup(arg);
+			reset_str(mem_bind);	/* clear existing list */
+			if (list && *list) {
+				*mem_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--mem_bind=map_mem:<list>\"");
 				xfree(buf);
@@ -433,17 +447,17 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			}
 		} else if ((strncasecmp(tok, "mask_mem", 8) == 0) ||
 		           (strncasecmp(tok, "maskmem", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type |=  MEM_BIND_MASK;
-			char *arg;
-			arg = strsep(&tok, ":=");
-			arg = strsep(&tok, ":=");
-			if (arg && *arg) {
-				if (*mem_bind) { xfree(*mem_bind); }
-				*mem_bind = xstrdup(arg);
+			reset_str(mem_bind);	/* clear existing list */
+			if (list && *list) {
+				*mem_bind = xstrdup(list);
 			} else {
 				error("missing list for \"--mem_bind=mask_mem:<list>\"");
 				xfree(buf);

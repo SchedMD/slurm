@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_selecttype_info.c - Parse the SelectTypeParameters parameters
+ *  slurm_selecttype_info.h - Parse the SelectTypeParameters parameters
  *****************************************************************************
  *
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.

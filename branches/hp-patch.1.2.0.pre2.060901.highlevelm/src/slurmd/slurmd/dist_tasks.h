@@ -57,6 +57,12 @@ typedef struct slurm_lllp_context slurm_lllp_ctx_t;
 
 void cr_reserve_lllp(uint32_t job_id, launch_tasks_request_msg_t *req);
 void cr_release_lllp(uint32_t job_id);
+void lllp_distribution(launch_tasks_request_msg_t *req, const uint32_t *gtid);
+void lllp_ctx_destroy(void);
+void lllp_ctx_alloc(void);
+void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
+			      cpu_bind_type_t cpu_bind_type, 
+			      char *cpu_bind, uint32_t numtasks);
 
 #endif /* !_SLURMSTEPD_DIST_TASKS_H */
 
