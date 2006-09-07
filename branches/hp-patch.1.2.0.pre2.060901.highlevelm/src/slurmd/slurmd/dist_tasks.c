@@ -20,30 +20,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
-
-#include <signal.h>
-#include <sys/types.h>
-#include <grp.h>
-
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
-#include "src/common/xstring.h"
-#include "src/common/fd.h"
-#include "src/common/log.h"
-#include "src/common/eio.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_resource_info.h"
-
-#include "src/common/bitstring.h"
-
-#include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/dist_tasks.h"
 
 slurm_lllp_ctx_t *lllp_ctx;	/* binding context */
@@ -58,48 +35,49 @@ static void _task_layout_display_masks(launch_tasks_request_msg_t *req,
 				       bitstr_t **masks);
 static int _init_lllp(void);
 static int _cleanup_lllp(void);
-static void _print_tasks_per_lllp (void);
-static int _task_layout_lllp_block (launch_tasks_request_msg_t *req,
-				    const uint32_t *gtid,
-				    const uint32_t maxtasks,
-				    bitstr_t ***masks_p);
+static void _print_tasks_per_lllp(void);
+static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
+				   const uint32_t *gtid,
+				   const uint32_t maxtasks,
+				   bitstr_t ***masks_p);
 static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				    const uint32_t *gtid,
 				    const uint32_t maxtasks,
 				    bitstr_t ***masks_p);
-static int _task_layout_lllp_plane (launch_tasks_request_msg_t *req,
-				    const uint32_t *gtid,
-				    const uint32_t maxtasks,
-				    bitstr_t ***masks_p);
-static int _lllp_use_available (launch_tasks_request_msg_t *req,
+static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
+				   const uint32_t *gtid,
+				   const uint32_t maxtasks,
+				   bitstr_t ***masks_p);
+static void _lllp_use_available(launch_tasks_request_msg_t *req,
 				const uint32_t maxtasks,
 				bitstr_t **masks);
 static bitstr_t *_lllp_map_abstract_mask (bitstr_t *bitmask);
-static int _lllp_map_abstract_masks (const uint32_t maxtasks,
+static void _lllp_map_abstract_masks(const uint32_t maxtasks,
 				     bitstr_t **masks);
-static int _lllp_generate_cpu_bind (launch_tasks_request_msg_t *req,
+static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 				    const uint32_t maxtasks,
 				    bitstr_t **masks);
-static int _lllp_free_masks (launch_tasks_request_msg_t *req,
+static void _lllp_free_masks(launch_tasks_request_msg_t *req,
 			     const uint32_t maxtasks,
 			     bitstr_t **masks);
-static int _single_mask(const int nsockets, 
-			const int ncores, 
-			const int nthreads, 
-			const int socket_id,
-			const int core_id, 
-			const int thread_id,
-			const bool bind_to_exact_socket,
-			const bool bind_to_exact_core,
-			const bool bind_to_exact_thread,
-			bitstr_t ** single_mask );
+static void _single_mask(const int nsockets, 
+			 const int ncores, 
+			 const int nthreads, 
+			 const int socket_id,
+			 const int core_id, 
+			 const int thread_id,
+			 const bool bind_to_exact_socket,
+			 const bool bind_to_exact_core,
+			 const bool bind_to_exact_thread,
+			 bitstr_t ** single_mask);
 static void _get_resources_this_node(int *cpus,
 				     int *sockets,
 				     int *cores,
 				     int *threads,
 				     int *alloc_sockets, 
 				     int *alloc_lps);
-static void _cr_update_reservation(int reserve, int *reserved, bitstr_t *mask);
+static void _cr_update_reservation(int reserve, uint32_t *reserved, 
+				   bitstr_t *mask);
 
 /* Convenience macros: 
  *     SCT_TO_LLLP   sockets cores threads to abstract block LLLP index
@@ -132,7 +110,7 @@ static uint32_t _block_map(uint32_t index, uint32_t *map);
 void lllp_distribution(launch_tasks_request_msg_t *req, 
 		       const uint32_t *gtid)
 {
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	bitstr_t **masks = NULL;
 	char buf_type[100];
 	int maxtasks = req->tasks_to_launch[req->srun_node_id];
@@ -215,7 +193,7 @@ void _task_layout_display_masks(launch_tasks_request_msg_t *req,
  * IN- maximum number of tasks
  * IN/OUT- array of masks
  */
-static int _lllp_use_available (launch_tasks_request_msg_t *req,
+static void _lllp_use_available (launch_tasks_request_msg_t *req,
 				const uint32_t maxtasks,
 				bitstr_t **masks)
 {
@@ -279,11 +257,13 @@ static int _lllp_use_available (launch_tasks_request_msg_t *req,
 			bitstr_t *newmask = bit_rotate_copy(bitmask, rotval,
 							    newmask_size);
 			physmask = _lllp_map_abstract_mask(newmask);
-			overlap = int_and_set_count(resv,
-						    conf->lllp_reserved_size, physmask);
+			overlap = int_and_set_count((int *)resv,
+						    conf->lllp_reserved_size,
+						    physmask);
 			bit_free(newmask);
 			bit_free(physmask);
-			debug3("mask %d rot %d[%d] = %d", i, rotval, j, overlap);
+			debug3("mask %d rot %d[%d] = %d",
+			       i, rotval, j, overlap);
 			if (overlap < min_overlap) {
 				min_overlap = overlap;
 				min_rotval  = rotval;
@@ -344,12 +324,12 @@ static bitstr_t *_lllp_map_abstract_mask (bitstr_t *bitmask)
  * IN- maximum number of tasks
  * IN/OUT- array of masks
  */
-static int _lllp_map_abstract_masks (const uint32_t maxtasks,
+static void _lllp_map_abstract_masks(const uint32_t maxtasks,
 				     bitstr_t **masks)
 {
     	int i;
 	debug3("_lllp_map_abstract_masks");
-
+	
 	for (i = 0; i < maxtasks; i++) { 
 		bitstr_t *bitmask = masks[i];
 	    	if (bitmask) {
@@ -369,11 +349,11 @@ static int _lllp_map_abstract_masks (const uint32_t maxtasks,
  * IN- maximum number of tasks
  * IN- array of masks
  */
-static int _lllp_generate_cpu_bind (launch_tasks_request_msg_t *req,
+static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 				    const uint32_t maxtasks,
 				    bitstr_t **masks)
 {
-    	int i, num_bits, masks_len;
+    	int i, num_bits=0, masks_len;
 	bitstr_t *bitmask;
 	bitoff_t charsize;
 	char *masks_str = NULL;
@@ -395,7 +375,7 @@ static int _lllp_generate_cpu_bind (launch_tasks_request_msg_t *req,
 	masks_str = xmalloc(masks_len);
 	if(masks_str == NULL) {
 		error(" JobId %u masks_str == NULL", req->job_id); 
-		return SLURM_ERROR;
+		return;
 	}
 
 	masks_len = 0;
@@ -410,7 +390,7 @@ static int _lllp_generate_cpu_bind (launch_tasks_request_msg_t *req,
 		curlen = strlen(str) + 1;
 
 		if (masks_len > 0) masks_str[masks_len-1]=',';
-		strlcpy(&masks_str[masks_len], str, curlen);
+		strncpy(&masks_str[masks_len], str, curlen);
 		masks_len += curlen;
 		xassert(masks_str[masks_len] == '\0');
 		xfree(str);
@@ -438,9 +418,9 @@ static int _lllp_generate_cpu_bind (launch_tasks_request_msg_t *req,
 }
 
 
-static int _lllp_free_masks (launch_tasks_request_msg_t *req,
-			     const uint32_t maxtasks,
-			     bitstr_t **masks)
+static void _lllp_free_masks (launch_tasks_request_msg_t *req,
+			      const uint32_t maxtasks,
+			      bitstr_t **masks)
 {
     	int i;
 	bitstr_t *bitmask;
@@ -694,9 +674,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   const uint32_t maxtasks,
 				   bitstr_t ***masks_p)
 {
-        int retval, i, j, k, l, m, taskcount = 0, taskid = 0;
+        int retval, j, k, l, m, taskcount = 0, taskid = 0;
 	int over_subscribe  = 0, space_remaining = 0;
-	int socket_index = 0, core_index = 0, thread_index = 0;
+	int core_index = 0, thread_index = 0;
 	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	int usable_cpus = 0, avail_cpus = 0;
 	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
@@ -830,8 +810,7 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 				   const uint32_t maxtasks,
 				   bitstr_t ***masks_p)
 {
-        int retval, i, j, k, l, m, taskcount = 0, taskid = 0, next = 0;
-	int task_index = 0 , over_subscribe  = 0, space_remaining = 0;
+        int retval, j, k, l, m, taskid = 0, next = 0;
 	int core_index = 0, thread_index = 0;
 	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	int usable_cpus = 0, avail_cpus = 0;
@@ -1034,7 +1013,7 @@ lllp_ctx_alloc(void)
 
 static int _init_lllp(void)
 {
-	int j = 0, k = 0, l = 0;
+	int j = 0, k = 0;
 	int usable_sockets, usable_threads, usable_cores;
 
 	debug3("init LLLP");
@@ -1074,10 +1053,9 @@ static int _init_lllp(void)
 
 int _cleanup_lllp(void)
 {
-	int i=0, j=0, k=0;
+	int i=0, j=0;
   	/* FIX for heterogeneous socket/core/thread count per system in future releases */
 	int usable_sockets = conf->sockets;
-	int usable_threads = conf->threads;
 	int usable_cores   = conf->cores;
 
 	for (i=0; i<usable_sockets; i++) { 
@@ -1140,18 +1118,18 @@ static uint32_t _block_map(uint32_t index, uint32_t *map)
  * This function allocates and returns a abstract (unmapped) bitmask given the
  * machine architecture, the index for the task, and the desired binding type
  */
-static int _single_mask(const int nsockets, 
-			const int ncores, 
-			const int nthreads, 
-			const int socket_id,
-			const int core_id, 
-			const int thread_id,
-			const bool bind_to_exact_socket,
-			const bool bind_to_exact_core,
-			const bool bind_to_exact_thread,
-			bitstr_t **single_mask ) 
+static void _single_mask(const int nsockets, 
+			 const int ncores, 
+			 const int nthreads, 
+			 const int socket_id,
+			 const int core_id, 
+			 const int thread_id,
+			 const bool bind_to_exact_socket,
+			 const bool bind_to_exact_core,
+			 const bool bind_to_exact_thread,
+			 bitstr_t **single_mask ) 
 {
-	int socket, core, thread, len, i, j;
+	int socket, core, thread;
 	int nsockets_left, ncores_left, nthreads_left;
 	bitoff_t bit;
 	bitoff_t num_bits = nsockets * ncores * nthreads;
@@ -1348,7 +1326,8 @@ void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
 }
 
 
-static void _cr_update_reservation(int reserve, int *reserved, bitstr_t *mask)
+static void _cr_update_reservation(int reserve, uint32_t *reserved, 
+				   bitstr_t *mask)
 {
 	int i;
 	int num_bits = bit_size(mask);
@@ -1448,7 +1427,7 @@ void cr_reserve_lllp(uint32_t job_id, launch_tasks_request_msg_t *req)
     	/* store job_id, cpu_bind_type, cpu_bind */
 	slurm_mutex_lock(&lllp_ctx->mutex);
 
-	if (j = _find_lllp_job_state(job_id)) {
+	if ((j = _find_lllp_job_state(job_id))) {
 		_remove_lllp_job_state(job_id);	/* clear any stale state */
 	}
 

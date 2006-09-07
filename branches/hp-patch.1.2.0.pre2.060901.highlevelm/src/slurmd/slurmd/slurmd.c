@@ -125,7 +125,6 @@ static void      _init_conf();
 static void      _destroy_conf();
 static void      _print_conf();
 static void      _read_config();
-static void      _init_lllp();
 static void 	 _kill_old_slurmd();
 static void      _reconfigure();
 static int       _restore_cred_state(slurm_cred_ctx_t ctx);

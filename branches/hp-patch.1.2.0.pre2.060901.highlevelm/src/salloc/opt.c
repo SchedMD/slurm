@@ -139,7 +139,7 @@ static char *_print_mail_type(const uint16_t type);
 static int _parse_signal(const char *signal_name);
 static long  _to_bytes(const char *arg);
 static void  _usage(void);
-static bool  _valid_node_list(char **node_list_pptr);
+//static bool  _valid_node_list(char **node_list_pptr);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_conn_type(const char *arg);

@@ -166,9 +166,9 @@ static bool  _under_parallel_debugger(void);
 static void  _usage(void);
 static enum  task_dist_states _verify_dist_type(const char *arg);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
-					cpu_bind_type_t *cpu_bind_type);
+			      cpu_bind_type_t *cpu_bind_type);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
-                                        mem_bind_type_t *mem_bind_type);
+			      mem_bind_type_t *mem_bind_type);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -231,7 +231,7 @@ reset_str(char **str)
  * returns -1 on error, 0 otherwise
  */
 static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
-		cpu_bind_type_t *cpu_bind_type)
+			    cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
 	if (!arg) {
@@ -254,29 +254,29 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 	while (*p) {
 	    	if (*p == ',') {
 			if (!isdigit(*(p+1)))
-			*p = ';';
+				*p = ';';
 		}
 		*p++;
 	}
 
 	p = buf;
-	while (tok = strsep(&p, ";")) {
-		if (strcasecmp(tok, "help") == 0) {
+	while ((tok = strsep(&p, ";"))) {
+		if (!strcasecmp(tok, "help")) {
 			printf("CPU bind options:\n"
-	"\tq[uiet],        quietly bind before task runs (default)\n"
-	"\tv[erbose],      verbosely report binding before task runs\n"
-	"\tno[ne]          don't bind tasks to CPUs (default)\n"
-	"\trank            bind by task rank\n"
-	"\tmap_cpu:<list>  specify a CPU ID binding for each task\n"
-	"\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-	"\tmask_cpu:<list> specify a CPU ID binding mask for each task\n"
-	"\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
-        "\tsockets         auto-generated masks bind to sockets\n"
-        "\tcores           auto-generated masks bind to cores\n"
-        "\tthreads         auto-generated masks bind to threads\n");
+			       "\tq[uiet],        quietly bind before task runs (default)\n"
+			       "\tv[erbose],      verbosely report binding before task runs\n"
+			       "\tno[ne]          don't bind tasks to CPUs (default)\n"
+			       "\trank            bind by task rank\n"
+			       "\tmap_cpu:<list>  specify a CPU ID binding for each task\n"
+			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+			       "\tmask_cpu:<list> specify a CPU ID binding mask for each task\n"
+			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
+			       "\tsockets         auto-generated masks bind to sockets\n"
+			       "\tcores           auto-generated masks bind to cores\n"
+			       "\tthreads         auto-generated masks bind to threads\n");
 			return 1;
 		} else if ((strcasecmp(tok, "q") == 0) ||
-		    (strcasecmp(tok, "quiet") == 0)) {
+			   (strcasecmp(tok, "quiet") == 0)) {
 		        *cpu_bind_type &= ~CPU_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
@@ -359,7 +359,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
  * returns -1 on error, 0 otherwise
  */
 static int _verify_mem_bind(const char *arg, char **mem_bind, 
-		mem_bind_type_t *mem_bind_type)
+			    mem_bind_type_t *mem_bind_type)
 {
 	char *buf, *p, *tok;
 	if (!arg) {
@@ -379,28 +379,28 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	while (*p) {
 	    	if (*p == ',') {
 			if (!isdigit(*(p+1)))
-			*p = ';';
+				*p = ';';
 		}
 		*p++;
 	}
 
 	p = buf;
-	while (tok = strsep(&p, ";")) {
-		if (strcasecmp(tok, "help") == 0) {
+	while((tok = strsep(&p, ";"))) {
+		if(!strcasecmp(tok, "help")) {
 			printf("Memory bind options:\n"
-	"\tq[uiet],        quietly bind before task runs (default)\n"
-	"\tv[erbose],      verbosely report binding before task runs\n"
-	"\tno[ne]          don't bind tasks to memory (default)\n"
-	"\trank            bind by task rank\n"
-	"\tlocal           bind to memory local to processor\n"
-	"\tmap_mem:<list>  specify a memory binding for each task\n"
-	"\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-	"\tmask_mem:<list> specify a memory binding mask for each tasks\n"
-	"\t                where <list> is <mask1>,<mask2>,...<maskN>\n");
+			       "\tq[uiet],        quietly bind before task runs (default)\n"
+			       "\tv[erbose],      verbosely report binding before task runs\n"
+			       "\tno[ne]          don't bind tasks to memory (default)\n"
+			       "\trank            bind by task rank\n"
+			       "\tlocal           bind to memory local to processor\n"
+			       "\tmap_mem:<list>  specify a memory binding for each task\n"
+			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+			       "\tmask_mem:<list> specify a memory binding mask for each tasks\n"
+			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n");
 			return 1;
 			
 		} else if ((strcasecmp(tok, "q") == 0) ||
-		    (strcasecmp(tok, "quiet") == 0)) {
+			   (strcasecmp(tok, "quiet") == 0)) {
 		        *mem_bind_type &= ~MEM_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
@@ -718,20 +718,20 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
-  {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           },
-  {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
-  {"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
-  {"SLAUNCH_MEM_BIND",     OPT_MEM_BIND,  NULL,               NULL           },
-  {"SLAUNCH_DEBUG",        OPT_DEBUG,     NULL,               NULL           },
-  {"SLAUNCH_DISTRIBUTION", OPT_DISTRIB,   NULL,               NULL           },
-  {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
-  {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
-  {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
-  {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
-  {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
-  {NULL, 0, NULL, NULL}
+	{"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
+	{"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           },
+	{"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
+	{"SLAUNCH_CPU_BIND",     OPT_CPU_BIND,  NULL,               NULL           },
+	{"SLAUNCH_MEM_BIND",     OPT_MEM_BIND,  NULL,               NULL           },
+	{"SLAUNCH_DEBUG",        OPT_DEBUG,     NULL,               NULL           },
+	{"SLAUNCH_DISTRIBUTION", OPT_DISTRIB,   NULL,               NULL           },
+	{"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
+	{"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
+	{"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
+	{"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
+	{"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
+	{"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
+	{NULL, 0, NULL, NULL}
 };
 
 
@@ -804,7 +804,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_MEM_BIND:
 		if (_verify_mem_bind(val, &opt.mem_bind,
-				&opt.mem_bind_type))
+				     &opt.mem_bind_type))
 			exit(1);
 		break;
 
@@ -1105,19 +1105,19 @@ void set_options(const int argc, char **argv)
 			break;
                 case LONG_OPT_CPU_BIND:
 			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
-							&opt.cpu_bind_type))
+					     &opt.cpu_bind_type))
 				exit(1);
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (_verify_mem_bind(optarg, &opt.mem_bind,
-					&opt.mem_bind_type))
+					     &opt.mem_bind_type))
 				exit(1);
 			break;
 		case LONG_OPT_CORE:
 			opt.core_type = core_format_type (optarg);
 			if (opt.core_type == CORE_INVALID)
 				error ("--core=\"%s\" Invalid -- ignoring.\n",
-				      optarg);
+				       optarg);
 			break;
 		case LONG_OPT_MPI:
 			if (srun_mpi_init((char *)optarg) == SLURM_ERROR) {
@@ -1321,7 +1321,7 @@ static int _get_range(regex_t *re, char *token, int *first, int *last,
  *	3-2   becomes foo[4,3]
  */
 static char *_node_indices_to_nodelist(const char *indices_list,
-			   resource_allocation_response_msg_t *alloc_info)
+				       resource_allocation_response_msg_t *alloc_info)
 {
 	char *list;
 	int list_len;
@@ -1422,25 +1422,25 @@ static void _load_multi(int *argc, char **argv)
 
 	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
 		error("Could not open multi_prog config file %s",
-			argv[0]);
+		      argv[0]);
 		exit(1);
 	}
 	if (fstat(config_fd, &stat_buf) == -1) {
 		error("Could not stat multi_prog config file %s",
-			argv[0]);
+		      argv[0]);
 		exit(1);
 	}
 	if (stat_buf.st_size > 60000) {
 		error("Multi_prog config file %s is too large",
-			argv[0]);
+		      argv[0]);
 		exit(1);
 	}
 	data_buf = xmalloc(stat_buf.st_size);
 	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
-			- data_read)) != 0) {
+			 - data_read)) != 0) {
 		if (i < 0) {
 			error("Error reading multi_prog config file %s", 
-				argv[0]);
+			      argv[0]);
 			exit(1);
 		} else
 			data_read += i;
@@ -1896,7 +1896,7 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 		return NULL;
 
 	if (  (cmd[0] == '.' || cmd[0] == '/') 
-           && (access(cmd, access_mode) == 0 ) ) {
+	      && (access(cmd, access_mode) == 0 ) ) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", opt.cwd);
 		xstrcat(fullpath, cmd);
@@ -1916,7 +1916,7 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 		xfree(fullpath);
 		fullpath = NULL;
 	}
-  done:
+done:
 	list_destroy(l);
 	return fullpath;
 }
@@ -1948,13 +1948,13 @@ static void _opt_list()
 	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
 	info("num_tasks      : %d %s", opt.num_tasks,
-		opt.num_tasks_set ? "(set)" : "(default)");
+	     opt.num_tasks_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,
-		opt.cpus_per_task_set ? "(set)" : "(default)");
+	     opt.cpus_per_task_set ? "(set)" : "(default)");
 	info("nodes          : %d %s",
 	     opt.num_nodes, opt.num_nodes_set ? "(set)" : "(default)");
 	info("jobid          : %u %s", opt.jobid, 
-		opt.jobid_set ? "(set)" : "(default)");
+	     opt.jobid_set ? "(set)" : "(default)");
 	info("job name       : \"%s\"", opt.job_name);
 	info("distribution   : %s %s",
 	     format_task_dist_states(opt.distribution),
@@ -1995,19 +1995,19 @@ static bool _under_parallel_debugger (void)
 static void _usage(void)
 {
  	printf(
-"Usage: slaunch [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
-"               [-c ncpus] [-r n] [-t minutes]\n"
-"               [-D path] [--overcommit] [--no-kill]\n"
-"               [--label] [--unbuffered] [-m dist] [-J jobname]\n"
-"               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
-"               [--core=type] [-W sec]\n"
-"               [--mpi=type]\n"
-"               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
-"               [--cpu_bind=...] [--mem_bind=...]\n"
-"               [--prolog=fname] [--epilog=fname]\n"
-"               [--task-prolog=fname] [--task-epilog=fname]\n"
-"               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
-"               [-w hosts...] executable [args...]\n");
+		"Usage: slaunch [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
+		"               [-c ncpus] [-r n] [-t minutes]\n"
+		"               [-D path] [--overcommit] [--no-kill]\n"
+		"               [--label] [--unbuffered] [-m dist] [-J jobname]\n"
+		"               [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
+		"               [--core=type] [-W sec]\n"
+		"               [--mpi=type]\n"
+		"               [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
+		"               [--cpu_bind=...] [--mem_bind=...]\n"
+		"               [--prolog=fname] [--epilog=fname]\n"
+		"               [--task-prolog=fname] [--task-epilog=fname]\n"
+		"               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
+		"               [-w hosts...] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2015,56 +2015,56 @@ static void _help(void)
 	slurm_ctl_conf_t *conf;
 
         printf (
-"Usage: slaunch [OPTIONS...] executable [args...]\n"
-"\n"
-"Parallel run options:\n"
-"  -n, --ntasks=ntasks         number of tasks to run\n"
-"  -N, --nodes=N               number of nodes on which to run\n"
-"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"  -i, --slaunch-input=file    slaunch will read stdin from \"file\"\n"
-"  -o, --slaunch-output=file   slaunch will write stdout to \"file\"\n"
-"  -e, --slaunch-error=file    slaunch will write stderr to \"file\"\n"
-"  -I, --task-input=file       connect task stdin to \"file\"\n"
-"  -O, --task-output=file      connect task stdout to \"file\"\n"
-"  -E, --task-error=file       connect task stderr to \"file\"\n"
-"  -r, --relative=n            run job step relative to node n of allocation\n"
-"  -t, --time=minutes          time limit\n"
-"  -D, --workdir=path          the working directory for the launched tasks\n"
-"  -C, --overcommit            overcommit resources\n"
-"  -k, --no-kill               do not kill job on node failure\n"
-"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
-"                              non-zero exit code\n"
-"  -l, --label                 prepend task number to lines of stdout/err\n"
-"  -u, --unbuffered            do not line-buffer stdout/err\n"
-"  -m, --distribution=type     distribution method for processes to nodes\n"
-"                              (type = block|cyclic|hostfile)\n"
-"  -J, --job-name=jobname      name of job\n"
-"      --jobid=id              run under already allocated job\n"
-"  -W, --wait=sec              seconds to wait after first task exits\n"
-"                              before killing job\n"
-"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --slurmd-debug=level    slurmd debug level\n"
-"      --core=type             change default corefile format type\n"
-"                              (type=\"list\" to list of valid formats)\n"
-"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"      --mpi=type              specifies version of MPI to use\n"
-"      --prolog=program        run \"program\" before launching job step\n"
-"      --epilog=program        run \"program\" after launching job step\n"
-"      --task-prolog=program   run \"program\" before launching task\n"
-"      --task-epilog=program   run \"program\" after launching task\n"
-"      --ctrl-comm-ifhn=addr   hostname for PMI communications with slaunch\n"
-"      --multi-prog            if set the program name specified is the\n"
-"                              configuration specificaiton for multiple programs\n"
-"  -w, --nodelist=hosts...     request a specific list of hosts\n");
+		"Usage: slaunch [OPTIONS...] executable [args...]\n"
+		"\n"
+		"Parallel run options:\n"
+		"  -n, --ntasks=ntasks         number of tasks to run\n"
+		"  -N, --nodes=N               number of nodes on which to run\n"
+		"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+		"  -i, --slaunch-input=file    slaunch will read stdin from \"file\"\n"
+		"  -o, --slaunch-output=file   slaunch will write stdout to \"file\"\n"
+		"  -e, --slaunch-error=file    slaunch will write stderr to \"file\"\n"
+		"  -I, --task-input=file       connect task stdin to \"file\"\n"
+		"  -O, --task-output=file      connect task stdout to \"file\"\n"
+		"  -E, --task-error=file       connect task stderr to \"file\"\n"
+		"  -r, --relative=n            run job step relative to node n of allocation\n"
+		"  -t, --time=minutes          time limit\n"
+		"  -D, --workdir=path          the working directory for the launched tasks\n"
+		"  -C, --overcommit            overcommit resources\n"
+		"  -k, --no-kill               do not kill job on node failure\n"
+		"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
+		"                              non-zero exit code\n"
+		"  -l, --label                 prepend task number to lines of stdout/err\n"
+		"  -u, --unbuffered            do not line-buffer stdout/err\n"
+		"  -m, --distribution=type     distribution method for processes to nodes\n"
+		"                              (type = block|cyclic|hostfile)\n"
+		"  -J, --job-name=jobname      name of job\n"
+		"      --jobid=id              run under already allocated job\n"
+		"  -W, --wait=sec              seconds to wait after first task exits\n"
+		"                              before killing job\n"
+		"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+		"  -q, --quiet                 quiet mode (suppress informational messages)\n"
+		"  -d, --slurmd-debug=level    slurmd debug level\n"
+		"      --core=type             change default corefile format type\n"
+		"                              (type=\"list\" to list of valid formats)\n"
+		"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
+		"      --mpi=type              specifies version of MPI to use\n"
+		"      --prolog=program        run \"program\" before launching job step\n"
+		"      --epilog=program        run \"program\" after launching job step\n"
+		"      --task-prolog=program   run \"program\" before launching task\n"
+		"      --task-epilog=program   run \"program\" after launching task\n"
+		"      --ctrl-comm-ifhn=addr   hostname for PMI communications with slaunch\n"
+		"      --multi-prog            if set the program name specified is the\n"
+		"                              configuration specificaiton for multiple programs\n"
+		"  -w, --nodelist=hosts...     request a specific list of hosts\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
-"      --cpu_bind=             Bind tasks to CPUs\n"
-"                              (see \"--cpu_bind=help\" for options)\n"
-"      --mem_bind=             Bind memory to locality domains (ldom)\n"
-"                              (see \"--mem_bind=help\" for options)\n"
+			"      --cpu_bind=             Bind tasks to CPUs\n"
+			"                              (see \"--cpu_bind=help\" for options)\n"
+			"      --mem_bind=             Bind memory to locality domains (ldom)\n"
+			"                              (see \"--mem_bind=help\" for options)\n"
 			);
 	}
 	slurm_conf_unlock();
@@ -2073,18 +2073,18 @@ static void _help(void)
 
         printf(
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
-  "AIX related options:\n"
-  "  --network=type              communication protocol to be used\n"
-  "\n"
+		"AIX related options:\n"
+		"  --network=type              communication protocol to be used\n"
+		"\n"
 #endif
 
-"Help options:\n"
-"  -h, --help                  show this help message\n"
-"      --usage                 display brief usage message\n"
-"\n"
-"Other options:\n"
-"  -V, --version               output version information and exit\n"
-"\n"
-);
+		"Help options:\n"
+		"  -h, --help                  show this help message\n"
+		"      --usage                 display brief usage message\n"
+		"\n"
+		"Other options:\n"
+		"  -V, --version               output version information and exit\n"
+		"\n"
+		);
 
 }

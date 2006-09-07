@@ -54,6 +54,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 
+#include "src/slurmd/slurmd/dist_tasks.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"

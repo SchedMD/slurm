@@ -117,6 +117,7 @@ typedef struct srun_options {
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool nodes_set;		/* true if nodes explicitly set */
+	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states

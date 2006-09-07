@@ -208,12 +208,11 @@ static bool  _under_parallel_debugger(void);
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static task_dist_states_t _verify_dist_type(const char *arg, uint32_t *psize);
-static bool  _verify_node_cpu_core_thread_count(const char *arg,
-						int *min_nodes, int *max_nodes,
-						int *min_sockets, int *max_sockets,
-						int *min_cores, int *max_cores,
-						int *min_threads, int  *max_threads,
-						cpu_bind_type_t *cpu_bind_type);
+static bool  _verify_cpu_core_thread_count(const char *arg,
+					   int *min_sockets, int *max_sockets,
+					   int *min_cores, int *max_cores,
+					   int *min_threads, int  *max_threads,
+					   cpu_bind_type_t *cpu_bind_type);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
 			      cpu_bind_type_t *cpu_bind_type);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
@@ -663,23 +662,21 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
  * RET true if valid
  */
 static bool
-_verify_node_cpu_core_thread_count(const char *start_ptr, 
-				   int *min_nodes, int *max_nodes,
-				   int *min_sockets, int *max_sockets,
-				   int *min_cores, int *max_cores,
-				   int *min_threads, int  *max_threads,
-				   cpu_bind_type_t *cpu_bind_type)
+_verify_cpu_core_thread_count(const char *start_ptr, 
+			      int *min_sockets, int *max_sockets,
+			      int *min_cores, int *max_cores,
+			      int *min_threads, int  *max_threads,
+			      cpu_bind_type_t *cpu_bind_type)
 {
 	bool tmp_val,ret_val;
 	int i,j;
 	const char *cur_ptr = start_ptr;
-	char buf[4][48]; /* each can hold INT64_MAX - INT64_MAX */
+	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 	buf[0][0] = '\0';
 	buf[1][0] = '\0';
 	buf[2][0] = '\0';
-	buf[3][0] = '\0';
 
- 	for (j=0;j<4;j++) {	
+ 	for (j=0;j<3;j++) {	
 		for (i=0;i<47;i++) {
 			if (*cur_ptr == '\0' || *cur_ptr ==':') break;
 			buf[j][i] = *cur_ptr++;
@@ -695,28 +692,25 @@ _verify_node_cpu_core_thread_count(const char *start_ptr,
 	if (!(*cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 				CPU_BIND_TO_CORES |
 				CPU_BIND_TO_THREADS))) {
-		if (j == 1) {
+		if (j == 0) {
 			*cpu_bind_type |= CPU_BIND_TO_SOCKETS;
-		} else if (j == 2) {
+		} else if (j == 1) {
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
-		} else if (j == 3) {
+		} else if (j == 2) {
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		}
         }
 	buf[j][i] = '\0';
 
 	ret_val = true;
-	tmp_val = _get_resource_range( &buf[0][0], "first arg of -N", 
-                                       min_nodes, max_nodes, true);
+	tmp_val = _get_resource_range(&buf[0][0], "first arg of -E", 
+				      min_sockets, max_sockets, true);
 	ret_val = ret_val && tmp_val;
-	tmp_val = _get_resource_range( &buf[1][0], "second arg of -N", 
-				       min_sockets, max_sockets, true);
+	tmp_val = _get_resource_range(&buf[1][0], "second arg of -E", 
+				      min_cores, max_cores, true);
 	ret_val = ret_val && tmp_val;
-	tmp_val = _get_resource_range( &buf[2][0], "third arg of -N", 
-				       min_cores, max_cores, true);
-	ret_val = ret_val && tmp_val;
-	tmp_val = _get_resource_range( &buf[3][0], "fourth arg of -N", 
-			 	       min_threads, max_threads, true);
+	tmp_val = _get_resource_range(&buf[2][0], "third arg of -E", 
+				      min_threads, max_threads, true);
 	ret_val = ret_val && tmp_val;
 
 	return ret_val;
@@ -848,7 +842,8 @@ static void _opt_default()
 	opt.max_sockets_per_node = 0;
 	opt.min_cores_per_socket = 0; /* request, not constraint (mincores) */
 	opt.max_cores_per_socket = 0;
-	opt.min_threads_per_core = 0; /* request, not constraint (minthreads) */
+	opt.min_threads_per_core = 0; /* request, not constraint
+				       * (minthreads */
 	opt.max_threads_per_core = 0; 
 	opt.ntasks_per_node   = 0; 
 	opt.ntasks_per_socket = 0; 
@@ -1231,6 +1226,7 @@ void set_options(const int argc, char **argv, int first)
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
+		{"extra-node-info", required_argument, 0, 'e'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
@@ -1309,7 +1305,7 @@ void set_options(const int argc, char **argv, int first)
 		{"print-request",    no_argument,       0, LONG_OPT_PRINTREQ},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
+	char *opt_string = "+a:Abc:C:d:D:e:E:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1417,6 +1413,26 @@ void set_options(const int argc, char **argv, int first)
 			else
 				opt.efname = xstrdup(optarg);
 			break;
+		case (int)'E':
+			if(!first && opt.extra_set)
+				break;
+						
+			opt.extra_set = _verify_cpu_core_thread_count(
+				optarg,
+				&opt.min_sockets_per_node,
+				&opt.max_sockets_per_node,
+				&opt.min_cores_per_socket,
+				&opt.max_cores_per_socket,
+				&opt.min_threads_per_core,
+				&opt.max_threads_per_core,
+				&opt.cpu_bind_type);
+			
+			if (opt.extra_set == false) {
+				error("invalid resource allocation -E `%s'", 
+				      optarg);
+				exit(1);
+			}
+			break;
 		case (int)'g':
 			if(!first && opt.geometry)
 				break;
@@ -1480,18 +1496,12 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.nodes_set)
 				break;
 						
-			opt.nodes_set = _verify_node_cpu_core_thread_count(
-				optarg,
-				&opt.min_nodes,
-				&opt.max_nodes,
-				&opt.min_sockets_per_node,
-				&opt.max_sockets_per_node,
-				&opt.min_cores_per_socket,
-				&opt.max_cores_per_socket,
-				&opt.min_threads_per_core,
-				&opt.max_threads_per_core,
-				&opt.cpu_bind_type);
-
+			opt.nodes_set = 
+				_get_resource_range(optarg, 
+						    "requested node count",
+						    &opt.min_nodes,
+						    &opt.max_nodes, true);
+			
 			if (opt.nodes_set == false) {
 				error("invalid resource allocation -N `%s'", 
 				      optarg);
@@ -2513,8 +2523,7 @@ static void _help(void)
 		"                              cpu consumable resource is enabled\n"
 		"\n"
 		"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
-		"  -N N[:S[:C[:T]]]            Expands to:\n"
-		"      --nodes=N                 number of nodes to allocate\n"
+		"  -E --extra-node-info=S[:C[:T]]            Expands to:\n"
 		"      --sockets-per-node=S      number of sockets per node to allocate\n"
 		"      --cores-per-socket=C      number of cores per socket to allocate\n"
 		"      --threads-per-core=T      number of threads per core to allocate\n"

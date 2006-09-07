@@ -91,7 +91,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	char *curstr, *selstr;
 	char mstr[1 + CPU_SETSIZE / 4];
 	int local_id = job->envtp->localid;
-	int buftype[1024];
+	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
 	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type, job->cpu_bind);

@@ -23,6 +23,33 @@
 
 #ifndef _SLURMSTEPD_DIST_TASKS_H
 #define _SLURMSTEPD_DIST_TASKS_H
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_STRING_H
+#  include <string.h>
+#endif
+
+#include <signal.h>
+#include <sys/types.h>
+#include <grp.h>
+#include <stdlib.h>
+
+#include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
+#include "src/common/xstring.h"
+#include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/eio.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
+
+#include "src/common/bitstring.h"
+
+#include "src/slurmd/slurmd/slurmd.h"
+
 /* Structures to create an object oriented version of a 4-D 
    infrastructure --> task id mapping [node][cpu][core][taskid] = tid
 */
