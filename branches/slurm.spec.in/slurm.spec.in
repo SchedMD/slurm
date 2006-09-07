@@ -13,8 +13,8 @@ Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
-Requires: $(REQ_RPMS)
-BuildRequires: $(REQ_RPMS)
+Requires: @REQ_RPMS@
+BuildRequires: @REQ_RPMS@
 
 #
 # If "--with debug" is set compile with --enable-debug 
