@@ -1,7 +1,6 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-<<<<<<< .working
 * Changes in SLURM 1.2.0-pre3
 =============================
  -- Remove configuration parameter ShedulerAuth (defunct).
@@ -43,10 +42,7 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
-* Changes in SLURM 1.1.13
-=======
 * Changes in SLURM 1.1.12
->>>>>>> .merge-right.r9238
 =========================
  - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS
     request.
