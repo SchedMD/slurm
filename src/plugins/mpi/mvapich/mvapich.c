@@ -348,7 +348,7 @@ static void *mvapich_thr(void *arg)
 
 extern int mvapich_thr_create(srun_job_t *job)
 {
-	int port;
+	short port;
 	pthread_attr_t attr;
 	pthread_t tid;
 
