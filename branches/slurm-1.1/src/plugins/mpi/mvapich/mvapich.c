@@ -232,9 +232,8 @@ static int mvapich_handle_task (int fd, struct mvapich_info *mvi)
 			else
 				return mvapich_get_task_info (mvi);
 		default:
-			error ("mvapich: Unsupported protocol version %d", 
-					protocol_version);
-			return (-1);
+			return (error ("mvapich: Unsupported protocol version %d", 
+					protocol_version));
 	}
 
 	return (0);
@@ -423,6 +422,9 @@ static int mvapich_handle_connection (int fd)
 
 	if (mvapich_get_task_header (fd, &version, &rank) < 0)
 		return (-1);
+
+	if (rank > nprocs - 1) 
+		return (error ("mvapich: task reported invalid rank (%d)", rank));
 
 	if (mvapich_handle_task (fd, mvarray [rank]) < 0)
 		return (-1);
