@@ -637,7 +637,12 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 #endif
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
+
+#ifdef HAVE_BG
 		convert_num_unit((float)node_cnt, tmp_char, UNIT_NONE);
+#else
+		sprintf(tmp_char, "%d", node_cnt);
+#endif
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -685,13 +690,10 @@ static bool _node_in_list(char *node_name, char *node_list)
 int _print_job_shared(job_info_t * job, int width, bool right_justify, 
 		      char* suffix)
 {
-	char tmp_char[6];
-
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("SHARED", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->shared, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
+		_print_int(job->shared, width, right_justify, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -701,13 +703,10 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 int _print_job_contiguous(job_info_t * job, int width, bool right_justify, 
 			  char* suffix)
 {
-	char tmp_char[6];
-
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CONTIGUOUS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->contiguous, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
+		_print_int(job->contiguous, width, right_justify, true);
 	}
 	
 	if (suffix)

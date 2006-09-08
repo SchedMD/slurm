@@ -1973,7 +1973,6 @@ extern char *nodelist_nth_host(const char *nodelist, int inx)
 
 void convert_num_unit(float num, char *buf, int orig_type)
 {
-#ifdef HAVE_BG
 	char *unit = "\0KMGP?";
 	int i = (int)num % 512;
 	
@@ -1994,9 +1993,6 @@ void convert_num_unit(float num, char *buf, int orig_type)
 		sprintf(buf, "%d%c", i, unit[orig_type]);
 	else
 		sprintf(buf, "%.2f%c", num, unit[orig_type]);
-#else
-	sprintf(buf, "%d", (int)num);
-#endif
 }
 
 #if _DEBUG

@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  mvapich.c - srun support for MPICH-IB (MVAPICH 0.9.4 and 0.9.5), for 
- *	other versions see MVAPICH_VERSION below.
+ *  mvapich.c - srun support for MPICH-IB (MVAPICH 0.9.4 and 0.9.5,7,8)
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).  
@@ -61,10 +60,12 @@
  * This makes support of MVAPICH very difficult. 
  * Support for the following versions have been validated:
  *
- * For MVAPICH-GEN2-1.0-103,    set MVAPICH_VERSION to 2
- * For MVAPICH 0.9.4 and 0.9.5, set MVAPICH_VERSION to 3
+ * For MVAPICH-GEN2-1.0-103,    set MVAPICH_VERSION_REQUIRES_PIDS to 2
+ * For MVAPICH 0.9.4 and 0.9.5, set MVAPICH_VERSION_REQUIRES_PIDS to 3
+ *
+ * See functions mvapich_requires_pids() below for other mvapich versions.
  */
-#define MVAPICH_VERSION 3
+#define MVAPICH_VERSION_REQUIRES_PIDS 3
 
 #include "src/plugins/mpi/mvapich/mvapich.h"
 
@@ -72,9 +73,10 @@
  *  Arguments passed to mvapich support thread.
  */
 struct mvapich_args {
-	srun_job_t *job;         /* SRUN job information                  */
+	srun_job_t *job;    /* SRUN job information                  */
 	int fd;             /* fd on which to accept new connections */
 };
+
 
 /*
  *  Information read from each MVAPICH process
@@ -82,10 +84,11 @@ struct mvapich_args {
 struct mvapich_info
 {
 	int fd;             /* fd for socket connection to MPI task  */
-	int version;        /* Version of mvapich startup protocol   */
 	int rank;           /* This process' MPI rank                */
 	int pidlen;         /* length of pid buffer                  */
 	char *pid;          /* This rank's local pid (V3 only)       */
+	int hostidlen;      /* Host id length                        */
+	int hostid;         /* Separate hostid (for protocol v5)     */
 	int addrlen;        /* Length of addr array in bytes         */
 
 	int *addr;          /* This process' address array, which for
@@ -96,7 +99,7 @@ struct mvapich_info
 	                     *
 	                     *  Where position N is this rank's lid,
 	                     *  and the hostid is tacked onto the end
-	                     *  of the array
+	                     *  of the array (for protocol version 3)
 	                     */
 };
 
@@ -106,59 +109,15 @@ static struct mvapich_info **mvarray = NULL;
 static int  mvapich_fd       = -1;
 static int  nprocs           = -1;
 static int  protocol_version = -1;
+static int  v5_phase         = 0;
 
-static void mvapich_info_destroy (struct mvapich_info *mvi);
 
-#define E_RET(msg, args...) \
-	do { \
-	  error (msg, ## args); \
-	  mvapich_info_destroy (mvi); \
-      return (NULL); \
-	} while (0); 
-
-/*
- *  Create an mvapich_info object by reading information from
- *   file descriptor `fd'
- */
-static struct mvapich_info * mvapich_info_create (int fd)
+static struct mvapich_info * mvapich_info_create (void)
 {
 	struct mvapich_info *mvi = xmalloc (sizeof (*mvi));
-
-	mvi->fd = fd;
-	mvi->addr = NULL;
-
-	if (fd_read_n (fd, &mvi->version, sizeof (int)) < 0)
-		E_RET ("mvapich: Unable to read version from task: %m");
-
-	if (protocol_version == -1) 
-		protocol_version = mvi->version;
-	else if (protocol_version != mvi->version) 
-		E_RET ("mvapich: version %d != %d", mvi->version, protocol_version);
-
-	if (fd_read_n (fd, &mvi->rank, sizeof (int)) < 0)
-		E_RET ("mvapich: Unable to read rank id: %m", mvi->rank);
-
-	if (mvi->version <= 1 || mvi->version > 3)
-		E_RET ("Unsupported version %d from rank %d", mvi->version, mvi->rank);
-
-	if (fd_read_n (fd, &mvi->addrlen, sizeof (int)) < 0)
-		E_RET ("mvapich: Unable to read addrlen for rank %d: %m", mvi->rank);
-
-	mvi->addr = xmalloc (mvi->addrlen);
-
-	if (fd_read_n (fd, mvi->addr, mvi->addrlen) < 0)
-		E_RET ("mvapich: Unable to read addr info for rank %d: %m", mvi->rank);
-
-	if (mvi->version == MVAPICH_VERSION) {
-		if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) < 0)
-			E_RET ("mvapich: Unable to read pidlen for rank %d: %m", mvi->rank);
-
-		mvi->pid = xmalloc (mvi->pidlen);
-
-		if (fd_read_n (fd, mvi->pid, mvi->pidlen) < 0)
-			E_RET ("mvapich: Unable to read pid for rank %d: %m", mvi->rank);
-	}
-
+	memset (mvi, 0, sizeof (*mvi));
+	mvi->fd = -1;
+	mvi->rank = -1;
 	return (mvi);
 }
 
@@ -170,6 +129,116 @@ static void mvapich_info_destroy (struct mvapich_info *mvi)
 	return;
 }
 
+static int mvapich_requires_pids (void)
+{
+	if ( protocol_version == MVAPICH_VERSION_REQUIRES_PIDS 
+	  || protocol_version == 5)
+		return (1);
+	return (0);
+}
+
+static int mvapich_abort_sends_rank (void)
+{
+	if (protocol_version >= 3)
+		return (1);
+	return (0);
+}
+
+/*
+ *  Create an mvapich_info object by reading information from
+ *   file descriptor `fd'
+ */
+static int mvapich_get_task_info (struct mvapich_info *mvi)
+{
+	int fd = mvi->fd;
+
+	if (fd_read_n (fd, &mvi->addrlen, sizeof (int)) < 0)
+		return error ("mvapich: Unable to read addrlen for rank %d: %m", 
+				mvi->rank);
+
+	mvi->addr = xmalloc (mvi->addrlen);
+
+	if (fd_read_n (fd, mvi->addr, mvi->addrlen) < 0)
+		return error ("mvapich: Unable to read addr info for rank %d: %m", 
+				mvi->rank);
+
+	if (!mvapich_requires_pids ())
+		return (0);
+
+	if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) < 0)
+		return error ("mvapich: Unable to read pidlen for rank %d: %m", 
+				mvi->rank);
+
+	mvi->pid = xmalloc (mvi->pidlen);
+
+	if (fd_read_n (fd, mvi->pid, mvi->pidlen) < 0)
+		return error ("mvapich: Unable to read pid for rank %d: %m", mvi->rank);
+
+	return (0);
+}
+
+static int mvapich_get_hostid (struct mvapich_info *mvi)
+{
+	if (fd_read_n (mvi->fd, &mvi->hostidlen, sizeof (int)) < 0)
+		return error ("mvapich: Unable to read hostidlen for rank %d: %m",
+				mvi->rank);
+	if (mvi->hostidlen != sizeof (int))
+		return error ("mvapich: Unexpected size for hostidlen (%d)", mvi->hostidlen);
+	if (fd_read_n (mvi->fd, &mvi->hostid, sizeof (int)) < 0)
+		return error ("mvapich: unable to read hostid from rank %d", 
+				mvi->rank);
+
+	return (0);
+}
+
+static int mvapich_get_task_header (int fd, int *version, int *rank)
+{
+	/*
+	 *  V5 only sends version on first pass
+	 */
+	if (protocol_version != 5 || v5_phase == 0) {
+		if (fd_read_n (fd, version, sizeof (int)) < 0) 
+			return error ("mvapich: Unable to read version from task: %m");
+	} 
+
+	if (fd_read_n (fd, rank, sizeof (int)) < 0) 
+		return error ("mvapich: Unable to read task rank: %m");
+
+	if (protocol_version == 5 && v5_phase > 0)
+		return (0);
+
+	if (protocol_version == -1)
+		protocol_version = *version;
+	else if (protocol_version != *version) {
+		return error ("mvapich: rank %d version %d != %d", *rank, *version, 
+				protocol_version);
+	}
+
+	return (0);
+
+}
+
+static int mvapich_handle_task (int fd, struct mvapich_info *mvi)
+{
+	mvi->fd = fd;
+
+	switch (protocol_version) {
+		case 1:
+		case 2:
+		case 3:
+			return mvapich_get_task_info (mvi);
+		case 5:
+			if (v5_phase == 0)
+				return mvapich_get_hostid (mvi);
+			else
+				return mvapich_get_task_info (mvi);
+		default:
+			return (error ("mvapich: Unsupported protocol version %d", 
+					protocol_version));
+	}
+
+	return (0);
+}
 
 /*
  *  Broadcast addr information to all connected mvapich processes.
@@ -184,7 +253,7 @@ static void mvapich_info_destroy (struct mvapich_info *mvi)
  *   total of 3*nprocs ints.
  *
  */   
-static void mvapich_bcast (void)
+static void mvapich_bcast_addrs (void)
 {
 	struct mvapich_info *m;
 	int out_addrs_len = 3 * nprocs * sizeof (int);
@@ -202,7 +271,8 @@ static void mvapich_bcast (void)
 		/*
 		 * hostids are the last entry in addrs
 		 */
-		out_addrs[2 * nprocs + i] = m->addr[(m->addrlen/sizeof (int)) - 1];
+		out_addrs[2 * nprocs + i] =
+			m->addr[(m->addrlen/sizeof (int)) - 1];
 	}
 
 	for (i = 0; i < nprocs; i++) {
@@ -212,22 +282,53 @@ static void mvapich_bcast (void)
 		 * qp array is tailored to each process.
 		 */
 		for (j = 0; j < nprocs; j++)  
-			out_addrs[nprocs + j] = (i == j) ? -1 : mvarray[j]->addr[i];
+			out_addrs[nprocs + j] = 
+				(i == j) ? -1 : mvarray[j]->addr[i];
 
 		fd_write_n (m->fd, out_addrs, out_addrs_len);
 
 		/*
 		 * Protocol version 3 requires pid list to be sent next
 		 */
-		if (protocol_version == MVAPICH_VERSION) {
+		if (mvapich_requires_pids ()) {
 			for (j = 0; j < nprocs; j++)
-				fd_write_n (m->fd, &mvarray[j]->pid, mvarray[j]->pidlen);
+				fd_write_n (m->fd, &mvarray[j]->pid,
+					    mvarray[j]->pidlen);
 		}
 
 	}
 
 	xfree (out_addrs);
 	return;
+}
+
+static void mvapich_bcast_hostids (void)
+{
+	int *  hostids;
+	int    i   = 0;
+	size_t len = nprocs * sizeof (int);
+
+	hostids = xmalloc (len);
+
+	for (i = 0; i < nprocs; i++)
+		hostids [i] = mvarray[i]->hostid;
+
+	for (i = 0; i < nprocs; i++) {
+		struct mvapich_info *mvi = mvarray [i];
+		if (fd_write_n (mvi->fd, hostids, len) < 0)
+			error ("mvapich: write hostid rank %d: %m", mvi->rank);
+		close (mvi->fd);
+	}
+
+	xfree (hostids);
+}
+
+static void mvapich_bcast (void)
+{
+	if (protocol_version < 5 || v5_phase > 0)
+		return mvapich_bcast_addrs ();
+	else
+		return mvapich_bcast_hostids ();
 }
 
 static void mvapich_barrier (void)
@@ -290,59 +391,98 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 			continue;
 		}
 		close(newfd);
-		if (protocol_version == MVAPICH_VERSION) {
+		if (mvapich_abort_sends_rank ()) {
 			int rank = (int) (*rbuf);
-			info ("mvapich: Received ABORT message from MPI Rank %d", rank);
+			info ("mvapich: Received ABORT message "
+			      "from MPI Rank %d", rank);
 		} else
-			info ("mvapich: Received ABORT message from an MPI process.");
+			info ("mvapich: Received ABORT message from "
+			      "an MPI process.");
 		fwd_signal(job, SIGKILL, opt.max_threads);
 	}
 
 	return; /* but not reached */
 }
 
+static void mvapich_mvarray_create (void)
+{
+	int i;
+	mvarray = xmalloc (nprocs * sizeof (*mvarray));
+	for (i = 0; i < nprocs; i++) {
+		mvarray [i] = mvapich_info_create ();
+		mvarray [i]->rank = i;
+	}
+}
 
+static void mvapich_mvarray_destroy (void)
+{
+	int i;
+	for (i = 0; i < nprocs; i++)
+		mvapich_info_destroy (mvarray [i]);
+	xfree (mvarray);
+}
+
+static int mvapich_handle_connection (int fd)
+{
+	int version, rank;
+
+	if (mvapich_get_task_header (fd, &version, &rank) < 0)
+		return (-1);
+
+	if (rank > nprocs - 1) 
+		return (error ("mvapich: task reported invalid rank (%d)",
+			       rank));
+
+	if (mvapich_handle_task (fd, mvarray [rank]) < 0)
+		return (-1);
+
+	return (0);
+}
 
 static void *mvapich_thr(void *arg)
 {
 	srun_job_t *job = arg;
 	int i = 0;
 
-	mvarray = xmalloc (nprocs * sizeof (*mvarray));
+	debug ("mvapich-0.9.x/gen2: thread started: %ld", pthread_self ());
 
-	debug ("mvapich-0.9.[45]/gen2: thread started: %ld", pthread_self ());
+	mvapich_mvarray_create ();
 
+again:
+	i = 0;
 	while (i < nprocs) {
-		struct mvapich_info *mvi = NULL;
 		slurm_addr addr;
-		int newfd = slurm_accept_msg_conn (mvapich_fd, &addr);
-
-		if (newfd < 0) {
-			fatal ("Failed to accept connection from mvapich task: %m");
-			continue;
+		int fd;
+		
+		if ((fd = slurm_accept_msg_conn (mvapich_fd, &addr)) < 0) {
+			error ("mvapich: accept: %m");
+			goto fail;
 		}
 
-		if ((mvi = mvapich_info_create (newfd)) == NULL) {
-			error ("mvapich: MPI task failed to check in");
-			return NULL;
-		}
+		if (mvapich_handle_connection (fd) < 0) 
+			goto fail;
 
-		if (mvarray[mvi->rank] != NULL) {
-			fatal ("mvapich: MPI task checked in more than once");
-			return NULL;
-		}
-
-		debug ("mvapich: rank %d checked in", mvi->rank);
-		mvarray[mvi->rank] = mvi;
 		i++;
 	}
 
 	mvapich_bcast ();
 
+	if (protocol_version == 5 && v5_phase == 0) {
+		v5_phase = 1;
+		goto again;
+	}
+
 	mvapich_barrier ();
 
 	mvapich_wait_for_abort (job);
 
+	mvapich_mvarray_destroy ();
+
+	return (NULL);
+
+fail:
+	error ("mvapich: fatal error, killing job");
+	fwd_signal (job, SIGKILL, opt.max_threads);
 	return (void *)0;
 }
 
@@ -352,7 +492,7 @@ extern int mvapich_thr_create(srun_job_t *job)
 	pthread_attr_t attr;
 	pthread_t tid;
 
-	nprocs = job->ntasks;
+	nprocs = opt.nprocs;
 
 	if (net_stream_listen(&mvapich_fd, &port) < 0)
 		error ("Unable to create ib listen port: %m");

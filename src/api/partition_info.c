@@ -110,12 +110,19 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char *out = NULL;
 
 	/****** Line 1 ******/
+	xstrcat(out, tmp_line);
+
+#ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp1, UNIT_NONE);
+#else
+	sprintf(tmp1, "%d", part_ptr->total_nodes);
+#endif
 	convert_num_unit((float)part_ptr->total_cpus, tmp2, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
-		part_ptr->name, tmp1, tmp2);
+		 "PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
+		 part_ptr->name, tmp1, tmp2);
 	xstrcat(out, tmp_line);
+
 	if (part_ptr->root_only)
 		sprintf(tmp_line, "RootOnly=YES");
 	else
@@ -160,13 +167,23 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 3 ******/
+
+#ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->min_nodes, tmp1, UNIT_NONE);
+#else
+	sprintf(tmp1, "%d", part_ptr->min_nodes);
+#endif
 	sprintf(tmp_line, "MinNodes=%s ", tmp1);
 	xstrcat(out, tmp_line);
+
 	if (part_ptr->max_nodes == INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
 	else {
+#ifdef HAVE_BG
 		convert_num_unit((float)part_ptr->max_nodes, tmp1, UNIT_NONE);
+#else
+		sprintf(tmp1, "%d", part_ptr->max_nodes);
+#endif
 		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
 	}
 	xstrcat(out, tmp_line);

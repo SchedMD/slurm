@@ -352,6 +352,7 @@ struct job_record {
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t requid;            	/* requester user ID */
+	uint32_t exit_code;		/* exit code for the job */
 };
 
 struct 	step_record {
