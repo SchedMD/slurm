@@ -729,7 +729,7 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  *       both must be freed at some point using the slurm_free_functions 
  *       and list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
- * OUT msg	- a slurm_msg struct to be filled in by the function
+ * IN/OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
  *                forwarded the message to. List containing type (ret_types_t).
