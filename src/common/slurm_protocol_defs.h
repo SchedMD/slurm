@@ -505,7 +505,7 @@ typedef struct reattach_tasks_response_msg {
 	uint32_t  return_code;
 	uint32_t  srun_node_id;
 	uint32_t  ntasks;       /* number of tasks on this node     */
-	uint32_t *gtids;         /* Global task id assignments       */
+	uint32_t *gtids;        /* Global task id assignments       */
 	uint32_t *local_pids;   /* list of process ids on this node */
 } reattach_tasks_response_msg_t;
 

@@ -159,7 +159,7 @@ static void  _print_version(void);
 static void _process_env_var(env_vars_t *e, const char *val);
 
 /* search PATH for command returns full path */
-static char *_search_path(char *, bool, int);
+static char *_search_path(char *, int);
 
 static bool  _under_parallel_debugger(void);
 
@@ -1454,11 +1454,8 @@ static void _opt_args(int argc, char **argv)
 	}
 	else if (opt.argc > 0) {
 		char *fullpath;
-		char *cmd       = opt.argv[0];
-		bool search_cwd = false; /* was: (opt.batch || opt.allocate); */
-		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
-		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
+		if ((fullpath = _search_path(opt.argv[0], R_OK|X_OK))) {
 			xfree(opt.argv[0]);
 			opt.argv[0] = fullpath;
 		} 
@@ -1850,7 +1847,7 @@ _create_path_list(void)
 }
 
 static char *
-_search_path(char *cmd, bool check_current_dir, int access_mode)
+_search_path(char *cmd, int access_mode)
 {
 	List         l        = _create_path_list();
 	ListIterator i        = NULL;
@@ -1859,16 +1856,13 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 	if (l == NULL)
 		return NULL;
 
-	if (  (cmd[0] == '.' || cmd[0] == '/') 
-           && (access(cmd, access_mode) == 0 ) ) {
+	if ((cmd[0] == '.' || cmd[0] == '/')
+	    && (access(cmd, access_mode) == 0 ) ) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", opt.cwd);
 		xstrcat(fullpath, cmd);
 		goto done;
 	}
-
-	if (check_current_dir) 
-		list_prepend(l, xstrdup(opt.cwd));
 
 	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
