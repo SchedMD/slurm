@@ -1,8 +1,6 @@
 /*****************************************************************************
  *  read_config.h - definitions for reading the overall slurm configuration 
  *  file
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -62,6 +60,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
+#define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAX_JOB_COUNT       2000
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"

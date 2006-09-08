@@ -172,6 +172,7 @@ int main(int argc, char *argv[])
 {
 	int error_code;
 	pthread_attr_t thread_attr_save, thread_attr_sig, thread_attr_rpc;
+	struct stat stat_buf;
 
 	/*
 	 * Establish initial configuration
@@ -200,6 +201,8 @@ int main(int argc, char *argv[])
 		fatal("Can not set uid to SlurmUser(%d): %m", 
 			slurmctld_conf.slurm_user_id);
 	}
+	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
+		error("Configured MailProg is invalid");
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE

@@ -2033,6 +2033,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
 	pack16((uint16_t)build_ptr->kill_wait, buffer);
+	packstr(build_ptr->mail_prog, buffer);
 	pack16((uint16_t)build_ptr->max_job_cnt, buffer);
 	pack16((uint16_t)build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
@@ -2117,6 +2118,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->mail_prog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
@@ -2194,6 +2196,8 @@ unpack_error:
 	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
+	xfree(build_ptr->mail_prog);
+	xfree(build_ptr->mpi_default);
 	xfree(build_ptr->plugindir);
 	xfree(build_ptr->plugstack);
 	xfree(build_ptr->proctrack_type);
