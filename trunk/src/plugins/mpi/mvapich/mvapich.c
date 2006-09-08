@@ -509,11 +509,11 @@ extern int mvapich_thr_create(srun_job_t *job)
 	 *  Set some environment variables in current env so they'll get
 	 *   passed to all remote tasks
 	 */
-	setenvf (NULL, "MPIRUN_PORT",   "%d", ntohs (port));
+	setenvf (NULL, "MPIRUN_PORT",   "%d", port);
 	setenvf (NULL, "MPIRUN_NPROCS", "%d", nprocs);
 	setenvf (NULL, "MPIRUN_ID",     "%d", job->jobid);
 
-	verbose ("mvapich-0.9.[45] master listening on port %d", ntohs (port));
+	verbose ("mvapich-0.9.[45] master listening on port %d", port);
 
 	return 0;
 }
