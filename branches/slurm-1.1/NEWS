@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
    count.
  - Sched/wiki2 to report a job's COMPETETIME and SUSPENDTIME in GETJOBS 
    response.
+ - Added support for Mellanox's version of mvapich-0.9.7.
 
 * Changes in SLURM 1.1.11
 =========================
