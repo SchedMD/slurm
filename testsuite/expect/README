@@ -363,6 +363,8 @@ test15.20  Test of contiguous option with multiple nodes (--contiguous option).
 test15.21  Test of contiguous option with multiple nodes (--contiguous option).
 test15.22  Test of partition specification on job submission (--partition  
            option).
+test15.TBD Test of environment variables that control salloc actions: 
+           SALLOC_DEBUG, ...
 
 
 test16.#   Testing of sattach options.
@@ -371,6 +373,8 @@ test16.1   Confirm sattach usage option works (--usage option).
 test16.2   Confirm sattach help option works (--help option).
 test16.3   Confirm that sattach reports a proper version number
            (--version option).
+test16.TBD Test of environment variables that control sattach actions:
+           SATTACH_DEBUG, ...
 
 
 test17.#   Testing of sbatch options.
@@ -470,5 +474,16 @@ test18.27  Confirm that a job executes with the proper task distribution
 test18.28  Confirm that a job executes with the proper node count
            (--nodes option).
 test18.TBD Verify that SLURM directed environment variables are processed:
-           SBATCH_NNODES, etc.
+           SLAUNCH_DEBUG, etc.
+**NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
+           The test will print "WARNING" and terminate with an exit code of
+           zero if the cluster configuration does not permit proper testing.
+test18.TBD Confirm that a job executes with the proper node count
+           (--nodes option).
+test18.TBD Confirm that a job executes with the specified nodes
+           (--relative, --nodelist, --exclude options).
+test18.TBD Basic MPI functionality tests.
+test18.TBD Test of CPU affinity support.
+test18.TBD Test of memory affinity support for NUMA systems.
+**NOTE**   The above tests for mutliple processor/partition systems only
 
