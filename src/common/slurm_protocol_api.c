@@ -747,7 +747,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	xassert(fd >= 0);
 
-	slurm_msg_t_init(msg);
+	if(msg->forward.init != FORWARD_INIT)
+		slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 	
 	if (timeout == 0)
