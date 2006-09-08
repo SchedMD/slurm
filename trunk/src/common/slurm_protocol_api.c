@@ -730,6 +730,7 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  *       and list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
  * IN/OUT msg	- a slurm_msg struct to be filled in by the function
+ *                we use the orig_addr from this var for forwarding. 
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
  *                forwarded the message to. List containing type (ret_types_t).
