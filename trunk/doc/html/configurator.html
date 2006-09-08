@@ -106,7 +106,6 @@ function displayfile()
    "# <br>" +
    "# SCHEDULING<br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
-   get_field("SchedulerAuth",document.config.scheduler_auth) + "<br>" +
    get_field("SchedulerPort",document.config.scheduler_port) + "<br>" +
    "#SchedulerRootFilter= <br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
@@ -298,10 +297,7 @@ FIFO with backfill<BR>
 <input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface to Maui 
 (configuration parameters SchedulerAuth and SchedulerPort must specified)<BR>
 <P>
-<input type="text" name="scheduler_auth" value=""> <B>SchedulerAuth</B>: authentication 
-token (used by Wiki only)
-<P>
-<input type="text" name="scheduler_port" value=""> <B>SchedulerPort</B>: scheduler 
+<input type="text" name="scheduler_port" value="7321"> <B>SchedulerPort</B>: scheduler 
 communcations port (used by Wiki only)
 <P>
 Define what node configuration should be used. 
