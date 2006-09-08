@@ -559,6 +559,7 @@ static int _cr_dist(struct select_cr_job *job)
 		struct node_cr_record *this_cr_node;
 		int alloc_sockets = 0;
 		int alloc_lps     = 0;
+		int avail_cpus    = 0;
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
@@ -576,17 +577,21 @@ static int _cr_dist(struct select_cr_job *job)
 					 this_cr_node,  &alloc_sockets, 
 					 &alloc_lps);
 
-/* 		int avail_cpus = slurm_get_avail_procs(job->max_sockets,  */
-/* 						       job->max_cores,  */
-/* 						       job->max_threads,   */
-/* 						       job->cpus_per_task, */
-/* 						       &usable_cpus,  */
-/* 						       &usable_sockets,  */
-/* 						       &usable_cores, */
-/* 						       &usable_threads, */
-/* 						       alloc_sockets, */
-/* 						       alloc_lps, */
-/* 						       cr_type); */
+		avail_cpus = slurm_get_avail_procs(job->max_sockets,
+						       job->max_cores,
+						       job->max_threads,
+						       job->cpus_per_task,
+						       &usable_cpus,
+						       &usable_sockets,
+						       &usable_cores,
+						       &usable_threads,
+						       alloc_sockets,
+						       alloc_lps,
+						       cr_type);
+		if (avail_cpus == 0) {
+			error(" cons_res: no available cpus on node %s", 
+			      node_record_table_ptr[host_index].name);
+		}
 
 		maxtasks = job->alloc_lps[job_index];
 		last_socket_index = -1;	
@@ -697,6 +702,7 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 		struct node_cr_record *this_cr_node = NULL;
 		int alloc_sockets = 0;
 		int alloc_lps     = 0;
+		int avail_cpus    = 0;
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
@@ -714,17 +720,21 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 					 this_cr_node,  &alloc_sockets, 
 					 &alloc_lps);
 		
-/* 		int avail_cpus = slurm_get_avail_procs(job->max_sockets,  */
-/* 						       job->max_cores,  */
-/* 						       job->max_threads,   */
-/* 						       job->cpus_per_task, */
-/* 						       &usable_cpus,  */
-/* 						       &usable_sockets,  */
-/* 						       &usable_cores, */
-/* 						       &usable_threads, */
-/* 						       alloc_sockets, */
-/* 						       alloc_lps, */
-/* 						       cr_type); */
+		avail_cpus = slurm_get_avail_procs(job->max_sockets,
+						       job->max_cores,
+						       job->max_threads,
+						       job->cpus_per_task,
+						       &usable_cpus,
+						       &usable_sockets,
+						       &usable_cores,
+						       &usable_threads,
+						       alloc_sockets,
+						       alloc_lps,
+						       cr_type);
+		if (avail_cpus == 0) {
+			error(" cons_res: no available cpus on node %s", 
+			      node_record_table_ptr[host_index].name);
+		}
 
 		maxtasks = job->alloc_lps[job_index];
 		last_socket_index = -1;
