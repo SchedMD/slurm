@@ -1164,6 +1164,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_SLURM_RC:
 		slurm_free_return_code_msg(data);
 		break;
+	case RESPONSE_FORWARD_FAILED:
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break; 
@@ -1190,6 +1192,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *)data)->return_code;
+		break;
+	case RESPONSE_FORWARD_FAILED:
+		rc = SLURM_ERROR;
 		break;
 	default:
 		error("don't know the rc for type %u returning %u", type, rc);

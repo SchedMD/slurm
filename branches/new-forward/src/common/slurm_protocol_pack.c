@@ -326,14 +326,8 @@ pack_header(header_t * header, Buf buffer)
 	pack32((uint32_t)header->body_length, buffer);
 	pack16((uint16_t)header->forward.cnt, buffer);
 	if (header->forward.cnt > 0) {
-		_pack_slurm_addr_array(header->forward.addr,
-				       header->forward.cnt, buffer);
-		packmem(header->forward.name, 
-			(header->forward.cnt * MAX_SLURM_NAME), 
-			buffer);
-		pack32_array(header->forward.node_id, 
-			     header->forward.cnt, 
-			     buffer);
+		packstr(header->forward.nodelist, buffer);
+		pack32((uint32_t)header->forward.first_node_id, buffer);
 		pack32((uint32_t)header->forward.timeout, buffer);
 	}
 	pack16((uint16_t)header->ret_cnt, buffer);	
@@ -356,7 +350,6 @@ int
 unpack_header(header_t * header, Buf buffer)
 {
 	uint16_t uint16_tmp = 0;
-	uint32_t uint32_tmp = 0;
 
 	forward_init(&header->forward, NULL);
 	header->ret_list = NULL;
@@ -366,22 +359,10 @@ unpack_header(header_t * header, Buf buffer)
 	header->msg_type = (slurm_msg_type_t) uint16_tmp;
 	safe_unpack32(&header->body_length, buffer);
 	safe_unpack16(&header->forward.cnt, buffer);
-	if (header->forward.cnt > 0) {
-		if(_unpack_slurm_addr_array(&(header->forward.addr),
-					    &uint16_tmp, buffer))
-			goto unpack_error;
-		if(uint16_tmp != header->forward.cnt)
-			goto unpack_error;
-		safe_unpackmem_xmalloc(&(header->forward.name), 
-				       &uint16_tmp, 
-				       buffer);
-		
-		safe_unpack32_array(&(header->forward.node_id), 
-				    &uint32_tmp,
-				    buffer);
-		if(uint32_tmp != (uint32_t)header->forward.cnt) {
-			goto unpack_error;
-		}
+	if (header->forward.cnt > 0) {		
+		safe_unpackstr_xmalloc(&header->forward.nodelist, 
+				       &uint16_tmp, buffer);
+		safe_unpack32(&header->forward.first_node_id, buffer);
 		safe_unpack32(&header->forward.timeout, buffer);
 	} 
 	
@@ -3265,33 +3246,21 @@ static void
 _pack_ret_list(List ret_list,
 	       uint16_t size_val, Buf buffer)
 {
-	uint16_t i = 0;
 	ListIterator itr;
-	ListIterator itr_data;
-	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
 
 	
 	itr = list_iterator_create(ret_list);		
-	while((ret_type = list_next(itr)) != NULL) {
-		pack32((uint32_t)ret_type->msg_rc, buffer);
-		pack32((uint32_t)ret_type->err, buffer);
-		pack16((uint16_t)ret_type->type, buffer);
+	while((ret_data_info = list_next(itr))) {
+		pack32((uint32_t)ret_data_info->err, buffer);
+		pack16((uint16_t)ret_data_info->type, buffer);
+		packstr(ret_data_info->node_name, buffer);
+		pack32((uint32_t)ret_data_info->nodeid, buffer);
 		
-		msg.msg_type = ret_type->type;
-
-		i = list_count(ret_type->ret_data_list);
-		pack16((uint16_t)i, buffer);
-		itr_data = list_iterator_create(ret_type->ret_data_list);
-		while((ret_data_info = list_next(itr_data)) != NULL) {
-			packstr(ret_data_info->node_name, buffer);
-			slurm_pack_slurm_addr(&ret_data_info->addr, buffer);
-			pack32((uint32_t)ret_data_info->nodeid, buffer);
-			msg.data = ret_data_info->data;
-			pack_msg(&msg, buffer);
-		} 
-		list_iterator_destroy(itr_data);		
+		msg.msg_type = ret_data_info->type;
+		msg.data = ret_data_info->data;
+		pack_msg(&msg, buffer);
 	}
 	list_iterator_destroy(itr);
 }
@@ -3302,48 +3271,32 @@ _unpack_ret_list(List *ret_list,
 {
 	int i = 0, j = 0;
 	uint16_t nl = 0, uint16_tmp;
-	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
-	*ret_list = list_create(destroy_ret_types);
+	*ret_list = list_create(destroy_data_info);
 	
 	for (i=0; i<size_val; i++) {
-		ret_type = xmalloc(sizeof(ret_types_t));
-		list_push(*ret_list, ret_type);
-		safe_unpack32((uint32_t *)&ret_type->msg_rc, buffer);
-		safe_unpack32((uint32_t *)&ret_type->err, buffer);
-		safe_unpack16((uint16_t *)&ret_type->type, buffer);
+		ret_data_info = xmalloc(sizeof(ret_data_info_t));
+		list_push(*ret_list, ret_data_info);
 		
-		msg.msg_type = ret_type->type;
-			
-		safe_unpack16(&nl, buffer);
-		ret_type->ret_data_list = list_create(destroy_data_info);
-		for(j=0; j<nl; j++) {
-			ret_data_info = xmalloc(sizeof(ret_data_info_t));
-			safe_unpackstr_xmalloc(&ret_data_info->node_name, 
-					       &uint16_tmp, buffer);
-			slurm_unpack_slurm_addr_no_alloc(&ret_data_info->addr,
-							 buffer);
-			safe_unpack32((uint32_t *)&ret_data_info->nodeid, 
-				      buffer);
-			if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
-				goto unpack_error;
-			ret_data_info->data = msg.data;
-			list_push(ret_type->ret_data_list, ret_data_info);
-			ret_data_info = NULL;
-		}
+		safe_unpack32((uint32_t *)&ret_data_info->err, buffer);
+		safe_unpack16((uint16_t *)&ret_data_info->type, buffer);
+		safe_unpackstr_xmalloc(&ret_data_info->node_name, 
+				       &uint16_tmp, buffer);
+		safe_unpack32((uint32_t *)&ret_data_info->nodeid, 
+			      buffer);
+		msg.msg_type = ret_data_info->type;
+		if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		ret_data_info->data = msg.data;
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if (ret_type && ret_type->type) {
+	if (ret_data_info && ret_data_info->type) {
 		error("_unpack_ret_list: message type %u, record %d of %u", 
-		      ret_type->type, j, nl);
-	}
-	if (ret_data_info) {
-		/* failed unpacking data, free without putting on ret_list */
-		xfree(ret_data_info->node_name);
-		xfree(ret_data_info);
+		      ret_data_info->type, j, nl);
 	}
 	list_destroy(*ret_list);
 	*ret_list = NULL;

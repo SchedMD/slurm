@@ -189,7 +189,9 @@ typedef enum {
 	PMI_KVS_GET_REQ,
 	PMI_KVS_GET_RESP,
 
-	RESPONSE_SLURM_RC = 8001
+	RESPONSE_SLURM_RC = 8001,
+
+	RESPONSE_FORWARD_FAILED = 9001
 } slurm_msg_type_t;
 
 typedef enum {
@@ -200,17 +202,15 @@ typedef enum {
  * core api configuration struct 
 \*****************************************************************************/
 typedef struct forward {
-	slurm_addr *addr;	  /* array of network addresses */
-	 /* "name" must be a string of length (cnt * MAX_SLURM_NAME), with
-	  *  NodeName strings for each node available at regular offsets
-	  *  of MAX_SLURM_NAME characters into the string.
-	  *  FIXME - This is ugly, and scales poorly - CJM.
-	  */
-	char       *name;
-	uint32_t  *node_id;       /* ARRAY of node ids (relative to job) */
-	/* Or not, forwarding used to talk to non-job and non-jobstep sets of
-           nodes, so what are the node_ids supposed to be then?!? - CJM */
-	uint16_t   cnt;           /* number of addresses to forward */
+	char      *nodelist; /*ranged string of who to forward the
+			       message to */
+	uint32_t  first_node_id;  /* if sending multiple treads this
+				   * is the first node_id in the
+				   * global sense.  (i.e. if you are
+				   * sending 50 nodes and this forward
+				   * have nodes 40-50 first_node_id
+				   * would be 40 */
+	uint16_t   cnt;           /* number of nodes to forward to */
 	uint32_t   timeout;       /* original timeout increments */
 	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
 } forward_t;
@@ -232,12 +232,10 @@ typedef struct forward_message {
 	header_t header;
 	char *buf;
 	int buf_len;
-	slurm_addr addr;
 	int timeout;
 	List ret_list;
 	pthread_mutex_t *forward_mutex;
 	pthread_cond_t *notify;
-	char node_name[MAX_SLURM_NAME];
 } forward_msg_t;
 
 typedef struct forward_struct {
@@ -274,19 +272,13 @@ typedef struct slurm_msg {
 } slurm_msg_t;
 
 typedef struct ret_data_info {
+	slurm_msg_type_t type; /* message type */
+	uint32_t err;
 	char *node_name;
-	slurm_addr addr;       
 	uint32_t nodeid;
 	void *data; /* used to hold the return message data (i.e. 
 		       return_code_msg_t */
 } ret_data_info_t;
-
-typedef struct ret_types {
-	uint32_t msg_rc; /* message return code */
-	uint32_t err;
-	slurm_msg_type_t type; /* message type */
-	List ret_data_list; /* list of ret_data_info_t pointers */
-} ret_types_t;
 
 /*****************************************************************************\
  * Slurm Protocol Data Structures

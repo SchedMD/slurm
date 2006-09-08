@@ -217,70 +217,34 @@ static void * _p_signal_task(void *args)
 	char        *tmpchar = NULL;
 	List ret_list = NULL;
 	ListIterator itr;
-	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
-	List tmp_ret_list = NULL;
-	forward_msg_t fwd_msg;
-
-send_rc_again:
+	
 	debug3("sending signal to host %s", host);
 	
 	if ((ret_list = slurm_send_recv_rc_msg(req, 0)) == NULL) { 
-		errno = SLURM_SOCKET_ERROR;
 		error("%s: signal: %m", host);
-		if(!tmp_ret_list)
-			tmp_ret_list = list_create(destroy_ret_types);
-		
-		fwd_msg.header.srun_node_id = req->srun_node_id;
-		fwd_msg.header.forward = req->forward;
-		fwd_msg.ret_list = tmp_ret_list;
-		strncpy(fwd_msg.node_name, host, MAX_SLURM_NAME);
-		fwd_msg.forward_mutex = NULL;
-		if(forward_msg_to_next(&fwd_msg, errno)) {
-			req->address = fwd_msg.addr;
-			req->forward = fwd_msg.header.forward;
-			req->srun_node_id = fwd_msg.header.srun_node_id;
-			xfree(tmpchar);
-			tmpchar = xstrdup(fwd_msg.node_name);
-			host = tmpchar;
-			goto send_rc_again;
-		}
+		mark_as_failed_forward(&ret_list, host, 
+				       req->srun_node_id, 
+				       errno);
 	}
-	if(tmp_ret_list) {
-		if(!ret_list)
-			ret_list = tmp_ret_list;
-		else {
-			while((ret_type  = list_pop(tmp_ret_list))) 
-				list_push(ret_list, ret_type);
-			list_destroy(tmp_ret_list);
-		}
-	}
+	
 	xfree(tmpchar);
 	if(!ret_list)
 		goto done;
 	itr = list_iterator_create(ret_list);		
-	while((ret_type = list_next(itr)) != NULL) {
-		rc = ret_type->msg_rc;
-		
+	while((ret_data_info = list_next(itr))) {
+		rc = slurm_get_return_code(ret_data_info->type, 
+					   ret_data_info->data);
 		/*
 		 *  Report error unless it is "Invalid job id" which 
 		 *    probably just means the tasks exited in the meanwhile.
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
 		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			if(ret_type->ret_data_list) {
-				while((ret_data_info 
-				      = list_pop(ret_type->ret_data_list))) {
-					error("%s: signal: %s", 
-					      ret_data_info->node_name, 
-					      slurm_strerror(rc));
-					destroy_data_info(ret_data_info);
-				}
-			} else {
-				error("%s: signal: %s", 
-				      host, 
-				      slurm_strerror(rc));
-			}
+			error("%s: signal: %s", 
+			      ret_data_info->node_name, 
+			      slurm_strerror(rc));
+			destroy_data_info(ret_data_info);
 		}
 	}
 	list_iterator_destroy(itr);

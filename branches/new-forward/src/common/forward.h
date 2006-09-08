@@ -106,6 +106,17 @@ extern int forward_msg(forward_struct_t *forward_struct,
 extern int forward_msg_to_next(forward_msg_t *fwd_msg, int err);
 
 /*
+ * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
+ *
+ * IN: ret_list       - List *   - ret_list to put ret_data_info
+ * IN: node_name      - char *   - node name that failed
+ * IN: node_id        - int      - node id that failed
+ * IN: err            - int      - error message from attempt
+ *
+ */
+extern void mark_as_failed_forward(List *ret_list, char *node_name, 
+				   int node_id, int err); 
+/*
  * forward_set     - divide a mesage up into components for forwarding
  * IN: forward     - forward_t *   - struct to store forward info
  * IN: span        - int           - count of forwards to do

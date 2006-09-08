@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -732,7 +732,8 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type (ret_types_t).
+ *                forwarded the message to. List containing type
+ *                (ret_data_info_t).
  */
 List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 {
@@ -742,8 +743,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	int rc;
 	void *auth_cred = NULL;
 	Buf buffer;
-	ret_types_t *ret_type = NULL;
-	List ret_list = list_create(destroy_ret_types);
+	ret_data_info_t *ret_data_info = NULL;
+	List ret_list = list_create(destroy_data_info);
 
 	xassert(fd >= 0);
 
@@ -794,8 +795,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	}
 	//info("ret_cnt = %d",header.ret_cnt);
 	if(header.ret_cnt > 0) {
-		while((ret_type = list_pop(header.ret_list)) != NULL)
-			list_push(ret_list, ret_type);
+		while((ret_data_info = list_pop(header.ret_list)))
+			list_push(ret_list, ret_data_info);
 		header.ret_cnt = 0;
 		list_destroy(header.ret_list);
 		header.ret_list = NULL;
@@ -1413,13 +1414,14 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
  * with a list containing the responses of the children (if any) we 
- * forwarded the message to. List containing type (ret_types_t).
+ * forwarded the message to. List containing type (ret_data_info_t).
  * IN open_fd	- file descriptor to receive msg on
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type (ret_types_t).
+ *                forwarded the message to. List containing type
+ *                (ret_data_info_t). 
  */
 static List 
 _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, 
@@ -1548,7 +1550,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
  * OUT response_msg	- slurm_msg response
  * IN timeout	        - how long to wait in milliseconds
  * RET List		- return list from multiple nodes
- *                        List containing type (ret_types_t).
+ *                        List containing type (ret_data_info_t).
  */
 List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
@@ -1631,7 +1633,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 
 /*
  *  Send message and recv "return code" message on an already open
- *  slurm file descriptor return List containing type (ret_types_t).
+ *  slurm file descriptor return List containing type (ret_data_info_t).
  * IN fd	- file descriptor to receive msg on
  * IN req	- slurm_msg request
  * IN timeout   - how long to wait in milliseconds
@@ -1640,11 +1642,8 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 {
 	slurm_msg_t	msg;
 	List ret_list = NULL;
-	ListIterator itr = NULL;
-	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int msg_rc;
-	int set = 0;
 	int err;
 	//info("here 1");
 	
@@ -1652,7 +1651,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	err = errno;	
 
 	if(!msg.auth_cred) {
-		msg.msg_type = REQUEST_PING;
+		msg.msg_type = RESPONSE_FORWARD_FAILED;
 		msg_rc = SLURM_ERROR;	
 	} else {
 		msg_rc = ((return_code_msg_t *)msg.data)->return_code;
@@ -1661,7 +1660,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	}
 	
 	if(!ret_list) {
-		return ret_list;
+		ret_list = list_create(destroy_data_info);
 	} 
 	
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
@@ -1671,36 +1670,21 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	       ret_data_info->node_name, 
 	       msg_rc, 
 	       err);
-	
-	itr = list_iterator_create(ret_list);		
-	while((ret_type = list_next(itr)) != NULL) {
-		if(ret_type->msg_rc == msg_rc) {
-			list_push(ret_type->ret_data_list, ret_data_info);
-			set = 1;
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	if(!set) {
-		ret_type = xmalloc(sizeof(ret_types_t));
-		list_push(ret_list, ret_type);
-		ret_type->type = msg.msg_type;
-		ret_type->msg_rc = msg_rc;
-		ret_type->err = err;
-		ret_type->ret_data_list = list_create(destroy_data_info);
-		list_push(ret_type->ret_data_list, ret_data_info);
-	}
+
+	list_push(ret_list, ret_data_info);
+			
 	return ret_list;
 }
 
 /*
  *  Open a connection to req->address, send message (forward if told), 
  *  req must contain the message already packed in it's buffer variable,
- *  and receive List of type ret_types_t from all childern nodes
+ *  and receive List of type ret_data_info_t from all childern nodes
  * IN msg	- a slurm_msg struct to be sent by the function
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type (ret_types_t).
+ *                forwarded the message to. List containing type
+ *                (ret_data_info_t). 
  */
 List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 {
@@ -1709,11 +1693,8 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 	int steps = 0;
 	slurm_msg_t resp;
 	List ret_list = NULL;
-	ListIterator itr;
-	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int msg_rc;
-	int set = 0;
 	int retry = 0;
 
 	if(!msg->buffer) {
@@ -1768,37 +1749,20 @@ failed:
 	ret_data_info->node_name = NULL;
 	ret_data_info->data = NULL;
 	ret_data_info->nodeid = msg->srun_node_id;
+	list_push(ret_list, ret_data_info);
 		
-	itr = list_iterator_create(ret_list);		
-	while((ret_type = list_next(itr)) != NULL) {
-		if(ret_type->msg_rc == msg_rc) {
-			list_push(ret_type->ret_data_list, ret_data_info);
-			set = 1;
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	if(!set) {
-		ret_type = xmalloc(sizeof(ret_types_t));
-		list_push(ret_list, ret_type);
-		ret_type->type = resp.msg_type;
-		ret_type->msg_rc = msg_rc;
-		ret_type->err = err;
-		ret_type->ret_data_list = list_create(destroy_data_info);
-		list_push(ret_type->ret_data_list, ret_data_info);
-	}
-	
 	return ret_list; 
 }
 
 /*
  *  Open a connection to the "address" specified in the the slurm msg "req"
  *    Then read back an "rc" message returning List containing 
- *    type (ret_types_t).
+ *    type (ret_data_info_t).
  * IN req	- a slurm_msg struct to be sent by the function
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type (ret_types_t).
+ *                forwarded the message to. List containing type
+ *                (ret_data_info_t). 
  */
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 {
@@ -1810,6 +1774,78 @@ List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 	}
 	return _send_recv_rc_msg(fd, req, timeout);
 }
+
+/*
+ *  Send a message to the nodelist specificed using fanout
+ *    Then read back an "rc" message returning List containing 
+ *    type (ret_data_info_t).
+ * IN nodelist	    - list of nodes to send to.
+ * IN msg           - a slurm_msg struct to be sent by the function
+ * IN first_node_id - a slurm_msg struct to be sent by the function
+ * IN timeout	    - how long to wait in milliseconds
+ * RET List	    - List containing the responses of the childern
+ *                    (if any) we forwarded the message to. List
+ *                    containing type (ret_data_info_t).
+ */
+List slurm_send_recv_rc_msg2(const char *nodelist, slurm_msg_t *msg, 
+			     int first_node_id, int timeout)
+{
+	List ret_list = NULL;
+	List tmp_ret_list = NULL;
+	slurm_fd fd = -1;
+	char *name = NULL;
+	char buf[8192];
+	hostlist_t hl = hostlist_create(nodelist);
+	ret_data_info_t *ret_data_info = NULL;
+	
+	while((name = hostlist_pop(hl))) {
+		info("sending to %s", name);
+		slurm_conf_get_addr(name, &msg->address);
+		
+		if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
+			mark_as_failed_forward(&tmp_ret_list, name, 
+					       first_node_id, 
+					       SLURM_SOCKET_ERROR);
+			first_node_id++;
+			free(name);
+			continue;
+		}
+
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+
+		forward_init(&msg->forward, NULL);
+		msg->forward.nodelist = xstrdup(buf);
+		info("forwarding to %s", msg->forward.nodelist);
+		msg->forward.first_node_id = first_node_id+1;
+		msg->forward.timeout = timeout;
+		msg->forward.cnt = hostlist_count(hl);
+		
+		if(!(ret_list = _send_recv_rc_msg(fd, msg, timeout))) {	
+			xfree(msg->forward.nodelist);
+			mark_as_failed_forward(&tmp_ret_list, name, 
+					       first_node_id, errno);
+			first_node_id++;
+			free(name);
+			continue;
+		} 
+		free(name);
+		break;		
+	}
+	hostlist_destroy(hl);
+
+	if(tmp_ret_list) {
+		if(!ret_list)
+			ret_list = tmp_ret_list;
+		else {
+			while((ret_data_info = list_pop(tmp_ret_list))) 
+				list_push(ret_list, ret_data_info);
+			list_destroy(tmp_ret_list);
+		}
+	} 
+	return ret_list;
+}
+
+
 /*
  *  Open a connection to the "address" specified in the the slurm msg "req"
  *    Then read back an "rc" message returning the "return_code" specified
@@ -1823,8 +1859,8 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 {
 	slurm_fd fd = -1;
 	List ret_list = NULL;
-	ret_types_t *ret_type = NULL;
 	int ret_c = 0;
+	ret_data_info_t *ret_data_info = NULL;
 
 	/* Just in case the caller didn't initialize his slurm_msg_t, and
 	 * since we KNOW that we are only sending to one node,
@@ -1844,15 +1880,16 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 			error("Got %d, expecting 1 from message receiving",
 			      list_count(ret_list));
 
-		ret_type = list_pop(ret_list);
+		ret_data_info = list_pop(ret_list);
 	
-		if(ret_type) {
-			*rc = ret_type->msg_rc;
+		if(ret_data_info) {
+			*rc = slurm_get_return_code(ret_data_info->type, 
+						    ret_data_info->data);
 			// make sure we only send 0 or -1 for an error
-			if(ret_type->err != 0) 
+			if(ret_data_info->err != 0) 
 				//ret_c = ret_type->err;
 				ret_c = -1;
-			destroy_ret_types(ret_type);
+			destroy_data_info(ret_data_info);
 		}
 		list_destroy(ret_list);
 	} else 
@@ -1867,8 +1904,8 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 {
 	slurm_fd fd = -1;
 	List ret_list = NULL;
-	ret_types_t *ret_type = NULL;
-	int ret_val = 0;
+	int ret_c = 0;
+	ret_data_info_t *ret_data_info = NULL;
 
 	/* Just in case the caller didn't initialize his slurm_msg_t, and
 	 * since we KNOW that we are only sending to one node (the controller),
@@ -1886,20 +1923,21 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 		if(list_count(ret_list)>1)
 			error("controller_rc_msg: Got %d instead of 1 back",
 			      list_count(ret_list));
-		ret_type = list_pop(ret_list);
-		
-		if(ret_type) {
-			*rc = ret_type->msg_rc;
+		ret_data_info = list_pop(ret_list);
+	
+		if(ret_data_info) {
+			*rc = slurm_get_return_code(ret_data_info->type, 
+						    ret_data_info->data);
 			// make sure we only send 0 or -1 for an error
-			if(ret_type->err != 0) 
+			if(ret_data_info->err != 0) 
 				//ret_c = ret_type->err;
-				ret_val = -1;
-			destroy_ret_types(ret_type);
+				ret_c = -1;
+			destroy_data_info(ret_data_info);
 		}
 		list_destroy(ret_list);
 	} else 
-		ret_val = -1;
-	return ret_val;
+		ret_c = -1;
+	return ret_c;
 }
 
 /* this is used to set how many nodes are going to be on each branch
