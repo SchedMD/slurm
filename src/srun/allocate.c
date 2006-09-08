@@ -167,7 +167,7 @@ existing_allocation(void)
         if ((old_job_id = jobid_from_env()) == 0)
                 return NULL;
 
-        if (slurm_allocation_lookup(old_job_id, &resp) < 0) {
+        if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
                 if (opt.parallel_debug || opt.jobid_set)
                         return NULL;    /* create new allocation as needed */
                 if (errno == ESLURM_ALREADY_DONE)
