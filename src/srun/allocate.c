@@ -114,7 +114,7 @@ allocate_nodes(void)
 
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
-	if (getenv("SLURM_JOBID") != NULL) {
+	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
 		info("WARNING: Creating SLURM job allocation from within "
 			"another allocation");
 		info("WARNING: You are attempting to initiate a second job");
@@ -156,6 +156,31 @@ allocate_nodes(void)
 	job_desc_msg_destroy(j);
 
 	return resp;
+}
+
+resource_allocation_response_msg_t *
+existing_allocation(void)
+{
+	uint32_t old_job_id;
+        resource_allocation_response_msg_t *resp = NULL;
+
+        if ((old_job_id = jobid_from_env()) == 0)
+                return NULL;
+
+        if (slurm_allocation_lookup(old_job_id, &resp) < 0) {
+                if (opt.parallel_debug || opt.jobid_set)
+                        return NULL;    /* create new allocation as needed */
+                if (errno == ESLURM_ALREADY_DONE)
+                        error ("SLURM job %u has expired.", old_job_id);
+                else
+                        error ("Unable to confirm allocation for job %u: %m",
+                              old_job_id);
+                info ("Check SLURM_JOBID environment variable "
+                      "for expired or invalid job.");
+                exit(1);
+        }
+
+        return resp;
 }
 
 /* 

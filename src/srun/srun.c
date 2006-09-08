@@ -238,7 +238,8 @@ int srun(int ac, char **av)
 		xfree(env);
 		exit (exitcode);
 
-	} else if ((job_id = jobid_from_env())) {
+	} else if ((resp = existing_allocation())) {
+		slurm_free_resource_allocation_response_msg(resp);
 		if (opt.allocate) {
 			error("job %u already has an allocation",
 			      job_id);
