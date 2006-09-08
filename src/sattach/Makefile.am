@@ -6,7 +6,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sattach
 
-sattach_SOURCES = sattach.c opt.h opt.c
+sattach_SOURCES = sattach.c opt.h opt.c attach.h attach.c
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
