@@ -1501,7 +1501,6 @@ done:
 	debug2("node %s (id %u) sending rc = %d", conf->node_name, nodeid, rc);
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
-	//slurm_send_only_node_msg(&resp_msg);
 	slurm_free_reattach_tasks_response_msg(resp);
 }
 

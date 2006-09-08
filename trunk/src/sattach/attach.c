@@ -42,7 +42,7 @@
 
 #include "src/common/log.h"
 
-#include "src/srun/attach.h"
+#include "src/sattach/attach.h"
 
 /*
  *  Instantiate extern variables from attach.h

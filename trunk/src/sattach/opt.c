@@ -73,7 +73,8 @@
 #include "src/common/mpi.h"
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_INFO_ONLY 0x100
+#define LONG_OPT_LAYOUT_ONLY   0x100
+#define LONG_OPT_DEBUGGER_TEST 0x101
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -180,7 +181,8 @@ static void _opt_default()
 	opt.labelio = false;
 	opt.ctrl_comm_ifhn  = xshort_hostname();
 	memcpy(&opt.fds, &fds, sizeof(fds));
-	opt.info_only = false;
+	opt.layout_only = false;
+	opt.debugger_test = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -250,7 +252,8 @@ void set_options(const int argc, char **argv)
 		{"usage",       no_argument,   0, 'u'},
 		{"verbose",     no_argument,   0, 'v'},
 		{"version",     no_argument,   0, 'V'},
-		{"info",        no_argument,   0, LONG_OPT_INFO_ONLY},
+		{"layout",      no_argument,   0, LONG_OPT_LAYOUT_ONLY},
+		{"debugger-test",no_argument,  0, LONG_OPT_DEBUGGER_TEST},
 		{NULL}
 	};
 	char *opt_string = "+hlquvV";
@@ -285,8 +288,11 @@ void set_options(const int argc, char **argv)
 			_print_version();
 			exit(0);
 			break;
-		case LONG_OPT_INFO_ONLY:
-			opt.info_only = true;
+		case LONG_OPT_LAYOUT_ONLY:
+			opt.layout_only = true;
+			break;
+		case LONG_OPT_DEBUGGER_TEST:
+			opt.debugger_test = true;
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -400,21 +406,14 @@ static void _usage(void)
 
 static void _help(void)
 {
-        printf("Usage: sattach <jobid.stepid>\n");
+        printf("Usage: sattach [options] <jobid.stepid>\n");
 	printf(
-"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -h, --help         print this help message\n"
+"  -l, --label        prepend task number to lines of stdout & stderr\n"
+"      --layout       print task layout info and exit (does not attach to tasks)\n"
+"  -q, --quiet        quiet mode (suppress informational messages)\n"
+"  -u, --usage        print a brief usage message\n"
+"  -v, --verbose      verbose mode (multiple -v's increase verbosity)\n"
+"  -V, --version      print the SLURM version and exit\n"
 		);
-	printf("\n");
-
-	printf(
-"Help options:\n"
-"  -h, --help                  show this help message\n"
-"  -u, --usage                 display brief usage message\n"
-"\n"
-"Other options:\n"
-"  -V, --version               output version information and exit\n"
-"\n"
-);
-
 }
