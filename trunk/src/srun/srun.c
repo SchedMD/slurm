@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  srun.c - user interface to allocate resources, submit jobs, and execute 
  *	parallel jobs.
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -239,6 +238,7 @@ int srun(int ac, char **av)
 		exit (exitcode);
 
 	} else if ((resp = existing_allocation())) {
+		job_id = resp->job_id;
 		slurm_free_resource_allocation_response_msg(resp);
 		if (opt.allocate) {
 			error("job %u already has an allocation",
