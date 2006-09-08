@@ -108,10 +108,6 @@ if {[string compare $host ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname\n"
 	exit 1	
 }
-if {$cpus_per_node != $cpu_count} {
-	send_user "FAILURE: should have run $cpus_per_node tasks (one per CPU) instead of $cpu_count tasks\n"
-	exit 1
-}
 if {$cpu_count < 2} {
 	send_user "\nWARNING: The node only has one CPU\n"
 	exit $exit_code
@@ -151,7 +147,6 @@ if {$read_cpus != [expr $cpu_count / 2]} {
 	send_user "\nFAILURE: Improper task count for given cpus-per-task\n"
 	set exit_code   1	
 }
-
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
