@@ -373,8 +373,11 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 	char tmp[7];
 	if (sinfo_data) {
+#ifdef HAVE_BG		
 		convert_num_unit((float)sinfo_data->nodes_tot, tmp, UNIT_NONE);
-	
+#else
+		sprintf(tmp, "%d", sinfo_data->nodes_tot);
+#endif
 		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
 		_print_str(id, width, right_justify, true);
 	} else
@@ -392,11 +395,15 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 	char tmpa[7];
 	char tmpi[7];
 	if (sinfo_data) {
+#ifdef HAVE_BG		
 		convert_num_unit((float)sinfo_data->nodes_alloc, 
 				 tmpa, UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_idle, 
 				 tmpi, UNIT_NONE);
-	
+#else
+		sprintf(tmpa, "%d", sinfo_data->nodes_alloc);
+		sprintf(tmpi, "%d", sinfo_data->nodes_idle);
+#endif
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s", 
 		         tmpa, tmpi);
 		_print_str(id, width, right_justify, true);
@@ -417,6 +424,7 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[7];
 	char tmpt[7];
 	if (sinfo_data) {
+#ifdef HAVE_BG		
 		convert_num_unit((float)sinfo_data->nodes_alloc, 
 				 tmpa, UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_idle, 
@@ -425,6 +433,13 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 				 tmpo, UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_tot,
 				 tmpt, UNIT_NONE);
+#else
+		sprintf(tmpa, "%d", sinfo_data->nodes_alloc);
+		sprintf(tmpi, "%d", sinfo_data->nodes_idle);
+		sprintf(tmpo, "%d", sinfo_data->nodes_other);
+		sprintf(tmpt, "%d", sinfo_data->nodes_tot);
+#endif
+
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s", 
 		         tmpa, tmpi, tmpo, tmpt);
 		_print_str(id, width, right_justify, true);

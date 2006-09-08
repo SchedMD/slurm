@@ -100,6 +100,20 @@ int mpi_p_init (slurmd_job_t *job, int rank)
 	
 	setenvf (&job->env, "MPIRUN_PROCESSES", "%s", processes);
 
+	/* 
+	 * Some mvapich versions will ignore MPIRUN_PROCESSES If
+	 *  the following env var is set.
+	 */
+	setenvf (&job->env, "NOT_USE_TOTALVIEW", "1");
+
+	/*
+	 * Set VIADEV_ENABLE_AFFINITY=0 so that mvapich doesn't 
+	 *  override SLURM's CPU affinity. (Unless this var is
+	 *  already set in user env)
+	 */
+	if (!getenvp (job->env, "VIADEV_ENABLE_AFFINITY"))
+		setenvf (&job->env, "VIADEV_ENABLE_AFFINITY", "0");
+
 	return SLURM_SUCCESS;
 }
 

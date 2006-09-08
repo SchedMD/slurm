@@ -1,6 +1,7 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+<<<<<<< .working
 * Changes in SLURM 1.2.0-pre3
 =============================
  -- Remove configuration parameter ShedulerAuth (defunct).
@@ -43,18 +44,21 @@ documents those changes that are of interest to users and admins.
  -- Added support for OSX build.
 
 * Changes in SLURM 1.1.13
-=========================
- - fixed some timeout issues in the controller hopefully stopping all the 
-   issues with excessive timeouts.
- - unit conversion (i.e. 1024 => 1k) only happens on bgl systems.
- - Sched/wiki2 to report a job's COMPETETIME and SUSPENDTIME in GETJOBS 
-   response.
-
+=======
 * Changes in SLURM 1.1.12
+>>>>>>> .merge-right.r9238
 =========================
- - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS request.
+ - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS
+    request.
  - Add srun option "--comment" (maps to job account until slurm v1.2, 
    needed for Moab scheduler functionality).
+ - fixed some timeout issues in the controller hopefully stopping all the 
+   issues with excessive timeouts.
+ - unit conversion (i.e. 1024 => 1k) only happens on bgl systems for node 
+   count.
+ - Sched/wiki2 to report a job's COMPETETIME and SUSPENDTIME in GETJOBS 
+   response.
+ - Added support for Mellanox's version of mvapich-0.9.7.
 
 * Changes in SLURM 1.1.11
 =========================

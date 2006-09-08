@@ -238,19 +238,21 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, UNIT_NONE);
-	convert_num_unit((float)job_ptr->num_nodes, tmp3, UNIT_NONE);
 #ifdef HAVE_BG
-	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp3);
+	convert_num_unit((float)job_ptr->num_nodes, tmp2, UNIT_NONE);
+	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
 #else
-	sprintf(tmp_line, "ReqProcs=%s MinNodes=%s ", tmp1, tmp3);
+	sprintf(tmp2, "%d", job_ptr->num_nodes);
+	sprintf(tmp_line, "ReqProcs=%s MinNodes=%s ", tmp1, tmp2);
 #endif
 	xstrcat(out, tmp_line);
-	convert_num_unit((float)job_ptr->shared, tmp1, UNIT_NONE);
-	convert_num_unit((float)job_ptr->contiguous, tmp2, UNIT_NONE);
-	convert_num_unit((float)job_ptr->cpus_per_task, tmp3, UNIT_NONE);
+	
+	convert_num_unit((float)job_ptr->cpus_per_task, tmp1, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Shared=%s Contiguous=%s CPUs/task=%s", tmp1, tmp2, tmp3);
+		"Shared=%d Contiguous=%d CPUs/task=%s", 
+		 job_ptr->shared, job_ptr->contiguous, tmp1);
 	xstrcat(out, tmp_line);
+
 	if (one_liner)
 		xstrcat(out, " ");
 	else
