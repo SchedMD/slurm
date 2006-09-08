@@ -408,12 +408,14 @@ static void _help(void)
 {
         printf("Usage: sattach [options] <jobid.stepid>\n");
 	printf(
-"  -h, --help         print this help message\n"
 "  -l, --label        prepend task number to lines of stdout & stderr\n"
 "      --layout       print task layout info and exit (does not attach to tasks)\n"
 "  -q, --quiet        quiet mode (suppress informational messages)\n"
-"  -u, --usage        print a brief usage message\n"
 "  -v, --verbose      verbose mode (multiple -v's increase verbosity)\n"
-"  -V, --version      print the SLURM version and exit\n"
+"  -V, --version      print the SLURM version and exit\n\n"
+"Help options:\n"
+"  -h, --help         print this help message\n"
+"  -u, --usage        print a brief usage message\n"
+
 		);
 }
