@@ -1456,9 +1456,11 @@ static void _mail_proc(mail_info_t *mi)
 		(void) close(pfd[1]);
 		(void) close(1);
 		(void) close(2);
-		execle("/bin/mail", "mail", mi->user_name, 
+		execle(slurmctld_conf.mail_prog, "mail", 
+			mi->user_name, 
 			"-s", mi->message, NULL, NULL);
-		error("Failed to exec /bin/mail: %m");
+		error("Failed to exec %s: %m", 
+			slurmctld_conf.mail_prog);
 		exit(1);
 	} else {	/* parent */
 		(void) close(pfd[0]);

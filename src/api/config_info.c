@@ -118,6 +118,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
+	fprintf(out, "MailProg          = %s\n",
+		slurm_ctl_conf_ptr->mail_prog);
 	fprintf(out, "MaxJobCount       = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
 	fprintf(out, "MessageTimeout    = %u\n",
