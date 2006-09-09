@@ -88,8 +88,11 @@ typedef struct slaunch_options {
 	char *local_ifname;	/* --local-input,  -i filename  */
 	char *local_efname;	/* --local-error, -e filename   */
 	uint32_t local_input_filter;
+	bool local_input_filter_set;
 	uint32_t local_output_filter;
+	bool local_output_filter_set;
 	uint32_t local_error_filter;
+	bool local_error_filter_set;
 	char *remote_ofname;	/* --remote-output filename     */
 	char *remote_ifname;	/* --remote-input filename      */
 	char *remote_efname;	/* --remote-error filename      */

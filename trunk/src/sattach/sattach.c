@@ -210,38 +210,6 @@ static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	return cred;
 }
 
-
-#if 0
-/*
- * Take a string representing a node list, remove the first node in the list,
- * and return an xmalloc()ed string of the remaining nodes.
- *
- * Free the returned string with xfree().
- *
- * Returns NULL on error.
- */
-static char *_node_list_remove_first(const char *nodes)
-{
-	char *new_nodes;
-	hostlist_t nodes_list;
-	char *node;
-	char buf[BUFSIZ];
-
-	nodes_list = hostlist_create(nodes);
-	node = hostlist_shift(nodes_list);
-	free(node);
-	if (hostlist_ranged_string(nodes_list, BUFSIZ, buf) == -1) {
-		error("_node_list_remove_first node list truncation occurred");
-		new_nodes = NULL;
-	} else {
-		new_nodes = xstrdup(buf);
-	}
-
-	hostlist_destroy(nodes_list);
-	return new_nodes;
-}
-#endif
-
 /*
  * Take a NodeName list in hostlist_t string format, and expand
  * it into one giant string of NodeNames, in which each NodeName is
