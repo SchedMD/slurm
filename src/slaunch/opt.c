@@ -614,8 +614,11 @@ static void _opt_default()
 	opt.remote_ifname = NULL;
 	opt.remote_efname = NULL;
 	opt.local_input_filter = (uint32_t)-1;
+	opt.local_input_filter_set = false;
 	opt.local_output_filter = (uint32_t)-1;
+	opt.local_output_filter_set = false;
 	opt.local_error_filter = (uint32_t)-1;
+	opt.local_error_filter_set = false;
 	opt.remote_input_filter = (uint32_t)-1;
 	opt.remote_output_filter = (uint32_t)-1;
 	opt.remote_error_filter = (uint32_t)-1;
@@ -1168,16 +1171,28 @@ void set_options(const int argc, char **argv)
 							    "pmi-threads"));
 			break;
 		case LONG_OPT_LIN_FILTER:
-			opt.local_input_filter =
-				_get_pos_int(optarg, "slaunch-input-filter");
+			if (strcmp(optarg, "-") != 0) {
+				opt.local_input_filter =
+					_get_pos_int(optarg,
+						     "slaunch-input-filter");
+			}
+			opt.local_input_filter_set = true;
 			break;
 		case LONG_OPT_LOUT_FILTER:
-			opt.local_output_filter =
-				_get_pos_int(optarg, "slaunch-output-filter");
+			if (strcmp(optarg, "-") != 0) {
+				opt.local_output_filter =
+					_get_pos_int(optarg,
+						     "slaunch-output-filter");
+			}
+			opt.local_output_filter_set = true;
 			break;
 		case LONG_OPT_LERR_FILTER:
-			opt.local_error_filter =
-				_get_pos_int(optarg, "slaunch-error-filter");
+			if (strcmp(optarg, "-") != 0) {
+				opt.local_error_filter =
+					_get_pos_int(optarg,
+						     "slaunch-error-filter");
+			}
+			opt.local_error_filter_set = true;
 			break;
 		case LONG_OPT_RIN_FILTER:
 			opt.remote_input_filter =
@@ -1990,6 +2005,9 @@ static void _help(void)
 "  -i, --slaunch-input=file    slaunch will read stdin from \"file\"\n"
 "  -o, --slaunch-output=file   slaunch will write stdout to \"file\"\n"
 "  -e, --slaunch-error=file    slaunch will write stderr to \"file\"\n"
+"      --slaunch-input-filter=taskid  send stdin to only the specified task\n"
+"      --slaunch-output-filter=taskid only print stdout from the specified task\n"
+"      --slaunch-error-filter=taskid  only print stderr from the specified task\n"
 "  -I, --task-input=file       connect task stdin to \"file\"\n"
 "  -O, --task-output=file      connect task stdout to \"file\"\n"
 "  -E, --task-error=file       connect task stderr to \"file\"\n"

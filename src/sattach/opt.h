@@ -67,6 +67,12 @@ typedef struct sbatch_options {
 	slurm_step_io_fds_t fds;
 	bool layout_only;
 	bool debugger_test;
+	uint32_t input_filter;
+	bool input_filter_set;
+	uint32_t output_filter;
+	bool output_filter_set;
+	uint32_t error_filter;
+	bool error_filter_set;
 } opt_t;
 
 extern opt_t opt;

@@ -75,6 +75,9 @@
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_LAYOUT_ONLY   0x100
 #define LONG_OPT_DEBUGGER_TEST 0x101
+#define LONG_OPT_IN_FILTER     0x102
+#define LONG_OPT_OUT_FILTER    0x103
+#define LONG_OPT_ERR_FILTER    0x104
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -102,6 +105,9 @@ static bool _opt_verify(void);
 static void  _print_version(void);
 
 static void _process_env_var(env_vars_t *e, const char *val);
+
+/* Get a POSITIVE decimal integer from arg */
+static int  _get_pos_int(const char *arg, const char *what);
 
 static void  _usage(void);
 
@@ -152,6 +158,31 @@ static void argerror(const char *msg, ...)
 #endif				/* USE_ARGERROR */
 
 /*
+ *  Get a POSITIVE decimal integer from arg.
+ *
+ *  Returns the integer on success, exits program on failure.
+ * 
+ */
+static int
+_get_pos_int(const char *arg, const char *what)
+{
+	char *p;
+	long int result = strtol(arg, &p, 10);
+
+	if (p == arg || !xstring_is_whitespace(p) || (result < 0L)) {
+		error ("Invalid numeric value \"%s\" for %s.", arg, what);
+		exit(1);
+	}
+
+	if (result > INT_MAX) {
+		error ("Numeric argument %ld to big for %s.", result, what);
+		exit(1);
+	}
+
+	return (int) result;
+}
+
+/*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
 static void _opt_default()
@@ -183,6 +214,12 @@ static void _opt_default()
 	memcpy(&opt.fds, &fds, sizeof(fds));
 	opt.layout_only = false;
 	opt.debugger_test = false;
+	opt.input_filter = (uint32_t)-1;
+	opt.input_filter_set = false;
+	opt.output_filter = (uint32_t)-1;
+	opt.output_filter_set = false;
+	opt.error_filter = (uint32_t)-1;
+	opt.error_filter_set = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -246,14 +283,17 @@ void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	static struct option long_options[] = {
-		{"help", 	no_argument,   0, 'h'},
-		{"label",       no_argument,   0, 'l'},
-		{"quiet",       no_argument,   0, 'q'},
-		{"usage",       no_argument,   0, 'u'},
-		{"verbose",     no_argument,   0, 'v'},
-		{"version",     no_argument,   0, 'V'},
-		{"layout",      no_argument,   0, LONG_OPT_LAYOUT_ONLY},
-		{"debugger-test",no_argument,  0, LONG_OPT_DEBUGGER_TEST},
+		{"help", 	no_argument,       0, 'h'},
+		{"label",       no_argument,       0, 'l'},
+		{"quiet",       no_argument,       0, 'q'},
+		{"usage",       no_argument,       0, 'u'},
+		{"verbose",     no_argument,       0, 'v'},
+		{"version",     no_argument,       0, 'V'},
+		{"layout",      no_argument,       0, LONG_OPT_LAYOUT_ONLY},
+		{"debugger-test",no_argument,      0, LONG_OPT_DEBUGGER_TEST},
+		{"input-filter", required_argument,0, LONG_OPT_IN_FILTER},
+		{"output-filter",required_argument,0, LONG_OPT_OUT_FILTER},
+		{"error-filter", required_argument,0, LONG_OPT_ERR_FILTER},
 		{NULL}
 	};
 	char *opt_string = "+hlquvV";
@@ -287,6 +327,27 @@ void set_options(const int argc, char **argv)
 		case 'V':
 			_print_version();
 			exit(0);
+			break;
+		case LONG_OPT_IN_FILTER:
+			if (strcmp(optarg, "-") != 0) {
+				opt.input_filter = (uint32_t)
+					_get_pos_int(optarg, "input-filter");
+			}
+			opt.input_filter_set = true;
+			break;
+		case LONG_OPT_OUT_FILTER:
+			if (strcmp(optarg, "-") != 0) {
+				opt.output_filter = (uint32_t)
+					_get_pos_int(optarg, "output-filter");
+			}
+			opt.output_filter_set = true;
+			break;
+		case LONG_OPT_ERR_FILTER:
+			if (strcmp(optarg, "-") != 0) {
+				opt.error_filter = (uint32_t)
+					_get_pos_int(optarg, "error-filter");
+			}
+			opt.error_filter_set = true;
 			break;
 		case LONG_OPT_LAYOUT_ONLY:
 			opt.layout_only = true;
@@ -382,6 +443,20 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	/*
+	 * set up standard IO filters
+	 */
+	if (opt.input_filter_set)
+		opt.fds.in.taskid = opt.input_filter;
+	if (opt.output_filter_set)
+		opt.fds.out.taskid = opt.output_filter;
+	if (opt.error_filter_set) {
+		opt.fds.err.taskid = opt.error_filter;
+	} else if (opt.output_filter_set) {
+		opt.fds.err.taskid = opt.output_filter;
+	}
+
+
 	return verified;
 }
 
@@ -408,6 +483,9 @@ static void _help(void)
 {
         printf("Usage: sattach [options] <jobid.stepid>\n");
 	printf(
+"      --input-filter=taskid  send stdin to only the specified task\n"
+"      --output-filter=taskid only print stdout from the specified task\n"
+"      --error-filter=taskid  only print stderr from the specified task\n"
 "  -l, --label        prepend task number to lines of stdout & stderr\n"
 "      --layout       print task layout info and exit (does not attach to tasks)\n"
 "  -q, --quiet        quiet mode (suppress informational messages)\n"
