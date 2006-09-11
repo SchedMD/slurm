@@ -1630,11 +1630,10 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int      retry = 0;
 	slurm_fd fd = -1;
 	
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
+	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return SLURM_SOCKET_ERROR;
-
+	}
 	rc = slurm_send_node_msg(fd, req);
-
 	/* 
 	 *  Attempt to close an open connection
 	 */
@@ -1817,7 +1816,6 @@ List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg,
 	hostlist_t hl = hostlist_create(nodelist);
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
-
 	while((name = hostlist_pop(hl))) {
 		info("sending to %s", name);
 		slurm_conf_get_addr(name, &msg->address);

@@ -659,6 +659,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case PMI_KVS_PUT_RESP:
 		break;	/* no data in message */
+	case RESPONSE_FORWARD_FAILED:
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -969,6 +971,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case PMI_KVS_PUT_RESP:
 		break;	/* no data */
+	case RESPONSE_FORWARD_FAILED:
+		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
 		return EINVAL;

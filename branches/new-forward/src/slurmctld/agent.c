@@ -223,7 +223,7 @@ void *agent(void *args)
 		}
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
-
+	
 	/* basic argument value tests */
 	begin_time = time(NULL);
 	if (_valid_agent_arg(agent_arg_ptr))
@@ -334,7 +334,7 @@ void *agent(void *args)
 static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 {
 	xassert(agent_arg_ptr);
-	hostlist_destroy(agent_arg_ptr->hostlist);
+	xassert(agent_arg_ptr->hostlist);
 
 	if (agent_arg_ptr->node_count == 0)
 		return SLURM_FAILURE;	/* no messages to be sent */
@@ -352,7 +352,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	hostlist_t hl = NULL;
 	char buf[8192];
 	char *name = NULL;
-
+	
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
 	if (pthread_cond_init(&agent_info_ptr->thread_cond, NULL))
@@ -400,7 +400,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
 		thread_ptr[thr_count].nodelist = xstrdup(buf);
-		
 		thr_count++;		       
 	}
 	xfree(span);
@@ -799,34 +798,11 @@ static void *_thread_per_group_rpc(void *args)
 		    == NULL) {
 		}
 	} else {
-		if (slurm_send_only_node_msg(&msg) < 0) {
-		/* 	if(!tmp_ret_list) */
-/* 				tmp_ret_list = list_create(destroy_ret_types); */
-			
-/* 			fwd_msg.header.srun_node_id = msg.srun_node_id; */
-/* 			forward_init(&fwd_msg.header.forward, &msg.forward); */
-/* 			//fwd_msg.header.forward = msg.forward; */
-/* 			fwd_msg.ret_list = tmp_ret_list; */
-/* 			strncpy(fwd_msg.node_name, */
-/* 				thread_ptr->node_name, */
-/* 				MAX_SLURM_NAME); */
-/* 			fwd_msg.forward_mutex = NULL; */
-/* 			memcpy(&fwd_msg.addr, &thread_ptr->slurm_addr,  */
-/* 			       sizeof(slurm_addr)); */
-/* 			if(forward_msg_to_next(&fwd_msg, errno)) { */
-/* 				msg.address = fwd_msg.addr; */
-/* 				forward_init(&msg.forward,  */
-/* 					     &fwd_msg.header.forward); */
-/* 				msg.srun_node_id = fwd_msg.header.srun_node_id; */
-/* 				strncpy(thread_ptr->node_name, */
-/* 					fwd_msg.node_name, */
-/* 					MAX_SLURM_NAME); */
-/* 				memcpy(&thread_ptr->slurm_addr,  */
-/* 				       &fwd_msg.addr,  */
-/* 				       sizeof(slurm_addr)); */
-/* 				goto send_node_again; */
-/* 			} */
-		} 
+		slurm_conf_get_addr(thread_ptr->nodelist, &msg.address);
+		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) 
+			thread_state = DSH_DONE;
+		goto cleanup;
+
 	}
 	
 	
@@ -939,6 +915,7 @@ static void *_thread_per_group_rpc(void *args)
 	}
 	list_iterator_destroy(itr);
 
+cleanup:
 	xfree(args);
 	
 	/* handled at end of thread just incase resend is needed */

@@ -52,6 +52,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
 
 #ifdef WITH_PTHREADS
@@ -80,6 +81,8 @@ void *_forward_thread(void *arg)
 		name = hostlist_pop(hl);
 		if(!name)
 			goto cleanup;
+		slurm_conf_get_addr(name, &addr);
+		
 		/* info("sending to %s with %d forwards",  */
 		/*     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
 		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
@@ -204,7 +207,6 @@ void *_forward_thread(void *arg)
 		}
 		list_destroy(ret_list);
 	}
-	slurm_mutex_unlock(fwd_msg->forward_mutex);
 	
 cleanup:
 	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
