@@ -481,8 +481,9 @@ test18.30  Confirm that a job executes with the proper node count
 test18.31  Confirm that a job executes with the specified nodes
             (--relative, --nodelist-byname and --nodelist-byid).
 test18.32  Basic MPI functionality tests via slaunch.
+test18.33  Verify that SLURM directed environment variables are processed
+           SLAUNCH_DEBUG, SLAUNCH_DISTRIBUTION, SLAUNCH_LABELIO and 
+           SLAUNCH_OVERCOMMIT
 test18.TBD Test of CPU affinity support.
 test18.TBD Test of memory affinity support for NUMA systems.
-test18.TBD Verify that SLURM directed environment variables are processed:
-           SLAUNCH_DEBUG, etc.
 
