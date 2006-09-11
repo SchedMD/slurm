@@ -1349,6 +1349,7 @@ static void _normalize_debug_level(uint16_t *level)
 static void
 validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
+	char *temp_str = NULL;
 	bool truth;
 
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
@@ -1532,7 +1533,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
 
-	char *temp_str = NULL;
         if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
 		if ((parse_select_type_param(temp_str,

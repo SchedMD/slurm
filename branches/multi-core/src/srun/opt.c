@@ -295,7 +295,7 @@ static task_dist_states_t _verify_dist_type(const char *arg,
 {
 	int len = strlen(arg);
 	char *dist_str = NULL;
-	task_dist_states_t result = SLURM_DIST_UNKNOWN;
+	task_dist_states_t result = -1;
 	bool lllp_dist = false, plane_dist = false;
 
 	dist_str = strchr(arg,':');
@@ -867,7 +867,7 @@ static void _opt_default()
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
-	opt.distribution = SLURM_DIST_UNKNOWN;
+	opt.distribution = -1;
 	opt.plane_size   = 0;
 
 	opt.ofname = NULL;
@@ -1061,7 +1061,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_DISTRIB:
 	        opt.plane_size = 0;
 		dt = _verify_dist_type(val, &opt.plane_size);
-		if (dt == SLURM_DIST_UNKNOWN) {
+		if (dt == -1) {
 			error("\"%s=%s\" -- invalid distribution type. " 
 			      "ignoring...", e->var, val);
 		} else 
@@ -1480,7 +1480,7 @@ void set_options(const int argc, char **argv, int first)
 			opt.plane_size = 0;
 			opt.distribution = _verify_dist_type(optarg, 
 							     &opt.plane_size);
-			if (opt.distribution == SLURM_DIST_UNKNOWN) {
+			if (opt.distribution == -1) {
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
 				exit(1);
@@ -2056,7 +2056,7 @@ static bool _opt_verify(void)
 		core_format_enable (opt.core_type);
 
 		/* massage the numbers */
-		if (opt.nodes_set && !opt.nprocs_set) {
+		if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
 			/* 1 proc / node default */
 			opt.nprocs = opt.min_nodes;
 

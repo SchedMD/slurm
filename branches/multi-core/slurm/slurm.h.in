@@ -275,8 +275,7 @@ typedef enum task_dist_states {
 	SLURM_DIST_CYCLIC_BLOCK, /* cyclic for node and block for lllp  */
 	SLURM_DIST_BLOCK_CYCLIC, /* block for node and cyclic for lllp  */
 	SLURM_DIST_BLOCK_BLOCK,	/* block for node and block for lllp  */
-	SLURM_NO_LLLP_DIST,	/* No distribution specified for lllp */
-	SLURM_DIST_UNKNOWN	/* unknown dist */
+	SLURM_NO_LLLP_DIST	/* No distribution specified for lllp */
 } task_dist_states_t;
 
 typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */

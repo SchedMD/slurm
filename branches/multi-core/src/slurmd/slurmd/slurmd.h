@@ -54,7 +54,6 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-#include "src/slurmd/slurmd/dist_tasks.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
@@ -92,9 +91,6 @@ typedef struct slurmd_config {
 	uint32_t     block_map_size;	/* size of block map               */
 	uint32_t     *block_map;	/* abstract->machine block map     */
 	uint32_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	uint32_t     lllp_reserved_size;/* size of lllp reserved array     */
-	uint32_t     *lllp_reserved;    /* count of Reserved lllps (socket,
-					 * core, threads) */
         int          cr_type;           /* Consumable Resource Type:       *
 					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
 					 * CR_DEFAULT, etc.                */

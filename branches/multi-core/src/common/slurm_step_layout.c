@@ -1,6 +1,6 @@
 /*****************************************************************************\
  *  slurm_step_layout.c - functions to distribute tasks over nodes.
- *  $Id: slurm_step_layout.c,v 1.6 2006/09/06 16:07:33 palermo Exp $
+ *  $Id: slurm_step_layout.c,v 1.7 2006/09/08 15:59:11 palermo Exp $
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.

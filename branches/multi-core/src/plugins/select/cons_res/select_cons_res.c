@@ -385,6 +385,8 @@ static int _get_avail_lps(struct job_record *job_ptr, const int index, const boo
 	int avail_cpus, cpus_per_task = 0;
 	int max_sockets = 0, max_cores = 0, max_threads = 0;
 	int cpus, sockets, cores, threads;
+	int alloc_sockets = 0;
+	int alloc_lps     = 0;
 	struct node_cr_record *this_cr_node;
 	
 	if (job_ptr->details && job_ptr->details->cpus_per_task)
@@ -403,8 +405,6 @@ static int _get_avail_lps(struct job_record *job_ptr, const int index, const boo
 		avail_cpus = 0;
 		return avail_cpus;
 	}
-	int alloc_sockets = 0;
-	int alloc_lps     = 0;
 	_get_resources_this_node(&cpus, &sockets, &cores, &threads, 
 				 this_cr_node, &alloc_sockets, 
 				 &alloc_lps);
@@ -545,6 +545,7 @@ static int _cr_dist(struct select_cr_job *job)
 	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
 	int last_socket_index = -1;
 	int last_core_index = -1;
+	int job_index = -1;
 
 	int error_code = _compute_c_b_task_dist(job);
 	if (error_code != SLURM_SUCCESS) {
@@ -552,7 +553,6 @@ static int _cr_dist(struct select_cr_job *job)
 		return error_code;
 	}
 
-	int job_index = -1;
 	for (host_index = 0; 
 	     ((host_index < node_record_count) && (taskcount < job->nprocs));
 	     host_index++) {
@@ -664,6 +664,7 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 	int usable_cpus, usable_sockets, usable_cores, usable_threads;
 	int taskcount=0, last_socket_index;
 	int socket_index, core_index, thread_index;
+	int job_index = -1;
 	
 	info("cons_res _cr_plane_dist plane_size %d ", plane_size);
 	info("cons_res _cr_plane_dist  maxtasks %d num_hosts %d",
@@ -695,7 +696,6 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 		     job->job_id, job->host[i],  job->alloc_lps[i]);
 	}
 
-	int job_index = -1;
 	for (host_index = 0; 
 	     ((host_index < node_record_count) && (taskcount < job->nprocs));
 	     host_index++) {
@@ -843,11 +843,11 @@ static void _count_cpus(unsigned *bitmap, int sum)
 	sum = 0;
 
 	for (i = 0; i < node_record_count; i++) {
+		struct node_cr_record *this_node;
 		allocated_lps = 0;
 		if (bit_test(bitmap, i) != 1)
 			continue;
 
-		struct node_cr_record *this_node;
 		this_node = _find_cr_node_record(node_record_table_ptr[i].name);
 		if (this_node == NULL) {
 			error(" cons_res: Invalid Node reference %s ",
@@ -1691,6 +1691,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 	switch (dinfo) {
 	case SELECT_USED_CPUS: 
 	{
+		uint32_t *tmp_32 = (uint32_t *) data;
 	        this_cr_node = _find_cr_node_record (node_ptr->name);
 		if (this_cr_node == NULL) {
 		        error(" cons_res: could not find node %s",
@@ -1698,7 +1699,6 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			rc = SLURM_ERROR;
 			return rc;
 		}
-		uint32_t *tmp_32 = (uint32_t *) data;
 		switch(cr_type) {
 		case CR_SOCKET:
 			*tmp_32 = this_cr_node->alloc_sockets *

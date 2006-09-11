@@ -326,12 +326,16 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->cpu_bind_type) {
+		char *str_verbose, *str_bind_type, *str_bind_list;
+		char *str_bind;
+		int len;
+
 		unsetenvp(env->env, "SLURM_CPU_BIND_VERBOSE");
 		unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
 		unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
 		unsetenvp(env->env, "SLURM_CPU_BIND");
 
-		char *str_verbose = xstrdup ("");
+		str_verbose = xstrdup ("");
 		if (env->cpu_bind_type & CPU_BIND_VERBOSE) {
 			xstrcat(str_verbose, "verbose");
 		} else {
@@ -342,7 +346,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 
-		char *str_bind_type = xstrdup ("");
+		str_bind_type = xstrdup ("");
 		if (env->cpu_bind_type & CPU_BIND_TO_THREADS) {
 			xstrcat(str_bind_type, "threads,");
 		} else if (env->cpu_bind_type & CPU_BIND_TO_CORES) {
@@ -359,7 +363,7 @@ int setup_env(env_t *env)
 		} else if (env->cpu_bind_type & CPU_BIND_MASK) {
 			xstrcat(str_bind_type, "mask_cpu:");
 		}
-		int len = strlen(str_bind_type);
+		len = strlen(str_bind_type);
 		if (len) {		/* remove a possible trailing ',' */
 		    	if (str_bind_type[len-1] == ',') {
 			    	str_bind_type[len-1] = '\0';
@@ -370,7 +374,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 
-		char *str_bind_list = xstrdup ("");
+		str_bind_list = xstrdup ("");
 		if (env->cpu_bind) {
 			xstrcat(str_bind_list, env->cpu_bind);
 		}
@@ -379,7 +383,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 
-		char *str_bind = xstrdup ("");
+		str_bind = xstrdup ("");
 		xstrcat(str_bind, str_verbose);
 		if (str_bind[0]) {		/* add ',' if str_verbose */
 			xstrcatchar(str_bind, ',');
@@ -394,12 +398,15 @@ int setup_env(env_t *env)
 	}
 
 	if (env->mem_bind_type) {
+		char *str_verbose, *str_bind_type, *str_bind_list;
+		char *str_bind;
+
 		unsetenvp(env->env, "SLURM_MEM_BIND_VERBOSE");
 		unsetenvp(env->env, "SLURM_MEM_BIND_TYPE");
 		unsetenvp(env->env, "SLURM_MEM_BIND_LIST");
 		unsetenvp(env->env, "SLURM_MEM_BIND");
 
-		char *str_verbose = xstrdup ("");
+		str_verbose = xstrdup ("");
 		if (env->mem_bind_type & MEM_BIND_VERBOSE) {
 			xstrcat(str_verbose, "verbose");
 		} else {
@@ -410,7 +417,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
  
-		char *str_bind_type = xstrdup ("");
+		str_bind_type = xstrdup ("");
 		if (env->mem_bind_type & MEM_BIND_NONE) {
 			xstrcat(str_bind_type, "none");
 		} else if (env->mem_bind_type & MEM_BIND_RANK) {
@@ -427,7 +434,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 
-		char *str_bind_list = xstrdup ("");
+		str_bind_list = xstrdup ("");
 		if (env->mem_bind) {
 			xstrcat(str_bind_list, env->mem_bind);
 		}
@@ -436,7 +443,7 @@ int setup_env(env_t *env)
 			rc = SLURM_FAILURE;
 		}
 
-		char *str_bind = xstrdup ("");
+		str_bind = xstrdup ("");
 		xstrcat(str_bind, str_verbose);
 		if (str_bind[0]) {		/* add ',' if str_verbose */
 			xstrcatchar(str_bind, ',');

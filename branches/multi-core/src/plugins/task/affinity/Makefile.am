@@ -11,6 +11,7 @@ pkglib_LTLIBRARIES = task_affinity.la
 task_affinity_la_SOURCES = 	\
 	affinity.c \
 	affinity.h \
+	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
 	task_affinity.c
@@ -21,6 +22,7 @@ pkglib_LTLIBRARIES =
 EXTRA_task_affinity_la_SOURCES = \
 	affinity.c \
 	affinity.h \
+	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
 	task_affinity.c

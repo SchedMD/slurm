@@ -598,7 +598,9 @@ _read_config()
 
 	get_memory(&conf->real_memory_size);
 
+#if 0 /* fixme */
 	lllp_ctx_alloc();
+#endif
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
@@ -661,6 +663,7 @@ static void
 _print_conf()
 {
 	slurm_ctl_conf_t *cf;
+	char *str;
 	int i;
 
 	cf = slurm_conf_lock();
@@ -683,7 +686,7 @@ _print_conf()
 	       conf->threads,
 	       conf->conf_threads,
 	       conf->actual_threads);
-	char *str = xmalloc(conf->block_map_size*5);
+	str = xmalloc(conf->block_map_size*5);
 	str[0] = '\0';
 	for (i = 0; i < conf->block_map_size; i++) {
 		char id[10];	       
@@ -735,7 +738,9 @@ _init_conf()
 	conf->sockets     = 0;
 	conf->cores       = 0;
 	conf->threads     = 0;
+#if 0
 	conf->lllp_reserved = NULL;
+#endif
 	conf->block_map_size = 0;
 	conf->block_map   = NULL;
 	conf->block_map_inv = NULL;
@@ -781,7 +786,9 @@ _destroy_conf()
 		xfree(conf->tmpfs);
 		slurm_mutex_destroy(&conf->config_mutex);
 		slurm_cred_ctx_destroy(conf->vctx);
+#if 0 /* fixme */
 		lllp_ctx_destroy();
+#endif
 		xfree(conf);
 	}
 	return;

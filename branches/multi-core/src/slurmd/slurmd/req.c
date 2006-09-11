@@ -664,15 +664,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req->srun_node_id = msg->srun_node_id;
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 
-	int hw_sockets = conf->sockets;
-	int hw_cores   = conf->cores;
-	int hw_threads = conf->threads;
-
-	if (((hw_sockets >= 1) && ((hw_cores > 1) || (hw_threads > 1))) 
-	    || (!(req->cpu_bind_type & CPU_BIND_NONE)))	
-		lllp_distribution(req, req->global_task_ids[msg->srun_node_id]);
-	/* Remove the slurm msg timeout needs to be investigated some more */
-	/* req->cpu_bind_type = CPU_BIND_NONE; */ 
+	slurmd_launch_request(req, msg->srun_node_id);
 
 	super_user = _slurm_authorized_user(req_uid);
 
@@ -732,7 +724,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state(conf->vctx);
-		cr_reserve_lllp(req->job_id, req);
+		slurmd_reserve_resources(req->job_id, req);
 	}
 
 	/*
@@ -1997,7 +1989,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		return;
 	} 
 
-	cr_release_lllp(req->job_id);
+	slurmd_release_resources(req->job_id);
 
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another

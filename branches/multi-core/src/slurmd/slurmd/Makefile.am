@@ -20,7 +20,6 @@ slurmd_test_LDADD = $(slurmd_LDADD)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
-	dist_tasks.c dist_tasks.h \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
 	reverse_tree_math.c reverse_tree_math.h \

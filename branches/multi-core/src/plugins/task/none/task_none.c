@@ -98,6 +98,36 @@ int fini ( void )
 }
 
 /*
+ * task_slurmd_launch_request()
+ */
+int task_slurmd_launch_request ( launch_tasks_request_msg_t *req, uint32_t srun_node_id)
+{
+	debug("task_slurmd_launch_request: %u %u", 
+		req->job_id, srun_node_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_reserve_resources()
+ */
+int task_slurmd_reserve_resources ( uint32_t job_id, launch_tasks_request_msg_t *req )
+{
+	debug("task_slurmd_reserve_resources: %u",
+		job_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_release_resources()
+ */
+int task_slurmd_release_resources ( uint32_t job_id )
+{
+	debug("task_slurmd_release_resources: %u",
+		job_id);
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_pre_launch() is called prior to exec of application task.
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).

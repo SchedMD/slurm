@@ -807,6 +807,7 @@ bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits) {
 void
 bit_rotate(bitstr_t *b1, int n) {
 	uint32_t bitsize;
+	bitstr_t *new;
 
 	if (n == 0)
 		return;
@@ -814,7 +815,7 @@ bit_rotate(bitstr_t *b1, int n) {
 	_assert_bitstr_valid(b1);
 	bitsize = bit_size(b1);
 
-	bitstr_t *new = bit_rotate_copy(b1, n, bitsize);
+	new = bit_rotate_copy(b1, n, bitsize);
 	bit_copybits(b1, new);
 	bit_free(new);
 }

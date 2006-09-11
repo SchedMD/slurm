@@ -61,6 +61,27 @@ extern int slurmd_task_fini(void);
  */
 
 /*
+ * Slurmd has received a launch request.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_launch_request( launch_tasks_request_msg_t *req, uint32_t srun_node_id);
+
+/*
+ * Slurmd is reserving resources for the task.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_reserve_resources(  uint32_t job_id, launch_tasks_request_msg_t *req );
+
+/*
+ * Slurmd is releasing resources for the task.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_release_resources( uint32_t job_id );
+
+/*
  * Note that a task launch is about to occur.
  *
  * RET - slurm error code

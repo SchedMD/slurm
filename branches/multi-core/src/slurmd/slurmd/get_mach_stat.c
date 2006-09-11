@@ -84,7 +84,7 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 int chk_cpuinfo_float(char *buffer, char *keyword, float *val);
 
-#define DEBUG_DETAIL	1	/* enable detailed debugging within SLURM */
+/* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
 
 #if DEBUG_MODULE
 #define DEBUG_DETAIL	1
