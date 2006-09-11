@@ -80,6 +80,7 @@
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/run_script.h"
+#include "src/slurmd/common/task_plugin.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64

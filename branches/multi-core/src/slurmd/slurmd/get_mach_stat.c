@@ -486,7 +486,7 @@ get_cpuinfo(uint32_t numproc,
 	FILE *cpu_info_file;
 	char buffer[128];
 	int retval;
-	uint32_t i, curcpu, sockets, cores, threads;
+	uint32_t curcpu, sockets, cores, threads;
 	uint32_t numcpu	   = 0;		/* number of cpus seen */
 	uint32_t numphys   = 0;		/* number of unique "physical id"s */
 	uint32_t numcores  = 0;		/* number of unique "cores id"s */
@@ -502,6 +502,9 @@ get_cpuinfo(uint32_t numproc,
 	uint32_t mincpuid  = INT_MAX;	/* minimum CPU ID ("processor") */
 	uint32_t minphysid = INT_MAX;	/* minimum "physical id" */
 	uint32_t mincoreid = INT_MAX;	/* minimum "core id" */
+#ifdef DEBUG_DETAIL
+	int i;
+#endif
 
 	*p_sockets = numproc;		/* initially all single core/thread */
 	*p_cores   = 1;

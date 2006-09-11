@@ -84,6 +84,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
+#include "src/common/slurm_resource_info.h"
 
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
