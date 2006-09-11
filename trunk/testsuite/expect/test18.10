@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test slaunch stdout/err disabling (--output and --error options
-#          with argument of "none").
+#          Test slaunch task stdout/err disabling (--task-output and 
+#          --task-error options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -42,7 +42,7 @@ print_header $test_id
 # Spawn a program via slaunch with stdout forwarding disabled
 #
 set timeout $max_job_delay
-spawn $salloc -t1 $slaunch --slaunch-output=none $bin_id
+spawn $salloc -t1 $slaunch --task-output=none $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
