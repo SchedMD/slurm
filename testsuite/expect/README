@@ -452,7 +452,8 @@ test18.11  Test slaunch stdout/err file name formatting (--task-output and
            --task-error options with %j, %J, %n, %s and %t specifications).
 test18.12  Test slaunch stdin routing to specific task (--slaunch-input-filter
            option with numeric argument).
-test18.13  DELETED
+test18.13  Confirm that slaunch sets appropriate working directory (--workdir
+           option).
 test18.14  Verify the appropriate job environment variables are set
 test18.15  Verify that user environment variables are propagated to the job
 test18.16  Verify that user limits are propagated to the job
