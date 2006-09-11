@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  opt.c - options processing for slaunch
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1988,7 +1987,7 @@ static void _usage(void)
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
 "               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
-"               [-w hosts...] executable [args...]\n");
+"               [-w hosts...] [-L hostids...] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2040,7 +2039,8 @@ static void _help(void)
 "      --ctrl-comm-ifhn=addr   hostname for PMI communications with slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
-"  -w, --nodelist=hosts...     request a specific list of hosts\n");
+"  -w, --nodelist-byname=hosts...   request a specific list of hosts\n"
+"  -L, --nodelist-byid=hosts...     request a specific list of hosts\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
