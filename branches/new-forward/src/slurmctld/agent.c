@@ -120,7 +120,7 @@ typedef struct thd {
 	time_t start_time;		/* start time */
 	time_t end_time;		/* end time or delta time 
 					 * upon termination */
-	char nodelist;	                /* list of nodes to send to */
+	char *nodelist;	                /* list of nodes to send to */
 	int first_node_id;              /* relative first node id */
 	List ret_list;
 } thd_t;
@@ -197,8 +197,8 @@ static bool run_scheduler = false;
  * agent - party responsible for transmitting an common RPC in parallel 
  *	across a set of nodes. Use agent_queue_request() if immediate 
  *	execution is not essential.
- * IN pointer to agent_arg_t, which is xfree'd (including slurm_addr, 
- *	node_names and msg_args) upon completion if AGENT_IS_THREAD is set
+ * IN pointer to agent_arg_t, which is xfree'd (including hostlist, 
+ *	and msg_args) upon completion if AGENT_IS_THREAD is set
  * RET always NULL (function format just for use as pthread)
  */
 void *agent(void *args)
@@ -334,8 +334,7 @@ void *agent(void *args)
 static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 {
 	xassert(agent_arg_ptr);
-	xassert(agent_arg_ptr->slurm_addr);
-	xassert(agent_arg_ptr->node_names);
+	hostlist_destroy(agent_arg_ptr->hostlist);
 
 	if (agent_arg_ptr->node_count == 0)
 		return SLURM_FAILURE;	/* no messages to be sent */
@@ -345,13 +344,14 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 {
 	int i = 0, j=0;
-	agent_info_t *agent_info_ptr;
-	thd_t *thread_ptr;
+	agent_info_t *agent_info_ptr = NULL;
+	thd_t *thread_ptr = NULL;
 	int *span = NULL;
 	int thr_count = 0;
-       	forward_t forward;
+       	//forward_t forward;
 	hostlist_t hl = NULL;
 	char buf[8192];
+	char *name = NULL;
 
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
@@ -376,28 +376,30 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		span = set_span(agent_arg_ptr->node_count, 
 				agent_arg_ptr->node_count);
 	}
-	forward_init(&forward, NULL);
-	forward.cnt = agent_info_ptr->thread_count;
-	forward.name = agent_arg_ptr->node_names;
-	forward.addr = agent_arg_ptr->slurm_addr;
-	forward.node_id = NULL;
-	forward.timeout = slurm_get_msg_timeout() * 1000;
+	/* forward_init(&forward, NULL); */
+/* 	forward.cnt = agent_info_ptr->thread_count; */
+/* 	forward.name = agent_arg_ptr->node_names; */
+/* 	forward.addr = agent_arg_ptr->slurm_addr; */
+/* 	forward.node_id = NULL; */
+/* 	forward.timeout = slurm_get_msg_timeout() * 1000; */
 
 	i = 0;
 	while(i < agent_info_ptr->thread_count) {
 		thread_ptr[thr_count].state      = DSH_NEW;
 		
-		thead_ptr[thr_count].first_node_id = i;
+		thread_ptr[thr_count].first_node_id = i;
 		hl = hostlist_create("");
 		for(j = 0; j < span[thr_count]; j++) {
-			if(!agent_arg_ptr->node_names[i * MAX_SLURM_NAME])
+			name = hostlist_shift(agent_arg_ptr->hostlist);
+			if(!name)
 				break;
-			hostlist_push(hl, agent_arg_ptr->
-				      node_names[i++ * MAX_SLURM_NAME]);
+			hostlist_push(hl, name);
+			free(name);
+			i++;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
-		thead_ptr[thr_count].nodelist = xstrcpy(buf);
+		thread_ptr[thr_count].nodelist = xstrdup(buf);
 		
 		thr_count++;		       
 	}
@@ -464,7 +466,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 static void *_wdog(void *args)
 {
 	bool srun_agent = false;
-	int i, j, count;
+	int i;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	unsigned long usec = 125000;
@@ -581,7 +583,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				    int no_resp_cnt, int retry_cnt)
 {
 	ListIterator itr = NULL;
-	ListIterator data_itr;
 	ret_data_info_t *ret_data_info = NULL;
 	state_t state;
 	int is_ret_list = 1;
@@ -642,7 +643,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				break;
 			case DSH_FAILED:
 				if(!is_ret_list) {
-					set_node_down(thread_ptr[i].node_name, 
+					set_node_down(thread_ptr[i].nodelist, 
 						      "Prolog/epilog failure");
 					break;
 				}
@@ -651,7 +652,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				break;
 			case DSH_DONE:
 				if(!is_ret_list) {
-					node_did_resp(thread_ptr[i].node_name);
+					node_did_resp(thread_ptr[i].nodelist);
 					break;
 				}
 				node_did_resp(ret_data_info->node_name);
@@ -659,7 +660,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			default:
 				if(!is_ret_list) {
 					error("unknown state returned for %s",
-					      thread_ptr[i].node_name);
+					      thread_ptr[i].nodelist);
 					break;
 				}
 				error("unknown state returned for %s",
@@ -724,13 +725,9 @@ static void *_thread_per_group_rpc(void *args)
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent;
 	List ret_list = NULL;
-	List tmp_ret_list = NULL;
 	ListIterator itr;
-	ListIterator data_itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int found = 0;
-	forward_msg_t fwd_msg;
-			
 
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
@@ -794,11 +791,11 @@ static void *_thread_per_group_rpc(void *args)
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
-		if ((ret_list = slurm_send_recv_rc_msg2(
+		if ((ret_list = slurm_send_recv_msg(
 			     thread_ptr->nodelist,
 			     &msg, 
 			     thread_ptr->first_node_id,
-			     msg.forward.timeout)) 
+			     0)) 
 		    == NULL) {
 		}
 	} else {
@@ -842,7 +839,7 @@ static void *_thread_per_group_rpc(void *args)
 					   ret_data_info->data);
 		if(!found && !ret_data_info->node_name) {
 			ret_data_info->node_name = 
-				xstrdup(thread_ptr->node_name);
+				xstrdup(thread_ptr->nodelist);
 			if(rc == SLURM_ERROR) {
 				errno = ret_data_info->err;
 				continue;
@@ -884,8 +881,7 @@ static void *_thread_per_group_rpc(void *args)
 			}
 #endif
 		}
-		list_iterator_destroy(data_itr);
-	
+		
 		if (((msg_type == REQUEST_SIGNAL_TASKS) 
 		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 
 		    && (rc == ESRCH)) {
@@ -900,50 +896,33 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			break;
 		case ESLURMD_EPILOG_FAILED:
-			data_itr = 
-				list_iterator_create(ret_data_info->ret_data_list);
-			while((ret_data_info = list_next(data_itr)) != NULL) 
-				error("Epilog failure on host %s, "
-				      "setting DOWN", 
-				      ret_data_info->node_name);
-			list_iterator_destroy(data_itr);
-	
+			error("Epilog failure on host %s, "
+			      "setting DOWN", 
+			      ret_data_info->node_name);
+				
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURMD_PROLOG_FAILED:
-			data_itr = 
-				list_iterator_create(ret_data_info->ret_data_list);
-			while((ret_data_info = list_next(data_itr)) != NULL) 
-				error("Prolog failure on host %s, "
-				      "setting DOWN", 
-				      ret_data_info->node_name);
-			list_iterator_destroy(data_itr);
+			error("Prolog failure on host %s, "
+			      "setting DOWN", 
+			      ret_data_info->node_name);
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURM_INVALID_JOB_ID:  
 			/* Not indicative of a real error */
 		case ESLURMD_JOB_NOTRUNNING: 
 			/* Not indicative of a real error */
-			data_itr = 
-				list_iterator_create(ret_data_info->ret_data_list);
-			while((ret_data_info = list_next(data_itr)) != NULL) 
-				debug2("agent processed RPC to node %s: %s",
-				       ret_data_info->node_name,
-				       slurm_strerror(rc));
-			list_iterator_destroy(data_itr);
-	
+			debug2("agent processed RPC to node %s: %s",
+			       ret_data_info->node_name,
+			       slurm_strerror(rc));
+			
 			thread_state = DSH_DONE;
 			break;
 		default:
-			data_itr = 
-				list_iterator_create(ret_data_info->ret_data_list);
-			while((ret_data_info = list_next(data_itr)) != NULL) 
-				if (!srun_agent) {
-					errno = ret_data_info->err;
-					rc = _comm_err(
-						ret_data_info->node_name);
-				}
-			list_iterator_destroy(data_itr);
+			if (!srun_agent) {
+				errno = ret_data_info->err;
+				rc = _comm_err(ret_data_info->node_name);
+			}
 			if(srun_agent)
 				thread_state = DSH_FAILED;
 			else if(ret_data_info->type == REQUEST_PING)
@@ -960,7 +939,6 @@ static void *_thread_per_group_rpc(void *args)
 	}
 	list_iterator_destroy(itr);
 
-cleanup:
 	xfree(args);
 	
 	/* handled at end of thread just incase resend is needed */
@@ -991,7 +969,6 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 {
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr = list_iterator_create(thread_ptr->ret_list);
-	
 	while((ret_data_info = list_next(itr))) {
 		debug2("got err of %d", ret_data_info->err);
 		if (ret_data_info->err != DSH_NO_RESP)
@@ -1001,10 +978,8 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 		      ret_data_info->node_name, count);
 				
 		if(agent_arg_ptr) {
-			strncpy(&agent_arg_ptr->
-				node_names[(*spot) * MAX_SLURM_NAME],
-				ret_data_info->node_name, 
-				MAX_SLURM_NAME);
+			hostlist_push(agent_arg_ptr->hostlist, 
+				      ret_data_info->node_name);
 			
 			if ((++(*spot)) == count) {
 				list_iterator_destroy(itr);
@@ -1035,9 +1010,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = count;
 	agent_arg_ptr->retry = 1;
-	agent_arg_ptr->slurm_addr = xmalloc(sizeof(slurm_addr) * count);
-	agent_arg_ptr->node_names = 
-		xmalloc(sizeof(char) * MAX_SLURM_NAME * count);
+	agent_arg_ptr->hostlist = hostlist_create("");
 	agent_arg_ptr->msg_type = agent_info_ptr->msg_type;
 	agent_arg_ptr->msg_args = *(agent_info_ptr->msg_args_pptr);
 	*(agent_info_ptr->msg_args_pptr) = NULL;
@@ -1048,12 +1021,9 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			if (thread_ptr[i].state != DSH_NO_RESP)
 				continue;
 			debug("got the name %s to resend", 
-			      thread_ptr[i].node_name);
-			
-			agent_arg_ptr->slurm_addr[j] = 
-				thread_ptr[i].slurm_addr;
-			strncpy(&agent_arg_ptr->node_names[j * MAX_SLURM_NAME],
-				thread_ptr[i].node_name, MAX_SLURM_NAME);
+			      thread_ptr[i].nodelist);
+			hostlist_push(agent_arg_ptr->hostlist, 
+				      thread_ptr[i].nodelist);
 			if ((++j) == count)
 				break;
 		} else {
@@ -1113,7 +1083,7 @@ extern int agent_retry (int min_wait)
 	int list_size = 0;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
-	agent_arg_t *agent_arg_ptr;
+	agent_arg_t *agent_arg_ptr = NULL;
 	ListIterator retry_iter;
 
 	slurm_mutex_lock(&retry_mutex);
@@ -1307,11 +1277,11 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 	if (agent_arg_ptr == NULL)
 		return;
 
-	xfree(agent_arg_ptr->slurm_addr);
-	xfree(agent_arg_ptr->node_names);
+	hostlist_destroy(agent_arg_ptr->hostlist);
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH)
-			_slurmctld_free_job_launch_msg(agent_arg_ptr->msg_args);
+			_slurmctld_free_job_launch_msg(
+				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == 
 				RESPONSE_RESOURCE_ALLOCATION)
 			slurm_free_resource_allocation_response_msg(

@@ -268,7 +268,7 @@ if(!ret_list || list_count(ret_list) == 0) {
 	no_resp_forwards(&req->forward, &ret_list, errno);
 }
 **********************************************************************/
-extern int no_resp_forwards(forward_t *forward, List *ret_list, int err);
+/* extern int no_resp_forwards(forward_t *forward, List *ret_list, int err); */
 
 /* destroyers */
 extern void destroy_data_info(void *object);

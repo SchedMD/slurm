@@ -61,9 +61,7 @@ static void _srun_agent_launch(slurm_addr *addr, char *host,
 
 	agent_args->node_count = 1;
 	agent_args->retry      = 0;
-	agent_args->slurm_addr = addr;
-	agent_args->node_names = xmalloc(MAX_SLURM_NAME);
-	strncpy(agent_args->node_names, host, MAX_SLURM_NAME);
+	agent_args->hostlist   = hostlist_create(host);
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
 	agent_queue_request(agent_args);

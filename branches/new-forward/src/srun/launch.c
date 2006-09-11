@@ -522,11 +522,10 @@ static void * _p_launch_task(void *arg)
 	int                        retry   = 3; /* retry thrice */
 	List ret_list = NULL;
 	ListIterator itr;
-	ListIterator data_itr;
-	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
-		
+	int rc = SLURM_SUCCESS;
+	
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
 	
@@ -544,56 +543,53 @@ again:
 		goto cleanup;
 	}
 	itr = list_iterator_create(ret_list);		
-	while((ret_type = list_next(itr)) != NULL) {
-		data_itr = list_iterator_create(ret_type->ret_data_list);
-		while((ret_data_info = list_next(data_itr)) != NULL) {
-			if(!ret_data_info->node_name) {
-				name = nodelist_nth_host(
-					job->step_layout->node_list, 
-					ret_data_info->nodeid);
-				ret_data_info->node_name = xstrdup(name);
-				free(name);
-			}
-			if(ret_type->msg_rc == SLURM_SUCCESS) {
-				_update_contacted_node(job, 
-						       ret_data_info->nodeid);
-				continue;
-			}
-			
-			errno = ret_type->err;
-			if (errno != EINTR) 
-				verbose("first launch error on %s: %m",
-					ret_data_info->node_name);
-			
-			if ((errno != ETIMEDOUT) 
-			    && (job->state == SRUN_JOB_LAUNCHING)
-			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
-			    &&  ((retry--) > 0)) {
-				list_iterator_destroy(data_itr);
-				list_iterator_destroy(itr);
-				list_destroy(ret_list);	
-				sleep(1);
-				goto again;
-			}
-			name = nodelist_nth_host(job->step_layout->node_list, 
-						 ret_data_info->nodeid);
-				
-			if (errno == EINTR)
-				verbose("launch on %s canceled", 
-					ret_data_info->node_name);
-			else
-				error("second launch error on %s: %m", 
-				      ret_data_info->node_name);
-		       
-			_update_failed_node(job, ret_data_info->nodeid);
-			
-			th->state = DSH_FAILED;
-			
-			pthread_mutex_lock(&active_mutex);
-			fail_launch_cnt++;
-			pthread_mutex_unlock(&active_mutex);
+	while((ret_data_info = list_next(itr))) {
+		rc = slurm_get_return_code(ret_data_info->type, 
+					   ret_data_info->data);
+		if(!ret_data_info->node_name) {
+			name = nodelist_nth_host(
+				job->step_layout->node_list, 
+				ret_data_info->nodeid);
+			ret_data_info->node_name = xstrdup(name);
+			free(name);
 		}
-		list_iterator_destroy(data_itr);
+		if(rc == SLURM_SUCCESS) {
+			_update_contacted_node(job, 
+					       ret_data_info->nodeid);
+			continue;
+		}
+		
+		errno = ret_data_info->err;
+		if (errno != EINTR) 
+			verbose("first launch error on %s: %m",
+				ret_data_info->node_name);
+		
+		if ((errno != ETIMEDOUT) 
+		    && (job->state == SRUN_JOB_LAUNCHING)
+		    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
+		    &&  ((retry--) > 0)) {
+			list_iterator_destroy(itr);
+			list_destroy(ret_list);	
+			sleep(1);
+			goto again;
+		}
+		name = nodelist_nth_host(job->step_layout->node_list, 
+					 ret_data_info->nodeid);
+		
+		if (errno == EINTR)
+			verbose("launch on %s canceled", 
+				ret_data_info->node_name);
+		else
+			error("second launch error on %s: %m", 
+			      ret_data_info->node_name);
+		
+		_update_failed_node(job, ret_data_info->nodeid);
+		
+		th->state = DSH_FAILED;
+		
+		pthread_mutex_lock(&active_mutex);
+		fail_launch_cnt++;
+		pthread_mutex_unlock(&active_mutex);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);	

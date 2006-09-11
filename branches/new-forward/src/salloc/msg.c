@@ -148,6 +148,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	int len = sizeof(addr);
 	List ret_list = NULL;
 	int timeout = 0;
+	slurm_addr recv_addr;
 
 	debug3("Called _msg_socket_accept");
 
@@ -181,8 +182,9 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	msg->conn_fd = fd;
 	
 	timeout = slurm_get_msg_timeout();
+	memcpy(&recv_addr, &addr, sizeof(slurm_addr));
 again:
-	ret_list = slurm_receive_msg(fd, msg, timeout);
+	ret_list = slurm_receive_msg(fd, recv_addr, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		printf("error on slurm_recieve_msg\n");
 		fflush(stdout);

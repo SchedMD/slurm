@@ -65,9 +65,9 @@
 				 * only run MAX_THREADS at one time */
 typedef struct thd {
 	pthread_t thread;	/* thread ID */
-	slurm_msg_t *msg;	/* message to send */
+	slurm_msg_t msg;	/* message to send */
 	int rc;			/* highest return codes from RPC */
-	char node_name[MAX_SLURM_NAME];
+	char *nodelist;
 } thd_t;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -79,37 +79,29 @@ static void *_agent_thread(void *args);
 static void *_agent_thread(void *args)
 {
 	List ret_list = NULL;
-	ret_types_t *ret_type = NULL;
 	thd_t *thread_ptr = (thd_t *) args;
-	slurm_msg_t *msg = thread_ptr->msg;
-	ListIterator itr, data_itr;
+	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
-	int rc = 0;
+	int rc = 0, msg_rc;
 
-	ret_list = slurm_send_recv_rc_msg(msg, 
-			(slurm_get_msg_timeout() * 1000));
+	ret_list = slurm_send_recv_msg(thread_ptr->nodelist, &thread_ptr->msg,
+				       0, 0);
 	if (ret_list == NULL) {
-		error("slurm_send_recv_rc_msg: %m");
+		error("slurm_send_recv_msg: %m");
 		exit(1);
 	}
 	
 	itr = list_iterator_create(ret_list);
-	while ((ret_type = list_next(itr)) != NULL) {
-		data_itr = list_iterator_create(ret_type->ret_data_list);
-		while ((ret_data_info = list_next(data_itr)) != NULL) {
-			if (ret_type->msg_rc == SLURM_SUCCESS)
-				continue;
-			if (!ret_data_info->node_name) {
-				ret_data_info->node_name = 
-					xstrdup(thread_ptr->node_name);
-				ret_data_info->addr = msg->address;
-			}
-			error("REQUEST_FILE_BCAST(%s): %s",
-				ret_data_info->node_name,
-				slurm_strerror(ret_type->msg_rc));
-			rc = MAX(rc, ret_type->msg_rc);
-		}
-		list_iterator_destroy(data_itr);
+	while ((ret_data_info = list_next(itr))) {
+		msg_rc = slurm_get_return_code(ret_data_info->type, 
+					       ret_data_info->data);
+		if (msg_rc == SLURM_SUCCESS)
+			continue;
+		
+		error("REQUEST_FILE_BCAST(%s): %s",
+		      ret_data_info->node_name,
+		      slurm_strerror(msg_rc));
+		rc = MAX(rc, msg_rc);
 	}
 
 	thread_ptr->rc = rc;
@@ -128,9 +120,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		     job_alloc_info_response_msg_t *alloc_resp)
 {
 	/* Preserve some data structures across calls for better performance */
-	static forward_t from, forward[MAX_THREADS];
 	static int threads_used = 0;
-	static slurm_msg_t msg[MAX_THREADS];
 
 	int i, fanout, rc = SLURM_SUCCESS;
 	int retries = 0;
@@ -139,45 +129,45 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 
 	if (threads_used == 0) {
 		hostlist_t hl;
-		int *span;
+		hostlist_t new_hl;
+		int *span = NULL;
+		char buf[8192];
+		char *name = NULL;
 
 		if (params.fanout)
 			fanout = MIN(MAX_THREADS, params.fanout);
 		else
 			fanout = MAX_THREADS;
-		span = set_span(alloc_resp->node_cnt, fanout);
-		from.cnt  = alloc_resp->node_cnt;
-		from.name = xmalloc(MAX_SLURM_NAME * alloc_resp->node_cnt);
-		hl = hostlist_create(alloc_resp->node_list);
-		for (i=0; i<alloc_resp->node_cnt; i++) {
-			char *host = hostlist_shift(hl);
-			strncpy(&from.name[MAX_SLURM_NAME*i], host, 
-				MAX_SLURM_NAME);
-			free(host);
-		}
-		hostlist_destroy(hl);
-		from.addr	= alloc_resp->node_addr;
-		from.node_id	= NULL;
-		from.timeout	= slurm_get_msg_timeout() * 1000;
 
-		for (i=0; i<alloc_resp->node_cnt; i++) {
-			int j = i;
-			strncpy(thread_info[threads_used].node_name, 
-				&from.name[MAX_SLURM_NAME*i], MAX_SLURM_NAME); 
-			       
-			forward_set(&forward[threads_used], span[threads_used],
-				    &i, &from);
-			msg[threads_used].msg_type  = REQUEST_FILE_BCAST;
-			msg[threads_used].address   = alloc_resp->node_addr[j];
-			msg[threads_used].data      = bcast_msg;
-			msg[threads_used].forward   = forward[threads_used];
-			msg[threads_used].ret_list  = NULL;
-			msg[threads_used].orig_addr.sin_addr.s_addr = 0;
-			msg[threads_used].srun_node_id = 0;
+		span = set_span(alloc_resp->node_cnt, fanout);
+		
+		hl = hostlist_create(alloc_resp->node_list);
+		
+		i = 0;
+		while(i < alloc_resp->node_cnt) {
+			int j = 0;
+			
+			new_hl = hostlist_create("");
+			for(j = 0; j < span[threads_used]; j++) {
+				name = hostlist_shift(hl);
+				if(!name)
+					break;
+				hostlist_push(new_hl, name);
+				free(name);
+				i++;
+			}
+			hostlist_ranged_string(new_hl, sizeof(buf), buf);
+			hostlist_destroy(new_hl);
+			thread_info[threads_used].nodelist = xstrdup(buf);
+			slurm_msg_t_init(&thread_info[threads_used].msg);
+			thread_info[threads_used].msg.msg_type =
+				REQUEST_FILE_BCAST;
+			thread_info[threads_used].msg.data = bcast_msg;
 						
 			threads_used++;
 		}
 		xfree(span);
+		hostlist_destroy(hl);
 		debug("using %d threads", threads_used);
 	}
 
@@ -193,10 +183,9 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		agent_cnt++;
 		slurm_mutex_unlock(&agent_cnt_mutex);
 
-		thread_info[i].msg = &msg[i];
 		while (pthread_create(&thread_info[i].thread,
-				&attr, _agent_thread,
-				(void *) &thread_info[i])) {
+				      &attr, _agent_thread,
+				      (void *) &thread_info[i])) {
 			error("pthread_create error %m");
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");

@@ -699,6 +699,18 @@ slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 	return rc;
 }
 
+/* gets the slurm_addr of the specified controller
+ *	primary or secondary slurmctld message engine
+ * IN dest      - controller to contact, primary or secondary
+ * OUT addr     - slurm_addr to the specified controller
+ */
+void slurm_get_controller_addr_spec(enum controller_id dest, slurm_addr *addr)
+{
+	addr = (dest == PRIMARY_CONTROLLER) ? 
+		  &proto_conf->primary_controller : 
+		  &proto_conf->secondary_controller;
+} 
+
 /* In the bsd implmentation maps directly to a accept call 
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address	- slurm_addr of the accepted connection
@@ -735,7 +747,8 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  *                forwarded the message to. List containing type
  *                (ret_data_info_t).
  */
-List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
+List slurm_receive_msg(slurm_fd fd, slurm_addr orig_addr, 
+		       slurm_msg_t *msg, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -805,7 +818,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	if(header.orig_addr.sin_addr.s_addr != 0) {
 		memcpy(&msg->orig_addr, &header.orig_addr, sizeof(slurm_addr));
 	} else {
-		memcpy(&header.orig_addr, &msg->orig_addr, sizeof(slurm_addr));
+		memcpy(&header.orig_addr, &orig_addr, sizeof(slurm_addr));
 	}
 
 	/* Forward message to other nodes */
@@ -876,7 +889,7 @@ total_return:
 	destroy_forward(&header.forward);
 	
 	if(rc != SLURM_SUCCESS) {
-		msg->msg_type = REQUEST_PING;
+		msg->msg_type = RESPONSE_FORWARD_FAILED;
 		msg->auth_cred = (void *) NULL;
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
@@ -1415,7 +1428,8 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
  * Send and recv a slurm request and response on the open slurm descriptor
  * with a list containing the responses of the children (if any) we 
  * forwarded the message to. List containing type (ret_data_info_t).
- * IN open_fd	- file descriptor to receive msg on
+ * IN fd	- file descriptor to receive msg on
+ * IN orig_addr - slurm_addr we are recieving the message on.
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
@@ -1424,7 +1438,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
  *                (ret_data_info_t). 
  */
 static List 
-_send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, 
+_send_and_recv_msg(slurm_fd fd, slurm_addr orig_addr, slurm_msg_t *req, 
 		   slurm_msg_t *resp, int timeout)
 {
 	int retry = 0;
@@ -1440,7 +1454,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 			steps += 1;
 			timeout += (req->forward.timeout*steps);
 		}
-		ret_list = slurm_receive_msg(fd, resp, timeout);
+		ret_list = slurm_receive_msg(fd, orig_addr, resp, timeout);
 	}
 	
 
@@ -1497,7 +1511,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		/* If the backup controller is in the process of assuming 
 		 * control, we sleep and retry later */
 		retry = 0;
-		ret_list = _send_and_recv_msg(fd, req, resp, 0);
+		ret_list = _send_and_recv_msg(fd,
+					      proto_conf->primary_controller,
+					      req, resp, 0);
 		if (resp->auth_cred)
 			g_slurm_auth_destroy(resp->auth_cred);
 		else 
@@ -1560,7 +1576,7 @@ List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return NULL; 
 	
-	return _send_and_recv_msg(fd, req, resp, timeout);
+	return _send_and_recv_msg(fd, req->address, req, resp, timeout);
 
 }
 
@@ -1632,44 +1648,48 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 
 
 /*
- *  Send message and recv "return code" message on an already open
+ *  Send message and recv message on an already open
  *  slurm file descriptor return List containing type (ret_data_info_t).
- * IN fd	- file descriptor to receive msg on
+ * IN fd        - file descriptor we are receiving the msg on
+ * IN orig_addr - slurm_addr we are recieving the message on.
  * IN req	- slurm_msg request
  * IN timeout   - how long to wait in milliseconds
  */
-static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
+static List _send_recv_msg(slurm_fd fd, slurm_addr orig_addr,
+			   slurm_msg_t *req, int timeout)
 {
 	slurm_msg_t	msg;
 	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int msg_rc;
-	int err;
 	//info("here 1");
 	
-	ret_list = _send_and_recv_msg(fd, req, &msg, timeout);
-	err = errno;	
-
-	if(!msg.auth_cred) {
-		msg.msg_type = RESPONSE_FORWARD_FAILED;
-		msg_rc = SLURM_ERROR;	
-	} else {
-		msg_rc = ((return_code_msg_t *)msg.data)->return_code;
-		slurm_free_return_code_msg(msg.data);
-		g_slurm_auth_destroy(msg.auth_cred);
-	}
+	ret_list = _send_and_recv_msg(fd, orig_addr, req, &msg, timeout);
 	
 	if(!ret_list) {
-		ret_list = list_create(destroy_data_info);
+		return NULL;
 	} 
-	
+
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
+	ret_data_info->err = errno;
+	ret_data_info->nodeid = msg.srun_node_id;
 	ret_data_info->node_name = NULL;
-	ret_data_info->data = NULL;
+	
+	if(!msg.auth_cred) {
+		ret_data_info->type = RESPONSE_FORWARD_FAILED;
+		msg_rc = SLURM_ERROR;	
+		ret_data_info->data = NULL;
+	} else {
+		msg_rc = slurm_get_return_code(msg.msg_type, msg.data);
+		ret_data_info->type = msg.msg_type;
+		ret_data_info->data = msg.data;
+		g_slurm_auth_destroy(msg.auth_cred);
+	}
+
 	debug3("got reply for %s rc %d %d", 
 	       ret_data_info->node_name, 
 	       msg_rc, 
-	       err);
+	       ret_data_info->err);
 
 	list_push(ret_list, ret_data_info);
 			
@@ -1694,7 +1714,6 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 	slurm_msg_t resp;
 	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
-	int msg_rc;
 	int retry = 0;
 
 	if(!msg->buffer) {
@@ -1717,7 +1736,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 			timeout += (msg->forward.timeout*steps);
 		}
 				
-		ret_list = slurm_receive_msg(fd, &resp, timeout);
+		ret_list = slurm_receive_msg(fd, msg->address, &resp, timeout);
 	}
 	err = errno;
 			
@@ -1732,23 +1751,23 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 	}
 	
 failed:
-	if(!ret_list || list_count(ret_list) == 0) {
-		no_resp_forwards(&msg->forward, &ret_list, err);
+	if(!ret_list) {
+		return NULL;
 	}
+	ret_data_info = xmalloc(sizeof(ret_data_info_t));
+	ret_data_info->nodeid = resp.srun_node_id;
+	ret_data_info->err = err;
+	ret_data_info->node_name = NULL;
 	
-	if(err != SLURM_SUCCESS) {
-		resp.msg_type = REQUEST_PING;
-		msg_rc = SLURM_ERROR;	
+	if(!resp.auth_cred) {
+		ret_data_info->type = RESPONSE_FORWARD_FAILED;
+		ret_data_info->data = NULL;
 	} else {
-		msg_rc = ((return_code_msg_t *)resp.data)->return_code;
-		slurm_free_return_code_msg(resp.data);
+		ret_data_info->type = resp.msg_type;
+		ret_data_info->data = resp.data;
 		g_slurm_auth_destroy(resp.auth_cred);
 	}
 	
-	ret_data_info = xmalloc(sizeof(ret_data_info_t));
-	ret_data_info->node_name = NULL;
-	ret_data_info->data = NULL;
-	ret_data_info->nodeid = msg->srun_node_id;
 	list_push(ret_list, ret_data_info);
 		
 	return ret_list; 
@@ -1772,13 +1791,13 @@ List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 		errno = SLURM_SOCKET_ERROR;
 		return NULL;
 	}
-	return _send_recv_rc_msg(fd, req, timeout);
+	return _send_recv_msg(fd, req->address, req, timeout);
 }
 
 /*
  *  Send a message to the nodelist specificed using fanout
- *    Then read back an "rc" message returning List containing 
- *    type (ret_data_info_t).
+ *    Then return List containing type (ret_data_info_t). and filling
+ *    in the resp with info from resp.
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN first_node_id - a slurm_msg struct to be sent by the function
@@ -1787,8 +1806,8 @@ List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_data_info_t).
  */
-List slurm_send_recv_rc_msg2(const char *nodelist, slurm_msg_t *msg, 
-			     int first_node_id, int timeout)
+List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg, 
+			 int first_node_id, int timeout)
 {
 	List ret_list = NULL;
 	List tmp_ret_list = NULL;
@@ -1797,7 +1816,8 @@ List slurm_send_recv_rc_msg2(const char *nodelist, slurm_msg_t *msg,
 	char buf[8192];
 	hostlist_t hl = hostlist_create(nodelist);
 	ret_data_info_t *ret_data_info = NULL;
-	
+	ListIterator itr;
+
 	while((name = hostlist_pop(hl))) {
 		info("sending to %s", name);
 		slurm_conf_get_addr(name, &msg->address);
@@ -1820,14 +1840,24 @@ List slurm_send_recv_rc_msg2(const char *nodelist, slurm_msg_t *msg,
 		msg->forward.timeout = timeout;
 		msg->forward.cnt = hostlist_count(hl);
 		
-		if(!(ret_list = _send_recv_rc_msg(fd, msg, timeout))) {	
+		if(!(ret_list = _send_recv_msg(fd, msg->address,
+					       msg, timeout))) {	
 			xfree(msg->forward.nodelist);
 			mark_as_failed_forward(&tmp_ret_list, name, 
 					       first_node_id, errno);
 			first_node_id++;
 			free(name);
 			continue;
-		} 
+		} else {
+			itr = list_iterator_create(ret_list);
+			while((ret_data_info = list_next(itr))) 
+				if(!ret_data_info->node_name) {
+					ret_data_info->node_name =
+						xstrdup(name);
+					ret_data_info->nodeid = first_node_id;
+				}
+			list_iterator_destroy(itr);
+		}
 		free(name);
 		break;		
 	}
@@ -1874,7 +1904,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 		return -1;
 	}
 			
-	ret_list = _send_recv_rc_msg(fd, req, timeout);
+	ret_list = _send_recv_msg(fd, req->address, req, timeout);
 	if(ret_list) {
 		if(list_count(ret_list)>1) 
 			error("Got %d, expecting 1 from message receiving",
@@ -1917,7 +1947,8 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 		
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return -1;
-	ret_list = _send_recv_rc_msg(fd, req, 0);
+	ret_list = _send_recv_msg(fd, proto_conf->primary_controller, 
+				  req, 0);
 	
 	if(ret_list) {
 		if(list_count(ret_list)>1)

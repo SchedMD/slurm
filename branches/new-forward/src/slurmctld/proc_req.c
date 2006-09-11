@@ -2466,10 +2466,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
-	memcpy(agent_arg_ptr->slurm_addr,
-	       &(node_ptr->slurm_addr), sizeof(struct sockaddr_in));
-	agent_arg_ptr->node_names = xstrdup(node_ptr->name);
+	agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 

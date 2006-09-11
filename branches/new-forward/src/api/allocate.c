@@ -649,7 +649,7 @@ _accept_msg_connection(int listen_fd, resource_allocation_response_msg_t **resp)
 	msg->ret_list = NULL;
 	msg->conn_fd = conn_fd;
 	
-	ret_list = slurm_receive_msg(conn_fd, msg, 0);
+	ret_list = slurm_receive_msg(conn_fd, cli_addr, msg, 0);
 
 	if (!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {

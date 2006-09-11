@@ -487,6 +487,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	int len = sizeof(addr);
 	int          timeout = 0;	/* slurm default value */
 	List ret_list = NULL;
+	slurm_addr recv_addr;
 
 	debug3("Called _msg_socket_accept");
 
@@ -522,8 +523,9 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
+	memcpy(&recv_addr, &addr, sizeof(slurm_addr));
 again:
-	ret_list = slurm_receive_msg(fd, msg, timeout);
+	ret_list = slurm_receive_msg(fd, recv_addr, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
 			list_destroy(ret_list);
@@ -717,10 +719,9 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	int zero = 0;
 	List ret_list = NULL;
 	ListIterator ret_itr;
-	ListIterator ret_data_itr;
-	ret_types_t *ret;
 	ret_data_info_t *ret_data;
 	int timeout;
+	int rc = SLURM_SUCCESS;
 
 	debug("Entering _launch_tasks");
 	slurm_msg_t_init(&msg);
@@ -746,35 +747,26 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	hostlist_iterator_destroy(itr);
 	hostlist_destroy(hostlist);
 
-	ret_list =
-		slurm_send_recv_rc_packed_msg(&msg, timeout);
+	ret_list = slurm_send_recv_rc_packed_msg(&msg, timeout);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_rc_packed_msg failed miserably: %m");
 		return SLURM_ERROR;
 	}
 	ret_itr = list_iterator_create(ret_list);
-	while ((ret = list_next(ret_itr)) != NULL) {
+	while ((ret_data = list_next(ret_itr))) {
+		rc = slurm_get_return_code(ret_data->type, 
+					   ret_data->data);
 		debug("launch returned msg_rc=%d err=%d type=%d",
-		      ret->msg_rc, ret->err, ret->type);
-		if (ret->msg_rc != SLURM_SUCCESS) {
-			ret_data_itr =
-				list_iterator_create(ret->ret_data_list);
-			while ((ret_data = list_next(ret_data_itr)) != NULL) {
-				errno = ret->err;
-				error("Task launch failed on node %s(%d): %m",
-				      ret_data->node_name, ret_data->nodeid);
-			}
-			list_iterator_destroy(ret_data_itr);
+		      rc, ret_data->err, ret_data->type);
+		if (rc != SLURM_SUCCESS) {
+			errno = ret_data->err;
+			error("Task launch failed on node %s(%d): %m",
+			      ret_data->node_name, ret_data->nodeid);
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
-			ret_data_itr =
-				list_iterator_create(ret->ret_data_list);
-			while ((ret_data = list_next(ret_data_itr)) != NULL) {
-				errno = ret->err;
-				info("Launch success on node %s(%d)",
-				     ret_data->node_name, ret_data->nodeid);
-			}
-			list_iterator_destroy(ret_data_itr);
+			errno = ret_data->err;
+			info("Launch success on node %s(%d)",
+			     ret_data->node_name, ret_data->nodeid);
 #endif
 		}
 	}

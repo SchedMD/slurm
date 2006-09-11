@@ -134,7 +134,8 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	int rc = SLURM_PROTOCOL_SUCCESS;
 	slurm_fd fd = -1;
 	slurm_msg_t resp_msg;
-
+	slurm_addr addr;
+	
 	List ret_list = NULL;
 	
 	/*always only going to 1 node */
@@ -145,8 +146,9 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
-	
-	ret_list = slurm_receive_msg(fd, &resp_msg, 0);
+
+	slurm_get_controller_addr_spec(dest, &addr);
+	ret_list = slurm_receive_msg(fd, addr, &resp_msg, 0);
 	if(!ret_list)
 		return SLURM_ERROR;
 	if(list_count(ret_list)>0) {

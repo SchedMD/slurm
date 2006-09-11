@@ -278,7 +278,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	msg->conn_fd = fd;
 		
   again:
-	ret_list = slurm_receive_msg(fd, msg, 0);
+	ret_list = slurm_receive_msg(fd, cli_addr, msg, 0);
 
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {

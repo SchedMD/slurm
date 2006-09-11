@@ -921,7 +921,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
 again:
-	ret_list = slurm_receive_msg(fd, msg, timeout);
+	ret_list = slurm_receive_msg(fd, cli_addr, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
 			list_destroy(ret_list);

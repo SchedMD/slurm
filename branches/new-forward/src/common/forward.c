@@ -74,8 +74,8 @@ void *_forward_thread(void *arg)
 	int first_node_id = fwd_msg->header.srun_node_id;
 	slurm_addr addr;
 	char buf[8196];
+	slurm_msg_t_init(&msg);
 
-	msg.forward.cnt = 0;
 	while(1) { /* repeat until we are sure the message was sent */ 
 		name = hostlist_pop(hl);
 		if(!name)
@@ -159,7 +159,7 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 	
-		ret_list = slurm_receive_msg(fd, &msg, fwd_msg->timeout);
+		ret_list = slurm_receive_msg(fd, addr, &msg, fwd_msg->timeout);
 
 		if(!ret_list || (fwd_msg->header.forward.cnt != 0 
 				 && list_count(ret_list) == 0)) {
@@ -592,31 +592,31 @@ extern void forward_wait(slurm_msg_t * msg)
 	return;
 }
 
-extern int no_resp_forwards(forward_t *forward, List *ret_list, int err)
-{
-	ret_data_info_t *ret_data_info = NULL;
-	char *name = NULL;
-	int i=0;
-	hostlist_t hl = NULL;
+/* extern int no_resp_forwards(forward_t *forward, List *ret_list, int err) */
+/* { */
+/* 	ret_data_info_t *ret_data_info = NULL; */
+/* 	char *name = NULL; */
+/* 	int i=0; */
+/* 	hostlist_t hl = NULL; */
 	
-	if(!*ret_list)
-		*ret_list = list_create(destroy_data_info);
-	if(forward->cnt == 0)
-		goto no_forward;
-	error("something bad happened");
+/* 	if(!*ret_list) */
+/* 		*ret_list = list_create(destroy_data_info); */
+/* 	if(forward->cnt == 0) */
+/* 		goto no_forward; */
+/* 	error("something bad happened"); */
 	
-	hl = hostlist_create(forward->nodelist);
-	while((name = hostlist_pop(hl))) {
-		ret_data_info = xmalloc(sizeof(ret_data_info_t));
-		list_push(*ret_list, ret_data_info);
-		ret_data_info->node_name = xstrdup(name);
-		free(name);
-		ret_data_info->nodeid = forward->first_node_id+(i++);
-	}
-	hostlist_destroy(hl);
-no_forward:
-	return SLURM_SUCCESS;
-}
+/* 	hl = hostlist_create(forward->nodelist); */
+/* 	while((name = hostlist_pop(hl))) { */
+/* 		ret_data_info = xmalloc(sizeof(ret_data_info_t)); */
+/* 		list_push(*ret_list, ret_data_info); */
+/* 		ret_data_info->node_name = xstrdup(name); */
+/* 		free(name); */
+/* 		ret_data_info->nodeid = forward->first_node_id+(i++); */
+/* 	} */
+/* 	hostlist_destroy(hl); */
+/* no_forward: */
+/* 	return SLURM_SUCCESS; */
+/* } */
 
 void destroy_data_info(void *object)
 {

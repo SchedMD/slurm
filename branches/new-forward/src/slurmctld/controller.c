@@ -165,6 +165,7 @@ static bool         _wait_for_server_thread(void);
 
 typedef struct connection_arg {
 	int newsockfd;
+	slurm_addr addr;
 } connection_arg_t;
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -585,6 +586,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
+		conn_arg->addr = cli_addr;
 		if (slurmctld_config.shutdown_time)
 			no_thread = 1;
 		else if (pthread_create(&thread_id_rpc_req,
@@ -617,19 +619,20 @@ static void *_slurmctld_rpc_mgr(void *no_data)
  */
 static void *_service_connection(void *arg)
 {
-	slurm_fd newsockfd = ((connection_arg_t *) arg)->newsockfd;
+	connection_arg_t *conn = (connection_arg_t *) arg;
 	void *return_code = NULL;
 	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	
-	ret_list = slurm_receive_msg(newsockfd, msg, 0);	
-	msg->conn_fd = newsockfd;
+	ret_list = slurm_receive_msg(conn->newsockfd, conn->addr, msg, 0);
+
 	if(!ret_list) {
 		error("slurm_receive_msg: %m");
-		/* close should only be called when the socket implementation is 
-		 * being used the following call will be a no-op in a 
+		/* close should only be called when the socket implementation
+		 * is being used the following call will be a no-op in a 
 		 * message/mongo implementation */
-		slurm_close_accepted_conn(newsockfd);	/* close the new socket */
+		/* close the new socket */
+		slurm_close_accepted_conn(conn->newsockfd);
 		goto cleanup;
 	}
 
@@ -647,8 +650,9 @@ static void *_service_connection(void *arg)
 		/* process the request */
 		slurmctld_req (msg);
 	}
-	if ((newsockfd >= 0) && slurm_close_accepted_conn(newsockfd) < 0)
-		error ("close(%d): %m",  newsockfd);
+	if ((conn->newsockfd >= 0) 
+	    && slurm_close_accepted_conn(conn->newsockfd) < 0)
+		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:
 	slurm_free_msg(msg);

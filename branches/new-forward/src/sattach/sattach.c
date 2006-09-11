@@ -242,70 +242,6 @@ static char *_node_list_remove_first(const char *nodes)
 }
 #endif
 
-/*
- * Take a NodeName list in hostlist_t string format, and expand
- * it into one giant string of NodeNames, in which each NodeName is
- * found at regular offsets of MAX_SLURM_NAME bytes into the string.
- *
- * Also, it trims off the first NodeName, which is not used because we
- * send to that node directly.
- *
- * Free returned string with xfree();
- */
-static char *_create_ugly_nodename_string(const char *node_list, uint32_t count)
-{
-	char *ugly_str;
-	hostlist_t nl;
-	hostlist_iterator_t itr;
-	char *node;
-	int i;
-
-	ugly_str = xmalloc(MAX_SLURM_NAME *count);
-	nl = hostlist_create(node_list);
-	itr = hostlist_iterator_create(nl);
-	
-	/* skip the first node */
-	free(hostlist_next(itr));
-
-	/* now add all remaining node names up to a maximum of "count" */
-	for (i = 0; (i < count) && ((node = hostlist_next(itr)) != NULL); i++) {
-		strcpy(ugly_str + (i*MAX_SLURM_NAME), node);
-		free(node);
-	}
-
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(nl);
-	return ugly_str;
-}
-
-/*
- * Create a simple array of sequential uint32_t values from "first" to "last".
- * For example, if "first" is 3 and "last" is 8, the array would contain:
- *     3, 4, 5, 6, 7, 8
- *
- * Free the returned array with xfree().
- *
- * Returns NULL on error.
- */
-static uint32_t *_create_range_array(uint32_t first, uint32_t last)
-{
-	uint32_t i, current, len, *array;
-
-	if (first > last) {
-		error("_create_range_array, \"first\" (%d)"
-		      " cannot be greater than \"last\" (%d)", first, last);
-		return NULL;
-	}
-
-	len = last - first + 1;
-	array = xmalloc(sizeof(uint32_t) * len);
-	for (i = 0, current = first; i < len; i++, current++) {
-		array[i] = current;
-	}
-
-	return array;
-}
-
 void _handle_response_msg(slurm_msg_type_t msg_type, void *msg)
 {
 	reattach_tasks_response_msg_t *resp;
@@ -343,33 +279,22 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg)
 
 void _handle_response_msg_list(List other_nodes_resp)
 {
-	ListIterator itr1, itr2;
-	ret_types_t *ret;
-	ret_data_info_t *ret_msg_wrapper;
+	ListIterator itr;
+	ret_data_info_t *ret_data_info = NULL;
+	uint32_t msg_rc;
 
-	itr1 = list_iterator_create(other_nodes_resp);
-	while ((ret = list_next(itr1)) != NULL) {
+	itr = list_iterator_create(other_nodes_resp);
+	while ((ret_data_info = list_next(itr))) {
+		msg_rc = slurm_get_return_code(ret_data_info->type,
+					       ret_data_info->data);
 		debug("Attach returned msg_rc=%d err=%d type=%d",
-		      ret->msg_rc, ret->err, ret->type);
-		if (ret->msg_rc != SLURM_SUCCESS) {
-			itr2 = list_iterator_create(ret->ret_data_list);
-			while ((ret_msg_wrapper = list_next(itr2)) != NULL) {
-				errno = ret->err;
-				_handle_response_msg(ret->type,
-						     ret_msg_wrapper->data);
-			}
-			list_iterator_destroy(itr2);
-		} else {
-			itr2 = list_iterator_create(ret->ret_data_list);
-			while ((ret_msg_wrapper = list_next(itr2)) != NULL) {
-				_handle_response_msg(ret->type,
-						     ret_msg_wrapper->data);
-			}
-			list_iterator_destroy(itr2);
-		}
+		      msg_rc, ret_data_info->err, ret_data_info->type);
+		if (msg_rc != SLURM_SUCCESS) 
+			errno = ret_data_info->err;
+		_handle_response_msg(ret_data_info->type,
+				     ret_data_info->data);
 	}
-
-	list_iterator_destroy(itr1);
+	list_iterator_destroy(itr);
 }
 
 static int _attach_to_tasks(uint32_t jobid,
@@ -381,13 +306,12 @@ static int _attach_to_tasks(uint32_t jobid,
 			    int num_io_ports,
 			    uint16_t *io_ports)
 {
-	slurm_msg_t msg, first_node_resp;
-	List other_nodes_resp = NULL;
+	slurm_msg_t msg;
+	List nodes_resp = NULL;
 	int timeout;
 	reattach_tasks_request_msg_t reattach_msg;
 
 	slurm_msg_t_init(&msg);
-	slurm_msg_t_init(&first_node_resp);
 	
 	timeout = slurm_get_msg_timeout() * 1000; /* sec to msec */
 
@@ -401,37 +325,17 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	msg.msg_type = REQUEST_REATTACH_TASKS;
 	msg.data = &reattach_msg;
-	msg.srun_node_id = 0;
-
-	msg.forward.cnt = layout->node_cnt - 1;
-	if (layout->node_cnt > 1) {
-		msg.forward.node_id =
-			_create_range_array(1, layout->node_cnt-1);
-		msg.forward.name = _create_ugly_nodename_string(
-			layout->node_list, layout->node_cnt-1);
-		msg.forward.addr = layout->node_addr + 1;
-		msg.forward.timeout = timeout;
-	}
-
-	memcpy(&msg.address, layout->node_addr + 0,
-	       sizeof(slurm_addr));
-
-	other_nodes_resp = slurm_send_recv_node_msg(&msg, &first_node_resp,
-						    timeout);
-	if (other_nodes_resp == NULL) {
-		error("slurm_send_recv_node_msg failed: %m");
-		xfree(msg.forward.node_id);
-		xfree(msg.forward.name);
+	
+	nodes_resp = slurm_send_recv_msg(layout->node_list, &msg, 0, timeout);
+	if (nodes_resp == NULL) {
+		error("slurm_send_recv_msg failed: %m");
 		return SLURM_ERROR;
 	}
 
-	_handle_response_msg(first_node_resp.msg_type, first_node_resp.data);
-	_handle_response_msg_list(other_nodes_resp);
+	_handle_response_msg_list(nodes_resp);
 
-	list_destroy(other_nodes_resp);
-	xfree(msg.forward.node_id);
-	xfree(msg.forward.name);
-
+	list_destroy(nodes_resp);
+	
 	return SLURM_SUCCESS;
 }
 
@@ -537,6 +441,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	int len = sizeof(addr);
 	int          timeout = 0;	/* slurm default value */
 	List ret_list = NULL;
+	slurm_addr recv_addr;
 
 	debug3("Called _msg_socket_accept");
 
@@ -572,8 +477,9 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
+	memcpy(&recv_addr, &addr, sizeof(slurm_addr));
 again:
-	ret_list = slurm_receive_msg(fd, msg, timeout);
+	ret_list = slurm_receive_msg(fd, recv_addr, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
 			list_destroy(ret_list);

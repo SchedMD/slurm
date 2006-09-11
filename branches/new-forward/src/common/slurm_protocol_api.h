@@ -307,7 +307,8 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
  *  forwarded the message to if an entire message is successfully 
  *  received. Otherwise NULL is returned.
  */
-List slurm_receive_msg(slurm_fd fd, slurm_msg_t *resp, int timeout);
+List slurm_receive_msg(slurm_fd fd, slurm_addr orig_addr, 
+		       slurm_msg_t *resp, int timeout);
 
 /**********************************************************************\
  * send message functions
@@ -335,6 +336,12 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg);
  */
 slurm_fd inline slurm_open_controller_conn();
 slurm_fd inline slurm_open_controller_conn_spec(enum controller_id dest);
+/* gets the slurm_addr of the specified controller
+ *	primary or secondary slurmctld message engine
+ * IN dest      - controller to contact, primary or secondary
+ * OUT addr     - slurm_addr to the specified controller
+ */
+void slurm_get_controller_addr_spec(enum controller_id dest, slurm_addr *addr);
 
 /* In the bsd socket implementation it creates a SOCK_STREAM socket  
  *	and calls connect on it a SOCK_DGRAM socket called with connect   
@@ -600,10 +607,11 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
  *  and receive List of "return codes" from all nodes
  */
 List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout);
+
 /*
  *  Send a message to the nodelist specificed using fanout
- *    Then read back an "rc" message returning List containing 
- *    type (ret_types_t).
+ *    Then return List containing type (ret_data_info_t). and filling
+ *    in the resp with info from resp.
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN first_node_id - a slurm_msg struct to be sent by the function
@@ -612,8 +620,8 @@ List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout);
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
-List slurm_send_recv_rc_msg2(const char *nodelist, slurm_msg_t *msg, 
-			     int first_node_id, int timeout);
+List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg, 
+			 int first_node_id, int timeout);
 
 /*
  *  Same as above, but only to one node 
