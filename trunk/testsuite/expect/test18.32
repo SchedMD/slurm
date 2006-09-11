@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Basic test of MPI functionality via srun
+#          Basic test of MPI functionality via slaunch
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -11,7 +11,7 @@
 # Note:    This script generates and then deletes a file in the working 
 #          directory named test1.88.prog
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -35,7 +35,7 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.88"
+set test_id            "18.32"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
@@ -81,13 +81,15 @@ file delete $file_out $file_err
 #
 make_bash_script $file_in "
   $bin_echo test1_N3_n6_cyclic
-  $srun -n6 --distribution=cyclic $test_prog
+  $slaunch -n6 --distribution=cyclic $test_prog
   $bin_echo test2_n6_block
-  $srun -n6 --distribution=block  $test_prog
+  $slaunch -n6 --distribution=block  $test_prog
   $bin_echo test3_n4_cyclic
-  $srun -n4 --distribution=cyclic $test_prog
+  $slaunch -n4 --distribution=cyclic $test_prog
   $bin_echo test4_n4_block
-  $srun -n4 --distribution=block  $test_prog
+  $slaunch -n4 --distribution=block  $test_prog
+  $bin_echo test5_N2_n4_with_hole
+  $slaunch -N2 -n4 --distribution=cyclic --nodelist-byid=0,2  $test_prog
   $bin_echo TEST_COMPLETE
 "
 
@@ -148,7 +150,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output in stdout
 #
-set expected [expr 6 + 6 + 4 + 4]
+set expected [expr 6 + 6 + 4 + 4 + 4]
 if {[wait_for_file $file_out] == 0} {
 	set matches  0
 	set complete 0

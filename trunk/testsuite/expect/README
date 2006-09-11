@@ -155,7 +155,7 @@ test1.86   Confirm node selection from within a job step on existing allocation
            (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation
            (--relative, --nodes and --nprocs options).
-test1.88   Basic MPI functionality tests.
+test1.88   Basic MPI functionality tests via srun.
 test1.89   Test of CPU affinity support.
 test1.90   Test of memory affinity support for NUMA systems.
 **NOTE**   The above tests for mutliple processor/partition systems only
@@ -480,7 +480,7 @@ test18.30  Confirm that a job executes with the proper node count
            (--nodes option).
 test18.31  Confirm that a job executes with the specified nodes
             (--relative, --nodelist-byname and --nodelist-byid).
-test18.TBD Basic MPI functionality tests.
+test18.32  Basic MPI functionality tests via slaunch.
 test18.TBD Test of CPU affinity support.
 test18.TBD Test of memory affinity support for NUMA systems.
 test18.TBD Verify that SLURM directed environment variables are processed:
