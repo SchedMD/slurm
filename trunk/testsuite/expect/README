@@ -359,7 +359,8 @@ test15.17  Test the launch of a batch job within an existing job allocation.
 test15.18  Test of running non-existant job, confirm timely termination.
 test15.19  Confirm that a job executes with the proper node count
            (--nodes option).
-test15.20  Test of contiguous option with multiple nodes (--contiguous option).
+test15.20  Confirm that a job executes with the specified nodes
+           (--nodelist and --exclude options).
 test15.21  Test of contiguous option with multiple nodes (--contiguous option).
 test15.22  Test of partition specification on job submission (--partition  
            option).
@@ -473,17 +474,15 @@ test18.27  Confirm that a job executes with the proper task distribution
            (--nodes and --distribution options).
 test18.28  Confirm that a job executes with the proper node count
            (--nodes option).
-test18.TBD Verify that SLURM directed environment variables are processed:
-           SLAUNCH_DEBUG, etc.
-**NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
-           The test will print "WARNING" and terminate with an exit code of
-           zero if the cluster configuration does not permit proper testing.
-test18.TBD Confirm that a job executes with the proper node count
+test18.29  Test of cpus-per-task option on a single node (--cpus-per-task  
+           option).
+test18.30  Confirm that a job executes with the proper node count
            (--nodes option).
-test18.TBD Confirm that a job executes with the specified nodes
-           (--relative, --nodelist, --exclude options).
+test18.31  Confirm that a job executes with the specified nodes
+            (--relative, --nodelist-byname and --nodelist-byid).
 test18.TBD Basic MPI functionality tests.
 test18.TBD Test of CPU affinity support.
 test18.TBD Test of memory affinity support for NUMA systems.
-**NOTE**   The above tests for mutliple processor/partition systems only
+test18.TBD Verify that SLURM directed environment variables are processed:
+           SLAUNCH_DEBUG, etc.
 
