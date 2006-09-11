@@ -437,26 +437,25 @@ test18.1   Confirm slaunch usage option works (--usage option).
 test18.2   Confirm slaunch help option works (--help option).
 test18.3   Confirm that slaunch reports a proper version number
            (--version option).
-test18.4   Confirm that a job executes with the proper task count (--nprocs
+test18.4   Confirm that a job executes with the proper task count (--tasks
            and --overcommit options).
 test18.5   Confirm that slauch local stdin, stdout, and stderr options work
-           (options --local-input, --local-output and --local-error
+           (options --slaunch-input, --slaunch-output and --slaunch-error 
            respectively).
-test18.6   Test of slaunch verbose mode (-v option).
-test18.7   Test of slaunch/slurmd debug mode (--debug option).
+test18.6   Test of slaunch verbose mode (--verbose option).
+test18.7   Test of slaunch/slurmd debug mode (--slurmd_debug option).
 test18.8   Confirm that slaunch buffering can be disabled (--unbuffered option).
 test18.9   Test of wait option (--wait option).
-test18.10  Test slaunch stdout/err disabling (--output and --error options
-           with argument of "none").
-test18.11  Test slaunch stdout/err file name formatting (--local-output and 
-           --local-error options with %j, %J, %n, %s and %t specifications).
-test18.12  Test slaunch stdin routing to specific task (--local-input option
-           with numeric argument).
-test18.13  Confirm that a job executes with various launch thread fanouts
-           (--threads option).
+test18.10  Test slaunch task stdout/err disabling (--task-output and 
+           --task-error options).
+test18.11  Test slaunch stdout/err file name formatting (--task-output and 
+           --task-error options with %j, %J, %n, %s and %t specifications).
+test18.12  Test slaunch stdin routing to specific task (--slaunch-input-filter
+           option with numeric argument).
+test18.13  DELETED
 test18.14  Verify the appropriate job environment variables are set
 test18.15  Verify that user environment variables are propagated to the job
-test18.16  Verify that user user limits are propagated to the job
+test18.16  Verify that user limits are propagated to the job
 test18.17  Test of salloc and slaunch exit code reporting
 test18.18  Test of parallel launch of slaunch ("slaunch slaunch id").
 test18.19  Test of slaunch signal forwarding (actually using scancel, for 
@@ -467,7 +466,7 @@ test18.21  Test of slaunch's --kill-on-bad-exit option.
 test18.22  Test of slaunch task-prolog and task-epilog option.
 test18.23  Test of running non-existant job, confirm timely termination.
 test18.24  Test propagation of umask to spawned tasks.
-test18.25  Test of hostfile option (-hostfile).
+test18.25  Test of HOSTFILE environment variable.
 test18.26  Test of running different executables with different arguments
            for each task (--multi-prog option).
 test18.27  Confirm that a job executes with the proper task distribution
