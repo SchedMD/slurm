@@ -344,9 +344,8 @@ test15.7   Test of processors, memory, and temporary disk space
            Also test that priority zero job is not started (--hold option).
 test15.8   Test of immediate allocation option (--immediate option).
 test15.9   Confirm that salloc exit code processing.
-test15.10  Confirm that a job allocates the proper procesor count (--nprocs)
-test15.11  Test of processors, memory, and temporary disk space
-           constraints options (--mincpus, --mem, and --tmp options).
+test15.10  Confirm that a job allocates the proper procesor count (--tasks)
+test15.11  DUPLICATE
 test15.12  Verify node configuration specification (--constraint option).
 test15.13  Verify the appropriate job environment variables are set
 test15.14  Test of account number and job dependencies (--account
