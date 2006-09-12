@@ -199,6 +199,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.ifname = params->remote_input_filename;
 	launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
 
+	launch.task_flags = 0;
 	if (params->parallel_debug)
 		launch.task_flags |= TASK_PARALLEL_DEBUG;
 
