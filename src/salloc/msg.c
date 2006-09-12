@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  src/salloc/msg.c - Message handler for salloc
- *
- *  $Id: salloc.c 8570 2006-07-13 21:12:58Z morrone $
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -180,7 +178,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 	
-	timeout = slurm_get_msg_timeout();
+	timeout = slurm_get_msg_timeout() * 1000;	/* secs to msecs */
 again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
 	if(!ret_list || errno != SLURM_SUCCESS) {
