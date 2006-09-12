@@ -760,6 +760,36 @@ proc default_partition {} {
     return $name
 }
 
+################################################################
+#
+# Proc: switch_type
+#
+# Purpose: Use scontrol to determine the switch type
+#
+# Returns: Name of SwitchType
+#
+################################################################
+
+proc switch_type {} {
+    global scontrol
+
+    set name ""
+    set fd [open "|$scontrol show config"]
+    while {[gets $fd line] != -1} {
+        if {[regexp {^SwitchType *= switch/(\w+)} $line frag name]
+            == 1} {
+            break
+        }
+    }
+    catch {close $fd}
+
+    if {[string length $name] == 0} {
+        send_user "ERROR: could not identify the switch type"
+    }
+
+    return $name
+}
+
 
 ################################################################
 #

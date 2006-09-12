@@ -33,11 +33,7 @@ source ./globals
 
 set test_id     "18.25"
 set exit_code   0
-set num_nodes   2
-set num_tasks   2
 set node_count  0
-set max_nodes   100
-set task_count  0
 set job_id      0
 set hostfile    "test$test_id.hostfile"
 
@@ -45,46 +41,38 @@ print_header $test_id
 
 exec $bin_rm -f $hostfile
 if { [test_front_end] } {
-	send_user "\nWARNING: This test incompatable with front-end Systems\n"
+	send_user "\nWARNING: This test incompatable with front-end systems\n"
+	exit $exit_code
+}
+
+if {[string compare [switch_type] "elan"] == 0} {
+	send_user "\nWARNING: This test incompatable with elan switch\n"
 	exit $exit_code
 }
 
 #find out if we have enough nodes to test functionality
-set def_part [default_partition]
-spawn $scontrol show partition $def_part
-expect {
-	-re "not found" {
-		send_user "\nFAILURE: partition $def_part doesn't exist\n"
-		exit 1
-	}
-	-re "TotalNodes=($number)" {
-		set node_count $expect_out(1,string)
-		exp_continue
-	}
-	-re "MaxNodes=(($number)|(UNLIMITED))" {
-		set max_nodes $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-if { ($node_count < 2)
-     || (([string compare $max_nodes UNLIMITED] != 0) && ($max_nodes < 2)) } {
-	send_user "WARNING: system must have at least 2 nodes to run this test on.\n" 
+set node_count [available_nodes [default_partition]]
+if { $node_count < 2 } {
+	send_user "WARNING: system must have at least 2 nodes to run this test.\n" 
 	exit $exit_code
 }
 
+set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N2 sleep 30]
 set salloc_spawn_id $spawn_id
 expect {
-    -re "Granted job allocation ($number)" {
-	set jobid $expect_out(1,string)
-    }
+	-re "Granted job allocation ($number)" {
+		set jobid $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id == 0} {
+			kill_salloc
+		} else {
+			cancel_job $job_id
+		}
+		exit 1
+	}
 }
 
 #
@@ -92,20 +80,20 @@ expect {
 #
 set node0 0
 set node1 0
-spawn slaunch --jobid $jobid -l $bin_printenv SLURMD_NODENAME
+spawn $slaunch --jobid $jobid -l $bin_printenv SLURMD_NODENAME
 expect {
-    -re "($number): ($alpha_numeric)" {
-	set task_id $expect_out(1,string)
-	if {$task_id == 0} {
-	    set node0 $expect_out(2,string)
-	} else {
-	    set node1 $expect_out(2,string)
+	-re "($number): ($alpha_numeric)" {
+		set task_id $expect_out(1,string)
+		if {$task_id == 0} {
+			set node0 $expect_out(2,string)
+		} else {
+			set node1 $expect_out(2,string)
+		}
+		exp_continue
 	}
-	exp_continue
-    }
-    eof {
-	wait
-    }
+	eof {
+		wait
+	}
 }
 
 
@@ -114,8 +102,8 @@ expect {
 # the default.
 #
 if { $node0 == 0 || $node1 == 0 } {
-    send_user "\nFAILURE: node names not set from previous srun\n"
-    exit 1
+	send_user "\nFAILURE: node names not set from previous srun\n"
+	exit 1
 }
 set env(SLURM_HOSTFILE) $hostfile
 set 1node0 $node0
@@ -128,20 +116,20 @@ close $file
 #
 # slaunch the tasks using the hostfile
 #
-spawn slaunch --jobid $jobid -l --task-layout-file $hostfile $bin_printenv SLURMD_NODENAME
+spawn $slaunch --jobid $jobid -l --task-layout-file $hostfile $bin_printenv SLURMD_NODENAME
 expect {
-    -re "($number): ($alpha_numeric)" {
-	set task_id $expect_out(1,string)
-	if {$task_id == 0} {
-	    set node0 $expect_out(2,string)
-	} else {
-	    set node1 $expect_out(2,string)
+	-re "($number): ($alpha_numeric)" {
+		set task_id $expect_out(1,string)
+		if {$task_id == 0} {
+			set node0 $expect_out(2,string)
+		} else {
+			set node1 $expect_out(2,string)
+		}
+		exp_continue
 	}
-	exp_continue
-    }
-    eof {
-	wait
-    }
+	eof {
+		wait
+	}
 }
 
 #
@@ -150,9 +138,9 @@ expect {
 exec $bin_kill -s SIGINT -$salloc_pid
 set spawn_id $salloc_spawn_id
 expect {
-    eof {
-	wait
-    }
+	eof {
+		wait
+	}
 }
 
 if { [string compare $node0 $1node1] } {
