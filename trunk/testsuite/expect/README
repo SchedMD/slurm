@@ -364,8 +364,8 @@ test15.20  Confirm that a job executes with the specified nodes
 test15.21  Test of contiguous option with multiple nodes (--contiguous option).
 test15.22  Test of partition specification on job submission (--partition  
            option).
-test15.TBD Test of environment variables that control salloc actions: 
-           SALLOC_DEBUG, ...
+test15.23  Test of environment variables that control salloc actions: 
+           SALLOC_ACCOUNT, SALLOC_DEBUG and SALLOC_TIMELIMIT
 
 
 test16.#   Testing of sattach options.
@@ -481,7 +481,7 @@ test18.30  Confirm that a job executes with the proper node count
 test18.31  Confirm that a job executes with the specified nodes
             (--relative, --nodelist-byname and --nodelist-byid).
 test18.32  Basic MPI functionality tests via slaunch.
-test18.33  Verify that SLURM directed environment variables are processed
+test18.33  Verify environment variables controlling slaunch are processed:
            SLAUNCH_DEBUG, SLAUNCH_DISTRIBUTION, SLAUNCH_LABELIO and 
            SLAUNCH_OVERCOMMIT
 test18.34  Test slaunch's ability to set the job step's name (--name option)
