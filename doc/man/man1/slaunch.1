@@ -148,9 +148,10 @@ Some network switch layers do not permit arbitrary task layout.
 
 .TP 
 \fB\-F\fR, \fB\-\-task\-layout\-file\fR[=]<\fIfilename\fR>
-Request a specific task layout.  This options much like the \-\-task\-layout
-option, except that instead of a nodelist you supply the name of a file.
-The file contains a nodelist that may span multiple lines of the file.
+Request a specific task layout.  This option is much like the
+\-\-task\-layout\-byname option, except that instead of a nodelist you
+supply the name of a file.  The file contains a nodelist that may span
+multiple lines of the file.
 
 NOTE: This option implicitly sets the task distribution method to "arbitrary".
 Some network switch layers do not permit arbitrary task layout.
@@ -346,6 +347,28 @@ Specify the address or hostname to be used for PMI communications only
 (MPCIH2 communication bootstrapping mechanism).
 Defaults to short hostname of the node on which slaunch is running.
 
+.TP
+\fB\-\-network\fR=\fIoptions\fR
+(NOTE: this option is currently only of use on AIX systems.)
+Specify the communication protocol to be used. 
+The interpretation of \fItype\fR is system dependent. 
+For AIX systems with an IBM Federation switch, the following 
+comma\-separated and case insensitive options are recongnized:
+\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
+\fBBULK_XFER\fR and adapter names. For more information, on 
+IBM systems see \fIpoe\fR documenation on the environment variables 
+\fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
+
+.TP
+\fB\-\-multi\-prog\fR
+This option allows one to launch tasks with different executables within
+the same job step.  When this option is present, slaunch no long accepts
+the name of an executable "command" on the command line, instead it accepts
+the name of a file.  This file specifies which executables and command line
+parameters should be used by each task in the job step.  See the section 
+\fBMULTIPLE PROGRAMS FILE\fR below for an explanation of the multiple program
+file syntax.
+
 .TP 
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
@@ -358,11 +381,176 @@ Display brief usage message and exit.
 \fB\-V\fR, \fB\-\-version\fR
 Display version information and exit.
 
+.PP
+Affinity/Multi-core Options (when the task/affinity or task/numa 
+plugin is enabled):
+.TP
+\fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+Bind tasks to CPUs
+.RS
+.TP
+.B q[uiet],
+quietly bind before task runs (default)
+.TP
+.B v[erbose],
+verbosely report binding before task runs
+.TP
+.B no[ne]
+don't bind tasks to CPUs (default)
+.TP
+.B rank
+bind by task rank
+.TP
+.B map_cpu:<list>
+bind by mapping CPU IDs to tasks as specified
+where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
+CPU IDs are interpreted as decimal values unless they are preceded
+with '0x' in which case they interpreted as hexadecimal values.
+.TP
+.B mask_cpu:<list>
+bind by setting CPU masks on tasks as specified
+where <list> is <mask1>,<mask2>,...<maskN>.
+CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
+preceded with an optional '0x'.
+.RE
+
+To have SLURM always report on the selected CPU binding for all srun commands
+executed in a shell, you can also enable verbose mode separately from
+the command line with:
+.PP
+.nf
+        setenv SLURM_CPU_BIND verbose
+.fi
+.PP
+SLURM_CPU_BIND will not propagate into the tasks environment (binding
+by default only affects the first srun).  To propagate \-\-cpu_bind to
+successive srun commands, first do the following in each task:
+.PP
+.nf
+ setenv SLURM_CPU_BIND \\
+   ${SLURM_CPU_BIND_VERBOSE},${SLURM_CPU_BIND_TYPE}${SLURM_CPU_BIND_LIST}
+.fi
+
+.PP
+Affinity/Multi-core Options (when the task/affinity plugin is enabled and 
+the NUMA memory functions are available):
+.TP
+\fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+Bind tasks to memory. \fBNote that the resolution of CPU and memory binding 
+may differ on some architectures.\fR For example, CPU binding may be performed 
+at the level of the cores within a processor while memory binding will 
+be performed at the level of nodes, where the definition of "nodes" 
+may differ from system to system. \fBThe use of any type other than 
+"none" or "local" is not recommended.\fR
+If you want greater control, try running a simple test code with the 
+options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine 
+the specific configuration.
+.RS
+.TP
+.B q[uiet],
+quietly bind before task runs (default)
+.TP
+.B v[erbose],
+verbosely report binding before task runs
+.TP
+.B no[ne]
+don't bind tasks to memory (default)
+.TP
+.B rank
+bind by task rank (not recommended)
+.TP
+.B local
+Use memory local to the processor in use
+.TP
+.B map_mem:<list>
+bind by mapping a node's memory to tasks as specified
+where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
+CPU IDs are interpreted as decimal values unless they are preceded
+with '0x' in which case they interpreted as hexadecimal values
+(not recommended)
+.TP
+.B mask_mem:<list>
+bind by setting memory masks on tasks as specified
+where <list> is <mask1>,<mask2>,...<maskN>.
+memory masks are \fBalways\fR interpreted as hexadecimal values but can be
+preceded with an optional '0x' (not recommended)
+.RE
+                                                                                  
+To have SLURM always report on the selected memory binding for all srun commands
+executed in a shell, you can also enable verbose mode separately from
+the command line with:
+.PP
+.PP
+.nf
+        setenv SLURM_MEM_BIND verbose
+.fi
+.PP
+SLURM_MEM_BIND will not propagate into the tasks environment (binding
+by default only affects the first srun).  To propagate \-\-mem_bind to
+successive srun commands, first do the following in each task:
+.PP
+.nf
+ setenv SLURM_MEM_BIND \\
+   ${SLURM_MEM_BIND_VERBOSE},${SLURM_MEM_BIND_TYPE}${SLURM_MEM_BIND_LIST}
+.fi
+.PP
+See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
+of the individual SLURM_CPU_BIND* and SLURM_MEM_BIND* variables.
+                                                                                  
 .SH "ENVIRONMENT VARIABLES"
 .LP 
 .TP 
 \fBSLAUNCH_JOBID\fP
 Same as \fB\-\-jobid\fR.
+
+.SH "MULTIPLE PROGRAMS FILE"
+Comments in the configuration file must have a "#" in collumn one.
+The configuration file contains the following fields separated by white
+space:
+.TP
+Task rank
+One or more task ranks to use this configuration.
+Multiple values may be comma separated.
+Ranges may be indicated with two numbers separated with a '\-'.
+To indicate all tasks, specify a rank of '*' (in which case you probably 
+should not be using this option).
+.TP
+Executable
+The name of the program to execute.
+May be fully qualified pathname if desired.
+.TP
+Arguments
+Program arguments.
+The expression "%t" will be replaced with the task's number.
+The expression "%o" will be replaced with the task's offset within
+this range (e.g. a configured task rank value of "1-5" would
+have offset values of "0-4").
+Single quotes may be used to avoid having the enclosed values interpretted.
+This field is optional.
+.PP
+For example:
+.nf
+###################################################################
+# srun multiple program configuration file
+#
+# srun -n8 -l --multi-prog silly.conf
+###################################################################
+4-6       hostname
+1,7       echo  task:%t
+0,2-3     echo  offset:%o
+
+$ srun -n8 -l --multi-prog silly.conf
+0: offset:0
+1: task:1
+2: offset:1
+3: offset:2
+4: linux15.llnl.gov
+5: linux16.llnl.gov
+6: linux17.llnl.gov
+7: task:7
+
+.fi
+
 .SH "EXAMPLES"
 .LP 
 To launch a job step (parallel program) in an existing job allocation:
