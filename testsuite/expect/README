@@ -245,8 +245,8 @@ test7.#    Testing of other functionality.
 ==========================================
 test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and 
            --batch options.
-test7.2    Test of PMI functions available via API library (test using srun 
-           and slaunch for task launch). 
+test7.2    Test of PMI functions available via API library. Uses srun and 
+           slaunch. Tests --pmi-threads option in both commands.
 test7.3    Test of slurm_spawn API (needed on IBM SP systems).
 test7.4    Test of TotalView operation with SLURM
 
@@ -485,6 +485,8 @@ test18.33  Verify that SLURM directed environment variables are processed
            SLAUNCH_DEBUG, SLAUNCH_DISTRIBUTION, SLAUNCH_LABELIO and 
            SLAUNCH_OVERCOMMIT
 test18.34  Test slaunch's ability to set the job step's name (--name option)
+test18.35  Test of task layout controls (--task-layout-byid, 
+           --task-layout-byname and --task-layout-file options).
 test18.TBD Test of CPU affinity support (--cpu-bind option).
 test18.TBD Test of memory affinity support for NUMA systems (--mem-bind option).
 
