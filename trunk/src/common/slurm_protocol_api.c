@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  slurm_protocol_api.c - high-level slurm communication functions
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -811,7 +810,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	/* Forward message to other nodes */
 	if(header.forward.cnt > 0) {
-		debug("forwarding to %d", header.forward.cnt);
+		debug("forwarding to %u", header.forward.cnt);
 		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
 		msg->forward_struct->buf_len = remaining_buf(buffer);
 		msg->forward_struct->buf = 
@@ -826,8 +825,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			(timeout - header.forward.timeout);
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
-		debug3("forwarding messages to %d nodes!!!! "
-		       "with a timeout of %d", 
+		debug3("forwarding messages to %u nodes with timeout of %d", 
 		       msg->forward_struct->fwd_cnt,
 		       msg->forward_struct->timeout);
 		
