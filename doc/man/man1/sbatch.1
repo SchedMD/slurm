@@ -1,5 +1,4 @@
-.\" $Id: salloc.1 8570 2006-07-13 21:12:58Z morrone $
-.TH "sbatch" "1" "SLURM 1.2" "July 2006" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.2" "September 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -52,7 +51,7 @@ different  users.   The  value may be changed after job submission using the
 scontrol command.
 
 .TP
-\fB\-s\fR, \fB\-\-shared\fR
+\fB\-s\fR, \fB\-\-share\fR
 The job allocation can share nodes with other running jobs.  (The default
 shared/exclusive behaviour depends on system configuration.)
 This may result the allocation being granted sooner than if the \-\-shared
@@ -282,6 +281,11 @@ to restart the job (for example, after a scheduled downtime).
 When a job is requeued, the batch script is initiated from its beginning.
 
 .TP
+\fB\-\-jobid\fR
+Allocate resources as the specified job id.
+NOTE: Only valid for user root.
+
+.TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress informational messages from sbatch. Errors will still be displayed.
 
@@ -306,7 +310,7 @@ Display version information and exit.
 The following options support Blue Gene systems, but may be 
 applicable to other systems as well.
 .TP
-\fB\-g\fR, fB\-\-geometry\fR[=]<\fIXxYxZ\fR>
+\fB\-g\fR, \fB\-\-geometry\fR[=]<\fIXxYxZ\fR>
 Specify the geometry requirements for the job. The three numbers 
 represent the required geometry giving dimensions in the X, Y and 
 Z directions. For example "\-\-geometry=2x3x4", specifies a block 
@@ -330,33 +334,84 @@ By default the specified geometry can rotate in three dimensions.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP 
+.TP
+\fBSBATCH_ACCOUNT\fR
+Same as \fB\-\-account\fR.
+.TP
+\fBSBATCH_CONN_TYPE\fR
+Same as \fB\-\-conn\-type\fR.
+.TP
+\fBSBATCH_DEBUG\fR
+Same as \fB\-v\fR or \fB\-\-verbose\fR.
+.TP
+\fBSBATCH_GEOMETRY\fR
+Same as \fB\-g\fR or \fB\-\-geometry\fR.
+.TP
+\fBSBATCH_IMMEDIATE\fR
+Same as \fB-I\fR or \fB\-\-immediate\fR.
+.TP
+\fBSBATCH_JOBID\fR
+Same as \fB\-\-jobid\fR.
+.TP
+\fBSBATCH_NO_REQUEUE\fR
+Same as \fB\-\-no\-requeue\fR.
+.TP
+\fBSBATCH_NO_ROTATE\fR
+Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
+.TP
+\fBSBATCH_PARTITION\fR
+Same as \fB\-p\fR or \fB\-\-partition\fR.
+.TP
+\fBSBATCH_TIMELIMIT\fR
+Same as \fB\-t\fR or \fB\-\-time\fR.
+
 .SH "EXAMPLES"
 .LP 
 Specify a batch script by filename on the command line:
 .IP 
 $ cat myscript
+.br
 #!/bin/sh
+.br
 slaunch hostname |sort
+.br
 $ sbatch \-N4 myscript
+.br
 salloc: Granted job allocation 65537
+.br
 $ cat slurm\-65537.out
+.br
 host1
+.br
 host2
+.br
 host3
+.br
 host4
+
 .LP 
 Pass a batch script to sbatch on standard input:
 .IP 
 morrone:~$ sbatch \-N4 <<EOF
+.br
 > #!/bin/sh
+.br
 > slaunch hostname |sort
+.br
 > EOF
+.br
 sbatch: Submitted batch job 65541
+.br
 $ cat slurm\-65541.out
+.br
 host1
+.br
 host2
+.br
 host3
+.br
 host4
+
 .SH "SEE ALSO"
 .LP 
 sinfo(1), slaunch(1), sattach(1), salloc(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)
