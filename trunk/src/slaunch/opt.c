@@ -92,9 +92,7 @@
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_USAGE       0x100
-#define LONG_OPT_XTO         0x102
 #define LONG_OPT_LAUNCH      0x103
-#define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_UID         0x106
 #define LONG_OPT_GID         0x107
@@ -109,7 +107,7 @@
 #define LONG_OPT_TASK_EPILOG 0x110
 #define LONG_OPT_CPU_BIND    0x111
 #define LONG_OPT_MEM_BIND    0x112
-#define LONG_OPT_CTRL_COMM_IFHN 0x113
+#define LONG_OPT_COMM_HOSTNAME 0x113
 #define LONG_OPT_MULTI       0x114
 #define LONG_OPT_PMI_THREADS 0x115
 #define LONG_OPT_LIN_FILTER  0x116
@@ -159,8 +157,6 @@ static void _process_env_var(env_vars_t *e, const char *val);
 
 /* search PATH for command returns full path */
 static char *_search_path(char *, int);
-
-static bool  _under_parallel_debugger(void);
 
 static void  _usage(void);
 static enum  task_dist_states _verify_dist_type(const char *arg);
@@ -629,9 +625,7 @@ static void _opt_default()
 	opt.overcommit = false;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
-
 	opt.max_wait	= slurm_get_wait_time();
-
 	opt.quiet = 0;
 	opt.verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
@@ -639,9 +633,6 @@ static void _opt_default()
 	opt.nodelist_byid   = NULL;
 	opt.task_layout = NULL;
 	opt.task_layout_file_set = false;
-	opt.max_launch_time = 120;/* 120 seconds to launch job             */
-	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
-	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -654,15 +645,7 @@ static void _opt_default()
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
 
-	opt.ctrl_comm_ifhn  = xshort_hostname();
-
-	/*
-	 * Reset some default values if running under a parallel debugger
-	 */
-	if ((opt.parallel_debug = _under_parallel_debugger())) {
-		opt.max_launch_time = 120;
-		opt.msg_timeout     = 15;
-	}
+	opt.comm_hostname  = xshort_hostname();
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -696,7 +679,7 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
-  {"SLAUNCH_SRUN_COMM_IFHN",OPT_STRING,   &opt.ctrl_comm_ifhn,NULL           },
+  {"SLAUNCH_COMM_HOSTNAME",OPT_STRING,    &opt.comm_hostname, NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -885,9 +868,6 @@ void set_options(const int argc, char **argv)
 		{"core",             required_argument, 0, LONG_OPT_CORE},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
-		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
-		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
 		{"uid",              required_argument, 0, LONG_OPT_UID},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		/* debugger-test intentionally undocumented in the man page */
@@ -899,7 +879,7 @@ void set_options(const int argc, char **argv)
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
-		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
+		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_COMM_HOSTNAME},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		/* pmi-threads intentionally undocumented in the man page */
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
@@ -1100,18 +1080,6 @@ void set_options(const int argc, char **argv)
 			opt.jobid = _get_pos_int(optarg, "jobid");
 			opt.jobid_set = true;
 			break;
-		case LONG_OPT_TIMEO:
-			opt.msg_timeout = 
-				_get_pos_int(optarg, "msg-timeout");
-			break;
-		case LONG_OPT_LAUNCH:
-			opt.max_launch_time = 
-				_get_pos_int(optarg, "max-launch-time");
-			break;
-		case LONG_OPT_XTO:
-			opt.max_exit_timeout = 
-				_get_pos_int(optarg, "max-exit-timeout");
-			break;
 		case LONG_OPT_UID:
 			opt.euid = uid_from_string (optarg);
 			if (opt.euid == (uid_t) -1)
@@ -1128,8 +1096,6 @@ void set_options(const int argc, char **argv)
 			 * is really attached */
 			opt.parallel_debug   = true;
 			MPIR_being_debugged  = 1;
-			opt.max_launch_time = 120;
-			opt.msg_timeout     = 15;
 			break;
 		case LONG_OPT_USAGE:
 			_usage();
@@ -1162,9 +1128,9 @@ void set_options(const int argc, char **argv)
 			xfree(opt.task_epilog);
 			opt.task_epilog = xstrdup(optarg);
 			break;
-		case LONG_OPT_CTRL_COMM_IFHN:
-			xfree(opt.ctrl_comm_ifhn);
-			opt.ctrl_comm_ifhn = xstrdup(optarg);
+		case LONG_OPT_COMM_HOSTNAME:
+			xfree(opt.comm_hostname);
+			opt.comm_hostname = xstrdup(optarg);
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
@@ -1798,12 +1764,6 @@ static bool _opt_verify(void)
 		exit(1);
 	}
 
-	/*
-	 * --wait always overrides hidden max_exit_timeout
-	 */
-	if (opt.max_wait)
-		opt.max_exit_timeout = opt.max_wait;
-
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
 
@@ -1962,18 +1922,12 @@ static void _opt_list()
 	info("epilog         : %s", opt.epilog);
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
-	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
+	info("comm_hostname : %s", opt.comm_hostname);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	str = print_remote_command();
 	info("remote command : %s", str);
 	xfree(str);
 
-}
-
-/* Determine if slaunch is under the control of a parallel debugger or not */
-static bool _under_parallel_debugger (void)
-{
-	return (MPIR_being_debugged != 0);
 }
 
 static void _usage(void)
@@ -1990,7 +1944,7 @@ static void _usage(void)
 "               [--cpu_bind=...] [--mem_bind=...]\n"
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
-"               [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
+"               [--comm-hostname=<hostname|address>] [--multi-prog]\n"
 "               [-w hosts...] [-L hostids...] executable [args...]\n");
 }
 
@@ -2040,7 +1994,7 @@ static void _help(void)
 "      --epilog=program        run \"program\" after launching job step\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
-"      --ctrl-comm-ifhn=addr   hostname for PMI communications with slaunch\n"
+"      --comm-hostname=hostname hostname for PMI communications with slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "  -w, --nodelist-byname=hosts...   request a specific list of hosts\n"
