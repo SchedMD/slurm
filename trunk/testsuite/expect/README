@@ -484,6 +484,7 @@ test18.32  Basic MPI functionality tests via slaunch.
 test18.33  Verify that SLURM directed environment variables are processed
            SLAUNCH_DEBUG, SLAUNCH_DISTRIBUTION, SLAUNCH_LABELIO and 
            SLAUNCH_OVERCOMMIT
-test18.TBD Test of CPU affinity support.
-test18.TBD Test of memory affinity support for NUMA systems.
+test18.34  Test slaunch's ability to set the job step's name (--name option)
+test18.TBD Test of CPU affinity support (--cpu-bind option).
+test18.TBD Test of memory affinity support for NUMA systems (--mem-bind option).
 
