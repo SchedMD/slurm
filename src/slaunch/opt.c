@@ -836,6 +836,7 @@ void set_options(const int argc, char **argv)
 	char *tmp;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
+		{"overcommit",    no_argument,       0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"workdir",       required_argument, 0, 'D'},
 		{"slaunch-error", required_argument, 0, 'e'},
@@ -853,7 +854,6 @@ void set_options(const int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"slaunch-output",required_argument, 0, 'o'},
 		{"task-output",   required_argument, 0, 'O'},
-		{"overcommit",    no_argument,       0, 'C'},
 		{"quiet",         no_argument,       0, 'q'},
 		{"relative",      required_argument, 0, 'r'},
 		{"unbuffered",    no_argument,       0, 'u'},
