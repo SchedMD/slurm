@@ -68,6 +68,8 @@ static void _mpir_dump_proctable(void);
 static void print_layout_info(slurm_step_layout_t *layout);
 static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 					uid_t uid, char *nodelist);
+static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
+				    uint32_t taskid);
 static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
@@ -75,7 +77,8 @@ static int _attach_to_tasks(uint32_t jobid,
 			    uint16_t num_resp_ports,
 			    uint16_t *resp_ports,
 			    int num_io_ports,
-			    uint16_t *io_ports);
+			    uint16_t *io_ports,
+			    bitstr_t *tasks_started);
 
 /**********************************************************************
  * Message handler declarations
@@ -83,21 +86,16 @@ static int _attach_to_tasks(uint32_t jobid,
 typedef struct message_thread_state {
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
-	int tasks_requested;
 	bitstr_t *tasks_started; /* or attempted to start, but failed */
 	bitstr_t *tasks_exited;  /* or never started correctly */
-	bool abort;
-	bool abort_action_taken;
-
-	/* message thread variables */
 	eio_handle_t *msg_handle;
 	pthread_t msg_thread;
-	/* set to -1 if slaunch message handler should not attempt to handle */
 	uint16_t num_resp_port;
 	uint16_t *resp_port; /* array of message response ports */
 } message_thread_state_t;
 static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks);
-static void _msg_thr_wait_and_destroy(message_thread_state_t *mts);
+static void _msg_thr_wait(message_thread_state_t *mts);
+static void _msg_thr_destroy(message_thread_state_t *mts);
 static void _handle_msg(message_thread_state_t *mts, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int _message_socket_accept(eio_obj_t *obj, List objs);
@@ -142,6 +140,10 @@ int main(int argc, char *argv[])
 	totalview_jobid = NULL;
 	xstrfmtcat(totalview_jobid, "%u", opt.jobid);
 	_mpir_init(layout->task_cnt);
+	if (opt.input_filter_set) {
+		opt.fds.in.nodeid =
+			_nodeid_from_layout(layout, opt.fds.in.taskid);
+	}
 
 	fake_cred = _generate_fake_cred(opt.jobid, opt.stepid,
 					opt.uid, layout->node_list);
@@ -155,20 +157,40 @@ int main(int argc, char *argv[])
 
 	_attach_to_tasks(opt.jobid, opt.stepid, layout, fake_cred,
 			 mts->num_resp_port, mts->resp_port,
-			 io->num_listen, io->listenport);
-
+			 io->num_listen, io->listenport,
+			 mts->tasks_started);
+	
 	MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 	MPIR_Breakpoint();
 	if (opt.debugger_test)
 		_mpir_dump_proctable();
 
-	_msg_thr_wait_and_destroy(mts);
+	_msg_thr_wait(mts);
+	_msg_thr_destroy(mts);
 	slurm_job_step_layout_free(layout);
 	client_io_handler_finish(io);
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
 
 	return 0;
+}
+
+static uint32_t
+_nodeid_from_layout(slurm_step_layout_t *layout, uint32_t taskid)
+{
+	uint32_t i, nodeid;
+
+	for (nodeid = 0; nodeid < layout->node_cnt; nodeid++) {
+		for (i = 0; i < layout->tasks[nodeid]; i++) {
+			if (layout->tids[nodeid][i] == taskid) {
+				debug3("task %d is on node %d",
+				       taskid, nodeid);
+				return nodeid;
+			}
+		}
+	}
+
+	return -1; /* node ID not found */
 }
 
 static void print_layout_info(slurm_step_layout_t *layout)
@@ -274,7 +296,8 @@ static uint32_t *_create_range_array(uint32_t first, uint32_t last)
 	return array;
 }
 
-void _handle_response_msg(slurm_msg_type_t msg_type, void *msg)
+void _handle_response_msg(slurm_msg_type_t msg_type, void *msg,
+			  bitstr_t *tasks_started)
 {
 	reattach_tasks_response_msg_t *resp;
 	MPIR_PROCDESC *table;
@@ -292,6 +315,7 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg)
 		     resp->node_name, resp->srun_node_id,
 		     resp->executable_name, resp->ntasks);
 		for (i = 0; i < resp->ntasks; i++) {
+			bit_set(tasks_started, resp->gtids[i]);
 			table = &MPIR_proctable[resp->gtids[i]];
 			/* FIXME - node_name is not necessarily
 			   a valid hostname */
@@ -309,7 +333,7 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg)
 	}
 }
 
-void _handle_response_msg_list(List other_nodes_resp)
+void _handle_response_msg_list(List other_nodes_resp, bitstr_t *tasks_started)
 {
 	ListIterator itr1, itr2;
 	ret_types_t *ret;
@@ -324,14 +348,16 @@ void _handle_response_msg_list(List other_nodes_resp)
 			while ((ret_msg_wrapper = list_next(itr2)) != NULL) {
 				errno = ret->err;
 				_handle_response_msg(ret->type,
-						     ret_msg_wrapper->data);
+						     ret_msg_wrapper->data,
+						     tasks_started);
 			}
 			list_iterator_destroy(itr2);
 		} else {
 			itr2 = list_iterator_create(ret->ret_data_list);
 			while ((ret_msg_wrapper = list_next(itr2)) != NULL) {
 				_handle_response_msg(ret->type,
-						     ret_msg_wrapper->data);
+						     ret_msg_wrapper->data,
+						     tasks_started);
 			}
 			list_iterator_destroy(itr2);
 		}
@@ -340,6 +366,11 @@ void _handle_response_msg_list(List other_nodes_resp)
 	list_iterator_destroy(itr1);
 }
 
+/*
+ * All parameters are inputs EXCEPT for tasks_started, which is an OUTPUT.
+ * A bit is set in tasks_started for each task for which we receive a
+ * reattach response message stating that the task is still running.
+ */
 static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
@@ -347,7 +378,8 @@ static int _attach_to_tasks(uint32_t jobid,
 			    uint16_t num_resp_ports,
 			    uint16_t *resp_ports,
 			    int num_io_ports,
-			    uint16_t *io_ports)
+			    uint16_t *io_ports,
+			    bitstr_t *tasks_started)
 {
 	slurm_msg_t msg, first_node_resp;
 	List other_nodes_resp = NULL;
@@ -393,8 +425,9 @@ static int _attach_to_tasks(uint32_t jobid,
 		return SLURM_ERROR;
 	}
 
-	_handle_response_msg(first_node_resp.msg_type, first_node_resp.data);
-	_handle_response_msg_list(other_nodes_resp);
+	_handle_response_msg(first_node_resp.msg_type, first_node_resp.data,
+			     tasks_started);
+	_handle_response_msg_list(other_nodes_resp, tasks_started);
 
 	list_destroy(other_nodes_resp);
 	xfree(msg.forward.node_id);
@@ -465,7 +498,18 @@ fail:
 	return NULL;
 }
 
-static void _msg_thr_wait_and_destroy(message_thread_state_t *mts)
+static void _msg_thr_wait(message_thread_state_t *mts)
+{
+	/* Wait for all known running tasks to complete */
+	pthread_mutex_lock(&mts->lock);
+	while (bit_set_count(mts->tasks_exited)
+	       < bit_set_count(mts->tasks_started)) {
+		pthread_cond_wait(&mts->cond, &mts->lock);
+	}
+	pthread_mutex_unlock(&mts->lock);
+}
+
+static void _msg_thr_destroy(message_thread_state_t *mts)
 {
 	eio_signal_shutdown(mts->msg_handle);
 	pthread_join(mts->msg_thread, NULL);

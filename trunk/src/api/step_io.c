@@ -839,8 +839,13 @@ again:
 		msg->ref_count = 1;
 		nodeid = info->nodeid;
 		debug3("  taskid %d maps to nodeid %ud", header.gtaskid, nodeid);
-		server = info->cio->ioserver[nodeid]->arg;
-		list_enqueue(server->msg_queue, msg);
+		if (nodeid == (uint32_t)-1) {
+			error("A valid node id must be specified"
+			      " for SLURM_IO_STDIN");
+		} else {
+			server = info->cio->ioserver[nodeid]->arg;
+			list_enqueue(server->msg_queue, msg);
+		}
 	} else {
 		fatal("Unsupported header.type");
 	}
