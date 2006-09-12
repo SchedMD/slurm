@@ -1,5 +1,4 @@
-.\" $Id: salloc.1 8570 2006-07-13 21:12:58Z morrone $
-.TH "salloc" "1" "SLURM 1.2" "July 2006" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.2" "September 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -43,7 +42,7 @@ different  users.   The  value may be changed after job submission using the
 scontrol command.
 
 .TP
-\fB\-s\fR, \fB\-\-shared\fR
+\fB\-s\fR, \fB\-\-share\fR
 The job allocation can share nodes with other running jobs.  (The default
 shared/exclusive behaviour depends on system configuration.)
 This may result the allocation being granted sooner than if the \-\-shared
@@ -262,6 +261,11 @@ privileged users can specify a negative adjustment.  NOTE: This option
 is presently ignored if SchedulerType=sched/maui.
 
 .TP
+\fB\-\-jobid\fR
+Allocate resources as the specified job id. 
+NOTE: Only valid for user root.
+
+.TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress informational messages from salloc. Errors will still be displayed.
 
@@ -286,7 +290,7 @@ Display version information and exit.
 The following options support Blue Gene systems, but may be 
 applicable to other systems as well.
 .TP
-\fB\-g\fR, fB\-\-geometry\fR[=]<\fIXxYxZ\fR>
+\fB\-g\fR, \fB\-\-geometry\fR[=]<\fIXxYxZ\fR>
 Specify the geometry requirements for the job. The three numbers 
 represent the required geometry giving dimensions in the X, Y and 
 Z directions. For example "\-\-geometry=2x3x4", specifies a block 
@@ -310,12 +314,43 @@ By default the specified geometry can rotate in three dimensions.
 Output version information and exit.
 .SH "ENVIRONMENT VARIABLES"
 .LP 
-.TP 
+.TP
+\fBSALLOC_ACCOUNT\fR
+Same as \fB\-\-account\fR.
+.TP
 \fBSALLOC_BELL\fR
 Same as \fB\-\-bell\fR.
-.TP 
+.TP
 \fBSALLOC_NO_BELL\fR
 Same as \fB\-\-no\-bell\fR.
+.TP
+\fBSALLOC_CONN_TYPE\fR
+Same as \fB\-\-conn\-type\fR.
+.TP
+\fBSALLOC_DEBUG\fR
+Same as \fB\-v\fR or \fB\-\-verbose\fR.
+.TP
+\fBSALLOC_GEOMETRY\fR
+Same as \fB\-g\fR or \fB\-\-geometry\fR.
+.TP
+\fBSALLOC_IMMEDIATE\fR
+Same as \fB-I\fR or \fB\-\-immediate\fR.
+.TP
+\fBSALLOC_JOBID\fR
+Same as \fB\-\-jobid\fR.
+.TP
+\fBSALLOC_NO_ROTATE\fR
+Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
+.TP
+\fBSALLOC_PARTITION\fR
+Same as \fB\-p\fR or \fB\-\-partition\fR.
+.TP
+\fBSALLOC_TIMELIMIT\fR
+Same as \fB\-t\fR or \fB\-\-time\fR.
+.TP
+\fBSALLOC_WAIT\fR
+Same as \fB\-W\fR or \fB\-\-wait\fR.
+
 .SH "SIGNALS"
 .LP 
 While salloc is waiting for a PENDING job allocation, most signals will cause salloc to revoke the allocation request and exit.
