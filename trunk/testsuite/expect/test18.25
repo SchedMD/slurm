@@ -36,7 +36,7 @@ set exit_code   0
 set num_nodes   2
 set num_tasks   2
 set node_count  0
-set max_nodes   0
+set max_nodes   100
 set task_count  0
 set job_id      0
 set hostfile    "test$test_id.hostfile"
@@ -61,7 +61,7 @@ expect {
 		set node_count $expect_out(1,string)
 		exp_continue
 	}
-	-re "MaxNodes=($number)" {
+	-re "MaxNodes=(($number)|(UNLIMITED))" {
 		set max_nodes $expect_out(1,string)
 		exp_continue
 	}
@@ -73,66 +73,86 @@ expect {
 		wait
 	}
 }
-if { ($node_count < 2) || ($max_nodes < 2) } {
+if { ($node_count < 2)
+     || (([string compare $max_nodes UNLIMITED] != 0) && ($max_nodes < 2)) } {
 	send_user "WARNING: system must have at least 2 nodes to run this test on.\n" 
 	exit $exit_code
 }
 
+set salloc_pid [spawn $salloc -N2 sleep 30]
+set salloc_spawn_id $spawn_id
+expect {
+    -re "Granted job allocation ($number)" {
+	set jobid $expect_out(1,string)
+    }
+}
+
+#
+# First launch 2 tasks on 2 nodes, and find out the default task layout order
+#
 set node0 0
 set node1 0
-
-for {set i 0} {$i<2} {incr i} {
-
-	if { $i==1 } {
-		if { $node0 == 0 || $node1 == 0 } {
-			send_user "\nFAILURE: node names not set from \
-				previous srun\n"
-			exit 1
-		}
-		set env(SLURM_HOSTFILE) $hostfile
-		set 1node0 $node0
-		set 1node1 $node1
-		set file [open $hostfile "w"]
-		puts $file "$node1\n$node0"
-		close $file
+spawn slaunch --jobid $jobid -l $bin_printenv SLURMD_NODENAME
+expect {
+    -re "($number): ($alpha_numeric)" {
+	set task_id $expect_out(1,string)
+	if {$task_id == 0} {
+	    set node0 $expect_out(2,string)
+	} else {
+	    set node1 $expect_out(2,string)
 	}
-	#
-	# execute srun with a specific node count
-	#
-	set node0 ""
-	set node1 ""
-	spawn $salloc -N2 $slaunch -l $bin_printenv SLURMD_NODENAME
-	expect {
-		-re "Granted job allocation ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		-re "($number): ($alpha_numeric)" {
-			set task_id $expect_out(1,string)
-			if {$task_id == 0} {
-				set node0 $expect_out(2,string)
-			} else {
-				set node1 $expect_out(2,string)
-			}
-			exp_continue
-		}
-		-re "slurm job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			if {$job_id == 0} {
-				kill_salloc
-			} else {
-				cancel_job $job_id
-			}
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	exp_continue
+    }
+    eof {
+	wait
+    }
+}
+
+
+#
+# Then create a hostfile laying out the tasks in the opposite order of
+# the default.
+#
+if { $node0 == 0 || $node1 == 0 } {
+    send_user "\nFAILURE: node names not set from previous srun\n"
+    exit 1
+}
+set env(SLURM_HOSTFILE) $hostfile
+set 1node0 $node0
+set 1node1 $node1
+set file [open $hostfile "w"]
+puts $file "$node1"
+puts $file "$node0"
+close $file
+
+#
+# slaunch the tasks using the hostfile
+#
+spawn slaunch --jobid $jobid -l --task-layout-file $hostfile $bin_printenv SLURMD_NODENAME
+expect {
+    -re "($number): ($alpha_numeric)" {
+	set task_id $expect_out(1,string)
+	if {$task_id == 0} {
+	    set node0 $expect_out(2,string)
+	} else {
+	    set node1 $expect_out(2,string)
 	}
+	exp_continue
+    }
+    eof {
+	wait
+    }
+}
+
+#
+# Kill salloc (by signalling its process group and killing the sleep 30)
+#
+exec $bin_kill -s SIGINT -$salloc_pid
+set spawn_id $salloc_spawn_id
+expect {
+    eof {
+	wait
+    }
 }
 
 if { [string compare $node0 $1node1] } {
