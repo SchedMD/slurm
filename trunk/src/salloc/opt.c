@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  opt.c - options processing for salloc
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -489,8 +488,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SALLOC_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SALLOC_BELL",         OPT_BELL,       NULL,               NULL           },
-  {"SALLOC_NO_BELL",      OPT_NO_BELL,    NULL,               NULL           },
+  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
+  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
