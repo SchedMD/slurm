@@ -153,12 +153,14 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_free_job_launch_msg(msg->data);
 		break;
 	case REQUEST_LAUNCH_TASKS:
+		debug2("Processing RPC: REQUEST_LAUNCH_TASKS");
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg);
 		slurm_free_launch_tasks_request_msg(msg->data);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SPAWN_TASK:
+		debug2("Processing RPC: REQUEST_SPAWN_TASK");
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_spawn_task(msg);
 		slurm_free_spawn_task_request_msg(msg->data);
