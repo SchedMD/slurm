@@ -76,13 +76,15 @@ void *_forward_thread(void *arg)
 	slurm_addr addr;
 	char buf[8196];
 	slurm_msg_t_init(&msg);
-
-	while(1) { /* repeat until we are sure the message was sent */ 
-		name = hostlist_pop(hl);
-		if(!name)
-			goto cleanup;
-		slurm_conf_get_addr(name, &addr);
-		
+	
+	/* repeat until we are sure the message was sent */ 
+	while((name = hostlist_pop(hl))) {
+		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
+			error("forward_thread: can't get addr for host %s",
+			      name);
+			free(name);
+			continue;
+		}
 		/* info("sending to %s with %d forwards",  */
 		/*     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
 		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
@@ -341,81 +343,6 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	return SLURM_SUCCESS;
 }
 
-/* /\* */
-/*  * forward_msg_to_next- logic to change the address and forward structure of a */
-/*  *                      message to the next one in the queue and mark the   */
-/*  *                      current node as having an error adding it to the return */
-/*  *                      list of the fwd_msg. */
-/*  * */
-/*  * IN: fwd_msg        - forward_msg_t *      - holds information about message */
-/*  *                                             and the childern it was suppose  */
-/*  *                                             to forward to */
-/*  * IN: err            - int                  - error message from attempt */
-/*  * */
-/*  * RET: 0/1           - int                  - if 1 more to forward to 0 if  */
-/*  *                                             no one left to forward to. */
-/*  * you need to slurm_mutex_lock(fwd_msg->forward_mutex); */
-/*  * before coming in here */
-/*  *\/ */
-/* extern int forward_msg_to_next(forward_msg_t *fwd_msg, int err)  */
-/* { */
-/* 	ret_data_info_t *ret_data_info = NULL; */
-/* 	ret_types_t *type = NULL; */
-/* 	int i = 0; */
-/* 	int prev_cnt = fwd_msg->header.forward.cnt; */
-/* 	forward_t forward; */
-/* 	ListIterator itr; */
-	
-/* 	forward_init(&forward, NULL); */
-/* 	debug3("problems with %s", fwd_msg->node_name); */
-/* 	if(fwd_msg->ret_list) { */
-/* 		ret_data_info = xmalloc(sizeof(ret_data_info_t)); */
-/* 		ret_data_info->node_name = xstrdup(fwd_msg->node_name); */
-/* 		memcpy(&ret_data_info->addr, &fwd_msg->addr,  */
-/* 		       sizeof(slurm_addr)); */
-/* 		ret_data_info->nodeid = fwd_msg->header.srun_node_id; */
-/* 		itr = list_iterator_create(fwd_msg->ret_list);	 */
-/* 		while((type = (ret_types_t *) list_next(itr)) != NULL) { */
-/* 			if(type->msg_rc == SLURM_ERROR){ */
-/* 				list_push(type->ret_data_list, ret_data_info); */
-/* 				break; */
-/* 			} */
-/* 		} */
-/* 		list_iterator_destroy(itr); */
-		
-/* 		if(!type) { */
-/* 			type = xmalloc(sizeof(ret_types_t)); */
-/* 			list_push(fwd_msg->ret_list, type); */
-/* 			type->type = REQUEST_PING; */
-/* 			type->msg_rc = SLURM_ERROR; */
-/* 			type->err = err; */
-/* 			type->ret_data_list = list_create(destroy_data_info); */
-/* 			list_push(type->ret_data_list, ret_data_info); */
-/* 		}		 */
-/* 	}  */
-/* 	if(prev_cnt == 0) { */
-/* 		debug3("no more to send to"); */
-/* 		return 0; */
-/* 	} */
-	
-/* 	fwd_msg->header.srun_node_id = fwd_msg->header.forward.node_id[0]; */
-/* 	memcpy(&fwd_msg->addr, &fwd_msg->header.forward.addr[0],  */
-/* 	       sizeof(slurm_addr)); */
-/* 	strncpy(fwd_msg->node_name, */
-/* 		&fwd_msg->header.forward.name[i * MAX_SLURM_NAME], */
-/* 		MAX_SLURM_NAME); */
-/* 	i = 0; */
-	
-/* 	forward_set(&forward, */
-/* 		    prev_cnt, */
-/* 		    &i, */
-/* 		    &fwd_msg->header.forward); */
-
-/* 	destroy_forward(&fwd_msg->header.forward); */
-/* 	forward_init(&fwd_msg->header.forward, &forward); */
-	
-/* 	return 1; */
-/* } */
 
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
@@ -443,125 +370,6 @@ extern void mark_as_failed_forward(List *ret_list, char *node_name,
 	list_push(*ret_list, ret_data_info);
 			
 	return;
-}
-/*
- * forward_set - divide a mesage up into components for forwarding
- * OUT: forward    - forward_t *   - struct to store forward info
- * IN: span        - int           - count of forwards to do
- * IN/OUT: pos     - int *         - position in the original messages addr 
- *                                   structure
- * IN: from        - forward_t *   - information from original message
- * RET: SLURM_SUCCESS - int
- */
-extern int forward_set(forward_t *forward, 
-		       int span,
-		       int *pos,
-		       forward_t *from)
-{
-/*         int j = 1; */
-/* 	int total = from->cnt; */
-
-/* /\* 	char name[MAX_SLURM_NAME]; *\/ */
-/* /\* 	strncpy(name, *\/ */
-/* /\* 		&from->name[(*pos) * MAX_SLURM_NAME], *\/ */
-/* /\* 		MAX_SLURM_NAME); *\/ */
-/* /\* 	info("forwarding to %s",name); *\/ */
-	
-/* 	if(span > 0) { */
-/* 		forward->addr = xmalloc(sizeof(slurm_addr) * span); */
-/* 		forward->name = xmalloc(sizeof(char)  */
-/* 					* (MAX_SLURM_NAME * span)); */
-		
-/* 		forward->first_node_id = xmalloc(sizeof(int32_t) * span); */
-/* 		forward->timeout = from->timeout; */
-/* 		forward->init = FORWARD_INIT; */
-		
-/* 		while(j<span && ((*pos+j) < total)) { */
-/* 			memcpy(&forward->addr[j-1], */
-/* 			       &from->addr[*pos+j], */
-/* 			       sizeof(slurm_addr)); */
-/* 			strncpy(&forward->name[(j-1) * MAX_SLURM_NAME], */
-/* 				&from->name[(*pos+j) * MAX_SLURM_NAME], */
-/* 				MAX_SLURM_NAME); */
-
-/* 			if(from->node_id) */
-/* 				forward->node_id[j-1] = from->node_id[*pos+j]; */
-/* 			else */
-/* 				forward->node_id[j-1] = 0; */
-
-/* /\* 			strncpy(name, *\/ */
-/* /\* 				&from->name[(*pos+j) * MAX_SLURM_NAME], *\/ */
-/* /\* 				MAX_SLURM_NAME); *\/ */
-/* /\* 			info("along with %s",name); *\/ */
-/* 			j++; */
-/* 		} */
-/* 		j--; */
-/* 		forward->cnt = j; */
-/* 		*pos += j; */
-/* 	} else { */
-/* 		forward_init(forward, NULL); */
-/* 		forward->timeout = from->timeout; */
-/* 	} */
-	
-	return SLURM_SUCCESS;
-}
-
-/*
- * forward_set_launch - add to the message possible forwards to go to during 
- *                      a job launch
- * OUT: forward     - forward_t *          - struct to store forward info
- * IN: span        - int                   - count of forwards to do
- * IN: pos         - int *                 - position in the node list
- * IN: total       - int                   - total count of nodes in message
- * IN: node_addr   - slurm_addr *          - contains addresses to forward to
- * IN: itr         - hostlist_iterator_t   - count into host list of hosts to 
- *                                           send messages to 
- * IN: timeout     - int32_t               - timeout if any to wait for 
- *                                           message responses in milliseconds
- * RET: SLURM_SUCCESS - int
- */
-extern int forward_set_launch(forward_t *forward, 
-			      int span,
-			      int *pos,
-			      int total,
-			      slurm_addr *node_addr,
-			      hostlist_iterator_t itr,
-			      int32_t timeout)
-{
-	
-/* 	int j=1; */
-/* 	char *host = NULL; */
-	
-/* 	if(span > 0) { */
-/* 		forward->addr = xmalloc(sizeof(slurm_addr) * span); */
-/* 		forward->name =  */
-/* 			xmalloc(sizeof(char) * (MAX_SLURM_NAME * span)); */
-/* 		forward->node_id = xmalloc(sizeof(int32_t) * span); */
-/* 		forward->timeout = timeout; */
-/* 		forward->init = FORWARD_INIT; */
-
-/* 		while(j<span && ((*pos+j) < total)) { */
-/* 			host = hostlist_next(itr); */
-			
-/* 			memcpy(&forward->addr[j-1],  */
-/* 			       &node_addr[(*pos+j)],  */
-/* 			       sizeof(slurm_addr)); */
-/* 			strcpy(&forward->name[(j-1) * MAX_SLURM_NAME], host); */
-/* 			forward->node_id[j-1] = (*pos+j); */
-/* /\* 			info("along with %s",host);	 *\/ */
-/* 			free(host); */
-/* 			j++; */
-/* 		} */
-			
-/* 		j--; */
-/* 		forward->cnt = j; */
-/* 		*pos += j; */
-/* 	} else { */
-/* 		forward_init(forward, NULL); */
-/* 		forward->timeout = timeout; */
-/* 	} */
-
-	return SLURM_SUCCESS;
 }
 
 extern void forward_wait(slurm_msg_t * msg)
@@ -593,32 +401,6 @@ extern void forward_wait(slurm_msg_t * msg)
 	}
 	return;
 }
-
-/* extern int no_resp_forwards(forward_t *forward, List *ret_list, int err) */
-/* { */
-/* 	ret_data_info_t *ret_data_info = NULL; */
-/* 	char *name = NULL; */
-/* 	int i=0; */
-/* 	hostlist_t hl = NULL; */
-	
-/* 	if(!*ret_list) */
-/* 		*ret_list = list_create(destroy_data_info); */
-/* 	if(forward->cnt == 0) */
-/* 		goto no_forward; */
-/* 	error("something bad happened"); */
-	
-/* 	hl = hostlist_create(forward->nodelist); */
-/* 	while((name = hostlist_pop(hl))) { */
-/* 		ret_data_info = xmalloc(sizeof(ret_data_info_t)); */
-/* 		list_push(*ret_list, ret_data_info); */
-/* 		ret_data_info->node_name = xstrdup(name); */
-/* 		free(name); */
-/* 		ret_data_info->nodeid = forward->first_node_id+(i++); */
-/* 	} */
-/* 	hostlist_destroy(hl); */
-/* no_forward: */
-/* 	return SLURM_SUCCESS; */
-/* } */
 
 void destroy_data_info(void *object)
 {

@@ -212,7 +212,8 @@ void *agent(void *args)
 	task_info_t *task_specific_ptr;
 	time_t begin_time;
 
-	//info("I am here and agent_cnt is %d of %d",agent_cnt, MAX_AGENT_CNT);
+	info("I am here and agent_cnt is %d of %d with type %d",
+	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	while (1) {
 		if (agent_cnt < MAX_AGENT_CNT) {
@@ -338,6 +339,14 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->node_count == 0)
 		return SLURM_FAILURE;	/* no messages to be sent */
+	if (agent_arg_ptr->node_count 
+	    != hostlist_count(agent_arg_ptr->hostlist)) {
+		error("you said you were going to send to %d "
+		     "hosts but I only have %d",
+		     agent_arg_ptr->node_count,
+		     hostlist_count(agent_arg_ptr->hostlist));
+		return SLURM_FAILURE;	/* no messages to be sent */
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -389,17 +398,33 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		
 		thread_ptr[thr_count].first_node_id = i;
 		hl = hostlist_create("");
-		for(j = 0; j < span[thr_count]; j++) {
+		if(span[thr_count]) {
+			for(j = 0; j < span[thr_count]; j++) {
+				name = hostlist_shift(agent_arg_ptr->hostlist);
+				if(!name)
+					break;
+				info("adding %s", name);
+				hostlist_push(hl, name);
+				free(name);
+				i++;
+			}
+			hostlist_ranged_string(hl, sizeof(buf), buf);
+			hostlist_destroy(hl);
+			if(thread_ptr[thr_count].nodelist)
+				info("dude there was a nodelist of %s", 
+				     thread_ptr[thr_count].nodelist);
+			thread_ptr[thr_count].nodelist = xstrdup(buf);
+		} else {
 			name = hostlist_shift(agent_arg_ptr->hostlist);
-			if(!name)
-				break;
-			hostlist_push(hl, name);
+			info("adding %s", name);
+			thread_ptr[thr_count].nodelist = xstrdup(name);
 			free(name);
+			if(!thread_ptr[thr_count].nodelist)
+				error("we don't have the correct list!");
 			i++;
 		}
-		hostlist_ranged_string(hl, sizeof(buf), buf);
-		hostlist_destroy(hl);
-		thread_ptr[thr_count].nodelist = xstrdup(buf);
+		info("sending to nodes %s", 
+		     thread_ptr[thr_count].nodelist);
 		thr_count++;		       
 	}
 	xfree(span);
@@ -798,7 +823,12 @@ static void *_thread_per_group_rpc(void *args)
 		    == NULL) {
 		}
 	} else {
-		slurm_conf_get_addr(thread_ptr->nodelist, &msg.address);
+		if(slurm_conf_get_addr(thread_ptr->nodelist, &msg.address) ==
+		   SLURM_ERROR) {
+			error("_thread_per_group_rpc: can't get address for "
+			      "host %s", thread_ptr->nodelist);
+			goto cleanup;
+		}
 		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) 
 			thread_state = DSH_DONE;
 		goto cleanup;
@@ -813,50 +843,45 @@ static void *_thread_per_group_rpc(void *args)
 	while((ret_data_info = list_next(itr)) != NULL) {
 		rc = slurm_get_return_code(ret_data_info->type, 
 					   ret_data_info->data);
-		if(!found && !ret_data_info->node_name) {
-			ret_data_info->node_name = 
-				xstrdup(thread_ptr->nodelist);
-			if(rc == SLURM_ERROR) {
-				errno = ret_data_info->err;
-				continue;
-			}
-#if AGENT_IS_THREAD
-			
-			/* SPECIAL CASE: Mark node as IDLE if job already 
-			   complete */
-			if (is_kill_msg && 
-			    (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
-				kill_job_msg_t *kill_job;
-				kill_job = (kill_job_msg_t *) 
-					task_ptr->msg_args_ptr;
-				rc = SLURM_SUCCESS;
-				
-				lock_slurmctld(job_write_lock);
-				if (job_epilog_complete(kill_job->job_id, 
-							ret_data_info->
-							node_name, 
-							rc))
-					run_scheduler = true;
-				unlock_slurmctld(job_write_lock);
-			}
-			
-			/* SPECIAL CASE: Kill non-startable batch job */
-			if ((msg_type == REQUEST_BATCH_JOB_LAUNCH)
-			    && rc) {
-				batch_job_launch_msg_t *launch_msg_ptr = 
-					task_ptr->msg_args_ptr;
-				uint32_t job_id = launch_msg_ptr->job_id;
-				info("Killing non-startable batch job %u: %s", 
-				     job_id, slurm_strerror(rc));
-				thread_state = DSH_DONE;
-				lock_slurmctld(job_write_lock);
-				job_complete(job_id, 0, false, 1);
-				unlock_slurmctld(job_write_lock);
-				continue;
-				//goto cleanup;
-			}
-#endif
+		if(rc == SLURM_ERROR) {
+			errno = ret_data_info->err;
+			continue;
 		}
+#if AGENT_IS_THREAD
+		/* SPECIAL CASE: Mark node as IDLE if job already 
+		   complete */
+		if (is_kill_msg && 
+		    (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
+			kill_job_msg_t *kill_job;
+			kill_job = (kill_job_msg_t *) 
+				task_ptr->msg_args_ptr;
+			rc = SLURM_SUCCESS;
+			lock_slurmctld(job_write_lock);
+			if (job_epilog_complete(kill_job->job_id, 
+						ret_data_info->
+						node_name, 
+						rc))
+				run_scheduler = true;
+			unlock_slurmctld(job_write_lock);
+		}
+			
+		/* SPECIAL CASE: Kill non-startable batch job */
+		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH)
+		    && rc) {
+			batch_job_launch_msg_t *launch_msg_ptr = 
+				task_ptr->msg_args_ptr;
+			uint32_t job_id = launch_msg_ptr->job_id;
+			info("Killing non-startable batch job %u: %s", 
+			     job_id, slurm_strerror(rc));
+			thread_state = DSH_DONE;
+			lock_slurmctld(job_write_lock);
+			job_complete(job_id, 0, false, 1);
+			unlock_slurmctld(job_write_lock);
+			continue;
+			//goto cleanup;
+		}
+#endif
+		
 		
 		if (((msg_type == REQUEST_SIGNAL_TASKS) 
 		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 

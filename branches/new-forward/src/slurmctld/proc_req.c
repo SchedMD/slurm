@@ -1620,7 +1620,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 			dump_job = true;
 		}
 	}
-
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)

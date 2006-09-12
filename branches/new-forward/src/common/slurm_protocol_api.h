@@ -596,17 +596,20 @@ List slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 			      int timeout);
 
 /*
- *  Open a connection to req->address, send message (forward if told), 
- *  req must contain the message already packed in it's buffer variable,
- *  and receive List of ret_type_t from all nodes
+ *  Send a packed message to the nodelist specificed using fanout
+ *    Then return List containing type (ret_data_info_t). and filling
+ *    in the resp with info from resp.
+ * IN nodelist  - list of nodes to send to.
+ * IN msg	- a slurm_msg struct to be sent by the function
+ * IN first_node_id - a slurm_msg struct to be sent by the function
+ * IN timeout	- how long to wait in milliseconds
+ * RET List	- List containing the responses of the childern (if any) we 
+ *                forwarded the message to. List containing type
+ *                (ret_data_info_t). 
  */
-List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
-
-/*
- *  Open a connection to req->address, send message (forward if told) 
- *  and receive List of "return codes" from all nodes
- */
-List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout);
+List slurm_send_recv_packed_msg(const char *nodelist, 
+				slurm_msg_t *msg, int first_node_id,
+				int timeout);
 
 /*
  *  Send a message to the nodelist specificed using fanout

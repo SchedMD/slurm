@@ -97,6 +97,7 @@ static void * _p_launch_task(void *args);
 static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
 		                char * hostname, int nodeid);
 static void   _update_failed_node(srun_job_t *j, int id);
+static void   _update_contacted_node(srun_job_t *j, int id);
 
 int 
 launch_thr_create(srun_job_t *job)
@@ -123,24 +124,20 @@ launch_thr_create(srun_job_t *job)
 void *
 launch(void *arg)
 {
-	slurm_msg_t *msg_array_ptr = NULL;
 	launch_tasks_request_msg_t r;
 	srun_job_t *job = (srun_job_t *) arg;
 	int i, my_envc;
-	hostlist_t hostlist = NULL;
-	hostlist_iterator_t itr = NULL;
-	char *host = NULL;
-	int *span = set_span(job->step_layout->node_cnt, 0);
-	slurm_msg_t *m = NULL;
-	Buf buffer = NULL;
+	slurm_msg_t msg;
+	ret_data_info_t *ret_data = NULL;
+	List ret_list = NULL;
+	ListIterator ret_itr;
+	int rc = SLURM_SUCCESS;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
 	debug("going to launch %d tasks on %d hosts", 
 	      opt.nprocs, job->step_layout->node_cnt);
 
-	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
-				* job->step_layout->node_cnt);
 	my_envc = envcount(environ);
 	/* convert timeout from sec to milliseconds */
 	opt.msg_timeout *= 1000;
@@ -200,49 +197,46 @@ launch(void *arg)
 		r.io_port[i] = job->client_io->listenport[i];
 	}
 
-	msg_array_ptr[0].msg_type = REQUEST_LAUNCH_TASKS;
-	msg_array_ptr[0].data            = &r;
-	buffer = slurm_pack_msg_no_header(&msg_array_ptr[0]);
+	
 	
 	//hostlist = hostlist_create(job->nodelist);
 	debug("sending to list %s", job->step_layout->node_list);
-	hostlist = hostlist_create(job->step_layout->node_list);
-	itr = hostlist_iterator_create(hostlist);
-	job->thr_count = 0;
-	i=0;
-	for(i=0; i<job->step_layout->node_cnt; i++) {
-		host = hostlist_next(itr);
-		if(!host)
-			break;
-		debug("sending to %s id %d", host, i);
-		free(host);
-		
-		m = &msg_array_ptr[job->thr_count];
-		slurm_msg_t_init(m);
-		
-		m->srun_node_id    = (uint32_t)i;			
-		m->msg_type        = REQUEST_LAUNCH_TASKS;
-		m->data            = &r;
-		m->buffer          = buffer;
-		
-		memcpy(&m->address, 
-		       &job->step_layout->node_addr[i], 
-		       sizeof(slurm_addr));
-		
-		forward_set_launch(&m->forward,
-				   span[job->thr_count],
-				   &i,
-				   job->step_layout->node_cnt,
-				   job->step_layout->node_addr,
-				   itr,
-				   opt.msg_timeout);
-		job->thr_count++;
-		
+	
+	slurm_msg_t_init(&msg);
+	msg.msg_type        = REQUEST_LAUNCH_TASKS;
+	msg.data            = &r;
+
+	if(!(ret_list = slurm_send_recv_msg(
+		     job->step_layout->node_list,
+		     &msg, 0, opt.msg_timeout))) {
+		error("slurm_send_recv_msg failed miserably: %m");
+		return NULL;
 	}
-	xfree(span);
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(hostlist);
-	_p_launch(msg_array_ptr, job);
+
+	ret_itr = list_iterator_create(ret_list);
+	while ((ret_data = list_next(ret_itr))) {
+		rc = slurm_get_return_code(ret_data->type, 
+					   ret_data->data);
+		debug("launch returned msg_rc=%d err=%d type=%d",
+		      rc, ret_data->err, ret_data->type);
+		if (rc != SLURM_SUCCESS) {
+			errno = ret_data->err;
+			error("Task launch failed on node %s(%d): %m",
+			      ret_data->node_name, ret_data->nodeid);
+			_update_failed_node(job, ret_data->nodeid);
+			fail_launch_cnt++;
+		} else {
+#if 0 /* only for debugging, might want to make this a callback */
+			errno = ret_data->err;
+			info("Launch success on node %s(%d)",
+			     ret_data->node_name, ret_data->nodeid);
+#endif
+			_update_contacted_node(job, 
+					       ret_data->nodeid);
+		}
+	}
+	list_iterator_destroy(ret_itr);
+	list_destroy(ret_list);
 	
 	if (fail_launch_cnt) {
 		srun_job_state_t jstate;
@@ -262,10 +256,8 @@ launch(void *arg)
 		debug("All task launch requests sent");
 		update_job_state(job, SRUN_JOB_STARTING);
 	}
-	xfree(msg_array_ptr);
 	xfree(r.io_port);
 	xfree(r.resp_port);
-	free_buf(buffer);
 		
 	return(void *)(0);
 }
@@ -536,7 +528,8 @@ static void * _p_launch_task(void *arg)
 	}
 again:
 	//ret_list = slurm_send_recv_rc_msg(req, opt.msg_timeout);
-	ret_list = slurm_send_recv_rc_packed_msg(req, opt.msg_timeout);
+	ret_list = slurm_send_recv_packed_msg(job->step_layout->node_list, req,
+					      0, opt.msg_timeout);
 	if(!ret_list) {
 		th->state = DSH_FAILED;
 			

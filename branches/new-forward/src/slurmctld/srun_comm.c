@@ -101,7 +101,7 @@ extern void srun_allocate (uint32_t job_id)
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 		_srun_agent_launch(addr, job_ptr->alloc_resp_host, 
-				RESPONSE_RESOURCE_ALLOCATION, msg_arg);
+				   RESPONSE_RESOURCE_ALLOCATION, msg_arg);
 	}
 }
 
@@ -157,7 +157,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->nodelist = xstrdup(node_name);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL, 
-				msg_arg);
+				   msg_arg);
 	}	
 	list_iterator_destroy(step_iterator);
 }
@@ -257,7 +257,6 @@ extern void srun_complete (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-
 	if (job_ptr->other_port
 	    && job_ptr->other_host && job_ptr->other_host[0]) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
@@ -265,7 +264,9 @@ extern void srun_complete (struct job_record *job_ptr)
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
-		_srun_agent_launch(addr, job_ptr->other_host, SRUN_JOB_COMPLETE,
+		info("I'm here for %s", job_ptr->other_host);
+		_srun_agent_launch(addr, job_ptr->other_host, 
+				   SRUN_JOB_COMPLETE,
 				   msg_arg);
 	}
 
@@ -282,8 +283,9 @@ extern void srun_complete (struct job_record *job_ptr)
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
+		info("got here for %s", step_ptr->host);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE, 
-				msg_arg);
+				   msg_arg);
 	}	
 	list_iterator_destroy(step_iterator);
 }

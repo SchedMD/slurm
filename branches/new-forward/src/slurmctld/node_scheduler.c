@@ -174,8 +174,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		bool suspended)
 {
 	int i;
-	kill_job_msg_t *kill_job;
-	agent_arg_t *agent_args;
+	kill_job_msg_t *kill_job = NULL;
+	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
 	uint16_t base_state;
 
@@ -191,6 +191,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	else
 		agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update = time(NULL);
 	kill_job->job_id  = job_ptr->job_id;
@@ -231,7 +232,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		xfree(agent_args);
 		return;
 	}
-
+	info("ok, going to terminate the job here");
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
 	return;
@@ -1409,6 +1410,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
+	agent_args->hostlist = hostlist_create("");
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_id  = job_ptr->job_id;

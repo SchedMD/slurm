@@ -713,43 +713,20 @@ static int _launch_tasks(slurm_step_ctx ctx,
 			 launch_tasks_request_msg_t *launch_msg)
 {
 	slurm_msg_t msg;
-	Buf buffer = NULL;
-	hostlist_t hostlist = NULL;
-	hostlist_iterator_t itr = NULL;
-	int zero = 0;
 	List ret_list = NULL;
 	ListIterator ret_itr;
-	ret_data_info_t *ret_data;
-	int timeout;
+	ret_data_info_t *ret_data = NULL;
 	int rc = SLURM_SUCCESS;
 
 	debug("Entering _launch_tasks");
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
-	buffer = slurm_pack_msg_no_header(&msg);
-	hostlist = hostlist_create(ctx->step_resp->step_layout->node_list);
-	itr = hostlist_iterator_create(hostlist);
-	msg.srun_node_id = 0;
-	msg.ret_list = NULL;
-	msg.orig_addr.sin_addr.s_addr = 0;
-	msg.buffer = buffer;
-	memcpy(&msg.address, &ctx->step_resp->step_layout->node_addr[0],
-	       sizeof(slurm_addr));
-	timeout = slurm_get_msg_timeout() * 1000;
- 	forward_set_launch(&msg.forward,
-			   ctx->step_resp->step_layout->node_cnt,
-			   &zero,
-			   ctx->step_resp->step_layout->node_cnt,
-			   ctx->step_resp->step_layout->node_addr,
-			   itr,
-			   timeout);
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(hostlist);
-
-	ret_list = slurm_send_recv_rc_packed_msg(&msg, timeout);
-	if (ret_list == NULL) {
-		error("slurm_send_recv_rc_packed_msg failed miserably: %m");
+	
+	if(!(ret_list = slurm_send_recv_msg(
+		     ctx->step_resp->step_layout->node_list,
+		     &msg, 0, 0))) {
+		error("slurm_send_recv_msg failed miserably: %m");
 		return SLURM_ERROR;
 	}
 	ret_itr = list_iterator_create(ret_list);
