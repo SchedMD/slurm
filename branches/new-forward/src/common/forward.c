@@ -78,7 +78,7 @@ void *_forward_thread(void *arg)
 	slurm_msg_t_init(&msg);
 	
 	/* repeat until we are sure the message was sent */ 
-	while((name = hostlist_pop(hl))) {
+	while((name = hostlist_shift(hl))) {
 		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
 			error("forward_thread: can't get addr for host %s",
 			      name);
@@ -103,10 +103,17 @@ void *_forward_thread(void *arg)
 			continue;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
-
+		/* info("forward: send to %s id %d %d",  */
+/* 		     name, fwd_msg->header.srun_node_id, first_node_id); */
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
+		fwd_msg->header.forward.first_node_id =
+			fwd_msg->header.srun_node_id+1;;
+			
+		/* info("forward: along with to %s id %d %d",  */
+/* 		     fwd_msg->header.forward.nodelist,  */
+/* 		     fwd_msg->header.forward.first_node_id); */
 		
 		pack_header(&fwd_msg->header, buffer);
 	
@@ -152,11 +159,10 @@ void *_forward_thread(void *arg)
 			free(name);
 			ret_data_info->nodeid = fwd_msg->header.srun_node_id;
 			i=0;
-			while((name = hostlist_pop(hl))) {
+			while((name = hostlist_shift(hl))) {
 				ret_data_info = 
 					xmalloc(sizeof(ret_data_info_t));
 				list_push(fwd_msg->ret_list, ret_data_info);
-				name = hostlist_pop(hl);
 				ret_data_info->node_name = xstrdup(name);
 				free(name);
 				ret_data_info->nodeid = first_node_id++;
@@ -283,7 +289,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		xmalloc(sizeof(forward_msg_t) * header->forward.cnt);
 	i = 0;
 	
-	while((name = hostlist_pop(hl))) {
+	while((name = hostlist_shift(hl))) {
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
 		char buf[8192];
@@ -315,9 +321,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		forward_msg->header.ret_cnt = 0;
 		
 		forward_hl = hostlist_create(name);
+		i++;
 		free(name);
 		for(j = 0; j < span[thr_count]; j++) {
-			name = hostlist_pop(hl);
+			name = hostlist_shift(hl);
 			if(!name)
 				break;
 			hostlist_push(forward_hl, name);

@@ -1785,7 +1785,7 @@ List slurm_send_recv_packed_msg(const char *nodelist,
 		goto failed;	
 	}
 
-	while((name = hostlist_pop(hl))) {
+	while((name = hostlist_shift(hl))) {
 		//info("sending to %s", name);
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
 			error("slurm_send_recv_msg: can't get addr for "
@@ -1898,8 +1898,8 @@ List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg,
 
 	hl = hostlist_create(nodelist);
 
-	while((name = hostlist_pop(hl))) {
-		//info("sending to %s", name);
+	while((name = hostlist_shift(hl))) {
+		/* info("sending to %s id %d", name, first_node_id); */
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
 			error("slurm_send_recv_msg: can't get addr for "
 			      "host %s", name);
@@ -1921,10 +1921,11 @@ List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg,
 
 		forward_init(&msg->forward, NULL);
 		msg->forward.nodelist = xstrdup(buf);
-		//info("forwarding to %s", msg->forward.nodelist);
 		msg->forward.first_node_id = first_node_id+1;
 		msg->forward.timeout = timeout;
 		msg->forward.cnt = hostlist_count(hl);
+		/* info("forwarding to %s id %d", msg->forward.nodelist, */
+/* 		     msg->forward.first_node_id); */
 		
 		if(!(ret_list = _send_recv_msg(fd, msg->address,
 					       msg, timeout))) {	

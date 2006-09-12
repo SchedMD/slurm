@@ -994,8 +994,8 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 
 		/*
 		 * On AIX the new socket [sd] seems to inherit the O_NONBLOCK
-		 * flag from the listening socket [fd], so we need to explicitly
-		 * set it back to blocking mode.
+		 * flag from the listening socket [fd], so we need to 
+		 * explicitly set it back to blocking mode.
 		 * (XXX: This should eventually be fixed by making
 		 *  reads of IO headers nonblocking)
 		 */
