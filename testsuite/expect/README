@@ -487,6 +487,6 @@ test18.33  Verify that SLURM directed environment variables are processed
 test18.34  Test slaunch's ability to set the job step's name (--name option)
 test18.35  Test of task layout controls (--task-layout-byid, 
            --task-layout-byname and --task-layout-file options).
-test18.TBD Test of CPU affinity support (--cpu-bind option).
-test18.TBD Test of memory affinity support for NUMA systems (--mem-bind option).
+test18.36  Test of CPU affinity support (--cpu-bind option).
+test18.37  Test of memory affinity support for NUMA systems (--mem-bind option).
 
