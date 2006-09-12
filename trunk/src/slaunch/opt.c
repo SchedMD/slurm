@@ -890,6 +890,7 @@ void set_options(const int argc, char **argv)
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
 		{"uid",              required_argument, 0, LONG_OPT_UID},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
+		/* debugger-test intentionally undocumented in the man page */
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
@@ -900,10 +901,13 @@ void set_options(const int argc, char **argv)
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
+		/* pmi-threads intentionally undocumented in the man page */
 		{"pmi-threads",	     required_argument, 0, LONG_OPT_PMI_THREADS},
 		{"slaunch-input-filter",required_argument,0, LONG_OPT_LIN_FILTER},
 		{"slaunch-output-filter",required_argument,0,LONG_OPT_LOUT_FILTER},
 		{"slaunch-error-filter",required_argument,0, LONG_OPT_LERR_FILTER},
+		/* task-*-filter are not yet functional, and intentionally
+		   undocumented in the man page */
 		{"task-input-filter",required_argument,0,LONG_OPT_RIN_FILTER},
 		{"task-output-filter",required_argument,0,LONG_OPT_ROUT_FILTER},
 		{"task-error-filter",required_argument,0,LONG_OPT_RERR_FILTER},
