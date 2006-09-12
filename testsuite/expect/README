@@ -467,7 +467,7 @@ test18.21  Test of slaunch's --kill-on-bad-exit option.
 test18.22  Test of slaunch task-prolog and task-epilog option.
 test18.23  Test of running non-existant job, confirm timely termination.
 test18.24  Test propagation of umask to spawned tasks.
-test18.25  Test of HOSTFILE environment variable.
+test18.25  Test of --task-layout-file option.
 test18.26  Test of running different executables with different arguments
            for each task (--multi-prog option).
 test18.27  Confirm that a job executes with the proper task distribution
