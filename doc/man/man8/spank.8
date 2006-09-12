@@ -318,10 +318,10 @@ int slurm_spank_init (spank_t sp, int ac, char **av)
         if (strncmp ("min_prio=", av[i], 9) == 0) {
             const char *optarg = av[i] + 9;
             if (_str2prio (optarg, &min_prio) < 0) 
-                slurm_error ("Ignoring invalid min_prio value \"%s\"", av[i]);
+                slurm_error ("Ignoring invalid min_prio value: %s", av[i]);
         }
         else {
-            slurm_error ("renice: Invalid option \"%s\"", av[i]);
+            slurm_error ("renice: Invalid option: %s", av[i]);
         }
     }
 
@@ -347,7 +347,7 @@ int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
             return (0);
 
         if (_str2prio (val, &prio) < 0) {
-            slurm_error ("Bad value for %s: \"%s\"\n", PRIO_ENV_VAR, optarg);
+            slurm_error ("Bad value for %s: %s", PRIO_ENV_VAR, optarg);
             return (-1);
         }
 
@@ -362,7 +362,7 @@ int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
     spank_get_item (sp, S_TASK_GLOBAL_ID, &taskid);
     spank_get_item (sp, S_TASK_PID, &pid);
 
-    slurm_info ("re-nicing task%d pid %ld to %ld\n", taskid, pid, prio);
+    slurm_info ("re-nicing task%d pid %ld to %ld", taskid, pid, prio);
 
     if (setpriority (PRIO_PROCESS, (int) pid, (int) prio) < 0) {
         slurm_error ("setpriority: %m");
@@ -394,7 +394,7 @@ static int _renice_opt_process (int val, const char *optarg, int remote)
     }
         
     if (_str2prio (optarg, &prio) < 0) {
-        slurm_error ("Bad value for --renice: \"%s\"\n", optarg);
+        slurm_error ("Bad value for --renice: %s", optarg);
         return (-1);
     }
 
