@@ -342,13 +342,13 @@ program. If it fails to terminate within a few seconds, it will
 be killed along with any descendant processes.
 
 .TP
-\fB\-\-ctrl\-comm\-ifhn\fR[=]<\fIaddr\fR>
-Specify the address or hostname to be used for PMI communications only
+\fB\-\-comm\-hostname\fR[=]<\fIhostname|address\fR>
+Specify the hostname or address to be used for PMI communications only
 (MPCIH2 communication bootstrapping mechanism).
 Defaults to short hostname of the node on which slaunch is running.
 
 .TP
-\fB\-\-network\fR=\fIoptions\fR
+\fB\-\-network\fR[=]<\fIoptions\fR>
 (NOTE: this option is currently only of use on AIX systems.)
 Specify the communication protocol to be used. 
 The interpretation of \fItype\fR is system dependent. 
