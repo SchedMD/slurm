@@ -134,6 +134,8 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	char **env = NULL;
 
 	debug("Entering slurm_step_launch");
+	memset(&launch, 0, sizeof(launch));
+
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
 		error("Not a valid slurm_step_ctx!");
 
