@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 9128 2006-08-30 23:19:10Z jette $
+# $Id: Makefile.am 9168 2006-09-05 16:53:05Z jette $
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
