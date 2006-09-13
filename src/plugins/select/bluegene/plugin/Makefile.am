@@ -25,6 +25,12 @@ select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la 
 
+pkglib_LTLIBRARIES = libsched_if.la
+
+# Blue Gene node selection plugin.
+select_bluegene_la_SOURCES = libsched_if.c 
+
+
 sbin_PROGRAMS = slurm_prolog slurm_epilog sfree
 
 sfree_LDADD = $(top_builddir)/src/common/libcommon.la \
