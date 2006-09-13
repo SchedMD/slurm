@@ -51,6 +51,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -182,7 +183,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		debug("using %d threads", threads_used);
 	}
 
-	pthread_attr_init(&attr);
+	slurm_attr_init(&attr);
 	if (pthread_attr_setstacksize(&attr, 3 * 1024*1024))
 		error("pthread_attr_setstacksize: %m");
 	if (pthread_attr_setdetachstate (&attr,
