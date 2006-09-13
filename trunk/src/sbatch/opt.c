@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  opt.c - options processing for sbatch
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1495,10 +1494,8 @@ static void _help(void)
 "\n"
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
-"                              cpu consumable resource is enabled\n");
-	printf("\n");
-
-        printf(
+"                              cpu consumable resource is enabled\n"
+"\n"
 #ifdef HAVE_BG				/* Blue gene specific options */
   "Blue Gene related options:\n"
   "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
