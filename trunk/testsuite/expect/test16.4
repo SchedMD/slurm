@@ -1,7 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Basic sattach functionality test (--verbose and --label options).
+#          Basic sattach functionality test (--layout, --verbose and 
+#          --label options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -87,6 +88,31 @@ if {$matches != 4} {
 }
 
 #
+# Get task layout information
+#
+set matches     0
+spawn $sattach --layout $job_id.0
+set attach_id $spawn_id
+expect {
+	-i $attach_id
+	-re "4 tasks, ($number) nodes" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sattach not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: layout information not printed\n"
+	set exit_code 1
+}
+
+#
 # Attach to initial program
 #
 set matches     0
@@ -116,7 +142,7 @@ expect {
 }
 if {$matches != 5} {
 	send_user "\nFAILURE: job run time failure\n"
-	set exit_code   1
+	set exit_code 1
 }
 
 #
