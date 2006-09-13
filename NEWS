@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.13
+=========================
+ - Fix hang in sched/wiki2 if Moab stops responding responding when 
+   response is outgoing. 
+
 * Changes in SLURM 1.1.12
 =========================
  - Sched/wiki2 to report a job's account as COMMENT response to GETJOBS
