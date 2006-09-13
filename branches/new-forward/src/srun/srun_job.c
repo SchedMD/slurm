@@ -113,7 +113,6 @@ job_create_noalloc(void)
 		error("Invalid node list `%s' specified", opt.nodelist);
 		goto error;
 	}
-
 	srand48(getpid());
 	ai->jobid          = MIN_NOALLOC_JOBID +
 				((uint32_t) lrand48() % 
@@ -139,7 +138,6 @@ job_create_noalloc(void)
 		
 	_job_fake_cred(job);
 	job_update_io_fnames(job);
-
    error:
 	xfree(ai);
 	return (job);
@@ -199,7 +197,7 @@ job_step_create_allocation(uint32_t job_id)
 			hl = hostlist_create(opt.nodelist);
 		else
 			hl = hostlist_create(ai->nodelist);
-		info("using %s or %s", opt.nodelist, ai->nodelist);
+		//info("using %s or %s", opt.nodelist, ai->nodelist);
 		while ((node_name = hostlist_shift(exc_hl))) {
 			int inx = hostlist_find(hl, node_name);
 			if (inx >= 0) {
@@ -652,6 +650,8 @@ _job_fake_cred(srun_job_t *job)
 	arg.hostlist = job->nodelist;
         arg.ntask_cnt = 0;    
         arg.ntask    =  NULL; 
+	info("got %u.%u %u and %s",job->jobid, job->stepid, 
+	     opt.uid, job->nodelist);
 	job->cred = slurm_cred_faker(&arg);
 }
 

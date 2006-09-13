@@ -131,7 +131,8 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 	hostlist_ranged_string(hl, sizeof(buf), buf);
 	hostlist_destroy(hl);
 	name = xstrdup(buf);
-		
+
+	slurm_msg_t_init(&req);	
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 	
@@ -141,6 +142,7 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 		error("fwd_signal: slurm_send_recv_msg really failed bad");
 		return;
 	}
+	xfree(name);
 	itr = list_iterator_create(ret_list);		
 	while((ret_data_info = list_next(itr))) {
 		rc = slurm_get_return_code(ret_data_info->type, 

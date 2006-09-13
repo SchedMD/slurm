@@ -408,8 +408,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	job_id_request_msg_t req;
-	List ret_list;
-
+	
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
@@ -423,21 +422,14 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
 	
-	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
+	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if(!ret_list || !resp_msg.auth_cred) {
+	if(rc != 0 || !resp_msg.auth_cred) {
 		error("slurm_pid2jobid: %m");
-		if(ret_list)
-			list_destroy(ret_list);
 		if(resp_msg.auth_cred)
 			g_slurm_auth_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
-	if(list_count(ret_list)>0) {
-		error("slurm_pid2jobid: got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	list_destroy(ret_list);
 	if(resp_msg.auth_cred)
 		g_slurm_auth_destroy(resp_msg.auth_cred);	
 	switch (resp_msg.msg_type) {

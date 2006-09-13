@@ -165,7 +165,6 @@ static bool         _wait_for_server_thread(void);
 
 typedef struct connection_arg {
 	int newsockfd;
-	slurm_addr addr;
 } connection_arg_t;
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -536,7 +535,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	pthread_t thread_id_rpc_req;
 	pthread_attr_t thread_attr_rpc_req;
 	int no_thread;
-	connection_arg_t *conn_arg;
+	connection_arg_t *conn_arg = NULL;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -586,7 +585,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
-		conn_arg->addr = cli_addr;
 		if (slurmctld_config.shutdown_time)
 			no_thread = 1;
 		else if (pthread_create(&thread_id_rpc_req,
@@ -621,12 +619,11 @@ static void *_service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
 	void *return_code = NULL;
-	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	
-	ret_list = slurm_receive_msg(conn->newsockfd, conn->addr, msg, 0);
 
-	if(!ret_list) {
+	slurm_msg_t_init(msg);
+
+	if(slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
 		error("slurm_receive_msg: %m");
 		/* close should only be called when the socket implementation
 		 * is being used the following call will be a no-op in a 
@@ -635,8 +632,6 @@ static void *_service_connection(void *arg)
 		slurm_close_accepted_conn(conn->newsockfd);
 		goto cleanup;
 	}
-
-	msg->ret_list = ret_list;
 
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
@@ -648,7 +643,7 @@ static void *_service_connection(void *arg)
 			info("_service_connection/slurm_receive_msg %m");
 	} else {
 		/* process the request */
-		slurmctld_req (msg);
+		slurmctld_req(msg);
 	}
 	if ((conn->newsockfd >= 0) 
 	    && slurm_close_accepted_conn(conn->newsockfd) < 0)

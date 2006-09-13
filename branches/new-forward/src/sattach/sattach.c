@@ -440,8 +440,6 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
 	int          timeout = 0;	/* slurm default value */
-	List ret_list = NULL;
-	slurm_addr recv_addr;
 
 	debug3("Called _msg_socket_accept");
 
@@ -477,26 +475,17 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
-	memcpy(&recv_addr, &addr, sizeof(slurm_addr));
 again:
-	ret_list = slurm_receive_msg(fd, recv_addr, msg, timeout);
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if(slurm_receive_msg(fd, msg, timeout) != 0) {
 		if (errno == EINTR) {
-			list_destroy(ret_list);
 			goto again;
 		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
 		goto cleanup;
 	}
-	if(list_count(ret_list)>0) {
-		error("_message_socket_accept connection: "
-		      "got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	msg->ret_list = ret_list;
 
-	_handle_msg(mts, msg); /* handle_msg frees msg */
+	_handle_msg(mts, msg); /* handle_msg frees msg->data */
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", msg->conn_fd);

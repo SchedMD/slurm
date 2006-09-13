@@ -205,7 +205,12 @@ launch(void *arg)
 	slurm_msg_t_init(&msg);
 	msg.msg_type        = REQUEST_LAUNCH_TASKS;
 	msg.data            = &r;
-
+	
+	if (_verbose) {
+		char *name = nodelist_nth_host(job->step_layout->node_list, 0);
+		_print_launch_msg(&r, name, 0);
+		free(name);
+	}
 	if(!(ret_list = slurm_send_recv_msg(
 		     job->step_layout->node_list,
 		     &msg, 0, opt.msg_timeout))) {

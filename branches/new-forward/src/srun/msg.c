@@ -823,7 +823,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	switch (msg->msg_type)
 	{
 	case RESPONSE_LAUNCH_TASKS:
-		debug("recevied task launch response");
+		debug("received task launch response");
 		_launch_handler(job, msg);
 		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
@@ -893,7 +893,6 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	unsigned char *uc;
 	short        port;
 	int          timeout = 0;	/* slurm default value */
-	List         ret_list;
 
 	if (fdnum < job->njfds)
 		fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr);
@@ -914,31 +913,22 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
-	msg->conn_fd = fd;
 		
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
 again:
-	ret_list = slurm_receive_msg(fd, cli_addr, msg, timeout);
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if(slurm_receive_msg(fd, msg, timeout) != 0) {
 		if (errno == EINTR) {
-			list_destroy(ret_list);
 			goto again;
 		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
 		goto cleanup;
 	}
-	if(list_count(ret_list)>0) {
-		error("_accept_msg_connection: "
-		      "got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	msg->ret_list = ret_list;
 			
-	_handle_msg(job, msg); /* handle_msg frees msg */
+	_handle_msg(job, msg); /* handle_msg frees msg->data */
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", msg->conn_fd);

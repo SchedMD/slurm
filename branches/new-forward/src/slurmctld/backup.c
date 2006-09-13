@@ -271,8 +271,7 @@ static void *_background_rpc_mgr(void *no_data)
 	slurm_addr cli_addr;
 	slurm_msg_t *msg = NULL;
 	int error_code;
-	List ret_list = NULL;
-
+	
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -313,21 +312,16 @@ static void *_background_rpc_mgr(void *no_data)
 		}
 
 		msg = xmalloc(sizeof(slurm_msg_t));
-		msg->conn_fd = newsockfd;
-		ret_list = slurm_receive_msg(newsockfd, cli_addr, msg, 0);
-		if(ret_list) {
-			if(list_count(ret_list)>0) 
-				error("Got %d, expecting 0 from "
-				      "message received",
-				      list_count(ret_list));
-			error_code = _background_process_msg(msg);
-			if ((error_code == SLURM_SUCCESS)
-			&&  (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
-			&&  (slurmctld_config.shutdown_time == 0))
-				slurmctld_config.shutdown_time = time(NULL);
-			list_destroy(ret_list);
-		} else if(errno != SLURM_SUCCESS) 
+		slurm_msg_t_init(msg);
+		if(slurm_receive_msg(newsockfd, msg, 0) != 0)
 			error("slurm_receive_msg: %m");
+		
+		error_code = _background_process_msg(msg);
+		if ((error_code == SLURM_SUCCESS)
+		    &&  (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
+		    &&  (slurmctld_config.shutdown_time == 0))
+			slurmctld_config.shutdown_time = time(NULL);
+		
 		slurm_free_msg(msg);
 
 		/* close should only be called when the socket 

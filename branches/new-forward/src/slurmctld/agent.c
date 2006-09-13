@@ -120,6 +120,8 @@ typedef struct thd {
 	time_t start_time;		/* start time */
 	time_t end_time;		/* end time or delta time 
 					 * upon termination */
+	slurm_addr *addr;	        /* specific addr to send to
+					 * will not do nodelist if set */
 	char *nodelist;	                /* list of nodes to send to */
 	int first_node_id;              /* relative first node id */
 	List ret_list;
@@ -212,8 +214,8 @@ void *agent(void *args)
 	task_info_t *task_specific_ptr;
 	time_t begin_time;
 
-	info("I am here and agent_cnt is %d of %d with type %d",
-	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
+	/* info("I am here and agent_cnt is %d of %d with type %d", */
+/* 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type); */
 	slurm_mutex_lock(&agent_cnt_mutex);
 	while (1) {
 		if (agent_cnt < MAX_AGENT_CNT) {
@@ -385,46 +387,44 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		span = set_span(agent_arg_ptr->node_count, 
 				agent_arg_ptr->node_count);
 	}
-	/* forward_init(&forward, NULL); */
-/* 	forward.cnt = agent_info_ptr->thread_count; */
-/* 	forward.name = agent_arg_ptr->node_names; */
-/* 	forward.addr = agent_arg_ptr->slurm_addr; */
-/* 	forward.node_id = NULL; */
-/* 	forward.timeout = slurm_get_msg_timeout() * 1000; */
-
 	i = 0;
 	while(i < agent_info_ptr->thread_count) {
 		thread_ptr[thr_count].state      = DSH_NEW;
-		
+		thread_ptr[thr_count].addr = agent_arg_ptr->addr; 
 		thread_ptr[thr_count].first_node_id = i;
-		hl = hostlist_create("");
-		if(span[thr_count]) {
-			for(j = 0; j < span[thr_count]; j++) {
-				name = hostlist_shift(agent_arg_ptr->hostlist);
-				if(!name)
-					break;
-				info("adding %s", name);
-				hostlist_push(hl, name);
-				free(name);
-				i++;
-			}
-			hostlist_ranged_string(hl, sizeof(buf), buf);
-			hostlist_destroy(hl);
-			if(thread_ptr[thr_count].nodelist)
-				info("dude there was a nodelist of %s", 
-				     thread_ptr[thr_count].nodelist);
-			thread_ptr[thr_count].nodelist = xstrdup(buf);
-		} else {
+		name = hostlist_shift(agent_arg_ptr->hostlist);
+		if(!name) {
+			debug3("no more nodes to send to");
+			break;
+		}
+		hl = hostlist_create(name);
+		if(addr && span[thr_count]) {
+			debug("warning: you will only be sending this to %s",
+			      name);
+			span[thr_count] = 0;
+		}
+		free(name);
+		i++;
+		for(j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(agent_arg_ptr->hostlist);
-			info("adding %s", name);
-			thread_ptr[thr_count].nodelist = xstrdup(name);
+			if(!name)
+				break;
+			/* info("adding %s", name); */
+			hostlist_push(hl, name);
 			free(name);
-			if(!thread_ptr[thr_count].nodelist)
-				error("we don't have the correct list!");
 			i++;
 		}
-		info("sending to nodes %s", 
-		     thread_ptr[thr_count].nodelist);
+		hostlist_ranged_string(hl, sizeof(buf), buf);
+		hostlist_destroy(hl);
+		if(thread_ptr[thr_count].nodelist) {
+			error("there was a nodelist of %s that shouldn't be", 
+			      thread_ptr[thr_count].nodelist);
+			xfree(thread_ptr[thr_count].nodelist);
+		}
+		thread_ptr[thr_count].nodelist = xstrdup(buf);
+		
+		/* info("sending to nodes %s",  */
+/* 		     thread_ptr[thr_count].nodelist); */
 		thr_count++;		       
 	}
 	xfree(span);
@@ -821,13 +821,20 @@ static void *_thread_per_group_rpc(void *args)
 			     thread_ptr->first_node_id,
 			     0)) 
 		    == NULL) {
+			error("_thread_per_group_rpc: no ret_list given");
+			goto cleanup;
 		}
 	} else {
-		if(slurm_conf_get_addr(thread_ptr->nodelist, &msg.address) ==
-		   SLURM_ERROR) {
-			error("_thread_per_group_rpc: can't get address for "
-			      "host %s", thread_ptr->nodelist);
-			goto cleanup;
+		if(thread_ptr->addr) {
+			msg.address = *thread_ptr->addr;
+		} else {
+			if(slurm_conf_get_addr(thread_ptr->nodelist,
+					       &msg.address) == SLURM_ERROR) {
+				error("_thread_per_group_rpc: "
+				      "can't get address for "
+				      "host %s", thread_ptr->nodelist);
+				goto cleanup;
+			}
 		}
 		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) 
 			thread_state = DSH_DONE;
@@ -1280,6 +1287,7 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 		return;
 
 	hostlist_destroy(agent_arg_ptr->hostlist);
+	xfree(agent_arg_ptr->addr);
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH)
 			_slurmctld_free_job_launch_msg(

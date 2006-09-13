@@ -232,7 +232,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		xfree(agent_args);
 		return;
 	}
-	info("ok, going to terminate the job here");
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
 	return;

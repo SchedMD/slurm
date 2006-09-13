@@ -262,7 +262,6 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	char         host[256];
 	uint16_t     port;
 	int          rc = 0;
-	List ret_list;
 
 	fd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);
 	if (fd < 0) {
@@ -275,31 +274,20 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
-	msg->conn_fd = fd;
-		
+	
   again:
-	ret_list = slurm_receive_msg(fd, cli_addr, msg, 0);
-
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if(slurm_receive_msg(fd, msg, 0) != 0) {
 		if (errno == EINTR) {
 			goto again;
-		}
-		if(ret_list)
-			list_destroy(ret_list);
-			
+		}			
 		error("_accept_msg_connection[%s]: %m", host);
-		slurm_free_msg(msg);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
+		
 	}
-	if(list_count(ret_list)>0) {
-		error("_accept_msg_connection: "
-		      "got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	msg->ret_list = ret_list;
-	
-	
-	rc = _handle_msg(msg, resp); /* handle_msg frees msg */
+			
+	rc = _handle_msg(msg, resp); /* handle_msg frees msg->data */
+cleanup:
 	slurm_free_msg(msg);
 		
 	slurm_close_accepted_conn(fd);

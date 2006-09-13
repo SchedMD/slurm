@@ -67,7 +67,6 @@ void *_forward_thread(void *arg)
 	Buf buffer = init_buf(0);
 	int i=0;
 	List ret_list = NULL;
-	slurm_msg_t msg;
 	slurm_fd fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
@@ -75,7 +74,6 @@ void *_forward_thread(void *arg)
 	int first_node_id = fwd_msg->header.srun_node_id;
 	slurm_addr addr;
 	char buf[8196];
-	slurm_msg_t_init(&msg);
 	
 	/* repeat until we are sure the message was sent */ 
 	while((name = hostlist_shift(hl))) {
@@ -170,7 +168,7 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 	
-		ret_list = slurm_receive_msg(fd, addr, &msg, fwd_msg->timeout);
+		ret_list = slurm_receive_msgs(fd, fwd_msg->timeout);
 
 		if(!ret_list || (fwd_msg->header.forward.cnt != 0 
 				 && list_count(ret_list) == 0)) {
@@ -189,33 +187,19 @@ void *_forward_thread(void *arg)
 		break;
 	}
 	
-	ret_data_info = xmalloc(sizeof(ret_data_info_t));
-	ret_data_info->err = errno;
-	ret_data_info->node_name = xstrdup(name);
-	free(name);
-	ret_data_info->nodeid = fwd_msg->header.srun_node_id;
-						
-	if(ret_data_info->err != SLURM_SUCCESS) {
-		ret_data_info->type = RESPONSE_FORWARD_FAILED;
-		ret_data_info->data = NULL;
-	} else {
-		ret_data_info->type = msg.msg_type;		
-		ret_data_info->data = msg.data;
-		g_slurm_auth_destroy(msg.auth_cred);
-	}
-	debug3("got reply for %s", 
-	       ret_data_info->node_name);
 	slurm_mutex_lock(fwd_msg->forward_mutex);
-	list_push(fwd_msg->ret_list, ret_data_info);
 	if(ret_list) {
 		while((ret_data_info = list_pop(ret_list)) != NULL) {
-			list_push(fwd_msg->ret_list,  ret_data_info);
-			/* info("got %s", */
-			/* ret_data_info->node_name); */
+			if(!ret_data_info->node_name) {
+				ret_data_info->node_name = xstrdup(name);
+			}
+			list_push(fwd_msg->ret_list, ret_data_info);
+			debug3("got response from %s",
+			       ret_data_info->node_name);
 		}
 		list_destroy(ret_list);
 	}
-	
+	free(name);
 cleanup:
 	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
 		error ("close(%d): %m", fd);

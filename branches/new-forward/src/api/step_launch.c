@@ -249,7 +249,6 @@ int slurm_step_launch (slurm_step_ctx ctx,
 int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
-
 	/* Wait for all tasks to start */
 	pthread_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_started) < sls->tasks_requested) {
@@ -315,9 +314,10 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 				 *   be made smart enough to really ensure
 				 *   that a killed step never starts.
 				 */
-				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->job_step_id,
-						    SIGKILL);
+				slurm_kill_job_step(
+					ctx->job_id,
+					ctx->step_resp->job_step_id,
+					SIGKILL);
 				client_io_handler_abort(sls->client_io);
 				break;
 			} else if (errnum != 0) {
@@ -328,7 +328,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 			}
 		}
 	}
-
+	
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
 	pthread_join(sls->msg_thread, NULL);
@@ -455,7 +455,6 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		error("pthread_create of message thread: %m");
 		return SLURM_ERROR;
 	}
-
 	return SLURM_SUCCESS;
 }
 
@@ -482,14 +481,13 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	int fd;
 	unsigned char *uc;
-	short        port;
+	short port;
 	struct sockaddr_un addr;
 	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
-	int          timeout = 0;	/* slurm default value */
-	List ret_list = NULL;
-	slurm_addr recv_addr;
-
+	int timeout = 0;	/* slurm default value */
+	int rc = 0;
+	
 	debug3("Called _msg_socket_accept");
 
 	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
@@ -524,24 +522,15 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
-	memcpy(&recv_addr, &addr, sizeof(slurm_addr));
 again:
-	ret_list = slurm_receive_msg(fd, recv_addr, msg, timeout);
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if((rc = slurm_receive_msg(fd, msg, timeout)) != 0) {
 		if (errno == EINTR) {
-			list_destroy(ret_list);
 			goto again;
 		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
 		goto cleanup;
 	}
-	if(list_count(ret_list)>0) {
-		error("_message_socket_accept connection: "
-		      "got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	msg->ret_list = ret_list;
 
 	_handle_msg(sls, msg); /* handle_msg frees msg */
 cleanup:

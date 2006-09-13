@@ -61,6 +61,7 @@ static void _srun_agent_launch(slurm_addr *addr, char *host,
 
 	agent_args->node_count = 1;
 	agent_args->retry      = 0;
+	agent_args->addr       = addr;
 	agent_args->hostlist   = hostlist_create(host);
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
@@ -264,7 +265,6 @@ extern void srun_complete (struct job_record *job_ptr)
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
-		info("I'm here for %s", job_ptr->other_host);
 		_srun_agent_launch(addr, job_ptr->other_host, 
 				   SRUN_JOB_COMPLETE,
 				   msg_arg);
@@ -283,7 +283,6 @@ extern void srun_complete (struct job_record *job_ptr)
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
-		info("got here for %s", step_ptr->host);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE, 
 				   msg_arg);
 	}	

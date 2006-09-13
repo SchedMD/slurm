@@ -3011,6 +3011,7 @@ static void
 _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer)
 {
 	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
 	jobacct_g_pack(msg->jobacct, buffer);	
@@ -3026,6 +3027,7 @@ _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer)
 	*msg_ptr = msg;	
 
 	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->step_id, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
 	jobacct_g_unpack(&msg->jobacct, buffer);
@@ -3438,6 +3440,7 @@ _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 
 	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->return_code, buffer);
 }
 
 static int
@@ -3452,6 +3455,7 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
 
 	/* load the data values */
 	safe_unpack32(&tmp_ptr->job_id, buffer);
+	safe_unpack32(&tmp_ptr->return_code, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

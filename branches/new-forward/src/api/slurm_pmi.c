@@ -46,6 +46,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
+#include "src/common/slurm_auth.h"
 
 #define MAX_RETRIES 5
 #define PMI_TIME    1000	/* spacing between RPCs, usec */
@@ -120,8 +121,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
-	List ret_list = NULL;
-
+	
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 
@@ -154,6 +154,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	data.port = port;
 	data.hostname = hostname;
 	slurm_msg_t_init(&msg_send);
+	slurm_msg_t_init(&msg_rcv);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
@@ -186,23 +187,16 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		return errno;
 	}
 
-	while ((ret_list = slurm_receive_msg(srun_fd, srun_reply_addr,
-					     &msg_rcv, 0)) == NULL) {
+	while ((rc = slurm_receive_msg(srun_fd, &msg_rcv, 0)) != 0) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
 		slurm_close_accepted_conn(srun_fd);
 		return errno;
 	}
-	if(ret_list) {
-		if(list_count(ret_list)>0) {
-			error("We didn't do things correctly "
-			      "got %d responses didn't expect any",
-			      list_count(ret_list));
-		}
-		list_destroy(ret_list);
-	}
-	msg_rcv.conn_fd = srun_fd;
+	if(msg_rcv.auth_cred)
+		(void)g_slurm_auth_destroy(msg_rcv.auth_cred);
+	
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
 		slurm_close_accepted_conn(srun_fd);
@@ -210,6 +204,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
+	
 	slurm_close_accepted_conn(srun_fd);
 	*kvs_set_ptr = msg_rcv.data;
 	return SLURM_SUCCESS;

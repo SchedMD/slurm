@@ -110,8 +110,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char *out = NULL;
 
 	/****** Line 1 ******/
-	xstrcat(out, tmp_line);
-
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp1, UNIT_NONE);
 #else

@@ -50,6 +50,7 @@
 
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/forward.h"
+#include "src/common/xmalloc.h"
 
 static int _send_message_controller (	enum controller_id dest, 
 					slurm_msg_t *request_msg );
@@ -133,41 +134,30 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 {
 	int rc = SLURM_PROTOCOL_SUCCESS;
 	slurm_fd fd = -1;
-	slurm_msg_t resp_msg;
-	slurm_addr addr;
-	
-	List ret_list = NULL;
-	
-	/*always only going to 1 node */
-	slurm_msg_t_init(&resp_msg);
+	slurm_msg_t *resp_msg = NULL;
 		
+	/*always only going to 1 node */
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
-
-	slurm_get_controller_addr_spec(dest, &addr);
-	ret_list = slurm_receive_msg(fd, addr, &resp_msg, 0);
-	if(!ret_list)
-		return SLURM_ERROR;
-	if(list_count(ret_list)>0) {
-		error("_send_message_controller: expected 0 back, but got %d",
-		      list_count(ret_list));
+	resp_msg = xmalloc(sizeof(slurm_msg_t));
+	slurm_msg_t_init(resp_msg);
+	
+	if((rc = slurm_receive_msg(fd, resp_msg, 0)) != 0) {
+		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
-	list_destroy(ret_list);
-	rc = errno;
-	if(rc < 0) {
-		rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
-	}
+	
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
 		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
-	
-	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
-			rc = SLURM_UNEXPECTED_MSG_ERROR;
+	else if (resp_msg->msg_type != RESPONSE_SLURM_RC)
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+	else
+		rc = slurm_get_return_code(resp_msg->msg_type,
+					   resp_msg->data);
+	slurm_free_msg(resp_msg);
 
-	rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-	
 	if (rc) slurm_seterrno_ret(rc);
 
         return rc;
