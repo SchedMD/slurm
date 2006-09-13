@@ -401,9 +401,14 @@ try_again:
 				continue;	/* Not usable */
 		}
 		*found_bg_record = record;
+		found = 1;
+		debug2("we found one! %s", (*found_bg_record)->bg_block_id);
 		break;
 	}
 	list_iterator_destroy(itr);
+
+	if(*found_bg_record)
+		goto found_it;
 
 	if(!found && bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		/* 
@@ -576,7 +581,7 @@ try_again:
 			list_destroy(lists_of_lists);
 		slurm_mutex_lock(&block_state_mutex);		
 	}
-	
+found_it:
 	/* set the bitmap and do other allocation activities */
 	if (*found_bg_record) {
 		if(!test_only) {
