@@ -250,7 +250,7 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
 	bytes_remaining = size;
 	ptr = buf;
 	while (bytes_remaining > 0) {
-		bytes_written = write(fd, ptr, size);
+		bytes_written = write(fd, ptr, bytes_remaining);
 		if (bytes_written < 0)
 			return 0;
 		bytes_remaining -= bytes_written;
