@@ -211,10 +211,10 @@ launch(void *arg)
 		_print_launch_msg(&r, name, 0);
 		free(name);
 	}
-	if(!(ret_list = slurm_send_recv_msg(
+	if(!(ret_list = slurm_send_recv_msgs(
 		     job->step_layout->node_list,
 		     &msg, 0, opt.msg_timeout))) {
-		error("slurm_send_recv_msg failed miserably: %m");
+		error("slurm_send_recv_msgs failed miserably: %m");
 		return NULL;
 	}
 

@@ -92,8 +92,8 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	msg.data            = &r;
 	
 	
-	ret_list = slurm_send_recv_msg(step_layout->node_list, &msg,
-				       0, 0);
+	ret_list = slurm_send_recv_msgs(step_layout->node_list, &msg,
+					0, 0);
 	if (!ret_list) {
 		error("got an error no list returned");
 		goto cleanup;

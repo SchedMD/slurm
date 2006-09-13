@@ -713,10 +713,10 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 	
-	if(!(ret_list = slurm_send_recv_msg(
+	if(!(ret_list = slurm_send_recv_msgs(
 		     ctx->step_resp->step_layout->node_list,
 		     &msg, 0, 0))) {
-		error("slurm_send_recv_msg failed miserably: %m");
+		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}
 	ret_itr = list_iterator_create(ret_list);

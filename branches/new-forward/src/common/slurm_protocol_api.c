@@ -1057,7 +1057,7 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 
 	msg->ret_list = list_create(destroy_data_info);
 
-	if (timeout == 0)
+	if (timeout <= 0)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
@@ -1129,6 +1129,8 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 		/* take out the amount of timeout from this hop */
 		msg->forward_struct->timeout = 
 			(timeout - header.forward.timeout);
+		if(msg->forward_struct->timeout < 0)
+			msg->forward_struct->timeout = 0;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		debug3("forwarding messages to %d nodes!!!! "
@@ -2053,7 +2055,7 @@ List slurm_send_recv_packed_msg(const char *nodelist,
 	while((name = hostlist_shift(hl))) {
 		//info("sending to %s", name);
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
-			error("slurm_send_recv_msg: can't get addr for "
+			error("slurm_send_recv_packed_msg: can't get addr for "
 			      "host %s", name);
 			free(name);
 			continue;
@@ -2134,8 +2136,7 @@ failed:
 
 /*
  *  Send a message to the nodelist specificed using fanout
- *    Then return List containing type (ret_data_info_t). and filling
- *    in the resp with info from resp.
+ *    Then return List containing type (ret_data_info_t).
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN first_node_id - a slurm_msg struct to be sent by the function
@@ -2144,8 +2145,8 @@ failed:
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_data_info_t).
  */
-List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg, 
-			 int first_node_id, int timeout)
+List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, 
+			  int first_node_id, int timeout)
 {
 	List ret_list = NULL;
 	List tmp_ret_list = NULL;
@@ -2157,7 +2158,7 @@ List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg,
 	ListIterator itr;
 
 	if(!nodelist) {
-		error("slurm_send_recv_msg: no nodelist given");
+		error("slurm_send_recv_msgs: no nodelist given");
 		return NULL;
 	}
 
@@ -2166,7 +2167,7 @@ List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg,
 	while((name = hostlist_shift(hl))) {
 		/* info("sending to %s id %d", name, first_node_id); */
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
-			error("slurm_send_recv_msg: can't get addr for "
+			error("slurm_send_recv_msgs: can't get addr for "
 			      "host %s", name);
 			free(name);
 			continue;
@@ -2225,6 +2226,51 @@ List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg,
 	} 
 	return ret_list;
 }
+
+/*
+ *  Send a message to msg->address
+ *    Then return List containing type (ret_data_info_t). 
+ * IN msg           - a slurm_msg struct to be sent by the function
+ * IN timeout	    - how long to wait in milliseconds
+ * RET List	    - List containing the responses of the childern
+ *                    (if any) we forwarded the message to. List
+ *                    containing type (ret_types_t).
+ */
+List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
+{
+	List ret_list = NULL;
+	List tmp_ret_list = NULL;
+	slurm_fd fd = -1;
+	ret_data_info_t *ret_data_info = NULL;
+	ListIterator itr;
+
+	if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
+		mark_as_failed_forward(&ret_list, name, 
+				       0, 
+				       SLURM_SOCKET_ERROR);
+		return ret_list;
+	}
+
+	/*just to make sure */
+	forward_init(&msg->forward, NULL);
+	msg->ret_list = NULL;
+	msg->forward_struct = NULL;
+	if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
+		mark_as_failed_forward(&tmp_ret_list, name, 
+				       0, errno);
+		return ret_list;
+	} else {
+		itr = list_iterator_create(ret_list);
+		while((ret_data_info = list_next(itr))) 
+			if(!ret_data_info->node_name) {
+				ret_data_info->node_name =
+					xstrdup(name);
+			}
+		list_iterator_destroy(itr);
+	}
+	return ret_list;
+}
+
 
 
 /*

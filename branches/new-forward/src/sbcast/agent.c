@@ -84,10 +84,10 @@ static void *_agent_thread(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = 0, msg_rc;
 
-	ret_list = slurm_send_recv_msg(thread_ptr->nodelist, &thread_ptr->msg,
-				       0, 0);
+	ret_list = slurm_send_recv_msgs(thread_ptr->nodelist, &thread_ptr->msg,
+					0, 0);
 	if (ret_list == NULL) {
-		error("slurm_send_recv_msg: %m");
+		error("slurm_send_recv_msgs: %m");
 		exit(1);
 	}
 	

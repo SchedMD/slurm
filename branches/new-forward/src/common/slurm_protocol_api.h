@@ -623,7 +623,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				   slurm_msg_t * response_msg);
 
 /* slurm_send_recv_node_msg
- * opens a connection to node, usually multiple nodes, 
+ * opens a connection to node,
  * and sends the nodes a message, listens 
  * for the response, then closes the connections
  * IN request_msg	- slurm_msg request
@@ -652,8 +652,7 @@ List slurm_send_recv_packed_msg(const char *nodelist,
 
 /*
  *  Send a message to the nodelist specificed using fanout
- *    Then return List containing type (ret_data_info_t). and filling
- *    in the resp with info from resp.
+ *    Then return List containing type (ret_data_info_t).
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN first_node_id - a slurm_msg struct to be sent by the function
@@ -662,8 +661,20 @@ List slurm_send_recv_packed_msg(const char *nodelist,
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
-List slurm_send_recv_msg(const char *nodelist, slurm_msg_t *msg, 
-			 int first_node_id, int timeout);
+List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, 
+			  int first_node_id, int timeout);
+
+/*
+ *  Send a message to msg->address
+ *    Then return List containing type (ret_data_info_t). 
+ * IN msg           - a slurm_msg struct to be sent by the function
+ * IN name          - the name of the node the message is being sent to
+ * IN timeout	    - how long to wait in milliseconds
+ * RET List	    - List containing the responses of the childern
+ *                    (if any) we forwarded the message to. List
+ *                    containing type (ret_types_t).
+ */
+List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout);
 
 /*
  *  Same as above, but only to one node 

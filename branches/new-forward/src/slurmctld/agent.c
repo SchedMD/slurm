@@ -398,7 +398,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			break;
 		}
 		hl = hostlist_create(name);
-		if(addr && span[thr_count]) {
+		if(thread_ptr[thr_count].addr && span[thr_count]) {
 			debug("warning: you will only be sending this to %s",
 			      name);
 			span[thr_count] = 0;
@@ -815,14 +815,24 @@ static void *_thread_per_group_rpc(void *args)
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
-		if ((ret_list = slurm_send_recv_msg(
-			     thread_ptr->nodelist,
-			     &msg, 
-			     thread_ptr->first_node_id,
-			     0)) 
-		    == NULL) {
-			error("_thread_per_group_rpc: no ret_list given");
-			goto cleanup;
+		if(thread_ptr->addr) {
+			msg.address = *thread_ptr->addr;
+			if(!(ret_list = slurm_send_addr_recv_msgs(
+				     &msg, thread_ptr->nodelist, 0))) {
+				error("_thread_per_group_rpc: "
+				      "no ret_list given");
+				goto cleanup;
+			}
+		} else {
+			if(!(ret_list = slurm_send_recv_msgs(
+				     thread_ptr->nodelist,
+				     &msg, 
+				     thread_ptr->first_node_id,
+				     0))) {
+				error("_thread_per_group_rpc: "
+				      "no ret_list given");
+				goto cleanup;
+			}
 		}
 	} else {
 		if(thread_ptr->addr) {
