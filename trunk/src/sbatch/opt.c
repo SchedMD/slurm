@@ -445,6 +445,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
+  {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL           },
   {"SBATCH_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
   {"SBATCH_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
