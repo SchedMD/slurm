@@ -1243,12 +1243,8 @@ static void _help(void)
 "\n"
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
-"                              cpu consumable resource is enabled\n");
-
-	printf("\n");
-
-        printf(
-
+"                              cpu consumable resource is enabled\n"
+"\n"
 #ifdef HAVE_BG				/* Blue gene specific options */
   "Blue Gene related options:\n"
   "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
