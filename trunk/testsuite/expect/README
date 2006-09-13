@@ -422,6 +422,7 @@ test17.25  Verify environment variables controlling sbatch are processed:
 test17.26  Test of --input option.
 test17.27  Test that a job executes with the specified nodes, requires multiple
            nodes (--nodes, --nodelist and --exclude options).
+test17.28  Tests #SBATCH entry functionality in a batch script.
 
 
 test18.#   Testing of slaunch options.
