@@ -1043,7 +1043,6 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	xassert(fd >= 0);
 
 	slurm_msg_t_init(msg);
-	msg->conn_fd = fd;
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
@@ -1051,7 +1050,7 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	/* this always is the connection */
 	memcpy(&msg->address, orig_addr, sizeof(slurm_addr));
 
-	/* this always where the connection originated from, this
+	/* where the connection originated from, this
 	 * might change based on the header we receive */
 	memcpy(&msg->orig_addr, orig_addr, sizeof(slurm_addr));
 
