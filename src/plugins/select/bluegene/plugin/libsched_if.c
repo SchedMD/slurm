@@ -36,8 +36,9 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+typedef struct sched_params sched_params_t;
 
-int get_parameters(void *stuff) 
+int get_parameters(sched_params_t *stuff) 
 {
 	return -1;
 }
