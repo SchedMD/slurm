@@ -1847,7 +1847,6 @@ extern int *set_span(int total,  uint16_t tree_width)
 
 	span = xmalloc(sizeof(int) * tree_width);
 	//info("span count = %d", tree_width);
-	memset(span, 0, tree_width);
 	if(total <= tree_width) {
 		return span;
 	} 
