@@ -1,5 +1,4 @@
-.\" $Id: sattach.1 8570 2006-07-13 21:12:58Z morrone $
-.TH "sattach" "1" "SLURM 1.2" "July 2006" "SLURM Commands"
+.TH "sattach" "1" "SLURM 1.2" "September 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 sattach \- Attach to a SLURM job step.
@@ -27,6 +26,14 @@ suitable for use with a parallel debugger like TotalView.
 Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  The filtering is performed locally in
 sattach.
+
+.TP
+\fB\-l\fR, \fB\-\-label\fR
+prepend task number to lines of stdout/err. Normally, stdout and stderr
+from remote tasks is line-buffered directly to the stdout and stderr of
+\fBsattach\fR.
+The \fB\-\-label\fR option will prepend lines of output with the remote
+task id.
 
 .TP
 \fB\-\-layout\fR
