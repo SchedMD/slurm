@@ -417,8 +417,8 @@ test17.21  Tests #SLURM entry functionality in a batch script
 test17.22  Test of running non-existant job, confirm timely termination.
 test17.23  Test of nice value specification (--nice option).
 test17.24  Test of --partition and --verbose options.
-test17.TBD Verify that SLURM directed environment variables are processed:
-           SBATCH_NNODES, etc.
+test17.25  Verify environment variables controlling sbatch are processed:
+           SBATCH_ACCOUNT, SBATCH_DEBUG and SBATCH_TIMELIMIT
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of
            zero if the cluster configuration does not permit proper testing.
