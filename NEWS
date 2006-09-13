@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  - Fix hang in sched/wiki2 if Moab stops responding responding when 
    response is outgoing. 
+ - Enable specification of srun --jobid=# option with --batch (for user root).
 
 * Changes in SLURM 1.1.12
 =========================
