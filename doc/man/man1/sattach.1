@@ -29,11 +29,8 @@ sattach.
 
 .TP
 \fB\-l\fR, \fB\-\-label\fR
-prepend task number to lines of stdout/err. Normally, stdout and stderr
-from remote tasks is line-buffered directly to the stdout and stderr of
-\fBsattach\fR.
-The \fB\-\-label\fR option will prepend lines of output with the remote
-task id.
+Prepend each line of task standard output or standard error with the task
+number of its origin.
 
 .TP
 \fB\-\-layout\fR
