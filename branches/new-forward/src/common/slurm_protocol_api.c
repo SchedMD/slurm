@@ -760,7 +760,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 	
-	if (timeout == 0)
+	if (timeout <= 0)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
@@ -896,7 +896,7 @@ List slurm_receive_msgs(slurm_fd fd, int timeout)
 	slurm_msg_t_init(&msg);
 	msg.conn_fd = fd;
 	
-	if (timeout == 0)
+	if (timeout <= 0)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
