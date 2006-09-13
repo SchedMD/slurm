@@ -420,14 +420,8 @@ test17.24  Test of --partition and --verbose options.
 test17.25  Verify environment variables controlling sbatch are processed:
            SBATCH_ACCOUNT, SBATCH_DEBUG and SBATCH_TIMELIMIT
 test17.26  Test of --input option.
-**NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
-           The test will print "WARNING" and terminate with an exit code of
-           zero if the cluster configuration does not permit proper testing.
-test17.TBD Confirm that a job executes with the proper node count
-           (--nodes option).
-test17.TBD Confirm that a job executes with the specified nodes
-           (--nodelist and --exclude options).
-**NOTE**   The above tests for mutliple processor/partition systems only
+test17.27  Test that a job executes with the specified nodes, requires multiple
+           nodes (--nodes, --nodelist and --exclude options).
 
 
 test18.#   Testing of slaunch options.
