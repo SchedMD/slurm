@@ -1,7 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Confirm that job time limit function works (-t option).
+#          Confirm that job time limit function works (--time and 
+#          --kill-command options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -33,6 +34,7 @@ source ./globals
 
 set test_id     "15.5"
 set exit_code   0
+set file_in     "test$test_id.input"
 set job_id      0
 
 # NOTE: If you increase sleep_time, change job time limits as well
@@ -81,6 +83,14 @@ if {$inactive_limit < $sleep_time} {
 }
 
 #
+# Build input script file
+#
+make_bash_script $file_in "
+  $srun $bin_sleep $sleep_time
+  $bin_echo FINI
+"
+
+#
 # Execute a couple of three minute jobs; one with a one minute time  
 # limit and the other with a four minute time limit. Confirm jobs 
 # are terminated on a timeout as required. Note that SLURM time 
@@ -93,27 +103,15 @@ if {$inactive_limit < $sleep_time} {
 #
 set timeout [expr $max_job_delay + $sleep_time]
 set job_id    0
-set timed_out 0
-spawn $salloc -t1 --kill-command $bin_sleep $sleep_time
+spawn $salloc -t1 --kill-command $file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "job exceeded timelimit" {
-		set timed_out 1
-		exp_continue
-	}
-	-re "Terminated" {
-		set timed_out 1
-		exp_continue
-	}
-	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
-	}
-	-re "Job allocation $number has been revoked" {
-		set timed_out 1
+	-re "FINI" {
+		send_user "\nFAILURE: job time limit not honored\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -129,40 +127,18 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$timed_out == 1} {
-	send_user "Early termination is expected, no worries.\n"
-} else {
-	send_user "\nFAILURE: time limit not enforced\n"
-	set exit_code 1
 }
 
 set completions 0
 set job_id      0
-spawn $salloc -t4 -v $bin_sleep $sleep_time
+spawn $salloc -t4 --kill-command $file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "job exceeded timelimit" {
-		set completions -1
-		exp_continue
-	}
-	-re "Terminated" {
-		set completions -1
-		exp_continue
-	}
-	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
-	}
-	-re "error" {
-		set completions -1
-		exp_continue
-	}
-	-re "Job allocation $number has been revoked" {
-		set completions -1
+	-re "FINI" {
+		incr completions
 		exp_continue
 	}
 	timeout {
@@ -177,7 +153,6 @@ expect {
 	}
 	eof {
 		wait
-		incr completions
 	}
 }
 if {$completions != 1} {
@@ -186,6 +161,7 @@ if {$completions != 1} {
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
