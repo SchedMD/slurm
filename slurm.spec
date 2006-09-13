@@ -209,6 +209,8 @@ LIST=./bluegene.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so &&
   echo "%{_libdir}/slurm/select_bluegene.so"      >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so &&
+  echo "%{_libdir}/slurm/libsched_if.so"          >> $LIST
 echo "%{_mandir}/man5/bluegene.*"                 >> $LIST
 echo "%{_sbindir}/slurm_epilog"                   >> $LIST
 echo "%{_sbindir}/slurm_prolog"                   >> $LIST
