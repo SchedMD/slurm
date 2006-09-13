@@ -374,7 +374,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	thd_t *thd;
 	int rc = 0;
 	char *name = NULL;
-
+	int total_tasks = 0;
 	/*
 	 * SigFunc *oldh;
 	 * sigset_t set;
@@ -401,7 +401,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 			thd[i].thread = (pthread_t) NULL;
 			continue;
 		}
-
+		total_tasks += job->step_layout->tasks[i];
 		if (job->state > SRUN_JOB_LAUNCHING)
 			break;
 
@@ -418,6 +418,10 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		thd[i].task.job = job;
 
 		_spawn_launch_thr(&thd[i]);
+	}
+	if(total_tasks == 0) {
+		error("there was a problem with no tasks being laid out on "
+		      "the nodes specified");
 	}
 	for ( ; i < job->step_layout->node_cnt; i++)
 		_update_failed_node(job, i);
