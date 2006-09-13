@@ -404,7 +404,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	if (msg->err == NULL)
 		msg->err = xstrdup(msg->out);
 	job->task[0] = task_info_create(0, global_taskid,
-					xstrdup("/dev/null"),
+					_batchfilename(job, msg->in),
 					_batchfilename(job, msg->out),
 					_batchfilename(job, msg->err));
 

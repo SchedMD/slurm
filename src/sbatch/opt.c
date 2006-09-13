@@ -415,7 +415,7 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
-	opt.ifname = NULL;
+	opt.ifname = xstrdup("/dev/null");
 	opt.ofname = NULL;
 	opt.efname = NULL;
 }
