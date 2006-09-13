@@ -374,8 +374,8 @@ test16.1   Confirm sattach usage option works (--usage option).
 test16.2   Confirm sattach help option works (--help option).
 test16.3   Confirm that sattach reports a proper version number
            (--version option).
-test16.4   Basic sattach functionality test (--layout, --verbose and
-           --label options).
+test16.4   Basic sattach functionality test (--layout, --verbose, --label
+           and --output-filter options).
 
 
 test17.#   Testing of sbatch options.

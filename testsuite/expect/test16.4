@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Basic sattach functionality test (--layout, --verbose and 
-#          --label options).
+#          Basic sattach functionality test (--layout, --verbose, --label 
+#          and --output-filter options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -109,6 +109,38 @@ expect {
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: layout information not printed\n"
+	set exit_code 1
+}
+
+#
+# Attach to initial program, just get one tasks output
+#
+set matches     0
+set timeout     10
+set attach_pid [spawn $sattach -l --output-filter=2 $job_id.0]
+set attach_id $spawn_id
+expect {
+        -i $attach_id
+	-re "($number): WAITING" {
+		if {$expect_out(1,string) != 2} {
+			send_user "\nFAILURE: output filtering by task failed\n"
+			set exit_code 1
+		} else {
+			incr matches
+			exec $bin_kill -KILL $attach_pid
+		}
+		exp_continue
+	}
+	timeout {
+		send_user \nFAILURE: sattach not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: failed to filter task output\n"
 	set exit_code 1
 }
 
