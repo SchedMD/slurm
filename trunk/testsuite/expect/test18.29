@@ -118,7 +118,8 @@ if {[string compare $host ""] == 0} {
 	exit 1	
 }
 if {$cpus_per_node != $cpu_count} {
-	send_user "FAILURE: should have run $cpus_per_node tasks (one per CPU) instead of $cpu_count tasks\n"
+	send_user "FAILURE: should have run $cpus_per_node tasks (one per CPU) "
+	send_user "instead of $cpu_count tasks\n"
 	exit 1
 }
 if {$cpus_per_node < 2} {
