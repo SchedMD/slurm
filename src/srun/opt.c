@@ -1198,9 +1198,12 @@ void set_options(const int argc, char **argv, int first)
 		case (int)'i':
 			if(!first && opt.ifname)
 				break;
-						
+			
 			xfree(opt.ifname);
-			opt.ifname = xstrdup(optarg);
+			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+				opt.ifname = xstrdup("/dev/null");
+			else
+				opt.ifname = xstrdup(optarg);
 			break;
 		case (int)'I':
 			opt.immediate = true;
