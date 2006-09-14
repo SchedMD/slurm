@@ -257,7 +257,10 @@ struct job_details {
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *features;			/* required features */
-	uint16_t shared;		/* set node can be shared */
+	uint16_t shared;		/* 1 if job can share nodes,
+					   0 if job cannot share nodes,
+					   any other value accepts the default
+					   sharing policy. */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	uint16_t wait_reason;		/* reason job still pending, see
 					 * slurm.h:enum job_wait_reason */
