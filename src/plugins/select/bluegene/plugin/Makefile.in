@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 9348 2006-09-14 15:37:10Z da $
+# $Id: Makefile.am 9350 2006-09-14 15:42:08Z da $
 # Makefile for select/bluegene plugin
 
 
@@ -316,7 +316,7 @@ select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la
 
 # MPIRUN dynamic lib.
 libsched_if_la_SOURCES = libsched_if.c 
-libsched_if_la_LDFLAGS = $(SO_LDFLAGS)
+libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 sfree_LDADD = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/api/libslurm.la
 
