@@ -99,6 +99,7 @@ strong_alias(hostset_count,		slurm_hostset_count);
 strong_alias(hostset_create,		slurm_hostset_create);
 strong_alias(hostset_delete,		slurm_hostset_delete);
 strong_alias(hostset_destroy,		slurm_hostset_destroy);
+strong_alias(hostset_find,		slurm_hostset_find);
 strong_alias(hostset_insert,		slurm_hostset_insert);
 strong_alias(hostset_shift,		slurm_hostset_shift);
 strong_alias(hostset_shift_range,	slurm_hostset_shift_range);
@@ -2818,37 +2819,10 @@ char * hostset_nth(hostset_t set, int n)
 {
 	return hostlist_nth(set->hl, n);
 }
-	
 
-int hostset_index(hostset_t set, const char *host, int jobid)
+int hostset_find(hostset_t set, const char *hostname)
 {
-        char *this_host;
-        int retval = -1, j = 0; 
-        int nhosts = hostset_count(set);
-
-        /* Locking isn't an option since host_list_iterator_create,
-           hostlist_next and hostlist_iterator_destroy are locking */
-
-        hostlist_iterator_t iterator = hostlist_iterator_create(set->hl);
-
-        for (j = 0; j < nhosts; j++) {
-                this_host = hostlist_next(iterator);
-                /* Left in here for debugging purposes
-		debug3(" cons_res host_index %u j=%d host %s this_host %s", 
-		        jobid, j, host, this_host); 
-		*/
-                if (strcmp(host, this_host) == 0) {
-                        retval = j; 
-                        free(this_host);
-                        goto done;
-                }
-               free(this_host);
-        }
-
-    done:
-       hostlist_iterator_destroy(iterator);
-
-       return retval;
+	return hostlist_find(set->hl, hostname);
 }
 
 #if TEST_MAIN 

@@ -620,7 +620,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	/* find the index number of each down node */
 	for (i = 0; i < num_node_ids; i++) {
 		node = hostlist_next(fail_itr);
-		node_id = node_ids[i] = hostset_index(all_nodes, node, 0);
+		node_id = node_ids[i] = hostset_find(all_nodes, node);
 		free(node);
 
 		/* find all of the task that should run on this node and

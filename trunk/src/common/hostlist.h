@@ -432,10 +432,14 @@ char * hostset_shift_range(hostset_t set);
  */
 int hostset_count(hostset_t set);
 
-/* hostset_index():
- * Return the index of host in hostset
+/* hostset_find():
+ *
+ * Searches hostset set for a host matching hostname 
+ * and returns position in list if found. 
+ *
+ * Returns -1 if host is not found.
  */
-int hostset_index(hostset_t set, const char *host, int jobid);
+int hostset_find(hostset_t set, const char *hostname);
 
 char * hostset_nth(hostset_t set, int n);
 
