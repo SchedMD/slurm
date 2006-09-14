@@ -28,7 +28,7 @@ select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la
 
 # MPIRUN dynamic lib.
 libsched_if_la_SOURCES = libsched_if.c 
-libsched_if_la_LDFLAGS = $(SO_LDFLAGS)
+libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog sfree
