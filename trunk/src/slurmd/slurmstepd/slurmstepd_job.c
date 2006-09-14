@@ -338,6 +338,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	struct passwd *pwd;
 	slurmd_job_t *job;
 	srun_info_t  *srun = NULL;
+	char *in_name;
 
 	xassert(msg != NULL);
 	
@@ -402,8 +403,14 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		xmalloc(sizeof(slurmd_task_info_t *));
 	if (msg->err == NULL)
 		msg->err = xstrdup(msg->out);
+
+	if (msg->in == NULL)
+		in_name = xstrdup("/dev/null");
+	else 
+		in_name = fname_create(job, msg->in, 0);
+
 	job->task[0] = task_info_create(0, 0,
-					_batchfilename(job, msg->in),
+					in_name,
 					_batchfilename(job, msg->out),
 					_batchfilename(job, msg->err));
 
