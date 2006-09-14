@@ -106,11 +106,12 @@ static void _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 static int _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only);
-static int _pick_best_nodes(struct node_set *node_set_ptr, 
-			    int node_set_size, bitstr_t ** select_bitmap, 
-			    struct job_record *job_ptr, uint32_t min_nodes, 
-			    uint32_t max_nodes, uint32_t req_nodes, 
-			    int shared);
+static int _pick_best_nodes(struct node_set *node_set_ptr,
+			    int node_set_size, bitstr_t ** select_bitmap,
+			    struct job_record *job_ptr,
+			    struct part_record *part_ptr,
+			    uint32_t min_nodes, uint32_t max_nodes,
+			    uint32_t req_nodes);
 static int _valid_features(char *requested, char *available);
 
 
@@ -381,6 +382,45 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 	*heavy_load_bit = bitmap2;
 }
 
+/*
+ * Decide if a job can share nodes with other jobs based on the
+ * following three input parameters:
+ *
+ * IN user_flag - may be 0 (do not share nodes), 1 (node sharing allowed),
+ *                or any other number means "don't care"
+ * IN part_enum - current partition's node sharing policy
+ * IN cons_res_flag - 1 if the consumable resources flag is enable, 0 otherwise
+ *
+ * RET - 1 if nodes can be shared, 0 if nodes cannot be shared
+ */
+static int
+_resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
+		       int cons_res_flag)
+{
+	int shared;
+
+	if (cons_res_flag) {
+		/*
+		 * Consuable resources will always share nodes by default,
+		 * the user has to explicitly disable sharing to
+		 * get exclusive nodes.
+		 */
+		shared = user_flag == 0 ? 0 : 1;
+	} else {
+		/* The partition sharing option is only used if
+		 * the consumable resources plugin is NOT in use.
+		 */
+		if (part_enum == SHARED_FORCE)   /* shared=force */
+			shared = 1;
+		else if (part_enum == SHARED_NO) /* can't share */
+			shared = 0;
+		else
+			shared = user_flag == 1 ? 1 : 0;
+	}
+
+	return shared;
+}
+
 
 /*
  * _pick_best_nodes - from a weigh order list of all nodes satisfying a 
@@ -389,10 +429,10 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
  * IN node_set_size - number of entries in records pointed to by node_set_ptr
  * OUT select_bitmap - returns bitmap of selected nodes, must FREE_NULL_BITMAP
  * IN job_ptr - pointer to job being scheduled
+ * IN part_ptr - pointer to the partition in which the job is being scheduled
  * IN min_nodes - minimum count of nodes required by the job
  * IN max_nodes - maximum count of nodes required by the job (0==no limit)
  * IN req_nodes - requested (or desired) count of nodes
- * IN shared - set to 1 if nodes may be shared, 0 otherwise
  * RET SLURM_SUCCESS on success, 
  *	ESLURM_NODES_BUSY if request can not be satisfied now, 
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never 
@@ -419,8 +459,8 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 static int
 _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t ** select_bitmap, struct job_record *job_ptr,
-		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		 int shared)
+		 struct part_record *part_ptr,
+		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, total_cpus = 0;	/* total resources configured 
@@ -433,6 +473,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
         int cr_enabled = 0;
+	int shared = 0;
 
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
@@ -444,17 +485,18 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						    &cr_enabled);
         if (error_code != SLURM_SUCCESS)
                 return error_code;
-          
+
+	shared = _resolve_shared_status(job_ptr->details->shared,
+					part_ptr->shared, cr_enabled);
+	job_ptr->details->shared = shared;
+
         if (cr_enabled) {
-                shared = 0; /* No sharing when Consumable Resources is enabled */
                 job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
                 debug3(" Is this Job %u in exclusive mode? %d cr_enabled %d", 
-		       job_ptr->job_id, 
-		       job_ptr->details->shared ? 0 : 1,
-		       cr_enabled);
+		       job_ptr->job_id, shared, cr_enabled);
 
-		if (job_ptr->details->shared == 0) {
+		if (shared == 0) {
 			partially_idle_node_bitmap = bit_copy(idle_node_bitmap);
 		} else {
 			/* Update partially_idle_node_bitmap to reflect the
@@ -508,21 +550,21 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					       partially_idle_node_bitmap);
 				return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
                         }
-			if (shared) {
+			if (cr_enabled) {
+				if (!bit_super_set(job_ptr->details->
+						   req_node_bitmap, 
+                                                   partially_idle_node_bitmap)) {
+                                        FREE_NULL_BITMAP(
+						partially_idle_node_bitmap);
+					return ESLURM_NODES_BUSY;
+                                }
+			} else if (shared) {
 				if (!bit_super_set(job_ptr->details->
 						   req_node_bitmap, 
                                                    share_node_bitmap)) {
                                         if (cr_enabled) 
                                           FREE_NULL_BITMAP(
 						  partially_idle_node_bitmap);
-					return ESLURM_NODES_BUSY;
-                                }
-			} else if (cr_enabled) {
-				if (!bit_super_set(job_ptr->details->
-						   req_node_bitmap, 
-                                                   partially_idle_node_bitmap)) {
-                                        FREE_NULL_BITMAP(
-						partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
                                 }
                         } else {
@@ -573,7 +615,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 }
                         }
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
-			if (shared) {
+                        if (cr_enabled) {
+                                bit_and(node_set_ptr[i].my_bitmap,
+				        partially_idle_node_bitmap);
+			} else if (shared) {
 #ifdef HAVE_BG
 				/* If any nodes which can be used have jobs in 
 				 * COMPLETING state then do not schedule the  
@@ -594,12 +639,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					share_node_bitmap);
 				pick_light_load = true;
 #endif
-                        } else if (cr_enabled)
-                                bit_and(node_set_ptr[i].my_bitmap,
-				        partially_idle_node_bitmap);
-                        else
+			} else {
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);
+			}
 			node_set_ptr[i].nodes =
 				bit_set_count(node_set_ptr[i].my_bitmap);
                         error_code = _add_node_set_info(&node_set_ptr[i], 
@@ -815,7 +858,7 @@ _add_node_set_info(struct node_set *node_set_ptr,
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only)
 {
-	int error_code = SLURM_SUCCESS, i, shared, node_set_size = 0;
+	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
 	struct job_details *detail_ptr = job_ptr->details;
 	struct node_set *node_set_ptr = NULL;
@@ -906,20 +949,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		req_nodes = min_nodes;
 	/* info("nodes:%u:%u:%u", min_nodes, req_nodes, max_nodes); */
 
- 	if (part_ptr->shared == SHARED_FORCE)	/* shared=force */
- 		shared = 1;
-	else if (part_ptr->shared == SHARED_NO)	/* can't share */
-		shared = 0;
-	else
-		shared = job_ptr->details->shared;
-
 	if (max_nodes < min_nodes) {
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	} else {
 		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
-				      &select_bitmap, job_ptr,
-				      min_nodes, max_nodes, req_nodes,
-				      shared);
+				      &select_bitmap, job_ptr, part_ptr,
+				      min_nodes, max_nodes, req_nodes);
 	}
 
 	if (error_code) {
@@ -954,7 +989,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	if (detail_ptr)
 		detail_ptr->wait_reason = WAIT_NO_REASON;
 	job_ptr->nodes = bitmap2node_name(select_bitmap);
-	job_ptr->details->shared = shared;
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);

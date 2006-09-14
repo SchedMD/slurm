@@ -807,9 +807,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_array(&argv, &argc, buffer);
 
 	/* validity test as possible */
-	if ((shared > 1) || (contiguous > 1)) {
-		error("Invalid data for job %u: shared=%u contiguous=%u",
-			job_ptr->job_id, shared, contiguous);
+	if (contiguous > 1) {
+		error("Invalid data for job %u: contiguous=%u",
+			job_ptr->job_id, contiguous);
 		goto unpack_error;
 	}
 	if ((no_requeue > 1) || (overcommit > 1)) {
@@ -2379,8 +2379,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
-	if (job_desc->shared != (uint16_t) NO_VAL)
-		detail_ptr->shared = job_desc->shared;
+	detail_ptr->shared = job_desc->shared;
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
@@ -2536,8 +2535,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->contiguous = 0;
 	if (job_desc_msg->kill_on_node_fail == (uint16_t) NO_VAL)
 		job_desc_msg->kill_on_node_fail = 1;
-	if (job_desc_msg->shared == (uint16_t) NO_VAL)
-		job_desc_msg->shared = 0;
 
 	if (job_desc_msg->job_id != NO_VAL) {
 		struct job_record *dup_job_ptr;
@@ -2577,8 +2574,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->min_memory = 1;	/* default 1MB mem per node */
 	if (job_desc_msg->min_tmp_disk == NO_VAL)
 		job_desc_msg->min_tmp_disk = 1;	/* default 1MB disk per node */
-	if (job_desc_msg->shared == (uint16_t) NO_VAL)
-		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
 

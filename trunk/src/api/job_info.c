@@ -249,8 +249,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	
 	convert_num_unit((float)job_ptr->cpus_per_task, tmp1, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Shared=%d Contiguous=%d CPUs/task=%s", 
-		 job_ptr->shared, job_ptr->contiguous, tmp1);
+		"Shared=%s Contiguous=%d CPUs/task=%s", 
+		 (job_ptr->shared == 0 ? "0" :
+		  job_ptr->shared == 1 ? "1" : "OK"),
+		 job_ptr->contiguous, tmp1);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)

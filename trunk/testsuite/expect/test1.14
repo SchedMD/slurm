@@ -118,9 +118,9 @@ expect {
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Shared=($number)" {
+	        -re "Shared=($alpha)" {
 			set shared_val $expect_out(1,string)
-			if {$shared_val == 0} {
+		        if {[string compare $shared_val OK] == 0} {
 				incr matches
 			}
 			exp_continue
