@@ -71,7 +71,6 @@ void *_forward_thread(void *arg)
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
-	int first_node_id = fwd_msg->header.srun_node_id;
 	slurm_addr addr;
 	char buf[8196];
 	
@@ -89,10 +88,8 @@ void *_forward_thread(void *arg)
 			error("forward_thread to %s: %m", name);
 
 			slurm_mutex_lock(fwd_msg->forward_mutex);
-			mark_as_failed_forward(&fwd_msg->ret_list, name, 
-					       first_node_id, 
+			mark_as_failed_forward(&fwd_msg->ret_list, name,
 					       SLURM_SOCKET_ERROR);
-			fwd_msg->header.srun_node_id = first_node_id++;
 			slurm_mutex_unlock(fwd_msg->forward_mutex);
 
 			free_buf(buffer);	
@@ -101,17 +98,14 @@ void *_forward_thread(void *arg)
 			continue;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
-		/* info("forward: send to %s id %d %d",  */
-/* 		     name, fwd_msg->header.srun_node_id, first_node_id); */
+		/* info("forward: send to %s ",  */
+/* 		     name); */
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
-		fwd_msg->header.forward.first_node_id =
-			fwd_msg->header.srun_node_id+1;;
 			
-		/* info("forward: along with to %s id %d %d",  */
-/* 		     fwd_msg->header.forward.nodelist,  */
-/* 		     fwd_msg->header.forward.first_node_id); */
+		/* info("forward: along with to %s",  */
+/* 		     fwd_msg->header.forward.nodelist); */
 		
 		pack_header(&fwd_msg->header, buffer);
 	
@@ -137,9 +131,7 @@ void *_forward_thread(void *arg)
 						
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name, 
-					       first_node_id, 
 					       errno);
-			fwd_msg->header.srun_node_id = first_node_id++;
 			slurm_mutex_unlock(fwd_msg->forward_mutex);
 			
 			free_buf(buffer);	
@@ -155,7 +147,6 @@ void *_forward_thread(void *arg)
 			list_push(fwd_msg->ret_list, ret_data_info);
 			ret_data_info->node_name = xstrdup(name);
 			free(name);
-			ret_data_info->nodeid = fwd_msg->header.srun_node_id;
 			i=0;
 			while((name = hostlist_shift(hl))) {
 				ret_data_info = 
@@ -163,7 +154,6 @@ void *_forward_thread(void *arg)
 				list_push(fwd_msg->ret_list, ret_data_info);
 				ret_data_info->node_name = xstrdup(name);
 				free(name);
-				ret_data_info->nodeid = first_node_id++;
 			}
 			goto cleanup;
 		}
@@ -174,9 +164,7 @@ void *_forward_thread(void *arg)
 				 && list_count(ret_list) == 0)) {
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name, 
-					       first_node_id, 
 					       errno);
-			fwd_msg->header.srun_node_id = first_node_id++;
 			slurm_mutex_unlock(fwd_msg->forward_mutex);
 			
 			free_buf(buffer);	
@@ -225,13 +213,11 @@ extern void forward_init(forward_t *forward, forward_t *from)
 		forward->cnt = from->cnt;
 		forward->timeout = from->timeout;
 		forward->nodelist = from->nodelist;
-		forward->first_node_id = from->first_node_id;
 		forward->init = from->init;
 	} else {
 		forward->cnt = 0;
 		forward->timeout = 0;
 		forward->nodelist = NULL;
-		forward->first_node_id = 0;
 		forward->init = FORWARD_INIT;
 	}
 }
@@ -299,8 +285,6 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		forward_msg->header.flags = header->flags;
 		forward_msg->header.msg_type = header->msg_type;
 		forward_msg->header.body_length = header->body_length;
-		forward_msg->header.srun_node_id = 
-			header->forward.first_node_id+i;
 		forward_msg->header.ret_list = NULL;
 		forward_msg->header.ret_cnt = 0;
 		
@@ -340,12 +324,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
  *
  * IN: ret_list       - List *   - ret_list to put ret_data_info
  * IN: node_name      - char *   - node name that failed
- * IN: node_id        - int      - node id that failed
  * IN: err            - int      - error message from attempt
  *
  */
-extern void mark_as_failed_forward(List *ret_list, char *node_name, 
-				   int node_id, int err) 
+extern void mark_as_failed_forward(List *ret_list, char *node_name, int err) 
 {
 	ret_data_info_t *ret_data_info = NULL;
 	
@@ -355,7 +337,6 @@ extern void mark_as_failed_forward(List *ret_list, char *node_name,
 	
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup(node_name);
-	ret_data_info->nodeid = node_id;
 	ret_data_info->type = RESPONSE_FORWARD_FAILED;
 	ret_data_info->err = err;
 	list_push(*ret_list, ret_data_info);

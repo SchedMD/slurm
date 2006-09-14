@@ -1653,7 +1653,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
-
+	info("completing job %u", job_id);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info("job_complete: invalid JobId=%u", job_id);

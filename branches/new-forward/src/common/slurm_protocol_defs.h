@@ -204,12 +204,6 @@ typedef enum {
 typedef struct forward {
 	char      *nodelist; /*ranged string of who to forward the
 			       message to */
-	uint32_t  first_node_id;  /* if sending multiple treads this
-				   * is the first node_id in the
-				   * global sense.  (i.e. if you are
-				   * sending 50 nodes and this forward
-				   * have nodes 40-50 first_node_id
-				   * would be 40 */
 	uint16_t   cnt;           /* number of nodes to forward to */
 	uint32_t   timeout;       /* original timeout increments */
 	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
@@ -223,7 +217,6 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 	uint16_t ret_cnt;
 	forward_t forward;
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	slurm_addr orig_addr;       
 	List ret_list;
 } header_t;
@@ -263,19 +256,16 @@ typedef struct slurm_msg {
 	uint32_t data_size;
 
 	/* The following were all added for the forward.c code */
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
 	forward_struct_t *forward_struct;
 	slurm_addr orig_addr;       
 	List ret_list;
-	Buf buffer;
 } slurm_msg_t;
 
 typedef struct ret_data_info {
 	slurm_msg_type_t type; /* message type */
 	uint32_t err;
 	char *node_name;
-	uint32_t nodeid;
 	void *data; /* used to hold the return message data (i.e. 
 		       return_code_msg_t */
 } ret_data_info_t;
@@ -383,7 +373,6 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	uint32_t  *tasks_to_launch;
 	uint16_t  envc;
 	uint16_t  argc;
@@ -420,6 +409,7 @@ typedef struct launch_tasks_request_msg {
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
+	char *complete_nodelist;
 } launch_tasks_request_msg_t;
 
 typedef struct spawn_task_request_msg {
@@ -429,7 +419,6 @@ typedef struct spawn_task_request_msg {
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
         uint32_t  gid;
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	uint16_t  envc;
 	uint16_t  argc;
 	uint16_t  cpus_allocated;
@@ -445,7 +434,7 @@ typedef struct spawn_task_request_msg {
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
-
+	char *complete_nodelist;
 } spawn_task_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
@@ -495,7 +484,6 @@ typedef struct reattach_tasks_response_msg {
 	char     *node_name;
 	char     *executable_name;
 	uint32_t  return_code;
-	uint32_t  srun_node_id;
 	uint32_t  ntasks;       /* number of tasks on this node     */
 	uint32_t *gtids;        /* Global task id assignments       */
 	uint32_t *local_pids;   /* list of process ids on this node */

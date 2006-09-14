@@ -363,26 +363,27 @@ static void
 _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 {
 	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-	
-	if ((msg->srun_node_id < 0) || (msg->srun_node_id >= job->nhosts)) {
+	int nodeid = nodelist_find(job->step_layout->node_list, 
+				   msg->node_name);
+	if ((nodeid < 0) || (nodeid >= job->nhosts)) {
 		error ("Bad launch response from %s", msg->node_name);
 		return;
 	}
 	pthread_mutex_lock(&job->task_mutex);
-	job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
+	job->host_state[nodeid] = SRUN_HOST_REPLIED;
 	pthread_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
 			   &pipe_enum, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &msg->srun_node_id, sizeof(int));
+			   &nodeid, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->host_state[msg->srun_node_id], sizeof(int));
+			   &job->host_state[nodeid], sizeof(int));
 		
 	}
 	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
-			       msg->srun_node_id, msg->count_of_pids,
+			       nodeid, msg->count_of_pids,
 			       msg->local_pids, remote_argv[0]);
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
 			 msg->local_pids, remote_argv[0]     );
@@ -491,10 +492,12 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
 	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-	
+	int nodeid = nodelist_find(job->step_layout->node_list, 
+				   msg->node_name);
+		
 	debug3("received launch resp from %s nodeid=%d", 
 	       msg->node_name,
-	       msg->srun_node_id);
+	       nodeid);
 	
 	if (msg->return_code != 0)  {
 
@@ -502,32 +505,32 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		      msg->node_name, slurm_strerror(msg->return_code));
 
 		slurm_mutex_lock(&job->task_mutex);
-		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
+		job->host_state[nodeid] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
 		
 		if(message_thread) {
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
 				   &pipe_enum, sizeof(int));
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &msg->srun_node_id, sizeof(int));
+				   &nodeid, sizeof(int));
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->host_state[msg->srun_node_id],
+				   &job->host_state[nodeid],
 				   sizeof(int));
 		}
-		update_failed_tasks(job, msg->srun_node_id);
+		update_failed_tasks(job, nodeid);
 
 		/*
 		  if (!opt.no_kill) {
 		  job->rc = 124;
 		  update_job_state(job, SRUN_JOB_WAITING_ON_IO);
 		  } else 
-		  update_failed_tasks(job, msg->srun_node_id);
+		  update_failed_tasks(job, nodeid);
 		*/
 		debugger_launch_failure(job);
 		return;
 	} else {
 		_process_launch_resp(job, msg);
-		update_running_tasks(job, msg->srun_node_id);
+		update_running_tasks(job, nodeid);
 	}
 	return;
 rwfail:
@@ -574,14 +577,16 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 {
 	int i;
 	reattach_tasks_response_msg_t *resp = msg->data;
-	
-	if ((resp->srun_node_id < 0) || (resp->srun_node_id >= job->nhosts)) {
+	int nodeid = nodelist_find(job->step_layout->node_list, 
+				   resp->node_name);
+		
+	if ((nodeid < 0) || (nodeid >= job->nhosts)) {
 		error ("Invalid reattach response received");
 		return;
 	}
 
 	slurm_mutex_lock(&job->task_mutex);
-	job->host_state[resp->srun_node_id] = SRUN_HOST_REPLIED;
+	job->host_state[nodeid] = SRUN_HOST_REPLIED;
 	slurm_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
@@ -589,9 +594,9 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
 			   &pipe_enum, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &resp->srun_node_id, sizeof(int));
+			   &nodeid, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->host_state[resp->srun_node_id], sizeof(int));
+			   &job->host_state[nodeid], sizeof(int));
 	}
 
 	if (resp->return_code != 0) {
@@ -600,7 +605,7 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 			       job->jobid, slurm_strerror(resp->return_code));
 		} else {
 			error ("Unable to attach to step %d.%d on node %d: %s",
-			       job->jobid, job->stepid, resp->srun_node_id,
+			       job->jobid, job->stepid, nodeid,
 			       slurm_strerror(resp->return_code));
 		}
 		job->rc = 1;
@@ -612,20 +617,20 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 	/* 
 	 * store global task id information as returned from slurmd
 	 */
-	job->step_layout->tids[resp->srun_node_id]  = 
+	job->step_layout->tids[nodeid]  = 
 		xmalloc( resp->ntasks * sizeof(uint32_t) );
 
-	job->step_layout->tasks[resp->srun_node_id] = resp->ntasks;
+	job->step_layout->tasks[nodeid] = resp->ntasks;
 
 	info ("ntasks = %d\n");
 
 	for (i = 0; i < resp->ntasks; i++) {
-		job->step_layout->tids[resp->srun_node_id][i] = resp->gtids[i];
+		job->step_layout->tids[nodeid][i] = resp->gtids[i];
 		info ("setting task%d on hostid %d\n", 
-		      resp->gtids[i], resp->srun_node_id);
+		      resp->gtids[i], nodeid);
 	}
 	_update_step_layout(job->forked_msg->par_msg->msg_pipe[1],
-			    job->step_layout, resp->srun_node_id);
+			    job->step_layout, nodeid);
 
 	/* Build process table for any parallel debugger
          */
@@ -637,13 +642,13 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 		remote_argv[1] = NULL;
 	}
 	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
-			       resp->srun_node_id, resp->ntasks,
+			       nodeid, resp->ntasks,
 			       resp->local_pids, remote_argv[0]);
 
 	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids, 
 			remote_argv[0]);
 
-	update_running_tasks(job, resp->srun_node_id);
+	update_running_tasks(job, nodeid);
 	return;
 rwfail:
 	error("_reattach_handler: "

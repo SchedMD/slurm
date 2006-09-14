@@ -352,9 +352,6 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
  * send message functions
 \**********************************************************************/
 
-
-int slurm_add_header_and_send(slurm_fd fd, slurm_msg_t *msg);
-
 /* sends a message to an arbitrary node
  *
  * IN open_fd		- file descriptor to send msg on
@@ -635,34 +632,16 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 			     int timeout);
 
 /*
- *  Send a packed message to the nodelist specificed using fanout
- *    Then return List containing type (ret_data_info_t). and filling
- *    in the resp with info from resp.
- * IN nodelist  - list of nodes to send to.
- * IN msg	- a slurm_msg struct to be sent by the function
- * IN first_node_id - a slurm_msg struct to be sent by the function
- * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type
- *                (ret_data_info_t). 
- */
-List slurm_send_recv_packed_msg(const char *nodelist, 
-				slurm_msg_t *msg, int first_node_id,
-				int timeout);
-
-/*
  *  Send a message to the nodelist specificed using fanout
  *    Then return List containing type (ret_data_info_t).
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
- * IN first_node_id - a slurm_msg struct to be sent by the function
  * IN timeout	    - how long to wait in milliseconds
  * RET List	    - List containing the responses of the childern
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
-List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, 
-			  int first_node_id, int timeout);
+List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout);
 
 /*
  *  Send a message to msg->address
@@ -718,5 +697,6 @@ extern void slurm_free_msg(slurm_msg_t * msg);
 
 /* must free this memory with free not xfree */
 extern char *nodelist_nth_host(const char *nodelist, int inx);
+extern int nodelist_find(const char *nodelist, const char *name);
 void convert_num_unit(float num, char *buf, int orig_type);
 #endif

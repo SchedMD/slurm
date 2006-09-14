@@ -123,7 +123,6 @@ typedef struct thd {
 	slurm_addr *addr;	        /* specific addr to send to
 					 * will not do nodelist if set */
 	char *nodelist;	                /* list of nodes to send to */
-	int first_node_id;              /* relative first node id */
 	List ret_list;
 } thd_t;
 
@@ -372,6 +371,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->retry          = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
 	thread_ptr = xmalloc(agent_info_ptr->thread_count * sizeof(thd_t));
+	memset(thread_ptr, 0, (agent_info_ptr->thread_count * sizeof(thd_t)));
 	agent_info_ptr->thread_struct  = thread_ptr;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
@@ -390,8 +390,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	i = 0;
 	while(i < agent_info_ptr->thread_count) {
 		thread_ptr[thr_count].state      = DSH_NEW;
-		thread_ptr[thr_count].addr = agent_arg_ptr->addr; 
-		thread_ptr[thr_count].first_node_id = i;
+		thread_ptr[thr_count].addr = agent_arg_ptr->addr;
 		name = hostlist_shift(agent_arg_ptr->hostlist);
 		if(!name) {
 			debug3("no more nodes to send to");
@@ -416,11 +415,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
-		if(thread_ptr[thr_count].nodelist) {
-			error("there was a nodelist of %s that shouldn't be", 
-			      thread_ptr[thr_count].nodelist);
-			xfree(thread_ptr[thr_count].nodelist);
-		}
 		thread_ptr[thr_count].nodelist = xstrdup(buf);
 		
 		/* info("sending to nodes %s",  */
@@ -827,7 +821,6 @@ static void *_thread_per_group_rpc(void *args)
 			if(!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
 				     &msg, 
-				     thread_ptr->first_node_id,
 				     0))) {
 				error("_thread_per_group_rpc: "
 				      "no ret_list given");
@@ -846,8 +839,13 @@ static void *_thread_per_group_rpc(void *args)
 				goto cleanup;
 			}
 		}
-		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) 
+		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;
+		} else {
+			error("_thread_per_group_rpc: "
+			      "couldn't send to %s", thread_ptr->nodelist);
+			
+		}
 		goto cleanup;
 
 	}

@@ -138,7 +138,7 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 	
 	debug3("sending signal to host %s", name);
 	
-	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, 0))) { 
+	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) { 
 		error("fwd_signal: slurm_send_recv_msgs really failed bad");
 		return;
 	}

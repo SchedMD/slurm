@@ -92,12 +92,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
  *
  * IN: ret_list       - List *   - ret_list to put ret_data_info
  * IN: node_name      - char *   - node name that failed
- * IN: node_id        - int      - node id that failed
  * IN: err            - int      - error message from attempt
  *
  */
-extern void mark_as_failed_forward(List *ret_list, char *node_name, 
-				   int node_id, int err); 
+extern void mark_as_failed_forward(List *ret_list, char *node_name, int err); 
 
 extern void forward_wait(slurm_msg_t *msg);
 

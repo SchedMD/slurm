@@ -661,9 +661,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_addr *cli = &msg->orig_addr;
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
+	int nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-	req->srun_node_id = msg->srun_node_id;
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 
 	super_user = _slurm_authorized_user(req_uid);
@@ -680,7 +680,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	     req->job_step_id, req->uid, req->gid, host, port);
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
-				  req->tasks_to_launch[req->srun_node_id],
+				  req->tasks_to_launch[nodeid],
 				  &step_hset) < 0) {
 		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
 		error("Invalid job credential from %ld@%s: %m", 
@@ -1496,9 +1496,8 @@ done:
 	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
 	resp->node_name       = xstrdup(conf->node_name);
-	resp->srun_node_id    = nodeid;
 	resp->return_code     = rc;
-	debug2("node %s (id %u) sending rc = %d", conf->node_name, nodeid, rc);
+	debug2("node %s sending rc = %d", conf->node_name, rc);
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_reattach_tasks_response_msg(resp);

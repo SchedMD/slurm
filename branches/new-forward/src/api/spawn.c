@@ -173,7 +173,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		/* Task specific message contents */
 		r->global_task_id	= step_layout->tids[i][0];
 		r->cpus_allocated	= cpus[i];
-		r->srun_node_id	= (uint32_t) i;
+		r->complete_nodelist	= xstrdup(step_layout->node_list);
 		r->io_port	= sock_array[i];
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;

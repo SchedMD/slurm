@@ -86,6 +86,7 @@ update_header(header_t * header, uint32_t msg_length);
 
 
 /* log the supplied slurm task launch message as debug3() level */
-extern void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg);
+extern void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg,
+					char *name);
 
 #endif /* !_SLURM_PROTOCOL_UTIL_H */

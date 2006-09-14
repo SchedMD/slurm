@@ -715,7 +715,7 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	
 	if(!(ret_list = slurm_send_recv_msgs(
 		     ctx->step_resp->step_layout->node_list,
-		     &msg, 0, 0))) {
+		     &msg, 0))) {
 		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}
@@ -727,13 +727,13 @@ static int _launch_tasks(slurm_step_ctx ctx,
 		      rc, ret_data->err, ret_data->type);
 		if (rc != SLURM_SUCCESS) {
 			errno = ret_data->err;
-			error("Task launch failed on node %s(%d): %m",
-			      ret_data->node_name, ret_data->nodeid);
+			error("Task launch failed on node %s: %m",
+			      ret_data->node_name);
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
 			errno = ret_data->err;
-			info("Launch success on node %s(%d)",
-			     ret_data->node_name, ret_data->nodeid);
+			info("Launch success on node %s",
+			     ret_data->node_name);
 #endif
 		}
 	}

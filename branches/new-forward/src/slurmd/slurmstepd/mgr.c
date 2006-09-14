@@ -444,9 +444,7 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	slurm_msg_t_init(&resp);
 	resp.data        = &msg;
 	resp.msg_type    = MESSAGE_TASK_EXIT;
-	resp.srun_node_id = job->nodeid;
 	
-
 	/*
 	 *  XXX Hack for TCP timeouts on exit of large, synchronized
 	 *  jobs. Delay a random amount if job->nnodes > 100
@@ -1329,19 +1327,19 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
+	int nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	slurm_msg_t_init(&resp_msg);
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, 
-		       msg->resp_port[msg->srun_node_id % msg->num_resp_port],
+		       msg->resp_port[nodeid % msg->num_resp_port],
 		       NULL); 
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 		
 	resp.node_name     = conf->node_name;
-	resp.srun_node_id  = msg->srun_node_id;
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
 
@@ -1369,7 +1367,6 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
 	
 	resp.node_name        = conf->node_name;
-	resp.srun_node_id     = job->nodeid;
 	resp.return_code      = rc;
 	resp.count_of_pids    = job->ntasks;
 
