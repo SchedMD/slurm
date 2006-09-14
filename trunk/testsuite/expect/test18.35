@@ -149,6 +149,7 @@ set include_node $host_2
 #
 # Submit a job explicitly skip node 0 via --task-layout-byid
 #
+set invalid     0
 set host_0      ""
 set host_1      ""
 set host_2      ""
@@ -164,9 +165,13 @@ expect {
 		send_user "\nWARNING: Appears you are using "
 		send_user "multiple slurmd testing.\n"
 		send_user "This test won't work in that fashion.\n"
-		exit 0	
+		set invalid 1
+		exp_continue
 	}
-		
+	-re "SwitchType does not permit" {
+		send_user "\nNo worries, just stop the test now\n"
+		set invalid 1
+	}
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
@@ -191,6 +196,12 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$invalid != 0} {
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
 }
 
 #
