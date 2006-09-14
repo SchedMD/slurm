@@ -36,9 +36,13 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-typedef struct sched_params sched_params_t;
 
-int get_parameters(sched_params_t *stuff) 
+int get_parameters(void *params) 
 {
 	return -1;
+}
+
+void mpirun_done(int res)
+{
+	return;
 }
