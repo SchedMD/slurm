@@ -407,24 +407,53 @@ try_again:
 	}
 	list_iterator_destroy(itr);
 
-	if(*found_bg_record)
-		goto found_it;
+	/* set the bitmap and do other allocation activities */
+	if (*found_bg_record) {
+		if(!test_only) {
+			if(check_block_bp_states(
+				   (*found_bg_record)->bg_block_id) 
+			   == SLURM_ERROR) {
+				(*found_bg_record)->job_running = -3;
+				(*found_bg_record)->state = RM_PARTITION_ERROR;
+				slurm_mutex_unlock(&block_state_mutex);
+				goto try_again;
+			}
+		}
+		format_node_name(*found_bg_record, tmp_char);
+	
+		debug("_find_best_block_match %s <%s>", 
+			(*found_bg_record)->bg_block_id, 
+			tmp_char);
+		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
+		slurm_mutex_unlock(&block_state_mutex);
+		return SLURM_SUCCESS;
+	}
 
-	if(!found && bluegene_layout_mode == LAYOUT_DYNAMIC) {
+	/* all these assume that the *found_bg_record is NULL */
+	if(bluegene_layout_mode == LAYOUT_OVERLAP && !test_only && created<2) {
+		created++;
+		slurm_mutex_unlock(&block_state_mutex);
+		goto try_again;
+	}
+		
+	slurm_mutex_unlock(&block_state_mutex);
+	if(bluegene_layout_mode !=  LAYOUT_DYNAMIC)
+		goto not_dynamic;
+	
+	if(!found) {
 		/* 
 		   see if we have already tryed to create this 
-		   size but couldn't make it right now no reason 
+		   size OR GREATER but couldn't make it right now no reason 
 		   to try again 
 		*/
 		slurm_mutex_lock(&request_list_mutex);
 		itr = list_iterator_create(bg_request_list);
-		while ((try_request = list_next(itr)) != NULL) {
-			if(try_request->procs > req_procs) {
+		while ((try_request = list_next(itr))) {
+			if(try_request->procs >= req_procs) {
 				debug("already tried to create but "
 				      "can't right now.");
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&request_list_mutex);
-				slurm_mutex_unlock(&block_state_mutex);
 				if(test_only)
 					return SLURM_SUCCESS;
 				else
@@ -435,34 +464,7 @@ try_again:
 		slurm_mutex_unlock(&request_list_mutex);
 	}
 
-	if(bluegene_layout_mode == LAYOUT_OVERLAP 
-	   &&!test_only && created<2 && !*found_bg_record) {
-		created++;
-		slurm_mutex_unlock(&block_state_mutex);
-		goto try_again;
-	}
-		
-	if(!found && test_only && bluegene_layout_mode == LAYOUT_DYNAMIC) {
-		slurm_mutex_unlock(&block_state_mutex);
-		/* 
-		   see if we have already tryed to create this 
-		   size but couldn't make it right now no reason 
-		   to try again 
-		*/
-		slurm_mutex_lock(&request_list_mutex);
-		itr = list_iterator_create(bg_request_list);
-		while ((try_request = list_next(itr)) != NULL) {
-			if(try_request->procs == req_procs) {
-				debug2("already tried to create but "
-				     "can't right now. 2");
-				list_iterator_destroy(itr);
-				slurm_mutex_unlock(&request_list_mutex);
-				return SLURM_SUCCESS;
-			}				
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&request_list_mutex);
-		
+	if(!found && test_only) {
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 			request.start[i] = start[i];
 			
@@ -521,11 +523,8 @@ try_again:
 			xfree(request.save_name);
 			return SLURM_SUCCESS;
 		}
-	} else if(!*found_bg_record 
-		  && !created 
-		  && bluegene_layout_mode == LAYOUT_DYNAMIC) {
+	} else if(!created) {
 		debug2("going to create %d", target_size);
-		slurm_mutex_unlock(&block_state_mutex);
 		lists_of_lists = list_create(NULL);
 		if(job_ptr->details->req_nodes) {
 			list_append(lists_of_lists, bg_job_block_list);
@@ -544,7 +543,7 @@ try_again:
 				list_append(lists_of_lists, bg_job_block_list);
 		}
 		itr = list_iterator_create(lists_of_lists);
-		while ((temp_list = (List)list_next(itr)) != NULL) {
+		while ((temp_list = (List)list_next(itr))) {
 			created++;
 
 			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
@@ -579,32 +578,8 @@ try_again:
 		list_iterator_destroy(itr);
 		if(lists_of_lists)
 			list_destroy(lists_of_lists);
-		slurm_mutex_lock(&block_state_mutex);		
 	}
-found_it:
-	/* set the bitmap and do other allocation activities */
-	if (*found_bg_record) {
-		if(!test_only) {
-			if(check_block_bp_states(
-				   (*found_bg_record)->bg_block_id) 
-			   == SLURM_ERROR) {
-				(*found_bg_record)->job_running = -3;
-				(*found_bg_record)->state = RM_PARTITION_ERROR;
-				slurm_mutex_unlock(&block_state_mutex);
-				goto try_again;
-			}
-		}
-		format_node_name(*found_bg_record, tmp_char);
-	
-		debug("_find_best_block_match %s <%s>", 
-			(*found_bg_record)->bg_block_id, 
-			tmp_char);
-		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
-		slurm_mutex_unlock(&block_state_mutex);
-		return SLURM_SUCCESS;
-	}
-		
-	slurm_mutex_unlock(&block_state_mutex);
+not_dynamic:
 	debug("_find_best_block_match none found");
 	return SLURM_ERROR;
 }
