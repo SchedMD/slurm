@@ -217,7 +217,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 					step_layout->tids[i][j] = 
 						step_layout->task_cnt++;
 					if(step_layout->task_cnt >= task_cnt) {
-						step_layout->tasks[i] = j;
+						step_layout->tasks[i] = j + 1;
 						break;
 					}
 				}
