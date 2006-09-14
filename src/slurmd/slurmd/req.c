@@ -286,7 +286,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 #ifndef HAVE_FRONT_END
 		int count;
 		count = hostset_count(step_hset);
-		rank = hostset_index(step_hset, conf->node_name, 0);
+		rank = hostset_find(step_hset, conf->node_name);
 		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
@@ -607,7 +607,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 
         if ((arg.ntask_cnt > 0) && (tasks_to_launch > 0)) {
 
-                host_index = hostset_index(hset, conf->node_name, jobid);
+                host_index = hostset_find(hset, conf->node_name);
 
                 /* Left in here for debugging purposes
                 if(host_index >= 0)

@@ -216,7 +216,7 @@ _get_step_addresses(const job_step_info_t *step,
 	num_nodes = hostset_count(step_nodes);
 	addrs = xmalloc(sizeof(slurm_addr) * num_nodes);
 	for (i = 0; (hostname = hostlist_next(step_nodes_it)) != NULL; i++) {
-		int index = hostset_index(alloc_nodes, hostname, 0);
+		int index = hostset_find(alloc_nodes, hostname);
 		addrs[i] = allocation->node_addr[index];
 		free(hostname);
 	}
