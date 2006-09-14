@@ -101,11 +101,16 @@ if {$job_id != 0} {
 } else {
 	set exit_code   1
 }
+if {$matches != 2} {
+	send_user "\nFAILURE: Did not properly set shared and contiguous flag\n"
+	set exit_code   1
+}
 
 #
 # Spawn a sbatch job with contiguous option only
 #
-set job_id 0
+set job_id  0
+set matches 0
 spawn $sbatch --contiguous --hold -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -127,11 +132,12 @@ expect {
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Shared=($number)" {
-			set shared_val $expect_out(1,string)
-			if {$shared_val == 0} {
-				incr matches
-			}
+		-re "Shared=0" {
+			incr matches
+			exp_continue
+		}
+		-re "Shared=OK" {
+			incr matches
 			exp_continue
 		}
 		-re "Contiguous=($number)" {
@@ -154,7 +160,7 @@ if {$job_id != 0} {
 	set exit_code 1
 }
 
-if {$matches != 4} {
+if {$matches != 2} {
 	send_user "\nFAILURE: Did not properly set shared and contiguous flags\n"
 	set exit_code 1
 }
