@@ -1710,7 +1710,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
-		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
+		if ((job_desc_msg->job_id != SLURM_BATCH_SCRIPT)
+		&&  (find_job_record(job_desc_msg->job_id) != NULL)) {
 
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 			/* Non-super users not permitted to run job steps on front-end.
