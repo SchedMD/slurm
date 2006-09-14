@@ -53,7 +53,7 @@ if {[test_multiple_slurmd] != 0} {
 }
 
 make_bash_script $file_in "
-   env | grep SLURM_JOB_CPUS_PER_NODE
+   env | grep SLURM_CPUS_ON_NODE
    $bin_hostname"
 
 #
@@ -67,10 +67,14 @@ set timeout        $max_job_delay
 set node_cnt       1
 set task_cnt       1
 
-spawn $srun -N$node_cnt --cpus-per-task=$task_cnt -l -t1 $bin_hostname  
+spawn $srun -N$node_cnt --cpus-per-task=$task_cnt -l -t1 $file_in 
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_CPUS_ON_NODE=($number)" {
+		set cpus_per_node $expect_out(1,string)
 		exp_continue
 	}
 	-re "($number): ($alpha_numeric)" {
@@ -107,6 +111,11 @@ if {$fat_nodes == 1} {
 if {[string compare $host ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname\n"
 	exit 1	
+}
+if {$cpus_per_node != $cpu_count} {
+	send_user "FAILURE: should have run $cpus_per_node tasks (one per CPU) "
+	send_user "instead of $cpu_count tasks\n"
+	exit 1
 }
 if {$cpu_count < 2} {
 	send_user "\nWARNING: The node only has one CPU\n"
