@@ -39,7 +39,7 @@
 #include <stdio.h>
 
 int get_parameters(void *params) 
-{
+{ 
 	printf("YOU ARE OUTSIDE OF SLURM!!!! NOT RUNNING MPIRUN!\n");
 	return -1;
 }
