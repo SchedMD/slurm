@@ -109,6 +109,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	char *new_node_list;
+	static char tmp_msg[128];
 	bitstr_t *new_bitmap;
 
 	lock_slurmctld(job_write_lock);
@@ -168,11 +169,29 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	job_ptr->priority = 1000000;
 
  fini:	unlock_slurmctld(job_write_lock);
-	/* functions below provide their own locking */
 	if (rc == 0) {	/* New job to start ASAP */
-		(void) schedule();
-		schedule_node_save();
-		schedule_job_save();
+		(void) schedule();	/* provides own locking */
+		/* Check to insure the job was actually started */
+		lock_slurmctld(job_write_lock);
+		/* job_ptr = find_job_record(jobid);	don't bother */
+		if ((job_ptr->job_id == jobid)
+		&&  (job_ptr->job_state != JOB_RUNNING)) {
+			uint16_t wait_reason = 0;
+			error("wiki: failed to start job %u", jobid);
+			job_ptr->priority = 0;
+			if (job_ptr->details)
+				wait_reason = job_ptr->details->wait_reason;
+			*err_code = 910 + wait_reason;
+			snprintf(tmp_msg, sizeof(tmp_msg),
+				"Could not start job %u: %s",
+				jobid, job_reason_string(wait_reason));
+			*err_msg = tmp_msg;
+			error("wiki: %s", tmp_msg);
+			rc = -1;
+		}
+		unlock_slurmctld(job_write_lock);
+		schedule_node_save();	/* provides own locking */
+		schedule_job_save();	/* provides own locking */
 	}
 	return rc;
 }

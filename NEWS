@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  - BLUEGENE - add libsched_if.so so mpirun doesn't try to create a block
    by itself.
  - Enable specification of srun --jobid=# option with --batch (for user root).
+ - Verify that job actually starts when requested by sched/wiki2.
 
 * Changes in SLURM 1.1.12
 =========================
