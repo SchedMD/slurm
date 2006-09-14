@@ -65,8 +65,9 @@ To build and run on AIX:
    put the buildfarm directory in your search path
 1. export OBJECT_MODE=32
 2. Build with:
-   ./configure --enable-debug --prefix=<install-dir> \
-	--sysconfdir=<config-dir> --with-procrack=/opt/freeware/include \
+   ./configure --enable-debug --prefix=/opt/freeware \
+	--sysconfdir=/opt/freeware/etc/slurm \
+	--with-procrack=/opt/freeware/include \
 	--with-ssl=/opt/freeware --with-munge=/opt/freeware
    make
    make uninstall  # remove old shared libraries, aix caches them
