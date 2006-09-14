@@ -73,6 +73,7 @@ EXTRA_DIST = \
 	test1.54			\
 	test1.55			\
 	test1.56			\
+	test1.57			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
@@ -192,6 +193,106 @@ EXTRA_DIST = \
 	test14.6			\
 	test14.7			\
 	test14.8			\
+	test15.1			\
+	test15.2			\
+	test15.3			\
+	test15.4			\
+	test15.5			\
+	test15.6			\
+	test15.7			\
+	test15.8			\
+	test15.9			\
+	test15.10			\
+	test15.11			\
+	test15.12			\
+	test15.13			\
+	test15.14			\
+	test15.15			\
+	test15.16			\
+	test15.17			\
+	test15.18			\
+	test15.19			\
+	test15.20			\
+	test15.21			\
+	test15.22			\
+	test15.23			\
+	test16.1			\
+	test16.2			\
+	test16.3			\
+	test16.4			\
+	test16.4.prog.c			\
+	test17.1			\
+	test17.2			\
+	test17.3			\
+	test17.4			\
+	test17.5			\
+	test17.6			\
+	test17.7			\
+	test17.8			\
+	test17.9			\
+	test17.10			\
+	test17.11			\
+	test17.12			\
+	test17.13			\
+	test17.14			\
+	test17.15			\
+	test17.15.prog.c		\
+	test17.16			\
+	test17.17			\
+	test17.18			\
+	test17.19			\
+	test17.20			\
+	test17.21			\
+	test17.22			\
+	test17.23			\
+	test17.24			\
+	test17.25			\
+	test17.26			\
+	test17.27			\
+	test17.28			\
+	test17.29			\
+	test18.1			\
+	test18.2			\
+	test18.3			\
+	test18.4			\
+	test18.5			\
+	test18.6			\
+	test18.7			\
+	test18.8			\
+	test18.9			\
+	test18.10			\
+	test18.11			\
+	test18.12			\
+	test18.13			\
+	test18.14			\
+	test18.15			\
+	test18.16			\
+	test18.16.prog.c		\
+	test18.17			\
+	test18.18			\
+	test18.19			\
+	test18.19.prog.c		\
+	test18.20			\
+	test18.21			\
+	test18.22			\
+	test18.23			\
+	test18.24			\
+	test18.25			\
+	test18.26			\
+	test18.27			\
+	test18.28			\
+	test18.29			\
+	test18.30			\
+	test18.31			\
+	test18.32			\
+	test18.32.prog.c		\
+	test18.33			\
+	test18.34			\
+	test18.35			\
+	test18.36			\
+	test18.36.prog.c		\
+	test18.37			\
+	test18.37.prog.c		\
 	usleep
 
 distclean-local:
