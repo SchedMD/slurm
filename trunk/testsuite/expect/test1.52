@@ -78,8 +78,9 @@ if { ($node_count < 2) || ($max_nodes < 2) } {
 	exit $exit_code
 }
 
-set node0 0
-set node1 0
+set node0       0
+set node1       0
+set no_hostfile 0
 
 for {set i 0} {$i<2} {incr i} {
 
@@ -104,6 +105,10 @@ for {set i 0} {$i<2} {incr i} {
 	set node1  ""
 	spawn $srun -N2 -l $bin_printenv SLURMD_NODENAME
 	expect {
+		-re "SwitchType does not permit arbitrary task distribution" {
+			set no_hostfile 1
+			exp_continue
+		}
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
@@ -132,8 +137,10 @@ for {set i 0} {$i<2} {incr i} {
 	}
 }
 
-if { [string compare $node0 $1node1] } {
-	send_user "\n FAILURE: tasks not distributed by hostfile\n"
+if { $no_hostfile != 0 } {
+	send_user "\nNo worries, test just can not run here\n"
+} elseif { [string compare $node0 $1node1] } {
+	send_user "\nFAILURE: tasks not distributed by hostfile\n"
 	set exit_code 1
 } elseif { [string compare $node1 $1node0] } {
 	send_user "\nFAILURE: tasks not distributed by hostfile\n"
