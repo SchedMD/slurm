@@ -105,9 +105,9 @@ static struct io_operations message_socket_ops = {
 };
 
 /**********************************************************************
- * main
+ * sattach
  **********************************************************************/
-int main(int argc, char *argv[])
+int sattach(int argc, char *argv[])
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_layout_t *layout;
