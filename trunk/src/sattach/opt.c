@@ -248,7 +248,7 @@ env_vars_t env_vars[] = {
 /*
  * _opt_env(): used by initialize_and_process_args to set options via
  *            environment variables. See comments above for how to
- *            extend srun to process different vars
+ *            extend sattach to process different vars
  */
 static void _opt_env()
 {

@@ -4,7 +4,7 @@
  *	active parallel job
  *
  * For TotalView, a parallel job debugger from Etnus <http://www.etnus.com>
- *	Type "<ctrl-a>" to specify arguments for srun
+ *	Type "<ctrl-a>" to specify arguments for sattach
  *	Type "g" to start the program
  *
  * Information for other debuggers may be submitted to slurm-dev@lists.llnl.gov
