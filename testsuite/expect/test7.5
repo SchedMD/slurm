@@ -49,8 +49,8 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 
 # Note this appears as a single argv value to totalviewcli
-#set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$slaunch -n%N --jobid=`./test7.4.sh $squeue %t1` -l -i none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
-set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -n%N --jobid=`./test7.4.sh $squeue %t1` -l -i none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+#set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$slaunch -n%N --jobid=`./test7.4.sh $squeue %t1` -l -i /dev/null %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -n%N --jobid=`./test7.4.sh $squeue %t1` -l -i /dev/null %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
@@ -127,8 +127,8 @@ set env(SLURM_JOB_ID) $job_id
 send_user "======================================================================\n"
 send_user "=======================  Run without bulk transfer ===================\n"
 send_user "======================================================================\n"
-#spawn $totalviewcli -verbosity info -e $no_bulk $slaunch -a -i none -n4 -O $test_prog
-spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -i none -n4 -O $test_prog
+#spawn $totalviewcli -verbosity info -e $no_bulk $slaunch -a -i /dev/null -n4 --overcommit $test_prog
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -i /dev/null -n4 --overcommit $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
@@ -206,8 +206,8 @@ set no_capability 0
 send_user "======================================================================\n"
 send_user "=====================  Run with bulk transfer ========================\n"
 send_user "======================================================================\n"
-#spawn $totalviewcli -verbosity info -e $bulk $slaunch -a -i none -n4 -O $test_prog
-spawn $totalviewcli -verbosity info -e $bulk $srun -a -i none -n4 -O $test_prog
+#spawn $totalviewcli -verbosity info -e $bulk $slaunch -a -i /dev/null -n4 --overcommit $test_prog
+spawn $totalviewcli -verbosity info -e $bulk $srun -a -i /dev/null -n4 --overcommit $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
