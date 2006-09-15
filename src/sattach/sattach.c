@@ -247,8 +247,8 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg,
 			break;
 		}
 
-		debug("Node %s (%u), executable %s, %d tasks",
-		      resp->node_name, resp->node_id;
+		debug("Node %s, executable %s, %d tasks",
+		      resp->node_name,
 		      resp->executable_name, resp->ntasks);
 		for (i = 0; i < resp->ntasks; i++) {
 			bit_set(tasks_started, resp->gtids[i]);
