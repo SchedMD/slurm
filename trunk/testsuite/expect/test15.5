@@ -103,7 +103,7 @@ make_bash_script $file_in "
 #
 set timeout [expr $max_job_delay + $sleep_time]
 set job_id    0
-spawn $salloc -t1 --kill-command $file_in
+spawn $salloc -t1 --kill-command ./$file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -131,7 +131,7 @@ expect {
 
 set completions 0
 set job_id      0
-spawn $salloc -t4 --kill-command $file_in
+spawn $salloc -t4 --kill-command ./$file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -161,7 +161,7 @@ if {$completions != 1} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	file delete $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
