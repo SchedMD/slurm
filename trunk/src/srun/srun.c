@@ -100,12 +100,10 @@
 #define	TYPE_SCRIPT	2
 
 
-typedef resource_allocation_response_msg_t         allocation_resp;
-
 /*
  * forward declaration of static funcs
  */
-static void  _print_job_information(allocation_resp *resp);
+static void  _print_job_information(resource_allocation_response_msg_t *resp);
 static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
 static void  _send_options(const int argc, char **argv);
@@ -127,7 +125,7 @@ static int   _run_srun_script (srun_job_t *job, char *script);
 
 int srun(int ac, char **av)
 {
-	allocation_resp *resp;
+	resource_allocation_response_msg_t *resp;
 	srun_job_t *job = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
@@ -239,6 +237,16 @@ int srun(int ac, char **av)
 
 	} else if ((resp = existing_allocation())) {
 		job_id = resp->job_id;
+
+		/* If opt.nodelist isn't set we initialize it from the
+		 * allocation info, but only if the env variable SLURM_HOSTFILE
+		 * ISN'T set, because SLURM_HOSTFILE isn't parsed until
+		 * job_step_create_allocation is called (bad design, all env
+		 * variable parsing should happen up front in opt.c with the
+		 * rest of the option parsing).
+		 */
+		if (opt.nodelist == NULL && getenv("SLURM_HOSTFILE") == NULL)
+			opt.nodelist = xstrdup(resp->node_list);
 		slurm_free_resource_allocation_response_msg(resp);
 		if (opt.allocate) {
 			error("job %u already has an allocation",
@@ -474,7 +482,7 @@ _switch_standalone(srun_job_t *job)
 
 
 static void 
-_print_job_information(allocation_resp *resp)
+_print_job_information(resource_allocation_response_msg_t *resp)
 {
 	int i;
 	char tmp_str[10], job_details[4096];
