@@ -115,8 +115,8 @@ if {$job_id == 0} {
 }
 
 # Note this appears as a single argv value to totalviewcli
-set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$slaunch -n%N --jobid=$job_id -l -i /dev/null %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
-set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
+set bulk "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$slaunch --jobid=%J -N%N -n%N -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l -i /dev/null %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set no_bulk "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 #
 # Now run totalviewcli (command line interface to TotalView)
