@@ -485,4 +485,4 @@ test18.35  Test of task layout controls (--task-layout-byid,
            --task-layout-byname and --task-layout-file options).
 test18.36  Test of CPU affinity support (--cpu-bind option).
 test18.37  Test of memory affinity support for NUMA systems (--mem-bind option).
-
+test18.38  Test of slaunch --jobid

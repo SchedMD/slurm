@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of srun --jobid option with an existing allocation
+#          Test of slaunch --jobid option
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,36 +31,35 @@
 ############################################################################
 source ./globals
 
-set test_id              "1.58"
+set test_id              "18.38"
 set exit_code            0
 
 print_header $test_id
 set timeout $max_job_delay
 
 #
-# Run an srun to grab a single node allocation, but not start any
-# job steps.
+# Run an salloc to grab a single node allocation.
 #
-set srun_alloc_pid [spawn $srun -v -N1 -n1 -A $bin_sleep 600]
-set srun_alloc_sid $spawn_id
+set salloc_pid [spawn $salloc -N1 $slaunch $bin_sleep 600]
+set salloc_sid $spawn_id
 expect {
-    -re "srun: jobid ($number)" {
+    -re "Granted job allocation ($number)" {
 	set jobid $expect_out(1,string)
     }
     timeout {
-	send_user "\nFAILURE: srun failed to grab an allocation in a timely manner.\n"
-	exec kill $srun_alloc_pid
+	send_user "\nFAILURE: salloc failed to grab an allocation in a timely manner.\n"
+	exec kill $salloc_pid
 	exit 1
     }
 }
 
 #
-# Now try to use the srun --jobid option to run in the already existing
+# Now try to use the slaunch --jobid option to run in the already existing
 # allocation.
 #
-set pattern "sdiouetj49udfj"
+set pattern "xcoetn46398vnk"
 set got_pattern 0
-set srun_launch_pid [spawn $srun --jobid $jobid echo $pattern]
+set slaunch_pid [spawn $slaunch --jobid $jobid echo $pattern]
 expect {
     -re "error" {
 	send_user "\nFAILURE: unexpected error occurred\n"
@@ -71,9 +70,8 @@ expect {
 	exp_continue
     }
     timeout {
-	exec kill $srun_launch_pid
-	exec kill $srun_launch_pid
-	exec kill -9 $srun_launch_pid
+	exec kill $slaunch_pid
+	exec kill -9 $slaunch_pid
     }
     eof {
 	wait
@@ -89,11 +87,15 @@ if {$got_pattern == 0} {
 # Release the allocation by killing the first srun (really it kills the "sleep")
 #
 exec $scancel $jobid
-set spawn_id $srun_alloc_sid
-exec kill -9 $srun_alloc_pid
+exec kill $salloc_pid
+set spawn_id $salloc_sid
 expect {
+    -re "error.*already completed" {
+	send_user "The \"already completed\" error is normal.\n"
+	exp_continue
+    }
     timeout {
-	exec kill -9 $srun_alloc_pid
+	exec kill -9 $salloc_pid
     }
     eof {
 	wait
