@@ -164,7 +164,9 @@ existing_allocation(void)
 	uint32_t old_job_id;
         resource_allocation_response_msg_t *resp = NULL;
 
-        if ((old_job_id = jobid_from_env()) == 0)
+	if (opt.jobid != NO_VAL)
+		old_job_id = (uint32_t)opt.jobid;
+	else
                 return NULL;
 
         if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
@@ -181,19 +183,6 @@ existing_allocation(void)
         }
 
         return resp;
-}
-
-/* 
- * Returns jobid if SLURM_JOBID was set in the user's environment
- *  or if --jobid option was given, else returns 0
- */
-uint32_t
-jobid_from_env(void)
-{
-	if (opt.jobid != NO_VAL)
-		return ((uint32_t) opt.jobid);
-	else 
-		return (0);
 }
 
 static void
