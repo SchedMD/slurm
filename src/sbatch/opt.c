@@ -806,7 +806,7 @@ static char *_get_argument(const char *line, int *skipped)
 /*
  * set options from batch script
  *
- * Build and argv-style array of options from the script "body",
+ * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
  */
 static void _opt_batch_script(const void *body, int size)
