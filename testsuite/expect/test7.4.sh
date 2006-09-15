@@ -1,4 +1,4 @@
-#!/bin/sh
+s#!/bin/sh
 # Usage: <squeue path> <hostlist file>
 # Returns SLURM job id allocated  to that node for that user
 # Note: The hostlist file contains full pathnames that need to 
