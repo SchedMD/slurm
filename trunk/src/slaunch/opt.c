@@ -667,8 +667,12 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
+  /* SLURM_JOBID is handled like SLAUNCH_JOBID as backwards compatibility
+     with LCRM.  If we get LCRM to call a slurm API function which
+     tells LCRM which variables to set for a particular jobid number,
+     then there would be no need for LCRM's static SLURM_JOBID code or
+     the handling of SLURM_JOBID below.*/
   {"SLURM_JOBID",          OPT_INT,       &opt.jobid,         &opt.jobid_set },
-  {"SLURM_JOB_ID",         OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLAUNCH_JOBID",        OPT_INT,       &opt.jobid,         &opt.jobid_set },
   {"SLURMD_DEBUG",         OPT_INT,       &opt.slurmd_debug,  NULL           },
   {"SLAUNCH_CORE_FORMAT",  OPT_CORE,      NULL,               NULL           },
