@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of TotalView operation with srun, with and without bulk
+#          Test of TotalView operation with slaunch, with and without bulk
 #          transfer.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -44,20 +44,22 @@
 ############################################################################
 source ./globals
 
-set test_id       "7.4"
+set test_id       "7.5"
 set exit_code     0
 set test_prog     "test$test_id.prog"
 
 # Note this appears as a single argv value to totalviewcli
-set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`./test7.4.sh $squeue %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+#set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$slaunch -n%N --jobid=`./test7.4.sh $squeue %t1` -l -i none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -n%N --jobid=`./test7.4.sh $squeue %t1` -l -i none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
 
 #
 # Put desired SLURM install directory at head of search path for bulk launch 
-# command to work (runs "srun" without path)
+# command to work (runs "slaunch" without path)
 #
+global env
 set env(PATH) "$slurm_dir/bin:$env(PATH)"
 send_user "\n $env(PATH)\n"
 
@@ -92,15 +94,41 @@ exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints
 exec $mpicc -o $test_prog ${test_prog}.c
 
 #
-# Now run totalviewcli (command line interface to TotalView)
+# Create the slurm job allocation
 #
+set job_id  0
 set matches 0
 set no_capability 0
 set timeout $max_job_delay
+set salloc_pid [spawn $salloc -N1-2 -t1 $bin_bash]
+set salloc_spawn_id $spawn_id
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		if {$job_id == 0} {
+			slow_kill $salloc_pid
+		} else {
+			cancel_job $job_id
+		}
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: failed to create job allocation\n"
+	exit 1
+}
+# Set SLURM_JOB_ID for totalview and slaunch to get it in the higher-level process
+set env(SLURM_JOB_ID) $job_id
+
+#
+# Now run totalviewcli (command line interface to TotalView)
+#
 send_user "======================================================================\n"
 send_user "=======================  Run without bulk transfer ===================\n"
 send_user "======================================================================\n"
-spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
+#spawn $totalviewcli -verbosity info -e $no_bulk $slaunch -a -i none -n4 -O $test_prog
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -i none -n4 -O $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
@@ -178,7 +206,8 @@ set no_capability 0
 send_user "======================================================================\n"
 send_user "=====================  Run with bulk transfer ========================\n"
 send_user "======================================================================\n"
-spawn $totalviewcli -verbosity info -e $bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
+#spawn $totalviewcli -verbosity info -e $bulk $slaunch -a -i none -n4 -O $test_prog
+spawn $totalviewcli -verbosity info -e $bulk $srun -a -i none -n4 -O $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
@@ -236,15 +265,39 @@ expect {
 		wait
 	}
 }
+
+#
+# Check the results of bulk transfer test above
+#
 if {$no_capability != 0} {
 	send_user "\nWARNING: Unable to run test with present configuration\n"
-	exit 0
+} else {
+	if {$matches != 12} {
+		send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
+		send_user "Remove your ~/.totalview directory and try again\n"
+		set exit_code 1
+	}
 }
-if {$matches != 12} {
-	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
-	send_user "Remove your ~/.totalview directory and try again\n"
-	set exit_code 1
+
+#
+# terminate the job
+#
+cancel_job $job_id
+set spawn_id $salloc_spawn_id
+expect {
+	-re "Job allocation $job_id has been revoked." {
+		send "exit\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc did not terminate as expected\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
+
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.b3breakpoints
