@@ -90,11 +90,6 @@
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
 
-typedef struct connection {
-	slurm_fd fd;
-	slurm_addr *cli_addr;
-} conn_t;
-
 /*
  * count of active threads
  */
@@ -103,6 +98,11 @@ static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct connection {
+	slurm_fd fd;
+	slurm_addr *cli_addr;
+} conn_t;
 
 
 
@@ -358,30 +358,17 @@ static void *
 _service_connection(void *arg)
 {
 	conn_t *con = (conn_t *) arg;
-	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 		
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
-	msg->conn_fd = con->fd;
-	/* this could change if being forwarded to */
-	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
-	
-	ret_list = slurm_receive_msg(con->fd, msg, 0);	
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if((slurm_receive_and_forward_msgs(con->fd, con->cli_addr, msg, 0)) 
+	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
 		goto cleanup;
 	}
-
-	/* set msg connection fd to accepted fd. This allows 
-	 *  possibility for slurmd_req () to close accepted connection
-	 */
-	/* this always is the connection */
-	memcpy(&msg->address, con->cli_addr, sizeof(slurm_addr));
-
 	debug2("got this type of message %d with %d other responses",
-	     msg->msg_type, list_count(ret_list));
-	msg->ret_list = ret_list;
+	     msg->msg_type, list_count(msg->ret_list));
 	slurmd_req(msg);
 	
 cleanup:

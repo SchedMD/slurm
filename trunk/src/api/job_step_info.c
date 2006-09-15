@@ -159,6 +159,9 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	slurm_msg_t resp_msg;
 	job_step_info_request_msg_t req;
 
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
 	req.last_update  = update_time;
 	req.job_id	= job_id;
 	req.step_id	= step_id;
@@ -194,6 +197,9 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
 	job_step_id_msg_t data;
 	slurm_msg_t req, resp;
 	int errnum;
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
 
 	req.msg_type = REQUEST_STEP_LAYOUT;
 	req.data = &data;

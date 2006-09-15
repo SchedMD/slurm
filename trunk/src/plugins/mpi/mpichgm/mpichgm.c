@@ -72,6 +72,7 @@ typedef struct {
 #define GMPI_RECV_BUF_LEN 65536
 
 
+opt_t opt;
 static int gmpi_fd = -1;
 
 static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,

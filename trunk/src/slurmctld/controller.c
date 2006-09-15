@@ -538,7 +538,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	pthread_t thread_id_rpc_req;
 	pthread_attr_t thread_attr_rpc_req;
 	int no_thread;
-	connection_arg_t *conn_arg;
+	connection_arg_t *conn_arg = NULL;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -620,23 +620,21 @@ static void *_slurmctld_rpc_mgr(void *no_data)
  */
 static void *_service_connection(void *arg)
 {
-	slurm_fd newsockfd = ((connection_arg_t *) arg)->newsockfd;
+	connection_arg_t *conn = (connection_arg_t *) arg;
 	void *return_code = NULL;
-	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	
-	ret_list = slurm_receive_msg(newsockfd, msg, 0);	
-	msg->conn_fd = newsockfd;
-	if(!ret_list) {
+
+	slurm_msg_t_init(msg);
+
+	if(slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
 		error("slurm_receive_msg: %m");
-		/* close should only be called when the socket implementation is 
-		 * being used the following call will be a no-op in a 
+		/* close should only be called when the socket implementation
+		 * is being used the following call will be a no-op in a 
 		 * message/mongo implementation */
-		slurm_close_accepted_conn(newsockfd);	/* close the new socket */
+		/* close the new socket */
+		slurm_close_accepted_conn(conn->newsockfd);
 		goto cleanup;
 	}
-
-	msg->ret_list = ret_list;
 
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
@@ -648,10 +646,11 @@ static void *_service_connection(void *arg)
 			info("_service_connection/slurm_receive_msg %m");
 	} else {
 		/* process the request */
-		slurmctld_req (msg);
+		slurmctld_req(msg);
 	}
-	if ((newsockfd >= 0) && slurm_close_accepted_conn(newsockfd) < 0)
-		error ("close(%d): %m",  newsockfd);
+	if ((conn->newsockfd >= 0) 
+	    && slurm_close_accepted_conn(conn->newsockfd) < 0)
+		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:
 	slurm_free_msg(msg);
@@ -1033,6 +1032,7 @@ static int _shutdown_backup_controller(int wait_time)
 	int rc;
 	slurm_msg_t req;
 
+	slurm_msg_t_init(&req);
 	if ((slurmctld_conf.backup_addr == NULL) ||
 	    (slurmctld_conf.backup_addr[0] == '\0')) {
 		debug("No backup controller to shutdown");
@@ -1044,9 +1044,7 @@ static int _shutdown_backup_controller(int wait_time)
 
 	/* send request message */
 	req.msg_type = REQUEST_CONTROL;
-	req.data = NULL;
-	req.forward.cnt = 0;
-	req.ret_list = NULL;
+	
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, CONTROL_TIMEOUT) < 0) {
 		error("shutdown_backup:send/recv: %m");
 		return SLURM_ERROR;

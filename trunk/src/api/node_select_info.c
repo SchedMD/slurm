@@ -72,6 +72,9 @@ extern int slurm_load_node_select (time_t update_time,
         slurm_msg_t resp_msg;
 	node_info_select_request_msg_t req;
 
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
         req.last_update  = update_time;
         req_msg.msg_type = REQUEST_NODE_SELECT_INFO;
         req_msg.data     = &req;

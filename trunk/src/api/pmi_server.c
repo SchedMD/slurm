@@ -128,6 +128,7 @@ static void *_msg_thread(void *x)
 	int rc, success = 0, timeout;
 	slurm_msg_t msg_send;
 	
+	slurm_msg_t_init(&msg_send);
 
 	debug2("KVS_Barrier msg to %s:%u",
 		msg_arg_ptr->bar_ptr->hostname,

@@ -62,6 +62,7 @@ slurm_complete_job ( uint32_t job_id, uint32_t job_return_code )
 	slurm_msg_t req_msg;
 	complete_job_allocation_msg_t req;
 
+	slurm_msg_t_init(&req_msg);
 	req.job_id      = job_id;
 	req.job_rc      = job_return_code;
 

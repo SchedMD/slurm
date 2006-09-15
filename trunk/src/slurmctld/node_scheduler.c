@@ -175,9 +175,9 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		bool suspended)
 {
 	int i;
-	kill_job_msg_t *kill_job;
-	agent_arg_t *agent_args;
-	int buf_rec_size = 0, down_node_cnt = 0;
+	kill_job_msg_t *kill_job = NULL;
+	agent_arg_t *agent_args = NULL;
+	int down_node_cnt = 0;
 	uint16_t base_state;
 
 	xassert(job_ptr);
@@ -192,6 +192,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	else
 		agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update = time(NULL);
 	kill_job->job_id  = job_ptr->job_id;
@@ -217,19 +218,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		if (agent_args->node_count > 0)
 			continue;
 #endif
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				 (sizeof(struct sockaddr_in) *
-				  buf_rec_size));
-			xrealloc((agent_args->node_names),
-				 (MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-		    node_ptr->slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_ptr->name, MAX_SLURM_NAME);
+		hostlist_push(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 
@@ -244,7 +233,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		xfree(agent_args);
 		return;
 	}
-
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
 	return;
@@ -1447,7 +1435,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 	int i;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
-	int buf_rec_size = 0;
 	hostlist_t kill_hostlist = hostlist_create("");
 	char host_str[64];
 
@@ -1456,6 +1443,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
+	agent_args->hostlist = hostlist_create("");
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_id  = job_ptr->job_id;
@@ -1488,18 +1476,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if (agent_args->node_count > 0)
 			continue;
 #endif
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				 (sizeof(struct sockaddr_in) * buf_rec_size));
-			xrealloc((agent_args->node_names),
-				 (MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-		    node_ptr->slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_ptr->name, MAX_SLURM_NAME);
+		hostlist_push(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 

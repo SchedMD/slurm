@@ -163,6 +163,8 @@ extern int slurm_load_node (time_t update_time,
         slurm_msg_t resp_msg;
         node_info_request_msg_t req;
 	
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
         req.last_update  = update_time;
 	req.show_flags   = show_flags;
         req_msg.msg_type = REQUEST_NODE_INFO;

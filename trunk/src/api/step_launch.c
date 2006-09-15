@@ -194,6 +194,8 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.multi_prog = params->multi_prog ? 1 : 0;
 
 	launch.options = job_options_create();
+	launch.complete_nodelist = 
+		xstrdup(ctx->step_resp->step_layout->node_list);
 	spank_set_remote_options (launch.options);
 
 	launch.ofname = params->remote_output_filename;
@@ -201,6 +203,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.ifname = params->remote_input_filename;
 	launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
 
+	launch.task_flags = 0;
 	if (params->parallel_debug)
 		launch.task_flags |= TASK_PARALLEL_DEBUG;
 
@@ -250,7 +253,6 @@ int slurm_step_launch (slurm_step_ctx ctx,
 int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
-
 	/* Wait for all tasks to start */
 	pthread_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_started) < sls->tasks_requested) {
@@ -316,9 +318,10 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 				 *   be made smart enough to really ensure
 				 *   that a killed step never starts.
 				 */
-				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->job_step_id,
-						    SIGKILL);
+				slurm_kill_job_step(
+					ctx->job_id,
+					ctx->step_resp->job_step_id,
+					SIGKILL);
 				client_io_handler_abort(sls->client_io);
 				break;
 			} else if (errnum != 0) {
@@ -329,7 +332,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 			}
 		}
 	}
-
+	
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
 	pthread_join(sls->msg_thread, NULL);
@@ -456,7 +459,6 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		error("pthread_create of message thread: %m");
 		return SLURM_ERROR;
 	}
-
 	return SLURM_SUCCESS;
 }
 
@@ -483,13 +485,13 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	int fd;
 	unsigned char *uc;
-	short        port;
+	short port;
 	struct sockaddr_un addr;
 	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
-	int          timeout = 0;	/* slurm default value */
-	List ret_list = NULL;
-
+	int timeout = 0;	/* slurm default value */
+	int rc = 0;
+	
 	debug3("Called _msg_socket_accept");
 
 	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
@@ -525,22 +527,14 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
 again:
-	ret_list = slurm_receive_msg(fd, msg, timeout);
-	if(!ret_list || errno != SLURM_SUCCESS) {
+	if((rc = slurm_receive_msg(fd, msg, timeout)) != 0) {
 		if (errno == EINTR) {
-			list_destroy(ret_list);
 			goto again;
 		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
 		goto cleanup;
 	}
-	if(list_count(ret_list)>0) {
-		error("_message_socket_accept connection: "
-		      "got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	msg->ret_list = ret_list;
 
 	_handle_msg(sls, msg); /* handle_msg frees msg */
 cleanup:
@@ -713,70 +707,37 @@ static int _launch_tasks(slurm_step_ctx ctx,
 			 launch_tasks_request_msg_t *launch_msg)
 {
 	slurm_msg_t msg;
-	Buf buffer = NULL;
-	hostlist_t hostlist = NULL;
-	hostlist_iterator_t itr = NULL;
-	int zero = 0;
 	List ret_list = NULL;
 	ListIterator ret_itr;
-	ListIterator ret_data_itr;
-	ret_types_t *ret;
-	ret_data_info_t *ret_data;
-	int timeout;
+	ret_data_info_t *ret_data = NULL;
+	int rc = SLURM_SUCCESS;
 
 	debug("Entering _launch_tasks");
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
-	buffer = slurm_pack_msg_no_header(&msg);
-	hostlist = hostlist_create(ctx->step_resp->step_layout->node_list);
-	itr = hostlist_iterator_create(hostlist);
-	msg.srun_node_id = 0;
-	msg.ret_list = NULL;
-	msg.orig_addr.sin_addr.s_addr = 0;
-	msg.buffer = buffer;
-	memcpy(&msg.address, &ctx->step_resp->step_layout->node_addr[0],
-	       sizeof(slurm_addr));
-	timeout = slurm_get_msg_timeout() * 1000;
- 	forward_set_launch(&msg.forward,
-			   ctx->step_resp->step_layout->node_cnt,
-			   &zero,
-			   ctx->step_resp->step_layout->node_cnt,
-			   ctx->step_resp->step_layout->node_addr,
-			   itr,
-			   timeout);
-	hostlist_iterator_destroy(itr);
-	hostlist_destroy(hostlist);
-
-	ret_list =
-		slurm_send_recv_rc_packed_msg(&msg, timeout);
-	if (ret_list == NULL) {
-		error("slurm_send_recv_rc_packed_msg failed miserably: %m");
+	
+	if(!(ret_list = slurm_send_recv_msgs(
+		     ctx->step_resp->step_layout->node_list,
+		     &msg, 0))) {
+		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}
 	ret_itr = list_iterator_create(ret_list);
-	while ((ret = list_next(ret_itr)) != NULL) {
+	while ((ret_data = list_next(ret_itr))) {
+		rc = slurm_get_return_code(ret_data->type, 
+					   ret_data->data);
 		debug("launch returned msg_rc=%d err=%d type=%d",
-		      ret->msg_rc, ret->err, ret->type);
-		if (ret->msg_rc != SLURM_SUCCESS) {
-			ret_data_itr =
-				list_iterator_create(ret->ret_data_list);
-			while ((ret_data = list_next(ret_data_itr)) != NULL) {
-				errno = ret->err;
-				error("Task launch failed on node %s(%d): %m",
-				      ret_data->node_name, ret_data->nodeid);
-			}
-			list_iterator_destroy(ret_data_itr);
+		      rc, ret_data->err, ret_data->type);
+		if (rc != SLURM_SUCCESS) {
+			errno = ret_data->err;
+			error("Task launch failed on node %s: %m",
+			      ret_data->node_name);
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
-			ret_data_itr =
-				list_iterator_create(ret->ret_data_list);
-			while ((ret_data = list_next(ret_data_itr)) != NULL) {
-				errno = ret->err;
-				info("Launch success on node %s(%d)",
-				     ret_data->node_name, ret_data->nodeid);
-			}
-			list_iterator_destroy(ret_data_itr);
+			errno = ret_data->err;
+			info("Launch success on node %s",
+			     ret_data->node_name);
 #endif
 		}
 	}

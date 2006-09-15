@@ -754,7 +754,7 @@ proc default_partition {} {
     catch {close $fd}
 
     if {[string length $name] == 0} {
-	send_user "ERROR: could not identify the default partition"
+	send_user "ERROR: could not identify the default partition\n"
     }
 
     return $name
