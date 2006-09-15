@@ -57,7 +57,6 @@ set salloc_spawn_id $spawn_id
 set spawn_id $salloc_spawn_id
 expect {
 	-re "Granted job allocation ($number)" {
-	    send_user "got job id\n"
 		set job_id $expect_out(1,string)
 	}
 	timeout {
