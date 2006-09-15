@@ -118,8 +118,8 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: failed to create job allocation\n"
 	exit 1
 }
-# Set SLURM_JOB_ID for totalview and slaunch to get it in the higher-level process
-set env(SLURM_JOB_ID) $job_id
+# Set SLURM_JOBID for totalview and slaunch to get it in the higher-level process
+set env(SLURM_JOBID) $job_id
 
 #
 # Now run totalviewcli (command line interface to TotalView)
