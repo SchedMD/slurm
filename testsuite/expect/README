@@ -470,8 +470,7 @@ test18.27  Confirm that a job executes with the proper task distribution
            (--nodes and --distribution options).
 test18.28  Confirm that a job executes with the proper node count
            (--nodes option).
-test18.29  Test of cpus-per-task option on a single node (--cpus-per-task  
-           option).
+test18.29  Test of slaunch --cpus-per-task option.
 test18.30  Confirm that a job executes with the proper node count
            (--nodes option).
 test18.31  Confirm that a job executes with the specified nodes
