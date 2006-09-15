@@ -148,16 +148,24 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 slurmd_job_t * 
 job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 {
-	struct passwd *pwd;
-	slurmd_job_t  *job;
-	srun_info_t   *srun;
+	struct passwd *pwd = NULL;
+	slurmd_job_t  *job = NULL;
+	srun_info_t   *srun = NULL;
 	slurm_addr     resp_addr;
 	slurm_addr     io_addr;
+	int           nodeid = NO_VAL;
 	
 	xassert(msg != NULL);
+	xassert(msg->complete_nodelist != NULL);
 
-	debug3("entering job_create");
-
+	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
+	debug3("entering job_create on node %d", nodeid);
+	
+	if(nodeid < 0) {
+		error("couldn't find node %s in %s", 
+		      conf->node_name, msg->complete_nodelist);
+		return NULL;
+	}
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
 		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
@@ -172,7 +180,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
-	job->ntasks  = msg->tasks_to_launch[msg->srun_node_id];
+	job->ntasks  = msg->tasks_to_launch[nodeid];
 	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->job_step_id;
@@ -210,11 +218,11 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	
 	memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr));
 	slurm_set_addr(&resp_addr,
-		       msg->resp_port[msg->srun_node_id % msg->num_resp_port],
+		       msg->resp_port[nodeid % msg->num_resp_port],
 		       NULL);
 	memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
 	slurm_set_addr(&io_addr,
-		       msg->io_port[msg->srun_node_id % msg->num_io_port],
+		       msg->io_port[nodeid % msg->num_io_port],
 		       NULL);
 		
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
@@ -228,9 +236,9 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->argv    = _array_copy(job->argc, msg->argv);
 
 	job->nnodes  = msg->nnodes;
-	job->nodeid  = msg->srun_node_id;
+	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
-	job->cpus    = msg->cpus_allocated[msg->srun_node_id];
+	job->cpus    = msg->cpus_allocated[nodeid];
 	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
@@ -240,7 +248,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	
 	list_append(job->sruns, (void *) srun);
 
-	_job_init_task_info(job, msg->global_task_ids[msg->srun_node_id],
+	_job_init_task_info(job, msg->global_task_ids[nodeid],
 			    msg->ifname, msg->ofname, msg->efname);
 
 	return job;
@@ -255,10 +263,13 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	slurmd_job_t  *job;
 	srun_info_t   *srun;
 	slurm_addr     io_addr;
-
+	int           nodeid = NO_VAL;
+	
 	xassert(msg != NULL);
 
 	debug3("entering job_spawn_create");
+
+	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
@@ -302,7 +313,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->argv    = _array_copy(job->argc, msg->argv);
 	
 	job->nnodes  = msg->nnodes;
-	job->nodeid  = msg->srun_node_id;
+	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->cpus_allocated;
 	job->multi_prog  = msg->multi_prog;

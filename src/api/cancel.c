@@ -63,6 +63,7 @@ slurm_kill_job ( uint32_t job_id, uint16_t signal, uint16_t batch_flag )
 	slurm_msg_t msg;
 	job_step_kill_msg_t req;
 
+	slurm_msg_t_init(&msg);
 	/* 
 	 * Request message:
 	 */
@@ -97,6 +98,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	slurm_msg_t msg;
 	job_step_kill_msg_t req;
 
+	slurm_msg_t_init(&msg);
 	/* 
 	 * Request message:
 	 */

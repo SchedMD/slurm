@@ -57,6 +57,7 @@ static int _suspend_op (uint16_t op, uint32_t job_id)
 	suspend_msg_t sus_req;
 	slurm_msg_t req_msg;
 
+	slurm_msg_t_init(&req_msg);
 	sus_req.op       = op;
 	sus_req.job_id   = job_id;
 	req_msg.msg_type = REQUEST_SUSPEND;
@@ -100,6 +101,7 @@ extern int slurm_requeue (uint32_t job_id)
 	job_id_msg_t requeue_req;
 	slurm_msg_t req_msg;
 
+	slurm_msg_t_init(&req_msg);
 	requeue_req.job_id	= job_id;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;

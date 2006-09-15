@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Remove configuration parameter ShedulerAuth (defunct).
  -- Add NextJobId to "scontrol show config" output.
  -- Add new slurm.conf parameter MailProg.
+ -- new forwarding logic.  New recieve_msg functions depending on what you
+    are expecting to get back.  No srun_node_id anymore passed around in
+    a slurm_msg_t
 
 * Changes in SLURM 1.2.0-pre2
 =============================

@@ -1639,18 +1639,14 @@ static void _dump_hash (void)
  * REQUEST_SHUTDOWN) to every slurmd, no args */
 void msg_to_slurmd (slurm_msg_type_t msg_type)
 {
-	int i, pos;
+	int i;
 	shutdown_msg_t *shutdown_req;
 	agent_arg_t *kill_agent_args;
 	
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
-	kill_agent_args->slurm_addr = xmalloc (
-		sizeof (struct sockaddr_in) *
-		(node_record_count + 1));
-	kill_agent_args->node_names = xmalloc (MAX_SLURM_NAME * 
-		(node_record_count + 1));
+	kill_agent_args->hostlist = hostlist_create("");
 	if (msg_type == REQUEST_SHUTDOWN) {
  		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
 		shutdown_req->core = 0;
@@ -1658,11 +1654,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	}
 
 	for (i = 0; i < node_record_count; i++) {
-		kill_agent_args->slurm_addr[kill_agent_args->node_count] = 
-			node_record_table_ptr[i].slurm_addr;
-		pos = MAX_SLURM_NAME * kill_agent_args->node_count;
-		strncpy (&kill_agent_args->node_names[pos],
-			node_record_table_ptr[i].name, MAX_SLURM_NAME);
+		hostlist_push(kill_agent_args->hostlist, 
+			      node_record_table_ptr[i].name);
 		kill_agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
@@ -1670,8 +1663,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	}
 
 	if (kill_agent_args->node_count == 0) {
-		xfree (kill_agent_args->slurm_addr);
-		xfree (kill_agent_args->node_names);
+		hostlist_destroy(kill_agent_args->hostlist);
 		xfree (kill_agent_args);
 	} else {
 		debug ("Spawning agent msg_type=%d", msg_type);

@@ -1067,7 +1067,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		slurm_step_layout_destroy(job_step_resp.step_layout);
 		slurm_cred_destroy(slurm_cred);
 		switch_free_jobinfo(job_step_resp.switch_job);
-		
 		schedule_job_save();	/* Sets own locks */
 	}
 }
@@ -1621,7 +1620,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 			dump_job = true;
 		}
 	}
-
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
@@ -1701,6 +1699,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB");
 
+	slurm_msg_t_init(&response_msg);
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -1739,7 +1738,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				submit_msg.job_id     = job_desc_msg->job_id;
 				submit_msg.step_id    = step_id;
 				submit_msg.error_code = error_code;
-				slurm_msg_t_init(&response_msg);
 				response_msg.msg_type = 
 					RESPONSE_SUBMIT_BATCH_JOB;
 			
@@ -1773,7 +1771,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		submit_msg.job_id     = job_ptr->job_id;
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
-		slurm_msg_t_init(&response_msg);
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -2468,10 +2465,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
-	memcpy(agent_arg_ptr->slurm_addr,
-	       &(node_ptr->slurm_addr), sizeof(struct sockaddr_in));
-	agent_arg_ptr->node_names = xstrdup(node_ptr->name);
+	agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 

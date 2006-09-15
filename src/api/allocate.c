@@ -321,8 +321,8 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
-	slurm_msg_t_init(&resp_msg);
 	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
 	
@@ -363,6 +363,7 @@ slurm_allocation_lookup(uint32_t jobid,
 
 	req.job_id = jobid;
 	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 	req_msg.data     = &req; 
 	
@@ -405,6 +406,7 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 
 	req.job_id = jobid;
 	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO_LITE;
 	req_msg.data     = &req; 
 	
@@ -625,16 +627,16 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
  * OUT resp: resource allocation response message
  * RET 1 if resp is filled in, 0 otherwise */
 static int 
-_accept_msg_connection(int listen_fd, resource_allocation_response_msg_t **resp)
+_accept_msg_connection(int listen_fd, 
+		       resource_allocation_response_msg_t **resp)
 {
 	int	     conn_fd;
-	slurm_msg_t *msg = NULL;
+	slurm_msg_t  *msg = NULL;
 	slurm_addr   cli_addr;
 	char         host[256];
 	uint16_t     port;
 	int          rc = 0;
-	List ret_list;
-
+	
 	conn_fd = slurm_accept_msg_conn(listen_fd, &cli_addr);
 	if (conn_fd < 0) {
 		error("Unable to accept connection: %m");
@@ -645,31 +647,20 @@ _accept_msg_connection(int listen_fd, resource_allocation_response_msg_t **resp)
 	debug2("got message connection from %s:%d", host, port);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	forward_init(&msg->forward, NULL);
-	msg->ret_list = NULL;
-	msg->conn_fd = conn_fd;
-	
-	ret_list = slurm_receive_msg(conn_fd, msg, 0);
+	slurm_msg_t_init(msg);
+		
+	if((rc = slurm_receive_msg(conn_fd, msg, 0)) != 0) {
+		slurm_free_msg(msg);
 
-	if (!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
 			slurm_close_accepted_conn(conn_fd);
 			*resp = NULL;
 			return 0;
 		}
-		if (ret_list)
-			list_destroy(ret_list);
-			
+		
 		error("_accept_msg_connection[%s]: %m", host);
-		slurm_free_msg(msg);
 		return SLURM_ERROR;
 	}
-	if (list_count(ret_list)>0) {
-		error("_accept_msg_connection: "
-		      "got %d from receive, expecting 0",
-		      list_count(ret_list));
-	}
-	msg->ret_list = ret_list;
 	
 	rc = _handle_msg(msg, resp); /* handle_msg frees msg */
 	slurm_free_msg(msg);

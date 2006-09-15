@@ -225,11 +225,16 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 		}
 		name = hostlist_shift(hl);
 		if(!name) {
-			error("job_create_noalloc: "
+			error("fake_slurm_step_layout_create: "
 			      "We don't have the correct nodelist.");
 			goto error;			      
 		}
-		slurm_conf_get_addr(name, &step_layout->node_addr[i]);
+		if(slurm_conf_get_addr(name, &step_layout->node_addr[i]) == 
+		   SLURM_ERROR) {
+			error("fake_slurm_step_layout_create: "
+			      "we didn't get an addr for host %s.", name);
+				
+		}
 		free(name);
 	}
 	hostlist_destroy(hl);
@@ -429,7 +434,13 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			hostlist_destroy(hl);
 			return SLURM_ERROR;
 		}
-		slurm_conf_get_addr(name, &step_layout->node_addr[i]);
+		if(slurm_conf_get_addr(name, &step_layout->node_addr[i])
+		   == SLURM_ERROR) {
+			error("_init_task_layout: can't get addr for "
+			      "host %s", name);
+			free(name);
+			continue;
+		}
 							
 		debug2("host %d = %s", i, name);
 		free(name);

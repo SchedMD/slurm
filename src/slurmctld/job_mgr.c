@@ -1623,13 +1623,8 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_args->msg_type	= REQUEST_SIGNAL_TASKS;
 	agent_args->retry	= 1;
 	agent_args->node_count  = 1;
-	agent_args->slurm_addr	= xmalloc(sizeof(struct sockaddr_in));
-	memcpy(agent_args->slurm_addr, &node_record_table_ptr[i].slurm_addr,
-			sizeof(struct sockaddr_in));
-	agent_args->node_names	= xmalloc(MAX_SLURM_NAME);
-	strncpy(agent_args->node_names, node_record_table_ptr[i].name,
-			MAX_SLURM_NAME);
-	
+	agent_args->hostlist	= 
+		hostlist_create(node_record_table_ptr[i].name);	
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
@@ -1658,7 +1653,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
-
+	info("completing job %u", job_id);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info("job_complete: invalid JobId=%u", job_id);
@@ -3600,10 +3595,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
-	agent_info->slurm_addr	= xmalloc(sizeof(slurm_addr));
-	memcpy(agent_info->slurm_addr, 
-	       &node_ptr->slurm_addr, sizeof(slurm_addr));
-	agent_info->node_names	= xstrdup(node_ptr->name);
+	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
 
@@ -3763,11 +3755,12 @@ _xmit_new_end_time(struct job_record *job_ptr)
 {
 	job_time_msg_t *job_time_msg_ptr;
 	agent_arg_t *agent_args;
-	int buf_rec_size = 0, i;
+	int i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
 	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
 	job_time_msg_ptr = xmalloc(sizeof(job_time_msg_t));
 	job_time_msg_ptr->job_id          = job_ptr->job_id;
 	job_time_msg_ptr->expiration_time = job_ptr->end_time;
@@ -3775,19 +3768,8 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				 (sizeof(struct sockaddr_in) *
-				  buf_rec_size));
-			xrealloc((agent_args->node_names),
-				 (MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-		    node_record_table_ptr[i].slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_SLURM_NAME);
+		hostlist_push(agent_args->hostlist,
+			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* operate only on front-end node */
 		break;
@@ -3975,11 +3957,12 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 {
 	agent_arg_t *agent_args = NULL;
 	signal_job_msg_t *signal_job_msg = NULL;
-	int i, buf_rec_size = 0;
+	int i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
 	signal_job_msg->signal = signal;
@@ -3987,19 +3970,8 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				(sizeof(struct sockaddr_in) *
-				buf_rec_size));
-			xrealloc((agent_args->node_names),
-				(MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-			node_record_table_ptr[i].slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_SLURM_NAME);
+		hostlist_push(agent_args->hostlist,
+			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END	/* Operate only on front-end */
 		break;
@@ -4022,11 +3994,12 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 {
 	agent_arg_t *agent_args;
 	suspend_msg_t *sus_ptr;
-	int i, buf_rec_size = 0;
+	int i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SUSPEND;
 	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
 	sus_ptr = xmalloc(sizeof(suspend_msg_t));
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
@@ -4034,19 +4007,8 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				(sizeof(struct sockaddr_in) *
-				buf_rec_size));
-			xrealloc((agent_args->node_names),
-				(MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-			node_record_table_ptr[i].slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_SLURM_NAME);
+		hostlist_push(agent_args->hostlist,
+			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END	/* Operate only on front-end */
 		break;

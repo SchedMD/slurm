@@ -304,9 +304,8 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 {
 	int i;
 	kill_tasks_msg_t *kill_tasks_msg;
-	agent_arg_t *agent_args;
-	int buf_rec_size = 0;
-
+	agent_arg_t *agent_args = NULL;
+	
 	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (signal == SIGKILL)
@@ -314,27 +313,17 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 	else
 		agent_args->msg_type = REQUEST_SIGNAL_TASKS;
 	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
 	kill_tasks_msg->job_step_id = step_ptr->step_id;
 	kill_tasks_msg->signal      = signal;
-
+	
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
-		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 128;
-			xrealloc((agent_args->slurm_addr),
-				 (sizeof(struct sockaddr_in) *
-				  buf_rec_size));
-			xrealloc((agent_args->node_names),
-				 (MAX_SLURM_NAME * buf_rec_size));
-		}
-		agent_args->slurm_addr[agent_args->node_count] =
-		    node_record_table_ptr[i].slurm_addr;
-		strncpy(&agent_args->
-			node_names[MAX_SLURM_NAME * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_SLURM_NAME);
+		hostlist_push(agent_args->hostlist,
+			node_record_table_ptr[i].name);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
@@ -343,6 +332,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 
 	if (agent_args->node_count == 0) {
 		xfree(kill_tasks_msg);
+		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
 	}

@@ -189,7 +189,9 @@ typedef enum {
 	PMI_KVS_GET_REQ,
 	PMI_KVS_GET_RESP,
 
-	RESPONSE_SLURM_RC = 8001
+	RESPONSE_SLURM_RC = 8001,
+
+	RESPONSE_FORWARD_FAILED = 9001
 } slurm_msg_type_t;
 
 typedef enum {
@@ -200,17 +202,9 @@ typedef enum {
  * core api configuration struct 
 \*****************************************************************************/
 typedef struct forward {
-	slurm_addr *addr;	  /* array of network addresses */
-	 /* "name" must be a string of length (cnt * MAX_SLURM_NAME), with
-	  *  NodeName strings for each node available at regular offsets
-	  *  of MAX_SLURM_NAME characters into the string.
-	  *  FIXME - This is ugly, and scales poorly - CJM.
-	  */
-	char       *name;
-	uint32_t  *node_id;       /* ARRAY of node ids (relative to job) */
-	/* Or not, forwarding used to talk to non-job and non-jobstep sets of
-           nodes, so what are the node_ids supposed to be then?!? - CJM */
-	uint16_t   cnt;           /* number of addresses to forward */
+	char      *nodelist; /*ranged string of who to forward the
+			       message to */
+	uint16_t   cnt;           /* number of nodes to forward to */
 	uint32_t   timeout;       /* original timeout increments */
 	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
 } forward_t;
@@ -223,7 +217,6 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 	uint16_t ret_cnt;
 	forward_t forward;
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	slurm_addr orig_addr;       
 	List ret_list;
 } header_t;
@@ -232,12 +225,10 @@ typedef struct forward_message {
 	header_t header;
 	char *buf;
 	int buf_len;
-	slurm_addr addr;
 	int timeout;
 	List ret_list;
 	pthread_mutex_t *forward_mutex;
 	pthread_cond_t *notify;
-	char node_name[MAX_SLURM_NAME];
 } forward_msg_t;
 
 typedef struct forward_struct {
@@ -265,28 +256,19 @@ typedef struct slurm_msg {
 	uint32_t data_size;
 
 	/* The following were all added for the forward.c code */
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
 	forward_struct_t *forward_struct;
 	slurm_addr orig_addr;       
 	List ret_list;
-	Buf buffer;
 } slurm_msg_t;
 
 typedef struct ret_data_info {
+	slurm_msg_type_t type; /* message type */
+	uint32_t err;
 	char *node_name;
-	slurm_addr addr;       
-	uint32_t nodeid;
 	void *data; /* used to hold the return message data (i.e. 
 		       return_code_msg_t */
 } ret_data_info_t;
-
-typedef struct ret_types {
-	uint32_t msg_rc; /* message return code */
-	uint32_t err;
-	slurm_msg_type_t type; /* message type */
-	List ret_data_list; /* list of ret_data_info_t pointers */
-} ret_types_t;
 
 /*****************************************************************************\
  * Slurm Protocol Data Structures
@@ -391,7 +373,6 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	uint32_t  *tasks_to_launch;
 	uint16_t  envc;
 	uint16_t  argc;
@@ -428,6 +409,7 @@ typedef struct launch_tasks_request_msg {
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
+	char *complete_nodelist;
 } launch_tasks_request_msg_t;
 
 typedef struct spawn_task_request_msg {
@@ -437,7 +419,6 @@ typedef struct spawn_task_request_msg {
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
         uint32_t  gid;
-	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	uint16_t  envc;
 	uint16_t  argc;
 	uint16_t  cpus_allocated;
@@ -453,7 +434,7 @@ typedef struct spawn_task_request_msg {
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
-
+	char *complete_nodelist;
 } spawn_task_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
@@ -503,7 +484,6 @@ typedef struct reattach_tasks_response_msg {
 	char     *node_name;
 	char     *executable_name;
 	uint32_t  return_code;
-	uint32_t  srun_node_id;
 	uint32_t  ntasks;       /* number of tasks on this node     */
 	uint32_t *gtids;        /* Global task id assignments       */
 	uint32_t *local_pids;   /* list of process ids on this node */

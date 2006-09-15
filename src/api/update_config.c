@@ -105,6 +105,7 @@ _slurm_update (void *data, slurm_msg_type_t msg_type)
 	int rc;
 	slurm_msg_t req_msg;
 
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = msg_type;
 	req_msg.data     = data; 
 
