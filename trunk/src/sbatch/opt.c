@@ -812,6 +812,7 @@ static char *_get_argument(const char *line, int *skipped)
 static void _opt_batch_script(const void *body, int size)
 {
 	char *magic_word = "#SBATCH";
+	int magic_word_len;
 	int argc;
 	char **argv;
 	void *state = NULL;
@@ -821,19 +822,20 @@ static void _opt_batch_script(const void *body, int size)
 	int skipped = 0;
 	int i;
 
+	magic_word_len = strlen(magic_word);
 	/* getopt_long skips over the first argument, so fill it in */
 	argc = 1;
 	argv = xmalloc(sizeof(char *));
 	argv[0] = "sbatch";
 
 	while((line = _next_line(body, size, &state)) != NULL) {
-		if (strncmp(line, magic_word, strlen(magic_word)) != 0) {
+		if (strncmp(line, magic_word, magic_word_len) != 0) {
 			xfree(line);
 			continue;
 		}
 
 		/* this line starts with the magic word */
-		ptr = line + strlen(magic_word);
+		ptr = line + magic_word_len;
 		while ((option = _get_argument(ptr, &skipped)) != NULL) {
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
