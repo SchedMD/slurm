@@ -72,7 +72,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_sattach_OBJECTS = sattach.$(OBJEXT) opt.$(OBJEXT) attach.$(OBJEXT)
+am_sattach_OBJECTS = attach.$(OBJEXT) opt.$(OBJEXT) sattach.$(OBJEXT) \
+	sattach.wrapper.$(OBJEXT)
 sattach_OBJECTS = $(am_sattach_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurmhelper.la
 sattach_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -272,7 +273,12 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) 
-sattach_SOURCES = sattach.c opt.h opt.c attach.h attach.c
+sattach_SOURCES = \
+	attach.c attach.h \
+	opt.c opt.h \
+	sattach.c \
+	sattach.wrapper.c 
+
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 sattach_LDADD = \
 	$(convenience_libs) 
@@ -352,6 +358,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attach.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sattach.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sattach.wrapper.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -512,7 +519,7 @@ info-am:
 
 install-data-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-binPROGRAMS install-exec-local
 
 install-info: install-info-am
 
@@ -545,17 +552,32 @@ uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 	distclean-generic distclean-libtool distclean-tags distdir dvi \
 	dvi-am html html-am info info-am install install-am \
 	install-binPROGRAMS install-data install-data-am install-exec \
-	install-exec-am install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-info-am
+	install-exec-am install-exec-local install-info \
+	install-info-am install-man install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-info-am
 
 
 force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+# debugging information is required for symbols in the attach
+# module so that a debugger can attach to spawned tasks
+attach.o : attach.c
+	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c
+
+install-exec-local:
+	umask 022; \
+	if [ -x /usr/lib/rpm/debugedit ]; then \
+		srcdir=`cd $(top_srcdir) && pwd`; \
+		/usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
+			$(DESTDIR)$(bindir)/sattach; fi; \
+	$(INSTALL) $(INSTALL_DIRS) -m 644 $(top_srcdir)/src/sattach/sattach.wrapper.c \
+		$(DESTDIR)$(pkglibdir)/src/sattach/sattach.wrapper.c
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
