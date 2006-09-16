@@ -87,13 +87,20 @@ expect {
 	}
 }
 
+send "env |grep SLURM_JOB_CPUS_PER_NODE\n"
+expect {
+    -re "SLURM_JOB_CPUS_PER_NODE=($number)" {
+	set available_cpus $expect_out(1,string)
+    }
+}
+
 #
 # Run a job step to get allocated processor count and affinity
 #
 expect -re $prompt
 set mask 0
 set task_cnt 0
-send "$slaunch -c1 $file_prog\n"
+send "$slaunch -n $available_cpus $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_cnt
@@ -116,7 +123,7 @@ expect {
 # Run a job step with affinity
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=rank $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=rank $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -142,7 +149,7 @@ if {$task_mask != $mask} {
 # Run a job step with verbosity and all tasks on CPU 0
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=verbose,map_cpu:0 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -164,7 +171,7 @@ if {$task_mask != $task_cnt} {
 	set exit_code 1
 }
 set verbose_cnt 0
-send "$slaunch -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=verbose,map_cpu:0 $file_prog\n"
 expect {
 	-re "setting affinity of task" {
 		incr verbose_cnt
@@ -193,7 +200,7 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	send "$slaunch -c1 --cpu_bind=map_cpu:$cpu_cnt $file_prog\n"
+	send "$slaunch -n $available_cpus --cpu_bind=map_cpu:$cpu_cnt $file_prog\n"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr mask_sum $expect_out(2,string)
@@ -226,7 +233,7 @@ while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
 	set mstr [ dec2hex16 $mask]
-	send "$slaunch -c1 --cpu_bind=mask_cpu:$mstr $file_prog\n"
+	send "$slaunch -n $available_cpus --cpu_bind=mask_cpu:$mstr $file_prog\n"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr mask_sum $expect_out(2,string)
@@ -301,7 +308,7 @@ send_user "alt_mask: $alt_mask\n"
 # Run all tasks bound to a different CPU by specifying a forward map
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=map_cpu:$fwd_map $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=map_cpu:$fwd_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -328,7 +335,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying a reverse map
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=map_cpu:$rev_map $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=map_cpu:$rev_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -355,7 +362,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying an alternating map
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=map_cpu:$alt_map $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=map_cpu:$alt_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -382,7 +389,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying a forward mask
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=mask_cpu:$fwd_mask $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=mask_cpu:$fwd_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -409,7 +416,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying a reverse mask
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=mask_cpu:$rev_mask $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=mask_cpu:$rev_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -436,7 +443,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying an alternating mask
 #
 set task_mask 0
-send "$slaunch -c1 --cpu_bind=mask_cpu:$alt_mask $file_prog\n"
+send "$slaunch -n $available_cpus --cpu_bind=mask_cpu:$alt_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
