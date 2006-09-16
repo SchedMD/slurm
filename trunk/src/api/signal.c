@@ -165,11 +165,12 @@ _local_send_recv_rc_msgs(const char *nodelist, slurm_msg_type_t type,
 {
 	List ret_list = NULL;
 	int temp_rc = 0, rc = 0;
+	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+
 	slurm_msg_t_init(msg);
 	msg->msg_type = type;
 	msg->data = data;
-	ret_data_info_t *ret_data_info = NULL;
 
 	if((ret_list = slurm_send_recv_msgs(nodelist, msg, 10000))) {
 		while((ret_data_info = list_pop(ret_list))) {
