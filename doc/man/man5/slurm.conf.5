@@ -327,6 +327,13 @@ upon the value of \fBSchedulerType\fR.  In the Wiki scheduler plugin,
 this value must correspond to the checksum seed with which Maui was
 compiled.
 .TP
+\fBSchedulerRootFilter\fR
+If set to '1' then scheduler will filter and avoid \fBRootOnly\fR 
+partitions (let root user or process schedule these partitions).
+Otherwise scheduler will treat \fBRootOnly\fR partitions as any 
+other standard partition.
+Currently only supported by sched/backfill schedululer plugin.
+.TP
 \fBSchedulerPort\fR
 The port number on which slurmctld should listen for connection requests.
 This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
