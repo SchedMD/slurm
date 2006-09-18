@@ -227,10 +227,24 @@ extern int update_block_list()
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr)) 
 		    != STATUS_OK) {
-			if(rc == INCONSISTENT_DATA
-			   && bluegene_layout_mode == LAYOUT_DYNAMIC)
-				continue;
-			
+			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+				switch(rc) {
+				case INCONSISTENT_DATA:
+					debug2("got inconsistent data when "
+					       "quering block %s", name);
+					continue;
+					break;
+				case PARTITION_NOT_FOUND:
+					debug("block %s not found, removing "
+					      "from slurm", name);
+					list_remove(itr);
+					destroy_bg_record(bg_record);
+					continue;
+					break;
+				default:
+					break;
+				}
+			}
 			error("bridge_get_block_info(%s): %s", 
 			      name, 
 			      bg_err_str(rc));

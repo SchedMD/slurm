@@ -927,7 +927,16 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	int stepid = NO_VAL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
-	
+#ifdef HAVE_BG
+	uint16_t rotate;
+	uint16_t conn_type;
+	char* token, *delimiter = ",x", *next_ptr;
+	int j;
+	uint16_t geo[SYSTEM_DIMENSIONS];
+	char* geometry_tmp = xstrdup(new_text);
+	char* original_ptr = geometry_tmp;
+#endif
+
 	if(!new_text || !strcmp(new_text, ""))
 		goto no_input;
 
@@ -1073,14 +1082,9 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		break;
 #ifdef HAVE_BG
 	case SORTID_GEOMETRY:
-		{
-			char* token, *delimiter = ",x", *next_ptr;
-			int j;
-			uint16_t geo[SYSTEM_DIMENSIONS];
-			char* geometry_tmp = xstrdup(new_text);
-			char* original_ptr = geometry_tmp;
-		}
 		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+		for (j=0; j<SYSTEM_DIMENSIONS; j++)
+			geo[j] = (uint16_t) NO_VAL;
 		for (j=0; j<SYSTEM_DIMENSIONS; j++) {
 			if (token == NULL) {
 				//error("insufficient dimensions in "
@@ -1104,12 +1108,6 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 			goto print_error;
 		}
 		
-		if (rc != 0) {
-			for (j=0; j<SYSTEM_DIMENSIONS; j++)
-				geo[j] = (uint16_t) NO_VAL;
-			exit_code = 1;
-		} else
-			update_cnt++;
 		select_g_set_jobinfo(job_msg.select_jobinfo,
 				     SELECT_DATA_GEOMETRY,
 				     (void *) &geo);
@@ -1117,9 +1115,6 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		type = "geometry";
 		break;
 	case SORTID_ROTATE:
-		{
-			uint16_t rotate;
-		}
 		if (!strcasecmp(new_text, "yes")) {
 			rotate = 1;
 			temp = "*";
@@ -1134,9 +1129,6 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		type = "rotate";	
 		break;
 	case SORTID_CONNECTION:
-		{
-			uint16_t conn_type;
-		}
 		if (!strcasecmp(new_text, "torus")) {
 			conn_type = SELECT_TORUS;
 		} else if (!strcasecmp(new_text, "mesh")) {

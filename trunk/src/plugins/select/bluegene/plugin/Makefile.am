@@ -7,7 +7,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
-pkglib_LTLIBRARIES = select_bluegene.la libsched_if.la
+pkglib_LTLIBRARIES = select_bluegene.la libsched_if64.la
 
 # Blue Gene node selection plugin.
 select_bluegene_la_SOURCES = select_bluegene.c \
@@ -26,7 +26,8 @@ select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la
 
 
 # MPIRUN dynamic lib.
-libsched_if_la_SOURCES = libsched_if.c 
+libsched_if64_la_SOURCES = libsched_if64.c 
+libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog sfree

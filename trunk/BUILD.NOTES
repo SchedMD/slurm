@@ -61,12 +61,14 @@ BlueGene build notes:
 
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
+   svn co https://eris.llnl.gov/svn/slurm/private/proctrack-aix/trunk proctrack
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
    put the buildfarm directory in your search path
 1. export OBJECT_MODE=32
 2. Build with:
-   ./configure --enable-debug --prefix=<install-dir> \
-	--sysconfdir=<config-dir> --with-procrack=/opt/freeware/include \
+   ./configure --enable-debug --prefix=/opt/freeware \
+	--sysconfdir=/opt/freeware/etc/slurm
+        --with-proctrack=<your directory>/proctrack \
 	--with-ssl=/opt/freeware --with-munge=/opt/freeware
    make
    make uninstall  # remove old shared libraries, aix caches them
@@ -83,7 +85,7 @@ To build and run on AIX:
         %_defaultdocdir         %{_prefix}/doc
 
 	%_enable_debug    "--enable-debug"
-	%with_proctrack   "--with-proctrack=/admin/llnl/include"
+	%with_proctrack   "--with-proctrack=<your directory>/proctrack"
 	%with_ssl         "--with-ssl=/opt/freeware"
 	%with_munge       "--with-munge=/opt/freeware"
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
@@ -96,6 +98,10 @@ To build and run on AIX:
    There will be a log file create named /tmp/mplog.<jobid>.<taskid>
 7. If you update proctrack, be sure to run "slibclean" to clear cached
    version.
+8. Install the rpms slurm-*.ppc.rpm, slurm-aix-federation-*.ppc.rpm,
+   slurm-auth-munge-*.ppc.rpm, slurm-devel-*.ppc.rpm, and
+   slurm-sched-wiki-*.ppc.rpm in /usr/admin/inst.image/slurm/aix5.3 on an
+   OCF AIX machine (pdev is a good choice).
 
 AIX/Federation switch window problems
 To clean switch windows:     ntblclean =w 8 -a sni0
