@@ -72,7 +72,7 @@ set job_id      0
 set host_0      ""
 set host_1      ""
 set timeout $max_job_delay
-spawn $salloc -N$node_cnt -t1 $slaunch -l -N1 $bin_printenv SLURM_NODEID
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -l -N1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -94,7 +94,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -127,7 +127,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $salloc -N$node_cnt -t1 $slaunch -l -N3 $bin_printenv SLURM_NODEID
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -l -N3 $bin_printenv SLURM_NODEID]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -155,7 +155,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

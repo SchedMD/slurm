@@ -42,7 +42,7 @@ print_header $test_id
 # Spawn a program via slaunch with stdout forwarding disabled
 #
 set timeout $max_job_delay
-spawn $salloc -t1 $slaunch --task-output=none $bin_id
+set salloc_pid [spawn $salloc -t1 $slaunch --task-output=none $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -61,7 +61,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -78,7 +78,7 @@ expect {
 #
 set job_id    0
 set matches   0
-spawn $salloc -t1 -v $slaunch --task-error=/dev/null $bin_sleep aaa
+set salloc_pid [spawn $salloc -t1 -v $slaunch --task-error=/dev/null $bin_sleep aaa]
 expect {
 	-re "Pending job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -97,7 +97,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

@@ -42,7 +42,7 @@ print_header $test_id
 # The job can't run immediately with a priority of zero
 #
 set timeout 10
-spawn $salloc --immediate --hold -t1 -v $bin_pwd
+set salloc_pid [spawn $salloc --immediate --hold -t1 -v $bin_pwd]
 expect {
 	-re "Pending job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -56,7 +56,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -79,7 +79,7 @@ if {$matches != 1} {
 #
 set job_id  0
 set matches 0
-spawn $salloc --immediate -t1 $bin_pwd
+set salloc_pid [spawn $salloc --immediate -t1 $bin_pwd]
 expect {
 	-re "error" {
 		send_user "This error is not unexpected, no worries\n"
@@ -94,7 +94,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

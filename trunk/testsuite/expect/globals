@@ -38,14 +38,14 @@ global sacct salloc sattach sbatch sbcast scancel scontrol sinfo slaunch smap sq
 
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
-    if {![uplevel 1 info exists $name]} {
-	upvar $name tmp
-	set tmp $value
-    }
+	if {![uplevel 1 info exists $name]} {
+		upvar $name tmp
+		set tmp $value
+	}
 }
 
 if [file exists globals.local] {
-    source globals.local
+	source globals.local
 }
 
 #
@@ -405,63 +405,65 @@ proc wait_for_file { file_name } {
 ################################################################
 
 proc wait_for_job { job_id desired_state } {
-    global scontrol
+	global scontrol
 
-    # First verify that desired_state is supported
-    switch $desired_state {
-	"DONE" {}
-	"RUNNING" {}
-	default {
-	    send_user "Unsupported desired state: $desired_state\n"
-	    return 1
-	}
-    }
-
-    set sleep_time  1
-    while 1 {
-	set fd [open "|$scontrol -o show job $job_id"]
-	gets $fd line
-	catch {close $fd}
-	if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
-	    set state "NOT_FOUND"
-	}
-
-	switch $state {
-	    "NOT_FOUND" -
-	    "CANCELLED" -
-	    "FAILED" -
-	    "TIMEOUT" -
-	    "NODE_FAIL" -
-	    "COMPLETED" {
-		if {[string compare $desired_state "DONE"] == 0} {
-		    send_user "Job $job_id is DONE\n"
-		    sleep 2
-		    return 0
-		} else {
-		    if {[string compare $desired_state "RUNNING"] == 0} {
-			send_user "Job $job_id is $state, but we wanted RUNNING\n"
-		    }
-		    return 1
+	# First verify that desired_state is supported
+	switch $desired_state {
+		"DONE" {}
+		"RUNNING" {}
+		default {
+			send_user "Unsupported desired state: $desired_state\n"
+			return 1
 		}
-	    }
-	    "RUNNING" {
-		if {[string compare $desired_state "RUNNING"] == 0} {
-		    send_user "Job $job_id is RUNNING\n"
-		    return 0
-		}
-		send_user "Job $job_id is in state $state, desire $desired_state\n"
-	    }
-	    default {
-		send_user "Job $job_id is in state $state, desire $desired_state\n"
-	    }
 	}
 
-	sleep $sleep_time
-	set sleep_time  [expr $sleep_time * 2]
-	if { $sleep_time > 10 } {
-	    set sleep_time 10
+	set sleep_time  1
+	while 1 {
+		set fd [open "|$scontrol -o show job $job_id"]
+		gets $fd line
+		catch {close $fd}
+		if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
+			set state "NOT_FOUND"
+		}
+
+		switch $state {
+			"NOT_FOUND" -
+			"CANCELLED" -
+			"FAILED" -
+			"TIMEOUT" -
+			"NODE_FAIL" -
+			"COMPLETED" {
+				if {[string compare $desired_state "DONE"] == 0} {
+					send_user "Job $job_id is DONE\n"
+					sleep 2
+					return 0
+				}
+				if {[string compare $desired_state "RUNNING"] == 0} {
+					send_user "Job $job_id is $state, "
+					send_user "but we wanted RUNNING\n"
+				}
+				return 1
+			}
+			"RUNNING" {
+				if {[string compare $desired_state "RUNNING"] == 0} {
+					send_user "Job $job_id is RUNNING\n"
+					return 0
+				}
+				send_user "Job $job_id is in state $state, "
+				send_user "desire $desired_state\n"
+			}
+			default {
+				send_user "Job $job_id is in state $state, "
+				send_user "desire $desired_state\n"
+			}
+		}
+
+		sleep $sleep_time
+		set sleep_time  [expr $sleep_time * 2]
+		if { $sleep_time > 10 } {
+			set sleep_time 10
+		}
 	}
-    }
 }
 
 ################################################################
@@ -718,15 +720,15 @@ proc dec2hex16 {value} {
 ################################################################
 
 proc available_nodes { partition } {
-    global sinfo
+	global sinfo
 
-    set available -1
-    send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
-    set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
-    gets $fd line
-    catch {close $fd}
-    regexp {\d+} $line available
-    return $available
+	set available -1
+	send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
+	set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
+	gets $fd line
+	catch {close $fd}
+	regexp {\d+} $line available
+	return $available
 }
 
 
@@ -741,23 +743,23 @@ proc available_nodes { partition } {
 ################################################################
 
 proc default_partition {} {
-    global scontrol
+	global scontrol
 
-    set name ""
-    set fd [open "|$scontrol --all --oneliner show partition"]
-    while {[gets $fd line] != -1} {
-	if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
-	    == 1} {
-	    break
+	set name ""
+	set fd [open "|$scontrol --all --oneliner show partition"]
+	while {[gets $fd line] != -1} {
+		if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
+				== 1} {
+			break
+		}
 	}
-    }
-    catch {close $fd}
+	catch {close $fd}
 
-    if {[string length $name] == 0} {
-	send_user "ERROR: could not identify the default partition\n"
-    }
+	if {[string length $name] == 0} {
+		send_user "ERROR: could not identify the default partition\n"
+	}
 
-    return $name
+	return $name
 }
 
 ################################################################
@@ -771,23 +773,23 @@ proc default_partition {} {
 ################################################################
 
 proc switch_type {} {
-    global scontrol
+	global scontrol
 
-    set name ""
-    set fd [open "|$scontrol show config"]
-    while {[gets $fd line] != -1} {
-        if {[regexp {^SwitchType *= switch/(\w+)} $line frag name]
-            == 1} {
-            break
-        }
-    }
-    catch {close $fd}
+	set name ""
+	set fd [open "|$scontrol show config"]
+	while {[gets $fd line] != -1} {
+		if {[regexp {^SwitchType *= switch/(\w+)} $line frag name]
+				== 1} {
+			break
+		}
+	}
+	catch {close $fd}
 
-    if {[string length $name] == 0} {
-        send_user "ERROR: could not identify the switch type"
-    }
+	if {[string length $name] == 0} {
+		send_user "ERROR: could not identify the switch type"
+	}
 
-    return $name
+	return $name
 }
 
 
@@ -811,14 +813,14 @@ proc switch_type {} {
 ################################################################
 
 proc make_bash_script { script_name script_contents } {
-    global bin_bash bin_chmod
+	global bin_bash bin_chmod
 
-    file delete $script_name
-    set fd [open $script_name "w"]
-    puts $fd "#!$bin_bash"
-    puts $fd $script_contents
-    close $fd
-    exec $bin_chmod 700 $script_name
+	file delete $script_name
+	set fd [open $script_name "w"]
+	puts $fd "#!$bin_bash"
+	puts $fd $script_contents
+	close $fd
+	exec $bin_chmod 700 $script_name
 }
 
 ################################################################

@@ -51,7 +51,7 @@ set env(SALLOC_TIMELIMIT)     2
 # Spawn a job via slaunch using these environment variables
 #
 set matches 0
-spawn $salloc -N1 $bin_bash
+set salloc_pid [spawn $salloc -N1 $bin_bash]
 expect {
 	-re "debug:  Entering _msg_thr_create" {
 		incr matches
@@ -79,7 +79,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

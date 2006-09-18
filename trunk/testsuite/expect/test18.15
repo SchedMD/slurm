@@ -48,7 +48,7 @@ print_header $test_id
 # Spawn a job via sbatch to print environment variables
 #
 set env($test_env_name) $test_env_val
-spawn $salloc -N1 -t1 $slaunch $bin_env
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch $bin_env]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -63,7 +63,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

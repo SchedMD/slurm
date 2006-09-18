@@ -50,7 +50,7 @@ set job_id      0
 set timeout $max_job_delay
 set expected_layout [list 0 0 1 1]
 set tested_layout [list -1 -1 -1 -1] 
-spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=block $bin_printenv SLURM_NODEID  
+set salloc_pid [spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=block $bin_printenv SLURM_NODEID]  
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -69,7 +69,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -98,7 +98,7 @@ set job_id      0
 set timeout $max_job_delay
 set expected_layout [list 0 1 0 1]
 set tested_layout [list -1 -1 -1 -1] 
-spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=cyclic $bin_printenv SLURM_NODEID  
+set salloc_pid [spawn $salloc -N2 -t1 $slaunch -n4 --overcommit -l --distribution=cyclic $bin_printenv SLURM_NODEID]  
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -117,7 +117,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

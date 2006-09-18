@@ -69,7 +69,7 @@ array set good_vars {
 #
 # Spawn a job via salloc to print environment variables
 #
-spawn $salloc -N1 -t1 $slaunch $bin_env
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch $bin_env]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -82,7 +82,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -98,16 +98,17 @@ set total 0
 set good 0
 send_user "\n"
 foreach {slurm_var check_flag} [array get good_vars] {
-    incr total
-    if {[info exists found_vars($slurm_var)]} {
-	if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-		send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
+	incr total
+	if {[info exists found_vars($slurm_var)]} {
+		if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
+			send_user "FAILURE: Found $slurm_var, "
+			send_user "but $found_vars($slurm_var) <= 0\n"
+		} else {
+			incr good
+		}
 	} else {
-	    incr good
+		send_user "FAILURE: Variable $slurm_var not found\n"
 	}
-    } else {
-	send_user "FAILURE: Variable $slurm_var not found\n"
-    }
 }
 
 if {$good < $total} {
