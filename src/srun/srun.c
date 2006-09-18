@@ -238,15 +238,6 @@ int srun(int ac, char **av)
 	} else if ((resp = existing_allocation())) {
 		job_id = resp->job_id;
 
-		/* If opt.nodelist isn't set we initialize it from the
-		 * allocation info, but only if the env variable SLURM_HOSTFILE
-		 * ISN'T set, because SLURM_HOSTFILE isn't parsed until
-		 * job_step_create_allocation is called (bad design, all env
-		 * variable parsing should happen up front in opt.c with the
-		 * rest of the option parsing).
-		 */
-		if (opt.nodelist == NULL && getenv("SLURM_HOSTFILE") == NULL)
-			opt.nodelist = xstrdup(resp->node_list);
 		slurm_free_resource_allocation_response_msg(resp);
 		if (opt.allocate) {
 			error("job %u already has an allocation",

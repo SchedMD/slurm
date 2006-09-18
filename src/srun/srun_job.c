@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -163,13 +163,18 @@ job_step_create_allocation(uint32_t job_id)
 
 	if(!opt.max_nodes)
 		opt.max_nodes = opt.min_nodes;
-
+	
+	/* The reason we read in from the hostfile here is so if we don't 
+	 * need all the hostfile we only get what the user asked for 
+	 * (i.e. opt.max_nodes)
+	 */
 	if (opt.nodelist == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
 		
 		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
+			nodelist = slurm_read_hostfile(hostfile,
+						       opt.max_nodes);
 			if (nodelist == NULL) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
@@ -184,7 +189,7 @@ job_step_create_allocation(uint32_t job_id)
 		}
 	}
 	ai->nodelist       = opt.alloc_nodelist;
-
+	
 	if (opt.exc_nodes) {
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
 		char *node_name = NULL;
@@ -308,7 +313,7 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_uniq(hl);
 		ai->nnodes = hostlist_count(hl);
 		hostlist_destroy(hl);
-	} else if((opt.max_nodes > 0) && (opt.max_nodes <ai->nnodes))
+	} else if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
 		ai->nnodes = opt.max_nodes;
 	
 	/* 
