@@ -64,6 +64,13 @@ To build and run on AIX:
    svn co https://eris.llnl.gov/svn/slurm/private/proctrack-aix/trunk proctrack
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
    put the buildfarm directory in your search path
+   Also, you will need two commands to appear FIRST in your PATH:
+
+      /usr/local/tools/gnu/aix_5_64_fed/bin/install
+      /usr/local/gnu/bin/tar
+
+   I do this by making symlinks to those commands in the buildfarm directory,
+   then making the buildfarm directory the first one in my PATH.
 1. export OBJECT_MODE=32
 2. Build with:
    ./configure --enable-debug --prefix=/opt/freeware \
