@@ -744,8 +744,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		      (timeout/1000));
 	} else if(timeout < 1000) {
 		debug("You are sending a message with a very short timeout of "
-		      "%d seconds", 
-		      (timeout/1000));
+		      "%d msecs", 
+		      timeout);
 	} 
 	
 
