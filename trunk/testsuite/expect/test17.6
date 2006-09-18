@@ -54,7 +54,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Failed to allocate" {
+	-re "Batch job submission failed" {
 		send_user "\nNo worries, error not unexpected\n"
 		set no_run 1
 		exp_continue
