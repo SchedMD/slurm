@@ -82,7 +82,7 @@ if {$kill_wait > 60} {
 	exit 0
 }
 if {$inactive_limit < $sleep_time} {
-	set sleep_time $inactive_limit
+	set sleep_time [expr $inactive_limit + $kill_wait]
 	send_user "\nReset job sleep time to $sleep_time seconds\n"
 }
 
