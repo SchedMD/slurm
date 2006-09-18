@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proc_msg.c - process incomming messages to slurmctld
+ *  proc_req.c - process incomming messages to slurmctld
  *
  *  $Id$
  *****************************************************************************

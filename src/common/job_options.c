@@ -203,9 +203,11 @@ int job_options_unpack (job_options_t opts, Buf buf)
 	if (unpackstr_xmalloc (&tag, &len, buf) != SLURM_SUCCESS)
 		return (SLURM_ERROR);
 
-	if (strncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0)
+	if (strncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0) {
+		xfree(tag);
 		return (-1);
-
+	}
+	xfree(tag);
 	unpack32 (&count, buf);
 
 	for (i = 0; i < count; i++) {
