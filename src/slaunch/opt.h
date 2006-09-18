@@ -111,7 +111,6 @@ typedef struct slaunch_options {
 	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
-	bool parallel_debug;	/* slaunch controlled by debugger */
 	bool debugger_test;	/* --debugger-test		*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/

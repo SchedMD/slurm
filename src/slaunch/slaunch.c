@@ -247,7 +247,12 @@ int slaunch(int argc, char **argv)
 	params.mem_bind_type = opt.mem_bind_type;
 	
 	_setup_local_fds(&params.local_fds, step_ctx);
-	params.parallel_debug = MPIR_being_debugged ? true : false;
+	if (MPIR_being_debugged) {
+		params.parallel_debug = true;
+		pmi_server_max_threads(1);
+	} else {
+		params.parallel_debug = false;
+	}
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
 
