@@ -47,10 +47,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Help options" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sattach not responding\n"
 		set exit_code 1
@@ -60,7 +56,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$matches != 1} {
 	send_user "\nFAILURE: sattach failed to report help message\n"
 	set exit_code 1
 }
