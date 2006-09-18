@@ -14,11 +14,11 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 9350 2006-09-14 15:42:08Z da $
+# $Id: Makefile.am 9407 2006-09-18 16:40:53Z da $
 # Makefile for select/bluegene plugin
 
 
-SOURCES = $(libsched_if_la_SOURCES) $(select_bluegene_la_SOURCES) $(sfree_SOURCES) $(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
+SOURCES = $(libsched_if64_la_SOURCES) $(select_bluegene_la_SOURCES) $(sfree_SOURCES) $(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -79,9 +79,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(sbindir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-libsched_if_la_LIBADD =
-am_libsched_if_la_OBJECTS = libsched_if.lo
-libsched_if_la_OBJECTS = $(am_libsched_if_la_OBJECTS)
+libsched_if64_la_LIBADD =
+am_libsched_if64_la_OBJECTS = libsched_if64.lo
+libsched_if64_la_OBJECTS = $(am_libsched_if64_la_OBJECTS)
 select_bluegene_la_DEPENDENCIES =  \
 	../block_allocator/libbluegene_block_allocator.la
 am_select_bluegene_la_OBJECTS = select_bluegene.lo bg_job_place.lo \
@@ -114,12 +114,12 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link --tag=CC $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libsched_if_la_SOURCES) $(select_bluegene_la_SOURCES) \
+SOURCES = $(libsched_if64_la_SOURCES) $(select_bluegene_la_SOURCES) \
 	$(sfree_SOURCES) $(slurm_epilog_SOURCES) \
 	$(slurm_prolog_SOURCES)
-DIST_SOURCES = $(libsched_if_la_SOURCES) $(select_bluegene_la_SOURCES) \
-	$(sfree_SOURCES) $(slurm_epilog_SOURCES) \
-	$(slurm_prolog_SOURCES)
+DIST_SOURCES = $(libsched_if64_la_SOURCES) \
+	$(select_bluegene_la_SOURCES) $(sfree_SOURCES) \
+	$(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -298,7 +298,7 @@ target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
-pkglib_LTLIBRARIES = select_bluegene.la libsched_if.la
+pkglib_LTLIBRARIES = select_bluegene.la libsched_if64.la
 
 # Blue Gene node selection plugin.
 select_bluegene_la_SOURCES = select_bluegene.c \
@@ -315,8 +315,8 @@ select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la 
 
 # MPIRUN dynamic lib.
-libsched_if_la_SOURCES = libsched_if.c 
-libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+libsched_if64_la_SOURCES = libsched_if64.c 
+libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 sfree_LDADD = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/api/libslurm.la
 
@@ -395,8 +395,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libsched_if.la: $(libsched_if_la_OBJECTS) $(libsched_if_la_DEPENDENCIES) 
-	$(LINK) -rpath $(pkglibdir) $(libsched_if_la_LDFLAGS) $(libsched_if_la_OBJECTS) $(libsched_if_la_LIBADD) $(LIBS)
+libsched_if64.la: $(libsched_if64_la_OBJECTS) $(libsched_if64_la_DEPENDENCIES) 
+	$(LINK) -rpath $(pkglibdir) $(libsched_if64_la_LDFLAGS) $(libsched_if64_la_OBJECTS) $(libsched_if64_la_LIBADD) $(LIBS)
 select_bluegene.la: $(select_bluegene_la_OBJECTS) $(select_bluegene_la_DEPENDENCIES) 
 	$(LINK) -rpath $(pkglibdir) $(select_bluegene_la_LDFLAGS) $(select_bluegene_la_OBJECTS) $(select_bluegene_la_LIBADD) $(LIBS)
 install-sbinPROGRAMS: $(sbin_PROGRAMS)
@@ -450,7 +450,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_sys.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsched_if.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsched_if64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sfree.Po@am__quote@
