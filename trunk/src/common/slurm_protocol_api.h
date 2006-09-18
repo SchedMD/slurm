@@ -193,6 +193,14 @@ extern uint16_t slurm_get_propagate_prio_process(void);
  */
 char *slurm_get_proctrack_type(void);
 
+/* slurm_get_root_filter
+ * RET uint16_t  - Value of SchedulerRootFilter */
+extern uint16_t slurm_get_root_filter(void);
+
+/* slurm_get_sched_port
+ * RET uint16_t  - Value of SchedulerPort */
+extern uint16_t slurm_get_sched_port(void);
+
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET uint16_t	- slurmd port

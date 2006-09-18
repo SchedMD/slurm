@@ -146,25 +146,6 @@ static void * sched_get_node_partition(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_node_mod_time( 	sched_obj_list_t, int32_t, char * );
 
 
-
-/* ************************************************************************ */
-/*  TAG(                         sched_get_port                          )  */
-/* ************************************************************************ */
-u_int16_t
-sched_get_port( void )
-{
-	u_int16_t port;
-	/* Locks: Read config */
-	slurmctld_lock_t config_read_lock = { 
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	lock_slurmctld(config_read_lock);
-	port = slurmctld_conf.schedport;
-	unlock_slurmctld(config_read_lock);
-
-	return port;
-}
-
 /* ************************************************************************ */
 /*  TAG(                         sched_get_auth                          )  */
 /* ************************************************************************ */
@@ -174,24 +155,6 @@ sched_get_auth( void )
 	static char auth[] = "";
 
 	return auth;
-}
-
-/* ************************************************************************ */
-/*  TAG(                     sched_get_root_filter                       )  */
-/* ************************************************************************ */
-u_int16_t
-sched_get_root_filter( void )
-{
-	u_int16_t root_filter;
-	/* Locks: Read config */
-	slurmctld_lock_t config_read_lock = { 
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	lock_slurmctld(config_read_lock);
-	root_filter = slurmctld_conf.schedrootfltr;
-	unlock_slurmctld(config_read_lock);
-
-	return root_filter;
 }
 
 /* ************************************************************************ */
