@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     are expecting to get back.  No srun_node_id anymore passed around in
     a slurm_msg_t
  -- Remove sched/wiki plugin (use sched/wiki2 for now)
+ -- Disable pthread_create() for PMI_send when TotalView is running for 
+    better performance.
 
 * Changes in SLURM 1.2.0-pre2
 =============================

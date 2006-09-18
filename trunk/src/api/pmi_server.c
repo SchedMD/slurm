@@ -187,7 +187,14 @@ static void *_agent(void *x)
 			msg_args = xmalloc(sizeof(struct msg_arg));
 			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
 			msg_args->kvs_ptr = &kvs_set;
-			if (pthread_create(&msg_id, &attr, _msg_thread, 
+			if (agent_max_cnt == 1) {
+				/* TotalView slows down a great deal for
+				 * pthread_create() calls, so just send the
+				 * messages inline when TotalView is in use
+				 * or for some other reason we only want 
+				 * one pthread. */
+				_msg_thread((void *) msg_args);
+			} else if (pthread_create(&msg_id, &attr, _msg_thread,
 					(void *) msg_args)) {
 				fatal("pthread_create: %m");
 			}

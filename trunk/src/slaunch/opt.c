@@ -1102,6 +1102,7 @@ void set_options(const int argc, char **argv)
 			 * is really attached */
 			opt.parallel_debug   = true;
 			MPIR_being_debugged  = 1;
+			pmi_server_max_threads(1);
 			break;
 		case LONG_OPT_USAGE:
 			_usage();
