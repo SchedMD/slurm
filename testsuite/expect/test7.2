@@ -67,7 +67,7 @@ if { [test_bluegene] } {
 # Adjust time limits as needed for large task counts */
 #                   times are here  vv 
 set timeout [expr $max_job_delay +  60]
-spawn $srun -l -N$node_cnt -n8 -O -t1 --pmi-threads=3 $file_prog_get
+spawn $srun -l -N$node_cnt -n8 -O -t1 --threads=1 $file_prog_get
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"
