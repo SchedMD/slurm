@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -1327,8 +1327,15 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
-	int nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
-
+	int nodeid = 0;
+	char *name = NULL;
+#ifndef HAVE_FRONT_END
+	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
+	name = xstrdup(conf->node_name);
+#else
+	name = xstrdup(msg->complete_nodelist);
+	
+#endif
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	slurm_msg_t_init(&resp_msg);
@@ -1339,12 +1346,12 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 		
-	resp.node_name     = conf->node_name;
+	resp.node_name     = name;
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
 
 	slurm_send_only_node_msg(&resp_msg);
-
+	xfree(name);
 	return;
 }
 
@@ -1366,7 +1373,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
 	
-	resp.node_name        = conf->node_name;
+	resp.node_name        = xstrdup(job->node_name);
 	resp.return_code      = rc;
 	resp.count_of_pids    = job->ntasks;
 
@@ -1381,6 +1388,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 	xfree(resp.local_pids);
 	xfree(resp.task_ids);
+	xfree(resp.node_name);
 }
 
 
@@ -1396,7 +1404,7 @@ _complete_batch_script(slurmd_job_t *job, int err, int status)
 	req.slurm_rc	= err; 
 		
 	slurm_msg_t_init(&req_msg);
-	req.node_name	= conf->node_name;
+	req.node_name	= job->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;	
 		

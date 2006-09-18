@@ -714,6 +714,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		free(hostname);
 		free(address);
 #endif
+		
 	}
 
 	/* free allocated storage */
@@ -795,8 +796,8 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 
 	slurm_conf_lock();
 	_init_slurmd_nodehash();
-
 	idx = _get_hash_idx(node_hostname);
+
 	p = host_to_node_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->hostname, node_hostname) == 0) {

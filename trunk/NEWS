@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Remove sched/wiki plugin (use sched/wiki2 for now)
  -- Disable pthread_create() for PMI_send when TotalView is running for 
     better performance.
+ -- fixed certain tests in test suite to not run with bluegene or front-end 
+    systems
+ -- removed addresses from slurm_step_layout_t
 
 * Changes in SLURM 1.2.0-pre2
 =============================

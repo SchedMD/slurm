@@ -157,15 +157,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
-
-	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
-	debug3("entering job_create on node %d", nodeid);
-	
-	if(nodeid < 0) {
-		error("couldn't find node %s in %s", 
-		      conf->node_name, msg->complete_nodelist);
-		return NULL;
-	}
+	debug3("entering job_create");
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
 		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
@@ -177,7 +169,20 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 		return NULL;
 	}
 	job = xmalloc(sizeof(slurmd_job_t));
-
+#ifndef HAVE_FRONT_END
+	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
+	job->node_name = xstrdup(conf->node_name);
+#else
+	nodeid = 0;
+	job->node_name = xstrdup(msg->complete_nodelist);
+#endif
+	if(nodeid < 0) {
+		error("couldn't find node %s in %s", 
+		      job->node_name, msg->complete_nodelist);
+		job_destroy(job);
+		return NULL;
+	}
+	
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
 	job->ntasks  = msg->tasks_to_launch[nodeid];
@@ -266,10 +271,9 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	int           nodeid = NO_VAL;
 	
 	xassert(msg != NULL);
+	xassert(msg->complete_nodelist != NULL);
 
 	debug3("entering job_spawn_create");
-
-	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
@@ -277,7 +281,19 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 		return NULL;
 	}
 	job = xmalloc(sizeof(slurmd_job_t));
-
+#ifndef HAVE_FRONT_END
+	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
+	job->node_name = xstrdup(conf->node_name);
+#else
+	nodeid = 0;
+	job->node_name = xstrdup(msg->complete_nodelist);
+#endif
+	if(nodeid < 0) {
+		error("couldn't find node %s in %s", 
+		      job->node_name, msg->complete_nodelist);
+		job_destroy(job);
+		return NULL;
+	}
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
 	job->ntasks  = 1;	/* tasks to launch always one */
@@ -516,6 +532,7 @@ job_destroy(slurmd_job_t *job)
 		task_info_destroy(job->task[i]);
 	list_destroy(job->sruns);
 	xfree(job->envtp);
+	xfree(job->node_name);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job);

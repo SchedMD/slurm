@@ -506,8 +506,6 @@ typedef struct slurm_step_layout {
 	uint16_t node_cnt;	/* node count */
 	uint32_t task_cnt;	/* total number of tasks in the step */
 	char *node_list;        /* list of nodes in step */
-	slurm_addr *node_addr;  /* corresponding addresses */
-	
 	/* Array of length "node_cnt". Each element of the array
 	   is the number of tasks assigned to the corresponding node */
 	uint32_t *tasks;

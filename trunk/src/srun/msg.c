@@ -363,8 +363,9 @@ static void
 _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 {
 	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-	int nodeid = nodelist_find(job->step_layout->node_list, 
+	int nodeid = nodelist_find(job->step_layout->node_list,
 				   msg->node_name);
+
 	if ((nodeid < 0) || (nodeid >= job->nhosts)) {
 		error ("Bad launch response from %s", msg->node_name);
 		return;

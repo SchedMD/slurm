@@ -287,14 +287,14 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	if(quarter != (uint16_t)NO_VAL 
 	   && nodecard != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d.%d", step->step_layout->node_list, 
+			 "%s.%d.%d", step->job_ptr->nodes, 
 			 quarter, nodecard);
 	else if(quarter != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d", step->step_layout->node_list, quarter);
+			 "%s.%d", step->job_ptr->nodes, quarter);
 	else
 		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step->step_layout->node_list);
+			 step->job_ptr->nodes);
 	
 #else
 	if(!step->step_layout || !step->step_layout->task_cnt) {
@@ -405,14 +405,14 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	if(quarter != (uint16_t)NO_VAL 
 	   && nodecard != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d.%d", step->step_layout->node_list, 
+			 "%s.%d.%d", step->job_ptr->nodes, 
 			 quarter, nodecard);
 	else if(quarter != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d", step->step_layout->node_list, quarter);
+			 "%s.%d", step->job_ptr->nodes, quarter);
 	else
 		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step->step_layout->node_list);
+			 step->job_ptr->nodes);
 	
 #else
 	if(!step->step_layout || !step->step_layout->task_cnt) {
@@ -511,7 +511,7 @@ extern int common_suspend_slurmctld(struct job_record *job_ptr)
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
-		
+	
 	/* tell what time has passed */
 	if(!now)
 		now = job_ptr->start_time;

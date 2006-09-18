@@ -118,6 +118,8 @@ typedef struct slurmd_job {
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */
 	char          *cwd;    /* path to current working directory         */
+	char          *node_name; /* node name of node running job
+				   * needed for front-end systems           */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=                       */
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
