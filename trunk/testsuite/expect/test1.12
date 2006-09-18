@@ -58,7 +58,7 @@ make_bash_script $file_in "
 #
 # Spawn a srun batch job with constraints and stdout/err
 #
-spawn $srun --batch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in
+set srun_pid [spawn $srun --batch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -66,7 +66,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
 		exp_continue
 	}

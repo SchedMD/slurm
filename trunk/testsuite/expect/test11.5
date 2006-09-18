@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -50,7 +50,7 @@ make_bash_script $file_in "
 #
 # Submit a job so we have something to work with
 #
-spawn $srun --batch --output=/dev/null --error=/dev/null -t2 $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t2 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -58,7 +58,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		if {$job_id == 0} {
+			slow_kill $srun_pid
+		} else {
+			cancel_job $job_id
+		}
 		exit 1
 	}
 	eof {
@@ -67,7 +71,6 @@ expect {
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: srun submit failed\n"
-	kill_srun
 	exit 1
 }
 
@@ -78,7 +81,7 @@ exec $bin_rm -f $file_in
 #
 if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: waiting for job $job_id to run\n"
-	kill_srun
+	cancel_job $job_id
 	exit 1
 }
 exec $bin_sleep 2
