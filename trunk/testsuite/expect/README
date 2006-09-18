@@ -253,6 +253,7 @@ test7.4    Test of TotalView operation with srun, with and without bulk
            transfer.
 test7.5    Test of TotalView operation with slaunch, with and without bulk
            transfer.
+test7.6    Test of TotalView operation with sattach
 
 
 test8.#    Test of Blue Gene specific functionality.
