@@ -346,6 +346,9 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
 		break;
 	}
+	if(!job) {
+		fatal("_step_setup: no job returned");
+	}
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_g_alloc(NULL);
 	

@@ -4212,7 +4212,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	job_ptr->suspend_time = now;
 	
     reply:
-	jobacct_g_suspend_slurmctld(job_ptr);
+	if(job_ptr)
+		jobacct_g_suspend_slurmctld(job_ptr);
 
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);

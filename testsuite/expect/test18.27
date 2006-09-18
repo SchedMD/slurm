@@ -38,9 +38,9 @@ set exit_code   0
 
 print_header $test_id
 
-if { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatable with XCPU systems\n"
-	exit 0
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
+	exit $exit_code
 }
 
 #
@@ -89,11 +89,6 @@ send_user "Tested layout was  : $tested_layout\n"
 if {[string compare $expected_layout $tested_layout] != 0} {
 	send_user "\FAILURE: failed to distribute tasks in block fashion\n"
 	set exit_code 1
-}
-
-if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
-	exit $exit_code
 }
 
 #

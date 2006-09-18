@@ -40,7 +40,7 @@
 #include "sacct.h"
 #include "src/common/parse_time.h"
 #include "slurm.h"
-#define FORMAT_STRING_SIZE 32
+#define FORMAT_STRING_SIZE 50
 
 void _elapsed_time(long secs, long usecs, char *str);
 
@@ -713,10 +713,10 @@ void print_pages(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-35s", "MaxPages/Node:Task - Ave");
+		printf("%-50s", "MaxPages/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-35s", "----------------------------------");
+		printf("%-50s", "----------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
@@ -736,7 +736,7 @@ void print_pages(type_t type, void *object)
 				 sacct.max_pages_id.taskid, 
 				 buf2);
 		}
-		printf("%-35s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
@@ -750,7 +750,7 @@ void print_pages(type_t type, void *object)
 			 buf3,
 			 sacct.max_pages_id.taskid, 
 			 buf2);
-		printf("%-35s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	} 
 }
@@ -769,10 +769,10 @@ void print_rss(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-32s", "MaxRSS/Node:Task - Ave");
+		printf("%-50s", "MaxRSS/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-32s", "--------------------------------");
+		printf("%-50s", "--------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
@@ -792,7 +792,7 @@ void print_rss(type_t type, void *object)
 				 sacct.max_rss_id.taskid, 
 				 buf2);
 		}
-		printf("%-32s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
@@ -806,7 +806,7 @@ void print_rss(type_t type, void *object)
 			 buf3, 
 			 sacct.max_rss_id.taskid, 
 			 buf2);
-		printf("%-32s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	} 
 }
@@ -1044,10 +1044,10 @@ void print_vsize(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-34s", "MaxVSIZE/Node:Task - Ave");
+		printf("%-50s", "MaxVSIZE/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-34s", "----------------------------------");
+		printf("%-50s", "----------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
@@ -1066,7 +1066,7 @@ void print_vsize(type_t type, void *object)
 				 sacct.max_vsize_id.taskid, 
 				 buf2);
 		}
-		printf("%-34s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
@@ -1080,7 +1080,7 @@ void print_vsize(type_t type, void *object)
 			 buf3, 
 			 sacct.max_vsize_id.taskid, 
 			 buf2);
-		printf("%-34s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	} 
 }
@@ -1099,10 +1099,10 @@ void print_cputime(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-36s", "MinCPUtime/Node:Task - Ave");
+		printf("%-50s", "MinCPUtime/Node:Task - Ave");
 		break;
 	case UNDERSCORE:
-		printf("%-36s", "------------------------------------");
+		printf("%-50s", "------------------------------------");
 		break;
 	case JOB:
 		sacct = job->sacct;
@@ -1122,7 +1122,7 @@ void print_cputime(type_t type, void *object)
 				 sacct.min_cpu_id.taskid, 
 				 buf2);
 		}
-		printf("%-36s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	case JOBSTEP:
 		sacct = step->sacct;
@@ -1137,7 +1137,7 @@ void print_cputime(type_t type, void *object)
 			 buf3, 
 			 sacct.min_cpu_id.taskid, 
 			 buf2);
-		printf("%-36s", outbuf);
+		printf("%-50s", outbuf);
 		break;
 	} 
 }

@@ -158,7 +158,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 {
 	uint32_t cpn = 1;
 	int cpu_cnt = 0, cpu_inx = 0, i, j;
-	char *name = NULL;
+/* 	char *name = NULL; */
 	hostlist_t hl = NULL;
 	slurm_step_layout_t *step_layout = 
 		xmalloc(sizeof(slurm_step_layout_t));
@@ -185,8 +185,8 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout->node_cnt = node_cnt;
 	step_layout->tasks = xmalloc(sizeof(uint32_t) * node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) * node_cnt);
-	step_layout->node_addr = 
-		xmalloc(sizeof(slurm_addr) * node_cnt);
+/* 	step_layout->node_addr =  */
+/* 		xmalloc(sizeof(slurm_addr) * node_cnt); */
 
 	step_layout->task_cnt = 0;
 	for (i=0; i<step_layout->node_cnt; i++) {
@@ -223,26 +223,26 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 				}
 			}
 		}
-		name = hostlist_shift(hl);
-		if(!name) {
-			error("fake_slurm_step_layout_create: "
-			      "We don't have the correct nodelist.");
-			goto error;			      
-		}
-		if(slurm_conf_get_addr(name, &step_layout->node_addr[i]) == 
-		   SLURM_ERROR) {
-			error("fake_slurm_step_layout_create: "
-			      "we didn't get an addr for host %s.", name);
+/* 		name = hostlist_shift(hl); */
+/* 		if(!name) { */
+/* 			error("fake_slurm_step_layout_create: " */
+/* 			      "We don't have the correct nodelist."); */
+/* 			goto error;			       */
+/* 		} */
+/* 		if(slurm_conf_get_addr(name, &step_layout->node_addr[i]) ==  */
+/* 		   SLURM_ERROR) { */
+/* 			error("fake_slurm_step_layout_create: " */
+/* 			      "we didn't get an addr for host %s.", name); */
 				
-		}
-		free(name);
+/* 		} */
+/* 		free(name); */
 	}
 	hostlist_destroy(hl);
 	return step_layout;
-error:
-	hostlist_destroy(hl);
-	slurm_step_layout_destroy(step_layout);
-	return NULL;
+/* error: */
+/* 	hostlist_destroy(hl); */
+/* 	slurm_step_layout_destroy(step_layout); */
+/* 	return NULL; */
 }
 
 
@@ -261,9 +261,9 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->node_cnt = step_layout->node_cnt;
 	layout->task_cnt = step_layout->task_cnt;
 	
-	layout->node_addr = xmalloc(sizeof(slurm_addr) * layout->node_cnt);
-	memcpy(layout->node_addr, step_layout->node_addr, 
-	       (sizeof(slurm_addr) * layout->node_cnt));
+/* 	layout->node_addr = xmalloc(sizeof(slurm_addr) * layout->node_cnt); */
+/* 	memcpy(layout->node_addr, step_layout->node_addr,  */
+/* 	       (sizeof(slurm_addr) * layout->node_cnt)); */
 
 	layout->tasks = xmalloc(sizeof(uint32_t) * layout->node_cnt);
 	memcpy(layout->tasks, step_layout->tasks, 
@@ -292,8 +292,8 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 	packstr(step_layout->node_list, buffer);
 	pack16(step_layout->node_cnt, buffer);
 	pack32(step_layout->task_cnt, buffer);
-	slurm_pack_slurm_addr_array(step_layout->node_addr, 
-				    step_layout->node_cnt, buffer);
+/* 	slurm_pack_slurm_addr_array(step_layout->node_addr,  */
+/* 				    step_layout->node_cnt, buffer); */
 
 	for(i=0; i<step_layout->node_cnt; i++) {
 		pack32_array(step_layout->tids[i], step_layout->tasks[i], 
@@ -323,11 +323,11 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 	safe_unpack16(&step_layout->node_cnt, buffer);
 	safe_unpack32(&step_layout->task_cnt, buffer);
 	
-	if (slurm_unpack_slurm_addr_array(&(step_layout->node_addr), 
-					  &uint16_tmp, buffer))
-		goto unpack_error;
-	if (uint16_tmp != step_layout->node_cnt)
-		goto unpack_error;
+/* 	if (slurm_unpack_slurm_addr_array(&(step_layout->node_addr),  */
+/* 					  &uint16_tmp, buffer)) */
+/* 		goto unpack_error; */
+/* 	if (uint16_tmp != step_layout->node_cnt) */
+/* 		goto unpack_error; */
 	
 	step_layout->tasks = xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
 	step_layout->tids = xmalloc(sizeof(uint32_t *) 
@@ -353,7 +353,7 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 	int i=0;
 	if(step_layout) {
 		xfree(step_layout->node_list);
-		xfree(step_layout->node_addr);
+/* 		xfree(step_layout->node_addr); */
 		xfree(step_layout->tasks);
 		for (i = 0; i < step_layout->node_cnt; i++) {
 			xfree(step_layout->tids[i]);
@@ -397,7 +397,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
 	hostlist_t hl = NULL;
-	char *name = NULL;
+/* 	char *name = NULL; */
 	uint32_t cpus[step_layout->node_cnt];
 
 	if (step_layout->node_cnt == 0)
@@ -405,8 +405,8 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	if (step_layout->tasks)	/* layout already completed */
 		return SLURM_SUCCESS;
 	
-	step_layout->node_addr = xmalloc(sizeof(slurm_addr) 
-				     * step_layout->node_cnt);
+/* 	step_layout->node_addr = xmalloc(sizeof(slurm_addr)  */
+/* 				     * step_layout->node_cnt); */
 	step_layout->tasks = xmalloc(sizeof(uint32_t) 
 				     * step_layout->node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
@@ -428,22 +428,22 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	}
 	
 	for (i=0; i<step_layout->node_cnt; i++) {
-		name = hostlist_shift(hl);
-		if(!name) {
-			error("hostlist incomplete for this job request");
-			hostlist_destroy(hl);
-			return SLURM_ERROR;
-		}
-		if(slurm_conf_get_addr(name, &step_layout->node_addr[i])
-		   == SLURM_ERROR) {
-			error("_init_task_layout: can't get addr for "
-			      "host %s", name);
-			free(name);
-			continue;
-		}
+/* 		name = hostlist_shift(hl); */
+/* 		if(!name) { */
+/* 			error("hostlist incomplete for this job request"); */
+/* 			hostlist_destroy(hl); */
+/* 			return SLURM_ERROR; */
+/* 		} */
+/* 		if(slurm_conf_get_addr(name, &step_layout->node_addr[i]) */
+/* 		   == SLURM_ERROR) { */
+/* 			error("_init_task_layout: can't get addr for " */
+/* 			      "host %s", name); */
+/* 			free(name); */
+/* 			continue; */
+/* 		} */
 							
-		debug2("host %d = %s", i, name);
-		free(name);
+/* 		debug2("host %d = %s", i, name); */
+/* 		free(name); */
 		cpus[i] = cpus_per_node[cpu_inx];
 		
 		if ((++cpu_cnt) >= cpu_count_reps[cpu_inx]) {

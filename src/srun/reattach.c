@@ -319,12 +319,15 @@ _attach_to_job(srun_job_t *job)
 	int i;
 	reattach_tasks_request_msg_t *req = NULL;
 	slurm_msg_t *msg = NULL;
-
+	hostlist_t hl = NULL;
+	char *name = NULL;
+	
 	req = xmalloc(job->nhosts * sizeof(reattach_tasks_request_msg_t));
 	msg = xmalloc(job->nhosts * sizeof(slurm_msg_t));
 
 	debug("Going to attach to job %u.%u", job->jobid, job->stepid);
 
+	hl = hostlist_create(job->step_layout->node_list);
 	for (i = 0; i < job->nhosts; i++) {
 		reattach_tasks_request_msg_t *r = &req[i];
 		slurm_msg_t                  *m = &msg[i];
@@ -342,13 +345,27 @@ _attach_to_job(srun_job_t *job)
 		slurm_msg_t_init(m);
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		
-		memcpy(&m->address, &job->step_layout->node_addr[i], 
-		       sizeof(slurm_addr));
+		name = hostlist_shift(hl);
+		if(!name) {
+			error("hostlist incomplete for this job request");
+			hostlist_destroy(hl);
+			return SLURM_ERROR;
+		}
+		if(slurm_conf_get_addr(name, &m->address)
+		   == SLURM_ERROR) {
+			error("_init_task_layout: can't get addr for "
+			      "host %s", name);
+			free(name);
+			hostlist_destroy(hl);
+			return SLURM_ERROR;
+		}
+		free(name);
+		/* memcpy(&m->address, &job->step_layout->node_addr[i],  */
+/* 		       sizeof(slurm_addr)); */
 	}
-
+	hostlist_destroy(hl);
 	_p_reattach(msg, job);
-
+	
 	return SLURM_SUCCESS;
 }
 

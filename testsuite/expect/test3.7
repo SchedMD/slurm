@@ -204,7 +204,6 @@ sleep 5
 suspend_job $job_id1 suspend
 if {$not_supported == 1} {
 	exec $scancel $job_id1
-	exec $scancel $job_id2
 	exit 0
 }
 if {$not_supported == 0} {

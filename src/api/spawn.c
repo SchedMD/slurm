@@ -59,6 +59,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -109,7 +110,9 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	int task_cnt = 0;
 	uint32_t *cpus = NULL;
 	slurm_step_layout_t *step_layout = ctx->step_resp->step_layout;
-
+	hostlist_t hl = NULL;
+	char *name = NULL;
+	
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC) ||
 	    (fd_array == NULL)) {
@@ -152,6 +155,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * 
 				step_layout->node_cnt);
 
+	hl = hostlist_create(step_layout->node_list);
 	for (i=0; i<step_layout->node_cnt; i++) {
 		spawn_task_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t              *m = &req_array_ptr[i];
@@ -179,15 +183,28 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;
-		
-		memcpy(&m->address, &step_layout->node_addr[i], 
-		       sizeof(slurm_addr));
+		name = hostlist_shift(hl);
+		if(!name) {
+			error("hostlist incomplete for this job request");
+			hostlist_destroy(hl);
+			return SLURM_ERROR;
+		}
+		if(slurm_conf_get_addr(name, &m->address)
+		   == SLURM_ERROR) {
+			error("_init_task_layout: can't get addr for "
+			      "host %s", name);
+			free(name);
+			hostlist_destroy(hl);
+			return SLURM_ERROR;	
+		}
+		free(name);
 #if		_DEBUG
 		printf("tid=%d, fd=%d, port=%u, node_id=%u\n",
 			step_layout->tids[i][0], 
 		       fd_array[i], r->io_port, i);
 #endif
 	}
+	hostlist_destroy(hl);
 	rc = _p_launch(req_array_ptr, ctx);
 
 	xfree(msg_array_ptr);
