@@ -1097,12 +1097,9 @@ void set_options(const int argc, char **argv)
 				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_DEBUG_TS:
+			/* simulate running under a parallel debugger */
 			opt.debugger_test    = true;
-			/* make other parameters look like debugger 
-			 * is really attached */
-			opt.parallel_debug   = true;
 			MPIR_being_debugged  = 1;
-			pmi_server_max_threads(1);
 			break;
 		case LONG_OPT_USAGE:
 			_usage();
