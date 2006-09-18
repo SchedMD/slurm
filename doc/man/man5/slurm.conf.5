@@ -398,7 +398,8 @@ The default value is "/var/run/slurmctld.pid".
 \fBSlurmctldPort\fR
 The port number that the SLURM controller, \fBslurmctld\fR, listens 
 to for work. The default value is SLURMCTLD_PORT as established at system 
-build time.  NOTE: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not 
+build time. If none is explicitly specified, it will be set to 6817.  
+NOTE: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not 
 execute on the same nodes or the values of \fBSlurmctldPort\fR and 
 \fBSlurmdPort\fR must be different.
 .TP
@@ -429,7 +430,8 @@ The default value is "/var/run/slurmd.pid".
 \fBSlurmdPort\fR
 The port number that the SLURM compute node daemon, \fBslurmd\fR, listens 
 to for work. The default value is SLURMD_PORT as established at system 
-build time. NOTE: Either slurmctld and slurmd daemons must not execute
+build time. If none is explicitly specified, its value will be 6818. 
+NOTE: Either slurmctld and slurmd daemons must not execute
 on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
 .TP
