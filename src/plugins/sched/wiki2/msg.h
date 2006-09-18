@@ -74,10 +74,10 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/sched_plugin.h"
 
 #define PRIO_HOLD      0
 #define PRIO_DECREMENT 1

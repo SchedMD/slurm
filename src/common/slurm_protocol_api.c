@@ -422,6 +422,31 @@ uint32_t slurm_get_slurm_user_id(void)
 	return slurm_uid;
 }
 
+/* slurm_get_root_filter
+ * RET uint16_t  - Value of SchedulerRootFilter */
+extern uint16_t slurm_get_root_filter(void)
+{
+        uint16_t root_filter;
+        slurm_ctl_conf_t *conf;
+ 
+        conf = slurm_conf_lock();
+        root_filter = conf->schedrootfltr;
+        slurm_conf_unlock();
+        return root_filter;
+}
+/* slurm_get_sched_port
+ * RET uint16_t  - Value of SchedulerPort */
+extern uint16_t slurm_get_sched_port(void)
+{
+        uint16_t port;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        port = conf->schedport;
+        slurm_conf_unlock();
+        return port;
+}
+
 /* slurm_get_sched_type
  * get sched type from slurmctld_conf object
  * RET char *   - sched type, MUST be xfreed by caller

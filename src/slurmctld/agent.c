@@ -86,6 +86,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/uid.h"
 #include "src/common/forward.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -1385,17 +1386,9 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 {
 	mail_info_t *mi = _mail_alloc();
 
-	if (!job_ptr->mail_user) {
-		struct passwd *pw;
-		pw = getpwuid((uid_t) job_ptr->user_id);
-		if (pw && pw->pw_name)
-			mi->user_name = xstrdup(pw->pw_name);
-		else {
-			error("getpwuid(%u): %m", job_ptr->user_id);
-			_mail_free(mi);
-			return;
-		}
-	} else
+	if (!job_ptr->mail_user)
+		mi->user_name = xstrdup(uid_to_string((uid_t)job_ptr->user_id));
+	else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
 	mi->message = xmalloc(sizeof(char)*128);

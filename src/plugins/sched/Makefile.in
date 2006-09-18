@@ -255,7 +255,7 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-SUBDIRS = backfill builtin hold maui wiki2
+SUBDIRS = backfill builtin hold wiki2
 all: all-recursive
 
 .SUFFIXES:

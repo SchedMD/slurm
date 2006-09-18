@@ -110,7 +110,7 @@ static void *_msg_thread(void *no_data)
 	int sig_array[] = {SIGUSR1, 0};
 	char *msg;
 
-	if ((sock_fd = slurm_init_msg_engine_port(sched_get_port())) 
+	if ((sock_fd = slurm_init_msg_engine_port(slurm_get_sched_port())) 
 			== SLURM_SOCKET_ERROR)
 		fatal("wiki: slurm_init_msg_engine_port %m");
 

@@ -59,10 +59,10 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
-#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct part_specs {
@@ -173,7 +173,7 @@ backfill_agent(void *args)
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
-	if (sched_get_root_filter())
+	if (slurm_get_root_filter())
 		filter_root = true;
 	while (1) {
 		sleep(SLEEP_TIME);      /* don't run continuously */
