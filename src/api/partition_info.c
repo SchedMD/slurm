@@ -214,7 +214,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		if (part_ptr->node_inx[j] == -1)
 			break;
 	}
-	xstrcat(out, "\n\n");
+	if (one_liner)
+		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
 	
 	return out;
 }
