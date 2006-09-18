@@ -546,6 +546,7 @@ static void *_wdog(void *args)
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		if (thread_ptr[i].ret_list)
 			list_destroy(thread_ptr[i].ret_list);
+		xfree(thread_ptr[i].nodelist);
 	}
 	
 	if (thd_comp.max_delay)

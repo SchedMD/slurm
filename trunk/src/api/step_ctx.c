@@ -57,7 +57,6 @@ static void	_xcopy_char_array(char ***argv_p, char **argv, int cnt);
 static void	_xfree_char_array(char ***argv_p, int cnt);
 static job_step_create_request_msg_t *_copy_step_req(
 	job_step_create_request_msg_t *step_req);
-static void _free_step_req(job_step_create_request_msg_t *step_req);
 
 /*
  * slurm_step_ctx_create - Create a job step and its context. 
@@ -91,7 +90,7 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 		if (net_stream_listen(&sock, &port) < 0) {
 			errnum = errno;
 			error("unable to intialize step context socket: %m");
-			_free_step_req(step_req);
+			slurm_free_job_step_create_request_msg(step_req);
 			goto fail;
 		}
 		step_req->port = port;
@@ -101,7 +100,7 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
 		errnum = errno;
-		_free_step_req(step_req);
+		slurm_free_job_step_create_request_msg(step_req);
 		goto fail;
 	}
 	
@@ -301,7 +300,7 @@ slurm_step_ctx_destroy (slurm_step_ctx ctx)
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
-	_free_step_req(ctx->step_req);
+	slurm_free_job_step_create_request_msg(ctx->step_req);
 	slurm_free_job_step_create_response_msg(ctx->step_resp);
 	if (ctx->argv)
 		_xfree_char_array(&ctx->argv, ctx->argc);
@@ -357,19 +356,3 @@ static job_step_create_request_msg_t *_copy_step_req(
 	return copy;
 }
 
-static void _free_step_req(job_step_create_request_msg_t *step_req)
-{
-	if (step_req == NULL)
-		return;
-
-	if (step_req->host != NULL)
-		xfree(step_req->host);
-	if (step_req->node_list != NULL)
-		xfree(step_req->node_list);
-	if (step_req->network != NULL)
-		xfree(step_req->network);
-	if (step_req->name != NULL)
-		xfree(step_req->name);
-
-	xfree(step_req);
-}

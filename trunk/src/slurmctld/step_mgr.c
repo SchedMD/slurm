@@ -529,9 +529,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			node_tmp = bit_pick_cnt(nodes_idle,
 						(step_spec->node_count -
 						 nodes_picked_cnt));
-			debug2("1 got - %d %x",
-			       step_spec->node_count - nodes_picked_cnt,
-			       node_tmp);
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -546,9 +543,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			node_tmp = bit_pick_cnt(nodes_avail, 
 						(step_spec->node_count - 
 						 nodes_picked_cnt));
-			debug2("2 got - %d %x",
-			       step_spec->node_count - nodes_picked_cnt,
-			       node_tmp);
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -770,7 +764,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
-
+	xfree(step_node_list);
 	*new_step_record = step_ptr;
 	jobacct_g_step_start_slurmctld(step_ptr);
 	return SLURM_SUCCESS;
