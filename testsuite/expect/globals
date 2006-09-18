@@ -220,6 +220,7 @@ proc slow_kill { pid } {
 	global bin_kill
 
 	catch {exec $bin_kill -INT $pid}
+	catch {exec $bin_kill -INT $pid}
 	sleep  1
 	catch {exec $bin_kill -KILL $pid}
 
@@ -236,9 +237,8 @@ proc slow_kill { pid } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# Note: usleep is used to avoid pkill race error message (the
-# processes terminate after the process table is read and before
-# the signal is sent to the detected processses)
+# NOTE: Use slow_kill instead of kill_salloc if you can capture 
+#       the process id
 #
 ################################################################
 
@@ -255,27 +255,10 @@ proc kill_salloc {  } {
 			wait
 		}
 	}
-
-	spawn $bin_pkill -INT -u $uid salloc
-	expect {
-		eof {
-			wait
-		}
-	}
-	exec $bin_usleep 1000
-	spawn $bin_pkill -INT -u $uid salloc
-	expect {
-		eof {
-			wait
-		}
-	}
-	exec $bin_sleep  1
-	spawn $bin_pkill -KILL -u $uid salloc
-	expect {
-		eof {
-			wait
-		}
-	}
+	catch {exec $bin_pkill -INT -u $uid salloc}
+	catch {exec $bin_pkill -INT -u $uid salloc}
+	sleep  1
+	catch {exec $bin_pkill -KILL -u $uid salloc}
 
 	return 0
 }
@@ -290,9 +273,8 @@ proc kill_salloc {  } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# Note: usleep is used to avoid pkill race error message (the
-# processes terminate after the process table is read and before
-# the signal is sent to the detected processses)
+# NOTE: Use slow_kill instead of kill_srun if you can capture 
+#       the process id
 #
 ################################################################
 
@@ -309,27 +291,10 @@ proc kill_srun {  } {
 			wait
 		}
 	}
-
-	spawn $bin_pkill -INT -u $uid srun
-	expect {
-		eof {
-			wait
-		}
-	}
-	exec $bin_usleep 1000
-	spawn $bin_pkill -INT -u $uid srun
-	expect {
-		eof {
-			wait
-		}
-	}
-	exec $bin_sleep  1
-	spawn $bin_pkill -KILL -u $uid srun
-	expect {
-		eof {
-			wait
-		}
-	}
+	catch {exec $bin_pkill -INT -u $uid srun}
+	catch {exec $bin_pkill -INT -u $uid srun}
+	sleep  1
+	catch {exec $bin_pkill -KILL -u $uid srun}
 
 	return 0
 }

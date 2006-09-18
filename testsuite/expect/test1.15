@@ -6,11 +6,8 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.15.input
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -57,7 +54,7 @@ make_bash_script $file_in "
 # Spawn tasks via srun and immediately exit task 1 only
 #
 set timeout $max_job_delay
-spawn $srun -n10 -N1 -O -W2 -t2 $file_in
+set srun_pid [spawn $srun -n10 -N1 -O -W2 -t2 $file_in]
 expect {
 	-re "First task exited" {
 		send_user "This error is expected, no worries\n"
@@ -70,7 +67,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
 		exp_continue
 	}
