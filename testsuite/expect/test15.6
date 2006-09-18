@@ -47,7 +47,7 @@ print_header $test_id
 # 3: debug2   (-vvv)
 #
 set timeout $max_job_delay
-spawn $salloc -vv -N1 -t1 $bin_id  
+set salloc_pid [spawn $salloc -vv -N1 -t1 $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -72,7 +72,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

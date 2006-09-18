@@ -43,14 +43,15 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 $slaunch $bin_sleep 600]
 set salloc_sid $spawn_id
 expect {
-    -re "Granted job allocation ($number)" {
-	set jobid $expect_out(1,string)
-    }
-    timeout {
-	send_user "\nFAILURE: salloc failed to grab an allocation in a timely manner.\n"
-	exec kill $salloc_pid
-	exit 1
-    }
+	-re "Granted job allocation ($number)" {
+		set jobid $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: salloc failed to grab an allocation "
+		send_user "in a timely manner.\n"
+		exec kill $salloc_pid
+		exit 1
+	}
 }
 
 #
@@ -61,26 +62,26 @@ set pattern "xcoetn46398vnk"
 set got_pattern 0
 set slaunch_pid [spawn $slaunch --jobid $jobid echo $pattern]
 expect {
-    -re "error" {
-	send_user "\nFAILURE: unexpected error occurred\n"
-	set exit_code 1
-    }
-    -re $pattern {
-	set got_pattern 1
-	exp_continue
-    }
-    timeout {
-	exec kill $slaunch_pid
-	exec kill -9 $slaunch_pid
-    }
-    eof {
-	wait
-    }
+	-re "error" {
+		send_user "\nFAILURE: unexpected error occurred\n"
+		set exit_code 1
+	}
+	-re $pattern {
+		set got_pattern 1
+		exp_continue
+	}
+	timeout {
+		exec kill $slaunch_pid
+		exec kill -9 $slaunch_pid
+	}
+	eof {
+		wait
+	}
 }
 
 if {$got_pattern == 0} {
-    send_user "\nFAILURE: unable to srun step under existing job allocation\n"
-    set exit_code 1
+	send_user "\nFAILURE: unable to srun step under existing job allocation\n"
+	set exit_code 1
 }
 
 #
@@ -90,19 +91,19 @@ exec $scancel $jobid
 exec kill $salloc_pid
 set spawn_id $salloc_sid
 expect {
-    -re "error.*already completed" {
-	send_user "The \"already completed\" error is normal.\n"
-	exp_continue
-    }
-    timeout {
-	exec kill -9 $salloc_pid
-    }
-    eof {
-	wait
-    }
+	-re "error.*already completed" {
+		send_user "The \"already completed\" error is normal.\n"
+		exp_continue
+	}
+	timeout {
+		exec kill -9 $salloc_pid
+	}
+	eof {
+		wait
+	}
 }
 
 if {$got_pattern == 1} {
-    send_user "\nSUCCESS\n"
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code

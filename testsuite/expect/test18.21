@@ -55,12 +55,12 @@ puts $fd {
 
 main()
 {
-    char *id = getenv("SLURM_PROCID");
-    if (atoi(id) == 9) {
-        exit(2);
-    }
-    sleep(15);
-    printf("SHOULD_NOT_BE_HERE\n");
+	char *id = getenv("SLURM_PROCID");
+	if (atoi(id) == 9) {
+		exit(2);
+	}
+	sleep(15);
+	printf("SHOULD_NOT_BE_HERE\n");
 }
 }
 close $fd
@@ -74,7 +74,7 @@ exec $bin_chmod 700 $file_in
 #
 set timeout $max_job_delay
 set job_id  0
-spawn $salloc -t1 -N1 $slaunch -n10 --overcommit --kill-on-bad-exit $file_in
+set salloc_pid [spawn $salloc -t1 -N1 $slaunch -n10 --overcommit --kill-on-bad-exit $file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -91,10 +91,10 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		if {$job_id_1 != 0} {
-			cancel_job $job_id_1
+		if {$job_id == 0} {
+			slow_kill $salloc_pid
 		} else {
-			kill_salloc
+			cancel_job $job_id_1
 		}
 		set exit_code 1
 		exp_continue

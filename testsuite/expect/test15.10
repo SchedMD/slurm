@@ -41,7 +41,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 	set tasks_set $inx
 	set tasks_get 0
 	set timeout $max_job_delay
-	spawn $salloc -n$tasks_set -t1 $bin_bash  
+	set salloc_pid [spawn $salloc -n$tasks_set -t1 $bin_bash]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -60,7 +60,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 		timeout {
 			send_user "\nFAILURE: salloc not responding\n"
 			if {$job_id == 0} {
-				kill_salloc
+				slow_kill $salloc_pid
 			} else {
 				cancel_job $job_id
 			}

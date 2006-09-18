@@ -63,12 +63,12 @@ $srun $bin_sleep 500 &
 trap /bin/true SIGINT
 
 while /bin/true; do
-    wait
-    if \[ \$? -ge 128 \]; then
-	echo \"INTerrupted wait, resuming\"
-    else
-	break
-    fi
+	wait
+	if \[ \$? -ge 128 \]; then
+		echo \"INTerrupted wait, resuming\"
+	else
+		break
+	fi
 done
 "
 

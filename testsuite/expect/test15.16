@@ -44,7 +44,7 @@ print_header $test_id
 #
 set job_id      0
 set env("SALLOC_BELL") 1
-spawn $salloc -N1 -t1 $bin_id  
+set salloc_pid [spawn $salloc -N1 -t1 $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -57,7 +57,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -79,7 +79,7 @@ if {$job_id == 0} {
 #
 set job_id      0
 set env("SALLOC_NO_BELL") 1
-spawn $salloc -N1 -t1 $bin_id  
+set salloc_pid [spawn $salloc -N1 -t1 $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -92,7 +92,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

@@ -51,7 +51,7 @@ print_header $test_id
 #
 file delete [glob -nocomplain "test$test_id.s.*.output"]
 set timeout $max_job_delay
-spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_t -n$task_cnt --overcommit $bin_id
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_t -n$task_cnt --overcommit $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -60,7 +60,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -97,7 +97,7 @@ if {$file_cnt != $task_cnt} {
 #
 set job_id    0
 set matches   0
-spawn $salloc -N1 -t1 $slaunch --task-output=/dev/null --task-error=$file_err_j -n$task_cnt --overcommit $bin_sleep aaa
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --task-output=/dev/null --task-error=$file_err_j -n$task_cnt --overcommit $bin_sleep aaa]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -111,7 +111,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -143,7 +143,7 @@ if {[wait_for_file $file_err_j_glob] == 0} {
 # file name and confirm it is created
 #
 set job_id   0
-spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_J $bin_hostname
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_J $bin_hostname]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -152,7 +152,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -184,7 +184,7 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 file delete $file_out_n_glob
 
 set job_id   0
-spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_n -n2 --overcommit $bin_hostname
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --task-output=$file_out_n -n2 --overcommit $bin_hostname]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -193,7 +193,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

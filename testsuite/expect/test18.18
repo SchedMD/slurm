@@ -60,7 +60,7 @@ if { [test_bluegene] } {
 
 set job_id  0
 set timeout $max_job_delay
-spawn $salloc -N$node_cnt -t1 $slaunch -n$task_cnt --overcommit $slaunch -l -n$mult --overcommit $bin_id
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -n$task_cnt --overcommit $slaunch -l -n$mult --overcommit $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -73,7 +73,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

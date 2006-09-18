@@ -46,7 +46,7 @@ print_header $test_id
 # Change working directory on execute line and then print where jobs runs
 #
 set timeout $max_job_delay
-spawn $salloc -N1 -t1 $slaunch --name=$step_name $scontrol show step
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch --name=$step_name $scontrol show step]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -63,7 +63,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}

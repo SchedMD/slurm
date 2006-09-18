@@ -103,7 +103,7 @@ make_bash_script $file_in "
 #
 set timeout [expr $max_job_delay + $sleep_time]
 set job_id    0
-spawn $salloc -t1 --kill-command ./$file_in
+set salloc_pid [spawn $salloc -t1 --kill-command ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -117,7 +117,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
@@ -131,7 +131,7 @@ expect {
 
 set completions 0
 set job_id      0
-spawn $salloc -t4 --kill-command ./$file_in
+set salloc_pid [spawn $salloc -t4 --kill-command ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -144,7 +144,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id == 0} {
-			kill_salloc
+			slow_kill $salloc_pid
 		} else {
 			cancel_job $job_id
 		}
