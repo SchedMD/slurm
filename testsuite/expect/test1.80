@@ -49,7 +49,7 @@ if { [test_front_end] } {
 set timeout $max_job_delay
 set expected_layout [list 0 0 1 1]
 set tested_layout [list -1 -1 -1 -1] 
-spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID  
+set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -63,9 +63,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -93,7 +92,7 @@ if {[test_front_end] != 0} {
 set timeout $max_job_delay
 set expected_layout [list 0 1 0 1]
 set tested_layout [list -1 -1 -1 -1] 
-spawn $srun -O -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID  
+set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -107,9 +106,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

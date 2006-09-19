@@ -62,7 +62,7 @@ make_bash_script $file_in "
 # Submit a 4 node job
 #
 set timeout $max_job_delay
-spawn $srun -N4 -A $file_in
+set srun_pid [spawn $srun -N4 -A $file_in]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -71,7 +71,7 @@ expect {
 	}
 	-re "configuration not available" {
 		send_user "WARNING: partition too small for test\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 0
 	}
 	-re "Unable to contact" {
@@ -83,14 +83,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		exec $bin_rm -f $file_in
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
 		send_user "\nFAILURE: srun terminated\n"
-		kill_srun
-		exec $bin_rm -f $file_in
 		exit 1
 	}
 }
@@ -130,7 +127,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -202,7 +199,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -253,7 +250,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -291,7 +288,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -311,7 +308,7 @@ send "exit\n"
 expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {

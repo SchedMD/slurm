@@ -105,7 +105,6 @@ expect {
 }
 if {$job_id1 == 0} {
 	send_user "\nFAILURE: srun failed to report jobid\n"
-	kill_srun
 	exit 1
 }
 

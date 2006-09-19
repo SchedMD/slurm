@@ -96,7 +96,6 @@ expect {
 
 if {$job_id == 0} {
 	send_user "\nFAILURE: did not get job_id\n" 
-	kill_srun
 	exit 1
 }
 
