@@ -140,6 +140,11 @@ cset max_file_delay 60
 #
 cset max_stress_tasks 4
 
+#
+# The error message that the "sleep" command prints when we run "sleep aaa".
+#
+cset sleep_error_message "(invalid time interval)|(bad character in argument)"
+
 # Other common variables
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"

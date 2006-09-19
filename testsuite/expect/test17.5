@@ -109,7 +109,7 @@ set got_stderr 0
 if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
-		-re "invalid time interval" {
+		-re "$sleep_error_message" {
 			send_user "\nNo worries, this error is expected\n"
 			set got_stderr 1
 			exp_continue
