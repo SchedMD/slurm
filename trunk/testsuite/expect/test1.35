@@ -6,9 +6,6 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.35.input, test1.35.output, and test1.35.error
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -73,7 +70,7 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $srun --batch -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in
+set srun_pid [spawn $srun --batch -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -81,9 +78,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -100,6 +96,7 @@ if {$job_id == 0} {
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
 	set exit_code 1
 }
 

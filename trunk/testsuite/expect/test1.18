@@ -53,7 +53,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-spawn $srun -N1-4 -v -t5 $file_prog
+set srun_pid [spawn $srun -N1-4 -v -t5 -l $file_prog]
 set init_id $spawn_id
 expect {
         -i $init_id
@@ -66,6 +66,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun (launch) not responding\n"
+		slow_kill $srun_pid
 		set exit_code 1
 	}
 	eof {
@@ -86,7 +87,7 @@ if {$matches == 0} {
 #
 set matches     0
 set timeout     10
-spawn $srun -vv --attach=$job_id --join
+set attach_pid [spawn $srun -vv -l --attach=$job_id --join]
 set attach_id $spawn_id
 expect {
         -i $attach_id
@@ -96,9 +97,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun (attach) not responding\n"
-		kill_srun
+		slow_kill $attach_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

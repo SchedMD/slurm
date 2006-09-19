@@ -53,7 +53,7 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname  
+set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname]
 expect {
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
@@ -61,9 +61,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -83,7 +82,7 @@ if {[string compare $host_0 ""] == 0} {
 #
 set host_0      ""
 set timeout $max_job_delay
-spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname  
+set srun_pid [spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname]
 expect {
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
@@ -91,9 +90,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

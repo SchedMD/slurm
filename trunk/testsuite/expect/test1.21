@@ -44,7 +44,7 @@ print_header $test_id
 # Spawn a shell via srun with stdout forwarding disabled
 #
 set timeout $max_job_delay
-spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash
+set srun_pid [spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash]
 expect {
 	-re "launching ($number).0 on host" {
 		set job_id $expect_out(1,string)
@@ -68,9 +68,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

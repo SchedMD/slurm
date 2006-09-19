@@ -55,7 +55,7 @@ if { [test_bluegene] } {
 #
 set timeout $max_job_delay
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
-	spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_hostname
+	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_hostname]
 	expect {
 		-re "Immediate execution impossible" {
 			send_user "This error is expected, no worries\n"
@@ -85,9 +85,8 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			set exit_code   1
-			kill_srun
-			exp_continue
+			slow_kill $srun_pid
+			set exit_code 1
 		}
 		eof {
 			wait

@@ -74,8 +74,7 @@ expect {
 set timeout $max_job_delay
 set matches 0
 set job_id  0
-spawn $srun -v -N1 -t1 --unbuffered $file_in
-set srun_pid [exp_pid]
+set srun_pid [spawn $srun -v -N1 -t1 --unbuffered $file_in]
 expect {
 	-re "launching ($number).0" {
 		set job_id $expect_out(1,string)
@@ -84,7 +83,6 @@ expect {
 	-re "WAITING" {
 		incr matches
 		exec $bin_kill -INT $srun_pid
-#		exec $bin_pkill -INT -n -u $uid srun
 		exp_continue
 	}
 	-re "srun: interrupt" {
@@ -98,9 +96,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -118,8 +115,7 @@ if {$matches != 3} {
 #
 set matches 0
 set job_id  0
-spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt $file_in
-set srun_pid [exp_pid]
+set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt $file_in]
 expect {
 	-re "launching ($number).0" {
 		set job_id $expect_out(1,string)
@@ -128,7 +124,6 @@ expect {
 	-re "WAITING" {
 		incr matches
 		exec $bin_kill -INT $srun_pid
-#		exec $bin_pkill -INT -n -u $uid srun
 		exp_continue
 	}
 	-re "srun: interrupt" {
@@ -145,9 +140,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

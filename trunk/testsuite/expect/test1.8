@@ -63,7 +63,7 @@ exec $bin_chmod 700 $file_in
 # Spawn a shell via srun that uses stdin/out/err and confirm their contents
 #
 set timeout $max_job_delay
-spawn $srun --input=$file_in --output=$file_out --error=$file_err -t1 $bin_bash
+set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err -t1 $bin_bash]
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
@@ -71,9 +71,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -150,7 +149,7 @@ if {$got_sleep_err == 0} {
 #
 # Spawn a program to run for a while with no input, output or error
 #
-spawn $srun --input=none --output=none --error=none -t1 -N1 od -c $srun
+set srun_pid [spawn $srun --input=none --output=none --error=none -t1 -N1 od -c $srun]
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
@@ -168,9 +167,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

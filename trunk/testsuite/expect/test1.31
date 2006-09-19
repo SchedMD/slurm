@@ -77,7 +77,7 @@ exec $bin_rm -f $env_valu_stdout
 #
 # Spawn a job via srun using these environment variables
 #
-spawn $srun -t1 $bin_env
+set srun_pid [spawn $srun -t1 $bin_env]
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -86,9 +86,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

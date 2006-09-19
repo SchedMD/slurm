@@ -58,7 +58,7 @@ make_bash_script $file_in "$bin_echo \$1,\$2"
 # Spawn a srun batch job with arguments
 #
 set timeout $max_job_delay
-spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in $arg1 $arg2
+set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in $arg1 $arg2]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -66,9 +66,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -85,6 +84,7 @@ if {$job_id == 0} {
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
 	set exit_code 1
 }
 

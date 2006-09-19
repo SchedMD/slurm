@@ -41,7 +41,7 @@ print_header $test_id
 # Spawn a program via srun with stdout forwarding disabled
 #
 set timeout $max_job_delay
-spawn $srun --output=none -t1 $bin_id
+set srun_pid [spawn $srun --output=none -t1 $bin_id]
 expect {
 	-re "uid=" {
 		send_user "\nFAILURE: srun improperly forwarded stdout\n"
@@ -55,9 +55,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -68,7 +67,7 @@ expect {
 # Spawn a program via srun with stderr forwarding disabled
 #
 set matches 0
-spawn $srun --error=none -t1 $bin_sleep aaa
+set srun_pid [spawn $srun --error=none -t1 $bin_sleep aaa]
 expect {
 	-re "invalid" {
 		send_user "\nFAILURE: srun improperly forwarded stderr\n"
@@ -82,9 +81,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
