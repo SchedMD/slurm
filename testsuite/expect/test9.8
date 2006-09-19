@@ -72,7 +72,7 @@ $srun $bin_sleep $sleep_time
 set start_cnt 0
 set timeout $delay
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in
+	set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in]
 	expect {
 		-re "jobid ($number) submitted" {
 			incr start_cnt
@@ -84,7 +84,7 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			kill_srun
+			slow_kill $srun_pid
 			exit 1
 		}
 		eof {
