@@ -36,6 +36,17 @@
 \*****************************************************************************/
 #include "sview.h"
 
+void *_refresh_thr(gpointer arg)
+{
+	int msg_id = GPOINTER_TO_INT(arg);
+	sleep(5);
+	gdk_threads_enter();
+	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar), 
+			     STATUS_REFRESH, msg_id);
+	gdk_flush();
+	gdk_threads_leave();
+	return NULL;	
+}
 
 extern void create_config_popup(GtkToggleAction *action, gpointer user_data)
 {

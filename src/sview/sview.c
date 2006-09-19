@@ -121,18 +121,6 @@ void *_page_thr(void *arg)
 	return NULL;
 }
 
-void *_refresh_thr(gpointer arg)
-{
-	int msg_id = GPOINTER_TO_INT(arg);
-	sleep(5);
-	gdk_threads_enter();
-	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar), 
-			     STATUS_REFRESH, msg_id);
-	gdk_flush();
-	gdk_threads_leave();
-	return NULL;	
-}
-
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
