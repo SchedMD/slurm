@@ -199,6 +199,13 @@ extern void refresh_main(GtkAction *action, gpointer user_data);
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event, 
 			const display_data_t *display_data);
 
+//popups.c
+extern void create_config_popup(GtkToggleAction *action, gpointer user_data);
+extern void create_deamon_popup(GtkToggleAction *action, gpointer user_data);
+extern void create_search_popup(GtkToggleAction *action, gpointer user_data);
+extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
+
+
 // part_info.c
 extern void refresh_part(GtkAction *action, gpointer user_data);
 extern GtkListStore *create_model_part(int type);
