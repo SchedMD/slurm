@@ -47,7 +47,7 @@ print_header $test_id
 #
 set timeout $max_job_delay
 set env($test_env_name) $test_env_val
-spawn $srun -N1 -t1 $bin_env
+set srun_pid [spawn $srun -N1 -t1 $bin_env]
 expect {
 	-re "$test_env_name=($number)" {
 		if {$expect_out(1,string) == $test_env_val} {
@@ -57,9 +57,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

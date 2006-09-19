@@ -44,7 +44,7 @@ print_header $test_id
 #
 set timeout $max_job_delay
 set match 0
-spawn $srun --allocate --verbose -t1
+set srun_pid [spawn $srun --allocate --verbose -t1]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -68,9 +68,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

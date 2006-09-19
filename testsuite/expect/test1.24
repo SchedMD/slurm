@@ -43,7 +43,7 @@ print_header $test_id
 set err_msg     0
 set host_0      ""
 set timeout $max_job_delay
-spawn $srun -N1 -l --constraint=invalid,constraint -t1 $bin_hostname  
+set srun_pid [spawn $srun -N1 -l --constraint=invalid,constraint -t1 $bin_hostname]
 expect {
 	-re "configuration is not available" {
 		send_user "This error is expected, no worries\n"
@@ -56,9 +56,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

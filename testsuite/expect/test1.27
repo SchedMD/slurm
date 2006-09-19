@@ -63,7 +63,7 @@ array set good_vars {
 # Spawn a job via srun to print environment variables
 #
 set timeout $max_job_delay
-spawn $srun -N1 -n1 -t1 $bin_env
+set srun_pid [spawn $srun -N1 -n1 -t1 $bin_env]
 expect {
 	-re "(SLURM_$alpha_under)=($alpha_numeric)" {
 		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
@@ -71,9 +71,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

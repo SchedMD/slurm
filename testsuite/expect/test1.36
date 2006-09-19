@@ -58,7 +58,7 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $srun -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id
+set srun_pid [spawn $srun -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id]
 expect {
 	-re "($number): uid=" {
 		incr task_output
@@ -66,9 +66,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
