@@ -55,17 +55,16 @@ make_bash_script $file_in "$bin_echo \$1,\$2"
 # Spawn a sbatch job with arguments
 #
 set timeout $max_job_delay
-spawn $sbatch --output=$file_out --error=$file_err -t1 $file_in $arg1 $arg2
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t1 $file_in $arg1 $arg2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

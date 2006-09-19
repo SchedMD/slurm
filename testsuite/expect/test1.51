@@ -58,7 +58,7 @@ make_bash_script $file_script "
 # Set umask and confirm it is propagated
 #
 set matches 0
-spawn ./$file_script
+set srun_pid [spawn ./$file_script]
 expect {
 	-re (0123|123) {
 		set matches 1
@@ -66,7 +66,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill [expr 0 - $srun_pid]
 		exit 1
 	}
 	eof {

@@ -103,18 +103,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		if {$job_id == 0} {
-			slow_kill $salloc_pid
-		} else {
+		if {$job_id != 0} {
 			cancel_job $job_id
 		}
+		slow_kill [expr 0 - $salloc_pid]
 		if {$waiting == 1} {
 			send_user "\nWARNING: salloc still not responding, quiting\n"
-			exit 0
 		} else {
 			send_user "\nFAILURE: salloc not responding\n"
-			exit 1
 		}
+		exit 1
 	}
 	eof {
 		wait

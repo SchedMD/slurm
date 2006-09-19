@@ -7,9 +7,6 @@
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes a file in the working 
-#          directory named test1.88.prog
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -98,7 +95,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-spawn $srun -N3 -n6 --batch --output=$file_out --error=$file_err -t1 $file_in
+set srun_pid [spawn $srun -N3 -n6 --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -118,9 +115,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		set exit_code 1
-		exp_continue
+		slow_kill $srun_pid
+		exit 1
 	}
 	eof {
 		wait
