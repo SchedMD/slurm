@@ -40,7 +40,7 @@ print_header $test_id
 #
 # Report the srun version number
 #
-spawn $srun -V  
+set srun_pid [spawn $srun -V]
 expect {
 	-re "(slurm ($number)\.($number)\.($number).*\n)" {
 		incr version
@@ -48,7 +48,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
 		exp_continue
 	}
