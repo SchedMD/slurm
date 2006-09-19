@@ -201,7 +201,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 
 //popups.c
 extern void create_config_popup(GtkToggleAction *action, gpointer user_data);
-extern void create_deamon_popup(GtkToggleAction *action, gpointer user_data);
+extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data);
 extern void create_search_popup(GtkToggleAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
 
