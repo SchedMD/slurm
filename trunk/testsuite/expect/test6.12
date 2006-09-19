@@ -76,7 +76,7 @@ done
 # Spawn a srun batch job with arguments
 #
 set timeout $max_job_delay
-spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
+set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -84,7 +84,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -158,7 +158,7 @@ file delete $file_out $file_err
 make_bash_script $file_in "$bin_sleep 500"
 
 set job_id 0
-spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
+set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -166,7 +166,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -236,7 +236,7 @@ set job_id      0
 file delete $file_out $file_err
 make_bash_script $file_in "$srun $bin_sleep 500"
 
-spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
+set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -244,7 +244,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {

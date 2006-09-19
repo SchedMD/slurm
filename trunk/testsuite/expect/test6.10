@@ -73,7 +73,7 @@ make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
 #
 # Spawn a srun batch job
 #
-spawn $srun --batch --output=/dev/null --error=/dev/null --hold -t5 $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null --hold -t5 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -81,9 +81,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
