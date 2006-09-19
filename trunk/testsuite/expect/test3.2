@@ -49,7 +49,7 @@ proc run_job { part_name } {
 	global bin_hostname srun timeout
 	set rc 1
 
-	spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_hostname
+	set srun_pid [spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_hostname]
 	expect {
 		-re "Unable to contact" {
 			send_user "\nFAILURE: slurm appears to be down\n"
@@ -60,12 +60,12 @@ proc run_job { part_name } {
 			exp_continue
 		}
 		-re "not available" {
-			kill_srun
+			slow_kill $srun_pid
 			exp_continue
 		}
 		timeout {
 			send_user "\nsrun not responding\n"
-			kill_srun
+			slow_kill $srun_pid
 			return 1
 		}
 		eof {

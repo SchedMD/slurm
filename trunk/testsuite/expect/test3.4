@@ -49,7 +49,7 @@ make_bash_script $file_in "$srun $bin_sleep 60"
 #
 # Submit a job so we have something to work with
 #
-spawn $srun --batch --output=/dev/null --error=/dev/null -t1 --hold $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t1 --hold $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -57,9 +57,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

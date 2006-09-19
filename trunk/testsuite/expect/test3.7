@@ -122,7 +122,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Submit two jobs to the same node
 #
-spawn $srun --batch -N1 -t1 --output=$file_out1 $file_prog_sh1
+set srun_pid [spawn $srun --batch -N1 -t1 --output=$file_out1 $file_prog_sh1]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -130,7 +130,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -139,7 +139,6 @@ expect {
 }
 if {$job_id1 == 0} {
 	send_user "\nFAILURE: srun failed to report jobid\n"
-	kill_srun
 	exit 1
 }
 # Get the job's allocate host name
@@ -159,7 +158,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		kill_srun
+		cancel_job $job_id1
 		exit 1
 	}
 	eof {
@@ -168,11 +167,11 @@ expect {
 }
 if {[string compare $host_name ""] == 0} {
 	send_user "\nFAILURE: did not get hostname for job $job_id1\n"
-	kill_srun
+	cancel_job $job_id1
 	exit 1
 }
 # Submit another job to that same node
-spawn $srun --batch -N1 -t1 --output=$file_out2 $file_prog_sh2
+set srun_pid [spawn $srun --batch -N1 -t1 --output=$file_out2 $file_prog_sh2]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id2 $expect_out(1,string)
@@ -180,7 +179,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -209,7 +208,7 @@ if {$not_supported == 1} {
 if {$not_supported == 0} {
 	if {[wait_for_job $job_id2 RUNNING] != 0} {
 		send_user "\nFAILURE: waiting for job $job_id2 to run\n"
-		kill_srun
+		cancel_job $job_id2
 		exit 1
 	}
 	sleep 5
