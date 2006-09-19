@@ -66,7 +66,7 @@ exec $bin_chmod 700 $file_in
 set timeout $max_job_delay
 
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
-	spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in
+	set srun_pid [spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in]
 	expect {
 		-re "jobid ($number) submitted" {
 			set job_id $expect_out(1,string)
@@ -80,7 +80,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			kill_srun
+			slow_kill $srun_pid
 			exit 1
 		}
 		eof {
@@ -136,7 +136,7 @@ exec $scancel --quiet $job_id
 #
 set job_id      0
 set timeout $max_job_delay
-spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in
+set srun_pid [spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -144,7 +144,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {

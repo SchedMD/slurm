@@ -92,7 +92,7 @@ set timeout $max_job_delay
 set job_id 0
 set matches 0
 
-spawn $srun --allocate -N1 --verbose -t2
+set srun_pid [spawn $srun --allocate -N1 --verbose -t2]
 expect -re "jobid ($number).*"
 set job_id $expect_out(1,string)
 
@@ -114,8 +114,8 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun (from --allocate) not responding\n"
-			kill_srun
-			set exit_code 1
+			slow_kill $srun_pid
+			exit 1
 		}
 		eof {
 			send_user "\nFAILURE: srun aborted\n"
@@ -139,8 +139,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
-		kill_srun
-		set exit_code 1
+		slow_kill $srun_pid
+		exit 1
 	}
 	eof {
 		wait
