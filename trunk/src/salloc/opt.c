@@ -76,6 +76,7 @@
 #define OPT_STRING      0x02
 #define OPT_DEBUG       0x03
 #define OPT_NODES       0x05
+#define OPT_BOOL        0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
 #define OPT_NO_ROTATE	0x0a
@@ -482,7 +483,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SALLOC_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
+  {"SALLOC_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
@@ -532,6 +533,24 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid. ignoring...", e->var, val);
+		}
+		break;
+
+	case OPT_BOOL:
+		/* A boolean env variable is true if:
+		 *  - set, but no argument
+		 *  - argument is "yes"
+		 *  - argument is a non-zero number
+		 */
+		if (val == NULL || strcmp(val, "") == 0) {
+			*((bool *)e->arg) = true;
+		} else if (strcasecmp(val, "yes") == 0) {
+			*((bool *)e->arg) = true;
+		} else if ((strtol(val, &end, 10) != 0)
+			   && end != val) {
+			*((bool *)e->arg) = true;
+		} else {
+			*((bool *)e->arg) = false;
 		}
 		break;
 
