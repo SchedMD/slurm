@@ -96,6 +96,9 @@ enum { STATUS_ADMIN_MODE,
        STATUS_ADMIN_EDIT
 };
 
+enum { DISPLAY_NAME,
+       DISPLAY_VALUE };
+
 /* Input parameters */
 typedef struct {
 	bool all_flag;
@@ -156,6 +159,7 @@ struct popup_info {
 	int toggled;
 	int force_refresh;
 	int *running;
+	bool not_found;
 	GtkWidget *popup;
 	GtkWidget *event_box;
 	GtkWidget *button;
@@ -284,8 +288,10 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 extern GtkScrolledWindow *create_scrolled_window();
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
 extern GtkTreeView *create_treeview(display_data_t *local);
+extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table);
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data, int count);
+
 extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 
 				 GdkEventButton *event, 
 				 const display_data_t *display_data,
@@ -308,5 +314,8 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 extern char *str_tolower(char *upper_str);
 extern char *get_reason();
 extern void display_edit_note(char *edit_note);
-
+extern void add_display_treestore_line(int update,
+				       GtkTreeStore *treestore,
+				       GtkTreeIter *iter,
+				       char *name, char *value);
 #endif
