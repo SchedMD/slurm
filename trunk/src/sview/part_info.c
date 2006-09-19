@@ -285,6 +285,168 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 	return;
 }
 
+static void _layout_part_record(GtkTreeView *treeview, 
+				sview_part_info_t *sview_part_info,
+				int update)
+{
+	GtkTreeIter iter;
+	ListIterator itr = NULL;
+	char time_buf[20];
+	char tmp_cnt[7];
+	partition_info_t *part_ptr = sview_part_info->part_ptr;
+	sview_part_sub_t *sview_part_sub = NULL;
+	sview_part_sub_t *temp_part_sub = NULL;
+	sview_part_sub_t alloc_part_sub;
+	sview_part_sub_t idle_part_sub;
+	sview_part_sub_t other_part_sub;
+	char tmp[1024];
+
+	GtkTreeStore *treestore = 
+		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+	
+	memset(&alloc_part_sub, 0, sizeof(sview_part_sub_t));
+	memset(&idle_part_sub, 0, sizeof(sview_part_sub_t));
+	memset(&other_part_sub, 0, sizeof(sview_part_sub_t));
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_NAME].name,
+				   part_ptr->name);
+
+	if(part_ptr->default_part) 
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_DEFAULT].
+					   name, "*");
+	
+	if(part_ptr->hidden) 
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_HIDDEN].
+					   name, "*");
+	
+	if (part_ptr->state_up) 
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_AVAIL].
+					   name, "up");
+	else
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_AVAIL].
+					   name, "down");
+		
+	if (part_ptr->max_time == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		snprint_time(time_buf, sizeof(time_buf), 
+			     (part_ptr->max_time * 60));
+	}
+
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_TIMELIMIT].name,
+				   time_buf);
+	
+	_build_min_max_string(time_buf, sizeof(time_buf), 
+			      part_ptr->min_nodes, 
+			      part_ptr->max_nodes, true);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_JOB_SIZE].name,
+				   time_buf);
+	
+	if (part_ptr->min_nodes == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		convert_num_unit((float)part_ptr->min_nodes, 
+				 time_buf, UNIT_NONE);
+	}
+	add_display_treestore_line(update, treestore, &iter, 
+			   display_data_part[SORTID_MIN_NODES].name, 
+			   time_buf);
+	if (part_ptr->max_nodes == INFINITE)
+		snprintf(time_buf, sizeof(time_buf), "infinite");
+	else {
+		convert_num_unit((float)part_ptr->max_nodes, 
+				 time_buf, UNIT_NONE);
+	}
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_MAX_NODES].name, 
+				   time_buf);
+
+	if(part_ptr->root_only)
+		add_display_treestore_line(update, treestore, &iter,
+					   display_data_part[SORTID_ROOT].
+					   name, "yes");
+	else
+		add_display_treestore_line(update, treestore, &iter,
+					   display_data_part[SORTID_ROOT].
+					   name, "no");
+	
+	if(part_ptr->shared > 1)
+		add_display_treestore_line(update, treestore, &iter,
+					   display_data_part[SORTID_SHARE].
+					   name, "force");
+	else if(part_ptr->shared)
+		add_display_treestore_line(update, treestore, &iter,
+					   display_data_part[SORTID_SHARE].
+					   name, "yes");
+	else
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_SHARE].
+					   name, "no");
+	
+	if(part_ptr->allow_groups)
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_GROUPS].
+					   name,
+					   part_ptr->allow_groups);
+	else
+		add_display_treestore_line(update, treestore, &iter, 
+					   display_data_part[SORTID_GROUPS].
+					   name, "all");
+
+#ifdef HAVE_BG
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+#else
+	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
+#endif
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_NODES].name, 
+				   tmp_cnt);
+	convert_num_unit((float)part_ptr->total_cpus, tmp_cnt, UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_CPUS].name, 
+				   tmp_cnt);
+	
+
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_part[SORTID_NODELIST].name, 
+				   part_ptr->nodes);
+	itr = list_iterator_create(sview_part_info->sub_list);
+	while((sview_part_sub = list_next(itr))) {
+		if(sview_part_sub->node_state == NODE_STATE_IDLE)
+			temp_part_sub = &idle_part_sub;
+		else if(sview_part_sub->node_state == NODE_STATE_ALLOCATED)
+			temp_part_sub = &alloc_part_sub;
+		else
+			temp_part_sub = &other_part_sub;
+		temp_part_sub->node_cnt += sview_part_sub->node_cnt;
+		temp_part_sub->min_cpus += sview_part_sub->min_cpus;
+		temp_part_sub->max_cpus += sview_part_sub->max_cpus;
+		
+		temp_part_sub->min_disk += sview_part_sub->min_disk;
+		temp_part_sub->max_disk += sview_part_sub->max_disk;
+		
+		temp_part_sub->min_mem += sview_part_sub->min_mem;
+		temp_part_sub->max_mem += sview_part_sub->max_mem;
+		
+		temp_part_sub->min_weight += sview_part_sub->min_weight;
+		temp_part_sub->max_weight += sview_part_sub->max_weight;
+	}
+	snprintf(tmp, sizeof(tmp), "%u/%u/%u",
+		 alloc_part_sub.node_cnt,
+		 idle_part_sub.node_cnt,
+		 other_part_sub.node_cnt);		 
+	add_display_treestore_line(update, treestore, &iter,
+				   "Nodes (Allocated/Idle/Other)",
+				   tmp);
+}
+
 static void _update_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeStore *treestore, 
 				GtkTreeIter *iter)
@@ -357,7 +519,11 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		gtk_tree_store_set(treestore, iter, SORTID_GROUPS, "all", -1);
 
+#ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+#else
+	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
+#endif
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
@@ -816,58 +982,74 @@ static List _create_info_list(partition_info_msg_t *part_info_ptr,
 	return info_list;
 }
 
-void _display_info_part(partition_info_msg_t *part_info_ptr,
+void _display_info_part(List info_list,
 			popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->data;
-	int i, found = 0;
-	partition_info_t part;
-	char *info = NULL;
-	char *not_found = NULL;
-	GtkWidget *label = NULL;
-	
+	int found = 0;
+	partition_info_t *part_ptr = NULL;
+	GtkTreeView *treeview = NULL;
+	ListIterator itr = NULL;
+	sview_part_info_t *sview_part_info = NULL;
+	int update = 0;
+
 	if(!spec_info->data) {
-		info = xstrdup("No pointer given!");
+		//info = xstrdup("No pointer given!");
 		goto finished;
 	}
 
-	if(spec_info->display_widget) {
-		not_found = 
-			xstrdup(GTK_LABEL(spec_info->display_widget)->text);
-		gtk_widget_destroy(spec_info->display_widget);
-		spec_info->display_widget = NULL;
+need_refresh:
+	if(!spec_info->display_widget) {
+		treeview = create_treeview_2cols_attach_to_table(
+			popup_win->table);
+		spec_info->display_widget = 
+			gtk_widget_ref(GTK_WIDGET(treeview));
+	} else {
+		treeview = GTK_TREE_VIEW(spec_info->display_widget);
+		update = 1;
 	}
-	for (i = 0; i < part_info_ptr->record_count; i++) {
-		part = part_info_ptr->partition_array[i];
-		if (!part.nodes || (part.nodes[0] == '\0'))
+	
+	itr = list_iterator_create(info_list);
+	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
+		part_ptr = sview_part_info->part_ptr;
+		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
 			continue;	/* empty partition */
-		if(!strcmp(part.name, name)) {
-			if(!(info = slurm_sprint_partition_info(&part, 0))) {
-				info = xmalloc(100);
-				sprintf(info, 
-					"Problem getting partition "
-					"info for %s", 
-					part.name);
-			}
+		if(!strcmp(part_ptr->name, name)) {
+			_layout_part_record(treeview, sview_part_info, update);
 			found = 1;
 			break;
 		}
 	}
-	if(!found) {
-		char *temp = "PARTITION DOESN'T EXSIST\n";
-		if(!not_found || strncmp(temp, not_found, strlen(temp))) 
-			info = xstrdup(temp);
-		xstrcat(info, not_found);
-	}
-finished:
-	label = gtk_label_new(info);
-	xfree(info);
-	xfree(not_found);
-	gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1); 
-	gtk_widget_show(label);	
-	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+	list_iterator_destroy(itr);
 	
+	if(!found) {
+		if(!popup_win->not_found) { 
+			char *temp = "PARTITION DOESN'T EXSIST\n";
+			GtkTreeIter iter;
+			GtkTreeModel *model = NULL;
+	
+			/* only time this will be run so no update */
+			model = gtk_tree_view_get_model(treeview);
+			add_display_treestore_line(0, 
+						   GTK_TREE_STORE(model), 
+						   &iter,
+						   temp, "");
+		}
+		popup_win->not_found = true;
+	} else {
+		if(popup_win->not_found) { 
+			popup_win->not_found = false;
+			gtk_widget_destroy(spec_info->display_widget);
+			
+			goto need_refresh;
+		}
+		
+	}
+	gtk_widget_show(spec_info->display_widget);
+		
+finished:
+		
 	return;
 }
 
@@ -1384,7 +1566,7 @@ display_it:
 
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
-		_display_info_part(part_info_ptr, popup_win);
+		_display_info_part(info_list, popup_win);
 	} else {
 		_update_info_part(info_list, 
 				  GTK_TREE_VIEW(spec_info->display_widget), 
