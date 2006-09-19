@@ -77,8 +77,12 @@ expect {
 		set jobid $expect_out(1,string)
 	}
 	timeout {
-		slow_kill $salloc_pid
-		set exit_code 1
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
+		exit 1
 	}
 }
 expect {
@@ -86,8 +90,10 @@ expect {
 		set cpu_cnt $expect_out(1,string)
 	}
 	timeout {
-		slow_kill $salloc_pid
-		set exit_code 1
+		send_user "\nFAILURE: salloc not responding\n"
+		cancel_job $job_id
+		slow_kill [expr 0 - $salloc_pid]
+		exit 1
 	}
 }
 file delete $script_name

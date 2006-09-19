@@ -49,7 +49,10 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc failed to grab an allocation "
 		send_user "in a timely manner.\n"
-		exec kill $salloc_pid
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
 		exit 1
 	}
 }
