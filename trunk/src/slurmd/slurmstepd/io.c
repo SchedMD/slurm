@@ -603,7 +603,7 @@ _task_read(eio_obj_t *obj, List objs)
 
 	xassert(out->magic == TASK_OUT_MAGIC);
 
-	debug4("Entering _task_read");
+	debug4("Entering _task_read for obj %x", obj);
 	len = cbuf_free(out->buf);
 	if (len > 0 && !out->eof) {
 again:
@@ -634,7 +634,7 @@ again:
 	/*
 	 * Send the eof message
 	 */
-	if (cbuf_used(out->buf) == 0 && out->eof) {
+	if (cbuf_used(out->buf) == 0 && out->eof && !out->eof_msg_sent) {
 		_send_eof_msg(out);
 	}
 	
