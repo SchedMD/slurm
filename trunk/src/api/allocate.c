@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <poll.h>
+#include <sys/poll.h>
 #include <stdbool.h>
 #include <time.h>
 #include <netinet/in.h> /* for ntohs() */
@@ -151,7 +151,8 @@ slurm_allocate_resources (job_desc_msg_t *req,
  *	allocate resources for a job request.  This call will block until
  *	the allocation is granted, or the specified timeout limit is reached.
  * IN req - description of resource allocation request
- * IN timeout - amount of time to wait for a response before giving up.
+ * IN timeout - amount of time, in seconds, to wait for a response before
+ * 	giving up.
  *	A timeout of zero will wait indefinitely.
  * IN pending_callback - If the allocation cannot be granted immediately,
  *      the controller will put the job in the PENDING state.  If
@@ -178,9 +179,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
-
-	if (timeout == 0)
-		timeout = (time_t)-1;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -671,7 +669,7 @@ _accept_msg_connection(int listen_fd,
 
 /* Wait up to sleep_time for RPC from slurmctld indicating resource allocation
  * has occured.
- * IN sleep_time: delay in seconds
+ * IN sleep_time: delay in seconds (0 means unbounded wait)
  * OUT resp: resource allocation response message
  * RET 1 if resp is filled in, 0 otherwise */
 static int
@@ -680,11 +678,17 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 {
 	struct pollfd fds[1];
 	int rc;
+	int timeout_ms;
 
 	fds[0].fd = listen->fd;
 	fds[0].events = POLLIN;
 
-	while ((rc = poll(fds, 1, (sleep_time * 1000))) < 0) {
+	if (sleep_time != 0) {
+		timeout_ms = sleep_time * 1000;
+	} else {
+		timeout_ms = -1;
+	}
+	while ((rc = poll(fds, 1, timeout_ms)) < 0) {
 		switch (errno) {
 			case EAGAIN:
 			case EINTR:

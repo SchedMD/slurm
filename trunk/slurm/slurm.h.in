@@ -806,7 +806,8 @@ extern int slurm_allocate_resources PARAMS((
  *	allocate resources for a job request.  This call will block until
  *	the allocation is granted, or the specified timeout limit is reached.
  * IN req - description of resource allocation request
- * IN timeout - amount of time to wait for a response before giving up.
+ * IN timeout - amount of time, in seconds, to wait for a response before
+ * 	giving up.
  *	A timeout of zero will wait indefinitely.
  * IN pending_callback - If the allocation cannot be granted immediately,
  *      the controller will put the job in the PENDING state.  If
