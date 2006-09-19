@@ -83,7 +83,7 @@
 #define OPT_STRING      0x02
 #define OPT_DEBUG       0x03
 #define OPT_DISTRIB     0x04
-#define OPT_OVERCOMMIT  0x06
+#define OPT_BOOL        0x06
 #define OPT_CORE        0x07
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
@@ -680,9 +680,9 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_MEM_BIND",     OPT_MEM_BIND,  NULL,               NULL           },
   {"SLAUNCH_DEBUG",        OPT_DEBUG,     NULL,               NULL           },
   {"SLAUNCH_DISTRIBUTION", OPT_DISTRIB,   NULL,               NULL           },
-  {"SLAUNCH_KILL_BAD_EXIT",OPT_INT,       &opt.kill_bad_exit, NULL           },
-  {"SLAUNCH_LABELIO",      OPT_INT,       &opt.labelio,       NULL           },
-  {"SLAUNCH_OVERCOMMIT",   OPT_OVERCOMMIT,NULL,               NULL           },
+  {"SLAUNCH_KILL_BAD_EXIT",OPT_BOOL,      &opt.kill_bad_exit, NULL           },
+  {"SLAUNCH_LABELIO",      OPT_BOOL,      &opt.labelio,       NULL           },
+  {"SLAUNCH_OVERCOMMIT",   OPT_BOOL,      &opt.overcommit,    NULL           },
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
   {"SLAUNCH_COMM_HOSTNAME",OPT_STRING,    &opt.comm_hostname, NULL           },
@@ -732,6 +732,24 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_BOOL:
+		/* A boolean env variable is true if:
+		 *  - set, but no argument
+		 *  - argument is "yes"
+		 *  - argument is a non-zero number
+		 */
+		if (val == NULL || strcmp(val, "") == 0) {
+			*((bool *)e->arg) = true;
+		} else if (strcasecmp(val, "yes") == 0) {
+			*((bool *)e->arg) = true;
+		} else if ((strtol(val, &end, 10) != 0)
+			   && end != val) {
+			*((bool *)e->arg) = true;
+		} else {
+			*((bool *)e->arg) = false;
+		}
+		break;
+
 	case OPT_DEBUG:
 		if (val != NULL) {
 			opt.verbose = (int) strtol(val, &end, 10);
@@ -761,10 +779,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (_verify_mem_bind(val, &opt.mem_bind,
 				&opt.mem_bind_type))
 			exit(1);
-		break;
-
-	case OPT_OVERCOMMIT:
-		opt.overcommit = true;
 		break;
 
 	case OPT_CORE:
