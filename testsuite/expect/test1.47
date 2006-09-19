@@ -49,7 +49,7 @@ make_bash_script $file_in "
 
 set timeout $max_job_delay
 set job_id 0
-spawn $srun -o $file_out -b $file_in
+set srun_pid [spawn $srun -o $file_out -b $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -57,7 +57,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
 		exp_continue
 	}
@@ -106,7 +106,7 @@ make_bash_script $file_in "
 "
 
 set matches 0
-spawn $srun -o $file_out -b $file_in
+set srun_pid [spawn $srun -o $file_out -b $file_in]
 expect {
 	-re "More .* requested than permitted" {	
 		send_user "This error was expected, no worries\n\n"
@@ -115,9 +115,8 @@ expect {
 	}	
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -133,7 +132,7 @@ make_bash_script $file_in "
   $bin_sleep $delay
 "
 
-spawn $srun -N1 -o $file_out -b $file_in
+set srun_pid [spawn $srun -N1 -o $file_out -b $file_in]
 expect {
 	-re "More nodes requested than permitted" {
 		send_user "\nFAILURE: srun read from the batch file options"
@@ -143,9 +142,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

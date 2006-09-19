@@ -6,9 +6,6 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.46.input, test1.46.output, and test1.46.error
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -76,7 +73,7 @@ exec $bin_chmod 700 $file_in
 # Spawn a shell via srun and send exit command to task 1 only
 #
 set timeout $max_job_delay
-spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 $file_in
+set srun_pid [spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 $file_in]
 expect {
 	-re "exit code 2" {
 		send_user "This error is expected, no worries\n"
@@ -89,9 +86,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pidkill_srun
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

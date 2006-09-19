@@ -103,7 +103,7 @@ for {set i 0} {$i<2} {incr i} {
 	set job_id 0
 	set node0  ""
 	set node1  ""
-	spawn $srun -N2 -l $bin_printenv SLURMD_NODENAME
+	set srun_pid [spawn $srun -N2 -l $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "SwitchType does not permit arbitrary task distribution" {
 			set no_hostfile 1
@@ -124,11 +124,7 @@ for {set i 0} {$i<2} {incr i} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			if {$job_id == 0} {
-				kill_srun
-			} else {
-				cancel_job $job_id
-			}
+			slow_kill $srun_pid
 			set exit_code 1
 		}
 		eof {

@@ -60,7 +60,7 @@ if { [test_bluegene] } {
 	}
 }
 
-spawn $srun -N$node_cnt -A -v -t1
+set srun_pid [spawn $srun -N$node_cnt -A -v -t1]
 expect {
 	-re "jobid ($number):" {
 		set job_id_1 $expect_out(1,string)
@@ -81,11 +81,12 @@ expect {
 		send_user "\nFAILURE: srun not responding\n"
 		if {$job_id_1 != 0} {
 			cancel_job $job_id_1
-		} else {
-			kill_srun
 		}
+		if {$job_id_2 != 0} {
+			cancel_job $job_id_2
+		}
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
