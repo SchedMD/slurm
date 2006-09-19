@@ -350,6 +350,7 @@ documents those changes that are of interest to users and admins.
     previously just hung).
  -- Make sure that "scancel -s KILL" terminates the job just like "scancel" 
     including deletion of all job steps (Chris Holmes, HP, slurm,patch).
+ -- Recognize ISO-8859 input to srun as a script (for non-English scripts).
 
 * Changes in SLURM 1.0.15
 =========================
