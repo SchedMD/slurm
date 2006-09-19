@@ -258,7 +258,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"      <menuitem action='search'/>"
 		"      <separator/>"
 		"      <menuitem action='config'/>"
-		"      <menuitem action='deamons'/>"
+		"      <menuitem action='daemons'/>"
 		"    </menu>"
 		"    <menu action='help'>"
 		"      <menuitem action='about'/>"
@@ -281,9 +281,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"config", NULL, "Config _Info", 
 		 "<control>i", "Displays info from slurm.conf file", 
 		 G_CALLBACK(create_config_popup)},
-		{"deamons", NULL, "_Deamons", 
-		 "<control>d", "Displays Deamons running on node", 
-		 G_CALLBACK(create_deamon_popup)},
+		{"daemons", NULL, "_Daemons", 
+		 "<control>d", "Displays Daemons running on node", 
+		 G_CALLBACK(create_daemon_popup)},
 		{"search", NULL, "Search", 
 		 "<control>f", "Search through SLURM", 
 		 G_CALLBACK(create_search_popup)},
