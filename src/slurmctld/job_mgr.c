@@ -2450,6 +2450,11 @@ void job_time_limit(void)
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
+		/* Consider a job active if it has any active steps */
+		if (job_ptr->step_list
+		&&  (list_count(job_ptr->step_list) > 0))
+			job_ptr->time_last_active = now;
+
 		if (slurmctld_conf.inactive_limit
 		&&  (job_ptr->time_last_active <= old)
 		&&  (job_ptr->part_ptr)
