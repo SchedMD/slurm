@@ -54,11 +54,10 @@ make_bash_script $test_script {
 #
 # Launch the test script
 #
-set srun_pid [spawn $srun -u -v -n1 $test_script]
-
 set timeout $max_job_delay
 set jobid  0
 set stepid 0
+set srun_pid [spawn $srun -u -v -n1 $test_script]
 expect {
 	-re "launching (($number)\.0)" {
 		set stepid $expect_out(1,string)
@@ -68,7 +67,7 @@ expect {
 	"Running" {}
 	timeout {
 		send_user "\nFAILURE: Failed to launch test program through srun\n"
-		catch {exec $scancel $jobid}
+		slow_kill $srun_pid
 		exit 1
 	}
 }

@@ -42,7 +42,7 @@ print_header $test_id
 # Submit a slurm allocate job
 #
 set timeout $max_job_delay
-spawn $srun --allocate -t1 --no-shell
+set srun_pid [spawn $srun --allocate -t1 --no-shell]
 expect {
 	-re "SLURM_JOBID=($number).*" {
 		set job_id $expect_out(1,string)
@@ -50,9 +50,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -95,7 +94,7 @@ exec $scancel --quiet $job_id
 # Create a job allocation as some other user, namely root
 #
 set job_id 0
-spawn $srun --allocate -t1 --no-shell --uid=0
+set srun_pid [spawn $srun --allocate -t1 --no-shell --uid=0]
 expect {
 	-re "SLURM_JOBID=($number).*" {
 		set job_id $expect_out(1,string)
@@ -107,9 +106,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -145,10 +143,7 @@ if { $job_id == -1 } {
 		send_user "\nFAILURE: job $job_id not in run state\n"
 		exit 1
 	}
-#
-#	Kill the job
-#
-	exec $scancel --quiet $job_id
+	cancel_job $job_id
 }
 
 if { $exit_code == 0 } {

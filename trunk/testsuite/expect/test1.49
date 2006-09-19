@@ -81,7 +81,7 @@ if { [test_bluegene] } {
 	set node_cnt 1-1
 }
 
-spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
+set srun_pid [spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in]
 expect {
 	-re "TEST==prolog_qa" {
 		incr matches
@@ -94,9 +94,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

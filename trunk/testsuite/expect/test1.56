@@ -58,9 +58,8 @@ close $file
 #
 # Launch the test script
 #
-spawn $srun -v -n1 --input=$file_in --output=$file_out --error=- cat
-
 set timeout $max_job_delay
+set srun_pid [spawn $srun -v -n1 --input=$file_in --output=$file_out --error=- cat]
 expect {
 	-re {launching ($number)\.($number)} {
 		set jobid $expect_out(1,string)
@@ -68,7 +67,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun launch failed\n"
-		catch {exec $scancel $jobid}
+		slow_kill $srun_pid
 		exit 1
     	}
 	eof {
