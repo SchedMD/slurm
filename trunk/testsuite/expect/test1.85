@@ -77,7 +77,7 @@ make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
 # Submit a batch job explicitly to the default partition
 #
 set job_id           0
-spawn $srun --batch --output=/dev/null --error=/dev/null --hold --partition=$def_part_name -t1 $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null --hold --partition=$def_part_name -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -85,9 +85,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -134,7 +133,7 @@ if (![string compare $other_part_name ""]) {
 # Submit job explicitly to a non-default partition
 #
 set job_id           0
-spawn $srun --batch --output=/dev/null --error=/dev/null --hold --partition=$other_part_name -t1 $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null --hold --partition=$other_part_name -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -142,9 +141,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

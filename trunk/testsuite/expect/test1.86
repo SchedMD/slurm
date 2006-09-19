@@ -62,7 +62,7 @@ make_bash_script $file_in "
 # Submit a 2 node job
 #
 set timeout $max_job_delay
-spawn $srun -N2 -A $file_in
+set srun_pid [spawn $srun -N2 -A $file_in]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -78,15 +78,12 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
-		exec $bin_rm -f $file_in
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
 		wait
 		send_user "\nFAILURE: srun terminated\n"
-		kill_srun
-		exec $bin_rm -f $file_in
 		exit 1
 	}
 }
@@ -118,7 +115,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -166,7 +163,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -203,7 +200,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -247,7 +244,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -284,7 +281,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -321,7 +318,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -355,7 +352,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -394,7 +391,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -426,7 +423,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -451,7 +448,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -477,7 +474,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {

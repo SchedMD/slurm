@@ -46,7 +46,7 @@ set task_cnt    0
 set can_not_run 0
 set timeout $max_job_delay
 
-spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID
+set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
@@ -65,9 +65,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -84,7 +83,7 @@ if {[string compare $host_0 ""] == 0} {
 
 set alloc_fail 0
 set task_cnt2  0
-spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID
+set srun_pid [spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -96,9 +95,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -120,7 +118,7 @@ if { $task_cnt2 != 0 } {
 set host_0      ""
 set host_1      ""
 
-spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID
+set srun_pid [spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -133,9 +131,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -165,7 +162,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID
+set srun_pid [spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -184,9 +181,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -227,7 +223,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID
+set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -250,9 +246,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

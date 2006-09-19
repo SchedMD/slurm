@@ -280,7 +280,6 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	if {$failures == 0} {
 		incr successes
 	} else {
-		kill_srun
 		set exit_code 1
 	}
 }
