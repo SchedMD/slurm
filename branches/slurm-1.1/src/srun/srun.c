@@ -678,7 +678,8 @@ _is_file_text (char *fname, char **shell_ptr)
 	(void) close (fd);
 
 	for (i=0; i<buf_size; i++) {
-		if ((int) text_chars[buffer[i]] != T) {
+		if (((int) text_chars[buffer[i]] != T) 
+		&&  ((int) text_chars[buffer[i]] != I)) {
 			rc = 0;
 			break;
 		}
