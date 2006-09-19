@@ -60,18 +60,25 @@ exec $bin_chmod 700 $file_in
 #
 # Spawn a shell via slaunch that uses stdin/out/err and confirm their contents
 #
+set job_id  0
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 -t1 $slaunch --slaunch-input=$file_in --slaunch-output=$file_out --slaunch-error=$file_err $bin_bash]
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
 		exit 1
 	}
 	timeout {
 		send_user "\nFAILURE: salloc/slaunch not responding\n"
-		exec $bin_kill -TERM "-$salloc_pid"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -148,8 +155,13 @@ if {$got_sleep_err == 0} {
 #
 # Spawn a program to run for a while with no input, output or error
 #
+set job_id 0
 set salloc_pid [spawn $salloc -N1 -t1 $slaunch --slaunch-input=none --slaunch-output=none --slaunch-error=none $bin_od -c $srun]
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
 		exit 1
@@ -165,7 +177,10 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}

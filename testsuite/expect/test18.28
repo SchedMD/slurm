@@ -78,11 +78,10 @@ for {set inx 1} {$inx <= 4} {set inx [expr $inx * 2]} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc not responding\n"
-			if {$job_id == 0} {
-				slow_kill $salloc_pid
-			} else {
+			if {$job_id != 0} {
 				cancel_job $job_id
 			}
+			slow_kill [expr 0 - $salloc_pid]
 			exit 1
 		}
 		eof {
