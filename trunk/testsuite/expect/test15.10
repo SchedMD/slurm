@@ -62,7 +62,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 			if {$job_id != 0} {
 				cancel_job $job_id
 			}
-			slow_kill $salloc_pid
+			slow_kill [expr 0 - $salloc_pid]
 			set exit_code 1
 		}
 		eof {

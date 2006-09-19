@@ -82,11 +82,9 @@ expect {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id_1 != 0} {
 			cancel_job $job_id_1
-		} else {
-			slow_kill $salloc_pid
 		}
+		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

@@ -48,7 +48,7 @@ print_header $test_id
 # Submit a job and get the node's NodeName from the nodelist
 #
 set timeout $max_job_delay
-spawn $srun -v -N1 -l -t1 $bin_hostname
+set srun_pid [spawn $srun -v -N1 -l -t1 $bin_hostname]
 expect {
 	-re "on host ($alpha_numeric)," {
 		set nodelist_name $expect_out(1,string)
@@ -60,9 +60,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -89,15 +88,15 @@ make_bash_script $file_in "$srun $bin_sleep 5"
 # with sharing permitted. Insure the first job completes before the 
 # second job is started.
 #
-spawn $sbatch -N1 --exclusive --nodelist=$nodelist_name -t1 --output=$file_out --error=$file_err  $file_in
+set sbatch_pid [spawn $sbatch -N1 --exclusive --nodelist=$nodelist_name -t1 --output=$file_out --error=$file_err  $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
@@ -112,7 +111,7 @@ if {$job_id1 == 0} {
 set partition "dummy"
 set waited 1
 set timeout [expr $timeout + 5]
-spawn $srun -N1 --nodelist=$nodelist_name -t1 --share $scontrol -o show job $job_id1
+set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 --share $scontrol -o show job $job_id1]
 expect {
 	-re "Partition=($alpha_numeric)" {
 		set partition $expect_out(1,string)
@@ -124,7 +123,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {

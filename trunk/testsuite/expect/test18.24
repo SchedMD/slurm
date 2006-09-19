@@ -59,7 +59,7 @@ make_bash_script $file_script "
 #
 set job_id  0
 set matches 0
-spawn ./$file_script
+set salloc_pid [spawn ./$file_script]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -71,11 +71,10 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		if {$job_id == 0} {
-			kill_salloc
-		} else {
-			cancel_job $job_id
+		if {$job_id != 0} {
+			 cancel_job $job_id
 		}
+		slow_kill [expr 0 - $salloc_pid]
 		exit 1
 	}
 	eof {
