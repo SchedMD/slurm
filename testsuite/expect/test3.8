@@ -75,7 +75,7 @@ make_bash_script $file_in "
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in
+set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -83,9 +83,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -148,7 +147,7 @@ set job_id        0
 
 exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3
 
-spawn $srun --no-requeue --batch --output=$file_out --error=$file_err -t1 $file_in
+set srun_pid [spawn $srun --no-requeue --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -156,9 +155,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

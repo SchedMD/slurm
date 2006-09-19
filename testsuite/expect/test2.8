@@ -50,7 +50,7 @@ make_bash_script $file_in "
 #
 # Submit a couple jobs so we have something to work with
 #
-spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -58,7 +58,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -67,11 +67,10 @@ expect {
 }
 if {$job_id1 == 0} {
 	send_user "\nFAILURE: srun submit failed\n"
-	kill_srun
 	exit 1
 }
 
-spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in
+set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id2 $expect_out(1,string)
@@ -80,7 +79,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		cancel_job $job_id1
-		kill_srun
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
@@ -90,7 +89,6 @@ expect {
 if {$job_id2 == 0} {
 	send_user "\nFAILURE: srun submit failed\n"
 	cancel_job $job_id1
-	kill_srun
 	exit 1
 }
 
