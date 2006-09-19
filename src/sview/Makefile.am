@@ -26,7 +26,7 @@ sview_CFLAGS = $(GTK2_CFLAGS)
 
 else
 
-EXTRA_sview_SOURCES = sview.h sview.c part_info.c job_info.c \
+EXTRA_sview_SOURCES = sview.h sview.c popups.c part_info.c job_info.c \
 	block_info.c node_info.c \
 	submit_info.c admin_info.c common.c
 
