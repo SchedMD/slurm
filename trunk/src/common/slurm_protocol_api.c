@@ -1699,6 +1699,10 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		if(req->forward.cnt>0) {
 			steps = req->forward.cnt/slurm_get_tree_width();
 			steps += 1;
+			if (!req->forward.timeout)
+				req->forward.timeout = 
+					slurm_get_msg_timeout() * 1000;
+		
 			timeout += (req->forward.timeout*steps);
 		}
 		rc = slurm_receive_msg(fd, resp, timeout);
@@ -1742,6 +1746,10 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 		if(req->forward.cnt>0) {
 			steps = req->forward.cnt/slurm_get_tree_width();
 			steps += 1;
+			if (!req->forward.timeout)
+				req->forward.timeout = 
+					slurm_get_msg_timeout() * 1000;
+		
 			timeout += (req->forward.timeout*steps);
 		}
 		ret_list = slurm_receive_msgs(fd, timeout);
@@ -1963,36 +1971,43 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		error("slurm_send_recv_msgs: no nodelist given");
 		return NULL;
 	}
-	//info("total sending to %s",nodelist);
+/* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);
 
 	while((name = hostlist_shift(hl))) {
-		//info("sending to %s", name);
+		
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
 			error("slurm_send_recv_msgs: can't get addr for "
 			      "host %s", name);
+			mark_as_failed_forward(&tmp_ret_list, name, 
+					       SLURM_SOCKET_ERROR);
 			free(name);
 			continue;
 		
 		}
 		
 		if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
+			error("slurm_send_recv_msgs to %s: %m", name);
+
 			mark_as_failed_forward(&tmp_ret_list, name, 
 					       SLURM_SOCKET_ERROR);
 			free(name);
 			continue;
 		}
 
+/* 		info("sending to %s", name); */
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 
 		forward_init(&msg->forward, NULL);
 		msg->forward.nodelist = xstrdup(buf);
 		msg->forward.timeout = timeout;
 		msg->forward.cnt = hostlist_count(hl);
-		/* info("forwarding to %s", msg->forward.nodelist); */
+/* 		info("along with to %s", msg->forward.nodelist); */
 		
 		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
 			xfree(msg->forward.nodelist);
+			error("slurm_send_recv_msgs(_send_and_recv_msgs) "
+			      "to %s: %m", name);
 			mark_as_failed_forward(&tmp_ret_list, name, errno);
 			free(name);
 			continue;
