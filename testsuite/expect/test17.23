@@ -57,6 +57,10 @@ expect {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
 	eof {
 		wait
 	}
@@ -71,6 +75,10 @@ expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
 	}
 	eof {
 		wait
@@ -87,6 +95,10 @@ expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)
 		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
 	}
 	eof {
 		wait
