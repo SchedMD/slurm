@@ -372,7 +372,8 @@ static void mvapich_print_abort_message (slurm_step_layout_t *sl, int rank)
 		return;
 	}
 
-	host = step_layout_host_name (sl, step_layout_host_id (sl, rank));
+	host = slurm_step_layout_host_name(
+		sl, slurm_step_layout_host_id(sl, rank));
 
 	info ("mvapich: Received ABORT message from MPI rank %d [on %s]", 
 	      rank, host);
@@ -409,7 +410,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 		}
 		close(newfd);
 
-		mvapich_print_abort_message (job->step_layout, *((int *) rbuf));
+		mvapich_print_abort_message(job->step_layout, *((int *) rbuf));
 		fwd_signal(job, SIGKILL, opt.max_threads);
 	}
 
