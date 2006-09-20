@@ -2191,9 +2191,7 @@ extern void slurm_free_msg(slurm_msg_t * msg)
 {
 	if(msg->auth_cred)
 		(void) g_slurm_auth_destroy(msg->auth_cred);
-	/* make sure we have all the ones we sent to so we don't worry 
-	   about freing something that may be written to later */
-	forward_wait(msg);
+
 	if(msg->ret_list) {
 		list_destroy(msg->ret_list);
 		msg->ret_list = NULL;
