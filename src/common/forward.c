@@ -82,8 +82,6 @@ void *_forward_thread(void *arg)
 			free(name);
 			continue;
 		}
-		/* info("sending to %s with %d forwards",  */
-		/*     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
 		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
 			error("forward_thread to %s: %m", name);
 
