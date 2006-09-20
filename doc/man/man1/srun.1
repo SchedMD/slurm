@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "June 2006" "srun 1.2" "slurm components"
+.TH SRUN "1" "September 2006" "srun 1.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -111,12 +111,18 @@ and you can tell SLURM to run the job today with the keyword
 \fItomorrow\fR.
 The value may be changed after job submission using the
 \fBscontrol\fR command.
+
 .TP
 \fB\-U\fR, \fB\-\-account\fR=\fIaccount\fR
 Change resource use by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The may 
 be changed after job submission using the \fBscontrol\fR 
 command.
+
+.TP
+\fB\-\-comment\fR
+An arbitrary comment.
+
 .TP
 \fB\-t\fR, \fB\-\-time\fR=\fIminutes\fR
 Establish a time limit to terminate the job after the specified number of 

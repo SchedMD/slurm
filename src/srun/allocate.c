@@ -466,6 +466,8 @@ job_desc_msg_create_from_opts (char *script)
 		j->network = xstrdup(opt.network);
 	if (opt.account)
 		j->account = xstrdup(opt.account);
+	if (opt.comment)
+		j->comment = xstrdup(opt.comment);
 
 	if (opt.hold)
 		j->priority     = 0;
@@ -550,6 +552,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 {
 	if (j) {
 		xfree(j->account);
+		xfree(j->comment);
 		xfree(j->alloc_resp_hostname);
 		xfree(j->other_hostname);
 		xfree(j);

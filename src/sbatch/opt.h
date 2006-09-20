@@ -72,6 +72,7 @@ typedef struct sbatch_options {
 	unsigned int dependency;/* --dependency, -P jobid	*/
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
+	char *comment;		/* --comment			*/
 
 	int immediate;		/* -i, --immediate      	*/
 

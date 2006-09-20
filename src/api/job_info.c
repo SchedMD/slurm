@@ -336,6 +336,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 
 	/****** Line 13 (optional) ******/
+	if (job_ptr->comment) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		sprintf(tmp_line, "Comment=%s ", job_ptr->comment);
+		xstrcat(out, tmp_line);
+	}
+
+	/****** Line 14 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 	if (select_buf[0] != '\0') {

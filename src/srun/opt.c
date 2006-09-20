@@ -718,6 +718,7 @@ static void _opt_default()
 	opt.jobid_set = false;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
+	opt.comment  = NULL;
 
 	opt.distribution = -1;
 
@@ -1537,12 +1538,10 @@ void set_options(const int argc, char **argv, int first)
 			opt.no_requeue = true;
 			break;
 		case LONG_OPT_COMMENT:
-			/* Use account for Moab until job comment field
-			 * is actually available in slurm v1.2 */
-			if(!first && opt.account)
+			if(!first && opt.comment)
 				break;
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
+			xfree(opt.comment);
+			opt.comment = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2044,6 +2043,7 @@ static void _opt_list()
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
+	info("comment        : %s", opt.comment);
 	if (opt.dependency == NO_VAL)
 		info("dependency     : none");
 	else
@@ -2096,7 +2096,7 @@ static void _usage(void)
 "            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
-"            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
+"            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
@@ -2152,6 +2152,7 @@ static void _help(void)
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
+"      --comment=name          arbitrary comment\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"
 "      --prolog=program        run \"program\" before launching job step\n"

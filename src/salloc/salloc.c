@@ -229,6 +229,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->begin_time = opt.begin;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
+	if (opt.comment)
+		desc->comment = xstrdup(opt.comment);
 
 	if (opt.hold)
 		desc->priority     = 0;

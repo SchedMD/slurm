@@ -102,6 +102,7 @@
 #define LONG_OPT_BELL        0x124
 #define LONG_OPT_NO_BELL     0x125
 #define LONG_OPT_JOBID       0x126
+#define LONG_OPT_COMMENT     0x127
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -426,6 +427,7 @@ static void _opt_default()
 	opt.jobid = NO_VAL;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
+	opt.comment  = NULL;
 
 	opt.shared = (uint16_t)NO_VAL;
 	opt.no_kill = false;
@@ -671,6 +673,7 @@ void set_options(const int argc, char **argv)
 		{"bell",             no_argument,       0, LONG_OPT_BELL},
 		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
+		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:c:C:d:F:g:hHIJ:kK::n:N:p:qR:st:uU:vVw:W:x:";
@@ -871,6 +874,10 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_JOBID:
 			opt.jobid = _get_int(optarg, "jobid");
+			break;
+		case LONG_OPT_COMMENT:
+			xfree(opt.comment);
+			opt.comment = xstrdup(optarg);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1179,6 +1186,7 @@ static void _opt_list()
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
+	info("comment        : %s", opt.comment);
 	if (opt.dependency == NO_VAL)
 		info("dependency     : none");
 	else
@@ -1215,7 +1223,7 @@ static void _usage(void)
 "              [--verbose]\n"
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--account=name] [--dependency=jobid]\n"
+"              [--account=name] [--dependency=jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
@@ -1248,6 +1256,7 @@ static void _help(void)
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
+"      --comment=name          arbitrary comment\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "\n"
