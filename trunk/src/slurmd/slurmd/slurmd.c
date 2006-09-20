@@ -359,12 +359,18 @@ _service_connection(void *arg)
 {
 	conn_t *con = (conn_t *) arg;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-		
+	int rc = SLURM_SUCCESS;
+	
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
-	if((slurm_receive_and_forward_msgs(con->fd, con->cli_addr, msg, 0)) 
+	if((rc = slurm_receive_and_forward_msgs(
+		    con->fd, con->cli_addr, msg, 0))
 	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
+		/* if this fails we need to make sure the nodes we forward
+		   to are taken care of and sent back. This way the control
+		   also has a better idea what happened to us */
+		slurm_send_rc_msg(msg, rc);
 		goto cleanup;
 	}
 	debug2("got this type of message %d with %d other responses",
