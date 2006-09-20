@@ -250,6 +250,12 @@ The slurmd daemon uses this mechanism to identify all processes
 which are children of processes it spawns for a user job. 
 The slurmd daemon must be restarted for a change in ProctrackType
 to take effect.
+NOTE: "proctrack/linuxproc" and "proctrack/pgid" can fail to 
+identify all processes associated with a job since processes 
+can become a child of the init process (when the parent process 
+terminates) or change their process group. 
+To reliably track all processes, one of the other mechanisms 
+utilizing kernel modifications is preferable. 
 NOTE: "proctrack/linuxproc" is not compatable with "swich/elan."
 Acceptable values at present include:
 .RS
@@ -264,7 +270,7 @@ parent process IDs
 default if "SwitchType=switch/elan" 
 .TP
 \fBproctrack/sgi_job\fR which uses SGI's Process Aggregates (PAGG)
-kernel module, see \fIhttp://oss.sgi.comm/projects/pagg/\fR 
+kernel module, see \fIhttp://oss.sgi.com/projects/pagg/\fR 
 for more information 
 .TP
 \fBproctrack/pgid\fR which uses process group IDs and is the 
