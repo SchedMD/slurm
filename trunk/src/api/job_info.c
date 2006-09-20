@@ -214,9 +214,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if(job_ptr->nodes) {
 		if(quarter != (uint16_t) NO_VAL) {
 			if(nodecard != (uint16_t) NO_VAL) 
-				sprintf(tmp_line, ".%d.%d", quarter, nodecard);
+				sprintf(tmp_line, ".%u.%u", quarter, nodecard);
 			else
-				sprintf(tmp_line, ".%d", quarter);
+				sprintf(tmp_line, ".%u", quarter);
 			xstrcat(out, tmp_line);
 		} 
 	}
@@ -242,7 +242,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	convert_num_unit((float)job_ptr->num_nodes, tmp2, UNIT_NONE);
 	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
 #else
-	sprintf(tmp2, "%d", job_ptr->num_nodes);
+	sprintf(tmp2, "%u", job_ptr->num_nodes);
 	sprintf(tmp_line, "ReqProcs=%s MinNodes=%s ", tmp1, tmp2);
 #endif
 	xstrcat(out, tmp_line);
