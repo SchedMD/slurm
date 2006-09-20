@@ -409,6 +409,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * NICE_OFFSET == no change */
 	char *account;		/* charge to specified account */
 	char *network;		/* network use spec */
+	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
@@ -475,6 +476,7 @@ typedef struct job_info {
 	uint16_t wait_reason;	/* reason job still pending, see
 				 * slurm.h:enum job_wait_reason */
 	char *network;		/* network specification */
+	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* process using select_g_get_jobinfo() */
 } job_info_t;

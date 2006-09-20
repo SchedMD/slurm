@@ -98,6 +98,7 @@
 #define LONG_OPT_MAIL_USER   0x11b
 #define LONG_OPT_NICE        0x11e
 #define LONG_OPT_NO_REQUEUE  0x123
+#define LONG_OPT_COMMENT     0x124
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -387,6 +388,7 @@ static void _opt_default()
 	opt.jobid_set = false;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
+	opt.comment  = NULL;
 
 	opt.shared = (uint16_t)NO_VAL;
 	opt.no_kill = false;
@@ -597,6 +599,7 @@ static struct option long_options[] = {
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 	{"nice",             optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
+	{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 	{NULL,               0,                 0, 0}
 };
 
@@ -1080,6 +1083,10 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
 			break;
+		case LONG_OPT_COMMENT:
+			xfree(opt.comment);
+			opt.comment = xstrdup(optarg);
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1428,6 +1435,7 @@ static void _opt_list()
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
+	info("comment        : %s", opt.comment);
 	if (opt.dependency == NO_VAL)
 		info("dependency     : none");
 	else
@@ -1465,7 +1473,7 @@ static void _usage(void)
 "              [--jobid=id] [--verbose]\n"
 "              [-W sec]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--account=name] [--dependency=jobid]\n"
+"              [--account=name] [--dependency=jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
@@ -1501,6 +1509,7 @@ static void _help(void)
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
+"      --comment=name          arbitrary comment\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"

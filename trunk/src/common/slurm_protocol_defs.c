@@ -60,7 +60,6 @@
 #include "src/common/forward.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
-static void _slurm_free_job_info_members (job_info_t * job);
 
 static void _free_all_node_info (node_info_msg_t *msg);
 static void _slurm_free_node_info_members (node_info_t * node);
@@ -202,6 +201,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->other_hostname);
 		xfree(msg->account);
 		xfree(msg->network);
+		xfree(msg->comment);
 		xfree(msg);
 	}
 }
@@ -261,6 +261,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->network);
+		xfree(job->comment);
 	}
 }
 
@@ -861,28 +862,8 @@ static void _free_all_job_info(job_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		_slurm_free_job_info_members (&msg->job_array[i]);
+		slurm_free_job_info_members (&msg->job_array[i]);
 }
-
-static void _slurm_free_job_info_members(job_info_t * job)
-{
-	if (job) {
-		xfree(job->nodes);
-		xfree(job->partition);
-		xfree(job->account);
-		xfree(job->name);
-		xfree(job->alloc_node);
-		xfree(job->node_inx);
-		select_g_free_jobinfo(&job->select_jobinfo);
-		xfree(job->features);
-		xfree(job->req_nodes);
-		xfree(job->req_node_inx);
-		xfree(job->exc_nodes);
-		xfree(job->exc_node_inx);
-		xfree(job->network);
-	}
-}
-
 
 /*
  * slurm_free_job_step_info_response_msg - free the job step 

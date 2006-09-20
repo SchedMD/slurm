@@ -333,6 +333,7 @@ struct job_record {
 	uint16_t other_port;		/* port for client communications */
 	char *other_host;		/* host for client communications */
 	char *account;			/* account number to charge */
+	char *comment;			/* arbitrary comment */
 	uint32_t dependency;		/* defer until this job completes */
 	char *network;			/* network/switch requirement spec */
 	struct job_record *job_next;	/* next entry with same hash index */

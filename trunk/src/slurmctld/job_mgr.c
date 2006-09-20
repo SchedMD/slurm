@@ -520,6 +520,7 @@ Update JOB_STATE_VERSION
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
+	packstr(dump_job_ptr->comment, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 
@@ -558,6 +559,7 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *alloc_resp_host = NULL, *other_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
+	char *comment = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -600,6 +602,7 @@ job_ptr->exit_code = exit_code;
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
+	safe_unpackstr_xmalloc(&comment, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 
@@ -684,6 +687,8 @@ job_ptr->exit_code = exit_code;
 	xfree(partition);
 	job_ptr->account = account;
 	account          = NULL;  /* reused, nothing left to free */
+	job_ptr->comment = comment;
+	comment          = NULL;  /* reused, nothing left to free */
 	job_ptr->network = network;
 	network          = NULL;  /* reused, nothing left to free */
 	job_ptr->part_ptr = part_ptr;
@@ -722,6 +727,7 @@ job_ptr->exit_code = exit_code;
 	xfree(name);
 	xfree(alloc_node);
 	xfree(account);
+	xfree(comment);
 	xfree(mail_user);
 	select_g_free_jobinfo(&select_jobinfo);
 	return SLURM_FAILURE;
@@ -1283,8 +1289,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->alloc_resp_hostname, job_specs->alloc_resp_port);
 	debug3("   other_hostname=%s other_port=%u",
 	       job_specs->other_hostname, job_specs->other_port);
-	debug3("   dependency=%ld account=%s",
-	       dependency, job_specs->account);
+	debug3("   dependency=%ld account=%s comment=%s",
+	       dependency, job_specs->account, job_specs->comment);
 
 	num_tasks = (job_specs->num_tasks != (uint16_t) NO_VAL) ?
 			(long) job_specs->num_tasks : -1L;
@@ -2329,6 +2335,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->network    = xstrdup(job_desc->network);
+	job_ptr->comment    = xstrdup(job_desc->comment);
 	if (job_desc->dependency != NO_VAL) /* leave as zero */
 		job_ptr->dependency = job_desc->dependency;
 
@@ -2618,6 +2625,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->account);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
+	xfree(job_ptr->comment);
 	xfree(job_ptr->ntask);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
@@ -2782,6 +2790,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
+	packstr(dump_job_ptr->comment, buffer);
 	pack32((uint32_t)dump_job_ptr->dependency, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
