@@ -857,10 +857,6 @@ static void *_thread_per_group_rpc(void *args)
 	while((ret_data_info = list_next(itr)) != NULL) {
 		rc = slurm_get_return_code(ret_data_info->type, 
 					   ret_data_info->data);
-		if(rc == SLURM_ERROR) {
-			errno = ret_data_info->err;
-			continue;
-		}
 #if AGENT_IS_THREAD
 		/* SPECIAL CASE: Mark node as IDLE if job already 
 		   complete */
@@ -888,6 +884,7 @@ static void *_thread_per_group_rpc(void *args)
 			info("Killing non-startable batch job %u: %s", 
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
+			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
 			job_complete(job_id, 0, false, 1);
 			unlock_slurmctld(job_write_lock);
@@ -940,7 +937,7 @@ static void *_thread_per_group_rpc(void *args)
 			}
 			if(srun_agent)
 				thread_state = DSH_FAILED;
-			else if(ret_data_info->type == REQUEST_PING)
+			else if(ret_data_info->type == RESPONSE_FORWARD_FAILED)
 				/* check if a forward failed */
 				thread_state = DSH_NO_RESP;
 			else /* some will fail that don't mean anything went 
