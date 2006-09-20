@@ -143,7 +143,7 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	job->nodes = NULL;
 	job->track_steps = 0;
 	job->account = NULL;
-	job->requid = 0;
+	job->requid = -1;
 
       	return job;
 }
@@ -165,7 +165,7 @@ step_rec_t *_init_step_rec(acct_header_t header)
 	step->tot_cpu_sec = (uint32_t)NO_VAL;
 	step->tot_cpu_usec = (uint32_t)NO_VAL;
 	step->account = NULL;
-	step->requid = 0;
+	step->requid = -1;
 
 	return step;
 }
@@ -306,7 +306,6 @@ int _parse_line(char *f[], void **data, int len)
 		*job = _init_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
-		(*job)->requid = atoi(f[F_REQUID]);		
 		break;
 	default:
 		printf("UNKOWN TYPE %d",i);
@@ -530,7 +529,6 @@ void process_terminated(char *f[], int lc, int show_full, int len)
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;
 	job->show_full = show_full;
-	job->requid = temp->requid;
 	
 finished:
 	destroy_job(temp);

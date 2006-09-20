@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -1702,9 +1702,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->end_time   = now;
 		job_completion_logger(job_ptr);
 	} else {
-		if (job_return_code == NO_VAL)
+		if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
-		else if (job_return_code) {
+			if (job_ptr->requid == -1)
+ 				job_ptr->requid = uid;
+		} else if (job_return_code) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
 		}

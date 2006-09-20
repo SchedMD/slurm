@@ -1089,14 +1089,15 @@ void do_dump(void)
 					job->header.jobnum);
 			}
 			_dump_header(job->header);
-			printf("JOB_START 1 16 %d %d %s %d %d %d %s\n", 
+			printf("JOB_START 1 16 %d %d %s %d %d %d %s %s\n", 
 			       job->header.uid,
 			       job->header.gid,
 			       job->jobname,
 			       job->track_steps,
 			       job->priority,
 			       job->ncpus,
-			       job->nodes);
+			       job->nodes,
+			       job->account);
 		}
 		/* JOB_STEP */
 		itr_step = list_iterator_create(job->steps);
@@ -1148,7 +1149,7 @@ void do_dump(void)
 			       step->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.2f %u %u %.2f %s %s\n",
+			       "%.2f %u %u %.2f %s %s %s\n",
 			       step->sacct.max_vsize_id.nodeid,
 			       step->sacct.max_vsize_id.taskid,
 			       step->sacct.ave_vsize/1024,
@@ -1164,7 +1165,8 @@ void do_dump(void)
 			       step->sacct.min_cpu_id.taskid,
 			       step->sacct.ave_cpu,
 			       step->stepname,
-			       step->nodes);
+			       step->nodes,
+			       job->account);
 		}
 		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
@@ -1209,7 +1211,7 @@ void do_dump(void)
 			       job->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.2f %u %u %.2f %s %s\n",
+			       "%.2f %u %u %.2f %s %s %s %d\n",
 			       job->sacct.max_vsize_id.nodeid,
 			       job->sacct.max_vsize_id.taskid,
 			       job->sacct.ave_vsize/1024,
@@ -1225,7 +1227,9 @@ void do_dump(void)
 			       job->sacct.min_cpu_id.taskid,
 			       job->sacct.ave_cpu,
 			       "-",
-			       job->nodes);			
+			       job->nodes,
+			       job->account,
+			       job->requid);			
 		}
 	}
 	list_iterator_destroy(itr);		
@@ -1563,6 +1567,7 @@ void do_fdump(char* f[], int lc)
 			    "priority",	 /* F_PRIORITY */
 			    "ncpus",	 /* F_NCPUS */
 			    "nodeList", /* F_NODES */
+				"account",   /* F_JOB_ACCOUNT */
 			    NULL};
 		
 	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
@@ -1609,6 +1614,8 @@ void do_fdump(char* f[], int lc)
 			   "max_rss_node",	 /* F_MAX_RSS_NODE */
 			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
 			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
+			   "account",    /* F_STEP_ACCOUNT */
+			   "requid",     /* F_STEP_REQUID */
 			   NULL};
        
 	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
