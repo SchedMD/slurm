@@ -5,6 +5,7 @@ man1_MANS =            \
 	man1/sacct.1 \
 	man1/salloc.1 \
 	man1/sattach.1 \
+	man1/sbatch.1 \
 	man1/sbcast.1 \
 	man1/scancel.1 \
 	man1/scontrol.1 \
@@ -13,8 +14,7 @@ man1_MANS =            \
 	man1/slurm.1 \
 	man1/smap.1 \
 	man1/squeue.1 \
-	man1/srun.1 \
-	man1/sbcast.1   
+	man1/srun.1
 
 man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_hostlist_destroy.3 \
