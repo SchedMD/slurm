@@ -110,16 +110,6 @@ int plugrack_set_paranoia( plugrack_t rack,
 			   const uid_t uid );
 
 /*
- * Add a plugin to a rack by giving the pathname to the plugin.
- *
- * If a type has been set for this rack, the plugin's major type must
- * match or an error results.
- *
- * Returns a SLURM errno.
- */
-int plugrack_add_plugin_file( plugrack_t rack, const char *fq_path );
-
-/*
  * Add plugins to a rack by scanning the given directory.  If a
  * type has been set for this rack, only those plugins whose major type
  * matches the rack's type will be loaded.  If a rack's paranoia factors

@@ -412,41 +412,6 @@ plugrack_add_plugin_path( plugrack_t rack,
 }
 
   
-int
-plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
-{
-	static const size_t type_len = 64;
-	char plugin_type[ type_len ];
-
-        if ( ! rack ) return SLURM_ERROR;
-        if ( ! fq_path ) return SLURM_ERROR;
-
-        /*
-         * See if we should open this plugin.  Paranoia checks must
-         * always be done first since code can be executed in the plugin
-         * simply by opening it.
-         */
-        if ( ! accept_paranoia( rack, fq_path ) ) return SLURM_ERROR;
-
-	/* Test the type. */
-	if ( plugin_peek( fq_path,
-			  plugin_type,
-			  type_len,
-			  NULL ) == SLURM_ERROR ) {
-		return SLURM_ERROR;
-	}
-	if (   rack->major_type 
-	       && ( strncmp( rack->major_type,
-			     plugin_type,
-			     strlen( rack->major_type ) ) != 0 ) ) {
-		return SLURM_ERROR;
-        }
-
-        /* Add it to the list. */
-        return plugrack_add_plugin_path( rack, plugin_type, fq_path );
-}
-
-
 /* test for the plugin in the various colon separated directories */
 int
 plugrack_read_dir( plugrack_t rack, const char *dir )
@@ -532,7 +497,8 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
   
         while ( 1 ) {
                 e = readdir( dirp );
-                if ( e == NULL ) break;
+                if ( e == NULL )
+			break;
 
                 /*
                  * Compose file name.  Where NAME_MAX is defined it represents 
@@ -543,12 +509,14 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
                 strcpy( tail, e->d_name );
 		
                 /* Check only regular files. */
-		if ( strncmp(e->d_name, ".", 1) == 0) continue;
-                if ( stat( fq_path, &st ) < 0 ) continue;
-                if ( ! S_ISREG( st.st_mode ) ) continue;
+		if ( (strncmp(e->d_name, ".", 1) == 0)
+		||   (stat( fq_path, &st ) < 0)
+		||   (! S_ISREG(st.st_mode)) )
+			continue;
 
-		/* Check only shared object files. */
-		if ( ! _so_file( e->d_name) ) continue;
+		/* Check only shared object files */
+		if (! _so_file(e->d_name))
+			continue;
 
 		/* file's prefix must match specified major_type
 		 * to avoid having some program try to open a 
@@ -619,6 +587,10 @@ static bool
 _match_major ( const char *path_name, const char *major_type )
 {
 	char *head = (char *)path_name;
+
+	/* Special case for BlueGene systems */
+	if (strncmp(head, "libsched_if", 11) == 0)
+		return FALSE;
 
 	if (strncmp(head, "lib", 3) == 0)
 		head += 3;
