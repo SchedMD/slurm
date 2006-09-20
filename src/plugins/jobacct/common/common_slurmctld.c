@@ -96,7 +96,7 @@ const char *_jobstep_format =
 "%u "	/* max pages node */
 "%u "	/* min cpu node */
 "%s "   /* account */
-"%u";   /* requester user id */
+"%d";   /* requester user id */
 
 /*
  * Print the record to the log file.
@@ -250,11 +250,10 @@ extern int common_job_complete_slurmctld(struct job_record *job_ptr)
 		debug("jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	snprintf(buf, BUFFER_SIZE, "%d %u %d %u",
+	snprintf(buf, BUFFER_SIZE, "%d %u %d",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING),
-		 job_ptr->requid);
+		 job_ptr->job_state & (~JOB_COMPLETING));
 	
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
 }
@@ -310,7 +309,9 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		account = step->job_ptr->account;
 	else
 		account = "(null)";
-	
+
+	step->job_ptr->requid = -1;     /* force to -1 */
+
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
