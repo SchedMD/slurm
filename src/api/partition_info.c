@@ -113,7 +113,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp1, UNIT_NONE);
 #else
-	sprintf(tmp1, "%d", part_ptr->total_nodes);
+	sprintf(tmp1, "%u", part_ptr->total_nodes);
 #endif
 	convert_num_unit((float)part_ptr->total_cpus, tmp2, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
