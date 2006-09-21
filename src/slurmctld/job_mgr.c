@@ -1440,9 +1440,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 
 	no_alloc = test_only || too_fragmented || 
 			(!top_prio) || (!independent);
-	
 	error_code = select_nodes(job_ptr, no_alloc);
-	
+
 	if ((error_code == ESLURM_NODES_BUSY)
 	||  (error_code == ESLURM_JOB_HELD)
 	||  (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
