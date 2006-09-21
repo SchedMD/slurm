@@ -1688,7 +1688,6 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		   slurm_msg_t *resp, int timeout)
 {
 	int retry = 0;
-	int steps = 0;
 	int rc = 0; 
 	slurm_msg_t_init(resp);
 
