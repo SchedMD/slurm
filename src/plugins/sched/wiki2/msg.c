@@ -46,8 +46,11 @@ static pthread_t msg_thread_id;
 static char *err_msg;
 static int   err_code;
 
-int init_prio_mode = PRIO_HOLD;
-char *auth_key = NULL;
+/* Global configuration parameters */
+char *   auth_key = NULL;
+uint16_t e_port = 0;
+uint16_t job_aggregation_time = 0;
+int      init_prio_mode = PRIO_HOLD;
 
 static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
@@ -180,6 +183,8 @@ static void _parse_wiki_config(void)
 {
 	s_p_options_t options[] = {
 		{"AuthKey", S_P_STRING},
+		{"EPort", S_P_UINT16},
+		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING}, 
 		{NULL} };
 	s_p_hashtbl_t *tbl;
@@ -198,9 +203,10 @@ static void _parse_wiki_config(void)
 	if (s_p_parse_file(tbl, wiki_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading wiki.conf file");
 
-	if (! s_p_get_string(&auth_key, "AuthKey", tbl)) {
+	if (! s_p_get_string(&auth_key, "AuthKey", tbl))
 		debug("Warning: No wiki_conf AuthKey specified");
-	}
+	s_p_get_uint16(&e_port, "EPort", tbl);
+	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
 	if (s_p_get_string(&priority_mode, "JobPriority", tbl)) {
 		if (strcasecmp(priority_mode, "hold") == 0)
@@ -431,6 +437,9 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 		cancel_job(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
+	} else if (strncmp(cmd_ptr, "JOBREQUEUE", 10) == 0) {
+		job_requeue(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 		suspend_job(cmd_ptr, &err_code, &err_msg);
