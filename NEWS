@@ -14,7 +14,7 @@ documents those changes that are of interest to users and admins.
     better performance.
  -- fixed certain tests in test suite to not run with bluegene or front-end 
     systems
- -- removed addresses from slurm_step_layout_t
+ -- Removed addresses from slurm_step_layout_t
  -- Added new job field, "comment". Set by srun, salloc and sbatch. See 
     with "scontrol show job". Used in sched/wiki2.
 
