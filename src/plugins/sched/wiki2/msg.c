@@ -84,6 +84,7 @@ extern int spawn_msg_thread(void)
 			_msg_thread, NULL))
 		fatal("pthread_create %m");
 
+	(void) event_notify("slurm startup");
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
 	pthread_mutex_unlock(&thread_flag_mutex);
@@ -96,6 +97,7 @@ extern int spawn_msg_thread(void)
 extern void term_msg_thread(void)
 {
 	pthread_mutex_lock(&thread_flag_mutex);
+	(void) event_notify(NULL);
 	if (thread_running) {
 		thread_shutdown = true;
 		pthread_kill(msg_thread_id, SIGUSR1);

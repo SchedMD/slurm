@@ -37,22 +37,73 @@
 
 #include "./msg.h"
 
-/* RET 0 on success, -1 on failure */
+static pthread_mutex_t event_fd_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * event_notify - Notify Moab of some event
+ * msg IN - event type, NULL to close connection
+ * RET 0 on success, -1 on failure
+ */
 extern int	event_notify(char *msg)
 {
+	static slurm_fd event_fd = (slurm_fd) -1;
 	static time_t last_notify_time = (time_t) 0;
 	time_t now = time(NULL);
+	int rc;
 
-	if (e_port == 0)
+	if (e_port == 0) {
+		/* Event notification disabled */
 		return 0;
+	}
+
+	if (msg == NULL) {
+		/* Shutdown connection */
+		pthread_mutex_lock(&event_fd_mutex);
+		if (event_fd != -1) {
+			(void) slurm_shutdown_msg_engine(event_fd);
+			event_fd = -1;
+		}
+		pthread_mutex_unlock(&event_fd_mutex);
+		return 0;
+	}
 
 	if (job_aggregation_time
-	&&  (difftime(now, last_notify_time) < job_aggregation_time))
+	&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
+		/* Already sent recent event notification */
 		return 0;
+	}
 
-	last_notify_time = now;
-	debug("event_notify: %s", msg);
-	/* FIXME: Send message here */
+	pthread_mutex_lock(&event_fd_mutex);
+	if (event_fd == -1) {
+		/* Open new socket connection */
+		slurm_addr moab_event_addr;
+		char *control_addr;
+		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		control_addr = xstrdup(conf->control_addr);
+		slurm_conf_unlock();
+		slurm_set_addr(&moab_event_addr, e_port, control_addr);
+		event_fd = slurm_open_msg_conn(&moab_event_addr);
+		if (event_fd == -1) {
+			error("Unable to open wiki event port %s:%u", 
+				control_addr, e_port);
+			xfree(control_addr);
+			pthread_mutex_unlock(&event_fd_mutex);
+			return -1;
+		}
+		xfree(control_addr);
+	}
 
-	return 0;
+	if (send(event_fd, msg, strlen(msg), MSG_DONTWAIT) > 0) {
+		debug("wiki event_notification sent: %s", msg);
+		last_notify_time = now;
+		rc = 0;
+	} else {
+		error("wiki event notification failure: %m");
+		/* close socket, re-open later */
+		(void) slurm_shutdown_msg_engine(event_fd);
+		event_fd = -1;
+		rc = -1;
+	}
+	pthread_mutex_unlock(&event_fd_mutex);
+	return rc;
 }
