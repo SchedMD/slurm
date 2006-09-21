@@ -76,10 +76,11 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__sview_SOURCES_DIST = sview.c popups.c part_info.c job_info.c \
-	block_info.c node_info.c submit_info.c admin_info.c common.c
+am__sview_SOURCES_DIST = sview.c popups.c grid.c part_info.c \
+	job_info.c block_info.c node_info.c submit_info.c admin_info.c \
+	common.c
 @HAVE_GTK_TRUE@am_sview_OBJECTS = sview-sview.$(OBJEXT) \
-@HAVE_GTK_TRUE@	sview-popups.$(OBJEXT) \
+@HAVE_GTK_TRUE@	sview-popups.$(OBJEXT) sview-grid.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-part_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-job_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-block_info.$(OBJEXT) \
@@ -87,9 +88,9 @@ am__sview_SOURCES_DIST = sview.c popups.c part_info.c job_info.c \
 @HAVE_GTK_TRUE@	sview-submit_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-admin_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-common.$(OBJEXT)
-am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c part_info.c \
-	job_info.c block_info.c node_info.c submit_info.c admin_info.c \
-	common.c
+am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
+	part_info.c job_info.c block_info.c node_info.c submit_info.c \
+	admin_info.c common.c
 sview_OBJECTS = $(am_sview_OBJECTS)
 @HAVE_GTK_TRUE@sview_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
@@ -295,13 +296,13 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_GTK_TRUE@	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
 
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
-@HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c part_info.c job_info.c \
+@HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_TRUE@	block_info.c node_info.c \
 @HAVE_GTK_TRUE@	submit_info.c admin_info.c common.c
 
 @HAVE_GTK_TRUE@sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK2_LIBS) 
 @HAVE_GTK_TRUE@sview_CFLAGS = $(GTK2_CFLAGS)
-@HAVE_GTK_FALSE@EXTRA_sview_SOURCES = sview.h sview.c popups.c part_info.c job_info.c \
+@HAVE_GTK_FALSE@EXTRA_sview_SOURCES = sview.h sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_FALSE@	block_info.c node_info.c \
 @HAVE_GTK_FALSE@	submit_info.c admin_info.c common.c
 
@@ -379,6 +380,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-admin_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-block_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-grid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-job_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-node_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-part_info.Po@am__quote@
@@ -434,6 +436,20 @@ sview-popups.obj: popups.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='popups.c' object='sview-popups.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-popups.obj `if test -f 'popups.c'; then $(CYGPATH_W) 'popups.c'; else $(CYGPATH_W) '$(srcdir)/popups.c'; fi`
+
+sview-grid.o: grid.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-grid.o -MD -MP -MF "$(DEPDIR)/sview-grid.Tpo" -c -o sview-grid.o `test -f 'grid.c' || echo '$(srcdir)/'`grid.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sview-grid.Tpo" "$(DEPDIR)/sview-grid.Po"; else rm -f "$(DEPDIR)/sview-grid.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='grid.c' object='sview-grid.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-grid.o `test -f 'grid.c' || echo '$(srcdir)/'`grid.c
+
+sview-grid.obj: grid.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-grid.obj -MD -MP -MF "$(DEPDIR)/sview-grid.Tpo" -c -o sview-grid.obj `if test -f 'grid.c'; then $(CYGPATH_W) 'grid.c'; else $(CYGPATH_W) '$(srcdir)/grid.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sview-grid.Tpo" "$(DEPDIR)/sview-grid.Po"; else rm -f "$(DEPDIR)/sview-grid.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='grid.c' object='sview-grid.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-grid.obj `if test -f 'grid.c'; then $(CYGPATH_W) 'grid.c'; else $(CYGPATH_W) '$(srcdir)/grid.c'; fi`
 
 sview-part_info.o: part_info.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-part_info.o -MD -MP -MF "$(DEPDIR)/sview-part_info.Tpo" -c -o sview-part_info.o `test -f 'part_info.c' || echo '$(srcdir)/'`part_info.c; \
