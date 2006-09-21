@@ -414,6 +414,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			free(name);
 			i++;
 		}
+		hostlist_uniq(hl);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
 		thread_ptr[thr_count].nodelist = xstrdup(buf);
@@ -807,7 +808,8 @@ static void *_thread_per_group_rpc(void *args)
 	slurm_msg_t_init(&msg);
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-	
+/* 	info("sending message type %u to %s", msg_type,
+	thread_ptr->nodelist); */
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if(thread_ptr->addr) {
@@ -848,10 +850,8 @@ static void *_thread_per_group_rpc(void *args)
 		}
 		goto cleanup;
 	}
-	
-	
-	
-	//info("got %d states back from the send", list_count(ret_list));
+		
+	//info("got %d messages back", list_count(ret_list));
 	found = 0;
 	itr = list_iterator_create(ret_list);		
 	while((ret_data_info = list_next(itr)) != NULL) {
@@ -889,7 +889,6 @@ static void *_thread_per_group_rpc(void *args)
 			job_complete(job_id, 0, false, 1);
 			unlock_slurmctld(job_write_lock);
 			continue;
-			//goto cleanup;
 		}
 #endif
 		

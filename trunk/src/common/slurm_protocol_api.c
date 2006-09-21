@@ -1693,18 +1693,10 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	slurm_msg_t_init(resp);
 
 	if(slurm_send_node_msg(fd, req) >= 0) {
-		if (!timeout)
-			timeout = slurm_get_msg_timeout() * 1000;
-		
-		if(req->forward.cnt>0) {
-			steps = req->forward.cnt/slurm_get_tree_width();
-			steps += 1;
-			if (!req->forward.timeout)
-				req->forward.timeout = 
-					slurm_get_msg_timeout() * 1000;
-		
-			timeout += (req->forward.timeout*steps);
-		}
+		/* no need to adjust and timeouts here since we are not
+		   forwarding or expecting anything other than 1 message
+		   and the regular timeout will be altered in
+		   slurm_recieve_msg if it is 0 */
 		rc = slurm_receive_msg(fd, resp, timeout);
 	}
 	
@@ -1995,14 +1987,14 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			continue;
 		}
 
-/* 		info("sending to %s", name); */
+		debug3("sending to %s", name);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 
 		forward_init(&msg->forward, NULL);
 		msg->forward.nodelist = xstrdup(buf);
 		msg->forward.timeout = timeout;
 		msg->forward.cnt = hostlist_count(hl);
-/* 		info("along with to %s", msg->forward.nodelist); */
+		debug3("along with to %s", msg->forward.nodelist);
 		
 		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
 			xfree(msg->forward.nodelist);
