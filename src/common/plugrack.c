@@ -209,101 +209,6 @@ accept_path_paranoia( plugrack_t rack,
 }
 
 
-/*
- * Check a file to see if its permissions and location are appropriate
- * for a plugin.  This checks both a file and its parent directory for
- * correct ownership and writability.
- *
- * The permissions and ownerships to check are given in the paranoia
- * policy of the plugin rack.
- *
- * Returns nonzero if the plugin is acceptable.
- */
-static int
-accept_paranoia( plugrack_t rack, const char *fq_path )
-{
-        char *local;
-        char *p;
-	int rc;
-  
-        xassert( rack );
-        xassert( fq_path );
-
-        /* Trivial accept. */
-        if ( ! rack->paranoia ) return 1;
-  
-        /* Make a local copy of the path name so we can write into it. */
-        local = xmalloc( strlen( fq_path ) + 1 );
-        strcpy( local, fq_path );
-
-        if ( ! accept_path_paranoia( rack,
-                                     local,
-                                     rack->paranoia & 
-				     PLUGRACK_PARANOIA_FILE_OWN,
-                                     rack->paranoia & 
-				     PLUGRACK_PARANOIA_FILE_WRITABLE ) ) {
-		xfree( local );
-                return 0;
-        }
-
-        /*
-         * Find the directory name by chopping off the last path element.
-         * This also helps weed out malformed file names.  We specify that
-         * plugins be specified by fully-qualified pathnames and that means
-         * it should have at least one delimiter.
-         */
-        if ( ( p = strrchr( local, '/' ) ) == NULL ) {
-		free( local );
-                return 0;
-        }
-        if ( p != local ) *p = 0;
-
-        rc = accept_path_paranoia( rack,
-                                   local,
-                                   rack->paranoia & 
-				   PLUGRACK_PARANOIA_DIR_OWN,
-                                   rack->paranoia & 
-				   PLUGRACK_PARANOIA_DIR_WRITABLE );
-	xfree( local );
-	return rc;
-}
-
-#if 0
-/* Vestigial */
-/*
- * Load a plugin.  Check its type, but not any of the onwership or
- * writability.  It is presumed that those have already been checked.
- */
-static plugin_handle_t
-plugrack_open_plugin( plugrack_t rack, const char *fq_path )
-{
-        plugin_handle_t plug;
-
-        if ( ! rack ) return PLUGIN_INVALID_HANDLE;
-        if ( ! fq_path ) return PLUGIN_INVALID_HANDLE;
-  
-        /* See if we can actually load the plugin. */
-        plug = plugin_load_from_file( fq_path );
-        if ( plug == PLUGIN_INVALID_HANDLE ) {
-		debug3( "plugrack_open_plugin: can't open %s", fq_path );
-		return PLUGIN_INVALID_HANDLE;
-	}
-
-        /* Now see if this is the right type. */
-        if (   rack->major_type 
-	       && ( strncmp( rack->major_type,
-			     plugin_get_type( plug ),
-			     strlen( rack->major_type ) ) != 0 ) ) {
-		debug3( "plugrack_open_plugin: %s is of wrong type", fq_path );
-                plugin_unload( plug );
-                return PLUGIN_INVALID_HANDLE;
-        }
-
-        return plug;
-}
-#endif
-
-
 plugrack_t plugrack_create( void )
 {
         plugrack_t rack = (plugrack_t) xmalloc( sizeof( struct _plugrack ) );
@@ -445,7 +350,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 	return rc;
 }
 
-int
+static int
 _plugrack_read_single_dir( plugrack_t rack, char *dir )
 {
         char *fq_path;
