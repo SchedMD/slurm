@@ -157,6 +157,11 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 					    msg_ptr, Buf buffer);
 
 
+static void _pack_task_spawn_io_stream_msg(task_spawn_io_msg_t *
+					   msg, Buf buffer);
+static int _unpack_task_spawn_io_stream_msg(task_spawn_io_msg_t **
+					    msg_ptr, Buf buffer);
+
 static void _pack_spawn_task_request_msg(spawn_task_request_msg_t *
 					 msg, Buf buffer);
 static int _unpack_spawn_task_request_msg(spawn_task_request_msg_t **
@@ -495,6 +500,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_launch_tasks_response_msg((launch_tasks_response_msg_t
 						 *) msg->data, buffer);
 		break;
+	case TASK_SPAWN_IO_STREAM:
+		_pack_task_spawn_io_stream_msg(
+			(task_spawn_io_msg_t *) msg->data, buffer);
+		break;
 	case REQUEST_SPAWN_TASK:
 		_pack_spawn_task_request_msg(
 			(spawn_task_request_msg_t *)
@@ -777,6 +786,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_launch_tasks_response_msg(
 			(launch_tasks_response_msg_t **)
 			& (msg->data), buffer);
+		break;
+	case TASK_SPAWN_IO_STREAM:
+		_unpack_task_spawn_io_stream_msg(
+			(task_spawn_io_msg_t **) &msg->data, buffer);
 		break;
 	case REQUEST_SPAWN_TASK:
 		rc = _unpack_spawn_task_request_msg(
@@ -2676,9 +2689,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack16((uint16_t)msg->num_resp_port, buffer);
 	for(i = 0; i < msg->num_resp_port; i++)
 		pack16((uint16_t)msg->resp_port[i], buffer);
-	pack16((uint16_t)msg->num_io_port, buffer);
-	for(i = 0; i < msg->num_io_port; i++)
-		pack16((uint16_t)msg->io_port[i], buffer);
 	slurm_pack_slurm_addr(&msg->orig_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
@@ -2689,10 +2699,16 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr_array(msg->argv, msg->argc, buffer);
 	pack16((uint16_t)msg->task_flags, buffer);
 	pack16((uint16_t)msg->multi_prog, buffer);
-	packstr(msg->ofname, buffer);
-	packstr(msg->efname, buffer);
-	packstr(msg->ifname, buffer);
-	pack8(msg->buffered_stdio, buffer);
+	pack16((uint16_t)msg->spawn_io_flag, buffer);
+	if (msg->spawn_io_flag == 1) {
+		packstr(msg->ofname, buffer);
+		packstr(msg->efname, buffer);
+		packstr(msg->ifname, buffer);
+		pack8(msg->buffered_stdio, buffer);
+		pack16((uint16_t)msg->num_io_port, buffer);
+		for(i = 0; i < msg->num_io_port; i++)
+			pack16((uint16_t)msg->io_port[i], buffer);
+	}
 	packstr(msg->task_prolog, buffer);
 	packstr(msg->task_epilog, buffer);
 	pack32((uint32_t)msg->slurmd_debug, buffer);
@@ -2742,12 +2758,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		for (i = 0; i < msg->num_resp_port; i++)
 			safe_unpack16(&msg->resp_port[i], buffer);
 	}
-	safe_unpack16(&msg->num_io_port, buffer);
-	if (msg->num_io_port > 0) {
-		msg->io_port = xmalloc(sizeof(uint16_t)*msg->num_io_port);
-		for (i = 0; i < msg->num_io_port; i++)
-			safe_unpack16(&msg->io_port[i], buffer);
-	}
 	slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
 	safe_unpackstr_xmalloc(&msg->cwd, &uint16_tmp, buffer);
@@ -2758,10 +2768,20 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->multi_prog, buffer);
-	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
-	safe_unpack8(&msg->buffered_stdio, buffer);
+	safe_unpack16(&msg->spawn_io_flag, buffer);
+	if (msg->spawn_io_flag == 1) {
+		safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
+		safe_unpack8(&msg->buffered_stdio, buffer);
+		safe_unpack16(&msg->num_io_port, buffer);
+		if (msg->num_io_port > 0) {
+			msg->io_port =
+				xmalloc(sizeof(uint16_t) * msg->num_io_port);
+			for (i = 0; i < msg->num_io_port; i++)
+				safe_unpack16(&msg->io_port[i], buffer);
+		}
+	}
 	safe_unpackstr_xmalloc(&msg->task_prolog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->task_epilog, &uint16_tmp, buffer);
 	safe_unpack32(&msg->slurmd_debug, buffer);
@@ -2782,6 +2802,33 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 unpack_error:
 	slurm_free_launch_tasks_request_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_task_spawn_io_stream_msg(task_spawn_io_msg_t * msg, Buf buffer)
+{
+	xassert(msg != NULL);
+	pack32(msg->task_id, buffer);
+}
+
+static int
+_unpack_task_spawn_io_stream_msg(task_spawn_io_msg_t **msg_ptr,
+				 Buf buffer)
+{
+	task_spawn_io_msg_t *msg;
+
+	xassert(msg_ptr != NULL);
+	msg = xmalloc(sizeof(task_spawn_io_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->task_id, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_task_spawn_io_stream_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

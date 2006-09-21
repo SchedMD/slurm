@@ -68,7 +68,9 @@ typedef struct srun_key {
 typedef struct srun_info {
 	srun_key_t *key;	   /* srun key for IO verification         */
 	slurm_addr resp_addr;	   /* response addr for task exit msg      */
-	slurm_addr ioaddr;         /* Address to connect on for I/O        */
+	slurm_addr ioaddr;         /* Address to connect on for normal I/O.
+				      Spawn IO uses messages to the normal
+				      resp_addr. */
 } srun_info_t;
 
 typedef enum task_state {
@@ -131,6 +133,7 @@ typedef struct slurmd_job {
 	gid_t        *gids;    /* array of gids for user specified in uid   */
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
+	bool           spawn_io_flag;
 	bool           spawn_task; /* stand-alone task                      */
 	time_t         timelimit;  /* time at which job must stop           */
 	char          *task_prolog; /* per-task prolog                      */
@@ -187,7 +190,7 @@ typedef struct slurmd_job {
 } slurmd_job_t;
 
 
-slurmd_job_t * job_create(launch_tasks_request_msg_t *msg, slurm_addr *client);
+slurmd_job_t * job_create(launch_tasks_request_msg_t *msg);
 slurmd_job_t * job_batch_job_create(batch_job_launch_msg_t *msg);
 slurmd_job_t * job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *client);
 

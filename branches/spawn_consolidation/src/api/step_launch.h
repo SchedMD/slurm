@@ -44,6 +44,11 @@
 
 #include "src/api/step_io.h"
 
+typedef struct {
+	int connected;
+	int *socket; /* array of socket file descriptors */
+} spawn_io_t;
+
 struct step_launch_state {
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
@@ -61,8 +66,12 @@ struct step_launch_state {
 	uint16_t num_resp_port;
 	uint16_t *resp_port; /* array of message response ports */
 
-	/* client side io variables */
-	client_io_t *client_io;
+	/* io variables */
+	bool spawn_io_flag;
+	union {
+		client_io_t *normal;
+		spawn_io_t *spawn;
+	} io;
 	slurm_step_layout_t *layout; /* a pointer into the ctx
 					step_resp, do not free */
 

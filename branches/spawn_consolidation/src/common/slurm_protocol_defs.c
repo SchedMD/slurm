@@ -422,6 +422,14 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg);
 }
 
+void slurm_free_task_spawn_io_stream_msg(task_spawn_io_msg_t *msg)
+{
+	if (msg == NULL)
+		return;
+
+	xfree(msg);
+}
+
 void slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg)
 {
 	int i;
@@ -1131,6 +1139,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		slurm_free_launch_tasks_request_msg(data);
+		break;
+	case TASK_SPAWN_IO_STREAM:
+		slurm_free_task_spawn_io_stream_msg(data);
 		break;
 	case REQUEST_SPAWN_TASK:
 		slurm_free_spawn_task_request_msg(data);

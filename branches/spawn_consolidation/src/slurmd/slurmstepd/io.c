@@ -1311,3 +1311,44 @@ _outgoing_buf_free(slurmd_job_t *job)
 
 	return false;
 }
+
+/**********************************************************************
+ * Functions specific to "spawn" IO
+ **********************************************************************/
+static int
+_spawn_connect(srun_info_t *srun, uint32_t gtid)
+{
+	int fd;
+	/* connect the fd to the launcher */
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * This function sets the close-on-exec flag on the socket descriptor.
+ * io_dup_stdio will will remove the close-on-exec flag for just one task's
+ * file descriptors.
+ */
+int
+spawn_io_client_connect(int ntasks, srun_info_t *srun,
+			slurmd_task_info_t **tasks)
+{
+	int fd;
+	int i;
+
+	for (i = 0; i < ntasks; i++) {
+		fd = _spawn_connect(srun, tasks[i]->gtid);
+		if (fd == -1)
+			return SLURM_ERROR;
+		fd_set_close_on_exec(fd);
+		tasks[i]->stdin_fd = fd;
+		tasks[i]->to_stdin = -1;
+		tasks[i]->stdout_fd = fd;
+		tasks[i]->from_stdout = -1;
+		tasks[i]->stderr_fd = fd;
+		tasks[i]->from_stderr = -1;
+	}
+
+	return SLURM_SUCCESS;
+}
+

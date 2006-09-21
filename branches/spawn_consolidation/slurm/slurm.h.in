@@ -558,12 +558,17 @@ typedef struct {
 	uint16_t envc;
 	char **env;
 	char *cwd;
+	bool spawn_io;
+
+	/* START - only used if spawn_io is false */
 	bool buffered_stdio;
 	bool labelio;
 	char *remote_output_filename;
 	char *remote_error_filename;
 	char *remote_input_filename;
 	slurm_step_io_fds_t local_fds;
+	/*  END  - only used if spawn_io is false */
+
 	uint32_t gid;
 	bool multi_prog;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */

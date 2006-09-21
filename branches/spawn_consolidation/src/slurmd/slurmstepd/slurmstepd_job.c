@@ -146,7 +146,7 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 
 /* create a slurmd job structure from a launch tasks message */
 slurmd_job_t * 
-job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
+job_create(launch_tasks_request_msg_t *msg)
 {
 	struct passwd *pwd = NULL;
 	slurmd_job_t  *job = NULL;
@@ -225,10 +225,13 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	slurm_set_addr(&resp_addr,
 		       msg->resp_port[nodeid % msg->num_resp_port],
 		       NULL);
-	memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
-	slurm_set_addr(&io_addr,
-		       msg->io_port[nodeid % msg->num_io_port],
-		       NULL);
+	job->spawn_io_flag = msg->spawn_io_flag;
+	if (!msg->spawn_io_flag) {
+		memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
+		slurm_set_addr(&io_addr,
+			       msg->io_port[nodeid % msg->num_io_port],
+			       NULL);
+	}
 		
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
