@@ -13,7 +13,7 @@ sview_LDADD =					  \
 	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
 
 noinst_HEADERS = sview.h
-sview_SOURCES = sview.c popups.c part_info.c job_info.c \
+sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 	block_info.c node_info.c \
 	submit_info.c admin_info.c common.c
 
@@ -26,7 +26,7 @@ sview_CFLAGS = $(GTK2_CFLAGS)
 
 else
 
-EXTRA_sview_SOURCES = sview.h sview.c popups.c part_info.c job_info.c \
+EXTRA_sview_SOURCES = sview.h sview.c popups.c grid.c part_info.c job_info.c \
 	block_info.c node_info.c \
 	submit_info.c admin_info.c common.c
 
