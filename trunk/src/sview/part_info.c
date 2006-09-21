@@ -221,8 +221,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				goto adding;
 			} else {
 				memcpy(sub_iter, &first_sub_iter, 
-				       sizeof(GtkTreeIter));
-			
+				       sizeof(GtkTreeIter));		
 			}
 			
 			while(1) {
@@ -1652,6 +1651,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 	switch(id) {
 	case JOB_PAGE:
+	case BLOCK_PAGE: 
+	case INFO_PAGE:
 		popup_win->spec_info->data = name;
 		//specific_info_job(popup_win);
 		break;
@@ -1661,16 +1662,10 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->data = name;
 		//specific_info_node(popup_win);
 		break;
-	case BLOCK_PAGE: 
-		popup_win->spec_info->data = name;
-		break;
 	case SUBMIT_PAGE: 
 		break;
-	case INFO_PAGE:
-		popup_win->spec_info->data = name;
-		break;
 	default:
-		g_print("part got %d\n", id);
+		g_print("part got unknown type %d\n", id);
 	}
 	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
 	{

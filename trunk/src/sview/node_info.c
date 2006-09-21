@@ -74,6 +74,7 @@ static display_data_t display_data_node[] = {
 
 static display_data_t options_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
@@ -84,6 +85,56 @@ static display_data_t options_data_node[] = {
 };
 
 static display_data_t *local_display_data = NULL;
+
+static void _layout_node_record(GtkTreeView *treeview,
+				node_info_t *node_ptr,
+				int update)
+{
+	char tmp_cnt[50];
+	char *upper = NULL, *lower = NULL;		     
+	GtkTreeIter iter;
+	GtkTreeStore *treestore = 
+		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+	if(!treestore)
+		return;
+	
+	add_display_treestore_line(update, treestore, &iter,
+				   display_data_node[SORTID_NAME].name,
+				   node_ptr->name);
+				   
+	upper = node_state_string(node_ptr->node_state);
+	lower = str_tolower(upper);
+	add_display_treestore_line(update, treestore, &iter,
+				   display_data_node[SORTID_STATE].name,
+				   lower);
+	xfree(lower);
+	
+	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_MEGA);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_node[SORTID_CPUS].name,
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_node[SORTID_MEMORY].name,
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_node[SORTID_DISK].name,
+				   tmp_cnt);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", node_ptr->weight);
+	add_display_treestore_line(update, treestore, &iter,
+				   display_data_node[SORTID_WEIGHT].name, 
+				   tmp_cnt);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_node[SORTID_FEATURES].name, 
+				   node_ptr->features);
+	add_display_treestore_line(update, treestore, &iter,
+				   display_data_node[SORTID_REASON].name, 
+				   node_ptr->reason);
+	return;
+}
 
 static void _update_node_record(node_info_t *node_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter)
@@ -223,50 +274,58 @@ void _display_info_node(node_info_msg_t *node_info_ptr,
 	char *name = (char *)spec_info->data;
 	int i, found = 0;
 	node_info_t node;
-	char *info = NULL;
-	char *not_found = NULL;
-	GtkWidget *label = NULL;
+	GtkTreeView *treeview = NULL;
+	int update = 0;
 	
 	if(!spec_info->data) {
-		info = xstrdup("No pointer given!");
 		goto finished;
 	}
-
-	if(spec_info->display_widget) {
-		not_found = 
-			xstrdup(GTK_LABEL(spec_info->display_widget)->text);
-		gtk_widget_destroy(spec_info->display_widget);
-		spec_info->display_widget = NULL;
+need_refresh:
+	if(!spec_info->display_widget) {
+		treeview = create_treeview_2cols_attach_to_table(
+			popup_win->table);
+		spec_info->display_widget = 
+			gtk_widget_ref(GTK_WIDGET(treeview));
+	} else {
+		treeview = GTK_TREE_VIEW(spec_info->display_widget);
+		update = 1;
 	}
+	
 	for (i = 0; i < node_info_ptr->record_count; i++) {
 		node = node_info_ptr->node_array[i];
 		if (!node.name || (node.name[0] == '\0'))
 			continue;	/* bad node */
 		if(!strcmp(node.name, name)) {
-			if(!(info = slurm_sprint_node_table(&node, 0))) {
-				info = xmalloc(100);
-				sprintf(info, 
-					"Problem getting node info for %s",
-					node.name);
-			}
+			_layout_node_record(treeview, &node, update);
 			found = 1;
 			break;
 		}		
 	}
 	if(!found) {
-		char *temp = "NODE NOT FOUND\n";
-		if(!not_found || strncmp(temp, not_found, strlen(temp))) 
-			info = xstrdup(temp);
-		xstrcat(info, not_found);
+		if(!popup_win->not_found) { 
+			char *temp = "NODE NOT FOUND\n";
+			GtkTreeIter iter;
+			GtkTreeModel *model = NULL;
+			
+			/* only time this will be run so no update */
+			model = gtk_tree_view_get_model(treeview);
+			add_display_treestore_line(0, 
+						   GTK_TREE_STORE(model), 
+						   &iter,
+						   temp, "");
+		}
+		popup_win->not_found = true;
+	} else {
+		if(popup_win->not_found) { 
+			popup_win->not_found = false;
+			gtk_widget_destroy(spec_info->display_widget);
+			
+			goto need_refresh;
+		}	
 	}
+	gtk_widget_show(spec_info->display_widget);
+
 finished:
-	label = gtk_label_new(info);
-	xfree(info);
-	xfree(not_found);
-	gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1); 
-	gtk_widget_show(label);	
-	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
-	
 	return;
 }
 
@@ -641,8 +700,12 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 	list_iterator_destroy(itr);
 	
-	if(!popup_win) 
-		popup_win = create_popup_info(NODE_PAGE, id, title);
+	if(!popup_win) {
+		if(id == INFO_PAGE)
+			popup_win = create_popup_info(id, NODE_PAGE, title);
+		else
+			popup_win = create_popup_info(NODE_PAGE, id, title);
+	}
 	popup_win->spec_info->data = name;
 	
 	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))

@@ -233,6 +233,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	GtkTreeIter iter;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+
 	if(!treestore)
 		return;
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
@@ -619,13 +620,13 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 			}
 		}
 		memcpy(step_iter, &first_step_iter, sizeof(GtkTreeIter));
+		set = 1;
 	}
 	for (i = 0; i < step_info_ptr->job_step_count; i++) {
 		step = step_info_ptr->job_steps[i];
 		if(step.job_id != jobid)
 			continue;
-		/* get the iter, or find out the list is 
-		   empty goto add */
+		/* get the iter, or find out the list is empty goto add */
 		if (!step_iter) {
 			goto adding;
 		} else {
@@ -662,6 +663,7 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 		while(1) {
 			gtk_tree_model_get(model, step_iter, 
 					   SORTID_UPDATED, &i, -1);
+			g_print("updated is %d\n", i);
 			if(!i) {
 				if(!gtk_tree_store_remove(
 					   GTK_TREE_STORE(model), 
@@ -883,6 +885,13 @@ need_refresh:
 						   GTK_TREE_STORE(model), 
 						   &iter,
 						   temp, "");
+			if(job_step->stepid != NO_VAL) 
+				add_display_treestore_line(
+					1, 
+					GTK_TREE_STORE(model), 
+					&iter,
+					display_data_job[SORTID_STATE].name,
+					job_state_string(JOB_COMPLETE));
 		}
 		popup_win->not_found = true;
 	} else {
@@ -891,8 +900,7 @@ need_refresh:
 			gtk_widget_destroy(spec_info->display_widget);
 			
 			goto need_refresh;
-		}
-		
+		}		
 	}
 	gtk_widget_show(spec_info->display_widget);
 
@@ -1667,14 +1675,11 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	list_iterator_destroy(itr);
 	
 	if(!popup_win) {
-		g_print("need popup for %s\n", title);
 		if(id == INFO_PAGE)
 			popup_win = create_popup_info(id, JOB_PAGE, title);
 		else
 			popup_win = create_popup_info(JOB_PAGE, id, title);
-	} else
-		g_print("got popup for %s\n", title);
-		
+	}		
 	
 	switch(id) {
 	case NODE_PAGE:
