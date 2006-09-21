@@ -1,4 +1,4 @@
-.TH "wiki.conf" "5" "August 2006" "wiki.conf 1.1" "Slurm configuration file"
+.TH "wiki.conf" "5" "September 2006" "wiki.conf 1.1" "Slurm configuration file"
 .SH "NAME"
 wiki.conf \- Slurm configuration file for wiki scheduler plugin
 .SH "DESCRIPTION"
@@ -20,6 +20,23 @@ The overall configuration parameters available include:
 Authentication key for communications. 
 This numeric value should match KEY configured in the 
 \fBmoab-private.cnf\fR file.
+
+.TP
+\fBEPort\fR
+Port to be used to notify Moab of events (job submitted to Slurm, 
+job terminates, etc.). 
+This numeric value should match EPORT configured in the
+\fBmoab.cnf\fR file.
+
+.TP
+\fBJobAggregationTime\fR
+This is used to avoid notifying Moab of large numbers of events 
+occuring about the same time.
+If an event occurs within this number of seconds since Moab was 
+last notified of an event, another notification is not sent.
+This should be an integer number of seconds.
+Thevalue should match JOBAGGREGATIONTIME configured in the 
+\fBmoab.cnf\fR file.
 
 .TP
 \fBJobPriority\fR
@@ -52,6 +69,18 @@ JobPriority=hold
 # Moab encryption key, matches KEY in moab-private.cfg
 .br
 AuthKey=1234
+.br
+#
+.br
+# Moab event notification port, matches EPORT in moab.cfg
+.br
+EPort=15017
+.br
+# Moab event notifcation throttle, matches JOBAGGREGATIONTIME 
+.br
+# in moab.cfg (integer value in seconds)
+.br
+JobAggregationTime=30
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
