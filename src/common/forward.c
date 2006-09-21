@@ -79,6 +79,12 @@ void *_forward_thread(void *arg)
 		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
 			error("forward_thread: can't get addr for host %s",
 			      name);
+
+			slurm_mutex_lock(fwd_msg->forward_mutex);
+			mark_as_failed_forward(&fwd_msg->ret_list, name,
+					       SLURM_SOCKET_ERROR);
+			slurm_mutex_unlock(fwd_msg->forward_mutex);
+
 			free(name);
 			continue;
 		}
@@ -90,20 +96,19 @@ void *_forward_thread(void *arg)
 					       SLURM_SOCKET_ERROR);
 			slurm_mutex_unlock(fwd_msg->forward_mutex);
 
-			free_buf(buffer);	
 			free(name);
-			buffer = init_buf(0);
 			continue;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
-		/* info("forward: send to %s ",  */
-/* 		     name); */
+
+		debug3("forward: send to %s ", name);
+
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
 			
-		/* info("forward: along with to %s",  */
-/* 		     fwd_msg->header.forward.nodelist); */
+		debug3("forward: along with %s",
+		       fwd_msg->header.forward.nodelist);
 		
 		pack_header(&fwd_msg->header, buffer);
 	
@@ -298,10 +303,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
 			free(name);
 			i++;
 		}
+		hostlist_uniq(forward_hl);
 		hostlist_ranged_string(forward_hl, sizeof(buf), buf);
 		hostlist_destroy(forward_hl);
 		forward_msg->header.forward.nodelist = xstrdup(buf);
-		
 		while(pthread_create(&thread_agent, &attr_agent,
 				   _forward_thread, 
 				   (void *)forward_msg)) {
