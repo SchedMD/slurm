@@ -293,10 +293,10 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 {
 	bitstr_t *no_load_bit, *light_load_bit, *heavy_load_bit;
 	int error_code;
-
+	
 	_node_load_bitmaps(bitmap, &no_load_bit, &light_load_bit, 
 			&heavy_load_bit);
-
+			
 	/* first try to use idle nodes */
 	bit_and(bitmap, no_load_bit);
 	FREE_NULL_BITMAP(no_load_bit);
@@ -462,7 +462,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_avail = false;	/* Job can run with available nodes */
         int cr_enabled = 0;
 	int shared = 0;
-
+			
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
@@ -580,12 +580,18 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (node_set_ptr[i].feature < min_feature)
 			min_feature = node_set_ptr[i].feature;
 	}
-
+	
 	for (j = min_feature; j <= max_feature; j++) {
+		/* we use this var to go straight down the list if the
+		 * first one doesn't work we go to the next until the
+		 * list is empty.
+		 */
+		int tries = 0;
 		for (i = 0; i < node_set_size; i++) {
 			bool pick_light_load = false;
 			if (node_set_ptr[i].feature != j)
 				continue;
+			
 			if (!runable_ever) {
                                 int cr_disabled = 0;
 			        error_code = _add_node_set_info(
@@ -603,6 +609,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 }
                         }
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
+			
                         if (cr_enabled) {
                                 bit_and(node_set_ptr[i].my_bitmap,
 				        partially_idle_node_bitmap);
@@ -633,7 +640,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 			node_set_ptr[i].nodes =
 				bit_set_count(node_set_ptr[i].my_bitmap);
-                        error_code = _add_node_set_info(&node_set_ptr[i], 
+			error_code = _add_node_set_info(&node_set_ptr[i], 
 							&avail_bitmap, 
                                                         &avail_nodes, 
 							&avail_cpus, 
@@ -672,6 +679,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      req_nodes,
 							      false);
 			}
+			
 			if (pick_code == SLURM_SUCCESS) {
 				if (bit_set_count(avail_bitmap) > max_nodes) {
 					/* end of tests for this feature */
@@ -682,8 +690,17 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 if (cr_enabled) 
  				         FREE_NULL_BITMAP(
 						 partially_idle_node_bitmap);
+						
 				*select_bitmap = avail_bitmap;
 				return SLURM_SUCCESS;
+			} else {
+				/* reset the counters and start from the
+				 * next node in the list */
+				FREE_NULL_BITMAP(avail_bitmap);
+				avail_nodes = 0;
+				avail_cpus = 0;
+				tries++;
+				i = tries;
 			}
 		}
 
@@ -941,8 +958,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	} else {
 		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
-				      &select_bitmap, job_ptr, part_ptr,
-				      min_nodes, max_nodes, req_nodes);
+					      &select_bitmap, job_ptr,
+					      part_ptr, min_nodes, max_nodes,
+					      req_nodes);
 	}
 
 	if (error_code) {
