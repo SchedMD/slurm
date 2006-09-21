@@ -1319,9 +1319,23 @@ static int
 _spawn_connect(srun_info_t *srun, uint32_t gtid)
 {
 	int fd;
-	/* connect the fd to the launcher */
+	task_spawn_io_msg_t spawn_payload;
+	slurm_msg_t msg;
 
-	return SLURM_SUCCESS;
+	slurm_msg_t_init(&msg);
+	msg.msg_type = TASK_SPAWN_IO_STREAM;
+	msg.data = &spawn_payload;
+	spawn_payload.task_id = gtid;
+
+	fd = slurm_open_msg_conn(&srun->resp_addr);
+	if (fd == -1)
+		return -1;
+
+	if (slurm_send_node_msg(fd, &msg) == -1) {
+		close(fd);
+		return -1;
+	}
+	return fd;
 }
 
 /*

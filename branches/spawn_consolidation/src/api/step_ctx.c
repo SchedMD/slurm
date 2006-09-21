@@ -137,6 +137,8 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 	job_step_create_response_msg_t ** step_resp_pptr;
 	slurm_cred_t  *cred;     /* Slurm job credential    */
 	switch_jobinfo_t *switch_job;
+	int *int_ptr;
+	int **int_array_pptr = (int **) NULL;
 	
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC)) {
@@ -200,6 +202,20 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 		char_array_pptr = (char **) va_arg(ap, void *);
 		*char_array_pptr = nodelist_nth_host(
 			ctx->step_resp->step_layout->node_list, node_inx);
+		break;
+	case SLURM_STEP_CTX_SPAWN_SOCKETS:
+		int_ptr = va_arg(ap, int *);
+		int_array_pptr = va_arg(ap, int **);
+		if (ctx->launch_state == NULL
+		    || ctx->launch_state->spawn_io_flag == false
+		    || ctx->launch_state->io.spawn == NULL) {
+			*int_ptr = 0;
+			*int_array_pptr = (int *)NULL;
+			rc = SLURM_ERROR;
+			break;
+		}
+		*int_ptr = ctx->launch_state->tasks_requested;
+		*int_array_pptr = ctx->launch_state->io.spawn->sockets;
 		break;
 	default:
 		slurm_seterrno(EINVAL);

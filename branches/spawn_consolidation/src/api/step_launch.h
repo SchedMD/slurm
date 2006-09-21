@@ -46,7 +46,7 @@
 
 typedef struct {
 	int connected;
-	int *socket; /* array of socket file descriptors */
+	int *sockets; /* array of socket file descriptors */
 } spawn_io_t;
 
 struct step_launch_state {

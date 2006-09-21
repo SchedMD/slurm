@@ -229,6 +229,13 @@ int slurm_step_launch (slurm_step_ctx ctx,
 			launch.io_port[i] =
 				ctx->launch_state->io.normal->listenport[i];
 		}
+	} else { /* spawn_io_flag is true */
+		/* initialize spawn_io_t */
+		ctx->launch_state->io.spawn =
+			(spawn_io_t *)xmalloc(sizeof(spawn_io_t));
+		ctx->launch_state->io.spawn->connected = 0;
+		ctx->launch_state->io.spawn->sockets =
+			(int *)xmalloc(sizeof(int)*ctx->step_req->num_tasks);
 	}
 
 	launch.num_resp_port = ctx->launch_state->num_resp_port;
@@ -689,7 +696,7 @@ _task_spawn_io_handler(struct step_launch_state *sls, slurm_msg_t *spawn_msg)
 	}
 
 	sls->io.spawn->connected++;
-	sls->io.spawn->socket[msg->task_id] = spawn_msg->conn_fd;
+	sls->io.spawn->sockets[msg->task_id] = spawn_msg->conn_fd;
 	/* prevent the caller from closing the spawn IO stream */
 	spawn_msg->conn_fd = -1;
 
