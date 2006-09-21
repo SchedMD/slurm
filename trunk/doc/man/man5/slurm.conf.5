@@ -558,11 +558,20 @@ Fully qualified pathname of the file system available to user jobs for
 temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR
 space. 
 The default value is "/tmp".
+
 .TP
 \fBTreeWidth\fR
 \fBSlurmd\fR daemons use a virtual tree network for communications.
 \fBTreeWidth\fR specifies the width of the tree (i.e. the fanout).
-The default value is 50.
+The default value is 50, meaning each slurmd daemon can communicate
+with up to 50 other slurmd daemons and over 2500 nodes can be contacted
+with two message hops.
+The default value will work well for most clusters.
+Optimaly system performance can typically be achieved if \fBTreeWidth\fR
+is set to the square root of the number of nodes in the cluster for
+systems having no more than 2500 nodes or the cube root for larger
+systems.
+
 .TP
 \fBUsePAM\fR
 If set to 1, PAM (Pluggable Authentication Modules for Linux) will be enabled.
