@@ -696,7 +696,9 @@ _task_spawn_io_handler(struct step_launch_state *sls, slurm_msg_t *spawn_msg)
 	}
 
 	sls->io.spawn->connected++;
+	fd_set_blocking(spawn_msg->conn_fd);
 	sls->io.spawn->sockets[msg->task_id] = spawn_msg->conn_fd;
+
 	/* prevent the caller from closing the spawn IO stream */
 	spawn_msg->conn_fd = -1;
 
