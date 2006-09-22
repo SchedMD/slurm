@@ -2700,7 +2700,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack16((uint16_t)msg->task_flags, buffer);
 	pack16((uint16_t)msg->multi_prog, buffer);
 	pack16((uint16_t)msg->spawn_io_flag, buffer);
-	if (msg->spawn_io_flag == 1) {
+	if (msg->spawn_io_flag == 0) {
 		packstr(msg->ofname, buffer);
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
@@ -2715,7 +2715,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	switch_pack_jobinfo(msg->switch_job, buffer);
 	job_options_pack(msg->options, buffer);
 	packstr(msg->complete_nodelist, buffer);
-	
 }
 
 static int
@@ -2769,7 +2768,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->multi_prog, buffer);
 	safe_unpack16(&msg->spawn_io_flag, buffer);
-	if (msg->spawn_io_flag == 1) {
+	if (msg->spawn_io_flag == 0) {
 		safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);

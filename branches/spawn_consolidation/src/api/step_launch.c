@@ -101,6 +101,7 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
+	memset(ptr, 0, sizeof(slurm_job_step_launch_t));
 	ptr->argc = 0;
 	ptr->argv = NULL;
 	ptr->envc = 0;
@@ -119,6 +120,10 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 	ptr->parallel_debug = false;
 	ptr->task_prolog = NULL;
 	ptr->task_epilog = NULL;
+	ptr->cpu_bind_type = 0;
+	ptr->cpu_bind = NULL;
+	ptr->mem_bind_type = 0;
+	ptr->mem_bind = NULL;
 }
 
 /*
