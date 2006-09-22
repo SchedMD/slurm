@@ -69,7 +69,5 @@ int main(int argc, char **argv)
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 
-	sleep (10);
-
 	return (0);
 }

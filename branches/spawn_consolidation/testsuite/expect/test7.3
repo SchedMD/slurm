@@ -37,7 +37,6 @@ set test_id     "7.3"
 set exit_code   0
 set io_prog     "test$test_id.io"
 set test_prog   "test$test_id.prog"
-set test_out    "test$test_id.out"
 
 print_header $test_id
 
@@ -49,15 +48,17 @@ if {[test_front_end] != 0} {
 #
 # Delete left-over programs and rebuild them 
 #
-exec $bin_rm -f $io_prog $test_prog $test_out
+file delete $io_prog $test_prog
 
 exec $bin_make -f /dev/null $io_prog
 exec $bin_chmod 700 $io_prog
 
+send_user "slurm_dir is $slurm_dir\n"
 if {![test_aix]} {
 	exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
 } else {
-	exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm
+	send_user "$bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm\n"
+	exec $bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm
 }
 exec $bin_chmod 700 $test_prog
 
@@ -73,9 +74,7 @@ set job_id 0
 set matches 0
 set task_cnt 1
 # Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
-catch {exec ./$test_prog 1 2 >$test_out}
-exec $bin_touch $test_out
-spawn $bin_cat $test_out
+spawn ./$test_prog 1 2
 expect {
 	-re "job_id ($number)" {
 		set job_id $expect_out(1,string)
@@ -126,11 +125,11 @@ expect {
 
 if {$matches != [expr $task_cnt * 3]} {
 	send_user "\nFAILURE: spawn_task communications failure\n"
-	set exit_code   1
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $io_prog $test_prog $test_out
+	file delete $io_prog $test_prog
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
