@@ -44,11 +44,16 @@ print_header $test_id
 # Check if we have sched/wiki2 configured
 #
 log_user 0
-set conf_dir   ""
-set sched_port 0
-set sched_wiki 0
+set conf_dir     ""
+set control_addr ""
+set sched_port   0
+set sched_wiki   0
 spawn $scontrol show config
 expect {
+	-re "ControlAddr *= ($alpha_numeric)" {
+		set control_addr $expect_out(1,string)
+		exp_continue
+	}
 	-re "SchedulerPort *= ($number)" {
 		set sched_port $expect_out(1,string)
 		exp_continue
@@ -73,6 +78,10 @@ log_user 1
 if {$sched_wiki == 0} {
 	send_user "\nWARNING: not running sched/wiki, test is not applicable\n"
 	exit $exit_code
+}
+if {[string compare $control_addr ""] == 0} {
+	send_user "\nFAILURE: ControlAddr not set\n"
+	exit 1
 }
 if {$sched_port == 0} {
 	send_user "\nFAILURE: SchedulerPort = 0\n"
@@ -116,7 +125,6 @@ if {$auth_key == 0} {
 #
 make_bash_script $file_in "
   echo BEGIN
-  $srun $bin_hostname
   $bin_sleep 120
   echo FINI"
 set job_id 0
@@ -146,7 +154,7 @@ if {$job_id == 0} {
 exec $bin_rm -f $test_prog
 exec $bin_make -f /dev/null $test_prog
 set success 0
-set moab_pid [spawn $test_prog $auth_key $e_port $job_id $sched_port]
+set moab_pid [spawn $test_prog $auth_key $control_addr $e_port $job_id $sched_port]
 expect {
 	-re "SUCCESS" {
 		set success 1
