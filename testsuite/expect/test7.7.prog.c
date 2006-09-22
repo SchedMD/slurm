@@ -34,8 +34,9 @@
 #include "./test7.7.crypto.c"
 
 /* global variables */
-int e_port, job_id, sched_port;
 char *auth_key, *control_addr;
+int   e_port, sched_port;
+long  job_id;
 
 static int _conn_wiki_port(char *host, int port)
 {
@@ -149,8 +150,9 @@ static char *_recv_msg(int fd)
 static void _xmit(char *msg)
 {
 	int msg_len = strlen(msg);
-	char *out_msg, *in_msg, sum[20];
+	char *out_msg, *in_msg, sum[20], *sc_ptr;
 	int wiki_fd = _conn_wiki_port(control_addr, sched_port);
+	int sc;
 
 	out_msg = calloc(1, (msg_len+100));
 	if (out_msg == NULL) {
@@ -162,7 +164,13 @@ static void _xmit(char *msg)
 	printf("send:%s\n", out_msg);
 	_send_msg(wiki_fd, out_msg, strlen(out_msg));
 	in_msg = _recv_msg(wiki_fd);
-	printf("recv:%s\n", in_msg);
+	printf("recv:%s\n\n", in_msg);
+	sc_ptr = strstr(in_msg, "SC=");
+	sc = atoi(sc_ptr+3);
+	if (sc != 0) {
+		fprintf(stderr, "RPC failure\n");
+		exit(1);
+	} 
 	free(in_msg);
 	close(wiki_fd);
 }
@@ -189,15 +197,37 @@ static void _get_nodes(void)
 	_xmit(out_msg);
 }
 
-static void _start_job(void)
+static void _start_job(long my_job_id)
 {
 	time_t now = time(NULL);
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=STARTJOB ARG=%d TASKLIST=",
+		"TS=%u AUTH=root DT=CMD=STARTJOB ARG=%ld TASKLIST=",
 		/* Empty TASKLIST means we don't care */
-		(uint32_t) now, job_id);
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
+static void _suspend_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=SUSPENDJOB ARG=%ld",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
+static void _resume_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=RESUMEJOB ARG=%ld",
+		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
 
@@ -219,7 +249,12 @@ int main(int argc, char * argv[])
 
 	_get_jobs();
 	_get_nodes();
-	_start_job();
+	_start_job(job_id);
+	_get_jobs();
+	_suspend_job(job_id);
+	_get_jobs();
+	_resume_job(job_id);
+	_get_jobs();
 
 	printf("SUCCESS\n");
 	exit(0);
