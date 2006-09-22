@@ -430,35 +430,6 @@ void slurm_free_task_spawn_io_stream_msg(task_spawn_io_msg_t *msg)
 	xfree(msg);
 }
 
-void slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg)
-{
-	int i;
-	if (msg == NULL)
-		return;
-
-	slurm_cred_destroy(msg->cred);
-
-	if (msg->env) {
-		for (i = 0; i < msg->envc; i++) {
-			xfree(msg->env[i]);
-		}
-		xfree(msg->env);
-	}
-	xfree(msg->cwd);
-	if (msg->argv) {
-		for (i = 0; i < msg->argc; i++) {
-			xfree(msg->argv[i]);
-		}
-		xfree(msg->argv);
-	}
-
-	if (msg->switch_job)
-		switch_free_jobinfo(msg->switch_job);
-	xfree(msg->complete_nodelist);
-
-	xfree(msg);
-}
-
 void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 {
 	if (msg) {
@@ -1142,9 +1113,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case TASK_SPAWN_IO_STREAM:
 		slurm_free_task_spawn_io_stream_msg(data);
-		break;
-	case REQUEST_SPAWN_TASK:
-		slurm_free_spawn_task_request_msg(data);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:

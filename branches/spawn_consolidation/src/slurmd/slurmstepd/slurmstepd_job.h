@@ -134,7 +134,6 @@ typedef struct slurmd_job {
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
 	bool           spawn_io_flag;
-	bool           spawn_task; /* stand-alone task                      */
 	time_t         timelimit;  /* time at which job must stop           */
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
@@ -192,7 +191,6 @@ typedef struct slurmd_job {
 
 slurmd_job_t * job_create(launch_tasks_request_msg_t *msg);
 slurmd_job_t * job_batch_job_create(batch_job_launch_msg_t *msg);
-slurmd_job_t * job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *client);
 
 void job_kill(slurmd_job_t *job, int signal);
 

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  step_launch.c - launch a parallel job step
  *
- *  $Id: spawn.c 7973 2006-05-08 23:52:35Z morrone $
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

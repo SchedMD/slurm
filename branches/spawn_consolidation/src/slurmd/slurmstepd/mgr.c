@@ -298,29 +298,6 @@ mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc)
 	_batch_cleanup(job, 2, rc);
 }
 
-/*
- * Spawn a task / job step on the current node
- */
-slurmd_job_t *
-mgr_spawn_task_setup(spawn_task_request_msg_t *msg, slurm_addr *cli,
-		     slurm_addr *self)
-{
-	slurmd_job_t *job = NULL;
-	
-	if (!(job = job_spawn_create(msg, cli)))
-		return NULL;
-
-	job->spawn_task = true;
-	_set_job_log_prefix(job);
-
-	_setargs(job);
-	
-	job->envtp->cli = cli;
-	job->envtp->self = self;
-	
-	return job;
-}
-
 static void
 _set_job_log_prefix(slurmd_job_t *job)
 {
@@ -752,7 +729,7 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->spawn_io_flag && !job->spawn_task && io_initialized) {
+	if (!job->batch && !job->spawn_io_flag && io_initialized) {
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
@@ -1357,7 +1334,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	launch_tasks_response_msg_t resp;
 	srun_info_t *srun = list_peek(job->sruns);
 
-	if (job->batch || job->spawn_task)
+	if (job->batch)
 		return;
 
 	debug("Sending launch resp rc=%d", rc);
@@ -1498,8 +1475,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 {
 	char argv0[64];
 
-	if (!job->spawn_task)
-		conf->log_opts.buffered = 1;
+	conf->log_opts.buffered = 1;
 
 	/*
 	 * Reset stderr logging to user requested level
@@ -1523,7 +1499,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_set_argv0(argv0);
 	
 	/* Connect slurmd stderr to job's stderr */
-	if (!job->spawn_io_flag && (!job->spawn_task) && (job->task != NULL)) {
+	if (!job->spawn_io_flag && job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
 			return;

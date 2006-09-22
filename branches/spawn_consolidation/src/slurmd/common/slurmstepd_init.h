@@ -50,7 +50,7 @@
 typedef enum slurmd_step_tupe {
 	LAUNCH_BATCH_JOB = 0,
 	LAUNCH_TASKS,
-	SPAWN_TASKS
+	DEFUNCT_SPAWN_TASKS /* DEFUNCT */
 } slurmd_step_type_t;
 
 /*
