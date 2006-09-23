@@ -155,8 +155,7 @@ static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job, struct priv_state *ps);
 static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
-static int  _setup_io(slurmd_job_t *job);
-static int  _setup_spawn_io(slurmd_job_t *job);
+static int  _setup_normal_io(slurmd_job_t *job);
 static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
 				struct priv_state *state);
 static int  _reclaim_privileges(struct priv_state *state);
@@ -201,7 +200,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 {
 	slurmd_job_t *job = NULL;
 
-	if (!(job = job_create(msg, cli))) {
+	if (!(job = job_create(msg))) {
 		_send_launch_failure (msg, cli, errno);
 		return NULL;
 	}
@@ -299,29 +298,6 @@ mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc)
 	_batch_cleanup(job, 2, rc);
 }
 
-/*
- * Spawn a task / job step on the current node
- */
-slurmd_job_t *
-mgr_spawn_task_setup(spawn_task_request_msg_t *msg, slurm_addr *cli,
-		     slurm_addr *self)
-{
-	slurmd_job_t *job = NULL;
-	
-	if (!(job = job_spawn_create(msg, cli)))
-		return NULL;
-
-	job->spawn_task = true;
-	_set_job_log_prefix(job);
-
-	_setargs(job);
-	
-	job->envtp->cli = cli;
-	job->envtp->self = self;
-	
-	return job;
-}
-
 static void
 _set_job_log_prefix(slurmd_job_t *job)
 {
@@ -339,13 +315,12 @@ _set_job_log_prefix(slurmd_job_t *job)
 }
 
 static int
-_setup_io(slurmd_job_t *job)
+_setup_normal_io(slurmd_job_t *job)
 {
 	int            rc   = 0;
 	struct priv_state sprivs;
 
-	debug2("Entering _setup_io");
-
+	debug2("Entering _setup_normal_io");
 
 	/*
 	 * Temporarily drop permissions, initialize task stdio file
@@ -377,38 +352,22 @@ _setup_io(slurmd_job_t *job)
 	if (!job->batch)
 		if (io_thread_start(job) < 0)
 			return ESLURMD_IO_ERROR;
-	/*
-	 * Initialize log facility to copy errors back to srun
-	 */
-	_slurmd_job_log_init(job);
-	
-#ifndef NDEBUG
-#  ifdef PR_SET_DUMPABLE
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		debug ("Unable to set dumpable to 1");
-#  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG         */
-
-	debug2("Leaving  _setup_io");
+	debug2("Leaving  _setup_normal_io");
 	return SLURM_SUCCESS;
 }
-
 
 static int
-_setup_spawn_io(slurmd_job_t *job)
+_setup_user_managed_io(slurmd_job_t *job)
 {
-	_slurmd_job_log_init(job);
+	srun_info_t *srun;
 
-#ifndef NDEBUG
-#  ifdef PR_SET_DUMPABLE
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		debug ("Unable to set dumpable to 1");
-#  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG         */
-
-	return SLURM_SUCCESS;
+	if ((srun = list_peek(job->sruns)) == NULL) {
+		error("_setup_user_managed_io: no clients!");
+		return SLURM_ERROR;
+	}
+	
+	return user_managed_io_client_connect(job->ntasks, srun, job->task);
 }
-
 
 static void
 _random_sleep(slurmd_job_t *job)
@@ -687,10 +646,22 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 	
-	if (job->spawn_task)
-		rc = _setup_spawn_io(job);
+	if (job->user_managed_io)
+		rc = _setup_user_managed_io(job);
 	else
-		rc = _setup_io(job);
+		rc = _setup_normal_io(job);
+	/*
+	 * Initialize log facility to copy errors back to srun
+	 */
+	_slurmd_job_log_init(job);
+	
+#ifndef NDEBUG
+#  ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#  endif /* PR_SET_DUMPABLE */
+#endif   /* !NDEBUG         */
+
 	if (rc) {
 		error("IO setup failed: %m");
 		goto fail2;
@@ -758,7 +729,7 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->spawn_task && io_initialized) {
+	if (!job->batch && !job->user_managed_io && io_initialized) {
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
@@ -1176,7 +1147,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
  * Make sure all processes in session are dead for interactive jobs.  On 
  * systems with an IBM Federation switch, all processes must be terminated 
  * before the switch window can be released by interconnect_postfini().
- *  For batch jobs, we let spawned processes continue by convention
+ * For batch jobs, we let spawned processes continue by convention
  * (although this could go either way). The Epilog program could be used 
  * to terminate any "orphan" processes.
  */
@@ -1363,7 +1334,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	launch_tasks_response_msg_t resp;
 	srun_info_t *srun = list_peek(job->sruns);
 
-	if (job->batch || job->spawn_task)
+	if (job->batch)
 		return;
 
 	debug("Sending launch resp rc=%d", rc);
@@ -1504,8 +1475,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 {
 	char argv0[64];
 
-	if (!job->spawn_task)
-		conf->log_opts.buffered = 1;
+	conf->log_opts.buffered = 1;
 
 	/*
 	 * Reset stderr logging to user requested level
@@ -1529,7 +1499,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_set_argv0(argv0);
 	
 	/* Connect slurmd stderr to job's stderr */
-	if ((!job->spawn_task) && (job->task != NULL)) {
+	if (!job->user_managed_io && job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
 			return;

@@ -101,4 +101,11 @@ void io_close_task_fds(slurmd_job_t *job);
 
 void io_close_all(slurmd_job_t *job);
 
+/*
+ *  Initialize "user managed" IO, where each task has a single TCP
+ *  socket end point shared on stdin, stdout, and stderr.
+ */
+int user_managed_io_client_connect(int ntasks, srun_info_t *srun,
+				   slurmd_task_info_t **tasks);
+
 #endif /* !_IO_H */

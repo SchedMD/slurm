@@ -87,7 +87,7 @@ libslurm_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = allocate.lo cancel.lo checkpoint.lo complete.lo \
 	config_info.lo init_msg.lo job_info.lo job_step_info.lo \
 	node_info.lo node_select_info.lo partition_info.lo signal.lo \
-	slurm_pmi.lo spawn.lo step_ctx.lo step_io.lo step_launch.lo \
+	slurm_pmi.lo step_ctx.lo step_io.lo step_launch.lo \
 	pmi_server.lo submit.lo suspend.lo reconfigure.lo \
 	update_config.lo
 am_libslurm_la_OBJECTS = $(am__objects_1)
@@ -347,7 +347,6 @@ slurmapi_src = \
 	partition_info.c \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
-	spawn.c          \
 	step_ctx.c step_ctx.h \
 	step_io.c step_io.h \
 	step_launch.c step_launch.h \
@@ -488,7 +487,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reconfigure.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_pmi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spawn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_io.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  step_ctx.h - step context declarations
  *
- *  $Id: spawn.c 8334 2006-06-07 20:36:04Z morrone $
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -51,14 +51,7 @@ struct slurm_step_ctx_struct {
 	job_step_create_request_msg_t *step_req;
 	job_step_create_response_msg_t *step_resp;
 
-	char *cwd;		/* working directory */
-	uint32_t argc;		/* count of arguments */
-	char **argv;		/* argument list */
-	uint16_t env_set;	/* flag if user set env */
-	uint32_t envc;		/* count of env vars */
-	char **env;		/* environment variables */
-
-	/* Used by slurm_step_launch(), but not slurm_spawn() */
+	/* Used by slurm_step_launch() */
 	struct step_launch_state *launch_state;
 };
 

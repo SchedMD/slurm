@@ -90,40 +90,9 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
-static void  _setup_spawn_io(slurmd_job_t *job);
 static int   _run_script(const char *name, const char *path, 
 		slurmd_job_t *job);
 static void  _update_env(char *buf, char ***env);
-
-
-static void _setup_spawn_io(slurmd_job_t *job)
-{
-	srun_info_t *srun;
-	int fd = -1;
-
-	srun = list_peek(job->sruns);
-	xassert(srun);
-	if ((fd = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
-		error("connect spawn io stream: %m");
-		exit(1);
-	}
-
-	if (dup2(fd, STDIN_FILENO) == -1) {
-		error("dup2 over STDIN_FILENO: %m");
-		exit(1);
-	}
-	if (dup2(fd, STDOUT_FILENO) == -1) {
-		error("dup2 over STDOUT_FILENO: %m");
-		exit(1);
-	}
-	if (dup2(fd, STDERR_FILENO) == -1) {
-		error("dup2 over STDERR_FILENO: %m");
-		exit(1);
-	}
-		
-	if (fd > 2)
-		(void) close(fd);
-}
 
 /* Search for "export NAME=value" records in buf and 
  * use them to add environment variables to env */
@@ -247,7 +216,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	slurmd_task_info_t *t = NULL;
 
 
-	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
+	if (set_user_limits(job) < 0) {
 		debug("Unable to set user limits");
 		log_fini();
 		exit(5);
@@ -309,10 +278,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	 * If io_prepare_child() is moved above interconnect_attach()
 	 * this causes EBADF from qsw_attach(). Why?
 	 */
-	if (job->spawn_task)
-		_setup_spawn_io(job);
-	else
-		io_dup_stdio(job->task[i]);
+	io_dup_stdio(job->task[i]);
 
 	/* task-specific pre-launch activities */
 
