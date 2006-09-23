@@ -49,7 +49,35 @@ static int _conn_wiki_port(char *host, int port)
 		perror("gethostbyname");
 		exit(1);
 	}
-	if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0) < 0)) {
+	if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket");
+		exit(1);
+	}
+	bzero((char *) &wiki_addr, sizeof(wiki_addr));
+	wiki_addr.sin_family = AF_INET;
+	wiki_addr.sin_port   = htons(port);
+	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);		
+	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (connect(sock_fd, (struct sockaddr *) &wiki_addr, 
+			sizeof(wiki_addr))) {
+		perror("connect");
+		exit(1);
+	}
+	return sock_fd;
+}
+
+static int _conn_event_port(char *host, int port)
+{
+	int sock_fd;
+	struct sockaddr_in wiki_addr;
+	struct hostent *hptr;
+
+	hptr = gethostbyname(host);
+	if (hptr == NULL) {
+		perror("gethostbyname");
+		exit(1);
+	}
+	if ((sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		perror("socket");
 		exit(1);
 	}
@@ -57,12 +85,13 @@ static int _conn_wiki_port(char *host, int port)
 	wiki_addr.sin_family = AF_INET;
 	wiki_addr.sin_port   = htons(port);
 	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);
-	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (connect(sock_fd, (struct sockaddr *) &wiki_addr, 
+	if (bind(sock_fd, (struct sockaddr *) &wiki_addr,
 			sizeof(wiki_addr))) {
-		perror("connect");
-		exit(1);
+		printf("WARNING: bind to port %i failed, may not be real error\n",
+			port);
+		return -1;
 	}
+	listen(sock_fd, 1);
 	return sock_fd;
 }
 
@@ -175,6 +204,30 @@ static void _xmit(char *msg)
 	close(wiki_fd);
 }
 
+static void _event_mgr(void)
+{
+	int accept_fd, event_fd;
+	int accept_addr_len = sizeof(struct sockaddr);
+	size_t cnt;
+	char in_msg[2];
+	struct sockaddr_in accept_addr;
+
+	if ((event_fd = _conn_event_port(control_addr, e_port)) < 0)
+		return;
+	printf("READY_FOR_EVENT\n");
+	if ((accept_fd = accept(event_fd, (struct sockaddr *) &accept_addr,
+			&accept_addr_len)) < 0) {
+		perror("accept");
+		exit(1);
+	}
+	close(event_fd);
+
+	cnt = _read_bytes(accept_fd, in_msg, 1);
+	if (cnt > 0)
+		printf("event recv:%c\n\n", in_msg[0]);
+	close(accept_fd);
+}
+
 static void _get_jobs(void)
 {
 	time_t now = time(NULL);
@@ -254,6 +307,8 @@ int main(int argc, char * argv[])
 	_suspend_job(job_id);
 	_get_jobs();
 	_resume_job(job_id);
+	if (e_port)
+		_event_mgr();
 	_get_jobs();
 
 	printf("SUCCESS\n");
