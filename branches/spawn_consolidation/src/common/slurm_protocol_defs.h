@@ -178,7 +178,7 @@ typedef enum {
 	MESSAGE_EPILOG_COMPLETE,
 	DEFUNCT_REQUEST_SPAWN_TASK, /* DEFUNCT */
 	REQUEST_FILE_BCAST,
-	TASK_SPAWN_IO_STREAM,
+	TASK_USER_MANAGED_IO_STREAM,
 
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
@@ -393,17 +393,18 @@ typedef struct launch_tasks_request_msg {
 	uint32_t **global_task_ids;
 	slurm_addr orig_addr;	  /* where message really came from for io */ 
 	
-	uint16_t spawn_io_flag; /* 0 for "launch" IO, 1 for "spawn" IO */
+	uint16_t user_managed_io; /* 0 for "normal" IO,
+				     1 for "user manged" IO */
 
-	/********** START LAUNCH-ONLY options **********/
-	/* These options are ignored if spawn_io_flag is 1 */
+	/********** START "normal" IO only options **********/
+	/* These options are ignored if user_managed_io is 1 */
 	char     *ofname; /* stdout filename pattern */
 	char     *efname; /* stderr filename pattern */
 	char     *ifname; /* stdin filename pattern */
 	uint8_t   buffered_stdio; /* 1 for line-buffered, 0 for unbuffered */
 	uint16_t  num_io_port;
 	uint16_t  *io_port;  /* array of available client IO listen ports */
-	/********** END LAUNCH-ONLY options **********/
+	/**********  END  "normal" IO only options **********/
 
 	char     *task_prolog;
 	char     *task_epilog;
@@ -416,34 +417,9 @@ typedef struct launch_tasks_request_msg {
 	char *complete_nodelist;
 } launch_tasks_request_msg_t;
 
-typedef struct task_spawn_io_msg {
+typedef struct task_user_managed_io_msg {
 	uint32_t task_id;
-} task_spawn_io_msg_t;
-
-typedef struct spawn_task_request_msg {
-	uint32_t  job_id;
-	uint32_t  job_step_id;
-	uint32_t  nnodes;	/* number of nodes in this job step       */
-	uint32_t  nprocs;	/* number of processes in this job step   */
-	uint32_t  uid;
-        uint32_t  gid;
-	uint16_t  envc;
-	uint16_t  argc;
-	uint16_t  cpus_allocated;
-	uint16_t  multi_prog;
-	char    **env;
-	char    **argv;
-	char     *cwd;
-	uint16_t  io_port;
-	uint16_t  task_flags;
-	uint32_t  global_task_id;
-
-	uint32_t   slurmd_debug; /* remote slurmd debug level */
-
-	slurm_cred_t cred;	/* job credential            */
-	switch_jobinfo_t switch_job;	/* switch credential for the job */
-	char *complete_nodelist;
-} spawn_task_request_msg_t;
+} task_user_managed_io_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
 
@@ -685,8 +661,8 @@ void inline
 slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg);
 void inline 
 slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t * msg);
-void inline slurm_free_task_spawn_io_stream_msg(task_spawn_io_msg_t *msg);
-void inline slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg);
+void inline slurm_free_task_user_managed_io_stream_msg(
+	task_user_managed_io_msg_t *msg);
 void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
 void inline 

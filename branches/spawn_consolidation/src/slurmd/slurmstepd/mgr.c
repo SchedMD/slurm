@@ -357,16 +357,16 @@ _setup_normal_io(slurmd_job_t *job)
 }
 
 static int
-_setup_spawn_io(slurmd_job_t *job)
+_setup_user_managed_io(slurmd_job_t *job)
 {
 	srun_info_t *srun;
 
 	if ((srun = list_peek(job->sruns)) == NULL) {
-		error("_setup_spawn_io: no clients!");
+		error("_setup_user_managed_io: no clients!");
 		return SLURM_ERROR;
 	}
 	
-	return spawn_io_client_connect(job->ntasks, srun, job->task);
+	return user_managed_io_client_connect(job->ntasks, srun, job->task);
 }
 
 static void
@@ -646,8 +646,8 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 	
-	if (job->spawn_io_flag)
-		rc = _setup_spawn_io(job);
+	if (job->user_managed_io)
+		rc = _setup_user_managed_io(job);
 	else
 		rc = _setup_normal_io(job);
 	/*
@@ -729,7 +729,7 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->spawn_io_flag && io_initialized) {
+	if (!job->batch && !job->user_managed_io && io_initialized) {
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
@@ -1147,7 +1147,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
  * Make sure all processes in session are dead for interactive jobs.  On 
  * systems with an IBM Federation switch, all processes must be terminated 
  * before the switch window can be released by interconnect_postfini().
- *  For batch jobs, we let spawned processes continue by convention
+ * For batch jobs, we let spawned processes continue by convention
  * (although this could go either way). The Epilog program could be used 
  * to terminate any "orphan" processes.
  */
@@ -1499,7 +1499,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_set_argv0(argv0);
 	
 	/* Connect slurmd stderr to job's stderr */
-	if (!job->spawn_io_flag && job->task != NULL) {
+	if (!job->user_managed_io && job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
 			return;

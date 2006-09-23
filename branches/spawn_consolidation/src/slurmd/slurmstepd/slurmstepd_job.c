@@ -225,8 +225,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	slurm_set_addr(&resp_addr,
 		       msg->resp_port[nodeid % msg->num_resp_port],
 		       NULL);
-	job->spawn_io_flag = msg->spawn_io_flag;
-	if (!msg->spawn_io_flag) {
+	job->user_managed_io = msg->user_managed_io;
+	if (!msg->user_managed_io) {
 		memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
 		slurm_set_addr(&io_addr,
 			       msg->io_port[nodeid % msg->num_io_port],

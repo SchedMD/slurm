@@ -47,7 +47,7 @@
 typedef struct {
 	int connected;
 	int *sockets; /* array of socket file descriptors */
-} spawn_io_t;
+} user_managed_io_t;
 
 struct step_launch_state {
 	pthread_mutex_t lock;
@@ -67,10 +67,10 @@ struct step_launch_state {
 	uint16_t *resp_port; /* array of message response ports */
 
 	/* io variables */
-	bool spawn_io_flag;
+	bool user_managed_io;
 	union {
 		client_io_t *normal;
-		spawn_io_t *spawn;
+		user_managed_io_t *user;
 	} io;
 	slurm_step_layout_t *layout; /* a pointer into the ctx
 					step_resp, do not free */

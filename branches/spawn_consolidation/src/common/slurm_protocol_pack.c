@@ -157,9 +157,9 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 					    msg_ptr, Buf buffer);
 
 
-static void _pack_task_spawn_io_stream_msg(task_spawn_io_msg_t *
+static void _pack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t *
 					   msg, Buf buffer);
-static int _unpack_task_spawn_io_stream_msg(task_spawn_io_msg_t **
+static int _unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **
 					    msg_ptr, Buf buffer);
 
 static void _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer);
@@ -495,9 +495,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_launch_tasks_response_msg((launch_tasks_response_msg_t
 						 *) msg->data, buffer);
 		break;
-	case TASK_SPAWN_IO_STREAM:
-		_pack_task_spawn_io_stream_msg(
-			(task_spawn_io_msg_t *) msg->data, buffer);
+	case TASK_USER_MANAGED_IO_STREAM:
+		_pack_task_user_managed_io_stream_msg(
+			(task_user_managed_io_msg_t *) msg->data, buffer);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
@@ -777,9 +777,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(launch_tasks_response_msg_t **)
 			& (msg->data), buffer);
 		break;
-	case TASK_SPAWN_IO_STREAM:
-		_unpack_task_spawn_io_stream_msg(
-			(task_spawn_io_msg_t **) &msg->data, buffer);
+	case TASK_USER_MANAGED_IO_STREAM:
+		_unpack_task_user_managed_io_stream_msg(
+			(task_user_managed_io_msg_t **) &msg->data, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		rc = _unpack_reattach_tasks_request_msg(
@@ -2684,8 +2684,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr_array(msg->argv, msg->argc, buffer);
 	pack16((uint16_t)msg->task_flags, buffer);
 	pack16((uint16_t)msg->multi_prog, buffer);
-	pack16((uint16_t)msg->spawn_io_flag, buffer);
-	if (msg->spawn_io_flag == 0) {
+	pack16((uint16_t)msg->user_managed_io, buffer);
+	if (msg->user_managed_io == 0) {
 		packstr(msg->ofname, buffer);
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
@@ -2752,8 +2752,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->multi_prog, buffer);
-	safe_unpack16(&msg->spawn_io_flag, buffer);
-	if (msg->spawn_io_flag == 0) {
+	safe_unpack16(&msg->user_managed_io, buffer);
+	if (msg->user_managed_io == 0) {
 		safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
@@ -2791,20 +2791,21 @@ unpack_error:
 }
 
 static void
-_pack_task_spawn_io_stream_msg(task_spawn_io_msg_t * msg, Buf buffer)
+_pack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t * msg,
+				      Buf buffer)
 {
 	xassert(msg != NULL);
 	pack32(msg->task_id, buffer);
 }
 
 static int
-_unpack_task_spawn_io_stream_msg(task_spawn_io_msg_t **msg_ptr,
-				 Buf buffer)
+_unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **msg_ptr,
+					Buf buffer)
 {
-	task_spawn_io_msg_t *msg;
+	task_user_managed_io_msg_t *msg;
 
 	xassert(msg_ptr != NULL);
-	msg = xmalloc(sizeof(task_spawn_io_msg_t));
+	msg = xmalloc(sizeof(task_user_managed_io_msg_t));
 	*msg_ptr = msg;
 
 	safe_unpack32(&msg->task_id, buffer);
@@ -2812,7 +2813,7 @@ _unpack_task_spawn_io_stream_msg(task_spawn_io_msg_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_task_spawn_io_stream_msg(msg);
+	slurm_free_task_user_managed_io_stream_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

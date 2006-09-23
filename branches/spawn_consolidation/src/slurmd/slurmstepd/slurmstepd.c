@@ -287,7 +287,7 @@ _init_from_slurmd(int sock, char **argv,
 		msg->msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	default:
-		fatal("Unrecognized launch/spawn RPC");
+		fatal("Unrecognized launch RPC");
 		break;
 	}
 	if(unpack_msg(msg, buffer) == SLURM_ERROR) 
@@ -336,7 +336,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		job = mgr_launch_tasks_setup(msg->data, cli, self);
 		break;
 	default:
-		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
+		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
 	if(!job) {
@@ -369,7 +369,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 		slurm_free_launch_tasks_request_msg(msg->data);
 		break;
 	default:
-		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
+		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
 	jobacct_g_free(step_complete.jobacct);

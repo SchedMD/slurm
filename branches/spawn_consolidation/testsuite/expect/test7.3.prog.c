@@ -1,6 +1,7 @@
 /*****************************************************************************\
- *  test7.3.prog.c - Test of spawn IO with the slurm_step_launch() API
- *                   (required for "poe" job step launch on IBM AIX systems).
+ *  test7.3.prog.c - Test of "user managed" IO with the slurm_step_launch()
+ *                   API function (required for "poe" launch on IBM
+ *                   AIX systems).
  *  
  *  Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
  *****************************************************************************
@@ -36,7 +37,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-#define TASKS_PER_NODE 1	/* Can't have more with current spawn RPC */
+#define TASKS_PER_NODE 1
 
 static void _do_task_work(int *fd_array, int tasks);
 
@@ -134,9 +135,9 @@ int main (int argc, char *argv[])
 	}
 
 	/*
-	 * Launch the tasks using "spawn" IO.
-	 * "spawn" IO means a TCP stream for each task, directly connected to
-	 * the stdin, stdout, and stderr the task.
+	 * Launch the tasks using "user managed" IO.
+	 * "user managed" IO means a TCP stream for each task, directly
+         * connected to the stdin, stdout, and stderr the task.
 	 */
 	slurm_job_step_launch_t_init(&launch);
 	task_argv[0] = "./test7.3.io";
@@ -144,7 +145,8 @@ int main (int argc, char *argv[])
 	launch.argc = 1;
 	getcwd(cwd, PATH_MAX);
 	launch.cwd = cwd;
-	launch.spawn_io = true; /* This is key to using "spawn" IO */
+	launch.user_managed_io = true; /* This is the key to using
+					  "user managed" IO */
 	
 	if (slurm_step_launch(ctx, &launch, NULL) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
@@ -158,10 +160,10 @@ int main (int argc, char *argv[])
 		goto done;
 	}
 
-	slurm_step_ctx_get(ctx, SLURM_STEP_CTX_SPAWN_SOCKETS,
+	slurm_step_ctx_get(ctx, SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 			   &num_fd, &fd_array);
 
-	/* Interact with spawned tasks as desired */
+	/* Interact with launched tasks as desired */
 	_do_task_work(fd_array, tasks);
 
 	for (i = 0; i < tasks; i++) {

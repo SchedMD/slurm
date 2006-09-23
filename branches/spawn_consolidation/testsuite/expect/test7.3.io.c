@@ -1,5 +1,7 @@
 /*****************************************************************************\
- *  test7.3.io.c - Test of slurm_spawn API (needed on IBM SP systems).
+ *  test7.3.io.c - Test of "user managed" IO with the slurm_step_launch()
+ *                 API function (required for "poe" launch on IBM
+ *                 AIX systems).
  *
  *  Writes short message to stdout, another from stderr, reads message from 
  *  stdin and writes it back to stdout with header.
@@ -43,7 +45,7 @@ int main(int argc, char **argv)
 	sprintf(buf1, "task %d write to stdout:", procid);
 	write(STDOUT_FILENO, buf1, strlen(buf1));
 	sprintf(buf1, "task %d write to stderr:", procid);
-	 write(STDOUT_FILENO, buf1, strlen(buf1));
+	write(STDOUT_FILENO, buf1, strlen(buf1));
 	while  ((size = read(STDIN_FILENO, buf1, sizeof(buf1))) != 0) {
 		if (size > 0) {
 			int offset;

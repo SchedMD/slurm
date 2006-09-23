@@ -1313,19 +1313,19 @@ _outgoing_buf_free(slurmd_job_t *job)
 }
 
 /**********************************************************************
- * Functions specific to "spawn" IO
+ * Functions specific to "user managed" IO
  **********************************************************************/
 static int
-_spawn_connect(srun_info_t *srun, uint32_t gtid)
+_user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
 {
 	int fd;
-	task_spawn_io_msg_t spawn_payload;
+	task_user_managed_io_msg_t user_io_msg;
 	slurm_msg_t msg;
 
 	slurm_msg_t_init(&msg);
-	msg.msg_type = TASK_SPAWN_IO_STREAM;
-	msg.data = &spawn_payload;
-	spawn_payload.task_id = gtid;
+	msg.msg_type = TASK_USER_MANAGED_IO_STREAM;
+	msg.data = &user_io_msg;
+	user_io_msg.task_id = gtid;
 
 	fd = slurm_open_msg_conn(&srun->resp_addr);
 	if (fd == -1)
@@ -1344,14 +1344,14 @@ _spawn_connect(srun_info_t *srun, uint32_t gtid)
  * file descriptors.
  */
 int
-spawn_io_client_connect(int ntasks, srun_info_t *srun,
-			slurmd_task_info_t **tasks)
+user_managed_io_client_connect(int ntasks, srun_info_t *srun,
+			       slurmd_task_info_t **tasks)
 {
 	int fd;
 	int i;
 
 	for (i = 0; i < ntasks; i++) {
-		fd = _spawn_connect(srun, tasks[i]->gtid);
+		fd = _user_managed_io_connect(srun, tasks[i]->gtid);
 		if (fd == -1)
 			return SLURM_ERROR;
 		fd_set_close_on_exec(fd);

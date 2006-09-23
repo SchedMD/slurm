@@ -133,7 +133,7 @@ typedef struct slurmd_job {
 	gid_t        *gids;    /* array of gids for user specified in uid   */
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
-	bool           spawn_io_flag;
+	bool           user_managed_io;
 	time_t         timelimit;  /* time at which job must stop           */
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
