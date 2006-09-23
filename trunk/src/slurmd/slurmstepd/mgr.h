@@ -47,12 +47,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
- * Initialize a slurmd_job_t structure for a spawn task
- */
-slurmd_job_t *mgr_spawn_task_setup(spawn_task_request_msg_t *msg,
-				   slurm_addr *client, slurm_addr *self);
-
-/*
  * Initialize a slurmd_job_t structure for a launch tasks
  */
 slurmd_job_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,

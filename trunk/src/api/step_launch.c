@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  step_launch.c - launch a parallel job step
  *
- *  $Id: spawn.c 7973 2006-05-08 23:52:35Z morrone $
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -101,11 +101,13 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
+	memset(ptr, 0, sizeof(slurm_job_step_launch_t));
 	ptr->argc = 0;
 	ptr->argv = NULL;
 	ptr->envc = 0;
 	ptr->env = NULL;
 	ptr->cwd = NULL;
+	ptr->user_managed_io = false;
 	ptr->buffered_stdio = true;
 	ptr->labelio = false;
 	ptr->remote_output_filename = NULL;
@@ -118,6 +120,10 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 	ptr->parallel_debug = false;
 	ptr->task_prolog = NULL;
 	ptr->task_epilog = NULL;
+	ptr->cpu_bind_type = 0;
+	ptr->cpu_bind = NULL;
+	ptr->mem_bind_type = 0;
+	ptr->mem_bind = NULL;
 }
 
 /*
@@ -192,50 +198,51 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.mem_bind_type = params->mem_bind_type;
 	launch.mem_bind = params->mem_bind;
 	launch.multi_prog = params->multi_prog ? 1 : 0;
-
 	launch.options = job_options_create();
 	launch.complete_nodelist = 
 		xstrdup(ctx->step_resp->step_layout->node_list);
 	spank_set_remote_options (launch.options);
-
-	launch.ofname = params->remote_output_filename;
-	launch.efname = params->remote_error_filename;
-	launch.ifname = params->remote_input_filename;
-	launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
-
 	launch.task_flags = 0;
 	if (params->parallel_debug)
 		launch.task_flags |= TASK_PARALLEL_DEBUG;
-
-	/* Node specific message contents */
-/* 	if (slurm_mpi_single_task_per_node ()) { */
-/* 		for (i = 0; i < job->num_hosts; i++) */
-/* 			job->tasks[i] = 1; */
-/* 	}  */
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.cpus_allocated = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 	
-	ctx->launch_state->client_io =
-		client_io_handler_create(params->local_fds,
-					 ctx->step_req->num_tasks,
-					 ctx->step_req->node_count,
-					 ctx->step_resp->cred,
-					 params->labelio);
-	if (ctx->launch_state->client_io == NULL)
-		return SLURM_ERROR;
-	if (client_io_handler_start(ctx->launch_state->client_io) 
-	    != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
-	launch.num_io_port = ctx->launch_state->client_io->num_listen;
-	launch.io_port = xmalloc(sizeof(uint16_t) * launch.num_io_port);
-	for (i = 0; i < launch.num_io_port; i++) {
-		launch.io_port[i] =
-			ctx->launch_state->client_io->listenport[i];
+	launch.user_managed_io = params->user_managed_io ? 1 : 0;
+	ctx->launch_state->user_managed_io = params->user_managed_io;
+	if (!ctx->launch_state->user_managed_io) {
+		launch.ofname = params->remote_output_filename;
+		launch.efname = params->remote_error_filename;
+		launch.ifname = params->remote_input_filename;
+		launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
+		ctx->launch_state->io.normal =
+			client_io_handler_create(params->local_fds,
+						 ctx->step_req->num_tasks,
+						 ctx->step_req->node_count,
+						 ctx->step_resp->cred,
+						 params->labelio);
+		if (ctx->launch_state->io.normal == NULL)
+			return SLURM_ERROR;
+		if (client_io_handler_start(ctx->launch_state->io.normal) 
+		    != SLURM_SUCCESS)
+			return SLURM_ERROR;
+		launch.num_io_port = ctx->launch_state->io.normal->num_listen;
+		launch.io_port = xmalloc(sizeof(uint16_t)*launch.num_io_port);
+		for (i = 0; i < launch.num_io_port; i++) {
+			launch.io_port[i] =
+				ctx->launch_state->io.normal->listenport[i];
+		}
+	} else { /* user_managed_io is true */
+		/* initialize user_managed_io_t */
+		ctx->launch_state->io.user =
+			(user_managed_io_t *)xmalloc(sizeof(user_managed_io_t));
+		ctx->launch_state->io.user->connected = 0;
+		ctx->launch_state->io.user->sockets =
+			(int *)xmalloc(sizeof(int)*ctx->step_req->num_tasks);
 	}
-	
+
 	launch.num_resp_port = ctx->launch_state->num_resp_port;
 	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.num_resp_port);
 	for (i = 0; i < launch.num_resp_port; i++) {
@@ -268,6 +275,24 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 		}
 		pthread_cond_wait(&sls->cond, &sls->lock);
 	}
+
+	if (sls->user_managed_io) {
+		while(sls->io.user->connected < sls->tasks_requested) {
+			if (sls->abort) {
+				if (!sls->abort_action_taken) {
+					slurm_kill_job_step(
+						ctx->job_id,
+						ctx->step_resp->job_step_id,
+						SIGKILL);
+					sls->abort_action_taken = true;
+				}
+				pthread_mutex_unlock(&sls->lock);
+				return 0;
+			}
+			pthread_cond_wait(&sls->cond, &sls->lock);
+		}
+	}
+
 	pthread_mutex_unlock(&sls->lock);
 	return 1;
 }
@@ -322,12 +347,14 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 					ctx->job_id,
 					ctx->step_resp->job_step_id,
 					SIGKILL);
-				client_io_handler_abort(sls->client_io);
+				if (!sls->user_managed_io)
+					client_io_handler_abort(sls->io.normal);
 				break;
 			} else if (errnum != 0) {
 				error("Error waiting on condition in"
 				      " slurm_step_launch_wait_finish: %m");
-				client_io_handler_abort(sls->client_io);
+				if (!sls->user_managed_io)
+					client_io_handler_abort(sls->io.normal);
 				break;
 			}
 		}
@@ -339,8 +366,10 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 	eio_handle_destroy(sls->msg_handle);
 
 	/* Then wait for the IO thread to finish */
-	client_io_handler_finish(sls->client_io);
-	client_io_handler_destroy(sls->client_io);
+	if (!sls->user_managed_io) {
+		client_io_handler_finish(sls->io.normal);
+		client_io_handler_destroy(sls->io.normal);
+	}
 
 	pthread_mutex_unlock(&sls->lock);
 }
@@ -585,14 +614,13 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	pthread_mutex_unlock(&sls->lock);
 }
 
-static void
-
 /*
  * Take the list of node names of down nodes and convert into an
  * array of nodeids for the step.  The nodeid array is passed to
  * client_io_handler_downnodes to notify the IO handler to expect no
  * further IO from that node.
  */
+static void
 _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
@@ -632,7 +660,10 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		}
 	}
 
-	client_io_handler_downnodes(sls->client_io, node_ids, num_node_ids);
+	if (!sls->user_managed_io) {
+		client_io_handler_downnodes(sls->io.normal, node_ids,
+					    num_node_ids);
+	}
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 
@@ -642,6 +673,49 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	hostset_destroy(all_nodes);
 }
 
+/*
+ * The TCP connection that was used to send the task_spawn_io_msg_t message
+ * will be used as the user managed IO stream.  The remote end of the TCP stream
+ * will be connected to the stdin, stdout, and stderr of the task.  The
+ * local end of the stream is stored in the user_managed_io_t structure, and
+ * is left to the user to manage (the user can retrieve the array of
+ * socket descriptors using slurm_step_ctx_get()).
+ *
+ * To allow the message TCP stream to be reused for spawn IO traffic we
+ * set the slurm_msg_t's conn_fd to -1 to avoid having the caller close the
+ * TCP stream.
+ */
+static void
+_task_user_managed_io_handler(struct step_launch_state *sls,
+			      slurm_msg_t *user_io_msg)
+{
+	task_user_managed_io_msg_t *msg =
+		(task_user_managed_io_msg_t *) user_io_msg->data;
+
+	pthread_mutex_lock(&sls->lock);
+
+	debug("task %d user managed io stream established", msg->task_id);
+	/* sanity check */
+	if (msg->task_id >= sls->tasks_requested) {
+		error("_task_user_managed_io_handler:"
+		      " bad task ID %u (of %d tasks)",
+		      msg->task_id, sls->tasks_requested);
+	}
+
+	sls->io.user->connected++;
+	fd_set_blocking(user_io_msg->conn_fd);
+	sls->io.user->sockets[msg->task_id] = user_io_msg->conn_fd;
+
+	/* prevent the caller from closing the user managed IO stream */
+	user_io_msg->conn_fd = -1;
+
+	pthread_cond_signal(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
+}
+
+/*
+ * Identify the incoming message and call the appropriate handler function.
+ */
 static void
 _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 {
@@ -652,7 +726,7 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u", 
 		       (unsigned int) req_uid);
-		return;
+ 		return;
 	}
 
 	switch (msg->msg_type) {
@@ -691,6 +765,10 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 		rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
 		slurm_send_rc_msg(msg, rc);
 		slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
+		break;
+	case TASK_USER_MANAGED_IO_STREAM:
+		debug2("TASK_USER_MANAGED_IO_STREAM");
+		_task_user_managed_io_handler(sls, msg);
 		break;
 	default:
 		error("received spurious message type: %d",

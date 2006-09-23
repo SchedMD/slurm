@@ -61,7 +61,6 @@ slurmapi_src =           \
 	partition_info.c \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
-	spawn.c          \
 	step_ctx.c step_ctx.h \
 	step_io.c step_io.h \
 	step_launch.c step_launch.h \
