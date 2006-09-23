@@ -93,7 +93,8 @@ extern int	event_notify(char *msg)
 		xfree(control_addr);
 	}
 
-	if (send(event_fd, msg, strlen(msg), MSG_DONTWAIT) > 0) {
+	/* Just send a single byte */
+	if (send(event_fd, msg, 1, MSG_DONTWAIT) > 0) {
 		debug("wiki event_notification sent: %s", msg);
 		last_notify_time = now;
 		rc = 0;
@@ -104,6 +105,10 @@ extern int	event_notify(char *msg)
 		event_fd = -1;
 		rc = -1;
 	}
+	/* We disconnect and reconnect on every message to
+	 * gracefully handle some failure modes of Moab */
+	(void) slurm_shutdown_msg_engine(event_fd);
+	event_fd = -1;
 	pthread_mutex_unlock(&event_fd_mutex);
 	return rc;
 }
