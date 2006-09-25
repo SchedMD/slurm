@@ -162,7 +162,6 @@ struct popup_info {
 	bool not_found;
 	GtkWidget *popup;
 	GtkWidget *event_box;
-	GtkWidget *button;
 	GtkTable *table;
 	specific_info_t *spec_info;
 	display_data_t *display_data;
@@ -187,6 +186,7 @@ extern int global_sleep_time;
 extern bool admin_mode;
 extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
+extern GtkTable *main_grid_table;
 extern GStaticMutex sview_mutex;	
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
@@ -209,6 +209,14 @@ extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data);
 extern void create_search_popup(GtkToggleAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
 
+//grid.c
+extern void add_button_to_grid_table(GtkTable *table, char *name, int color);
+extern void change_grid_color(GtkTable *table, int start_inx, int end_inx,
+			      int color_inx);
+extern void set_grid_size(GtkTable *table, int node_cnt);
+extern int get_system_stats();
+extern void sview_init_grid();
+extern void sview_reset_grid();
 
 // part_info.c
 extern void refresh_part(GtkAction *action, gpointer user_data);
