@@ -17,8 +17,8 @@ documents those changes that are of interest to users and admins.
    by itself.
  - Enable specification of srun --jobid=# option with --batch (for user root).
  - Verify that job actually starts when requested by sched/wiki2.
- - Add new wiki.conf parameters: EPort and JobAggregationTime and added 
-   event notifcation logic (see wiki.conf man page for details)
+ - Add new wiki.conf parameters: EPort and JobAggregationTime for event 
+   notifcation logic (see wiki.conf man page for details)
 
 * Changes in SLURM 1.1.12
 =========================
