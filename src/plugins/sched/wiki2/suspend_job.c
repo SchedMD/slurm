@@ -55,7 +55,7 @@ extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	jobid = strtol(arg_ptr+4, &tmp_char, 10);
-	if (tmp_char[0] != '\0') {
+	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = 300;
 		*err_msg = "Invalid ARG value";
 		error("wiki: SUSPENDJOB has invalid jobid");
