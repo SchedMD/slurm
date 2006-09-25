@@ -67,14 +67,14 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "GETNODES lacks ARG";
 		error("wiki: GETNODES lacks ARG");
 		return -1;
 	}
 	update_time = (time_t) strtol(arg_ptr+4, &tmp_char, 10);
 	if (tmp_char[0] != ':') {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "Invalid ARG value";
 		error("wiki: GETNODES has invalid ARG value");
 		return -1;

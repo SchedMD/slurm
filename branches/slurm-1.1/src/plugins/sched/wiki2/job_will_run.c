@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  start_job.c - Process Wiki start job request
+ *  job_will_run.c - Process Wiki job will_run test
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,71 +36,73 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/state_save.h"
 
 static char *	_copy_nodelist_no_dup(char *node_list);
-static int	_start_job(uint32_t jobid, char *hostlist, 
+static int	_will_run_test(uint32_t jobid, char *hostlist, 
 			int *err_code, char **err_msg);
 
 /* RET 0 on success, -1 on failure */
-extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
+extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
 	int i;
 	uint32_t jobid;
-	hostlist_t hl;
 	char host_string[1024];
 	static char reply_msg[128];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
 		*err_code = -300;
-		*err_msg = "STARTJOB lacks ARG";
-		error("wiki: STARTJOB lacks ARG");
+		*err_msg = "JOBWILLRUN lacks ARG";
+		error("wiki: JOBWILLRUN lacks ARG");
 		return -1;
 	}
 	jobid = strtol(arg_ptr+4, &tmp_char, 10);
-	if (!isspace(tmp_char[0])) {
+	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
-		error("wiki: STARTJOB has invalid jobid");
+		error("wiki: JOBWILLRUN has invalid jobid");
 		return -1;
 	}
 
 	task_ptr = strstr(cmd_ptr, "TASKLIST=");
-	if (task_ptr == NULL) {
-		*err_code = -300;
-		*err_msg = "STARTJOB lacks TASKLIST";
-		error("wiki: STARTJOB lacks TASKLIST");
-		return -1;
+	if (task_ptr) {
+		hostlist_t hl;
+		node_ptr = task_ptr + 9;
+		for (i=0; node_ptr[i]!='\0'; i++) {
+			if (node_ptr[i] == ':')
+				node_ptr[i] = ',';
+		}
+		hl = hostlist_create(node_ptr);
+		i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
+		hostlist_destroy(hl);
+		if (i < 0) {
+			*err_code = -300;
+			*err_msg = "JOBWILLRUN has invalid TASKLIST";
+			error("wiki: JOBWILLRUN has invalid TASKLIST");
+			return -1;
+		}
+	} else {
+		/* no restrictions on nodes available for use */
+		strcpy(host_string, "");
 	}
-	node_ptr = task_ptr + 9;
-	for (i=0; node_ptr[i]!='\0'; i++) {
-		if (node_ptr[i] == ':')
-			node_ptr[i] = ',';
-	}
-	hl = hostlist_create(node_ptr);
-	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
-	hostlist_destroy(hl);
-	if (i < 0) {
-		*err_code = -300;
-		*err_msg = "STARTJOB has invalid TASKLIST";
-		error("wiki: STARTJOB has invalid TASKLIST");
-		return -1;
-	}
-	if (_start_job(jobid, host_string, err_code, err_msg) != 0)
+
+	if (_will_run_test(jobid, host_string, err_code, err_msg) != 0)
 		return -1;
 
 	snprintf(reply_msg, sizeof(reply_msg), 
-		"job %u started successfully", jobid);
+		"job %u can start now", jobid);
 	*err_msg = reply_msg;
 	return 0;
 }
 
-static int	_start_job(uint32_t jobid, char *hostlist,
+static int	_will_run_test(uint32_t jobid, char *hostlist,
 			int *err_code, char **err_msg)
 {
 	int rc = 0;
@@ -109,8 +111,9 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	char *new_node_list;
-	static char tmp_msg[128];
-	bitstr_t *new_bitmap;
+	bitstr_t *new_bitmap, *save_exc_bitmap, *save_req_bitmap;
+	uint32_t save_prio;
+	static char reply_msg[128];
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
@@ -119,17 +122,19 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		*err_msg = "No such job";
 		error("wiki: Failed to find job %u", jobid);
 		rc = -1;
-		goto fini;
+		unlock_slurmctld(job_write_lock);
+		return rc;
 	}
 
 	if ((job_ptr->details == NULL)
 	||  (job_ptr->job_state != JOB_PENDING)) {
 		*err_code = -700;
-		*err_msg = "Job not pending, can't update";
-		error("wiki: Attempt to change state of non-pending job %u",
+		*err_msg = "Job not pending, can't test  will_run";
+		error("wiki: Attempt to test will_run of non-pending job %u",
 			jobid);
 		rc = -1;
-		goto fini;
+		unlock_slurmctld(job_write_lock);
+		return rc;
 	}
 
 	new_node_list = _copy_nodelist_no_dup(hostlist);
@@ -139,7 +144,8 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		error("wiki: Attempt to set invalid node list for job %u, %s",
 			jobid, hostlist);
 		rc = -1;
-		goto fini;
+		unlock_slurmctld(job_write_lock);
+		return rc;
 	}
 
 	if (node_name2bitmap(new_node_list, false, &new_bitmap) != 0) {
@@ -147,60 +153,57 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		*err_msg = "Invalid TASKLIST";
 		error("wiki: Attempt to set invalid node list for job %u, %s",
 			jobid, hostlist);
-		xfree(hostlist);
 		rc = -1;
-		goto fini;
-	}
-
-	/* Remove any excluded nodes, incompatable with Wiki */
-	if (job_ptr->details->exc_nodes) {
-		error("wiki: clearing exc_nodes for job %u", jobid);
-		xfree(job_ptr->details->exc_nodes);
-		if (job_ptr->details->exc_node_bitmap)
-			bit_free(job_ptr->details->exc_node_bitmap);
-	}
-
-	/* start it now */
-	xfree(job_ptr->details->req_nodes);
-	job_ptr->details->req_nodes = new_node_list;
-	if (job_ptr->details->req_node_bitmap)
-		bit_free(job_ptr->details->req_node_bitmap);
-	job_ptr->details->req_node_bitmap = new_bitmap;
-	job_ptr->priority = 1000000;
-
- fini:	unlock_slurmctld(job_write_lock);
-	if (rc == 0) {	/* New job to start ASAP */
-		(void) schedule();	/* provides own locking */
-		/* Check to insure the job was actually started */
-		lock_slurmctld(job_write_lock);
-		/* job_ptr = find_job_record(jobid);	don't bother */
-		if ((job_ptr->job_id == jobid)
-		&&  (job_ptr->job_state != JOB_RUNNING)) {
-			uint16_t wait_reason = 0;
-			error("wiki: failed to start job %u", jobid);
-			job_ptr->priority = 0;
-			if (job_ptr->details)
-				wait_reason = job_ptr->details->wait_reason;
-			*err_code = -910 - wait_reason;
-			snprintf(tmp_msg, sizeof(tmp_msg),
-				"Could not start job %u: %s",
-				jobid, job_reason_string(wait_reason));
-			*err_msg = tmp_msg;
-			error("wiki: %s", tmp_msg);
-			rc = -1;
-		}
+		xfree(new_node_list);
 		unlock_slurmctld(job_write_lock);
-		schedule_node_save();	/* provides own locking */
-		schedule_job_save();	/* provides own locking */
+		return rc;
 	}
-	return rc;
+
+	/* Put the inverse of this on the excluded node list, 
+	 * Remove any required nodes, and test */
+	save_exc_bitmap = job_ptr->details->exc_node_bitmap;
+	if (hostlist[0]) {	/* empty hostlist, all nodes usable */
+		bit_not(new_bitmap);
+		job_ptr->details->exc_node_bitmap = new_bitmap;
+	}
+	save_req_bitmap = job_ptr->details->req_node_bitmap;
+	job_ptr->details->req_node_bitmap = bit_alloc(node_record_count);
+	save_prio = job_ptr->priority;
+	job_ptr->priority = 1;
+
+	rc = select_nodes(job_ptr, true);
+	if (rc == SLURM_SUCCESS) {
+		*err_code = 0;
+		*err_msg = "Job runable now";
+	} else if (rc == ESLURM_NODES_BUSY) {
+		*err_code = 1;
+		*err_msg = "Job runable later";
+	} else {
+		char *err_str = slurm_strerror(rc);
+		error("wiki: job %d never runnable on hosts=%s %s", 
+			jobid, new_node_list, err_str);
+		*err_code = -740;
+		snprintf(reply_msg, sizeof(reply_msg), 
+			"Job %d not runable: %s", jobid, err_str);
+		*err_msg = reply_msg;
+	}
+
+	/* Restore job's state, release memory */
+	xfree(new_node_list);
+	bit_free(new_bitmap);
+	bit_free(job_ptr->details->req_node_bitmap);
+	job_ptr->details->exc_node_bitmap = save_exc_bitmap;
+	job_ptr->details->req_node_bitmap = save_req_bitmap;
+	job_ptr->priority = save_prio;
+	unlock_slurmctld(job_write_lock);
+ 	return rc;
 }
 
 static char *	_copy_nodelist_no_dup(char *node_list)
 {
 	int   new_size = 128;
 	char *new_str;
-	hostlist_t hl = hostlist_create( node_list );
+	hostlist_t hl = hostlist_create(node_list);
 
 	if (hl == NULL)
 		return NULL;

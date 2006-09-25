@@ -268,7 +268,7 @@ static void _cancel_job(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=CANCELJOB ARG=%ld TASKLIST=",
+		"TS=%u AUTH=root DT=CMD=CANCELJOB ARG=%ld TYPE=ADMIN",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
@@ -307,6 +307,18 @@ static void _resume_job(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _job_will_run(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=%ld %s",
+		(uint32_t) now, my_job_id,
+		"TASKLIST=");	/* put desired node list here */
+	_xmit(out_msg);
+}
+
 int main(int argc, char * argv[])
 {
 	if (argc < 4) {
@@ -325,6 +337,7 @@ int main(int argc, char * argv[])
 
 	_get_jobs();
 	_get_nodes();
+	_job_will_run(job_id);
 	_start_job(job_id);
 	_suspend_job(job_id);
 	_resume_job(job_id);

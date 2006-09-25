@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
    time specified in request.
  - In sched/wiki2: include a job's exit code in job state information.
  - In sched/wiki2: add event notification logic.
+ - In sched/wiki2: add support for JOBWILLRUN command type.
 
 * Changes in SLURM 1.1.13
 =========================
