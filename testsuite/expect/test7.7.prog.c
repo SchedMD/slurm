@@ -209,7 +209,7 @@ static void _event_mgr(void)
 	int accept_fd, event_fd;
 	int accept_addr_len = sizeof(struct sockaddr);
 	size_t cnt;
-	char in_msg[2];
+	char in_msg[5];
 	struct sockaddr_in accept_addr;
 
 	if ((event_fd = _conn_event_port(control_addr, e_port)) < 0)
@@ -222,9 +222,9 @@ static void _event_mgr(void)
 	}
 	close(event_fd);
 
-	cnt = _read_bytes(accept_fd, in_msg, 1);
+	cnt = _read_bytes(accept_fd, in_msg, sizeof(in_msg));
 	if (cnt > 0)
-		printf("event recv:%c\n\n", in_msg[0]);
+		printf("event recv:%s\n\n", in_msg);
 	close(accept_fd);
 }
 

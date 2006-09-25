@@ -37,7 +37,11 @@
 
 #include "./msg.h"
 
-static pthread_mutex_t event_fd_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t	event_mutex = PTHREAD_MUTEX_INITIALIZER;
+static time_t		last_notify_time = (time_t) 0;
+static slurm_addr	moab_event_addr;
+static int		event_addr_set = 0;
+static char *		control_addr = NULL;
 
 /*
  * event_notify - Notify Moab of some event
@@ -46,24 +50,12 @@ static pthread_mutex_t event_fd_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 extern int	event_notify(char *msg)
 {
-	static slurm_fd event_fd = (slurm_fd) -1;
-	static time_t last_notify_time = (time_t) 0;
 	time_t now = time(NULL);
 	int rc;
+	slurm_fd event_fd = (slurm_fd) -1;
 
 	if (e_port == 0) {
 		/* Event notification disabled */
-		return 0;
-	}
-
-	if (msg == NULL) {
-		/* Shutdown connection */
-		pthread_mutex_lock(&event_fd_mutex);
-		if (event_fd != -1) {
-			(void) slurm_shutdown_msg_engine(event_fd);
-			event_fd = -1;
-		}
-		pthread_mutex_unlock(&event_fd_mutex);
 		return 0;
 	}
 
@@ -73,29 +65,26 @@ extern int	event_notify(char *msg)
 		return 0;
 	}
 
-	pthread_mutex_lock(&event_fd_mutex);
-	if (event_fd == -1) {
-		/* Open new socket connection */
-		slurm_addr moab_event_addr;
-		char *control_addr;
+	pthread_mutex_lock(&event_mutex);
+	if (event_addr_set == 0) {
+		/* Identify address for socket connection */
 		slurm_ctl_conf_t *conf = slurm_conf_lock();
 		control_addr = xstrdup(conf->control_addr);
 		slurm_conf_unlock();
 		slurm_set_addr(&moab_event_addr, e_port, control_addr);
-		event_fd = slurm_open_msg_conn(&moab_event_addr);
-		if (event_fd == -1) {
-			error("Unable to open wiki event port %s:%u", 
-				control_addr, e_port);
-			xfree(control_addr);
-			pthread_mutex_unlock(&event_fd_mutex);
-			return -1;
-		}
-		xfree(control_addr);
+		event_addr_set = 1;
+	}
+	event_fd = slurm_open_msg_conn(&moab_event_addr);
+	if (event_fd == -1) {
+		error("Unable to open wiki event port %s:%u", 
+			control_addr, e_port);
+		pthread_mutex_unlock(&event_mutex);
+		return -1;
 	}
 
-	/* Just send a single byte */
-	if (send(event_fd, msg, 1, MSG_DONTWAIT) > 0) {
-		debug("wiki event_notification sent: %s", msg);
+	/* Always send "1234\0" as the message */
+	if (send(event_fd, "1234", 5, MSG_DONTWAIT) > 0) {
+		info("wiki event_notification sent: %s", msg);
 		last_notify_time = now;
 		rc = 0;
 	} else {
@@ -105,10 +94,11 @@ extern int	event_notify(char *msg)
 		event_fd = -1;
 		rc = -1;
 	}
+
 	/* We disconnect and reconnect on every message to
 	 * gracefully handle some failure modes of Moab */
 	(void) slurm_shutdown_msg_engine(event_fd);
-	event_fd = -1;
-	pthread_mutex_unlock(&event_fd_mutex);
+	pthread_mutex_unlock(&event_mutex);
+
 	return rc;
 }
