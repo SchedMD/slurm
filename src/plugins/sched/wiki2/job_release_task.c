@@ -40,7 +40,7 @@
 /* RET 0 on success, -1 on failure */
 extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	*err_code = 810;
+	*err_code = -810;
 	*err_msg = "JOBRELEASETASK command not supported";
 	error("wiki: JOBRELEASETASK command not supported");
 	return -1;

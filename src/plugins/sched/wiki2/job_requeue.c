@@ -47,21 +47,21 @@ extern int	job_requeue(char *cmd_ptr, int *err_code, char **err_msg)
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "JOBREQUEUE lacks ARG";
 		error("wiki: JOBREQUEUE lacks ARG");
 		return -1;
 	}
 	jobid = strtol(arg_ptr+4, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "Invalid ARG value";
 		error("wiki: JOBREQUEUE has invalid jobid");
 		return -1;
 	}
 
 	/* FIXME: To be added in slurm v1.2 */
-	*err_code = 300;
+	*err_code = -300;
 	*err_msg = "unsupported request type";
 	error("wiki: unrecognized request type: JOBREQUEUE");
 	return -1;

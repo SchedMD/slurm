@@ -49,14 +49,14 @@ extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg)
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "SUSPENDJOB lacks ARG";
 		error("wiki: SUSPENDJOB lacks ARG");
 		return -1;
 	}
 	jobid = strtol(arg_ptr+4, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "Invalid ARG value";
 		error("wiki: SUSPENDJOB has invalid jobid");
 		return -1;
@@ -66,7 +66,7 @@ extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg)
 	msg.op = SUSPEND_JOB;
 	slurm_rc = job_suspend(&msg, 0, -1);
 	if (slurm_rc != SLURM_SUCCESS) {
-		*err_code = 700;
+		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);
 		error("wiki: Failed to suspend job %u (%m)", jobid);
 		return -1;
