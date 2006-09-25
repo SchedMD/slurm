@@ -112,11 +112,14 @@ static void *_msg_thread(void *no_data)
 	slurm_fd sock_fd, new_fd;
 	slurm_addr cli_addr;
 	int sig_array[] = {SIGUSR1, 0};
+	uint16_t sched_port = sched_get_port();
 	char *msg;
 
-	if ((sock_fd = slurm_init_msg_engine_port(sched_get_port())) 
-			== SLURM_SOCKET_ERROR)
-		fatal("wiki: slurm_init_msg_engine_port %m");
+	if ((sock_fd = slurm_init_msg_engine_port(sched_port)) 
+			== SLURM_SOCKET_ERROR) {
+		fatal("wiki: slurm_init_msg_engine_port %u %m",
+			sched_port);
+	}
 
 	/* SIGUSR1 used to interupt accept call */
 	xsignal(SIGUSR1, _sig_handler);
