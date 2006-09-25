@@ -237,6 +237,12 @@ static void _get_jobs(void)
 		"TS=%u AUTH=root DT=%s",
 		(uint32_t) now, "CMD=GETJOBS ARG=0:ALL");
 	_xmit(out_msg);
+
+	/* Check with time stamp */
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
+		(uint32_t) now, (uint32_t) (now+1));
+	_xmit(out_msg);
 }
 
 static void _get_nodes(void)
@@ -247,6 +253,23 @@ static void _get_nodes(void)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s", 
 		(uint32_t) now, "CMD=GETNODES ARG=0:ALL");
+	_xmit(out_msg);
+
+	/* Check with time stamp */
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
+		(uint32_t) now, (uint32_t) (now+1));
+	_xmit(out_msg);
+}
+
+static void _cancel_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=CANCELJOB ARG=%ld TASKLIST=",
+		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
 
@@ -303,12 +326,11 @@ int main(int argc, char * argv[])
 	_get_jobs();
 	_get_nodes();
 	_start_job(job_id);
-	_get_jobs();
 	_suspend_job(job_id);
-	_get_jobs();
 	_resume_job(job_id);
 	if (e_port)
 		_event_mgr();
+	_cancel_job(job_id+1);
 	_get_jobs();
 
 	printf("SUCCESS\n");
