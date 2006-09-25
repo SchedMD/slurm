@@ -44,8 +44,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static char *	_dump_all_jobs(int *job_cnt);
-static char *	_dump_job(struct job_record *job_ptr);
+static char *	_dump_all_jobs(int *job_cnt, int state_only);
+static char *	_dump_job(struct job_record *job_ptr, int state_only);
 static char *	_get_group_name(gid_t gid);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
@@ -79,7 +79,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	/* Locks: read job, partition */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
-	int job_rec_cnt = 0, buf_size = 0;
+	int job_rec_cnt = 0, buf_size = 0, state_only = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -97,11 +97,11 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(job_read_lock);
-	if (update_time > last_job_update) {
-		; /* No updates */
-	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
+	if (update_time > last_job_update)
+		state_only = 1;	/* Report just job id and state */
+	if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all jobs */
-		buf = _dump_all_jobs(&job_rec_cnt);
+		buf = _dump_all_jobs(&job_rec_cnt, state_only);
 	} else {
 		struct job_record *job_ptr;
 		char *job_name, *tmp2_char;
@@ -111,7 +111,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 		while (job_name) {
 			job_id = (uint32_t) strtol(job_name, NULL, 10);
 			job_ptr = find_job_record(job_id);
-			tmp_buf = _dump_job(job_ptr);
+			tmp_buf = _dump_job(job_ptr, state_only);
 			if (job_rec_cnt > 0)
 				xstrcat(buf, "#");
 			xstrcat(buf, tmp_buf);
@@ -133,7 +133,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *   _dump_all_jobs(int *job_cnt)
+static char *   _dump_all_jobs(int *job_cnt, int state_only)
 {
 	int cnt = 0;
 	struct job_record *job_ptr;
@@ -142,7 +142,7 @@ static char *   _dump_all_jobs(int *job_cnt)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		tmp_buf = _dump_job(job_ptr);
+		tmp_buf = _dump_job(job_ptr, state_only);
 		if (cnt > 0)
 			xstrcat(buf, "#");
 		xstrcat(buf, tmp_buf);
@@ -153,7 +153,7 @@ static char *   _dump_all_jobs(int *job_cnt)
 	return buf;
 }
 
-static char *	_dump_job(struct job_record *job_ptr)
+static char *	_dump_job(struct job_record *job_ptr, int state_only)
 {
 	char tmp[512], *buf = NULL;
 	uint32_t end_time, suspend_time;
@@ -161,11 +161,16 @@ static char *	_dump_job(struct job_record *job_ptr)
 	if (!job_ptr)
 		return NULL;
 
+	snprintf(tmp, sizeof(tmp), "%u:STATE=%s;",
+		job_ptr->job_id, _get_job_state(job_ptr));
+	xstrcat(buf, tmp);
+
+	if (state_only)
+		return buf;
+
 	snprintf(tmp, sizeof(tmp), 
-		"%u:UPDATETIME=%u;STATE=%s;WCLIMIT=%u;",
-		job_ptr->job_id, 
+		"UPDATETIME=%u;WCLIMIT=%u;",
 		(uint32_t) job_ptr->time_last_active,
-		_get_job_state(job_ptr),
 		(uint32_t) _get_job_time_limit(job_ptr));
 	xstrcat(buf, tmp);
 
@@ -199,14 +204,14 @@ static char *	_dump_job(struct job_record *job_ptr)
 	end_time = _get_job_end_time(job_ptr);
 	if (end_time) {
 		snprintf(tmp, sizeof(tmp),
-			"COMPLETETIME=%u", end_time);
+			"COMPLETETIME=%u;", end_time);
 		xstrcat(buf, tmp);
 	}
 
 	suspend_time = _get_job_suspend_time(job_ptr);
 	if (suspend_time) {
 		snprintf(tmp, sizeof(tmp),
-			"SUSPENDTIME=%u", suspend_time);
+			"SUSPENDTIME=%u;", suspend_time);
 		xstrcat(buf, tmp);
 	}
 

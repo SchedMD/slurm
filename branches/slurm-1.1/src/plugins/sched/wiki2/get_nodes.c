@@ -39,8 +39,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static char *	_dump_all_nodes(int *node_cnt);
-static char *	_dump_node(struct node_record *node_ptr);
+static char *	_dump_all_nodes(int *node_cnt, int state_only);
+static char *	_dump_node(struct node_record *node_ptr, int state_only);
 static char *	_get_node_state(struct node_record *node_ptr);
 
 /*
@@ -63,7 +63,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
-	int node_rec_cnt = 0, buf_size = 0;
+	int node_rec_cnt = 0, buf_size = 0, state_only = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -81,11 +81,11 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(node_read_lock);
-	if (update_time > last_node_update) {
-		; /* No updates */
-	} else if (strncmp(tmp_char, "ALL", 3) == 0) {
+	if (update_time > last_node_update)
+		state_only = 1;	/* Report job node name and state */
+	if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
-		buf = _dump_all_nodes(&node_rec_cnt);
+		buf = _dump_all_nodes(&node_rec_cnt, state_only);
 	} else {
 		struct node_record *node_ptr;
 		char *node_name, *tmp2_char;
@@ -93,7 +93,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
-			tmp_buf = _dump_node(node_ptr);
+			tmp_buf = _dump_node(node_ptr, state_only);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");
 			xstrcat(buf, tmp_buf);
@@ -115,7 +115,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *	_dump_all_nodes(int *node_cnt)
+static char *	_dump_all_nodes(int *node_cnt, int state_only)
 {
 	int i, cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
@@ -124,7 +124,7 @@ static char *	_dump_all_nodes(int *node_cnt)
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
-		tmp_buf = _dump_node(node_ptr);
+		tmp_buf = _dump_node(node_ptr, state_only);
 		if (cnt > 0)
 			xstrcat(buf, "#");
 		xstrcat(buf, tmp_buf);
@@ -135,7 +135,7 @@ static char *	_dump_all_nodes(int *node_cnt)
 	return buf;
 }
 
-static char *	_dump_node(struct node_record *node_ptr)
+static char *	_dump_node(struct node_record *node_ptr, int state_only)
 {
 	char tmp[512], *buf = NULL;
 	int i;
@@ -148,6 +148,9 @@ static char *	_dump_node(struct node_record *node_ptr)
 		node_ptr->name, 
 		_get_node_state(node_ptr));
 	xstrcat(buf, tmp);
+	
+	if (state_only)
+		return buf;
 
 #if 0
 	/* For now report actual resources on system 

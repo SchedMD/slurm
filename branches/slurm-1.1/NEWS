@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.14
+=========================
+ - In sched/wiki2: report job/node id and state only if no changes since 
+   time specified in request.
+
 * Changes in SLURM 1.1.13
 =========================
  - Fix hang in sched/wiki2 if Moab stops responding responding when 
