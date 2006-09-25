@@ -48,6 +48,31 @@ void *_refresh_thr(gpointer arg)
 	gdk_threads_leave();
 	return NULL;	
 }
+static gboolean _delete_popup(GtkWidget *widget,
+			      GtkWidget *event,
+			      gpointer data)
+{
+	gtk_widget_destroy(widget);
+	return FALSE;
+}
+
+void *_local_popup_thr(GtkWidget *popup)
+{
+	int response = 0;
+	
+	gdk_threads_enter();
+	response = gtk_dialog_run(GTK_DIALOG(popup));
+	gdk_flush();
+	gdk_threads_leave();
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		
+	}
+
+	gtk_widget_destroy(popup);
+	return NULL;
+}
 
 /* Creates a tree model containing the completions */
 void _search_entry(GtkEntry *entry, GtkComboBox *combo)
@@ -417,19 +442,23 @@ extern void create_config_popup(GtkToggleAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"SLURM Config Info",
-		GTK_WINDOW (user_data),
-		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_WINDOW(user_data),
+		GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_CLOSE,
 		GTK_RESPONSE_OK,
 		NULL);
-	
 	int error_code;
-	int response = 0;
 	GtkTreeStore *treestore = 
 		_local_create_treestore_2cols(popup, 600, 400);
 	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
+	g_signal_connect(G_OBJECT(popup), "delete_event",
+			 G_CALLBACK(_delete_popup), NULL);
+	g_signal_connect(G_OBJECT(popup), "response",
+			 G_CALLBACK(_delete_popup), NULL);
+	
+	
 	if (old_slurm_ctl_conf_ptr) {
 		error_code = slurm_load_ctl_conf(
 			old_slurm_ctl_conf_ptr->last_update,
@@ -449,15 +478,7 @@ extern void create_config_popup(GtkToggleAction *action, gpointer user_data)
 		
 	
 	gtk_widget_show_all(popup);
-	response = gtk_dialog_run(GTK_DIALOG(popup));
 
-	if (response == GTK_RESPONSE_OK)
-	{
-		
-	}
-
-	gtk_widget_destroy(popup);
-	
 	return;
 }
 
@@ -466,12 +487,11 @@ extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data)
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"SLURM Daemons running",
 		GTK_WINDOW(user_data),
-		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_CLOSE,
 		GTK_RESPONSE_OK,
 		NULL);
 	
-	int response = 0;
 	int update = 0;
 	slurm_ctl_conf_info_msg_t *conf;
 	char me[MAX_SLURM_NAME], *b, *c, *n;
@@ -479,6 +499,10 @@ extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data)
 	GtkTreeStore *treestore = 
 		_local_create_treestore_2cols(popup, 300, 100);
 	GtkTreeIter iter;
+	g_signal_connect(G_OBJECT(popup), "delete_event",
+			 G_CALLBACK(_delete_popup), NULL);
+	g_signal_connect(G_OBJECT(popup), "response",
+			 G_CALLBACK(_delete_popup), NULL);
 	
 	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
@@ -513,15 +537,7 @@ extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data)
 	
 
 	gtk_widget_show_all(popup);
-	response = gtk_dialog_run(GTK_DIALOG(popup));
-
-	if (response == GTK_RESPONSE_OK)
-	{
 		
-	}
-
-	gtk_widget_destroy(popup);
-	
 	return;
 }
 

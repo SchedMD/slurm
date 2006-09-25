@@ -84,7 +84,7 @@ enum {
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ACTION, "Action", TRUE, 0, refresh_job,
+	{G_TYPE_STRING, SORTID_ACTION, "Action", FALSE, 0, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -663,7 +663,6 @@ static void _update_info_step(job_step_info_response_msg_t *step_info_ptr,
 		while(1) {
 			gtk_tree_model_get(model, step_iter, 
 					   SORTID_UPDATED, &i, -1);
-			g_print("updated is %d\n", i);
 			if(!i) {
 				if(!gtk_tree_store_remove(
 					   GTK_TREE_STORE(model), 
@@ -1379,7 +1378,10 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	
+	int changed = 1;
+	int j=0, i=0;
+	job_info_t *job_ptr = NULL;	
+		
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
@@ -1418,7 +1420,7 @@ get_steps:
 		if((!display_widget || view == ERROR_VIEW)
 		   || (job_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
-		
+		changed = 0;
 		goto update_it;
 	}
 
@@ -1437,6 +1439,7 @@ get_steps:
 		goto end_it;
 	}
 display_it:
+	
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
@@ -1456,6 +1459,19 @@ display_it:
 	}
 
 update_it:
+	/* set up the grid */
+	for (i = 0; i < job_info_ptr->record_count; i++) {
+		job_ptr = &job_info_ptr->job_array[i];
+		j=0;
+		while(job_ptr->node_inx[j] >= 0) {
+			change_grid_color(main_grid_table,
+					  job_ptr->node_inx[j],
+					  job_ptr->node_inx[j+1],
+					  i);
+			j += 2;
+		}
+	}
+	
 	view = INFO_VIEW;
 	_update_info_job(job_info_ptr, step_info_ptr,
 			 GTK_TREE_VIEW(display_widget), NULL);

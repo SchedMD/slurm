@@ -1376,7 +1376,11 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-
+	int j=0, i=0;
+	sview_part_info_t *sview_part_info = NULL;
+	partition_info_t *part_ptr = NULL;
+	ListIterator itr = NULL;
+	
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
@@ -1439,7 +1443,27 @@ display_it:
 	info_list = _create_info_list(part_info_ptr, node_info_ptr, changed);
 	if(!info_list)
 		return;
-
+	else if(changed) {
+		int j=0, i=0;
+		sview_part_info_t *sview_part_info = NULL;
+		partition_info_t *part_ptr = NULL;
+			
+		ListIterator itr = list_iterator_create(info_list);
+		while ((sview_part_info = list_next(itr))) {
+			part_ptr = sview_part_info->part_ptr;
+			j=0;
+			while(part_ptr->node_inx[j] >= 0) {
+				change_grid_color(main_grid_table,
+						  part_ptr->node_inx[j],
+						  part_ptr->node_inx[j+1],
+						  i);
+				j += 2;
+			}
+			i++;
+		}
+		list_iterator_destroy(itr);
+	}
+	
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
@@ -1457,6 +1481,21 @@ display_it:
 		create_treestore(tree_view, display_data_part, SORTID_CNT);
 	}
 	view = INFO_VIEW;
+	/* set up the grid */
+	itr = list_iterator_create(info_list);
+	while ((sview_part_info = list_next(itr))) {
+		part_ptr = sview_part_info->part_ptr;
+		j=0;
+		while(part_ptr->node_inx[j] >= 0) {
+			change_grid_color(main_grid_table,
+					  part_ptr->node_inx[j],
+					  part_ptr->node_inx[j+1],
+					  i);
+			j += 2;
+		}
+		i++;
+	}
+	list_iterator_destroy(itr);
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget), NULL);
 end_it:
 	toggled = FALSE;
@@ -1584,6 +1623,7 @@ extern void set_menus_part(void *arg, GtkTreePath *path,
 {
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
+
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(menu, display_data_part);

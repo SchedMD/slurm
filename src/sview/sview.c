@@ -57,6 +57,8 @@ bool admin_mode = FALSE;
 GtkWidget *main_notebook = NULL;
 GtkWidget *main_statusbar = NULL;
 GtkWidget *main_window = NULL;
+GtkWidget *grid_window = NULL;
+GtkTable *main_grid_table = NULL;
 GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 
 display_data_t main_display_data[] = {
@@ -108,9 +110,12 @@ void *_page_thr(void *arg)
 	display_data_t *display_data = &main_display_data[num];
 	xfree(page);
 
+	sview_reset_grid();
+
 	while(page_running[num]) {
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
+		sview_init_grid();
 		(display_data->get_info)(table, display_data);
 		gdk_flush();
 		gdk_threads_leave();
@@ -197,6 +202,21 @@ static void _set_admin_mode(GtkToggleAction *action)
 	}
 }
 
+static void _set_grid(GtkToggleAction *action)
+{
+	static bool open = TRUE;
+	
+	if(open) {
+		gtk_widget_hide(grid_window);
+		open = FALSE;
+	} else {
+		gtk_widget_show(grid_window);
+		open = TRUE;
+	}
+		
+	return;
+}
+
 
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
@@ -239,6 +259,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"<ui>"
 		"  <menubar name='main'>"
 		"    <menu action='options'>"
+		"      <menuitem action='grid'/>"
 		"      <menuitem action='interval'/>"
 		"      <menuitem action='refresh'/>"
 		"      <separator/>"
@@ -305,6 +326,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	};
 
 	GtkToggleActionEntry toggle_entries[] = {
+		{"grid", NULL, "Show _Grid",
+		 "<control>g", "Visual display of cluster", 
+		 G_CALLBACK(_set_grid)},
 		{"admin", NULL,          
 		 "_Admin Mode", "<control>a", 
 		 "Allows user to change or update information", 
@@ -346,87 +370,6 @@ void *_popup_thr_main(void *arg)
 	return NULL;
 }
 
-int main(int argc, char *argv[])
-{
-	GtkWidget *menubar = NULL;
-	GtkWidget *table = NULL;
-	GtkWidget *button = NULL;
-	
-	int i=0;
-	
-	_init_pages();
-	g_thread_init(NULL);
-	gdk_threads_init();
-	gdk_threads_enter();
-	/* Initialize GTK */
-	gtk_init (&argc, &argv);
-	/* fill in all static info for pages */
-	/* Make a window */
-	main_window = gtk_dialog_new();
-	g_signal_connect(G_OBJECT(main_window), "delete_event",
-			 G_CALLBACK(_delete), NULL);
-	gtk_window_set_title(GTK_WINDOW(main_window), "Sview");
-	gtk_window_set_default_size(GTK_WINDOW(main_window), 600, 400);
-	gtk_container_set_border_width(
-		GTK_CONTAINER(GTK_DIALOG(main_window)->vbox), 1);
-	/* Create the main notebook, place the position of the tabs */
-	main_notebook = gtk_notebook_new();
-	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
-			 G_CALLBACK(_page_switched),
-			 NULL);
-	table = gtk_table_new(1, 2, FALSE);
-	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
-	gtk_container_set_border_width(GTK_CONTAINER(table), 1);	
-	/* Create a menu */
-	menubar = _get_menubar_menu(main_window, main_notebook);
-	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
-
-	/*create search button */
-	button = gtk_button_new_with_label("Search");
-	g_signal_connect(G_OBJECT(button), 
-			 "pressed",
-			 G_CALLBACK(create_search_popup),
-			 main_window);
-	
-	gtk_table_attach(GTK_TABLE(table), button, 1, 2, 0, 1,
-			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
-			 0, 0);
-		  
-	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
-	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
-	
-	main_statusbar = gtk_statusbar_new();
-	gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(main_statusbar), 
-					  FALSE);
-	/* Pack it all together */
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   table, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox), 
-			   main_notebook, TRUE, TRUE, 0);	
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   main_statusbar, FALSE, FALSE, 0);	
-	
-	for(i=0; i<PAGE_CNT; i++) {
-		if(main_display_data[i].id == -1)
-			break;
-		else if(!main_display_data[i].show) 
-			continue;
-		create_page(GTK_NOTEBOOK(main_notebook), 
-			    &main_display_data[i]);
-	}
-	/* tell signal we are done adding */
-	adding = 0;
-	popup_list = list_create(destroy_popup_info);
-	gtk_widget_show_all (main_window);
-
-	/* Finished! */
-	gtk_main ();
-	gdk_threads_leave();
-
-	return 0;
-}
-
 extern void refresh_main(GtkAction *action, gpointer user_data)
 {
 	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook));
@@ -446,5 +389,123 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 		right_button_pressed(NULL, NULL, event, 
 				     display_data, TAB_CLICKED);
 	} 
+}
+
+int main(int argc, char *argv[])
+{
+	GtkWidget *menubar = NULL;
+	GtkWidget *table = NULL;
+/* 	GtkWidget *button = NULL; */
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	
+	int i=0;
+	
+
+	_init_pages();
+	g_thread_init(NULL);
+	gdk_threads_init();
+	gdk_threads_enter();
+	/* Initialize GTK */
+	gtk_init (&argc, &argv);
+	/* make sure the system is up */
+	grid_window = GTK_WIDGET(create_scrolled_window());
+	bin = GTK_BIN(&GTK_SCROLLED_WINDOW(grid_window)->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin = GTK_BIN(&view->bin);
+	main_grid_table = GTK_TABLE(bin->child);
+	gtk_table_set_homogeneous(main_grid_table, TRUE);
+	while(get_system_stats() != SLURM_SUCCESS)
+		sleep(10);
+#ifdef HAVE_BG
+	gtk_widget_set_size_request(grid_window, 164, -1);
+#else
+	if(DIM_SIZE[X] < 50) {
+		gtk_widget_set_size_request(grid_window, 54, -1);
+		gtk_table_set_row_spacing(main_grid_table, 9, 5);
+	} else if(DIM_SIZE[X] < 500) {
+		gtk_widget_set_size_request(grid_window, 162, -1);
+		gtk_table_set_row_spacing(main_grid_table, 9, 5);
+	} else {
+		gtk_widget_set_size_request(grid_window, 287, -1);
+		gtk_table_set_col_spacing(main_grid_table, 9, 5);
+		gtk_table_set_row_spacing(main_grid_table, 9, 5);
+	}
+
+#endif
+	/* fill in all static info for pages */
+	/* Make a window */
+	main_window = gtk_dialog_new();
+	g_signal_connect(G_OBJECT(main_window), "delete_event",
+			 G_CALLBACK(_delete), NULL);
+	
+	gtk_window_set_title(GTK_WINDOW(main_window), "Sview");
+	gtk_window_set_default_size(GTK_WINDOW(main_window), 700, 450);
+	gtk_container_set_border_width(
+		GTK_CONTAINER(GTK_DIALOG(main_window)->vbox), 1);
+	/* Create the main notebook, place the position of the tabs */
+	main_notebook = gtk_notebook_new();
+	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
+			 G_CALLBACK(_page_switched),
+			 NULL);
+	table = gtk_table_new(1, 2, FALSE);
+	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 1);	
+	/* Create a menu */
+	menubar = _get_menubar_menu(main_window, main_notebook);
+	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
+
+	/* create search button */
+/* 	button = gtk_button_new_with_label("Search"); */
+/* 	g_signal_connect(G_OBJECT(button),  */
+/* 			 "pressed", */
+/* 			 G_CALLBACK(create_search_popup), */
+/* 			 main_window); */
+	
+/* 	gtk_table_attach(GTK_TABLE(table), button, 1, 2, 0, 1, */
+/* 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL, */
+/* 			 0, 0); */
+		  
+	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
+	
+	main_statusbar = gtk_statusbar_new();
+	gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(main_statusbar), 
+					  FALSE);
+	/* Pack it all together */
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
+			   table, FALSE, FALSE, 0);
+	table = gtk_table_new(1, 2, FALSE);
+
+	gtk_table_attach(GTK_TABLE(table), grid_window, 0, 1, 0, 1,
+			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
+			 0, 0);
+	gtk_table_attach_defaults(GTK_TABLE(table), main_notebook, 1, 2, 0, 1);
+	
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox), 
+			   table, TRUE, TRUE, 0);	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
+			   main_statusbar, FALSE, FALSE, 0);	
+	
+	for(i=0; i<PAGE_CNT; i++) {
+		if(main_display_data[i].id == -1)
+			break;
+		else if(!main_display_data[i].show) 
+			continue;
+		create_page(GTK_NOTEBOOK(main_notebook), 
+			    &main_display_data[i]);
+	}
+	/* tell signal we are done adding */
+	adding = 0;
+	popup_list = list_create(destroy_popup_info);
+	gtk_widget_show_all(main_window);
+
+	/* Finished! */
+	gtk_main ();
+	gdk_threads_leave();
+
+	return 0;
 }
 
