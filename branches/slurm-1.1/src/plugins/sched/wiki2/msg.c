@@ -97,7 +97,6 @@ extern int spawn_msg_thread(void)
 extern void term_msg_thread(void)
 {
 	pthread_mutex_lock(&thread_flag_mutex);
-	(void) event_notify(NULL);
 	if (thread_running) {
 		thread_shutdown = true;
 		pthread_kill(msg_thread_id, SIGUSR1);
