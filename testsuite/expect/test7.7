@@ -161,6 +161,7 @@ set success 0
 set moab_pid [spawn $test_prog $auth_key $control_addr $e_port $job_id1 $sched_port]
 set master_id $spawn_id
 
+exec $bin_sleep 2
 set srun_pid [spawn $srun --output=/dev/null --batch -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
