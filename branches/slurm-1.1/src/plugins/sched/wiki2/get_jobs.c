@@ -274,27 +274,42 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr)
 		return (limit * 60);	/* seconds, not minutes */
 }
 
+/* NOTE: if job has already completed, we append "EXITCODE=#" to 
+ * the state name */
 static char *	_get_job_state(struct job_record *job_ptr)
 {
 	uint16_t state = job_ptr->job_state;
 	uint16_t base_state = state & (~JOB_COMPLETING);
+	char *state_str;
+	static char return_msg[128];
 
 	if (base_state == JOB_PENDING)
 		return "Idle";
-	if ((base_state == JOB_RUNNING)
-	||  (state & JOB_COMPLETING))
+	if (base_state == JOB_RUNNING)
 		return "Running";
+
+	if (state & JOB_COMPLETING) {
+		/* Give 60 seconds to clear out, then 
+		 * then consider job done. Let Moab 
+		 * deal with inconsistency between 
+		 * job state (DONE) and node state
+		 * (some IDLE and others still 
+		 * BUSY). */
+		int age = (int) difftime(time(NULL), 
+			job_ptr->end_time);
+		if (age < 60)
+			return "Running";
+	}
+
 	if (base_state == JOB_COMPLETE)
-		return "Completed";
-	if (base_state == JOB_SUSPENDED)
-		return "Suspended";
-#if 0
-	if ((base_state == JOB_CANCELLED)
-	||  (base_state == JOB_FAILED)
-	||  (base_state == JOB_TIMEOUT)
-	||  (base_state == JOB_NODE_FAIL))
-#endif
-	return "Removed";
+		state_str = "Completed";
+	else if (base_state == JOB_SUSPENDED)
+		state_str = "Suspended";
+	else /* JOB_CANCELLED, JOB_FAILED, JOB_TIMEOUT, JOB_NODE_FAIL */
+		state_str = "Removed";
+	snprintf(return_msg, sizeof(return_msg), "%s;EXITCODE=%u",
+		state_str, job_ptr->exit_code);
+	return return_msg;
 }
 
 static uint32_t	_get_job_end_time(struct job_record *job_ptr)
