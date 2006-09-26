@@ -800,6 +800,9 @@ _add_node_set_info(struct node_set *node_set_ptr,
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they  
  *	could be allocated now
+ * IN select_node_bitmap - bitmap of nodes to be used for the
+ *	job's resource allocation (not returned if NULL), caller
+ *	must free
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -812,7 +815,8 @@ _add_node_set_info(struct node_set *node_set_ptr,
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-extern int select_nodes(struct job_record *job_ptr, bool test_only)
+extern int select_nodes(struct job_record *job_ptr, bool test_only,
+		bitstr_t **select_node_bitmap)
 {
 	int error_code = SLURM_SUCCESS, i, shared, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -971,7 +975,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
       cleanup:
-	FREE_NULL_BITMAP(select_bitmap);
+	if (select_node_bitmap)
+		*select_node_bitmap = select_bitmap;
+	else
+		FREE_NULL_BITMAP(select_bitmap);
 	if (node_set_ptr) {
 		for (i = 0; i < node_set_size; i++)
 			FREE_NULL_BITMAP(node_set_ptr[i].my_bitmap);
