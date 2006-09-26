@@ -177,14 +177,22 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		if ((job_ptr->job_id == jobid)
 		&&  (job_ptr->job_state != JOB_RUNNING)) {
 			uint16_t wait_reason = 0;
+			char *wait_string;
+
 			error("wiki: failed to start job %u", jobid);
 			job_ptr->priority = 0;
-			if (job_ptr->details)
+			if (job_ptr->job_state == JOB_FAILED)
+				wait_string = "Invalid request, job aborted";
+			else if (job_ptr->details) {
 				wait_reason = job_ptr->details->wait_reason;
+				wait_string = job_reason_string(wait_reason);
+				job_ptr->details->wait_reason = WAIT_HELD;
+			} else
+				wait_string = "Unknown";
 			*err_code = -910 - wait_reason;
 			snprintf(tmp_msg, sizeof(tmp_msg),
 				"Could not start job %u: %s",
-				jobid, job_reason_string(wait_reason));
+				jobid, wait_string);
 			*err_msg = tmp_msg;
 			error("wiki: %s", tmp_msg);
 			rc = -1;
