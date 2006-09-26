@@ -15,7 +15,7 @@ documents those changes that are of interest to users and admins.
  -- Remove sched/wiki plugin (use sched/wiki2 for now)
  -- Disable pthread_create() for PMI_send when TotalView is running for 
     better performance.
- -- fixed certain tests in test suite to not run with bluegene or front-end 
+ -- Fixed certain tests in test suite to not run with bluegene or front-end 
     systems
  -- Removed addresses from slurm_step_layout_t
  -- Added new job field, "comment". Set by srun, salloc and sbatch. See 
