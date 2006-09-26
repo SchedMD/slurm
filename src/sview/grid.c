@@ -36,13 +36,6 @@
 \*****************************************************************************/
 #include "sview.h"
 
-typedef struct {
-	GtkWidget *button;
-	int coord[BA_SYSTEM_DIMENSIONS];
-	int indecies;
-	int state;
-} grid_button_t;
-
 List grid_button_list = NULL;
 
 char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00", 
@@ -154,14 +147,18 @@ extern void add_button_to_grid_table(GtkTable *table, char *name, int color)
 	
 }
 
-extern void change_grid_color(GtkTable *table, int start, int end,
+extern char *change_grid_color(List button_list, int start, int end,
 			      int color_inx)
 {
-	ListIterator itr = list_iterator_create(grid_button_list);
+	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
 	uint16_t node_base_state;
 	GdkColor color;
 
+	if(!button_list)
+		return NULL;
+
+	itr = list_iterator_create(button_list);
 	color_inx %= sview_colors_cnt;
 	gdk_color_parse(sview_colors[color_inx], &color);
 		
@@ -173,12 +170,12 @@ extern void change_grid_color(GtkTable *table, int start, int end,
 		if ((node_base_state == NODE_STATE_DOWN)
 		    || (grid_button->state & NODE_STATE_DRAIN))
 			continue;
-		
+		grid_button->color = sview_colors[color_inx];
 		gtk_widget_modify_bg(grid_button->button, 
 				     GTK_STATE_NORMAL, &color);
 	}
 	list_iterator_destroy(itr);
-	return;
+	return sview_colors[color_inx];
 }
 
 extern void set_grid_size(GtkTable *table, int node_cnt)
