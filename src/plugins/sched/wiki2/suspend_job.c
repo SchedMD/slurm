@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* RET 0 on success, -1 on failure */
@@ -46,6 +47,9 @@ extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg)
 	suspend_msg_t msg;
 	uint32_t jobid;
 	static char reply_msg[128];
+	/* Locks: write job and node info */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -64,7 +68,9 @@ extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg)
 
 	msg.job_id = jobid;
 	msg.op = SUSPEND_JOB;
+	lock_slurmctld(job_write_lock);
 	slurm_rc = job_suspend(&msg, 0, -1);
+	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);

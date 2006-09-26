@@ -456,7 +456,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int avail_nodes = 0, avail_cpus = 0;	/* resources available for 
 						 * use now */
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
-        bitstr_t *partially_idle_node_bitmap = NULL;
+	bitstr_t *partially_idle_node_bitmap = NULL, *possible_bitmap = NULL;
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
@@ -605,6 +605,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							partially_idle_node_bitmap);
 					}
 					FREE_NULL_BITMAP(total_bitmap);
+					FREE_NULL_BITMAP(possible_bitmap);
 					return error_code;
                                 }
                         }
@@ -651,6 +652,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						partially_idle_node_bitmap);
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(avail_bitmap);
+				FREE_NULL_BITMAP(possible_bitmap);
 				return error_code;
                         }
 			if ((job_ptr->details->req_node_bitmap) &&
@@ -687,6 +689,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					break;
 				}
 				FREE_NULL_BITMAP(total_bitmap);
+				FREE_NULL_BITMAP(possible_bitmap);
                                 if (cr_enabled) 
  				         FREE_NULL_BITMAP(
 						 partially_idle_node_bitmap);
@@ -714,6 +717,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if ((pick_code == SLURM_SUCCESS) &&
 			     (bit_set_count(avail_bitmap) <= max_nodes)) {
 				FREE_NULL_BITMAP(total_bitmap);
+				FREE_NULL_BITMAP(possible_bitmap);
                                 if (cr_enabled) 
 					FREE_NULL_BITMAP(
 						partially_idle_node_bitmap);
@@ -751,6 +755,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					if (bit_set_count(avail_bitmap) <=
 					     max_nodes)
 						runable_avail = true;
+					possible_bitmap = avail_bitmap;
+					avail_bitmap = NULL;
 				}
 			}
 			if (!runable_ever) {
@@ -762,8 +768,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      true);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
-				if (pick_code == SLURM_SUCCESS)
+				if (pick_code == SLURM_SUCCESS) {
+					possible_bitmap = total_bitmap;
+					total_bitmap = NULL;
 					runable_ever = true;
+				}
 			}
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
@@ -784,8 +793,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		info("_pick_best_nodes: job never runnable");
 	}
 
-	if (error_code == SLURM_SUCCESS)
+	if (error_code == SLURM_SUCCESS) {
 		error_code = ESLURM_NODES_BUSY;
+		*select_bitmap = possible_bitmap; 
+	}
 	return error_code;
 }
 
@@ -849,6 +860,9 @@ _add_node_set_info(struct node_set *node_set_ptr,
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they  
  *	could be allocated now
+ * IN select_node_bitmap - bitmap of nodes to be used for the
+ *	job's resource allocation (not returned if NULL), caller
+ *	must free
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -861,7 +875,8 @@ _add_node_set_info(struct node_set *node_set_ptr,
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-extern int select_nodes(struct job_record *job_ptr, bool test_only)
+extern int select_nodes(struct job_record *job_ptr, bool test_only,
+		bitstr_t **select_node_bitmap)
 {
 	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -971,7 +986,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 			 * too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
-			job_ptr->priority = 1;	/* Move to end of queue */
+			if (job_ptr->priority != 0)  /* Move to end of queue */
+				job_ptr->priority = 1;
 			last_job_update = time(NULL);
 		} else if (error_code == ESLURM_NODES_BUSY)
 			slurm_sched_job_is_pending();
@@ -1012,7 +1028,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
       cleanup:
-	FREE_NULL_BITMAP(select_bitmap);
+	if (select_node_bitmap)
+		*select_node_bitmap = select_bitmap;
+	else
+		FREE_NULL_BITMAP(select_bitmap);
 	if (node_set_ptr) {
 		for (i = 0; i < node_set_size; i++)
 			FREE_NULL_BITMAP(node_set_ptr[i].my_bitmap);
