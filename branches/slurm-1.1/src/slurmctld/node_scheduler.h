@@ -91,6 +91,9 @@ extern void re_kill_job(struct job_record *job_ptr);
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they  
  *	could be allocated now
+ * IN select_node_bitmap - bitmap of nodes to be used for the
+ *	job's resource allocation (not returned if NULL), caller
+ *	must free
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -103,6 +106,7 @@ extern void re_kill_job(struct job_record *job_ptr);
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-extern int select_nodes(struct job_record *job_ptr, bool test_only);
+extern int select_nodes(struct job_record *job_ptr, bool test_only,
+		bitstr_t **select_node_bitmap);
 
 #endif /* !_HAVE_NODE_SCHEDULER_H*/
