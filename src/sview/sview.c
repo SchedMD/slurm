@@ -109,9 +109,14 @@ void *_page_thr(void *arg)
 	GtkTable *table = page->table;
 	display_data_t *display_data = &main_display_data[num];
 	xfree(page);
+	static int thread_count = 0;
 
+	gdk_threads_enter();
 	sview_reset_grid();
-
+	thread_count++;
+	gdk_flush();
+	gdk_threads_leave();
+		
 	while(page_running[num]) {
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
@@ -120,9 +125,24 @@ void *_page_thr(void *arg)
 		gdk_flush();
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
+
 		sleep(global_sleep_time);
-	}	
 		
+		gdk_threads_enter();
+		if(thread_count > 1) {
+			gdk_flush();
+			gdk_threads_leave();	
+			break;
+		}
+		gdk_flush();
+		gdk_threads_leave();
+	
+	}	
+	gdk_threads_enter();
+	thread_count--;
+	gdk_flush();
+	gdk_threads_leave();
+					
 	return NULL;
 }
 
