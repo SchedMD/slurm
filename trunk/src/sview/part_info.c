@@ -57,6 +57,7 @@ typedef struct {
 	/* part_info contains partition, avail, max_time, job_size, 
 	 * root, share, groups */
 	partition_info_t* part_ptr;
+	char *color;
 	List sub_list;
 } sview_part_info_t;
 
@@ -734,7 +735,7 @@ static void _update_info_part(List info_list,
 	return;
 }
 
-static void _info_list_del(void *object)
+static void _part_info_list_del(void *object)
 {
 	sview_part_info_t *sview_part_info = (sview_part_info_t *)object;
 
@@ -916,9 +917,9 @@ static sview_part_info_t *_create_sview_part_info(partition_info_t* part_ptr)
 	return sview_part_info;
 }
 
-static List _create_info_list(partition_info_msg_t *part_info_ptr,
-			      node_info_msg_t *node_info_ptr,
-			      int changed)
+static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
+				   node_info_msg_t *node_info_ptr,
+				   int changed)
 {
 	sview_part_info_t *sview_part_info = NULL;
 	sview_part_sub_t *sview_part_sub = NULL;
@@ -937,7 +938,7 @@ static List _create_info_list(partition_info_msg_t *part_info_ptr,
 	if(info_list) {
 		list_destroy(info_list);
 	}
-	info_list = list_create(_info_list_del);
+	info_list = list_create(_part_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
@@ -981,8 +982,7 @@ static List _create_info_list(partition_info_msg_t *part_info_ptr,
 	return info_list;
 }
 
-void _display_info_part(List info_list,
-			popup_info_t *popup_win)
+void _display_info_part(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->data;
@@ -1440,30 +1440,11 @@ get_node:
 
 display_it:
 
-	info_list = _create_info_list(part_info_ptr, node_info_ptr, changed);
+	info_list = _create_part_info_list(part_info_ptr,
+					   node_info_ptr, changed);
 	if(!info_list)
 		return;
-	else if(changed) {
-		int j=0, i=0;
-		sview_part_info_t *sview_part_info = NULL;
-		partition_info_t *part_ptr = NULL;
-			
-		ListIterator itr = list_iterator_create(info_list);
-		while ((sview_part_info = list_next(itr))) {
-			part_ptr = sview_part_info->part_ptr;
-			j=0;
-			while(part_ptr->node_inx[j] >= 0) {
-				change_grid_color(main_grid_table,
-						  part_ptr->node_inx[j],
-						  part_ptr->node_inx[j+1],
-						  i);
-				j += 2;
-			}
-			i++;
-		}
-		list_iterator_destroy(itr);
-	}
-	
+		
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
@@ -1487,10 +1468,11 @@ display_it:
 		part_ptr = sview_part_info->part_ptr;
 		j=0;
 		while(part_ptr->node_inx[j] >= 0) {
-			change_grid_color(main_grid_table,
-					  part_ptr->node_inx[j],
-					  part_ptr->node_inx[j+1],
-					  i);
+			sview_part_info->color = 
+				change_grid_color(grid_button_list,
+						  part_ptr->node_inx[j],
+						  part_ptr->node_inx[j+1],
+						  i);
 			j += 2;
 		}
 		i++;
@@ -1516,7 +1498,11 @@ extern void specific_info_part(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	
+	int j=0, i=0;
+	sview_part_info_t *sview_part_info = NULL;
+	partition_info_t *part_ptr = NULL;
+	ListIterator itr = NULL;
+		
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_part, SORTID_CNT);
 	
@@ -1577,7 +1563,8 @@ get_node:
 
 display_it:	
 	
-	info_list = _create_info_list(part_info_ptr, node_info_ptr, changed);
+	info_list = _create_part_info_list(part_info_ptr,
+					   node_info_ptr, changed);
 	if(!info_list)
 		return;		
 	
@@ -1602,6 +1589,22 @@ display_it:
 				 SORTID_CNT);
 	}
 
+	/* set up the grid */
+	itr = list_iterator_create(info_list);
+	while((sview_part_info = list_next(itr))) {
+		part_ptr = sview_part_info->part_ptr;
+		j=0;
+		while(part_ptr->node_inx[j] >= 0) {
+			sview_part_info->color = 
+				change_grid_color(popup_win->grid_button_list,
+						  part_ptr->node_inx[j],
+						  part_ptr->node_inx[j+1],
+						  i);
+			j += 2;
+		}
+		i++;
+	}
+	list_iterator_destroy(itr);
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_part(info_list, popup_win);

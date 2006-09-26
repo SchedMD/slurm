@@ -163,6 +163,8 @@ struct popup_info {
 	GtkWidget *popup;
 	GtkWidget *event_box;
 	GtkTable *table;
+	GtkTable *grid_table;
+	List grid_button_list;
 	specific_info_t *spec_info;
 	display_data_t *display_data;
 };
@@ -171,6 +173,14 @@ typedef struct {
 	int jobid;
 	int stepid;
 } job_step_num_t;
+
+typedef struct {
+	GtkWidget *button;
+	int coord[BA_SYSTEM_DIMENSIONS];
+	int indecies;
+	int state;
+	char *color;
+} grid_button_t;
 
 extern sview_parameters_t params;
 extern int text_line_cnt;
@@ -182,6 +192,7 @@ extern int quiet_flag;
 extern bool toggled;
 extern bool force_refresh;
 extern List popup_list;
+extern List grid_button_list;
 extern int global_sleep_time;
 extern bool admin_mode;
 extern GtkWidget *main_statusbar;
@@ -211,8 +222,9 @@ extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
 
 //grid.c
 extern void add_button_to_grid_table(GtkTable *table, char *name, int color);
-extern void change_grid_color(GtkTable *table, int start_inx, int end_inx,
-			      int color_inx);
+/* do not free the char * from this function it is static */
+extern char *change_grid_color(List button_list, int start_inx, int end_inx,
+			       int color_inx);
 extern void set_grid_size(GtkTable *table, int node_cnt);
 extern int get_system_stats();
 extern void sview_init_grid();
