@@ -183,7 +183,6 @@ done
 
 # Temporary, until wiki2 becomes wiki (see code above)
 LIST=./sched_wiki.files
-LIST=./${plugin}.files
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki2.so &&
   echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
 echo "%{_mandir}/man5/wiki.*"                     >> $LIST
