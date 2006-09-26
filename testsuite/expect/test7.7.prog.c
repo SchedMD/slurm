@@ -343,8 +343,10 @@ int main(int argc, char * argv[])
 	_resume_job(job_id);
 	if (e_port)
 		_event_mgr();
-	else
+	else {
+		printf("READY\n");
 		sleep(1);
+	}
 	_cancel_job(job_id+1);
 	_get_jobs();
 
