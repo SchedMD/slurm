@@ -94,7 +94,7 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_COLOR, "Grid Color", TRUE, 0, refresh_job,
+	{G_TYPE_STRING, SORTID_COLOR, "Grid Color", FALSE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACTION, "Action", FALSE, 0, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -344,7 +344,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	}
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_TIME, tmp_char, -1);
-		
+	
 	gtk_tree_store_set(treestore, iter, SORTID_ALLOC, 1, -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_JOBID, job_ptr->job_id, -1);
