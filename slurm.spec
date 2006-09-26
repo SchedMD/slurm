@@ -174,7 +174,7 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd sched_wiki; do
+for plugin in auth_munge auth_authd; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
@@ -183,7 +183,8 @@ done
 
 # Temporary, until wiki2 becomes wiki (see code above)
 LIST=./sched_wiki.files
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki.so &&
+LIST=./${plugin}.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki2.so &&
   echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
 echo "%{_mandir}/man5/wiki.*"                     >> $LIST
 
