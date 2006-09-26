@@ -179,8 +179,8 @@ static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _complete_batch_script(slurmd_job_t *job, 
-				     int err, int status);
+static int    _send_complete_batch_script_msg(slurmd_job_t *job, 
+					      int err, int status);
 
 /*
  * Initialize the group list using the list of gids from the slurmd if
@@ -216,39 +216,32 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 }
 
 static void
-_batch_cleanup(slurmd_job_t *job, int level, int status)
+_batch_finish(slurmd_job_t *job, int rc)
 {
-	int rc = 0;
+	int status = job->task[0]->estatus;
 
-	switch(level) {
-	default:
-	case 2:
-		if (job->argv[0] && (unlink(job->argv[0]) < 0))
-			error("unlink(%s): %m", job->argv[0]);
-        case 1:
-		if (job->batchdir && (rmdir(job->batchdir) < 0))
-			error("rmdir(%s): %m",  job->batchdir);
-		xfree(job->batchdir);
-	case 0:
-		if (job->stepid == NO_VAL) 
-			verbose("job %u completed with slurm_rc = %d, "
-				"job_rc = %d", 
-				job->jobid, rc, status);
-		else
-			verbose("job %u.%u completed with slurm_rc = %d, "
-				"job_rc = %d", 
-				job->jobid, job->stepid, rc, status);
-
-		_complete_batch_script(job, rc, status);
+	if (job->argv[0] && (unlink(job->argv[0]) < 0))
+		error("unlink(%s): %m", job->argv[0]);
+	if (job->batchdir && (rmdir(job->batchdir) < 0))
+		error("rmdir(%s): %m",  job->batchdir);
+	xfree(job->batchdir);
+	if (job->stepid == NO_VAL) {
+		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
+			job->jobid, rc, status);
+	} else {
+		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
+			job->jobid, job->stepid, rc, status);
 	}
+
+	_send_complete_batch_script_msg(job, rc, status);
 }
+
 /*
  * Launch a batch job script on the current node
  */
 slurmd_job_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
-	int           status = 0;
 	slurmd_job_t *job = NULL;
 	char       buf[1024];
 	hostlist_t hl = hostlist_create(msg->nodes);
@@ -267,15 +260,13 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	_setargs(job);
 
 	if ((job->batchdir = _make_batch_dir(job)) == NULL) {
-		_batch_cleanup(job, 1, status);
-		return NULL;
+		goto cleanup1;
 	}
 
 	xfree(job->argv[0]);
 
 	if ((job->argv[0] = _make_batch_script(msg, job->batchdir)) == NULL) {
-		_batch_cleanup(job, 2, status);
-		return NULL;
+		goto cleanup2;
 	}
 	
 	/* this is the new way of setting environment variables */
@@ -290,12 +281,19 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	job->envtp->nodelist = xstrdup(buf);
 	job->envtp->task_count = _sprint_task_cnt(msg);
 	return job;
-}
 
-void
-mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc)
-{
-	_batch_cleanup(job, 2, rc);
+cleanup2:
+	if (job->batchdir && (rmdir(job->batchdir) < 0))
+		error("rmdir(%s): %m",  job->batchdir);
+	xfree(job->batchdir);
+
+cleanup1:
+	error("batch script setup failed for job %u.%u",
+	      msg->job_id, msg->step_id);
+
+	_send_complete_batch_script_msg(job, -1, -1);
+
+	return NULL;
 }
 
 static void
@@ -587,7 +585,7 @@ static void
 _send_step_complete_msgs(slurmd_job_t *job)
 {
 	int start, size;
-	int first = 0, last = 0;
+	int first=-1, last=-1;
 	bool sent_own_comp_msg = false;
 
 	pthread_mutex_lock(&step_complete.lock);
@@ -747,7 +745,9 @@ job_manager(slurmd_job_t *job)
 		_send_launch_resp(job, rc);
 	}
 
-	if (!job->batch && step_complete.rank > -1) {
+	if (job->batch) {
+		_batch_finish(job, rc); /* sends batch complete message */
+	} else if (step_complete.rank > -1) {
 		_wait_for_children_slurmstepd(job);
 		_send_step_complete_msgs(job);
 	}
@@ -1364,7 +1364,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 
 static int
-_complete_batch_script(slurmd_job_t *job, int err, int status)
+_send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 {
 	int                      rc, i;
 	slurm_msg_t              req_msg;

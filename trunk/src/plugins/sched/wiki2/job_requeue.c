@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_add_task.c - Process Wiki job add tasks request
+ *  job_requeue.c - Process Wiki job requeue request
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,12 +36,38 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/slurmctld/slurmctld.h"
 
 /* RET 0 on success, -1 on failure */
-extern int	job_add_task(char *cmd_ptr, int *err_code, char **err_msg)
+extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	*err_code = -810;
-	*err_msg = "JOBADDTASK command not supported";
-	error("wiki: JOBADDTASK command not supported");
+	char *arg_ptr, *tmp_char;
+	uint32_t jobid;
+	static char reply_msg[128];
+
+	arg_ptr = strstr(cmd_ptr, "ARG=");
+	if (arg_ptr == NULL) {
+		*err_code = -300;
+		*err_msg = "JOBREQUEUE lacks ARG";
+		error("wiki: JOBREQUEUE lacks ARG");
+		return -1;
+	}
+	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
+	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
+		*err_code = -300;
+		*err_msg = "Invalid ARG value";
+		error("wiki: JOBREQUEUE has invalid jobid");
+		return -1;
+	}
+
+	/* FIXME: To be added in slurm v1.2 */
+	*err_code = -300;
+	*err_msg = "unsupported request type";
+	error("wiki: unrecognized request type: JOBREQUEUE");
 	return -1;
+
+	snprintf(reply_msg, sizeof(reply_msg),
+		"job %u requeued successfully", jobid);
+	*err_msg = reply_msg;
+	return 0;
 }

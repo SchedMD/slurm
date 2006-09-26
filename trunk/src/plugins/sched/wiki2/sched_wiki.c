@@ -82,6 +82,7 @@ extern int slurm_sched_plugin_schedule( void )
 /**************************************************************************/
 extern uint32_t slurm_sched_plugin_initial_priority( uint32_t last_prio )
 {
+	(void) event_notify("Job submit");
 	if (init_prio_mode == PRIO_DECREMENT) {
 		if (last_prio >= 2)
 			return (last_prio - 1);

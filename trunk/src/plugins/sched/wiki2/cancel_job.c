@@ -55,14 +55,14 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "CANCELJOB lacks ARG";
 		error("wiki: CANCELJOB lacks ARG");
 		return -1;
 	}
-	jobid = strtol(arg_ptr+4, &tmp_char, 10);
+	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
 	if (!isspace(tmp_char[0])) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "Invalid ARG value";
 		error("wiki: CANCELJOB has invalid jobid");
 		return -1;
@@ -75,7 +75,7 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 	else if (strstr(cmd_ptr, "TYPE=ADMIN") != 0)
 		cancel_type = TYPE_ADMIN;
 	else if (strstr(cmd_ptr, "TYPE=") != 0) {
-		*err_code = 300;
+		*err_code = -300;
 		*err_msg = "Invalid TYPE value";
 		error("wiki: CANCELJOB has invalid TYPE");
 		return -1;
@@ -106,7 +106,7 @@ static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
 	lock_slurmctld(job_write_lock);
 	slurm_rc = job_signal(jobid, SIGKILL, 0, 0);
 	if (slurm_rc != SLURM_SUCCESS) {
-		*err_code = 700;
+		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);
 		error("wiki: Failed to signal job %u (%m)", jobid);
 		rc = -1;
@@ -131,7 +131,7 @@ static int	_timeout_job(uint32_t jobid, int *err_code, char **err_msg)
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
-		*err_code = 700;
+		*err_code = -700;
 		*err_msg = "No such job";
 		error("wiki: Failed to find job %u", jobid);
 		rc = -1;

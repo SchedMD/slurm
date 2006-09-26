@@ -352,9 +352,7 @@ static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
 	jobacct_g_free(job->jobacct);
-	if (job->batch)
-		mgr_launch_batch_job_cleanup(job, rc);
-	else
+	if (!job->batch)
 		job_destroy(job);
 	/* 
 	 * The message cannot be freed until the jobstep is complete
