@@ -470,6 +470,7 @@ typedef struct job_info {
 				 * start_range_2, .., -1  */
 	char *features;		/* comma separated list of required features */
 	uint32_t dependency;	/* defer until specified job completes */
+	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *account;		/* charge to specified account */
 	uint16_t wait_reason;	/* reason job still pending, see
 				 * slurm.h:enum job_wait_reason */

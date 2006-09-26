@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- Removed addresses from slurm_step_layout_t
  -- Added new job field, "comment". Set by srun, salloc and sbatch. See 
     with "scontrol show job". Used in sched/wiki2.
+ -- Report a job's exit status in "scontrol show job".
 
 * Changes in SLURM 1.2.0-pre2
 =============================

@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "May 2006" "scontrol 1.2" "Slurm components"
+.TH SCONTROL "1" "September 2006" "scontrol 1.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -180,7 +180,7 @@ Display the version number of scontrol being executed.
 \fI!!\fP
 Repeat the last command executed.
 .TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, JOBS\fR
+\fBSPECIFICATIONS FOR SHOW AND UPDATE COMMANDS, JOBS\fR
 .TP
 \fIAccount\fP=<account>
 Account name to be changed for this job's resource use.
@@ -193,6 +193,12 @@ Possible values are"YES" and "NO".
 \fIDependency\fP=<job_id>
 Defer job's initiation until specified job_id completes.
 Cancel dependency with job_id value of "0", "Depedency=0".
+.TP
+\fIExitCode\fP=<exit>:<sig>
+Exit status reported for the job by the wait() function.
+The first number is the exit code, typically as set by the exit() function.
+The second number of the signal that caused the process to terminate if
+it was terminated by a signal.
 .TP
 \fIFeatures\fP=<features>
 Set the job's required features on nodes specified value. Multiple values 

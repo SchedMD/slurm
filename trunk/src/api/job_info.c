@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 
 #include <slurm/slurm.h>
@@ -117,6 +118,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char tmp_line[128];
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
+	uint16_t term_sig = 0;
 	char *out = NULL;
 	
 #ifdef HAVE_BG
@@ -178,9 +180,15 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (job_ptr->time_limit == INFINITE)
 		sprintf(tmp_line, "UNLIMITED");
 	else if (job_ptr->time_limit == NO_VAL)
-		sprintf(tmp_line, "Partition_Limit");
+		sprintf(tmp_line, "Partition_Limit ");
 	else
-		sprintf(tmp_line, "%u", job_ptr->time_limit);
+		sprintf(tmp_line, "%u ", job_ptr->time_limit);
+	xstrcat(out, tmp_line);
+	if (WIFSIGNALED(job_ptr->exit_code))
+		term_sig = WTERMSIG(job_ptr->exit_code);
+	snprintf(tmp_line, sizeof(tmp_line),
+		"ExitCode=%u:%u", 
+		WEXITSTATUS(job_ptr->exit_code), term_sig);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
