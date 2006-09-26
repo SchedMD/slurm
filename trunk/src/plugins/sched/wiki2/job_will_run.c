@@ -54,7 +54,6 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	int i;
 	uint32_t jobid;
 	char host_string[1024];
-	static char reply_msg[128];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -96,9 +95,6 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	if (_will_run_test(jobid, host_string, err_code, err_msg) != 0)
 		return -1;
 
-	snprintf(reply_msg, sizeof(reply_msg), 
-		"job %u can start now", jobid);
-	*err_msg = reply_msg;
 	return 0;
 }
 
@@ -110,10 +106,11 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
-	char *new_node_list;
+	char *new_node_list, *picked_node_list = NULL;
 	bitstr_t *new_bitmap, *save_exc_bitmap, *save_req_bitmap;
 	uint32_t save_prio;
-	static char reply_msg[128];
+	static char reply_msg[1024];
+	bitstr_t *picked_node_bitmap = NULL;
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
@@ -171,13 +168,22 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	save_prio = job_ptr->priority;
 	job_ptr->priority = 1;
 
-	rc = select_nodes(job_ptr, true);
+	rc = select_nodes(job_ptr, true, &picked_node_bitmap);
+	if (picked_node_bitmap)
+		picked_node_list = bitmap2node_name(picked_node_bitmap);
+
 	if (rc == SLURM_SUCCESS) {
 		*err_code = 0;
-		*err_msg = "Job runable now";
+		snprintf(reply_msg, sizeof(reply_msg),
+			"Job %d runnable now TASKLIST:%s",
+			jobid, picked_node_list);
+		*err_msg = reply_msg;
 	} else if (rc == ESLURM_NODES_BUSY) {
 		*err_code = 1;
-		*err_msg = "Job runable later";
+		snprintf(reply_msg, sizeof(reply_msg),
+			"Job %d runnable later TASKLIST:%s",
+			jobid, picked_node_list);
+		*err_msg = reply_msg;
 	} else {
 		char *err_str = slurm_strerror(rc);
 		error("wiki: job %d never runnable on hosts=%s %s", 
@@ -189,6 +195,8 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	}
 
 	/* Restore job's state, release memory */
+	xfree(picked_node_list);
+	FREE_NULL_BITMAP(picked_node_bitmap);
 	xfree(new_node_list);
 	bit_free(new_bitmap);
 	bit_free(job_ptr->details->req_node_bitmap);
