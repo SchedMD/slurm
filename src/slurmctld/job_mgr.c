@@ -2797,6 +2797,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
 	pack32((uint32_t)dump_job_ptr->dependency, buffer);
+	pack32((uint32_t)dump_job_ptr->exit_code, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
