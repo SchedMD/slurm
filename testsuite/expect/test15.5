@@ -68,10 +68,13 @@ if {$kill_wait > 60} {
 # Build input script file
 #
 make_bash_script $file_in "
-  trap \"\" SIGINT
-  $srun $bin_sleep $sleep_time
+  $bin_sleep $sleep_time
   $bin_echo FINI
 "
+
+proc date {} {
+	send_user "local time: [exec date]\n"
+}
 
 #
 # Execute a couple of three minute jobs; one with a one minute time  
@@ -86,14 +89,24 @@ make_bash_script $file_in "
 #
 set timeout [expr $max_job_delay + $sleep_time]
 set job_id    0
-set salloc_pid [spawn $salloc -t1 --kill-command ./$file_in]
+set salloc_pid [spawn $salloc -t1 --kill-command=KILL ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		date
+		exp_continue
+	}
+	-re "Job allocation time limit to be reached at" {
+		date
+		exp_continue
+	}
+	-re "Job allocation ($number) has been revoked." {
+		date
 		exp_continue
 	}
 	-re "FINI" {
 		send_user "\nFAILURE: job time limit not honored\n"
+		date
 		set exit_code 1
 		exp_continue
 	}
@@ -112,13 +125,23 @@ expect {
 
 set completions 0
 set job_id      0
-set salloc_pid [spawn $salloc -t4 --kill-command ./$file_in]
+set salloc_pid [spawn $salloc -t4 --kill-command=KILL ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		date
+		exp_continue
+	}
+	-re "Job allocation time limit to be reached at" {
+		date
+		exp_continue
+	}
+	-re "Job allocation ($number) has been revoked." {
+		date
 		exp_continue
 	}
 	-re "FINI" {
+		date
 		incr completions
 		exp_continue
 	}
