@@ -377,7 +377,7 @@ static int	_parse_msg(char *msg, char **req)
 		error("wiki: request lacks TS=");
 		return -1;
 	}
-	ts = strtol((ts_ptr+3), NULL, 10); 
+	ts = strtoul((ts_ptr+3), NULL, 10); 
 	if (ts < now)
 		delta_t = (uint32_t) difftime(now, ts);
 	else
@@ -443,7 +443,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		cancel_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "JOBREQUEUE", 10) == 0) {
-		job_requeue(cmd_ptr, &err_code, &err_msg);
+		job_requeue_wiki(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 		suspend_job(cmd_ptr, &err_code, &err_msg);

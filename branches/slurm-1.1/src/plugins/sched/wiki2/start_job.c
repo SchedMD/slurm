@@ -62,7 +62,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: STARTJOB lacks ARG");
 		return -1;
 	}
-	jobid = strtol(arg_ptr+4, &tmp_char, 10);
+	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
 	if (!isspace(tmp_char[0])) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";

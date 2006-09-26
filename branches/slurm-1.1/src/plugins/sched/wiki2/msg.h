@@ -98,7 +98,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg);
 extern int 	get_nodes(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_add_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);
-extern int	job_requeue(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg);

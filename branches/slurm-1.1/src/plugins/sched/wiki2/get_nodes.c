@@ -72,7 +72,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: GETNODES lacks ARG");
 		return -1;
 	}
-	update_time = (time_t) strtol(arg_ptr+4, &tmp_char, 10);
+	update_time = (time_t) strtoul(arg_ptr+4, &tmp_char, 10);
 	if (tmp_char[0] != ':') {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";

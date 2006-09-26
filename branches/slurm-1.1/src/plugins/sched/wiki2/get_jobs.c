@@ -88,7 +88,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: GETJOBS lacks ARG");
 		return -1;
 	}
-	update_time = (time_t) strtol(arg_ptr+4, &tmp_char, 10);
+	update_time = (time_t) strtoul(arg_ptr+4, &tmp_char, 10);
 	if (tmp_char[0] != ':') {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
@@ -109,7 +109,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 
 		job_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (job_name) {
-			job_id = (uint32_t) strtol(job_name, NULL, 10);
+			job_id = (uint32_t) strtoul(job_name, NULL, 10);
 			job_ptr = find_job_record(job_id);
 			tmp_buf = _dump_job(job_ptr, state_only);
 			if (job_rec_cnt > 0)
