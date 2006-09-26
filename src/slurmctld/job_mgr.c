@@ -1674,7 +1674,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	} else {
 		if (job_return_code == NO_VAL)
 			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
-		else if (job_return_code) {
+		else if (WEXITSTATUS(job_return_code)) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
 		}
