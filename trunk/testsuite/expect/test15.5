@@ -73,7 +73,7 @@ make_bash_script $file_in "
 "
 
 proc date {} {
-	send_user "local time: [exec date]\n"
+	send_user "local time: [clock format [clock seconds]]\n"
 }
 
 #
