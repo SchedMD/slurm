@@ -348,7 +348,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	GtkToggleActionEntry toggle_entries[] = {
 		{"grid", NULL, "Show _Grid",
 		 "<control>g", "Visual display of cluster", 
-		 G_CALLBACK(_set_grid)},
+		 G_CALLBACK(_set_grid), TRUE},
 		{"admin", NULL,          
 		 "_Admin Mode", "<control>a", 
 		 "Allows user to change or update information", 
@@ -367,10 +367,10 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_toggle_actions(action_group, toggle_entries, 
 					   G_N_ELEMENTS(toggle_entries), 
 					   NULL);
-	ui_manager = gtk_ui_manager_new ();
-	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
+	ui_manager = gtk_ui_manager_new();
+	gtk_ui_manager_insert_action_group(ui_manager, action_group, 0);
 
-	accel_group = gtk_ui_manager_get_accel_group (ui_manager);
+	accel_group = gtk_ui_manager_get_accel_group(ui_manager);
 	gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
 	if (!gtk_ui_manager_add_ui_from_string (ui_manager, ui_description, 
