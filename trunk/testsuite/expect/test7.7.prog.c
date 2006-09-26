@@ -307,6 +307,17 @@ static void _resume_job(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _job_requeue(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=JOBREQUEUE ARG=%ld",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
 static void _job_will_run(long my_job_id)
 {
 	time_t now = time(NULL);
@@ -344,8 +355,11 @@ int main(int argc, char * argv[])
 	if (e_port)
 		_event_mgr();
 	else
-		sleep(1);
+		sleep(3);
 	_cancel_job(job_id+1);
+	_job_requeue(job_id);	/* Put job back into HELD state */
+	sleep(5);
+	_start_job(job_id);
 	_get_jobs();
 
 	printf("SUCCESS\n");

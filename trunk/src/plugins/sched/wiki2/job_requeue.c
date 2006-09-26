@@ -37,6 +37,7 @@
 
 #include "./msg.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/locks.h"
 
 /* RET 0 on success, -1 on failure */
 extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
@@ -44,6 +45,10 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	char *arg_ptr, *tmp_char;
 	uint32_t jobid;
 	static char reply_msg[128];
+	int slurm_rc;
+	/* Write lock on job and node info */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -60,11 +65,15 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	/* FIXME: To be added in slurm v1.2 */
-	*err_code = -300;
-	*err_msg = "unsupported request type";
-	error("wiki: unrecognized request type: JOBREQUEUE");
-	return -1;
+	lock_slurmctld(job_write_lock);
+	slurm_rc = job_requeue(0, jobid, -1);
+	unlock_slurmctld(job_write_lock);
+	if (slurm_rc != SLURM_SUCCESS) {
+		*err_code = -700;
+		*err_msg = slurm_strerror(slurm_rc);
+		error("wiki: Failed to requeue job %u (%m)", jobid);
+		return -1;
+	}
 
 	snprintf(reply_msg, sizeof(reply_msg),
 		"job %u requeued successfully", jobid);

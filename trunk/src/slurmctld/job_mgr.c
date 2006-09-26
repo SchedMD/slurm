@@ -4289,18 +4289,13 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		goto reply;
 	}
 
-	/* if pending, just reset the priority */
-	if (job_ptr->job_state == JOB_PENDING) {
-		/* just reset the priority */
-		if ((job_ptr->priority == 0)
-		&&  (!super_user)) {
-			rc = ESLURM_ACCESS_DENIED;
-			goto reply;
-		}
-		_set_job_prio(job_ptr);
-		last_job_update = now;
+	/* reset the priority */
+	_set_job_prio(job_ptr);
+	last_job_update = now;
+
+	/* nothing else to do if pending */
+	if (job_ptr->job_state == JOB_PENDING)
 		goto reply;
-	}
 
 	if (job_ptr->batch_flag == 0) {
 		rc = ESLURM_BATCH_ONLY;
@@ -4317,7 +4312,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 
 	if (job_ptr->job_state == JOB_SUSPENDED)
 		suspended = true;
-	last_job_update            = now;
 	job_ptr->time_last_active  = now;
 	job_ptr->job_state         = JOB_PENDING | JOB_COMPLETING;
 	if (suspended)
@@ -4329,11 +4323,13 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 //FIXME: Test accounting
 
     reply:
-	slurm_msg_t_init(&resp_msg);
-	resp_msg.msg_type  = RESPONSE_SLURM_RC;
-	rc_msg.return_code = rc;
-	resp_msg.data      = &rc_msg;
-	slurm_send_node_msg(conn_fd, &resp_msg);
+	if (conn_fd >= 0) {
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		rc_msg.return_code = rc;
+		resp_msg.data      = &rc_msg;
+		slurm_send_node_msg(conn_fd, &resp_msg);
+	}
 	return rc;
 }
 
