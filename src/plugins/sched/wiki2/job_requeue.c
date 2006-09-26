@@ -39,7 +39,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* RET 0 on success, -1 on failure */
-extern int	job_requeue(char *cmd_ptr, int *err_code, char **err_msg)
+extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *tmp_char;
 	uint32_t jobid;
@@ -52,7 +52,7 @@ extern int	job_requeue(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: JOBREQUEUE lacks ARG");
 		return -1;
 	}
-	jobid = strtol(arg_ptr+4, &tmp_char, 10);
+	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
