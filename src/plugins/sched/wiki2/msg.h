@@ -79,12 +79,15 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+/* Global configuration parameters */
 #define PRIO_HOLD      0
 #define PRIO_DECREMENT 1
 extern int	init_prio_mode;
-
 extern char *	auth_key;
+extern uint16_t	e_port;
+extern uint16_t	job_aggregation_time;
 
+extern int	event_notify(char *msg);
 extern int	spawn_msg_thread(void);
 extern void	term_msg_thread(void);
 
@@ -95,6 +98,8 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg);
 extern int 	get_nodes(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_add_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg);

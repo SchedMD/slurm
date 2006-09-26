@@ -1076,6 +1076,7 @@ extern int kill_job_by_part_name(char *part_name)
 			info("Killing job_id %u on defunct partition %s",
 			      job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
+			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			if (suspended)
 				job_ptr->end_time = job_ptr->suspend_time;
 			else
@@ -1150,6 +1151,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				      job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
+				job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 				if (suspended)
 					job_ptr->end_time = job_ptr->suspend_time;
 				else
@@ -1710,9 +1712,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->exit_code = job_return_code;
 		}
 		else if (job_comp_flag &&		/* job was running */
-			 (job_ptr->end_time < now))	/* over time limit */
+			 (job_ptr->end_time < now)) {	/* over time limit */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
-		else
+			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
+		} else
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
 		if (suspended)
 			job_ptr->end_time = job_ptr->suspend_time;
@@ -2500,6 +2503,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->end_time           = now;
 		job_ptr->time_last_active   = now;
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
+		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 		deallocate_nodes(job_ptr, true, false);
 		job_completion_logger(job_ptr);
 	} else
@@ -2949,6 +2953,7 @@ void reset_job_bitmaps(void)
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 			}
+			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_completion_logger(job_ptr);
 		}
 	}

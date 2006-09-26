@@ -46,8 +46,11 @@ static pthread_t msg_thread_id;
 static char *err_msg;
 static int   err_code;
 
-int init_prio_mode = PRIO_HOLD;
-char *auth_key = NULL;
+/* Global configuration parameters */
+char *   auth_key = NULL;
+uint16_t e_port = 0;
+uint16_t job_aggregation_time = 0;
+int      init_prio_mode = PRIO_HOLD;
 
 static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
@@ -81,6 +84,7 @@ extern int spawn_msg_thread(void)
 			_msg_thread, NULL))
 		fatal("pthread_create %m");
 
+	(void) event_notify("slurm startup");
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
 	pthread_mutex_unlock(&thread_flag_mutex);
@@ -108,11 +112,17 @@ static void *_msg_thread(void *no_data)
 	slurm_fd sock_fd, new_fd;
 	slurm_addr cli_addr;
 	int sig_array[] = {SIGUSR1, 0};
+	uint16_t sched_port;
 	char *msg;
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
-	if ((sock_fd = slurm_init_msg_engine_port(slurm_get_sched_port())) 
-			== SLURM_SOCKET_ERROR)
-		fatal("wiki: slurm_init_msg_engine_port %m");
+	sched_port = conf->schedport;
+	slurm_conf_unlock();
+	if ((sock_fd = slurm_init_msg_engine_port(sched_port)) 
+			== SLURM_SOCKET_ERROR) {
+		fatal("wiki: slurm_init_msg_engine_port %u %m",
+			sched_port);
+	}
 
 	/* SIGUSR1 used to interupt accept call */
 	xsignal(SIGUSR1, _sig_handler);
@@ -180,6 +190,8 @@ static void _parse_wiki_config(void)
 {
 	s_p_options_t options[] = {
 		{"AuthKey", S_P_STRING},
+		{"EPort", S_P_UINT16},
+		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING}, 
 		{NULL} };
 	s_p_hashtbl_t *tbl;
@@ -198,9 +210,10 @@ static void _parse_wiki_config(void)
 	if (s_p_parse_file(tbl, wiki_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading wiki.conf file");
 
-	if (! s_p_get_string(&auth_key, "AuthKey", tbl)) {
+	if (! s_p_get_string(&auth_key, "AuthKey", tbl))
 		debug("Warning: No wiki_conf AuthKey specified");
-	}
+	s_p_get_uint16(&e_port, "EPort", tbl);
+	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
 	if (s_p_get_string(&priority_mode, "JobPriority", tbl)) {
 		if (strcasecmp(priority_mode, "hold") == 0)
@@ -272,14 +285,14 @@ static char *	_recv_msg(slurm_fd new_fd)
 	char *buf;
 
 	if (_read_bytes((int) new_fd, header, 9) != 9) {
-		err_code = 240;
+		err_code = -240;
 		err_msg = "failed to read message header";
 		error("wiki: failed to read message header %m");
 		return NULL;
 	}
 
 	if (sscanf(header, "%ul", &size) != 1) {
-		err_code = 244;
+		err_code = -244;
 		err_msg = "malformed message header";
 		error("wiki: malformed message header (%s)", header);
 		return NULL;
@@ -287,7 +300,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 
 	buf = xmalloc(size + 1);	/* need '\0' on end to print */
 	if (_read_bytes((int) new_fd, buf, size) != size) {
-		err_code = 246;
+		err_code = -246;
 		err_msg = "unable to read all message data";
 		error("wiki: unable to read data message");
 		xfree(buf);
@@ -348,32 +361,32 @@ static int	_parse_msg(char *msg, char **req)
 	}
 
 	if (!auth_ptr) {
-		err_code = 300;
+		err_code = -300;
 		err_msg = "request lacks AUTH";
 		error("wiki: request lacks AUTH=");
 		return -1;
 	}
 
 	if (!dt_ptr) {
-		err_code = 300;
+		err_code = -300;
 		err_msg = "request lacks DT";
 		error("wiki: request lacks DT=");
 		return -1;
 	}
 
 	if (!ts_ptr) {
-		err_code = 300;
+		err_code = -300;
 		err_msg = "request lacks TS";
 		error("wiki: request lacks TS=");
 		return -1;
 	}
-	ts = strtol((ts_ptr+3), NULL, 10); 
+	ts = strtoul((ts_ptr+3), NULL, 10); 
 	if (ts < now)
 		delta_t = (uint32_t) difftime(now, ts);
 	else
 		delta_t = (uint32_t) difftime(ts, now);
 	if (delta_t > 300) {
-		err_code = 350;
+		err_code = -350;
 		err_msg = "TS value too far from NOW";
 		error("wiki: TS delta_t=%u", delta_t);
 		return -1;
@@ -382,7 +395,7 @@ static int	_parse_msg(char *msg, char **req)
 	if (auth_key) {
 		checksum(sum, auth_key, ts_ptr);
 		if (strncmp(sum, msg, 19) != 0) {
-			err_code = 422;
+			err_code = -422;
 			err_msg = "bad checksum";
 			error("wiki: message checksum error");
 			return -1;
@@ -412,7 +425,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 
 	cmd_ptr = strstr(req, "CMD=");
 	if (cmd_ptr == NULL) {
-		err_code = 300;
+		err_code = -300;
 		err_msg = "request lacks CMD"; 
 		error("wiki: request lacks CMD");
 		goto err_msg;
@@ -432,6 +445,9 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 		cancel_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
+	} else if (strncmp(cmd_ptr, "JOBREQUEUE", 10) == 0) {
+		job_requeue_wiki(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 		suspend_job(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
@@ -444,8 +460,11 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 		job_release_task(cmd_ptr, &err_code, &err_msg);
 		goto err_msg;	/* always send reply here */
+	} else if  (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
+		job_will_run(cmd_ptr, &err_code, &err_msg);
+		goto err_msg;	/* always send reply here */
 	} else {
-		err_code = 300;
+		err_code = -300;
 		err_msg = "unsupported request type";
 		error("wiki: unrecognized request type: %s", req);
 		goto err_msg;

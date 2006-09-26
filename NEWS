@@ -54,6 +54,14 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.14
+=========================
+ - In sched/wiki2: report job/node id and state only if no changes since 
+   time specified in request.
+ - In sched/wiki2: include a job's exit code in job state information.
+ - In sched/wiki2: add event notification logic.
+ - In sched/wiki2: add support for JOBWILLRUN command type.
+
 * Changes in SLURM 1.1.13
 =========================
  - Fix hang in sched/wiki2 if Moab stops responding responding when 
@@ -63,6 +71,8 @@ documents those changes that are of interest to users and admins.
    by itself.
  - Enable specification of srun --jobid=# option with --batch (for user root).
  - Verify that job actually starts when requested by sched/wiki2.
+ - Add new wiki.conf parameters: EPort and JobAggregationTime for event 
+   notifcation logic (see wiki.conf man page for details)
 
 * Changes in SLURM 1.1.12
 =========================

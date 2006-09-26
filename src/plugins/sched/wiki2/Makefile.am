@@ -14,10 +14,13 @@ sched_wiki2_la_SOURCES = \
 	cancel_job.c	\
 	crypto.c	\
 	crypto.h	\
+	event.c		\
 	get_jobs.c	\
 	get_nodes.c	\
 	job_add_task.c	\
 	job_release_task.c \
+	job_requeue.c	\
+	job_will_run.c	\
 	msg.c		\
 	msg.h		\
 	resume_job.c	\
