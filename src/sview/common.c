@@ -40,6 +40,7 @@ static void _handle_response(GtkDialog *dialog, gint response_id,
 	case GTK_RESPONSE_OK: //refresh
 		(popup_win->display_data->refresh)(NULL, popup_win);
 		break;
+	case GTK_RESPONSE_DELETE_EVENT: // exit
 	case GTK_RESPONSE_CLOSE: // close
 		delete_popup(NULL, NULL, popup_win->spec_info->title);
 		break;
@@ -178,6 +179,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	g_signal_connect(renderer, "edited",
 			 G_CALLBACK(display_data->admin_edit), 
 			 gtk_tree_view_get_model(tree_view));
+	
 	g_object_set_data(G_OBJECT(renderer), "column", 
 			  GINT_TO_POINTER(display_data->id));
 	
@@ -480,7 +482,7 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 	gtk_tree_view_column_set_expand(col, true);
 	gtk_tree_view_append_column(tree_view, col);
 
-	g_object_unref(GTK_TREE_MODEL(treestore));
+       	g_object_unref(treestore);
 	return tree_view;
 }
 
@@ -533,7 +535,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 					     1, 
 					     GTK_SORT_ASCENDING);
 	
-	g_object_unref(GTK_TREE_MODEL(treestore));
+	g_object_unref(treestore);
 
 	return treestore;
 }
@@ -833,6 +835,7 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 				   1, display_data[i].name, -1);
 	}
 	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+       
 	g_object_unref(store);	
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);

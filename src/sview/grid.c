@@ -45,26 +45,11 @@ typedef struct {
 
 List grid_button_list = NULL;
 
-char *sview_colors[] = {"green",
-			"blue",
-			"red",
-			"orange",
-			"yellow",
-			"violet",
-			"brown",
-			"DarkCyan",
-			"DarkRed",
-			"wheat4",
-			"gold4",
-			"LightBlue3",
-			"DeepSkyBlue2",
-			"MistyRose2",
-			"HotPink",
-			"tan",
-			"ForestGreen",
-			"moccasin",
-			"sienna",
-			"peru"};
+char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00", 
+			"#FF0000", "#4D4DC6", "#F09A09", "#BDFA19",
+			"#715627", "#6A8CA2", "#4C7127", "#25B9B9",
+			"#A020F0", "#8293ED", "#FFA500", "#FFC0CB",
+			"#8B6914", "#18A24E", "#F827FC", "#B8A40C"};
 int sview_colors_cnt = 20;
 
 void *_blink_thr(void *arg)
@@ -172,11 +157,14 @@ extern void add_button_to_grid_table(GtkTable *table, char *name, int color)
 extern void change_grid_color(GtkTable *table, int start, int end,
 			      int color_inx)
 {
-/* 	char temp[255]; */
 	ListIterator itr = list_iterator_create(grid_button_list);
 	grid_button_t *grid_button = NULL;
 	uint16_t node_base_state;
 	GdkColor color;
+
+	color_inx %= sview_colors_cnt;
+	gdk_color_parse(sview_colors[color_inx], &color);
+		
 	while((grid_button = list_next(itr))) {
 		if ((grid_button->indecies < start)
 		    ||  (grid_button->indecies > end)) 
@@ -186,8 +174,6 @@ extern void change_grid_color(GtkTable *table, int start, int end,
 		    || (grid_button->state & NODE_STATE_DRAIN))
 			continue;
 		
-		color_inx %= sview_colors_cnt;
-		gdk_color_parse(sview_colors[color_inx], &color);
 		gtk_widget_modify_bg(grid_button->button, 
 				     GTK_STATE_NORMAL, &color);
 	}
@@ -317,6 +303,7 @@ update_it:
 			    error->message);
 		return SLURM_ERROR;
 	}
+		
 	return SLURM_SUCCESS;
 }
 
@@ -344,7 +331,7 @@ extern void sview_init_grid()
 		g_print("you need to run get_system_stats() first\n");
 		exit(0);
 	}
-
+	
 	gdk_color_parse("black", &color);
 	gdk_color_parse("white", &color2);
 	
