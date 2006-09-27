@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/fd.h"
 
 static pthread_mutex_t	event_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t		last_notify_time = (time_t) 0;
@@ -82,8 +83,14 @@ extern int	event_notify(char *msg)
 		return -1;
 	}
 
-	/* Always send "1234\0" as the message */
-	if (send(event_fd, "1234", 5, MSG_DONTWAIT) > 0) {
+	/* We can't have the controller block on the following write() */
+	fd_set_nonblocking(event_fd);
+
+	/* Always send "1234\0" as the message
+	 * (we do not care if all of the message is sent, just that
+	 * some of it went through to wake up Moab)
+	 */
+	if (write(event_fd, "1234", 5) > 0) {
 		info("wiki event_notification sent: %s", msg);
 		last_notify_time = now;
 		rc = 0;
@@ -97,7 +104,7 @@ extern int	event_notify(char *msg)
 
 	/* We disconnect and reconnect on every message to
 	 * gracefully handle some failure modes of Moab */
-	(void) slurm_shutdown_msg_engine(event_fd);
+	(void) slurm_shutdown_msg_conn(event_fd);
 	pthread_mutex_unlock(&event_mutex);
 
 	return rc;
