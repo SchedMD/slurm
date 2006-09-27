@@ -36,7 +36,6 @@
 \*****************************************************************************/
 
 #include "./msg.h"
-#include "src/common/bitstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
