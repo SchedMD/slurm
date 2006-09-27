@@ -37,7 +37,6 @@
 
 #include "./msg.h"
 #include "slurm/slurm_errno.h"
-#include "src/common/bitstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -101,7 +100,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 static int	_will_run_test(uint32_t jobid, char *hostlist,
 			int *err_code, char **err_msg)
 {
-	int rc = 0;
+	int rc = 0, i;
 	struct job_record *job_ptr;
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
@@ -109,7 +108,8 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	char *new_node_list, *picked_node_list = NULL;
 	bitstr_t *new_bitmap, *save_exc_bitmap, *save_req_bitmap;
 	uint32_t save_prio;
-	static char reply_msg[1024];
+	static char *reply_msg;
+	static int reply_msg_size = 0;
 	bitstr_t *picked_node_bitmap = NULL;
 
 	lock_slurmctld(job_write_lock);
@@ -169,18 +169,26 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	job_ptr->priority = 1;
 
 	rc = select_nodes(job_ptr, true, &picked_node_bitmap);
-	if (picked_node_bitmap)
-		picked_node_list = bitmap2node_name(picked_node_bitmap);
+	/* If we could use Slurm-style node lists, use bitmap2node_name()
+	 * instead of bitmap2wiki_node_name() */
+	if (picked_node_bitmap) {
+		picked_node_list = bitmap2wiki_node_name(picked_node_bitmap);
+		i = strlen(picked_node_list);
+		if ((i + 64) > reply_msg_size) {
+			reply_msg_size = i + 1024;
+			xrealloc(reply_msg, reply_msg_size);
+		}
+	}
 
 	if (rc == SLURM_SUCCESS) {
 		*err_code = 0;
-		snprintf(reply_msg, sizeof(reply_msg),
+		snprintf(reply_msg, reply_msg_size,
 			"Job %d runnable now TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
 	} else if (rc == ESLURM_NODES_BUSY) {
 		*err_code = 1;
-		snprintf(reply_msg, sizeof(reply_msg),
+		snprintf(reply_msg, reply_msg_size,
 			"Job %d runnable later TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
@@ -189,7 +197,7 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 		error("wiki: job %d never runnable on hosts=%s %s", 
 			jobid, new_node_list, err_str);
 		*err_code = -740;
-		snprintf(reply_msg, sizeof(reply_msg), 
+		snprintf(reply_msg, reply_msg_size, 
 			"Job %d not runable: %s", jobid, err_str);
 		*err_msg = reply_msg;
 	}
@@ -226,3 +234,29 @@ static char *	_copy_nodelist_no_dup(char *node_list)
 	return new_str;
 }
 
+/*
+ * bitmap2wiki_node_name  - given a bitmap, build a list of colon separated 
+ *	node names.
+ * IN bitmap - bitmap pointer
+ * RET pointer to node list or NULL on error 
+ * globals: node_record_table_ptr - pointer to node table
+ * NOTE: the caller must xfree the memory at node_list when no longer required
+ */
+extern char *	bitmap2wiki_node_name(bitstr_t *bitmap)
+{
+	int i, first = 1;
+	char *buf = NULL;
+
+	if (bitmap == NULL)
+		return xstrdup("");
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test (bitmap, i) == 0)
+			continue;
+		if (first == 0)
+			xstrcat(buf, ":");
+		first = 0;
+		xstrcat(buf, node_record_table_ptr[i].name);
+	}
+	return buf;
+}
