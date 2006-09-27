@@ -168,6 +168,17 @@ static char *	_dump_job(struct job_record *job_ptr, int state_only)
 	if (state_only)
 		return buf;
 
+	if ((job_ptr->job_state == JOB_PENDING)
+	&&  (job_ptr->details)
+	&&  (job_ptr->details->req_nodes)
+	&&  (job_ptr->details->req_nodes[0])) {
+		snprintf(tmp, sizeof(tmp),
+			"HOSTLIST=%s;",
+			bitmap2wiki_node_name(
+			job_ptr->details->req_node_bitmap));
+		xstrcat(buf, tmp);
+	}
+
 	snprintf(tmp, sizeof(tmp), 
 		"UPDATETIME=%u;WCLIMIT=%u;",
 		(uint32_t) job_ptr->time_last_active,
