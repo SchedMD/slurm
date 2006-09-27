@@ -130,3 +130,43 @@ extern uint32_t slurm_container_find(pid_t pid)
 	return (uint32_t) find_ancestor(pid, "slurmstepd");
 }
 
+extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+{
+	uint32_t cont;
+
+	cont = (uint32_t) find_ancestor(pid, "slurmstepd");
+	if (cont == cont_id)
+		return true;
+
+	return false;
+}
+
+extern int
+slurm_container_wait(uint32_t cont_id)
+{
+	int delay = 1;
+
+	if (cont_id == 0 || cont_id == 1) {
+		errno = EINVAL;
+		return SLURM_ERROR;
+	}
+
+	/* Spin until the container is successfully destroyed */
+	while (slurm_container_destroy(cont_id) != SLURM_SUCCESS) {
+		slurm_container_signal(cont_id, SIGKILL);
+		sleep(delay);
+		if (delay < 120) {
+			delay *= 2;
+		} else {
+			error("Unable to destroy container %u", cont_id);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+{
+	return proctrack_linuxproc_get_pids((pid_t)cont_id, pids, npids);
+}

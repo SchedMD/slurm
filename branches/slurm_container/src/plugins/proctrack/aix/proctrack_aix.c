@@ -175,3 +175,45 @@ slurm_container_find(pid_t pid)
 	return (uint32_t) cont_id;
 }
 
+extern bool
+slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+{
+	int local_pid = (int) pid;
+	int found_cont_id = proctrack_get_job_id(&local_pid);
+
+	if (found_cont_id == -1 || (uint32_t)found_cont_id != cont_id)
+		return false;
+
+	return true;
+}
+
+extern int
+slurm_container_wait(uint32_t cont_id)
+{
+	int delay = 1;
+
+	if (cont_id == 0 || cont_id == 1) {
+		errno = EINVAL;
+		return SLURM_ERROR;
+	}
+
+	/* Spin until the container is successfully destroyed */
+	while (slurm_container_destroy(cont_id) != SLURM_SUCCESS) {
+		slurm_container_signal(cont_id, SIGKILL);
+		sleep(delay);
+		if (delay < 120) {
+			delay *= 2;
+		} else {
+			error("Unable to destroy container %u", cont_id);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+{
+	error("proctrack/aix does not yet implement slurm_container_get_pids");
+	return SLURM_ERROR;
+}

@@ -176,6 +176,7 @@ extern int slurm_container_destroy (uint32_t id)
 	return SLURM_ERROR;
 }
 
+
 extern uint32_t slurm_container_find (pid_t pid)
 {
 	int prgid = 0;
@@ -185,6 +186,79 @@ extern uint32_t slurm_container_find (pid_t pid)
 	return (uint32_t) prgid;
 }
 
+extern bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
+{
+	int prgid = 0;
+
+	if (rms_getprgid ((int) pid, &prgid) < 0)
+		return false;
+	if ((uint32_t)prgid != cont_id)
+		return false;
+
+	return true;
+}
+
+extern int
+slurm_container_wait(uint32_t cont_id)
+{
+	int delay = 1;
+
+	if (cont_id == 0 || cont_id == 1) {
+		errno = EINVAL;
+		return SLURM_ERROR;
+	}
+
+	/* Spin until the container is empty */
+	while (slurm_container_signal(cont_id, 0) != -1) {
+		slurm_container_signal(cont_id, SIGKILL);
+		sleep(delay);
+		if (delay < 120) {
+			delay *= 2;
+		} else {
+			error("Unable to destroy container %u", cont_id);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * This module assumes that the slurmstepd (running as root) is always the
+ * last process in the rms program description.  We do not include
+ * the slurmstepd in the list of pids that we return.
+ */
+extern int
+slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+{
+	pid_t *p;
+	int np;
+	int len = 32;
+
+	p = xmalloc(len * sizeof(pid_t));
+	while(rms_prginfo((int)cont_id, len, p, &np) == -1) {
+		if (errno == EINVAL) {
+			/* array is too short, double its len */
+			len += 2;
+			xrealloc(p, len);
+		} else {
+			xfree(p);
+			*pids = NULL;
+			*npids = 0;
+			return SLURM_ERROR;
+		}
+	}
+
+	/* Don't include the last pid (slurmstepd) in the list */
+	if (np > 0) {
+		p[np-1] = 0;
+		np--;
+	}
+
+	*npids = np;
+	*pids = p;
+
+	return SLURM_SUCCESS;
+}
 
 static void
 _close_all_fd_except(int fd)

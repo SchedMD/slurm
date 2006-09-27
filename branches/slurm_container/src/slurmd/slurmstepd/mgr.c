@@ -1154,25 +1154,13 @@ _wait_for_all_tasks(slurmd_job_t *job)
 static void
 _kill_running_tasks(slurmd_job_t *job)
 {
-	int          delay = 1;
-
 	if (job->batch)
 		return;
 
 	if (job->cont_id) {
 		slurm_container_signal(job->cont_id, SIGKILL);
 
-		/* Spin until the container is successfully destroyed */
-		while (slurm_container_destroy(job->cont_id) != SLURM_SUCCESS) {
-			slurm_container_signal(job->cont_id, SIGKILL);
-			sleep(delay);
-			if (delay < 120) {
-				delay *= 2;
-			} else {
-				error("Unable to destroy container, job %u.%u",
-				      job->jobid, job->stepid);
-			}
-		}
+		slurm_container_wait(job->cont_id);
 	}
 
 	return;

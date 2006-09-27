@@ -867,12 +867,7 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 	
-	/*
-	 * FIXME - we should add a new call in the proctrack API
-	 *         that simply returns "true" if a pid is in the step
-	 */
-	if (job->cont_id == slurm_container_find(pid))
-		rc = true;
+	rc = slurm_container_has_pid(job->cont_id, pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(bool));
