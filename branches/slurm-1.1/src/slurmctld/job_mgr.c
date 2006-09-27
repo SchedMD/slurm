@@ -1105,8 +1105,10 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 			else
 				error("node_cnt underflow on JobId=%u", 
 			   	      job_ptr->job_id);
-			if (job_ptr->node_cnt == 0)
+			if (job_ptr->node_cnt == 0) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				slurm_sched_schedule();
+			}
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else

@@ -72,7 +72,7 @@ extern void fini( void )
 /***************************************************************************/
 extern int slurm_sched_plugin_schedule( void )
 {
-	/* No action required */
+	(void) event_notify("Requested by slurm");
 	return SLURM_SUCCESS;
 }
 
