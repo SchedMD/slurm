@@ -437,21 +437,12 @@ int main(int argc, char *argv[])
 	gtk_table_set_homogeneous(main_grid_table, TRUE);
 	while(get_system_stats() != SLURM_SUCCESS)
 		sleep(10);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(grid_window),
+				       GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
+	    
 #ifdef HAVE_BG
 	gtk_widget_set_size_request(grid_window, 164, -1);
-#else
-	if(DIM_SIZE[X] < 50) {
-		gtk_widget_set_size_request(grid_window, 54, -1);
-		gtk_table_set_row_spacing(main_grid_table, 9, 5);
-	} else if(DIM_SIZE[X] < 500) {
-		gtk_widget_set_size_request(grid_window, 162, -1);
-		gtk_table_set_row_spacing(main_grid_table, 9, 5);
-	} else {
-		gtk_widget_set_size_request(grid_window, 287, -1);
-		gtk_table_set_col_spacing(main_grid_table, 9, 5);
-		gtk_table_set_row_spacing(main_grid_table, 9, 5);
-	}
-
 #endif
 	/* fill in all static info for pages */
 	/* Make a window */

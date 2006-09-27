@@ -200,8 +200,6 @@ extern int get_system_stats()
 	int x=0, table_x=0, table_y=0;
 	int coord_x=0, coord_y=0, i=0;
 	grid_button_t *grid_button = NULL;
-/* 	GtkWidget *event_box = NULL; */
-	GdkColor color;
 	GError *error = NULL;
 	
 #ifdef HAVE_BG
@@ -223,18 +221,14 @@ update_it:
 #ifndef HAVE_BG
 	if(DIM_SIZE[X] < 50) {
 		table_x = 1;
-		table_y = DIM_SIZE[X];
 	} else if(DIM_SIZE[X] < 500) {
-		table_x = DIM_SIZE[X];
-		table_y = 1;
+		table_x = 10;
 	} else {
 		table_x=20;
-		table_y = DIM_SIZE[X]/20;
-		if(table_y < 1)
-			table_y=1;
-		else
-			table_y++;
 	}
+	table_y = DIM_SIZE[X]/table_x;
+	table_y++;
+	
 #else
 	if(DIM_SIZE[X] < 12) {
 		table_x = DIM_SIZE[X];
@@ -249,7 +243,6 @@ update_it:
 	}
 #endif
 	gtk_table_resize(main_grid_table, table_y, table_x);
-	gdk_color_parse("red", &color);
 	
 	for (x=0; x<DIM_SIZE[X]; x++) {
 #ifdef HAVE_BG
@@ -273,8 +266,6 @@ update_it:
 		grid_button->indecies = i++;
 		grid_button->button = gtk_button_new();
 		gtk_widget_set_size_request(grid_button->button, 10, 10);
-		gtk_widget_modify_fg(grid_button->button, 
-				     GTK_STATE_NORMAL, &color);
 		g_signal_connect(G_OBJECT(grid_button->button), 
 				 "button-press-event",
 				 G_CALLBACK(_open_node),
@@ -286,12 +277,25 @@ update_it:
 				 1, 1);
 		
 		coord_x++;
+			
 		if(coord_x == table_x) {
 			coord_x = 0;
 			coord_y++;
+			if(!(coord_y%10)) {
+				gtk_table_set_row_spacing(main_grid_table,
+							  coord_y-1, 5);
+			}
+			
 		}
+		
 		if(coord_y == table_y)
 			break;
+	
+		if(coord_x && !(coord_x%10)) {
+			gtk_table_set_col_spacing(main_grid_table,
+						  coord_x-1, 5);
+		}
+	
 #endif
 	}
 	if (!g_thread_create(_blink_thr, NULL, FALSE, &error))
