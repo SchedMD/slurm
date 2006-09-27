@@ -231,8 +231,10 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		agent_args->node_count++;
 	}
 
-	if ((agent_args->node_count - down_node_cnt) == 0)
+	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
+		slurm_sched_schedule();
+	}
 	if (agent_args->node_count == 0) {
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
@@ -1461,6 +1463,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			if ((--job_ptr->node_cnt) == 0) {
 				last_node_update = time(NULL);
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				slurm_sched_schedule();
 			}
 			continue;
 		}

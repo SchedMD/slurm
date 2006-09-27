@@ -1795,6 +1795,7 @@ void make_node_idle(struct node_record *node_ptr,
 						"%ld seconds", job_ptr->job_id,
 						(long) delay);
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				slurm_sched_schedule();
 			}
 		} else {
 			error("node_cnt underflow on job_id %u", 
