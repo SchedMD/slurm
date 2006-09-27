@@ -253,8 +253,9 @@ int schedule(void)
 			job_cnt++;
 		} else if (error_code !=
 		           ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
-			info("schedule: JobId=%u non-runnable: %m",
-			     job_ptr->job_id);
+			info("schedule: JobId=%u non-runnable: %s",
+				job_ptr->job_id, 
+				slurm_strerror(error_code));
 			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
