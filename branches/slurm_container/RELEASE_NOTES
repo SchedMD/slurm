@@ -1,0 +1,39 @@
+RELEASE NOTES FOR SLURM VERSION 1.2
+30 August 2006
+
+See the file NEWS for more details.
+
+* Several new commands have been added to perform the individual srun functions.
+  The srun command will continue to exist, but these commands may offer 
+  greater clarity and ease of use. 
+  salloc  - Perform a resource allocation (functions like "srun --allocate")
+  sattach - Attach to an existing job (functions like "srun --attach")
+  sbatch  - Submit a batch job (functions like "srun --batch")
+  slaunch - Launch tasks (requires an allocaiton to already exist for the job)  
+  See the indivual man pages for more information. 
+
+* Permit batch jobs to be requeued ("scontrol requeue <jobid>" or
+  "srun --batch --no-requeue ..." to prevent).
+
+* Added "account" field to job and step accounting information and sacct output.
+
+* Added new configuration parameter MessageTimeout (replaces #define in the 
+  code).
+
+* Added support for OS X operaing system.
+
+* There is a new version of the Wiki scheduler plugin to interface with
+  the Maui Scheduler and Moab. It can be accessed with the slurm.conf
+  parameter "SchedulerType=sched/wiki2" (it will replace "sched/wiki"
+  in SLURM version 1.2, but will co-exist in version 1.1.10+). Key
+  differences include:
+  - Node and job data returned is correct (several errors in old plugin)
+  - Node data includes partition information (CCLASS field)
+  - Improved error handling
+  - Support added for configuration file ("wiki.conf" in same directory
+    as "slurm.conf" file, see "man wiki.conf" for details)
+  - Support added for job suspend/resume
+  - Authentication of communications now supported
+  - Improved performance
+  - Memory leaks fixed
+
