@@ -49,7 +49,7 @@ static int   err_code;
 /* Global configuration parameters */
 char *   auth_key = NULL;
 uint16_t e_port = 0;
-uint16_t job_aggregation_time = 0;
+uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
 
 static char *	_get_wiki_conf_path(void);
