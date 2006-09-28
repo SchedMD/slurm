@@ -331,10 +331,10 @@ if [ -x /sbin/ldconfig ]; then
         [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
     fi
 fi
-if [! -f ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf ]; then
+if [ ! -f ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf ]; then
     echo "You need to build and install a slurm.conf file"
     echo "Edit ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example and copy it to slurm.conf or"
-    echo "use http://www.llnl.gov/linux/slurm/configurator.html"
+    echo "build a new one using http://www.llnl.gov/linux/slurm/configurator.html"
 fi
 
 %preun
