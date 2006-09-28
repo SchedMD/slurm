@@ -35,7 +35,8 @@ occuring about the same time.
 If an event occurs within this number of seconds since Moab was 
 last notified of an event, another notification is not sent.
 This should be an integer number of seconds.
-Thevalue should match JOBAGGREGATIONTIME configured in the 
+The default value is 10 seconds.
+The value should match JOBAGGREGATIONTIME configured in the 
 \fBmoab.cnf\fR file.
 
 .TP
@@ -80,7 +81,7 @@ EPort=15017
 .br
 # in moab.cfg (integer value in seconds)
 .br
-JobAggregationTime=30
+JobAggregationTime=15
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.

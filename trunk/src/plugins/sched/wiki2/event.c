@@ -65,6 +65,7 @@ extern int	event_notify(char *msg)
 		/* Already sent recent event notification */
 		return 0;
 	}
+	last_notify_time = now;
 
 	pthread_mutex_lock(&event_mutex);
 	if (event_addr_set == 0) {
@@ -92,7 +93,6 @@ extern int	event_notify(char *msg)
 	 */
 	if (write(event_fd, "1234", 5) > 0) {
 		info("wiki event_notification sent: %s", msg);
-		last_notify_time = now;
 		rc = 0;
 	} else {
 		error("wiki event notification failure: %m");

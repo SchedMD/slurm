@@ -64,6 +64,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG		0
@@ -1780,6 +1781,7 @@ void make_node_idle(struct node_record *node_ptr,
 						"%ld seconds", job_ptr->job_id,
 						(long) delay);
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				slurm_sched_schedule();
 			}
 		} else {
 			error("node_cnt underflow on job_id %u", 
