@@ -519,6 +519,21 @@ rwfail:
 	return SLURM_FAILURE;
 }
 
+static void
+_temporary_test(uint32_t cont_id)
+{
+	pid_t *pids;
+	int npids;
+	int i;
+
+	slurm_container_get_pids(cont_id, &pids, &npids);
+	info("There are %d pids", npids);
+	for (i = 0; i < npids; i++) {
+		info("  pid %d : %d", i, pids[i]);
+	}
+	xfree(pids);
+}
+
 static int
 _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 {
@@ -547,6 +562,8 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
+
+	_temporary_test(job->cont_id);
 
 	/*
 	 * Signal the process group
