@@ -1308,8 +1308,8 @@ extern int slurm_resume PARAMS(( uint32_t job_id ));
  * OUT start_time - time at which checkpoint request was issued
  * RET 0 (can be checkpoined) or a slurm error code
  */
-extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
-		time_t *start_time);
+extern int slurm_checkpoint_able PARAMS(( uint32_t job_id, uint32_t step_id,
+		time_t *start_time ));
 
 /*
  * slurm_checkpoint_disable - disable checkpoint requests for some job step
@@ -1317,7 +1317,8 @@ extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_disable (uint32_t job_id, uint32_t step_id);
+extern int slurm_checkpoint_disable PARAMS(( uint32_t job_id, 
+		uint32_t step_id ));
 
 
 /*
@@ -1326,7 +1327,8 @@ extern int slurm_checkpoint_disable (uint32_t job_id, uint32_t step_id);
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id);
+extern int slurm_checkpoint_enable PARAMS(( uint32_t job_id, 
+		uint32_t step_id ));
 
 /*
  * slurm_checkpoint_create - initiate a checkpoint requests for some job step.
@@ -1336,8 +1338,8 @@ extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id);
  * IN max_wait - maximum wait for operation to complete, in seconds
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id, 
-		uint16_t max_wait);
+extern int slurm_checkpoint_create PARAMS(( uint32_t job_id, 
+		uint32_t step_id, uint16_t max_wait ));
 
 /*
  * slurm_checkpoint_vacate - initiate a checkpoint requests for some job step.
@@ -1347,8 +1349,8 @@ extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id,
  * IN max_wait - maximum wait for operation to complete, in seconds
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id, 
-		uint16_t max_wait);
+extern int slurm_checkpoint_vacate PARAMS(( uint32_t job_id, 
+		uint32_t step_id, uint16_t max_wait ));
 
 /*
  * slurm_checkpoint_restart - restart execution of a checkpointed job step.
@@ -1356,7 +1358,8 @@ extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id,
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id);
+extern int slurm_checkpoint_restart PARAMS(( uint32_t job_id, 
+		uint32_t step_id ));
 
 /*
  * slurm_checkpoint_complete - note the completion of a job step's checkpoint
@@ -1368,8 +1371,9 @@ extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id);
  * IN error_msg - error message, preserved for highest error_code
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
-		time_t begin_time, uint32_t error_code, char *error_msg);
+extern int slurm_checkpoint_complete PARAMS(( uint32_t job_id, 
+		uint32_t step_id, time_t begin_time, 
+		uint32_t error_code, char *error_msg ));
 
 /*
  * slurm_checkpoint_error - gather error information for the last checkpoint
@@ -1384,8 +1388,71 @@ extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
  *	must be freed by the caller to prevent memory leak
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
-		uint32_t *error_code, char **error_msg);
+extern int slurm_checkpoint_error PARAMS(( uint32_t job_id, 
+		uint32_t step_id, uint32_t *error_code, 
+		char **error_msg ));
+
+/* The hostlist opaque data type
+ *
+ * A hostlist is a list of hostnames optimized for a prefixXXXX style
+ * naming convention, where XXXX  is a decimal, numeric suffix.
+ */
+#ifndef   __hostlist_t_defined
+#  define __hostlist_t_defined
+   typedef struct hostlist * hostlist_t;
+#endif
+
+/*
+ * slurm_hostlist_create():
+ *
+ * Create a new hostlist from a string representation.
+ *
+ * The string representation (str) may contain one or more hostnames or
+ * bracketed hostlists separated by either `,' or whitespace. A bracketed
+ * hostlist is denoted by a common prefix followed by a list of numeric
+ * ranges contained within brackets: e.g. "tux[0-5,12,20-25]"
+ *
+ * To support systems with 3-D topography, a rectangular prism may
+ * be described using two three digit numbers separated by "x": e.g.
+ * "bgl[123x456]". This selects all nodes between 1 and 4 inclusive
+ * in the first dimension, between 2 and 5 in the second, and between
+ * 3 and 6 in the third dimension for a total of 4*4*4=64 nodes
+ *
+ * Note: if this module is compiled with WANT_RECKLESS_HOSTRANGE_EXPANSION
+ * defined, a much more loose interpretation of host ranges is used.
+ * Reckless hostrange expansion allows all of the following (in addition to
+ * bracketed hostlists):
+ *
+ *  o tux0-5,tux12,tux20-25
+ *  o tux0-tux5,tux12,tux20-tux25
+ *  o tux0-5,12,20-25
+ *
+ * If str is NULL, and empty hostlist is created and returned.
+ *
+ * If the create fails, hostlist_create() returns NULL.
+ *
+ * The returned hostlist must be freed with hostlist_destroy()
+ *
+ */
+extern hostlist_t slurm_hostlist_create PARAMS(( const char *hostlist ));
+
+/*
+ * slurm_hostlist_shift():
+ *
+ * Returns the string representation of the first host in the hostlist
+ * or NULL if the hostlist is empty or there was an error allocating memory.
+ * The host is removed from the hostlist.
+ *
+ * Note: Caller is responsible for freeing the returned memory.
+ */
+extern char * slurm_hostlist_shift PARAMS(( hostlist_t hl ));
+
+/*
+ * slurm_hostlist_destroy():
+ *
+ * Destroy a hostlist object. Frees all memory allocated to the hostlist.
+ */
+extern void slurm_hostlist_destroy PARAMS(( hostlist_t hl ));
 
 END_C_DECLS
 
