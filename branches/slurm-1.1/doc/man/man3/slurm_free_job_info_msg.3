@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "March 2006" "Morris Jette" "Slurm job information reporting functions"
+.TH "Slurm API" "3" "September 2006" "Morris Jette" "Slurm job information reporting functions"
 .SH "NAME"
 slurm_free_job_info_msg, slurm_get_end_time,
 slurm_get_rem_time, slurm_get_select_jobinfo,
@@ -299,10 +299,13 @@ int main (int argc, char *argv[])
 .br 
 }
 
-.SH "NOTE"
+.SH "NOTES"
 Some data structures contain index values to cross-reference each other. 
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this 
 data, these index values will be invalid.
+
+The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
+expressions into a collection of individual node names.
 
 .SH "COPYING"
 Copyright (C) 2002-2006 The Regents of the University of California.
@@ -324,6 +327,9 @@ details.
 
 .SH "SEE ALSO"
 .LP 
-\fBscontrol\fR(1), \fBsqueue\fR(1), \fBslurm_allocation_lookup\fR(3), 
+\fBscontrol\fR(1), \fBsqueue\fR(1), 
+\fBslurm_hostlist_create\fR(3), \fBslurm_hostlist_shift\fR(3), 
+\fBslurm_hostlist_destroy\fR(3),
+\fBslurm_allocation_lookup\fR(3), 
 \fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
 
