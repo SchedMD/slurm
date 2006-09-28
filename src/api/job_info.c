@@ -178,7 +178,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		job_ptr->alloc_node, job_ptr->alloc_sid);
 	xstrcat(out, tmp_line);
 	if (job_ptr->time_limit == INFINITE)
-		sprintf(tmp_line, "UNLIMITED");
+		sprintf(tmp_line, "UNLIMITED ");
 	else if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_line, "Partition_Limit ");
 	else
