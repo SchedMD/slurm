@@ -1761,24 +1761,24 @@ unpack_error:
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */
-void
-pack_job_step_info_members(uint32_t job_id, uint16_t step_id,
-			   uint32_t user_id, uint32_t num_tasks,
-			   time_t start_time, char *partition, 
-			   char *nodes, char *name, char *network,
-			   Buf buffer)
-{
-	pack32((uint32_t)job_id, buffer);
-	pack16((uint16_t)step_id, buffer);
-	pack32((uint32_t)user_id, buffer);
-	pack32((uint32_t)num_tasks, buffer);
+/* void */
+/* pack_job_step_info_members(uint32_t job_id, uint16_t step_id, */
+/* 			   uint32_t user_id, uint32_t num_tasks, */
+/* 			   time_t start_time, char *partition,  */
+/* 			   char *nodes, char *name, char *network, */
+/* 			   Buf buffer) */
+/* { */
+/* 	pack32((uint32_t)job_id, buffer); */
+/* 	pack16((uint16_t)step_id, buffer); */
+/* 	pack32((uint32_t)user_id, buffer); */
+/* 	pack32((uint32_t)num_tasks, buffer); */
 
-	pack_time(start_time, buffer);
-	packstr(partition, buffer);
-	packstr(nodes, buffer);
-	packstr(name, buffer);
-	packstr(network, buffer);
-}
+/* 	pack_time(start_time, buffer); */
+/* 	packstr(partition, buffer); */
+/* 	packstr(nodes, buffer); */
+/* 	packstr(name, buffer); */
+/* 	packstr(network, buffer); */
+/* } */
 
 /* pack_job_step_info
  * packs a slurm job steps info
@@ -1786,17 +1786,17 @@ pack_job_step_info_members(uint32_t job_id, uint16_t step_id,
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */
-void
-pack_job_step_info(job_step_info_t * step, Buf buffer)
-{
-	pack_job_step_info_members(step->job_id,
-				   step->step_id,
-				   step->user_id,
-				   step->num_tasks,
-				   step->start_time,
-				   step->partition, step->nodes, 
-				   step->name, step->network, buffer);
-}
+/* void */
+/* pack_job_step_info(job_step_info_t * step, Buf buffer) */
+/* { */
+/* 	pack_job_step_info_members(step->job_id, */
+/* 				   step->step_id, */
+/* 				   step->user_id, */
+/* 				   step->num_tasks, */
+/* 				   step->start_time, */
+/* 				   step->partition, step->nodes,  */
+/* 				   step->name, step->network, buffer); */
+/* } */
 
 /* _unpack_job_step_info_members
  * unpacks a set of slurm job step info for one job step
@@ -1808,6 +1808,7 @@ static int
 _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 {
 	uint16_t uint16_tmp = 0;
+	char *node_inx_str;
 
 	safe_unpack32(&step->job_id, buffer);
 	safe_unpack16(&step->step_id, buffer);
@@ -1819,7 +1820,14 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpackstr_xmalloc(&step->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->name, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->network, &uint16_tmp, buffer);
-
+	safe_unpackstr_xmalloc(&node_inx_str, &uint16_tmp, buffer);
+	if (node_inx_str == NULL)
+		step->node_inx = bitfmt2int("");
+	else {
+		step->node_inx = bitfmt2int(node_inx_str);
+		xfree(node_inx_str);
+	}
+	
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1827,6 +1835,7 @@ unpack_error:
 	xfree(step->nodes);
 	xfree(step->name);
 	xfree(step->network);
+	xfree(step->node_inx);
 	return SLURM_ERROR;
 }
 

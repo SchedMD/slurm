@@ -48,6 +48,7 @@ typedef struct {
 sview_parameters_t params;
 int adding = 1;
 int fini = 0;
+int grid_init = 0;
 bool toggled = FALSE;
 bool force_refresh = FALSE;
 List popup_list;
@@ -60,6 +61,9 @@ GtkWidget *main_window = NULL;
 GtkWidget *grid_window = NULL;
 GtkTable *main_grid_table = NULL;
 GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
+GMutex *grid_mutex = NULL;
+GCond *grid_cond = NULL;
+GtkActionGroup *admin_action_group = NULL;
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
@@ -108,16 +112,31 @@ void *_page_thr(void *arg)
 	int num = page->page_num;
 	GtkTable *table = page->table;
 	display_data_t *display_data = &main_display_data[num];
-	xfree(page);
 	static int thread_count = 0;
 
+	xfree(page);
+	
+	if(!grid_init) {
+		/* we need to signal any threads that are waiting */
+		g_mutex_lock(grid_mutex);
+		g_cond_signal(grid_cond);
+		g_mutex_unlock(grid_mutex);
+		
+		/* wait for the grid to be inited */
+		g_mutex_lock(grid_mutex);
+		g_cond_wait(grid_cond, grid_mutex);
+		g_mutex_unlock(grid_mutex);
+		
+		/* if the grid isn't there just return */
+		if(!grid_init)
+			return NULL;
+	}
 	gdk_threads_enter();
 	sview_reset_grid();
 	thread_count++;
 	gdk_flush();
 	gdk_threads_leave();
-		
-	while(page_running[num]) {
+	while(page_running[num]) {		
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
 		sview_init_grid();
@@ -146,6 +165,44 @@ void *_page_thr(void *arg)
 	return NULL;
 }
 
+void *_grid_init_thr(void *arg)
+{
+	guint page = 0;
+	GtkScrolledWindow *window = NULL;
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkTable *table = NULL;
+	int rc = SLURM_SUCCESS;
+		
+	while(!grid_init) {
+		gdk_threads_enter();
+		page = gtk_notebook_get_current_page(
+			GTK_NOTEBOOK(main_notebook));
+		window = GTK_SCROLLED_WINDOW(
+			gtk_notebook_get_nth_page(GTK_NOTEBOOK(main_notebook),
+						  page));
+		bin = GTK_BIN(&window->container);
+		view = GTK_VIEWPORT(bin->child);
+		bin = GTK_BIN(&view->bin);
+		table = GTK_TABLE(bin->child);
+		/* set up the main grid */
+		rc = get_system_stats(table);
+		gdk_flush();
+		gdk_threads_leave();
+	
+		if(rc != SLURM_SUCCESS)
+			sleep(global_sleep_time);
+		else
+			grid_init = 1;
+		
+	}
+	g_mutex_lock(grid_mutex);
+	g_cond_signal(grid_cond);
+	g_mutex_unlock(grid_mutex);
+		
+	return NULL;
+}
+
 static void _page_switched(GtkNotebook     *notebook,
 			   GtkNotebookPage *page,
 			   guint            page_num,
@@ -159,18 +216,29 @@ static void _page_switched(GtkNotebook     *notebook,
 	GtkViewport *view = GTK_VIEWPORT(bin->child);
 	GtkBin *bin2 = GTK_BIN(&view->bin);
 	GtkTable *table = GTK_TABLE(bin2->child);
-	int i;
+	int i = 0;
 	static int running=-1;
 	page_thr_t *page_thr = NULL;
 	GError *error = NULL;
-		
+	static int started_grid_init = 0;
+	
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
 		return;
+	else if(!grid_init && !started_grid_init) {
+		/* start the thread to make the grid only once */
+		if (!g_thread_create(_grid_init_thr, notebook, FALSE, &error))
+		{
+			g_printerr ("Failed to create grid init thread: %s\n",
+				    error->message);
+			return;
+		}
+		started_grid_init = 1;
+	}
 	
 	if(running != -1) {
 		page_running[running] = 0;
-	}
+	}	
 	
 	for(i=0; i<PAGE_CNT; i++) {
 		if(main_display_data[i].id == -1)
@@ -209,6 +277,8 @@ static void _page_switched(GtkNotebook     *notebook,
 
 static void _set_admin_mode(GtkToggleAction *action)
 {
+//	GtkAction *admin_action = NULL;
+
 	if(admin_mode) {
 		admin_mode = FALSE;
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 
@@ -220,6 +290,7 @@ static void _set_admin_mode(GtkToggleAction *action)
 				   "Admin mode activated! "
 				   "Think before you alter anything.");
 	}
+	gtk_action_group_set_sensitive(admin_action_group, admin_mode); 
 }
 
 static void _set_grid(GtkToggleAction *action)
@@ -269,22 +340,27 @@ static gboolean _delete(GtkWidget *widget,
 /* Returns a menubar widget made from the above menu */
 static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 {
-	GtkActionGroup *action_group = NULL;
 	GtkUIManager *ui_manager = NULL;
 	GtkAccelGroup *accel_group = NULL;
 	GError *error = NULL;
+	GtkActionGroup *action_group = NULL;
 
 	/* Our menu*/
 	const char *ui_description =
 		"<ui>"
 		"  <menubar name='main'>"
+		"    <menu action='actions'>"
+		"      <menuitem action='search'/>"
+		"      <menuitem action='refresh'/>"
+		"      <menuitem action='reconfig'/>"
+		"      <separator/>"
+		"      <menuitem action='exit'/>"
+		"    </menu>"
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='interval'/>"
-		"      <menuitem action='refresh'/>"
 		"      <separator/>"
 		"      <menuitem action='admin'/>"
-		"      <menuitem action='reconfig'/>"
 		"      <separator/>"
 		"      <menu action='tab_pos'>"
 		"        <menuitem action='tab_top'/>"
@@ -292,46 +368,44 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"        <menuitem action='tab_left'/>"
 		"        <menuitem action='tab_right'/>"
 		"      </menu>"
-		"      <separator/>"
-		"      <menuitem action='exit'/>"
 		"    </menu>"
 		"    <menu action='displays'>"
-		"      <menuitem action='search'/>"
-		"      <separator/>"
 		"      <menuitem action='config'/>"
-		"      <menuitem action='daemons'/>"
 		"    </menu>"
 		"    <menu action='help'>"
 		"      <menuitem action='about'/>"
+		"      <menuitem action='manual'/>"
 		"    </menu>"
 		"  </menubar>"
 		"</ui>";
 
 	GtkActionEntry entries[] = {
-		{"options", NULL, "_Options"},
-		{"displays", NULL, "_Query"},
-		{"tab_pos", NULL, "_Tab Pos"},
-		{"interval", NULL, "Set _Refresh Interval", 
-		 "<control>r", "Change Refresh Interval", 
+		{"actions", NULL, "_Actions", NULL, "<alt>a"},
+		{"options", NULL, "_Options", NULL, "<alt>o"},
+		{"displays", NULL, "_Query", NULL, "<alt>q"},
+		{"tab_pos", NULL, "_Tab Pos", NULL, "<alt>t"},
+		{"interval", GTK_STOCK_REFRESH, "Set Refresh _Interval", 
+		 "<control>i", "Change Refresh Interval", 
 		 G_CALLBACK(change_refresh_popup)},
-		{"refresh", NULL, "Refresh", 
+		{"refresh", GTK_STOCK_REFRESH, "Refresh", 
 		 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
-		{"reconfig", NULL, "_SLURM Reconfigure", 
-		 "<control>s", "Reconfigures System", 
-		 G_CALLBACK(slurm_reconfigure)},
-		{"config", NULL, "Config _Info", 
-		 "<control>i", "Displays info from slurm.conf file", 
+		{"config", NULL, "_Config Info", 
+		 "<control>c", "Displays info from slurm.conf file", 
 		 G_CALLBACK(create_config_popup)},
-		{"daemons", NULL, "_Daemons", 
-		 "<control>d", "Displays Daemons running on node", 
-		 G_CALLBACK(create_daemon_popup)},
 		{"search", NULL, "Search", 
 		 "<control>f", "Search through SLURM", 
 		 G_CALLBACK(create_search_popup)},
-		{"exit", NULL, "E_xit", 
+		{"exit", GTK_STOCK_CLOSE, "E_xit", 
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
-		{"help", NULL, "_Help"},
-		{"about", NULL, "_About"}
+		{"help", NULL, "_Help", NULL, "<alt>h"},
+		{"about", GTK_STOCK_HELP, "_About", NULL, "<control>a"},
+		{"manual", NULL, "_Manual", NULL, "<control>m"}
+	};
+
+	GtkActionEntry admin_entries[] = {
+		{"reconfig", NULL, "SLURM _Reconfigure", 
+		 "<control>r", "Reconfigures System", 
+		 G_CALLBACK(slurm_reconfigure)},
 	};
 
 	GtkRadioActionEntry radio_entries[] = {
@@ -355,7 +429,6 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 G_CALLBACK(_set_admin_mode), 
 		 FALSE} 
 	};
-
 		
 	/* Make an accelerator group (shortcut keys) */
 	action_group = gtk_action_group_new ("MenuActions");
@@ -367,9 +440,16 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_toggle_actions(action_group, toggle_entries, 
 					   G_N_ELEMENTS(toggle_entries), 
 					   NULL);
+	admin_action_group = gtk_action_group_new ("MenuActions");
+	gtk_action_group_add_actions(admin_action_group, admin_entries, 
+				     G_N_ELEMENTS(admin_entries),
+				     window);
+	gtk_action_group_set_sensitive(admin_action_group, FALSE); 
+	
 	ui_manager = gtk_ui_manager_new();
 	gtk_ui_manager_insert_action_group(ui_manager, action_group, 0);
-
+	gtk_ui_manager_insert_action_group(ui_manager, admin_action_group, 1);
+	
 	accel_group = gtk_ui_manager_get_accel_group(ui_manager);
 	gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
@@ -418,16 +498,16 @@ int main(int argc, char *argv[])
 /* 	GtkWidget *button = NULL; */
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
-	
 	int i=0;
 	
-
 	_init_pages();
 	g_thread_init(NULL);
 	gdk_threads_init();
 	gdk_threads_enter();
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
+	grid_mutex = g_mutex_new();
+	grid_cond = g_cond_new();
 	/* make sure the system is up */
 	grid_window = GTK_WIDGET(create_scrolled_window());
 	bin = GTK_BIN(&GTK_SCROLLED_WINDOW(grid_window)->container);
@@ -435,12 +515,10 @@ int main(int argc, char *argv[])
 	bin = GTK_BIN(&view->bin);
 	main_grid_table = GTK_TABLE(bin->child);
 	gtk_table_set_homogeneous(main_grid_table, TRUE);
-	while(get_system_stats() != SLURM_SUCCESS)
-		sleep(10);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(grid_window),
 				       GTK_POLICY_NEVER,
 				       GTK_POLICY_AUTOMATIC);
-	    
+	
 #ifdef HAVE_BG
 	gtk_widget_set_size_request(grid_window, 164, -1);
 #endif
@@ -466,17 +544,6 @@ int main(int argc, char *argv[])
 	menubar = _get_menubar_menu(main_window, main_notebook);
 	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
 
-	/* create search button */
-/* 	button = gtk_button_new_with_label("Search"); */
-/* 	g_signal_connect(G_OBJECT(button),  */
-/* 			 "pressed", */
-/* 			 G_CALLBACK(create_search_popup), */
-/* 			 main_window); */
-	
-/* 	gtk_table_attach(GTK_TABLE(table), button, 1, 2, 0, 1, */
-/* 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL, */
-/* 			 0, 0); */
-		  
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
@@ -508,6 +575,8 @@ int main(int argc, char *argv[])
 		create_page(GTK_NOTEBOOK(main_notebook), 
 			    &main_display_data[i]);
 	}
+		
+	
 	/* tell signal we are done adding */
 	adding = 0;
 	popup_list = list_create(destroy_popup_info);
@@ -516,7 +585,6 @@ int main(int argc, char *argv[])
 	/* Finished! */
 	gtk_main ();
 	gdk_threads_leave();
-
 	return 0;
 }
 

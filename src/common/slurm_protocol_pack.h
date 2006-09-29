@@ -125,7 +125,7 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */
-void pack_job_step_info ( job_step_info_t* step, Buf buffer );
+/* void pack_job_step_info ( job_step_info_t* step, Buf buffer ); */
 
 /* pack_job_step_info_members
  * pack selected fields of the description of a job into a buffer
@@ -133,9 +133,9 @@ void pack_job_step_info ( job_step_info_t* step, Buf buffer );
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */ 
-void pack_job_step_info_members( uint32_t job_id, uint16_t step_id, 
-		uint32_t user_id, uint32_t num_tasks, time_t start_time, 
-		char *partition, char *nodes, char *name, char *network,
-		Buf buffer );
+/* void pack_job_step_info_members( uint32_t job_id, uint16_t step_id,  */
+/* 		uint32_t user_id, uint32_t num_tasks, time_t start_time,  */
+/* 		char *partition, char *nodes, char *name, char *network, */
+/* 		Buf buffer ); */
 
 #endif

@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0-pre4
 =============================
+ -- added node_inx to job_step_info_t to get the node indecies for mapping out
+    steps in a job by nodes.
+ -- sview grid added
 
 * Changes in SLURM 1.2.0-pre3
 =============================

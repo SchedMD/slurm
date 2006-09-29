@@ -837,14 +837,18 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 		task_cnt = step->job_ptr->num_procs;
 		node_list = step->job_ptr->nodes;	
 	}
-	pack_job_step_info_members(step->job_ptr->job_id,
-				   step->step_id,
-				   step->job_ptr->user_id,
-				   task_cnt,
-				   step->start_time,
-				   step->job_ptr->partition,
-				   node_list, 
-				   step->name, step->network, buffer);
+	pack32((uint32_t)step->job_ptr->job_id, buffer);
+	pack16((uint16_t)step->step_id, buffer);
+	pack32((uint32_t)step->job_ptr->user_id, buffer);
+	pack32((uint32_t)task_cnt, buffer);
+
+	pack_time(step->start_time, buffer);
+	packstr(step->job_ptr->partition, buffer);
+	packstr(node_list, buffer);
+	packstr(step->name, buffer);
+	packstr(step->network, buffer);
+	pack_bit_fmt(step->step_node_bitmap, buffer);
+	
 }
 
 /* 
