@@ -31,11 +31,6 @@
 #define _DEBUG 0
 DEF_TIMERS;
 
-typedef struct {
-	node_info_t *node_ptr;
-	char *color;
-} sview_node_info_t;
-
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_NAME, 
@@ -256,43 +251,6 @@ static void _node_info_list_del(void *object)
 	}
 }
 
-
-static List _create_node_info_list(node_info_msg_t *node_info_ptr,
-				   int changed)
-{
-	static List info_list = NULL;
-	int i = 0;
-	sview_node_info_t *sview_node_info_ptr = NULL;
-	node_info_t *node_ptr = NULL;
-	
-	if(!changed && info_list) {
-		goto update_color;
-	}
-	
-	if(info_list) {
-		list_destroy(info_list);
-	}
-
-	info_list = list_create(_node_info_list_del);
-	if (!info_list) {
-		g_print("malloc error\n");
-		return NULL;
-	}
-	
-	for (i=0; i<node_info_ptr->record_count; i++) {
-		node_ptr = &(node_info_ptr->node_array[i]);
-		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
-			continue;	/* bad node */
-	
-		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
-		list_append(info_list, sview_node_info_ptr);
-		sview_node_info_ptr->node_ptr = node_ptr;		
-	}
-update_color:
-	
-	return info_list;
-}
-
 void _display_info_node(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
@@ -370,6 +328,42 @@ extern void refresh_node(GtkAction *action, gpointer user_data)
 	xassert(popup_win->spec_info->title != NULL);
 	popup_win->force_refresh = 1;
 	specific_info_node(popup_win);
+}
+
+/* don't destroy the list from this function */
+extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
+{
+	static List info_list = NULL;
+	int i = 0;
+	sview_node_info_t *sview_node_info_ptr = NULL;
+	node_info_t *node_ptr = NULL;
+	
+	if(!changed && info_list) {
+		goto update_color;
+	}
+	
+	if(info_list) {
+		list_destroy(info_list);
+	}
+
+	info_list = list_create(_node_info_list_del);
+	if (!info_list) {
+		g_print("malloc error\n");
+		return NULL;
+	}
+	
+	for (i=0; i<node_info_ptr->record_count; i++) {
+		node_ptr = &(node_info_ptr->node_array[i]);
+		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
+			continue;	/* bad node */
+	
+		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
+		list_append(info_list, sview_node_info_ptr);
+		sview_node_info_ptr->node_ptr = node_ptr;		
+	}
+update_color:
+	
+	return info_list;
 }
 
 extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
@@ -571,7 +565,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 display_it:
-	info_list = _create_node_info_list(node_info_ptr, changed);
+	info_list = create_node_info_list(node_info_ptr, changed);
 
 	if(!info_list)
 		return;
@@ -662,7 +656,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 		return;
 	}
 display_it:	
-	info_list = _create_node_info_list(node_info_ptr, changed);
+	info_list = create_node_info_list(node_info_ptr, changed);
 
 	if(!info_list)
 		return;

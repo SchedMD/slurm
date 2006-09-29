@@ -642,6 +642,9 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 			   popup_win->event_box, FALSE, FALSE, 0);
 
 	window = create_scrolled_window();
+	gtk_scrolled_window_set_policy(window,
+				       GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
 	bin = GTK_BIN(&window->container);
 	view = GTK_VIEWPORT(bin->child);
 	bin = GTK_BIN(&view->bin);
