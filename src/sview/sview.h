@@ -233,7 +233,6 @@ extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
 
 //grid.c
 extern void destroy_grid_button(void *arg);
-extern void add_button_to_down_list(grid_button_t *grid_button);
 /* do not free the char * from this function it is static */
 extern char *change_grid_color(List button_list, int start_inx, int end_inx,
 			       int color_inx);
