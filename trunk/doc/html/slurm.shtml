@@ -40,6 +40,7 @@ nodes, each having four Itanium2 processors</li>
 <li><a href="http://www.llnl.gov/asci/platforms/purple/">ASC Purple</a> an IBM SP/AIX 
 cluster with 1500 nodes, each having eight Power5 processors</li>
 </ul>
+There are about 150 downloads of SLURM per month from LLNL's FTP server alone.
 As of September 2006, SLURM has been downloaded over 3500 times to over 500 
 distinct sites in 38 countries. 
 SLURM is also distributed and supported by <a href="http://www.hp.com">

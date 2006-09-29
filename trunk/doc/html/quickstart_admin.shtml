@@ -553,8 +553,8 @@ adev0: scontrol shutdown
 <h2>Testing</h2>
 <p>An extensive test suite is available within the SLURM distribution 
 in <i>testsuite/expect</i>. 
-There are about 150 tests which will execute on the order of 1000 jobs 
-and 2000 job steps. 
+There are about 250 tests which will execute on the order of 2000 jobs 
+and 4000 job steps. 
 Depending upon your system configuration and performance, this test 
 suite will take roughly 40 minutes to complete.
 The file <i>testsuite/expect/globals</i> contains default paths and
@@ -568,19 +568,19 @@ or the full test suite may be executed with the single command
 See <i>testsuite/expect/README</i> for more information.</p>
 
 <h2>Upgrades</h2>
-<p>When upgrading to a new major or minor release of SLURM (e.g. 0.3.x to 0.4.x) 
+<p>When upgrading to a new major or minor release of SLURM (e.g. 1.1.x to 1.2.x) 
 all running and pending jobs will be purged due to changes in state save 
 information. It is possible to develop software to translate state information 
 between versions, but we do not normally expect to do so.
-When upgrading to a new micro release of SLURM (e.g. 0.3.1 to 0.3.2) all
+When upgrading to a new micro release of SLURM (e.g. 1.2.1 to 1.2.2) all
 running and pending jobs will be preserved. Just install a new version of
 SLURM and restart the daemons.
 An exception to this is that jobs may be lost when installing new pre-release 
-versions (e.g. 0.4.0-pre1 to 0.4.0-pre2). We'll try to note these cases 
+versions (e.g. 1.3.0-pre1 to 1.3.0-pre2). We'll try to note these cases 
 in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 April 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->
