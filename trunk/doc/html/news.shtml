@@ -94,12 +94,11 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 to coordinate activies. Future development plans includes:
 <ul>
 <li>Permit resource allocations (jobs) to change size.</li>
-<li>Convert state save functions to plugins for use of various databases.</li>
 <li>Add Kerberos credential support including credential forwarding 
 and refresh.</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 28 September 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->

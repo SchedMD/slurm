@@ -16,7 +16,6 @@ work.</p>
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
 <a href="http://www.hp.com/">Hewlett-Packard</a>, and
 <a href="http://www.lnxi.com/">Linux NetworX</a>.
-Linux NetworX distributes SLURM as a component in their ClusterWorX software.
 HP distributes and supports SLURM as a component in their XC System Software.</p>
 
 <h2>Architecture</h2>
@@ -27,8 +26,8 @@ can be compared to a remote shell: it waits for work, executes that work, return
 status, and waits for more work. User tools include <b>srun</b> to initiate jobs, 
 <b>scancel</b> to terminate queued or running jobs, <b>sinfo</b> to report system 
 status, and <b>squeue</b> to report the status of jobs. 
-The <b>smap</b> command graphically reports system and job status including 
-network topology. There is also an administrative 
+The <b>smap</b> and <b>sview</b> commands graphically reports system and 
+job status including network topology. There is also an administrative 
 tool <b>scontrol</b> available to monitor and/or modify configuration and state 
 information. APIs are available for all functions.</p>
 
@@ -47,7 +46,7 @@ building block approach. These plugins presently include:
 
 <li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX or none.</li>
 
-<li><a href="jobacctplugins.html">Job accounting</a>: linux or none</li>
+<li><a href="jobacctplugins.html">Job accounting</a>: AIX, Linux or none</li>
 
 <li><a href="jobcompplugins.html">Job completion logging</a>: text file, 
 arbitrary script, or none (default).</li>
@@ -60,8 +59,10 @@ Blue Gene (a 3-D torus interconnect),
 <a href="cons_res.html">consumable resources</a> (to allocate 
 individual processors and memory) or linear (to dedicate entire nodes).</li>
 
-<li>Process tracking (for signaling): AIX, linux process tree hierarchy, 
-process group ID, and RMS (Quadrics Linux kernel patch).</li>
+<li><a href="proctrack_plugins.html">Process tracking (for signaling)</a>: 
+AIX (using a kernel extension), Linux process tree hierarchy, process group ID, 
+RMS (Quadrics Linux kernel patch),
+and <a href="http://oss.sgi.com/projects/pagg/">SGI's Process Aggregates (PAGG)</a>.</li>
 
 <li><a href="schedplugins.html">Scheduler</a>: 
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
@@ -145,6 +146,6 @@ PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
 PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->

@@ -16,8 +16,8 @@ work.</p>
 
 <h2>Architecture</h2>
 <p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
-each compute node, a central <b>slurmctld</b> daemon running on a management node 
-(with optional fail-over twin), and seven utility programs: <b>srun</b>, 
+each compute node and a central <b>slurmctld</b> daemon running on a management node 
+(with optional fail-over twin). The user commands include: <b>srun</b>, 
 <b>sbcast</b>, <b>scancel</b>, 
 <b>sinfo</b>, <b>srun</b>, <b>smap</b>, <b>squeue</b>, and <b>scontrol</b>.  
 All of the commands can run anywhere in the cluster.</p>
@@ -87,6 +87,10 @@ jobs in priority order.</p>
 <p><span class="commandline"><b>smap</b></span> reports state information for 
 jobs, partitions, and nodes managed by SLURM, but graphically displays the 
 information to reflect network topology.</p>
+
+<p><span class="commandline"><b>sview</b></span> is a graphical user interface to 
+get and update state information for jobs, partitions, and nodes managed by SLURM.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Examples</h2>
@@ -290,6 +294,6 @@ the base partition count.
 See <a href="bluegene.html">BlueGene User and Administrator Guide</a> 
 for more information.</p>
 
-<p style="text-align:center;">Last modified 26 May 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->
