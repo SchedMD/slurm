@@ -132,6 +132,10 @@ void _put_button_as_down(grid_button_t *grid_button)
 	gtk_widget_destroy(grid_button->button);		
 				
 	grid_button->button = gtk_event_box_new();
+	gtk_tooltips_set_tip(grid_button->tip,
+			     grid_button->button,
+			     grid_button->node_name,
+			     "click for node stats");
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(grid_button->button),
 				      FALSE);
@@ -167,6 +171,10 @@ void _put_button_as_up(grid_button_t *grid_button)
 	gtk_widget_destroy(grid_button->button);		
 	grid_button->button = gtk_button_new();
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
+	gtk_tooltips_set_tip(grid_button->tip,
+			     grid_button->button,
+			     grid_button->node_name,
+			     "click for node stats");
 	g_signal_connect(G_OBJECT(grid_button->button), 
 			 "button-press-event",
 			 G_CALLBACK(_open_node),
@@ -188,6 +196,7 @@ extern void destroy_grid_button(void *arg)
 			gtk_widget_destroy(grid_button->button);
 			grid_button->button = NULL;
 		}
+		xfree(grid_button->node_name);
 		xfree(grid_button);
 	}
 }
@@ -260,7 +269,6 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 		*button_list = list_create(NULL);
 	
 	color_inx %= sview_colors_cnt;
-	gdk_color_parse(sview_colors[color_inx], &color);
 	
 	itr = list_iterator_create(grid_button_list);
 	while((grid_button = list_next(itr))) {
@@ -300,14 +308,22 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 			
 		} else {
 			send_grid_button->button = gtk_button_new();
+			gdk_color_parse(sview_colors[color_inx], &color);
 			gtk_widget_modify_bg(send_grid_button->button, 
 					     GTK_STATE_NORMAL, &color);
 		}
 		gtk_widget_set_size_request(send_grid_button->button, 10, 10);
+		send_grid_button->tip = gtk_tooltips_new();
+		send_grid_button->node_name = xstrdup(grid_button->node_name);
+				
 		g_signal_connect(G_OBJECT(send_grid_button->button),
 				 "button-press-event",
 				 G_CALLBACK(_open_node),
 				 send_grid_button);
+		gtk_tooltips_set_tip(send_grid_button->tip,
+				     send_grid_button->button,
+				     send_grid_button->node_name,
+				     "click for node stats");
 		grid_button->color = sview_colors[color_inx];
 		
 		list_append(*button_list, send_grid_button);
@@ -419,12 +435,14 @@ extern int get_system_stats()
 {
 	int error_code = SLURM_SUCCESS;
 	node_info_msg_t *node_info_ptr = NULL;
-	
+	List node_list = NULL;
+	int changed = 1;
 #ifdef HAVE_BG
 	int y=0, z=0;
 #endif
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
+		changed = 0;
 		goto update_it;
 	} 
 	if (error_code != SLURM_SUCCESS) {
@@ -436,19 +454,29 @@ update_it:
 	if(grid_button_list)
 		return SLURM_SUCCESS;
 	grid_button_list = list_create(destroy_grid_button);
-	setup_grid_table(main_grid_table, grid_button_list, DIM_SIZE[X]);
+	node_list = create_node_info_list(node_info_ptr, changed);
+	setup_grid_table(main_grid_table, grid_button_list, node_list);
 
 	return SLURM_SUCCESS;
 }
 
-extern int setup_grid_table(GtkTable *table, List button_list, int node_count)
+extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 {
 	int error_code = SLURM_SUCCESS;
 	int x=0, table_x=0, table_y=0;
 	int coord_x=0, coord_y=0, i=0;
 	grid_button_t *grid_button = NULL;
+	int node_count = 0;
+	ListIterator itr = NULL;
+	sview_node_info_t *sview_node_info_ptr = NULL;
 
+	if(!node_list) {
+		g_print("setup_grid_table: no node_list given\n");
+		return SLURM_ERROR;
+	}
+	
 #ifndef HAVE_BG
+	node_count = list_count(node_list);
 	if(node_count < 50) {
 		table_x = 1;
 	} else if(node_count < 500) {
@@ -466,7 +494,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, int node_count)
 #endif
 
 	gtk_table_resize(table, table_y, table_x);
-	
+	itr = list_iterator_create(node_list);
 	for (x=0; x<node_count; x++) {
 #ifdef HAVE_BG
 		for (y=0; y<DIM_SIZE[Y]; y++) {
@@ -480,6 +508,19 @@ extern int setup_grid_table(GtkTable *table, List button_list, int node_count)
 				grid_button->table_x = coord_x;
 				grid_button->table_y = coord_y;
 				grid_button->button = gtk_button_new();
+				grid_button->tip = gtk_tooltips_new();
+				if(!(sview_node_info_ptr = list_next(itr))) {
+					g_print("no node for this "
+						"inx %d!!!!\n",
+						grid_button->inx);
+					goto end_it;
+				}
+				grid_button->node_name = xstrdup(
+					sview_node_info_ptr->node_ptr->name);
+				gtk_tooltips_set_tip(grid_button->tip,
+						     grid_button->button,
+						     grid_button->node_name,
+						     "click for node stats");
 				gtk_widget_set_size_request(
 					grid_button->button, 10, 10);
 				g_signal_connect(G_OBJECT(grid_button->button),
@@ -527,6 +568,19 @@ extern int setup_grid_table(GtkTable *table, List button_list, int node_count)
 		grid_button->table_y = coord_y;
 		
 		grid_button->button = gtk_button_new();
+		grid_button->tip = gtk_tooltips_new();
+		if(!(sview_node_info_ptr = list_next(itr))) {
+			g_print("no node for this "
+				"inx %d!!!!\n",
+				grid_button->inx);
+			goto end_it;
+		}
+		grid_button->node_name = xstrdup(
+			sview_node_info_ptr->node_ptr->name);
+		gtk_tooltips_set_tip(grid_button->tip,
+				     grid_button->button,
+				     grid_button->node_name,
+				     "click for node stats");
 		gtk_widget_set_size_request(grid_button->button, 10, 10);
 		g_signal_connect(G_OBJECT(grid_button->button), 
 				 "button-press-event",
@@ -561,6 +615,8 @@ extern int setup_grid_table(GtkTable *table, List button_list, int node_count)
 	
 #endif
 	}
+end_it:
+	list_iterator_destroy(itr);
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
 
 	return error_code;
