@@ -237,8 +237,8 @@ slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 	p = xmalloc(len * sizeof(pid_t));
 	while(rms_prginfo((int)cont_id, len, p, &np) == -1) {
 		if (errno == EINVAL) {
-			/* array is too short, double its len */
-			len += 2;
+			/* array is too short, double its length */
+			len *= 2;
 			xrealloc(p, len);
 		} else {
 			xfree(p);

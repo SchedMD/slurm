@@ -165,7 +165,6 @@ static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 		int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
-static void _kill_running_tasks(slurmd_job_t *job);
 static void _wait_for_all_tasks(slurmd_job_t *job);
 static int  _wait_for_any_task(slurmd_job_t *job, bool waitflag);
 
@@ -712,13 +711,23 @@ job_manager(slurmd_job_t *job)
 
     fail2:
 	/*
-	 *  First call interconnect_postfini() - In at least one case,
-	 *    this will clean up any straggling processes. If this call
-	 *    is moved behind wait_for_io(), we may block waiting for IO
-	 *    on a hung process.
+	 * First call interconnect_postfini() - In at least one case,
+	 * this will clean up any straggling processes. If this call
+	 * is moved behind wait_for_io(), we may block waiting for IO
+	 * on a hung process.
+	 *
+	 * Make sure all processes in session are dead for interactive
+	 * jobs.  On  systems with an IBM Federation switch, all processes
+	 * must be terminated before the switch window can be released by
+	 * interconnect_postfini().  For batch jobs, we let spawned processes
+	 * continue by convention (although this could go either way). The
+	 * Epilog program could be used to terminate any "orphan" processes.
 	 */
 	if (!job->batch) {
-		_kill_running_tasks(job);
+		if (job->cont_id != 0) {
+			slurm_container_signal(job->cont_id, SIGKILL);
+			slurm_container_wait(job->cont_id);
+		}
 		if (interconnect_postfini(job->switch_job, job->jmgr_pid,
 				job->jobid, job->stepid) < 0)
 			error("interconnect_postfini: %m");
@@ -1141,29 +1150,6 @@ _wait_for_all_tasks(slurmd_job_t *job)
 
 		while (_send_pending_exit_msgs(job)) {;}
 	}
-}
-
-/*
- * Make sure all processes in session are dead for interactive jobs.  On 
- * systems with an IBM Federation switch, all processes must be terminated 
- * before the switch window can be released by interconnect_postfini().
- * For batch jobs, we let spawned processes continue by convention
- * (although this could go either way). The Epilog program could be used 
- * to terminate any "orphan" processes.
- */
-static void
-_kill_running_tasks(slurmd_job_t *job)
-{
-	if (job->batch)
-		return;
-
-	if (job->cont_id) {
-		slurm_container_signal(job->cont_id, SIGKILL);
-
-		slurm_container_wait(job->cont_id);
-	}
-
-	return;
 }
 
 /*

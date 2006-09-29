@@ -273,6 +273,32 @@ int slurm_container_wait (uint32_t id)
 
 int slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
-	
+	int pidcnt, bufsize;
+	pid_t *p;
+
+	pidcnt = _job_getpidcnt((jid_t)cont_id);
+	if (pidcnt > 0) {
+		/* 
+		 * FIXME - The "+ 128" is a rough attempt to allow for
+		 * the fact that _job_getpidcnt() followed by _job_get_pidlist
+		 * is not atomic.
+		 */
+		bufsize = sizeof(pid_t) * (pidcnt + 128);
+		p = (pid_t *)xmalloc(bufsize);
+		pidcnt = _job_getpidlist((jid_t)cont_id, p, bufsize);
+		if (pidcnt == -1) {
+			error("job_getpidlist() failed: %m");
+			*pids = NULL;
+			*npids = 0;
+			xfree(p);
+			return SLURM_ERROR;
+		}
+		*pids = p;
+		*npids = pidcnt;
+	} else {
+		*pids = NULL;
+		*npids = 0;
+	}
+
 	return SLURM_SUCCESS;
 }

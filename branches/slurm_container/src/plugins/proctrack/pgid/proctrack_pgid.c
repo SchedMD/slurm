@@ -161,6 +161,7 @@ extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
 extern int
 slurm_container_wait(uint32_t cont_id)
 {
+	pid_t pgid = (pid_t)cont_id;
 	int delay = 1;
 
 	if (cont_id == 0 || cont_id == 1) {
@@ -168,8 +169,8 @@ slurm_container_wait(uint32_t cont_id)
 		return SLURM_ERROR;
 	}
 
-	/* Spin until the container is successfully destroyed */
-	while (slurm_container_destroy(cont_id) != SLURM_SUCCESS) {
+	/* Spin until the process group is gone. */
+	while (killpg(pgid, 0) == 0) {
 		slurm_container_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
