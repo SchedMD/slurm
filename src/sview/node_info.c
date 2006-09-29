@@ -31,6 +31,11 @@
 #define _DEBUG 0
 DEF_TIMERS;
 
+typedef struct {
+	node_info_t *node_ptr;
+	char *color;
+} sview_node_info_t;
+
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_NAME, 
@@ -177,23 +182,16 @@ static void _append_node_record(node_info_t *node_ptr,
 	_update_node_record(node_ptr, treestore, iter);
 }
 
-static void _update_info_node(node_info_msg_t *node_info_ptr, 
-			      GtkTreeView *tree_view,
-			      specific_info_t *spec_info)
+static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
-	node_info_t node;
-	int i, line = 0;
+	node_info_t *node_ptr = NULL;
+	int line = 0;
 	char *name;
-	hostlist_t hostlist = NULL;	
-	hostlist_iterator_t itr = NULL;
-	
-	if(spec_info) {
-		hostlist = hostlist_create((char *)spec_info->data);
-		itr = hostlist_iterator_create(hostlist);
-	}
+	ListIterator itr = NULL;
+	sview_node_info_t *sview_node_info = NULL;
 
 	/* get the iter, or find out the list is empty goto add */
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
@@ -206,8 +204,9 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 			}
 		}
 	}
-	for (i = 0; i < node_info_ptr->record_count; i++) {
-		node = node_info_ptr->node_array[i];
+	itr = list_iterator_create(info_list);
+	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
+		node_ptr = sview_node_info->node_ptr;
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
@@ -217,10 +216,10 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 			   it is in the list */
 			gtk_tree_model_get(model, &iter, SORTID_NAME, 
 					   &name, -1);
-			if(!strcmp(name, node.name)) {
+			if(!strcmp(name, node_ptr->name)) {
 				/* update with new info */
 				g_free(name);
-				_update_node_record(&node, 
+				_update_node_record(node_ptr, 
 						    GTK_TREE_STORE(model), 
 						    &iter);
 				goto found;
@@ -236,47 +235,76 @@ static void _update_info_node(node_info_msg_t *node_info_ptr,
 			}
 		}
 	adding:
-		if(spec_info) {
-			int found = 0;
-			char *host = NULL;
-			while((host = hostlist_next(itr))) { 
-				if(!strcmp(host, node.name)) {
-					free(host);
-					found = 1;
-					break; 
-				}
-				free(host);
-			}
-			hostlist_iterator_reset(itr);
-			if(!found)
-				continue;
-		}
-		
-		_append_node_record(&node, GTK_TREE_STORE(model), &iter, i);
+		_append_node_record(node_ptr, GTK_TREE_STORE(model), &iter,
+				    line);
 	found:
 		;
 	}
+	list_iterator_destroy(itr);
+	
        	gtk_tree_path_free(path);
 	/* remove all old nodes */
 	remove_old(model, SORTID_UPDATED);
-	if(spec_info) {
-		hostlist_iterator_destroy(itr);
-		hostlist_destroy(hostlist);
-	}
-	
-	
 }
 
-void _display_info_node(node_info_msg_t *node_info_ptr,
-			popup_info_t *popup_win)
+static void _node_info_list_del(void *object)
+{
+	sview_node_info_t *sview_node_info = (sview_node_info_t *)object;
+
+	if (sview_node_info) {
+		xfree(sview_node_info);
+	}
+}
+
+
+static List _create_node_info_list(node_info_msg_t *node_info_ptr,
+				   int changed)
+{
+	static List info_list = NULL;
+	int i = 0;
+	sview_node_info_t *sview_node_info_ptr = NULL;
+	node_info_t *node_ptr = NULL;
+	
+	if(!changed && info_list) {
+		goto update_color;
+	}
+	
+	if(info_list) {
+		list_destroy(info_list);
+	}
+
+	info_list = list_create(_node_info_list_del);
+	if (!info_list) {
+		g_print("malloc error\n");
+		return NULL;
+	}
+	
+	for (i=0; i<node_info_ptr->record_count; i++) {
+		node_ptr = &(node_info_ptr->node_array[i]);
+		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
+			continue;	/* bad node */
+	
+		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
+		list_append(info_list, sview_node_info_ptr);
+		sview_node_info_ptr->node_ptr = node_ptr;		
+	}
+update_color:
+	
+	return info_list;
+}
+
+void _display_info_node(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->data;
-	int i, found = 0;
-	node_info_t node;
+	int found = 0;
+	node_info_t *node_ptr = NULL;
 	GtkTreeView *treeview = NULL;
 	int update = 0;
-	
+	ListIterator itr = NULL;
+	sview_node_info_t *sview_node_info = NULL;
+	int i = -1;
+
 	if(!spec_info->data) {
 		goto finished;
 	}
@@ -291,16 +319,19 @@ need_refresh:
 		update = 1;
 	}
 	
-	for (i = 0; i < node_info_ptr->record_count; i++) {
-		node = node_info_ptr->node_array[i];
-		if (!node.name || (node.name[0] == '\0'))
-			continue;	/* bad node */
-		if(!strcmp(node.name, name)) {
-			_layout_node_record(treeview, &node, update);
+	itr = list_iterator_create(info_list);
+	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
+		node_ptr = sview_node_info->node_ptr;
+		i++;
+		if(!strcmp(node_ptr->name, name)) {
+			get_button_list_from_main(&popup_win->grid_button_list,
+						  i, i, i);
+			_layout_node_record(treeview, node_ptr, update);
 			found = 1;
 			break;
 		}		
 	}
+	list_iterator_destroy(itr);
 	if(!found) {
 		if(!popup_win->not_found) { 
 			char *temp = "NODE NOT FOUND\n";
@@ -321,7 +352,9 @@ need_refresh:
 			gtk_widget_destroy(spec_info->display_widget);
 			
 			goto need_refresh;
-		}	
+		}
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
 	}
 	gtk_widget_show(spec_info->display_widget);
 
@@ -495,6 +528,11 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
+	List info_list = NULL;
+	int changed = 1;
+	int i = 0;
+	sview_node_info_t *sview_node_info_ptr = NULL;
+	ListIterator itr = NULL;
 	
 	if(display_data)
 		local_display_data = display_data;
@@ -512,7 +550,8 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		goto update_it;
+		changed = 0;
+		goto display_it;
 	} 
 
 	if (error_code != SLURM_SUCCESS) {
@@ -532,6 +571,19 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 display_it:
+	info_list = _create_node_info_list(node_info_ptr, changed);
+
+	if(!info_list)
+		return;
+	i=0;
+	/* set up the grid */
+	itr = list_iterator_create(info_list);
+	while ((sview_node_info_ptr = list_next(itr))) {
+		change_grid_color(grid_button_list, i, i, i);
+		i++;
+	}
+	list_iterator_destroy(itr);
+
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
@@ -548,9 +600,8 @@ display_it:
 		   the return value */
 		create_treestore(tree_view, display_data_node, SORTID_CNT);
 	}
-update_it:
 	view = INFO_VIEW;
-	_update_info_node(node_info_ptr, GTK_TREE_VIEW(display_widget), NULL);
+	_update_info_node(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = 1;
@@ -566,7 +617,16 @@ extern void specific_info_node(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	
+	List info_list = NULL;
+	List send_info_list = NULL;
+	ListIterator itr = NULL;
+	int changed = 1;
+	sview_node_info_t *sview_node_info_ptr = NULL;
+	node_info_t *node_ptr = NULL;
+	hostlist_t hostlist = NULL;	
+	hostlist_iterator_t host_itr = NULL;
+	int i = -1;
+		
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
 	
@@ -581,7 +641,8 @@ extern void specific_info_node(popup_info_t *popup_win)
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		goto update_it;
+		changed = 0;
+		goto display_it;
 	}  
 			
 	if (error_code != SLURM_SUCCESS) {
@@ -601,7 +662,11 @@ extern void specific_info_node(popup_info_t *popup_win)
 		return;
 	}
 display_it:	
-	
+	info_list = _create_node_info_list(node_info_ptr, changed);
+
+	if(!info_list)
+		return;
+
 	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
@@ -620,15 +685,61 @@ display_it:
 		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
-update_it:
+
+	if(popup_win->grid_button_list) {
+		list_destroy(popup_win->grid_button_list);
+	}
+	       
+	popup_win->grid_button_list = list_create(destroy_grid_button);
+
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
-		_display_info_node(node_info_ptr, popup_win);
-	} else {
-		_update_info_node(node_info_ptr, 
-				  GTK_TREE_VIEW(spec_info->display_widget),
-				  spec_info);
+		_display_info_node(info_list, popup_win);
+		goto end_it;
 	}
+	
+	/* just linking to another list, don't free the inside, just
+	   the list */
+	send_info_list = list_create(NULL);	
+
+	hostlist = hostlist_create((char *)spec_info->data);
+	host_itr = hostlist_iterator_create(hostlist);
+
+	i = -1;
+	itr = list_iterator_create(info_list);
+	while ((sview_node_info_ptr = list_next(itr))) {
+		int found = 0;
+		char *host = NULL;
+			
+		i++;
+		node_ptr = sview_node_info_ptr->node_ptr;
+		while((host = hostlist_next(host_itr))) { 
+			if(!strcmp(host, node_ptr->name)) {
+				free(host);
+				found = 1;
+				break; 
+			}
+			free(host);
+		}
+		hostlist_iterator_reset(host_itr);
+		if(!found)
+			continue;
+		
+		list_push(send_info_list, sview_node_info_ptr);
+		get_button_list_from_main(&popup_win->grid_button_list,
+					  i, i, i);		
+	}
+	list_iterator_destroy(itr);
+
+	hostlist_iterator_destroy(host_itr);
+	hostlist_destroy(hostlist);
+
+	put_buttons_in_table(popup_win->grid_table,
+			     popup_win->grid_button_list);
+	
+	_update_info_node(send_info_list, 
+			  GTK_TREE_VIEW(spec_info->display_widget));
+	list_destroy(send_info_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
@@ -705,13 +816,17 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(id, NODE_PAGE, title);
 		else
 			popup_win = create_popup_info(NODE_PAGE, id, title);
-	}
-	popup_win->spec_info->data = name;
-	
-	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
-	{
-		g_printerr ("Failed to create part popup thread: %s\n", 
-			    error->message);
-		return;
+		popup_win->spec_info->data = name;
+		if (!g_thread_create((gpointer)popup_thr, popup_win, 
+				     FALSE, &error))
+		{
+			g_printerr ("Failed to create node popup thread: "
+				    "%s\n", 
+				    error->message);
+			return;
+		}
+	} else {
+		g_free(name);
+		gtk_window_present(GTK_WINDOW(popup_win->popup));
 	}
 }

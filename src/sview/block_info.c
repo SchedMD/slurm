@@ -1048,9 +1048,16 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 	list_iterator_destroy(itr);
 	
-	if(!popup_win) 
-		popup_win = create_popup_info(BLOCK_PAGE, id, title);
-	
+	if(!popup_win) {
+		if(id == INFO_PAGE)
+			popup_win = create_popup_info(id, BLOCK_PAGE, title);
+		else
+			popup_win = create_popup_info(BLOCK_PAGE, id, title);
+	} else {
+		g_free(name);
+		gtk_window_present(GTK_WINDOW(popup_win->popup));
+		return;
+	}
 	switch(id) {
 	case JOB_PAGE:
 		popup_win->spec_info->data = name;

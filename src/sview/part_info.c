@@ -623,17 +623,14 @@ static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 }
 
 static void _update_info_part(List info_list, 
-			      GtkTreeView *tree_view,
-			      specific_info_t *spec_info)
+			      GtkTreeView *tree_view)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
 	partition_info_t *part_ptr = NULL;
 	int line = 0;
-	char *host = NULL, *host2 = NULL, *part_name = NULL;
-	hostlist_t hostlist = NULL;
-	int found = 0;
+	char *host = NULL, *part_name = NULL;
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
 
@@ -681,45 +678,6 @@ static void _update_info_part(List info_list,
 			}
 		}
 	adding:
-		if(spec_info) {
-			switch(spec_info->type) {
-			case NODE_PAGE:
-				if(!part_ptr->nodes)
-					continue;
-
-				hostlist = hostlist_create(
-					(char *)spec_info->data);
-				host = hostlist_shift(hostlist);
-				hostlist_destroy(hostlist);
-				if(!host) 
-					continue;
-			
-				hostlist = hostlist_create(part_ptr->nodes);
-				found = 0;
-				while((host2 = hostlist_shift(hostlist))) { 
-					if(!strcmp(host, host2)) {
-						free(host2);
-						found = 1;
-						break; 
-					}
-					free(host2);
-				}
-				hostlist_destroy(hostlist);
-				if(!found)
-					continue;
-				break;
-			case PART_PAGE:
-			case BLOCK_PAGE:
-			case JOB_PAGE:
-				if(strcmp(part_ptr->name, 
-					  (char *)spec_info->data)) 
-					continue;
-				break;
-			default:
-				g_print("Unkown type %d\n", spec_info->type);
-				continue;
-			}
-		}
 		_append_part_record(sview_part_info, GTK_TREE_STORE(model), 
 				    &iter, line);
 	found:
@@ -945,6 +903,9 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	}
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
+		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
+			continue;	/* empty partition */
+		
 		sview_part_info = _create_sview_part_info(part_ptr);
 		hl = hostlist_create(part_ptr->nodes);
 		while((node_name = hostlist_shift(hl))) {
@@ -992,6 +953,7 @@ void _display_info_part(List info_list,	popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
 	int update = 0;
+	int i = -1, j = 0;
 
 	if(!spec_info->data) {
 		//info = xstrdup("No pointer given!");
@@ -1012,9 +974,17 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
-		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
-			continue;	/* empty partition */
+		i++;
 		if(!strcmp(part_ptr->name, name)) {
+			j=0;
+			while(part_ptr->node_inx[j] >= 0) {
+				get_button_list_from_main(
+					&popup_win->grid_button_list,
+					part_ptr->node_inx[j],
+					part_ptr->node_inx[j+1],
+					i);
+				j += 2;
+			}
 			_layout_part_record(treeview, sview_part_info, update);
 			found = 1;
 			break;
@@ -1043,7 +1013,8 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-		
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
 	}
 	gtk_widget_show(spec_info->display_widget);
 		
@@ -1444,6 +1415,22 @@ display_it:
 					   node_info_ptr, changed);
 	if(!info_list)
 		return;
+	/* set up the grid */
+	itr = list_iterator_create(info_list);
+	while ((sview_part_info = list_next(itr))) {
+		part_ptr = sview_part_info->part_ptr;
+		j=0;
+		while(part_ptr->node_inx[j] >= 0) {
+			sview_part_info->color = 
+				change_grid_color(grid_button_list,
+						  part_ptr->node_inx[j],
+						  part_ptr->node_inx[j+1],
+						  i);
+			j += 2;
+		}
+		i++;
+	}
+	list_iterator_destroy(itr);
 		
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
@@ -1462,23 +1449,7 @@ display_it:
 		create_treestore(tree_view, display_data_part, SORTID_CNT);
 	}
 	view = INFO_VIEW;
-	/* set up the grid */
-	itr = list_iterator_create(info_list);
-	while ((sview_part_info = list_next(itr))) {
-		part_ptr = sview_part_info->part_ptr;
-		j=0;
-		while(part_ptr->node_inx[j] >= 0) {
-			sview_part_info->color = 
-				change_grid_color(grid_button_list,
-						  part_ptr->node_inx[j],
-						  part_ptr->node_inx[j+1],
-						  i);
-			j += 2;
-		}
-		i++;
-	}
-	list_iterator_destroy(itr);
-	_update_info_part(info_list, GTK_TREE_VIEW(display_widget), NULL);
+	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = 0;
@@ -1497,12 +1468,16 @@ extern void specific_info_part(popup_info_t *popup_win)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	List info_list = NULL;
+	List send_info_list = NULL;
 	int changed = 1;
-	int j=0, i=0;
-	sview_part_info_t *sview_part_info = NULL;
+	int j=0, i=-1;
+	sview_part_info_t *sview_part_info_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
-		
+	char *host = NULL, *host2 = NULL;
+	hostlist_t hostlist = NULL;
+	int found = 0;
+	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_part, SORTID_CNT);
 	
@@ -1588,32 +1563,82 @@ display_it:
 		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
-
-	/* set up the grid */
-	itr = list_iterator_create(info_list);
-	while((sview_part_info = list_next(itr))) {
-		part_ptr = sview_part_info->part_ptr;
-		j=0;
-		while(part_ptr->node_inx[j] >= 0) {
-			sview_part_info->color = 
-				change_grid_color(popup_win->grid_button_list,
-						  part_ptr->node_inx[j],
-						  part_ptr->node_inx[j+1],
-						  i);
-			j += 2;
-		}
-		i++;
+	
+	if(popup_win->grid_button_list) {
+		list_destroy(popup_win->grid_button_list);
 	}
-	list_iterator_destroy(itr);
+	       
+	popup_win->grid_button_list = list_create(destroy_grid_button);
+	
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_part(info_list, popup_win);
-	} else {
-		_update_info_part(info_list, 
-				  GTK_TREE_VIEW(spec_info->display_widget), 
-				  spec_info);
-	}
+		goto end_it;
+	} 
 	
+	/* just linking to another list, don't free the inside, just
+	   the list */
+	send_info_list = list_create(NULL);	
+	
+	itr = list_iterator_create(info_list);
+	while ((sview_part_info_ptr = list_next(itr))) {
+		i++;
+		part_ptr = sview_part_info_ptr->part_ptr;	
+		switch(spec_info->type) {
+		case NODE_PAGE:
+			if(!part_ptr->nodes)
+				continue;
+
+			hostlist = hostlist_create(
+				(char *)spec_info->data);
+			host = hostlist_shift(hostlist);
+			hostlist_destroy(hostlist);
+			if(!host) 
+				continue;
+			
+			hostlist = hostlist_create(part_ptr->nodes);
+			found = 0;
+			while((host2 = hostlist_shift(hostlist))) { 
+				if(!strcmp(host, host2)) {
+					free(host2);
+					found = 1;
+					break; 
+				}
+				free(host2);
+			}
+			hostlist_destroy(hostlist);
+			if(!found)
+				continue;
+			break;
+		case PART_PAGE:
+		case BLOCK_PAGE:
+		case JOB_PAGE:
+			if(strcmp(part_ptr->name, 
+				  (char *)spec_info->data)) 
+				continue;
+			break;
+		default:
+			g_print("Unkown type %d\n", spec_info->type);
+			list_iterator_destroy(itr);
+			goto end_it;
+		}
+		list_push(send_info_list, sview_part_info_ptr);
+		j=0;
+		while(part_ptr->node_inx[j] >= 0) {
+			get_button_list_from_main(
+				&popup_win->grid_button_list,
+				part_ptr->node_inx[j],
+				part_ptr->node_inx[j+1], i);
+			j += 2;
+		}
+	}
+	list_iterator_destroy(itr);
+	put_buttons_in_table(popup_win->grid_table,
+			     popup_win->grid_button_list);
+	 
+	_update_info_part(send_info_list, 
+			  GTK_TREE_VIEW(spec_info->display_widget));
+	list_destroy(send_info_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
@@ -1691,7 +1716,12 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(id, PART_PAGE, title);
 		else
 			popup_win = create_popup_info(PART_PAGE, id, title);
+	} else {
+		g_free(name);
+		gtk_window_present(GTK_WINDOW(popup_win->popup));
+		return;
 	}
+
 	switch(id) {
 	case JOB_PAGE:
 	case BLOCK_PAGE: 

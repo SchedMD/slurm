@@ -595,11 +595,11 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	GtkScrolledWindow *window = NULL;
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
-	GtkBin *bin2 = NULL;
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
+	GtkWidget *table = NULL;
 	popup_info_t *popup_win = xmalloc(sizeof(popup_info_t));
-
+	
 	list_push(popup_list, popup_win);
 	
 	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
@@ -614,13 +614,15 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 		GTK_STOCK_CLOSE,
 		GTK_RESPONSE_CLOSE,
 		NULL);
+
+	popup_win->show_grid = 1;
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
 	popup_win->type = dest_type;
 	popup_win->not_found = false;
 	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup), 
 				    600, 400);
-	
+	gtk_window_set_transient_for(GTK_WINDOW(popup_win->popup), NULL);
 	popup = popup_win->popup;
 
 	popup_win->event_box = gtk_event_box_new();
@@ -642,11 +644,27 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	window = create_scrolled_window();
 	bin = GTK_BIN(&window->container);
 	view = GTK_VIEWPORT(bin->child);
-	bin2 = GTK_BIN(&view->bin);
-	popup_win->table = GTK_TABLE(bin2->child);
+	bin = GTK_BIN(&view->bin);
+	popup_win->grid_table = GTK_TABLE(bin->child);
+	popup_win->grid_button_list = NULL;
+
+	table = gtk_table_new(1, 2, FALSE);
+
+	gtk_table_attach(GTK_TABLE(table), GTK_WIDGET(window), 0, 1, 0, 1,
+			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
+			 0, 0);
+	
+	window = create_scrolled_window();
+	bin = GTK_BIN(&window->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin = GTK_BIN(&view->bin);
+	popup_win->table = GTK_TABLE(bin->child);
+
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(window), 
+				  1, 2, 0, 1);
 	
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   GTK_WIDGET(window), TRUE, TRUE, 0);
+			   table, TRUE, TRUE, 0);
 	
 	g_signal_connect(G_OBJECT(popup_win->popup), "delete_event",
 			 G_CALLBACK(delete_popup), 
@@ -710,13 +728,23 @@ extern void destroy_specific_info(void *arg)
 extern void destroy_popup_info(void *arg)
 {
 	popup_info_t *popup_win = (popup_info_t *)arg;
+	
 	if(popup_win) {
 		*popup_win->running = 0;
+		g_static_mutex_lock(&sview_mutex);
 		/* these are all childern of each other so must 
 		   be freed in this order */
+		if(popup_win->grid_button_list) {
+			list_destroy(popup_win->grid_button_list);
+			popup_win->grid_button_list = NULL;
+		}
 		if(popup_win->table) {
 			gtk_widget_destroy(GTK_WIDGET(popup_win->table));
 			popup_win->table = NULL;
+		}
+		if(popup_win->grid_table) {
+			gtk_widget_destroy(GTK_WIDGET(popup_win->grid_table));
+			popup_win->grid_table = NULL;
 		}
 		if(popup_win->event_box) {
 			gtk_widget_destroy(popup_win->event_box);
@@ -730,7 +758,9 @@ extern void destroy_popup_info(void *arg)
 		destroy_specific_info(popup_win->spec_info);
 		xfree(popup_win->display_data);
 		xfree(popup_win);
+		g_static_mutex_unlock(&sview_mutex);
 	}
+	
 }
 
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
