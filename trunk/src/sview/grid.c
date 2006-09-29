@@ -465,7 +465,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 #else
 	node_count = DIM_SIZE[X];
 	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
-	table_y = DIM_SIZE[Z] * DIM_SIZE[Y];
+	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 #endif
 
 	gtk_table_resize(table, table_y, table_x);
@@ -476,7 +476,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	 * instead of laying these out in a nice X fashion
 	 */
 	for (x=0; x<DIM_SIZE[X]; x++) {
-		y_offset = DIM_SIZE[Y] - 1;
+		y_offset = 0;
 		for (y=0; y<DIM_SIZE[Y]; y++) {
 			coord_y = y + y_offset;
 			x_offset = DIM_SIZE[Z] - 1;
@@ -501,6 +501,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 				}
 				grid_button->node_name = xstrdup(
 					sview_node_info_ptr->node_ptr->name);
+				
 				gtk_tooltips_set_tip(grid_button->tip,
 						     grid_button->button,
 						     grid_button->node_name,
@@ -519,13 +520,9 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 						 GTK_SHRINK, GTK_SHRINK,
 						 1, 1);
 				
-				/* FIXME! we need to make sure this
-				   gets laid out correctly on Bluegene
-				   systems. */
 				coord_y++;
 				x_offset--;
 			}
-			//coord_y++;
 			y_offset += DIM_SIZE[Z];			
 		}
 		gtk_table_set_row_spacing(table, coord_y-1, 5);
