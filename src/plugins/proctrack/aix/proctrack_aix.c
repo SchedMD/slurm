@@ -61,6 +61,8 @@ extern int proctrack_job_kill(int *jobid, int *signal);	/* signal a job */
 extern int proctrack_get_job_id(int *pid_ptr);	/* return jobid for given pid */
 extern int proctrack_dump_records(void);	/* dump records */
 extern uint32_t proctrack_version(void);        /* proctrack version */
+extern int proctrack_get_pids(uint32_t job_id, int pid_array_len,
+			      int32_t *pid_array_ptr);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -101,7 +103,7 @@ const uint32_t plugin_version = 90;
  */
 extern int init ( void )
 {
-	uint32_t required_version = 2;
+	uint32_t required_version = 3;
 
 	if (proctrack_version() < required_version) {
 		error("proctrack AIX kernel extension must be >= %u",
@@ -161,7 +163,6 @@ extern int slurm_container_destroy ( uint32_t id )
 	if (proctrack_job_unreg(&jobid) == 0)
 		return SLURM_SUCCESS;
 
-	error("proctrack_job_unreg(%d): %m", jobid);
 	return SLURM_ERROR;
 }
 
@@ -175,3 +176,95 @@ slurm_container_find(pid_t pid)
 	return (uint32_t) cont_id;
 }
 
+extern bool
+slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+{
+	int local_pid = (int) pid;
+	int found_cont_id = proctrack_get_job_id(&local_pid);
+
+	if (found_cont_id == -1 || (uint32_t)found_cont_id != cont_id)
+		return false;
+
+	return true;
+}
+
+extern int
+slurm_container_wait(uint32_t cont_id)
+{
+	int jobid = (int) cont_id;
+	int delay = 1;
+
+	if (cont_id == 0 || cont_id == 1) {
+		errno = EINVAL;
+		return SLURM_ERROR;
+	}
+
+	/* Spin until the container is successfully destroyed */
+	while (proctrack_job_unreg(&jobid) != 0) {
+		sleep(delay);
+		if (delay < 120) {
+			delay *= 2;
+		} else {
+			int i;
+			pid_t *pids = NULL;
+			int npids = 0;
+			error("Container %u is still not empty", cont_id);
+
+			slurm_container_get_pids(cont_id, &pids, &npids);
+			if (npids > 0) {
+				for (i = 0; i < npids; i++) {
+					verbose("  Container %u has pid %d",
+						pids[i]);
+				}
+				xfree(pids);
+			}
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+{
+	int32_t *p;
+	int np;
+	int len = 64;
+
+	p = (int32_t *)xmalloc(len * sizeof(int32_t));
+	while((np = proctrack_get_pids(cont_id, len, p)) > len) {
+		/* array is too short, double its length */
+		len *= 2;
+		xrealloc(p, len);
+	}
+
+	if (np == -1) {
+		error("proctrack_get_pids(AIX) for container %u failed: %m",
+		      cont_id);
+		xfree(p);
+		*pids = NULL;
+		*npids = 0;
+		return SLURM_ERROR;
+	}
+
+	if (sizeof(uint32_t) == sizeof(pid_t)) {
+		debug3("slurm_container_get_pids: No need to copy pids array");
+		*npids = np;
+		*pids = (pid_t *)p;
+	} else {
+		/* need to cast every individual pid in the array */
+		pid_t *p_copy;
+		int i;
+
+		debug3("slurm_container_get_pids: Must copy pids array");
+		p_copy = (pid_t *)xmalloc(np * sizeof(pid_t));
+		for (i = 0; i < np; i++) {
+			p_copy[i] = (pid_t)p[i];
+		}
+		xfree(p);
+
+		*npids = np;
+		*pids = p_copy;
+	}
+	return SLURM_SUCCESS;
+}

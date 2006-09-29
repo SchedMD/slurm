@@ -49,4 +49,6 @@ extern pid_t find_ancestor(pid_t process, char *process_name);
  * then kill all that subtree.
  */
 
+extern int proctrack_linuxproc_get_pids(pid_t top, pid_t **pids, int *npids);
+
 #endif  /* _HAVE_KILL_TREE_H */
