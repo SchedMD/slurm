@@ -188,29 +188,6 @@ extern void destroy_grid_button(void *arg)
 	}
 }
 
-extern void add_button_to_down_list(grid_button_t *grid_button)
-{
-	ListIterator itr = NULL;
-	grid_button_t *blinking_grid_button = NULL;
-	g_static_mutex_lock(&blinking_mutex);
-	if(!blinking_button_list)
-		goto end_it;
-	
-	itr = list_iterator_create(blinking_button_list);
-	while((blinking_grid_button = list_next(itr))) {
-		if(blinking_grid_button == grid_button)
-			break;
-	}
-	list_iterator_destroy(itr);
-	if(blinking_grid_button)
-		goto end_it;
-	g_print("adding one\n");
-	list_append(blinking_button_list, grid_button);
-end_it:
-	g_static_mutex_unlock(&blinking_mutex);
-	return;	
-}
-
 extern char *change_grid_color(List button_list, int start, int end,
 			      int color_inx)
 {
@@ -465,7 +442,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 #ifdef HAVE_BG
-	int y=0, z=0;
+	int y=0, z=0, x_offset=0, y_offset=0;
 #endif
 
 	if(!node_list) {
@@ -487,16 +464,25 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	
 #else
 	node_count = DIM_SIZE[X];
-	table_x = node_count;
+	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = DIM_SIZE[Z] * DIM_SIZE[Y];
 #endif
 
 	gtk_table_resize(table, table_y, table_x);
 	itr = list_iterator_create(node_list);
-	for (x=0; x<node_count; x++) {
 #ifdef HAVE_BG
+	/* ok this is going to look much different than smap since we
+	 * get the nodes from the controller going up from the Z dim
+	 * instead of laying these out in a nice X fashion
+	 */
+	for (x=0; x<DIM_SIZE[X]; x++) {
+		y_offset = DIM_SIZE[Y] - 1;
 		for (y=0; y<DIM_SIZE[Y]; y++) {
+			coord_y = y + y_offset;
+			x_offset = DIM_SIZE[Z] - 1;
 			for (z=0; z<DIM_SIZE[Z]; z++){
+				coord_x = x + x_offset;
+				
 				grid_button = xmalloc(sizeof(grid_button_t));
 				grid_button->coord[X] = x;
 				grid_button->coord[Y] = y;
@@ -515,6 +501,11 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 				}
 				grid_button->node_name = xstrdup(
 					sview_node_info_ptr->node_ptr->name);
+				g_print("adding to coord %d %d "
+					"%dx%dx%d %d %s\n",
+					coord_x, coord_y, 
+					x, y, z, (i-1),
+					grid_button->node_name);
 				gtk_tooltips_set_tip(grid_button->tip,
 						     grid_button->button,
 						     grid_button->node_name,
@@ -526,38 +517,26 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 						 G_CALLBACK(_open_node),
 						 grid_button);
 				list_append(button_list, grid_button);
+								
 				gtk_table_attach(table, grid_button->button,
 						 coord_x, (coord_x+1),
 						 coord_y, (coord_y+1),
 						 GTK_SHRINK, GTK_SHRINK,
 						 1, 1);
-		
+				
 				/* FIXME! we need to make sure this
 				   gets laid out correctly on Bluegene
 				   systems. */
-				coord_x++;
-			
-				if(coord_x == table_x) {
-					coord_x = 0;
-					coord_y++;
-					if(!(coord_y%10)) {
-						gtk_table_set_row_spacing(
-							table, coord_y-1, 5);
-					}
-					
-				}
-				
-				if(coord_y == table_y)
-					break;
-				
-				if(coord_x && !(coord_x%10)) {
-					gtk_table_set_col_spacing(table,
-								  coord_x-1,
-								  5);
-				}
+				coord_y++;
+				x_offset--;
 			}
+			//coord_y++;
+			y_offset += DIM_SIZE[Z];			
 		}
+		gtk_table_set_row_spacing(table, coord_y-1, 5);
+	}
 #else
+	for (x=0; x<node_count; x++) {
 		grid_button = xmalloc(sizeof(grid_button_t));
 		grid_button->coord[X] = x;
 		grid_button->inx = i++;
@@ -610,9 +589,9 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 			gtk_table_set_col_spacing(table,
 						  coord_x-1, 5);
 		}
-	
-#endif
 	}
+#endif
+	
 end_it:
 	list_iterator_destroy(itr);
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
