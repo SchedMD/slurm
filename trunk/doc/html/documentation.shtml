@@ -24,7 +24,7 @@
 <li><a href="configurator.html">Configuration Tool</a></li>
 <li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
 <li><a href="moab.shtml">Moab Cluster Suite Integration Guide</a></li>
-<li><a href="http://docs.hp.com/en/7446/xc_user_gd/ch05.html">Submitting 
+<li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting 
 Jobs throuh LSF</a></li>
 </ul>
 
@@ -43,6 +43,6 @@ Jobs throuh LSF</a></li>
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->

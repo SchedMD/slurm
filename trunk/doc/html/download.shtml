@@ -17,13 +17,6 @@ the files to some computer outside of your firewall.</p>
 
 <p> Other software available for download includes
 <ul>
-<li><b>Test Suite (slurm-qa)</b><br>
-Includes a collection of about 150 functionality and stress tests for SLURM.
-NOTE: These tests are now within the main SLURM distribution in the 
-directory <i>testsuite/expect</i>.  
-For older versions of SLURM, the test suite may be downloaded from 
-<a href="ftp://ftp.llnl.gov/pub/linux/slurm-qa/">ftp://ftp.llnl.gov/pub/linux/slurm-qa</a>
-</li>
 <li><b>PAM Modules (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes 
 where SLURM performs resource management. Access to the node is restricted to 
@@ -74,6 +67,6 @@ Moab Cluster Suite</a></li>
 </ul>
 </ul>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->
