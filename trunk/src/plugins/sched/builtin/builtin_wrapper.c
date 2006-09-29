@@ -72,7 +72,6 @@ void fini( void )
 int
 slurm_sched_plugin_schedule( void )
 {
-	verbose( "Built-in plugin: schedule() is a NO-OP" );
 	return SLURM_SUCCESS;
 }
 
