@@ -140,11 +140,13 @@ static void *_editing_thr(gpointer arg)
 {
 	int msg_id = GPOINTER_TO_INT(arg);
 	sleep(5);
+	g_static_mutex_lock(&sview_mutex);
 	gdk_threads_enter();
 	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar), 
 			     STATUS_ADMIN_EDIT, msg_id);
 	gdk_flush();
 	gdk_threads_leave();
+	g_static_mutex_unlock(&sview_mutex);
 	return NULL;	
 }
 
