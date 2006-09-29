@@ -19,7 +19,7 @@ While other resource managers do exist, SLURM is unique in several respects:
 <ul>
 <li>Its source code is freely available under the 
 <a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
-<li>It is designed to operate in a heterogeneous cluster with up to 16,384 nodes.</li>
+<li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes.</li>
 <li>It is portable; written in C with a GNU autoconf configuration engine. While 
 initially written for Linux, other UNIX-like operating systems should be easy 
 porting targets. A plugin mechanism exists to support various interconnects, authentication 
@@ -35,16 +35,16 @@ many of the most powerful computers in the world including:
 <ul>
 <li><a href="http://www.llnl.gov/asci/platforms/bluegenel/">BlueGene/L</a> with 65,536
 dual-processor compute nodes</li>
-<li><a href="http://www.llnl.gov/linux/thunder/">Thunder</a> a Linux cluster with 1024 nodes 
-each having four Itanium2 processors</li>
-<li><a href="http://www.llnl.gov/asci/platforms/purple/">ASC Purple</a> an IBM SP/AIX cluster 
-with about 1500 nodes each having eight Power5 processors</li>
+<li><a href="http://www.llnl.gov/linux/thunder/">Thunder</a> a Linux cluster with 1024 
+nodes, each having four Itanium2 processors</li>
+<li><a href="http://www.llnl.gov/asci/platforms/purple/">ASC Purple</a> an IBM SP/AIX 
+cluster with 1500 nodes, each having eight Power5 processors</li>
 </ul>
-As of January 2006, SLURM has been downloaded over 2400 times to over 500 
-distinct sites in 34 countries. 
+As of September 2006, SLURM has been downloaded over 3500 times to over 500 
+distinct sites in 38 countries. 
 SLURM is also distributed and supported by <a href="http://www.hp.com">
 Hewlett-Packard</a> as the resource manager in their XC System Software.</p>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->
