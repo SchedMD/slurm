@@ -386,7 +386,7 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->slurmd_port);
 	add_display_treestore_line(update, treestore, &iter, 
-			    "SlurmdPort" temp_str);
+			    "SlurmdPort", temp_str);
 #endif
 	add_display_treestore_line(update, treestore, &iter, 
 			    "SlurmdSpoolDir", 
