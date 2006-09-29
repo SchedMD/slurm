@@ -427,9 +427,6 @@ extern int get_system_stats(GtkTable *table)
 	static GtkWidget *label = NULL;
 	char error_char[100];
 	
-#ifdef HAVE_BG
-	int y=0, z=0;
-#endif
 	if(label)
 		gtk_widget_destroy(label);
 		
@@ -467,6 +464,9 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	int node_count = 0;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
+#ifdef HAVE_BG
+	int y=0, z=0;
+#endif
 
 	if(!node_list) {
 		g_print("setup_grid_table: no node_list given\n");
