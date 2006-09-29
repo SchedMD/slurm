@@ -353,7 +353,8 @@ _node_state_list (void)
 	int i;
 	static char *all_states = NULL; 
 
-	if (all_states) return (all_states);
+	if (all_states)
+		return (all_states);
 
 	all_states = xstrdup (node_state_string_compact (0));
 	for (i = 1; i < NODE_STATE_END; i++) {
