@@ -159,6 +159,7 @@ struct popup_info {
 	int toggled;
 	int force_refresh;
 	int *running;
+	int show_grid;
 	bool not_found;
 	GtkWidget *popup;
 	GtkWidget *event_box;
@@ -176,10 +177,13 @@ typedef struct {
 
 typedef struct {
 	GtkWidget *button;
+	GtkTable *table;
 	int coord[BA_SYSTEM_DIMENSIONS];
-	int indecies;
+	int inx;
 	int state;
 	char *color;
+	int table_x;
+	int table_y;
 } grid_button_t;
 
 extern sview_parameters_t params;
@@ -221,12 +225,16 @@ extern void create_search_popup(GtkToggleAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
 
 //grid.c
-extern void add_button_to_grid_table(GtkTable *table, char *name, int color);
+extern void destroy_grid_button(void *arg);
+extern void add_button_to_down_list(grid_button_t *grid_button);
 /* do not free the char * from this function it is static */
 extern char *change_grid_color(List button_list, int start_inx, int end_inx,
 			       int color_inx);
-extern void set_grid_size(GtkTable *table, int node_cnt);
+extern void get_button_list_from_main(List *button_list, int start, int end,
+				      int color_inx);
+extern void put_buttons_in_table(GtkTable *table, List button_list);
 extern int get_system_stats();
+extern int setup_grid_table(GtkTable *table, List button_list, int node_count);
 extern void sview_init_grid();
 extern void sview_reset_grid();
 
