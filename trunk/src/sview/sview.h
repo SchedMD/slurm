@@ -240,7 +240,7 @@ extern char *change_grid_color(List button_list, int start_inx, int end_inx,
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);
 extern void put_buttons_in_table(GtkTable *table, List button_list);
-extern int get_system_stats();
+extern int get_system_stats(GtkTable *table);
 extern int setup_grid_table(GtkTable *table, List button_list, List node_list);
 extern void sview_init_grid();
 extern void sview_reset_grid();

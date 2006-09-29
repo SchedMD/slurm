@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -598,6 +598,9 @@ typedef struct {
 	char *nodes;		/* list of nodes allocated to job_step */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
+	int *node_inx;		/* list index pairs into node_table for *nodes:
+				 * start_range_1, end_range_1,
+				 * start_range_2, .., -1  */
 } job_step_info_t;
 
 typedef struct job_step_info_response_msg {

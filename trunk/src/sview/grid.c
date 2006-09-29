@@ -52,29 +52,16 @@ GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
 static void _open_node(GtkWidget *widget, GdkEventButton *event, 
 		       grid_button_t *grid_button)
 {
-	int error_code = SLURM_SUCCESS;
-	node_info_msg_t *node_info_ptr = NULL;
-	node_info_t *node_ptr = NULL;
 	GError *error = NULL;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 
-	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
-	   == SLURM_NO_CHANGE_IN_DATA) { 
-		goto update_it;
-	} 
-	if (error_code != SLURM_SUCCESS) {
-		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
-		return;
-	}
-update_it:
-	node_ptr = &node_info_ptr->node_array[grid_button->inx];
 #ifdef HAVE_BG
 	snprintf(title, 100, 
-		 "Info about base partition %s", node_ptr->name);
+		 "Info about base partition %s", grid_button->node_name);
 #else
-	snprintf(title, 100, "Info about node %s", node_ptr->name);
+	snprintf(title, 100, "Info about node %s", grid_button->node_name);
 #endif
 	itr = list_iterator_create(popup_list);
 	while((popup_win = list_next(itr))) {
@@ -87,7 +74,7 @@ update_it:
 
 	if(!popup_win) {
 		popup_win = create_popup_info(INFO_PAGE, NODE_PAGE, title);
-		popup_win->spec_info->data = g_strdup(node_ptr->name);
+		popup_win->spec_info->data = g_strdup(grid_button->node_name);
 		if (!g_thread_create((gpointer)popup_thr, popup_win,
 				     FALSE, &error))
 		{
@@ -431,22 +418,33 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	gtk_widget_show_all(GTK_WIDGET(table));
 }
 
-extern int get_system_stats()
+extern int get_system_stats(GtkTable *table)
 {
 	int error_code = SLURM_SUCCESS;
 	node_info_msg_t *node_info_ptr = NULL;
 	List node_list = NULL;
 	int changed = 1;
+	static GtkWidget *label = NULL;
+	char error_char[100];
+	
 #ifdef HAVE_BG
 	int y=0, z=0;
 #endif
+	if(label)
+		gtk_widget_destroy(label);
+		
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		changed = 0;
 		goto update_it;
 	} 
-	if (error_code != SLURM_SUCCESS) {
-		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
+	if (error_code != SLURM_SUCCESS) {		
+		snprintf(error_char, 100, "slurm_load_node: %s\n",
+			 slurm_strerror(error_code));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
+		gtk_widget_show(label);
+		
 		return SLURM_ERROR;
 	}
 update_it:
@@ -456,7 +454,7 @@ update_it:
 	grid_button_list = list_create(destroy_grid_button);
 	node_list = create_node_info_list(node_info_ptr, changed);
 	setup_grid_table(main_grid_table, grid_button_list, node_list);
-
+	gtk_widget_show_all(GTK_WIDGET(main_grid_table));
 	return SLURM_SUCCESS;
 }
 
@@ -638,7 +636,6 @@ extern void sview_init_grid()
 		return;
 	} 
 	if (error_code != SLURM_SUCCESS) {
-		g_print("slurm_load_node: %s\n", slurm_strerror(error_code));
 		return;
 	}
 	if(!grid_button_list) {
