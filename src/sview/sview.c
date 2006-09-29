@@ -389,41 +389,41 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 G_CALLBACK(change_refresh_popup)},
 		{"refresh", GTK_STOCK_REFRESH, "Refresh", 
 		 "F5", "Refreshes page", G_CALLBACK(refresh_main)},
-		{"config", NULL, "_Config Info", 
+		{"config", GTK_STOCK_INFO, "_Config Info", 
 		 "<control>c", "Displays info from slurm.conf file", 
 		 G_CALLBACK(create_config_popup)},
-		{"search", NULL, "Search", 
+		{"search", GTK_STOCK_FIND, "Search", 
 		 "<control>f", "Search through SLURM", 
 		 G_CALLBACK(create_search_popup)},
-		{"exit", GTK_STOCK_CLOSE, "E_xit", 
+		{"exit", GTK_STOCK_QUIT, "E_xit", 
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 		{"help", NULL, "_Help", NULL, "<alt>h"},
-		{"about", GTK_STOCK_HELP, "_About", NULL, "<control>a"},
-		{"manual", NULL, "_Manual", NULL, "<control>m"}
+		{"about", GTK_STOCK_ABOUT, "_About", NULL, "<control>a"},
+		{"manual", GTK_STOCK_HELP, "_Manual", NULL, "<control>m"}
 	};
 
 	GtkActionEntry admin_entries[] = {
-		{"reconfig", NULL, "SLURM _Reconfigure", 
-		 "<control>r", "Reconfigures System", 
+		{"reconfig", GTK_STOCK_REDO, "SLUR_M Reconfigure", 
+		 "<control>m", "Reconfigures System", 
 		 G_CALLBACK(slurm_reconfigure)},
 	};
 
 	GtkRadioActionEntry radio_entries[] = {
-		{"tab_top", NULL, "_Top", 
+		{"tab_top", GTK_STOCK_GOTO_TOP, "_Top", 
 		 "<control>T", "Move tabs to top", 2},
-		{"tab_bottom", NULL, "_Bottom", 
+		{"tab_bottom", GTK_STOCK_GOTO_BOTTOM, "_Bottom", 
 		 "<control>B", "Move tabs to the bottom", 3},
-		{"tab_left", NULL, "_Left", 
+		{"tab_left", GTK_STOCK_GOTO_FIRST, "_Left", 
 		 "<control>L", "Move tabs to the Left", 4},
-		{"tab_right", NULL, "_Right", 
+		{"tab_right", GTK_STOCK_GOTO_LAST, "_Right", 
 		 "<control>R", "Move tabs to the Right", 1}
 	};
 
 	GtkToggleActionEntry toggle_entries[] = {
-		{"grid", NULL, "Show _Grid",
+		{"grid", GTK_STOCK_SELECT_COLOR, "Show _Grid",
 		 "<control>g", "Visual display of cluster", 
 		 G_CALLBACK(_set_grid), TRUE},
-		{"admin", NULL,          
+		{"admin", GTK_STOCK_PREFERENCES,          
 		 "_Admin Mode", "<control>a", 
 		 "Allows user to change or update information", 
 		 G_CALLBACK(_set_admin_mode), 
