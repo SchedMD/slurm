@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2: add event notification logic on job submit and completion.
  - In sched/wiki2: add support for JOBWILLRUN command type.
  - In sched/wiki2: for job info include required HOSTLIST if applicable.
+ - Fix sinfo node state filtering when asking for idle nodes that are also 
+   draining. 
 
 * Changes in SLURM 1.1.13
 =========================
