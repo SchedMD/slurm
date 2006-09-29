@@ -501,11 +501,6 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 				}
 				grid_button->node_name = xstrdup(
 					sview_node_info_ptr->node_ptr->name);
-				g_print("adding to coord %d %d "
-					"%dx%dx%d %d %s\n",
-					coord_x, coord_y, 
-					x, y, z, (i-1),
-					grid_button->node_name);
 				gtk_tooltips_set_tip(grid_button->tip,
 						     grid_button->button,
 						     grid_button->node_name,
