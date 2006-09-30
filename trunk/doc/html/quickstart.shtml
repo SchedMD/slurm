@@ -17,8 +17,9 @@ work.</p>
 <h2>Architecture</h2>
 <p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
 each compute node and a central <b>slurmctld</b> daemon running on a management node 
-(with optional fail-over twin). The user commands include: <b>srun</b>, 
-<b>sbcast</b>, <b>scancel</b>, 
+(with optional fail-over twin). 
+The <b>slurmd</b> daemons provide fault-tolerant hierarchical communciations.
+The user commands include: <b>srun</b>, <b>sbcast</b>, <b>scancel</b>, 
 <b>sinfo</b>, <b>srun</b>, <b>smap</b>, <b>squeue</b>, and <b>scontrol</b>.  
 All of the commands can run anywhere in the cluster.</p>
 

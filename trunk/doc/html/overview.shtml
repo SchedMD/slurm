@@ -23,7 +23,9 @@ HP distributes and supports SLURM as a component in their XC System Software.</p
 work. There may also be a backup manager to assume those responsibilities in the 
 event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which 
 can be compared to a remote shell: it waits for work, executes that work, returns 
-status, and waits for more work. User tools include <b>srun</b> to initiate jobs, 
+status, and waits for more work. 
+The <b>slurmd</b> daemons provide fault-tolerant hierarchical communciations.
+User tools include <b>srun</b> to initiate jobs, 
 <b>scancel</b> to terminate queued or running jobs, <b>sinfo</b> to report system 
 status, and <b>squeue</b> to report the status of jobs. 
 The <b>smap</b> and <b>sview</b> commands graphically reports system and 
