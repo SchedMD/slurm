@@ -1134,6 +1134,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	job_desc_msg_t job_msg;
 	
 	char *temp = NULL;
+	char *old_text = NULL;
 	char *type = NULL;
 	int stepid = NO_VAL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
@@ -1150,12 +1151,14 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 
 	if(!new_text || !strcmp(new_text, ""))
 		goto no_input;
-
+	
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
 	slurm_init_job_desc_msg (&job_msg);	
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
-			   SORTID_JOBID, &job_msg.job_id, -1);
+			   SORTID_JOBID, &job_msg.job_id, 
+			   column, &old_text,
+			   -1);
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
 			   SORTID_ALLOC, &stepid, -1);
 	if(stepid)
@@ -1362,7 +1365,11 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	default:
 		break;
 	}
-	if(slurm_update_job(&job_msg) == SLURM_SUCCESS) {
+	if(old_text && !strcmp(old_text, new_text)) {
+			temp = g_strdup_printf("No change in value.");
+			display_edit_note(temp);
+			g_free(temp);	
+	} else if(slurm_update_job(&job_msg) == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, temp, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
 				       job_msg.job_id,
@@ -1383,7 +1390,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 
 no_input:
 	gtk_tree_path_free (path);
-		
+	g_free(old_text);
 	g_static_mutex_unlock(&sview_mutex);
 }
 

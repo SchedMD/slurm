@@ -144,7 +144,7 @@ void *_page_thr(void *arg)
 		gdk_flush();
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
-
+				
 		sleep(global_sleep_time);
 		
 		gdk_threads_enter();
