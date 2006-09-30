@@ -1185,22 +1185,24 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	update_part_msg_t part_msg;
 	
 	char *temp = NULL;
+	char *old_text = NULL;
 	char *type = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
 	
 	if(!new_text || !strcmp(new_text, ""))
 		goto no_input;
-
+	
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
 	if(column != SORTID_STATE) {
 		slurm_init_part_desc_msg(&part_msg);
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
-				   SORTID_NAME, 
-				   &part_msg.name, -1);
+				   SORTID_NAME, &part_msg.name, 
+				   column, &old_text,
+				   -1);
 	}
-
+	
 	switch(column) {
 	case SORTID_DEFAULT:
 		if (!strcasecmp(new_text, "yes")) {
@@ -1307,7 +1309,11 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 
 	if(column != SORTID_STATE) {
-		if(slurm_update_partition(&part_msg) == SLURM_SUCCESS) {
+		if(old_text && !strcmp(old_text, new_text)) {
+			temp = g_strdup_printf("No change in value.");
+			display_edit_note(temp);
+			g_free(temp);	
+		} else if(slurm_update_partition(&part_msg) == SLURM_SUCCESS) {
 			gtk_tree_store_set(treestore, &iter, column, temp, -1);
 			temp = g_strdup_printf("Partition %s %s changed to %s",
 					       part_msg.name,
@@ -1330,7 +1336,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 no_input:
 	gtk_tree_path_free (path);
-	
+	g_free(old_text);
 	g_static_mutex_unlock(&sview_mutex);
 }
 

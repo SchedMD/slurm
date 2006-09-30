@@ -127,6 +127,8 @@ static void _editing_started(GtkCellRenderer *cell,
 			     const gchar     *path,
 			     gpointer         data)
 {
+	//g_print("locking!!\n");
+	gdk_threads_leave();
 	g_static_mutex_lock(&sview_mutex);
 }
 
@@ -138,15 +140,14 @@ static void _editing_canceled(GtkCellRenderer *cell,
 
 static void *_editing_thr(gpointer arg)
 {
-	int msg_id = GPOINTER_TO_INT(arg);
+	int msg_id = 0;
 	sleep(5);
-	g_static_mutex_lock(&sview_mutex);
 	gdk_threads_enter();
+	msg_id = GPOINTER_TO_INT(arg);
 	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar), 
 			     STATUS_ADMIN_EDIT, msg_id);
 	gdk_flush();
 	gdk_threads_leave();
-	g_static_mutex_unlock(&sview_mutex);
 	return NULL;	
 }
 
@@ -736,7 +737,9 @@ extern void destroy_popup_info(void *arg)
 	
 	if(popup_win) {
 		*popup_win->running = 0;
+		//g_print("locking destroy_popup_info\n");
 		g_static_mutex_lock(&sview_mutex);
+		//g_print("locked\n");
 		/* these are all childern of each other so must 
 		   be freed in this order */
 		if(popup_win->grid_button_list) {
@@ -815,12 +818,15 @@ extern void *popup_thr(popup_info_t *popup_win)
 	popup_win->running = &running;
 	/* when popup is killed toggled will be set to -1 */
 	while(running) {
+		//g_print("locking popup_thr\n");
 		g_static_mutex_lock(&sview_mutex);
+		//g_print("locked popup_thr\n");
 		gdk_threads_enter();
 		(specifc_info)(popup_win);
 		gdk_flush();
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
+		//g_print("done popup_thr\n");
 		sleep(global_sleep_time);
 	}	
 	return NULL;
