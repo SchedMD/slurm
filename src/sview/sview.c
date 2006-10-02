@@ -519,9 +519,9 @@ int main(int argc, char *argv[])
 				       GTK_POLICY_NEVER,
 				       GTK_POLICY_AUTOMATIC);
 	
-#ifdef HAVE_BG
-	gtk_widget_set_size_request(grid_window, 164, -1);
-#endif
+/* #ifdef HAVE_BG */
+/* 	gtk_widget_set_size_request(grid_window, 164, -1); */
+/* #endif */
 	/* fill in all static info for pages */
 	/* Make a window */
 	main_window = gtk_dialog_new();
