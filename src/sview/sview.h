@@ -185,7 +185,6 @@ typedef struct {
 	int state;
 	int table_x;
 	int table_y;
-	int coord[BA_SYSTEM_DIMENSIONS];
 } grid_button_t;
 
 typedef struct {
