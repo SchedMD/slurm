@@ -37,6 +37,8 @@ access to compute nodes?</a></li>
 programs on some nodes?</a></li>
 <li><a href="#ping"> Why does <i>slurmctld</i> log that some nodes
 are not responding even if they are not in any partition?</a></li>
+<li><a href="#controller"> How should I relocated the primary or backup
+controller?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -339,9 +341,31 @@ The <i>slurmctld</i> daemon periodically pings the <i>slurmd</i>
 daemon on every configured node, even if not associated with any 
 partition. You can control the frequency of this ping with the 
 <i>SlurmdTimeout</i> configuration parameter in <i>slurm.conf</i>.
+
+<p><a name="controller"><b>12. How should I relocated the primary or 
+backup controller?</b></a><br>
+If the cluster's computers used for the primary or backup controller
+will be out of service for an extended period of time, it may be desirable
+to relocate them. In order to do so, follow this procedure:
+<ol>
+<li>Stop all SLURM daemons</li>
+<li>Modify the <i>ControlMachine</i>, <i>ControlAddr</i>, 
+<i>BackupController</i>, and/or <i>BackupAddr</i> in the <i>slurm.conf</i> file</li>
+<li>Distribute the updated <i>slurm.conf</i> file file to all nodes</li>
+<li>Restart all SLURM daemons</li>
+</ol>
+There should be no loss of any running or pending jobs. Insure that
+any nodes added to the cluster have a current <i>slurm.conf</i> file
+installed.
+<b>CAUTION:</b> If two nodes are simultaneously configured as the primary 
+controller (two nodes on which <i>ControlMachine</i> specify the local host 
+and the <i>slurmctld</i> daemon is executing on each), system behavior will be
+destructive. If a compute node has an incorrect <i>ControlMachine</i> or
+<i>BackupController</i> parameter, that node may be rendered unusable, but no
+other harm will result.
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 2 October 2006</p>
 
 <!--#include virtual="footer.txt"-->

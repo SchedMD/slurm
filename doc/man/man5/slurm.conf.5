@@ -905,9 +905,11 @@ In order to do so, follow this procedure:
 .LP
 1. Stop the SLURM daemons
 .br
-2. Modify the slurm.conf file on all nodes
+2. Modify the slurm.conf file appropriately
 .br
-3. Restart the SLURM daemons
+3. Distribute the updated slurm.conf file to all nodes
+.br
+4. Restart the SLURM daemons
 .LP
 There should be no loss of any running or pending jobs. 
 Insure that any nodes added to the cluster have the current 
@@ -919,7 +921,7 @@ the local host and the \fBslurmctld\fR daemon is executing on each),
 system behavior will be destructive.
 If a compute node has an incorrect \fBControlMachine\fR or 
 \fBBackupController\fR parameter, that node may be rendered 
-unusable, but no serious harm will result.
+unusable, but no other harm will result.
 
 .SH "EXAMPLE"
 .LP 
