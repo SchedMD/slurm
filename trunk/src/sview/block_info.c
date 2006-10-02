@@ -41,26 +41,28 @@ typedef struct {
 	enum connection_type bg_conn_type;
 	enum node_use_type bg_node_use;
 	rm_partition_state_t state;
-	int letter_num;
 	List nodelist;
 	int size;
 	uint16_t quarter;	
 	uint16_t nodecard;	
 	int node_cnt;	
+	int *bp_inx;            /* list index pairs into node_table for *nodes:
+				 * start_range_1, end_range_1,
+				 * start_range_2, .., -1  */
 	bool printed;
-
-} db2_block_info_t;
+	char *color;
+} sview_block_info_t;
 
 enum { 
 	SORTID_POS = POS_LOC,
-	SORTID_PARTITION, 
 	SORTID_BLOCK,
+	SORTID_NODES, 
+	SORTID_NODELIST, 
 	SORTID_STATE,
 	SORTID_USER,
 	SORTID_CONN,
 	SORTID_USE,
-	SORTID_NODES, 
-	SORTID_NODELIST, 
+	SORTID_PARTITION, 
 	SORTID_POINTER,
 	SORTID_UPDATED, 
 	SORTID_CNT
@@ -69,11 +71,12 @@ enum {
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
-	 TRUE, -1, refresh_block,
-	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
 	 TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -84,9 +87,8 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block,
-	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block,
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
+	 TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -108,78 +110,16 @@ static display_data_t *local_display_data = NULL;
 
 static char* _convert_conn_type(enum connection_type conn_type);
 static char* _convert_node_use(enum node_use_type node_use);
-static int _marknodes(db2_block_info_t *block_ptr, int count);
 static char *_part_state_str(rm_partition_state_t state);
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
-static int _in_slurm_partition(List slurm_nodes, List bg_nodes);
+static int _in_slurm_partition(int *part_inx, int *block_inx);
 static int _make_nodelist(char *nodes, List nodelist);
-static void _append_block_record(db2_block_info_t *block_ptr,
+static void _append_block_record(sview_block_info_t *block_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter, 
 				int line);
 
 
-static int _marknodes(db2_block_info_t *block_ptr, int count)
-{
-#ifdef HAVE_BG
-	int j=0;
-	int start[BA_SYSTEM_DIMENSIONS];
-	int end[BA_SYSTEM_DIMENSIONS];
-	int number = 0;
-	
-	block_ptr->letter_num = count;
-	while (block_ptr->nodes[j] != '\0') {
-		if ((block_ptr->nodes[j] == '['
-		     || block_ptr->nodes[j] == ',')
-		    && (block_ptr->nodes[j+8] == ']' 
-			|| block_ptr->nodes[j+8] == ',')
-		    && (block_ptr->nodes[j+4] == 'x'
-			|| block_ptr->nodes[j+4] == '-')) {
-			j++;
-			number = atoi(block_ptr->nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
-			j += 4;
-			number = atoi(block_ptr->nodes + j);
-			end[X] = number / 100;
-			end[Y] = (number % 100) / 10;
-			end[Z] = (number % 10);
-			j += 3;
-			
-			/* if(block_ptr->state != RM_PARTITION_FREE)  */
-/* 				block_ptr->size += set_grid_bg(start, */
-/* 							       end, */
-/* 							       count, */
-/* 							       1); */
-/* 			else */
-/* 				block_ptr->size += set_grid_bg(start,  */
-/* 							       end,  */
-/* 							       count,  */
-/* 							       0); */
-			if(block_ptr->nodes[j] != ',')
-				break;
-			j--;
-		} else if((block_ptr->nodes[j] < 58 
-			   && block_ptr->nodes[j] > 47)) {
-					
-			number = atoi(block_ptr->nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
-			j+=3;
-			/* block_ptr->size += set_grid_bg(start,  */
-/* 							start,  */
-/* 							count,  */
-/* 							0); */
-			if(block_ptr->nodes[j] != ',')
-				break;
-		}
-		j++;
-	}
-#endif
-	return SLURM_SUCCESS;
-}
 
 static char *_part_state_str(rm_partition_state_t state)
 {
@@ -210,7 +150,7 @@ static char *_part_state_str(rm_partition_state_t state)
 
 static void _block_list_del(void *object)
 {
-	db2_block_info_t *block_ptr = (db2_block_info_t *)object;
+	sview_block_info_t *block_ptr = (sview_block_info_t *)object;
 
 	if (block_ptr) {
 		xfree(block_ptr->bg_user_name);
@@ -232,39 +172,28 @@ static void _nodelist_del(void *object)
 	return;
 }
 
-static int _in_slurm_partition(List slurm_nodes, List bg_nodes)
+static int _in_slurm_partition(int *part_inx, int *bp_inx)
 {
-	ListIterator slurm_itr;
-	ListIterator bg_itr;
-	int *coord = NULL;
-	int *slurm_coord = NULL;
 	int found = 0;
-	
-	bg_itr = list_iterator_create(bg_nodes);
-	slurm_itr = list_iterator_create(slurm_nodes);
-	while ((coord = list_next(bg_itr)) != NULL) {
-		list_iterator_reset(slurm_itr);
+	int i=0, j=0;
+		
+	while(bp_inx[i] >= 0) {
+		j = 0;
 		found = 0;
-		while ((slurm_coord = list_next(slurm_itr)) != NULL) {
-			if((coord[X] == slurm_coord[X])
-			   && (coord[Y] == slurm_coord[Y])
-			   && (coord[Z] == slurm_coord[Z])) {
-				found=1;
+		while(part_inx[j] >= 0) {
+			if((bp_inx[i] >= part_inx[j])
+			   && bp_inx[i+1] <= part_inx[j+1]) {
+				found = 1;
 				break;
-			}			
+			}
+			j += 2;
 		}
-		if(!found) {
-			break;
-		}
+		if(!found)
+			return 0;
+		i += 2;
 	}
-	list_iterator_destroy(slurm_itr);
-	list_iterator_destroy(bg_itr);
-			
-	if(found)
-		return 1;
-	else
-		return 0;
 	
+	return 1;
 }
 
 static int _addto_nodelist(List nodelist, int *start, int *end)
@@ -369,7 +298,7 @@ static char* _convert_node_use(enum node_use_type node_use)
 	return "?";
 }
 
-static void _update_block_record(db2_block_info_t *block_ptr, 
+static void _update_block_record(sview_block_info_t *block_ptr, 
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char *nodes = NULL;
@@ -411,7 +340,7 @@ static void _update_block_record(db2_block_info_t *block_ptr,
 	return;
 }
 	
-static void _append_block_record(db2_block_info_t *block_ptr,
+static void _append_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter,
 				 int line)
 {
@@ -425,7 +354,7 @@ static void _update_info_block(List block_list,
 			       specific_info_t *spec_info)
 {
 	ListIterator itr;
-	db2_block_info_t *block_ptr = NULL;
+	sview_block_info_t *block_ptr = NULL;
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
@@ -456,7 +385,7 @@ static void _update_info_block(List block_list,
  	/* Report the BG Blocks */
 	
 	itr = list_iterator_create(block_list);
-	while ((block_ptr = (db2_block_info_t*) list_next(itr))) {
+	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
 		if(block_ptr->node_cnt == 0)
 			block_ptr->node_cnt = block_ptr->size;
 		if(!block_ptr->slurm_part_name)
@@ -559,13 +488,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			       node_select_info_msg_t *node_select_ptr,
 			       int changed)
 {
-	int i, j, last_count = -1;
+	int i, j;
 	static List block_list = NULL;
-	ListIterator itr;
-	List nodelist = NULL;
 	partition_info_t part;
-	db2_block_info_t *block_ptr = NULL;
-	db2_block_info_t *found_block = NULL;
+	sview_block_info_t *block_ptr = NULL;
 	
 	if(!changed && block_list) {
 		return block_list;
@@ -580,7 +506,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		return NULL;
 	}
 	for (i=0; i<node_select_ptr->record_count; i++) {
-		block_ptr = xmalloc(sizeof(db2_block_info_t));
+		block_ptr = xmalloc(sizeof(sview_block_info_t));
 			
 		block_ptr->bg_block_name 
 			= xstrdup(node_select_ptr->
@@ -588,7 +514,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->nodes 
 			= xstrdup(node_select_ptr->bg_info_array[i].nodes);
 		block_ptr->nodelist = list_create(_nodelist_del);
-		_make_nodelist(block_ptr->nodes,block_ptr->nodelist);
+		_make_nodelist(block_ptr->nodes, block_ptr->nodelist);
 		
 		block_ptr->bg_user_name 
 			= xstrdup(node_select_ptr->
@@ -605,49 +531,23 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= node_select_ptr->bg_info_array[i].nodecard;
 		block_ptr->node_cnt 
 			= node_select_ptr->bg_info_array[i].node_cnt;
-	       
-		itr = list_iterator_create(block_list);
-		while ((found_block = (db2_block_info_t*)list_next(itr)) 
-		       != NULL) {
-			if(!strcmp(block_ptr->nodes, found_block->nodes)) {
-				block_ptr->letter_num = 
-					found_block->letter_num;
+		block_ptr->bp_inx 
+			= node_select_ptr->bg_info_array[i].bp_inx;
+		for(j = 0; j < part_info_ptr->record_count; j++) {
+			part = part_info_ptr->partition_array[j];
+			if(_in_slurm_partition(part.node_inx,
+					       block_ptr->bp_inx)) {
+				block_ptr->slurm_part_name 
+					= xstrdup(part.name);
 				break;
 			}
 		}
-		list_iterator_destroy(itr);
-
-		if(!found_block) {
-			last_count++;
-			_marknodes(block_ptr, last_count);
-		}
-		
 		if(block_ptr->bg_conn_type == SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);
 	}
-	for (i = 0; i < part_info_ptr->record_count; i++) {
-		j = 0;
-		part = part_info_ptr->partition_array[i];
-		
-		if (!part.nodes || (part.nodes[0] == '\0'))
-			continue;	/* empty partition */
-		nodelist = list_create(_nodelist_del);
-		_make_nodelist(part.nodes, nodelist);	
-		
-		itr = list_iterator_create(block_list);
-		while ((block_ptr = (db2_block_info_t*) list_next(itr))) {
-			if(_in_slurm_partition(nodelist,
-					       block_ptr->nodelist)) {
-				block_ptr->slurm_part_name 
-					= xstrdup(part.name);
-			}
-		}
-		list_iterator_destroy(itr);
-		list_destroy(nodelist);
-	}
-
+	
 	return block_list;
 }
 void _display_info_block(List block_list,
@@ -656,7 +556,7 @@ void _display_info_block(List block_list,
 	specific_info_t *spec_info = popup_win->spec_info;
 	/* char *name = (char *)spec_info->data; */
 /* 	int i, found = 0; */
-/* 	db2_block_info_t *block_ptr = NULL; */
+/* 	sview_block_info_t *block_ptr = NULL; */
 	char *info = NULL;
 	char *not_found = NULL;
 	GtkWidget *label = NULL;
@@ -675,7 +575,7 @@ void _display_info_block(List block_list,
 	/* this is here for if later we have more stats on a bluegene
 	   block */
 	/* itr = list_iterator_create(block_list); */
-/* 	while ((block_ptr = (db2_block_info_t*) list_next(itr))) { */
+/* 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) { */
 /* 		if(!strcmp(block_ptr->bg_block_name, name)) { */
 /* 			if(!(info = slurm_sprint_block_info(&block_ptr, 0))) { */
 /* 				info = xmalloc(100); */
@@ -778,6 +678,9 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List block_list = NULL;
 	int changed = 1;
+	int i=0, j=0;
+	ListIterator itr = NULL;
+	sview_block_info_t *sview_block_info_ptr = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -847,6 +750,24 @@ display_it:
 					changed);
 	if(!block_list)
 		return;
+	i=0;
+	/* set up the grid */
+	itr = list_iterator_create(block_list);
+	while ((sview_block_info_ptr = list_next(itr))) {
+		j=0;
+		while(sview_block_info_ptr->bp_inx[j] >= 0) {
+			sview_block_info_ptr->color =
+				change_grid_color(grid_button_list,
+						  sview_block_info_ptr->
+						  bp_inx[j],
+						  sview_block_info_ptr->
+						  bp_inx[j+1],
+						  i);
+			j += 2;
+		}
+		i++;
+	}
+	list_iterator_destroy(itr);
 
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);

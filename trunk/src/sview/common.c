@@ -127,7 +127,7 @@ static void _editing_started(GtkCellRenderer *cell,
 			     const gchar     *path,
 			     gpointer         data)
 {
-	//g_print("locking!!\n");
+	g_print("locking!!\n");
 	gdk_threads_leave();
 	g_static_mutex_lock(&sview_mutex);
 }
@@ -135,6 +135,7 @@ static void _editing_started(GtkCellRenderer *cell,
 static void _editing_canceled(GtkCellRenderer *cell,
 			       gpointer         data)
 {
+	g_print("unlocking!!\n");
 	g_static_mutex_unlock(&sview_mutex);
 }
 
@@ -189,6 +190,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, 
 					   "text", display_data->id);
+	
 	gtk_tree_view_column_set_title(col, display_data->name);
 	gtk_tree_view_column_set_reorderable(col, true);
 	gtk_tree_view_column_set_resizable(col, true);
@@ -445,8 +447,6 @@ extern GtkTreeView *create_treeview(display_data_t *local)
 	g_signal_connect(G_OBJECT(tree_view), "button_press_event",
 			 G_CALLBACK(row_clicked),
 			 local);
-	
-
 	gtk_widget_show(GTK_WIDGET(tree_view));
 	
 	return tree_view;
@@ -505,6 +505,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 		g_error("Can't great treestore.\n");
 		return NULL;
 	}
+	
 	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
 	for(i=1; i<count; i++) {
 		if(!display_data[i].show) 
