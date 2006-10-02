@@ -374,7 +374,6 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 extern List copy_main_button_list()
 {
 	ListIterator itr = NULL;
-	ListIterator button_itr = NULL;
 	grid_button_t *grid_button = NULL;
 	grid_button_t *send_grid_button = NULL;
 	List button_list = list_create(destroy_grid_button);
@@ -519,7 +518,6 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 #else
-	node_count = list_count(node_list);
 	if(node_count < 50) {
 		table_x = 1;
 	} else if(node_count < 500) {
@@ -710,7 +708,6 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 #else
 	for (x=0; x<node_count; x++) {
 		grid_button = xmalloc(sizeof(grid_button_t));
-		grid_button->coord[X] = x;
 		grid_button->inx = i++;
 		grid_button->table = table;
 		grid_button->table_x = coord_x;
