@@ -758,9 +758,10 @@ display_it:
 	hostlist_iterator_destroy(host_itr);
 	hostlist_destroy(hostlist);
 
+#ifndef HAVE_BG
 	put_buttons_in_table(popup_win->grid_table,
 			     popup_win->grid_button_list);
-	
+#endif	
 	_update_info_node(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));
 	list_destroy(send_info_list);
