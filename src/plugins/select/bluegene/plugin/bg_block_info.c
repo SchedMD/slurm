@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -199,7 +199,8 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack16((uint16_t)bg_record->node_use, buffer);	
 	pack16((uint16_t)bg_record->quarter, buffer);	
 	pack16((uint16_t)bg_record->nodecard, buffer);	
-	pack32((uint32_t)bg_record->node_cnt, buffer);	
+	pack32((uint32_t)bg_record->node_cnt, buffer);
+	pack_bit_fmt(bg_record->bitmap, buffer);
 }
 
 extern int update_block_list()

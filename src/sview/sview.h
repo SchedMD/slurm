@@ -232,11 +232,19 @@ extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
 
 //grid.c
 extern void destroy_grid_button(void *arg);
+extern grid_button_t *create_grid_button_from_another(
+	grid_button_t *grid_button, char *name, int color_inx);
 /* do not free the char * from this function it is static */
 extern char *change_grid_color(List button_list, int start_inx, int end_inx,
 			       int color_inx);
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);
+extern List copy_main_button_list();
+#ifdef HAVE_BG
+extern void add_extra_bluegene_buttons(List *button_list, int inx, 
+				       int *color_inx);
+#endif
+extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr);
 extern void put_buttons_in_table(GtkTable *table, List button_list);
 extern int get_system_stats(GtkTable *table);
 extern int setup_grid_table(GtkTable *table, List button_list, List node_list);

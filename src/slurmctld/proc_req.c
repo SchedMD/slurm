@@ -2056,7 +2056,8 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_SELECT_INFO");
-	error_code = select_g_pack_node_info(sel_req_msg->last_update, &buffer);
+	error_code = select_g_pack_node_info(sel_req_msg->last_update,
+					     &buffer);
 	END_TIMER;
 
 	if (error_code) {

@@ -282,8 +282,22 @@ need_refresh:
 		node_ptr = sview_node_info->node_ptr;
 		i++;
 		if(!strcmp(node_ptr->name, name)) {
+#ifdef HAVE_BG
+			/* get other blocks that are on this bp */
+			add_extra_bluegene_buttons(
+				&popup_win->grid_button_list,
+				i, &i);
+			i--;
+#else
+			/* this may need to go away in the future
+			   after add_extra_cr_buttons is functional */
 			get_button_list_from_main(&popup_win->grid_button_list,
 						  i, i, i);
+			/* drill into node putting buttons for each
+			   core and what not */
+			add_extra_cr_buttons(&popup_win->grid_button_list,
+					     node_ptr);
+#endif
 			_layout_node_record(treeview, node_ptr, update);
 			found = 1;
 			break;
@@ -292,7 +306,11 @@ need_refresh:
 	list_iterator_destroy(itr);
 	if(!found) {
 		if(!popup_win->not_found) { 
+#ifdef HAVE_BG
+			char *temp = "BP NOT FOUND\n";
+#else
 			char *temp = "NODE NOT FOUND\n";
+#endif
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 			
@@ -680,11 +698,18 @@ display_it:
 				 SORTID_CNT);
 	}
 
+#ifdef HAVE_BG
+	if(!popup_win->grid_button_list) {
+		popup_win->grid_button_list = copy_main_button_list();
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
+	}
+#else
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
-	}
-	       
+	}	       
 	popup_win->grid_button_list = list_create(destroy_grid_button);
+#endif	
 
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
@@ -720,8 +745,13 @@ display_it:
 			continue;
 		
 		list_push(send_info_list, sview_node_info_ptr);
+#ifdef HAVE_BG
+		change_grid_color(popup_win->grid_button_list,
+				  i, i, i);
+#else
 		get_button_list_from_main(&popup_win->grid_button_list,
 					  i, i, i);		
+#endif
 	}
 	list_iterator_destroy(itr);
 

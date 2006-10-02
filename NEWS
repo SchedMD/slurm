@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Added node_inx to job_step_info_t to get the node indecies for mapping out
     steps in a job by nodes.
  -- sview grid added
+ -- BLUEGENE node_inx added to blocks for reference.
 
 * Changes in SLURM 1.2.0-pre3
 =============================

@@ -188,7 +188,7 @@ static display_data_t options_data_job[] = {
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, JOB_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, JOB_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Block", TRUE, JOB_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, JOB_PAGE},
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
@@ -1626,13 +1626,18 @@ display_it:
 		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
-
+#ifdef HAVE_BG
+	if(!popup_win->grid_button_list) {
+		popup_win->grid_button_list = copy_main_button_list();
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
+	}
+#else
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
-	}
-	       
+	}	       
 	popup_win->grid_button_list = list_create(destroy_grid_button);
-		
+#endif	
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_job(info_list, popup_win);
@@ -1643,6 +1648,7 @@ display_it:
 	   the list */
 	send_info_list = list_create(NULL);	
 	itr = list_iterator_create(info_list);
+	i = -1;
 	while ((sview_job_info_ptr = list_next(itr))) {
 		i++;
 		job_ptr = sview_job_info_ptr->job_ptr;
@@ -1710,17 +1716,25 @@ display_it:
 		list_push(send_info_list, sview_job_info_ptr);
 		j=0;
 		while(job_ptr->node_inx[j] >= 0) {
+#ifdef HAVE_BG
+			change_grid_color(
+				popup_win->grid_button_list,
+				job_ptr->node_inx[j],
+				job_ptr->node_inx[j+1], i);
+#else
 			get_button_list_from_main(
 				&popup_win->grid_button_list,
 				job_ptr->node_inx[j],
 				job_ptr->node_inx[j+1], i);
+#endif
 			j += 2;
 		}
 	}
 	list_iterator_destroy(itr);
+#ifndef HAVE_BG
 	put_buttons_in_table(popup_win->grid_table,
 			     popup_win->grid_button_list);
-	 
+#endif
 	_update_info_job(send_info_list,
 			 GTK_TREE_VIEW(spec_info->display_widget));
 			
