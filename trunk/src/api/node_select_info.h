@@ -21,7 +21,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -57,6 +57,9 @@ typedef struct {
 	int quarter;
 	int nodecard;
 	int node_cnt;
+	int *bp_inx;            /* list index pairs into node_table for *nodes:
+				 * start_range_1, end_range_1,
+				 * start_range_2, .., -1  */
 } bg_info_record_t;
 
 typedef struct {

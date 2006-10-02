@@ -353,7 +353,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		set_buf_offset(buffer, 0);
 		pack32(blocks_packed, buffer);
 		set_buf_offset(buffer, tmp_offset);
-
+		
 		*buffer_ptr = buffer;
 	}
 

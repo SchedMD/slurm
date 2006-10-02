@@ -25,7 +25,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -557,7 +557,7 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-
+	
 	return (*(g_select_context->ops.pack_node_info))
 		(last_query_time, buffer);
 }
@@ -970,6 +970,7 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 {
 	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
+	char *bp_inx_str;
 	
 	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->owner_name, &uint16_tmp, 
@@ -989,6 +990,13 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	bg_info_record->nodecard = (int) uint16_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
+	safe_unpackstr_xmalloc(&bp_inx_str, &uint16_tmp, buffer);
+	if (bp_inx_str == NULL) {
+		bg_info_record->bp_inx = bitfmt2int("");
+	} else {
+		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
+		xfree(bp_inx_str);
+	}
 		
 	return SLURM_SUCCESS;
 
@@ -996,6 +1004,7 @@ unpack_error:
 	xfree(bg_info_record->nodes);
 	xfree(bg_info_record->owner_name);
 	xfree(bg_info_record->bg_block_id);
+	xfree(bg_info_record->bp_inx);
 	return SLURM_ERROR;
 }
 

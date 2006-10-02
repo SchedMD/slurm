@@ -1570,11 +1570,18 @@ display_it:
 				 SORTID_CNT);
 	}
 	
+#ifdef HAVE_BG
+	if(!popup_win->grid_button_list) {
+		popup_win->grid_button_list = copy_main_button_list();
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
+	}
+#else
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
-	}
-	       
+	}	       
 	popup_win->grid_button_list = list_create(destroy_grid_button);
+#endif	
 	
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
@@ -1631,10 +1638,17 @@ display_it:
 		list_push(send_info_list, sview_part_info_ptr);
 		j=0;
 		while(part_ptr->node_inx[j] >= 0) {
+#ifdef HAVE_BG
+			change_grid_color(
+				popup_win->grid_button_list,
+				part_ptr->node_inx[j],
+				part_ptr->node_inx[j+1], i);
+#else
 			get_button_list_from_main(
 				&popup_win->grid_button_list,
 				part_ptr->node_inx[j],
 				part_ptr->node_inx[j+1], i);
+#endif
 			j += 2;
 		}
 	}

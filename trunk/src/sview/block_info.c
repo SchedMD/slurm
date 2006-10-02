@@ -264,8 +264,7 @@ static void _append_block_record(sview_block_info_t *block_ptr,
 }
 
 static void _update_info_block(List block_list, 
-			       GtkTreeView *tree_view,
-			       specific_info_t *spec_info)
+			       GtkTreeView *tree_view)
 {
 	ListIterator itr;
 	sview_block_info_t *block_ptr = NULL;
@@ -273,9 +272,7 @@ static void _update_info_block(List block_list,
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
 	char *name = NULL;
-	char *host = NULL, *host2 = NULL;
-	hostlist_t hostlist = NULL;
-	int found = 0;
+	char *host = NULL;
 	int line = 0;
 
 	if (!block_list) {
@@ -334,55 +331,6 @@ static void _update_info_block(List block_list,
 			}
 		}
 	adding:
-		if(spec_info) {
-			switch(spec_info->type) {
-			case PART_PAGE:
-				if(strcmp(block_ptr->slurm_part_name, 
-					  (char *)spec_info->data)) 
-					continue;
-				break;
-			case NODE_PAGE:
-				if(!block_ptr->nodes)
-					continue;
-
-				hostlist = hostlist_create(
-					(char *)spec_info->data);
-				host = hostlist_shift(hostlist);
-				hostlist_destroy(hostlist);
-				if(!host) 
-					continue;
-
-				hostlist = hostlist_create(block_ptr->nodes);
-				found = 0;
-				while((host2 = hostlist_shift(hostlist))) { 
-					if(!strcmp(host, host2)) {
-						free(host2);
-						found = 1;
-						break; 
-					}
-					free(host2);
-				}
-				hostlist_destroy(hostlist);
-				if(!found)
-					continue;
-				break;
-			case BLOCK_PAGE:
-			case JOB_PAGE:
-				if(strcmp(block_ptr->bg_block_name, 
-					  (char *)spec_info->data)) 
-					continue;
-				break;
-			default:
-				g_print("Unkown type %d\n", spec_info->type);
-				continue;
-			}
-		}
-
-
-		/* this is the letter for later 
-		   part.root_only = 
-		   (int) letters[block_ptr->letter_num%62];
-		*/
 		_append_block_record(block_ptr, GTK_TREE_STORE(model), 
 				     &iter, line);
 	found:
@@ -697,7 +645,7 @@ display_it:
 		create_treestore(tree_view, display_data_block, SORTID_CNT);
 	}
 	view = INFO_VIEW;
-	_update_info_block(block_list, GTK_TREE_VIEW(display_widget), NULL);
+	_update_info_block(block_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = FALSE;
@@ -716,8 +664,15 @@ extern void specific_info_block(popup_info_t *popup_win)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	List block_list = NULL;
+	List send_block_list = NULL;
 	int changed = 1;
-
+	sview_block_info_t *block_ptr = NULL;
+	int j=0, i=-1;
+	char *host = NULL, *host2 = NULL;
+	hostlist_t hostlist = NULL;
+	int found = 0;
+	ListIterator itr = NULL;
+	
 	if(!spec_info->display_widget) {
 		setup_popup_info(popup_win, display_data_block, SORTID_CNT);
 	}
@@ -807,14 +762,80 @@ display_it:
 				 popup_win->display_data, SORTID_CNT);
 	}
 
+	if(!popup_win->grid_button_list) {
+		popup_win->grid_button_list = copy_main_button_list();
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
+	}
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_block(block_list, popup_win);
-	} else {
-		_update_info_block(block_list, 
-				   GTK_TREE_VIEW(spec_info->display_widget), 
-				   spec_info);
+		goto end_it;
 	}
+
+	/* just linking to another list, don't free the inside, just
+	   the list */
+	send_block_list = list_create(NULL);	
+	itr = list_iterator_create(block_list);
+	i = -1;
+	while ((block_ptr = list_next(itr))) {
+		i++;
+		switch(spec_info->type) {
+		case PART_PAGE:
+			if(strcmp(block_ptr->slurm_part_name, 
+				  (char *)spec_info->data)) 
+				continue;
+			break;
+		case NODE_PAGE:
+			if(!block_ptr->nodes)
+				continue;
+			
+			hostlist = hostlist_create(
+				(char *)spec_info->data);
+			host = hostlist_shift(hostlist);
+			hostlist_destroy(hostlist);
+			if(!host) 
+				continue;
+
+			hostlist = hostlist_create(block_ptr->nodes);
+			found = 0;
+			while((host2 = hostlist_shift(hostlist))) { 
+				if(!strcmp(host, host2)) {
+					free(host2);
+					found = 1;
+					break; 
+				}
+				free(host2);
+			}
+			hostlist_destroy(hostlist);
+			if(!found)
+				continue;
+			break;
+		case BLOCK_PAGE:
+		case JOB_PAGE:
+			if(strcmp(block_ptr->bg_block_name, 
+				  (char *)spec_info->data)) 
+				continue;
+			break;
+		default:
+			g_print("Unkown type %d\n", spec_info->type);
+			continue;
+		}
+		list_push(send_block_list, block_ptr);
+		j=0;
+		while(block_ptr->bp_inx[j] >= 0) {
+			change_grid_color(
+				popup_win->grid_button_list,
+				block_ptr->bp_inx[j],
+				block_ptr->bp_inx[j+1], i);
+			j += 2;
+		}
+	}
+	list_iterator_destroy(itr);
+	 
+	_update_info_block(send_block_list, 
+			   GTK_TREE_VIEW(spec_info->display_widget));
+	list_destroy(send_block_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
