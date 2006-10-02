@@ -54,6 +54,7 @@ identification. For example, "elx0000" might be used to designate
 the ethernet address for node "lx0000". 
 By default the \fBBackupAddr\fR will be identical in value to 
 \fBBackupController\fR.
+
 .TP
 \fBBackupController\fR
 The name of the machine where SLURM control functions are to be 
@@ -63,6 +64,8 @@ as a controller only upon the failure of ControlMachine and will revert
 to a "standby" mode when the ControlMachine becomes available once again. 
 This should be a node name without the full domain name (e.g. "lx0002"). 
 While not essential, it is recommended that you specify a backup controller.
+See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
+
 .TP
 \fBCacheGroups\fR
 If set to 1, the slurmd daemon will  cache /etc/groups entries.
@@ -86,11 +89,14 @@ identification. For example, "elx0000" might be used to designate
 the ethernet address for node "lx0000". 
 By default the \fBControlAddr\fR will be identical in value to 
 \fBControlMachine\fR.
+
 .TP
 \fBControlMachine\fR
 The name of the machine where SLURM control functions are executed. 
 This should be a node name without the full domain name (e.g. "lx0001"). 
 This value must be specified.
+See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
+
 .TP
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
@@ -881,6 +887,31 @@ The default value is "NO".
 \fBState\fR
 State of partition or availability for use.  Possible values 
 are "UP" or "DOWN". The default value is "UP".
+
+.SH "RELOCATING CONTROLLERS"
+If the cluster's computers used for the primary or backup controller 
+will be out of service for an extended period of time, it may be 
+desirable to relocate them. 
+In order to do so, follow this procedure:
+.LP
+1. Stop the SLURM daemons
+.br
+2. Modify the slurm.conf file on all nodes
+.br
+3. Restart the SLURM daemons
+.LP
+There should be no loss of any running or pending jobs. 
+Insure that any nodes added to the cluster have the current 
+slurm.conf file installed. 
+.LP
+\fBCAUTION:\fR If two nodes are simultaneously configured as the 
+primary controller (two nodes on which \fBControlMachine\fR specify 
+the local host and the \fBslurmctld\fR daemon is executing on each), 
+system behavior will be destructive.
+If a compute node has an incorrect \fBControlMachine\fR or 
+\fBBackupController\fR parameter, that node may be rendered 
+unusable, but no serious harm will result.
+
 .SH "EXAMPLE"
 .LP 
 #
