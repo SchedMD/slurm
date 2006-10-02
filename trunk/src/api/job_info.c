@@ -230,14 +230,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 	sprintf(tmp_line, " %sIndices=", nodelist);
 	xstrcat(out, tmp_line);
-	for (j = 0; job_ptr->node_inx; j++) {
+	for (j = 0;  (job_ptr->node_inx && (job_ptr->node_inx[j] != -1)); 
+			j+=2) {
 		if (j > 0)
-			sprintf(tmp_line, ",%d", job_ptr->node_inx[j]);
-		else
-			sprintf(tmp_line, "%d", job_ptr->node_inx[j]);
+			 xstrcat(out, ",");
+		sprintf(tmp_line, "%d-%d", job_ptr->node_inx[j], 
+			job_ptr->node_inx[j+1]);
 		xstrcat(out, tmp_line);
-		if (job_ptr->node_inx[j] == -1)
-			break;
 	}
 	if (one_liner)
 		xstrcat(out, " ");
@@ -296,14 +295,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s Req%sIndices=", 
 		nodelist, job_ptr->req_nodes, nodelist);
 	xstrcat(out, tmp_line);
-	for (j = 0; job_ptr->req_node_inx; j++) {
+	for (j = 0; (job_ptr->req_node_inx && (job_ptr->req_node_inx[j] != -1));
+			j+=2) {
 		if (j > 0)
-			sprintf(tmp_line, ",%d", job_ptr->req_node_inx[j]);
-		else
-			sprintf(tmp_line, "%d", job_ptr->req_node_inx[j]);
+			xstrcat(out, ",");
+		sprintf(tmp_line, "%d-%d", job_ptr->req_node_inx[j],
+			job_ptr->req_node_inx[j+1]);
 		xstrcat(out, tmp_line);
-		if (job_ptr->req_node_inx[j] == -1)
-			break;
 	}
 	if (one_liner)
 		xstrcat(out, " ");
@@ -314,14 +312,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line), "Exc%s=%s Exc%sIndices=", 
 		nodelist, job_ptr->exc_nodes, nodelist);
 	xstrcat(out, tmp_line);
-	for (j = 0; job_ptr->exc_node_inx; j++) {
+	for (j = 0; (job_ptr->exc_node_inx && (job_ptr->exc_node_inx[j] != -1)); 
+			j+=2) {
 		if (j > 0)
-			sprintf(tmp_line, ",%d", job_ptr->exc_node_inx[j]);
-		else
-			sprintf(tmp_line, "%d", job_ptr->exc_node_inx[j]);
+			xstrcat(out, ",");
+		sprintf(tmp_line, "%d-%d", job_ptr->exc_node_inx[j],
+			job_ptr->exc_node_inx[j+1]);
 		xstrcat(out, tmp_line);
-		if (job_ptr->exc_node_inx[j] == -1)
-			break;
 	}
 	if (one_liner)
 		xstrcat(out, " ");
