@@ -205,14 +205,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	sprintf(tmp_line, "Nodes=%s NodeIndices=", part_ptr->nodes);
 #endif
 	xstrcat(out, tmp_line);
-	for (j = 0; part_ptr->node_inx; j++) {
+	for (j = 0; (part_ptr->node_inx && (part_ptr->node_inx[j] != -1)); 
+				j+=2) {
 		if (j > 0)
-			sprintf(tmp_line, ",%d", part_ptr->node_inx[j]);
-		else
-			sprintf(tmp_line, "%d", part_ptr->node_inx[j]);
+			xstrcat(out, ",");
+		sprintf(tmp_line, "%d-%d", part_ptr->node_inx[j],
+			part_ptr->node_inx[j+1]);
 		xstrcat(out, tmp_line);
-		if (part_ptr->node_inx[j] == -1)
-			break;
 	}
 	if (one_liner)
 		xstrcat(out, "\n");
