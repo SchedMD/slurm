@@ -857,10 +857,17 @@ need_refresh:
 	} else if(job_step->stepid == NO_VAL) {
 		j=0;
 		while(sview_job_info->job_ptr->node_inx[j] >= 0) {
+#ifdef HAVE_BG
+			change_grid_color(
+				popup_win->grid_button_list,
+				sview_job_info->job_ptr->node_inx[j],
+				sview_job_info->job_ptr->node_inx[j+1], i);
+#else
 			get_button_list_from_main(
 				&popup_win->grid_button_list,
 				sview_job_info->job_ptr->node_inx[j],
 				sview_job_info->job_ptr->node_inx[j+1], i);
+#endif
 			j += 2;
 		}
 		_layout_job_record(treeview, 
@@ -875,10 +882,17 @@ need_refresh:
 			if(step_ptr->step_id == job_step->stepid) {
 				j=0;
 				while(step_ptr->node_inx[j] >= 0) {
+#ifdef HAVE_BG
+					change_grid_color(
+						popup_win->grid_button_list,
+						step_ptr->node_inx[j],
+						step_ptr->node_inx[j+1], i);
+#else
 					get_button_list_from_main(
 						&popup_win->grid_button_list,
 						step_ptr->node_inx[j],
 						step_ptr->node_inx[j+1], i);
+#endif
 					j += 2;
 				}
 				_layout_step_record(treeview, 
@@ -918,8 +932,10 @@ need_refresh:
 			
 			goto need_refresh;
 		}
+#ifndef HAVE_BG
 		put_buttons_in_table(popup_win->grid_table,
 				     popup_win->grid_button_list);
+#endif
 	}
 	gtk_widget_show_all(spec_info->display_widget);
 
@@ -1626,13 +1642,7 @@ display_it:
 		create_treestore(tree_view, popup_win->display_data, 
 				 SORTID_CNT);
 	}
-#ifdef HAVE_BG
-	if(!popup_win->grid_button_list) {
-		popup_win->grid_button_list = copy_main_button_list();
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-	}
-#else
+#ifndef HAVE_BG
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
 	}	       

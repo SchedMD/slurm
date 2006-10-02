@@ -698,13 +698,7 @@ display_it:
 				 SORTID_CNT);
 	}
 
-#ifdef HAVE_BG
-	if(!popup_win->grid_button_list) {
-		popup_win->grid_button_list = copy_main_button_list();
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-	}
-#else
+#ifndef HAVE_BG
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
 	}	       
@@ -713,6 +707,12 @@ display_it:
 
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
+#ifdef HAVE_BG
+		if(popup_win->grid_button_list) {
+			list_destroy(popup_win->grid_button_list);
+		}	       
+		popup_win->grid_button_list = list_create(destroy_grid_button);
+#endif
 		_display_info_node(info_list, popup_win);
 		goto end_it;
 	}

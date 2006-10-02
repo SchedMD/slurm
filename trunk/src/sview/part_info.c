@@ -978,11 +978,18 @@ need_refresh:
 		if(!strcmp(part_ptr->name, name)) {
 			j=0;
 			while(part_ptr->node_inx[j] >= 0) {
+#ifdef HAVE_BG
+			change_grid_color(
+				popup_win->grid_button_list,
+				part_ptr->node_inx[j],
+				part_ptr->node_inx[j+1], i);
+#else
 				get_button_list_from_main(
 					&popup_win->grid_button_list,
 					part_ptr->node_inx[j],
 					part_ptr->node_inx[j+1],
 					i);
+#endif
 				j += 2;
 			}
 			_layout_part_record(treeview, sview_part_info, update);
@@ -1013,8 +1020,10 @@ need_refresh:
 			
 			goto need_refresh;
 		}
+#ifndef HAVE_BG
 		put_buttons_in_table(popup_win->grid_table,
 				     popup_win->grid_button_list);
+#endif
 	}
 	gtk_widget_show(spec_info->display_widget);
 		
@@ -1570,13 +1579,7 @@ display_it:
 				 SORTID_CNT);
 	}
 	
-#ifdef HAVE_BG
-	if(!popup_win->grid_button_list) {
-		popup_win->grid_button_list = copy_main_button_list();
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-	}
-#else
+#ifndef HAVE_BG
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
 	}	       
@@ -1692,11 +1695,12 @@ extern void set_menus_part(void *arg, GtkTreePath *path,
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+	char *state = NULL;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-					
+				
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 	
 	switch(id) {
@@ -1704,12 +1708,29 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		snprintf(title, 100, "Job(s) in partition %s", name);
 		break;
 	case NODE_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_STATE, &state, -1);
+		
 #ifdef HAVE_BG
-		snprintf(title, 100, 
-			 "Base partition(s) in partition %s", name);
+		if(!strlen(state))
+			snprintf(title, 100, 
+				 "Base partition(s) in partition %s",
+				 name);
+		else
+			snprintf(title, 100, 
+				 "Base partition(s) in partition %s "
+				 "that are in '%s' state",
+				 name, state);
 #else
-		snprintf(title, 100, "Node(s) in partition %s", name);
+		if(!strlen(state))
+			snprintf(title, 100, "Node(s) in partition %s ",
+				 name);
+		else
+			snprintf(title, 100, 
+				 "Node(s) in partition %s that are in "
+				 "'%s' state",
+				 name, state);
 #endif
+		g_free(state);
 		break;
 	case BLOCK_PAGE: 
 		snprintf(title, 100, "Block(s) in partition %s", name);
