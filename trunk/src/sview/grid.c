@@ -450,7 +450,11 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		return SLURM_ERROR;
 	}
 	
-#ifndef HAVE_BG
+#ifdef HAVE_BG
+	node_count = DIM_SIZE[X];
+	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
+	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
+#else
 	node_count = list_count(node_list);
 	if(node_count < 50) {
 		table_x = 1;
@@ -461,11 +465,6 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	}
 	table_y = node_count/table_x;
 	table_y++;
-	
-#else
-	node_count = DIM_SIZE[X];
-	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
-	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 #endif
 
 	gtk_table_resize(table, table_y, table_x);
@@ -484,9 +483,6 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 				coord_x = x + x_offset;
 				
 				grid_button = xmalloc(sizeof(grid_button_t));
-				grid_button->coord[X] = x;
-				grid_button->coord[Y] = y;
-				grid_button->coord[Z] = z;
 				grid_button->inx = i++;
 				grid_button->table = table;
 				grid_button->table_x = coord_x;

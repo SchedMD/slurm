@@ -41,7 +41,6 @@ typedef struct {
 	enum connection_type bg_conn_type;
 	enum node_use_type bg_node_use;
 	rm_partition_state_t state;
-	List nodelist;
 	int size;
 	uint16_t quarter;	
 	uint16_t nodecard;	
@@ -111,13 +110,10 @@ static display_data_t *local_display_data = NULL;
 static char* _convert_conn_type(enum connection_type conn_type);
 static char* _convert_node_use(enum node_use_type node_use);
 static char *_part_state_str(rm_partition_state_t state);
-static void _block_list_del(void *object);
-static void _nodelist_del(void *object);
 static int _in_slurm_partition(int *part_inx, int *block_inx);
-static int _make_nodelist(char *nodes, List nodelist);
 static void _append_block_record(sview_block_info_t *block_ptr,
-				GtkTreeStore *treestore, GtkTreeIter *iter, 
-				int line);
+				 GtkTreeStore *treestore, GtkTreeIter *iter, 
+				 int line);
 
 
 
@@ -157,19 +153,10 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
-		if(block_ptr->nodelist)
-			list_destroy(block_ptr->nodelist);
 		
 		xfree(block_ptr);
 		
 	}
-}
-
-static void _nodelist_del(void *object)
-{
-	int *coord = (int *)object;
-	xfree(coord);
-	return;
 }
 
 static int _in_slurm_partition(int *part_inx, int *bp_inx)
@@ -196,79 +183,6 @@ static int _in_slurm_partition(int *part_inx, int *bp_inx)
 	return 1;
 }
 
-static int _addto_nodelist(List nodelist, int *start, int *end)
-{
-	int *coord = NULL;
-	int x,y,z;
-	
-//	assert(end[X] < DIM_SIZE[X]);
-	assert(start[X] >= 0);
-	//assert(end[Y] < DIM_SIZE[Y]);
-	assert(start[Y] >= 0);
-	//assert(end[Z] < DIM_SIZE[Z]);
-	assert(start[Z] >= 0);
-	
-	for (x = start[X]; x <= end[X]; x++) {
-		for (y = start[Y]; y <= end[Y]; y++) {
-			for (z = start[Z]; z <= end[Z]; z++) {
-				coord = xmalloc(sizeof(int)*3);
-				coord[X] = x;
-				coord[Y] = y;
-				coord[Z] = z;
-				list_append(nodelist, coord);
-			}
-		}
-	}
-	return 1;
-}
-
-static int _make_nodelist(char *nodes, List nodelist)
-{
-	int j = 0;
-	int number;
-	int start[BA_SYSTEM_DIMENSIONS];
-	int end[BA_SYSTEM_DIMENSIONS];
-	
-	if(!nodelist)
-		nodelist = list_create(_nodelist_del);
-	while (nodes[j] != '\0') {
-		if ((nodes[j] == '['
-		     || nodes[j] == ',')
-		    && (nodes[j+8] == ']' 
-			|| nodes[j+8] == ',')
-		    && (nodes[j+4] == 'x'
-			|| nodes[j+4] == '-')) {
-			j++;
-			number = atoi(nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
-			j += 4;
-			number = atoi(nodes + j);
-			end[X] = number / 100;
-			end[Y] = (number % 100) / 10;
-			end[Z] = (number % 10);
-			j += 3;
-			_addto_nodelist(nodelist, start, end);
-			if(nodes[j] != ',')
-				break;
-			j--;
-		} else if((nodes[j] < 58 
-			   && nodes[j] > 47)) {
-					
-			number = atoi(nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
-			j+=3;
-			_addto_nodelist(nodelist, start, start);
-			if(nodes[j] != ',')
-				break;
-		}
-		j++;
-	}
-	return 1;
-}
 
 static char* _convert_conn_type(enum connection_type conn_type)
 {
@@ -513,8 +427,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 				  bg_info_array[i].bg_block_id);
 		block_ptr->nodes 
 			= xstrdup(node_select_ptr->bg_info_array[i].nodes);
-		block_ptr->nodelist = list_create(_nodelist_del);
-		_make_nodelist(block_ptr->nodes, block_ptr->nodelist);
 		
 		block_ptr->bg_user_name 
 			= xstrdup(node_select_ptr->
