@@ -1653,8 +1653,10 @@ display_it:
 		}
 	}
 	list_iterator_destroy(itr);
+#ifndef HAVE_BG
 	put_buttons_in_table(popup_win->grid_table,
 			     popup_win->grid_button_list);
+#endif
 	 
 	_update_info_part(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));

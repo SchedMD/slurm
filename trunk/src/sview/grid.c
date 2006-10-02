@@ -541,6 +541,9 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 				 (grid_button->table_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
 				 1, 1);
+		if(!grid_button->table_x)
+			gtk_table_set_row_spacing(table, 
+						  grid_button->table_y, 5);
 #else
 		grid_button->table = table;
 		grid_button->table_x = coord_x;
