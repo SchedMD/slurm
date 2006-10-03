@@ -127,7 +127,6 @@ static void _editing_started(GtkCellRenderer *cell,
 			     const gchar     *path,
 			     gpointer         data)
 {
-	g_print("locking!!\n");
 	gdk_threads_leave();
 	g_static_mutex_lock(&sview_mutex);
 }
@@ -135,7 +134,6 @@ static void _editing_started(GtkCellRenderer *cell,
 static void _editing_canceled(GtkCellRenderer *cell,
 			       gpointer         data)
 {
-	g_print("unlocking!!\n");
 	g_static_mutex_unlock(&sview_mutex);
 }
 
