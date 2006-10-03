@@ -308,6 +308,18 @@ static void _set_grid(GtkToggleAction *action)
 	return;
 }
 
+static void _reconfigure(GtkToggleAction *action)
+{
+	char *temp = NULL;
+
+	if(!slurm_reconfigure())
+		temp = g_strdup_printf(
+			"Reconfigure sent to slurm successfully");
+	else
+		temp = g_strdup_printf("Problem with reconfigure request");
+	display_edit_note(temp);
+	g_free(temp);
+}
 
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
@@ -405,7 +417,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	GtkActionEntry admin_entries[] = {
 		{"reconfig", GTK_STOCK_REDO, "SLUR_M Reconfigure", 
 		 "<control>m", "Reconfigures System", 
-		 G_CALLBACK(slurm_reconfigure)},
+		 G_CALLBACK(_reconfigure)},
 	};
 
 	GtkRadioActionEntry radio_entries[] = {
