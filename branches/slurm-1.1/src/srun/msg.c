@@ -104,7 +104,8 @@ static void 	_msg_thr_poll(srun_job_t *job);
 static void	_set_jfds_nonblocking(srun_job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
-static void     _node_fail_handler(char *nodelist, srun_job_t *job);
+static void	_node_fail_handler(int fd, srun_job_t *job);
+static void	_node_fail_forwarder(char *nodelist, srun_job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -354,20 +355,63 @@ void timeout_handler(time_t timeout)
  * not. The job will continue to execute given the --no-kill option. 
  * Otherwise all of the job's tasks and the job itself are killed..
  */
-static void _node_fail_handler(char *nodelist, srun_job_t *job)
+static void _node_fail_handler(int fd, srun_job_t *job)
 {
-	if ( (opt.no_kill) &&
-	     (io_node_fail(nodelist, job) == SLURM_SUCCESS) ) {
-		error("Node failure on %s, eliminated that node", nodelist);
-		return;
+	char *nodelist = NULL;
+	int len = 0;
+
+	safe_read(fd, &len, sizeof(int));
+	nodelist = (char *)xmalloc(len+1);
+	safe_read(fd, nodelist, len);
+	nodelist[len] = '\0';
+
+	io_node_fail(nodelist, job);
+
+	if (opt.no_kill) {
+		error("Node failure on %s.", nodelist);
+	} else {
+		error("Node failure on %s, killing job", nodelist);
+		update_job_state(job, SRUN_JOB_FORCETERM);
+		info("sending SIGINT to remaining tasks");
+		fwd_signal(job, SIGINT);
+		if (job->ioid)
+			eio_signal_wakeup(job->eio);
 	}
 
-	error("Node failure on %s, killing job", nodelist);
-	update_job_state(job, SRUN_JOB_FORCETERM);
-	info("sending Ctrl-C to remaining tasks");
-	fwd_signal(job, SIGINT);
-	if (job->ioid)
-		eio_signal_wakeup(job->eio);
+	xfree(nodelist);
+	return;
+rwfail:
+	error("Failure reading node failure message from message process: %m");
+	if (nodelist != NULL)
+		xfree(nodelist);
+	return;
+}
+
+/*
+ * Forward the node failure message to the main srun process.
+ *
+ * NOTE: this is called from the forked message handling process
+ */
+static void _node_fail_forwarder(char *nodelist, srun_job_t *job)
+{
+	pipe_enum_t pipe_enum = PIPE_NODE_FAIL;
+	int dummy = 0xdeadbeef;
+	int pipe_fd = job->forked_msg->par_msg->msg_pipe[1];
+	int len;
+
+	len = strlen(nodelist);
+	if (message_thread) {
+		safe_write(pipe_fd, &pipe_enum, sizeof(int));
+		safe_write(pipe_fd, &dummy, sizeof(int));
+
+		/* the following writes are handled by _node_fail_handler */
+		safe_write(pipe_fd, &len, sizeof(int));
+		safe_write(pipe_fd, nodelist, len);
+	}
+	return;
+rwfail:
+	error("Failure sending node failure message to main process: %m");
+	return;
 }
 
 static bool _job_msg_done(srun_job_t *job)
@@ -863,7 +907,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	case SRUN_NODE_FAIL:
 		verbose("node_fail received");
 		nf = msg->data;
-		_node_fail_handler(nf->nodelist, job);
+		_node_fail_forwarder(nf->nodelist, job);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_node_fail_msg(msg->data);
 		break;
@@ -1191,6 +1235,9 @@ par_thr(void *arg)
 		case PIPE_UPDATE_STEP_LAYOUT:
 			_handle_update_step_layout(par_msg->msg_pipe[0],
 						   job->step_layout);
+			break;
+		case PIPE_NODE_FAIL:
+			_node_fail_handler(par_msg->msg_pipe[0], job);
 			break;
 		default:
 			error("Unrecognized message from message thread %d",
