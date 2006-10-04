@@ -657,12 +657,17 @@ A job step's tasks are allocated to nodes in order the nodes appear
 in the configuration file. There is presently no capability within 
 SLURM to arbitarily order a job step's tasks.
 .LP
-A simple node range expression may optionally be used to specify 
-ranges of nodes to avoid building a configuration file with large 
-numbers of entries. The node range expression can contain one  
-pair of square brackets with a sequence of comma separated 
-numbers and/or ranges of numbers separated by a "-"
-(e.g. "linux[0-64,128]", or "lx[15,18,32-33]").
+Multiple node names may be comma separated (e.g. "alpha,beta,gamma")
+and/or a simple node range expression may optionally be used to 
+specify numeric ranges of nodes to avoid building a configuration 
+file with large numbers of entries. 
+The node range expression can contain one  pair of square brackets 
+with a sequence of comma separated numbers and/or ranges of numbers 
+separated by a "-" (e.g. "linux[0\-64,128]", or "lx[15,18,32\-33]").
+Note that the numeric ranges can include one or more leading 
+zeros to indicate the numeric portion has a fixed number of digits 
+(e.g. "linux[0000\-1023]").
+.LP
 On BlueGene systems only, the square brackets should contain
 pairs of three digit numbers separated by a "x".
 These numbers indicate the boundaries of a rectangular prism
