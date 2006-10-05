@@ -68,6 +68,12 @@ On success, zero is returned. On error, -1 is returned, and Slurm error code is 
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
+
+.SH "NOTE"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc -lslurm myprog.c").
+
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
