@@ -4,23 +4,44 @@
 <h2>Overview</h2>
 Please see the <a href="quickstart.html">Quick Start User Guide</a> for a general 
 overview. 
- 
+
+<h2>Super Quick Start</h2>
+<ol>
+<li>bunzip2 the distributed tar-ball and untar the files:<br>
+<i>tar --bzip -x -f slurm*tar.bz2</i></li>
+<li><i>cd</i> to the directory containing the SLURM source and type
+<i>./configure</i> with appropriate options, typically <i>--prefix=</i> 
+and <i>--sysconfdir=</i></li>
+<li>Type <i>make</i> to compile SLURM.</li>
+<li>Type <i>make install</i> to install the programs, documentation, libaries,
+header files, etc.</li>
+<li>Build a configuration file using your favorite web browser and
+<i>doc/html/configurator.html</i>.</li>
+<li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.</li>
+<li>Create OpenSSL Keys:<br>
+<i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
+<i>openssl rsa -in  &lt;sysconfdir&gt/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i></li>
+<li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
+</ol>
+<p>NOTE: Items 1 through 4 can be replaced with</p>
+<ol>
+<li><i>rpmbuild -ta slurm*.tar.bz2</i></li>
+<li><i>rpm --install &lt;the rpm files&gt;</i></li>
+</ol>
+
 <h2>Building and Installing</h2>
 
 <p>Instructions to build and install SLURM manually are shown below. 
 See the README and INSTALL files in the source distribution for more details.
 </p>
 <ol>
-<li>bunzip2 the distributed tar-ball and untar the files: 
-"tar --bzip -x -f slurm*tar.bz2"
-<li>cd to the directory containing the SLURM source and type 
-"./configure" with appropriate options.</li>
-<li>Type "make" to compile SLURM.</li>
-<li>Type "make install" to install the programs, documentation, libaries, 
+<li>bunzip2 the distributed tar-ball and untar the files:</br> 
+<i>tar --bzip -x -f slurm*tar.bz2</i>
+<li><i>cd</i> to the directory containing the SLURM source and type 
+<i>./configure</i> with appropriate options.</li>
+<li>Type <i>make</i> to compile SLURM.</li>
+<li>Type <i>make install</i> to install the programs, documentation, libaries, 
 header files, etc.</li>
-<li>Build a configuration file using "doc/html/configurator.html".</li>
-<li>Install the configuration file in <i>slurm.conf</i>.</li>
-<li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
 <p>The most commonly used arguments to the <span class="commandline">configure</span> 
 command include: </p>
@@ -35,7 +56,7 @@ Specify location of SLURM configuration file. The default value is PREFIX/etc</p
 
 <p>If required libraries or header files are in non-standard locations, 
 set CFLAGS and LDFLAGS environment variables accordingly.
-Type <i>control --help</i> for a more complete description of options.
+Type <i>configure --help</i> for a more complete description of options.
 Optional SLURM plugins will be built automatically when the
 <span class="commandline">configure</span> script detects that the required 
 build requirements are present. Build dependencies for various plugins
@@ -383,9 +404,9 @@ These keys are used by <i>slurmctld</i> to construct a job credential,
 which is sent to <i>srun</i> and then forwarded to <i>slurmd</i> to 
 initiate job steps.</p>
 
-<p class="commandline" style="margin-left:.2in">openssl genrsa -out /usr/local/etc/slurm.key 
-1024<br>
-openssl rsa -in /usr/local/etc/slurm.key -pubout -out /usr/local/etc/slurm.cert 
+<p class="commandline" style="margin-left:.2in">
+<i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
+<i>openssl rsa -in &lt;sysconfdir&gt;/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i> 
 </p>
 <p>SLURM does not use reserved ports to authenticate communication between 
 components, but relies upon an external entity to determine the user who 
@@ -413,15 +434,14 @@ on one node. By default, they execute in the background. Use the <span class="co
 option for each daemon to execute them in the foreground and logging will be done 
 to your terminal. The <span class="commandline">-v</span> option will log events 
 in more detail with more v's increasing the level of detail (e.g. <span class="commandline">-vvvvvv</span>). 
-You can use one window to execute "<span class="commandline">slurmctld -D -vvvvvv</span>", 
-a second window to execute "<span class="commandline">slurmd -D -vvvvv</span>".
+You can use one window to execute "<i>slurmctld -D -vvvvvv</i>", 
+a second window to execute "<i>slurmd -D -vvvvv</i>".
 You may see errors such as "Connection refused" or "Node X not responding" 
 while one daemon is operative and the other is being started, but the 
 daemons can be started in any order and proper communications will be 
 established once both daemons complete initialization. 
 You can use a third window to execute commands such as 
-"<span class="commandline">srun -N1 /bin/hostname</span>" to confirm 
-functionality.</p>
+"<i>srun -N1 /bin/hostname</i>" to confirm functionality.</p>
 
 <p>Another important option for the daemons is "-c" 
 to clear previous state information. Without the "-c"
@@ -584,6 +604,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 October 2006</p>
+<p style="text-align:center;">Last modified 5 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
