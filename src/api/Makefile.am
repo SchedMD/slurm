@@ -82,6 +82,7 @@ $(libslurm_la_LIBADD) : force
 
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
+	 echo "   islurm_*;"; \
 	 echo "   slurm_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
