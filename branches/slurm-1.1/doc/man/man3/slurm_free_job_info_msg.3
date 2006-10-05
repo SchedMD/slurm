@@ -300,10 +300,14 @@ int main (int argc, char *argv[])
 }
 
 .SH "NOTES"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc -lslurm myprog.c").
+.LP
 Some data structures contain index values to cross-reference each other. 
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this 
 data, these index values will be invalid.
-
+.LP
 The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
 expressions into a collection of individual node names.
 
