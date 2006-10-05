@@ -233,15 +233,22 @@ static void _get_jobs(void)
 	time_t now = time(NULL);
 	char out_msg[128];
 
+	/* Dump all data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s",
 		(uint32_t) now, "CMD=GETJOBS ARG=0:ALL");
 	_xmit(out_msg);
 
-	/* Check with time stamp */
+	/* Dump volitile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
-		(uint32_t) now, (uint32_t) (now+1));
+		(uint32_t) now, (uint32_t) 1);
+	_xmit(out_msg);
+
+	/* Dump state only */
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
+		(uint32_t) now, (uint32_t) (now+2));
 	_xmit(out_msg);
 }
 
@@ -250,15 +257,22 @@ static void _get_nodes(void)
 	time_t now = time(NULL);
 	char out_msg[128];
 
+	/* Dump all data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s", 
 		(uint32_t) now, "CMD=GETNODES ARG=0:ALL");
 	_xmit(out_msg);
 
-	/* Check with time stamp */
+	/* Dump volitile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
-		(uint32_t) now, (uint32_t) (now+1));
+		(uint32_t) now, (uint32_t) 1);
+	_xmit(out_msg);
+
+	/* Dump state only */
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
+		(uint32_t) now, (uint32_t) (now+2));
 	_xmit(out_msg);
 }
 
