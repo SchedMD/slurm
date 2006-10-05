@@ -204,9 +204,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
-		"UNAME=%s;GNAME=%s;RCLASS=%s;NODES=%u;",
-		uid_to_string((uid_t) job_ptr->user_id),
-		_get_group_name(job_ptr->group_id),
+		"RCLASS=%s;NODES=%u;",
 		job_ptr->partition,
 		_get_job_min_nodes(job_ptr));
 	xstrcat(buf, tmp);
@@ -236,6 +234,16 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 			"SUSPENDTIME=%u;", suspend_time);
 		xstrcat(buf, tmp);
 	}
+
+	if (state_info == SLURM_INFO_VOLITILE)
+		return buf;
+
+	/* SLURM_INFO_ALL only */
+	snprintf(tmp, sizeof(tmp),
+		"UNAME=%s;GNAME=%s;",
+		uid_to_string((uid_t) job_ptr->user_id),
+		_get_group_name(job_ptr->group_id));
+	xstrcat(buf, tmp);
 
 	return buf;
 }
