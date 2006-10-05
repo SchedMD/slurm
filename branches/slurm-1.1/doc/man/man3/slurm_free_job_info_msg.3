@@ -5,6 +5,10 @@ slurm_get_rem_time, slurm_get_select_jobinfo,
 slurm_load_jobs, slurm_pid2jobid, 
 slurm_print_job_info, slurm_print_job_info_msg
 \- Slurm job information reporting functions
+.LP
+ISLURM_GET_REM_TIME, ISLURM_GET_REM_TIME2 \-
+Fortran callable extensions
+
 .SH "SYNTAX"
 .LP 
 #include <stdio.h>
@@ -82,6 +86,20 @@ int \fBslurm_get_select_jobinfo\fR (
 	void *\fIdata\fP
 );
 
+.SH "FORTRAN EXTENSION"
+.LP
+INTEGER*4 JOBID, REM_TIME
+.br
+REM_TIME = ISLURM_GET_REM_TIME(JOBID)
+.br
+REM_TIME = ISLURM_GET_REM_TIME2()
+.LP
+ISLURM_GET_REM_TIME2() is equivalent to ISLURM_GET_REM_TIME() except 
+that the JOBID is taken from the SLURM_JOBID environment variable, 
+which is set by SLURM for tasks which it launches.
+Both functions return the number of seconds remaining before the job 
+reaches the end of it\'s allocated time.
+
 .SH "ARGUMENTS"
 .TP 
 \fIdata_type\fP
@@ -156,13 +174,13 @@ or partition records are returned.
 \fBslurm_load_jobs\fR function.
 .LP 
 \fBslurm_get_end_time\fR Returns the expected termination time of a specified 
-SLURM job. The time corresponds to the exhaustion of the job's or partition's 
+SLURM job. The time corresponds to the exhaustion of the job\'s or partition\'s 
 time limit. NOTE: The data is cached locally and only retrieved from the 
 SLURM controller once per minute.
 .LP
 \fBslurm_get_rem_time\fR Returns the number of seconds remaining before the 
 expected termination time of a specified SLURM job id. The time corresponds 
-to the exhaustion of the job's or partition's time limit. NOTE: The data is 
+to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is 
 cached locally and only retrieved from the SLURM controller once per minute.
 .LP 
 \fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time, 

@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
    volitile data if TS<=update_time, state only if TS>update_time
  - Fix sinfo node state filtering when asking for idle nodes that are also 
    draining. 
+ - Add Fortran extension to slurm_get_rem_time() API.
 
 * Changes in SLURM 1.1.13
 =========================
