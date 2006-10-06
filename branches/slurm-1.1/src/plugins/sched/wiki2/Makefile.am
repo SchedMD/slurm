@@ -18,8 +18,10 @@ sched_wiki2_la_SOURCES = \
 	get_jobs.c	\
 	get_nodes.c	\
 	job_add_task.c	\
+	job_modify.c	\
 	job_release_task.c \
 	job_requeue.c	\
+	job_signal.c	\
 	job_will_run.c	\
 	msg.c		\
 	msg.h		\

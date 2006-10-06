@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
    partition name associated with a job, but no task count)
  - In sched/wiki2: for job and node info, report all data if TS==0, 
    volitile data if TS<=update_time, state only if TS>update_time
+ - In sched/wiki2: add support for CMD=JOBSIGNAL ARG=jobid SIGNAL=name or #
+ - In sched/wiki2: add support for CMD=JOBMODIFY ARG=jobid [BANK=name]
+   [TIMELIMIT=minutes] [PARTITION=name]
  - Fix sinfo node state filtering when asking for idle nodes that are also 
    draining. 
  - Add Fortran extension to slurm_get_rem_time() API.
