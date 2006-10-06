@@ -39,9 +39,13 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static char *	_dump_all_nodes(int *node_cnt, int state_only);
-static char *	_dump_node(struct node_record *node_ptr, int state_only);
+static char *	_dump_all_nodes(int *node_cnt, int state_info);
+static char *	_dump_node(struct node_record *node_ptr, int state_info);
 static char *	_get_node_state(struct node_record *node_ptr);
+
+#define SLURM_INFO_ALL		0
+#define SLURM_INFO_VOLITILE	1
+#define SLURM_INFO_STATE	2
 
 /*
  * get_nodes - get information on specific node(s) changed since some time
@@ -50,10 +54,10 @@ static char *	_get_node_state(struct node_record *node_ptr);
  * RET 0 on success, -1 on failure
  *
  * Response format
- * ARG=<cnt>#<NODEID>:STATE=<state>;CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
+ * ARG=<cnt>#<NODEID>:STATE=<state>;
  *                    FEATURE=<feature:feature>;
  *                    CCLASS=<part>:<cpus>[,<part>:<cpus>];
- *                    ACLASS=<part>:<cpus>[,<part>:<cpus>];
+ *                    CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
  *         [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
@@ -63,7 +67,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
-	int node_rec_cnt = 0, buf_size = 0, state_only = 0;
+	int node_rec_cnt = 0, buf_size = 0, state_info;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -81,11 +85,16 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(node_read_lock);
-	if (update_time > last_node_update)
-		state_only = 1;	/* Report job node name and state */
+	if (update_time == 0)
+		state_info = SLURM_INFO_ALL;
+	else if (update_time > last_node_update)
+		state_info = SLURM_INFO_STATE;
+	else
+		state_info = SLURM_INFO_VOLITILE;
+
 	if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
-		buf = _dump_all_nodes(&node_rec_cnt, state_only);
+		buf = _dump_all_nodes(&node_rec_cnt, state_info);
 	} else {
 		struct node_record *node_ptr;
 		char *node_name, *tmp2_char;
@@ -93,7 +102,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
-			tmp_buf = _dump_node(node_ptr, state_only);
+			tmp_buf = _dump_node(node_ptr, state_info);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");
 			xstrcat(buf, tmp_buf);
@@ -115,7 +124,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *	_dump_all_nodes(int *node_cnt, int state_only)
+static char *	_dump_all_nodes(int *node_cnt, int state_info)
 {
 	int i, cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
@@ -124,7 +133,7 @@ static char *	_dump_all_nodes(int *node_cnt, int state_only)
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
-		tmp_buf = _dump_node(node_ptr, state_only);
+		tmp_buf = _dump_node(node_ptr, state_info);
 		if (cnt > 0)
 			xstrcat(buf, "#");
 		xstrcat(buf, tmp_buf);
@@ -135,7 +144,7 @@ static char *	_dump_all_nodes(int *node_cnt, int state_only)
 	return buf;
 }
 
-static char *	_dump_node(struct node_record *node_ptr, int state_only)
+static char *	_dump_node(struct node_record *node_ptr, int state_info)
 {
 	char tmp[512], *buf = NULL;
 	int i;
@@ -144,32 +153,59 @@ static char *	_dump_node(struct node_record *node_ptr, int state_only)
 	if (!node_ptr)
 		return NULL;
 
+	/* SLURM_INFO_STATE or SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
 	snprintf(tmp, sizeof(tmp), "%s:STATE=%s;",
 		node_ptr->name, 
 		_get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 	
-	if (state_only)
+	if (state_info == SLURM_INFO_STATE)
 		return buf;
 
-#if 0
-	/* For now report actual resources on system 
-	 * rather than what the sys admins configured */
+
+	/* SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
 	if (slurmctld_conf.fast_schedule) {
+		/* config from slurm.conf */
 		cpu_cnt = node_ptr->config_ptr->cpus;
+	} else {
+		/* config as reported by slurmd */
+		cpu_cnt = node_ptr->cpus;
+	}
+	for (i=0; i<node_ptr->part_cnt; i++) {
+		char *header;
+		if (i == 0)
+			header = "CCLASS=";
+		else
+			header = ",";
+		snprintf(tmp, sizeof(tmp), "%s%s:%u", 
+			header,
+			node_ptr->part_pptr[i]->name,
+			cpu_cnt);
+		xstrcat(buf, tmp);
+	}
+	if (i > 0)
+		xstrcat(buf, ";");
+
+	if (state_info == SLURM_INFO_VOLITILE)
+		return buf;
+
+
+	/* SLURM_INFO_ALL only */
+	if (slurmctld_conf.fast_schedule) {
+		/* config from slurm.conf */
 		snprintf(tmp, sizeof(tmp),
 			"CMEMORY=%u;CDISK=%u;CPROC=%u;",
 			node_ptr->config_ptr->real_memory,
 			node_ptr->config_ptr->tmp_disk,
 			node_ptr->config_ptr->cpus);
 	} else {
-#endif
-	cpu_cnt = node_ptr->cpus;
-	snprintf(tmp, sizeof(tmp),
-		"CMEMORY=%u;CDISK=%u;CPROC=%u;",
-		node_ptr->real_memory,
-		node_ptr->tmp_disk,
-		node_ptr->cpus);
+		/* config as reported by slurmd */
+		snprintf(tmp, sizeof(tmp),
+			"CMEMORY=%u;CDISK=%u;CPROC=%u;",
+			node_ptr->real_memory,
+			node_ptr->tmp_disk,
+			node_ptr->cpus);
+	}
 	xstrcat(buf, tmp);
 
 	if (node_ptr->config_ptr
@@ -183,38 +219,6 @@ static char *	_dump_node(struct node_record *node_ptr, int state_only)
 				tmp[i] = ':';
 		}
 		xstrcat(buf, tmp);
-	}
-
-	for (i=0; i<node_ptr->part_cnt; i++) {
-		char *header;
-		if (i == 0)
-			header = "CCLASS=";
-		else
-			header = ",";
-		snprintf(tmp, sizeof(tmp), "%s%s:%u", 
-			header,
-			node_ptr->part_pptr[i]->name,
-			cpu_cnt);
-		xstrcat(buf, tmp);
-#if 0
-/* FIXME: Modify to support consumable resources */
-uint32_t cpu_avail;	move to top of block
-
-		if ((node_ptr->node_state == NODE_STATE_IDLE)
-		||  (node_ptr->part_pptr[i]->shared == 2))
-			cpu_avail = cpu_cnt;
-		else
-			cpu_avail = 0;
-		if (i == 0)
-			header = "ACLASS=";
-		else
-			header = ",";
-		snprintf(tmp, sizeof(tmp), "%s%s:%u",
-			header,
-			node_ptr->part_pptr[i]->name,
-			cpu_cnt);
-		xstrcat(buf, tmp);
-#endif
 	}
 
 	return buf;

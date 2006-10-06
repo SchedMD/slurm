@@ -108,6 +108,7 @@ $(libslurm_la_LIBADD) : force
 #         calling them directly
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
+	 echo "   islurm_*;"; \
 	 echo "   slurm_*;"; \
 	 echo "   client_io_handler_*;"; \
 	 echo "  local: *;"; \

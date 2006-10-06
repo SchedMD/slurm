@@ -67,6 +67,11 @@ requested action (e.g. not user root or SlurmUser).
 .LP
 \fBESLURM_NOT_SUPPORTED\fR the requested operation is not supported on this system.
 
+.SH "NOTE"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc -lslurm myprog.c").
+
 .SH "COPYING"
 Copyright (C) 2005-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

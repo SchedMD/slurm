@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  event.c - Moab event notification
+ *  initialize.c - Initialization handshake between Slurm and Moab
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,76 +36,50 @@
 \*****************************************************************************/
 
 #include "./msg.h"
-#include "src/common/fd.h"
+#include <strings.h>
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
-static pthread_mutex_t	event_mutex = PTHREAD_MUTEX_INITIALIZER;
-static time_t		last_notify_time = (time_t) 0;
-static slurm_addr	moab_event_addr;
-static int		event_addr_set = 0;
-static char *		control_addr = NULL;
-
-/*
- * event_notify - Notify Moab of some event
- * msg IN - event type, NULL to close connection
- * RET 0 on success, -1 on failure
- */
-extern int	event_notify(char *msg)
+/* RET 0 on success, -1 on failure */
+extern int	initialize_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	time_t now = time(NULL);
-	int rc;
-	slurm_fd event_fd = (slurm_fd) -1;
+	char *arg_ptr, *eport_ptr, *exp_ptr, *use_ptr;
+	static char reply_msg[128];
 
-	if (e_port == 0) {
-		/* Event notification disabled */
-		return 0;
-	}
-
-	if (job_aggregation_time
-	&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
-		/* Already sent recent event notification */
-		return 0;
-	}
-
-	pthread_mutex_lock(&event_mutex);
-	if (event_addr_set == 0) {
-		/* Identify address for socket connection */
-		slurm_ctl_conf_t *conf = slurm_conf_lock();
-		control_addr = xstrdup(conf->control_addr);
-		slurm_conf_unlock();
-		slurm_set_addr(&moab_event_addr, e_port, control_addr);
-		event_addr_set = 1;
-	}
-	event_fd = slurm_open_msg_conn(&moab_event_addr);
-	if (event_fd == -1) {
-		error("Unable to open wiki event port %s:%u: %m", 
-			control_addr, e_port);
-		pthread_mutex_unlock(&event_mutex);
+	arg_ptr = strstr(cmd_ptr, "ARG=");
+	if (arg_ptr == NULL) {
+		*err_code = -300;
+		*err_msg = "INITIALIZE lacks ARG=";
+		error("wiki: INITIALIZE lacks ARG=");
 		return -1;
 	}
-
-	/* We can't have the controller block on the following write() */
-	fd_set_nonblocking(event_fd);
-
-	/* Always send "1234\0" as the message
-	 * (we do not care if all of the message is sent, just that
-	 * some of it went through to wake up Moab)
-	 */
-	if (write(event_fd, "1234", 5) > 0) {
-		info("wiki event_notification sent: %s", msg);
-		last_notify_time = now;
-		rc = 0;
-	} else {
-		error("wiki event notification failure: %m");
-		/* close socket, re-open later */
-		(void) slurm_shutdown_msg_engine(event_fd);
-		event_fd = -1;
-		rc = -1;
+	eport_ptr = strstr(cmd_ptr, "EPORT=");
+	exp_ptr   = strstr(cmd_ptr, "USEHOSTEXP=");
+	if (eport_ptr) {
+		eport_ptr += 6;
+		e_port = (uint16_t) strtoul(eport_ptr, NULL, 10);
+	}
+	if (exp_ptr) {
+		exp_ptr += 11;
+		if (exp_ptr[0] == 'T')
+			use_host_exp = 1;
+		else if (exp_ptr[0] == 'F')
+			use_host_exp = 0;
+		else {
+			*err_code = -300;
+			*err_msg = "INITIALIZE has invalid USEHOSTEXP";
+			error("wiki: INITIALIZE has invalid USEHOSTEXP");
+			return -1;
+		}
 	}
 
-	/* We disconnect and reconnect on every message to
-	 * gracefully handle some failure modes of Moab */
-	(void) slurm_shutdown_msg_conn(event_fd);
-	pthread_mutex_unlock(&event_mutex);
-
-	return rc;
+	if (use_host_exp)
+		use_ptr = "T";
+	else
+		use_ptr = "F";
+	snprintf(reply_msg, sizeof(reply_msg),
+		"EPORT=%u USEHOSTEXP=%s", 
+		e_port, use_ptr);
+	*err_msg = reply_msg;
+	return 0;
 }

@@ -490,6 +490,34 @@ extern long slurm_get_rem_time(uint32_t jobid)
 	return rc;
 }
 
+/* FORTRAN VERSIONS OF slurm_get_rem_time */
+extern int32_t islurm_get_rem_time__(uint32_t *jobid)
+{
+	time_t now = time(NULL);
+	time_t end_time;
+	int32_t rc;
+
+	if ((jobid == NULL)
+	||  (slurm_get_end_time(*jobid, &end_time) != SLURM_SUCCESS))
+		return 0;
+
+	rc = difftime(end_time, now);
+	if (rc < 0)
+		rc = 0;
+	return rc;
+}
+extern int32_t islurm_get_rem_time2__()
+{
+	uint32_t jobid;
+	char *slurm_jobid = getenv("SLURM_JOBID");
+
+	if (slurm_jobid == NULL)
+		return 0;
+	jobid = atol(slurm_jobid);
+	return islurm_get_rem_time__(&jobid);
+}
+
+
 /*
  * slurm_get_end_time - get the expected end time for a given slurm job
  * IN jobid     - slurm job id

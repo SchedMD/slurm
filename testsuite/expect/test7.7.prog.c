@@ -233,15 +233,22 @@ static void _get_jobs(void)
 	time_t now = time(NULL);
 	char out_msg[128];
 
+	/* Dump all data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s",
 		(uint32_t) now, "CMD=GETJOBS ARG=0:ALL");
 	_xmit(out_msg);
 
-	/* Check with time stamp */
+	/* Dump volitile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
-		(uint32_t) now, (uint32_t) (now+1));
+		(uint32_t) now, (uint32_t) 1);
+	_xmit(out_msg);
+
+	/* Dump state only */
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
+		(uint32_t) now, (uint32_t) (now+2));
 	_xmit(out_msg);
 }
 
@@ -250,15 +257,22 @@ static void _get_nodes(void)
 	time_t now = time(NULL);
 	char out_msg[128];
 
+	/* Dump all data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s", 
 		(uint32_t) now, "CMD=GETNODES ARG=0:ALL");
 	_xmit(out_msg);
 
-	/* Check with time stamp */
+	/* Dump volitile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
-		(uint32_t) now, (uint32_t) (now+1));
+		(uint32_t) now, (uint32_t) 1);
+	_xmit(out_msg);
+
+	/* Dump state only */
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
+		(uint32_t) now, (uint32_t) (now+2));
 	_xmit(out_msg);
 }
 
@@ -296,6 +310,29 @@ static void _suspend_job(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _signal_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=JOBSIGNAL ARG=%ld SIGNAL=URG",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
+static void _modify_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[256];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=JOBMODIFY ARG=%ld "
+		/* PARTITION=pdebug" */
+		"TIMELIMIT=10 BANK=test_bank",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
 static void _resume_job(long my_job_id)
 {
 	time_t now = time(NULL);
@@ -330,6 +367,17 @@ static void _job_will_run(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _initialize(void)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=INITIALIZE ARG=USEHOSTEXP=T EPORT=%u",
+		(uint32_t) now, e_port);
+	_xmit(out_msg);
+}
+
 int main(int argc, char * argv[])
 {
 	if (argc < 4) {
@@ -346,12 +394,15 @@ int main(int argc, char * argv[])
 	printf("auth_key=%s control_addr=%s e_port=%d job_id=%d sched_port=%d\n", 
 		auth_key, control_addr, e_port, job_id, sched_port);
 
+	_initialize();
 	_get_jobs();
 	_get_nodes();
 	_job_will_run(job_id);
 	_start_job(job_id);
 	_suspend_job(job_id);
 	_resume_job(job_id);
+	_modify_job(job_id);
+	_signal_job(job_id);
 	if (e_port)
 		_event_mgr();
 	else {

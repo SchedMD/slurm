@@ -70,9 +70,22 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2: include a job's exit code in job state information.
  - In sched/wiki2: add event notification logic on job submit and completion.
  - In sched/wiki2: add support for JOBWILLRUN command type.
- - In sched/wiki2: for job info include required HOSTLIST if applicable.
+ - In sched/wiki2: for job info, include required HOSTLIST if applicable.
+ - In sched/wiki2: for job info, replace PARTITIONMASK with RCLASS (report
+   partition name associated with a job, but no task count)
+ - In sched/wiki2: for job and node info, report all data if TS==0, 
+   volitile data if TS<=update_time, state only if TS>update_time
+ - In sched/wiki2: add support for CMD=JOBSIGNAL ARG=jobid SIGNAL=name or #
+ - In sched/wiki2: add support for CMD=JOBMODIFY ARG=jobid [BANK=name]
+   [TIMELIMIT=minutes] [PARTITION=name]
+ - In sched/wiki2: add support for CMD=INITIALIZE ARG=[USEHOSTEXP=T|F]
+   [EPORT=#]; RESPONSE=EPORT=# USEHOSTEXP=T
  - Fix sinfo node state filtering when asking for idle nodes that are also 
    draining. 
+ - Add Fortran extension to slurm_get_rem_time() API.
+ - Fix bug when changing the time limit of a running job that has previously 
+   been suspended (formerly failed to account for suspend time in setting 
+   termination time).
 
 * Changes in SLURM 1.1.13
 =========================
