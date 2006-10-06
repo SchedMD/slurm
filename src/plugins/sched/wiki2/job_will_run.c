@@ -169,8 +169,6 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	job_ptr->priority = 1;
 
 	rc = select_nodes(job_ptr, true, &picked_node_bitmap);
-	/* If we could use Slurm-style node lists, use bitmap2node_name()
-	 * instead of bitmap2wiki_node_name() */
 	if (picked_node_bitmap) {
 		picked_node_list = bitmap2wiki_node_name(picked_node_bitmap);
 		i = strlen(picked_node_list);
@@ -236,7 +234,9 @@ static char *	_copy_nodelist_no_dup(char *node_list)
 
 /*
  * bitmap2wiki_node_name  - given a bitmap, build a list of colon separated 
- *	node names.
+ *	node names (if we can't use node range expressions), or the 
+ *	normal slurm node name expression
+ *
  * IN bitmap - bitmap pointer
  * RET pointer to node list or NULL on error 
  * globals: node_record_table_ptr - pointer to node table
@@ -247,6 +247,9 @@ extern char *	bitmap2wiki_node_name(bitstr_t *bitmap)
 	int i, first = 1;
 	char *buf = NULL;
 
+	if (use_host_exp)
+		return bitmap2node_name(bitmap);
+		
 	if (bitmap == NULL)
 		return xstrdup("");
 
