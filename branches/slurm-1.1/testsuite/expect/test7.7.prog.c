@@ -356,6 +356,17 @@ static void _job_will_run(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _initialize(void)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=INITIALIZE ARG=USEHOSTEXP=T EPORT=%u",
+		(uint32_t) now, e_port);
+	_xmit(out_msg);
+}
+
 int main(int argc, char * argv[])
 {
 	if (argc < 4) {
@@ -372,6 +383,7 @@ int main(int argc, char * argv[])
 	printf("auth_key=%s control_addr=%s e_port=%d job_id=%d sched_port=%d\n", 
 		auth_key, control_addr, e_port, job_id, sched_port);
 
+	_initialize();
 	_get_jobs();
 	_get_nodes();
 	_job_will_run(job_id);

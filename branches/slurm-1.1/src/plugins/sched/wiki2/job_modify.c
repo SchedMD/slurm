@@ -115,7 +115,6 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *part_ptr, *time_ptr, *tmp_char;
 	int slurm_rc;
-	suspend_msg_t msg;
 	uint32_t jobid, new_time_limit = 0;
 	static char reply_msg[128];
 	/* Locks: write job, read node and partition info */
@@ -152,7 +151,6 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		new_time_limit = strtoul(time_ptr, NULL, 10);
 	}
 
-	msg.job_id = jobid;
 	lock_slurmctld(job_write_lock);
 	slurm_rc = _job_modify(jobid, bank_ptr, part_ptr, new_time_limit);
 	unlock_slurmctld(job_write_lock);

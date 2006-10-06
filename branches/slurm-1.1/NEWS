@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2: add support for CMD=JOBSIGNAL ARG=jobid SIGNAL=name or #
  - In sched/wiki2: add support for CMD=JOBMODIFY ARG=jobid [BANK=name]
    [TIMELIMIT=minutes] [PARTITION=name]
+ - In sched/wiki2: add support for CMD=INITIALIZE ARG=[USEHOSTEXP=T|F]
+   [EPORT=#]; RESPONSE=EPORT=# USEHOSTEXP=T
  - Fix sinfo node state filtering when asking for idle nodes that are also 
    draining. 
  - Add Fortran extension to slurm_get_rem_time() API.
