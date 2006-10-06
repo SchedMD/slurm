@@ -310,6 +310,29 @@ static void _suspend_job(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _signal_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=JOBSIGNAL ARG=%ld SIGNAL=URG",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
+static void _modify_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[256];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=JOBMODIFY ARG=%ld "
+		/* PARTITION=pdebug" */
+		"TIMELIMIT=10 BANK=test_bank",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
 static void _resume_job(long my_job_id)
 {
 	time_t now = time(NULL);
@@ -355,6 +378,8 @@ int main(int argc, char * argv[])
 	_start_job(job_id);
 	_suspend_job(job_id);
 	_resume_job(job_id);
+	_modify_job(job_id);
+	_signal_job(job_id);
 	if (e_port)
 		_event_mgr();
 	else {

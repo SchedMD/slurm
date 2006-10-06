@@ -417,69 +417,67 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	if (new_fd < 0)
 		return;
 
-	if (!msg)
-		goto err_msg;
+	if (!msg) {
+		err_code = -300;
+		err_msg = "NULL request message";
+		error("wiki: NULL request message");
+		goto resp_msg;
+	}
 
 	if (_parse_msg(msg, &req) != 0)
-		goto err_msg;
+		goto resp_msg;
 
 	cmd_ptr = strstr(req, "CMD=");
 	if (cmd_ptr == NULL) {
 		err_code = -300;
 		err_msg = "request lacks CMD"; 
 		error("wiki: request lacks CMD");
-		goto err_msg;
+		goto resp_msg;
 	}
 	cmd_ptr +=4;
 	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
-		if (get_jobs(cmd_ptr, &err_code, &err_msg))
-			goto err_msg;
-		/* sends reply below if no error */
+		if (!get_jobs(cmd_ptr, &err_code, &err_msg))
+			goto free_resp_msg;
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
-		if (get_nodes(cmd_ptr, &err_code, &err_msg))
-			goto err_msg;
-		/* sends reply below if no error */
+		if (!get_nodes(cmd_ptr, &err_code, &err_msg))
+			goto free_resp_msg;
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
 		start_job(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 		cancel_job(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "JOBREQUEUE", 10) == 0) {
 		job_requeue_wiki(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 		suspend_job(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "RESUMEJOB", 9) == 0) {
 		resume_job(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "JOBADDTASK", 10) == 0) {
 		job_add_task(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 		job_release_task(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
-	} else if  (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
+	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
 		job_will_run(cmd_ptr, &err_code, &err_msg);
-		goto err_msg;	/* always send reply here */
+	} else if (strncmp(cmd_ptr, "JOBMODIFY", 9) == 0) {
+		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
+	} else if (strncmp(cmd_ptr, "JOBSIGNAL", 9) == 0) {
+		job_signal_wiki(cmd_ptr, &err_code, &err_msg);
 	} else {
 		err_code = -300;
 		err_msg = "unsupported request type";
 		error("wiki: unrecognized request type: %s", req);
-		goto err_msg;
 	}
 
+ resp_msg:
+	snprintf(response, sizeof(response),
+		"SC=%d;RESPONSE=%s", err_code, err_msg);
+	_send_reply(new_fd, response);
+	return;
+
+ free_resp_msg:
 	/* Message is pre-formatted by get_jobs and get_nodes
 	 * ONLY if no error. Send message and xfree the buffer. */
 	_send_reply(new_fd, err_msg);
 	xfree(err_msg);
-	return;
-
- err_msg:
-	snprintf(response, sizeof(response), 
-		"SC=%d;RESPONSE=%s", err_code, err_msg);
-	_send_reply(new_fd, response);
 	return;
 }
 
