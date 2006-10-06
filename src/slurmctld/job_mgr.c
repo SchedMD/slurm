@@ -3149,13 +3149,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if ((job_specs->time_limit != NO_VAL) && (!IS_JOB_FINISHED(job_ptr))) {
 		if (super_user ||
 		    (job_ptr->time_limit > job_specs->time_limit)) {
+			time_t old_time =  job_ptr->time_limit;
 			job_ptr->time_limit = job_specs->time_limit;
 			if (job_ptr->time_limit == INFINITE)	/* one year */
-				job_ptr->end_time = job_ptr->start_time +
-						    (365 * 24 * 60 * 60);
-			else
-				job_ptr->end_time = job_ptr->start_time +
-						    (job_ptr->time_limit * 60);
+				job_ptr->end_time = now +
+						(365 * 24 * 60 * 60);
+			else {
+				/* Update end_time based upon change
+				 * to preserve suspend time info */
+				job_ptr->end_time = job_ptr->end_time +
+						((job_ptr->time_limit -
+						  old_time) * 60);
+			}
 			if (job_ptr->end_time < now)
 				job_ptr->end_time = now;
 			if ((job_ptr->job_state == JOB_RUNNING) &&

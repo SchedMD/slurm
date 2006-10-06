@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
  - Fix sinfo node state filtering when asking for idle nodes that are also 
    draining. 
  - Add Fortran extension to slurm_get_rem_time() API.
+ - Fix bug when changing the time limit of a running job that has previously 
+   been suspended (formerly failed to account for suspend time in setting 
+   termination time).
 
 * Changes in SLURM 1.1.13
 =========================
