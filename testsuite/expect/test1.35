@@ -38,6 +38,7 @@ set file_err    "test$test_id.error"
 
 set exit_code            0
 set job_id               0
+set steps_started        20
 
 print_header $test_id
 
@@ -47,7 +48,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
-  for ((i = 0; i < 10; i++)); do
+  for ((i = 0; i < $steps_started; i++)); do
     $srun $bin_sleep 15 &
   done
   $bin_sleep 7
@@ -116,7 +117,7 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 }
-if {$step_cnt != 10} {
+if {$step_cnt != $steps_started} {
 	send_user "\nFAILURE: not all steps reported by squeue\n"
 	set exit_code 1
 }
