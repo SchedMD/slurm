@@ -87,6 +87,7 @@ extern int	init_prio_mode;
 extern char *	auth_key;
 extern uint16_t	e_port;
 extern uint16_t	job_aggregation_time;
+extern uint16_t use_host_exp;
 
 extern int	event_notify(char *msg);
 extern int	spawn_msg_thread(void);
@@ -98,6 +99,7 @@ extern char *   bitmap2wiki_node_name(bitstr_t *bitmap);
 extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg);
 extern int 	get_nodes(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	initialize_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_add_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);

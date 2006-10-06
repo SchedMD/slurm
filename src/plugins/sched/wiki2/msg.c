@@ -51,6 +51,7 @@ char *   auth_key = NULL;
 uint16_t e_port = 0;
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
+uint16_t use_host_exp = 0;
 
 static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
@@ -435,6 +436,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		goto resp_msg;
 	}
 	cmd_ptr +=4;
+	err_code = 0;
 	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
 		if (!get_jobs(cmd_ptr, &err_code, &err_msg))
 			goto free_resp_msg;
@@ -461,6 +463,8 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBSIGNAL", 9) == 0) {
 		job_signal_wiki(cmd_ptr, &err_code, &err_msg);
+	} else if (strncmp(cmd_ptr, "INITIALIZE", 10) == 0) {
+		initialize_wiki(cmd_ptr, &err_code, &err_msg);
 	} else {
 		err_code = -300;
 		err_msg = "unsupported request type";
