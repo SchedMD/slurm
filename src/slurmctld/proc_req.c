@@ -1004,7 +1004,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t *req_step_msg =
 	    (job_step_create_request_msg_t *) msg->data;
-	slurm_cred_t slurm_cred;
+	slurm_cred_t slurm_cred = (slurm_cred_t) NULL;
 	/* Locks: Write jobs, read nodes */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
@@ -1668,7 +1668,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* init */
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	uint32_t step_id;
+	uint32_t step_id = 0;
 	struct job_record *job_ptr;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
