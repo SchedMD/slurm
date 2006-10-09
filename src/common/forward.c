@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -138,6 +138,8 @@ start_again:
 		ret_data_info = xmalloc(sizeof(ret_data_info_t));
 		list_push(type->ret_data_list, ret_data_info);
 		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+		memcpy(&ret_data_info->addr, &fwd_msg->addr, 
+		       sizeof(slurm_addr));
 		ret_data_info->nodeid = fwd_msg->header.srun_node_id;
 		for(i=0; i<fwd_msg->header.forward.cnt; i++) {
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
@@ -147,6 +149,9 @@ start_again:
 				name[i * MAX_SLURM_NAME],
 				MAX_SLURM_NAME);
 			ret_data_info->node_name = xstrdup(name);
+			memcpy(&ret_data_info->addr,
+			       &fwd_msg->header.forward.addr[i], 
+			       sizeof(slurm_addr));
 			ret_data_info->nodeid = 
 				fwd_msg->header.forward.node_id[i];
 		}
@@ -176,6 +181,7 @@ start_again:
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	list_push(type->ret_data_list, ret_data_info);
 	ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+	memcpy(&ret_data_info->addr, &fwd_msg->addr, sizeof(slurm_addr));
 	ret_data_info->nodeid = fwd_msg->header.srun_node_id;
 						
 	if(type->err != SLURM_SUCCESS) {
