@@ -1,6 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Multi-core/multi-thread support in SLURM</h1>
+<h1>Support for Multi-core/Multi-thread Architectures</h1>
+
+<b>Note:</b> This document describes features added to SLURM version 1.2.
 
 <h2>Contents</h2>
 <UL>
@@ -15,10 +17,9 @@
 <a name=defs>
 <h2>Definitions</h2></a>
 
-<DL>
-<DT> <P> <b>Socket/Core/Thread</b> - Figure 1 illustrates the notion of
-Socket, Core and Thread as it is defined in the multi-core/multi-thread
-support in SLURM.</p>
+<P> <b>Socket/Core/Thread</b> - Figure 1 illustrates the notion of
+Socket, Core and Thread as it is defined in SLURM's multi-core/multi-thread
+support documentation.</p>
 
 <center>
 <img width=580 height=280 src="mc_support.gif">
@@ -26,22 +27,21 @@ support in SLURM.</p>
 Figure 1: Socket vs. Core vs. Multi-threading 
 </center>
 
-<DT> <P> <b>Affinity</b> - The state of being bound to a specific logical
-		processor.
-
-<DT> <P> <b>Affinity Mask</b> - A bitmask where indices correspond to
-		logical processors.
-		The least significant bit corresponds to the first
-		logical processor number on the system, while the most
-		significant bit corresponds to the last logical processor
-		number on the system.
-		A '1' in a given position indicates a process can run
-		on the associated logical processor.
-
-<DT> <P> <b>Fat Masks</b> - Affinity masks with more than 1 bit set
-		allowing a process to run on more than one logical
-		processor.
-</DL>
+<dl>
+<dt><b>Affinity</b>
+<dd>The state of being bound to a specific logical processor.
+<dt><b>Affinity Mask</b>
+<dd>A bitmask where indices correspond to logical processors.
+The least significant bit corresponds to the first
+logical processor number on the system, while the most
+significant bit corresponds to the last logical processor
+number on the system.
+A '1' in a given position indicates a process can run
+on the associated logical processor.
+<dt><b>Fat Masks</b>
+<dd>Affinity masks with more than 1 bit set
+allowing a process to run on more than one logical processor.
+</dl>
 
 <!-------------------------------------------------------------------------->
 <a name=flags>
@@ -236,7 +236,7 @@ note: compare the above with the previous corresponding --cpu_bind=... examples
 <p>See also 'srun --help' and 'man srun'</p>
 
 <a name="srun_dist">
-<h3>New distributions: Extensions to -m/--distribution</h3></a>
+<h3>New distributions: Extensions to -m / --distribution</h3></a>
 
 <p>The -m / --distribution option for distributing processes across nodes
 has been extended to also describe the distribution within the lowest level
