@@ -897,12 +897,13 @@ total_return:
  * NOTE: memory is allocated for the returned list
  *       and must be freed at some point using the list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
+ * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
  *                forwarded the message to. List containing type
  *                (ret_data_info_t).
  */
-List slurm_receive_msgs(slurm_fd fd, int timeout)
+List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -913,6 +914,7 @@ List slurm_receive_msgs(slurm_fd fd, int timeout)
 	Buf buffer;
 	ret_data_info_t *ret_data_info = NULL;
 	List ret_list = NULL;
+	int orig_timeout = 0;
 
 	xassert(fd >= 0);
 
@@ -922,13 +924,18 @@ List slurm_receive_msgs(slurm_fd fd, int timeout)
 	if (timeout <= 0)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
-
-	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
+	if(steps) {
+		steps++;
+		orig_timeout = timeout/steps;
+	}
+	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
+	       orig_timeout, steps, timeout);
+	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
 		error("You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
 		      (timeout/1000));
-	} else if(timeout < 1000) {
+	} else if(orig_timeout < 1000) {
 		debug("You are sending a message with a very short timeout of "
 		      "%d milliseconds", timeout);
 	} 
@@ -1048,11 +1055,12 @@ total_return:
  * IN open_fd	- file descriptor to receive msg on
  * IN/OUT msg	- a slurm_msg struct to be filled in by the function
  *                we use the orig_addr from this var for forwarding. 
+ * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr, 
-				   slurm_msg_t *msg, int timeout)
+				   slurm_msg_t *msg, int steps, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1061,7 +1069,8 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	void *auth_cred = NULL;
 	Buf buffer;
 	ret_data_info_t *ret_data_info = NULL;
-	
+	int orig_timeout = 0;
+
 	xassert(fd >= 0);
 
 	if(msg->forward.init != FORWARD_INIT)
@@ -1082,13 +1091,17 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	if (timeout <= 0)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
-
-	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
+	if(steps) {
+		steps++;
+		orig_timeout = timeout/steps;
+	}
+	
+	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
 		error("You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
 		      (timeout/1000));
-	} else if(timeout < 1000) {
+	} else if(orig_timeout < 1000) {
 		debug("You are sending a message with a very short timeout of "
 		      "%d milliseconds", timeout);
 	} 
@@ -1743,7 +1756,7 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 		
 			timeout += (req->forward.timeout*steps);
 		}
-		ret_list = slurm_receive_msgs(fd, timeout);
+		ret_list = slurm_receive_msgs(fd, steps, timeout);
 	}
 	
 

@@ -73,7 +73,8 @@ void *_forward_thread(void *arg)
 	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
 	slurm_addr addr;
 	char buf[8196];
-	
+	int steps = 0;
+		
 	/* repeat until we are sure the message was sent */ 
 	while((name = hostlist_shift(hl))) {
 		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
@@ -106,7 +107,11 @@ void *_forward_thread(void *arg)
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
-			
+		if(fwd_msg->header.forward.cnt>0) {
+			steps = fwd_msg->header.forward.cnt /
+				slurm_get_tree_width();
+			steps += 1;
+		}	
 		debug3("forward: along with %s",
 		       fwd_msg->header.forward.nodelist);
 		
@@ -161,7 +166,7 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 	
-		ret_list = slurm_receive_msgs(fd, fwd_msg->timeout);
+		ret_list = slurm_receive_msgs(fd, steps, fwd_msg->timeout);
 
 		if(!ret_list || (fwd_msg->header.forward.cnt != 0 
 				 && list_count(ret_list) == 0)) {

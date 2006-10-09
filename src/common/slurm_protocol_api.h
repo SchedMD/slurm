@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -328,13 +328,14 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout);
  *    list_destroy function.
  *
  * IN open_fd	- file descriptor to receive msg on
+ * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the childern (if any) we 
  *                forwarded the message to. List containing type
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-List slurm_receive_msgs(slurm_fd fd, int timeout);
+List slurm_receive_msgs(slurm_fd fd, int steps, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
@@ -350,11 +351,12 @@ List slurm_receive_msgs(slurm_fd fd, int timeout);
  *
  * IN open_fd	- file descriptor to receive msg on
  * OUT resp	- a slurm_msg struct to be filled in by the function
+ * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr, 
-				   slurm_msg_t *resp, int timeout);
+				   slurm_msg_t *resp, int steps, int timeout);
 
 /**********************************************************************\
  * send message functions
