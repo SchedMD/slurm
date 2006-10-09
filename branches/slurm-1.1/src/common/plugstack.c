@@ -324,7 +324,7 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 	char **argv;
 	int ac;
 	char *path;
-	bool required;
+	bool required = FALSE;
 
 	struct spank_plugin *p;
 
@@ -1077,7 +1077,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		}
 		break;
 	case S_TASK_GLOBAL_ID:
-		p2uint32 = va_arg(vargs, int *);
+		p2uint32 = va_arg(vargs, uint32_t *);
 		if (!spank->task) {
 			rc = ESPANK_NOT_TASK;
 		} else {

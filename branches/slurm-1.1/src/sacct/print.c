@@ -215,6 +215,7 @@ void print_idrss(type_t type, void *object)
 	step_rec_t *step = (step_rec_t *)object;
 	struct rusage rusage;
 	char outbuf[FORMAT_STRING_SIZE];
+	rusage.ru_idrss = 0;
 	
 	switch(type) {
 	case HEADLINE:
