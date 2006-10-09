@@ -215,8 +215,8 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
-		xfree(ai->nodelist);
-		ai->nodelist = xstrdup(buf);
+		/* xfree(ai->nodelist); */
+/* 		ai->nodelist = xstrdup(buf); */
 	}
 	
 	if(opt.nodelist) { 
@@ -228,11 +228,12 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
 		hostlist_destroy(hl);
-		xfree(ai->nodelist);
-		ai->nodelist = xstrdup(buf);
+		/* xfree(ai->nodelist); */
+/* 		ai->nodelist = xstrdup(buf); */
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
 	}
+
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		if(count != opt.nprocs) {
 			error("You asked for %d tasks but specified %d nodes",
@@ -308,14 +309,16 @@ job_step_create_allocation(uint32_t job_id)
 	}
 
 	/* get the correct number of hosts to run tasks on */
-	if(opt.nodelist) {
-		hl = hostlist_create(opt.nodelist);
-		hostlist_uniq(hl);
-		ai->nnodes = hostlist_count(hl);
-		hostlist_destroy(hl);
-	} else if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
+	/* if(opt.nodelist) { */
+/* 		hl = hostlist_create(opt.nodelist); */
+/* 		hostlist_uniq(hl); */
+/* 		ai->nnodes = hostlist_count(hl); */
+/* 		hostlist_destroy(hl); */
+/* 	} else */
+	if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
 		ai->nnodes = opt.max_nodes;
-	
+/* 	info("looking for %d nodes out of %s with a must list of %s", */
+/* 	     ai->nnodes, ai->nodelist, opt.nodelist); */
 	/* 
 	 * Create job
 	 */
@@ -334,7 +337,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 {
 	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(*i));
-		
+
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->jobid          = resp->job_id;

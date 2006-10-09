@@ -86,6 +86,8 @@ documents those changes that are of interest to users and admins.
  - Fix bug when changing the time limit of a running job that has previously 
    been suspended (formerly failed to account for suspend time in setting 
    termination time).
+ - fix for step allocation to be able to specify only a few nodes in a 
+   step and ask for more that specified.
 
 * Changes in SLURM 1.1.13
 =========================

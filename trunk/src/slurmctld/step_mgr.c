@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -452,17 +452,21 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				xfree(step_spec->node_list);
 				step_spec->task_dist = SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(selected_nodes);
-			} else {
-				/* use selected nodes to run the job */
-				FREE_NULL_BITMAP(nodes_avail);
-				return selected_nodes;
 			}
-		} else {
-			/* set the nodes_avail to be the new set */
-			FREE_NULL_BITMAP(nodes_avail);
-			nodes_avail = selected_nodes;
 			step_spec->node_count = bit_set_count(nodes_avail);
 		}
+		if (selected_nodes) {
+			/* use selected nodes to run the job and
+			 * make them unavailable for future use */
+			nodes_picked = bit_copy(selected_nodes);
+			bit_not(selected_nodes);
+			bit_and(nodes_avail, selected_nodes);
+			bit_free(selected_nodes);
+		}
+	} else {
+		nodes_picked = bit_alloc(bit_size(nodes_avail));
+		if (nodes_picked == NULL)
+			fatal("bit_alloc malloc failure");
 	}
 	
 	if (step_spec->relative != (uint16_t)NO_VAL) {
@@ -480,13 +484,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		bit_not (relative_nodes);
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
-		nodes_picked = bit_alloc(bit_size(nodes_avail));
-		if ((nodes_picked == NULL))
-			fatal("bit_alloc malloc failure");
 	} else {
-		nodes_picked = bit_alloc(bit_size(nodes_avail));
-		nodes_idle = bit_alloc(bit_size(nodes_avail));
-		if ((nodes_picked == NULL) || (nodes_idle == NULL))
+		nodes_idle = bit_alloc (bit_size (nodes_avail) );
+		if (nodes_idle == NULL)
 			fatal("bit_alloc malloc failure");
 		step_iterator = 
 			list_iterator_create(job_ptr->step_list);
@@ -710,6 +710,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		fatal ("create_step_record failed with no memory");
 
 	/* set the step_record values */
+
 	/* Here is where the node list is set for the step */
 	if(step_specs->node_list 
 	   && step_specs->task_dist == SLURM_DIST_ARBITRARY) {
@@ -720,6 +721,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_node_list = bitmap2node_name(nodeset);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
+
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
