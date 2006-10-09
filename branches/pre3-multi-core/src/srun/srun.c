@@ -122,6 +122,7 @@ static int   _print_script_exit_status(const char *argv0, int status);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
+static int _change_rlimit_rss(void);
 
 int srun(int ac, char **av)
 {
@@ -191,6 +192,13 @@ int srun(int ac, char **av)
 		exit (0);
 
 	} else if (opt.batch) {
+	    	/* allow binding with batch submissions */
+		env->cpu_bind_type = opt.cpu_bind_type;
+		env->cpu_bind = opt.cpu_bind;
+		env->mem_bind_type = opt.mem_bind_type;
+		env->mem_bind = opt.mem_bind;
+		setup_env(env);
+
 		if (_run_batch_job() < 0)
 			exit (1);
 		exit (0);
@@ -269,6 +277,9 @@ int srun(int ac, char **av)
 			exit(1);
 		}
 #endif
+		if (opt.job_max_memory > 0) {		
+			(void) _change_rlimit_rss();
+		}
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
@@ -298,7 +309,15 @@ int srun(int ac, char **av)
 	 */
 	env->nprocs = opt.nprocs;
 	env->cpus_per_task = opt.cpus_per_task;
+	env->ntasks_per_node = opt.ntasks_per_node;
+	env->ntasks_per_socket = opt.ntasks_per_socket;
+	env->ntasks_per_core = opt.ntasks_per_core;
 	env->distribution = opt.distribution;
+	env->plane_size = opt.plane_size;
+	env->cpu_bind_type = opt.cpu_bind_type;
+	env->cpu_bind = opt.cpu_bind;
+	env->mem_bind_type = opt.mem_bind_type;
+	env->mem_bind = opt.mem_bind;
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;
 	env->labelio = opt.labelio;
@@ -831,6 +850,34 @@ static void  _set_prio_process_env(void)
 	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
+/* 
+ *  Change SLURM_RLIMIT_RSS to the user specified value --job-mem 
+ *  or opt.job_max_memory 
+ */
+static int _change_rlimit_rss(void)
+{
+	struct rlimit        rlim[1];
+	long                 new_cur;
+	int                  rc = SLURM_SUCCESS;
+	
+	if (getrlimit (RLIMIT_RSS, rlim) < 0)
+		return (error ("getrlimit (RLIMIT_RSS): %m"));
+
+	new_cur = opt.job_max_memory*1024; 
+	if((new_cur > rlim->rlim_max) || (new_cur < 0))
+		rlim->rlim_cur = rlim->rlim_max;
+	else
+		rlim->rlim_cur = new_cur;
+
+	if (setenvf (NULL, "SLURM_RLIMIT_RSS", "%lu", rlim->rlim_cur) < 0)
+		error ("unable to set %s in environment", "RSS");
+
+	if (setrlimit (RLIMIT_RSS, rlim) < 0) 
+		return (error ("Unable to change memoryuse: %m"));
+
+	return rc;
+}
+
 /* Set SLURM_RLIMIT_* environment variables with current resource 
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
@@ -919,6 +966,9 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->nprocs = opt.nprocs;
 	if (opt.cpus_set)
 		env->cpus_per_task = opt.cpus_per_task;
+	env->ntasks_per_node = opt.ntasks_per_node;
+	env->ntasks_per_socket = opt.ntasks_per_socket;
+	env->ntasks_per_core = opt.ntasks_per_core;
 	env->distribution = opt.distribution;
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;

@@ -8,6 +8,9 @@
 <li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM,
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 <li><a href="http://www.llnl.gov/LCdocs/slurm">SLURM Reference Manual</a></li>
+<ul>
+<li><a href="mc_support.shtml">SLURM 1.2: support for multi-core/multi-threaded architectures</a></li>
+</ul>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
 </ul>

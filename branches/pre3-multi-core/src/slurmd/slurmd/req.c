@@ -80,6 +80,7 @@
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/run_script.h"
+#include "src/slurmd/common/task_plugin.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -137,12 +138,11 @@ static List waiters;
 
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-
 void
 slurmd_req(slurm_msg_t *msg)
 {
 	int rc;
-	
+
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		/* Mutex locking moved into _rpc_batch_job() due to 
@@ -557,7 +557,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 			if ((hset = hostset_create(arg.hostlist)))
 				*step_hset = hset;
 			xfree(arg.hostlist);
-			xfree(arg.ntask);
+			xfree(arg.alloc_lps);
 		}
 		return SLURM_SUCCESS;
 	}
@@ -584,21 +584,22 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	}
 
 	if (!hostset_within(hset, conf->node_name)) {
-		error("job credential invald for this host [%d.%d %ld %s]",
+		error("job credential invalid for this host [%d.%d %ld %s]",
 		      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
 		goto fail;
 	}
 
-        if ((arg.ntask_cnt > 0) && (tasks_to_launch > 0)) {
+        if ((arg.alloc_lps_cnt > 0) && (tasks_to_launch > 0)) {
 
                 host_index = hostset_find(hset, conf->node_name);
 
-                /* Left in here for debugging purposes
+                /* Left in here for debugging purposes */
+#if(0)
                 if(host_index >= 0)
-                  debug3(" cons_res %u ntask_cnt %d task[%d] = %d = task_to_launch %d host %s ", 
-                         arg.jobid, arg.ntask_cnt, host_index, arg.ntask[host_index], 
+                  info(" cons_res %u alloc_lps_cnt %d task[%d] = %d = task_to_launch %d host %s ", 
+                         arg.jobid, arg.alloc_lps_cnt, host_index, arg.alloc_lps[host_index], 
                          tasks_to_launch, conf->node_name);
-		*/
+#endif
 
                 if (host_index < 0) { 
                         error("job cr credential invalid host_index %d for job %d",
@@ -606,19 +607,18 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                         goto fail; 
                 }
                 
-                if (tasks_to_launch > arg.ntask[host_index]) {
-                        error("job cr credential (%d > %d) invalid for this host [%d.%d %ld %s]",
-                              tasks_to_launch, arg.ntask[host_index], arg.jobid, arg.stepid, 
-                              (long) arg.uid, arg.hostlist);
-                        goto fail;
-                }
+                if (tasks_to_launch > arg.alloc_lps[host_index]) {
+			error("cons_res: More than one tasks per logical processor (%d > %d) on host [%d.%d %ld %s] ",
+			      tasks_to_launch, arg.alloc_lps[host_index], 
+			      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
+			error(" cons_res: Use task/affinity plug-in to bind the tasks to the allocated resources");
+		}
         }
 
 	*step_hset = hset;
 	xfree(arg.hostlist);
-	arg.ntask_cnt = 0;
-	xfree(arg.ntask);
-
+	arg.alloc_lps_cnt = 0;
+	xfree(arg.alloc_lps);
 	return SLURM_SUCCESS;
 
     fail:
@@ -626,8 +626,8 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 		hostset_destroy(hset);
 	*step_hset = NULL;
 	xfree(arg.hostlist);
-        arg.ntask_cnt = 0;
-        xfree(arg.ntask);
+        arg.alloc_lps_cnt = 0;
+        xfree(arg.alloc_lps);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
@@ -635,7 +635,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
-	int      errnum = 0;
+	int      errnum = SLURM_SUCCESS;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
@@ -651,6 +651,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
+
+	slurmd_launch_request(jobid, req, nodeid);
 
 	super_user = _slurm_authorized_user(req_uid);
 
@@ -708,8 +710,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		 */
 		slurm_cred_rewind(conf->vctx, req->cred); /* ignore errors */
 
-	} else if (errnum == SLURM_SUCCESS)
+	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state(conf->vctx);
+		slurmd_reserve_resources(req->job_id, req, nodeid);
+	}
 
 	/*
 	 *  If job prolog failed, indicate failure to slurmctld
@@ -1885,6 +1889,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		return;
 	} 
 
+	slurmd_release_resources(req->job_id);
+
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another
 	 *   thread is already waiting on termination of this job, 
@@ -1987,6 +1993,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	save_cred_state(conf->vctx);
+
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
 		&bg_part_id);
 	rc = _run_epilog(req->job_id, req->job_uid, bg_part_id);

@@ -642,10 +642,8 @@ _job_fake_cred(srun_job_t *job)
 	arg.stepid   = job->stepid;
 	arg.uid      = opt.uid;
 	arg.hostlist = job->nodelist;
-        arg.ntask_cnt = 0;    
-        arg.ntask    =  NULL; 
-/* 	info("got %u.%u %u and %s",job->jobid, job->stepid,  */
-/* 	     opt.uid, job->nodelist); */
+        arg.alloc_lps_cnt = 0;    
+        arg.alloc_lps     =  NULL; 
 	job->cred = slurm_cred_faker(&arg);
 }
 

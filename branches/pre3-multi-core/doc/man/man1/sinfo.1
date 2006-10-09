@@ -82,7 +82,7 @@ when running with various options are
 "%#N %.5D %9P %6t"
 .TP
 .I "\-\-long \-\-Node"
-"%#N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f %R"
+"%#N %.5D %9P %11T %.4c %.8z %.6m %.8d %.6w %8f %R"
 .TP
 .I "\-\-list\-reasons"
 "%35R %N"
@@ -160,6 +160,18 @@ State of nodes, extended form
 \fB%w\fR 
 Scheduling weight of the nodes
 .TP
+\fB%X\fR 
+Number of sockets per node
+.TP
+\fB%Y\fR 
+Number of cores per socket
+.TP
+\fB%Z\fR 
+Number of threads per core
+.TP
+\fB%z\fR 
+Extended processor information: number of sockets, cores, threads (S:C:T) per node
+.TP
 \fB%.<*>\fR 
 right justification of the field
 .TP
@@ -229,6 +241,18 @@ Partition state: \fBup\fR or \fBdown\fR.
 .TP
 \fBCPUS\fR
 Count of CPUs (processors) on these nodes.
+.TP
+\fBS:C:T\fR
+Count of sockets (S), cores (C), and threads (T) on these nodes.
+.TP
+\fBSOCKETS\fR
+Count of sockets on these nodes.
+.TP
+\fBCORES\fR
+Count of cores on these nodes.
+.TP
+\fBTHREADS\fR
+Count of threads on these nodes.
 .TP
 \fBGROUPS\fR
 Resource allocations in this partition are restricted to the

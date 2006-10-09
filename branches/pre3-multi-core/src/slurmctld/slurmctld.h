@@ -155,7 +155,10 @@ extern int bg_recover;		/* state recovery mode */
 
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
-	uint32_t cpus;		/* count of cpus running on the node */
+	uint32_t cpus;		/* count of processors running on the node */
+	uint32_t sockets;	/* number of sockets per node */
+	uint32_t cores;		/* number of cores per CPU */
+	uint32_t threads;	/* number of threads per core */
 	uint32_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint32_t weight;	/* arbitrary priority of node for 
@@ -174,7 +177,10 @@ struct node_record {
 					 * NODE_STATE_NO_RESPOND if not 
 					 * responding */
 	time_t last_response;		/* last response from the node */
-	uint32_t cpus;			/* count of cpus on the node */
+	uint32_t cpus;			/* count of processors on the node */
+	uint32_t sockets;		/* number of sockets per node */
+	uint32_t cores;			/* number of cores per CPU */
+	uint32_t threads;		/* number of threads per core */
 	uint32_t real_memory;		/* MB real memory on the node */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	struct config_record *config_ptr;  /* configuration spec ptr */
@@ -252,6 +258,12 @@ struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint32_t max_nodes;		/* maximum number of nodes */
+	uint32_t min_sockets;		/* minimum number of sockets per node */
+	uint32_t max_sockets;		/* maximum number of sockets per node */
+	uint32_t min_cores;		/* minimum number of cores per cpu */
+	uint32_t max_cores;		/* maximum number of cores per cpu */
+	uint32_t min_threads;		/* minimum number of threads per core */
+	uint32_t max_threads;		/* maximum number of threads per core */
 	char *req_nodes;		/* required nodes */
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
@@ -262,15 +274,28 @@ struct job_details {
 					   any other value accepts the default
 					   sharing policy. */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
+        task_dist_states_t task_dist;  /* task layout for this job. Only useful 
+                                         * when Consumable Resources is enabled */
+        uint32_t plane_size;            /* plane_size for SLURM_DIST_PLANE. 
+					 * Only useful when Consumable 
+					 * Resources is enabled */
 	uint16_t wait_reason;		/* reason job still pending, see
 					 * slurm.h:enum job_wait_reason */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint16_t overcommit;		/* processors being over subscribed */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
-	uint32_t min_procs;		/* minimum processors per node */
-	uint32_t min_memory;		/* minimum memory per node, MB */
-	uint32_t min_tmp_disk;		/* minimum tempdisk per node, MB */
+        uint16_t ntasks_per_node;	/* number of tasks on each node */
+        uint16_t ntasks_per_socket;	/* number of tasks on each socket */
+        uint16_t ntasks_per_core;	/* number of tasks on each core */
+	/* job constraints: */
+	uint32_t job_min_procs;		/* minimum processors per node */
+	uint32_t job_min_sockets;	/* minimum sockets per node */
+	uint32_t job_min_cores; 	/* minimum cores per processor */
+	uint32_t job_min_threads;	/* minimum threads per core */
+	uint32_t job_min_memory;	/* minimum memory per node, MB */
+	uint32_t job_max_memory;	/* maximum memory per node, MB */
+	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	char *err;			/* pathname of job's stderr file */
 	char *in;			/* pathname of job's stdin file */
 	char *out;			/* pathname of job's stdout file */
@@ -348,11 +373,11 @@ struct job_record {
                                          * linear plugins 
                                          * 0 if cr is NOT enabled, 
                                          * 1 if cr is enabled */
-        uint32_t ntask_cnt;             /* number of hosts in *ntask
-                                           or 0 if ntask is not needed
-                                           for the credentials */
-        uint32_t *ntask;                /* number of tasks to run on
-                                           each of the ntask_cnt hosts */
+        uint32_t alloc_lps_cnt;        /* number of hosts in alloc_lps
+					  or 0 if alloc_lps is not needed
+					  for the credentials */
+        uint32_t *alloc_lps;           /* number of logical processors
+					* allocated for this job */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t requid;            	/* requester user ID */
@@ -397,12 +422,15 @@ extern List job_list;			/* list of job_record entries */
  * useful when updating other types of consumable resources as well
 */
 enum select_data_info {
-       SELECT_CR_PLUGIN,       /* data-> uint32 1 if CR plugin */
-       SELECT_CR_CPU_COUNT,    /* data-> uint32_t count_cpus (CR support) */   
-       SELECT_CR_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
-       SELECT_CR_USED_CPUS,    /* data-> uint32 used_cpus (CR support) */
-       SELECT_CR_USABLE_CPUS   /* data-> uint32 usable cpus (CR support) */ 
-};
+	SELECT_CR_PLUGIN,   /* data-> uint32 1 if CR plugin */
+	SELECT_CPU_COUNT,    /* data-> uint32_t count_cpus (CR support) */   
+	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
+	SELECT_ALLOC_CPUS,   /* data-> uint32 alloc cpus (CR support) */
+	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
+	SELECT_ALLOC_MEMORY, /* data-> uint32 alloc mem  (CR support) */
+	SELECT_AVAIL_CPUS,   /* data-> uint32 avail cpus (CR support) */ 
+	SELECT_AVAIL_MEMORY  /* data-> uint32 avail mem  (CR support) */ 
+} ;
 
 /*****************************************************************************\
  *  Global slurmctld functions
@@ -1186,6 +1214,7 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
  * IN step_node_list - node list of hosts in step
  * IN num_tasks - number of tasks in step
  * IN task_dist - type of task distribution
+ * IN plane_size - size of plane (only needed for the plane distribution)
  * RET - NULL or slurm_step_layout_t *
  * NOTE: you need to free the returned step_layout usually when the 
  *       step is freed.
@@ -1194,7 +1223,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint16_t node_count,
 					       uint32_t num_tasks,
-					       uint16_t task_dist);
+					       uint16_t task_dist,
+					       uint32_t plane_size);
 /*
  * step_epilog_complete - note completion of epilog on some node and 
  *	release it's switch windows if appropriate. can perform partition 
@@ -1292,6 +1322,9 @@ extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count,
  *   if not set state to down, in any case update last_response
  * IN node_name - name of the node
  * IN cpus - number of cpus measured
+ * IN sockets - number of sockets per cpu measured
+ * IN cores - number of cores per socket measured
+ * IN threads - number of threads per core measured
  * IN real_memory - mega_bytes of real_memory measured
  * IN tmp_disk - mega_bytes of tmp_disk measured
  * IN job_count - number of jobs allocated to this node
@@ -1300,7 +1333,11 @@ extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count,
  * global: node_record_table_ptr - pointer to global node table
  */
 extern int validate_node_specs (char *node_name,
-				uint32_t cpus, uint32_t real_memory, 
+				uint32_t cpus,
+				uint32_t sockets,
+				uint32_t cores,
+				uint32_t threads,
+				uint32_t real_memory,
 				uint32_t tmp_disk, uint32_t job_count,
 				uint32_t status);
 

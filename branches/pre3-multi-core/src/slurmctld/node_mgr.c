@@ -197,6 +197,9 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	node_ptr->part_pptr = NULL;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
+	node_ptr->sockets = config_ptr->sockets;
+	node_ptr->cores = config_ptr->cores;
+	node_ptr->threads = config_ptr->threads;
 	node_ptr->real_memory = config_ptr->real_memory;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
@@ -307,6 +310,9 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->reason, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	pack32  (dump_node_ptr->cpus, buffer);
+	pack32  (dump_node_ptr->sockets, buffer);
+	pack32  (dump_node_ptr->cores, buffer);
+	pack32  (dump_node_ptr->threads, buffer);
 	pack32  (dump_node_ptr->real_memory, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 }
@@ -324,7 +330,8 @@ extern int load_all_node_state ( bool state_only )
 	char *node_name, *reason = NULL, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state, name_len;
-	uint32_t cpus, real_memory, tmp_disk, data_size = 0;
+	uint32_t cpus = 1, sockets = 1, cores = 1, threads = 1;
+	uint32_t real_memory, tmp_disk, data_size = 0;
 	struct node_record *node_ptr;
 	int state_fd;
 	time_t time_stamp;
@@ -372,14 +379,21 @@ extern int load_all_node_state ( bool state_only )
 		safe_unpackstr_xmalloc (&reason, &name_len, buffer);
 		safe_unpack16 (&node_state,  buffer);
 		safe_unpack32 (&cpus,        buffer);
+		safe_unpack32 (&sockets,     buffer);
+		safe_unpack32 (&cores,       buffer);
+		safe_unpack32 (&threads,     buffer);
 		safe_unpack32 (&real_memory, buffer);
 		safe_unpack32 (&tmp_disk,    buffer);
 		base_state = node_state & NODE_STATE_BASE;
 
 		/* validity test as possible */
-		if ((cpus == 0) || (base_state  >= NODE_STATE_END)) {
-			error ("Invalid data for node %s: cpus=%u, state=%u",
-				node_name, cpus, node_state);
+		if ((cpus == 0) || 
+		    (sockets == 0) || 
+		    (cores == 0) || 
+		    (threads == 0) || 
+		    (base_state  >= NODE_STATE_END)) {
+			error ("Invalid data for node %s: procs=%u, sockets=%u, cores=%u, threads=%u, state=%u",
+				node_name, cpus, sockets, cores, threads, node_state);
 			error ("No more node data will be processed from the "
 				"checkpoint file");
 			xfree (node_name);
@@ -414,6 +428,9 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
+			node_ptr->sockets       = sockets;
+			node_ptr->cores         = cores;
+			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
@@ -725,11 +742,17 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 	if (slurmctld_conf.fast_schedule) {	
 		/* Only data from config_record used for scheduling */
 		pack32  (dump_node_ptr->config_ptr->cpus, buffer);
+		pack32  (dump_node_ptr->config_ptr->cores, buffer);
+		pack32  (dump_node_ptr->config_ptr->sockets, buffer);
+		pack32  (dump_node_ptr->config_ptr->threads, buffer);
 		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
 	} else {	
 		/* Individual node data used for scheduling */
 		pack32  (dump_node_ptr->cpus, buffer);
+		pack32  (dump_node_ptr->cores, buffer);
+		pack32  (dump_node_ptr->sockets, buffer);
+		pack32  (dump_node_ptr->threads, buffer);
 		pack32  (dump_node_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->tmp_disk, buffer);
 	}
@@ -1025,6 +1048,9 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
  *   if not set state to down, in any case update last_response
  * IN node_name - name of the node
  * IN cpus - number of cpus measured
+ * IN sockets - number of sockets per cpu measured
+ * IN cores - number of cores per socket measured
+ * IN threads - number of threads per core measured
  * IN real_memory - mega_bytes of real_memory measured
  * IN tmp_disk - mega_bytes of tmp_disk measured
  * IN job_count - number of jobs allocated to this node
@@ -1035,6 +1061,7 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
  */
 extern int 
 validate_node_specs (char *node_name, uint32_t cpus, 
+			uint32_t sockets, uint32_t cores, uint32_t threads,
 			uint32_t real_memory, uint32_t tmp_disk, 
 			uint32_t job_count, uint32_t status)
 {
@@ -1065,6 +1092,9 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		}
 	}
 	node_ptr->cpus = cpus;
+	node_ptr->sockets = sockets;
+	node_ptr->cores = cores;
+	node_ptr->threads = threads;
 
 	if (real_memory < config_ptr->real_memory) {
 		error ("Node %s has low real_memory size %u", 

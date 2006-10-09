@@ -227,7 +227,7 @@ extern void parse_command_line(int argc, char *argv[])
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%N %.5D %.9P %.11T %.4c %.6m %.8d %.6w %.8f %20R" :
+			  "%N %.5D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20R" :
 			  "%N %.5D %.9P %6t";
 
 		} else if (params.list_reasons) {
@@ -545,6 +545,30 @@ _parse_format( char* format )
 		} else if (field[0] == 'w') {
 			params.match_flags.weight_flag = true;
 			format_add_weight( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
+		} else if (field[0] == 'X') {
+			params.match_flags.sockets_flag = true;
+			format_add_sockets( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
+		} else if (field[0] == 'Y') {
+			params.match_flags.cores_flag = true;
+			format_add_cores( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
+		} else if (field[0] == 'Z') {
+			params.match_flags.threads_flag = true;
+			format_add_threads( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
+		} else if (field[0] == 'z') {
+			params.match_flags.sct_flag = true;
+			format_add_sct( params.format_list, 
 					field_size, 
 					right_justify, 
 					suffix );

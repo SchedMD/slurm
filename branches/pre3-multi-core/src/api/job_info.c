@@ -85,6 +85,17 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 		slurm_print_job_info(out, &job_ptr[i], one_liner);
 }
 
+static void _sprint_range(char *str, int lower, int upper)
+{
+    	char tmp[128];
+	convert_num_unit((float)lower, str, UNIT_NONE);
+	if (upper > 0) {
+		convert_num_unit((float)upper, tmp, UNIT_NONE);
+		strcat(str, "-");
+		strcat(str, tmp);
+	}
+}
+
 /*
  * slurm_print_job_info - output information about a specific Slurm 
  *	job based upon message as loaded using slurm_load_jobs
@@ -111,10 +122,10 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
-	int j;
+	int i, j;
 	char time_str[32], select_buf[128];
 	struct group *group_info = NULL;
-	char tmp1[7], tmp2[7], tmp3[7];
+	char tmp1[128], tmp2[128], tmp3[128], tmp4[128];
 	char tmp_line[128];
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
@@ -243,18 +254,90 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
+	/****** Line 6a (optional) ******/
+#if 0
+	/* mainly for debugging */ 
+	convert_num_unit((float)job_ptr->num_cpu_groups, tmp1, UNIT_NONE);
+	snprintf(tmp_line, sizeof(tmp_line),
+		"NumCPUGroups=%s ",
+		 tmp1);
+	xstrcat(out, tmp_line);
+#endif
+
+	if ((job_ptr->num_cpu_groups > 0) && 
+	    (job_ptr->cpus_per_node) &&
+	    (job_ptr->cpu_count_reps)) {
+		int length = 0;
+		xstrcat(out, "AllocCPUs=");
+		length += 10;
+		for (i = 0; i < job_ptr->num_cpu_groups; i++) {
+			if (length > 70) {
+				/* skip to last CPU group entry */
+			    	if (i < job_ptr->num_cpu_groups - 1) {
+			    		continue;
+				}
+				/* add elipsis before last entry */
+			    	xstrcat(out, "...,");
+				length += 4;
+			}
+
+			snprintf(tmp_line, sizeof(tmp_line),
+				"%d",
+				 job_ptr->cpus_per_node[i]);
+			xstrcat(out, tmp_line);
+			length += strlen(tmp_line);
+		    	if (job_ptr->cpu_count_reps[i] > 1) {
+				snprintf(tmp_line, sizeof(tmp_line),
+					"*%d",
+					 job_ptr->cpu_count_reps[i]);
+				xstrcat(out, tmp_line);
+				length += strlen(tmp_line);
+			}
+			if (i < job_ptr->num_cpu_groups - 1) {
+				xstrcat(out, ",");
+				length++;
+			}
+		}
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
 	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, UNIT_NONE);
 #ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->num_nodes, tmp2, UNIT_NONE);
 	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
 #else
-	sprintf(tmp2, "%u", job_ptr->num_nodes);
-	sprintf(tmp_line, "ReqProcs=%s MinNodes=%s ", tmp1, tmp2);
+	_sprint_range(tmp2, job_ptr->num_nodes, job_ptr->max_nodes);
+	sprintf(tmp_line, "ReqProcs=%s ReqNodes=%s ", tmp1, tmp2);
 #endif
 	xstrcat(out, tmp_line);
-	
+
+	_sprint_range(tmp1, job_ptr->min_sockets, job_ptr->max_sockets);
+	if (job_ptr->min_cores > 0) {
+		_sprint_range(tmp2, job_ptr->min_cores, job_ptr->max_cores);
+		strcat(tmp1, ":");
+		strcat(tmp1, tmp2);
+		if (job_ptr->min_threads > 0) {
+			_sprint_range(tmp2, job_ptr->min_threads, job_ptr->max_threads);
+			strcat(tmp1, ":");
+			strcat(tmp1, tmp2);
+		}
+	}
+	snprintf(tmp_line, sizeof(tmp_line), 
+		"ReqS:C:T=%s",
+		tmp1);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 8 ******/
 	convert_num_unit((float)job_ptr->cpus_per_task, tmp1, UNIT_NONE);
+
 	snprintf(tmp_line, sizeof(tmp_line),
 		"Shared=%s Contiguous=%d CPUs/task=%s", 
 		 (job_ptr->shared == 0 ? "0" :
@@ -267,20 +350,33 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 8 ******/
-	convert_num_unit((float)job_ptr->min_procs, tmp1, UNIT_NONE);
-	convert_num_unit((float)job_ptr->min_memory, tmp2, UNIT_NONE);
-	convert_num_unit((float)job_ptr->min_tmp_disk, tmp3, UNIT_NONE);
+	/****** Line 9 ******/
+	convert_num_unit((float)job_ptr->job_min_procs, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_sockets, tmp2, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_cores, tmp3, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_threads, tmp4, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"MinProcs=%s MinMemory=%s Features=%s MinTmpDisk=%s", 
-		tmp1, tmp2, job_ptr->features, tmp3);
+		"MinProcs=%s MinSockets=%s MinCores=%s MinThreads=%s", 
+		tmp1, tmp2, tmp3, tmp4);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 9 ******/
+	/****** Line 10 ******/
+	convert_num_unit((float)job_ptr->job_min_memory, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, UNIT_NONE);
+	snprintf(tmp_line, sizeof(tmp_line), 
+		"MinMemory=%s MinTmpDisk=%s Features=%s",
+		tmp1, tmp2, job_ptr->features);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"Dependency=%u Account=%s Reason=%s Network=%s",
 		job_ptr->dependency, job_ptr->account,
@@ -291,7 +387,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 10 ******/
+	/****** Line 12 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s Req%sIndices=", 
 		nodelist, job_ptr->req_nodes, nodelist);
 	xstrcat(out, tmp_line);
@@ -308,7 +404,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 11 ******/
+	/****** Line 13 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Exc%s=%s Exc%sIndices=", 
 		nodelist, job_ptr->exc_nodes, nodelist);
 	xstrcat(out, tmp_line);
@@ -325,7 +421,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 12 ******/
+	/****** Line 14 ******/
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, time_str, 
 		sizeof(time_str));
 	sprintf(tmp_line, "SubmitTime=%s ", time_str);
@@ -340,7 +436,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		  time_str, (long int)job_ptr->pre_sus_time);
 	xstrcat(out, tmp_line);
 
-	/****** Line 13 (optional) ******/
+	/****** Line 15 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -350,7 +446,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 14 (optional) ******/
+	/****** Line 16 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 	if (select_buf[0] != '\0') {

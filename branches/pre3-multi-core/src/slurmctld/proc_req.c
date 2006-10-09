@@ -360,6 +360,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
+	conf_ptr->select_type_param   = conf->select_type_param;
 	conf_ptr->slurm_user_id       = conf->slurm_user_id;
 	conf_ptr->slurm_user_name     = xstrdup(conf->slurm_user_name);
 	conf_ptr->slurmctld_debug     = conf->slurmctld_debug;
@@ -433,19 +434,19 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.uid      = step_rec->job_ptr->user_id;
 	cred_arg.hostlist = step_rec->step_layout->node_list;
         if(step_rec->job_ptr->details->shared == 0)
-                cred_arg.ntask_cnt = 0;
+                cred_arg.alloc_lps_cnt = 0;
         else
-                cred_arg.ntask_cnt = step_rec->job_ptr->ntask_cnt;
-        if (cred_arg.ntask_cnt > 0) {
-                cred_arg.ntask = xmalloc(cred_arg.ntask_cnt * sizeof(int));
-                memcpy(cred_arg.ntask, step_rec->job_ptr->ntask, 
-                       cred_arg.ntask_cnt*sizeof(int));
+                cred_arg.alloc_lps_cnt = step_rec->job_ptr->alloc_lps_cnt;
+        if (cred_arg.alloc_lps_cnt > 0) {
+                cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt * sizeof(int));
+                memcpy(cred_arg.alloc_lps, step_rec->job_ptr->alloc_lps, 
+                       cred_arg.alloc_lps_cnt*sizeof(int));
         } else
-		cred_arg.ntask = NULL;
+		cred_arg.alloc_lps = NULL;
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
 			&cred_arg);
-	xfree(cred_arg.ntask);
+	xfree(cred_arg.alloc_lps);
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;
@@ -1214,10 +1215,11 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		error_code =
 		    validate_node_specs(node_reg_stat_msg->node_name,
 					node_reg_stat_msg->cpus,
-					node_reg_stat_msg->
-					real_memory_size,
-					node_reg_stat_msg->
-					temporary_disk_space,
+					node_reg_stat_msg->sockets,
+					node_reg_stat_msg->cores,
+					node_reg_stat_msg->threads,
+					node_reg_stat_msg->real_memory_size,
+					node_reg_stat_msg->temporary_disk_space,
 					node_reg_stat_msg->job_count,
 					node_reg_stat_msg->status);
 #endif

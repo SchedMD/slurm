@@ -55,6 +55,7 @@
 #define MAX_THREADS	32
 #define MAX_USERNAME	9
 
+#define INT_UNASSIGNED ((int)-1)
 
 /* global variables relating to user options */
 extern char **remote_argv;
@@ -75,6 +76,11 @@ extern enum modes mode;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
+		                 (t == SLURM_DIST_PLANE) ? "plane" : \
+		                 (t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" : \
+		                 (t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" : \
+		                 (t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" : \
+		                 (t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
 
@@ -97,15 +103,28 @@ typedef struct srun_options {
 	int  max_threads;	/* --threads, -T (threads in srun) */
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
+        int  min_sockets_per_node; /* --sockets-per-node=n      */
+        int  max_sockets_per_node; /* --sockets-per-node=x-n    */
+        int  min_cores_per_socket; /* --cores-per-socket=n      */
+        int  max_cores_per_socket; /* --cores-per-socket=x-n    */
+        int  min_threads_per_core; /* --threads-per-core=n      */
+        int  max_threads_per_core; /* --threads-per-core=x-n    */
+        int  ntasks_per_node;   /* --ntasks-per-node=n		*/
+        int  ntasks_per_socket; /* --ntasks-per-socket=n	*/
+        int  ntasks_per_core;   /* --ntasks-per-core=n		*/
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool nodes_set;		/* true if nodes explicitly set */
+	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
-		distribution;	/* --distribution=, -m dist	*/
+	        distribution;	/* --distribution=, -m dist	*/
+        uint32_t plane_size;    /* lllp distribution -> plane_size for
+				 * when -m plane=<# of lllp per
+				 * plane> */      
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true if jobid explicitly set */
@@ -151,11 +170,16 @@ typedef struct srun_options {
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/
+        bool printreq;          /* --print-request              */
 
 	/* constraint options */
-	int mincpus;		/* --mincpus=n			*/
-	int realmem;		/* --mem=n			*/
-	long tmpdisk;		/* --tmp=n			*/
+	int job_min_cpus;	/* --mincpus=n			*/
+	int job_min_sockets;	/* --minsockets=n		*/
+	int job_min_cores;	/* --mincores=n			*/
+	int job_min_threads;	/* --minthreads=n		*/
+	int job_min_memory;	/* --mem=n			*/
+	int job_max_memory;	/* --job-mem=n			*/
+	long job_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
@@ -186,8 +210,14 @@ extern opt_t opt;
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
-#define constraints_given() opt.mincpus != -1 || opt.realmem != -1 ||\
-                            opt.tmpdisk != -1 || opt.contiguous   
+#define constraints_given() opt.job_min_cpus != INT_UNASSIGNED ||\
+			    opt.job_min_memory != INT_UNASSIGNED ||\
+			    opt.job_max_memory != INT_UNASSIGNED ||\
+			    opt.job_min_tmp_disk != INT_UNASSIGNED ||\
+			    opt.job_min_sockets != INT_UNASSIGNED ||\
+			    opt.job_min_cores != INT_UNASSIGNED ||\
+			    opt.job_min_threads != INT_UNASSIGNED ||\
+			    opt.contiguous   
 
 /* process options:
  * 1. set defaults

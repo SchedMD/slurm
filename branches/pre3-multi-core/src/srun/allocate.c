@@ -452,12 +452,22 @@ job_desc_msg_create_from_opts (char *script)
 	j->exc_nodes      = opt.exc_nodes;
 	j->partition      = opt.partition;
 	j->min_nodes      = opt.min_nodes;
+	j->min_sockets    = opt.min_sockets_per_node;
+	j->min_cores      = opt.min_cores_per_socket;
+	j->min_threads    = opt.min_threads_per_core;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
 	if (opt.nice)
 		j->nice   = NICE_OFFSET + opt.nice;
+	j->task_dist      = opt.distribution;
+	j->plane_size     = opt.plane_size;
 	j->group_id       = opt.gid;
 	j->mail_type      = opt.mail_type;
+
+	j->ntasks_per_node   = opt.ntasks_per_node;
+	j->ntasks_per_socket = opt.ntasks_per_socket;
+	j->ntasks_per_core   = opt.ntasks_per_core;
+
 	if (opt.mail_user)
 		j->mail_user = xstrdup(opt.mail_user);
 	if (opt.begin)
@@ -489,14 +499,28 @@ job_desc_msg_create_from_opts (char *script)
 
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
-	if (opt.mincpus > -1)
-		j->min_procs    = opt.mincpus;
-	if (opt.realmem > -1)
-		j->min_memory   = opt.realmem;
-	if (opt.tmpdisk > -1)
-		j->min_tmp_disk = opt.tmpdisk;
+	if (opt.max_sockets_per_node)
+		j->max_sockets  = opt.max_sockets_per_node;
+	if (opt.max_cores_per_socket)
+		j->max_cores    = opt.max_cores_per_socket;
+	if (opt.max_threads_per_core)
+		j->max_threads  = opt.max_threads_per_core;
 
-	if (opt.overcommit) { 
+	if (opt.job_min_cpus > -1)
+		j->job_min_procs    = opt.job_min_cpus;
+	if (opt.job_min_sockets > -1)
+		j->job_min_sockets  = opt.job_min_sockets;
+	if (opt.job_min_cores > -1)
+		j->job_min_cores    = opt.job_min_cores;
+	if (opt.job_min_threads > -1)
+		j->job_min_threads  = opt.job_min_threads;
+	if (opt.job_min_memory > -1)
+		j->job_min_memory   = opt.job_min_memory;
+	if (opt.job_max_memory > -1)
+		j->job_max_memory   = opt.job_max_memory;
+	if (opt.job_min_tmp_disk > -1)
+		j->job_min_tmp_disk = opt.job_min_tmp_disk;
+	if (opt.overcommit) {
 		j->num_procs    = opt.min_nodes;
 		j->overcommit	= opt.overcommit;
 	} else
@@ -595,6 +619,22 @@ _step_req_create(srun_job_t *j)
 		break;
 	case SLURM_DIST_CYCLIC:
 		r->task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC:
+		r->task_dist = SLURM_DIST_CYCLIC_CYCLIC;
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK:
+		r->task_dist = SLURM_DIST_CYCLIC_BLOCK;
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC:
+		r->task_dist = SLURM_DIST_BLOCK_CYCLIC;
+		break;
+	case SLURM_DIST_BLOCK_BLOCK:
+		r->task_dist = SLURM_DIST_BLOCK_BLOCK;
+		break;
+	case SLURM_DIST_PLANE:
+		r->task_dist = SLURM_DIST_PLANE;
+		r->plane_size = opt.plane_size;
 		break;
 	default:
 		r->task_dist = (opt.nprocs <= r->node_count) 

@@ -251,7 +251,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 static uint32_t _get_job_min_mem(struct job_record *job_ptr)
 {
 	if (job_ptr->details)
-		return job_ptr->details->min_memory;
+		return job_ptr->details->job_min_memory;
 	return (uint32_t) 0;
 }
 
@@ -259,7 +259,7 @@ static uint32_t _get_job_min_disk(struct job_record *job_ptr)
 	
 {
 	if (job_ptr->details)
-		return job_ptr->details->min_tmp_disk;
+		return job_ptr->details->job_min_tmp_disk;
 	return (uint32_t) 0;
 }
 
