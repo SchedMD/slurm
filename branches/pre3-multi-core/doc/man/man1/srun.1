@@ -63,22 +63,22 @@ for more information.  If \fB\-N\fR is not specified, the default
 behaviour is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
 .TP
-\fB\-E\fR \fB\-\-extra-node-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
+\fB\-E\fR \fB\-\-extra\-node\-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
 Request a specific allocation of resources with details as to the
-number and type of computational resources within a cluster :
+number and type of computational resources within a cluster:
 number of sockets (or physical processors) per node,
 cores per socket, and threads per core.
 The total amount of resources being requested is the product of all of
 the terms.
-As with --nodes, each value can be a single number or a range (e.g. min-max).
+As with \-\-nodes, each value can be a single number or a range (e.g. min\-max).
 An asterisk (*) can be used as a placeholder indicating that all available 
 resources of that type are to be utilized.
 As with nodes, the individual levels can also be specified in separate
 options if desired:
 .nf
-    \fB\--sockets-per-node\fR=\fIsockets\fR
-    \fB\--cores-per-socket\fR=\fIcores\fR
-    \fB\--threads-per-core\fR=\fIthreads\fR
+    \fB\-\-sockets\-per\-node\fR=\fIsockets\fR
+    \fB\-\-cores\-per\-socket\fR=\fIcores\fR
+    \fB\-\-threads\-per\-core\fR=\fIthreads\fR
 .fi
 When the task/affinity plugin is enabled,
 specifying an allocation in this manner also instructs SLURM to use
@@ -206,7 +206,7 @@ per cpu. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
 permitted to execute per node.
 ./"NOTE: Do not document feature until user release mechanism is available.
 ./".TP
-./"-H, --hold
+./"\-H, \-\-hold
 ./"Specify the job is to be submitted in a held state (priority of zero).
 ./"A held job can now be released using scontrol to reset its priority.
 .TP
@@ -359,7 +359,7 @@ i.e.
 .br 
 #SLURM -N 2 -n 2
 .br 
-#SLURM --mpi=lam
+#SLURM \-\-mpi=lam
 .br
 
 This is run the script on 2 nodes, with 2 procs with mpi type lam.  
@@ -534,7 +534,7 @@ by the slurm job manager.
 .TP
 \fB\-\-contiguous\fR
 Demand a contiguous range of nodes. The default is "yes". Specify
---contiguous=no if a contiguous range of nodes is not a constraint.
+\-\-contiguous=no if a contiguous range of nodes is not a constraint.
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=\fIhost1,host2,...\fR or \fIfilename\fR
 Request a specific list of hosts. The job will contain \fIat least\fR
@@ -857,9 +857,9 @@ to this same task.
 will redirect stdout and/or stderr to the named file from all tasks.
 stdin will be redirected from the named file and broadcast to all
 tasks in the job.  If the job is submitted in batch mode using the
-.B -b
+.B \-b
 or
-.B --batch
+.B \-\-batch
 option, \fIfilename\fR refers to a path on each of the nodes on which
 the job runs.  Otherwise \fIfilename\fR refers to a path on the host
 that runs \fBsrun\fR.  Depending on the cluster's file system layout,
@@ -988,7 +988,7 @@ The location of the SLURM configuration file.
 \fB\-g, \-\-geometry\fR=\fIX,Y,Z\fR
 .TP
 \fBSLURM_LABELIO\fR
-\fB-l, --label\fR
+\fB\-l, \-\-label\fR
 .TP
 \fBSLURM_MEM_BIND\fR
 \fB\-\-mem_bind\fR=\fItype\fR
@@ -1012,10 +1012,10 @@ The location of the SLURM configuration file.
 \fB\-o, \-\-overcommit\fR
 .TP
 \fBSLURM_PARTITION\fR
-\fB\-p, --partition\fR=\fIpartition\fR
+\fB\-p, \-\-partition\fR=\fIpartition\fR
 .TP
 \fBSLURM_REMOTE_CWD\fR
-\fB\-D, --chdir=\fR=\fIdir\fR
+\fB\-D, \-\-chdir=\fR=\fIdir\fR
 .TP
 \fBSLURM_SRUN_COMM_IFHN\fR
 \fB\-\-ctrl\-comm\-ifhn\fR=\fIaddr\fR
@@ -1187,13 +1187,13 @@ For example:
 ###################################################################
 # srun multiple program configuration file
 #
-# srun -n8 -l --multi-prog silly.conf
+# srun \-n8 \-l \-\-multi-prog silly.conf
 ###################################################################
 4-6       hostname
 1,7       echo  task:%t
 0,2-3     echo  offset:%o
 
-$ srun -n8 -l --multi-prog silly.conf
+$ srun \-n8 -\l \-\-multi\-prog silly.conf
 0: offset:0
 1: task:1
 2: offset:1
@@ -1248,7 +1248,7 @@ srun: jobid 42 submitted
 .fi
 .PP
 The output of test.sh would be found in the default output file
-"slurm-42.out."
+"slurm\-42.out."
 .PP
 The srun \fB-r\fR option is used within a job script
 to run two job steps on disjoint nodes in the following
@@ -1260,11 +1260,11 @@ of as a batch job in this case.
 > cat test.sh
 #!/bin/sh
 echo $SLURM_NODELIST
-srun -lN2 -r2 hostname
-srun -lN2 hostname
+srun \-lN2 \-r2 hostname
+srun \-lN2 hostname
 
-> srun -A -N4 test.sh
-dev[7-10]
+> srun \-A -\N4 test.sh
+dev[7\-10]
 0: dev9
 1: dev10
 0: dev7
@@ -1279,14 +1279,14 @@ within an allocated set of nodes.
 
 > cat test.sh
 #!/bin/bash
-srun -lN2 -n4 -r 2 sleep 60 &
-srun -lN2 -r 0 sleep 60 &
+srun \-lN2 \-n4 \-r 2 sleep 60 &
+srun \-lN2 \-r 0 sleep 60 &
 sleep 1
 squeue
-squeue -s
+squeue \-s
 wait
 
-> srun -A -N4 test.sh
+> srun \-A \-N4 test.sh
   JOBID PARTITION     NAME     USER  ST      TIME  NODES NODELIST
   65641     batch  test.sh   grondo   R      0:01      4 dev[7-10]
 
@@ -1310,14 +1310,14 @@ MACHINEFILE="nodes.$SLURM_JOBID"
 # Generate Machinefile for mpich such that hosts are in the same
 #  order as if run via srun
 #
-srun -l /bin/hostname | sort -n | awk '{print $2}' > $MACHINEFILE
+srun \-l /bin/hostname | sort \-n | awk '{print $2}' > $MACHINEFILE
 
 # Run using generated Machine file:
-mpirun -np $SLURM_NPROCS -machinefile $MACHINEFILE mpi-app
+mpirun \-np $SLURM_NPROCS \-machinefile $MACHINEFILE mpi\-app
 
 rm $MACHINEFILE
 
-> srun -AN2 -n4 test.sh
+> srun \-AN2 \-n4 test.sh
 
 .fi 
 .PP
