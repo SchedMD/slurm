@@ -914,7 +914,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	Buf buffer;
 	ret_data_info_t *ret_data_info = NULL;
 	List ret_list = NULL;
-	int orig_timeout = 0;
+	int orig_timeout = timeout;
 
 	xassert(fd >= 0);
 
@@ -1069,7 +1069,7 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	void *auth_cred = NULL;
 	Buf buffer;
 	ret_data_info_t *ret_data_info = NULL;
-	int orig_timeout = 0;
+	int orig_timeout = timeout;
 
 	xassert(fd >= 0);
 
