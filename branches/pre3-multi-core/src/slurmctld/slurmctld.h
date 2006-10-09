@@ -274,9 +274,9 @@ struct job_details {
 					   any other value accepts the default
 					   sharing policy. */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
-        task_dist_states_t task_dist;  /* task layout for this job. Only useful 
+	task_dist_states_t task_dist;  /* task layout for this job. Only useful 
                                          * when Consumable Resources is enabled */
-        uint32_t plane_size;            /* plane_size for SLURM_DIST_PLANE. 
+	uint32_t plane_size;            /* plane_size for SLURM_DIST_PLANE. 
 					 * Only useful when Consumable 
 					 * Resources is enabled */
 	uint16_t wait_reason;		/* reason job still pending, see
@@ -285,9 +285,9 @@ struct job_details {
 	uint16_t overcommit;		/* processors being over subscribed */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
-        uint16_t ntasks_per_node;	/* number of tasks on each node */
-        uint16_t ntasks_per_socket;	/* number of tasks on each socket */
-        uint16_t ntasks_per_core;	/* number of tasks on each core */
+	uint16_t ntasks_per_node;	/* number of tasks on each node */
+	uint16_t ntasks_per_socket;	/* number of tasks on each socket */
+	uint16_t ntasks_per_core;	/* number of tasks on each core */
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
 	uint32_t job_min_sockets;	/* minimum sockets per node */
@@ -422,7 +422,7 @@ extern List job_list;			/* list of job_record entries */
  * useful when updating other types of consumable resources as well
 */
 enum select_data_info {
-	SELECT_CR_PLUGIN,   /* data-> uint32 1 if CR plugin */
+	SELECT_CR_PLUGIN,    /* data-> uint32 1 if CR plugin */
 	SELECT_CPU_COUNT,    /* data-> uint32_t count_cpus (CR support) */   
 	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
 	SELECT_ALLOC_CPUS,   /* data-> uint32 alloc cpus (CR support) */
