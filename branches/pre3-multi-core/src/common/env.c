@@ -322,6 +322,10 @@ int setup_env(env_t *env)
 			dist      = "block";
 			lllp_dist = "block";
 			break;
+		case SLURM_DIST_UNKNOWN:
+			dist      = "unknown";
+			lllp_dist = "unknown";
+			break;
 		default:
 			error("unknown dist, type %d", env->distribution);
 			dist      = "unknown";
