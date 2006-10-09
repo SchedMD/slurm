@@ -55,7 +55,7 @@ expect {
 }
 spawn ls /usr/include/numa.h
 expect {
-	-re "no such file" {
+	-nocase "no such file" {
 		set affinity 0
 		exp_continue
 	}
