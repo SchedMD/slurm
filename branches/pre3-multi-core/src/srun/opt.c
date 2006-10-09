@@ -1064,6 +1064,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_DISTRIB:
+		if (strcmp(val, "unknown") == 0)
+			break;	/* ignore it, passed from salloc */
 	        opt.plane_size = 0;
 		dt = _verify_dist_type(val, &opt.plane_size);
 		if (dt == SLURM_DIST_UNKNOWN) {
