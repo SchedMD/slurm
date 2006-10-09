@@ -265,7 +265,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
 
-		hostlist_uniq(hl);
+		/* hostlist_uniq(hl); */
 		//ai->nnodes = hostlist_count(hl);
 	
 		hostlist_destroy(hl);
