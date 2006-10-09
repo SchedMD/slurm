@@ -103,15 +103,15 @@ typedef struct srun_options {
 	int  max_threads;	/* --threads, -T (threads in srun) */
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
-        int  min_sockets_per_node; /* --sockets-per-node=n      */
-        int  max_sockets_per_node; /* --sockets-per-node=x-n    */
-        int  min_cores_per_socket; /* --cores-per-socket=n      */
-        int  max_cores_per_socket; /* --cores-per-socket=x-n    */
-        int  min_threads_per_core; /* --threads-per-core=n      */
-        int  max_threads_per_core; /* --threads-per-core=x-n    */
-        int  ntasks_per_node;   /* --ntasks-per-node=n		*/
-        int  ntasks_per_socket; /* --ntasks-per-socket=n	*/
-        int  ntasks_per_core;   /* --ntasks-per-core=n		*/
+	int  min_sockets_per_node; /* --sockets-per-node=n      */
+	int  max_sockets_per_node; /* --sockets-per-node=x-n    */
+	int  min_cores_per_socket; /* --cores-per-socket=n      */
+	int  max_cores_per_socket; /* --cores-per-socket=x-n    */
+	int  min_threads_per_core; /* --threads-per-core=n      */
+	int  max_threads_per_core; /* --threads-per-core=x-n    */
+	int  ntasks_per_node;   /* --ntasks-per-node=n		*/
+	int  ntasks_per_socket; /* --ntasks-per-socket=n	*/
+	int  ntasks_per_core;   /* --ntasks-per-core=n		*/
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
