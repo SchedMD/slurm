@@ -167,7 +167,7 @@ function displayfile()
    "NodeName=" + document.config.node_name.value +
    get_field2("NodeAddr",document.config.node_addr) +
    get_field2(" Procs",document.config.procs) +
-   get_field2(" Memory",document.config.procs) +
+   get_field2(" Memory",document.config.memory) +
    get_field2(" Sockets",document.config.sockets) +
    get_field2(" CoresPerSocket",document.config.cores_per_socket) +
    get_field2(" ThreadsPerCore",document.config.threads_per_core) +
@@ -491,24 +491,27 @@ CPU affinity support
 <P>
 <B>Prolog/Epilog</B>: Fully qualified path that will be executed as 
 root on every node of a user's job before the job's tasks
-will be initiated there and after that job has terminated:
+will be initiated there and after that job has terminated.
+These parameters are optional.
 <DL>
 <DT> <input type="text" name="epilog" value="" size=40> <B>Prolog</B>
 <DT> <input type="text" name="prolog" value="" size=40> <B>Epilog</B>
 </DL>
 
 <P>
-<B>SrunProlog/Epilog</B>: Fully qualified path to be executed by srun at job step initiation and 
-termination. These parameters may be overridden by srun's --prolog 
-and --epilog options:
+<B>SrunProlog/Epilog</B>: Fully qualified path to be executed by srun at 
+job step initiation and termination. These parameters may be overridden by 
+srun's --prolog and --epilog options
+These parameters are optional.
 <DL>
 <DT> <input type="text" name="srun_prolog" value="" size=40> <B>SrunProlog</B>
 <DT> <input type="text" name="srun_epilog" value="" size=40> <B>SrunEpilog</B>
 </DL>
 
 <P>
-<B>TaskProlog/Epilog</B>: Fully qualified path to be executed as the user before each task begins 
-execution and after each task terminates.
+<B>TaskProlog/Epilog</B>: Fully qualified path to be executed as the user 
+before each task begins execution and after each task terminates.
+These parameters are optional.
 <DL>
 <DT> <input type="text" name="task_prolog" value="" size=40> <B>TaskProlog</B>
 <DT> <input type="text" name="task_epilog" value="" size=40> <B>TaskEpilog</B>
