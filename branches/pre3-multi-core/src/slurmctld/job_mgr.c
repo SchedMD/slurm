@@ -2469,7 +2469,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->shared = job_desc->shared;
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
-        if (job_desc->task_dist != (uint32_t) NO_VAL)
+        if (job_desc->task_dist != (uint16_t) NO_VAL)
                 detail_ptr->task_dist = job_desc->task_dist;
         if (job_desc->plane_size != (uint32_t) NO_VAL)
                 detail_ptr->plane_size = job_desc->plane_size;
@@ -2645,7 +2645,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
 
-        if (job_desc_msg->task_dist == (uint32_t) NO_VAL)
+        if (job_desc_msg->task_dist == (uint16_t) NO_VAL)
 		info("_validate_job_desc: job failed to specify distribution ");
         if (job_desc_msg->plane_size == (uint32_t) NO_VAL)
                 job_desc_msg->plane_size = 0;

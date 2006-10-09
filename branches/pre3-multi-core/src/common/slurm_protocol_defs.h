@@ -390,15 +390,15 @@ typedef struct launch_tasks_request_msg {
 	char    **env;
 	char    **argv;
 	char     *cwd;
-	cpu_bind_type_t cpu_bind_type;	/* --cpu_bind=                    */
+	uint16_t cpu_bind_type;	/* --cpu_bind=                    */
 	char     *cpu_bind;	/* binding map for map/mask_cpu           */
-	mem_bind_type_t mem_bind_type;	/* --mem_bind=                    */
+	uint16_t mem_bind_type;	/* --mem_bind=                    */
 	char     *mem_bind;	/* binding map for tasks to memory        */
 	uint16_t  num_resp_port;
 	uint16_t  *resp_port;   /* array of available response ports      */
 
         /* Distribution at the lowest level of logical processor (lllp) */
-	task_dist_states_t task_dist;  /* --distribution=, -m dist	*/
+	uint16_t task_dist;  /* --distribution=, -m dist	*/
 	uint32_t plane_size; /* lllp distribution -> plane_size for
 			      * when -m plane=<# of lllp per plane> */      
 	uint16_t  task_flags;

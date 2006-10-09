@@ -91,6 +91,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->argv        = ((char **) NULL);
 	job_desc_msg->argc        = 0;
 	job_desc_msg->shared      = (uint16_t) NO_VAL;
+	job_desc_msg->task_dist   = (uint16_t) NO_VAL;
 	job_desc_msg->time_limit  = NO_VAL;
 	job_desc_msg->num_procs   = NO_VAL;
 	job_desc_msg->max_nodes   = NO_VAL;

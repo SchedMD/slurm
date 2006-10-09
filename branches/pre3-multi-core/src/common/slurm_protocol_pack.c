@@ -1449,7 +1449,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack32((uint32_t)msg->num_tasks, buffer);
 
 	pack16((uint16_t)msg->relative, buffer);
-	pack32((uint32_t)msg->task_dist, buffer);
+	pack16((uint16_t)msg->task_dist, buffer);
 	pack32((uint32_t)msg->plane_size, buffer);
 	pack16((uint16_t)msg->port, buffer);
 	packstr(msg->host, buffer);
@@ -1478,7 +1478,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack32(&(tmp_ptr->num_tasks), buffer);
 
 	safe_unpack16(&(tmp_ptr->relative), buffer);
-	safe_unpack32(&(tmp_ptr->task_dist), buffer);
+	safe_unpack16(&(tmp_ptr->task_dist), buffer);
 	safe_unpack32(&(tmp_ptr->plane_size), buffer);
 	safe_unpack16(&(tmp_ptr->port), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
@@ -2264,7 +2264,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
 	/* load the data values */
 	pack16((uint16_t)job_desc_ptr->contiguous, buffer);
-	pack32((uint32_t)job_desc_ptr->task_dist, buffer);
+	pack16((uint16_t)job_desc_ptr->task_dist, buffer);
 	pack32((uint32_t)job_desc_ptr->plane_size, buffer);
 	pack16((uint16_t)job_desc_ptr->kill_on_node_fail, buffer);
 	packstr(job_desc_ptr->features, buffer);
@@ -2374,7 +2374,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	/* load the data values */
 	safe_unpack16(&job_desc_ptr->contiguous, buffer);
-	safe_unpack32(&job_desc_ptr->task_dist, buffer);
+	safe_unpack16(&job_desc_ptr->task_dist, buffer);
 	safe_unpack32(&job_desc_ptr->plane_size, buffer);
 	safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->features, &uint16_tmp, buffer);
@@ -2762,12 +2762,12 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	slurm_pack_slurm_addr(&msg->orig_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
-	pack32((uint32_t)msg->cpu_bind_type, buffer);
+	pack16((uint16_t)msg->cpu_bind_type, buffer);
 	packstr(msg->cpu_bind, buffer);
-	pack32((uint32_t)msg->mem_bind_type, buffer);
+	pack16((uint16_t)msg->mem_bind_type, buffer);
 	packstr(msg->mem_bind, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
-	pack32((uint32_t)msg->task_dist, buffer);
+	pack16((uint16_t)msg->task_dist, buffer);
 	pack32((uint32_t)msg->plane_size, buffer);
 	pack16((uint16_t)msg->task_flags, buffer);
 	pack16((uint16_t)msg->multi_prog, buffer);
@@ -2839,12 +2839,12 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
 	safe_unpackstr_xmalloc(&msg->cwd, &uint16_tmp, buffer);
-	safe_unpack32(&msg->cpu_bind_type, buffer);
+	safe_unpack16(&msg->cpu_bind_type, buffer);
 	safe_unpackstr_xmalloc(&msg->cpu_bind, &uint16_tmp, buffer);
-	safe_unpack32(&msg->mem_bind_type, buffer);
+	safe_unpack16(&msg->mem_bind_type, buffer);
 	safe_unpackstr_xmalloc(&msg->mem_bind, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-	safe_unpack32(&msg->task_dist, buffer);
+	safe_unpack16(&msg->task_dist, buffer);
 	safe_unpack32(&msg->plane_size, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->multi_prog, buffer);
