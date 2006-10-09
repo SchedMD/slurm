@@ -78,7 +78,7 @@ by their application.  Table 1 summarizes the new multi-core flags.
 to dedicate to a job (minimum or range)
 </td></tr>
 <tr>
-    <td> -E <i>S[:C[:T]]</i></td>
+    <td> -B <i>S[:C[:T]]</i></td>
     <td> Combined shorcut option for --sockets-per-node, --cores-per_cpu, --threads-per_core
 </td></tr>
 <tr><td colspan=2>
@@ -184,7 +184,7 @@ socket or core.
 <p>See also 'srun --cpu_bind=help' and 'man srun'</p>
 
 <a name="srun_highlevelmc">
-<h3>High-level -E <i>S[:C[:T]]</i> - Automatic mask generation interface</h3></a>
+<h3>High-level -B <i>S[:C[:T]]</i> - Automatic mask generation interface</h3></a>
 
 <p>We have updated the node
 selection infrastructure with a mechanism that allows selection of logical
@@ -192,7 +192,7 @@ processors at a finer granularity. Users are able to request a specific number
 of nodes, sockets,&nbsp; cores, and threads:</p>
 
 <PRE>
-    -E --extra-node-info=<i>S[:C[:T]]</i>            Expands to:
+    -B --extra-node-info=<i>S[:C[:T]]</i>            Expands to:
         --sockets-per-node=<i>S</i>      number of sockets per node to allocate
         --cores-per-socket=<i>C</i>      number of cores per socket to allocate
         --threads-per-core=<i>T</i>      number of threads per core to allocate
@@ -205,19 +205,19 @@ of nodes, sockets,&nbsp; cores, and threads:</p>
 
 <UL>
 <UL>
-<LI> srun -n 8 -N 4 -E 2:1 a.out
-<LI> srun -n 8 -N 4 -E 2   a.out
+<LI> srun -n 8 -N 4 -B 2:1 a.out
+<LI> srun -n 8 -N 4 -B 2   a.out
 <BR>
 note: compare the above with the previous corresponding --cpu_bind=... examples
 
 <LI> srun -n 16 -N 4 a.out
-<LI> srun -n 16 -N 4 -E 2:2:1 a.out
-<LI> srun -n 16 -N 4 -E 2-2:2-2:1-1 a.out
+<LI> srun -n 16 -N 4 -B 2:2:1 a.out
+<LI> srun -n 16 -N 4 -B 2-2:2-2:1-1 a.out
 <BR> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or
 <LI> srun -n 16 -N 4 --sockets-per-node 2-2 --cores-per-socket 2-2 --threads-per-core 1-1 a.out
-<LI> srun -n 16 -N 2-4 -E '1-2:*:1' a.out
-<LI> srun -n 16 -N 4:2 -E '2:*:1-1' a.out
-<LI> srun -n 16 -N 4:4 -E '1-1:1-1' a.out
+<LI> srun -n 16 -N 2-4 -B '1-2:*:1' a.out
+<LI> srun -n 16 -N 4:2 -B '2:*:1-1' a.out
+<LI> srun -n 16 -N 4:4 -B '1-1:1-1' a.out
 </UL>
 </UL>
 
@@ -228,9 +228,9 @@ note: compare the above with the previous corresponding --cpu_bind=... examples
  <li> Adding --cpu_bind=verbose to the command line (or setting the
       CPU_BIND environment variable to "verbose") will cause each task
       to report the affinity mask in use
- <li> Binding is on by default when -E is used. The default binding on
+ <li> Binding is on by default when -B is used. The default binding on
       multi-core/multi-threaded systems is equivalent to the level of
-      resource enumerated in the -E option.
+      resource enumerated in the -B option.
 </ul>
 
 <p>See also 'srun --help' and 'man srun'</p>
@@ -267,9 +267,9 @@ is enabled. To disable binding at the job level use --cpu_bind=no.</p>
 
 <UL>
 <UL>
-<LI>srun -n 16 -N 4 -E '2:*:1' -m block:cyclic --cpu_bind=socket a.out
-<LI>srun -n 16 -N 4 -E '2:*:1' -m plane=2 --cpu_bind=core a.out
-<LI>srun -n 16 -N 4 -E '2:*:1' -m plane=2 a.out
+<LI>srun -n 16 -N 4 -B '2:*:1' -m block:cyclic --cpu_bind=socket a.out
+<LI>srun -n 16 -N 4 -B '2:*:1' -m plane=2 --cpu_bind=core a.out
+<LI>srun -n 16 -N 4 -B '2:*:1' -m plane=2 a.out
 </UL>
 </UL>
 
@@ -295,7 +295,7 @@ specify a minimum number of sockets, cores, or threads:
       --tmp=<i>MB</i>                minimum amount of temporary disk
 </PRE>
 
-These constraints are separate from the -N or -E allocation minimums.
+These constraints are separate from the -N or -B allocation minimums.
 Using these constraints allows the user to exclude smaller nodes from
 the allocation request.
 
@@ -405,7 +405,7 @@ proposed high-level flags are easier to use than --cpu_bind because:</p>
 <ul>
 <li>Affinity mask generation happens automatically when using the high-level flags. </li>
 <li>The length and complexity of the --cpu_bind flag vs. the length
-of the combination of -E and --distribution flags make the high-level
+of the combination of -B and --distribution flags make the high-level
 flags much easier to use.</li>
 </ul>
 
@@ -427,9 +427,9 @@ wanted layout using 1) the new high-level flags and 2) --cpubind</p>
 
 <DL>
 <DL>
-<DT><p>% mpirun -srun -n 32 -N 4 -E 4:2 --distribution=block:cyclic a.out</p>
+<DT><p>% mpirun -srun -n 32 -N 4 -B 4:2 --distribution=block:cyclic a.out</p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or
-<DT><p>% mpirun -srun -n 32 -N 4 -E 4:2 a.out</p>
+<DT><p>% mpirun -srun -n 32 -N 4 -B 4:2 a.out</p>
 </DL>
 </DL>
 
@@ -728,7 +728,7 @@ Below is an example squeue output after running 7 copies of:
 
 <UL>
 <UL>
-<DL>% srun -n 4 -E 2:2:1
+<DL>% srun -n 4 -B 2:2:1
 	--minsockets=4 --mincores=2 --minthreads=1 --mem=1024 sleep 100 &
 </UL>
 </UL>
@@ -837,7 +837,7 @@ the number of allocated CPUs per node as well as the socket, cores,
 and threads specified in the request and contraints.
 
 <PRE>
-% srun -N 2 -E 2:1-1 sleep 100 &
+% srun -N 2 -B 2:1-1 sleep 100 &
 % scontrol show job 20
 JobId=20 UserId=(30352) GroupId=users(1051)
    Name=sleep
@@ -983,7 +983,7 @@ using NodeName:
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 3 October 2006</p>
+<p style="text-align:center;">Last modified 9 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
 

@@ -1227,12 +1227,12 @@ void set_options(const int argc, char **argv, int first)
 		{"attach",        required_argument, 0, 'a'},
 		{"allocate",      no_argument,       0, 'A'},
 		{"batch",         no_argument,       0, 'b'},
+		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
-		{"extra-node-info", required_argument, 0, 'e'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
@@ -1313,7 +1313,7 @@ void set_options(const int argc, char **argv, int first)
 		{"print-request",    no_argument,       0, LONG_OPT_PRINTREQ},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:Abc:C:d:D:e:E:g:Hi:IjJ:kKlm:n:N:"
+	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1383,6 +1383,27 @@ void set_options(const int argc, char **argv, int first)
 				      "from srun commandline.", opt_char);
 			}
 			break;
+		case (int)'B':
+			if(!first && opt.extra_set)
+				break;
+
+			opt.extra_set = _verify_cpu_core_thread_count(
+				optarg,
+				&opt.min_sockets_per_node,
+				&opt.max_sockets_per_node,
+				&opt.min_cores_per_socket,
+				&opt.max_cores_per_socket,
+				&opt.min_threads_per_core,
+				&opt.max_threads_per_core,
+				&opt.cpu_bind_type);
+
+
+			if (opt.extra_set == false) {
+				error("invalid resource allocation -B `%s'",
+					optarg);
+				exit(1);
+			}
+			break;
 		case (int)'c':
 			if(!first && opt.cpus_set)
 				break;
@@ -1420,26 +1441,6 @@ void set_options(const int argc, char **argv, int first)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
-			break;
-		case (int)'E':
-			if(!first && opt.extra_set)
-				break;
-						
-			opt.extra_set = _verify_cpu_core_thread_count(
-				optarg,
-				&opt.min_sockets_per_node,
-				&opt.max_sockets_per_node,
-				&opt.min_cores_per_socket,
-				&opt.max_cores_per_socket,
-				&opt.min_threads_per_core,
-				&opt.max_threads_per_core,
-				&opt.cpu_bind_type);
-			
-			if (opt.extra_set == false) {
-				error("invalid resource allocation -E `%s'", 
-				      optarg);
-				exit(1);
-			}
 			break;
 		case (int)'g':
 			if(!first && opt.geometry)
@@ -2590,7 +2591,7 @@ static void _help(void)
 "                              --mem >= --job-mem if --mem is specified.\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
-"  -E --extra-node-info=S[:C[:T]]            Expands to:\n"
+"  -B --extra-node-info=S[:C[:T]]            Expands to:\n"
 "      --sockets-per-node=S      number of sockets per node to allocate\n"
 "      --cores-per-socket=C      number of cores per socket to allocate\n"
 "      --threads-per-core=T      number of threads per core to allocate\n"
