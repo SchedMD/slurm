@@ -196,7 +196,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->nodelist       = _normalize_hostlist(resp->node_list);
 	ai->jobid          = resp->job_id;
 	ai->nnodes         = resp->node_cnt;
-	ai->alloc_nnodes   = ai->nnodes;
+	ai->alloc_nnodes   = resp->node_cnt;
 	ai->stepid         = NO_VAL;
 	ai->num_cpu_groups = resp->num_cpu_groups;
 	ai->cpus_per_node  = resp->cpus_per_node;
@@ -266,13 +266,15 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		count = hostlist_count(hl);
 
 		hostlist_uniq(hl);
-		ai->nnodes = hostlist_count(hl);
+		//ai->nnodes = hostlist_count(hl);
 	
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
 		
-	} else if((opt.max_nodes > 0) && (opt.max_nodes <ai->nnodes))
+	} 
+		
+	if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
 		ai->nnodes = opt.max_nodes;
 
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
@@ -303,7 +305,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 {
 	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(*i));
-
+	
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->alloc_nnodes   = i->nnodes;
