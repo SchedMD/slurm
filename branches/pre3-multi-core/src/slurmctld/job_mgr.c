@@ -2685,6 +2685,12 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */
+	if (job_desc_msg->min_sockets == NO_VAL)
+		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
+	if (job_desc_msg->min_cores == NO_VAL)
+		job_desc_msg->min_cores = 1;	/* default core count of 1 */
+	if (job_desc_msg->min_threads == NO_VAL)
+		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
 	if (job_desc_msg->job_min_procs == NO_VAL)
