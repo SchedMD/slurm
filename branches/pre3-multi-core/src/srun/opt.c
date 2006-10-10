@@ -170,7 +170,7 @@ static char * _base_name(char* command);
 static List  _create_path_list(void);
 
 /* Get a decimal integer from arg */
-static int  _get_int(const char *arg, const char *what);
+static int  _get_int(const char *arg, const char *what, bool positive);
 static bool _get_resource_range(const char *arg, const char *what, 
                                 int *min, int *max, bool isFatal);
 
@@ -1141,12 +1141,13 @@ _process_env_var(env_vars_t *e, const char *val)
  * 
  */
 static int
-_get_int(const char *arg, const char *what)
+_get_int(const char *arg, const char *what, bool positive)
 {
 	char *p;
 	long int result = strtol(arg, &p, 10);
 
-	if ((*p != '\0') || (result <= 0L)) {
+	if ((*p != '\0') || (result < 0L)
+	||  (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		exit(1);
 	} else if (result > INT_MAX) {
@@ -1411,7 +1412,7 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
-				_get_int(optarg, "cpus-per-task");
+				_get_int(optarg, "cpus-per-task", true);
 			break;
 		case (int)'C':
 			if(!first && opt.constraints)
@@ -1424,7 +1425,7 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			
 			opt.slurmd_debug = 
-				_get_int(optarg, "slurmd-debug");
+				_get_int(optarg, "slurmd-debug", false);
 			break;
 		case (int)'D':
 			if(!first && set_cwd)
@@ -1504,7 +1505,7 @@ void set_options(const int argc, char **argv, int first)
 						
 			opt.nprocs_set = true;
 			opt.nprocs = 
-				_get_int(optarg, "number of tasks");
+				_get_int(optarg, "number of tasks", true);
 			break;
 		case (int)'N':
 			if(!first && opt.nodes_set)
@@ -1546,7 +1547,7 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.dependency)
 				break;
 						
-			opt.dependency = _get_int(optarg, "dependency");
+			opt.dependency = _get_int(optarg, "dependency", true);
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
@@ -1562,7 +1563,7 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			
 			//xfree(opt.relative);
-			opt.relative = _get_int(optarg, "relative");
+			opt.relative = _get_int(optarg, "relative", false);
 			opt.relative_set = true;
 			break;
 		case (int)'R':
@@ -1575,14 +1576,14 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.time_limit)
 				break;
 			
-			opt.time_limit = _get_int(optarg, "time");
+			opt.time_limit = _get_int(optarg, "time", true);
 			break;
 		case (int)'T':
 			if(!first && opt.max_threads)
 				break;
 			
 			opt.max_threads = 
-				_get_int(optarg, "max_threads");
+				_get_int(optarg, "max_threads", true);
 			pmi_server_max_threads(opt.max_threads);
 			break;
 		case (int)'u':
@@ -1620,7 +1621,7 @@ void set_options(const int argc, char **argv, int first)
 #endif
 			break;
 		case (int)'W':
-			opt.max_wait = _get_int(optarg, "wait");
+			opt.max_wait = _get_int(optarg, "wait", false);
 			break;
 		case (int)'x':
 			xfree(opt.exc_nodes);
@@ -1660,16 +1661,18 @@ void set_options(const int argc, char **argv, int first)
 				       optarg);
 			break;
 		case LONG_OPT_MINCPUS:
-			opt.job_min_cpus = _get_int(optarg, "mincpus");
+			opt.job_min_cpus = _get_int(optarg, "mincpus", true);
 			break;
 		case LONG_OPT_MINSOCKETS:
-			opt.job_min_sockets = _get_int(optarg, "minsockets");
+			opt.job_min_sockets = _get_int(optarg, "minsockets", 
+				true);
 			break;
 		case LONG_OPT_MINCORES:
-			opt.job_min_cores = _get_int(optarg, "mincores");
+			opt.job_min_cores = _get_int(optarg, "mincores", true);
 			break;
 		case LONG_OPT_MINTHREADS:
-			opt.job_min_threads = _get_int(optarg, "minthreads");
+			opt.job_min_threads = _get_int(optarg, "minthreads", 
+				true);
 			break;
 		case LONG_OPT_MEM:
 			opt.job_min_memory = (int) _to_bytes(optarg);
@@ -1705,20 +1708,20 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case LONG_OPT_JOBID:
-			opt.jobid = _get_int(optarg, "jobid");
+			opt.jobid = _get_int(optarg, "jobid", true);
 			opt.jobid_set = true;
 			break;
 		case LONG_OPT_TIMEO:
 			opt.msg_timeout = 
-				_get_int(optarg, "msg-timeout");
+				_get_int(optarg, "msg-timeout", true);
 			break;
 		case LONG_OPT_LAUNCH:
 			opt.max_launch_time = 
-				_get_int(optarg, "max-launch-time");
+				_get_int(optarg, "max-launch-time", true);
 			break;
 		case LONG_OPT_XTO:
 			opt.max_exit_timeout = 
-				_get_int(optarg, "max-exit-timeout");
+				_get_int(optarg, "max-exit-timeout", true);
 			break;
 		case LONG_OPT_UID:
 			opt.euid = uid_from_string (optarg);
@@ -1836,13 +1839,16 @@ void set_options(const int argc, char **argv, int first)
 				             &opt.max_threads_per_core, true );
 			break;
 		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node");
+			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",
+				true);
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
-			opt.ntasks_per_socket = _get_int(optarg, "ntasks-per-socket");
+			opt.ntasks_per_socket = _get_int(optarg, 
+				"ntasks-per-socket", true);
 			break;
 		case LONG_OPT_NTASKSPERCORE:
-			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core");
+			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
+				true);
 			break;
 		case LONG_OPT_PRINTREQ:
 			opt.printreq = true;
