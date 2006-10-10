@@ -215,6 +215,15 @@ Set the job's minimum real memory required per nodes to the specified value.
 \fIMinProcs\fP=<count>
 Set the job's minimum number of processors per nodes to the specified value.
 .TP
+\fIMinSockets\fP=<count>
+Set the job's minimum number of sockets per node to the specified value.
+.TP
+\fIMinCores\fP=<count>
+Set the job's minimum number of cores per socket to the specified value.
+.TP
+\fIMinThreads\fP=<count>
+Set the job's minimum number of threads per core to the specified value.
+.TP
 \fIMinTmpDisk\fP=<megabytes>
 Set the job's minimum temporary disk space required per nodes to the specified value.
 .TP
@@ -233,6 +242,9 @@ Set the priority to a non-zero value to permit it to run.
 \fINice\fP[=delta]
 Adjust job's priority by the specified value. Default value is 100.
 .TP
+\fIReqProcs\fP=<count>
+Set the job's count of required processes to the specified value.
+.TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
 simple node range expressions (e.g. "lx[10-20]"). 
@@ -241,8 +253,14 @@ Value may be cleared with blank data value, "ReqNodeList=".
 \fIReqNodes\fP=<count>
 Set the job's count of required nodes to the specified value.
 .TP
-\fIReqProcs\fP=<count>
-Set the job's count of required processors to the specified value.
+\fIReqSockets\fP=<count>
+Set the job's count of required sockets to the specified value.
+.TP
+\fIReqCores\fP=<count>
+Set the job's count of required cores to the specified value.
+.TP
+\fIReqThreads\fP=<count>
+Set the job's count of required threads to the specified value.
 .TP
 \fIShared\fP=<yes|no>
 Set the job's ability to share nodes with other jobs. Possible values are

@@ -11,16 +11,18 @@ pkglib_LTLIBRARIES = task_affinity.la
 task_affinity_la_SOURCES = 	\
 	affinity.c \
 	affinity.h \
+	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
 	task_affinity.c
 task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLUGIN_FLAGS)
-
+task_affinity_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 else
 pkglib_LTLIBRARIES =
 EXTRA_task_affinity_la_SOURCES = \
 	affinity.c \
 	affinity.h \
+	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
 	task_affinity.c

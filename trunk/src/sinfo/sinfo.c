@@ -441,8 +441,23 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 	 * otherwise check cpus, disk, memory and weigth individually */
 	if (!params.exact_match)
 		return true;
+
 	if (params.match_flags.cpus_flag &&
 	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
+		return false;
+	if (params.match_flags.sockets_flag &&
+	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
+		return false;
+	if (params.match_flags.cores_flag &&
+	    (node_ptr->cores       != sinfo_ptr->min_cores))
+		return false;
+	if (params.match_flags.threads_flag &&
+	    (node_ptr->threads     != sinfo_ptr->min_threads))
+		return false;
+	if (params.match_flags.sct_flag &&
+	    ((node_ptr->sockets     != sinfo_ptr->min_sockets) ||
+	     (node_ptr->cores       != sinfo_ptr->min_cores) ||
+	     (node_ptr->threads     != sinfo_ptr->min_threads)))
 		return false;
 	if (params.match_flags.disk_flag &&
 	    (node_ptr->tmp_disk    != sinfo_ptr->min_disk))
@@ -515,6 +530,12 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->min_cpus   = node_ptr->cpus;
 		sinfo_ptr->max_cpus   = node_ptr->cpus;
+		sinfo_ptr->min_sockets = node_ptr->sockets;
+		sinfo_ptr->max_sockets = node_ptr->sockets;
+		sinfo_ptr->min_cores   = node_ptr->cores;
+		sinfo_ptr->max_cores   = node_ptr->cores;
+		sinfo_ptr->min_threads = node_ptr->threads;
+		sinfo_ptr->max_threads = node_ptr->threads;
 		sinfo_ptr->min_disk   = node_ptr->tmp_disk;
 		sinfo_ptr->max_disk   = node_ptr->tmp_disk;
 		sinfo_ptr->min_mem    = node_ptr->real_memory;
@@ -530,6 +551,21 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 			sinfo_ptr->min_cpus = node_ptr->cpus;
 		if (sinfo_ptr->max_cpus < node_ptr->cpus)
 			sinfo_ptr->max_cpus = node_ptr->cpus;
+
+		if (sinfo_ptr->min_sockets > node_ptr->sockets)
+			sinfo_ptr->min_sockets = node_ptr->sockets;
+		if (sinfo_ptr->max_sockets < node_ptr->sockets)
+			sinfo_ptr->max_sockets = node_ptr->sockets;
+
+		if (sinfo_ptr->min_cores > node_ptr->cores)
+			sinfo_ptr->min_cores = node_ptr->cores;
+		if (sinfo_ptr->max_cores < node_ptr->cores)
+			sinfo_ptr->max_cores = node_ptr->cores;
+
+		if (sinfo_ptr->min_threads > node_ptr->threads)
+			sinfo_ptr->min_threads = node_ptr->threads;
+		if (sinfo_ptr->max_threads < node_ptr->threads)
+			sinfo_ptr->max_threads = node_ptr->threads;
 
 		if (sinfo_ptr->min_disk > node_ptr->tmp_disk)
 			sinfo_ptr->min_disk = node_ptr->tmp_disk;
@@ -594,6 +630,15 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		sinfo_ptr->nodes_tot += node_scaling;
 		sinfo_ptr->min_cpus = node_ptr->cpus;
 		sinfo_ptr->max_cpus = node_ptr->cpus;
+
+		sinfo_ptr->min_sockets = node_ptr->sockets;
+		sinfo_ptr->max_sockets = node_ptr->sockets;
+
+		sinfo_ptr->min_cores = node_ptr->cores;
+		sinfo_ptr->max_cores = node_ptr->cores;
+
+		sinfo_ptr->min_threads = node_ptr->threads;
+		sinfo_ptr->max_threads = node_ptr->threads;
 
 		sinfo_ptr->min_disk = node_ptr->tmp_disk;
 		sinfo_ptr->max_disk = node_ptr->tmp_disk;

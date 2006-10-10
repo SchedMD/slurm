@@ -33,6 +33,7 @@ source ./globals
 
 set test_id              "18.38"
 set exit_code            0
+set jobid                0
 
 print_header $test_id
 set timeout $max_job_delay
@@ -55,6 +56,10 @@ expect {
 		slow_kill [expr 0 - $salloc_pid]
 		exit 1
 	}
+}
+if {$jobid == 0} {
+	send_user "\nFAILURE: salloc failed to allocate resources\n"
+	exit 1
 }
 
 #

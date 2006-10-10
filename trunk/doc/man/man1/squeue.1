@@ -120,11 +120,23 @@ Group ID
 \fB%h\fR
 Can the nodes allocated to the job be shared with other jobs
 .TP
+\fB%H\fR 
+Minimum number of sockets per node requested by the job.
+This reports the value of the \fBsrun \-\-minsockets\fR option.
+.TP
 \fB%i\fR
 Job or job step id
 .TP
+\fB%I\fR 
+Minimum number of cores per socket requested by the job.
+This reports the value of the \fBsrun \-\-mincores\fR option.
+.TP
 \fB%j\fR
 Job or job step name
+.TP
+\fB%J\fR 
+Minimum number of threads per core requested by the job.
+This reports the value of the \fBsrun \-\-minthreads\fR option.
 .TP
 \fB%l\fR
 Time limit of the job in days\-hours:minutes:seconds. 
@@ -202,6 +214,18 @@ User ID
 .TP
 \fB%x\fR 
 List of node names explicitly excluded by the job
+.TP
+\fB%X\fR 
+Number of requested sockets per node
+.TP
+\fB%Y\fR 
+Number of requested cores per socket
+.TP
+\fB%Z\fR 
+Number of requested threads per core
+.TP
+\fB%z\fR 
+Extended processor information: number of requested sockets, cores, threads (S:C:T) per node
 .TP
 \fB%.<*>\fR 
 right justification of the field

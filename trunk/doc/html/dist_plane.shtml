@@ -1,0 +1,162 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Plane distribution: <i>-m plane=x</i></a></h1>
+
+<p>The plane distribution results in a block cyclic distribution with
+block size x. We chose to call the block cyclic distribution a plane
+distribution due to how we place the distribution onto logical
+processors in the multi-core environment. See Section "Plane
+distribution and task affinity".
+
+<p>To specify the plane distribution add to the srun command line
+<i>--distribution=plane=x</i> where <i>x</i> is the requested
+plane/block size.
+
+<p>More information on block cyclic distributions is available at:
+<a href="http://www.netlib.org/scalapack/slug/node75.html">
+http://www.netlib.org/scalapack/slug/node75.html</a>.
+
+<h2>Examples of plane (block cyclic) distributions</h2>
+
+<p>In the examples below we assume we have 21 tasks and that the
+task list is: 0, 1, 2, 3, 4, ..., 19, 20.
+
+<p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
+
+<p>The distribution results in a block distribution of blocksize 21.
+Even thought the user specified a plane size of 4 the final plane
+distribution results in a block distribution of blocksize 21.
+
+<p>
+<center>
+<img src="plane_ex1.gif">
+<p>Figure 1: Process layout for <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>
+</center>
+
+<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 -s <...></i>.
+
+<p>The plane distribution with a plane size of 4 results in the
+following allocation of the task ids:
+
+<p>
+<center>
+<img src="plane_ex2.gif">
+<p>Figure 2: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 -s <...> </i>
+</center>
+
+<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 -s <...>
+</i>. 
+
+<p>The plane distribution with a block size of 2 results in the
+following allocation of the task ids:
+
+<p>
+<center>
+<img src="plane_ex3.gif">
+<p>Figure 3: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>
+</center>
+
+<p>More information on block cyclic distributions is available at:
+<a href="http://www.netlib.org/scalapack/slug/node75.html">
+http://www.netlib.org/scalapack/slug/node75.html</a>.
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Assumptions and Limitations</h2>
+
+SLURM assumes that the number of tasks divided by the plane size is
+equal to the number of nodes specified.
+
+<p>In other words if the following is true SLURM will generate an
+error message:
+<pre>
+if ((n/plane_size < min_nodes) ((N-1)*plane_size >= n))
+            generate an error message: Too few processes for the
+	           requested {plane, node} distribution.  
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Plane distribution and task affinity</h2>
+
+<p>The concept behind this distribution is to divide the clusters into
+planes. Each plane includes a number of the lowest level of logical
+processors (CPU, cores, threads depending on the architecture) on each
+node. We then schedule within each plane first and then across planes.
+
+<p>We ensure that the processes are located correctly by setting the
+process affinity to the specified/correct logical processor. Process
+affinity is available to SLURM when the task affinity plug-in is
+enabled.
+
+<p>On a dual-processor node with quad-core processors (see figure 4)
+the plane distribution results in: 
+<ul>
+<li>One plane if the plane size x=8. In this case the processors are
+scheduled by first filling up the nodes and then scheduled across the
+nodes.</li>
+<li>Eight planes if the plane size x=1. In this case we would always
+schedule across the node first.</li>
+</ul>
+
+<p>
+<center>
+<img src="plane_ex4.gif">
+<p>Figure 4: Quad-core dual-processor system
+</center>
+
+<p>In a multi-core/hyper-threaded environment, two planes would
+provide better locality but potentially more contention for other
+resources. 
+
+<p>On the other hand, four planes (scheduling acorss processors) would
+minimize contention for cache and memory.
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Examples of plane distributions with process
+affinity enabled</h3>
+
+<p>In the examples below we assume we have 21 tasks and that the
+task list is: 0, 1, 2, 3, 4, ..., 19, 20.
+
+<p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
+Even thought the user specified a block size of 4 the final plane
+distribution results in a block distribution of blocksize 21.
+
+<p>
+<center>
+<img src="plane_ex5.gif">
+<p>Figure 5: Process layout for <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
+</center>
+
+<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 -s <...>
+</i>. The plane distribution with a block size of 4 results in the
+following allocation of the task ids:
+
+<p>
+<center>
+<img src="plane_ex6.gif">
+<p>Figure 6: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 -s <...></i>.
+</center>
+
+<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 -s <...>
+</i>. The plane distribution with a block size of 2 results in the
+following allocation of the task ids:
+
+<p>
+<center>
+<img src="plane_ex7.gif">
+<p>Figure 7: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>.
+</center>
+
+<p>
+The reason Process id 9 is assigned to "Node 0: Socket 1: Core 0" and
+not "Node 0: Socket 0: Core 1" is that SLURM assume a cyclic across
+the lowest level of logical processors by default.
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 9 October 2006</p>
+
+<!--#include virtual="footer.txt"-->

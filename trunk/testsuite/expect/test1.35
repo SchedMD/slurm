@@ -121,7 +121,7 @@ if {[wait_for_file $file_out] == 0} {
 }
 if {$step_cnt != $steps_started} {
 	send_user "\nFAILURE: not all steps reported by squeue\n"
-	 send_user"  Check $file_err for errors\n"
+	send_user "  Check $file_err for errors\n"
 	set exit_code 1
 }
 

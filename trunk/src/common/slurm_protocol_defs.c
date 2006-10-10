@@ -254,6 +254,8 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->name);
 		xfree(job->alloc_node);
 		xfree(job->node_inx);
+		xfree(job->cpus_per_node);
+		xfree(job->cpu_count_reps);
 		select_g_free_jobinfo(&job->select_jobinfo);
 		xfree(job->features);
 		xfree(job->req_nodes);

@@ -7,6 +7,14 @@ documents those changes that are of interest to users and admins.
     steps in a job by nodes.
  -- sview grid added
  -- BLUEGENE node_inx added to blocks for reference.
+ -- Automatic CPU_MASK generation for task launch, new srun option -B.
+ -- Automatic logical to physical processor identification and mapping.
+ -- Added new srun options to --cpu_bind: sockets, cores, and threads
+ -- Updated select/cons_res to operate as socket granularity.
+ -- New srun task distribution options to -m: plane
+ -- Multi-core support in sinfo, squeue, and scontrol.
+ -- Memory can be treated as a consumable resource.
+ -- New srun options --ntasks_per_[node|socket|core].
 
 * Changes in SLURM 1.2.0-pre3
 =============================

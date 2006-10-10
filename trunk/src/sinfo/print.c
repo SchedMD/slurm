@@ -277,6 +277,93 @@ int _print_cpus(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_sct(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	char sockets[FORMAT_STRING_SIZE];
+	char cores[FORMAT_STRING_SIZE];
+	char threads[FORMAT_STRING_SIZE];
+	char sct[(FORMAT_STRING_SIZE+1)*3];
+	if (sinfo_data) {
+		_build_min_max_string(sockets, FORMAT_STRING_SIZE, 
+		                      sinfo_data->min_sockets, 
+		                      sinfo_data->max_sockets, false);
+		_build_min_max_string(cores, FORMAT_STRING_SIZE, 
+		                      sinfo_data->min_cores, 
+		                      sinfo_data->max_cores, false);
+		_build_min_max_string(threads, FORMAT_STRING_SIZE, 
+		                      sinfo_data->min_threads, 
+		                      sinfo_data->max_threads, false);
+		sct[0] = '\0';
+		strcat(sct, sockets);
+		strcat(sct, ":");
+		strcat(sct, cores);
+		strcat(sct, ":");
+		strcat(sct, threads);
+		_print_str(sct, width, right_justify, true);
+	} else {
+		_print_str("S:C:T", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_sockets(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+	if (sinfo_data) {
+		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		                      sinfo_data->min_sockets, 
+		                      sinfo_data->max_sockets, false);
+		_print_str(id, width, right_justify, true);
+	} else {
+		_print_str("SOCKETS", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_cores(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+	if (sinfo_data) {
+		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		                      sinfo_data->min_cores, 
+		                      sinfo_data->max_cores, false);
+		_print_str(id, width, right_justify, true);
+	} else {
+		_print_str("CORES", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_threads(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+	if (sinfo_data) {
+		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		                      sinfo_data->min_threads, 
+		                      sinfo_data->max_threads, false);
+		_print_str(id, width, right_justify, true);
+	} else {
+		_print_str("THREADS", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_disk(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

@@ -11,7 +11,4 @@ pkglib_LTLIBRARIES = select_cons_res.la
 # Consumable resources node selection plugin.
 select_cons_res_la_SOURCES = select_cons_res.c
 select_cons_res_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-if HAVE_AIX
 select_cons_res_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
-endif
