@@ -63,6 +63,9 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+
+#include "src/common/slurm_resource_info.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 #define SELECT_DEBUG 0
@@ -285,6 +288,84 @@ extern int select_p_block_init(List part_list)
 }
 
 /*
+ * get_avail_cpus - Get the number of "available" cpus on a node
+ *	given this number given the number of cpus_per_task and
+ *	maximum sockets, cores, threads.  Note that the value of
+ *	cpus is the lowest-level logical processor (LLLP).
+ * IN job_ptr - pointer to job being scheduled
+ * IN index - index of node's configuration information in select_node_ptr
+ */
+int get_avail_cpus(struct job_record *job_ptr, int index)
+{
+	struct node_record *node_ptr;
+	int avail_cpus;
+	int cpus, sockets, cores, threads;
+	int cpus_per_task = 0;
+	int ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
+	int max_sockets = 0, max_cores = 0, max_threads = 0;
+
+	node_ptr = &(select_node_ptr[index]);
+
+	if (job_ptr->details && job_ptr->details->cpus_per_task)
+		cpus_per_task = job_ptr->details->cpus_per_task;
+	if (job_ptr->details && job_ptr->details->max_sockets)
+		max_sockets = job_ptr->details->max_sockets;
+	if (job_ptr->details && job_ptr->details->max_cores)
+		max_cores = job_ptr->details->max_cores;
+	if (job_ptr->details && job_ptr->details->max_threads)
+		max_threads = job_ptr->details->max_threads;
+	if (job_ptr->details && job_ptr->details->ntasks_per_node)
+		ntasks_per_node = job_ptr->details->ntasks_per_node;
+	if (job_ptr->details && job_ptr->details->ntasks_per_socket)
+		ntasks_per_socket = job_ptr->details->ntasks_per_socket;
+	if (job_ptr->details && job_ptr->details->ntasks_per_core)
+		ntasks_per_core = job_ptr->details->ntasks_per_core;
+
+        /* pick defaults for any unspecified items */
+	if (cpus_per_task <= 0)
+		cpus_per_task = 1;
+	if (max_sockets <= 0)
+		max_sockets = INT_MAX;
+	if (max_cores <= 0)
+		max_cores = INT_MAX;
+	if (max_threads <= 0)
+		max_threads = INT_MAX;
+
+	if (select_fast_schedule) { /* don't bother checking each node */
+		cpus    = node_ptr->config_ptr->cpus;
+		sockets = node_ptr->config_ptr->sockets;
+		cores   = node_ptr->config_ptr->cores;
+		threads = node_ptr->config_ptr->threads;
+	} else {
+		cpus    = node_ptr->cpus;
+		sockets = node_ptr->sockets;
+		cores   = node_ptr->cores;
+		threads = node_ptr->threads;
+	}
+
+#if 0
+	info(" SMB5  host %s User_ sockets %d cores %d threads %d ", 
+	     node_ptr->name, max_sockets, max_cores, max_threads);
+
+	info(" SMB5  host %s HW_ cpus %d sockets %d cores %d threads %d ", 
+	     node_ptr->name, cpus, sockets, cores, threads);
+#endif
+
+	avail_cpus = slurm_get_avail_procs(
+			max_sockets, max_cores, max_threads, cpus_per_task,
+			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
+	    		&cpus, &sockets, &cores, &threads, 
+			0, 0, SELECT_TYPE_INFO_NONE);
+
+#if 0
+	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",
+				index, avail_cpus,
+				cpus, sockets, cores, threads);
+#endif
+	return(avail_cpus);
+}
+
+/*
  * select_p_job_test - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as either single set of consecutive nodes satisfying 
@@ -326,9 +407,18 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
-	int cpus_per_task, avail_cpus;
+	int avail_cpus;
 
 	xassert(bitmap);
+	debug3("job min-[max]: -N %d-[%d]:%d-[%d]:%d-[%d]:%d-[%d]",
+		job_ptr->details->min_nodes,   job_ptr->details->max_nodes,
+		job_ptr->details->min_sockets, job_ptr->details->max_sockets,
+		job_ptr->details->min_cores,   job_ptr->details->max_cores,
+		job_ptr->details->min_threads, job_ptr->details->max_threads);
+	debug3("job ntasks-per: -node=%d -socket=%d -core=%d",
+		job_ptr->details->ntasks_per_node,
+		job_ptr->details->ntasks_per_socket,
+		job_ptr->details->ntasks_per_core);
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
@@ -339,10 +429,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	consec_end   = xmalloc(sizeof(int) * consec_size);
 	consec_req   = xmalloc(sizeof(int) * consec_size);
 
-	if (job_ptr->details && job_ptr->details->cpus_per_task)
-		cpus_per_task = job_ptr->details->cpus_per_task;
-	else
-		cpus_per_task = 1;
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
@@ -357,14 +443,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (bit_test(bitmap, index)) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
-			if (select_fast_schedule)
-				/* don't bother checking each node */
-				i = select_node_ptr[index].
-				    config_ptr->cpus;
-			else
-				i = select_node_ptr[index].cpus;
-			avail_cpus = (i / cpus_per_task) * 
-					cpus_per_task;	/* round down */
+
+			avail_cpus = get_avail_cpus(job_ptr, index);
+
 			if (job_ptr->details->req_node_bitmap
 			&&  bit_test(job_ptr->details->req_node_bitmap, index)
 			&&  (max_nodes > 0)) {
@@ -477,14 +558,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				if (select_fast_schedule)
-					avail_cpus = select_node_ptr[i].
-							config_ptr->cpus;
-				else
-					avail_cpus = select_node_ptr[i].
-							cpus;
-				avail_cpus = (avail_cpus / cpus_per_task) *
-						cpus_per_task;	/* round down */
+				avail_cpus = get_avail_cpus(job_ptr, i);
 				rem_cpus -= avail_cpus;
 			}
 			for (i = (best_fit_req - 1);
@@ -497,14 +571,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				if (select_fast_schedule)
-					avail_cpus = select_node_ptr[i].
-							config_ptr->cpus;
-				else
-					avail_cpus = select_node_ptr[i].
-							cpus;
-				avail_cpus = (avail_cpus / cpus_per_task) *
-						cpus_per_task;  /* round down */
+				avail_cpus = get_avail_cpus(job_ptr, i);
 				rem_cpus -= avail_cpus;
 			}
 		} else {
@@ -518,14 +585,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				if (select_fast_schedule)
-					avail_cpus = select_node_ptr[i].
-							config_ptr->cpus;
-				else
-					avail_cpus = select_node_ptr[i].
-							cpus;
-				avail_cpus = (avail_cpus / cpus_per_task) *
-						cpus_per_task;  /* round down */
+				avail_cpus = get_avail_cpus(job_ptr, i);
 				rem_cpus -= avail_cpus;
 			}
 		}
@@ -648,8 +708,7 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
        return SLURM_SUCCESS;
 }
 
-extern int select_p_update_nodeinfo (struct job_record *job_ptr,
-                                            enum select_data_info info)
+extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 {
        return SLURM_SUCCESS;
 }
@@ -660,16 +719,52 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 }
 
 extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
-                                      struct job_record *job_ptr, 
+                                       struct job_record *job_ptr, 
                                        enum select_data_info info,
                                        void *data)
 {
-       return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	switch (info) {
+	case SELECT_AVAIL_CPUS:
+	{
+		uint32_t *tmp_32 = (uint32_t *) data;
+                /* change this to something else Performance issue? SMB Fixme */
+		if ((job_ptr->details->cpus_per_task > 1) || 
+		    (job_ptr->details->max_sockets > 1) ||
+		    (job_ptr->details->max_cores > 1) ||
+		    (job_ptr->details->max_threads > 1)) {
+			int index;
+			/* Replace with a hash-table lookup before releasing SMB Fixme  */
+			for (index = 0; index < select_node_cnt; index++) {
+				if (strcmp(node_ptr->name, select_node_ptr[index].name) == 0) {
+					*tmp_32 = get_avail_cpus(job_ptr, index);
+				}
+			}
+		} else {
+			if (slurmctld_conf.fast_schedule) {
+				*tmp_32 = node_ptr->config_ptr->cpus;
+			} else {
+				*tmp_32 = node_ptr->cpus;
+			}
+		}
+		break;
+	}
+	default:
+		error("select_g_get_extra_jobinfo info %d invalid", info);
+		rc = SLURM_ERROR;
+		break;
+	}
+	
+	return rc;
 }
 
 extern int select_p_get_info_from_plugin (enum select_data_info info, void *data)
 {
-       return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)

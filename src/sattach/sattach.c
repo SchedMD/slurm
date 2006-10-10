@@ -214,6 +214,7 @@ static void print_layout_info(slurm_step_layout_t *layout)
 	}
 }
 
+
 /* return a faked job credential */
 static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 					uid_t uid, char *nodelist)
@@ -225,8 +226,8 @@ static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	arg.stepid   = stepid;
 	arg.uid      = uid;
 	arg.hostlist = nodelist;
-        arg.ntask_cnt = 0;    
-        arg.ntask    =  NULL; 
+        arg.alloc_lps_cnt = 0;    
+        arg.alloc_lps =  NULL; 
 	cred = slurm_cred_faker(&arg);
 
 	return cred;

@@ -127,9 +127,9 @@ void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 			strcpy(bind_type, "set to RANK");
 		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
 			strcpy(bind_type, "set to LOCAL");
-		} else if (job->mem_bind_type & MEM_BIND_MAPCPU) {
+		} else if (job->mem_bind_type & MEM_BIND_MAP) {
 			strcpy(bind_type, "set to MAP_MEM");
-		} else if (job->mem_bind_type & MEM_BIND_MASKCPU) {
+		} else if (job->mem_bind_type & MEM_BIND_MASK) {
 			strcpy(bind_type, "set to MASK_MEM");
 		} else if (job->mem_bind_type & (~MEM_BIND_VERBOSE)) {
 			strcpy(bind_type, "set to UNKNOWN");
@@ -219,7 +219,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
-	if (job->mem_bind_type & MEM_BIND_MASKCPU) {
+	if (job->mem_bind_type & MEM_BIND_MASK) {
 		/* convert mask string into nodemask_t mask */
 		if (_str_to_memset(mask, mstr) < 0) {
 			error("_str_to_memset %s", mstr);
@@ -228,7 +228,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 		return true;
 	}
 
-	if (job->mem_bind_type & MEM_BIND_MAPCPU) {
+	if (job->mem_bind_type & MEM_BIND_MAP) {
 		unsigned int my_node = 0;
 		if (strncmp(mstr, "0x", 2) == 0) {
 			my_node = strtoul (&(mstr[2]), NULL, 16);

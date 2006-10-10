@@ -632,9 +632,9 @@ _loc_restrict(struct job_record *job_ptr, part_specs_t *part_specs)
 	     (detail_ptr->exc_nodes && detail_ptr->exc_nodes[0]) )
 		return true;
 
-	if ( (detail_ptr->min_procs    > part_specs->min_cpus) ||
-	     (detail_ptr->min_memory   > part_specs->min_mem)  ||
-	     (detail_ptr->min_tmp_disk > part_specs->min_disk) )
+	if ( (detail_ptr->job_min_procs    > part_specs->min_cpus) ||
+	     (detail_ptr->job_min_memory   > part_specs->min_mem)  ||
+	     (detail_ptr->job_min_tmp_disk > part_specs->min_disk) )
 		return true;
 
 	if (part_specs->max_cpus != part_specs->min_cpus) {

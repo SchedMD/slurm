@@ -137,7 +137,9 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
+		"Sockets=%u Cores=%u Threads=%u "
 		"Weight=%u Features=%s Reason=%s\n" , 
+		node_ptr->sockets, node_ptr->cores, node_ptr->threads,
 		node_ptr->weight, node_ptr->features,
 		node_ptr->reason);
 	xstrcat(out, tmp_line);

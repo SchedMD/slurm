@@ -39,8 +39,8 @@ typedef struct env_options {
 	char *task_count;
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	enum task_dist_states
-		distribution;	/* --distribution=, -m dist	*/
+	task_dist_states_t distribution; /* --distribution=, -m dist	*/
+	int plane_size;         /* plane_size for SLURM_DIST_PLANE */
 	cpu_bind_type_t
 		cpu_bind_type;	/* --cpu_bind=			*/
 	char *cpu_bind;		/* binding map for map/mask_cpu	*/
@@ -64,6 +64,9 @@ typedef struct env_options {
 	int localid;		/* local task id (within node) */
 	int nodeid;
 	int cpus_per_task;	/* --cpus-per-task=n, -c n	*/
+	int ntasks_per_node;	/* --ntasks-per-node=n		*/
+	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/
+	int ntasks_per_core;	/* --ntasks-per-core=n		*/
 	int cpus_on_node;
 	pid_t task_pid;
 } env_t;

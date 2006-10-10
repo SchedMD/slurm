@@ -92,11 +92,9 @@ extern int select_g_get_select_nodeinfo (struct node_record *node_ptr,
 
 /* 
  * Update select data for a specific node record for a specific job 
- * IN cr_info   - type of data to update for a given job record
  * IN job_ptr - current job record
  */
-extern int select_g_update_nodeinfo (struct job_record *job_ptr, 
-				     enum select_data_info cr_info);
+extern int select_g_update_nodeinfo (struct job_record *job_ptr);
 
 /* 
  * Update specific block (usually something has gone wrong)  

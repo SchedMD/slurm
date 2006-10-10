@@ -474,15 +474,30 @@ extern int parse_format( char* format )
 				                       field_size, 
 				                       right_justify, 
 				                       suffix );
+			else if (field[0] == 'H')
+				job_format_add_min_sockets( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'i')
 				job_format_add_job_id( params.format_list, 
 				                       field_size, 
 				                       right_justify, 
 				                       suffix );
+			else if (field[0] == 'I')
+				job_format_add_min_cores( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'j')
 				job_format_add_name( params.format_list, 
 				                     field_size, 
 				                     right_justify, suffix );
+			else if (field[0] == 'J')
+				job_format_add_min_threads( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'l')
 				job_format_add_time_limit( params.format_list, 
 				                           field_size, 
@@ -573,6 +588,26 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
+			else if (field[0] == 'X')
+				job_format_add_num_sockets( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
+			else if (field[0] == 'Y')
+				job_format_add_num_cores( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
+			else if (field[0] == 'Z')
+				job_format_add_num_threads( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
+			else if (field[0] == 'z')
+				job_format_add_num_sct( params.format_list, 
+				                           field_size, 
+				                           right_justify, 
+				                           suffix );
 			else 
 				error( "Invalid job format specification: %c", 
 				       field[0] );

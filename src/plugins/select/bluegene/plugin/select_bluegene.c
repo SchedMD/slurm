@@ -368,8 +368,7 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
        return SLURM_SUCCESS;
 }
 
-extern int select_p_update_nodeinfo (struct job_record *job_ptr,
-                                            enum select_data_info info)
+extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 {
        return SLURM_SUCCESS;
 }

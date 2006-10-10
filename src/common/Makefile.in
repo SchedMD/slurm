@@ -91,10 +91,11 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_auth.c slurm_auth.h slurm_jobacct.c slurm_jobacct.h \
 	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
 	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
-	getopt1.c unsetenv.c unsetenv.h hostlist.c hostlist.h \
-	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
-	checkpoint.h parse_time.c parse_time.h job_options.c \
-	job_options.h global_defaults.c slurm_xlator.h
+	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
+	slurm_resource_info.c slurm_resource_info.h hostlist.c \
+	hostlist.h slurm_step_layout.c slurm_step_layout.h \
+	checkpoint.c checkpoint.h parse_time.c parse_time.h \
+	job_options.c job_options.h global_defaults.c slurm_xlator.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo global_srun.lo strlcpy.lo list.lo net.lo fd.lo \
@@ -106,7 +107,8 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
 	util-net.lo slurm_auth.lo slurm_jobacct.lo slurm_jobcomp.lo \
 	switch.lo arg_desc.lo malloc.lo getopt.lo getopt1.lo \
-	$(am__objects_1) hostlist.lo slurm_step_layout.lo \
+	$(am__objects_1) slurm_selecttype_info.lo \
+	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
 	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
@@ -383,6 +385,9 @@ libcommon_la_SOURCES = \
 	malloc.c malloc.h		\
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
+	slurm_selecttype_info.c 	\
+	slurm_resource_info.c 		\
+	slurm_resource_info.h		\
 	hostlist.c hostlist.h		\
 	slurm_step_layout.c slurm_step_layout.h	\
 	checkpoint.c checkpoint.h	\
@@ -508,7 +513,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_pack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_socket_implementation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_resource_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@

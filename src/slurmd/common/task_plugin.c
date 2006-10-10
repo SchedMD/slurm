@@ -46,6 +46,10 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurmd_task_ops {
+	int		(*slurmd_launch_request)	( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id);
+	int		(*slurmd_reserve_resources)	( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id );
+	int		(*slurmd_release_resources)	( uint32_t job_id);
+
 	int		(*pre_launch)		( slurmd_job_t *job );
 	int		(*post_term)		( slurmd_job_t *job );
 } slurmd_task_ops_t;
@@ -69,6 +73,9 @@ _slurmd_task_get_ops( slurmd_task_context_t *c )
 	 * Must be synchronized with slurmd_task_ops_t above.
 	 */
 	static const char *syms[] = {
+		"task_slurmd_launch_request",
+		"task_slurmd_reserve_resources",
+		"task_slurmd_release_resources",
 		"task_pre_launch",
 		"task_post_term",
 	};
@@ -199,6 +206,45 @@ extern int slurmd_task_fini( void )
 	rc = _slurmd_task_context_destroy(g_task_context);
 	g_task_context = NULL;
 	return rc;
+}
+
+/*
+ * Slurmd has received a launch request.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_launch_request( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id)
+{
+	if ( slurmd_task_init() )
+		return SLURM_ERROR;
+
+	return (*(g_task_context->ops.slurmd_launch_request))(job_id, req, node_id);
+}
+
+/*
+ * Slurmd is reserving resources for the task.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_reserve_resources(  uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id )
+{
+	if ( slurmd_task_init() )
+		return SLURM_ERROR;
+
+	return (*(g_task_context->ops.slurmd_reserve_resources))(job_id, req, node_id);
+}
+
+/*
+ * Slurmd is releasing resources for the task.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_release_resources( uint32_t job_id )
+{
+	if ( slurmd_task_init() )
+		return SLURM_ERROR;
+
+	return (*(g_task_context->ops.slurmd_release_resources))(job_id);
 }
 
 /*

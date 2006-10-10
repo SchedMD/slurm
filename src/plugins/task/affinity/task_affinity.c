@@ -46,6 +46,7 @@
 #include <sys/types.h>
 
 #include "affinity.h"
+#include "dist_tasks.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -84,6 +85,7 @@ const uint32_t plugin_version   = 100;
  */
 int init ( void )
 {
+	lllp_ctx_alloc();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -94,7 +96,53 @@ int init ( void )
  */
 int fini ( void )
 {
+	lllp_ctx_destroy();
 	verbose("%s unloaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_launch_request()
+ */
+int task_slurmd_launch_request ( uint32_t job_id,
+			launch_tasks_request_msg_t *req, uint32_t node_id)
+{
+	int hw_sockets, hw_cores, hw_threads;
+
+	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
+	hw_sockets = conf->sockets;
+	hw_cores   = conf->cores;
+	hw_threads = conf->threads;
+
+	if (((hw_sockets >= 1) && ((hw_cores > 1) || (hw_threads > 1))) 
+	    || (!(req->cpu_bind_type & CPU_BIND_NONE)))	
+		lllp_distribution(req, node_id);
+	/* Remove the slurm msg timeout needs to be investigated some more */
+	/* req->cpu_bind_type = CPU_BIND_NONE; */ 
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_reserve_resources()
+ */
+int task_slurmd_reserve_resources ( uint32_t job_id,
+			launch_tasks_request_msg_t *req, uint32_t node_id)
+{
+	debug("task_slurmd_reserve_resources: %u",
+		job_id);
+	cr_reserve_lllp(job_id, req, node_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_release_resources()
+ */
+int task_slurmd_release_resources ( uint32_t job_id )
+{
+	debug("task_slurmd_release_resources: %u",
+		job_id);
+	cr_release_lllp(job_id);
 	return SLURM_SUCCESS;
 }
 

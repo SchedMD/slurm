@@ -78,6 +78,12 @@ typedef struct {
 	uint32_t nodes_tot;
 	uint32_t min_cpus;
 	uint32_t max_cpus;
+	uint32_t min_sockets;
+	uint32_t max_sockets;
+	uint32_t min_cores;
+	uint32_t max_cores;
+	uint32_t min_threads;
+	uint32_t max_threads;
 	uint32_t min_disk;
 	uint32_t max_disk;
 	uint32_t min_mem;
@@ -101,6 +107,10 @@ typedef struct {
 struct sinfo_match_flags {
 	bool avail_flag;
 	bool cpus_flag;
+	bool sockets_flag;
+	bool cores_flag;
+	bool threads_flag;
+	bool sct_flag;
 	bool disk_flag;
 	bool features_flag;
 	bool groups_flag;

@@ -92,17 +92,25 @@
 #define	bit_or			slurm_bit_or
 #define	bit_set_count		slurm_bit_set_count
 #define	bit_clear_count		slurm_bit_clear_count
+#define	bit_nset_max_count	slurm_bit_nset_max_count
+#define	bit_and_set_count	slurm_bit_and_set_count
+#define	bit_rotate_copy		slurm_bit_rotate_copy
+#define	bit_rotate		slurm_bit_rotate
 #define	bit_fmt			slurm_bit_fmt
+#define bit_unfmt		slurm_bit_unfmt
+#define	bitfmt2int		slurm_bitfmt2int
+#define	bit_fmt_hexmask		slurm_bit_fmt_hexmask
+#define bit_unfmt_hexmask	slurm_bit_unfmt_hexmask
+#define	bit_fmt_binmask		slurm_bit_fmt_binmask
+#define bit_unfmt_binmask	slurm_bit_unfmt_binmask
 #define	bit_fls			slurm_bit_fls
 #define	bit_fill_gaps		slurm_bit_fill_gaps
 #define	bit_super_set		slurm_bit_super_set
 #define	bit_copy		slurm_bit_copy
 #define	bit_pick_cnt		slurm_bit_pick_cnt
-#define	bitfmt2int		slurm_bitfmt2int
 #define bit_nffc		slurm_bit_nffc
 #define bit_noc			slurm_bit_noc
 #define bit_nffs		slurm_bit_nffs
-#define bit_unfmt		slurm_bit_unfmt
 #define bit_copybits		slurm_bit_copybits
 
 /* hostlist.[ch] functions */

@@ -146,11 +146,11 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.no_rotate)
 		desc->rotate = 0;
 	if (opt.mincpus > -1)
-		desc->min_procs = opt.mincpus;
+		desc->job_min_procs = opt.mincpus;
 	if (opt.realmem > -1)
-		desc->min_memory = opt.realmem;
+		desc->job_min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)
-		desc->min_tmp_disk = opt.tmpdisk;
+		desc->job_min_tmp_disk = opt.tmpdisk;
 	desc->num_procs = opt.nprocs * opt.cpus_per_task;
 	if (opt.nprocs_set)
 		desc->num_tasks = opt.nprocs;

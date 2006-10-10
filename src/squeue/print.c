@@ -667,6 +667,78 @@ static int _get_node_cnt(job_info_t * job)
 	return node_cnt;
 }
 
+int _print_job_num_sct(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char sockets[10];
+	char cores[10];
+	char threads[10];
+	char sct[(10+1)*3];
+	if (job) {
+		convert_num_unit((float)job->min_sockets, sockets, UNIT_NONE);
+		convert_num_unit((float)job->min_cores, cores, UNIT_NONE);
+		convert_num_unit((float)job->min_threads, threads, UNIT_NONE);
+		sct[0] = '\0';
+		strcat(sct, sockets);
+		strcat(sct, ":");
+		strcat(sct, cores);
+		strcat(sct, ":");
+		strcat(sct, threads);
+		_print_str(sct, width, right_justify, true);
+	} else {
+		_print_str("S:C:T", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_num_sockets(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char tmp_char[10];
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("SOCKETS", width, right_justify, true);
+	else {
+		convert_num_unit((float)job->min_sockets, tmp_char, UNIT_NONE);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_num_cores(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char tmp_char[10];
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("CORES", width, right_justify, true);
+	else {
+		convert_num_unit((float)job->min_cores, tmp_char, UNIT_NONE);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_num_threads(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char tmp_char[10];
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("THREADS", width, right_justify, true);
+	else {
+		convert_num_unit((float)job->min_threads, tmp_char, UNIT_NONE);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 static int _nodes_in_list(char *node_list)
 {
 	hostset_t host_set = hostset_create(node_list);
@@ -722,10 +794,57 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_PROCS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_procs, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_procs, tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
-		
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_sockets(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char tmp_char[6];
+	
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MIN_SOCKETS", width, right_justify, true);
+	else {
+		convert_num_unit((float)job->job_min_sockets, tmp_char, UNIT_NONE);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_cores(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char tmp_char[6];
+	
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MIN_CORES", width, right_justify, true);
+	else {
+		convert_num_unit((float)job->job_min_cores, tmp_char, UNIT_NONE);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_threads(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	char tmp_char[6];
+
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MIN_THREADS", width, right_justify, true);
+	else {
+		convert_num_unit((float)job->job_min_threads, tmp_char, UNIT_NONE);
+		_print_str(tmp_char, width, right_justify, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -734,12 +853,21 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 int _print_job_min_memory(job_info_t * job, int width, bool right_justify, 
 			  char* suffix)
 {
-	char tmp_char[6];
+	char min_mem[10];
+	char max_mem[10];
+	char tmp_char[21];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_memory, tmp_char, UNIT_NONE);
+	    	tmp_char[0] = '\0';
+		if (job->job_max_memory < job->job_min_memory) {
+			convert_num_unit((float)job->job_max_memory, max_mem, UNIT_NONE);
+			strcat(tmp_char, max_mem);
+			strcat(tmp_char, "-");
+		}
+		convert_num_unit((float)job->job_min_memory, min_mem, UNIT_NONE);
+		strcat(tmp_char, min_mem);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	
@@ -757,7 +885,7 @@ _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_tmp_disk, 
+		convert_num_unit((float)job->job_min_tmp_disk, 
 				 tmp_char, UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}

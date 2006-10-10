@@ -70,6 +70,14 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_avail)
 #define format_add_cpus(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_cpus)
+#define format_add_sct(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_sct)
+#define format_add_sockets(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_sockets)
+#define format_add_cores(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_cores)
+#define format_add_threads(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_threads)
 #define format_add_disk(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_disk)
 #define format_add_features(list,wid,right,suffix) \
@@ -114,6 +122,14 @@ int  print_sinfo_list(List sinfo_list);
 int _print_avail(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_cpus(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_sct(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_sockets(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_cores(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_threads(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_disk(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
