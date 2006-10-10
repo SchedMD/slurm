@@ -348,11 +348,12 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 	}
 
 	if (!(p = _spank_plugin_create(path, ac, argv, required))) {
-		error ("spank: %s:%d: Failed to load %s plugin from %s. %s",
-		     file, line, 
-		     required ? "required" : "optional", 
-		     path,
-		     required ? "Aborting." : "Ignoring.");
+		if (required)
+			error ("spank: %s:%d: Failed to load plugin %s. Aborting.",
+					file, line, path);
+		else
+			verbose ("spank: %s:%d: Failed to load optional plugin %s. Ignored.",
+					file, line, path);
 		return (required ? -1 : 0);
 	}
 
@@ -553,12 +554,15 @@ int spank_init(slurmd_job_t * job)
 		return (-1);
 	}
 
+	if (_do_call_stack(SPANK_INIT, job, -1) < 0)
+		return (-1);
+
 	if (job && spank_get_remote_options(job->options) < 0) {
 		error("spank: Unable to get remote options");
 		return (-1);
 	}
 
-	return (_do_call_stack(SPANK_INIT, job, -1));
+	return (0);
 }
 
 int spank_user(slurmd_job_t * job)
