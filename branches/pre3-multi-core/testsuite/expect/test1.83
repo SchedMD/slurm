@@ -103,8 +103,16 @@ expect {
 		}
 		exp_continue
 	}
+	-re "step already completed" {
+		send_user "\nFAILURE: srun error\n"
+		send_user "This may not be a real failure if the system "
+		send_user "lacks three _contiguous_ nodes\n"
+		exit 1
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
+		send_user "This may not be a real failure if the system "
+		send_user "lacks three _contiguous_ nodes\n"
 		slow_kill $srun_pid
 		exit 1
 	}
