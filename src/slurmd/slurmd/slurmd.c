@@ -564,6 +564,7 @@ _read_config()
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
 	
+	conf->propagate_prio = cf->propagate_prio_process;
 	conf->job_acct_freq = cf->job_acct_freq;
 
 	if ( (conf->node_name == NULL) ||

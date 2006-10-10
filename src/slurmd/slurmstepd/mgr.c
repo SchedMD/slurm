@@ -636,6 +636,10 @@ job_manager(slurmd_job_t *job)
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
+	if (slurm_proctrack_init() != SLURM_SUCCESS) {
+		rc = SLURM_FAILURE;
+		goto fail1;
+	}
 	
 	if (!job->batch &&
 	    (interconnect_preinit(job->switch_job) < 0)) {
@@ -775,7 +779,6 @@ _fork_all_tasks(slurmd_job_t *job)
 	int *writefds; /* array of write file descriptors */
 	int *readfds; /* array of read file descriptors */
 	int fdpair[2];
-	uint16_t propagate_prio = slurm_get_propagate_prio_process();
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
 
@@ -874,7 +877,7 @@ _fork_all_tasks(slurmd_job_t *job)
 					close(readfds[j]);
 			}
 
-			if (propagate_prio == 1)
+			if (conf->propagate_prio == 1)
 				_set_prio_process(job);
 
  			if (_become_user(job, &sprivs) < 0) {
