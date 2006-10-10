@@ -579,10 +579,6 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint32_t *cpus)
 	for (i=0; i < step_layout->node_cnt; i++) {
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t) 
 					       * step_layout->tasks[i]);
-		if (step_layout->tids[i] == NULL) {
-			slurm_seterrno(ENOMEM);
-			return SLURM_ERROR;
-		}
 		for (j=0; j<step_layout->tasks[i]; j++) {
 			step_layout->tids[i][j] = taskid;
 			taskid++;
@@ -613,10 +609,6 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 	for (i=0; i<step_layout->node_cnt; i++) {
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t) 
 					       * step_layout->task_cnt);
-		if (step_layout->tids[i] == NULL) {
-			slurm_seterrno(ENOMEM);
-			return SLURM_ERROR;
-		}
 	}
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
 		bool space_remaining = false;
@@ -658,10 +650,6 @@ uint32_t *task_count_layout_plane(const uint32_t node_cnt,
 	int planes_per_host;
 
 	ntask = (uint32_t *) xmalloc(sizeof(uint32_t *) * node_cnt);
-	if (ntask == NULL) {
-		slurm_seterrno(ENOMEM);
-		return NULL;
-	}
 
 	tasks_all = node_cnt*plane_size;
 	planes_per_host = num_tasks/tasks_all;

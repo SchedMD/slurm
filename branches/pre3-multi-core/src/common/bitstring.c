@@ -1023,10 +1023,6 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
 	bitoff_t charsize = (bitsize + 3) / 4;
 
 	retstr = xmalloc(charsize + 3);
-	if (!retstr) {
-		error("bit_fmt_hexmask: failed to alloc %d bytes", charsize+3);
-		return NULL;
-	}
 
 	retstr[0] = '0';  
 	retstr[1] = 'x';  
@@ -1107,10 +1103,6 @@ char * bit_fmt_binmask(bitstr_t * bitmap)
 	bitoff_t charsize = bitsize;
 
 	retstr = xmalloc(charsize + 1);
-	if (!retstr)  {
-		error("bit_fmt_binmask: failed to alloc %d bytes", charsize+1);
-		return NULL;
-	}
 
 	retstr[charsize] = '\0';
 	ptr = &retstr[charsize - 1];
