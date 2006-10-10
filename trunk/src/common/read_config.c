@@ -1107,7 +1107,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
 	xfree( ctl_conf_ptr->select_type );
-        ctl_conf_ptr->select_type_param         = (uint32_t) NO_VAL;
+	ctl_conf_ptr->select_type_param         = (uint16_t) NO_VAL;
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurm_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
@@ -1540,12 +1540,13 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
         if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
-		if ((parse_select_type_param(temp_str,
-					     &conf->select_type_param) < 0)) {
+		select_type_plugin_info_t type_param;
+		if ((parse_select_type_param(temp_str, &type_param) < 0)) {
 			xfree(temp_str);
 			fatal("Bad SelectTypeParameter: %s",
 			      conf->select_type_param);
 		}
+		conf->select_type_param = (uint16_t) type_param;
 		xfree(temp_str);
 	} else {
 		if (strcmp(conf->select_type,"select/cons_res") == 0)

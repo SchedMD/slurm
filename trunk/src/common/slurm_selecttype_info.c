@@ -44,28 +44,28 @@ extern int parse_select_type_param(char *select_type_parameters,
 
 	char *st_str = xstrdup(select_type_parameters);
 	if ((str_parameters = strtok(st_str,",")) != NULL) {
-	  do {
-	    if (strcasecmp(str_parameters, "CR_SOCKET") == 0) {
-	      *param = CR_SOCKET;
-	    } else if (strcasecmp(str_parameters, "CR_Socket_Memory") == 0) {
-	      *param = CR_SOCKET_MEMORY;
-	    } else if (strcasecmp(str_parameters, "CR_Core") == 0) {
-	      *param = CR_CORE;
-	    } else if (strcasecmp(str_parameters, "CR_Core_Memory") == 0) {
-	      *param = CR_CORE_MEMORY;
-	    } else if (strcasecmp(str_parameters, "CR_Memory") == 0) {
-	      *param = CR_MEMORY;
-	    } else if (strcasecmp(str_parameters, "CR_CPU") == 0) {
-	      *param = CR_CPU;
-	    } else if (strcasecmp(str_parameters, "CR_CPU_Memory") == 0) {
-	      *param = CR_CPU_MEMORY;
-	    } else {
-	      error( "Bad SelectType Parameter: %s\n", str_parameters );
-	      rc = SLURM_ERROR;
-	      xfree(str_parameters);
-	      return rc;
-	    }
-	  } while ((str_parameters = strtok(NULL,",")));
+		do {
+			if (strcasecmp(str_parameters, "CR_SOCKET") == 0) {
+				*param = CR_SOCKET;
+			} else if (strcasecmp(str_parameters, "CR_Socket_Memory") == 0) {
+				*param = CR_SOCKET_MEMORY;
+			} else if (strcasecmp(str_parameters, "CR_Core") == 0) {
+				*param = CR_CORE;
+			} else if (strcasecmp(str_parameters, "CR_Core_Memory") == 0) {
+				*param = CR_CORE_MEMORY;
+			} else if (strcasecmp(str_parameters, "CR_Memory") == 0) {
+				*param = CR_MEMORY;
+			} else if (strcasecmp(str_parameters, "CR_CPU") == 0) {
+				*param = CR_CPU;
+			} else if (strcasecmp(str_parameters, "CR_CPU_Memory") == 0) {
+				*param = CR_CPU_MEMORY;
+			} else {
+				error( "Bad SelectType Parameter: %s\n", str_parameters );
+				rc = SLURM_ERROR;
+				xfree(str_parameters);
+				return rc;
+			}
+		} while ((str_parameters = strtok(NULL,",")));
 	}
 	xfree(str_parameters);
 	

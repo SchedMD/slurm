@@ -669,11 +669,11 @@ int read_slurm_conf(int recover)
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
-	char *old_select_type   = xstrdup(slurmctld_conf.select_type);
+	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
 	slurm_ctl_conf_t *conf;
 	select_type_plugin_info_t old_select_type_p = 
-		slurmctld_conf.select_type_param;
+		(select_type_plugin_info_t) slurmctld_conf.select_type_param;
 
 	/* initialization */
 	START_TIMER;
@@ -829,7 +829,8 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
         /* SelectTypeParameters cannot change */ 
 	if (old_select_type_p) {
 		if (old_select_type_p != ctl_conf_ptr->select_type_param) {
-			ctl_conf_ptr->select_type_param = old_select_type_p;
+			ctl_conf_ptr->select_type_param = (uint16_t) 
+				old_select_type_p;
 			rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
 		}
 	}
