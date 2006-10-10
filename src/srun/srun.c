@@ -332,7 +332,6 @@ int srun(int ac, char **av)
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
 	}
-info("dist=%d", env->distribution);
 	setup_env(env);
 	xfree(env->task_count);
 	xfree(env);
