@@ -821,7 +821,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
-	select_type_plugin_info_t select_type_param; /* Parameters 
+	uint16_t select_type_param; /* Parameters 
 				 * describing the select_type plugin */
 	uint32_t slurm_user_id;	/* uid of slurm_user_name */
 	char *slurm_user_name;	/* user that slurmctld runs as */

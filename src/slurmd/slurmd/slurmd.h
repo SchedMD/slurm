@@ -91,7 +91,7 @@ typedef struct slurmd_config {
 	uint32_t     block_map_size;	/* size of block map               */
 	uint32_t     *block_map;	/* abstract->machine block map     */
 	uint32_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	int          cr_type;           /* Consumable Resource Type:       *
+	uint16_t      cr_type;           /* Consumable Resource Type:       *
 					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
 					 * CR_DEFAULT, etc.                */
         char         *node_name;        /* node name                       */
