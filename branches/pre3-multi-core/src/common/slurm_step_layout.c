@@ -96,10 +96,6 @@ slurm_step_layout_t *slurm_step_layout_create(
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout = 
 		xmalloc(sizeof(slurm_step_layout_t));
-	if(!step_layout) {
-		error("xmalloc error for step_layout");
-		return NULL;
-	}
 		
 	if(task_dist == SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = NULL;
@@ -167,10 +163,6 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	slurm_step_layout_t *step_layout = 
 		xmalloc(sizeof(slurm_step_layout_t));
 
-	if(!step_layout) {
-		error("xmalloc error for step_layout");
-		return NULL;
-	}
 	if(node_cnt <= 0 || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
 		error("there is a problem with your fake_step_layout request\n"
 		      "node_cnt = %d, task_cnt = %d, tlist = %s",
@@ -720,9 +712,6 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 
 	for (i=0; i<step_layout->node_cnt; i++) {
 		step_layout->tids[i] = xmalloc(sizeof(int) * step_layout->task_cnt);
-		if (step_layout->tids[i] == NULL) {
-			return SLURM_ERROR;
-		}
 	}
 
 	temp_tasks = task_count_layout_plane(step_layout->node_cnt, 
