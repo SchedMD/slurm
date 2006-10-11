@@ -177,6 +177,7 @@ static pid_t fd_test_lock(int fd, int type)
     lock.l_start = 0;
     lock.l_whence = SEEK_SET;
     lock.l_len = 0;
+    lock.l_pid = 0;	/* avoid valgrind error */
 
     if (fcntl(fd, F_GETLK, &lock) < 0)
         error("Unable to test for file lock: %m");
