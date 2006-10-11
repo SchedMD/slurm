@@ -47,7 +47,7 @@ static char *err_msg;
 static int   err_code;
 
 /* Global configuration parameters */
-char *   auth_key = NULL;
+char     auth_key[KEY_SIZE] = "";
 uint16_t e_port = 0;
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
@@ -62,7 +62,6 @@ static size_t	_read_bytes(int fd, char *buf, const size_t size);
 static char *	_recv_msg(slurm_fd new_fd);
 static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size);
 static void	_send_reply(slurm_fd new_fd, char *response);
-static void	_sig_handler(int signal);
 static size_t	_write_bytes(int fd, char *buf, const size_t size);
 
 /*****************************************************************************\
@@ -100,7 +99,7 @@ extern void term_msg_thread(void)
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		thread_shutdown = true;
-		pthread_kill(msg_thread_id, SIGUSR1);
+		pthread_cancel(msg_thread_id);
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
@@ -112,7 +111,6 @@ static void *_msg_thread(void *no_data)
 {
 	slurm_fd sock_fd, new_fd;
 	slurm_addr cli_addr;
-	int sig_array[] = {SIGUSR1, 0};
 	uint16_t sched_port;
 	char *msg;
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
@@ -125,10 +123,6 @@ static void *_msg_thread(void *no_data)
 			sched_port);
 	}
 
-	/* SIGUSR1 used to interupt accept call */
-	xsignal(SIGUSR1, _sig_handler);
-	xsignal_unblock(sig_array);
-
 	/* Process incoming RPCs until told to shutdown */
 	while (!thread_shutdown) {
 		if ((new_fd = slurm_accept_msg_conn(sock_fd, &cli_addr))
@@ -139,7 +133,7 @@ static void *_msg_thread(void *no_data)
 		}
 		/* It would be nice to create a pthread for each new 
 		 * RPC, but that leaks memory on some systems when 
-		 * done from a plugin. 
+		 * done from a plugin.
 		 * FIXME: Maintain a pool of and reuse them. */
 		err_code = 0;
 		err_msg = "";
@@ -196,7 +190,7 @@ static void _parse_wiki_config(void)
 		{"JobPriority", S_P_STRING}, 
 		{NULL} };
 	s_p_hashtbl_t *tbl;
-	char *priority_mode, *wiki_conf;
+	char *key, *priority_mode, *wiki_conf;
 	struct stat buf;
 
 	wiki_conf = _get_wiki_conf_path();
@@ -211,8 +205,10 @@ static void _parse_wiki_config(void)
 	if (s_p_parse_file(tbl, wiki_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading wiki.conf file");
 
-	if (! s_p_get_string(&auth_key, "AuthKey", tbl))
+	if (! s_p_get_string(&key, "AuthKey", tbl))
 		debug("Warning: No wiki_conf AuthKey specified");
+	strncpy(auth_key, key, sizeof(auth_key));
+	xfree(key);
 	s_p_get_uint16(&e_port, "EPort", tbl);
 	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
@@ -229,13 +225,6 @@ static void _parse_wiki_config(void)
 	xfree(wiki_conf);
 
 	return;
-}
-
-/*****************************************************************************\
- * _sig_handler: signal handler, interrupt communications thread
-\*****************************************************************************/
-static void _sig_handler(int signal)
-{
 }
 
 static size_t	_read_bytes(int fd, char *buf, const size_t size)
@@ -355,7 +344,7 @@ static int	_parse_msg(char *msg, char **req)
 	time_t ts, now = time(NULL);
 	uint32_t delta_t;
 	
-	if (!auth_key && cmd_ptr) {
+	if ((auth_key[0] == '\0') && cmd_ptr) {
 		/* No authentication required */
 		*req = cmd_ptr;
 		return 0;
@@ -393,7 +382,7 @@ static int	_parse_msg(char *msg, char **req)
 		return -1;
 	}
 
-	if (auth_key) {
+	if (auth_key[0] != '\0') {
 		checksum(sum, auth_key, ts_ptr);
 		if (strncmp(sum, msg, 19) != 0) {
 			err_code = -422;
