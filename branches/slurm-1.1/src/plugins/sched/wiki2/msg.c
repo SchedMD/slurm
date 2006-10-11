@@ -190,7 +190,7 @@ static void _parse_wiki_config(void)
 		{"JobPriority", S_P_STRING}, 
 		{NULL} };
 	s_p_hashtbl_t *tbl;
-	char *key, *priority_mode, *wiki_conf;
+	char *key = NULL, *priority_mode = NULL, *wiki_conf;
 	struct stat buf;
 
 	wiki_conf = _get_wiki_conf_path();
@@ -207,8 +207,10 @@ static void _parse_wiki_config(void)
 
 	if (! s_p_get_string(&key, "AuthKey", tbl))
 		debug("Warning: No wiki_conf AuthKey specified");
-	strncpy(auth_key, key, sizeof(auth_key));
-	xfree(key);
+	else {
+		strncpy(auth_key, key, sizeof(auth_key));
+		xfree(key);
+	}
 	s_p_get_uint16(&e_port, "EPort", tbl);
 	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
@@ -489,4 +491,5 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 	memcpy(buf, sum, 19);
 
 	(void) _send_msg(new_fd, buf, i);
+	xfree(buf);
 }
