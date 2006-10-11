@@ -101,7 +101,7 @@ extern void term_msg_thread(void)
 		int i;
 		thread_shutdown = true;
 		for (i=0; i<4; i++) {
-			if ( pthread_cancel(msg_thread_id)) {
+			if (pthread_cancel(msg_thread_id)) {
 				msg_thread_id = 0;
 				break;
 			}
@@ -458,7 +458,8 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 		job_release_task(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
-		job_will_run(cmd_ptr, &err_code, &err_msg);
+		if (!job_will_run(cmd_ptr, &err_code, &err_msg))
+			goto free_resp_msg;
 	} else if (strncmp(cmd_ptr, "JOBMODIFY", 9) == 0) {
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBSIGNAL", 9) == 0) {
