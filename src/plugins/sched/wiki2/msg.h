@@ -81,10 +81,11 @@
 #include "src/slurmctld/sched_plugin.h"
 
 /* Global configuration parameters */
+#define KEY_SIZE      32
 #define PRIO_HOLD      0
 #define PRIO_DECREMENT 1
 extern int	init_prio_mode;
-extern char *	auth_key;
+extern char 	auth_key[KEY_SIZE];
 extern uint16_t	e_port;
 extern uint16_t	job_aggregation_time;
 extern uint16_t use_host_exp;
