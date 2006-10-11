@@ -39,6 +39,8 @@ programs on some nodes?</a></li>
 are not responding even if they are not in any partition?</a></li>
 <li><a href="#controller"> How should I relocated the primary or backup
 controller?</a></li>
+<li><a href="#multi_slurm">Can multiple SLURM systems be run in 
+parallel for testing purposes?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -363,9 +365,29 @@ and the <i>slurmctld</i> daemon is executing on each), system behavior will be
 destructive. If a compute node has an incorrect <i>ControlMachine</i> or
 <i>BackupController</i> parameter, that node may be rendered unusable, but no
 other harm will result.
- 
+
+<p><a name="multi_slurm"><b>13. Can multiple SLURM systems be run in 
+parallel for testing purposes?</b></a><br>
+Yes, this is a great way to test new versions of SLURM.
+Just install the test version in a different location with a different 
+<i>slurm.conf</i>. 
+The test system's <i>slurm.conf</i> should specify different 
+pathnames and port numbers to avoid conflicts.
+The only problem is if more than one version of SLURM is configured 
+with <i>switch/elan</i> or <i>switch/federation</i>.
+In that case, there can be conflicting switch window requests from 
+the different SLURM systems. 
+This can be avoided by configuring the test system with <i>switch/none</i>.
+MPI jobs started on an Elan or Federation switch system without the 
+switch windows configured will not execute properly, but other jobs 
+will run fine. 
+Another option for testing on Elan or Federation systems is to use 
+a different set of nodes for the different SLURM systems.
+That will permit both systems to allocate switch windows without 
+conflicts.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 October 2006</p>
+<p style="text-align:center;">Last modified 11 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
