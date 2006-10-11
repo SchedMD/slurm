@@ -948,11 +948,15 @@ static int elan_statkey (int prgid)
 }
 
 /*
- * Return the statkey to caller if shared memory was created
+ * Return the statkey to caller in keyp if shared memory was created
+ * Return -1 if shared memory creation failed.
  */
-int qsw_statkey (qsw_jobinfo_t jobinfo)
+int qsw_statkey (qsw_jobinfo_t jobinfo, int *keyp)
 {
-	return (shmid > 0 ? elan_statkey (jobinfo->j_prognum) : -1);
+	if (shmid < 0)
+		return (-1);
+	*keyp = elan_statkey (jobinfo->j_prognum);
+	return (0);
 }
 
 /*
