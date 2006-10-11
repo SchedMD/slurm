@@ -181,13 +181,13 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	if (rc == SLURM_SUCCESS) {
 		*err_code = 0;
 		snprintf(reply_msg, reply_msg_size,
-			"Job %d runnable now TASKLIST:%s",
+			"SC=0 Job %d runnable now TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
 	} else if (rc == ESLURM_NODES_BUSY) {
 		*err_code = 1;
 		snprintf(reply_msg, reply_msg_size,
-			"Job %d runnable later TASKLIST:%s",
+			"SC=1 Job %d runnable later TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
 	} else {
@@ -196,7 +196,8 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 			jobid, new_node_list, err_str);
 		*err_code = -740;
 		snprintf(reply_msg, reply_msg_size, 
-			"Job %d not runable: %s", jobid, err_str);
+			"SC=-740 Job %d not runable: %s", 
+			jobid, err_str);
 		*err_msg = reply_msg;
 	}
 
