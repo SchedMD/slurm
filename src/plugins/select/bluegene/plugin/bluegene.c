@@ -1098,6 +1098,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		} else {
 			num_quarter=4;
 		}
+		
 		if(_breakup_blocks(request, my_block_list, &block_inx) 
 		   != SLURM_SUCCESS) {
 			debug2("small block not able to be placed");
@@ -1125,41 +1126,46 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	}
 
 	/*Try to put block starting in the smallest of the exisiting blocks*/
-	itr = list_iterator_create(bg_list);
-	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		request->rotate_count = 0;
-		request->elongate_count = 1;
+	if(!request->start_req) {
+		itr = list_iterator_create(bg_list);
+		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+			request->rotate_count = 0;
+			request->elongate_count = 1;
 		
-		if(bg_record->job_running == -1 
-		   && (bg_record->quarter == (uint16_t) NO_VAL
-		       || (bg_record->quarter == 0 
-			   && (bg_record->nodecard == (uint16_t) NO_VAL
-			       || bg_record->nodecard == 0)))) {
-			
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-				request->start[i] = bg_record->start[i];
-			debug2("allocating %s %d%d%d %d",
-			       bg_record->nodes,
-			       request->start[X],
-			       request->start[Y],
-			       request->start[Z],
-			       request->size);
-			request->start_req = 1;
-			rc = SLURM_SUCCESS;
-			if (!allocate_block(request, NULL)){
-				debug2("allocate failure for size %d "
-				       "base partitions", 
+			if(bg_record->job_running == -1 
+			   && (bg_record->quarter == (uint16_t) NO_VAL
+			       || (bg_record->quarter == 0 
+				   && (bg_record->nodecard == (uint16_t) NO_VAL
+				       || bg_record->nodecard == 0)))) {
+				
+				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+					request->start[i] = 
+						bg_record->start[i];
+				debug2("allocating %s %d%d%d %d",
+				       bg_record->nodes,
+				       request->start[X],
+				       request->start[Y],
+				       request->start[Z],
 				       request->size);
-				rc = SLURM_ERROR;
-			} else 
-				break;
+				request->start_req = 1;
+				rc = SLURM_SUCCESS;
+				if (!allocate_block(request, NULL)){
+					debug2("allocate failure for size %d "
+					       "base partitions", 
+					       request->size);
+					rc = SLURM_ERROR;
+				} else 
+					break;
+			}
 		}
-	}
-	list_iterator_destroy(itr);
-
-no_list:
-	if(!bg_record) {
+		list_iterator_destroy(itr);
+		
 		request->start_req = 0;
+		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+			request->start[i] = (uint16_t) NO_VAL;
+	}
+no_list:
+	if(!bg_record) {		
 		rc = SLURM_SUCCESS;
 		if (!allocate_block(request, NULL)){
 			debug("allocate failure for size %d base partitions", 
@@ -2344,6 +2350,27 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 			continue;
 		if(bg_record->state != RM_PARTITION_FREE)
 			continue;
+		if(request->start_req) {
+			if ((request->start[X] != bg_record->start[X])
+			    || (request->start[Y] != bg_record->start[Y])
+			    || (request->start[Z] != bg_record->start[Z])) {
+				debug4("small got %d%d%d looking for %d%d%d",
+				       bg_record->start[X],
+				       bg_record->start[Y],
+				       bg_record->start[Z],
+				       request->start[X],
+				       request->start[Y],
+				       request->start[Z]);
+				continue;
+			}
+			debug3("small found %d%d%d looking for %d%d%d",
+			       bg_record->start[X],
+			       bg_record->start[Y],
+			       bg_record->start[Z],
+			       request->start[X],
+			       request->start[Y],
+			       request->start[Z]);
+		}
 		proc_cnt = bg_record->bp_count * 
 			bg_record->cpus_per_bp;
 		if(proc_cnt == request->procs) {
@@ -2410,6 +2437,28 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 	       != NULL) {
 		if(bg_record->job_running != -1)
 			continue;
+		if(request->start_req) {
+			if ((request->start[X] != bg_record->start[X])
+			    || (request->start[Y] != bg_record->start[Y])
+			    || (request->start[Z] != bg_record->start[Z])) {
+				debug4("small 2 got %d%d%d looking for %d%d%d",
+				       bg_record->start[X],
+				       bg_record->start[Y],
+				       bg_record->start[Z],
+				       request->start[X],
+				       request->start[Y],
+				       request->start[Z]);
+				continue;
+			}
+			debug3("small 2 found %d%d%d looking for %d%d%d",
+			       bg_record->start[X],
+			       bg_record->start[Y],
+			       bg_record->start[Z],
+			       request->start[X],
+			       request->start[Y],
+			       request->start[Z]);
+		}
+				
 		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
 		if(proc_cnt == request->procs) {
 			debug2("found it here %s, %s",

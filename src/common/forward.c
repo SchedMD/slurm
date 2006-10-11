@@ -182,7 +182,7 @@ void *_forward_thread(void *arg)
 		}
 		break;
 	}
-	
+
 	slurm_mutex_lock(fwd_msg->forward_mutex);
 	if(ret_list) {
 		while((ret_data_info = list_pop(ret_list)) != NULL) {
