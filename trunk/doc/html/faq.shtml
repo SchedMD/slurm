@@ -42,7 +42,7 @@ controller?</a></li>
 <li><a href="#multi_slurm">Can multiple SLURM systems be run in 
 parallel for testing purposes?</a></li>
 <li><a href="#multi_slurmd">Can multiple slurmd daemons be run
-+on the compute node(s) to emulate a larger cluster?</a></li>
+on the compute node(s) to emulate a larger cluster?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -399,17 +399,21 @@ file).</li>
 <li>Build and install SLURM in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary 
 names used only by SLURM) as <i>NodeName</i> along with the actual
-address of the physical node in <i>NodeAddr</i>. Note that multiple 
-<i>NodeName</i> values can be mapped to a single <i>NodeAddr</i>.</li>
-<li>Note that when more than one slurmd is started per node, they will 
-use communication ports that are higher than the configured value of
-<i>SlurmdPort</i>. (The first slurmd uses <i>SlurmdPort</i>, then 
-second uses <i>SlurmdPort</i>+1, etc.)</li>
+address of the physical node in <i>NodeHostname</i>. Multiple 
+<i>NodeName</i> values can be mapped to a single
+<i>NodeHostname</i>.  Note that each <i>NodeName</i> on a single
+physical node needs to be configured to use a different port number.  You
+will also want to use the "%n" symbol in slurmd related path options in
+slurm.conf. </li>
 <li>When starting the <i>slurmd</i> daemon, include the <i>NodeName</i>
 of the node that it is supposed to serve on the execute line.</li> 
 </ol>
 It is strongly recommended that SLURM version 1.2 or higher be used 
 for this due to it's improved support for multiple slurmd daemons.
+
+See the
+<a href="programmer_guide.shtml#multiple_slurmd_support">Programmers Guide</a>
+for more details about configuring multiple slurmd support.
 
 <p class="footer"><a href="#top">top</a></p>
 
