@@ -98,8 +98,17 @@ extern void term_msg_thread(void)
 {
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
+		int i;
 		thread_shutdown = true;
-		pthread_cancel(msg_thread_id);
+		for (i=0; i<4; i++) {
+			if ( pthread_cancel(msg_thread_id)) {
+				msg_thread_id = 0;
+				break;
+			}
+			usleep(1000);
+		}
+		if (msg_thread_id)
+			error("Cound not kill wiki msg pthread");
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
