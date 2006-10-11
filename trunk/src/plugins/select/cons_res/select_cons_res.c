@@ -192,7 +192,7 @@ static struct node_cr_record **cr_node_hash_table = NULL; /* node_cr_record hash
 
 static uint16_t select_fast_schedule;
 
-List select_cr_job_list; /* List of select_cr_job(s) that are still active */
+List select_cr_job_list = NULL; /* List of select_cr_job(s) that are still active */
 
 #if(0)
 /* 
@@ -1200,7 +1200,9 @@ extern int select_p_state_restore(char *dir_name)
 
 extern int select_p_job_init(List job_list)
 {
-	select_cr_job_list = list_create(NULL);
+    	if (!select_cr_job_list) {
+		select_cr_job_list = list_create(NULL);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -1840,6 +1842,9 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 			}
 			error("cons_res could not find %s", node_ptr->name); 
 			rc = SLURM_ERROR;
+		}
+		if (!job) {
+			debug3("cons_res: job %d not active", job_ptr->job_id);
 		}
 	     cleanup:
 		list_iterator_destroy(iterator);

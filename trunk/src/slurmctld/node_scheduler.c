@@ -1385,14 +1385,15 @@ extern void build_node_details(struct job_record *job_ptr)
 			if (cr_enabled)
 				job_ptr->alloc_lps[cr_count++] = usable_lps;
 			if(error_code != SLURM_SUCCESS) {
-				if (cr_enabled)
+				if (cr_enabled) {
 					xfree(job_ptr->alloc_lps); 
+					job_ptr->alloc_lps = NULL;
+					job_ptr->alloc_lps_cnt = 0;
+				}
 				error("Unable to get extra jobinfo "
 				      "from JobId=%u", job_ptr->job_id);
 			}
 			
-			if (usable_lps <= 0)
-					goto cleanup;
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr));
 
