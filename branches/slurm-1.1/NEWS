@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  - fix for step allocation to be able to specify only a few nodes in a 
    step and ask for more that specified.
  - patch from Hongjia Cao for forwarding logic
+ - BLUEGENE - able to allocate specific nodes without locking up.
 
 * Changes in SLURM 1.1.13
 =========================
