@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -147,6 +147,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 	
+	if(start[X] != (uint16_t)NO_VAL)
+		start_req = 1;
+
 	if(req_geometry[0] != 0 && req_geometry[0] != (uint16_t)NO_VAL) {
 		target_size = 1;
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
@@ -165,7 +168,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	}
 	if (target_size == 0) {	/* no geometry specified */
 		if(job_ptr->details->req_nodes 
-		   && start[0] == (uint16_t)NO_VAL) {
+		   && !start_req) {
 			bg_record_t *tmp_record = NULL;
 			char *tmp_nodes= job_ptr->details->req_nodes;
 			int len = strlen(tmp_nodes);
@@ -450,6 +453,27 @@ try_again:
 		slurm_mutex_lock(&request_list_mutex);
 		itr = list_iterator_create(bg_request_list);
 		while ((try_request = list_next(itr))) {
+			if(start_req) {
+				if ((try_request->start[X] != start[X])
+				    || (try_request->start[Y] != start[Y])
+				    || (try_request->start[Z] != start[Z])) {
+					debug4("got %d%d%d looking for %d%d%d",
+					       try_request->start[X],
+					       try_request->start[Y],
+					       try_request->start[Z],
+					       start[X],
+					       start[Y],
+					       start[Z]);
+					continue;
+				    }
+				debug3("found %d%d%d looking for %d%d%d",
+				       try_request->start[X],
+				       try_request->start[Y],
+				       try_request->start[Z],
+				       start[X],
+				       start[Y],
+				       start[Z]);
+			}
 			if(try_request->procs >= req_procs) {
 				debug("already tried to create but "
 				      "can't right now.");
@@ -465,7 +489,7 @@ try_again:
 		slurm_mutex_unlock(&request_list_mutex);
 	}
 
-	if(!found && test_only) {
+	if(test_only) {
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 			request.start[i] = start[i];
 			
@@ -504,6 +528,9 @@ try_again:
 			try_request->procs = req_procs;
 			try_request->save_name = NULL;
 			try_request->elongate_geos = NULL;
+			try_request->start_req = request.start_req;
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+				try_request->start[i] = start[i];
 			slurm_mutex_lock(&request_list_mutex);
 			list_push(bg_request_list, try_request);
 			slurm_mutex_unlock(&request_list_mutex);
