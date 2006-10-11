@@ -179,32 +179,44 @@ executes.  Initiate one <span class="commandline">slurmd</span> and one
 simultaneous job steps to avoid overloading the 
 <span class="commandline">slurmd</span> daemon executing them all.</p>
 
-<h3>Multiple slurmd support</h3>
+<h3><a name="multiple_slurmd_support">Multiple slurmd support</a></h3>
 <p>It is possible to run mutiple slurmd daemons on a single node, each using
 a different port number and NodeName alias.  This is very useful for testing
 networking and protocol changes, or anytime you want to simulate a larger
 cluster than you really have.  The author uses this on his desktop to simulate
-multiple nodes.  However, multiple slurmd mode should not be used in
-production, because not all slurm functions are working under this mode (e.g.
-many switch plugins will not work, srun reattachs won't work, etc.).</p>
+multiple nodes.  However, it is important to note that not all slurm functions
+will work with multiple slurmd support enabled (e.g. many switch plugins will
+not work, it is best to use switch/none).</p>
 
 <p>Multiple support is enabled at configure-time with the
 "--enable-multiple-slurmd" parameter.  This enables a new parameter in the
 slurm.conf file on the NodeName line, "Port=<port number>", and adds a new
-command line parameters to slurmd, "-N" and "-P".</p>
+command line parameter to slurmd, "-N".</p>
 
 <p>Each slurmd needs to have its own NodeName, and its own TCP port number. Here
 is an example of the NodeName lines for running three slurmd daemons on each
 of ten nodes:</p>
 
 <pre>
-NodeName=foo[1-10] NodeAddr=host[1-10]  Port=17001
-NodeName=foo[11-20] NodeAddr=host[1-10] Port=17002
-NodeName=foo[21-30] NodeAddr=host[1-10] Port=17003
+NodeName=foo[1-10] NodeHostname=host[1-10]  Port=17001
+NodeName=foo[11-20] NodeHostname=host[1-10] Port=17002
+NodeName=foo[21-30] NodeHostname=host[1-10] Port=17003
 </pre>
 
 <p>
-It is then up to you to start the slurmd daemons with the proper NodeNames.
+It is likely that you will also want to use the "%n" symbol in any slurmd
+related paths in the slurm.conf file, for instance SlurmdLogFile,
+SlurmdPidFile, and especially SlurmdSpoolDir.  Each slurmd replaces the "%n"
+with its own NodeName.  Here is an example:</p>
+
+<pre>
+SlurmdLogFile=/var/log/slurm/slurmd.%n.log
+SlurmdPidFile=/var/run/slurmd.%n.pid
+SlurmdSpoolDir=/var/spool/slurmd.%n
+</pre>
+
+<p>
+It is up to you to start each slurmd daemon with the proper NodeName.
 For example, to start the slurmd daemons for host1 from the
 above slurm.conf example:</p>
 
