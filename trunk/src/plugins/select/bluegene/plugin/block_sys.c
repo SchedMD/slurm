@@ -600,6 +600,7 @@ int read_bg_blocks()
 			
 			hostlist_push(hostlist, node_name_tmp);
 		}	
+		i = 1024;
 		bg_record->nodes = xmalloc(i);
 		while (hostlist_ranged_string(hostlist, i,
 					      bg_record->nodes) < 0) {
@@ -607,7 +608,7 @@ int read_bg_blocks()
 			xrealloc(bg_record->nodes, i);
 		}
 		hostlist_destroy(hostlist);
-
+		info("got nodes of %s", bg_record->nodes);
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 		
