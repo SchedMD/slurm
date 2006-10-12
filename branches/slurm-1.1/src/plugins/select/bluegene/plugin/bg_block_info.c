@@ -197,7 +197,7 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack32((uint32_t)bg_record->node_cnt, buffer);	
 }
 
-extern int update_block_list(List current_bg_list)
+extern int update_block_list()
 {
 	int updated = 0;
 #ifdef HAVE_BG_FILES
@@ -211,11 +211,11 @@ extern int update_block_list(List current_bg_list)
 	int skipped_dealloc = 0;
 	ListIterator itr = NULL;
 	
-	if(!current_bg_list) 
+	if(!bg_list) 
 		return updated;
 	
 	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(current_bg_list);
+	itr = list_iterator_create(bg_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		if(!bg_record->bg_block_id)
 			continue;
@@ -377,6 +377,91 @@ extern int update_block_list(List current_bg_list)
 			error("bridge_free_block(): %s", 
 			      bg_err_str(rc));
 		}				
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+		
+#endif
+	return updated;
+}
+
+extern int update_freeing_block_list()
+{
+	int updated = 0;
+#ifdef HAVE_BG_FILES
+	int rc;
+	rm_partition_t *block_ptr = NULL;
+	rm_partition_state_t state;
+	char *name = NULL;
+	bg_record_t *bg_record = NULL;
+	int skipped_dealloc = 0;
+	ListIterator itr = NULL;
+	
+	if(!bg_freeing_list) 
+		return updated;
+	
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_freeing_list);
+	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		if(!bg_record->bg_block_id)
+			continue;
+
+		name = bg_record->bg_block_id;
+		if ((rc = bridge_get_block_info(name, &block_ptr)) 
+		    != STATUS_OK) {
+			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+				switch(rc) {
+				case INCONSISTENT_DATA:
+					debug2("got inconsistent data when "
+					       "quering block %s", name);
+					continue;
+					break;
+				case PARTITION_NOT_FOUND:
+					debug("block %s not found, removing "
+					      "from slurm", name);
+					list_remove(itr);
+					destroy_bg_record(bg_record);
+					continue;
+					break;
+				default:
+					break;
+				}
+			}
+			error("bridge_get_block_info(%s): %s", 
+			      name, 
+			      bg_err_str(rc));
+			continue;
+		}
+				
+		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
+					  &state))
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionState): %s",
+			      bg_err_str(rc));
+			updated = -1;
+			goto next_block;
+		} else if(bg_record->state != state) {
+			debug("freeing state of Block %s was %d and now is %d",
+			      bg_record->bg_block_id, 
+			      bg_record->state, 
+			      state);
+			/* 
+			   check to make sure block went 
+			   through freeing correctly 
+			*/
+			if(bg_record->state 
+			   != RM_PARTITION_DEALLOCATING
+			   && state == RM_PARTITION_FREE)
+				skipped_dealloc = 1;
+
+			bg_record->state = state;
+		}
+	next_block:
+		if ((rc = bridge_free_block(block_ptr)) 
+		    != STATUS_OK) {
+			error("bridge_free_block(): %s", 
+			      bg_err_str(rc));
+		}
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);

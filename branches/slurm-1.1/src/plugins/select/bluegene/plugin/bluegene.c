@@ -84,9 +84,7 @@ List bg_destroy_block_list = NULL;       /* blocks to be destroyed */
 int free_cnt = 0;
 int destroy_cnt = 0;
 
-#ifdef HAVE_BG_FILES
-static int _update_bg_record_state(List bg_destroy_list);
-#else
+#ifndef HAVE_BG_FILES
 # if BA_SYSTEM_DIMENSIONS==3
 int max_dim[BA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
 # else
@@ -831,16 +829,15 @@ extern void *bluegene_agent(void *args)
 				return NULL;	/* quit now */
 			if(blocks_are_created) {
 				last_bg_test = now;
-				if((rc = update_block_list(bg_list)) == 1) {
+				if((rc = update_block_list()) == 1) {
 					slurm_mutex_lock(&block_state_mutex);
 					last_bg_update = now;
 					slurm_mutex_unlock(&block_state_mutex);
 				} else if(rc == -1)
 					error("Error with update_block_list");
 				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
-					if((rc = update_block_list(
-						    bg_freeing_list)) == 1) {
-					} else if(rc == -1)
+					if((rc = update_freeing_block_list())
+					   == -1)
 						error("Error with "
 						      "update_block_list 2");
 				}
@@ -1044,8 +1041,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					bit_alloc(bit_size(bg_record->bitmap));
 			}
 				
-			if(bg_record->job_running != -2 
-			   && !bit_super_set(bg_record->bitmap, my_bitmap)) {
+			if(!bit_super_set(bg_record->bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->bitmap);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
@@ -1531,25 +1527,13 @@ extern void *mult_destroy_block(void *args)
 			usleep(100000);
 			continue;
 		}
-		bg_record->job_running = -2;
+		slurm_mutex_lock(&block_state_mutex);
+		remove_from_bg_list(bg_list, bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
 			
-		slurm_mutex_lock(&freed_cnt_mutex);
+		slurm_mutex_lock(&block_state_mutex);
 		list_push(bg_freeing_list, bg_record);
-		slurm_mutex_unlock(&freed_cnt_mutex);
-		
-		debug("removing the jobs on block %s\n",
-		       bg_record->bg_block_id);
-		term_jobs_on_block(bg_record->bg_block_id);
-		
-		debug2("destroying %s", (char *)bg_record->bg_block_id);
-		if(bg_free_block(bg_record) == SLURM_ERROR) {
-			debug("there was an error");
-			goto already_here;
-		}
-		debug2("done destroying");
-		slurm_mutex_lock(&freed_cnt_mutex);
-		remove_from_bg_list(bg_freeing_list, bg_record);
-		slurm_mutex_unlock(&freed_cnt_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
 		
 		remove_from_request_list();
 		
@@ -1560,8 +1544,20 @@ extern void *mult_destroy_block(void *args)
 				bg_record->bp_count*bg_record->cpus_per_bp;
 		}
 		slurm_mutex_unlock(&block_state_mutex);
-	
-				
+		debug3("removing the jobs on block %s\n",
+		       bg_record->bg_block_id);
+		term_jobs_on_block(bg_record->bg_block_id);
+		
+		debug2("destroying %s", (char *)bg_record->bg_block_id);
+		if(bg_free_block(bg_record) == SLURM_ERROR) {
+			debug("there was an error");
+			goto already_here;
+		}
+		debug2("done destroying");
+		slurm_mutex_lock(&block_state_mutex);
+		remove_from_bg_list(bg_freeing_list, bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
+								
 #ifdef HAVE_BG_FILES
 		debug2("removing from database %s", 
 		       (char *)bg_record->bg_block_id);
@@ -1577,11 +1573,12 @@ extern void *mult_destroy_block(void *args)
 				      bg_err_str(rc));
 			}
 		} else
-			debug2("done");
+			debug2("done %s", 
+			       (char *)bg_record->bg_block_id);
 #endif
 		destroy_bg_record(bg_record);
+		debug2("destroyed");
 		
-				
 	already_here:
 		slurm_mutex_lock(&freed_cnt_mutex);
 		num_block_freed++;
@@ -1830,72 +1827,6 @@ extern int read_bg_conf(void)
 
 	return SLURM_SUCCESS;
 }
-
-#ifdef HAVE_BG_FILES
-static int _update_bg_record_state(List bg_destroy_list)
-{
-	char *name = NULL;
-	int rc;
-	rm_partition_state_t state;
-	rm_partition_t *block_ptr = NULL;
-	ListIterator itr;
-	bg_record_t* bg_record = NULL;	
-
-	if(!bg_destroy_list) {
-		return SLURM_SUCCESS;
-	}
-	
-	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_destroy_list);
-	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if(!bg_record->bg_block_id)
-			continue;
-		
-		if ((bg_record->state == RM_PARTITION_FREE)
-		    ||  (bg_record->state == RM_PARTITION_ERROR)) {
-			continue;
-		}
-		name = bg_record->bg_block_id;
-		
-		if ((rc = bridge_get_block_info(name, &block_ptr)) 
-		    != STATUS_OK) {
-			if(rc == PARTITION_NOT_FOUND 
-			   || (rc == INCONSISTENT_DATA
-			       && bluegene_layout_mode == LAYOUT_DYNAMIC)) {
-				debug4("block %s is not found",
-				      bg_record->bg_block_id);
-				continue;
-			} 
-			
-			error("bridge_get_block_info(%s): %s", 
-			      name, 
-			      bg_err_str(rc));
-			continue;
-		}
-	
-		if ((rc = bridge_get_data(block_ptr, 
-					  RM_PartitionState, 
-					  &state))
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_PartitionState): %s",
-			      bg_err_str(rc));
-		} else if(bg_record->state != state) {
-			debug("state of Block %s was %d "
-			      "and now is %d",
-			      name, bg_record->state, state);
-			bg_record->state = state;
-		}
-		if ((rc = bridge_free_block(block_ptr)) 
-		    != STATUS_OK) {
-			error("bridge_free_block(): %s", 
-			      bg_err_str(rc));
-		}
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
-	return SLURM_SUCCESS;
-}
-#endif /* HAVE_BG_FILES */
 
 #ifdef HAVE_BG
 static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
@@ -2148,6 +2079,9 @@ static int _delete_old_blocks(void)
 			itr_curr = list_iterator_create(bg_curr_block_list);
 			while ((init_record = 
 				(bg_record_t*)list_next(itr_curr))) {
+				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+					list_remove(itr_curr);
+				}
 				list_push(bg_destroy_list, init_record);
 			}
 			list_iterator_destroy(itr_curr);
@@ -2187,6 +2121,10 @@ static int _delete_old_blocks(void)
 					return SLURM_ERROR;
 				}
 				if(found_record == NULL) {
+					if(bluegene_layout_mode 
+					   == LAYOUT_DYNAMIC) {
+						list_remove(itr_curr);
+					}
 					list_push(bg_destroy_list, 
 						  init_record);
 				}
@@ -2236,10 +2174,11 @@ static int _delete_old_blocks(void)
 	}
 	list_iterator_destroy(itr_curr);
 	slurm_mutex_unlock(&freed_cnt_mutex);
+	list_destroy(bg_destroy_list);
 		
 	retries=30;
 	while(num_block_to_free != num_block_freed) {
-		_update_bg_record_state(bg_destroy_list);
+		update_freeing_block_list();
 		if(retries==30) {
 			info("Waiting for old blocks to be "
 			     "freed.  Have %d of %d",
@@ -2251,7 +2190,6 @@ static int _delete_old_blocks(void)
 		sleep(1);
 	}
 	
-	list_destroy(bg_destroy_list);
 	info("I am done deleting");
 #endif	
 	return SLURM_SUCCESS;

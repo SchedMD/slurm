@@ -222,7 +222,6 @@ static int _post_bg_init_read(void *object, void *arg)
 {
 	bg_record_t *bg_record = (bg_record_t *) object;
 	bg_record_t *tmp_record = NULL;
-	int i = 1024;
 	
 	process_nodes(bg_record);
 	

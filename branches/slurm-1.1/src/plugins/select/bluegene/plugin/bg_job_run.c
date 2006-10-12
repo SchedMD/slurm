@@ -287,7 +287,6 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		while ((found_record = (bg_record_t*) 
 			list_next(itr)) != NULL) {
 			if ((!found_record) 
-			    || (found_record->job_running == -2)
 			    || (bg_record == found_record))
 				continue;
 
@@ -520,8 +519,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		if(bg_record->job_running != -2)
-			bg_record->job_running = -1;
+		
+		bg_record->job_running = -1;
 		
 		/* remove user from list */
 		
