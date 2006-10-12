@@ -296,15 +296,12 @@ the type of data requested.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_update_nodeinfo(struct node_record *node_ptr,
-enum select_data_info info);</p>
+<p class="commandline">int select_p_update_nodeinfo(struct node_record *node_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Update plugin-specific information
-related to the specified  node.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
+related to the specified node. This is called after changes in a node's configuration.</p>
+<p style="margin-left:.2in"><b>Argument</b>:
 <span class="commandline"> node_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
-to the node for which information is requested.<br>
-<span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies
-the type of data requested.</p>
+to the node for which information is requested.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
@@ -337,6 +334,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 May 2006</p>
+<p style="text-align:center;">Last modified 12 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
