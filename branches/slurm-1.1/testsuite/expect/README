@@ -328,7 +328,7 @@ test14.7   Test sbcast security issues.
 test14.8   Test sbcast transmission buffer options (--size and 
            --fanout options).
 
-test15.#   Testing of bluegene plugin.
+test19.#   Testing of bluegene plugin. (15-18 already taken in slurm1.2)
 =====================================
-test15.1   Confirm we can make a 32, 128, and 512 cnode block.
-test15.2   Stress test Dynamic mode block creation.
+test19.1   Confirm we can make a 32, 128, and 512 cnode block.
+test19.2   Stress test Dynamic mode block creation.
