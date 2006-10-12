@@ -124,10 +124,10 @@ the job's requested node count or time allocation are outside of the partition's
 longer required using the function \fBslurm_free_submit_response_msg\fR.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
+On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBESLURM_DEFAULT_PARTITION_NOT_SET\fR the system lacks a valid default partition.
 .LP
@@ -224,11 +224,11 @@ int main (int argc, char *argv[])
 .br 
 	printf ("Allocated nodes %s to job_id %u\\n", 
 .br 
-	        slurm_alloc_msg_ptr->node_list, 
+	        slurm_alloc_msg_ptr\->node_list, 
 .br
-	        slurm_alloc_msg_ptr->job_id );
+	        slurm_alloc_msg_ptr\->job_id );
 .br 
-	if (slurm_job_kill(slurm_alloc_msg_ptr->
+	if (slurm_job_kill(slurm_alloc_msg_ptr\->
 .br
 	                     job_id, SIGKILL)) {
 .br 
@@ -240,7 +240,7 @@ int main (int argc, char *argv[])
 .br
 	printf ("canceled job_id %u\\n", 
 .br
-	        slurm_alloc_msg_ptr->job_id );
+	        slurm_alloc_msg_ptr\->job_id );
 .br 
 	slurm_free_resource_allocation_response_msg(
 .br
@@ -253,12 +253,12 @@ int main (int argc, char *argv[])
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2002-2006 The Regents of the University of California.
+Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

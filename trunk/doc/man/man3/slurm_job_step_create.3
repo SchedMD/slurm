@@ -43,10 +43,10 @@ using the functions \fBhostlist_create\fR, \fBhostlist_shift\fR, and
 \fBhostlist_destroy\fR.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
+On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
@@ -64,12 +64,12 @@ SLURM controller.
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

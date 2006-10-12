@@ -55,11 +55,11 @@ This is ignored if the \fB\-\-format\fR option is specified.
 \fB\-n <nodes>\fR, \fB\-\-nodes=<nodes>\fR
 Print information only about the specified node(s). 
 Multiple nodes may be comma separated or expressed using a 
-node range expression. For example "linux[00-07]" would 
+node range expression. For example "linux[00\-07]" would 
 indicate eight nodes, "linux00" through "linux07."
 .TP
 \fB\-N\fR, \fB\-\-Node\fR
-Print information in a node-oriented format.
+Print information in a node\-oriented format.
 The default is to print information in a partition\-oriented format.
 This is ignored if the \fB\-\-format\fR option is specified.
 .TP
@@ -396,56 +396,56 @@ Report basic node and partition configurations:
 
 > sinfo
 PARTITION AVAIL TIMELIMIT NODES STATE  NODELIST
-batch     up     infinite     2 alloc  adev[8-9]
-batch     up     infinite     6 idle   adev[10-15]
-debug*    up        30:00     8 idle   adev[0-7]
+batch     up     infinite     2 alloc  adev[8\-9]
+batch     up     infinite     6 idle   adev[10\-15]
+debug*    up        30:00     8 idle   adev[0\-7]
 
 .fi
  
 Report partition summary information:
 .nf
 
-> sinfo -s
+> sinfo \-s
 PARTITION AVAIL TIMELIMIT NODES(A/I/O/T) NODELIST
-batch     up     infinite 2/6/0/8        adev[8-15]
-debug*    up        30:00 0/8/0/8        adev[0-7]
+batch     up     infinite 2/6/0/8        adev[8\-15]
+debug*    up        30:00 0/8/0/8        adev[0\-7]
 
 .fi
  
 Report more complete information about the partition debug:
 .nf
 
-> sinfo --long --partition=debug
+> sinfo \-\-long \-\-partition=debug
 PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT SHARE GROUPS NODES STATE NODELIST
-debug*    up        30:00        8 no   no    all        8 idle  dev[0-7]
+debug*    up        30:00        8 no   no    all        8 idle  dev[0\-7]
 .fi
 
 Report only those nodes that are in state DRAINED:
 .nf
 
-> sinfo --states=drained
+> sinfo \-\-states=drained
 PARTITION AVAIL NODES TIMELIMIT STATE  NODELIST
-debug*    up        2     30:00 drain  adev[6-7]
+debug*    up        2     30:00 drain  adev[6\-7]
 
 .fi
 
-Report node-oriented information with details and exact matches:
+Report node\-oriented information with details and exact matches:
 .nf
 
-> sinfo -Nel
+> sinfo \-Nel
 NODELIST    NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
-adev[0-1]       2 debug*    idle      2   3448    38536     16 (null)   (null)
-adev[2,4-7]     5 debug*    idle      2   3384    38536     16 (null)   (null)
+adev[0\-1]       2 debug*    idle      2   3448    38536     16 (null)   (null)
+adev[2,4\-7]     5 debug*    idle      2   3384    38536     16 (null)   (null)
 adev3           1 debug*    idle      2   3394    38536     16 (null)   (null)
-adev[8-9]       2 batch     allocated 2    246    82306     16 (null)   (null)
-adev[10-15]     6 batch     idle      2    246    82306     16 (null)   (null)
+adev[8\-9]       2 batch     allocated 2    246    82306     16 (null)   (null)
+adev[10\-15]     6 batch     idle      2    246    82306     16 (null)   (null)
 
 .fi
 
 Report only down, drained and draining nodes and their reason field:
 .nf
 
-> sinfo -R
+> sinfo \-R
 REASON                              NODELIST
 Memory errors                       dev[0,5]
 Not Responding                      dev8
@@ -456,7 +456,7 @@ Not Responding                      dev8
 .SH "COPYING"
 Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

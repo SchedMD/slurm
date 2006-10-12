@@ -36,10 +36,10 @@ Slurm job id number.
 Slurm job step id number.
 .TP 
 \fIjob_return_code\fP
-Highest exit code of any task of the user's application. A non-zero value is considered as an indication of job failure.
+Highest exit code of any task of the user's application. A non\-zero value is considered as an indication of job failure.
 .TP 
 \fIsystem_return_code\fP
-Highest exit code of any system daemon executing the user's application. A non-zero value is considered as an indication of failure, such as error setting the job's session ID, error creating a log file, etc.
+Highest exit code of any system daemon executing the user's application. A non\-zero value is considered as an indication of failure, such as error setting the job's session ID, error creating a log file, etc.
 .SH "DESCRIPTION"
 .LP 
 \fBslurm_complete_job\fR Note the termination of a job. This function may only be 
@@ -49,11 +49,11 @@ successfully executed by the job's owner or user root.
 may only be successfully executed by the job's owner or user root.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error code 
+On success, zero is returned. On error, \-1 is returned, and Slurm error code 
 is set appropriately.
 .SH "ERRORS"
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
@@ -70,12 +70,12 @@ SLURM controller.
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

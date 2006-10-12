@@ -48,7 +48,7 @@ ignoring any previous checkpoint.
 .SH "RETURN VALUE"
 .LP
 Zero is returned upon success. 
-On error, -1 is returned, and the Slurm error code is set appropriately.
+On error, \-1 is returned, and the Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBESLURM_DISABLED\fR the operation is currently disabled
@@ -70,12 +70,12 @@ requested action (e.g. not user root or SlurmUser).
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2005-2006 The Regents of the University of California.
+Copyright (C) 2005\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

@@ -125,7 +125,7 @@ and includes: ID number, name, user ID, state, assigned or requested node
 names, indexes into the node table, etc. In the case of indexes into the 
 node table, this is an array of integers with pairs of start and end index 
 number into the node information records and the data is terminated with a 
-value of -1. See slurm.h for full details on the data structure's contents. 
+value of \-1. See slurm.h for full details on the data structure's contents. 
 .TP 
 \fIjob_id\fP
 Specifies a slurm job id. If zero, use the SLURM_JOBID environment variable
@@ -139,7 +139,7 @@ placed.
 Specifies the pointer to the structure created by \fBslurm_load_jobs\fR. 
 .TP
 \fIjobinfo\fP
-Job-specific information as constructed by Slurm's NodeSelect plugin.
+Job\-specific information as constructed by Slurm's NodeSelect plugin.
 This data object is returned for each job by the \fBslurm_load_jobs\fR function.
 .TP 
 \fIjob_pid\fP
@@ -150,7 +150,7 @@ Specifies a pointer to a single job records from the \fIjob_info_msg_ptr\fP
 data structure.
 .TP 
 \fIone_liner\fP
-Print one record per line if non-zero.
+Print one record per line if non\-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.
@@ -201,16 +201,16 @@ describing all job records loaded by the \fBslurm_load_node\fR function.
 .LP
 For \fBslurm_get_rem_time\fR on success a number of seconds is returned.
 For all other functions zero is returned on success. 
-On error, -1 is returned, and Slurm error code is set appropriately.
+On error, \-1 is returned, and Slurm error code is set appropriately.
 
 .SH "ERRORS"
 .LP
 \fBSLURM_NO_CHANGE_IN_DATA\fR Data has not changed since \fBupdate_time\fR.
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link 
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link 
 your code.
 .LP
-\fBESLURM_INVALID_JOB_ID\fR Request for information about a non-existent job.
+\fBESLURM_INVALID_JOB_ID\fR Request for information about a non\-existent job.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
@@ -257,9 +257,9 @@ int main (int argc, char *argv[])
 .LP
 	/* A harder way.. */
 .br
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+	for (i = 0; i < job_buffer_ptr\->record_count; i++) {
 .br
-		job_ptr = &job_buffer_ptr->job_array[i];
+		job_ptr = &job_buffer_ptr\->job_array[i];
 .br
 		slurm_print_job_info(stdout, job_ptr);
 .br
@@ -269,27 +269,27 @@ int main (int argc, char *argv[])
 .br
 	printf ("Jobs updated at %lx, record count %d\\n",
 .br
-	        job_buffer_ptr->last_update, 
+	        job_buffer_ptr\->last_update, 
 .br
-	        job_buffer_ptr->record_count);
+	        job_buffer_ptr\->record_count);
 .br
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+	for (i = 0; i < job_buffer_ptr\->record_count; i++) {
 .br
 		printf ("JobId=%u UserId=%u\\n", 
 .br
-			job_buffer_ptr->job_array[i].job_id, 
+			job_buffer_ptr\->job_array[i].job_id, 
 .br
-			job_buffer_ptr->job_array[i].user_id);
+			job_buffer_ptr\->job_array[i].user_id);
 .br
 	}
 .LP
-	if (job_buffer_ptr->record_count >= 1) {
+	if (job_buffer_ptr\->record_count >= 1) {
 .br
 		uint16_t rotate;
 .br
 		if (slurm_get_select_jobinfo(
 .br
-			job_buffer_ptr->job_array[0].select_jobinfo,
+			job_buffer_ptr\->job_array[0].select_jobinfo,
 .br
 			SELECT_DATA_ROTATE,
 .br
@@ -297,7 +297,7 @@ int main (int argc, char *argv[])
 .br
 			printf("JobId=%u Rotate=%u\\n",
 .br
-				job_buffer_ptr->job_array[0].job_id, 
+				job_buffer_ptr\->job_array[0].job_id, 
 .br
 				rotate);
 .br
@@ -320,9 +320,9 @@ int main (int argc, char *argv[])
 .SH "NOTES"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 .LP
-Some data structures contain index values to cross-reference each other. 
+Some data structures contain index values to cross\-reference each other. 
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this 
 data, these index values will be invalid.
 .LP
@@ -330,9 +330,9 @@ The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
 expressions into a collection of individual node names.
 
 .SH "COPYING"
-Copyright (C) 2002-2006 The Regents of the University of California.
+Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

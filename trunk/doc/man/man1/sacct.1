@@ -1,7 +1,7 @@
 .\" $Header$
 .TA "s"
 .TH  sacct 1
-.ds )H "Hewlett-Packard Company
+.ds )H "Hewlett\-Packard Company
 .SH "NAME"
 sacct
 \- displays accounting data for all jobs and job steps in the SLURM job accounting log
@@ -23,7 +23,7 @@ The
 command displays information on jobs, job steps, status, and exitcodes by 
 default.
 You can tailor the output with the use of the 
-\f3--fields=\fP 
+\f3\-\-fields=\fP 
 option to specify the fields to be shown.
 .PP
 For the root user, the 
@@ -32,15 +32,15 @@ command displays job accounting data for all users, although there are
 options to filter the output to report only the jobs from a specified 
 user or group.
 .PP
-For the non-root user, the 
+For the non\-root user, the 
 .BR "sacct "
 command limits the display of job accounting data to jobs that were 
 launched with their own user identifier (UID) by default.
 Data for other users can be displayed with the 
-\f3--all\fP,
-\f3--user\fP,
+\f3\-\-all\fP,
+\f3\-\-user\fP,
 or 
-\f3--uid\fP 
+\f3\-\-uid\fP 
 options.
 .TP "10"
 \f3Note: \fP\c
@@ -52,14 +52,14 @@ gather and report incomplete information for these calls;
 actually available on your system.
 .SS "Options"
 .TP "10"
-\f3\-a \fP\f3,\fP \f3--all\fP
+\f3\-a \fP\f3,\fP \f3\-\-all\fP
 Displays the job accounting data for all jobs in the job accounting log file.
 .IP 
 This is the default behavior when the 
 .BR "sacct "
 command is executed by the root user.
 .TP 
-\f3\-b \fP\f3,\fP \f3--brief\fP
+\f3\-b \fP\f3,\fP \f3\-\-brief\fP
 Displays a brief listing, which includes the following data:
 .RS 
 .TP "3"
@@ -74,22 +74,22 @@ Displays a brief listing, which includes the following data:
 .RE 
 .IP 
 This option has no effect when the 
-\f3---dump\fP 
+\f3\-\-\-dump\fP 
 option is also specified.
 .TP 
-\f3\-d \fP\f3,\fP \f3--dump\fP
+\f3\-d \fP\f3,\fP \f3\-\-dump\fP
 Displays (dumps) the raw data records.
 .IP 
 This option overrides the 
-\f3--brief\fP 
+\f3\-\-brief\fP 
 and 
-\f3--fields=\fP 
+\f3\-\-fields=\fP 
 options.
 .IP 
-The section titled "INTERPRETING THE --dump OPTION OUTPUT" describes the 
+The section titled "INTERPRETING THE \-\-dump OPTION OUTPUT" describes the 
 data output when this option is used.
 .TP
-\f3\-S \fP\f3,\fP \f3--stat\fP
+\f3\-S \fP\f3,\fP \f3\-\-stat\fP
 .IP
 Queries the status of a job as the job is running displaying
 the following data:
@@ -117,21 +117,21 @@ the following data:
 \f3status\fP 
 .RE 
 .IP
-You must also include the --jobs=job(.step) option if no (.step) is 
+You must also include the \-\-jobs=job(.step) option if no (.step) is 
 given you will recieve the job.0 step.
 
 .TP
-\f3-e \fP\f2time_spec\fP \f3,\fP \f3--expire=\fP\f2time_spec\fP
+\f3\-e \fP\f2time_spec\fP \f3,\fP \f3\-\-expire=\fP\f2time_spec\fP
 .IP
 Removes job data from SLURMs current accounting log file (or the file
-specified with \f3--file\fP) for jobs that completed more than
+specified with \f3\-\-file\fP) for jobs that completed more than
 \f2time_spec\fP
 ago and appends them to the expired log file.
 .IP
 If \f2time_spec\fP is an integer value only, it is interpreted as minutes. If
 \f2time_spec\fP is an integer followed by "h", it is interpreted as
 a number of hours. If \f2time_spec\fP is an integer followed by "d",
-it is interpreted as number of days. For example, "--expire=14d" 
+it is interpreted as number of days. For example, "\-\-expire=14d" 
 purges the job accounting log of all jobs that completed
 more than 14 days ago.
 .IP
@@ -140,16 +140,16 @@ log file, with ".expired" appended to the file name. For example, if
 the accounting log file is /var/log/slurmacct.log, the expired log
 file will be /var/log/slurmacct.log.expired.
 .TP 
-\f3\-F \fP\f2field_list\fP \f3,\fP  \f3--fields\fP\f3=\fP\f2field_list\fP
+\f3\-F \fP\f2field_list\fP \f3,\fP  \f3\-\-fields\fP\f3=\fP\f2field_list\fP
 Displays the job accounting data specified by the 
 \f2field_list\fP 
-operand, which is a comma-separated list of fields.
+operand, which is a comma\-separated list of fields.
 Space characters are not allowed in the 
 \f2field_list\fP\c
 \&. 
 .IP 
 See the 
-\f3--help-fields\fP 
+\f3\-\-help\-fields\fP 
 option for a list of the available fields.
 See the section titled "Job Accounting Fields" for a description of 
 each field.
@@ -162,9 +162,9 @@ Thus, the following two commands display the same data but in different order:
 .PP
 .nf 
 .ft 3
-# sacct --fields=jobid,status
+# sacct \-\-fields=jobid,status
 Jobid    Status
----------- ----------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 3          COMPLETED
 3.0        COMPLETED
 
@@ -175,9 +175,9 @@ Jobid    Status
 .PP
 .nf 
 .ft 3
-# sacct --fields=status,jobid
+# sacct \-\-fields=status,jobid
 Status     Jobid
----------- ----------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 COMPLETED  3
 COMPLETED  3.0
 
@@ -192,38 +192,38 @@ operand is
 \&.
 .IP 
 This option has no effect when the 
-\f3--dump\fP 
+\f3\-\-dump\fP 
 option is also specified.
 .TP 
-\f3\-f \fP\f2file\fP\f3,\fP  \f3--file\fP\f3=\fP\f2file\fP
+\f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
 Causes the 
 .BR "sacct "
 command to read job accounting data from the named 
 \f2file\fP 
 instead of the current SLURM job accounting log file.
 .TP 
-\f3\-O \fP\f3,\fP \f3--formatted_dump\fP
-Dumps accounting records in an easy-to-read format.
+\f3\-O \fP\f3,\fP \f3\-\-formatted_dump\fP
+Dumps accounting records in an easy\-to\-read format.
 .IP 
 This option is provided for debugging.
 .TP 
-\f3\-g \fP\f2gid\fP\f3,\fP  \f3--gid\fP\f3=\fP\f2gid\fP
+\f3\-g \fP\f2gid\fP\f3,\fP  \f3\-\-gid\fP\f3=\fP\f2gid\fP
 Displays the statistics only for the jobs started with GID 
 \f2gid\fP\c
 \&. 
 .TP 
-\f3\-g \fP\f2group\fP\f3,\fP  \f3--group\fP\f3=\fP\f2group\fP
+\f3\-g \fP\f2group\fP\f3,\fP  \f3\-\-group\fP\f3=\fP\f2group\fP
 Displays the statistics only for the jobs started by users in the
 group
 \f2group\fP\c
 \&. 
 .TP 
-\f3\-h \fP\f3,\fP \f3--help\fP
+\f3\-h \fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
 .TP 
-\f3--help-fields\fP
+\f3\-\-help\-fields\fP
 Displays a list of fields that can be specified with the 
-\f3--fields\fP 
+\f3\-\-fields\fP 
 option.
 .RS 
 .PP
@@ -247,17 +247,17 @@ uid         user        usercpu     vsize
 .IP 
 The section titled "Job Accounting Fields" describes these fields.
 .TP 
-\f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3--jobs\fP\f3=\fP\f2job(.step)\fP
+\f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3\-\-jobs\fP\f3=\fP\f2job(.step)\fP
 Displays information about the specified job(.step) or list of job(.step)s.
 .IP 
 The 
 \f2job(.step)\fP 
-parameter is a comma-separated list of jobs.
+parameter is a comma\-separated list of jobs.
 Space characters are not permitted in this list.
 .IP 
 The default is to display information on all jobs.
 .TP 
-\f3\-l\fP\f3,\fP \f3--long\fP
+\f3\-l\fP\f3,\fP \f3\-\-long\fP
 Displays a long listing, which includes the following data:
 .RS 
 .TP "3"
@@ -298,25 +298,25 @@ Displays a long listing, which includes the following data:
 \f3exitcode\fP 
 .RE 
 .TP 
-\f3--noheader\fP
+\f3\-\-noheader\fP
 Prevents the display of the heading over the output.
 The default action is to display a header.
 .IP 
 This option has no effect when used with the 
-\f3--dump\fP 
+\f3\-\-dump\fP 
 option.
 .TP 
-\f3\-p \fP\f2partition_list\fP \f3,\fP  \f3--partition\fP\f3=\fP\f2partition_list\fP
+\f3\-p \fP\f2partition_list\fP \f3,\fP  \f3\-\-partition\fP\f3=\fP\f2partition_list\fP
 Displays information about jobs and job steps specified by the 
 \f2partition_list\fP 
-operand, which is a comma-separated list of partitions.
+operand, which is a comma\-separated list of partitions.
 Space characters are not allowed in the 
 \f2partition_list\fP\c
 \&. 
 .IP 
 The default is to display information on jobs and job steps on all partitions.
 .TP 
-\f3\-s \fP\f2state_list\fP \f3,\fP  \f3--state\fP\f3=\fP\f2state_list\fP
+\f3\-s \fP\f2state_list\fP \f3,\fP  \f3\-\-state\fP\f3=\fP\f2state_list\fP
 Selects jobs based on their current state, which can be designated with 
 the following state designators:
 .RS 
@@ -348,29 +348,29 @@ node_fail
 .IP 
 The 
 \f2state_list\fP 
-operand is a comma-separated list of these state designators.
+operand is a comma\-separated list of these state designators.
 Space characters are not allowed in the 
 \f2state_list\fP\c
 \&.
 .TP 
-\f3\-t \fP\f3,\fP \f3--total\fP
+\f3\-t \fP\f3,\fP \f3\-\-total\fP
 Displays only the cumulative statistics for each job.
 Intermediate steps are displayed by default.
 .TP 
-\f3\-u \fP\f2uid\fP\f3,\fP  \f3--uid\fP\f3=\fP\f2uid\fP
+\f3\-u \fP\f2uid\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid\fP
 Displays the statistics only for the jobs started by the user whose UID is 
 \f2uid\fP\c
 \&.
 .TP 
-\f3\-u \fP\f2user\fP\f3,\fP  \f3--user\fP\f3=\fP\f2user\fP
+\f3\-u \fP\f2user\fP\f3,\fP  \f3\-\-user\fP\f3=\fP\f2user\fP
 Displays the statistics only for the jobs started by user
 \f2user\fP\c
 \&.
 .TP 
-\f3--usage\fP
+\f3\-\-usage\fP
 Displays a help message.
 .TP 
-\f3\-v \fP\f3,\fP \f3--verbose\fP
+\f3\-v \fP\f3,\fP \f3\-\-verbose\fP
 Reports the state of certain variables during processing.
 This option is primarily used for debugging.
 .SS "Job Accounting Fields"
@@ -401,7 +401,7 @@ The format of this fields output is as follows:
 .RS 
 .PD "0"
 .HP 
-\f2[DD-[hh:]]mm:ss\fP 
+\f2[DD\-[hh:]]mm:ss\fP 
 .PD 
 .RE 
 .IP 
@@ -427,7 +427,7 @@ Termination time of the job. Format output is as follows:
 .RS
 .PD "0"
 .HP
-\f2MM/DD-hh:mm:ss\fP
+\f2MM/DD\-hh:mm:ss\fP
 .PD
 .RE
 .IP
@@ -452,7 +452,7 @@ seconds
 
 .TP 
 \f3exitcode\fP 
-The first non-zero error code returned by any job step.
+The first non\-zero error code returned by any job step.
 
 .TP 
 \f3gid\fP 
@@ -622,11 +622,11 @@ Maximum Virtual Memory size of any process followed by its task id along with
 the average of all processes running in the step.
 
 .RE 
-.SH "INTERPRETING THE -DUMP OPTION OUTPUT"
+.SH "INTERPRETING THE \-DUMP OPTION OUTPUT"
 The 
 .BR "sacct "
 commands 
-\f3--dump\fP 
+\f3\-\-dump\fP 
 option displays data in a horizontal list of fields depending on the 
 record type;
 there are three record types: 
@@ -662,7 +662,7 @@ formatted displays.
 .SS "Output for the JOB_START Record Type"
 The following describes the horizontal fields output by the 
 .BR "sacct "
-\f3--dump\fP 
+\f3\-\-dump\fP 
 option for the 
 \f3JOB_START\fP 
 record type.
@@ -682,7 +682,7 @@ Field
 .TP 
 4
 The jobs start time;
-this value is the number of non-leap seconds since the Epoch (00:00:00 
+this value is the number of non\-leap seconds since the Epoch (00:00:00 
 UTC, January 1, 1970)
 .TP 
 5
@@ -724,7 +724,7 @@ Relative SLURM priority
 .SS "Output for the JOB_STEP Record Type"
 The following describes the horizontal fields output by the 
 .BR "sacct "
-\f3--dump\fP 
+\f3\-\-dump\fP 
 option for the 
 \f3JOB_STEP\fP 
 record type.
@@ -744,7 +744,7 @@ Field
 .TP 
 4
 The jobs start time;
-this value is the number of non-leap seconds since the Epoch (00:00:00 
+this value is the number of non\-leap seconds since the Epoch (00:00:00 
 UTC, January 1, 1970)
 .TP 
 5
@@ -877,7 +877,7 @@ expressed in microseconds
 .SS "Output for the JOB_TERMINATED Record Type"
 The following describes the horizontal fields output by the 
 .BR "sacct "
-\f3--dump\fP 
+\f3\-\-dump\fP 
 option for the 
 \f3JOB_TERMINATED\fP (literal string)
 record type.
@@ -897,7 +897,7 @@ Field
 .TP 
 4
 The jobs start time;
-this value is the number of non-leap seconds since the Epoch (00:00:00 
+this value is the number of non\-leap seconds since the Epoch (00:00:00 
 UTC, January 1, 1970)
 .TP 
 5
@@ -915,7 +915,7 @@ Job Record Version (1)
 9
 The number of fields in the record (38)
 .IP 
-Although thirty-eight fields are displayed by the 
+Although thirty\-eight fields are displayed by the 
 .BR "sacct "
 command for the 
 \f3JOB_TERMINATED\fP 
@@ -1043,7 +1043,7 @@ command:
 .ft 3
 # sacct
 Jobid      Jobname    Partition    Ncpus Status     Exitcode
----------- ---------- ---------- ------- ---------- --------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
 2          script01   srun             1 RUNNING           0
 3          script02   srun             1 RUNNING           0
 4          endscript  srun             1 RUNNING           0
@@ -1060,9 +1060,9 @@ option.
 .PP
 .nf 
 .ft 3
-# sacct --brief
+# sacct \-\-brief
 Jobid      Status     Exitcode
----------- ---------- --------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
 2          RUNNING           0
 3          RUNNING           0
 4          RUNNING           0
@@ -1075,9 +1075,9 @@ Jobid      Status     Exitcode
 .PP
 .nf 
 .ft 3
-# sacct --total
+# sacct \-\-total
 Jobid      Jobname    Partition    Ncpus Status     Exitcode
----------- ---------- ---------- ------- ---------- --------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
 3          sja_init   andy             1 COMPLETED         0
 4          sjaload    andy             2 COMPLETED         0
 5          sja_scr1   andy             1 COMPLETED         0
@@ -1099,9 +1099,9 @@ The fields are displayed in the order designated on the command line.
 .PP
 .nf 
 .ft 3
-# sacct --fields=jobid,ncpus,ntasks,nsignals,status
+# sacct \-\-fields=jobid,ncpus,ntasks,nsignals,status
 Jobid        Ncpus  Ntasks  Nsignals Status
----------- ------- ------- --------- ----------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 3                2       1         0 COMPLETED
 3.0              2       1         0 COMPLETED
 4                2       2         0 COMPLETED
@@ -1114,7 +1114,7 @@ Jobid        Ncpus  Ntasks  Nsignals Status
 .RE 
 .SH "COPYING"
 
-Copyright (C) 2005 Copyright Hewlett-Packard Development Company L.P.
+Copyright (C) 2005 Copyright Hewlett\-Packard Development Company L.P.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

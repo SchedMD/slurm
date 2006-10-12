@@ -82,7 +82,7 @@ or set by \fBslurm_step_ctx_set\fR.
 Storage location for requested data. See \fIdata_type\fP below.
 .TP
 \fIdata_type\fP
-Switch-specific data requested. The interpretation of this field depends
+Switch\-specific data requested. The interpretation of this field depends
 upon the switch plugin in use.
 .TP
 \fIfd_array\fP
@@ -91,7 +91,7 @@ Tasks will be connected to these file descriptors in order of their
 task id.
 This socket will carry standard input, output and error for the task.
 \fIjobinfo\fP
-Switch-specific job information as returned by \fBslurm_step_ctx_get\fR.
+Switch\-specific job information as returned by \fBslurm_step_ctx_get\fR.
 .TP
 \fIsignal\fP
 Signal to be sent to the spawned tasks. 
@@ -182,12 +182,12 @@ For \fB slurm_step_ctx_create\fR a context is return upon success. On error
 NULL is returned and the Slurm error code is set appropriately.
 .LP
 For all other functions zero is returned upon success. 
-On error, -1 is returned, and the Slurm error code is set appropriately.
+On error, \-1 is returned, and the Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBEINVAL\fR Invalid argument
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
@@ -273,7 +273,7 @@ int main (int argc, char *argv[])
 .br
 	bzero(&step_req, sizeof(job_step_create_request_msg_t ));
 .br
-	step_req.job_id = job_resp->job_id;
+	step_req.job_id = job_resp\->job_id;
 .br
 	step_req.user_id = getuid();
 .br
@@ -309,7 +309,7 @@ int main (int argc, char *argv[])
 .br
 		slurm_perror("slurm_spawn");
 .br
-		slurm_kill_job(job_resp->job_id, SIGKILL, 0);
+		slurm_kill_job(job_resp\->job_id, SIGKILL, 0);
 .br
 		exit(1);
 .br
@@ -353,7 +353,7 @@ int main (int argc, char *argv[])
 .LP
 	/* Terminate the job killing all tasks */
 .br
-	slurm_kill_job(job_resp->job_id, SIGKILL, 0);
+	slurm_kill_job(job_resp\->job_id, SIGKILL, 0);
 .br
 	slurm_step_ctx_destroy(ctx);
 .br
@@ -366,12 +366,12 @@ int main (int argc, char *argv[])
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
 Copyright (C) 2004 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

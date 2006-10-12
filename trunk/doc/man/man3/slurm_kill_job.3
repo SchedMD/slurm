@@ -28,7 +28,7 @@ int \fBslurm_kill_job_step\fR (
 .LP 
 .TB
 \fIbatch_flag\fP
-If non-zero then signal only the batch job shell.
+If non\-zero then signal only the batch job shell.
 .TP 
 \fIjob_id\fP
 Slurm job id number.
@@ -41,7 +41,7 @@ Signal to be sent to the job or job step.
 .SH "DESCRIPTION"
 .LP 
 \fBslurm_kill_job\fR Request that a signal be sent to either the batch job shell 
-(if \fIbatch_flag\fP is non-zero) or all steps of the specified job. 
+(if \fIbatch_flag\fP is non\-zero) or all steps of the specified job. 
 If the job is pending and the signal is SIGKILL, the job will be terminated immediately.
 This function may only be successfully executed by the job's owner or user root.
 .LP 
@@ -49,16 +49,16 @@ This function may only be successfully executed by the job's owner or user root.
 This function may only be successfully executed by the job's owner or user root.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
+On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBESLURM_DEFAULT_PARTITION_NOT_SET\fR the system lacks a valid default partition.
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
-\fBESLURM_JOB_SCRIPT_MISSING\fR the \fIbatch_flag\fP was set for a non-batch job.
+\fBESLURM_JOB_SCRIPT_MISSING\fR the \fIbatch_flag\fP was set for a non\-batch job.
 .LP
 \fBESLURM_ALREADY_DONE\fR the specified job has already completed and can not be modified. 
 .LP
@@ -72,12 +72,12 @@ SLURM controller.
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

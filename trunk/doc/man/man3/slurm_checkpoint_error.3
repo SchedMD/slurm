@@ -129,7 +129,7 @@ Request a checkpoint for the identified job step.
 Continue its execution upon completion of the checkpoint.
 .LP
 \fBslurm_checkpoint_disable\fR
-Make the identified job step non-checkpointable. 
+Make the identified job step non\-checkpointable. 
 This can be issued as needed to prevent checkpointing while 
 a job step is in a critical section or for other reasons.
 .LP
@@ -154,7 +154,7 @@ Terminate its execution upon completion of the checkpoint.
 .SH "RETURN VALUE"
 .LP
 Zero is returned upon success. 
-On error, -1 is returned, and the Slurm error code is set appropriately.
+On error, \-1 is returned, and the Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job or job step id does not exist. 
@@ -214,12 +214,12 @@ int main (int argc, char *argv[])
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
 Copyright (C) 2004 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.
