@@ -266,6 +266,8 @@ test8.1    Test of Blue Gene specific srun command line options
 test8.2    Test of Blue Gene specific srun environment variables
 test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
+test8.5    Confirm we can make a 32, 128, and 512 cnode block.
+test8.6    Stress test Dynamic mode block creation.
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
@@ -494,10 +496,3 @@ test18.35  Test of task layout controls (--task-layout-byid,
 test18.36  Test of CPU affinity support (--cpu-bind option).
 test18.37  Test of memory affinity support for NUMA systems (--mem-bind option).
 test18.38  Test of slaunch --jobid
-
-
-test19.#   Testing of bluegene plugin. (15-18 already taken in slurm1.2)
-=====================================
-test19.1   Confirm we can make a 32, 128, and 512 cnode block.
-test19.2   Stress test Dynamic mode block creation.
-
