@@ -26,6 +26,19 @@ AC_CONFIG_HEADERS([slurm/slurm.h])
 
 X_AC_AIX
 
+dnl
+dnl Check to see if this architecture should use slurm_* prefix function
+dnl aliases for plugins.
+dnl
+case "$host" in
+	*-*-aix*) AC_DEFINE(USE_ALIAS, 0, 
+                 	[Define slurm_ prefix function aliases for plusins]) ;;
+	*darwin*) AC_DEFINE(USE_ALIAS, 0,
+                  	[Define slurm_ prefix function aliases for plusins]) ;;
+	*)        AC_DEFINE(USE_ALIAS, 1, 
+			[Define slurm_ prefix function aliases for plugins]) ;;
+esac
+
 dnl Checks for programs.
 dnl
 AC_PROG_CC

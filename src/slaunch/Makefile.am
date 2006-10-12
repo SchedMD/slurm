@@ -42,6 +42,6 @@ install-exec-local:
 	  srcdir=`cd $(top_srcdir) && pwd`; \
 	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
 	                         $(DESTDIR)$(bindir)/slaunch; fi; \
-	$(INSTALL) -D -m 644 $(top_srcdir)/src/slaunch/slaunch.wrapper.c \
-	                       $(DESTDIR)$(pkglibdir)/src/slaunch/slaunch.wrapper.c
-
+	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/slaunch
+	$(INSTALL) -m 644 $(top_srcdir)/src/slaunch/slaunch.wrapper.c \
+		$(DESTDIR)$(pkglibdir)/src/slaunch/slaunch.wrapper.c

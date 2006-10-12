@@ -5,7 +5,7 @@
 #    Morris Jette <jette@llnl.gov>
 #
 #  SYNOPSIS:
-#    AC_AIX
+#    X_AC_AIX
 #
 #  DESCRIPTION:
 #    Check for AIX operating system and sets parameters accordingly, 
@@ -28,30 +28,17 @@ AC_DEFUN([X_AC_AIX],
                 CFLAGS="-maix32 $CFLAGS"
                 CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull -Wl,-bmaxdata:0x70000000" # keep all common functions
             fi
-            INSTALL_DIRS="-D"
             ac_have_aix="yes"
             ac_with_readline="no"
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
-            AC_DEFINE(USE_ALIAS, 0, 
-                      [Define slurm_ prefix function aliases for plusins]) ;;
-      *darwin*)
-            AC_MSG_WARN([On OSX, "install -d" does not work as documented])
-            AC_MSG_WARN([  Remove the "-d" from INSTALL_DIRS in src/srun/Makefile])
-            AC_MSG_WARN([  and manually create the directory as needed])
-            INSTALL_DIRS="-d"
-            ac_have_aix="no"
-            AC_DEFINE(USE_ALIAS, 0,
-                      [Define slurm_ prefix function aliases for plusins]) ;;    
-      *)    INSTALL_DIRS="-D"
-            ac_have_aix="no"
-            AC_DEFINE(USE_ALIAS, 1, 
-                      [Define slurm_ prefix function aliases for plugins]) ;;
+            ;;
+      *)    ac_have_aix="no"
+            ;;
    esac
 
    AC_SUBST(CMD_LDFLAGS)
    AC_SUBST(LIB_LDFLAGS)
    AC_SUBST(SO_LDFLAGS)
-   AC_SUBST(INSTALL_DIRS)
    AM_CONDITIONAL(HAVE_AIX, test "x$ac_have_aix" = "xyes")
    AC_SUBST(HAVE_AIX, "$ac_have_aix")
 
