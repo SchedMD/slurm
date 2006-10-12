@@ -1415,7 +1415,10 @@ extern void build_node_details(struct job_record *job_ptr)
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
- cleanup:	free(this_node_name);
+#ifdef HAVE_BG
+ cleanup:	
+#endif
+		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
 	if (job_ptr->node_cnt != node_inx) {
