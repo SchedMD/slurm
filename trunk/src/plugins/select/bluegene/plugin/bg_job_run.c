@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -302,6 +302,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			      found_record->bg_block_id, 
 			      bg_record->bg_block_id);
 			list_push(delete_list, found_record);
+			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+				list_remove(itr);
+			}
 			num_block_to_free++;
 		}		
 		list_iterator_destroy(itr);
@@ -331,13 +334,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   is a no-op if issued prior 
 			   to the script initiation */
 			(void) slurm_fail_job(bg_update_ptr->job_id);
+			slurm_mutex_lock(&block_state_mutex);
 			if (remove_from_bg_list(bg_job_block_list, bg_record)
 			    == SLURM_SUCCESS) {
-				slurm_mutex_lock(&block_state_mutex);
 				num_unused_cpus += bg_record->bp_count
 					*bg_record->cpus_per_bp;
-				slurm_mutex_unlock(&block_state_mutex);
 			}
+			slurm_mutex_unlock(&block_state_mutex);
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}
@@ -379,9 +382,6 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 	time_t now;
 	char reason[128];
 	int job_remove_failed = 0;
-	ba_request_t *try_request = NULL; 
-	int proc_cnt = 0;
-	ListIterator itr;
 	
 #ifdef HAVE_BG_FILES
 	rm_element_t *job_elem = NULL;
@@ -422,7 +422,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 				continue;
 			}
 		} else {
-			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob, 
+			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
 						  &job_elem)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_JobListFirstJob): %s",
@@ -482,26 +482,27 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		      bg_record->user_name);
 
 		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
-			/* 
-			   remove all requests out of the list 
-			   that are smaller than the one the 
-			   job was running on.
-			*/
-			proc_cnt = bg_record->bp_count * 
-				bg_record->cpus_per_bp;
-			slurm_mutex_lock(&request_list_mutex);
-			itr = list_iterator_create(bg_request_list);
-			while ((try_request = list_next(itr)) != NULL) {
-				if(try_request->procs <= proc_cnt) {
-					debug3("removing size %d", 
-					       try_request->procs);
-					list_remove(itr);
-					delete_ba_request(try_request);
-					list_iterator_reset(itr);
-				}				
-			}
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&request_list_mutex);
+			remove_from_request_list();
+		/* 	/\*  */
+/* 			   remove all requests out of the list  */
+/* 			   that are smaller than the one the  */
+/* 			   job was running on. */
+/* 			*\/ */
+/* 			proc_cnt = bg_record->bp_count *  */
+/* 				bg_record->cpus_per_bp; */
+/* 			slurm_mutex_lock(&request_list_mutex); */
+/* 			itr = list_iterator_create(bg_request_list); */
+/* 			while ((try_request = list_next(itr)) != NULL) { */
+/* 				if(try_request->procs <= proc_cnt) { */
+/* 					debug3("removing size %d",  */
+/* 					       try_request->procs); */
+/* 					list_remove(itr); */
+/* 					delete_ba_request(try_request); */
+/* 					list_iterator_reset(itr); */
+/* 				}				 */
+/* 			} */
+/* 			list_iterator_destroy(itr); */
+/* 			slurm_mutex_unlock(&request_list_mutex); */
 		}
 
 		if(job_remove_failed) {
@@ -544,14 +545,17 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		bg_record->boot_count = 0;
 		
 		last_bg_update = time(NULL);
-		slurm_mutex_unlock(&block_state_mutex);
 		if(remove_from_bg_list(bg_job_block_list, bg_record) 
 		   == SLURM_SUCCESS) {
-			slurm_mutex_lock(&block_state_mutex);
 			num_unused_cpus += 
 				bg_record->bp_count*bg_record->cpus_per_bp;
-			slurm_mutex_unlock(&block_state_mutex);
-		} 
+		}
+		slurm_mutex_unlock(&block_state_mutex);
+		
+	} else {
+		debug2("hopefully we are destroying this block %s "
+		       "since it isn't in the bg_list",
+		       bg_update_ptr->bg_block_id);
 	}
 #ifdef HAVE_BG_FILES
 	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)

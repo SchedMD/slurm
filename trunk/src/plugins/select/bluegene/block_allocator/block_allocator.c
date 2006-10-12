@@ -71,6 +71,7 @@ int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
 #else
 int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
+
 s_p_options_t bg_conf_file_options[] = {
 	{"BlrtsImage", S_P_STRING}, 
 	{"LinuxImage", S_P_STRING},
@@ -222,6 +223,14 @@ extern void destroy_blockreq(void *ptr)
 	if(n) {
 		xfree(n->block);
 		xfree(n);
+	}
+}
+
+extern void destroy_ba_node(void *ptr)
+{
+	ba_node_t *ba_node = (ba_node_t *)ptr;
+	if(ba_node) {
+		xfree(ba_node);
 	}
 }
 
@@ -818,13 +827,15 @@ extern void init_wires()
 		}
 	}
 #ifdef HAVE_BG_FILES	
-	   _set_external_wires(0,0,NULL,NULL);
-	   if(!bp_map_list) {
-		if(set_bp_map() == -1)
+	_set_external_wires(0,0,NULL,NULL);
+	if(!bp_map_list) {
+		if(set_bp_map() == -1) {
 			return;
-	   }
+		}
+	}
 #endif
-	   _wires_initialized = true;
+	
+	_wires_initialized = true;
 	return;
 }
 
@@ -877,7 +888,19 @@ extern void ba_set_node_down(ba_node_t *ba_node)
 	/* basically set the node as used */
 	ba_node->used = true;
 }
-
+/** 
+ * copy info from a ba_node
+ * 
+ * IN ba_node: node to be copied
+ * OUT ba_node_t *: copied info must be freed with destroy_ba_node
+ */
+extern ba_node_t *ba_copy_node(ba_node_t *ba_node)
+{
+	ba_node_t *new_ba_node = xmalloc(sizeof(ba_node_t));
+	
+	memcpy(new_ba_node, ba_node, sizeof(ba_node_t));
+	return new_ba_node;
+}
 /** 
  * Try to allocate a block.
  * 
@@ -1004,6 +1027,89 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 	}
 }
 
+extern void set_node_list(List nodes)
+{
+	ba_node_t *ba_node = NULL;
+	ba_node_t *curr_ba_node = NULL;
+	ListIterator itr = NULL;
+
+	itr = list_iterator_create(nodes);
+	while ((ba_node = list_next(itr))) {
+		curr_ba_node = &ba_system_ptr->grid[ba_node->coord[X]]
+			[ba_node->coord[Y]]
+			[ba_node->coord[Z]];
+		memcpy(curr_ba_node, ba_node, sizeof(ba_node_t));
+	}
+	list_iterator_destroy(itr);
+		
+}
+
+extern int check_and_set_node_list(List nodes)
+{
+	int rc = SLURM_ERROR;
+
+#ifdef HAVE_BG
+	int i, j;
+	ba_switch_t *ba_switch = NULL, *curr_ba_switch = NULL; 
+	ba_node_t *ba_node = NULL, *curr_ba_node = NULL;
+	ListIterator itr = NULL;
+
+	itr = list_iterator_create(nodes);
+	while((ba_node = list_next(itr))) { 
+		/* info("checking %d%d%d", */
+/* 		     ba_node->coord[X],  */
+/* 		     ba_node->coord[Y], */
+/* 		     ba_node->coord[Z]); */
+					      
+		curr_ba_node = &ba_system_ptr->
+			grid[ba_node->coord[X]]
+			[ba_node->coord[Y]]
+			[ba_node->coord[Z]];
+		if(ba_node->used && curr_ba_node->used) {
+			debug3("I have already been to "
+			       "this node %d%d%d",
+			       ba_node->coord[X], 
+			       ba_node->coord[Y],
+			       ba_node->coord[Z]);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		if(ba_node->used) 
+			curr_ba_node->used = true;		
+		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
+			ba_switch = &ba_node->axis_switch[i];
+			curr_ba_switch = &curr_ba_node->axis_switch[i];
+			//info("checking dim %d", i);
+		
+			for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) {
+				//info("checking port %d", j);
+		
+				if(ba_switch->int_wire[j].used 
+				   && curr_ba_switch->int_wire[j].used) {
+					debug3("%d%d%d dim %d port %d "
+					       "is already in use",
+					       ba_node->coord[X], 
+					       ba_node->coord[Y],
+					       ba_node->coord[Z], 
+					       i,
+					       j);
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
+				if(!ba_switch->int_wire[j].used)
+					continue;
+				curr_ba_switch->int_wire[j].used = 1;
+				curr_ba_switch->int_wire[j].port_tar 
+					= ba_switch->int_wire[j].port_tar;
+			}
+		}
+	}
+	rc = SLURM_SUCCESS;
+end_it:
+#endif
+	return rc;
+}
+
 extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type)
 {
@@ -1013,11 +1119,7 @@ extern char *set_bg_block(List results, int *start,
 	int send_results = 0;
 	int found = 0;
 
-	if(!results)
-		results = list_create(NULL);
-	else
-		send_results = 1;
-	
+
 #ifdef HAVE_BG
 	if(start[X]>=DIM_SIZE[X] 
 	   || start[Y]>=DIM_SIZE[Y]
@@ -1045,6 +1147,11 @@ extern char *set_bg_block(List results, int *start,
 	
 	if(!ba_node)
 		return NULL;
+
+	if(!results)
+		results = list_create(NULL);
+	else
+		send_results = 1;
 		
 	list_append(results, ba_node);
 	found = _find_x_path(results, ba_node,
@@ -1084,29 +1191,29 @@ extern char *set_bg_block(List results, int *start,
 				    geometry, 
 				    conn_type)) {
 			list_destroy(start_list);
-			return NULL;
+			goto end_it;
 		}
 		list_destroy(start_list);			
 #endif		
 	} else {
-		return NULL;
+		goto end_it;
 	}
 
 	name = _set_internal_wires(results,
 				   size,
 				   conn_type);
-	if(!send_results)
+end_it:
+	if(!send_results && results) {
 		list_destroy(results);
+	}
 	if(name!=NULL) {
 		debug2("name = %s", name);
 	} else {
 		debug2("can't allocate");
 		xfree(name);
-		return NULL;
 	}
 
-	return name;
-	
+	return name;	
 }
 
 extern int reset_ba_system()
@@ -1453,13 +1560,12 @@ extern int load_block_wiring(char *bg_block_id)
 					debug("I have already been to "
 					      "this node %d%d%d",
 					      geo[X], geo[Y], geo[Z]);
-			
 					return SLURM_ERROR;
 				}
 				ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].
 					used = true;		
 			}
-			debug2("connection going from %d -> %d",
+			debug3("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
 			
 			if(ba_switch->int_wire[curr_conn.p1].used) {
@@ -1687,7 +1793,7 @@ static int _fill_in_coords(List results, List start_list,
 				   == check_node->coord[Z])
 					continue;
 				if (!_node_used(ba_node,geometry)) {
-					debug2("here Adding %d%d%d",
+					debug3("here Adding %d%d%d",
 					       ba_node->coord[X],
 					       ba_node->coord[Y],
 					       ba_node->coord[Z]);
@@ -1803,7 +1909,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				&ba_node->
 				axis_switch[i2];
 			if(dim_curr_switch->int_wire[2].used) {
-				debug2("returning here");
+				debug4("returning here");
 				return 0;
 			}
 							
@@ -1885,7 +1991,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 							axis_switch[i2];
 					}
 									
-					debug2("back to first on dim %d "
+					debug3("back to first on dim %d "
 					       "at %d looking for %d",
 					       i2,
 					       node_tar[i2],
@@ -1953,7 +2059,7 @@ static int _create_config_even(ba_node_t *grid)
 #ifdef HAVE_BG
 	int y,z;
 	init_wires();
-
+	
 	for(x=0;x<DIM_SIZE[X];x++) {
 		for(y=0;y<DIM_SIZE[Y];y++) {
 			for(z=0;z<DIM_SIZE[Z];z++) {
@@ -2018,7 +2124,20 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	node_curr = curr_switch->ext_wire[0].node_tar;
 	node_tar = curr_switch->ext_wire[port_tar].node_tar;
 	port_tar = curr_switch->ext_wire[port_tar].port_tar;
-	debug2("from %d%d%d %d %d -> %d%d%d %d",
+	if(source == port_tar1) {
+		error("got this bad one %d%d%d %d %d -> %d%d%d %d",
+		      node_curr[X],
+		      node_curr[Y],
+		      node_curr[Z],
+		      source,
+		      port_tar1,
+		      node_tar[X],
+		      node_tar[Y],
+		      node_tar[Z],
+		      port_tar);
+		return 0;
+	}
+	debug4("from %d%d%d %d %d -> %d%d%d %d",
 	       node_curr[X],
 	       node_curr[Y],
 	       node_curr[Z],
@@ -2730,7 +2849,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		return NULL;
 	itr = list_iterator_create(nodes);
 	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
-		sprintf(name, "%d%d%d", 
+		snprintf(name, BUFSIZE, "%d%d%d", 
 			ba_node[count]->coord[X],
 			ba_node[count]->coord[Y],
 			ba_node[count]->coord[Z]);
@@ -2814,7 +2933,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	if(geometry[X] == 1) {
 		goto found_one;
 	}
-	debug2("found - %d",found);
+	debug3("found - %d",found);
 	for(i=0;i<2;i++) {
 		/* check to make sure it isn't used */
 		if(!curr_switch->int_wire[ports_to_try[i]].used) {
@@ -2888,10 +3007,10 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			}
 			debug3("Broke = %d Found = %d geometry[X] = %d",
 			       broke, found, geometry[X]);
-			debug2("Next Phys X %d Highest X %d",
+			debug3("Next Phys X %d Highest X %d",
 			       next_node->phys_x, highest_phys_x);
 			if(next_node->phys_x >= highest_phys_x) {
-				debug2("looking for a passthrough");
+				debug3("looking for a passthrough");
 				if(best_path)
 					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
