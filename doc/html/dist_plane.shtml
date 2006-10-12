@@ -1,31 +1,24 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Plane distribution: <i>-m plane=x</i></a></h1>
+<h1><a name="top">Plane distribution: <i>-m plane=plane_size</i></a></h1>
 
-<p>The plane distribution results in a block cyclic distribution with
-block size x. We chose to call the block cyclic distribution a plane
-distribution due to how we place the distribution onto logical
-processors in the multi-core environment. See Section "Plane
-distribution and task affinity".
+<p>The plane distribution allocates tasks in blocks of size 
+plane_size in a round-robin fashion across allocated nodes.
 
 <p>To specify the plane distribution add to the srun command line
-<i>--distribution=plane=x</i> where <i>x</i> is the requested
-plane/block size.
+<i>--distribution=plane=plane_size</i> or <i>-m plane=plane_size</i> 
+where <i>plane_size</i> is the requested plane/block size.
 
-<p>More information on block cyclic distributions is available at:
-<a href="http://www.netlib.org/scalapack/slug/node75.html">
-http://www.netlib.org/scalapack/slug/node75.html</a>.
-
-<h2>Examples of plane (block cyclic) distributions</h2>
+<h2>Examples of plane distributions</h2>
 
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
 <p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
 
-<p>The distribution results in a block distribution of blocksize 21.
-Even thought the user specified a plane size of 4 the final plane
-distribution results in a block distribution of blocksize 21.
+<p>The distribution results in a plane distribution with plane_size 21.
+Even thought the user specified a plane_size of 4 the final plane
+distribution results in a plane_size of 21.
 
 <p>
 <center>
@@ -35,7 +28,7 @@ distribution results in a block distribution of blocksize 21.
 
 <p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 -s <...></i>.
 
-<p>The plane distribution with a plane size of 4 results in the
+<p>The plane distribution with a plane_size of 4 results in the
 following allocation of the task ids:
 
 <p>
@@ -47,7 +40,7 @@ following allocation of the task ids:
 <p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 -s <...>
 </i>. 
 
-<p>The plane distribution with a block size of 2 results in the
+<p>The plane distribution with a plane_size of 2 results in the
 following allocation of the task ids:
 
 <p>
@@ -56,16 +49,12 @@ following allocation of the task ids:
 <p>Figure 3: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>
 </center>
 
-<p>More information on block cyclic distributions is available at:
-<a href="http://www.netlib.org/scalapack/slug/node75.html">
-http://www.netlib.org/scalapack/slug/node75.html</a>.
-
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Assumptions and Limitations</h2>
 
-SLURM assumes that the number of tasks divided by the plane size is
-equal to the number of nodes specified.
+<p>SLURM assumes that the number of tasks divided by the plane_size is
+greater or equal to the number of nodes specified.
 
 <p>In other words if the following is true SLURM will generate an
 error message:
@@ -73,6 +62,8 @@ error message:
 if ((n/plane_size < min_nodes) ((N-1)*plane_size >= n))
             generate an error message: Too few processes for the
 	           requested {plane, node} distribution.  
+
+where min_nodes is the minimum number of nodes requested for the job.
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -85,17 +76,18 @@ processors (CPU, cores, threads depending on the architecture) on each
 node. We then schedule within each plane first and then across planes.
 
 <p>We ensure that the processes are located correctly by setting the
-process affinity to the specified/correct logical processor. Process
-affinity is available to SLURM when the task affinity plug-in is
+process affinity to the specified/appropriate logical processor. Process
+affinity is available in SLURM when the task affinity plug-in is
 enabled.
 
 <p>On a dual-processor node with quad-core processors (see figure 4)
 the plane distribution results in: 
+
 <ul>
-<li>One plane if the plane size x=8. In this case the processors are
+<li>One plane if the plane_size=8. In this case the processors are
 scheduled by first filling up the nodes and then scheduled across the
 nodes.</li>
-<li>Eight planes if the plane size x=1. In this case we would always
+<li>Eight planes if the plane_size=1. In this case we would always
 schedule across the node first.</li>
 </ul>
 
@@ -109,7 +101,7 @@ schedule across the node first.</li>
 provide better locality but potentially more contention for other
 resources. 
 
-<p>On the other hand, four planes (scheduling acorss processors) would
+<p>On the other hand, four planes (scheduling across processors) would
 minimize contention for cache and memory.
 
 <p class="footer"><a href="#top">top</a></p>
@@ -121,8 +113,8 @@ affinity enabled</h3>
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
 <p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
-Even thought the user specified a block size of 4 the final plane
-distribution results in a block distribution of blocksize 21.
+Even thought the user specified a plane_size of 4 the final plane
+distribution results in a plane distribution with plane_size=8.
 
 <p>
 <center>
@@ -131,7 +123,7 @@ distribution results in a block distribution of blocksize 21.
 </center>
 
 <p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 -s <...>
-</i>. The plane distribution with a block size of 4 results in the
+</i>. The plane distribution with a plane_size of 4 results in the
 following allocation of the task ids:
 
 <p>
@@ -141,7 +133,7 @@ following allocation of the task ids:
 </center>
 
 <p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 -s <...>
-</i>. The plane distribution with a block size of 2 results in the
+</i>. The plane distribution with a plane_size of 2 results in the
 following allocation of the task ids:
 
 <p>
@@ -150,13 +142,8 @@ following allocation of the task ids:
 <p>Figure 7: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>.
 </center>
 
-<p>
-The reason Process id 9 is assigned to "Node 0: Socket 1: Core 0" and
-not "Node 0: Socket 0: Core 1" is that SLURM assume a cyclic across
-the lowest level of logical processors by default.
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 October 2006</p>
+<p style="text-align:center;">Last modified 12 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
