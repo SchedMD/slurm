@@ -51,6 +51,7 @@ install-exec-local:
 	  srcdir=`cd $(top_srcdir) && pwd`; \
 	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
 	                         $(DESTDIR)$(bindir)/srun; fi; \
-	$(INSTALL) $(INSTALL_DIRS) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
-	                       $(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
+	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/srun
+	$(INSTALL) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
+		$(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
 

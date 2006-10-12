@@ -34,6 +34,6 @@ install-exec-local:
 		srcdir=`cd $(top_srcdir) && pwd`; \
 		/usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
 			$(DESTDIR)$(bindir)/sattach; fi; \
-	$(INSTALL) $(INSTALL_DIRS) -m 644 $(top_srcdir)/src/sattach/sattach.wrapper.c \
+	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/sattach
+	$(INSTALL) -m 644 $(top_srcdir)/src/sattach/sattach.wrapper.c \
 		$(DESTDIR)$(pkglibdir)/src/sattach/sattach.wrapper.c
-
