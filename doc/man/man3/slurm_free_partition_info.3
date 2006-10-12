@@ -48,7 +48,7 @@ void \fBslurm_print_partition_info_msg\fR (
 .LP 
 .TP 
 \fIone_liner\fP
-Print one record per line if non-zero.
+Print one record per line if non\-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.
@@ -60,7 +60,7 @@ partition. Detailed partition information is written to fixed sized records and 
 name, state, job time limit, job size limit, node names, indexes into the node table, 
 etc. In the case of indexes into the node table, this is an array of integers with 
 pairs of start and end index number into the node information records and the 
-data is terminated with a value of -1. See slurm.h for full details on the data 
+data is terminated with a value of \-1. See slurm.h for full details on the data 
 structure's contents. 
 .TP 
 \fIpartition_info_msg_ptr\fP
@@ -94,12 +94,12 @@ single partition records from the data loaded by the \fBslurm_load_partitions\fR
 all partition records loaded by the \fBslurm_load_partitions\fR function.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
+On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBSLURM_NO_CHANGE_IN_DATA\fR Data has not changed since \fBupdate_time\fR.
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link 
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link 
 your code.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
@@ -142,9 +142,9 @@ int main (int argc, char *argv[])
 .LP
 	/* A harder way.. */
 .br
-	for (i = 0; i < part_buffer_ptr->record_count; i++) {
+	for (i = 0; i < part_buffer_ptr\->record_count; i++) {
 .br
-		part_ptr = &part_info_ptr->partition_array[i];
+		part_ptr = &part_info_ptr\->partition_array[i];
 .br
 		slurm_print_partition_info(stdout, part_ptr);
 .br
@@ -154,17 +154,17 @@ int main (int argc, char *argv[])
 .br
 	printf("Partitions updated at %lx, records=%d\\n",
 .br
-	       part_buffer_ptr->last_update, 
+	       part_buffer_ptr\->last_update, 
 .br
-	       part_buffer_ptr->record_count);
+	       part_buffer_ptr\->record_count);
 .br
-	for (i = 0; i < part_buffer_ptr->record_count; i++) {
+	for (i = 0; i < part_buffer_ptr\->record_count; i++) {
 .br
 		printf ("PartitionName=%s Nodes=%s\\n", 
 .br
-			part_info_ptr->partition_array[i].name, 
+			part_info_ptr\->partition_array[i].name, 
 .br
-			part_info_ptr->partition_array[i].nodes );
+			part_info_ptr\->partition_array[i].nodes );
 .br
 	}
 .LP
@@ -177,9 +177,9 @@ int main (int argc, char *argv[])
 .SH "NOTES"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 .LP
-Some data structures contain index values to cross-reference each other. 
+Some data structures contain index values to cross\-reference each other. 
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this
 data, these index values will be invalid.
 .LP
@@ -187,9 +187,9 @@ The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
 expressions into a collection of individual node names.
 
 .SH "COPYING"
-Copyright (C) 2002-2006 The Regents of the University of California.
+Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

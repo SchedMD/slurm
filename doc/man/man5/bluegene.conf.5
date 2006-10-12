@@ -18,7 +18,7 @@ The overall configuration parameters available include:
 
 .TP
 \fBBasePartitionNodeCount\fR
-The number of c-nodes per base partition.
+The number of c\-nodes per base partition.
 There is no default value and this must be specified.
 
 .TP
@@ -66,7 +66,7 @@ There is no default value and this must be specified.
 Describes how SLURM should create bgblocks.
 .RS
 .TP
-\fBSTATIC\fR: Create and use the defined non-overlapping bgblocks.
+\fBSTATIC\fR: Create and use the defined non\-overlapping bgblocks.
 .TP
 \fBOVERLAP\fR: Create and use the defined bgblocks, which may overlap.
 It is highly recommended that none of the bgblocks have any passthroughs 
@@ -82,7 +82,7 @@ and starvation of larger jobs.
 
 .TP
 \fBNodeCardNodeCount\fR
-Number of c-nodes per node card.
+Number of c\-nodes per node card.
 There is no default value and this must be specified.
 
 .TP
@@ -148,7 +148,7 @@ BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 .br
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 .br
-MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
+MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs\-mloader.rts
 .br
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
 .br
@@ -162,7 +162,7 @@ LayoutMode=STATIC
 .br
 ##################################################################
 .br
-# LEAVE AS COMMENT, Full-system bglblock, implicitly created
+# LEAVE AS COMMENT, Full\-system bglblock, implicitly created
 .br
 # BPs=[000x333] Type=TORUS        # 4x4x4 = 64 midplanes
 .br
@@ -185,7 +185,7 @@ BPs=[333x333] Type=SMALL NodeCards=4 Quarters=3 # 1/16 * 4 + 1/4 * 3
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

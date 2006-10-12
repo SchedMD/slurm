@@ -66,13 +66,13 @@ Slurm configuration records.
 .SH "RETURN VALUE"
 .LP
 For \fBslurm_api_version\fR the SLURM API version number is returned. 
-All other functions return zero on success and -1 on error with the 
+All other functions return zero on success and \-1 on error with the 
 SLURM error code set appropriately.
 .SH "ERRORS"
 .LP
 \fBSLURM_NO_CHANGE_IN_DATA\fR Data has not changed since \fBupdate_time\fR.
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
@@ -126,11 +126,11 @@ int main (int argc, char *argv[])
 .br
 	printf ("control_machine = %s\\n", 
 .br
-	        slurm_ctl_conf_ptr->control_machine);
+	        slurm_ctl_conf_ptr\->control_machine);
 .br
 	printf ("server_timeout = %u\\n", 
 .br
-	        slurm_ctl_conf_ptr->server_timeout);
+	        slurm_ctl_conf_ptr\->server_timeout);
 .LP
 	slurm_free_ctl_conf (conf_info_msg_ptr);
 .br
@@ -141,12 +141,12 @@ int main (int argc, char *argv[])
 .SH "NOTE"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

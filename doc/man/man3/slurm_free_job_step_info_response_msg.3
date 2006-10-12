@@ -72,7 +72,7 @@ Specifies a pointer to a single job step records from the \fIjob_step_info_msg_p
 data structure.
 .TP 
 \fIone_liner\fP
-Print one record per line if non-zero.
+Print one record per line if non\-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.
@@ -109,13 +109,13 @@ structure describing all job step records loaded by the
 \fslurm_get_job_steps\fR function.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error 
+On success, zero is returned. On error, \-1 is returned, and Slurm error 
 code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBSLURM_NO_CHANGE_IN_DATA\fR Data has not changed since \fBupdate_time\fR.
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
@@ -157,9 +157,9 @@ int main (int argc, char *argv[])
 .LP
 	/* A harder way.. */
 .br
-	for (i = 0; i < step_info_ptr->record_count; i++) {
+	for (i = 0; i < step_info_ptr\->record_count; i++) {
 .br
-		step_ptr = &step_info_ptr->job_steps[i];
+		step_ptr = &step_info_ptr\->job_steps[i];
 .br
 		slurm_print_job_step_info(stdout, step_ptr);
 .br
@@ -169,17 +169,17 @@ int main (int argc, char *argv[])
 .br
 	printf ("Steps updated at %lx, record count %d\\n",
 .br
-	        step_info_ptr->last_update, 
+	        step_info_ptr\->last_update, 
 .br
-	        step_info_ptr->job_step_count);
+	        step_info_ptr\->job_step_count);
 .br
-	for (i = 0; i < step_info_ptr->job_step_count; i++) {
+	for (i = 0; i < step_info_ptr\->job_step_count; i++) {
 .br
 		printf ("JobId=%u StepId=%u\\n", 
 .br
-			step_info_ptr->job_steps[i].job_id, 
+			step_info_ptr\->job_steps[i].job_id, 
 .br
-			step_info_ptr->job_steps[i].step_id);
+			step_info_ptr\->job_steps[i].step_id);
 .br
 	}			
 .LP
@@ -192,9 +192,9 @@ int main (int argc, char *argv[])
 .SH "NOTES"
 These functions are included in the libslurm library, 
 which must be linked to your process for use
-(e.g. "cc -lslurm myprog.c").
+(e.g. "cc \-lslurm myprog.c").
 .LP
-Some data structures contain index values to cross-reference each other. 
+Some data structures contain index values to cross\-reference each other. 
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this
 data, these index values will be invalid.
 .LP
@@ -202,9 +202,9 @@ The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
 expressions into a collection of individual node names.
 
 .SH "COPYING"
-Copyright (C) 2002-2006 The Regents of the University of California.
+Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

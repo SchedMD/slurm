@@ -44,8 +44,8 @@ name of the executable which slaunch is launching.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
-Terminate the job step if any task exits with a non-zero exit code.  By default
-slaunch will not terminate a job step because of a task with a non-zero exit
+Terminate the job step if any task exits with a non\-zero exit code.  By default
+slaunch will not terminate a job step because of a task with a non\-zero exit
 code.
 
 .TP
@@ -74,7 +74,7 @@ Increase the verbosity of slaunch's informational messages.  Multiple \-v's
 will further increase slaunch's verbosity.
 
 .TP
-\fB\-d\fR, \fB\-\-slurmd-debug\fR[=]<\fIlevel\fR>
+\fB\-d\fR, \fB\-\-slurmd\-debug\fR[=]<\fIlevel\fR>
 Specify a debug level for slurmd(8). \fIlevel\fR may be an integer value
 between 0 [quiet, only errors are displayed] and 4 [verbose operation]. 
 The slurmd debug information is copied onto the stderr of
@@ -96,12 +96,12 @@ Select a task distribution pattern.  (The default is cyclic.)
 .RS
 .TP
 .B cyclic
-The cyclic method distributes processes in a round-robin fashion across
+The cyclic method distributes processes in a round\-robin fashion across
 the allocated nodes. That is, task zero will be allocated to the first
 node, task one to the second, and so on.
 .TP
 .B block
-The block method of distribution will allocate tasks in-order to
+The block method of distribution will allocate tasks in\-order to
 the cpus on a node. If the number of tasks exceeds the number of 
 cpus on all of the nodes in the allocation then all nodes will be 
 utilized. For example, consider an allocation of three nodes each with 
@@ -192,7 +192,7 @@ Job allocation number.
 .TP 
 \fB%s\fR
 Job step number.
-.RS -10
+.RS \-10
 
 .TP 
 \fB\-\-slaunch\-input\-filter\fR[=]<\fItask number\fR>
@@ -207,7 +207,7 @@ Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  These options perform the filtering
 locally in slaunch.  All tasks are still capable of sending or receiving
 standard IO over the network, so the "sattach" command can still access the
-standard IO streams of the other tasks.  (NOTE: for -output and -error,
+standard IO streams of the other tasks.  (NOTE: for \-output and \-error,
 the streams from all tasks WILL be transmitted to slaunch, but it will only
 print the streams for the selected task.  If your tasks print a great deal of
 data to standard output or error, this can be performance limiting.)
@@ -265,7 +265,7 @@ Relative node index number within the job step.  All nodes used by the job step 
 .TP 
 \fB%t\fR
 Task rank number.  (Will result in a separate file per task.)
-.RS -10
+.RS \-10
 
 .TP 
 \fB\-D\fR, \fB\-\-workdir\fR[=]<\fIdirectory\fR>
@@ -337,7 +337,7 @@ for the task being spawned.
 \fB\-\-task\-epilog\fR[=]<\fIexecutable\fR>
 The \fBslurmd\fR daemon will run \fIexecutable\fR just after each task
 terminates. This will be before after any TaskEpilog parameter      
-in slurm.conf is executed. This is meant to be a very short-lived 
+in slurm.conf is executed. This is meant to be a very short\-lived 
 program. If it fails to terminate within a few seconds, it will 
 be killed along with any descendant processes.
 
@@ -382,7 +382,7 @@ Display brief usage message and exit.
 Display version information and exit.
 
 .PP
-Affinity/Multi-core Options (when the task/affinity or task/numa 
+Affinity/Multi\-core Options (when the task/affinity or task/numa 
 plugin is enabled):
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -432,7 +432,7 @@ successive srun commands, first do the following in each task:
 .fi
 
 .PP
-Affinity/Multi-core Options (when the task/affinity plugin is enabled and 
+Affinity/Multi\-core Options (when the task/affinity plugin is enabled and 
 the NUMA memory functions are available):
 .TP
 \fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -559,8 +559,8 @@ Arguments
 Program arguments.
 The expression "%t" will be replaced with the task's number.
 The expression "%o" will be replaced with the task's offset within
-this range (e.g. a configured task rank value of "1-5" would
-have offset values of "0-4").
+this range (e.g. a configured task rank value of "1\-5" would
+have offset values of "0\-4").
 Single quotes may be used to avoid having the enclosed values interpretted.
 This field is optional.
 .PP
@@ -569,13 +569,13 @@ For example:
 ###################################################################
 # srun multiple program configuration file
 #
-# srun -n8 -l --multi-prog silly.conf
+# srun \-n8 \-l \-\-multi\-prog silly.conf
 ###################################################################
-4-6       hostname
+4\-6       hostname
 1,7       echo  task:%t
-0,2-3     echo  offset:%o
+0,2\-3     echo  offset:%o
 
-$ srun -n8 -l --multi-prog silly.conf
+$ srun \-n8 \-l \-\-multi\-prog silly.conf
 0: offset:0
 1: task:1
 2: offset:1
@@ -601,7 +601,7 @@ salloc \-N5 slaunch \-n10 myprogram
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

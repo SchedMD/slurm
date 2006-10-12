@@ -1,12 +1,12 @@
-.TH "SPANK" "8" "May 2006" "SPANK" "SLURM plug-in architecture for Node and job (K)control"
+.TH "SPANK" "8" "May 2006" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
 .SH "NAME"
-\fBSPANK\fR \- SLURM Plug-in Architecture for Node and job (K)control 
+\fBSPANK\fR \- SLURM Plug\-in Architecture for Node and job (K)control 
 .SH "DESCRIPTION"
-This manual briefly describes the capabilities of the SLURM Plug-in
+This manual briefly describes the capabilities of the SLURM Plug\-in
 architecture for Node and job Kontrol (\fBSPANK\fR) as well as the \fBSPANK\fR
 configuration file: (By default: \fBplugstack.conf\fP.)
 .LP
-\fBSPANK\fR provides a very generic interface for stackable plug-ins 
+\fBSPANK\fR provides a very generic interface for stackable plug\-ins 
 which may be used to dynamically modify the job launch code in
 SLURM. \fBSPANK\fR plugins may be built without access to SLURM source
 code. They need only be compiled against SLURM's \fBspank.h\fR header file,
@@ -164,7 +164,7 @@ is a short description of the option suitable for \-\-help output.
 2 if the option takes an optional argument. (See \fBgetopt_long\fR(3)).
 .TP
 .I val
-A plugin-local value to return to the option callback function.
+A plugin\-local value to return to the option callback function.
 .TP
 .I cb
 A callback function that is invoked when the plugin option is
@@ -190,17 +190,17 @@ immediately invoke the option's callback with \fIremote\fR=0. This
 is meant for the plugin to do local sanity checking of the option before
 the value is sent to the remote side during job launch. If the argument
 the user specified is invalid, the plugin should issue an error and
-issue a non-zero return code from the callback.
+issue a non\-zero return code from the callback.
 .LP
 On the remote side, options and their arguments are registered just
 after \fBSPANK\fR plugins are loaded and before the \fBspank_init\fR
 handler is called. This allows plugins to modify behavior of all plugin
-functionality based on the value of user-provided options.
+functionality based on the value of user\-provided options.
 (See EXAMPLES below for a plugin that registers an option with \fBSLURM\fR).
 
 .SH "CONFIGURATION"
 .LP
-The default \fBSPANK\fR plug-in stack configuration file is
+The default \fBSPANK\fR plug\-in stack configuration file is
 \fBplugstack.conf\fR in the same directory as \fBslurm.conf\fR(5),
 though this may be changed via the SLURM config parameter
 \fIPlugStackConfig\fR. The config file lists \fBSPANK\fR plugins,
@@ -210,7 +210,7 @@ the plugin for runtime configuration.  Comments are preceded with '#'
 and extend to the end of the line.  If the configuration file
 is missing or empty, it will simply be ignored.
 .LP
-The format of each non-comment line in the configuration file is:
+The format of each non\-comment line in the configuration file is:
 \fB
 .nf
 
@@ -228,7 +228,7 @@ If a \fBSPANK\fR plugin is \fIrequired\fR, then failure of any of the
 plugin's functions will cause \fBslurmd\fR to terminate the job, while
 \fIoptional\fR plugins only cause a warning.
 .LP
-If a fully-qualified path is not specified for a plugin, then the
+If a fully\-qualified path is not specified for a plugin, then the
 currently configure \fIPluginDir\fR in \fBslurm.conf\fR(5) is searched.
 .LP
 \fBSPANK\fR plugins are stackable, meaning that more than one plugin may
@@ -236,7 +236,7 @@ be placed into the config file. The plugins will simply be called
 in order, one after the other, and appropriate action taken on
 failure given that state of the plugin's \fIoptional\fR flag.
 .LP
-The \fBSPANK\fR config file is re-read on each job launch, so editing
+The \fBSPANK\fR config file is re\-read on each job launch, so editing
 the config file will not affect running jobs. However care should
 be taken so that a partially edited config file is not read by a
 launching job.  
@@ -250,13 +250,13 @@ Simple \fBSPANK\fR config file:
 #
 # required?       plugin                     args
 #
-optional          renice.so                  min_prio=-10
+optional          renice.so                  min_prio=\-10
 required          /usr/lib/slurm/test.so     
 
 .fi
 .LP
 The following is a simple \fBSPANK\fR plugin to modify the nice value
-of job tasks. This plugin adds a --renice=[prio] option to srun which
+of job tasks. This plugin adds a \-\-renice=[prio] option to srun which
 users can use to set the priority of all remote tasks. Priority may
 also be specified via a SLURM_RENICE environment variable. A minimum
 priority may be established via a "min_prio" parameter in \fBplugstack.conf\fR
@@ -265,7 +265,7 @@ priority may be established via a "min_prio" parameter in \fBplugstack.conf\fR
 
 /*  
  *   To compile:
- *    gcc -shared -o renice.so renice.c
+ *    gcc \-shared \-o renice.so renice.c
  *
  */
 #include <sys/types.h>
@@ -289,7 +289,7 @@ SPANK_PLUGIN(renice, 1);
  *  Minimum allowable value for priority. May be set globally
  *   via plugin option min_prio=<prio>
  */
-static int min_prio = -20;
+static int min_prio = \-20;
 
 static int prio = PRIO_NOT_SET;
 
@@ -297,11 +297,11 @@ static int _renice_opt_process (int val, const char *optarg, int remote);
 static int _str2prio (const char *str, int *p2int);
 
 /*
- *  Provide a --renice=[prio] option to srun:
+ *  Provide a \-\-renice=[prio] option to srun:
  */
 struct spank_option spank_options[] =
 {
-    { "renice", "[prio]", "Re-nice job tasks to priority [prio].", 1, 0,
+    { "renice", "[prio]", "Re\-nice job tasks to priority [prio].", 1, 0,
         (spank_opt_cb_f) _renice_opt_process
     },
     SPANK_OPTIONS_TABLE_END
@@ -348,7 +348,7 @@ int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
 
         if (_str2prio (val, &prio) < 0) {
             slurm_error ("Bad value for %s: %s", PRIO_ENV_VAR, optarg);
-            return (-1);
+            return (\-1);
         }
 
     if (prio < min_prio)
@@ -362,11 +362,11 @@ int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
     spank_get_item (sp, S_TASK_GLOBAL_ID, &taskid);
     spank_get_item (sp, S_TASK_PID, &pid);
 
-    slurm_info ("re-nicing task%d pid %ld to %ld", taskid, pid, prio);
+    slurm_info ("re\-nicing task%d pid %ld to %ld", taskid, pid, prio);
 
     if (setpriority (PRIO_PROCESS, (int) pid, (int) prio) < 0) {
         slurm_error ("setpriority: %m");
-        return (-1);
+        return (\-1);
     }
 
     return (0);
@@ -378,8 +378,8 @@ static int _str2prio (const char *str, int *p2int)
     char *p;
 
     l = strtol (str, &p, 10);
-    if ((*p != '\0') || (l < -20) || (l > 20)) 
-        return (-1);
+    if ((*p != '\0') || (l < \-20) || (l > 20)) 
+        return (\-1);
 
     *p2int = (int) l;
 
@@ -390,16 +390,16 @@ static int _renice_opt_process (int val, const char *optarg, int remote)
 {
     if (optarg == NULL) {
         slurm_error ("renice: invalid argument!");
-        return (-1);
+        return (\-1);
     }
         
     if (_str2prio (optarg, &prio) < 0) {
-        slurm_error ("Bad value for --renice: %s", optarg);
-        return (-1);
+        slurm_error ("Bad value for \-\-renice: %s", optarg);
+        return (\-1);
     }
 
     if (prio < min_prio) 
-        slurm_error ("--renice=%d not allowed, will use min=%d", 
+        slurm_error ("\-\-renice=%d not allowed, will use min=%d", 
                      prio, min_prio);
 
     return (0);
@@ -410,7 +410,7 @@ static int _renice_opt_process (int val, const char *optarg, int remote)
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -425,11 +425,11 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "FILES"
-\fB/etc/slurm/slurm.conf\fR - SLURM configuration file.
+\fB/etc/slurm/slurm.conf\fR \- SLURM configuration file.
 .br
-\fB/etc/slurm/plugstack.conf\fR - SPANK configuration file.
+\fB/etc/slurm/plugstack.conf\fR \- SPANK configuration file.
 .br
-\fB/usr/include/slurm/spank.h\fR - SPANK header file.
+\fB/usr/include/slurm/spank.h\fR \- SPANK header file.
 .SH "SEE ALSO"
 .LP
 \fBslurm.conf\fR(5)

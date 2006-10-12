@@ -15,8 +15,8 @@ entered on the execute line, \fBscontrol\fR will operate in an interactive
 mode and prompt for input. It will continue prompting for input and executing 
 commands until explicitly terminated. If a command is entered on the execute 
 line, \fBscontrol\fR will execute that command and terminate. All commands 
-and options are case-insensitive, although node names and partition names 
-are case-sensitive (node names "LX" and "lx" are distinct). Commands can 
+and options are case\-insensitive, although node names and partition names 
+are case\-sensitive (node names "LX" and "lx" are distinct). Commands can 
 be abbreviated to the extent that the specification is unique.
 
 .TP
@@ -42,8 +42,8 @@ Print information one line per record.
 \fB\-q\fR, \fB\-\-quiet\fR
 Print no warning or informational messages, only fatal error messages.
 .TP
-\fB-v\fR, \fB\-\-verbose\fR
-Print detailed event logging. This includes time-stamps on data structures, 
+\fB\-v\fR, \fB\-\-verbose\fR
+Print detailed event logging. This includes time\-stamps on data structures, 
 record counts, etc.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
@@ -112,7 +112,7 @@ Print no warning or informational messages, only fatal error messages.
 Terminate the execution of scontrol.
 .TP
 \fIreconfigure\fP
-Instruct all Slurm daemons to re-read the configuration file. 
+Instruct all Slurm daemons to re\-read the configuration file. 
 This command does not restart the daemons.
 This mechanism would be used to modify configuration parameters (Epilog, 
 Prolog, SlurmctldLogFile, SlurmdLogFile, etc.) register the physical 
@@ -141,7 +141,7 @@ entity: the configuration parameter name, job ID, node name, partition name,
 or job step ID for entities \fIconfig\fP, \fIjob\fP, \fInode\fP, \fIpartition\fP, 
 and \fIstep\fP respectively. 
 Multiple node names may be specified using simple node range expressions 
-(e.g. "lx[10-20]"). All other \fIID\fP values must identify a single 
+(e.g. "lx[10\-20]"). All other \fIID\fP values must identify a single 
 element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 By default, all elements of the entity type specified are printed.
 .TP
@@ -162,7 +162,7 @@ Update job, node or partition configuration per the supplied specification.
 \fISPECIFICATION\fP is in the same format as the Slurm configuration file 
 and the output of the \fIshow\fP command described above. It may be desirable 
 to execute the \fIshow\fP command (described above) on the specific entity 
-you which to update, then use cut-and-paste tools to enter updated configuration 
+you which to update, then use cut\-and\-paste tools to enter updated configuration 
 values to the \fIupdate\fP. Note that while most configuration values can be 
 changed using this command, not all can be changed using this mechanism. In 
 particular, the hardware configuration of a node or the physical addition or 
@@ -171,7 +171,7 @@ the Slurm configuration file and executing the \fIreconfigure\fP command
 (described above).
 .TP
 \fIverbose\fP
-Print detailed event logging. This includes time-stamps on data structures, 
+Print detailed event logging. This includes time\-stamps on data structures, 
 record counts, etc.
 .TP
 \fIversion\fP
@@ -237,7 +237,7 @@ Set the job's partition to the specified value.
 Set the job's priority to the specified value.
 Note that a job priority of zero prevents the job from ever being scheduled.
 By setting a job's priority to zero it is held.
-Set the priority to a non-zero value to permit it to run.
+Set the priority to a non\-zero value to permit it to run.
 .TP
 \fINice\fP[=delta]
 Adjust job's priority by the specified value. Default value is 100.
@@ -247,7 +247,7 @@ Set the job's count of required processes to the specified value.
 .TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
-simple node range expressions (e.g. "lx[10-20]"). 
+simple node range expressions (e.g. "lx[10\-20]"). 
 Value may be cleared with blank data value, "ReqNodeList=".
 .TP
 \fIReqNodes\fP=<count>
@@ -272,13 +272,13 @@ It accepts times of the form \fIHH:MM:SS\fR to run a job at
 a specific time of day (seconds are optional).
 (If that time is already past, the next day is assumed.)
 You may also specify \fImidnight\fR, \fInoon\fR, or
-\fIteatime\fR (4pm) and you can have a time-of-day suffixed
+\fIteatime\fR (4pm) and you can have a time\-of\-day suffixed
 with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
 You can also say what day the job will be run, by giving
-a date in the form \fImonth-name\fR day with an optional year,
+a date in the form \fImonth\-name\fR day with an optional year,
 or giving a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR
 or \fIDD.MM.YY\fR. You can also
-give times like \fInow + count time-units\fR, where the time-units
+give times like \fInow + count time\-units\fR, where the time\-units
 can be \fIminutes\fR, \fIhours\fR, \fIdays\fR, or \fIweeks\fR
 and you can tell SLURM to run the job today with the keyword
 \fItoday\fR and to run the job tomorrow with the keyword
@@ -307,7 +307,7 @@ Possible values are "YES" and "NO".
 .TP
 \fINodeName\fP=<name>
 Identify the node(s) to be updated. Multiple node names may be specified using 
-simple node range expressions (e.g. "lx[10-20]"). This specification is required.
+simple node range expressions (e.g. "lx[10\-20]"). This specification is required.
 .TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED" or "DRAINING" state.
@@ -340,7 +340,7 @@ Possible values are"YES" and "NO".
 .TP
 \fINodes\fP=<name>
 Identify the node(s) to be associated with this partition. Multiple node names 
-may be specified using simple node range expressions (e.g. "lx[10-20]"). 
+may be specified using simple node range expressions (e.g. "lx[10\-20]"). 
 Note that jobs may only be associated with one partition at any time.
 Specify a blank data value to remove all nodes from a partition: "Nodes=".
 .TP
@@ -349,7 +349,7 @@ Identify the partition to be updated. This specification is required.
 .TP
 \fIRootOnly\fP=<yes|no>
 Specify if only allocation requests initiated by user root will be satisfied. 
-This can be used to restrict control of the partition to some meta-scheduler. 
+This can be used to restrict control of the partition to some meta\-scheduler. 
 Possible values are"YES" and "NO".
 .TP
 \fIShared\fP=<yes|no|force>
@@ -410,7 +410,7 @@ PartitionName=class TotalNodes=10 TotalCPUs=20 RootOnly=NO
 .br
    MinNodes=1 MaxNodes=2 AllowGroups=students
 .br
-   Nodes=lx[0031-0040] NodeIndices=31,40,-1
+   Nodes=lx[0031\-0040] NodeIndices=31,40,\-1
 .br 
 scontrol: update PartitionName=class MaxTime=99 MaxNodes=4
 .br 
@@ -424,7 +424,7 @@ JobId=65539 UserId=1500 JobState=PENDING TimeLimit=100
 .br
    ReqNodes=400 Contiguous=1 MinProcs=4 MinMemory=1024
 .br 
-   MinTmpDisk=2034ReqNodeList=lx[3000-3003] 
+   MinTmpDisk=2034ReqNodeList=lx[3000\-3003] 
 .br
    Features=(null) JobScript=/bin/hostname 
 .br 
@@ -436,7 +436,7 @@ scontrol: quit
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-217948.
+UCRL\-CODE\-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.
