@@ -45,7 +45,7 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    ncftp upload.sf.net
    cd upload
    put filename
-   Use SourceForge admin tool to ad new release, including changelog.
+   Use SourceForge admin tool to add new release, including changelog.
 
 BlueGene build notes:
 3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
