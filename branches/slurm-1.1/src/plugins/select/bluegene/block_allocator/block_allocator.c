@@ -1040,8 +1040,11 @@ extern void set_node_list(List nodes)
 	itr = list_iterator_create(nodes);
 	while ((ba_node = list_next(itr))) {
 		curr_ba_node = &ba_system_ptr->grid[ba_node->coord[X]]
+#ifdef HAVE_BG
 			[ba_node->coord[Y]]
-			[ba_node->coord[Z]];
+			[ba_node->coord[Z]]
+#endif
+			;
 		memcpy(curr_ba_node, ba_node, sizeof(ba_node_t));
 	}
 	list_iterator_destroy(itr);
