@@ -34,7 +34,7 @@ documents those changes that are of interest to users and admins.
     with "scontrol show job". Used in sched/wiki2.
  -- Report a job's exit status in "scontrol show job".
  -- In sched/wiki2: add support for JOBREQUEUE command.
-
+ 
 * Changes in SLURM 1.2.0-pre2
 =============================
  -- Added function slurm_init_slurm_msg to be used to init any slurm_msg_t
