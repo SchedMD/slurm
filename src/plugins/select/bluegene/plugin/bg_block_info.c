@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -97,18 +97,15 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
 				      jobid);
-				slurm_mutex_unlock(&block_state_mutex);
+				
 				if(jobid > -1)
 					slurm_fail_job(jobid);
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
-					slurm_mutex_lock(&block_state_mutex);
 					num_unused_cpus += bg_record->bp_count
 						*bg_record->cpus_per_bp;
-				} else {
-					slurm_mutex_lock(&block_state_mutex);
-				}
+				} 
 			} else {
 				debug("Block %s was in a ready state "
 				      "but is being freed. No job running.",
@@ -119,9 +116,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			      "for block %s.",
 			      bg_record->bg_block_id);
 		}
-		slurm_mutex_unlock(&block_state_mutex);
 		remove_from_bg_list(bg_booted_block_list, bg_record);
-		slurm_mutex_lock(&block_state_mutex);
 	} else if(bg_record->user_name) {
 		error("Target Name was not set "
 		      "not set for block %s.",
@@ -202,7 +197,7 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack32((uint32_t)bg_record->node_cnt, buffer);	
 }
 
-extern int update_block_list()
+extern int update_block_list(List current_bg_list)
 {
 	int updated = 0;
 #ifdef HAVE_BG_FILES
@@ -216,11 +211,11 @@ extern int update_block_list()
 	int skipped_dealloc = 0;
 	ListIterator itr = NULL;
 	
-	if(!bg_list) 
+	if(!current_bg_list) 
 		return updated;
 	
 	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_list);
+	itr = list_iterator_create(current_bg_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		if(!bg_record->bg_block_id)
 			continue;

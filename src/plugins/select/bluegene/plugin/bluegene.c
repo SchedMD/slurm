@@ -216,11 +216,6 @@ extern void print_bg_record(bg_record_t* bg_record)
 	info("\tlifecycle: %s", convert_lifecycle(bg_record->block_lifecycle));
 	info("\tconn_type: %s", convert_conn_type(bg_record->conn_type));
 	info("\tnode_use: %s", convert_node_use(bg_record->node_use));
-	if (bg_record->hostlist) {
-		char buffer[BUFSIZE];
-		hostlist_ranged_string(bg_record->hostlist, BUFSIZE, buffer);
-		info("\thostlist %s", buffer);
-	}
 	if (bg_record->bitmap) {
 		char bitstring[BITSIZE];
 		bit_fmt(bitstring, BITSIZE, bg_record->bitmap);
@@ -246,8 +241,6 @@ extern void destroy_bg_record(void *object)
 		xfree(bg_record->target_name);
 		if(bg_record->bg_block_list)
 			list_destroy(bg_record->bg_block_list);
-		if(bg_record->hostlist)
-			hostlist_destroy(bg_record->hostlist);
 		if(bg_record->bitmap)
 			bit_free(bg_record->bitmap);
 		
@@ -397,6 +390,8 @@ extern void process_nodes(bg_record_t *bg_record)
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 {
 	int i;
+	ListIterator itr = NULL;
+	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
 
 	xfree(sec_record->bg_block_id);
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
@@ -428,6 +423,13 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		error("Unable to copy bitmap for %s", fir_record->nodes);
 		sec_record->bitmap = NULL;
 	}
+	sec_record->bg_block_list = list_create(destroy_ba_node);
+	itr = list_iterator_create(fir_record->bg_block_list);
+	while((ba_node = list_next(itr))) {
+		new_ba_node = ba_copy_node(ba_node);
+		list_push(sec_record->bg_block_list, new_ba_node);
+	}
+	list_iterator_destroy(itr);
 	sec_record->job_running = fir_record->job_running;
 	sec_record->cpus_per_bp = fir_record->cpus_per_bp;
 	sec_record->node_cnt = fir_record->node_cnt;
@@ -603,18 +605,26 @@ extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;
-
-#ifdef HAVE_BG_FILES
 	int rc;
+	
+/* #ifdef HAVE_BG_FILES */
+/* 	int rc; */
+/* 	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) { */
+/* 		reset_ba_system(); */
+/* 		set_node_list(rec_a->bg_block_list); */
+/* 		load_block_wiring(rec_a->bg_block_id); */
+/* 		rc = load_block_wiring(rec_b->bg_block_id); */
+/* 		if(rc == SLURM_ERROR) */
+/* 			return true; */
+/* 	} */
+/* #endif */
 	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
 		reset_ba_system();
-		load_block_wiring(rec_a->bg_block_id);
-		rc = load_block_wiring(rec_b->bg_block_id);
+		set_node_list(rec_a->bg_block_list);
+		rc = check_and_set_node_list(rec_b->bg_block_list);
 		if(rc == SLURM_ERROR)
 			return true;
 	}
-#endif
-
 	my_bitmap = bit_copy(rec_a->bitmap);
 	bit_and(my_bitmap, rec_b->bitmap);
 	if (bit_ffs(my_bitmap) == -1) {
@@ -821,12 +831,19 @@ extern void *bluegene_agent(void *args)
 				return NULL;	/* quit now */
 			if(blocks_are_created) {
 				last_bg_test = now;
-				if((rc = update_block_list()) == 1) {
+				if((rc = update_block_list(bg_list)) == 1) {
 					slurm_mutex_lock(&block_state_mutex);
 					last_bg_update = now;
 					slurm_mutex_unlock(&block_state_mutex);
 				} else if(rc == -1)
 					error("Error with update_block_list");
+				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+					if((rc = update_block_list(
+						    bg_freeing_list)) == 1) {
+					} else if(rc == -1)
+						error("Error with "
+						      "update_block_list 2");
+				}
 			}
 		}
 
@@ -864,8 +881,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 
 #ifdef HAVE_BG_FILES
 	init_wires();
-#else
-	char *name = NULL;
 #endif
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
@@ -916,37 +931,35 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				       bg_record->start[Z],
 				       geo[X],
 				       geo[Y],
-				       geo[Z]);	
-#ifdef HAVE_BG_FILES
-				if(bg_record->bg_block_id) {
-					if(load_block_wiring(
-						   bg_record->bg_block_id)
-					   == SLURM_ERROR) {
-						debug("something happened in "
-						      "the load of %s", 
-						      bg_record->bg_block_id);
-						list_iterator_destroy(itr);
-						slurm_mutex_unlock(
-							&block_state_mutex);
-						return SLURM_ERROR;
-					}
-				} 
-#else
-				name = set_bg_block(NULL,
-						    bg_record->start, 
-						    geo, 
-						    bg_record->
-						    conn_type);
-				if(!name) {			
-					debug("I was unable to make "
-					      "the requested block.");
+				       geo[Z]);
+/* #ifdef HAVE_BG_FILES */
+/* 				if(bg_record->bg_block_id) { */
+/* 					if(load_block_wiring( */
+/* 						   bg_record->bg_block_id) */
+/* 					   == SLURM_ERROR) { */
+/* 						debug("something happened in " */
+/* 						      "the load of %s",  */
+/* 						      bg_record->bg_block_id); */
+/* 						list_iterator_destroy(itr); */
+/* 						slurm_mutex_unlock( */
+/* 							&block_state_mutex); */
+/* 						return SLURM_ERROR; */
+/* 					} */
+/* 				}  */
+				if(check_and_set_node_list(
+					   bg_record->bg_block_list)
+				   == SLURM_ERROR) {
+					debug2("something happened in "
+					       "the load of %s 2",
+					       bg_record->bg_block_id);
 					list_iterator_destroy(itr);
-					slurm_mutex_unlock(
-						&block_state_mutex);
+					slurm_mutex_unlock(&block_state_mutex);
 					return SLURM_ERROR;
 				}
-				xfree(name);
-#endif	
+/* #else */
+				//set_node_list(bg_record->bg_block_list);
+				
+/* #endif	 */
 			}
 			if(found_record == NULL) {
 #ifdef HAVE_BG_FILES
@@ -1019,9 +1032,6 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
-#ifndef HAVE_BG_FILES
-	char *name = NULL;
-#endif
 
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
@@ -1047,40 +1057,37 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				       geo[X],
 				       geo[Y],
 				       geo[Z]);
-#ifdef HAVE_BG_FILES
-				if(bg_record->bg_block_id) {
-					if(load_block_wiring(
-						   bg_record->bg_block_id)
-					   == SLURM_ERROR) {
-						debug("something happened in "
-						      "the load of %s", 
-						      bg_record->bg_block_id);
-						list_iterator_destroy(itr);
-						slurm_mutex_unlock(
-							&block_state_mutex);
-						if(my_bitmap)
-							bit_free(my_bitmap);
-						return SLURM_ERROR;
-					}
-				} 
-#else
-				name = set_bg_block(NULL,
-						    bg_record->start, 
-						    geo, 
-						    bg_record->
-						    conn_type);
-				if(!name) {			
-					debug("I was unable to make "
-					      "the requested block.");
+/* #ifdef HAVE_BG_FILES */
+/* 				if(bg_record->bg_block_id) { */
+/* 					if(load_block_wiring( */
+/* 						   bg_record->bg_block_id) */
+/* 					   == SLURM_ERROR) { */
+/* 						debug("something happened in " */
+/* 						      "the load of %s",  */
+/* 						      bg_record->bg_block_id); */
+/* 						list_iterator_destroy(itr); */
+/* 						slurm_mutex_unlock( */
+/* 							&block_state_mutex); */
+/* 						if(my_bitmap) */
+/* 							bit_free(my_bitmap); */
+/* 						return SLURM_ERROR; */
+/* 					} */
+/* 				}  */
+/* #else */
+				if(check_and_set_node_list(
+					   bg_record->bg_block_list)
+				   == SLURM_ERROR) {
+					debug2("something happened in "
+					      "the load of %s",
+					      bg_record->bg_block_id);
 					list_iterator_destroy(itr);
-					slurm_mutex_unlock(
-						&block_state_mutex);
+					slurm_mutex_unlock(&block_state_mutex);
 					if(my_bitmap)
 						bit_free(my_bitmap);
 					return SLURM_ERROR;
 				}
-				xfree(name);
-#endif	
+				//set_node_list(bg_record->bg_block_list);
+/* #endif	 */
 			}
 		}
 		list_iterator_destroy(itr);
@@ -1306,20 +1313,16 @@ extern int create_full_system_block(int *block_inx)
 	       geo[X],
 	       geo[Y],
 	       geo[Z]);
-	
-	name = set_bg_block(NULL,
-			    bg_record->start, 
-			    geo, 
-			    bg_record->conn_type);		
-	if(!name) {
-		error("I was unable to make the "
-		      "requested block.");
-		rc = SLURM_ERROR;
+	if(check_and_set_node_list(bg_record->bg_block_list) == SLURM_ERROR) {
+		debug("something happened in "
+		      "the load of %s",
+		      bg_record->bg_block_id);
 		destroy_bg_record(bg_record);
+		rc = SLURM_ERROR;
 		goto no_total;
 	}
-	xfree(name);
-	
+	//set_node_list(bg_record->bg_block_list);
+		
 #ifdef HAVE_BG_FILES
 	if((rc = configure_block(bg_record)) == SLURM_ERROR) {
 		error("unable to configure block in api");
@@ -1343,16 +1346,21 @@ no_total:
 	return rc;
 }
 
+/* must set the protecting mutex if any before this function is called */
+
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 {
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
 	int rc = SLURM_ERROR;
 
-	slurm_mutex_lock(&block_state_mutex);	
+	if(!bg_record)
+		return rc;
+
+	//slurm_mutex_lock(&block_state_mutex);	
 	itr = list_iterator_create(my_bg_list);
 	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if(found_record && bg_record)
+		if(found_record)
 			if(bg_record == found_record) {
 				list_remove(itr);
 				rc = SLURM_SUCCESS;
@@ -1360,8 +1368,33 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 			}
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
+	//slurm_mutex_unlock(&block_state_mutex);
 
+	return rc;
+}
+
+extern int remove_from_request_list()
+{
+	ba_request_t *try_request = NULL; 
+	ListIterator itr;
+	int rc = SLURM_ERROR;
+
+	/* 
+	   remove all requests out of the list.
+	*/
+		
+	slurm_mutex_lock(&request_list_mutex);
+	itr = list_iterator_create(bg_request_list);
+	while ((try_request = list_next(itr)) != NULL) {
+		debug3("removing size %d", 
+		       try_request->procs);
+		list_remove(itr);
+		delete_ba_request(try_request);
+		//list_iterator_reset(itr);
+		rc = SLURM_SUCCESS;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&request_list_mutex);
 	return rc;
 }
 
@@ -1420,8 +1453,8 @@ extern int bg_free_block(bg_record_t *bg_record)
 		slurm_mutex_unlock(&block_state_mutex);			
 		sleep(3);
 	}
-	slurm_mutex_unlock(&block_state_mutex);			
 	remove_from_bg_list(bg_booted_block_list, bg_record);
+	slurm_mutex_unlock(&block_state_mutex);			
 		
 	return SLURM_SUCCESS;
 }
@@ -1474,7 +1507,7 @@ extern void *mult_free_block(void *args)
 extern void *mult_destroy_block(void *args)
 {
 	bg_record_t *bg_record = NULL;
-	bg_record_t *found_record = NULL;
+
 #ifdef HAVE_BG_FILES
 	int rc;
 #endif
@@ -1498,27 +1531,13 @@ extern void *mult_destroy_block(void *args)
 			usleep(100000);
 			continue;
 		}
-		slurm_mutex_lock(&block_state_mutex);
-		if(bg_record->job_running == -2) {
-			slurm_mutex_unlock(&block_state_mutex);
-			goto already_here;
-		}
 		bg_record->job_running = -2;
-		slurm_mutex_unlock(&block_state_mutex);
 			
 		slurm_mutex_lock(&freed_cnt_mutex);
-		if(find_bg_record_in_list(bg_freeing_list, 
-					  bg_record->bg_block_id)) {
-			slurm_mutex_unlock(&freed_cnt_mutex);
-			goto already_here;	
-		}
-
-		found_record = xmalloc(sizeof(bg_record_t));
-		found_record->bg_block_id = xstrdup(bg_record->bg_block_id);
-		list_push(bg_freeing_list, found_record);
+		list_push(bg_freeing_list, bg_record);
 		slurm_mutex_unlock(&freed_cnt_mutex);
-
-		debug2("removing the jobs on block %s\n",
+		
+		debug("removing the jobs on block %s\n",
 		       bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
 		
@@ -1528,45 +1547,58 @@ extern void *mult_destroy_block(void *args)
 			goto already_here;
 		}
 		debug2("done destroying");
-		remove_from_bg_list(bg_list, bg_record);
+		slurm_mutex_lock(&freed_cnt_mutex);
+		remove_from_bg_list(bg_freeing_list, bg_record);
+		slurm_mutex_unlock(&freed_cnt_mutex);
 		
+		remove_from_request_list();
+		
+		slurm_mutex_lock(&block_state_mutex);
+		if(remove_from_bg_list(bg_job_block_list, bg_record) 
+		   == SLURM_SUCCESS) {
+			num_unused_cpus += 
+				bg_record->bp_count*bg_record->cpus_per_bp;
+		}
+		slurm_mutex_unlock(&block_state_mutex);
+	
+				
 #ifdef HAVE_BG_FILES
 		debug2("removing from database %s", 
-		       (char *)found_record->bg_block_id);
+		       (char *)bg_record->bg_block_id);
 		
-		rc = bridge_remove_block(found_record->bg_block_id);
+		rc = bridge_remove_block(bg_record->bg_block_id);
 		if (rc != STATUS_OK) {
 			if(rc == PARTITION_NOT_FOUND) {
 				debug("block %s is not found",
-				      found_record->bg_block_id);
+				      bg_record->bg_block_id);
 			} else {
 				error("1 rm_remove_partition(%s): %s",
-				      found_record->bg_block_id,
+				      bg_record->bg_block_id,
 				      bg_err_str(rc));
 			}
 		} else
 			debug2("done");
 #endif
-		if(blocks_are_created)
-			destroy_bg_record(bg_record);
-		destroy_bg_record(found_record);
-		slurm_mutex_unlock(&block_state_mutex);
-		slurm_mutex_lock(&freed_cnt_mutex);
-		remove_from_bg_list(bg_freeing_list, found_record);
-		slurm_mutex_unlock(&freed_cnt_mutex);
+		destroy_bg_record(bg_record);
 		
+				
 	already_here:
 		slurm_mutex_lock(&freed_cnt_mutex);
 		num_block_freed++;
 		slurm_mutex_unlock(&freed_cnt_mutex);
+				
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
 	destroy_cnt--;
+	slurm_mutex_unlock(&freed_cnt_mutex);	
+	
+	slurm_mutex_lock(&freed_cnt_mutex);
 	if(bg_freeing_list) {
 		list_destroy(bg_freeing_list);
 		bg_freeing_list = NULL;
 	}
-	slurm_mutex_unlock(&freed_cnt_mutex);	
+	slurm_mutex_unlock(&freed_cnt_mutex);
+
 	if(destroy_cnt == 0)
 		list_destroy(bg_destroy_block_list);
 	
@@ -1581,7 +1613,6 @@ extern int free_block_list(List delete_list)
 	int *count = NULL;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
-	
 	/* set up which list to push onto */
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		block_list = &bg_destroy_block_list;
@@ -1590,7 +1621,9 @@ extern int free_block_list(List delete_list)
 		block_list = &bg_free_block_list;
 		count = &free_cnt;
 	}
+	
 	slurm_mutex_lock(&freed_cnt_mutex);
+	
 	if ((*block_list == NULL) 
 	    && ((*block_list = list_create(NULL)) == NULL))
 		fatal("malloc failure in free_block_list");
@@ -1644,7 +1677,6 @@ extern int free_block_list(List delete_list)
 		slurm_attr_destroy(&attr_agent);
 	}
 	slurm_mutex_unlock(&freed_cnt_mutex);
-			
 	return SLURM_SUCCESS;
 }
 
@@ -1871,6 +1903,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	int node_count=0;
 	int x,y,z;
 	char node_name_tmp[255];
+	ba_node_t *ba_node = NULL;
 
 	if ((start[X] < 0) || (start[Y] < 0) || (start[Z] < 0)) {
 		fatal("bluegene.conf starting coordinate is invalid: %d%d%d",
@@ -1897,8 +1930,9 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 					slurmctld_conf.node_prefix,
 					x, y, z);		
 				slurm_conf_unlock();
-				list_append(bg_record->bg_block_list, 
-					    &ba_system_ptr->grid[x][y][z]);
+				ba_node = ba_copy_node(
+					&ba_system_ptr->grid[x][y][z]);
+				list_append(bg_record->bg_block_list, ba_node);
 				node_count++;
 			}
 		}
@@ -2552,8 +2586,7 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 	found_record->job_running = -1;
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
-	found_record->bg_block_list = list_create(NULL);
-	found_record->hostlist = hostlist_create(NULL);
+	found_record->bg_block_list = list_create(destroy_ba_node);
 	found_record->nodes = xstrdup(bg_record->nodes);
 
 	process_nodes(found_record);
@@ -2598,8 +2631,8 @@ static int _add_bg_record(List records, blockreq_t *blockreq)
 	} else {
 		bg_record->user_uid = pw_ent->pw_uid;
 	}
-	bg_record->bg_block_list = list_create(NULL);		
-	bg_record->hostlist = hostlist_create(NULL);
+	bg_record->bg_block_list = list_create(destroy_ba_node);
+	
 	bg_record->quarter = (uint16_t)NO_VAL;
 	bg_record->nodecard = (uint16_t)NO_VAL;
 	/* bg_record->boot_state = 0; 	Implicit */

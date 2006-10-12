@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
    step and ask for more that specified.
  - patch from Hongjia Cao for forwarding logic
  - BLUEGENE - able to allocate specific nodes without locking up.
+ - BLUEGENE - better tracking of blocks that are created dynamically, 
+   less hitting the db2.
 
 * Changes in SLURM 1.1.13
 =========================
