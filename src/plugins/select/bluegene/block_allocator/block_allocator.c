@@ -2128,7 +2128,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	node_tar = curr_switch->ext_wire[port_tar].node_tar;
 	port_tar = curr_switch->ext_wire[port_tar].port_tar;
 	if(source == port_tar1) {
-		error("got this bad one %d%d%d %d %d -> %d%d%d %d",
+		debug("got this bad one %d%d%d %d %d -> %d%d%d %d",
 		      node_curr[X],
 		      node_curr[Y],
 		      node_curr[Z],

@@ -115,6 +115,11 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	char tmp_char[256];
 	bitstr_t* tmp_bitmap = NULL;
 	int start_req = 0;
+	static int total_cpus = 0;
+
+	if(!total_cpus)
+		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
+			* procs_per_node;
 
 	if(req_nodes > max_nodes) {
 		error("can't run this job max bps is %u asking for %u",
@@ -140,50 +145,50 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		
 	if(start[X] != (uint16_t)NO_VAL)
 		start_req = 1;
-
-	/* 
-	   see if we have already tried to create this 
-	   size but couldn't make it right now no reason 
-	   to try again 
-	*/
-	slurm_mutex_lock(&request_list_mutex);
-	itr = list_iterator_create(bg_request_list);
-	while ((try_request = list_next(itr))) {
-		if(start_req) {
-			if ((try_request->start[X] != start[X])
-			    || (try_request->start[Y] != start[Y])
-			    || (try_request->start[Z] != start[Z])) {
-				debug4("got %d%d%d looking for %d%d%d",
+	if(num_unused_cpus != total_cpus) {
+		/* 
+		   see if we have already tried to create this 
+		   size but couldn't make it right now no reason 
+		   to try again 
+		*/
+		slurm_mutex_lock(&request_list_mutex);
+		itr = list_iterator_create(bg_request_list);
+		while ((try_request = list_next(itr))) {
+			if(start_req) {
+				if ((try_request->start[X] != start[X])
+				    || (try_request->start[Y] != start[Y])
+				    || (try_request->start[Z] != start[Z])) {
+					debug4("got %d%d%d looking for %d%d%d",
+					       try_request->start[X],
+					       try_request->start[Y],
+					       try_request->start[Z],
+					       start[X],
+					       start[Y],
+					       start[Z]);
+					continue;
+				}
+				debug3("found %d%d%d looking for %d%d%d",
 				       try_request->start[X],
 				       try_request->start[Y],
 				       try_request->start[Z],
 				       start[X],
 				       start[Y],
 				       start[Z]);
-				continue;
 			}
-			debug3("found %d%d%d looking for %d%d%d",
-			       try_request->start[X],
-			       try_request->start[Y],
-			       try_request->start[Z],
-			       start[X],
-			       start[Y],
-			       start[Z]);
+			if(try_request->procs == req_procs) {
+				debug("already tried to create but "
+				      "can't right now.");
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&request_list_mutex);
+				if(test_only)
+					return SLURM_SUCCESS;
+				else
+					return SLURM_ERROR;
+			}				
 		}
-		if(try_request->procs == req_procs) {
-			debug("already tried to create but "
-			      "can't right now.");
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&request_list_mutex);
-			if(test_only)
-				return SLURM_SUCCESS;
-			else
-				return SLURM_ERROR;
-		}				
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&request_list_mutex);
 	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&request_list_mutex);
-	
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -276,8 +281,7 @@ try_again:
 		*/
 		debug3("%s job_running = %d", 
 		       record->bg_block_id, record->job_running);
-		/*partition is being destroyed (-2), 
-		  or is messed up some how (-3) ignore it*/
+		/*block is messed up some how (-3) ignore it*/
 		if(record->job_running < -1)
 			continue;
 		else if((record->job_running != -1) 
@@ -354,7 +358,6 @@ try_again:
 		while ((found_record = (bg_record_t*)
 			list_next(itr2)) != NULL) {
 			if ((!found_record->bg_block_id)
-			    || (record->job_running == -2)
 			    || (!strcmp(record->bg_block_id, 
 					found_record->bg_block_id)))
 				continue;
