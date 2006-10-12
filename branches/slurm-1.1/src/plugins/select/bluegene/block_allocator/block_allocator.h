@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -209,6 +209,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *line);
 
 extern void destroy_blockreq(void *ptr);
+extern void destroy_ba_node(void *ptr);
 
 /**
  * create a block request.  Note that if the geometry is given,
@@ -265,6 +266,14 @@ extern void ba_fini();
 extern void ba_set_node_down(ba_node_t *ba_node);
 
 /** 
+ * copy info from a ba_node
+ * 
+ * IN ba_node: node to be copied
+ * OUT ba_node_t *: copied info must be freed with destroy_ba_node
+ */
+extern ba_node_t *ba_copy_node(ba_node_t *ba_node);
+
+/** 
  * Try to allocate a block.
  * 
  * IN - ba_request: allocation request
@@ -296,6 +305,10 @@ extern int alter_block(List nodes, int conn_type);
  *
  */
 extern int redo_block(List nodes, int *geo, int conn_type, int new_count);
+
+extern void set_node_list(List nodes);
+
+extern int check_and_set_node_list(List nodes);
 
 extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type);

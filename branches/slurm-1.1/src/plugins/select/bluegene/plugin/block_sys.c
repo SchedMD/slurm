@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -223,12 +223,7 @@ static int _post_bg_init_read(void *object, void *arg)
 	bg_record_t *bg_record = (bg_record_t *) object;
 	bg_record_t *tmp_record = NULL;
 	int i = 1024;
-	bg_record->nodes = xmalloc(i);
-	while (hostlist_ranged_string(bg_record->hostlist, i,
-				      bg_record->nodes) < 0) {
-		i *= 2;
-		xrealloc(bg_record->nodes, i);
-	}
+	
 	process_nodes(bg_record);
 	
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
@@ -378,6 +373,7 @@ int read_bg_blocks()
 	rm_nodecard_t *ncard = NULL;
 	rm_quarter_t quarter;
 	bool small = false;
+	hostlist_t hostlist;		/* expanded form of hosts */
 
 	set_bp_map();
 	if ((rc = bridge_get_blocks_info(state, &block_list))
@@ -448,7 +444,6 @@ int read_bg_blocks()
 		list_push(bg_curr_block_list, bg_record);
 		
 		bg_record->bg_block_id = xstrdup(block_name);
-		
 		free(block_name);
 
 		bg_record->state = NO_VAL;
@@ -468,10 +463,14 @@ int read_bg_blocks()
 		if(bp_cnt==0)
 			goto clean_up;
 		bg_record->bp_count = bp_cnt;
-		
 		debug3("has %d BPs",
 		       bg_record->bp_count);
-				
+		if(bg_record->bp_count > 1) {
+			rc = load_block_wiring(bg_record->bg_block_id);
+			if(rc == SLURM_ERROR)
+				goto clean_up;
+		}
+		
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 					  &bg_record->switch_count)) 
 		    != STATUS_OK) {
@@ -539,8 +538,8 @@ int read_bg_blocks()
 			
 		}
 
-		bg_record->bg_block_list = list_create(NULL);
-		bg_record->hostlist = hostlist_create(NULL);
+		bg_record->bg_block_list = list_create(destroy_ba_node);
+		hostlist = hostlist_create(NULL);
 
 		/* this needs to be changed for small blocks,
 		   we just don't know what they are suppose to look 
@@ -600,9 +599,16 @@ int read_bg_blocks()
 				coord[X], coord[Y], coord[Z]);
 			slurm_conf_unlock();
 			
-			hostlist_push(bg_record->hostlist, node_name_tmp);
+			hostlist_push(hostlist, node_name_tmp);
 		}	
-		
+		bg_record->nodes = xmalloc(i);
+		while (hostlist_ranged_string(hostlist, i,
+					      bg_record->nodes) < 0) {
+			i *= 2;
+			xrealloc(bg_record->nodes, i);
+		}
+		hostlist_destroy(hostlist);
+
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 		

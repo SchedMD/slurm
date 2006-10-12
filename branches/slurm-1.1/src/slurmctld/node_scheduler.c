@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -28,17 +28,6 @@
  *  version.  If you delete this exception statement from all source files in 
  *  the program, then also delete it here.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
- *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
- *  the program, then also delete it here.
- *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
@@ -708,6 +697,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					if (bit_set_count(avail_bitmap) <=
 					     max_nodes)
 						runable_avail = true;
+					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = avail_bitmap;
 					avail_bitmap = NULL;
 				}
@@ -722,6 +712,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS) {
+					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = total_bitmap;
 					total_bitmap = NULL;
 					runable_ever = true;
