@@ -86,7 +86,6 @@ typedef struct bg_record {
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
 	List bg_block_list;             /* node list of blocks in block */
-	hostlist_t hostlist;		/* expanded form of hosts */
 	int bp_count;                   /* size */
 	int switch_count;               /* number of switches used. */
 	int boot_state;                 /* check to see if boot failed. 
@@ -222,6 +221,7 @@ extern int create_full_system_block(int *block_inx);
 
 extern int bg_free_block(bg_record_t *bg_record);
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
+extern int remove_from_request_list();
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int free_block_list(List delete_list);

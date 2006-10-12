@@ -14,7 +14,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -43,5 +43,5 @@
 extern int block_ready(struct job_record *job_ptr);
 extern void pack_block(bg_record_t *bg_record, Buf buffer);
 extern int unpack_block(bg_info_record_t *bg_info_record, Buf buffer);
-extern int update_block_list();
+extern int update_block_list(List current_bg_list);
 #endif /* _BG_PART_INFO_H_ */

@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -794,6 +794,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					if (bit_set_count(avail_bitmap) <=
 					     max_nodes)
 						runable_avail = true;
+					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = avail_bitmap;
 					avail_bitmap = NULL;
 				}
@@ -808,6 +809,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS) {
+					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = total_bitmap;
 					total_bitmap = NULL;
 					runable_ever = true;
