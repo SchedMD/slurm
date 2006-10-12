@@ -33,8 +33,19 @@ CONFIGURATION FILE CHANGES
 * Removed defunct configuration parameter, ShedulerAuth. It has been rendered 
   obsolute by the new wiki.conf file.
 
+* Several new configuration parameters can be used to specify architectural
+  details of the node: Sockets, CoresPerSocket, and ThreadsPerCore.
+
 
 OTHER CHANGES
+
+* Several srun options are available to control layout of tasks across the 
+  cores on a node: --extra-node-info, --ntasks-per-node, --sockets-per-node,
+  --cores-per-socket, --threads-per-core, --minsockets, --mincores, --minthreads,
+  --ntasks-per-socket, --ntasks-per-core, and --ntasks-per-node.
+
+* New scontrol, sinfo and squeue options can be used to view socket, core,
+  and task details by job and/or node.
 
 * Permit batch jobs to be requeued ("scontrol requeue <jobid>" or
   "srun --batch --no-requeue ..." to prevent).
