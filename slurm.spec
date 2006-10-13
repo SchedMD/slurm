@@ -289,10 +289,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %dir %attr(0755,root,root) %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
-%ifnos aix5.3
 %{_libdir}/libpmi.a
 %{_libdir}/libpmi.la
-%endif
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
