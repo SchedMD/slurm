@@ -42,6 +42,12 @@ rev     = $(SLURM_API_REVISION)
 
 lib_LTLIBRARIES = libslurm.la libpmi.la
 
+# BUILT_SOURCES tells automake that when "make" is called, these targets
+# need to be built before anything else.  For instance, this takes care
+# of libpmi.la's dependency on libslurm.la, as long as you use "make"
+# and NOT "make libpmi.la".
+BUILT_SOURCES = $(VERSION_SCRIPT) libslurm.la
+
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols, including those from libcommon, libeio, etc.
 # Also, libslurmhelper is a convenience library, it is not installed.
@@ -70,13 +76,6 @@ slurmapi_src =           \
 	reconfigure.c    \
 	update_config.c
 
-libslurm_la_SOURCES = $(slurmapi_src)
-libslurmhelper_la_SOURCES = $(slurmapi_src)
-libpmi_la_SOURCES = pmi.c
-
-BUILT_SOURCES = 	\
-	$(VERSION_SCRIPT)
-
 common_dir = $(top_builddir)/src/common
 
 slurmapi_add = 				\
@@ -85,25 +84,25 @@ slurmapi_add = 				\
 	$(common_dir)/libeio.la		\
 	-lpthread
 
+libslurm_la_SOURCES = $(slurmapi_src)
 libslurm_la_LIBADD = $(slurmapi_add)
-libslurmhelper_la_LIBADD = $(slurmapi_add)
-
-libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
-
 libslurm_la_LDFLAGS        = \
-	$(LIB_LDFLAGS)       \
+	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age) \
 	$(OTHER_FLAGS)
+
+libslurmhelper_la_SOURCES = $(slurmapi_src)
+libslurmhelper_la_LIBADD = $(slurmapi_add)
 libslurmhelper_la_LDFLAGs = \
 	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age)
 
+libpmi_la_SOURCES = pmi.c
+libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
-$(libpmi_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # FIXME - don't export the client_io_handler_ symbols once srun is no longer
