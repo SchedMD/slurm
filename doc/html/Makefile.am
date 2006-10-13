@@ -35,7 +35,8 @@ generated_html = \
 	slurm.html \
 	switchplugins.html \
  	team.html \
- 	testimonials.html
+ 	testimonials.html \
+	troubleshoot.html
 
 html_DATA = \
 	${generated_html} \
