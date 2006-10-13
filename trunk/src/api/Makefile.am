@@ -40,10 +40,7 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
-lib_LTLIBRARIES = libslurm.la
-if !HAVE_AIX
-lib_LTLIBRARIES += libpmi.la
-endif
+lib_LTLIBRARIES = libslurm.la libpmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.  For instance, this takes care
