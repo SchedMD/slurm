@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  update_job.c - update job function for scontrol.
+ *  update_job.c - update job functions for scontrol.
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,6 +36,157 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+
+/* 
+ * scontrol_checkpoint - perform some checkpoint/resume operation
+ * IN op - checkpoint operation
+ * IN job_step_id_str - either a job name (for all steps of the given job) or 
+ *			a step name: "<jid>.<step_id>"
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ *			error message and returns 0
+ */
+extern int 
+scontrol_checkpoint(char *op, char *job_step_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
+	char *next_str;
+	uint32_t ckpt_errno;
+	char *ckpt_strerror = NULL;
+
+	if (job_step_id_str) {
+		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		if (next_str[0] == '.') {
+			step_id = (uint32_t) strtol (&next_str[1], &next_str, 10);
+			step_id_set = 1;
+		} else
+			step_id = NO_VAL;
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job step name\n");
+			return 0;
+		}
+	} else {
+		fprintf(stderr, "Invalid job step name\n");
+		return 0;
+	}
+
+	if (strncasecmp(op, "able", 2) == 0) {
+		time_t start_time;
+		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
+		if (rc == SLURM_SUCCESS) {
+			if (start_time) {
+				char buf[128], time_str[32];
+				slurm_make_time_str(&start_time, time_str,
+					sizeof(time_str));
+				snprintf(buf, sizeof(buf), 
+					"Began at %s\n", time_str); 
+				printf(time_str);
+			} else
+				printf("Yes\n");
+		} else if (slurm_get_errno() == ESLURM_DISABLED) {
+			printf("No\n");
+			rc = SLURM_SUCCESS;	/* not real error */
+		}
+	}
+	else if (strncasecmp(op, "complete", 3) == 0) {
+		/* Undocumented option used for testing purposes */
+		static uint32_t error_code = 1;
+		char error_msg[64];
+		sprintf(error_msg, "test error message %d", error_code);
+		rc = slurm_checkpoint_complete(job_id, step_id, (time_t) 0,
+			error_code++, error_msg);
+	}
+	else if (strncasecmp(op, "disable", 3) == 0)
+		rc = slurm_checkpoint_disable (job_id, step_id);
+	else if (strncasecmp(op, "enable", 2) == 0)
+		rc = slurm_checkpoint_enable (job_id, step_id);
+	else if (strncasecmp(op, "create", 2) == 0)
+		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
+	else if (strncasecmp(op, "vacate", 2) == 0)
+		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
+	else if (strncasecmp(op, "restart", 2) == 0)
+		rc = slurm_checkpoint_restart (job_id, step_id);
+	else if (strncasecmp(op, "error", 2) == 0) {
+		rc = slurm_checkpoint_error (job_id, step_id, 
+			&ckpt_errno, &ckpt_strerror);
+		if (rc == SLURM_SUCCESS) {
+			printf("error(%u): %s\n", ckpt_errno, ckpt_strerror);
+			free(ckpt_strerror);
+		}
+	}
+
+	else {
+		fprintf (stderr, "Invalid checkpoint operation: %s\n", op);
+		return 0;
+	}
+
+	return rc;
+}
+
+/*
+ * scontrol_suspend - perform some suspend/resume operation
+ * IN op - suspend/resume operation
+ * IN job_id_str - a job id
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *		error message and returns 0
+ */
+extern int 
+scontrol_suspend(char *op, char *job_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0;
+	char *next_str;
+
+	if (job_id_str) {
+		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
+	} else {
+		fprintf(stderr, "Invalid job id specified\n");
+		exit_code = 1;
+		return 0;
+	}
+
+	if (strncasecmp(op, "suspend", 3) == 0)
+		rc = slurm_suspend (job_id);
+	else
+		rc = slurm_resume (job_id);
+
+	return rc;
+}
+
+/*
+ * scontrol_requeue - requeue a pending or running batch job
+ * IN job_id_str - a job id
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *              error message and returns 0
+ */
+extern int 
+scontrol_requeue(char *job_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0;
+	char *next_str;
+
+	if (job_id_str) {
+		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
+	} else {
+		fprintf(stderr, "Invalid job id specified\n");
+		exit_code = 1;
+		return 0;
+	}
+
+	rc = slurm_requeue (job_id);
+	return rc;
+}
 
 
 /* 

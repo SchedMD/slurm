@@ -7,6 +7,9 @@ INCLUDES = -I$(top_srcdir)
 bin_PROGRAMS = scontrol
 
 scontrol_SOURCES =	\
+	info_job.c	\
+	info_node.c	\
+	info_part.c	\
 	scontrol.c	\
 	scontrol.h	\
 	update_job.c	\

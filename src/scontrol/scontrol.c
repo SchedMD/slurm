@@ -48,31 +48,14 @@ int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 
-static int	_checkpoint(char *op, char *job_step_id_str);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
-static bool	_in_node_bit_list(int inx, int *node_list_array);
-static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
-static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr, 
-			uint16_t show_flags);
-static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
-static void	_pid_info(pid_t job_pid);
 static void     _ping_slurmctld(char *control_machine, char *backup_controller);
-static void	_print_completing (void);
-static void	_print_completing_job(job_info_t *job_ptr, 
-				node_info_msg_t *node_info_msg);
 static void	_print_config (char *config_param);
 static void     _print_daemons (void);
-static void	_print_job (char * job_id_str);
-static void	_print_node (char *node_name, node_info_msg_t *node_info_ptr);
-static void	_print_node_list (char *node_list);
-static void	_print_part (char *partition_name);
 static void	_print_ping (void);
-static void	_print_step (char *job_step_id_str);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static int	_requeue(char *job_step_id_str);
-static int	_suspend(char *op, char *job_id_str);
 static void	_update_it (int argc, char *argv[]);
 static int	_update_bluegene_block (int argc, char *argv[]);
 static void	_usage ();
@@ -283,261 +266,6 @@ _get_command (int *argc, char **argv)
 	return 0;		
 }
 
-
-/* Load current job table information into *job_buffer_pptr */
-static int 
-_load_jobs (job_info_msg_t ** job_buffer_pptr) 
-{
-	int error_code;
-	static job_info_msg_t *old_job_info_ptr = NULL;
-	static uint16_t last_show_flags = 0xffff;
-	uint16_t show_flags = 0;
-	job_info_msg_t * job_info_ptr = NULL;
-
-	if (all_flag)
-		show_flags |= SHOW_ALL;
-
-	if (old_job_info_ptr) {
-		if (last_show_flags != show_flags)
-			old_job_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_load_jobs (old_job_info_ptr->last_update, 
-					&job_info_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_job_info_msg (old_job_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			job_info_ptr = old_job_info_ptr;
-			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
- 				printf ("slurm_load_jobs no change in data\n");
-		}
-	}
-	else
-		error_code = slurm_load_jobs ((time_t) NULL, &job_info_ptr,
-				show_flags);
-
-	if (error_code == SLURM_SUCCESS) {
-		old_job_info_ptr = job_info_ptr;
-		last_show_flags  = show_flags;
-		*job_buffer_pptr = job_info_ptr;
-	}
-
-	return error_code;
-}
-/* Load current node table information into *node_buffer_pptr */
-static int 
-_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags) 
-{
-	int error_code;
-	static node_info_msg_t *old_node_info_ptr = NULL;
-	static int last_show_flags = 0xffff;
-	node_info_msg_t *node_info_ptr = NULL;
-
-	if (old_node_info_ptr) {
-		if (last_show_flags != show_flags)
-			old_node_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_load_node (old_node_info_ptr->last_update, 
-			&node_info_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_node_info_msg (old_node_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			node_info_ptr = old_node_info_ptr;
-			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf ("slurm_load_node no change in data\n");
-		}
-	}
-	else
-		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				show_flags);
-
-	if (error_code == SLURM_SUCCESS) {
-		old_node_info_ptr = node_info_ptr;
-		last_show_flags = show_flags;
-		*node_buffer_pptr = node_info_ptr;
-	}
-
-	return error_code;
-}
-
-/* Load current partiton table information into *part_buffer_pptr */
-static int 
-_load_partitions (partition_info_msg_t **part_buffer_pptr)
-{
-	int error_code;
-	static partition_info_msg_t *old_part_info_ptr = NULL;
-	static uint16_t last_show_flags = 0xffff;
-	uint16_t show_flags = 0;
-	partition_info_msg_t *part_info_ptr = NULL;
-
-	if (all_flag)
-		show_flags |= SHOW_ALL;
-
-	if (old_part_info_ptr) {
-		if (last_show_flags != show_flags)
-			old_part_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_load_partitions (
-						old_part_info_ptr->last_update,
-						&part_info_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_partition_info_msg (old_part_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			part_info_ptr = old_part_info_ptr;
-			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf ("slurm_load_part no change in data\n");
-		}
-	}
-	else
-		error_code = slurm_load_partitions((time_t) NULL, 
-						   &part_info_ptr, show_flags);
-
-	if (error_code == SLURM_SUCCESS) {
-		old_part_info_ptr = part_info_ptr;
-		last_show_flags = show_flags;
-		*part_buffer_pptr = part_info_ptr;
-	}
-
-	return error_code;
-}
-
-/* 
- * _pid_info - given a local process id, print the corresponding slurm job id
- *	and its expected end time
- * IN job_pid - the local process id of interest
- */
-static void
-_pid_info(pid_t job_pid)
-{
-	int error_code;
-	uint32_t job_id;
-	time_t end_time;
-	long rem_time;
-
-	error_code = slurm_pid2jobid (job_pid, &job_id);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_pid2jobid error");
-		return;
-	}
-
-	error_code = slurm_get_end_time(job_id, &end_time);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_get_end_time error");
-		return;
-	}
-	printf("Slurm job id %u ends at %s\n", job_id, ctime(&end_time));
-
-	rem_time = slurm_get_rem_time(job_id);
-	printf("slurm_get_rem_time is %ld\n", rem_time);
-	return;
-}
-
-
-/*
- * print_completing - print jobs in completing state and associated nodes 
- * in COMPLETING or DOWN state
- */
-static void	
-_print_completing (void)
-{
-	int error_code, i;
-	job_info_msg_t  *job_info_msg;
-	job_info_t      *job_info;
-	node_info_msg_t *node_info_msg;
-	uint16_t         show_flags = 0;
-
-	error_code = _load_jobs  (&job_info_msg);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_jobs error");
-		return;
-	}
-	/* Must load all nodes including hidden for cross-index 
-	 * from job's node_inx to node table to work */
-	/*if (all_flag)		Always set this flag */
-		show_flags |= SHOW_ALL;
-	error_code = _load_nodes (&node_info_msg, show_flags);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_nodes error");
-		return;
-	}
-
-	/* Scan the jobs for completing state */
-	job_info = job_info_msg->job_array;
-	for (i=0; i<job_info_msg->record_count; i++) {
-		if (job_info[i].job_state & JOB_COMPLETING)
-			_print_completing_job(&job_info[i], node_info_msg);
-	}
-}
-
-static void
-_print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
-{
-	int i;
-	node_info_t *node_info;
-	uint16_t node_state, base_state;
-	hostlist_t all_nodes, comp_nodes, down_nodes;
-	char node_buf[1024];
-
-	all_nodes  = hostlist_create(job_ptr->nodes);
-	comp_nodes = hostlist_create("");
-	down_nodes = hostlist_create("");
-
-	node_info = node_info_msg->node_array;
-	for (i=0; i<node_info_msg->record_count; i++) {
-		node_state = node_info[i].node_state;
-		base_state = node_info[i].node_state & NODE_STATE_BASE;
-		if ((node_state & NODE_STATE_COMPLETING) && 
-		    (_in_node_bit_list(i, job_ptr->node_inx)))
-			hostlist_push_host(comp_nodes, node_info[i].name);
-		else if ((base_state == NODE_STATE_DOWN) &&
-			 (hostlist_find(all_nodes, node_info[i].name) != -1))
-			hostlist_push_host(down_nodes, node_info[i].name);
-	}
-
-	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
-	i = hostlist_ranged_string(comp_nodes, sizeof(node_buf), node_buf);
-	if (i > 0)
-		fprintf(stdout, "Nodes(COMPLETING)=%s ", node_buf);
-	i = hostlist_ranged_string(down_nodes, sizeof(node_buf), node_buf);
-	if (i > 0)
-		fprintf(stdout, "Nodes(DOWN)=%s ", node_buf);
-	fprintf(stdout, "\n");
-
-	hostlist_destroy(all_nodes);
-	hostlist_destroy(comp_nodes);
-	hostlist_destroy(down_nodes);
-}
-
-/*
- * Determine if a node index is in a node list pair array. 
- * RET -  true if specified index is in the array
- */
-static bool
-_in_node_bit_list(int inx, int *node_list_array)
-{
-	int i;
-	bool rc = false;
-
-	for (i=0; ; i+=2) {
-		if (node_list_array[i] == -1)
-			break;
-		if ((inx >= node_list_array[i]) &&
-		    (inx <= node_list_array[i+1])) {
-			rc = true;
-			break;
-		}
-	}
-
-	return rc;
-}
-
 /* 
  * _print_config - print the specified configuration parameter and value 
  * IN config_param - NULL to print all parameters and values
@@ -676,318 +404,6 @@ _print_daemons (void)
 }
 
 /*
- * _print_job - print the specified job's information
- * IN job_id - job's id or NULL to print information about all jobs
- */
-static void 
-_print_job (char * job_id_str) 
-{
-	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
-	uint32_t job_id = 0;
-	job_info_msg_t * job_buffer_ptr = NULL;
-	job_info_t *job_ptr = NULL;
-
-	error_code = _load_jobs(&job_buffer_ptr);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_jobs error");
-		return;
-	}
-	
-	if (quiet_flag == -1) {
-		char time_str[32];
-		slurm_make_time_str ((time_t *)&job_buffer_ptr->last_update, 
-				     time_str, sizeof(time_str));
-		printf ("last_update_time=%s, records=%d\n", 
-			time_str, job_buffer_ptr->record_count);
-	}
-
-	if (job_id_str)
-		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
-
-	job_ptr = job_buffer_ptr->job_array ;
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
-		if (job_id_str && job_id != job_ptr[i].job_id) 
-			continue;
-		print_cnt++;
-		slurm_print_job_info (stdout, & job_ptr[i], one_liner ) ;
-		if (job_id_str)
-			break;
-	}
-
-	if (print_cnt == 0) {
-		if (job_id_str) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				printf ("Job %u not found\n", job_id);
-		} else if (quiet_flag != 1)
-			printf ("No jobs in the system\n");
-	}
-}
-
-
-/*
- * _print_node - print the specified node's information
- * IN node_name - NULL to print all node information
- * IN node_ptr - pointer to node table of information
- * NOTE: call this only after executing load_node, called from 
- *	_print_node_list
- * NOTE: To avoid linear searches, we remember the location of the 
- *	last name match
- */
-static void
-_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
-{
-	int i, j, print_cnt = 0;
-	static int last_inx = 0;
-
-	for (j = 0; j < node_buffer_ptr->record_count; j++) {
-		if (node_name) {
-			i = (j + last_inx) % node_buffer_ptr->record_count;
-			if (strcmp (node_name, 
-				    node_buffer_ptr->node_array[i].name))
-				continue;
-		}
-		else
-			i = j;
-		print_cnt++;
-		slurm_print_node_table (stdout, 
-					& node_buffer_ptr->node_array[i], one_liner);
-
-		if (node_name) {
-			last_inx = i;
-			break;
-		}
-	}
-
-	if (print_cnt == 0) {
-		if (node_name) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				printf ("Node %s not found\n", node_name);
-		} else if (quiet_flag != 1)
-				printf ("No nodes in the system\n");
-	}
-}
-
-
-/*
- * _print_node_list - print information about the supplied node list (or 
- *	regular expression)
- * IN node_list - print information about the supplied node list 
- *	(or regular expression)
- */
-static void
-_print_node_list (char *node_list) 
-{
-	node_info_msg_t *node_info_ptr = NULL;
-	hostlist_t host_list;
-	int error_code;
-	uint16_t show_flags = 0;
-	char *this_node_name;
-
-	if (all_flag)
-		show_flags |= SHOW_ALL;
-
-	error_code = _load_nodes(&node_info_ptr, show_flags);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_node error");
-		return;
-	}
-
-	if (quiet_flag == -1) {
-		char time_str[32];
-		slurm_make_time_str ((time_t *)&node_info_ptr->last_update, 
-			             time_str, sizeof(time_str));
-		printf ("last_update_time=%s, records=%d\n", 
-			time_str, node_info_ptr->record_count);
-	}
-
-	if (node_list == NULL) {
-		_print_node (NULL, node_info_ptr);
-	}
-	else {
-		if ( (host_list = hostlist_create (node_list)) ) {
-			while ((this_node_name = hostlist_shift (host_list))) {
-				_print_node (this_node_name, node_info_ptr);
-				free (this_node_name);
-			}
-
-			hostlist_destroy (host_list);
-		}
-		else {
-			exit_code = 1;
-			if (quiet_flag != 1) {
-				if (errno == EINVAL)
-					fprintf (stderr, 
-					         "unable to parse node list %s\n", 
-					         node_list);
-				else if (errno == ERANGE)
-					fprintf (stderr, 
-					         "too many nodes in supplied range %s\n", 
-					         node_list);
-				else
-					perror ("error parsing node list");
-			}
-		}
-	}			
-	return;
-}
-
-
-/*
- * _print_part - print the specified partition's information
- * IN partition_name - NULL to print information about all partition 
- */
-static void 
-_print_part (char *partition_name) 
-{
-	int error_code, i, print_cnt = 0;
-	partition_info_msg_t *part_info_ptr = NULL;
-	partition_info_t *part_ptr = NULL;
-
-	error_code = _load_partitions(&part_info_ptr);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_partitions error");
-		return;
-	}
-
-	if (quiet_flag == -1) {
-		char time_str[32];
-		slurm_make_time_str ((time_t *)&part_info_ptr->last_update, 
-			       time_str, sizeof(time_str));
-		printf ("last_update_time=%s, records=%d\n", 
-			time_str, part_info_ptr->record_count);
-	}
-
-	part_ptr = part_info_ptr->partition_array;
-	for (i = 0; i < part_info_ptr->record_count; i++) {
-		if (partition_name && 
-		    strcmp (partition_name, part_ptr[i].name) != 0)
-			continue;
-		print_cnt++;
-		slurm_print_partition_info (stdout, & part_ptr[i], 
-		                            one_liner ) ;
-		if (partition_name)
-			break;
-	}
-
-	if (print_cnt == 0) {
-		if (partition_name) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				printf ("Partition %s not found\n", 
-				        partition_name);
-		} else if (quiet_flag != 1)
-			printf ("No partitions in the system\n");
-	}
-}
-
-
-/*
- * _print_step - print the specified job step's information
- * IN job_step_id_str - job step's id or NULL to print information
- *	about all job steps
- */
-static void 
-_print_step (char *job_step_id_str)
-{
-	int error_code, i;
-	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
-	char *next_str;
-	job_step_info_response_msg_t *job_step_info_ptr;
-	job_step_info_t * job_step_ptr;
-	static uint32_t last_job_id = 0, last_step_id = 0;
-	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
-	static uint16_t last_show_flags = 0xffff;
-	uint16_t show_flags = 0;
-
-	if (job_step_id_str) {
-		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
-		if (next_str[0] == '.') {
-			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
-			step_id_set = 1;
-		}
-	}
-
-	if (all_flag)
-		show_flags |= SHOW_ALL;
-
-	if ((old_job_step_info_ptr) &&
-	    (last_job_id == job_id) && (last_step_id == step_id)) {
-		if (last_show_flags != show_flags)
-			old_job_step_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_get_job_steps ( 
-					old_job_step_info_ptr->last_update,
-					job_id, step_id, &job_step_info_ptr,
-					show_flags);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_job_step_info_response_msg (
-					old_job_step_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			job_step_info_ptr = old_job_step_info_ptr;
-			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf ("slurm_get_job_steps no change in data\n");
-		}
-	}
-	else {
-		if (old_job_step_info_ptr) {
-			slurm_free_job_step_info_response_msg (
-					old_job_step_info_ptr);
-			old_job_step_info_ptr = NULL;
-		}
-		error_code = slurm_get_job_steps ( (time_t) 0, job_id, step_id, 
-				&job_step_info_ptr, show_flags);
-	}
-
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_get_job_steps error");
-		return;
-	}
-
-	old_job_step_info_ptr = job_step_info_ptr;
-	last_show_flags = show_flags;
-	last_job_id = job_id;
-	last_step_id = step_id;
-
-	if (quiet_flag == -1) {
-		char time_str[32];
-		slurm_make_time_str ((time_t *)&job_step_info_ptr->last_update, 
-			             time_str, sizeof(time_str));
-		printf ("last_update_time=%s, records=%d\n", 
-			time_str, job_step_info_ptr->job_step_count);
-	}
-
-	job_step_ptr = job_step_info_ptr->job_steps ;
-	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
-		if (step_id_set && (step_id == 0) && 
-		    (job_step_ptr[i].step_id != 0)) 
-			continue;
-		slurm_print_job_step_info (stdout, & job_step_ptr[i], 
-		                           one_liner ) ;
-	}
-
-	if (job_step_info_ptr->job_step_count == 0) {
-		if (job_step_id_str) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				printf ("Job step %u.%u not found\n", 
-				        job_id, step_id);
-		} else if (quiet_flag != 1)
-			printf ("No job steps in the system\n");
-	}
-}
-
-
-/*
  * _process_command - process the user's command
  * IN argc - count of arguments
  * IN argv - the arguments
@@ -1027,7 +443,7 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
 		}
-		_print_completing();
+		scontrol_print_completing();
 	}
 	else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
@@ -1070,7 +486,7 @@ _process_command (int argc, char *argv[])
 				 "missing argument for keyword:%s\n", 
 				 argv[0]);
 		} else
-			_pid_info ((pid_t) atol (argv[1]) );
+			scontrol_pid_info ((pid_t) atol (argv[1]) );
 
 	}
 	else if (strncasecmp (argv[0], "ping", 3) == 0) {
@@ -1128,7 +544,7 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		}
 		else {
-			error_code =_checkpoint(argv[1], argv[2]);
+			error_code =scontrol_checkpoint(argv[1], argv[2]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
@@ -1150,7 +566,7 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					argv[0]);
 		} else {
-			error_code =_requeue(argv[1]);
+			error_code =scontrol_requeue(argv[1]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
@@ -1175,7 +591,7 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					argv[0]);
 		} else {
-			error_code =_suspend(argv[0], argv[1]);
+			error_code =scontrol_suspend(argv[0], argv[1]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
@@ -1216,27 +632,27 @@ _process_command (int argc, char *argv[])
 		}
 		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
 			if (argc > 2)
-				_print_job (argv[2]);
+				scontrol_print_job (argv[2]);
 			else
-				_print_job (NULL);
+				scontrol_print_job (NULL);
 		}
 		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
 			if (argc > 2)
-				_print_node_list (argv[2]);
+				scontrol_print_node_list (argv[2]);
 			else
-				_print_node_list (NULL);
+				scontrol_print_node_list (NULL);
 		}
 		else if (strncasecmp (argv[1], "partitions", 3) == 0) {
 			if (argc > 2)
-				_print_part (argv[2]);
+				scontrol_print_part (argv[2]);
 			else
-				_print_part (NULL);
+				scontrol_print_part (NULL);
 		}
 		else if (strncasecmp (argv[1], "steps", 3) == 0) {
 			if (argc > 2)
-				_print_step (argv[2]);
+				scontrol_print_step (argv[2]);
 			else
-				_print_step (NULL);
+				scontrol_print_step (NULL);
 		}
 		else {
 			exit_code = 1;
@@ -1495,152 +911,3 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   are distinct).                                                       \n\n");
 
 }
-
-/* 
- * _checkpoint - perform some checkpoint/resume operation
- * IN op - checkpoint operation
- * IN job_step_id_str - either a job name (for all steps of the given job) or 
- *			a step name: "<jid>.<step_id>"
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
- *			error message and returns 0
- */
-static int _checkpoint(char *op, char *job_step_id_str)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
-	char *next_str;
-	uint32_t ckpt_errno;
-	char *ckpt_strerror = NULL;
-
-	if (job_step_id_str) {
-		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
-		if (next_str[0] == '.') {
-			step_id = (uint32_t) strtol (&next_str[1], &next_str, 10);
-			step_id_set = 1;
-		} else
-			step_id = NO_VAL;
-		if (next_str[0] != '\0') {
-			fprintf(stderr, "Invalid job step name\n");
-			return 0;
-		}
-	} else {
-		fprintf(stderr, "Invalid job step name\n");
-		return 0;
-	}
-
-	if (strncasecmp(op, "able", 2) == 0) {
-		time_t start_time;
-		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
-		if (rc == SLURM_SUCCESS) {
-			if (start_time) {
-				char buf[128], time_str[32];
-				slurm_make_time_str(&start_time, time_str,
-					sizeof(time_str));
-				snprintf(buf, sizeof(buf), 
-					"Began at %s\n", time_str); 
-				printf(time_str);
-			} else
-				printf("Yes\n");
-		} else if (slurm_get_errno() == ESLURM_DISABLED) {
-			printf("No\n");
-			rc = SLURM_SUCCESS;	/* not real error */
-		}
-	}
-	else if (strncasecmp(op, "complete", 3) == 0) {
-		/* Undocumented option used for testing purposes */
-		static uint32_t error_code = 1;
-		char error_msg[64];
-		sprintf(error_msg, "test error message %d", error_code);
-		rc = slurm_checkpoint_complete(job_id, step_id, (time_t) 0,
-			error_code++, error_msg);
-	}
-	else if (strncasecmp(op, "disable", 3) == 0)
-		rc = slurm_checkpoint_disable (job_id, step_id);
-	else if (strncasecmp(op, "enable", 2) == 0)
-		rc = slurm_checkpoint_enable (job_id, step_id);
-	else if (strncasecmp(op, "create", 2) == 0)
-		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "vacate", 2) == 0)
-		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "restart", 2) == 0)
-		rc = slurm_checkpoint_restart (job_id, step_id);
-	else if (strncasecmp(op, "error", 2) == 0) {
-		rc = slurm_checkpoint_error (job_id, step_id, 
-			&ckpt_errno, &ckpt_strerror);
-		if (rc == SLURM_SUCCESS) {
-			printf("error(%u): %s\n", ckpt_errno, ckpt_strerror);
-			free(ckpt_strerror);
-		}
-	}
-
-	else {
-		fprintf (stderr, "Invalid checkpoint operation: %s\n", op);
-		return 0;
-	}
-
-	return rc;
-}
-
-/*
- * _suspend - perform some suspend/resume operation
- * IN op - suspend/resume operation
- * IN job_id_str - a job id
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *		error message and returns 0
- */
-static int _suspend(char *op, char *job_id_str)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t job_id = 0;
-	char *next_str;
-
-	if (job_id_str) {
-		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
-		if (next_str[0] != '\0') {
-			fprintf(stderr, "Invalid job id specified\n");
-			exit_code = 1;
-			return 0;
-		}
-	} else {
-		fprintf(stderr, "Invalid job id specified\n");
-		exit_code = 1;
-		return 0;
-	}
-
-	if (strncasecmp(op, "suspend", 3) == 0)
-		rc = slurm_suspend (job_id);
-	else
-		rc = slurm_resume (job_id);
-
-	return rc;
-}
-
-/*
- * _requeue - requeue a pending or running batch job
- * IN job_id_str - a job id
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *              error message and returns 0
- */
-static int _requeue(char *job_id_str)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t job_id = 0;
-	char *next_str;
-
-	if (job_id_str) {
-		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
-		if (next_str[0] != '\0') {
-			fprintf(stderr, "Invalid job id specified\n");
-			exit_code = 1;
-			return 0;
-		}
-	} else {
-		fprintf(stderr, "Invalid job id specified\n");
-		exit_code = 1;
-		return 0;
-	}
-
-	rc = slurm_requeue (job_id);
-	return rc;
-}
-
