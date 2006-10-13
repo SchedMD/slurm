@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #ifndef __SQUEUE_H__
+#define __SQUEUE_H__
 
 #if HAVE_CONFIG_H
 #  include "config.h"
