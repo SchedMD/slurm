@@ -16,9 +16,9 @@ URL: http://www.llnl.gov/linux/slurm
 %ifos linux
 BuildRequires: python openssl-devel >= 0.9.6
 %endif
-%ifos aix
-Requires: openssl >= 0.9.6 munge proctrack >= 3
-BuildRequires: openssl-devel >= 0.9.6 munge-devel proctrack >= 3
+%ifos aix5.3
+Requires: openssl >= 0.9.6 munge-libs proctrack >= 3
+BuildRequires: openssl-devel >= 0.9.6 munge-libs munge-devel proctrack >= 3
 %endif
 
 #
@@ -157,7 +157,7 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
-%ifos aix
+%ifos aix5.3
 mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
 mv ${RPM_BUILD_ROOT}%{_bindir}/slaunch ${RPM_BUILD_ROOT}%{_sbindir}
 %endif
@@ -250,7 +250,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-%ifos aix
+%ifos aix5.3
 %{_sbindir}/srun
 %{_sbindir}/slaunch
 %endif
