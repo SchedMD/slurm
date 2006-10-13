@@ -59,7 +59,6 @@ List bg_sys_allocated = NULL;
 #ifdef HAVE_BG_FILES
 static void _pre_allocate(bg_record_t *bg_record);
 static int _post_allocate(bg_record_t *bg_record);
-static int _post_bg_init_read(void *object, void *arg);
 
 #define MAX_ADD_RETRY 2
 
@@ -218,23 +217,6 @@ static int _post_allocate(bg_record_t *bg_record)
 	return rc;
 }
 
-static int _post_bg_init_read(void *object, void *arg)
-{
-	bg_record_t *bg_record = (bg_record_t *) object;
-	bg_record_t *tmp_record = NULL;
-	
-	process_nodes(bg_record);
-	
-	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
-		tmp_record = xmalloc(sizeof(bg_record_t));
-		copy_bg_record(bg_record, tmp_record);
-		list_push(bg_list, tmp_record);
-	}
-	//print_bg_record(bg_record);
-
-	return SLURM_SUCCESS;
-}
-
 static int _find_nodecard(bg_record_t *bg_record, 
 			  rm_partition_t *block_ptr)
 {
@@ -387,7 +369,7 @@ int read_bg_blocks()
 		error("bridge_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		block_count = 0;
 	}
-	
+	info("querying the system for existing blocks");
 	for(block_number=0; block_number<block_count; block_number++) {
 		
 		if (block_number) {
@@ -449,7 +431,7 @@ int read_bg_blocks()
 		bg_record->quarter = (uint16_t) NO_VAL;
 		bg_record->nodecard = (uint16_t) NO_VAL;
 		bg_record->job_running = -1;
-				
+		
 		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionBPNum, 
 					  &bp_cnt)) 
@@ -464,11 +446,6 @@ int read_bg_blocks()
 		bg_record->bp_count = bp_cnt;
 		debug3("has %d BPs",
 		       bg_record->bp_count);
-		if(bg_record->bp_count > 1) {
-			rc = load_block_wiring(bg_record->bg_block_id);
-			if(rc == SLURM_ERROR)
-				goto clean_up;
-		}
 		
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 					  &bg_record->switch_count)) 
@@ -537,7 +514,11 @@ int read_bg_blocks()
 			
 		}
 
-		bg_record->bg_block_list = list_create(destroy_ba_node);
+		bg_record->bg_block_list =
+			get_and_set_block_wiring(bg_record->bg_block_id);
+		if(!bg_record->bg_block_list)
+			fatal("couldn't get the wiring info for block %s",
+			      bg_record->bg_block_id);
 		hostlist = hostlist_create(NULL);
 
 		/* this needs to be changed for small blocks,
@@ -632,6 +613,14 @@ int read_bg_blocks()
 		       bg_record->bg_block_id, 
 		       bg_record->state);
 		
+		process_nodes(bg_record);
+	
+		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			bg_record_t *tmp_record = xmalloc(sizeof(bg_record_t));
+			copy_bg_record(bg_record, tmp_record);
+			list_push(bg_list, tmp_record);
+		}
+
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
 					  &bp_cnt)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionUsersNum): %s",
@@ -696,10 +685,7 @@ int read_bg_blocks()
 		}
 	}
 	bridge_free_block_list(block_list);
-
-	/* perform post-processing for each bluegene block */
-	if(bg_recover)
-		list_for_each(bg_curr_block_list, _post_bg_init_read, NULL);
+	
 	return rc;
 }
 

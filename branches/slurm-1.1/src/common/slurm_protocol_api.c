@@ -735,7 +735,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	xassert(fd >= 0);
 	
-	if (timeout == 0)
+	if (timeout <= 0)
 		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 	if(timeout >= (SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10)) {
 		error("You are sending a message with timeout's greater "
