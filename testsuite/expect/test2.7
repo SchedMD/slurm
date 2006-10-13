@@ -87,7 +87,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Verify job_id in output file
 #
 set rem_time 999
-set delta 999
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
@@ -97,10 +96,6 @@ if {[wait_for_file $file_out] == 0} {
 		}
 		-re "slurm_get_rem_time is ($number)" {
 			set rem_time $expect_out(1,string)
-			exp_continue
-		}
-		-re "slurm_get_rem_time calls in ($number) seconds" {
-			set delta $expect_out(1,string)
 			exp_continue
 		}
 		eof {
@@ -114,10 +109,6 @@ if {$rem_time > 60} {
 }
 if {$rem_time < 59} {
 	send_user "\nFAILURE: job remaining time seems too small\n"
-	set exit_code 1
-}
-if {$delta > 1} {
-	send_user "\nFAILURE: slurm_get_rem_time calls too slow\n"
 	set exit_code 1
 }
 

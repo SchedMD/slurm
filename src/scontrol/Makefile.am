@@ -6,7 +6,12 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = scontrol
 
-scontrol_SOURCES = scontrol.c
+scontrol_SOURCES =	\
+	scontrol.c	\
+	scontrol.h	\
+	update_job.c	\
+	update_node.c	\
+	update_part.c
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
