@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -1365,7 +1365,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	int steps = 0;
 	resp->auth_cred = NULL;
 	if(slurm_send_node_msg(fd, req) >= 0) {
-		if (!timeout)
+		if (timeout <= 0)
 			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(req->forward.cnt>0) {
@@ -1658,7 +1658,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 	}
 
 	if(slurm_add_header_and_send(fd, msg) >= 0) {
-		if (!timeout)
+		if (timeout <= 0)
 			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(msg->forward.cnt>0) {
