@@ -72,7 +72,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_scontrol_OBJECTS = scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+am_scontrol_OBJECTS = info_job.$(OBJEXT) info_node.$(OBJEXT) \
+	info_part.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
 	update_node.$(OBJEXT) update_part.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurmhelper.la
@@ -274,6 +275,9 @@ target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 scontrol_SOURCES = \
+	info_job.c	\
+	info_node.c	\
+	info_part.c	\
 	scontrol.c	\
 	scontrol.h	\
 	update_job.c	\
@@ -357,6 +361,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_job.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_node.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scontrol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@

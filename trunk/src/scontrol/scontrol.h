@@ -97,6 +97,24 @@ extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
+extern int	scontrol_checkpoint(char *op, char *job_step_id_str);
+extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
+extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, 
+			uint16_t show_flags);
+extern int 	scontrol_load_partitions (partition_info_msg_t 
+			**part_info_pptr);
+extern void	scontrol_pid_info(pid_t job_pid);
+extern void	scontrol_print_completing (void);
+extern void	scontrol_print_completing_job(job_info_t *job_ptr, 
+				node_info_msg_t *node_info_msg);
+extern void	scontrol_print_job (char * job_id_str);
+extern void	scontrol_print_node (char *node_name, 
+			node_info_msg_t *node_info_ptr);
+extern void	scontrol_print_node_list (char *node_list);
+extern void	scontrol_print_part (char *partition_name);
+extern void	scontrol_print_step (char *job_step_id_str);
+extern int	scontrol_requeue(char *job_step_id_str);
+extern int	scontrol_suspend(char *op, char *job_id_str);
 extern int	scontrol_update_job (int argc, char *argv[]);
 extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
