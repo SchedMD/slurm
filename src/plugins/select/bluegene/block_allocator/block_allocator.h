@@ -274,6 +274,14 @@ extern void ba_set_node_down(ba_node_t *ba_node);
 extern ba_node_t *ba_copy_node(ba_node_t *ba_node);
 
 /** 
+ * copy the path of the nodes given
+ * 
+ * IN List of ba_node_t *'s: nodes to be copied
+ * OUT List of ba_node_t *'s: filled in list of nodes wiring
+ */
+extern int copy_node_path(List nodes, List dest_nodes);
+
+/** 
  * Try to allocate a block.
  * 
  * IN - ba_request: allocation request
@@ -305,8 +313,6 @@ extern int alter_block(List nodes, int conn_type);
  *
  */
 extern int redo_block(List nodes, int *geo, int conn_type, int new_count);
-
-extern void set_node_list(List nodes);
 
 extern int check_and_set_node_list(List nodes);
 
@@ -342,5 +348,11 @@ extern char *find_bp_rack_mid(char* xyz);
  * set the used wires for a block out of the database 
  */
 extern int load_block_wiring(char *bg_block_id);
+
+/**
+ * get the used wires for a block out of the database and return the
+ * node list
+ */
+extern List get_and_set_block_wiring(char *bg_block_id);
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

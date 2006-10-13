@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.15
+=========================
+ - BLUEGENE - fix to be able to create static partitions
+ - fix for receiving messages if the timeout is <=0 to set it to the default
+   timeout.
+
 * Changes in SLURM 1.1.14
 =========================
  - In sched/wiki2: report job/node id and state only if no changes since 
