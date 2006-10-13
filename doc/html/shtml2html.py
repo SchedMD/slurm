@@ -55,7 +55,6 @@ for f in sys.argv[1:]:
 
 for filename in files:
     dirname, basefilename = os.path.split(filename)
-    print 'dirname is', dirname
     newfilename = basefilename[:-6] + '.html'
     print 'Converting', filename, '->', newfilename
     shtml = file(filename, 'r')
