@@ -28,14 +28,18 @@ def include_virtual(matchobj):
 
 def url_rewrite(matchobj):
     global dirname
-    if matchobj.group(2)[-6:] == '.shtml' \
-           and os.access(dirname + '/' + matchobj.group(2), os.F_OK):
+    if dirname:
+        localpath = dirname + '/' + matchobj.group(2)
+    else:
+        localpath = matchobj.group(2)
+
+    if matchobj.group(2)[-6:] == '.shtml' and os.access(localpath, os.F_OK):
         location = matchobj.group(2)
         if matchobj.group(3) is None:
             newname = location[:-6] + '.html'
         else:
             newname = location[:-6] + '.html' + matchobj.group(3)
-        print 'Rewriting', location, 'to', newname
+        #print 'Rewriting', location, 'to', newname
         return matchobj.group(1) + newname + matchobj.group(4)
     else:
         return matchobj.group(0)
