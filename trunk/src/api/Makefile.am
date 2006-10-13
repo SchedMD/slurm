@@ -88,7 +88,7 @@ slurmapi_add = 				\
 libslurm_la_LIBADD = $(slurmapi_add)
 libslurmhelper_la_LIBADD = $(slurmapi_add)
 
-libpmi_la_LIBADD = libslurm.la
+libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \
@@ -102,6 +102,8 @@ libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
+$(libpmi_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # FIXME - don't export the client_io_handler_ symbols once srun is no longer
