@@ -93,12 +93,13 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activies. Future development plans includes:
 <ul>
+<li>Gang scheduling of jobs (without external scheduler).</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Add Kerberos credential support including credential forwarding 
 and refresh.</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 29 September 2006</p>
+<p style="text-align:center;">Last modified 13 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
