@@ -1034,10 +1034,12 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 
 extern int copy_node_path(List nodes, List dest_nodes)
 {
+	int rc = SLURM_ERROR;
+	
+#ifdef HAVE_BG
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
-	int rc = SLURM_SUCCESS;
 	int dim;
 	ba_switch_t *curr_switch = NULL, *new_switch = NULL; 
 	
@@ -1080,7 +1082,8 @@ extern int copy_node_path(List nodes, List dest_nodes)
 		
 	}
 	list_iterator_destroy(itr);
-		
+	rc = SLURM_SUCCESS;
+#endif	
 	return rc;
 }
 extern int check_and_set_node_list(List nodes)
