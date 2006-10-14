@@ -116,6 +116,9 @@
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 
+/* Define to 1 if you have the <proctrack.h> header file. */
+#undef HAVE_PROCTRACK_H
+
 /* Define if libc sets program_invocation_name */
 #undef HAVE_PROGRAM_INVOCATION_NAME
 

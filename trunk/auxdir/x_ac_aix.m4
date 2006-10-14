@@ -47,12 +47,21 @@ AC_DEFUN([X_AC_AIX],
          AS_HELP_STRING(--with-proctrack=PATH,Specify path to proctrack sources),
          [ PROCTRACKDIR="$withval" ]
       )
-      if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then
+      if test -f "$PROCTRACKDIR/lib/proctrackext.exp"; then
+         PROCTRACKDIR="$PROCTRACKDIR/lib"
+         AC_SUBST(PROCTRACKDIR)
+         CPPFLAGS="-I$PROCTRACKDIR/include $CPPFLAGS"
+         AC_CHECK_HEADERS(proctrack.h)
+         ac_have_aix_proctrack="yes"
+      elif test -f "$prefix/lib/proctrackext.exp"; then
+         PROCTRACKDIR="$prefix/lib"
+         AC_SUBST(PROCTRACKDIR)
+         CPPFLAGS="$CPPFLAGS -I$prefix/include"
+	 AC_CHECK_HEADERS(proctrack.h)
+         ac_have_aix_proctrack="yes"
+      else
          AC_MSG_WARN([proctrackext.exp is required for AIX proctrack support, specify location with --with-proctrack])
          ac_have_aix_proctrack="no"
-      else
-         AC_SUBST(PROCTRACKDIR)
-         ac_have_aix_proctrack="yes"
       fi
    else
       ac_have_aix_proctrack="no"
