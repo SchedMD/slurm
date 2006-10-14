@@ -61,7 +61,6 @@ BlueGene build notes:
 
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
-   svn co https://eris.llnl.gov/svn/slurm/private/proctrack-aix/trunk proctrack
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
    put the buildfarm directory in your search path
    Also, you will need two commands to appear FIRST in your PATH:
@@ -71,11 +70,11 @@ To build and run on AIX:
 
    I do this by making symlinks to those commands in the buildfarm directory,
    then making the buildfarm directory the first one in my PATH.
+   Also, make certain that the "proctrack" rpm is installed.
 1. export OBJECT_MODE=32
 2. Build with:
    ./configure --enable-debug --prefix=/opt/freeware \
 	--sysconfdir=/opt/freeware/etc/slurm
-        --with-proctrack=<your directory>/proctrack \
 	--with-ssl=/opt/freeware --with-munge=/opt/freeware
    make
    make uninstall  # remove old shared libraries, aix caches them
@@ -92,7 +91,6 @@ To build and run on AIX:
         %_defaultdocdir         %{_prefix}/doc
 
 	%_enable_debug    "--enable-debug"
-	%with_proctrack   "--with-proctrack=<your directory>/proctrack"
 	%with_ssl         "--with-ssl=/opt/freeware"
 	%with_munge       "--with-munge=/opt/freeware"
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3

@@ -52,17 +52,9 @@
 #include <unistd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+#include <proctrack.h>
 #include "src/common/log.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-extern int proctrack_job_reg_pid(int *jobid, int *pid_ptr); /* register a job */
-extern int proctrack_job_unreg(int *jobid);	/* unregister a job */
-extern int proctrack_job_kill(int *jobid, int *signal);	/* signal a job */
-extern int proctrack_get_job_id(int *pid_ptr);	/* return jobid for given pid */
-extern int proctrack_dump_records(void);	/* dump records */
-extern uint32_t proctrack_version(void);        /* proctrack version */
-extern int proctrack_get_pids(uint32_t job_id, int pid_array_len,
-			      int32_t *pid_array_ptr);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -189,42 +181,6 @@ slurm_container_has_pid(uint32_t cont_id, pid_t pid)
 }
 
 extern int
-slurm_container_wait(uint32_t cont_id)
-{
-	int jobid = (int) cont_id;
-	int delay = 1;
-
-	if (cont_id == 0 || cont_id == 1) {
-		errno = EINVAL;
-		return SLURM_ERROR;
-	}
-
-	/* Spin until the container is successfully destroyed */
-	while (proctrack_job_unreg(&jobid) != 0) {
-		sleep(delay);
-		if (delay < 120) {
-			delay *= 2;
-		} else {
-			int i;
-			pid_t *pids = NULL;
-			int npids = 0;
-			error("Container %u is still not empty", cont_id);
-
-			slurm_container_get_pids(cont_id, &pids, &npids);
-			if (npids > 0) {
-				for (i = 0; i < npids; i++) {
-					verbose("  Container %u has pid %d",
-						pids[i]);
-				}
-				xfree(pids);
-			}
-		}
-	}
-
-	return SLURM_SUCCESS;
-}
-
-extern int
 slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
 	int32_t *p;
@@ -268,3 +224,40 @@ slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 	}
 	return SLURM_SUCCESS;
 }
+
+extern int
+slurm_container_wait(uint32_t cont_id)
+{
+	int jobid = (int) cont_id;
+	int delay = 1;
+
+	if (cont_id == 0 || cont_id == 1) {
+		errno = EINVAL;
+		return SLURM_ERROR;
+	}
+
+	/* Spin until the container is successfully destroyed */
+	while (proctrack_job_unreg(&jobid) != 0) {
+		sleep(delay);
+		if (delay < 120) {
+			delay *= 2;
+		} else {
+			int i;
+			pid_t *pids = NULL;
+			int npids = 0;
+			error("Container %u is still not empty", cont_id);
+
+			slurm_container_get_pids(cont_id, &pids, &npids);
+			if (npids > 0) {
+				for (i = 0; i < npids; i++) {
+					verbose("  Container %u has pid %d",
+						pids[i]);
+				}
+				xfree(pids);
+			}
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
