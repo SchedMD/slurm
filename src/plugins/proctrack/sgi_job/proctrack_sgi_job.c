@@ -122,7 +122,7 @@ int init (void)
 	job_ops.detachpid = dlsym (libjob_handle, "job_detachpid");
 	job_ops.attachpid = dlsym (libjob_handle, "job_attachpid");
 	job_ops.getpidlist= dlsym (libjob_handle, "job_getpidlist");
-	job_ops.getpidcnt = dlsyn (libjob_handle, "job_getpidcnt");
+	job_ops.getpidcnt = dlsym (libjob_handle, "job_getpidcnt");
 
 	if (!job_ops.create)
 		error ("Unable to resolve job_create in libjob.so");
