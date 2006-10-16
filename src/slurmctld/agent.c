@@ -771,9 +771,6 @@ static void *_thread_per_group_rpc(void *args)
 	int found = 0;
 	forward_msg_t fwd_msg;
 	int sig_array[0] = {SIGALRM, 0};
-
-	xsignal_unblock(sig_array);
-
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -784,6 +781,7 @@ static void *_thread_per_group_rpc(void *args)
 #endif
 	xassert(args != NULL);
 
+	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
 			(msg_type == REQUEST_TERMINATE_JOB) );
 	srun_agent = (	(msg_type == SRUN_PING)    ||
