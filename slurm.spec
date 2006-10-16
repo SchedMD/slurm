@@ -73,11 +73,6 @@ Summary: SLURM interfaces to IBM Blue Gene system
 Group: System Environment/Base
 Requires: slurm
 
-%package sched-wiki
-Summary: SLURM scheduling plugin for the Maui scheduler.
-Group: System Environment/Base
-Requires: slurm
-
 %package switch-elan
 Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
@@ -114,9 +109,6 @@ SLURM authentication module for Chris Dunlap's Munge
 
 %description bluegene
 SLURM plugin interfaces to IBM Blue Gene system
-
-%description sched-wiki
-SLURM scheduling plugin for the Maui scheduler.
 
 %description switch-elan
 SLURM switch plugin for Quadrics Elan3 or Elan4.
@@ -190,12 +182,6 @@ for plugin in auth_munge auth_authd; do
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
 
-# Temporary, until wiki2 becomes wiki (see code above)
-LIST=./sched_wiki.files
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki2.so &&
-  echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
-echo "%{_mandir}/man5/wiki.*"                     >> $LIST
-
 LIST=./switch_elan.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_elan.so &&
@@ -258,6 +244,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/slurm.*
+%{_mandir}/man5/wiki.*
 %{_mandir}/man8/*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm
@@ -272,6 +259,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
+%{_libdir}/slurm/sched_gang.so
+%{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
@@ -310,10 +299,6 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %files -f bluegene.files bluegene
-%defattr(-,root,root)
-#############################################################################
-
-%files -f sched_wiki.files sched-wiki
 %defattr(-,root,root)
 #############################################################################
 
