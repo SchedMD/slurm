@@ -24545,6 +24545,7 @@ main ()
           {
             (void) gtk_action_group_new ("MenuActions");
             (void) gtk_ui_manager_new ();
+	    (void) gtk_cell_renderer_combo_new();
           }
 
   ;
