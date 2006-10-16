@@ -159,4 +159,11 @@ with the bug.
 For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
  valgrind --tool=memcheck --leak-check=yes --num-callers=6 --leak-resolution=med ./slurmctld
 
-Remember to test on ia64, i386, BGL, and AIX.
+Before new major release:
+ - Test on ia64, i386, BGL, AIX, OSX, XCPU
+ - Test for memory leaks in slurmctld and slurmd
+ - Change API version number
+ - Review and release web pages
+ - Review and release code
+ - Run "make check"
+ 
