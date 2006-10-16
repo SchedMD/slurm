@@ -14,7 +14,6 @@ LDADD =		$(top_builddir)/src/common/libcommon.la \
 
 check_PROGRAMS = \
 	$(TESTS) \
-	stream_server stream_client \
 	$(elan_testprogs)
 
 TESTS = \
