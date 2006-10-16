@@ -43,6 +43,14 @@ AC_DEFUN([X_AC_GTK],
         fi
     fi
 
+### Check for gtk2.6+ package
+    if test "$ac_have_gtk" == "yes" ; then
+	AM_PATH_GTK_2_0(2.6.0,ac_have_gtk=yes,ac_have_gtk=no)
+	if test "$ac_have_gtk" == "no" ; then
+		AC_MSG_WARN([*** gtk+-2.6.0+ is not available.])
+	fi
+    fi
+
 ### Run a test program
     if test "$ac_have_gtk" == "yes" ; then
         GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
