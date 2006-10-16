@@ -34,21 +34,13 @@ AC_DEFUN([X_AC_GTK],
     fi
 
 
-### Check for gtk2 package
+### Check for gtk2.6 package
     if test "$ac_have_gtk" == "yes" ; then
-        $HAVEPKGCONFIG --exists gtk+-2.0
+        $HAVEPKGCONFIG --exists gtk+-2.6.0
         if ! test $? -eq 0 ; then
-            AC_MSG_WARN([*** gtk+-2.0 is not available.])
+            AC_MSG_WARN([*** gtk+-2.6.0 is not available.])
             ac_have_gtk="no"
         fi
-    fi
-
-### Check for gtk2.6+ package
-    if test "$ac_have_gtk" == "yes" ; then
-	AM_PATH_GTK_2_0(2.6.0,ac_have_gtk=yes,ac_have_gtk=no)
-	if test "$ac_have_gtk" == "no" ; then
-		AC_MSG_WARN([*** gtk+-2.6.0+ is not available.])
-	fi
     fi
 
 ### Run a test program
