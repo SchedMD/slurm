@@ -770,7 +770,7 @@ static void *_thread_per_group_rpc(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 	int found = 0;
 	forward_msg_t fwd_msg;
-	int sig_array[0] = {SIGALRM, 0};
+	int sig_array[2] = {SIGALRM, 0};
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
