@@ -13,7 +13,7 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c stream_client.c stream_server.c
+SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -36,8 +36,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
-check_PROGRAMS = $(am__EXEEXT_1) stream_server$(EXEEXT) \
-	stream_client$(EXEEXT) $(am__EXEEXT_2)
+check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 subdir = testsuite/slurm_unit/common
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -89,16 +88,6 @@ runqsw_OBJECTS = runqsw.$(OBJEXT)
 runqsw_LDADD = $(LDADD)
 runqsw_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(am__DEPENDENCIES_1)
-stream_client_SOURCES = stream_client.c
-stream_client_OBJECTS = stream_client.$(OBJEXT)
-stream_client_LDADD = $(LDADD)
-stream_client_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(am__DEPENDENCIES_1)
-stream_server_SOURCES = stream_server.c
-stream_server_OBJECTS = stream_server.$(OBJEXT)
-stream_server_LDADD = $(LDADD)
-stream_server_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -110,10 +99,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link --tag=CC $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c \
-	stream_client.c stream_server.c
-DIST_SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c \
-	stream_client.c stream_server.c
+SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c
+DIST_SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -355,12 +342,6 @@ pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES)
 runqsw$(EXEEXT): $(runqsw_OBJECTS) $(runqsw_DEPENDENCIES) 
 	@rm -f runqsw$(EXEEXT)
 	$(LINK) $(runqsw_LDFLAGS) $(runqsw_OBJECTS) $(runqsw_LDADD) $(LIBS)
-stream_client$(EXEEXT): $(stream_client_OBJECTS) $(stream_client_DEPENDENCIES) 
-	@rm -f stream_client$(EXEEXT)
-	$(LINK) $(stream_client_LDFLAGS) $(stream_client_OBJECTS) $(stream_client_LDADD) $(LIBS)
-stream_server$(EXEEXT): $(stream_server_OBJECTS) $(stream_server_DEPENDENCIES) 
-	@rm -f stream_server$(EXEEXT)
-	$(LINK) $(stream_server_LDFLAGS) $(stream_server_OBJECTS) $(stream_server_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -372,8 +353,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runqsw.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stream_client.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stream_server.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
