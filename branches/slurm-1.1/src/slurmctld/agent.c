@@ -828,6 +828,7 @@ static void *_thread_per_group_rpc(void *args)
 
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
+	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	slurm_mutex_unlock(thread_mutex_ptr);
 
 	/* send request message */
@@ -841,7 +842,6 @@ static void *_thread_per_group_rpc(void *args)
 	msg.forward_struct_init = 0;
 
 	//info("%s forwarding to %d",thread_ptr->node_name, msg.forward.cnt);
-	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 	send_rc_again:
 		if ((ret_list = slurm_send_recv_rc_msg(&msg, 
