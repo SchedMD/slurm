@@ -522,10 +522,6 @@ get_cpuinfo(uint32_t numproc,
 	/* Note: assumes all processor IDs are within [0:numproc-1] */
 	cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
 	memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
-	if (cpuinfo == NULL) {
-		error ("get_cpuinfo: error %d allocating cpuinfo\n", errno);
-		return errno;
-	}
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		uint32_t val;
@@ -719,10 +715,6 @@ int compute_block_map(uint32_t numproc,
 	if (block_map) {
 		*block_map = xmalloc(numproc * sizeof(uint32_t));
 		memset(*block_map, 0, numproc * sizeof(uint32_t));
-		if (*block_map == NULL) {
-			error ("get_cpuinfo: error %d allocating block_map\n", errno);
-			return errno;
-		}
 		for (i = 0; i < numproc; i++) {
 			(*block_map)[i] = i;
 		}
@@ -731,10 +723,6 @@ int compute_block_map(uint32_t numproc,
 	if (block_map_inv) {
 		*block_map_inv = xmalloc(numproc * sizeof(uint32_t));
 		memset(*block_map_inv, 0, numproc * sizeof(uint32_t));
-		if (*block_map_inv == NULL) {
-			error("get_cpuinfo: error %d allocating block_map_inv\n", errno);
-			return errno;
-		}
 		for (i = 0; i < numproc; i++) {
 			uint32_t idx = (*block_map)[i];
 			(*block_map_inv)[idx] = i;
