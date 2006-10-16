@@ -458,11 +458,6 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 	debug3("_lllp_generate_cpu_bind %d %d %d", maxtasks, charsize, masks_len);
 
 	masks_str = xmalloc(masks_len);
-	if(masks_str == NULL) {
-		error(" JobId %u masks_str == NULL", req->job_id); 
-		return;
-	}
-
 	masks_len = 0;
 	for (i = 0; i < maxtasks; i++) {
 	    	char *str;
@@ -578,10 +573,6 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 	
 	/* Allocate masks array */
 	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
-	if(*masks_p == NULL) {
-		error(" JobId %u masks == NULL", req->job_id); 
-		return SLURM_ERROR;
-	}
 	for (i = 0; i < maxtasks; i++) { 
 	    	(*masks_p)[i] = NULL;
 	}
@@ -1123,8 +1114,6 @@ lllp_ctx_alloc(void)
 	lllp_reserved_size = num_lllp;
 	lllp_reserved = xmalloc(num_lllp * sizeof(uint32_t));
 	memset(lllp_reserved, 0, num_lllp * sizeof(uint32_t));
-	if (lllp_reserved == NULL)
-		error(" lllp_reserved == NULL");
 
 	if (lllp_ctx) {
 		lllp_ctx_destroy();
@@ -1157,28 +1146,12 @@ static int _init_lllp(void)
 	usable_cores   = conf->cores;
 
         lllp_tasks = xmalloc(sizeof(struct node_gids));
-	if (lllp_tasks == NULL) {
-		error(" Error (lllp_tasks == NULL) ");
-		return SLURM_ERROR;
-	}
-	
 	lllp_tasks->sockets =  xmalloc(sizeof(struct socket_gids) * usable_sockets);
-	if (lllp_tasks->sockets == NULL) {
-		error(" Error (lllp_tasks->sockets == NULL) ");
-		return SLURM_ERROR;
-	}
 	for (j=0; j<usable_sockets; j++) {
 		lllp_tasks->sockets[j].cores =  xmalloc(sizeof(struct core_gids) * usable_cores);
-		if (lllp_tasks->sockets[j].cores == NULL) {
-			error(" Error (lllp_tasks->sockets[j].cores == NULL) ");
-			return SLURM_ERROR;
-		}
 		for (k=0; k<usable_cores; k++) {
-			lllp_tasks->sockets[j].cores[k].threads = xmalloc(sizeof(struct thread_gids) * usable_threads);
-			if (lllp_tasks->sockets[j].cores[k].threads == NULL) {
-				error(" Error (lllp_tasks->sockets[j].cores[k].threads == NULL) ");
-				return SLURM_ERROR;
-			}
+			lllp_tasks->sockets[j].cores[k].threads = 
+					xmalloc(sizeof(struct thread_gids) * usable_threads);
 		}
 	}
 	return SLURM_SUCCESS;
