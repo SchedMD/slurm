@@ -232,8 +232,6 @@ void *agent(void *args)
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
 
-	xsignal(SIGALRM, _alarm_handler);
-
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
 	thread_ptr = agent_info_ptr->thread_struct;
@@ -780,7 +778,7 @@ static void *_thread_per_group_rpc(void *args)
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 #endif
 	xassert(args != NULL);
-
+	xsignal(SIGALRM, _alarm_handler);
 	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
 			(msg_type == REQUEST_TERMINATE_JOB) );
@@ -1084,7 +1082,6 @@ cleanup:
  */
 static void _alarm_handler(int dummy)
 {
-	xsignal(SIGALRM, _alarm_handler);
 }
 
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr, 
