@@ -596,9 +596,11 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                 /* Left in here for debugging purposes */
 #if(0)
                 if(host_index >= 0)
-                  info(" cons_res %u alloc_lps_cnt %d task[%d] = %d = task_to_launch %d host %s ", 
-                         arg.jobid, arg.alloc_lps_cnt, host_index, arg.alloc_lps[host_index], 
-                         tasks_to_launch, conf->node_name);
+                  info(" cons_res %u alloc_lps_cnt %d "
+			"task[%d] = %d = task_to_launch %d host %s ", 
+			arg.jobid, arg.alloc_lps_cnt, host_index, 
+			arg.alloc_lps[host_index], 
+			tasks_to_launch, conf->node_name);
 #endif
 
                 if (host_index < 0) { 
@@ -608,10 +610,13 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                 }
                 
                 if (tasks_to_launch > arg.alloc_lps[host_index]) {
-			error("cons_res: More than one tasks per logical processor (%d > %d) on host [%d.%d %ld %s] ",
-			      tasks_to_launch, arg.alloc_lps[host_index], 
-			      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
-			error(" cons_res: Use task/affinity plug-in to bind the tasks to the allocated resources");
+			error("cons_res: More than one tasks per logical "
+				"processor (%d > %d) on host [%d.%d %ld %s] ",
+				tasks_to_launch, arg.alloc_lps[host_index], 
+				arg.jobid, arg.stepid, (long) arg.uid, 
+				arg.hostlist);
+			error(" cons_res: Use task/affinity plug-in to bind "
+				"the tasks to the allocated resources");
 		}
         }
 
@@ -737,7 +742,8 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	if (err_name_ptr[0] == '/')
 		snprintf(path_name, MAXPATHLEN, "%s", err_name_ptr);
 	else if (req->work_dir)
-		snprintf(path_name, MAXPATHLEN, "%s/%s", req->work_dir, err_name_ptr);
+		snprintf(path_name, MAXPATHLEN, "%s/%s", 
+			req->work_dir, err_name_ptr);
 	else
 		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
 
@@ -745,7 +751,8 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 		error("Unable to open %s: %s", path_name, slurm_strerror(errno));
 		return;
 	}
-	snprintf(err_name, 128, "Error running slurm prolog: %d\n", WEXITSTATUS(rc));
+	snprintf(err_name, 128, "Error running slurm prolog: %d\n", 
+		WEXITSTATUS(rc));
 	write(fd, err_name, strlen(err_name));
 	fchown(fd, (uid_t) req->uid, (gid_t) req->gid);
 	close(fd);
