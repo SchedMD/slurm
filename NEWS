@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  - BLUEGENE - fix to be able to create static partitions
  - fix for receiving messages if the timeout is <=0 to set it to the default
    timeout.
+ - Fix for slurmctld timeout on outgoing message (Hongjia Cao, NUDT.edu.cn).
 
 * Changes in SLURM 1.1.14
 =========================
