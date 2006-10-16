@@ -24507,12 +24507,12 @@ echo "$as_me: WARNING: *** libbglade-2.0 is not available." >&2;}
     fi
 
 
-### Check for gtk2 package
+### Check for gtk2.6 package
     if test "$ac_have_gtk" == "yes" ; then
-        $HAVEPKGCONFIG --exists gtk+-2.0
+        $HAVEPKGCONFIG --exists gtk+-2.6.0
         if ! test $? -eq 0 ; then
-            { echo "$as_me:$LINENO: WARNING: *** gtk+-2.0 is not available." >&5
-echo "$as_me: WARNING: *** gtk+-2.0 is not available." >&2;}
+            { echo "$as_me:$LINENO: WARNING: *** gtk+-2.6.0 is not available." >&5
+echo "$as_me: WARNING: *** gtk+-2.6.0 is not available." >&2;}
             ac_have_gtk="no"
         fi
     fi
