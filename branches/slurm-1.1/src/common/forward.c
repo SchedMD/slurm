@@ -75,10 +75,20 @@ void *_forward_thread(void *arg)
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
 	char name[MAX_SLURM_NAME];
-
+	int steps = 0;
+	int start_timeout = fwd_msg->timeout;
 	msg.forward.cnt = 0;
+
 start_again:
-	/* info("sending to %s with %d forwards",  */
+	/* figure out where we are in the tree and set the timeout for
+	   to wait for our childern correctly (timeout+1 sec per step)
+	   to let the child timeout */
+	steps = (fwd_msg->header.forward.cnt+1)/slurm_get_tree_width();
+	fwd_msg->timeout = (1000*steps);
+	steps++;
+	fwd_msg->timeout += (start_timeout*steps);
+	
+/* 	info("sending to %s with %d forwards", */
 /* 	     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
 	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
 		error("forward_thread to %s: %m", fwd_msg->node_name);
@@ -649,7 +659,7 @@ extern int forward_set_launch(forward_t *forward,
 	char *host = NULL;
 	int total = step_layout->num_hosts;
 	
-	/* char name[MAX_SLURM_NAME]; */
+/* 	char name[MAX_SLURM_NAME]; */
 /* 	strncpy(name, */
 /* 		step_layout->host[*pos], */
 /* 		MAX_SLURM_NAME); */
@@ -683,10 +693,10 @@ extern int forward_set_launch(forward_t *forward,
 				step_layout->host[*pos+j], 
 				MAX_SLURM_NAME);
 			forward->node_id[j-1] = (*pos+j);
-			/* strncpy(name, */
+/* 			strncpy(name, */
 /* 				step_layout->host[*pos+j], */
 /* 				MAX_SLURM_NAME); */
-/* 			info("along with %s",name);	 */
+/* 			info("along with %s",name); */
 			j++;
 		}
 			
