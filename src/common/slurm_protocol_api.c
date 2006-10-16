@@ -735,7 +735,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 
 	xassert(fd >= 0);
 	
-	if (timeout <= 0)
+	if (timeout == 0)
 		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 	if(timeout >= (SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10)) {
 		error("You are sending a message with timeout's greater "
@@ -806,8 +806,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		
 		msg->forward_struct->ret_list = ret_list;
 		/* take out the amount of timeout from this hop */
-		msg->forward_struct->timeout = 
-			(timeout - header.forward.timeout);
+		msg->forward_struct->timeout = header.forward.timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		debug3("forwarding messages to %d nodes!!!! "
@@ -1365,12 +1364,16 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	int steps = 0;
 	resp->auth_cred = NULL;
 	if(slurm_send_node_msg(fd, req) >= 0) {
-		if (timeout <= 0)
-			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(req->forward.cnt>0) {
+			/* figure out where we are in the tree and set
+			   the timeout for to wait for our childern
+			   correctly (timeout+1 sec per step)
+			   to let the child timeout */
+	
 			steps = req->forward.cnt/slurm_get_tree_width();
-			steps += 1;
+			timeout = (1000*steps);
+			steps++;
 			timeout += (req->forward.timeout*steps);
 		}
 		ret_list = slurm_receive_msg(fd, resp, timeout);
@@ -1658,15 +1661,18 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 	}
 
 	if(slurm_add_header_and_send(fd, msg) >= 0) {
-		if (timeout <= 0)
-			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
-		
 		if(msg->forward.cnt>0) {
+			/* figure out where we are in the tree and set
+			   the timeout for to wait for our childern
+			   correctly (timeout+1 sec per step)
+			   to let the child timeout */
+			
 			steps = msg->forward.cnt/slurm_get_tree_width();
-			steps += 1;
+			timeout = (1000*steps);
+			steps++;
 			timeout += (msg->forward.timeout*steps);
 		}
-				
+					
 		ret_list = slurm_receive_msg(fd, &resp, timeout);
 	}
 	err = errno;

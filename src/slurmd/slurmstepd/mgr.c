@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -561,7 +561,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	for (i = 0; i < REVERSE_TREE_PARENT_RETRY; i++) {
 		if (i)
 			sleep(1);
-		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10);
+		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10000);
 		if (retcode == 0 && rc == 0)
 			goto finished;
 	}

@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -73,6 +73,7 @@
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -752,7 +753,8 @@ static void _opt_default()
 	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
-	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
+	/* Default launch msg timeout           */
+	opt.msg_timeout     = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;  
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
