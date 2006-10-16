@@ -5,7 +5,6 @@ LDADD    =        $(top_builddir)/src/api/libslurm.la
 check_PROGRAMS = \
 	cancel-tst \
 	complete-tst \
-	allocate-tst \
 	job_info-tst \
 	node_info-tst \
 	partition_info-tst \
