@@ -61,6 +61,7 @@ AC_DEFUN([X_AC_GTK],
           {
             (void) gtk_action_group_new ("MenuActions");
             (void) gtk_ui_manager_new ();
+	    (void) gtk_cell_renderer_combo_new();	
           }
         ], , [ac_have_gtk="no"])
 	CFLAGS="$save_CFLAGS"
