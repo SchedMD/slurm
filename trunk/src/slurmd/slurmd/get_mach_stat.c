@@ -583,15 +583,18 @@ get_cpuinfo(uint32_t numproc,
 			cores = maxcores;
 	
 		if (cores == 0) {
-		    cores = numcpu / sockets;	/* assume multi-core */
-		    if (cores > 1) {
-			debug3("Warning: cpuinfo missing 'core id' or 'cpu cores' but assuming multi-core");
-		    }
+			cores = numcpu / sockets;	/* assume multi-core */
+			if (cores > 1) {
+				debug3("Warning: cpuinfo missing 'core id' or 'cpu cores' "
+					"but assuming multi-core");
+			}
 		}
-		if (cores == 0) cores = 1;	/* guarantee non-zero */
+		if (cores == 0)
+			cores = 1;	/* guarantee non-zero */
 	
 		threads = numcpu / (sockets * cores); /* solve for threads */
-		if (threads == 0) threads = 1;	/* guarantee non-zero */
+		if (threads == 0)
+			threads = 1;	/* guarantee non-zero */
 	} else {				/* heterogeneous system */
 		sockets = numcpu;
 		cores   = 1;			/* one core per socket */
@@ -685,11 +688,11 @@ get_cpuinfo(uint32_t numproc,
 static int _icmp(uint32_t a, uint32_t b)
 {
     	if (a < b) {
-	    return -1;
+		return -1;
 	} else if (a == b) {
-	    return 0;
+		return 0;
 	} else {
-	    return 1;
+		return 1;
 	}
 }
 
@@ -697,12 +700,19 @@ int _compare_cpus(const void *a1, const void *b1) {
 	uint32_t *a = (uint32_t *) a1;
 	uint32_t *b = (uint32_t *) b1;
 	int cmp;
+
 	cmp = -1 * _icmp(cpuinfo[*a].seen,cpuinfo[*b].seen); /* seen to front */
-	if (cmp != 0) return cmp;
+	if (cmp != 0)
+		return cmp;
+
 	cmp = _icmp(cpuinfo[*a].physid, cpuinfo[*b].physid); /* key 1: physid */
-	if (cmp != 0) return cmp;
+	if (cmp != 0)
+		return cmp;
+
 	cmp = _icmp(cpuinfo[*a].coreid, cpuinfo[*b].coreid); /* key 2: coreid */
-	if (cmp != 0) return cmp;
+	if (cmp != 0)
+		return cmp;
+
 	cmp = _icmp(cpuinfo[*a].id, cpuinfo[*b].id); 	     /* key 3: cpu id */
 	return cmp;
 }
