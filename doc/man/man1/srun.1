@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "September 2006" "srun 1.2" "slurm components"
+.TH SRUN "1" "October 2006" "srun 1.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -999,6 +999,9 @@ The location of the SLURM configuration file.
 \fBSLURMD_DEBUG\fR
 \fB\-d, \-\-slurmd\-debug\fR
 .TP
+\fBSLURM_DIST_PLANESIZE\fR
+\fB\-m plane\fR
+.TP
 \fBSLURM_DISTRIBUTION\fR
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic|hostfile\fR)
 .TP
@@ -1016,6 +1019,15 @@ The location of the SLURM configuration file.
 .TP
 \fBSLURM_NNODES\fR
 \fB\-N, \-\-nodes\fR=(\fIn|min\-max\fR)
+.TP
+\fBSLURN_NTASKS_PER_CORE\fR
+\fB\-\-ntasks\-per\-core\fR
+.TP
+\fBSLURN_NTASKS_PER_NODE\fR
+\fB\-\-ntasks\-per\-node\fRa
+.TP
+\fBSLURN_NTASKS_PER_SOCKET\fR
+\fB\-\-ntasks\-per\-socket\fRa
 .TP
 \fBSLURM_NO_REQUEUE\fR
 \fB\-\-no\-requeue\fR
@@ -1123,6 +1135,12 @@ Total number of processes in the current job
 .TP
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
+.TP
+\fBSLURM_STEPID\fR
+The step ID of the current job
+.TP
+\fBSLURM_TASK_PID\fR
+The process ID of the task being started.
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are 
