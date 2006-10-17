@@ -287,7 +287,6 @@ extern void process_nodes(bg_record_t *bg_record)
 		if(!bg_record->bg_block_list) {
 			bg_record->bg_block_list =
 				list_create(destroy_ba_node);
-			info("got here");
 		}
 		bg_record->bp_count = 0;
 		
@@ -445,7 +444,6 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	if(fir_record->bg_block_list) {
 		itr = list_iterator_create(fir_record->bg_block_list);
 		while((ba_node = list_next(itr))) {
-			info("got here 2");
 			new_ba_node = ba_copy_node(ba_node);
 			list_push(sec_record->bg_block_list, new_ba_node);
 		}
