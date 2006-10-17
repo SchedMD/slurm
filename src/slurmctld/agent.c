@@ -1029,7 +1029,6 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		if(!thread_ptr[i].ret_list) {
-			char ip_buf[32];
 			if (thread_ptr[i].state != DSH_NO_RESP)
 				continue;
 

@@ -351,12 +351,11 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout);
  *
  * IN open_fd	- file descriptor to receive msg on
  * OUT resp	- a slurm_msg struct to be filled in by the function
- * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr, 
-				   slurm_msg_t *resp, int steps, int timeout);
+int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr, 
+				  slurm_msg_t *resp, int timeout);
 
 /**********************************************************************\
  * send message functions

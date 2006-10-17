@@ -107,13 +107,7 @@ void *_forward_thread(void *arg)
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
-		if(fwd_msg->header.forward.cnt>0) {
-			steps = (fwd_msg->header.forward.cnt+1) /
-				slurm_get_tree_width();
-			fwd_msg->timeout = (1000*steps);
-			steps++;
-			fwd_msg->timeout += (start_timeout*steps);
-		}	
+		
 		debug3("forward: along with %s",
 		       fwd_msg->header.forward.nodelist);
 		
@@ -167,7 +161,15 @@ void *_forward_thread(void *arg)
 			}
 			goto cleanup;
 		}
-	
+
+		if(fwd_msg->header.forward.cnt>0) {
+			steps = (fwd_msg->header.forward.cnt+1) /
+				slurm_get_tree_width();
+			fwd_msg->timeout = (1000*steps);
+			steps++;
+			fwd_msg->timeout += (start_timeout*steps);
+		}	
+		
 		ret_list = slurm_receive_msgs(fd, steps, fwd_msg->timeout);
 
 		if(!ret_list || (fwd_msg->header.forward.cnt != 0 
