@@ -1386,9 +1386,12 @@ extern void build_node_details(struct job_record *job_ptr)
 			error_code = select_g_get_extra_jobinfo( 
 				node_ptr, job_ptr, SELECT_AVAIL_CPUS, 
 				&usable_lps);
-			if (cr_enabled)
-				job_ptr->alloc_lps[cr_count++] = usable_lps;
-			if(error_code != SLURM_SUCCESS) {
+			if (error_code == SLURM_SUCCESS) {
+				if (cr_enabled && job_ptr->alloc_lps) {
+					job_ptr->alloc_lps[cr_count++] =
+								usable_lps;
+				}
+			} else {
 				if (cr_enabled) {
 					xfree(job_ptr->alloc_lps); 
 					job_ptr->alloc_lps = NULL;

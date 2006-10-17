@@ -355,7 +355,7 @@ int get_avail_cpus(struct job_record *job_ptr, int index)
 			max_sockets, max_cores, max_threads, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, 
-			0, 0, SELECT_TYPE_INFO_NONE);
+			0, NULL, 0, SELECT_TYPE_INFO_NONE);
 
 #if 0
 	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",

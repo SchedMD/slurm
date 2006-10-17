@@ -46,7 +46,7 @@
  *
  * Return SLURM_SUCCESS on success, or SLURM_ERROR otherwise
  */
-extern int parse_select_type_param(char *select_type_parameters, 
+int parse_select_type_param(char *select_type_parameters, 
 				   select_type_plugin_info_t *param)
 {
 	int rc = SLURM_SUCCESS;	
@@ -56,7 +56,7 @@ extern int parse_select_type_param(char *select_type_parameters,
 	char *st_str = xstrdup(select_type_parameters);
 	if ((str_parameters = strtok(st_str,",")) != NULL) {
 		do {
-			if (strcasecmp(str_parameters, "CR_SOCKET") == 0) {
+			if (strcasecmp(str_parameters, "CR_Socket") == 0) {
 				*param = CR_SOCKET;
 			} else if (strcasecmp(str_parameters, "CR_Socket_Memory") == 0) {
 				*param = CR_SOCKET_MEMORY;

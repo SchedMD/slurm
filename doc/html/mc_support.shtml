@@ -113,7 +113,7 @@ to dedicate to a job (minimum or range)
     <td> maximum amount of real memory per node required by the job.
 </td></tr>
 <tr><td colspan=2>
-<b><a href="#srun_ntasks">Task invocation as a function of logical processors</a></b>
+<b><a href="#srun_ntasks">Task invocation control</a></b>
 </td></tr>
 <tr>
     <td> --ntasks-per-node=<i>ntasks</i></td>
@@ -124,6 +124,19 @@ to dedicate to a job (minimum or range)
 </td></tr>
     <td> --ntasks-per-core=<i>ntasks</i></td>
     <td> number of tasks to invoke on each core
+</td></tr>
+<tr><td colspan=2>
+<b><a href="#srun_hints">Application hints</a></b>
+</td></tr>
+<tr>
+    <td> --hint=compute_bound</td>
+    <td> use all cores in each physical CPU
+</td></tr>
+    <td> --hint=memory_bound</td>
+    <td> use only one core in each physical CPU
+</td></tr>
+    <td> --hint=[no]multithread</td>
+    <td> [don't] use extra threads with in-core multi-threading
 </td></tr>
 </table>
 
@@ -394,6 +407,54 @@ behavior of these flags:
 
 <p>See also 'srun --help' and 'man srun'</p>
 
+<a name="srun_hints">
+<h3>Application hints</h3></a>
+
+Different applications will have various levels of resource
+requirements. Some applications tend to be computationally intensive
+but require little to no inter-process communication. Some applications
+will be memory bound, saturating the memory bandwidth of a processor
+before exhausting the computational capabilities. Other applications
+will be highly communication intensive causing processes to block
+awaiting messages from other processes. Applications with these
+different properties tend to run well on a multi-core system given
+the right mappings.
+
+For computationally intensive applications, all cores in a multi-core
+system would normally be used. For memory bound applications, only
+using a single core on each CPU will result in the highest per
+core memory bandwidth. For communication intensive applications,
+using in-core multi-threading (e.g. hyperthreading, SMT, or TMT)
+may also improve performance.
+The following command line flags can be used to communicate these
+types of application hints to the SLURM multi-core support:
+
+<PRE>
+    --hint=             Bind tasks according to application hints
+        compute_bound   use all cores in each physical CPU
+        memory_bound    use only one core in each physical CPU
+        [no]multithread [don't] use extra threads with in-core multi-threading
+        help            show this help message
+</PRE>
+
+For example, given a cluster with nodes containing two sockets,
+each containing two cores, the following commands illustrate the
+behavior of these flags:
+<pre>
+        % srun -n 4 --hint=compute_bound --cpu_bind=verbose sleep 1
+        setting affinity of task 0 pid 15425 on host hydra12 to mask 0x1
+        setting affinity of task 2 pid 15427 on host hydra12 to mask 0x2
+        setting affinity of task 1 pid 15426 on host hydra12 to mask 0x4
+        setting affinity of task 3 pid 15428 on host hydra12 to mask 0x8
+
+        % srun -n 4 --hint=memory_bound --cpu_bind=verbose sleep 1
+        setting affinity of task 1 pid 15551 on host hydra12 to mask 0x4
+        setting affinity of task 0 pid 15550 on host hydra12 to mask 0x1
+        setting affinity of task 2 pid 14974 on host <b>hydra13</b> to mask 0x1
+        setting affinity of task 3 pid 14975 on host <b>hydra13</b> to mask 0x4
+</pre>
+
+<p>See also 'srun --hint=help' and 'man srun'</p>
 <!-------------------------------------------------------------------------->
 <a name=motivation>
 <h2>Motivation behind high-level srun flags</h2></a>
@@ -986,5 +1047,4 @@ using NodeName:
 <p style="text-align:center;">Last modified 9 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
-
 

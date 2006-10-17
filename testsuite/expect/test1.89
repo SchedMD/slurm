@@ -102,6 +102,7 @@ expect {
 #
 # Run a job step with affinity
 #
+set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
 send "$srun -c1 --cpu_bind=rank $file_prog\n"
 expect {
@@ -121,8 +122,8 @@ expect {
 	}
 	-re $prompt
 }
-if {$task_mask != $mask} {
-	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$mask)\n"
+if {$task_mask != $expected_mask} {
+	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$expected_mask)\n"
 	set exit_code 1
 }
 

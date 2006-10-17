@@ -256,20 +256,22 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 
 	p = buf;
 	while ((tok = strsep(&p, ";"))) {
-		if (!strcasecmp(tok, "help")) {
-			printf("CPU bind options:\n"
-			       "\tq[uiet],        quietly bind before task runs (default)\n"
-			       "\tv[erbose],      verbosely report binding before task runs\n"
-			       "\tno[ne]          don't bind tasks to CPUs (default)\n"
-			       "\trank            bind by task rank\n"
-			       "\tmap_cpu:<list>  specify a CPU ID binding for each task\n"
-			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-			       "\tmask_cpu:<list> specify a CPU ID binding mask for each task\n"
-			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
-			       "\tsockets         auto-generated masks bind to sockets\n"
-			       "\tcores           auto-generated masks bind to cores\n"
-			       "\tthreads         auto-generated masks bind to threads\n"
-			       "\thelp            show this help message\n");
+		if (strcasecmp(tok, "help") == 0) {
+			printf(
+"CPU bind options:\n"
+"    --cpu_bind=         Bind tasks to CPUs\n"
+"        q[uiet]         quietly bind before task runs (default)\n"
+"        v[erbose]       verbosely report binding before task runs\n"
+"        no[ne]          don't bind tasks to CPUs (default)\n"
+"        rank            bind by task rank\n"
+"        map_cpu:<list>  specify a CPU ID binding for each task\n"
+"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"        mask_cpu:<list> specify a CPU ID binding mask for each task\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        sockets         auto-generated masks bind to sockets\n"
+"        cores           auto-generated masks bind to cores\n"
+"        threads         auto-generated masks bind to threads\n"
+"        help            show this help message\n");
 			return 1;
 		} else if ((strcasecmp(tok, "q") == 0) ||
 			   (strcasecmp(tok, "quiet") == 0)) {
@@ -381,19 +383,21 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	}
 
 	p = buf;
-	while((tok = strsep(&p, ";"))) {
-		if(!strcasecmp(tok, "help")) {
-			printf("Memory bind options:\n"
-			       "\tq[uiet],        quietly bind before task runs (default)\n"
-			       "\tv[erbose],      verbosely report binding before task runs\n"
-			       "\tno[ne]          don't bind tasks to memory (default)\n"
-			       "\trank            bind by task rank\n"
-			       "\tlocal           bind to memory local to processor\n"
-			       "\tmap_mem:<list>  specify a memory binding for each task\n"
-			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-			       "\tmask_mem:<list> specify a memory binding mask for each tasks\n"
-			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
-			       "\thelp            show this help message\n");
+	while ((tok = strsep(&p, ";"))) {
+		if (strcasecmp(tok, "help") == 0) {
+			printf(
+"Memory bind options:\n"
+"    --mem_bind=         Bind memory to locality domains (ldom)\n"
+"        q[uiet]         quietly bind before task runs (default)\n"
+"        v[erbose]       verbosely report binding before task runs\n"
+"        no[ne]          don't bind tasks to memory (default)\n"
+"        rank            bind by task rank\n"
+"        local           bind to memory local to processor\n"
+"        map_mem:<list>  specify a memory binding for each task\n"
+"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"        mask_mem:<list> specify a memory binding mask for each tasks\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        help            show this help message\n");
 			return 1;
 			
 		} else if ((strcasecmp(tok, "q") == 0) ||
