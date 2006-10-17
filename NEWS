@@ -15,7 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Multi-core support in sinfo, squeue, and scontrol.
  -- Memory can be treated as a consumable resource.
  -- New srun options --ntasks-per-[node|socket|core].
- -- patch from HP patch.1.2.0.pre4.061017.crcore_hints
+ -- Patch from HP patch.1.2.0.pre4.061017.crcore_hints, supports cores as consumable
+    resource.
 
 * Changes in SLURM 1.2.0-pre3
 =============================
