@@ -309,9 +309,12 @@ int srun(int ac, char **av)
 	 */
 	env->nprocs = opt.nprocs;
 	env->cpus_per_task = opt.cpus_per_task;
-	env->ntasks_per_node = opt.ntasks_per_node;
-	env->ntasks_per_socket = opt.ntasks_per_socket;
-	env->ntasks_per_core = opt.ntasks_per_core;
+	if (opt.ntasks_per_node != NO_VAL)
+		env->ntasks_per_node = opt.ntasks_per_node;
+	if (opt.ntasks_per_socket != NO_VAL)
+		env->ntasks_per_socket = opt.ntasks_per_socket;
+	if (opt.ntasks_per_core != NO_VAL)
+		env->ntasks_per_core = opt.ntasks_per_core;
 	env->distribution = opt.distribution;
 	env->plane_size = opt.plane_size;
 	env->cpu_bind_type = opt.cpu_bind_type;
@@ -966,9 +969,12 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->nprocs = opt.nprocs;
 	if (opt.cpus_set)
 		env->cpus_per_task = opt.cpus_per_task;
-	env->ntasks_per_node = opt.ntasks_per_node;
-	env->ntasks_per_socket = opt.ntasks_per_socket;
-	env->ntasks_per_core = opt.ntasks_per_core;
+	if (opt.ntasks_per_node != NO_VAL)
+		env->ntasks_per_node = opt.ntasks_per_node;
+	if (opt.ntasks_per_socket != NO_VAL)
+		env->ntasks_per_socket = opt.ntasks_per_socket;
+	if (opt.ntasks_per_core != NO_VAL)
+		env->ntasks_per_core = opt.ntasks_per_core;
 	env->distribution = opt.distribution;
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;
