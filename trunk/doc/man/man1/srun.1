@@ -969,11 +969,10 @@ or \fB\-N\fR in attach mode.
 .PP
 .SH "ENVIRONMENT VARIABLES"
 .PP
-Some
-.B srun
-options may be set via environment variables. These environment
-variables, along with their corresponding options, are listed below.
-(Note: commandline options will always override these settings)
+Some srun options may be set via environment variables. 
+These environment variables, along with their corresponding options, 
+are listed below.
+Note: Command line options will always override these settings.
 .TP 22
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
@@ -1074,11 +1073,9 @@ The location of the SLURM configuration file.
 \fBSLURM_DISABLE_STATUS\fR
 \fB\-X, \-\-disable\-status\fR
 .PP
-Additionally,
-.B srun
-will set some environment variables  in the environment of the
-executing tasks on the remote compute nodes. These environment variables
-are:
+Additionally, srun will set some environment variables in the environment 
+of the executing tasks on the remote compute nodes. 
+These environment variables are:
 
 .TP
 \fBSLURM_CPU_BIND_VERBOSE\fR
