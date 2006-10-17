@@ -450,8 +450,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 		thd_comp->work_done = false;
 		break;
 	case DSH_DONE:
-		if (thd_comp->max_delay < 
-		    (int)thread_ptr->end_time)
+		if (thd_comp->max_delay < (int)thread_ptr->end_time)
 			thd_comp->max_delay = (int)thread_ptr->end_time;
 		break;
 	case DSH_NO_RESP:
@@ -655,10 +654,11 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				data_itr = list_iterator_create(
 					ret_type->ret_data_list);
 				while((ret_data_info = list_next(data_itr)) 
-				      != NULL) 
+				      != NULL) {
 					node_not_resp(ret_data_info->node_name,
 						      thread_ptr[i].
 						      start_time);
+				}
 				list_iterator_destroy(data_itr);
 				break;
 			case DSH_FAILED:
@@ -1062,7 +1062,7 @@ static void *_thread_per_group_rpc(void *args)
 cleanup:
 	xfree(args);
 	
-	/* handled at end of thread just incase resend is needed */
+	/* handled at end of thread just in case resend is needed */
 	destroy_forward(&msg.forward);
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->ret_list = ret_list;
@@ -1092,32 +1092,34 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 	ret_data_info_t *ret_data_info = NULL;
 	ret_types_t *ret_type = NULL;
 
+	xassert(agent_arg_ptr);
 	itr = list_iterator_create(thread_ptr->ret_list);
 	while((ret_type = list_next(itr)) != NULL) {
-		debug2("got return type of %d", ret_type->msg_rc);
 		if (ret_type->msg_rc != DSH_NO_RESP)
 			continue;
 
 		data_itr = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(data_itr)) != NULL) {
-			debug("got the name %s to resend out of %d", 
-			      ret_data_info->node_name, count);
+			char ip_buf[32];
+			_slurm_print_slurm_addr(&ret_data_info->addr,
+				ip_buf, sizeof(ip_buf));
+			debug("resend msg_type:%u to %s at %s",
+				agent_arg_ptr->msg_type,
+				ret_data_info->node_name, ip_buf);
 				
-			if(agent_arg_ptr) {
-				memcpy(&agent_arg_ptr->slurm_addr[*spot], 
-				       &ret_data_info->addr, 
-				       sizeof(slurm_addr));
+			memcpy(&agent_arg_ptr->slurm_addr[*spot], 
+				&ret_data_info->addr, 
+				sizeof(slurm_addr));
 			
-				strncpy(&agent_arg_ptr->
-					node_names[(*spot) * MAX_SLURM_NAME],
-					ret_data_info->node_name, 
-					MAX_SLURM_NAME);
+			strncpy(&agent_arg_ptr->
+				node_names[(*spot) * MAX_SLURM_NAME],
+				ret_data_info->node_name, 
+				MAX_SLURM_NAME);
 				
-				if ((++(*spot)) == count) {
-					list_iterator_destroy(data_itr);
-					list_iterator_destroy(itr);
-					return 1;
-				}
+			if ((++(*spot)) == count) {
+				list_iterator_destroy(data_itr);
+				list_iterator_destroy(itr);
+				return 1;
 			}
 		}
 		list_iterator_destroy(data_itr);
@@ -1155,10 +1157,15 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		if(!thread_ptr[i].ret_list) {
+			char ip_buf[32];
 			if (thread_ptr[i].state != DSH_NO_RESP)
 				continue;
-			debug("got the name %s to resend", 
-			      thread_ptr[i].node_name);
+
+			_slurm_print_slurm_addr(&thread_ptr[i].slurm_addr,
+				ip_buf, sizeof(ip_buf));
+			debug("resend msg_type:%u to %s at %s", 
+				agent_arg_ptr->msg_type, 
+				thread_ptr[i].node_name, ip_buf);
 			
 			agent_arg_ptr->slurm_addr[j] = 
 				thread_ptr[i].slurm_addr;
