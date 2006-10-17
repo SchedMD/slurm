@@ -923,7 +923,7 @@ static void _opt_default()
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	/* Default launch msg timeout           */
-	opt.msg_timeout     = SLURM_MESSAGE_TIMEOUT_SEC_STATIC;  
+	opt.msg_timeout     = slurm_get_msg_timeout();  
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;

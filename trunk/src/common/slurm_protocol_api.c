@@ -839,7 +839,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	/* Forward message to other nodes */
 	if(header.forward.cnt > 0) {
 		error("We need to forward this to other nodes use "
-		      "slurm_receive_and_forward_msgs instead");
+		      "slurm_receive_msg_and_forward instead");
 	}
 	
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
@@ -925,8 +925,9 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 	if(steps) {
-		steps++;
 		orig_timeout = timeout/steps;
+		steps--;
+		orig_timeout -= (1000*steps);
 	}
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
 	       orig_timeout, steps, timeout);
@@ -1055,12 +1056,11 @@ total_return:
  * IN open_fd	- file descriptor to receive msg on
  * IN/OUT msg	- a slurm_msg struct to be filled in by the function
  *                we use the orig_addr from this var for forwarding. 
- * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr, 
-				   slurm_msg_t *msg, int steps, int timeout)
+int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr, 
+				  slurm_msg_t *msg, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1068,8 +1068,6 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	int rc;
 	void *auth_cred = NULL;
 	Buf buffer;
-	ret_data_info_t *ret_data_info = NULL;
-	int orig_timeout = timeout;
 
 	xassert(fd >= 0);
 
@@ -1091,21 +1089,16 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 	if (timeout <= 0)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
-	if(steps) {
-		steps++;
-		orig_timeout = timeout/steps;
-	}
-	
-	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
+		
+	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
 		error("You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
 		      (timeout/1000));
-	} else if(orig_timeout < 1000) {
+	} else if(timeout < 1000) {
 		debug("You are sending a message with a very short timeout of "
 		      "%d milliseconds", timeout);
-	} 
-	
+	} 	
 
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
@@ -1134,14 +1127,21 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	//info("ret_cnt = %d",header.ret_cnt);
 	if(header.ret_cnt > 0) {
-		while((ret_data_info = list_pop(header.ret_list)))
-			list_push(msg->ret_list, ret_data_info);
+		error("we recieved more than one message back use "
+		      "slurm_receive_msgs instead");
 		header.ret_cnt = 0;
 		list_destroy(header.ret_list);
 		header.ret_list = NULL;
 	}
+	//info("ret_cnt = %d",header.ret_cnt);
+	/* if(header.ret_cnt > 0) { */
+/* 		while((ret_data_info = list_pop(header.ret_list))) */
+/* 			list_push(msg->ret_list, ret_data_info); */
+/* 		header.ret_cnt = 0; */
+/* 		list_destroy(header.ret_list); */
+/* 		header.ret_list = NULL; */
+/* 	} */
 	/* 
 	 * header.orig_addr will be set to where the first message
 	 * came from if this is a forward else we set the
