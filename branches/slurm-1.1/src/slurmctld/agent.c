@@ -162,7 +162,7 @@ typedef struct mail_info {
 	char *message;
 } mail_info_t;
 
-static void _alarm_handler(int dummy);
+static void _sig_handler(int dummy);
 static inline int _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
@@ -442,7 +442,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 			debug3("agent thread %lu timed out\n", 
 			       (unsigned long) 
 			       thread_ptr->thread);
-			if (pthread_kill(thread_ptr->thread, SIGALRM) == ESRCH)
+			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
 		}
 		break;
@@ -464,7 +464,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 }
 
 /* 
- * _wdog - Watchdog thread. Send SIGALRM to threads which have been active 
+ * _wdog - Watchdog thread. Send SIGUSR1 to threads which have been active 
  *	for too long. 
  * IN args - pointer to agent_info_t with info on threads to watch
  * Sleep between polls with exponential times (from 0.125 to 1.0 second) 
@@ -768,7 +768,7 @@ static void *_thread_per_group_rpc(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 	int found = 0;
 	forward_msg_t fwd_msg;
-	int sig_array[2] = {SIGALRM, 0};
+	int sig_array[2] = {SIGUSR1, 0};
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -778,7 +778,7 @@ static void *_thread_per_group_rpc(void *args)
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 #endif
 	xassert(args != NULL);
-	xsignal(SIGALRM, _alarm_handler);
+	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
 			(msg_type == REQUEST_TERMINATE_JOB) );
@@ -1077,10 +1077,10 @@ cleanup:
 }
 
 /*
- * SIGALRM handler.  We are really interested in interrupting hung communictions
+ * Signal handler.  We are really interested in interrupting hung communictions
  * and causing them to return EINTR. Multiple interupts might be required.
  */
-static void _alarm_handler(int dummy)
+static void _sig_handler(int dummy)
 {
 }
 
