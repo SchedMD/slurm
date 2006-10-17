@@ -74,13 +74,13 @@ void *_forward_thread(void *arg)
 	slurm_addr addr;
 	char buf[8196];
 	int steps = 0;
+	int start_timeout = fwd_msg->timeout;
 		
 	/* repeat until we are sure the message was sent */ 
 	while((name = hostlist_shift(hl))) {
 		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
 			error("forward_thread: can't get addr for host %s",
 			      name);
-
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
 					       SLURM_SOCKET_ERROR);
@@ -108,9 +108,11 @@ void *_forward_thread(void *arg)
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
 		if(fwd_msg->header.forward.cnt>0) {
-			steps = fwd_msg->header.forward.cnt /
+			steps = (fwd_msg->header.forward.cnt+1) /
 				slurm_get_tree_width();
-			steps += 1;
+			fwd_msg->timeout = (1000*steps);
+			steps++;
+			fwd_msg->timeout += (start_timeout*steps);
 		}	
 		debug3("forward: along with %s",
 		       fwd_msg->header.forward.nodelist);

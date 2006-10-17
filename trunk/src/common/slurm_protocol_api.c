@@ -1166,8 +1166,7 @@ int slurm_receive_and_forward_msgs(slurm_fd fd, slurm_addr *orig_addr,
 		
 		msg->forward_struct->ret_list = msg->ret_list;
 		/* take out the amount of timeout from this hop */
-		msg->forward_struct->timeout = 
-			(timeout - header.forward.timeout);
+		msg->forward_struct->timeout = header.forward.timeout;
 		if(msg->forward_struct->timeout < 0)
 			msg->forward_struct->timeout = 0;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
@@ -1744,12 +1743,15 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 	int steps = 0;
 	
 	if(slurm_send_node_msg(fd, req) >= 0) {
-		if (!timeout)
-			timeout = slurm_get_msg_timeout() * 1000;
-		
 		if(req->forward.cnt>0) {
+			/* figure out where we are in the tree and set
+			   the timeout for to wait for our childern
+			   correctly (timeout+1 sec per step)
+			   to let the child timeout */
+	
 			steps = req->forward.cnt/slurm_get_tree_width();
-			steps += 1;
+			timeout = (1000*steps);
+			steps++;
 			if (!req->forward.timeout)
 				req->forward.timeout = 
 					slurm_get_msg_timeout() * 1000;
@@ -1975,6 +1977,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		error("slurm_send_recv_msgs: no nodelist given");
 		return NULL;
 	}
+
 /* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);
 
@@ -1987,7 +1990,6 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 					       SLURM_SOCKET_ERROR);
 			free(name);
 			continue;
-		
 		}
 		
 		if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
