@@ -278,55 +278,54 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 
 	
-	if(bg_record->state == RM_PARTITION_FREE) {
-		num_block_to_free = 0;
-		num_block_freed = 0;
-		delete_list = list_create(NULL);
-		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(bg_list);
-		while ((found_record = (bg_record_t*) 
-			list_next(itr)) != NULL) {
-			if ((!found_record) 
-			    || (bg_record == found_record))
-				continue;
-
-			if(!blocks_overlap(bg_record, found_record)) {
-				debug2("block %s isn't part of %s",
-				       found_record->bg_block_id, 
-				       bg_record->bg_block_id);
-				continue;
-			}
-									
-			debug("need to make sure %s is free, it's part of %s",
-			      found_record->bg_block_id, 
-			      bg_record->bg_block_id);
-			list_push(delete_list, found_record);
-			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
-				list_remove(itr);
-			}
-			num_block_to_free++;
-		}		
-		list_iterator_destroy(itr);
-	        free_block_list(delete_list);
-		list_destroy(delete_list);
-		slurm_mutex_unlock(&block_state_mutex);
-	
-		/* wait for all necessary blocks to be freed */
-		while(num_block_to_free > num_block_freed) {
-			sleep(1);
-			debug("got %d of %d freed",
-			      num_block_freed, 
-			      num_block_to_free);
+	num_block_to_free = 0;
+	num_block_freed = 0;
+	delete_list = list_create(NULL);
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_list);
+	while ((found_record = (bg_record_t*) 
+		list_next(itr)) != NULL) {
+		if ((!found_record) || (bg_record == found_record))
+			continue;
+		
+		if(!blocks_overlap(bg_record, found_record)) {
+			debug2("block %s isn't part of %s",
+			       found_record->bg_block_id, 
+			       bg_record->bg_block_id);
+			continue;
 		}
 		
-		if(bg_record->job_running <= -1) {
-			slurm_mutex_unlock(&job_start_mutex);
-			debug("job %d already finished before boot",
-			      bg_update_ptr->job_id);
-			return;
+		debug2("need to make sure %s is free, it's part of %s",
+		       found_record->bg_block_id, 
+		       bg_record->bg_block_id);
+		list_push(delete_list, found_record);
+		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			list_remove(itr);
 		}
-		if((rc = boot_block(bg_record))
-		   != SLURM_SUCCESS) {
+		num_block_to_free++;
+	}		
+	list_iterator_destroy(itr);
+	free_block_list(delete_list);
+	list_destroy(delete_list);
+	slurm_mutex_unlock(&block_state_mutex);
+	
+	/* wait for all necessary blocks to be freed */
+	while(num_block_to_free > num_block_freed) {
+		sleep(1);
+		debug("got %d of %d freed",
+		      num_block_freed, 
+		      num_block_to_free);
+	}
+	
+	if(bg_record->job_running <= -1) {
+		slurm_mutex_unlock(&job_start_mutex);
+		debug("job %d already finished before boot",
+		      bg_update_ptr->job_id);
+		return;
+	}
+	
+	if(bg_record->state == RM_PARTITION_FREE) {
+		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			sleep(2);	
 			/* wait for the slurmd to begin 
 			   the batch script, slurm_fail_job() 

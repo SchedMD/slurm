@@ -71,6 +71,15 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.16
+=========================
+
+* Changes in SLURM 1.1.15
+=========================
+ - BLUEGENE - fix to be able to create static partitions
+ - Fixed fanout timeout logic.
+ - Fix for slurmctld timeout on outgoing message (Hongjia Cao, NUDT.edu.cn).
+
 * Changes in SLURM 1.1.14
 =========================
  - In sched/wiki2: report job/node id and state only if no changes since 

@@ -665,6 +665,13 @@ create_job_step(srun_job_t *job)
 	job->cred    = resp->cred;
 	job->switch_job = resp->switch_job;
 		
+
+	/*  Number of hosts in job may not have been initialized yet if 
+	 *    --jobid was used or only SLURM_JOBID was set in user env.		 
+	 *    Reset the value here just in case.
+	 */
+	job->nhosts = job->step_layout->num_hosts;
+
 	if(!job->step_layout) {
 		error("step_layout not returned");
 		return -1;

@@ -13,7 +13,7 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-SOURCES = allocate-tst.c cancel-tst.c complete-tst.c job_info-tst.c node_info-tst.c partition_info-tst.c reconfigure-tst.c submit-tst.c update_config-tst.c
+SOURCES = cancel-tst.c complete-tst.c job_info-tst.c node_info-tst.c partition_info-tst.c reconfigure-tst.c submit-tst.c update_config-tst.c
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -37,10 +37,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
 check_PROGRAMS = cancel-tst$(EXEEXT) complete-tst$(EXEEXT) \
-	allocate-tst$(EXEEXT) job_info-tst$(EXEEXT) \
-	node_info-tst$(EXEEXT) partition_info-tst$(EXEEXT) \
-	reconfigure-tst$(EXEEXT) submit-tst$(EXEEXT) \
-	update_config-tst$(EXEEXT)
+	job_info-tst$(EXEEXT) node_info-tst$(EXEEXT) \
+	partition_info-tst$(EXEEXT) reconfigure-tst$(EXEEXT) \
+	submit-tst$(EXEEXT) update_config-tst$(EXEEXT)
 subdir = testsuite/slurm_unit/api/manual
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -70,10 +69,6 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
-allocate_tst_SOURCES = allocate-tst.c
-allocate_tst_OBJECTS = allocate-tst.$(OBJEXT)
-allocate_tst_LDADD = $(LDADD)
-allocate_tst_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
 cancel_tst_SOURCES = cancel-tst.c
 cancel_tst_OBJECTS = cancel-tst.$(OBJEXT)
 cancel_tst_LDADD = $(LDADD)
@@ -117,12 +112,12 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link --tag=CC $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = allocate-tst.c cancel-tst.c complete-tst.c job_info-tst.c \
+SOURCES = cancel-tst.c complete-tst.c job_info-tst.c node_info-tst.c \
+	partition_info-tst.c reconfigure-tst.c submit-tst.c \
+	update_config-tst.c
+DIST_SOURCES = cancel-tst.c complete-tst.c job_info-tst.c \
 	node_info-tst.c partition_info-tst.c reconfigure-tst.c \
 	submit-tst.c update_config-tst.c
-DIST_SOURCES = allocate-tst.c cancel-tst.c complete-tst.c \
-	job_info-tst.c node_info-tst.c partition_info-tst.c \
-	reconfigure-tst.c submit-tst.c update_config-tst.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -346,9 +341,6 @@ clean-checkPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-allocate-tst$(EXEEXT): $(allocate_tst_OBJECTS) $(allocate_tst_DEPENDENCIES) 
-	@rm -f allocate-tst$(EXEEXT)
-	$(LINK) $(allocate_tst_LDFLAGS) $(allocate_tst_OBJECTS) $(allocate_tst_LDADD) $(LIBS)
 cancel-tst$(EXEEXT): $(cancel_tst_OBJECTS) $(cancel_tst_DEPENDENCIES) 
 	@rm -f cancel-tst$(EXEEXT)
 	$(LINK) $(cancel_tst_LDFLAGS) $(cancel_tst_OBJECTS) $(cancel_tst_LDADD) $(LIBS)
@@ -380,7 +372,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate-tst.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel-tst.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete-tst.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info-tst.Po@am__quote@
