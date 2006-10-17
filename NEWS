@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.16
+=========================
+
 * Changes in SLURM 1.1.15
 =========================
  - BLUEGENE - fix to be able to create static partitions
