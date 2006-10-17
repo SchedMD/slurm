@@ -789,12 +789,14 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
 	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
-		error("You are sending a message with timeout's greater "
+		error("slurm_receive_msg: "
+		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
 		      (timeout/1000));
 	} else if(timeout < 1000) {
-		debug("You are sending a message with a very short timeout of "
+		debug("slurm_receive_msg: "
+		      "You are sending a message with a very short timeout of "
 		      "%d milliseconds", timeout);
 	} 
 	
@@ -932,12 +934,14 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
 	       orig_timeout, steps, timeout);
 	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
-		error("You are sending a message with timeout's greater "
+		error("slurm_receive_msgs: "
+		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
 		      (timeout/1000));
 	} else if(orig_timeout < 1000) {
-		debug("You are sending a message with a very short timeout of "
+		debug("slurm_receive_msgs: "
+		      "You are sending a message with a very short timeout of "
 		      "%d milliseconds", timeout);
 	} 
 	
@@ -1091,12 +1095,14 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
                 timeout  = slurm_get_msg_timeout() * 1000; 
 		
 	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
-		error("You are sending a message with timeout's greater "
+		error("slurm_receive_msg_and_forward: "
+		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
 		      (timeout/1000));
 	} else if(timeout < 1000) {
-		debug("You are sending a message with a very short timeout of "
+		debug("slurm_receive_msg_and_forward: "
+		      "You are sending a message with a very short timeout of "
 		      "%d milliseconds", timeout);
 	} 	
 
@@ -1742,6 +1748,11 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 	List ret_list = NULL;
 	int steps = 0;
 	
+	if (!req->forward.timeout) {
+		if(!timeout)
+			timeout = slurm_get_msg_timeout() * 1000;
+		req->forward.timeout = timeout;
+	}
 	if(slurm_send_node_msg(fd, req) >= 0) {
 		if(req->forward.cnt>0) {
 			/* figure out where we are in the tree and set
@@ -1752,10 +1763,7 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 			steps = req->forward.cnt/slurm_get_tree_width();
 			timeout = (1000*steps);
 			steps++;
-			if (!req->forward.timeout)
-				req->forward.timeout = 
-					slurm_get_msg_timeout() * 1000;
-		
+			
 			timeout += (req->forward.timeout*steps);
 		}
 		ret_list = slurm_receive_msgs(fd, steps, timeout);

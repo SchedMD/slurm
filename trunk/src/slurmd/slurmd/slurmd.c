@@ -373,8 +373,7 @@ _service_connection(void *arg)
 		slurm_send_rc_msg(msg, rc);
 		goto cleanup;
 	}
-	debug2("got this type of message %d with %d other responses",
-	     msg->msg_type, list_count(msg->ret_list));
+	debug2("got this type of message %d", msg->msg_type);
 	slurmd_req(msg);
 	
 cleanup:
