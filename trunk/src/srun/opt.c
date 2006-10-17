@@ -153,6 +153,7 @@
 #define LONG_OPT_NTASKSPERCORE	 0x138
 #define LONG_OPT_PRINTREQ	 0x139
 #define LONG_OPT_JOBMEM	         0x13a
+#define LONG_OPT_HINT	         0x13b
 
 /*---- global variables, defined in opt.h ----*/
 char **remote_argv;
@@ -211,7 +212,12 @@ static bool  _under_parallel_debugger(void);
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static task_dist_states_t _verify_dist_type(const char *arg, uint32_t *psize);
-static bool  _verify_cpu_core_thread_count(const char *arg,
+static bool  _verify_socket_core_thread_count(const char *arg,
+					   int *min_sockets, int *max_sockets,
+					   int *min_cores, int *max_cores,
+					   int *min_threads, int  *max_threads,
+					   cpu_bind_type_t *cpu_bind_type);
+static bool  _verify_hint(const char *arg,
 					   int *min_sockets, int *max_sockets,
 					   int *min_cores, int *max_cores,
 					   int *min_threads, int  *max_threads,
@@ -447,19 +453,21 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 	p = buf;
 	while ((tok = strsep(&p, ";"))) {
 		if (strcasecmp(tok, "help") == 0) {
-			printf("CPU bind options:\n"
-			       "\tq[uiet],        quietly bind before task runs (default)\n"
-			       "\tv[erbose],      verbosely report binding before task runs\n"
-			       "\tno[ne]          don't bind tasks to CPUs (default)\n"
-			       "\trank            bind by task rank\n"
-			       "\tmap_cpu:<list>  specify a CPU ID binding for each task\n"
-			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-			       "\tmask_cpu:<list> specify a CPU ID binding mask for each task\n"
-			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
-			       "\tsockets         auto-generated masks bind to sockets\n"
-			       "\tcores           auto-generated masks bind to cores\n"
-			       "\tthreads         auto-generated masks bind to threads\n"
-			       "\thelp            show this help message\n");
+			printf(
+"CPU bind options:\n"
+"    --cpu_bind=         Bind tasks to CPUs\n"
+"        q[uiet]         quietly bind before task runs (default)\n"
+"        v[erbose]       verbosely report binding before task runs\n"
+"        no[ne]          don't bind tasks to CPUs (default)\n"
+"        rank            bind by task rank\n"
+"        map_cpu:<list>  specify a CPU ID binding for each task\n"
+"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"        mask_cpu:<list> specify a CPU ID binding mask for each task\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        sockets         auto-generated masks bind to sockets\n"
+"        cores           auto-generated masks bind to cores\n"
+"        threads         auto-generated masks bind to threads\n"
+"        help            show this help message\n");
 			return 1;
 		} else if ((strcasecmp(tok, "q") == 0) ||
 			   (strcasecmp(tok, "quiet") == 0)) {
@@ -573,17 +581,19 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	p = buf;
 	while ((tok = strsep(&p, ";"))) {
 		if (strcasecmp(tok, "help") == 0) {
-			printf("Memory bind options:\n"
-			       "\tq[uiet],        quietly bind before task runs (default)\n"
-			       "\tv[erbose],      verbosely report binding before task runs\n"
-			       "\tno[ne]          don't bind tasks to memory (default)\n"
-			       "\trank            bind by task rank\n"
-			       "\tlocal           bind to memory local to processor\n"
-			       "\tmap_mem:<list>  specify a memory binding for each task\n"
-			       "\t                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-			       "\tmask_mem:<list> specify a memory binding mask for each tasks\n"
-			       "\t                where <list> is <mask1>,<mask2>,...<maskN>\n"
-			       "\thelp            show this help message\n");
+			printf(
+"Memory bind options:\n"
+"    --mem_bind=         Bind memory to locality domains (ldom)\n"
+"        q[uiet]         quietly bind before task runs (default)\n"
+"        v[erbose]       verbosely report binding before task runs\n"
+"        no[ne]          don't bind tasks to memory (default)\n"
+"        rank            bind by task rank\n"
+"        local           bind to memory local to processor\n"
+"        map_mem:<list>  specify a memory binding for each task\n"
+"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"        mask_mem:<list> specify a memory binding mask for each tasks\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        help            show this help message\n");
 			return 1;
 			
 		} else if ((strcasecmp(tok, "q") == 0) ||
@@ -667,7 +677,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
  * RET true if valid
  */
 static bool
-_verify_cpu_core_thread_count(const char *start_ptr, 
+_verify_socket_core_thread_count(const char *arg, 
 			      int *min_sockets, int *max_sockets,
 			      int *min_cores, int *max_cores,
 			      int *min_threads, int  *max_threads,
@@ -675,7 +685,7 @@ _verify_cpu_core_thread_count(const char *start_ptr,
 {
 	bool tmp_val,ret_val;
 	int i,j;
-	const char *cur_ptr = start_ptr;
+	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 	buf[0][0] = '\0';
 	buf[1][0] = '\0';
@@ -719,6 +729,74 @@ _verify_cpu_core_thread_count(const char *start_ptr,
 	ret_val = ret_val && tmp_val;
 
 	return ret_val;
+}
+
+/* 
+ * verify that a hint is valid and convert it into the implied settings
+ * RET true if valid
+ */
+static bool
+_verify_hint(const char *arg, 
+			      int *min_sockets, int *max_sockets,
+			      int *min_cores, int *max_cores,
+			      int *min_threads, int  *max_threads,
+			      cpu_bind_type_t *cpu_bind_type)
+{
+	char *buf, *p, *tok;
+	if (!arg) {
+		return true;
+	}
+
+	buf = xstrdup(arg);
+	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
+	/* simplifies parsing tokens while keeping map/mask together */
+	while (*p) {
+		if (*p == ',') {
+			if (!isdigit(*(p+1)))
+				*p = ';';
+		}
+		*p++;
+	}
+
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
+		if (strcasecmp(tok, "help") == 0) {
+			printf(
+"Application hint options:\n"
+"    --hint=             Bind tasks according to application hints\n"
+"        compute_bound   use all cores in each physical CPU\n"
+"        memory_bound    use only one core in each physical CPU\n"
+"        [no]multithread [don't] use extra threads with in-core multi-threading\n"
+"        help            show this help message\n");
+			return 1;
+		} else if (strcasecmp(tok, "compute_bound") == 0) {
+		        *min_sockets = 1;
+		        *max_sockets = INT_MAX;
+		        *min_cores   = 1;
+		        *max_cores   = INT_MAX;
+			*cpu_bind_type |= CPU_BIND_TO_CORES;
+		} else if (strcasecmp(tok, "memory_bound") == 0) {
+		        *min_cores = 1;
+		        *max_cores = 1;
+			*cpu_bind_type |= CPU_BIND_TO_CORES;
+		} else if (strcasecmp(tok, "multithread") == 0) {
+		        *min_threads = 1;
+		        *max_threads = INT_MAX;
+			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+		} else if (strcasecmp(tok, "nomultithread") == 0) {
+		        *min_threads = 1;
+		        *max_threads = 1;
+			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+		} else {
+			error("unrecognized --hint argument \"%s\", see --hint=help", tok);
+			xfree(buf);
+			return 1;
+		}
+	}
+
+	xfree(buf);
+	return 0;
 }
 
 /* return command name from its full path name */
@@ -843,16 +921,15 @@ static void _opt_default()
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
-	opt.min_sockets_per_node = 0; /* request, not constraint (mincpus) */
-	opt.max_sockets_per_node = 0;
-	opt.min_cores_per_socket = 0; /* request, not constraint (mincores) */
-	opt.max_cores_per_socket = 0;
-	opt.min_threads_per_core = 0; /* request, not constraint
-				       * (minthreads */
-	opt.max_threads_per_core = 0; 
-	opt.ntasks_per_node   = 0; 
-	opt.ntasks_per_socket = 0; 
-	opt.ntasks_per_core   = 0; 
+	opt.min_sockets_per_node = NO_VAL; /* requested min/maxsockets */
+	opt.max_sockets_per_node = NO_VAL;
+	opt.min_cores_per_socket = NO_VAL; /* requested min/maxcores */
+	opt.max_cores_per_socket = NO_VAL;
+	opt.min_threads_per_core = NO_VAL; /* requested min/maxthreads */
+	opt.max_threads_per_core = NO_VAL; 
+	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
+	opt.ntasks_per_socket    = NO_VAL; 
+	opt.ntasks_per_core      = NO_VAL; 
 	opt.nodes_set = false;
 	opt.cpu_bind_type = 0;
 	opt.cpu_bind = NULL;
@@ -1281,6 +1358,7 @@ void set_options(const int argc, char **argv, int first)
 		{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"job-mem",          required_argument, 0, LONG_OPT_JOBMEM},
+		{"hint",             required_argument, 0, LONG_OPT_HINT},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
 		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
@@ -1392,7 +1470,7 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.extra_set)
 				break;
 
-			opt.extra_set = _verify_cpu_core_thread_count(
+			opt.extra_set = _verify_socket_core_thread_count(
 				optarg,
 				&opt.min_sockets_per_node,
 				&opt.max_sockets_per_node,
@@ -1839,6 +1917,18 @@ void set_options(const int argc, char **argv, int first)
 			_get_resource_range( optarg, "threads-per-core",
 				             &opt.min_threads_per_core,
 				             &opt.max_threads_per_core, true );
+			break;
+		case LONG_OPT_HINT:
+			if (_verify_hint(optarg,
+				&opt.min_sockets_per_node,
+				&opt.max_sockets_per_node,
+				&opt.min_cores_per_socket,
+				&opt.max_cores_per_socket,
+				&opt.min_threads_per_core,
+				&opt.max_threads_per_core,
+				&opt.cpu_bind_type)) {
+				exit(1);
+			}
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",
@@ -2615,6 +2705,8 @@ static void _help(void)
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
+"      --hint=                 Bind tasks according to application hints\n"
+"                              (see \"--hint=help\" for options)\n"
 "      --cpu_bind=             Bind tasks to CPUs\n"
 "                              (see \"--cpu_bind=help\" for options)\n"
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"

@@ -565,14 +565,33 @@ instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
 is specified.
 .TP
+\fB\-\-hint\fR=\fItype\fR
+Bind tasks according to application hints
+.RS
+.TP
+.B compute_bound
+Select settings for compute bound applications:
+use all cores in each physical CPU
+.TP
+.B memory_bound
+Select settings for memory bound applications:
+use only one core in each physical CPU
+.TP
+.B [no]multithread
+[don't] use extra threads with in-core multi-threading
+which can benefit communication intensive applications
+.B help
+show this help message
+.RE
+.TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs
 .RS
 .TP
-.B q[uiet],
+.B q[uiet]
 quietly bind before task runs (default)
 .TP
-.B v[erbose],
+.B v[erbose]
 verbosely report binding before task runs
 .TP
 .B no[ne]
@@ -590,8 +609,9 @@ with '0x' in which case they interpreted as hexadecimal values.
 .B mask_cpu:<list>
 bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
-CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
-preceded with an optional '0x'.
+CPU masks are \fBalways\fR interpreted as hexadecimal values.
+Note that masks must be preceded with a '0x' if they don't begin
+with [0-9] so they are seen as numerical values by srun.
 .TP
 .B sockets
 auto\-generated masks bind to sockets
@@ -655,10 +675,10 @@ options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine
 the specific configuration.
 .RS
 .TP
-.B q[uiet],
+.B q[uiet]
 quietly bind before task runs (default)
 .TP
-.B v[erbose],
+.B v[erbose]
 verbosely report binding before task runs
 .TP
 .B no[ne]
@@ -680,8 +700,9 @@ with '0x' in which case they interpreted as hexadecimal values
 .B mask_mem:<list>
 bind by setting memory masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
-memory masks are \fBalways\fR interpreted as hexadecimal values but can be
-preceded with an optional '0x' (not recommended)
+memory masks are \fBalways\fR interpreted as hexadecimal values.
+Note that masks must be preceded with a '0x' if they don't begin
+with [0-9] so they are seen as numerical values by srun.
 .TP
 .B help
 show this help message

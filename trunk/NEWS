@@ -14,7 +14,8 @@ documents those changes that are of interest to users and admins.
  -- New srun task distribution options to -m: plane
  -- Multi-core support in sinfo, squeue, and scontrol.
  -- Memory can be treated as a consumable resource.
- -- New srun options --ntasks_per_[node|socket|core].
+ -- New srun options --ntasks-per-[node|socket|core].
+ -- patch from HP patch.1.2.0.pre4.061017.crcore_hints
 
 * Changes in SLURM 1.2.0-pre3
 =============================

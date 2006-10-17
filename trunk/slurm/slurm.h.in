@@ -467,7 +467,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *network;		/* network use spec */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
-	uint16_t task_dist; /* see enum task_dist_state */
+	uint16_t task_dist;	/* see enum task_dist_state */
 	uint32_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	time_t begin_time;	/* delay initiation until this time */

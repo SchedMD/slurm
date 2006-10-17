@@ -1037,8 +1037,12 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 		xfree(bit_fmt);
 	}
 
-	switch_g_job_step_allocated(switch_tmp, 
+	if (step_ptr->step_layout && step_ptr->step_layout->node_list) {
+		switch_g_job_step_allocated(switch_tmp, 
 				    step_ptr->step_layout->node_list);
+	} else {
+		switch_g_job_step_allocated(switch_tmp, NULL);
+	}
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
@@ -2693,6 +2697,13 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
+	if (job_desc_msg->min_sockets == NO_VAL)
+		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
+	if (job_desc_msg->min_cores == NO_VAL)
+		job_desc_msg->min_cores = 1;	/* default core count of 1 */
+	if (job_desc_msg->min_threads == NO_VAL)
+		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
+
 	if (job_desc_msg->job_min_procs == NO_VAL)
 		job_desc_msg->job_min_procs = 1;   /* default 1 cpu per node */
 	if (job_desc_msg->job_min_sockets == NO_VAL)
@@ -3453,7 +3464,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
-
 
 	if (job_specs->job_min_threads != NO_VAL && detail_ptr) {
 		if (super_user ||

@@ -89,7 +89,8 @@ static void _get_resources_this_node(int *cpus,
 				     int *sockets,
 				     int *cores,
 				     int *threads,
-				     int *alloc_sockets, 
+				     int *alloc_sockets,
+				     int *alloc_cores,
 				     int *alloc_lps,
 				     unsigned int *jobid);
 static void _cr_update_reservation(int reserve, uint32_t *reserved, 
@@ -145,8 +146,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		return;
 	}
 
-	/* SMB. We are still thinking about this. Does this make
-	   sense?
+	/* We are still thinking about this. Does this make sense?
 	if (req->task_dist == SLURM_DIST_ARBITRARY) {
 		req->cpu_bind_type >= CPU_BIND_NONE;
 		info("lllp_distribution jobid [%u] -m hostfile - auto binding off ",
@@ -533,11 +533,11 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 				  int *hw_sockets, 
 				  int *hw_cores,
 				  int *hw_threads,
-				  int *alloc_sockets,
-				  int *alloc_lps,
 				  int *avail_cpus)
 {
 	int i;
+	int alloc_sockets = 0, alloc_lps = 0;
+	int alloc_cores[conf->sockets];
 
 	if (req->cpu_bind_type & CPU_BIND_TO_THREADS) {
 		/* Default: in here in case we decide to change the
@@ -552,11 +552,9 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 		info ("task_layout cpu_bind_type CPU_BIND_TO_SOCKETS");
 	}
 
-	*alloc_sockets = 0;
-	*alloc_lps     = 0;
 	_get_resources_this_node(usable_cpus, usable_sockets, usable_cores,
-				 usable_threads, alloc_sockets, alloc_lps,
-				 &req->job_id);
+				 usable_threads, &alloc_sockets, alloc_cores,
+				 &alloc_lps, &req->job_id);
 
 	*hw_sockets = *usable_sockets;
 	*hw_cores   = *usable_cores;
@@ -569,8 +567,8 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 					    req->ntasks_per_core,
 					    usable_cpus, usable_sockets,
 					    usable_cores, usable_threads,
-					    *alloc_sockets, *alloc_lps, conf->cr_type);
-	
+					    alloc_sockets, alloc_cores,
+					    alloc_lps, conf->cr_type);
 	/* Allocate masks array */
 	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
 	for (i = 0; i < maxtasks; i++) { 
@@ -593,13 +591,14 @@ static void _get_resources_this_node(int *cpus,
 				     int *sockets,
 				     int *cores,
 				     int *threads,
-				     int *alloc_sockets, 
+				     int *alloc_sockets,
+				     int *alloc_cores,
 				     int *alloc_lps,
 	                             unsigned int *jobid)
 {
 	int bit_index = 0;
 	int i, j , k;
-	int this_socket = 0;
+	int this_socket = 0, cr_core_enabled = 0;
 
 	/* FIX for heterogeneous socket/core/thread count per system
 	 * in future releases */
@@ -609,10 +608,13 @@ static void _get_resources_this_node(int *cpus,
 	*threads = conf->threads;
 
 	switch(conf->cr_type) {
-	case CR_SOCKET:
-	case CR_SOCKET_MEMORY: 
 	case CR_CORE:
 	case CR_CORE_MEMORY: 
+		for(i = 0; i < *sockets; i++)
+			alloc_cores[i] = 0;
+		cr_core_enabled = 1;
+	case CR_SOCKET:
+	case CR_SOCKET_MEMORY: 
 	case CR_CPU:
 	case CR_CPU_MEMORY:
 		for(i = 0; i < *sockets; i++) {
@@ -623,6 +625,9 @@ static void _get_resources_this_node(int *cpus,
 					     *jobid, bit_index, lllp_reserved[bit_index]);
 					if(lllp_reserved[bit_index] > 0) {
 						*alloc_lps += 1;
+						if ((k == 0) && (cr_core_enabled)) {
+							alloc_cores[i]++;
+						}
 						this_socket++;
 					}
 					bit_index++;
@@ -639,8 +644,14 @@ static void _get_resources_this_node(int *cpus,
 		break;
 	}
 
+#if(0)
 	info("_get_resources jobid %d hostname %s alloc_sockets %d alloc_lps %d ", 
-	     jobid, conf->hostname, *alloc_sockets, *alloc_lps);
+	     *jobid, conf->hostname, *alloc_sockets, *alloc_lps);
+	if (cr_core_enabled) 
+		for (i = 0; i < *sockets; i++)
+			info("_get_resources %d hostname %s socket id %d cores %d ", 
+			     *jobid, conf->hostname, i, alloc_cores[i]);
+#endif
 }
 	
 /* 
@@ -676,7 +687,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	int usable_cpus = 0, avail_cpus = 0;
 	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
-	int alloc_sockets = 0, alloc_lps = 0;
 	
 	bitstr_t **masks = NULL;
 	bool bind_to_exact_socket = true;
@@ -696,8 +706,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					&hw_sockets, 
 					&hw_cores, 
 					&hw_threads, 
-					&alloc_sockets, 
-					&alloc_lps,
 					&avail_cpus);
 	if (retval != SLURM_SUCCESS) {
 		return retval;
@@ -782,7 +790,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	int usable_cpus = 0, avail_cpus = 0;
 	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
-	int alloc_sockets = 0, alloc_lps = 0;
 
 	bitstr_t **masks = NULL;
 	bool bind_to_exact_socket = true;
@@ -802,8 +809,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 					&hw_sockets, 
 					&hw_cores, 
 					&hw_threads, 
-					&alloc_sockets, 
-					&alloc_lps,
 					&avail_cpus);
 	if (retval != SLURM_SUCCESS) {
 		return retval;
@@ -906,9 +911,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
  * in srun. The second distribution "plane|block|cyclic" is computed
  * locally by each slurmd.
  *  
- * Restriction: Any restrictions? what about plane:cyclic or
- * plane:block? Only plane:plane? FIXME!!! SMB!!!
- * 
  * The input to the lllp distribution algorithms is the gids
  * (tasksids) generated for the local node.
  *  
@@ -928,7 +930,6 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
 	int plane_size = req->plane_size;
 	int max_plane_size = 0;
-	int alloc_sockets = 0, alloc_lps = 0;
 
 	bitstr_t **masks = NULL; 
 	bool bind_to_exact_socket = true;
@@ -948,8 +949,6 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 					&hw_sockets, 
 					&hw_cores, 
 					&hw_threads, 
-					&alloc_sockets, 
-					&alloc_lps,
 					&avail_cpus);
 	if (retval != SLURM_SUCCESS) {
 		return retval;

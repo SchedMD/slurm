@@ -61,6 +61,7 @@ int slurm_get_avail_procs(const int mxsockets,
 				 int *cores, 
 				 int *threads,
 				 const int alloc_sockets,
+				 const int *alloc_cores,
 				 const int alloc_lps,
 				 const select_type_plugin_info_t cr_type);
 

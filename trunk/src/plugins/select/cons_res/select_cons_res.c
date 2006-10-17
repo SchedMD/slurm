@@ -55,8 +55,6 @@
  * The advantage of the consumable resource scheduling policy is that
  * the job throughput can increase dramatically.
  *
- *  $Id$
- *
  *****************************************************************************
  *  Copyright (C) 2005-2006 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
@@ -115,6 +113,10 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/slurmctld/slurmctld.h"
 
+#if 0
+#define CR_DEBUG 1
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -155,7 +157,8 @@ struct node_cr_record {
 	struct node_record *node_ptr;	/* ptr to the node that own these resources */
 	uint32_t alloc_lps;	/* cpu count reserved by already scheduled jobs */
 	uint32_t alloc_sockets;	/* socket count reserved by already scheduled jobs */
-	uint32_t *alloc_cores;	/* core count reserved by already scheduled jobs */
+	uint32_t *alloc_cores;	/* core count per socket reserved by
+				 * already scheduled jobs */
 	uint32_t alloc_memory;	/* real memory reserved by already scheduled jobs */
 	struct node_cr_record *node_next;/* next entry with same hash index */
 };
@@ -169,10 +172,14 @@ struct select_cr_job {
 	int nhosts;		/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
 	int *cpus;		/* number of processors on each host   */
-	int *alloc_lps;	        /* number of allocated threads/lps on each host */
-	int *alloc_sockets;	/* number of allocated sockets on each host */
-	int **alloc_cores;	/* Allocated cores per socket on each host */
-	int *alloc_memory;      /* number of allocated MB of real memory on each host */
+	int *alloc_lps;	        /* number of allocated threads/lps on
+				 * each host */
+	int *alloc_sockets;	/* number of allocated sockets on each
+				 * host */
+	int **alloc_cores;	/* number of allocated cores on each
+				 * host */
+	int *alloc_memory;      /* number of allocated MB of real
+				 * memory on each host */
 	int max_sockets;
 	int max_cores;
 	int max_threads;
@@ -349,14 +356,13 @@ static void _get_resources_this_node(int *cpus,
 	}
 	*alloc_sockets  = this_cr_node->alloc_sockets;
 	*alloc_lps      = this_cr_node->alloc_lps;
-#if(0)
-	info("cons_res %d _get_resources host %s HW_ cpus %d sockets %d cores %d threads %d ", 
+
+	debug3("cons_res %d _get_resources host %s HW_ cpus %d sockets %d cores %d threads %d ", 
 	       *jobid, this_cr_node->node_ptr->name,
 	       *cpus, *sockets, *cores, *threads);
-	info("cons_res %d _get_resources host %s Alloc_ sockets %d lps %d ", 
+	debug3("cons_res %d _get_resources host %s Alloc_ sockets %d lps %d ", 
 	       *jobid, this_cr_node->node_ptr->name, 
 	       *alloc_sockets, *alloc_lps);
-#endif
 }
 
 /*
@@ -405,7 +411,7 @@ static int _get_avail_lps(struct job_record *job_ptr,
 	int max_sockets = 0, max_cores = 0, max_threads = 0;
 	int ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
 	int cpus, sockets, cores, threads;
-	int alloc_sockets = 0, alloc_lps     = 0;
+	int alloc_sockets = 0, alloc_lps = 0;
 	struct node_cr_record *this_cr_node;
 	
 	if (job_ptr->details && job_ptr->details->cpus_per_task)
@@ -416,6 +422,12 @@ static int _get_avail_lps(struct job_record *job_ptr,
 		max_cores = job_ptr->details->max_cores;
 	if (job_ptr->details && job_ptr->details->max_threads)
 		max_threads = job_ptr->details->max_threads;
+	if (job_ptr->details && job_ptr->details->ntasks_per_node)
+		ntasks_per_node = job_ptr->details->ntasks_per_node;
+	if (job_ptr->details && job_ptr->details->ntasks_per_socket)
+		ntasks_per_socket = job_ptr->details->ntasks_per_socket;
+	if (job_ptr->details && job_ptr->details->ntasks_per_core)
+		ntasks_per_core = job_ptr->details->ntasks_per_core;
 
 	this_cr_node = _find_cr_node_record (select_node_ptr[index].node_ptr->name);
 	if (this_cr_node == NULL) {
@@ -425,7 +437,7 @@ static int _get_avail_lps(struct job_record *job_ptr,
 		return avail_cpus;
 	}
 	_get_resources_this_node(&cpus, &sockets, &cores, &threads, 
-				 this_cr_node, &alloc_sockets, 
+				 this_cr_node, &alloc_sockets,
 				 &alloc_lps, &job_ptr->job_id);
 	if (all_available) {
 		alloc_sockets = 0;
@@ -441,6 +453,7 @@ static int _get_avail_lps(struct job_record *job_ptr,
 					   ntasks_per_core,
 					   &cpus, &sockets, &cores,
 					   &threads, alloc_sockets,
+					   (int *)this_cr_node->alloc_cores, 
 					   alloc_lps, cr_type);
 	return(avail_cpus);
 }		
@@ -500,29 +513,59 @@ static int _compute_c_b_task_dist(struct select_cr_job *job)
 				int alloc_lps     = 0;
 				_get_resources_this_node(&cpus, &sockets, 
 							 &cores, &threads, 
-							 this_node, &alloc_sockets, 
-							 &alloc_lps, &job->job_id);
+							 this_node,
+							 &alloc_sockets, 
+							 &alloc_lps,
+							 &job->job_id);
 
-				avail_cpus = slurm_get_avail_procs(job->max_sockets, 
-								   job->max_cores, 
-								   job->max_threads, 
-								   job->cpus_per_task, 
-								   job->ntasks_per_node, 
-								   job->ntasks_per_socket, 
-								   job->ntasks_per_core, 
-								   &cpus,
-								   &sockets,
-								   &cores,
-								   &threads,
-								   alloc_sockets,
-								   alloc_lps,
-								   cr_type);
+				avail_cpus = slurm_get_avail_procs(
+					job->max_sockets, 
+					job->max_cores, 
+					job->max_threads, 
+					job->cpus_per_task, 
+					job->ntasks_per_node, 
+					job->ntasks_per_socket, 
+					job->ntasks_per_core, 
+					&cpus,
+					&sockets,
+					&cores,
+					&threads,
+					alloc_sockets,
+					(int *)this_node->alloc_cores,
+					alloc_lps,
+					cr_type);
 				break;
 			}
 			case CR_CORE:
 			case CR_CORE_MEMORY:
-				/* Not implemented yet */
+			{
+				int alloc_sockets = 0;
+				int alloc_lps     = 0;
+				_get_resources_this_node(&cpus, &sockets, 
+							 &cores, &threads, 
+							 this_node,
+							 &alloc_sockets,
+							 &alloc_lps,
+							 &job->job_id);
+				
+				avail_cpus = slurm_get_avail_procs(
+					job->max_sockets, 
+					job->max_cores, 
+					job->max_threads, 
+					job->cpus_per_task,
+					job->ntasks_per_node,
+					job->ntasks_per_socket,
+					job->ntasks_per_core, 
+					&cpus,
+					&sockets,
+					&cores,
+					&threads,
+					alloc_sockets,
+					(int *)this_node->alloc_cores,
+					alloc_lps,
+					cr_type);
 				break;
+			}
 			default:
 				/* We should never get in here. If we
                                    do it is a bug */
@@ -569,12 +612,15 @@ static int _compute_c_b_task_dist(struct select_cr_job *job)
  * avoiding interference between co-allocated running jobs.
  *
  * In the consumable resources environment we need to determine the
- * CPU or core layout schema within slurmctld.
+ * layout schema within slurmctld.
 */
 static int _cr_dist(struct select_cr_job *job, const int cyclic)
 {
-	int  rc = SLURM_SUCCESS; 
-	int taskcount = 0;
+#if(CR_DEBUG)
+    	int i;
+#endif
+	int j, rc = SLURM_SUCCESS; 
+	int taskcount = 0; 
 	int maxtasks  = job->nprocs;
 	int host_index;
 	int usable_cpus = 0;
@@ -604,7 +650,7 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
-
+		
 		this_cr_node = _find_cr_node_record(
 			node_record_table_ptr[host_index].name);
 		if (this_cr_node == NULL) {
@@ -613,7 +659,7 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
 			return SLURM_ERROR;
 		}
 
-		_get_resources_this_node(&usable_cpus, &usable_sockets, 
+		_get_resources_this_node(&usable_cpus,  &usable_sockets, 
 					 &usable_cores, &usable_threads, 
 					 this_cr_node,  &alloc_sockets, 
 					 &alloc_lps, &job->job_id);
@@ -630,13 +676,22 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
 						   &usable_cores,
 						   &usable_threads,
 						   alloc_sockets,
+						   (int *)this_cr_node->
+						   alloc_cores,
 						   alloc_lps,
 						   cr_type);
-#if(0)		
-		info("_cr_dist %u avail_s %d _c %d _t %d alloc_s %d alloc_lps %d ",
+		
+#if(CR_DEBUG)
+		info("cons_res: _cr_dist %u avail_s %d _c %d _t %d "
+		     "alloc_s %d lps %d ",
 		     job->job_id, usable_sockets, usable_cores, usable_threads,
 		     alloc_sockets, alloc_lps);
-#endif
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
+			for(i=0; i<usable_sockets;i++)
+				info("cons_res: _cr_dist alloc_cores %d = %d", 
+				       i, this_cr_node->alloc_cores[i]);
+#endif		
+		
 		if (avail_cpus == 0) {
 			error(" cons_res: no available cpus on node %s", 
 			      node_record_table_ptr[host_index].name);
@@ -644,10 +699,19 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
 		maxtasks = job->alloc_lps[job_index];
 		taskcount = 0; 
 		job->alloc_sockets[job_index] = 0;
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+			for (j = 0; 
+			     j < node_record_table_ptr[host_index].cores; 
+			     j++)
+				job->alloc_cores[job_index][j] = 0;
+		}		
 
 		if (cyclic == 0) { /* block lllp distribution */
 			int s, c, t;
+			int c_ok = 0;
 			last_socket_index = -1;	
+			int socket_cnt = -1;
+			int core_cnt = 0;
 			for (s=0; 
 			     s < usable_sockets; s++) {
 				last_core_index = -1;	
@@ -662,21 +726,40 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
 						if (maxtasks <= taskcount) 
 							continue;
 						if (last_socket_index != s) {
-							job->alloc_sockets[job_index]++;
-#if(0)
-							info("block jid %u s %d c %d t %d tc %d", 
-							     job->job_id, s, c, t, 
-							     taskcount);
-#endif
+							job->alloc_sockets
+								[job_index]++;
 							last_socket_index = s;
+						}
+						if (((cr_type == CR_CORE) 
+						     || (cr_type
+							 == CR_CORE_MEMORY)) 
+						    && (c_ok == 0)) {
+							if (socket_cnt >= 
+							    node_record_table_ptr[host_index].sockets)
+								continue;
+							core_cnt = job->alloc_cores[job_index][socket_cnt]
+								+ this_cr_node->alloc_cores[socket_cnt];
+							if (core_cnt >= 
+							    node_record_table_ptr[host_index].cores) {
+								socket_cnt++;
+							}
+							job->alloc_cores[job_index][socket_cnt]++;
+							info("cons_res %u BLOCK job->alloc_cores[%d][%d] = %d",
+							     job->job_id, job_index, socket_cnt, 
+							     job->alloc_cores[job_index][socket_cnt]);
+							if (c == (usable_cores-1))
+								c_ok = 1;
 						}
 						taskcount++;
 					}
 				}
+				socket_cnt++;
 			}
 		} else if (cyclic == 1) { /* cyclic lllp distribution */
 			int s, c, t;
 			int max_s = 0;	
+			int socket_cnt = -1;
+			int core_cnt = 0;
 			for (t=0; 
 			     t < usable_threads; t++) {
 				if (maxtasks <= taskcount)
@@ -694,20 +777,40 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
 							if(s == (usable_sockets-1))
 								max_s = 1;
 						}
+						if (((cr_type == CR_CORE) 
+						     || (cr_type == CR_CORE_MEMORY)) 
+						    && (t == 0)) {
+							socket_cnt++;
+							if (socket_cnt >= 
+							    node_record_table_ptr[host_index].sockets)
+								continue;
+							core_cnt = job->alloc_cores[job_index][socket_cnt]
+								+ this_cr_node->alloc_cores[socket_cnt];
+							if (core_cnt >= 
+							    node_record_table_ptr[host_index].cores) {
+								socket_cnt++;
+							}
+							job->alloc_cores[job_index][socket_cnt]++;
+							info("cons_res %u CYCLIC job->alloc_cores[%d][%d] = %d",
+							     job->job_id, job_index, socket_cnt, 
+							     job->alloc_cores[job_index][socket_cnt]);
+						}
+
 						taskcount++;
-#if(0)
-						info("cyclic jid %u s %d c %d t %d tc %d", 
-						     job->job_id, s, c, t, taskcount);
-#endif
 					}
 				}
 			}
 		}
-#if(0)
+#if(CR_DEBUG)
 		info("cons_res _cr_dist %u cyclic %d host %d %s alloc_ "
 		     "sockets %d lps %d ", 
 		     job->job_id, cyclic, host_index,  this_cr_node->node_ptr->name, 
 		     job->alloc_sockets[job_index], job->alloc_lps[job_index]);
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
+			for(i=0; i<usable_sockets;i++)
+				info("cons_res _cr_dist: %u alloc_cores[%d][%d] = %d", 
+				     job->job_id, i, job_index, 
+				     job->alloc_cores[job_index][i]);
 #endif
 	}
 	return rc;
@@ -720,7 +823,7 @@ static int _cr_dist(struct select_cr_job *job, const int cyclic)
  */
 static int _cr_exclusive_dist(struct select_cr_job *job)
 {
-	int i;
+	int i, j;
 	int host_index = 0;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -729,6 +832,11 @@ static int _cr_exclusive_dist(struct select_cr_job *job)
 		job->alloc_lps[host_index] = node_record_table_ptr[i].cpus;
 		job->alloc_sockets[host_index] = 
 			node_record_table_ptr[i].sockets; 
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+			for (j = 0; j < node_record_table_ptr[i].sockets; j++)
+				job->alloc_cores[host_index][j] = 
+					node_record_table_ptr[i].cores; 
+		}
 		host_index++;
 	}
 	return SLURM_SUCCESS;
@@ -744,9 +852,12 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 	int i, j, k, l, m, host_index;
 	int usable_cpus, usable_sockets, usable_cores, usable_threads;
 	int taskcount=0, last_socket_index;
-	int socket_index, core_index, thread_index;
+	int socket_index, core_index, thread_index; 
+	int c_ok = 0;
 	int job_index = -1;
-	
+	int socket_cnt = 0;
+	int core_cnt = 0;
+
 	debug3("cons_res _cr_plane_dist plane_size %d ", plane_size);
 	debug3("cons_res _cr_plane_dist  maxtasks %d num_hosts %d",
 	       maxtasks, num_hosts);
@@ -770,12 +881,13 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 			}
 		}
 	}
-#if(0)	
+#if(CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
 		info("cons_res _cr_plane_dist %u host %s alloc_ lps %d ", 
 		     job->job_id, job->host[i],  job->alloc_lps[i]);
 	}
 #endif
+
 	for (host_index = 0; 
 	     ((host_index < node_record_count) && (taskcount < job->nprocs));
 	     host_index++) {
@@ -801,27 +913,40 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 					 &alloc_lps, &job->job_id);
 		
 		avail_cpus = slurm_get_avail_procs(job->max_sockets,
-						       job->max_cores,
-						       job->max_threads,
-						       job->cpus_per_task,
-						       job->ntasks_per_node,
-						       job->ntasks_per_socket,
-						       job->ntasks_per_core,
-						       &usable_cpus,
-						       &usable_sockets,
-						       &usable_cores,
-						       &usable_threads,
-						       alloc_sockets,
-						       alloc_lps,
-						       cr_type);
+						   job->max_cores,
+						   job->max_threads,
+						   job->cpus_per_task,
+						   job->ntasks_per_node,
+						   job->ntasks_per_socket,
+						   job->ntasks_per_core,
+						   &usable_cpus,
+						   &usable_sockets,
+						   &usable_cores,
+						   &usable_threads,
+						   alloc_sockets,
+						   (int *)this_cr_node->
+						   alloc_cores,
+						   alloc_lps,
+						   cr_type);
+		
 		if (avail_cpus == 0) {
 			error(" cons_res: no available cpus on node %s", 
 			      node_record_table_ptr[host_index].name);
 		}
 
+		job->alloc_sockets[job_index] = 0;
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+			for (j = 0; 
+			     j < node_record_table_ptr[host_index].cores; 
+			     j++)
+				job->alloc_cores[job_index][j] = 0;
+		}		
+
 		maxtasks = job->alloc_lps[job_index];
 		last_socket_index = -1;
 		next = 0;
+		socket_cnt = 0;
+		core_cnt = 0;
 		for (j=0; next<maxtasks; j++) {
 			for (socket_index=0; 
 			     ((socket_index<usable_sockets) 
@@ -852,16 +977,43 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 							last_socket_index =
 								socket_index;
 						}
+						if (((cr_type == CR_CORE) ||
+						     (cr_type == CR_CORE_MEMORY))
+						    && (c_ok == 0)) {
+							if (socket_cnt >= 
+							    node_record_table_ptr[host_index].sockets)
+								continue;
+							core_cnt = job->alloc_cores[job_index][socket_cnt]
+								+ this_cr_node->alloc_cores[socket_cnt];
+							if (core_cnt >= 
+							    node_record_table_ptr[host_index].cores) {
+								socket_cnt++;
+							}
+							job->alloc_cores[job_index][socket_cnt]++;
+							info("cons_res %u PLANE job->alloc_cores[%d][%d] = %d",
+							     job->job_id, job_index, socket_cnt, 
+							     job->alloc_cores[job_index][socket_cnt]);
+							if (m == (usable_cores-1))
+								c_ok = 1;
+						}
 						next++;
 					}
 				}
+				socket_cnt++;
 			}
 		}
-#if(0)
+#if(CR_DEBUG)
 		info("cons_res _cr_plane_dist %u host %d %s alloc_ "
-		     "sockets %d lps %d ", 
+		     "s %d c %d lps %d ", 
 		     job->job_id, host_index,  this_cr_node->node_ptr->name, 
 		     job->alloc_sockets[job_index], job->alloc_lps[job_index]);
+		int i = 0;
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+			for (i = 0; i < this_cr_node->node_ptr->sockets; i++)
+				info("cons_res _cr_plane_dist %u host %d %s alloc_cores %d",
+				     job->job_id, host_index,  this_cr_node->node_ptr->name, 
+				     job->alloc_cores[job_index][i]);
+		}
 #endif
 	}
 	return SLURM_SUCCESS;
@@ -870,11 +1022,18 @@ static int _cr_plane_dist(struct select_cr_job *job, const int plane_size)
 /* xfree a select_cr_job job */
 static void _xfree_select_cr_job(struct select_cr_job *job)
 {
+	int i;
+	
 	xfree(job->host);
 	xfree(job->cpus);
-	xfree(job->alloc_lps);
+	xfree(job->alloc_lps);	
 	xfree(job->alloc_sockets);
 	xfree(job->alloc_memory);
+	if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+		for (i = 0; i < job->nhosts; i++)
+			xfree(job->alloc_cores[i]);
+		xfree(job->alloc_cores);
+	}
 	FREE_NULL_BITMAP(job->node_bitmap);
 	xfree(job);
 }
@@ -960,7 +1119,20 @@ static void _count_cpus(unsigned *bitmap, int sum)
 		case CR_CORE:
 		case CR_CORE_MEMORY:
 		{
-			/* FIXME */
+			int core_cnt = 0;
+			for (i = 0; i < this_node->node_ptr->sockets; i++)
+				core_cnt += this_node->alloc_cores[i];
+			if (slurmctld_conf.fast_schedule) {
+				sum += ((node_record_table_ptr[i].config_ptr->sockets
+					 * node_record_table_ptr[i].config_ptr->cores)
+					- core_cnt)
+					* node_record_table_ptr[i].config_ptr->threads;
+			} else {
+				sum += ((node_record_table_ptr[i].sockets 
+					 * node_record_table_ptr[i].cores) 
+					- core_cnt)
+					* node_record_table_ptr[i].threads;
+			}
 			break;
 		}
 		case CR_MEMORY:
@@ -1030,7 +1202,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 
 static int _clear_select_jobinfo(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS, i, nodes, job_id;
+	int rc = SLURM_SUCCESS, i, j, nodes, job_id;
 	struct select_cr_job *job = NULL;
 	ListIterator iterator;
 
@@ -1059,13 +1231,11 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				goto out;
 			}
 			
+			/* Updating this node allocated resources */
 			switch(cr_type) {
 			case CR_SOCKET:
 			case CR_SOCKET_MEMORY:
-			case CR_CORE:
-			case CR_CORE_MEMORY:
-				/* Updating this node allocated resources */
-				this_node->alloc_lps -= job->alloc_lps[i];
+				this_node->alloc_lps     -= job->alloc_lps[i];
 				this_node->alloc_sockets -= job->alloc_sockets[i];
 				if ((this_node->alloc_lps < 0) || (this_node->alloc_sockets < 0)) {
 					error(" alloc_lps < 0 %d on %s",
@@ -1076,8 +1246,44 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 					rc = SLURM_ERROR;  
 					goto out;
 				}
-				if ((cr_type == CR_SOCKET) || (cr_type == CR_CORE))
-					break;
+				this_node->alloc_memory -= job->alloc_memory[i];
+				if (this_node->alloc_memory < 0) {
+					error(" alloc_memory < 0 %d on %s",
+					      this_node->alloc_memory,
+					      this_node->node_ptr->name);
+					this_node->alloc_memory = 0;
+					rc = SLURM_ERROR;  
+					goto out;
+				}
+				break;
+			case CR_CORE:
+			case CR_CORE_MEMORY:
+				this_node->alloc_lps   -= job->alloc_lps[i];
+				for (j =0; j < this_node->node_ptr->sockets; j++)
+					this_node->alloc_cores[j] -= job->alloc_cores[i][j];
+				for (j =0; j < this_node->node_ptr->sockets; j++) {
+					if ((this_node->alloc_lps >= 0) || (this_node->alloc_cores[j] >= 0)) {
+						continue;
+					} else { 
+						error(" alloc_lps < 0 %d on %s",
+						      this_node->alloc_lps,
+						      this_node->node_ptr->name);
+						this_node->alloc_lps = 0;
+						this_node->alloc_cores = 0;
+						rc = SLURM_ERROR;  
+						goto out;
+					}
+				}
+				this_node->alloc_memory -= job->alloc_memory[i];
+				if (this_node->alloc_memory < 0) {
+					error(" alloc_memory < 0 %d on %s",
+					      this_node->alloc_memory,
+					      this_node->node_ptr->name);
+					this_node->alloc_memory = 0;
+					rc = SLURM_ERROR;  
+					goto out;
+				}
+				break;
 			case CR_MEMORY:
 				this_node->alloc_memory -= job->alloc_memory[i];
 				if (this_node->alloc_memory < 0) {
@@ -1116,10 +1322,16 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 			default:
 				break;
 			}
-#if(1)
-			info("cons_res %u _clear_select_jobinfo (-) node %s alloc_ lps %d sockets %d ",
-			     job->job_id, this_node->node_ptr->name, this_node->alloc_lps, 
-			     this_node->alloc_sockets);
+#if(CR_DEBUG)
+			info("cons_res %u _clear_select_jobinfo (-) node %s alloc_ s %d lps %d",
+			     job->job_id, this_node->node_ptr->name, 
+			     this_node->alloc_sockets, 
+			     this_node->alloc_lps);
+			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
+				for (j =0; j < this_node->node_ptr->sockets; j++)
+					info("cons_res %u _clear_select_jobinfo (-) node %s alloc_  c %d",
+					     job->job_id, this_node->node_ptr->name, 
+					     this_node->alloc_cores[j]);
 #endif
 		}
 	out:
@@ -1209,7 +1421,7 @@ extern int select_p_job_init(List job_list)
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	int i;
+	int i, j;
 
 	if (node_ptr == NULL) {
 		error("select_g_node_init: node_ptr == NULL");
@@ -1228,9 +1440,16 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
-		select_node_ptr[i].alloc_lps     = 0;
-		select_node_ptr[i].alloc_sockets = 0;
-		select_node_ptr[i].alloc_memory  = 0;
+		select_node_ptr[i].alloc_lps      = 0;
+		select_node_ptr[i].alloc_sockets  = 0;
+		select_node_ptr[i].alloc_memory   = 0;
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+			select_node_ptr[i].alloc_cores    = 
+				xmalloc(sizeof(int) * select_node_ptr->node_ptr->sockets);
+			for (j = 0; j < select_node_ptr->node_ptr->sockets; j++) {
+				select_node_ptr[i].alloc_cores[j] = 0;
+			}
+		}
 	}
 
 	select_fast_schedule = slurm_get_fast_schedule();
@@ -1488,7 +1707,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		goto cleanup;
 	
 	if (!test_only) {
-		int jobid, job_nodecnt, j;
+		int jobid, job_nodecnt, j, k;
 		bitoff_t size;
 		static struct select_cr_job *job;
 		job = xmalloc(sizeof(struct select_cr_job));
@@ -1515,13 +1734,17 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			bit_set(job->node_bitmap, i);
 		}
 		
-		job->host = (char **) xmalloc(job->nhosts * sizeof(char *));
-		job->cpus = (int *) xmalloc(job->nhosts * sizeof(int));
-
-		/* Build number of needed lps for each hosts for this job */
-		job->alloc_lps     = (int *) xmalloc(job->nhosts * sizeof(int));
+		job->host      = (char **) xmalloc(job->nhosts * sizeof(char *));
+		job->cpus      = (int *) xmalloc(job->nhosts * sizeof(int));
+		job->alloc_lps = (int *) xmalloc(job->nhosts * sizeof(int));
 		job->alloc_sockets = (int *) xmalloc(job->nhosts * sizeof(int));
 		job->alloc_memory  = (int *) xmalloc(job->nhosts * sizeof(int));
+		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+			job->alloc_cores   = (int **) xmalloc(job->nhosts * sizeof(int *));
+			for (i = 0; i < job->nhosts; i++)
+				job->alloc_cores[i] = (int *) xmalloc(
+					node_record_table_ptr[i].sockets * sizeof(int));
+		}
 
 		j = 0;
 		for (i = 0; i < node_record_count; i++) {
@@ -1529,13 +1752,16 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				continue;
 			job->host[j] = node_record_table_ptr[i].name;
 			job->cpus[j] = node_record_table_ptr[i].cpus;
-			job->alloc_memory[j] = job_ptr->details->job_max_memory; 
-			job->alloc_lps[j]     = 0;
+			job->alloc_lps[j] = 0;
 			job->alloc_sockets[j] = 0;
+			job->alloc_memory[j] = job_ptr->details->job_max_memory; 
+			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+				for (k = 0; k < node_record_table_ptr[i].sockets; k++)
+					job->alloc_cores[j][k]   = 0;
+			}
 			j++;
 		}
-		
-		/* check for error SMB Fixme */
+
 		debug3("cons_res %u task_dist %d", job_ptr->job_id, job_ptr->details->task_dist);
 		if (job_ptr->details->shared == 0) {
 			/* Nodes need to be allocated in dedicated
@@ -1576,14 +1802,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		}
 		if (error_code != SLURM_SUCCESS)
 			goto cleanup;
-#if(0)
-		/* debugging only Remove */
-		for (i = 0; i < job->nhosts; i++) {
-			debug3("cons_res: job: %u after _cr_dist host %s cpus %u alloc_lps %d alloc_sockets %d",
-			       job->job_id, job->host[i], job->cpus[i], 
-			       job->alloc_lps[i], job->alloc_sockets[i]);
-		}
-#endif
 
 		_append_to_job_list(job);
 	}
@@ -1751,6 +1969,7 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 {
 	int rc = SLURM_SUCCESS, i, avail = 0;
 	uint32_t *tmp_32 = (uint32_t *) data;
+	*tmp_32 = 0;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1816,22 +2035,13 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 				 * given job for a specific node --> based 
 				 * on the output from _cr_dist */
 				switch(cr_type) {
-				case CR_SOCKET:
-				case CR_SOCKET_MEMORY:
-					/* Number of hardware resources allocated
-					   for this job. This might be more than
-					   what the job requires since we
-					   only allocated whole sockets at
-					   this level */
-					*tmp_32 = job->alloc_lps[i];
-					break;
-				case CR_CORE: 
-				case CR_CORE_MEMORY: 
-					/* Not yet implemented */
-					break;
 				case CR_MEMORY:
 					*tmp_32 = node_ptr->cpus;
 					break;
+				case CR_SOCKET:
+				case CR_SOCKET_MEMORY:
+				case CR_CORE: 
+				case CR_CORE_MEMORY: 
 				case CR_CPU:
 				case CR_CPU_MEMORY:
 				default:
@@ -1845,6 +2055,7 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 		}
 		if (!job) {
 			debug3("cons_res: job %d not active", job_ptr->job_id);
+			*tmp_32 = 0;
 		}
 	     cleanup:
 		list_iterator_destroy(iterator);
@@ -1863,7 +2074,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 					enum select_data_info dinfo,
 					void *data)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, i;
 	struct node_cr_record *this_cr_node;
 
 	xassert(node_ptr);
@@ -1917,7 +2128,10 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			break;
 		case CR_CORE:
 		case CR_CORE_MEMORY:
-                        /* FIXME */
+			*tmp_32 = 0;
+			for (i = 0; i < this_cr_node->node_ptr->sockets; i++)  
+				*tmp_32 += this_cr_node->alloc_cores[i] *
+					node_ptr->threads;
 			break;
 		case CR_MEMORY:
 			*tmp_32 = 0;
@@ -1939,7 +2153,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 
 extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS, i, job_id, nodes;
+	int rc = SLURM_SUCCESS, i, j, job_id, nodes;
 	struct select_cr_job *job = NULL;
 	ListIterator iterator;
 
@@ -1965,29 +2179,39 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
+			/* Updating this node's allocated resources */
 			switch (cr_type) {
-			case CR_SOCKET:
-			case CR_CORE:
 			case CR_SOCKET_MEMORY:
-			case CR_CORE_MEMORY:
-				/* Updating this node's allocated resources */
+				this_node->alloc_memory += job->alloc_memory[i];
+			case CR_SOCKET:
 				this_node->alloc_lps     += job->alloc_lps[i];
 				this_node->alloc_sockets += job->alloc_sockets[i];
 				if (this_node->alloc_sockets > this_node->node_ptr->sockets)
 					error("Job %u Host %s too many allocated sockets %d",
 					      job->job_id, this_node->node_ptr->name, 
 					      this_node->alloc_sockets);
-				if ((cr_type == CR_SOCKET) 
-				    || (cr_type == CR_CORE))
-					break;
-			case CR_MEMORY: 
 				this_node->alloc_memory += job->alloc_memory[i];
 				break;
-			case CR_CPU:
+			case CR_CORE_MEMORY:
+				this_node->alloc_memory += job->alloc_memory[i];
+			case CR_CORE:
+				this_node->alloc_lps   += job->alloc_lps[i];
+				for (j = 0; j < this_node->node_ptr->sockets; j++)
+					this_node->alloc_cores[j] += job->alloc_cores[i][j];
+				for (j = 0; j < this_node->node_ptr->sockets; j++)
+					if (this_node->alloc_cores[j] <= this_node->node_ptr->cores)
+						continue;
+					else
+						error("Job %u Host %s too many allocated cores %d for socket %d ",
+						      job->job_id, this_node->node_ptr->name, 
+						      this_node->alloc_cores[j], j);
+				break;
 			case CR_CPU_MEMORY:
+				this_node->alloc_memory += job->alloc_memory[i];
+			case CR_CPU:
 				this_node->alloc_lps     += job->alloc_lps[i];				
-				if (cr_type == CR_CPU) 
-					break;				
+				break;
+			case CR_MEMORY: 
 				this_node->alloc_memory += job->alloc_memory[i];
 				break;
 			default:
@@ -1995,11 +2219,16 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 				rc = SLURM_ERROR;
 				break;
 			}
-#if(1)
+#if(CR_DEBUG)
 			/* Remove debug only */
 			info("cons_res %u update_nodeinfo (+) node %s alloc_ lps %d sockets %d mem %d ",
 			     job->job_id, this_node->node_ptr->name, this_node->alloc_lps, 
 			     this_node->alloc_sockets, this_node->alloc_memory);
+			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
+				for (j = 0; j < this_node->node_ptr->sockets; j++)
+					info("cons_res %u update_nodeinfo (+) node %s alloc_ cores %d ",
+					     job->job_id, this_node->node_ptr->name, 
+					     this_node->alloc_cores[j]);
 #endif
 		}
 	}
