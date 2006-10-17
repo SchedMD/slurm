@@ -317,8 +317,13 @@ By default the specified geometry can rotate in three dimensions.
 
 Output version information and exit.
 .SH "ENVIRONMENT VARIABLES"
-.LP 
-.TP
+.PP
+Some salloc options may be set via environment variables. 
+These environment variables, along with their corresponding options, 
+are listed below.
+Note: Command line options will always override these settings.
+
+.TP 22 
 \fBSALLOC_ACCOUNT\fR
 Same as \fB\-\-account\fR.
 .TP
@@ -354,6 +359,47 @@ Same as \fB\-t\fR or \fB\-\-time\fR.
 .TP
 \fBSALLOC_WAIT\fR
 Same as \fB\-W\fR or \fB\-\-wait\fR.
+
+.PP
+Additionally salloc will set some environment variables in 
+the environment of the executed program. 
+These environment variables are:
+
+.TP
+\fBSLURM_JOB_ID\fR and \fBSLURM_JOBID\fR
+Job id of the executing job
+.TP
+\fBSLURM_JOB_CPUS_PER_NODE\fR
+Count of processors available to the job on this node.
+Note the select/linear plugin allocates entire nodes to
+jobs, so the value indicates the total count of CPUs on the node.
+The select/cons_res plugin allocates individual processors
+to jobs, so this number indicates the number of processors
+on this node allocated to the job.
+.TP
+\fBSLURM_JOB_NODELIST\fR and \fBSLURM_NODELIST\fR
+List of nodes allocated to the job
+.TP
+\fBSLURM_JOB_NUM_NODES\fR and \fBSLURM_NNODES\fR
+Total number of nodes in the job's resource allocation
+.TP
+\fBSLURM_TASKS_PER_NODE\fR
+Number of tasks to be initiated on each node. Values are
+comma separated and in the same order as SLURM_NODELIST.
+If two or more consecutive nodes are to have the same task
+count, that count is followed by "(x#)" where "#" is the
+repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
+indicates that the first three nodes will each execute three
+tasks and the fourth node will execute one task.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
+.TP
+\fBMPIRUN_NOALLOCATE\fR
+Do not allcate a block on Blue Gene systems only.
+.TP
+\fBMPIRUN_NOFREE\fR
+Do not free a block on Blue Gene systems only.
 
 .SH "SIGNALS"
 .LP 
