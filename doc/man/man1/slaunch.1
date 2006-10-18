@@ -1,5 +1,5 @@
 .\" $Id$
-.TH "slaunch" "1" "SLURM 1.2" "July 2006" "SLURM Commands"
+.TH "slaunch" "1" "SLURM 1.2" "October 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 slaunch \- Launch a parallel application under a SLURM job allocation.
@@ -498,8 +498,12 @@ See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
 of the individual SLURM_CPU_BIND* and SLURM_MEM_BIND* variables.
                                                                                   
 .SH "ENVIRONMENT VARIABLES"
-.LP 
-.TP
+.PP
+Some slaunch options may be set via environment variables. 
+These environment variables, along with their corresponding options, 
+are listed below.
+Note: Command line options will always override these settings.
+.TP 25
 \fBSLAUNCH_COMM_HOSTNAME\fR
 Same as \fB\-\-comm\-hostname\fR.
 .TP
@@ -538,6 +542,46 @@ Same as \fB\-W\fR or \fB\-\-wait\fR.
 .TP
 \fBSLURMD_DEBUG\fR
 Same as \fB\-d\fR or \fB\-\-slurmd\-debug\fR
+
+.PP
+Additionally, slaunch will set some environment variables in the environment
+of the executing tasks on the remote compute nodes.
+These environment variables are:
+.TP
+\fBSLURM_CPUS_ON_NODE\fR and \fBSLURM_JOB_CPUS_PER_NODE\fB
+Count of processors available to the job on this node.
+Note the select/linear plugin allocates entire nodes to
+jobs, so the value indicates the total count of CPUs on the node.
+The select/cons_res plugin allocates individual processors
+to jobs, so this number indicates the number of processors
+on this node allocated to the job.
+.TP
+\fBSLURM_CPUS_PER_TASK\fR
+Processors required per task launched.
+.TP
+\fBSLURM_JOB_ID\fR and \fBSLURM_JOBID\fR
+Job ID of the executing job
+.TP
+\fBSLURM_JOB_NODELIST\fR and \fBSLURM_NODELIST\fR
+List of nodes allocated to the job
+.TP
+\fBSLURM_JOB_NUM_NODES\fR and \fBSLURM_NNODES\fR
+Total number of nodes in the job's resource allocation
+.TP
+\fBSLURM_LOCALID\fR
+Task ID relative to others on this node, zero origin
+.TP
+\fBSLURM_NODEID\fR
+Node ID relative to other nodes, zero origin
+.TP
+\fBSLURM_NPROCS\fR
+Count of tasks in this job
+.TP
+\fBSLURM_PROCID\fR
+Task ID relative to all others, zero origin
+.TP
+\fBSLURM_STEP_ID\fR and \fBSLURM_STEPID\fR
+Job step ID of the executing job
 
 .SH "MULTIPLE PROGRAMS FILE"
 Comments in the configuration file must have a "#" in collumn one.
