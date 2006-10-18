@@ -85,7 +85,7 @@
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
-#define JOB_STATE_VERSION      "VER003"
+#define JOB_STATE_VERSION      "VER004"
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -113,7 +113,6 @@ static void _delete_job_desc_files(uint32_t job_id);
 static void _dump_job_details(struct job_details *detail_ptr,
 				    Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
-static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer);
 static void _excise_node_from_job(struct job_record *job_ptr, 
 				  struct node_record *node_ptr);
 static int  _find_batch_dir(void *x, void *key);
@@ -126,7 +125,6 @@ static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
-static int  _load_step_state(struct job_record *job_ptr, Buf buffer);
 static void _pack_default_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _pack_pending_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _purge_job_record(uint32_t job_id);
@@ -542,7 +540,7 @@ Update JOB_STATE_VERSION
 	while ((step_ptr = (struct step_record *) 
 				list_next(step_iterator))) {
 		pack16((uint16_t) STEP_FLAG, buffer);
-		_dump_job_step_state(step_ptr, buffer);
+		dump_job_step_state(step_ptr, buffer);
 	}
 	list_iterator_destroy(step_iterator);
 	pack16((uint16_t) 0, buffer);	/* no step flag */
@@ -712,7 +710,7 @@ job_ptr->exit_code = exit_code;
 
 	safe_unpack16(&step_flag, buffer);
 	while (step_flag == STEP_FLAG) {
-		if ((error_code = _load_step_state(job_ptr, buffer)))
+		if ((error_code = load_step_state(job_ptr, buffer)))
 			goto unpack_error;
 		safe_unpack16(&step_flag, buffer);
 	}
@@ -921,142 +919,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 /*	for (i=0; i<argc; i++) 
 		xfree(argv[i]);  Don't trust this on unpack error */
 	xfree(argv);
-	return SLURM_FAILURE;
-}
-
-
-/*
- * _dump_job_step_state - dump the state of a specific job step to a buffer
- * IN detail_ptr - pointer to job step for which information is requested
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
-{
-	pack16((uint16_t) step_ptr->step_id, buffer);
-	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
-	pack16((uint16_t)step_ptr->port, buffer);
-	pack32(step_ptr->exit_code, buffer);
-	if (step_ptr->exit_code != NO_VAL) {
-		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
-		pack16((uint16_t) _bitstr_bits(step_ptr->exit_node_bitmap), 
-			buffer);
-	}
-
-	pack_time(step_ptr->start_time, buffer);
-	pack_time(step_ptr->pre_sus_time, buffer);
-	packstr(step_ptr->host,  buffer);
-	packstr(step_ptr->name, buffer);
-	packstr(step_ptr->network, buffer);
-	pack16((uint16_t)step_ptr->batch_step, buffer);
-	if (!step_ptr->batch_step) {
-		pack_slurm_step_layout(step_ptr->step_layout, buffer);
-		switch_pack_jobinfo(step_ptr->switch_job, buffer);
-	}
-	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
-}
-
-/* Unpack job step state information from a buffer */
-static int _load_step_state(struct job_record *job_ptr, Buf buffer)
-{
-	struct step_record *step_ptr = NULL;
-	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
-	uint32_t exit_code;
-	time_t start_time, pre_sus_time;
-	char *host = NULL;
-	char *name = NULL, *network = NULL, *bit_fmt = NULL;
-	switch_jobinfo_t switch_tmp = NULL;
-	check_jobinfo_t check_tmp = NULL;
-	slurm_step_layout_t *step_layout = NULL;
-	
-	safe_unpack16(&step_id, buffer);
-	safe_unpack16(&cyclic_alloc, buffer);
-	safe_unpack16(&port, buffer);
-	safe_unpack32(&exit_code, buffer);
-	if (exit_code != NO_VAL) {
-		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
-		safe_unpack16(&bit_cnt, buffer);
-	}
-	
-	safe_unpack_time(&start_time, buffer);
-	safe_unpack_time(&pre_sus_time, buffer);
-	safe_unpackstr_xmalloc(&host, &name_len, buffer);
-	safe_unpackstr_xmalloc(&name, &name_len, buffer);
-	safe_unpackstr_xmalloc(&network, &name_len, buffer);
-	safe_unpack16(&batch_step, buffer);
-	if (!batch_step) {
-		if (unpack_slurm_step_layout(&step_layout, buffer))
-			goto unpack_error;
-		switch_alloc_jobinfo(&switch_tmp);
-        	if (switch_unpack_jobinfo(switch_tmp, buffer))
-                	goto unpack_error;
-	}
-	checkpoint_alloc_jobinfo(&check_tmp);
-        if (checkpoint_unpack_jobinfo(check_tmp, buffer))
-                goto unpack_error;
-
-	/* validity test as possible */
-	if (cyclic_alloc > 1) {
-		error("Invalid data for job %u.%u: cyclic_alloc=%u",
-		      job_ptr->job_id, step_id, cyclic_alloc);
-		goto unpack_error;
-	}
-
-	step_ptr = find_step_record(job_ptr, step_id);
-	if (step_ptr == NULL)
-		step_ptr = create_step_record(job_ptr);
-	if (step_ptr == NULL)
-		goto unpack_error;
-
-	/* set new values */
-	step_ptr->step_id      = step_id;
-	step_ptr->cyclic_alloc = cyclic_alloc;
-	step_ptr->name         = name;
-	step_ptr->network      = network;
-	step_ptr->port         = port;
-	step_ptr->host         = host;
-	step_ptr->batch_step   = batch_step;
-	host                   = NULL;  /* re-used, nothing left to free */
-	step_ptr->start_time   = start_time;
-	step_ptr->pre_sus_time = pre_sus_time;
-
-	slurm_step_layout_destroy(step_ptr->step_layout);
-	step_ptr->step_layout = step_layout;
-	
-	step_ptr->switch_job   = switch_tmp;
-	step_ptr->check_job    = check_tmp;
-
-	step_ptr->exit_code    = exit_code;
-	if (bit_fmt) {
-		/* NOTE: This is only recovered if a job step completion
-		 * is actively in progress at step save time. Otherwise
-		 * the bitmap is NULL. */ 
-		step_ptr->exit_node_bitmap = bit_alloc(bit_cnt);
-		if (step_ptr->exit_node_bitmap == NULL)
-			fatal("bit_alloc: %m");
-		if (bit_unfmt(step_ptr->exit_node_bitmap, bit_fmt)) {
-			error("error recovering exit_node_bitmap from %s",
-				bit_fmt);
-		}
-		xfree(bit_fmt);
-	}
-
-	if (step_ptr->step_layout && step_ptr->step_layout->node_list) {
-		switch_g_job_step_allocated(switch_tmp, 
-				    step_ptr->step_layout->node_list);
-	} else {
-		switch_g_job_step_allocated(switch_tmp, NULL);
-	}
-	info("recovered job step %u.%u", job_ptr->job_id, step_id);
-	return SLURM_SUCCESS;
-
-      unpack_error:
-	xfree(host);
-	xfree(name);
-	xfree(network);
-	xfree(bit_fmt);
-	if (switch_tmp)
-		switch_free_jobinfo(switch_tmp);
-	slurm_step_layout_destroy(step_layout);
 	return SLURM_FAILURE;
 }
 
