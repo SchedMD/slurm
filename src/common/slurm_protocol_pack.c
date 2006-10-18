@@ -1827,6 +1827,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpack32(&step->num_tasks, buffer);
 
 	safe_unpack_time(&step->start_time, buffer);
+	safe_unpack_time(&step->run_time, buffer);
 	safe_unpackstr_xmalloc(&step->partition, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->name, &uint16_tmp, buffer);

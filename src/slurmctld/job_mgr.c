@@ -943,6 +943,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	}
 
 	pack_time(step_ptr->start_time, buffer);
+	pack_time(step_ptr->pre_sus_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
@@ -960,7 +961,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	struct step_record *step_ptr = NULL;
 	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
 	uint32_t exit_code;
-	time_t start_time;
+	time_t start_time, pre_sus_time;
 	char *host = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
@@ -977,6 +978,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	}
 	
 	safe_unpack_time(&start_time, buffer);
+	safe_unpack_time(&pre_sus_time, buffer);
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
@@ -1015,6 +1017,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->batch_step   = batch_step;
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
+	step_ptr->pre_sus_time = pre_sus_time;
 
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout = step_layout;
@@ -4479,6 +4482,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 				difftime(now,
 				job_ptr->start_time);
 		}
+		suspend_job_step(job_ptr);
 	} else if (sus_ptr->op == RESUME_JOB) {
 		if (job_ptr->job_state != JOB_SUSPENDED) {
 			rc = ESLURM_DISABLED;
