@@ -4284,7 +4284,10 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SUSPEND;
-	agent_args->retry = 1;
+	agent_args->retry = 0;	/* don't resend or gang schedulers
+				 * (sched/gang or sched/wiki) can
+				 * can quickly induce huge backlog
+				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create("");
 	sus_ptr = xmalloc(sizeof(suspend_msg_t));
 	sus_ptr->job_id = job_ptr->job_id;

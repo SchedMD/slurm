@@ -182,7 +182,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
 	else
 		agent_args->msg_type = REQUEST_TERMINATE_JOB;
-	agent_args->retry = 1;
+	agent_args->retry = 0;	/* re_kill_job() resends as needed */
 	agent_args->hostlist = hostlist_create("");
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update = time(NULL);
