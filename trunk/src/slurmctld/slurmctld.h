@@ -565,6 +565,14 @@ extern int dump_all_part_state ( void );
 extern void dump_job_desc(job_desc_msg_t * job_specs);
 
 /*
+ * dump_job_step_state - dump the state of a specific job step to a buffer,
+ *	load with load_step_state
+ * IN step_ptr - pointer to job step for which information is to be dumpped
+ * IN/OUT buffer - location to store data, pointers automatically advanced
+ */
+extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer);
+
+/*
  * dump_step_desc - dump the incoming step initiate request message
  * IN step_spec - job step request specification from RPC
  */
@@ -943,6 +951,13 @@ extern void load_part_uid_allow_list ( int force );
  *	file data.
  */
 extern int load_all_part_state ( void );
+
+/*
+ * Create a new job step from data in a buffer (as created by dump_job_step_state)
+ * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
+ * IN/OUT buffer - location from which to get data, pointers automatically advanced
+ */
+extern int load_step_state(struct job_record *job_ptr, Buf buffer);
 
 /* 
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
