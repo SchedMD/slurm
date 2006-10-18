@@ -391,6 +391,10 @@ struct 	step_record {
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
 	time_t start_time;      	/* step allocation time */
+/*	time_t suspend_time;		 * time step last suspended or resumed
+					 * implicitly the same as suspend_time
+					 * in the job record */
+	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
 	uint16_t port;			/* port for srun communications */
@@ -1255,6 +1259,9 @@ extern bool step_on_node(struct job_record  *job_ptr,
  */
 extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		int *max_rc);
+
+/* Update time stamps for job step suspend */
+extern void suspend_job_step(struct job_record *job_ptr);
 
 /*
  * Synchronize the batch job in the system with their files.

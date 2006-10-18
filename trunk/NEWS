@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0-pre6
 =============================
+ -- Maintain actually job step run time with suspend/resume use.
 
 * Changes in SLURM 1.2.0-pre5
 =============================

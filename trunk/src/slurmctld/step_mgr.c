@@ -845,29 +845,39 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
  * IN step - pointer to a job step record
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
+static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 {
 	int task_cnt;
 	char *node_list = NULL;
+	time_t begin_time, run_time;
 
-	if(step->step_layout) {
-		task_cnt = step->step_layout->task_cnt;
-		node_list = step->step_layout->node_list;		
+	if (step_ptr->step_layout) {
+		task_cnt = step_ptr->step_layout->task_cnt;
+		node_list = step_ptr->step_layout->node_list;		
 	} else {
-		task_cnt = step->job_ptr->num_procs;
-		node_list = step->job_ptr->nodes;	
+		task_cnt = step_ptr->job_ptr->num_procs;
+		node_list = step_ptr->job_ptr->nodes;	
 	}
-	pack32((uint32_t)step->job_ptr->job_id, buffer);
-	pack16((uint16_t)step->step_id, buffer);
-	pack32((uint32_t)step->job_ptr->user_id, buffer);
+	pack32((uint32_t)step_ptr->job_ptr->job_id, buffer);
+	pack16((uint16_t)step_ptr->step_id, buffer);
+	pack32((uint32_t)step_ptr->job_ptr->user_id, buffer);
 	pack32((uint32_t)task_cnt, buffer);
 
-	pack_time(step->start_time, buffer);
-	packstr(step->job_ptr->partition, buffer);
+	pack_time(step_ptr->start_time, buffer);
+	if (step_ptr->job_ptr->job_state == JOB_SUSPENDED) {
+		run_time = step_ptr->pre_sus_time;
+	} else {
+		begin_time = MAX(step_ptr->start_time,
+				step_ptr->job_ptr->suspend_time);
+		run_time = step_ptr->pre_sus_time +
+			difftime(time(NULL), begin_time);
+	}
+	pack_time(run_time, buffer);
+	packstr(step_ptr->job_ptr->partition, buffer);
 	packstr(node_list, buffer);
-	packstr(step->name, buffer);
-	packstr(step->network, buffer);
-	pack_bit_fmt(step->step_node_bitmap, buffer);
+	packstr(step_ptr->name, buffer);
+	packstr(step_ptr->network, buffer);
+	pack_bit_fmt(step_ptr->step_node_bitmap, buffer);
 	
 }
 
@@ -1330,5 +1340,37 @@ extern int step_epilog_complete(struct job_record  *job_ptr,
 	list_iterator_destroy (step_iterator);
 
 	return rc;
+}
+
+static void 
+_suspend_job_step(struct job_record *job_ptr, 
+		struct step_record *step_ptr, time_t now)
+{
+	if ((job_ptr->suspend_time)
+	&&  (job_ptr->suspend_time > step_ptr->start_time)) {
+		step_ptr->pre_sus_time +=
+			difftime(now,
+			job_ptr->suspend_time);
+	} else {
+		step_ptr->pre_sus_time +=
+			difftime(now,
+			step_ptr->start_time);
+	}
+
+}
+
+/* Update time stamps for job step suspend */
+extern void
+suspend_job_step(struct job_record *job_ptr)
+{
+	time_t now = time(NULL);
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		_suspend_job_step(job_ptr, step_ptr, now);
+	}
+	list_iterator_destroy (step_iterator);
 }
 

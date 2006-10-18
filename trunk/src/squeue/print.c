@@ -1158,7 +1158,7 @@ int _print_step_time_used(job_step_info_t * step, int width, bool right,
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("TIME", width, right, true);
 	else {
-		long delta_t = difftime(time(NULL), step->start_time);
+		long delta_t = step->run_time;
 		_print_secs(delta_t, width, right, false);
 	}
 	if (suffix)
