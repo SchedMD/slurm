@@ -493,16 +493,13 @@ successive srun commands, first do the following in each task:
  setenv SLURM_MEM_BIND \\
    ${SLURM_MEM_BIND_VERBOSE},${SLURM_MEM_BIND_TYPE}${SLURM_MEM_BIND_LIST}
 .fi
-.PP
-See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
-of the individual SLURM_CPU_BIND* and SLURM_MEM_BIND* variables.
                                                                                   
-.SH "ENVIRONMENT VARIABLES"
+.SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Some slaunch options may be set via environment variables. 
 These environment variables, along with their corresponding options, 
 are listed below.
-Note: Command line options will always override these settings.
+Note: Command line options will always override environment variables settings.
 .TP 25
 \fBSLAUNCH_COMM_HOSTNAME\fR
 Same as \fB\-\-comm\-hostname\fR.
@@ -543,45 +540,59 @@ Same as \fB\-W\fR or \fB\-\-wait\fR.
 \fBSLURMD_DEBUG\fR
 Same as \fB\-d\fR or \fB\-\-slurmd\-debug\fR
 
+.SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
-Additionally, slaunch will set some environment variables in the environment
-of the executing tasks on the remote compute nodes.
-These environment variables are:
+slaunch will set the following environment variables which will
+appear in the environments of all tasks in the job step.  Since slaunch
+sets these variables itself, they will also be available to --prolog
+and --epilog scripts.  (Notice that the "backwards compatibility" environment
+variables clobber some of the variables that were set by salloc or sbatch
+at job allocation time.  The newer SLURM_JOB_* and SLURM_STEP_* names do not
+conflict, so any task in any job step can easily determine the parameters
+of the job allocation.)
 .TP
-\fBSLURM_CPUS_ON_NODE\fR and \fBSLURM_JOB_CPUS_PER_NODE\fB
-Count of processors available to the job on this node.
-Note the select/linear plugin allocates entire nodes to
-jobs, so the value indicates the total count of CPUs on the node.
-The select/cons_res plugin allocates individual processors
-to jobs, so this number indicates the number of processors
-on this node allocated to the job.
+\fBSLURM_STEP_ID\fR (and \fBSLURM_STEPID\fR for backwards compatibility)
+The ID of the job step within the job allocation.
 .TP
-\fBSLURM_CPUS_PER_TASK\fR
-Processors required per task launched.
+\fBSLURM_STEP_NODELIST\fR
+The list of nodes in the job step.
 .TP
-\fBSLURM_JOB_ID\fR and \fBSLURM_JOBID\fR
-Job ID of the executing job
+\fBSLURM_STEP_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+The number of nodes used by the job step.
 .TP
-\fBSLURM_JOB_NODELIST\fR and \fBSLURM_NODELIST\fR
-List of nodes allocated to the job
+\fBSLURM_STEP_NUM_TASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
+The number of tasks in the job step.
 .TP
-\fBSLURM_JOB_NUM_NODES\fR and \fBSLURM_NNODES\fR
-Total number of nodes in the job's resource allocation
+\fBSLURM_STEP_TASKS_PER_NODE\fR (and \fBSLURM_TASKS_PER_NODE\fR for backwards compatibility)
+The number of tasks on each node in the job step.
 .TP
-\fBSLURM_LOCALID\fR
-Task ID relative to others on this node, zero origin
+\fBSLURM_STEP_LAUNCHER_HOSTNAME\fR (and \fBSLURM_SRUN_COMM_HOST\fR for backwards compatibility)
+.TP
+\fBSLURM_STEP_LAUNCHER_PORT\fR (and \fBSLURM_SRUN_COMM_PORT\fR for backwards compatibility)
+
+.PP
+Additionally, SLURM daemons will ensure that the the following variables are
+set in the environments of all tasks in the job step.  Many of the following
+variables will have different values in each task's environment.  (These
+variables are not available to the slaunch --prolog and --epilog scripts.)
+
 .TP
 \fBSLURM_NODEID\fR
-Node ID relative to other nodes, zero origin
-.TP
-\fBSLURM_NPROCS\fR
-Count of tasks in this job
+Node ID relative to other nodes in the job step.  Counting begins at zero.
 .TP
 \fBSLURM_PROCID\fR
-Task ID relative to all others, zero origin
+Task ID relative to the other tasks in the job step.  Counting begins at zero.
 .TP
-\fBSLURM_STEP_ID\fR and \fBSLURM_STEPID\fR
-Job step ID of the executing job
+\fBSLURM_LOCALID\fR
+Task ID relative to the other tasks on the same node which belong to the
+same job step.  Counting begins at zero.
+.TP
+\fBSLURMD_NODENAME\fR
+The SLURM NodeName for the node on which the task is running.  Depending
+on how your system administrator has configured SLURM, the NodeName for a
+node may not be the same as the node's hostname.  When you use commands
+such as \fBsinfo\fR and \fBsqueue\fR, or look at environment variables such
+as SLURM_JOB_NODELIST and SLURM_STEP_NODELIST, you are seeing SLURM NodeNames.
 
 .SH "MULTIPLE PROGRAMS FILE"
 Comments in the configuration file must have a "#" in collumn one.

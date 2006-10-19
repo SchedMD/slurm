@@ -316,12 +316,12 @@ appropriate partition.
 By default the specified geometry can rotate in three dimensions.
 
 Output version information and exit.
-.SH "ENVIRONMENT VARIABLES"
+
+.SH "INPUT ENVIRONMENT VARIABLES"
 .PP
-Some salloc options may be set via environment variables. 
-These environment variables, along with their corresponding options, 
-are listed below.
-Note: Command line options will always override these settings.
+Upon startup, salloc will read and handle the options set in the following
+environment variables.  Note: Command line options always override environment
+variables settings.
 
 .TP 22 
 \fBSALLOC_ACCOUNT\fR
@@ -360,28 +360,28 @@ Same as \fB\-t\fR or \fB\-\-time\fR.
 \fBSALLOC_WAIT\fR
 Same as \fB\-W\fR or \fB\-\-wait\fR.
 
+.SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
-Additionally salloc will set some environment variables in 
-the environment of the executed program. 
-These environment variables are:
+salloc will set the following environment variables in the environment of
+the executed program:
 
 .TP
-\fBSLURM_JOB_ID\fR and \fBSLURM_JOBID\fR
-Job id of the executing job
+\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
+The ID of the job allocation.
 .TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
 Count of processors available to the job on this node.
 Note the select/linear plugin allocates entire nodes to
-jobs, so the value indicates the total count of CPUs on the node.
+jobs, so the value indicates the total count of CPUs on each node.
 The select/cons_res plugin allocates individual processors
 to jobs, so this number indicates the number of processors
-on this node allocated to the job.
+on each node allocated to the job allocation.
 .TP
-\fBSLURM_JOB_NODELIST\fR and \fBSLURM_NODELIST\fR
-List of nodes allocated to the job
+\fBSLURM_JOB_NODELIST\fR (and \fBSLURM_NODELIST\fR for backwards compatibility)
+List of nodes allocated to the job.
 .TP
-\fBSLURM_JOB_NUM_NODES\fR and \fBSLURM_NNODES\fR
-Total number of nodes in the job's resource allocation
+\fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+Total number of nodes in the job allocation.
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are
@@ -396,7 +396,7 @@ tasks and the fourth node will execute one task.
 The block name on Blue Gene systems only.
 .TP
 \fBMPIRUN_NOALLOCATE\fR
-Do not allcate a block on Blue Gene systems only.
+Do not allocate a block on Blue Gene systems only.
 .TP
 \fBMPIRUN_NOFREE\fR
 Do not free a block on Blue Gene systems only.
