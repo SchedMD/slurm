@@ -35,6 +35,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef _SLURMCTLD_STATE_SAVE_H
+#define _SLURMCTLD_STATE_SAVE_H
+
 /* Queue saving of job state information */
 extern void schedule_job_save(void);
 
@@ -55,3 +58,5 @@ extern void shutdown_state_save(void);
  * RET - NULL
  */
 extern void *slurmctld_state_save(void *no_data);
+
+#endif

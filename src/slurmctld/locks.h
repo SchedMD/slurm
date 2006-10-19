@@ -83,6 +83,9 @@
  * would look like this: "{ NO_LOCK, READ_LOCK, READ_LOCK, WRITE_LOCK }"
 \*****************************************************************************/
 
+#ifndef _SLURMCTLD_LOCKS_H
+#define _SLURMCTLD_LOCKS_H
+
 /* levels of locking required for each data structure */
 typedef enum {
 	NO_LOCK,
@@ -144,3 +147,4 @@ extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
 extern void inline lock_state_files ( void );
 extern void inline unlock_state_files ( void );
 
+#endif
