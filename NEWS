@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.16
 =========================
+ - BLUEGENE - fix to make prolog run 5 minutes longer to make sure we have
+   enough time to free the overlapping blocks when starting a new job on a 
+   block.
 
 * Changes in SLURM 1.1.15
 =========================
