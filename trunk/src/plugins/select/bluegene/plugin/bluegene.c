@@ -562,19 +562,13 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	char *host = NULL;
 	char bg_down_node[128];
 
-	if(bg_record->job_running > -1)
+	if(bg_record->job_running > NO_JOB_RUNNING)
 		slurm_fail_job(bg_record->job_running);			
 
 	/* small blocks */
 	if(bg_record->cpus_per_bp != procs_per_node) {
 		debug2("small block");
-		while(bg_record->job_running > -1) 
-			sleep(1);
-		slurm_mutex_lock(&block_state_mutex);
-		bg_record->job_running = -3;
-		bg_record->state = RM_PARTITION_ERROR;
-		slurm_mutex_unlock(&block_state_mutex);
-		return;
+		goto end_it;
 	}
 	
 	/* at least one base partition */
@@ -584,11 +578,6 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		return;
 	}
 	while ((host = hostlist_shift(hl))) {
-		slurm_conf_lock();
-		snprintf(bg_down_node, sizeof(bg_down_node), "%s%s", 
-			 slurmctld_conf.node_prefix,
-			 host);
-		slurm_conf_unlock();
 		if (node_already_down(bg_down_node)) {
 			needed = false;
 			free(host);
@@ -598,8 +587,20 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	}
 	hostlist_destroy(hl);
 	
-	if (needed)
+	if (needed) {
 		slurm_drain_nodes(bg_record->nodes, reason);
+	}
+end_it:
+	while(bg_record->job_running > NO_JOB_RUNNING) {
+		debug2("block %s is still running job %d",
+		       bg_record->bg_block_id, bg_record->job_running);
+		sleep(1);
+	}
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record->job_running = BLOCK_ERROR_STATE;
+	bg_record->state = RM_PARTITION_ERROR;
+	slurm_mutex_unlock(&block_state_mutex);
+	return;
 }
 
 extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
@@ -1154,7 +1155,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			request->rotate_count = 0;
 			request->elongate_count = 1;
 		
-			if(bg_record->job_running == -1 
+			if(bg_record->job_running == NO_JOB_RUNNING 
 			   && (bg_record->quarter == (uint16_t) NO_VAL
 			       || (bg_record->quarter == 0 
 				   && (bg_record->nodecard == (uint16_t) NO_VAL
@@ -2308,7 +2309,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 	
 	itr = list_iterator_create(bg_list);			
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if(bg_record->job_running != -1)
+		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;
 		if(bg_record->state != RM_PARTITION_FREE)
 			continue;
@@ -2397,7 +2398,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 	last_quarter = (uint16_t) NO_VAL;
 	while ((bg_record = (bg_record_t *) list_next(itr)) 
 	       != NULL) {
-		if(bg_record->job_running != -1)
+		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;
 		if(request->start_req) {
 			if ((request->start[X] != bg_record->start[X])
@@ -2511,7 +2512,7 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 	
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 				
-	found_record->job_running = -1;
+	found_record->job_running = NO_JOB_RUNNING;
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(destroy_ba_node);
@@ -2602,7 +2603,7 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->conn_type = blockreq->conn_type;
 	bg_record->cpus_per_bp = procs_per_node;
 	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
-	bg_record->job_running = -1;
+	bg_record->job_running = NO_JOB_RUNNING;
 	
 	if(bg_record->conn_type != SELECT_SMALL) {
 		list_push(records, bg_record);

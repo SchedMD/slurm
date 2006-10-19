@@ -155,6 +155,8 @@ extern int procs_per_node;
 extern int num_unused_cpus;
 
 #define MAX_PTHREAD_RETRIES  1
+#define BLOCK_ERROR_STATE    -3
+#define NO_JOB_RUNNING       -1
 #define MAX_AGENT_COUNT      30
 
 #include "bg_block_info.h"

@@ -281,10 +281,10 @@ try_again:
 		*/
 		debug3("%s job_running = %d", 
 		       record->bg_block_id, record->job_running);
-		/*block is messed up some how (-3) ignore it*/
-		if(record->job_running < -1)
+		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
+		if(record->job_running == BLOCK_ERROR_STATE)
 			continue;
-		else if((record->job_running != -1) 
+		else if((record->job_running != NO_JOB_RUNNING) 
 		   && !test_only) {
 			debug("block %s in use by %s job %d", 
 			      record->bg_block_id,
@@ -373,10 +373,17 @@ try_again:
 						break;
 					} 
 				}
-				if(!test_only
-				   && ((found_record->job_running > -1)
-				   || (found_record->job_running == -3))) {
-					if(found_record->job_running > -1)
+				if(!test_only && found_record->job_running
+				   != NO_JOB_RUNNING) {
+					if(found_record->job_running
+					   == BLOCK_ERROR_STATE)
+						error("can't use %s, "
+						      "overlapping block %s "
+						      "is in an error state.",
+						      record->bg_block_id,
+						      found_record->
+						      bg_block_id);
+					else
 						debug("can't use %s, there is "
 						      "a job (%d) running on "
 						      "an overlapping "
@@ -386,13 +393,7 @@ try_again:
 						      job_running,
 						      found_record->
 						      bg_block_id);
-					else
-						error("can't use %s, "
-						      "overlapping block %s "
-						      "is in an error state.",
-						      record->bg_block_id,
-						      found_record->
-						      bg_block_id);
+				
 					if(bluegene_layout_mode == 
 					   LAYOUT_DYNAMIC) {
 						list_remove(itr);
@@ -464,7 +465,8 @@ try_again:
 			if(check_block_bp_states(
 				   (*found_bg_record)->bg_block_id) 
 			   == SLURM_ERROR) {
-				(*found_bg_record)->job_running = -3;
+				(*found_bg_record)->job_running =
+					BLOCK_ERROR_STATE;
 				(*found_bg_record)->state = RM_PARTITION_ERROR;
 				slurm_mutex_unlock(&block_state_mutex);
 				goto try_again;

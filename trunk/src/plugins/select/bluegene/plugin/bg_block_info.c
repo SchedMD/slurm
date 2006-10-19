@@ -271,7 +271,7 @@ extern int update_block_list()
 			      bg_err_str(rc));
 			updated = -1;
 			goto next_block;
-		} else if(bg_record->job_running != -3 
+		} else if(bg_record->job_running != BLOCK_ERROR_STATE 
 			  //plugin set error
 			  && bg_record->state != state) {
 			debug("state of Block %s was %d and now is %d",
