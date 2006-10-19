@@ -392,19 +392,19 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		 "Admin set block %s state to %s %s",
 		 bg_record->bg_block_id, 
 		 _block_state_str(part_desc_ptr->state_up), tmp); 
-	if(bg_record->job_running > -1) {
+	if(bg_record->job_running > NO_JOB_RUNNING) {
 		slurm_fail_job(bg_record->job_running);	
-		while(bg_record->job_running > -1) 
+		while(bg_record->job_running > NO_JOB_RUNNING) 
 			sleep(1);
 	}
 	if(!part_desc_ptr->state_up) {
 		slurm_mutex_lock(&block_state_mutex);
-		bg_record->job_running = -3;
+		bg_record->job_running = BLOCK_ERROR_STATE;
 		bg_record->state = RM_PARTITION_ERROR;
 		slurm_mutex_unlock(&block_state_mutex);
 	} else if(part_desc_ptr->state_up){
 		slurm_mutex_lock(&block_state_mutex);
-		bg_record->job_running = -1;
+		bg_record->job_running = NO_JOB_RUNNING;
 		bg_record->state = RM_PARTITION_FREE;
 		slurm_mutex_unlock(&block_state_mutex);
 	} else {
