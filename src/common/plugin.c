@@ -109,14 +109,16 @@ plugin_load_from_file( const char *fq_path )
         int (*init)( void );
         
         /*
-         * Try to open the shared object.  We have a choice of trying to
-         * resolve all the symbols (in both directions) now or when the
-         * symbols are first dereferenced and used.  While it's slower to
-         * do it this way, it's a lot easier to debug.  If you get an
-         * error somewhere down the line, you're likely to think it's
-         * some condition that happened then instead of way back here.
+         * Try to open the shared object.  
+	 *
+	 * Use RTLD_LAZY to allow plugins to use symbols that may be 
+	 * defined in only one slurm entity (e.g. srun and not slurmd),
+	 * when the use of that symbol is restricted to within the 
+	 * entity from which it is available. (i.e. srun symbols are only
+	 * used in the context of srun, not slurmd.)
+	 *
          */
-        plug = dlopen( fq_path, RTLD_NOW );
+        plug = dlopen( fq_path, RTLD_LAZY );
         if ( plug == NULL ) {
 		error( "plugin_load_from_file: dlopen(%s): %s",
 			fq_path,
