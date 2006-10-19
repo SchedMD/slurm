@@ -75,10 +75,9 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define BUFFER_SIZE 1024
 #define DETAILS_FLAG 0xdddd
-#define HUGE_BUF_SIZE (1024*16)
 #define MAX_RETRIES  10
+#define MAX_STR_LEN  1024
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
@@ -378,11 +377,11 @@ int load_all_job_state(void)
 		info("No job state file (%s) to recover", state_file);
 		error_code = ENOENT;
 	} else {
-		data_allocated = HUGE_BUF_SIZE;
+		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read(state_fd, &data[data_size],
-					HUGE_BUF_SIZE);
+					BUF_SIZE);
 			if (data_read < 0) {
 				if (errno == EINTR)
 					continue;
@@ -1938,22 +1937,22 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
  * RET 0 or error code */
 static int _validate_job_create_req(job_desc_msg_t * job_desc)
 {
-	if (job_desc->err && (strlen(job_desc->err) > BUFFER_SIZE)) {
+	if (job_desc->err && (strlen(job_desc->err) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(err) too big (%d)",
 		     strlen(job_desc->err));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->in && (strlen(job_desc->in) > BUFFER_SIZE)) {
+	if (job_desc->in && (strlen(job_desc->in) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(in) too big (%d)",
 		     strlen(job_desc->in));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->out && (strlen(job_desc->out) > BUFFER_SIZE)) {
+	if (job_desc->out && (strlen(job_desc->out) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(out) too big (%d)",
 		     strlen(job_desc->out));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->work_dir && (strlen(job_desc->work_dir) > BUFFER_SIZE)) {
+	if (job_desc->work_dir && (strlen(job_desc->work_dir) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(work_dir) too big (%d)",
 		     strlen(job_desc->work_dir));
 		return  ESLURM_PATHNAME_TOO_LONG;
@@ -2170,7 +2169,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
 	}
 
 	pos = 0;
-	buf_size = HUGE_BUF_SIZE;
+	buf_size = BUF_SIZE;
 	buffer = xmalloc(buf_size);
 	while (1) {
 		amount = read(fd, &buffer[pos], buf_size);
@@ -2226,7 +2225,7 @@ void _read_data_from_file(char *file_name, char **data)
 	}
 
 	pos = 0;
-	buf_size = HUGE_BUF_SIZE;
+	buf_size = BUF_SIZE;
 	buffer = xmalloc(buf_size);
 	while (1) {
 		amount = read(fd, &buffer[pos], buf_size);
@@ -2708,7 +2707,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(HUGE_BUF_SIZE);
+	buffer = init_buf(BUF_SIZE);
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */

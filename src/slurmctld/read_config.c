@@ -72,8 +72,6 @@
 
 #include "src/common/slurm_rlimits_info.h"
 
-#define BUFFER_SIZE	1024
-
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
