@@ -64,9 +64,6 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUFFER_SIZE 1024
-#define HUGE_BUF_SIZE (16 * 1024)
-
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
@@ -279,7 +276,7 @@ int dump_all_part_state(void)
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
 	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	Buf buffer = init_buf(HUGE_BUF_SIZE);
+	Buf buffer = init_buf(BUF_SIZE);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -407,11 +404,11 @@ int load_all_part_state(void)
 		     state_file);
 		error_code = ENOENT;
 	} else {
-		data_allocated = HUGE_BUF_SIZE;
+		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read(state_fd, &data[data_size], 
-					HUGE_BUF_SIZE);
+					BUF_SIZE);
 			if (data_read < 0) {
 				if  (errno == EINTR)
 					continue;
@@ -664,7 +661,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(HUGE_BUF_SIZE);
+	buffer = init_buf(BUF_SIZE);
 
 	/* write haeader: version and time */
 	parts_packed = 0;
@@ -707,7 +704,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
-	char node_inx_ptr[BUFFER_SIZE];
+	char node_inx_ptr[BUF_SIZE];
 	uint32_t altered, node_scaling;
 
 	if (default_part_loc == part_ptr)
@@ -742,7 +739,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->nodes, buffer);
 	if (part_ptr->node_bitmap) {
-		bit_fmt(node_inx_ptr, BUFFER_SIZE,
+		bit_fmt(node_inx_ptr, BUF_SIZE,
 			part_ptr->node_bitmap);
 		packstr(node_inx_ptr, buffer);
 	} else
