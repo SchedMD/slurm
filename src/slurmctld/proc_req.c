@@ -124,38 +124,6 @@ inline static void  _update_cred_key(void);
 
 
 /*
- * diff_tv_str - build a string showing the time difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
- */
-inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
-		char *tv_str, int len_tv_str)
-{
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
-	if (delta_t > 1000000)
-		info("Warning: Note very large processing time: %s",tv_str); 
-}
-
-/*
- * diff_tv - return the difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * RET time in micro-seconds
- */
-inline long diff_tv(struct timeval *tv1, struct timeval *tv2)
-{
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	return delta_t;
-}
-
-/*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */

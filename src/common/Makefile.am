@@ -80,6 +80,7 @@ libcommon_la_SOURCES = 			\
 	parse_time.c parse_time.h	\
 	job_options.c job_options.h	\
 	global_defaults.c		\
+	timers.c timers.h		\
 	slurm_xlator.h			
 
 EXTRA_libcommon_la_SOURCES = 	\

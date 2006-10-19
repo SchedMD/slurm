@@ -29,7 +29,6 @@
 #include "src/sview/sview.h"
 
 #define _DEBUG 0
-DEF_TIMERS;
 
 typedef struct {
 	partition_info_t* part_ptr;
