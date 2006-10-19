@@ -32,7 +32,6 @@
 #include "src/common/parse_time.h"
 
 #define _DEBUG 0
-DEF_TIMERS;
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {

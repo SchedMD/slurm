@@ -42,7 +42,6 @@
 #include "src/api/node_select_info.h"
 
 #define _DEBUG 0
-DEF_TIMERS;
 
 typedef struct {
 	char *bg_user_name;

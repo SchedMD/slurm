@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proc_msg.h - process incomming message functions
+ *  timers.h - timing functions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,38 +35,34 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_PROC_REQ_H
-#define _HAVE_PROC_REQ_H
+#ifndef _HAVE_TIMERS_H
+#define _HAVE_TIMERS_H
 
 #include <sys/time.h>
 
-#include "src/common/slurm_protocol_api.h"
+#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20]
+#define START_TIMER	gettimeofday(&tv1, NULL)
+#define END_TIMER	gettimeofday(&tv2, NULL); \
+			diff_tv_str(&tv1, &tv2, tv_str, 20)
+#define DELTA_TIMER	diff_tv(&tv1, &tv2)
+#define TIME_STR 	tv_str
 
 /*
- * slurmctld_req  - Process an individual RPC request
- * IN/OUT msg - the request message, data associated with the message is freed
+ * diff_tv_str - build a string showing the time difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
  */
-void slurmctld_req (slurm_msg_t * msg);
+extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
+		char *tv_str, int len_tv_str);
 
 /*
- * slurm_drain_nodes - process a request to drain a list of nodes,
- *	no-op for nodes already drained or draining
- * node_list IN - list of nodes to drain
- * reason IN - reason to drain the nodes
- * RET SLURM_SUCCESS or error code
- * NOTE: This is utilzed by plugins and not via RPC and it sets its
- *	own locks.
+ * diff_tv - return the difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * RET time in micro-seconds
  */
-extern int slurm_drain_nodes(char *node_list, char *reason);
+inline long diff_tv(struct timeval *tv1, struct timeval *tv2);
 
-/*
- * slurm_fail_job - terminate a job due to a launch failure
- *	no-op for jobs already terminated
- * job_id IN - slurm job id
- * RET SLURM_SUCCESS or error code
- * NOTE: This is utilzed by plugins and not via RPC and it sets its
- *	own locks.
- */
-extern int slurm_fail_job(uint32_t job_id);
-#endif /* !_HAVE_PROC_REQ_H */
-
+#endif

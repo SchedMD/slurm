@@ -29,7 +29,6 @@
 #include "src/sview/sview.h"
 
 #define _DEBUG 0
-DEF_TIMERS;
 
 enum { 
 	SORTID_POS = POS_LOC,

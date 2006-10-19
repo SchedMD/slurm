@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  proc_msg.h - process incomming message functions
+ *  timers.c - Timer functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov> 
+ *  Written by Morris Jette <jette@llnl.gov>
  *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -35,38 +35,38 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_PROC_REQ_H
-#define _HAVE_PROC_REQ_H
-
+#include <stdio.h>
 #include <sys/time.h>
-
-#include "src/common/slurm_protocol_api.h"
-
-/*
- * slurmctld_req  - Process an individual RPC request
- * IN/OUT msg - the request message, data associated with the message is freed
- */
-void slurmctld_req (slurm_msg_t * msg);
+#include <src/common/log.h>
 
 /*
- * slurm_drain_nodes - process a request to drain a list of nodes,
- *	no-op for nodes already drained or draining
- * node_list IN - list of nodes to drain
- * reason IN - reason to drain the nodes
- * RET SLURM_SUCCESS or error code
- * NOTE: This is utilzed by plugins and not via RPC and it sets its
- *	own locks.
+ * diff_tv_str - build a string showing the time difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
  */
-extern int slurm_drain_nodes(char *node_list, char *reason);
+inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
+		char *tv_str, int len_tv_str)
+{
+	long delta_t;
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+	if (delta_t > 1000000)
+		info("Warning: Note very large processing time: %s",tv_str); 
+}
 
 /*
- * slurm_fail_job - terminate a job due to a launch failure
- *	no-op for jobs already terminated
- * job_id IN - slurm job id
- * RET SLURM_SUCCESS or error code
- * NOTE: This is utilzed by plugins and not via RPC and it sets its
- *	own locks.
+ * diff_tv - return the difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * RET time in micro-seconds
  */
-extern int slurm_fail_job(uint32_t job_id);
-#endif /* !_HAVE_PROC_REQ_H */
-
+inline long diff_tv(struct timeval *tv1, struct timeval *tv2)
+{
+	long delta_t;
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	return delta_t;
+}
