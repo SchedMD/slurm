@@ -22,7 +22,7 @@ Socket, Core and Thread as it is defined in SLURM's multi-core/multi-thread
 support documentation.</p>
 
 <center>
-<img width=580 height=280 src="mc_support.gif">
+<img src="mc_support.gif">
 <br>
 Figure 1: Socket vs. Core vs. Multi-threading 
 </center>
