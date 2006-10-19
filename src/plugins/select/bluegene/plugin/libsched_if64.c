@@ -37,11 +37,22 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int get_parameters(void *params) 
 {
-	printf("YOU ARE OUTSIDE OF SLURM!!!! NOT RUNNING MPIRUN!\n");
-	return -1;
+	char *partition = getenv("MPIRUN_PARTITION"); /* get MPIRUN env
+						   * var to see if we
+						   * are inside slurm
+						   * or not */
+	setenv("MPIRUN_NOFREE", "1", 1);
+	setenv("MPIRUN_NOALLOCATE", "1", 1);
+	if (!partition || (strlen(partition) < 3)) {
+		printf("YOU ARE OUTSIDE OF SLURM!!!! NOT RUNNING MPIRUN!\n");
+		return 1;
+	}
+	return 2;
 }
 
 void mpirun_done(int res)
