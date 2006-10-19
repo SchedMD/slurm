@@ -82,6 +82,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.16
 =========================
+ - BLUEGENE - fix to make prolog run 5 minutes longer to make sure we have
+   enough time to free the overlapping blocks when starting a new job on a 
+   block.
+ - BLUEGENE - edit to the libsched_if.so to read env and look at 
+   MPIRUN_PARTITION to see if we are in slurm or running mpirun natively.
+ - Plugins are now dlopened RTLD_LAZY instead of RTLD_NOW.
 
 * Changes in SLURM 1.1.15
 =========================
