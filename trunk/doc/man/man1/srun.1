@@ -930,7 +930,7 @@ job0128.out
 job%j\-%2t.out 
 job128\-00.out, job128\-01.out, ...
 .PP
-.RS \-10
+.RS -10
 .PP
 .B "Allocate Mode"
 .PP
@@ -1232,7 +1232,7 @@ For example:
 1,7       echo  task:%t
 0,2\-3     echo  offset:%o
 
-$ srun \-n8 \-\l \-\-multi\-prog silly.conf
+> srun \-n8 \-l \-\-multi\-prog silly.conf
 0: offset:0
 1: task:1
 2: offset:1
@@ -1302,7 +1302,7 @@ echo $SLURM_NODELIST
 srun \-lN2 \-r2 hostname
 srun \-lN2 hostname
 
-> srun \-A \-\N4 test.sh
+> srun \-A \-N4 test.sh
 dev[7\-10]
 0: dev9
 1: dev10
