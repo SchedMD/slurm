@@ -46,8 +46,6 @@ int get_parameters(void *params)
 						   * var to see if we
 						   * are inside slurm
 						   * or not */
-	setenv("MPIRUN_NOFREE", "1", 1);
-	setenv("MPIRUN_NOALLOCATE", "1", 1);
 	if (!partition || (strlen(partition) < 3)) {
 		printf("YOU ARE OUTSIDE OF SLURM!!!! NOT RUNNING MPIRUN!\n");
 		return 1;
