@@ -430,7 +430,7 @@ int read_bg_blocks()
 		bg_record->state = NO_VAL;
 		bg_record->quarter = (uint16_t) NO_VAL;
 		bg_record->nodecard = (uint16_t) NO_VAL;
-		bg_record->job_running = -1;
+		bg_record->job_running = NO_JOB_RUNNING;
 		
 		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionBPNum, 

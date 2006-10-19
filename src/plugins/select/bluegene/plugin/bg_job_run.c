@@ -262,7 +262,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
-	if(bg_record->job_running <= -1) {
+	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d finished during the queueing job "
@@ -317,7 +317,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		      num_block_to_free);
 	}
 	
-	if(bg_record->job_running <= -1) {
+	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d already finished before boot",
 		      bg_update_ptr->job_id);
@@ -346,7 +346,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->boot_state = 1;		
 	}
 	
-	if(bg_record->job_running <= -1) {
+	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d finished during the start of the boot "
 		      "(everything is ok)",
@@ -479,30 +479,9 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		      bg_record->bg_block_id,
 		      bg_record->user_name);
 
-		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		if(bluegene_layout_mode == LAYOUT_DYNAMIC) 
 			remove_from_request_list();
-		/* 	/\*  */
-/* 			   remove all requests out of the list  */
-/* 			   that are smaller than the one the  */
-/* 			   job was running on. */
-/* 			*\/ */
-/* 			proc_cnt = bg_record->bp_count *  */
-/* 				bg_record->cpus_per_bp; */
-/* 			slurm_mutex_lock(&request_list_mutex); */
-/* 			itr = list_iterator_create(bg_request_list); */
-/* 			while ((try_request = list_next(itr)) != NULL) { */
-/* 				if(try_request->procs <= proc_cnt) { */
-/* 					debug3("removing size %d",  */
-/* 					       try_request->procs); */
-/* 					list_remove(itr); */
-/* 					delete_ba_request(try_request); */
-/* 					list_iterator_reset(itr); */
-/* 				}				 */
-/* 			} */
-/* 			list_iterator_destroy(itr); */
-/* 			slurm_mutex_unlock(&request_list_mutex); */
-		}
-
+		
 		if(job_remove_failed) {
 			char time_str[32];
 			slurm_make_time_str(&now, time_str, sizeof(time_str));
@@ -519,7 +498,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			
 		slurm_mutex_lock(&block_state_mutex);
 		
-		bg_record->job_running = -1;
+		bg_record->job_running = NO_JOB_RUNNING;
 		
 		/* remove user from list */
 		
