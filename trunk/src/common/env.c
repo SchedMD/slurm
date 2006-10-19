@@ -839,6 +839,8 @@ env_array_for_step(char ***dest,
 	tmp = _uint32_array_to_str(step->step_layout->node_cnt,
 				   step->step_layout->tasks);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
+	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",
+				"%s", step->step_layout->node_list);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",
 			 "%hu", step->step_layout->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
