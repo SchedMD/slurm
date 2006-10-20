@@ -871,27 +871,35 @@ extern void ba_fini()
 /** 
  * set the node in the internal configuration as unusable
  * 
- * IN c: coordinate of the node to put down
+ * IN ba_node: ba_node_t to put down
  */
-extern void ba_set_node_down(ba_node_t *ba_node)
+extern void ba_update_node_state(ba_node_t *ba_node, int state)
 {
+	uint16_t node_base_state = state & NODE_STATE_BASE;
+
 	if (!_initialized){
 		error("Error, configuration not initialized, "
 		      "calling ba_init(NULL)");
 		ba_init(NULL);
 	}
 
-#ifdef DEBUG_BA
 #ifdef HAVE_BG
-	debug("ba_set_node_down: node to set down: [%d%d%d]", 
-	      ba_node->coord[X], ba_node->coord[Y], ba_node->coord[Z]); 
+	debug("ba_update_node_state: new state of node[%d%d%d] is %s", 
+	      ba_node->coord[X], ba_node->coord[Y], ba_node->coord[Z],
+	      node_state_string(state)); 
 #else
-	debug("ba_set_node_down: node to set down: [%d]", ba_node->coord[X]); 
-#endif
+	debug("ba_update_node_state: new state of node[%d] is %s", 
+	      ba_node->coord[X],
+	      node_state_string(state)); 
 #endif
 
 	/* basically set the node as used */
-	ba_node->used = true;
+	if((node_base_state == NODE_STATE_DOWN)
+	   || (ba_node->state & NODE_STATE_DRAIN)) 
+		ba_node->used = true;
+	else
+		ba_node->used = false;
+	ba_node->state = state;
 }
 /** 
  * copy info from a ba_node
@@ -1319,9 +1327,10 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 							grid[x][y][z].letter 
 							= '#';
 						if(_initialized) {
-							ba_set_node_down(
+							ba_update_node_state(
 							&ba_system_ptr->
-							grid[x][y][z]);
+							grid[x][y][z],
+							node_ptr->node_state);
 						}
 					} else {
 						ba_system_ptr->grid[x][y][z].
@@ -1338,7 +1347,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 					ba_system_ptr->grid[x][y][z].state = 
 						NODE_STATE_IDLE;
 				}
-				ba_system_ptr->grid[x][y][z].indecies = i++;
+				ba_system_ptr->grid[x][y][z].index = i++;
 			}
 #else
 	for (x = 0; x < DIM_SIZE[X]; x++) {
@@ -1352,8 +1361,9 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 				ba_system_ptr->grid[x].color = 0;
 				ba_system_ptr->grid[x].letter = '#';
 				if(_initialized) {
-					ba_set_node_down(
-						&ba_system_ptr->grid[x]);
+					ba_update_node_state(
+						&ba_system_ptr->grid[x],
+						node_ptr->node_state);
 				}
 			} else {
 				ba_system_ptr->grid[x].color = 7;
@@ -1365,7 +1375,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 			ba_system_ptr->grid[x].letter = '.';
 			ba_system_ptr->grid[x].state = NODE_STATE_IDLE;
 		}
-		ba_system_ptr->grid[x].indecies = i++;
+		ba_system_ptr->grid[x].index = i++;
 	}
 #endif
 	return;
@@ -2133,8 +2143,6 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 		curr_switch->int_wire[source].port_tar;
 
 	port_tar = curr_switch->int_wire[source].port_tar;
-	if(mark_switch->int_wire[source].used)
-		debug2("setting dim %d %d->%d", dim, source, port_tar);	
 	
 	mark_switch->int_wire[port_tar].used = 
 		curr_switch->int_wire[port_tar].used;
@@ -2144,6 +2152,19 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	
 	/* follow the path */
 	node_curr = curr_switch->ext_wire[0].node_tar;
+	node_tar = curr_switch->ext_wire[port_tar].node_tar;
+	if(mark_switch->int_wire[source].used)
+		debug2("setting dim %d %d%d%d %d-> %d%d%d %d",
+		       dim,
+		       node_curr[X],
+		       node_curr[Y],
+		       node_curr[Z],
+		       source, 
+		       node_tar[X],
+		       node_tar[Y],
+		       node_tar[Z],
+		       port_tar);	
+	
 	if(port_tar == 1) {
 		mark_switch->int_wire[1].used = 
 			curr_switch->int_wire[1].used;
@@ -2152,7 +2173,6 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 		return 1;
 	}
 
-	node_tar = curr_switch->ext_wire[port_tar].node_tar;
 	mark_node_tar = mark_switch->ext_wire[port_tar].node_tar;
 	port_tar = curr_switch->ext_wire[port_tar].port_tar;
 	
@@ -2626,7 +2646,11 @@ extern int set_bp_map(void)
 static void _new_ba_node(ba_node_t *ba_node, int *coord)
 {
 	int i,j;
-	ba_node->used = false;
+	uint16_t node_base_state = ba_node->state & NODE_STATE_BASE;
+	
+	if((node_base_state != NODE_STATE_DOWN)
+	   && !(ba_node->state & NODE_STATE_DRAIN)) 
+		ba_node->used = false;
 	
 	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 		ba_node->coord[i] = coord[i];
