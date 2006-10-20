@@ -151,7 +151,6 @@
 #define LONG_OPT_NTASKSPERNODE	 0x136
 #define LONG_OPT_NTASKSPERSOCKET 0x137
 #define LONG_OPT_NTASKSPERCORE	 0x138
-#define LONG_OPT_PRINTREQ	 0x139
 #define LONG_OPT_JOBMEM	         0x13a
 #define LONG_OPT_HINT	         0x13b
 
@@ -1393,7 +1392,6 @@ void set_options(const int argc, char **argv, int first)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
-		{"print-request",    no_argument,       0, LONG_OPT_PRINTREQ},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1941,9 +1939,6 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
 				true);
-			break;
-		case LONG_OPT_PRINTREQ:
-			opt.printreq = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
