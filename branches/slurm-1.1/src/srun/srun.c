@@ -179,6 +179,7 @@ int srun(int ac, char **av)
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 	
+	info("here 0, opt.distribution = %d", opt.distribution);
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */
@@ -287,19 +288,26 @@ int srun(int ac, char **av)
 		}
 #endif
 		sig_setup_sigmask();
+		info("here 4, opt.distribution = %d", opt.distribution);
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
+		info("here 5, opt.distribution = %d", opt.distribution);
 		if (_verbose)
 			_print_job_information(resp);
+		info("here 6, opt.distribution = %d", opt.distribution);
 		job = job_create_allocation(resp);
+		info("here 7, opt.distribution = %d", opt.distribution);
 		if(!job)
 			exit(1);
+		info("here 8, opt.distribution = %d", opt.distribution);
 		if (create_job_step(job, resp) < 0) {
 			srun_job_destroy(job, 0);
 			exit(1);
 		}
+		info("here 9, opt.distribution = %d", opt.distribution);
 		
 		slurm_free_resource_allocation_response_msg(resp);
+		info("here 10, opt.distribution = %d", opt.distribution);
 	}
 
 	/*
@@ -313,6 +321,7 @@ int srun(int ac, char **av)
 	/*
 	 *  Enhance environment for job
 	 */
+	info("here 1 opt.distribution = %d", opt.distribution);
 	env->nprocs = opt.nprocs;
 	env->cpus_per_task = opt.cpus_per_task;
 	env->distribution = opt.distribution;
@@ -914,6 +923,8 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->nprocs = opt.nprocs;
 	if (opt.cpus_set)
 		env->cpus_per_task = opt.cpus_per_task;
+	info(" job script env->distribution = %d, opt = %d",
+	     env->distribution, opt.distribution);
 	env->distribution = opt.distribution;
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;

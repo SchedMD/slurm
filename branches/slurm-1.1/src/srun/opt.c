@@ -709,6 +709,7 @@ static void _opt_default()
 	opt.account  = NULL;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
+	info("here 2, opt.distribution = %d", opt.distribution);
 
 	opt.ofname = NULL;
 	opt.ifname = NULL;
@@ -897,6 +898,8 @@ _process_env_var(env_vars_t *e, const char *val)
 			      "ignoring...", e->var, val);
 		} else 
 			opt.distribution = dt;
+
+		info("ERRRR WAHT?");
 		break;
 
 	case OPT_CPU_BIND:
@@ -1215,6 +1218,7 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.distribution)
 				break;
 						
+			info("should not be here");
 			opt.distribution = _verify_dist_type(optarg);
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
 				error("distribution type `%s' " 
