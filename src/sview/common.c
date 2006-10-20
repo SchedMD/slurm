@@ -605,6 +605,13 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	list_push(popup_list, popup_win);
 	
 	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
+	popup_win->spec_info->search_info =
+		xmalloc(sizeof(sview_search_info_t));
+	popup_win->spec_info->search_info->search_type = 0;
+	popup_win->spec_info->search_info->gchar_data = NULL;
+	popup_win->spec_info->search_info->int_data = NO_VAL;
+	popup_win->spec_info->search_info->int_data2 = NO_VAL;
+	
 	popup_win->spec_info->type = type;
 	popup_win->spec_info->title = xstrdup(title);
 	popup_win->popup = gtk_dialog_new_with_buttons(
@@ -721,15 +728,26 @@ extern void redo_popup(GtkWidget *widget, GdkEventButton *event,
 	}
 }
 
+extern void destroy_search_info(void *arg)
+{
+	sview_search_info_t *search_info = (sview_search_info_t *)arg;
+	if(search_info) {
+		if(search_info->gchar_data)
+			g_free(search_info->gchar_data);
+		search_info->gchar_data = NULL;
+		xfree(search_info);
+		search_info = NULL;
+	}
+}
+
 extern void destroy_specific_info(void *arg)
 {
 	specific_info_t *spec_info = (specific_info_t *)arg;
 	if(spec_info) {
 		xfree(spec_info->title);
-		if(spec_info->data) {
-			g_free(spec_info->data);
-			spec_info->data = NULL;
-		}
+
+		destroy_search_info(spec_info->search_info); 
+
 		if(spec_info->display_widget) {
 			gtk_widget_destroy(spec_info->display_widget);
 			spec_info->display_widget = NULL;

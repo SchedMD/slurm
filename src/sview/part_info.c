@@ -945,7 +945,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 void _display_info_part(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
-	char *name = (char *)spec_info->data;
+	char *name = (char *)spec_info->search_info->gchar_data;
 	int found = 0;
 	partition_info_t *part_ptr = NULL;
 	GtkTreeView *treeview = NULL;
@@ -953,8 +953,9 @@ void _display_info_part(List info_list,	popup_info_t *popup_win)
 	sview_part_info_t *sview_part_info = NULL;
 	int update = 0;
 	int i = -1, j = 0;
+	int first_time = 0;
 
-	if(!spec_info->data) {
+	if(!spec_info->search_info->gchar_data) {
 		//info = xstrdup("No pointer given!");
 		goto finished;
 	}
@@ -977,18 +978,17 @@ need_refresh:
 		if(!strcmp(part_ptr->name, name)) {
 			j=0;
 			while(part_ptr->node_inx[j] >= 0) {
-#ifdef HAVE_BG
-			change_grid_color(
-				popup_win->grid_button_list,
-				part_ptr->node_inx[j],
-				part_ptr->node_inx[j+1], i);
-#else
-				get_button_list_from_main(
-					&popup_win->grid_button_list,
-					part_ptr->node_inx[j],
-					part_ptr->node_inx[j+1],
-					i);
-#endif
+				if(!first_time)
+					change_grid_color(
+						popup_win->grid_button_list,
+						part_ptr->node_inx[j],
+						part_ptr->node_inx[j+1], i);
+				else
+					get_button_list_from_main(
+						&popup_win->grid_button_list,
+						part_ptr->node_inx[j],
+						part_ptr->node_inx[j+1],
+						i);
 				j += 2;
 			}
 			_layout_part_record(treeview, sview_part_info, update);
@@ -1019,10 +1019,9 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-#ifndef HAVE_BG
 		put_buttons_in_table(popup_win->grid_table,
 				     popup_win->grid_button_list);
-#endif
+
 	}
 	gtk_widget_show(spec_info->display_widget);
 		
@@ -1578,13 +1577,16 @@ display_it:
 				 SORTID_CNT);
 	}
 	
-#ifndef HAVE_BG
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
 	}	       
+	
+#ifdef HAVE_BG
+	popup_win->grid_button_list = copy_main_button_list();
+#else
 	popup_win->grid_button_list = list_create(destroy_grid_button);
 #endif	
-	
+
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_part(info_list, popup_win);
@@ -1605,7 +1607,7 @@ display_it:
 				continue;
 
 			hostlist = hostlist_create(
-				(char *)spec_info->data);
+				(char *)spec_info->search_info->gchar_data);
 			host = hostlist_shift(hostlist);
 			hostlist_destroy(hostlist);
 			if(!host) 
@@ -1629,7 +1631,7 @@ display_it:
 		case BLOCK_PAGE:
 		case JOB_PAGE:
 			if(strcmp(part_ptr->name, 
-				  (char *)spec_info->data)) 
+				  (char *)spec_info->search_info->gchar_data)) 
 				continue;
 			break;
 		default:
@@ -1768,13 +1770,24 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case JOB_PAGE:
 	case BLOCK_PAGE: 
 	case INFO_PAGE:
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
 		//specific_info_job(popup_win);
 		break;
 	case NODE_PAGE:
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
+		if(strlen(state)) {
+			popup_win->spec_info->search_info->search_type =
+				SEARCH_NODE_STATE;
+			gtk_tree_model_get(
+				model, iter, SORTID_STATE_NUM,
+				&popup_win->spec_info->search_info->int_data,
+				-1);
+		} else {
+			popup_win->spec_info->search_info->search_type = 
+				SEARCH_NODE_NAME;
+		}
 		//specific_info_node(popup_win);
 		break;
 	case SUBMIT_PAGE: 

@@ -74,7 +74,8 @@ static void _open_node(GtkWidget *widget, GdkEventButton *event,
 
 	if(!popup_win) {
 		popup_win = create_popup_info(INFO_PAGE, NODE_PAGE, title);
-		popup_win->spec_info->data = g_strdup(grid_button->node_name);
+		popup_win->spec_info->search_info->gchar_data =
+			g_strdup(grid_button->node_name);
 		if (!g_thread_create((gpointer)popup_thr, popup_win,
 				     FALSE, &error))
 		{
@@ -111,7 +112,8 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 
 	if(!popup_win) {
 		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE, title);
-		popup_win->spec_info->data = g_strdup(grid_button->node_name);
+		popup_win->spec_info->search_info->gchar_data =
+			g_strdup(grid_button->node_name);
 		if (!g_thread_create((gpointer)popup_thr, popup_win,
 				     FALSE, &error))
 		{
@@ -146,7 +148,7 @@ static int _sort_button_inx(grid_button_t *button_a, grid_button_t *button_b)
 	return 0;
 }
 
-void _put_button_as_down(grid_button_t *grid_button)
+void _put_button_as_down(grid_button_t *grid_button, int state)
 {
 	GtkWidget *image = NULL;
 	GdkColor color;
@@ -180,9 +182,12 @@ void _put_button_as_down(grid_button_t *grid_button)
 	gdk_color_parse("white", &color);
 	gtk_widget_modify_bg(grid_button->button, 
 			     GTK_STATE_PRELIGHT, &color);
-	
-	image = gtk_image_new_from_stock(GTK_STOCK_CANCEL,
-					 GTK_ICON_SIZE_SMALL_TOOLBAR);
+	if(state == NODE_STATE_DRAIN)
+		image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_ERROR,
+						 GTK_ICON_SIZE_SMALL_TOOLBAR);
+	else 
+		image = gtk_image_new_from_stock(GTK_STOCK_CANCEL,
+						 GTK_ICON_SIZE_SMALL_TOOLBAR);
 	gtk_container_add(GTK_CONTAINER(grid_button->button), image);
 	gtk_widget_show_all(grid_button->button);
 	return;	
@@ -239,6 +244,13 @@ extern void destroy_grid_button(void *arg)
 	}
 }
 
+/* we don't set the call back for the button here because sometimes we
+ * need to get a different call back based on what we are doing with
+ * the button, an example of this would be in
+ * add_extra_bluegene_buttons were the small block buttons do
+ * something different than they do regularly
+ */
+
 extern grid_button_t *create_grid_button_from_another(
 	grid_button_t *grid_button, char *name, int color_inx)
 {
@@ -254,8 +266,7 @@ extern grid_button_t *create_grid_button_from_another(
 	send_grid_button = xmalloc(sizeof(grid_button_t));
 	memcpy(send_grid_button, grid_button, sizeof(grid_button_t));
 	node_base_state = send_grid_button->state & NODE_STATE_BASE;
-	if ((node_base_state == NODE_STATE_DOWN) || 
-	    (send_grid_button->state & NODE_STATE_DRAIN)) {
+	if((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_CANCEL,
 			GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -273,7 +284,25 @@ extern grid_button_t *create_grid_button_from_another(
 		gtk_container_add(
 			GTK_CONTAINER(send_grid_button->button),
 			image);
+	} else if((color_inx >= 0)
+		  && send_grid_button->state & NODE_STATE_DRAIN) {
+		GtkWidget *image = gtk_image_new_from_stock(
+			GTK_STOCK_DIALOG_ERROR,
+			GTK_ICON_SIZE_SMALL_TOOLBAR);
 		
+		send_grid_button->button = gtk_event_box_new();
+		gtk_event_box_set_above_child(
+			GTK_EVENT_BOX(send_grid_button->button),
+			FALSE);
+		gdk_color_parse("black", &color);
+		gtk_widget_modify_bg(send_grid_button->button, 
+				     GTK_STATE_NORMAL, &color);
+		gdk_color_parse("white", &color);
+		gtk_widget_modify_bg(send_grid_button->button, 
+				     GTK_STATE_PRELIGHT, &color);
+		gtk_container_add(
+			GTK_CONTAINER(send_grid_button->button),
+			image);		
 	} else {
 		send_grid_button->button = gtk_button_new();
 		if(color_inx >= 0)
@@ -319,12 +348,16 @@ extern char *change_grid_color(List button_list, int start, int end,
 		    ||  (grid_button->inx > end)) 
 			continue;
 		node_base_state = grid_button->state & NODE_STATE_BASE;
-		if ((node_base_state == NODE_STATE_DOWN)
-		    || (grid_button->state & NODE_STATE_DRAIN))
-			continue;
-		grid_button->color = sview_colors[color_inx];
-		gtk_widget_modify_bg(grid_button->button, 
-				     GTK_STATE_NORMAL, &color);
+		if (node_base_state == NODE_STATE_DOWN) {
+			_put_button_as_down(grid_button, NODE_STATE_DOWN);
+		} else if (grid_button->state & NODE_STATE_DRAIN) {
+			_put_button_as_down(grid_button, NODE_STATE_DRAIN);
+		} else {
+			_put_button_as_up(grid_button);
+			grid_button->color = sview_colors[color_inx];
+			gtk_widget_modify_bg(grid_button->button, 
+					     GTK_STATE_NORMAL, &color);
+		}
 	}
 	list_iterator_destroy(itr);
 	return sview_colors[color_inx];
@@ -805,11 +838,15 @@ extern void sview_init_grid()
 				continue;
 			node_base_state = node_ptr->node_state 
 				& NODE_STATE_BASE;
-			if ((node_base_state == NODE_STATE_DOWN) || 
-			    (node_ptr->node_state & NODE_STATE_DRAIN)) {
-				_put_button_as_down(grid_button);
+			if (node_base_state == NODE_STATE_DOWN) {
+				_put_button_as_down(grid_button,
+						    NODE_STATE_DOWN);
+			} else if (node_ptr->node_state & NODE_STATE_DRAIN) {
+				_put_button_as_down(grid_button,
+						    NODE_STATE_DRAIN);
 			} else {
 				_put_button_as_up(grid_button);
+				grid_button->color = "white";
 				gtk_widget_modify_bg(grid_button->button, 
 						     GTK_STATE_NORMAL, &color);
 			}

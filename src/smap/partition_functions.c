@@ -71,7 +71,6 @@ static char* _convert_node_use(enum node_use_type node_use);
 static int _marknodes(db2_block_info_t *block_ptr, int count);
 #endif
 static void _print_header_part(void);
-static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
 			     db2_block_info_t *db2_info_ptr);
 #ifdef HAVE_BG
@@ -496,33 +495,6 @@ static void _print_header_part(void)
 	}	
 }
 
-static char *_part_state_str(rm_partition_state_t state)
-{
-	static char tmp[16];
-
-#ifdef HAVE_BG
-	switch (state) {
-		case RM_PARTITION_BUSY: 
-			return "BUSY";
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_NAV:
-			return "NAV";
-		case RM_PARTITION_READY:
-			return "READY";
-	}
-#endif
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
-}
-
 static int _print_text_part(partition_info_t *part_ptr, 
 			    db2_block_info_t *db2_info_ptr)
 {
@@ -597,7 +569,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
 					  ba_system_ptr->xcord, 
-					  _part_state_str(
+					  bg_block_state_string(
 						  db2_info_ptr->state));
 				ba_system_ptr->xcord += 8;
 				
@@ -732,7 +704,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 				printf("%16.16s ",
 				       db2_info_ptr->bg_block_name);
 				printf("%5.5s ", 
-				       _part_state_str(db2_info_ptr->state));
+				       bg_block_state_string(
+					       db2_info_ptr->state));
 				
 				printf("%8.8s ", db2_info_ptr->bg_user_name);
 				

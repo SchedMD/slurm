@@ -204,6 +204,7 @@ extern char colors[6];
 extern int DIM_SIZE[BA_SYSTEM_DIMENSIONS];
 extern s_p_options_t bg_conf_file_options[];
 
+extern char *bg_block_state_string(rm_partition_state_t state);
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, 
 			  const char *line, char **leftover);

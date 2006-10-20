@@ -253,7 +253,7 @@ static void _node_info_list_del(void *object)
 void _display_info_node(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
-	char *name = (char *)spec_info->data;
+	char *name = (char *)spec_info->search_info->gchar_data;
 	int found = 0;
 	node_info_t *node_ptr = NULL;
 	GtkTreeView *treeview = NULL;
@@ -262,7 +262,7 @@ void _display_info_node(List info_list,	popup_info_t *popup_win)
 	sview_node_info_t *sview_node_info = NULL;
 	int i = -1;
 
-	if(!spec_info->data) {
+	if(!spec_info->search_info->gchar_data) {
 		goto finished;
 	}
 need_refresh:
@@ -637,7 +637,10 @@ extern void specific_info_node(popup_info_t *popup_win)
 	hostlist_t hostlist = NULL;	
 	hostlist_iterator_t host_itr = NULL;
 	int i = -1;
-		
+	sview_search_info_t *search_info = spec_info->search_info;
+	bool drain_flag1 = false, comp_flag1 = false, no_resp_flag1 = false;
+	bool drain_flag2 = false, comp_flag2 = false, no_resp_flag2 = false;
+	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
 	
@@ -697,33 +700,42 @@ display_it:
 				 SORTID_CNT);
 	}
 
-#ifndef HAVE_BG
-	if(popup_win->grid_button_list) {
-		list_destroy(popup_win->grid_button_list);
-	}	       
-	popup_win->grid_button_list = list_create(destroy_grid_button);
-#endif	
-
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
-#ifdef HAVE_BG
 		if(popup_win->grid_button_list) {
 			list_destroy(popup_win->grid_button_list);
 		}	       
 		popup_win->grid_button_list = list_create(destroy_grid_button);
-#endif
+		
 		_display_info_node(info_list, popup_win);
 		goto end_it;
 	}
+
+	if(popup_win->grid_button_list) {
+		list_destroy(popup_win->grid_button_list);
+	}	       
+#ifdef HAVE_BG
+	popup_win->grid_button_list = copy_main_button_list();
+#else
+	popup_win->grid_button_list = list_create(destroy_grid_button);
+#endif	
 	
 	/* just linking to another list, don't free the inside, just
 	   the list */
 	send_info_list = list_create(NULL);	
-
-	hostlist = hostlist_create((char *)spec_info->data);
-	host_itr = hostlist_iterator_create(hostlist);
+	if(search_info->gchar_data) {
+		hostlist = hostlist_create(search_info->gchar_data);
+		host_itr = hostlist_iterator_create(hostlist);
+	}
 
 	i = -1;
+	if(search_info->int_data != NO_VAL) {
+		drain_flag1 = (search_info->int_data & NODE_STATE_DRAIN);
+		comp_flag1 = (search_info->int_data & NODE_STATE_COMPLETING);
+		no_resp_flag1 = (search_info->int_data
+				 & NODE_STATE_NO_RESPOND);
+	}			
+	
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
 		int found = 0;
@@ -731,17 +743,65 @@ display_it:
 			
 		i++;
 		node_ptr = sview_node_info_ptr->node_ptr;
-		while((host = hostlist_next(host_itr))) { 
-			if(!strcmp(host, node_ptr->name)) {
+		switch(search_info->search_type) {
+		case SEARCH_NODE_NAME:
+			if(!search_info->gchar_data)
+				continue;
+			while((host = hostlist_next(host_itr))) { 
+				if(!strcmp(host, node_ptr->name)) {
+					free(host);
+					found = 1;
+					break; 
+				}
 				free(host);
-				found = 1;
-				break; 
 			}
-			free(host);
-		}
-		hostlist_iterator_reset(host_itr);
-		if(!found)
+			hostlist_iterator_reset(host_itr);
+			
+			if(!found)
+				continue;
+
+			break;
+		case SEARCH_NODE_STATE:
+			if(search_info->int_data == NO_VAL)
+				continue;
+			
+			drain_flag2 = (node_ptr->node_state
+				       & NODE_STATE_DRAIN);
+			comp_flag2 = (node_ptr->node_state
+				      & NODE_STATE_COMPLETING);
+			no_resp_flag2 = (node_ptr->node_state
+					 & NODE_STATE_NO_RESPOND);
+			
+			if(drain_flag1 && drain_flag2)
+				break;
+			else if(comp_flag1 && comp_flag2)
+				break;
+			else if(no_resp_flag1 && no_resp_flag2)
+				break;
+			
+			if(node_ptr->node_state != search_info->int_data)
+				continue;
+			if(search_info->gchar_data) {
+				while((host = hostlist_next(host_itr))) { 
+					if(!strcmp(host, node_ptr->name)) {
+						free(host);
+						found = 1;
+						break; 
+					}
+					free(host);
+				}
+				hostlist_iterator_reset(host_itr);
+				if(!found)
+					continue;
+			}			
+			
+			break;
+		default:
 			continue;
+			break;
+		}
+		
+		
 		
 		list_push(send_info_list, sview_node_info_ptr);
 #ifdef HAVE_BG
@@ -754,13 +814,15 @@ display_it:
 	}
 	list_iterator_destroy(itr);
 
-	hostlist_iterator_destroy(host_itr);
-	hostlist_destroy(hostlist);
+	if(search_info->gchar_data) {
+		hostlist_iterator_destroy(host_itr);
+		hostlist_destroy(hostlist);
+	}
 
-#ifndef HAVE_BG
+
 	put_buttons_in_table(popup_win->grid_table,
 			     popup_win->grid_button_list);
-#endif	
+
 	_update_info_node(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));
 	list_destroy(send_info_list);
@@ -840,7 +902,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(id, NODE_PAGE, title);
 		else
 			popup_win = create_popup_info(NODE_PAGE, id, title);
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
 		if (!g_thread_create((gpointer)popup_thr, popup_win, 
 				     FALSE, &error))
 		{

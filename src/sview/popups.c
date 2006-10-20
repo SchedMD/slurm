@@ -48,6 +48,7 @@ void *_refresh_thr(gpointer arg)
 	gdk_threads_leave();
 	return NULL;	
 }
+
 static gboolean _delete_popup(GtkWidget *widget,
 			      GtkWidget *event,
 			      gpointer data)
@@ -56,78 +57,105 @@ static gboolean _delete_popup(GtkWidget *widget,
 	return FALSE;
 }
 
-void *_local_popup_thr(GtkWidget *popup)
-{
-	int response = 0;
-	
-	gdk_threads_enter();
-	response = gtk_dialog_run(GTK_DIALOG(popup));
-	gdk_flush();
-	gdk_threads_leave();
-
-	if (response == GTK_RESPONSE_OK)
-	{
-		
-	}
-
-	gtk_widget_destroy(popup);
-	return NULL;
-}
-
 /* Creates a tree model containing the completions */
-void _search_entry(GtkEntry *entry, GtkComboBox *combo)
+void _search_entry(sview_search_info_t *sview_search_info)
 {
-	GtkTreeModel *model = NULL;
-	GtkTreeIter iter;
-	int id;
-	char *data = xstrdup(gtk_entry_get_text(entry));
+	int id = 0;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-	job_step_num_t *job_step = NULL;
-
-	gtk_entry_set_text(entry, "");
-
-	if(!strlen(data)) {
+	char *upper = NULL, *lower = NULL;		     
+	
+	if(sview_search_info->int_data == NO_VAL &&
+	   (!sview_search_info->gchar_data 
+	    || !strlen(sview_search_info->gchar_data))) {
 		g_print("nothing given to search for.\n");
 		return;
 	}
-	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
-		g_print("nothing selected\n");
-		return;
-	}
-	model = gtk_combo_box_get_model(combo);
-	if(!model) {
-		g_print("nothing selected\n");
-		return;
-	}
 	
-	gtk_tree_model_get(model, &iter, 0, &id, -1);
-	
-	switch(id) {
-	case JOB_PAGE:
-		snprintf(title, 100, "Job %s info", data);
+	switch(sview_search_info->search_type) {
+	case SEARCH_JOB_STATE:
+		id = JOB_PAGE;
+		upper = job_state_string(sview_search_info->int_data);
+		lower = str_tolower(upper);
+		snprintf(title, 100, "Job(s) in the %s state", lower);
+		xfree(lower);
 		break;
-	case PART_PAGE:
-		snprintf(title, 100, "Partition %s info", data);
+	case SEARCH_JOB_ID:
+		id = JOB_PAGE;
+		snprintf(title, 100, "Job %s info",
+			 sview_search_info->gchar_data);
 		break;
-	case BLOCK_PAGE:
-		snprintf(title, 100, "BG Block %s info", data);
+	case SEARCH_JOB_USER:
+		id = JOB_PAGE;
+		snprintf(title, 100, "Job(s) info for user %s",
+			 sview_search_info->gchar_data);
 		break;
-	case NODE_PAGE:
+	case SEARCH_BLOCK_STATE:
+		id = BLOCK_PAGE;
+		upper = bg_block_state_string(sview_search_info->int_data);
+		lower = str_tolower(upper);
+		snprintf(title, 100, "BG Block(s) in the %s state", lower);
+		xfree(lower);
+		break;
+	case SEARCH_BLOCK_NAME:
+		id = BLOCK_PAGE;
+		snprintf(title, 100, "Block %s info",
+			 sview_search_info->gchar_data);
+		break;
+	case SEARCH_BLOCK_SIZE:
+		id = BLOCK_PAGE;
+		sview_search_info->int_data = 
+			revert_num_unit(sview_search_info->gchar_data);
+		if(sview_search_info->int_data == -1)
+			return;
+		snprintf(title, 100, "Block(s) of size %d cnodes",
+			 sview_search_info->int_data);
+		break;
+	case SEARCH_PARTITION_NAME:
+		id = PART_PAGE;
+		snprintf(title, 100, "Partition %s info", 
+			 sview_search_info->gchar_data);
+		break;
+	case SEARCH_PARTITION_STATE:
+		id = PART_PAGE;
+		if(sview_search_info->int_data)
+			snprintf(title, 100, "Partition(s) that are up");
+		else
+			snprintf(title, 100, "Partition(s) that are down");
+		break;
+	case SEARCH_NODE_NAME:
+		id = NODE_PAGE;
 #ifdef HAVE_BG
-		snprintf(title, 100, 
-			 "Base partition(s) %s info", data);
+		snprintf(title, 100, "Base partition(s) %s info",
+			 sview_search_info->gchar_data);
 #else
-		snprintf(title, 100, "Node(s) %s info", data);
+		snprintf(title, 100, "Node(s) %s info",
+			 sview_search_info->gchar_data);
 #endif
+
+		break;
+	case SEARCH_NODE_STATE:
+		id = NODE_PAGE;
+		upper = node_state_string(sview_search_info->int_data);
+		lower = str_tolower(upper);
+#ifdef HAVE_BG
+		snprintf(title, 100, "Base partition(s) in the %s state",
+			 lower);
+#else
+		snprintf(title, 100, "Node(s) in the %s state", lower);
+#endif
+		xfree(lower);
+		
 		break;
 	default:
-		g_print("unknown selection %s\n", data);
-		break;
-	}
-
+		g_print("unknown search type %d.\n",
+			sview_search_info->search_type);
+		
+		return;
+	}		
+	
 	itr = list_iterator_create(popup_list);
 	while((popup_win = list_next(itr))) {
 		if(popup_win->spec_info)
@@ -139,26 +167,13 @@ void _search_entry(GtkEntry *entry, GtkComboBox *combo)
 
 	if(!popup_win) {
 		popup_win = create_popup_info(id, id, title);
-	}
-
-	switch(id) {
-	case JOB_PAGE:
-		id = atoi(data);
-		xfree(data);
-		job_step = g_malloc(sizeof(job_step_num_t));
-		job_step->jobid = id;
-		job_step->stepid = NO_VAL;
-		popup_win->spec_info->data = job_step;
-		break;
-	case PART_PAGE:
-	case BLOCK_PAGE:
-	case NODE_PAGE:
-		popup_win->spec_info->data = data;
-		break;
-	default:
-		g_print("unknown selection %d\n", id);
+	} else {
+		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;
 	}
+	memcpy(popup_win->spec_info->search_info, sview_search_info,
+	       sizeof(sview_search_info_t));
+
 	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
 	{
 		g_printerr ("Failed to create main popup thread: %s\n", 
@@ -438,7 +453,7 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 			    "WaitTime", temp_str);
 }
 
-extern void create_config_popup(GtkToggleAction *action, gpointer user_data)
+extern void create_config_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"SLURM Config Info",
@@ -482,7 +497,7 @@ extern void create_config_popup(GtkToggleAction *action, gpointer user_data)
 	return;
 }
 
-extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data)
+extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"SLURM Daemons running",
@@ -541,9 +556,8 @@ extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data)
 	return;
 }
 
-extern void create_search_popup(GtkToggleAction *action, gpointer user_data)
+extern void create_search_popup(GtkAction *action, gpointer user_data)
 {
-	GtkWidget *table = gtk_table_new(1, 2, FALSE);
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"Search",
 		GTK_WINDOW(user_data),
@@ -553,43 +567,171 @@ extern void create_search_popup(GtkToggleAction *action, gpointer user_data)
 		GTK_STOCK_CANCEL,
 		GTK_RESPONSE_CANCEL,
 		NULL);
-	int response = 0;
-	display_data_t pulldown_display_data[] = {
-		{G_TYPE_NONE, JOB_PAGE, "Job", TRUE, -1},
-		{G_TYPE_NONE, PART_PAGE, "Partition", TRUE, -1},
+	
+	int response = 0;	
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	const gchar *name = gtk_action_get_name(action);
+	sview_search_info_t sview_search_info;
+	
+	sview_search_info.gchar_data = NULL;
+	sview_search_info.int_data = NO_VAL;
+	sview_search_info.int_data2 = NO_VAL;
+			
+	if(!strcmp(name, "jobid")) {
+		sview_search_info.search_type = SEARCH_JOB_ID;
+		entry = gtk_entry_new();
+		label = gtk_label_new("Which job id?");
+	} else if(!strcmp(name, "user_jobs")) {
+		sview_search_info.search_type = SEARCH_JOB_USER;
+		entry = gtk_entry_new();
+		label = gtk_label_new("Which user?");
+	} else if(!strcmp(name, "state_jobs")) {
+		display_data_t pulldown_display_data[] = {
+			{G_TYPE_NONE, JOB_PENDING, "Pending", TRUE, -1},
+			{G_TYPE_NONE, JOB_RUNNING, "Running", TRUE, -1},
+			{G_TYPE_NONE, JOB_SUSPENDED, "Suspended", TRUE, -1},
+			{G_TYPE_NONE, JOB_COMPLETE, "Complete", TRUE, -1},
+			{G_TYPE_NONE, JOB_CANCELLED, "Cancelled", TRUE, -1},
+			{G_TYPE_NONE, JOB_FAILED, "Failed", TRUE, -1},
+			{G_TYPE_NONE, JOB_TIMEOUT, "Timeout", TRUE, -1},
+			{G_TYPE_NONE, JOB_NODE_FAIL, "Node Failure", TRUE, -1},
+			{G_TYPE_NONE, -1, NULL, FALSE, -1}
+		};
+		
+		sview_search_info.search_type = SEARCH_JOB_STATE;
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		label = gtk_label_new("Which state?");
+	} else if(!strcmp(name, "partition_name")) {
+		sview_search_info.search_type = SEARCH_PARTITION_NAME;
+		entry = gtk_entry_new();
+		label = gtk_label_new("Which partition");
+	} else if(!strcmp(name, "partition_state")) {
+		display_data_t pulldown_display_data[] = {
+			{G_TYPE_NONE, 0, "Down", TRUE, -1},
+			{G_TYPE_NONE, 1, "Up", TRUE, -1},
+			{G_TYPE_NONE, -1, NULL, FALSE, -1}
+		};
+		
+		sview_search_info.search_type = SEARCH_PARTITION_STATE;
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		label = gtk_label_new("Which state?");
+	} else if(!strcmp(name, "node_name")) {
+		sview_search_info.search_type = SEARCH_NODE_NAME;
+		entry = gtk_entry_new();	
 #ifdef HAVE_BG
-		{G_TYPE_NONE, BLOCK_PAGE, "BG Block", TRUE, -1},
-		{G_TYPE_NONE, NODE_PAGE, "Base Partitions", TRUE, -1},	
+		label = gtk_label_new("Which base partition(s)?\n"
+				      "(ranged or comma separated)");
 #else
-		{G_TYPE_NONE, NODE_PAGE, "Node", TRUE, -1},
+		label = gtk_label_new("Which node(s)?\n"
+				      "(ranged or comma separated)");
 #endif
-		{G_TYPE_NONE, -1, NULL, FALSE, -1}
-	};
-	GtkWidget *combo = 
-		create_pulldown_combo(pulldown_display_data, PAGE_CNT);
-	GtkWidget *entry = gtk_entry_new();
-	
-	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
-	
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
-			   table, FALSE, FALSE, 0);
-	
-	gtk_table_attach_defaults(GTK_TABLE(table), combo, 0, 1, 0, 1);
-	gtk_table_attach_defaults(GTK_TABLE(table), entry, 1, 2, 0, 1);
+	} else if(!strcmp(name, "node_state")) {
+		display_data_t pulldown_display_data[] = {
+			{G_TYPE_NONE, NODE_STATE_UNKNOWN, "Down", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_NO_RESPOND, "No Response",
+			 TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_DRAIN, "Drained", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_IDLE, "Idle", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_ALLOCATED, "Allocated",
+			 TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_COMPLETING, "Completing",
+			 TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_UNKNOWN, "Unknown", TRUE, -1},
+			{G_TYPE_NONE, -1, NULL, FALSE, -1}
+		};
 
+		sview_search_info.search_type = SEARCH_NODE_STATE;
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		label = gtk_label_new("Which state?");
+	} 
+#ifdef HAVE_BG
+	else if(!strcmp(name, "bg_block_name")) {
+		sview_search_info.search_type = SEARCH_BLOCK_NAME;
+		entry = gtk_entry_new();
+		label = gtk_label_new("Which block?");
+	} else if(!strcmp(name, "bg_block_size")) {
+		sview_search_info.search_type = SEARCH_BLOCK_SIZE;
+		entry = gtk_entry_new();
+		label = gtk_label_new("Which block size?");
+	} else if(!strcmp(name, "bg_block_state")) {
+		display_data_t pulldown_display_data[] = {
+			{G_TYPE_NONE, RM_PARTITION_FREE, "Free", TRUE, -1},
+			{G_TYPE_NONE, RM_PARTITION_CONFIGURING, "Configuring",
+			 TRUE, -1},
+			{G_TYPE_NONE, RM_PARTITION_READY, "Ready", TRUE, -1},
+			{G_TYPE_NONE, RM_PARTITION_BUSY, "Busy", TRUE, -1},
+			{G_TYPE_NONE, RM_PARTITION_DEALLOCATING,
+			 "Deallocating", TRUE, -1},
+			{G_TYPE_NONE, RM_PARTITION_ERROR, "Error", TRUE, -1},
+			{G_TYPE_NONE, -1, NULL, FALSE, -1}
+		};
+		sview_search_info.search_type = SEARCH_BLOCK_STATE;
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		label = gtk_label_new("Which state?");
+	}
+#endif
+	else {
+		sview_search_info.search_type = 0;
+		goto end_it;
+	}
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   label, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   entry, FALSE, FALSE, 0);
+		
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
-	if (response == GTK_RESPONSE_OK)
-		_search_entry(GTK_ENTRY(entry), GTK_COMBO_BOX(combo));
-	
+	if (response == GTK_RESPONSE_OK) {
+		if(!sview_search_info.search_type)
+			goto end_it;
 
+		switch(sview_search_info.search_type) {
+		case SEARCH_BLOCK_STATE:
+		case SEARCH_JOB_STATE:
+		case SEARCH_NODE_STATE:
+		case SEARCH_PARTITION_STATE:
+			if(!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(entry),
+							  &iter)) {
+				g_print("nothing selected\n");
+				return;
+			}
+			model = gtk_combo_box_get_model(GTK_COMBO_BOX(entry));
+			if(!model) {
+				g_print("nothing selected\n");
+				return;
+			}
+			
+			gtk_tree_model_get(model, &iter, 0,
+					   &sview_search_info.int_data, -1);
+			break;
+		case SEARCH_JOB_ID:
+		case SEARCH_JOB_USER:
+		case SEARCH_BLOCK_NAME:
+		case SEARCH_BLOCK_SIZE:
+		case SEARCH_PARTITION_NAME:
+		case SEARCH_NODE_NAME:
+			sview_search_info.gchar_data =
+				g_strdup(gtk_entry_get_text(GTK_ENTRY(entry)));
+			break;
+		default:
+		
+			break;
+		}
+		
+		_search_entry(&sview_search_info);
+	}
+end_it:
 	gtk_widget_destroy(popup);
 	
 	return;
 }
 
-extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data)
+extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *table = gtk_table_new(1, 2, FALSE);
 	GtkWidget *label = gtk_label_new("Interval in Seconds ");

@@ -97,7 +97,21 @@ enum { STATUS_ADMIN_MODE,
 };
 
 enum { DISPLAY_NAME,
-       DISPLAY_VALUE };
+       DISPLAY_VALUE 
+};
+
+typedef enum { SEARCH_JOB_ID = 1,
+	       SEARCH_JOB_USER,
+	       SEARCH_JOB_STATE,
+	       SEARCH_BLOCK_NAME,
+	       SEARCH_BLOCK_SIZE,
+	       SEARCH_BLOCK_STATE,
+	       SEARCH_PARTITION_NAME,
+	       SEARCH_PARTITION_STATE,
+	       SEARCH_NODE_NAME,
+	       SEARCH_NODE_STATE
+} sview_search_type_t;
+
 
 /* Input parameters */
 typedef struct {
@@ -146,10 +160,17 @@ struct display_data {
 	gpointer user_data;
 };
 
+typedef struct {
+	sview_search_type_t search_type;
+	gchar *gchar_data;
+	int  int_data;
+	int  int_data2;
+} sview_search_info_t;
+
 struct specific_info {
 	int type; /* calling window type */
 	int view;
-	void *data;
+	sview_search_info_t *search_info;
 	char *title;
 	GtkWidget *display_widget;	
 };
@@ -169,11 +190,6 @@ struct popup_info {
 	specific_info_t *spec_info;
 	display_data_t *display_data;
 };
-
-typedef struct {
-	int jobid;
-	int stepid;
-} job_step_num_t;
 
 typedef struct {
 	GtkWidget *button;
@@ -225,10 +241,10 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 			const display_data_t *display_data);
 
 //popups.c
-extern void create_config_popup(GtkToggleAction *action, gpointer user_data);
-extern void create_daemon_popup(GtkToggleAction *action, gpointer user_data);
-extern void create_search_popup(GtkToggleAction *action, gpointer user_data);
-extern void change_refresh_popup(GtkToggleAction *action, gpointer user_data);
+extern void create_config_popup(GtkAction *action, gpointer user_data);
+extern void create_daemon_popup(GtkAction *action, gpointer user_data);
+extern void create_search_popup(GtkAction *action, gpointer user_data);
+extern void change_refresh_popup(GtkAction *action, gpointer user_data);
 
 //grid.c
 extern void destroy_grid_button(void *arg);
@@ -347,6 +363,7 @@ extern void setup_popup_info(popup_info_t *popup_win,
 			     int cnt);
 extern void redo_popup(GtkWidget *widget, GdkEventButton *event, 
 		       popup_info_t *popup_win);
+extern void destroy_search_info(void *arg);
 extern void destroy_specific_info(void *arg);
 extern void destroy_popup_info(void *arg);
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
