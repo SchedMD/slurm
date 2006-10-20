@@ -377,8 +377,9 @@ static int _handle_string(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once", v->key);
-		return -1;
+		debug("%s specified more than once", v->key);
+		xfree(v->data);
+		v->data_count = 0;
 	}
 
 	if (v->handler != NULL) {
@@ -400,8 +401,9 @@ static int _handle_long(s_p_values_t *v,
 			const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once", v->key);
-		return -1;
+		debug("%s specified more than once", v->key);
+		xfree(v->data);
+		v->data_count = 0;
 	}
 
 	if (v->handler != NULL) {
@@ -441,8 +443,9 @@ static int _handle_uint16(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once", v->key);
-		return -1;
+		debug("%s specified more than once", v->key);
+		xfree(v->data);
+		v->data_count = 0;
 	}
 
 	if (v->handler != NULL) {
@@ -490,8 +493,9 @@ static int _handle_uint32(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once", v->key);
-		return -1;
+		debug("%s specified more than once", v->key);
+		xfree(v->data);
+		v->data_count = 0;
 	}
 
 	if (v->handler != NULL) {
@@ -539,11 +543,6 @@ static int _handle_uint32(s_p_values_t *v,
 static int _handle_pointer(s_p_values_t *v,
 			   const char *value, const char *line, char **leftover)
 {
-	if (v->data_count != 0) {
-		error("%s specified more than once", v->key);
-		return -1;
-	}
-
 	if (v->handler != NULL) {
 		/* call the handler function */
 		int rc;
@@ -552,6 +551,11 @@ static int _handle_pointer(s_p_values_t *v,
 		if (rc != 1)
 			return rc == 0 ? 0 : -1;
 	} else {
+		if (v->data_count != 0) {
+			debug("%s specified more than once", v->key);
+			xfree(v->data);
+			v->data_count = 0;
+		}
 		v->data = xstrdup(value);
 	}
 
@@ -587,8 +591,9 @@ static int _handle_boolean(s_p_values_t *v,
 			   const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once", v->key);
-		return -1;
+		debug("%s specified more than once", v->key);
+		xfree(v->data);
+		v->data_count = 0;
 	}
 
 	if (v->handler != NULL) {

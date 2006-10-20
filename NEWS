@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.0-pre6
 =============================
  -- Maintain actually job step run time with suspend/resume use.
+ -- Allow slurm.conf options to appear multiple times.  SLURM will use the
+    last instance of any particular option.
 
 * Changes in SLURM 1.2.0-pre5
 =============================
