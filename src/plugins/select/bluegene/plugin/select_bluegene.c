@@ -428,6 +428,36 @@ extern int select_p_get_info_from_plugin (enum select_data_info info,
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_update_node_state (int index, int state)
+{
+	int x;
+#ifdef HAVE_BG
+	int y, z;
+	
+	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
+		for (z = 0; z < DIM_SIZE[Z]; z++) {
+			for (x = 0; x < DIM_SIZE[X]; x++) {
+				if (ba_system_ptr->grid[x][y][z].index 
+				     == index) {
+					ba_update_node_state(
+						&ba_system_ptr->grid[x][y][z],
+						state);
+					return SLURM_SUCCESS;
+				}
+			}
+		}
+	}
+#else
+	for (x = 0; x < DIM_SIZE[X]; x++) {
+		if (ba_system_ptr->grid[x].index == index) {
+			ba_update_node_state(&ba_system_ptr->grid[x], state);
+			return SLURM_SUCCESS;
+		}
+	}
+#endif
+	return SLURM_ERROR;
+}
+
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;

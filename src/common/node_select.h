@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -106,11 +106,21 @@ extern int select_g_update_block (update_part_msg_t *part_desc_ptr);
 /* 
  * Get select data from a plugin
  * IN node_pts  - current node record
- * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN cr_info   - type of data to get from the node record 
+ *                (see enum select_data_info)
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
 					  void *data);
+
+/* 
+ * Updated a node state in the plugin, this should happen when a node is
+ * drained or put into a down state then changed back.
+ * IN index  - index into the node record list
+ * IN state  - state to update to
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
+extern int select_g_update_node_state (int index, int state);
 
 /* 
  * Alter the node count for a job given the type of system we are on

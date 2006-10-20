@@ -162,7 +162,7 @@ typedef struct {
 	ba_switch_t axis_switch[BA_SYSTEM_DIMENSIONS];
 	char letter;
 	int color;
-	int indecies;
+	int index;
 	int state;
 	int conn_type;
 	int phys_x;	
@@ -262,9 +262,10 @@ extern void ba_fini();
 /** 
  * set the node in the internal configuration as unusable
  * 
- * IN c: coordinate of the node to put down
+ * IN ba_node: ba_node_t to put down
+ * IN state: new state of ba_node_t
  */
-extern void ba_set_node_down(ba_node_t *ba_node);
+extern void ba_update_node_state(ba_node_t *ba_node, int state);
 
 /** 
  * copy info from a ba_node

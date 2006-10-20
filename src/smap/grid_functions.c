@@ -46,9 +46,9 @@ extern int set_grid(int start, int end, int count)
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if ((ba_system_ptr->grid[x][y][z].indecies 
+				if ((ba_system_ptr->grid[x][y][z].index 
 				     < start)
-				||  (ba_system_ptr->grid[x][y][z].indecies 
+				||  (ba_system_ptr->grid[x][y][z].index 
 				     > end)) 
 					continue;
 				if ((ba_system_ptr->grid[x][y][z].state 
@@ -66,8 +66,8 @@ extern int set_grid(int start, int end, int count)
 	}
 #else
 	for (x = 0; x < DIM_SIZE[X]; x++) {
-		if ((ba_system_ptr->grid[x].indecies < start)
-		    ||  (ba_system_ptr->grid[x].indecies > end)) 
+		if ((ba_system_ptr->grid[x].index < start)
+		    ||  (ba_system_ptr->grid[x].index > end)) 
 			continue;
 		if ((ba_system_ptr->grid[x].state == NODE_STATE_DOWN)
 		    ||  (ba_system_ptr->grid[x].state & NODE_STATE_DRAIN))
