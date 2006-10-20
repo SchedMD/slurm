@@ -60,6 +60,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/common/node_select.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
@@ -836,15 +837,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 			free (this_node_name);
 			break;
 		}
-
+		
 		if (state_val != (uint16_t) NO_VAL) {
 			base_state = node_ptr->node_state; 
 			if (!_valid_node_state_change(base_state, state_val)) {
-				info ("Invalid node state transition requested "
-					"for node %s from=%s to=%s",
-					this_node_name, 
-					node_state_string(base_state),
-					node_state_string(state_val));
+				info("Invalid node state transition requested "
+				     "for node %s from=%s to=%s",
+				     this_node_name, 
+				     node_state_string(base_state),
+				     node_state_string(state_val));
 				state_val = (uint16_t) NO_VAL;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
@@ -892,6 +893,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_flags = node_ptr->node_state & 
 						NODE_STATE_FLAGS;
 				node_ptr->node_state = state_val | node_flags;
+
+				select_g_update_node_state(node_inx, 
+							   state_val);
+
 				info ("update_node: node %s state set to %s",
 					this_node_name, 
 					node_state_string(state_val));
@@ -968,6 +973,8 @@ extern int drain_nodes ( char *nodes, char *reason )
 
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup(reason);
+
+		select_g_update_node_state(node_inx, node_ptr->node_state);
 
 		free (this_node_name);
 	}
@@ -1757,6 +1764,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	bit_clear (avail_node_bitmap, inx);
 	bit_set   (idle_node_bitmap,  inx);
 	bit_set   (share_node_bitmap, inx);
+	select_g_update_node_state(inx, node_ptr->node_state);	
 }
 
 /*

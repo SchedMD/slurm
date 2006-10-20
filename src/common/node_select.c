@@ -25,7 +25,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -102,6 +102,7 @@ typedef struct slurm_select_ops {
 						*part_desc_ptr);
 	int             (*get_info_from_plugin)(enum select_data_info cr_info,
 						void *data);
+	int             (*update_node_state)   (int index, int state);
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
 } slurm_select_ops_t;
@@ -174,6 +175,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_update_nodeinfo",
 		"select_p_update_block",
                 "select_p_get_info_from_plugin",
+		"select_p_update_node_state",
 		"select_p_alter_node_cnt"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -448,6 +450,21 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info,
                return SLURM_ERROR;
 
        return (*(g_select_context->ops.get_info_from_plugin))(cr_info, data);
+}
+
+/* 
+ * Updated a node state in the plugin, this should happen when a node is
+ * drained or put into a down state then changed back.
+ * IN index  - index into the node record list
+ * IN state  - state to update to
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
+extern int select_g_update_node_state (int index, int state)
+{
+	if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+	return (*(g_select_context->ops.update_node_state))(index, state);
 }
 
 /* 

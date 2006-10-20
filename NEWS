@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.17
+=========================
+ - BLUEGENE - fix to make dynamic partitioning not go create block where
+    there are nodes that are down or draining.
+
 * Changes in SLURM 1.1.16
 =========================
  - BLUEGENE - fix to make prolog run 5 minutes longer to make sure we have

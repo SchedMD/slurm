@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -46,9 +46,9 @@ extern int set_grid(int start, int end, int count)
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if ((ba_system_ptr->grid[x][y][z].indecies 
+				if ((ba_system_ptr->grid[x][y][z].index 
 				     < start)
-				||  (ba_system_ptr->grid[x][y][z].indecies 
+				||  (ba_system_ptr->grid[x][y][z].index 
 				     > end)) 
 					continue;
 				if ((ba_system_ptr->grid[x][y][z].state 
@@ -66,8 +66,8 @@ extern int set_grid(int start, int end, int count)
 	}
 #else
 	for (x = 0; x < DIM_SIZE[X]; x++) {
-		if ((ba_system_ptr->grid[x].indecies < start)
-		    ||  (ba_system_ptr->grid[x].indecies > end)) 
+		if ((ba_system_ptr->grid[x].index < start)
+		    ||  (ba_system_ptr->grid[x].index > end)) 
 			continue;
 		if ((ba_system_ptr->grid[x].state == NODE_STATE_DOWN)
 		    ||  (ba_system_ptr->grid[x].state & NODE_STATE_DRAIN))
