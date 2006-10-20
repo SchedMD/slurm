@@ -12,6 +12,10 @@
   Micro:        0
   Version:	1.2.0
   Release:	0.pre5
+  Minor:	1
+  Micro:        16
+  Version:	1.1.16
+  Release:	1
   API_CURRENT:	10	
   API_AGE:	0
   API_REVISION:	0

@@ -2280,6 +2280,11 @@ extern int select_p_get_info_from_plugin(enum select_data_info info,
 	return rc;
 }
 
+extern int select_p_update_node_state (int index, int state)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	return SLURM_SUCCESS;
