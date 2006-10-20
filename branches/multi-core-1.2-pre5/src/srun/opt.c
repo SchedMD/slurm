@@ -404,18 +404,6 @@ static int _verify_geometry(const char *arg, uint16_t *geometry)
 	return rc;
 }
 
-/* reset_str
- * given a pointer to a string, if it is not NULL free it and set it to NULL
- */
-static void
-reset_str(char **str)
-{
-	if (*str) {
-		xfree(*str);
-		*str=NULL;
-	}
-}
-
 /*
  * verify cpu_bind arguments
  * returns -1 on error, 0 otherwise
@@ -480,13 +468,13 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type |=  CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
 			char *list;
@@ -496,7 +484,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type |=  CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
@@ -513,7 +501,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type |=  CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
@@ -608,21 +596,21 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type |=  MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "local") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type |=  MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
@@ -633,7 +621,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type |=  MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
 			} else {
@@ -651,7 +639,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type |=  MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
 			} else {
@@ -1230,6 +1218,8 @@ _get_int(const char *arg, const char *what, bool positive)
 		exit(1);
 	} else if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
+	} else if (result < INT_MIN) {
+		error ("Numeric argument %ld to small for %s.", result, what);
 	}
 
 	return (int) result;
