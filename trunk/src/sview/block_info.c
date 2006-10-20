@@ -413,14 +413,14 @@ void _display_info_block(List block_list,
 			 popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
-	/* char *name = (char *)spec_info->data; */
+	/* char *name = (char *)spec_info->search_info->gchar_data; */
 /* 	int i, found = 0; */
 /* 	sview_block_info_t *block_ptr = NULL; */
 	char *info = NULL;
 	char *not_found = NULL;
 	GtkWidget *label = NULL;
 	
-	if(!spec_info->data) {
+	if(!spec_info->search_info->gchar_data) {
 		info = xstrdup("No pointer given!");
 		goto finished;
 	}
@@ -659,6 +659,7 @@ extern void specific_info_block(popup_info_t *popup_win)
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_select_info_msg_t *node_select_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
+	sview_search_info_t *search_info = spec_info->search_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -782,15 +783,14 @@ display_it:
 		switch(spec_info->type) {
 		case PART_PAGE:
 			if(strcmp(block_ptr->slurm_part_name, 
-				  (char *)spec_info->data)) 
+				  search_info->gchar_data)) 
 				continue;
 			break;
 		case NODE_PAGE:
 			if(!block_ptr->nodes)
 				continue;
 			
-			hostlist = hostlist_create(
-				(char *)spec_info->data);
+			hostlist = hostlist_create(search_info->gchar_data);
 			host = hostlist_shift(hostlist);
 			hostlist_destroy(hostlist);
 			if(!host) 
@@ -811,9 +811,37 @@ display_it:
 				continue;
 			break;
 		case BLOCK_PAGE:
+			switch(search_info->search_type) {
+			case SEARCH_BLOCK_NAME:
+				if(!search_info->gchar_data)
+					continue;
+				
+				if(strcmp(block_ptr->bg_block_name, 
+					  search_info->gchar_data)) 
+					continue;
+				break;
+			case SEARCH_BLOCK_SIZE:
+				if(search_info->int_data == NO_VAL)
+					continue;
+				if(block_ptr->node_cnt
+				   != search_info->int_data)
+					continue;
+				break;
+			case SEARCH_BLOCK_STATE:
+				if(search_info->int_data == NO_VAL)
+					continue;
+				if(block_ptr->state != search_info->int_data)
+					continue;
+				
+				break;
+			default:
+				continue;
+				break;
+			}
+			break;
 		case JOB_PAGE:
 			if(strcmp(block_ptr->bg_block_name, 
-				  (char *)spec_info->data)) 
+				  search_info->gchar_data)) 
 				continue;
 			break;
 		default:
@@ -913,12 +941,12 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 	switch(id) {
 	case JOB_PAGE:
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	case PART_PAGE:
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	case NODE_PAGE: 
 		g_free(name);
@@ -931,10 +959,10 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			}
 			i++;
 		}
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	case INFO_PAGE:
-		popup_win->spec_info->data = name;
+		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	default:
 		g_print("block got %d\n", id);

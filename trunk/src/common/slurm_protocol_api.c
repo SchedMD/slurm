@@ -53,6 +53,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 /* PROJECT INCLUDES */
 #include "src/common/macros.h"
@@ -2244,7 +2245,7 @@ extern int nodelist_find(const char *nodelist, const char *name)
 	return id;
 }
 
-void convert_num_unit(float num, char *buf, int orig_type)
+extern void convert_num_unit(float num, char *buf, int orig_type)
 {
 	char *unit = "\0KMGP?";
 	int i = (int)num % 512;
@@ -2266,6 +2267,27 @@ void convert_num_unit(float num, char *buf, int orig_type)
 		sprintf(buf, "%d%c", i, unit[orig_type]);
 	else
 		sprintf(buf, "%.2f%c", num, unit[orig_type]);
+}
+
+extern int revert_num_unit(const char *buf)
+{
+	char *unit = "\0KMGP\0";
+	int i = 1, j = 0, number = 0;
+	
+	if(!buf)
+		return -1;
+	j = strlen(buf) - 1;
+	while(unit[i]) {
+		if(toupper((int)buf[j]) == unit[i]) 
+			break;
+		i++;
+	}
+	
+	number = atoi(buf);
+	if(unit[i]) 
+		number *= (i*1024);
+		
+	return number;
 }
 
 #if _DEBUG

@@ -362,7 +362,23 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"<ui>"
 		"  <menubar name='main'>"
 		"    <menu action='actions'>"
-		"      <menuitem action='search'/>"
+		"      <menu action='search'>"
+		"        <menuitem action='jobid'/>"
+		"        <menuitem action='user_jobs'/>"
+		"        <menuitem action='state_jobs'/>"
+#ifdef HAVE_BG
+		"      <separator/>"
+		"        <menuitem action='bg_block_name'/>"
+		"        <menuitem action='bg_block_size'/>"
+		"        <menuitem action='bg_block_state'/>"
+#endif
+		"      <separator/>"
+		"        <menuitem action='partition_name'/>"
+		"        <menuitem action='partition_state'/>"
+		"      <separator/>"
+		"        <menuitem action='node_name'/>"
+		"        <menuitem action='node_state'/>"
+		"      </menu>"
 		"      <menuitem action='refresh'/>"
 		"      <menuitem action='reconfig'/>"
 		"      <separator/>"
@@ -392,10 +408,57 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"</ui>";
 
 	GtkActionEntry entries[] = {
-		{"actions", NULL, "_Actions", NULL, "<alt>a"},
-		{"options", NULL, "_Options", NULL, "<alt>o"},
-		{"displays", NULL, "_Query", NULL, "<alt>q"},
-		{"tab_pos", NULL, "_Tab Pos", NULL, "<alt>t"},
+		{"actions", NULL, "_Actions", "<alt>a"},
+		{"options", NULL, "_Options", "<alt>o"},
+		{"displays", NULL, "_Query", "<alt>q"},
+		{"search", GTK_STOCK_FIND, "Search", ""},
+		{"jobid", NULL, "Job ID", 
+		 "", "Search for jobid", 
+		 G_CALLBACK(create_search_popup)},
+		{"user_jobs", NULL, "Specific User's Job(s)", 
+		 "", "Search for a specific users job(s)", 
+		 G_CALLBACK(create_search_popup)},
+		{"state_jobs", NULL, "Job(s) in a Specific State", 
+		 "", "Search for job(s) in a specific state", 
+		 G_CALLBACK(create_search_popup)},
+#ifdef HAVE_BG
+		{"bg_block_name", NULL, "BG Block Name", 
+		 "", "Search for a specific BG Block", 
+		 G_CALLBACK(create_search_popup)},
+		{"bg_block_size", NULL, "BG Block Size", 
+		 "", 
+		 "Search for BG Blocks having given size in cnodes", 
+		 G_CALLBACK(create_search_popup)},
+		{"bg_block_state", NULL, "BG Block State", 
+		 "", 
+		 "Search for BG Blocks having given state", 
+		 G_CALLBACK(create_search_popup)},
+#endif
+		{"partition_name", NULL, "Slurm Partition Name", 
+		 "", "Search for a specific SLURM partition", 
+		 G_CALLBACK(create_search_popup)},
+		{"partition_state", NULL, "Slurm Partition State", 
+		 "", "Search for SLURM partitions in a given state", 
+		 G_CALLBACK(create_search_popup)},
+		{"node_name", NULL, 
+#ifdef HAVE_BG
+		 "Base Partition(s) Name",
+		 "", "Search for a specific Base Partition(s)", 
+#else
+		 "Node(s) Name", 
+		 "", "Search for a specific Node(s)", 
+#endif
+		 G_CALLBACK(create_search_popup)},		
+		{"node_state", NULL, 
+#ifdef HAVE_BG
+		 "Base Partition State",
+		 "", "Search for a Base Partition in a given state", 
+#else
+		 "Node State", 
+		 "", "Search for a Node in a given state", 
+#endif
+		 G_CALLBACK(create_search_popup)},		
+		{"tab_pos", NULL, "_Tab Pos"},
 		{"interval", GTK_STOCK_REFRESH, "Set Refresh _Interval", 
 		 "<control>i", "Change Refresh Interval", 
 		 G_CALLBACK(change_refresh_popup)},
@@ -404,14 +467,11 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"config", GTK_STOCK_INFO, "_Config Info", 
 		 "<control>c", "Displays info from slurm.conf file", 
 		 G_CALLBACK(create_config_popup)},
-		{"search", GTK_STOCK_FIND, "Search", 
-		 "<control>f", "Search through SLURM", 
-		 G_CALLBACK(create_search_popup)},
 		{"exit", GTK_STOCK_QUIT, "E_xit", 
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
-		{"help", NULL, "_Help", NULL, "<alt>h"},
-		{"about", GTK_STOCK_ABOUT, "_About", NULL, "<control>a"},
-		{"manual", GTK_STOCK_HELP, "_Manual", NULL, "<control>m"}
+		{"help", NULL, "_Help", "<alt>h"},
+		{"about", GTK_STOCK_ABOUT, "A_bout", "<control>b"},
+		{"manual", GTK_STOCK_HELP, "_Manual", "<control>m"}
 	};
 
 	GtkActionEntry admin_entries[] = {
