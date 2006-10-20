@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 =========================
  - BLUEGENE - fix to make dynamic partitioning not go create block where
     there are nodes that are down or draining.
+ - Fix srun's default node count with an existing allocation when neither
+   SLURM_NNODES nor -N are set.
+ - Stop srun from setting SLURM_DISTRIBUTION under job steps when a
+   specific was not explicitly requested by the user.
 
 * Changes in SLURM 1.1.16
 =========================
