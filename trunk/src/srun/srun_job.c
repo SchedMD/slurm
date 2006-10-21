@@ -302,8 +302,8 @@ job_step_create_allocation(uint32_t job_id)
 		xfree(tasks_per_node);
 	} else {
 		uint32_t cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
-		info("SLURM_TASKS_PER_NODE not set! "
-		     "Guessing %d cpus per node", cpn);
+		debug("SLURM_TASKS_PER_NODE not set! "
+		      "Guessing %d cpus per node", cpn);
 		ai->cpus_per_node  = &cpn;
 		ai->cpu_count_reps = &ai->nnodes;
 	}
