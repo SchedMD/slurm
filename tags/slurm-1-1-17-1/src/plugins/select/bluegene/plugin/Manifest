@@ -1,0 +1,21 @@
+Filename			: description
+README				: description of the plugin and 
+                                  configuration file
+Makefile.am			: autoconf Makefile 
+bluegene.conf			: sample configuration file
+select_bluegene.c		: API for the select_plugin
+bluegene.c			: component used for parsing config 
+                                  file, determining where jobs will 
+                                  and other plugin logic.
+bluegene.h			: header file
+block_sys.c			: component used for wiring up the 
+				  blocks
+block_sys.h			: header file
+bg_switch_connections.c		: interface for connecting wires in
+				  the bluegene system
+bg_switch_connections.h		: header file
+bg_block_info.c			: functions for updating states of bluegene
+				  blocks
+bg_job_run.c			: controls all states of the job
+bg_job_place.c			: determines which bg_block to run in
+
