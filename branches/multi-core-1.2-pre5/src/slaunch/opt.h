@@ -35,6 +35,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <slurm/slurm.h>
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
@@ -48,6 +49,11 @@
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
+		                 (t == SLURM_DIST_PLANE) ? "plane" : \
+		                 (t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" : \
+		                 (t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" : \
+		                 (t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" : \
+		                 (t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
 
@@ -68,6 +74,12 @@ typedef struct slaunch_options {
 
 	int  num_tasks;		/* --ntasks=n,      -n n	*/
 	bool num_tasks_set;	/* true if ntasks explicitly set */
+	int  ntasks_per_node;   /* --ntasks-per-node=n		*/
+	int  ntasks_per_socket; /* --ntasks-per-socket=n	*/
+	int  ntasks_per_core;   /* --ntasks-per-core=n		*/
+	uint32_t plane_size;    /* lllp distribution -> plane_size for
+				 * when -m plane=<# of lllp per
+				 * plane> */      
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_per_task_set; /* true if cpus_per_task explicitly set */
 	int  num_nodes;		/* --nodes=n,       -N n	*/ 

@@ -78,44 +78,47 @@
 #include "src/slaunch/attach.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
-#define OPT_NONE        0x00
-#define OPT_INT         0x01
-#define OPT_STRING      0x02
-#define OPT_DEBUG       0x03
-#define OPT_DISTRIB     0x04
-#define OPT_BOOL        0x06
-#define OPT_CORE        0x07
-#define OPT_MPI         0x0c
-#define OPT_CPU_BIND    0x0d
-#define OPT_MEM_BIND    0x0e
-#define OPT_MULTI       0x0f
+#define OPT_NONE	0x00
+#define OPT_INT		0x01
+#define OPT_STRING	0x02
+#define OPT_DEBUG	0x03
+#define OPT_DISTRIB	0x04
+#define OPT_BOOL	0x06
+#define OPT_CORE	0x07
+#define OPT_MPI		0x0c
+#define OPT_CPU_BIND	0x0d
+#define OPT_MEM_BIND	0x0e
+#define OPT_MULTI	0x0f
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_USAGE       0x100
-#define LONG_OPT_LAUNCH      0x103
-#define LONG_OPT_JOBID       0x105
-#define LONG_OPT_UID         0x106
-#define LONG_OPT_GID         0x107
-#define LONG_OPT_MPI         0x108
-#define LONG_OPT_CORE	     0x109
-#define LONG_OPT_DEBUG_TS    0x10a
-#define LONG_OPT_NETWORK     0x10b
-#define LONG_OPT_PROPAGATE   0x10c
-#define LONG_OPT_PROLOG      0x10d
-#define LONG_OPT_EPILOG      0x10e
-#define LONG_OPT_TASK_PROLOG 0x10f
-#define LONG_OPT_TASK_EPILOG 0x110
-#define LONG_OPT_CPU_BIND    0x111
-#define LONG_OPT_MEM_BIND    0x112
-#define LONG_OPT_COMM_HOSTNAME 0x113
-#define LONG_OPT_MULTI       0x114
-#define LONG_OPT_PMI_THREADS 0x115
-#define LONG_OPT_LIN_FILTER  0x116
-#define LONG_OPT_LOUT_FILTER 0x117
-#define LONG_OPT_LERR_FILTER 0x118
-#define LONG_OPT_RIN_FILTER  0x119
-#define LONG_OPT_ROUT_FILTER 0x11a
-#define LONG_OPT_RERR_FILTER 0x11b
+#define LONG_OPT_USAGE			0x100
+#define LONG_OPT_LAUNCH			0x103
+#define LONG_OPT_JOBID			0x105
+#define LONG_OPT_UID			0x106
+#define LONG_OPT_GID			0x107
+#define LONG_OPT_MPI			0x108
+#define LONG_OPT_CORE			0x109
+#define LONG_OPT_DEBUG_TS		0x10a
+#define LONG_OPT_NETWORK		0x10b
+#define LONG_OPT_PROPAGATE		0x10c
+#define LONG_OPT_PROLOG			0x10d
+#define LONG_OPT_EPILOG			0x10e
+#define LONG_OPT_TASK_PROLOG		0x10f
+#define LONG_OPT_TASK_EPILOG		0x110
+#define LONG_OPT_CPU_BIND		0x111
+#define LONG_OPT_MEM_BIND		0x112
+#define LONG_OPT_COMM_HOSTNAME		0x113
+#define LONG_OPT_MULTI			0x114
+#define LONG_OPT_PMI_THREADS		0x115
+#define LONG_OPT_LIN_FILTER		0x116
+#define LONG_OPT_LOUT_FILTER		0x117
+#define LONG_OPT_LERR_FILTER		0x118
+#define LONG_OPT_RIN_FILTER		0x119
+#define LONG_OPT_ROUT_FILTER		0x11a
+#define LONG_OPT_RERR_FILTER		0x11b
+#define LONG_OPT_NTASKSPERNODE		0x11c
+#define LONG_OPT_NTASKSPERSOCKET	0x11d
+#define LONG_OPT_NTASKSPERCORE		0x11e
 
 /*---- forward declarations of static functions  ----*/
 
@@ -130,7 +133,7 @@ static List  _create_path_list(void);
 static int  _get_pos_int(const char *arg, const char *what);
 
 /* Get a decimal integer from arg */
-static int  _get_int(const char *arg, const char *what);
+static int  _get_int(const char *arg, const char *what, bool positive);
 
 static void  _help(void);
 
@@ -159,11 +162,11 @@ static void _process_env_var(env_vars_t *e, const char *val);
 static char *_search_path(char *, int);
 
 static void  _usage(void);
-static enum  task_dist_states _verify_dist_type(const char *arg);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
 			      cpu_bind_type_t *cpu_bind_type);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
 			      mem_bind_type_t *mem_bind_type);
+static task_dist_states_t _verify_dist_type(const char *arg, uint32_t *psize);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -188,37 +191,6 @@ int initialize_and_process_args(int argc, char *argv[])
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
-}
-
-/* 
- * verify that a distribution type in arg is of a known form
- * returns the task_dist_states, or -1 if unrecognized dist method
- */
-static enum task_dist_states _verify_dist_type(const char *arg)
-{
-	int len = strlen(arg);
-	enum task_dist_states result = -1;
-
-	if (strncasecmp(arg, "cyclic", len) == 0)
-		result = SLURM_DIST_CYCLIC;
-	else if (strncasecmp(arg, "block", len) == 0)
-		result = SLURM_DIST_BLOCK;
-	else if (strncasecmp(arg, "arbitrary", len) == 0)
-		result = SLURM_DIST_ARBITRARY;
-
-	return result;
-}
-
-/* reset_str
- * given a pointer to a string, if it is not NULL free it and set it to NULL
- */
-static void
-reset_str(char **str)
-{
-	if (*str) {
-		xfree(*str);
-		*str=NULL;
-	}
 }
 
 /*
@@ -285,13 +257,13 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type |=  CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
 			char *list;
@@ -301,7 +273,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type |=  CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
@@ -318,7 +290,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type |=  CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
@@ -413,21 +385,21 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type |=  MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "local") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type |=  MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
@@ -438,7 +410,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type |=  MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
 			} else {
@@ -456,7 +428,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type |=  MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
 			} else {
@@ -473,6 +445,59 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 
 	xfree(buf);
 	return 0;
+}
+/* 
+ * verify that a distribution type in arg is of a known form
+ * returns the task_dist_states, or -1 if state is unknown
+ */
+static task_dist_states_t _verify_dist_type(const char *arg, 
+					    uint32_t *plane_size)
+{
+	int len = strlen(arg);
+	char *dist_str = NULL;
+	task_dist_states_t result = SLURM_DIST_UNKNOWN;
+	bool lllp_dist = false, plane_dist = false;
+
+	dist_str = strchr(arg,':');
+	if (dist_str != NULL) {
+		/* -m cyclic|block:cyclic|block */
+		lllp_dist = true;
+	} else {
+		/* -m plane=<plane_size> */
+		dist_str = strchr(arg,'=');
+		if(dist_str != NULL) {
+			*plane_size=atoi(dist_str+1);
+			len = dist_str-arg;
+			plane_dist = true;
+		}
+	}
+
+	if (lllp_dist) {
+		if (strcasecmp(arg, "cyclic:cyclic") == 0) {
+			result = SLURM_DIST_CYCLIC_CYCLIC;
+		} else if (strcasecmp(arg, "cyclic:block") == 0) {
+			result = SLURM_DIST_CYCLIC_BLOCK;
+		} else if (strcasecmp(arg, "block:block") == 0) {
+			result = SLURM_DIST_BLOCK_BLOCK;
+		} else if (strcasecmp(arg, "block:cyclic") == 0) {
+			result = SLURM_DIST_BLOCK_CYCLIC;
+		}
+	} else if (plane_dist) {
+		if (strncasecmp(arg, "plane", len) == 0) {
+			result = SLURM_DIST_PLANE;
+		}
+	} else {
+		if (strncasecmp(arg, "cyclic", len) == 0) {
+			result = SLURM_DIST_CYCLIC;
+		} else if (strncasecmp(arg, "block", len) == 0) {
+			result = SLURM_DIST_BLOCK;
+		} else if ((strncasecmp(arg, "arbitrary", len) == 0) ||
+		           (strncasecmp(arg, "hostfile", len) == 0)) {
+			result = SLURM_DIST_ARBITRARY;
+		}
+	}
+
+	return result;
 }
 
 /*
@@ -641,8 +666,12 @@ static void _opt_default()
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
 
-	opt.distribution = SLURM_DIST_CYCLIC;
-	opt.distribution_set = false;
+	opt.distribution      = SLURM_DIST_UNKNOWN;
+	opt.distribution_set  = false;
+	opt.ntasks_per_node   = NO_VAL; /* ntask max limits */
+	opt.ntasks_per_socket = NO_VAL; 
+	opt.ntasks_per_core   = NO_VAL; 
+	opt.plane_size        = 0;
 
 	opt.local_ofname = NULL;
 	opt.local_ifname = NULL;
@@ -754,7 +783,7 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	enum task_dist_states dt;
+	task_dist_states_t dt;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -801,14 +830,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_DISTRIB:
-		dt = _verify_dist_type(val);
-		if (dt == -1) {
+		if (strcmp(val, "unknown") == 0)
+			break;	/* ignore it, passed from salloc */
+	        opt.plane_size = 0;
+		dt = _verify_dist_type(val, &opt.plane_size);
+		if (dt == SLURM_DIST_UNKNOWN) {
 			error("\"%s=%s\" -- invalid distribution type. " 
 			      "ignoring...", e->var, val);
-		} else {
+		} else 
 			opt.distribution = dt;
-			opt.distribution_set = true;
-		}
 		break;
 
 	case OPT_CPU_BIND:
@@ -873,12 +903,13 @@ _get_pos_int(const char *arg, const char *what)
  * 
  */
 static int
-_get_int(const char *arg, const char *what)
+_get_int(const char *arg, const char *what, bool positive)
 {
 	char *p;
 	long int result = strtol(arg, &p, 10);
 
-	if (p == arg || !xstring_is_whitespace(p)) {
+	if ((p == arg) || (!xstring_is_whitespace(p))
+		||  (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		exit(1);
 	}
@@ -950,10 +981,13 @@ void set_options(const int argc, char **argv)
 		{"slaunch-error-filter",required_argument,0, LONG_OPT_LERR_FILTER},
 		/* task-*-filter are not yet functional, and intentionally
 		   undocumented in the man page */
-		{"task-input-filter",required_argument,0,LONG_OPT_RIN_FILTER},
-		{"task-output-filter",required_argument,0,LONG_OPT_ROUT_FILTER},
-		{"task-error-filter",required_argument,0,LONG_OPT_RERR_FILTER},
-		{NULL,               0,                 0, 0}
+		{"task-input-filter", required_argument, 0, LONG_OPT_RIN_FILTER},
+		{"task-output-filter",required_argument, 0, LONG_OPT_ROUT_FILTER},
+		{"task-error-filter", required_argument, 0, LONG_OPT_RERR_FILTER},
+		{"ntasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
+		{"ntasks-per-socket", required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
+		{"ntasks-per-core",   required_argument, 0, LONG_OPT_NTASKSPERCORE},
+		{NULL,                0,                 0, 0}
 	};
 	char *opt_string =
 		"+c:Cd:D:e:E:F:hi:I:J:KlL:m:n:N:o:O:qr:T:uvVw:W:Y:";
@@ -1043,14 +1077,14 @@ void set_options(const int argc, char **argv)
 			xfree(opt.nodelist_byid);
 			opt.nodelist_byid = xstrdup(optarg);
 			break;
-		case 'm':
-			opt.distribution = _verify_dist_type(optarg);
-			if (opt.distribution == -1) {
+		case (int)'m':
+			opt.plane_size = 0;
+			opt.distribution = _verify_dist_type(optarg, 
+							     &opt.plane_size);
+			if (opt.distribution == SLURM_DIST_UNKNOWN) {
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
 				exit(1);
-			} else {
-				opt.distribution_set = true;
 			}
 			break;
 		case 'n':
@@ -1080,7 +1114,8 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'r':
 			opt.relative_set = true;
-			opt.relative = _get_int(optarg, "relative start node");
+			opt.relative = _get_int(optarg, "relative start node", 
+				false);
 			break;
 		case 'T':
 			xfree(opt.task_layout);
@@ -1237,6 +1272,18 @@ void set_options(const int argc, char **argv)
 			opt.remote_error_filter =
 				_get_pos_int(optarg, "task-error-filter");
 			error("task-error-filter not yet implemented");
+			break;
+		case LONG_OPT_NTASKSPERNODE:
+			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",
+				true);
+			break;
+		case LONG_OPT_NTASKSPERSOCKET:
+			opt.ntasks_per_socket = _get_int(optarg, 
+				"ntasks-per-socket", true);
+			break;
+		case LONG_OPT_NTASKSPERCORE:
+			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
+				true);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -1947,43 +1994,47 @@ static void _opt_list()
 	info("defined options for program \"%s\"", opt.progname);
 	info("--------------- ---------------------");
 
-	info("user           : \"%s\"", opt.user);
-	info("uid            : %ld", (long) opt.uid);
-	info("gid            : %ld", (long) opt.gid);
-	info("cwd            : %s", opt.cwd);
-	info("num_tasks      : %d %s", opt.num_tasks,
+	info("user              : \"%s\"", opt.user);
+	info("uid               : %ld", (long) opt.uid);
+	info("gid               : %ld", (long) opt.gid);
+	info("cwd               : %s", opt.cwd);
+	info("num_tasks         : %d %s", opt.num_tasks,
 	     opt.num_tasks_set ? "(set)" : "(default)");
-	info("cpus_per_task  : %d %s", opt.cpus_per_task,
+	info("cpus_per_task     : %d %s", opt.cpus_per_task,
 	     opt.cpus_per_task_set ? "(set)" : "(default)");
-	info("nodes          : %d %s",
+	info("nodes             : %d %s",
 	     opt.num_nodes, opt.num_nodes_set ? "(set)" : "(default)");
-	info("jobid          : %u %s", opt.jobid, 
+	info("jobid             : %u %s", opt.jobid, 
 	     opt.jobid_set ? "(set)" : "(default)");
-	info("job name       : \"%s\"", opt.job_name);
-	info("distribution   : %s %s",
+	info("job name          : \"%s\"", opt.job_name);
+	info("distribution      : %s %s",
 	     format_task_dist_states(opt.distribution),
 	     opt.distribution_set ? "(set)" : "(default)");
-	info("cpu_bind       : %s", 
+	info("cpu_bind          : %s", 
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
-	info("mem_bind       : %s",
+	info("mem_bind          : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
-	info("core format    : %s", core_format_name (opt.core_type));
-	info("verbose        : %d", opt.verbose);
-	info("slurmd_debug   : %d", opt.slurmd_debug);
-	info("label output   : %s", tf_(opt.labelio));
-	info("unbuffered IO  : %s", tf_(opt.unbuffered));
-	info("overcommit     : %s", tf_(opt.overcommit));
-	info("wait           : %d", opt.max_wait);
-	info("required nodes : %s", opt.nodelist);
-	info("network        : %s", opt.network);
-	info("propagate      : %s",
+	info("core format       : %s", core_format_name (opt.core_type));
+	info("verbose           : %d", opt.verbose);
+	info("slurmd_debug      : %d", opt.slurmd_debug);
+	info("label output      : %s", tf_(opt.labelio));
+	info("unbuffered IO     : %s", tf_(opt.unbuffered));
+	info("overcommit        : %s", tf_(opt.overcommit));
+	info("wait              : %d", opt.max_wait);
+	info("required nodes    : %s", opt.nodelist);
+	info("network           : %s", opt.network);
+	info("propagate         : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
-	info("prolog         : %s", opt.prolog);
-	info("epilog         : %s", opt.epilog);
-	info("task_prolog    : %s", opt.task_prolog);
-	info("task_epilog    : %s", opt.task_epilog);
-	info("comm_hostname : %s", opt.comm_hostname);
-	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
+	info("prolog            : %s", opt.prolog);
+	info("epilog            : %s", opt.epilog);
+	info("task_prolog       : %s", opt.task_prolog);
+	info("task_epilog       : %s", opt.task_epilog);
+	info("comm_hostname     : %s", opt.comm_hostname);
+	info("multi_prog        : %s", opt.multi_prog ? "yes" : "no");
+	info("ntasks-per-node   : %d", opt.ntasks_per_node);
+	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
+	info("ntasks-per-core   : %d", opt.ntasks_per_core);
+	info("plane_size        : %u", opt.plane_size);
 	str = print_remote_command();
 	info("remote command : %s", str);
 	xfree(str);
@@ -2005,6 +2056,8 @@ static void _usage(void)
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
 "               [--comm-hostname=<hostname|address>] [--multi-prog]\n"
+"               [--ntasks-per-node=#] [--ntasks-per-socket=#]\n"
+"               [--ntasks-per-core=#]\n"
 "               [-w hosts...] [-L hostids...] executable [args...]\n");
 }
 
@@ -2057,6 +2110,9 @@ static void _help(void)
 "      --comm-hostname=hostname hostname for PMI communications with slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
+"      --ntasks-per-node=#     number of tasks to launch per node\n"
+"      --ntasks-per-socket=#   number of tasks to launch per socket\n"
+"      --ntasks-per-core=#     number of tasks to launch per core\n"
 "  -w, --nodelist-byname=hosts...   request a specific list of hosts\n"
 "  -L, --nodelist-byid=hosts...     request a specific list of hosts\n");
 	conf = slurm_conf_lock();

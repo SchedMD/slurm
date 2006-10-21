@@ -2547,8 +2547,12 @@ static void _opt_list()
 	info("task_epilog    : %s", opt.task_epilog);
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
+	info("ntasks-per-node   : %d", opt.ntasks_per_node);
+	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
+	info("ntasks-per-core   : %d", opt.ntasks_per_core);
+	info("plane_size        : %u", opt.plane_size);
 	str = print_commandline();
-	info("remote command : `%s'", str);
+	info("remote command    : `%s'", str);
 	xfree(str);
 
 }
@@ -2573,7 +2577,7 @@ static void _usage(void)
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
-"            [--ntasks-per-core=n] [--print-request]\n"
+"            [--ntasks-per-core=n]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 		"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
