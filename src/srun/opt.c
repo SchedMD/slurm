@@ -949,7 +949,7 @@ static void _opt_default()
 	opt.account  = NULL;
 	opt.comment  = NULL;
 
-	opt.distribution = SLURM_DIST_CYCLIC;
+	opt.distribution = SLURM_DIST_UNKNOWN;
 	opt.plane_size   = 0;
 
 	opt.ofname = NULL;
