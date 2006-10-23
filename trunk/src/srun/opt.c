@@ -151,7 +151,6 @@
 #define LONG_OPT_NTASKSPERNODE	 0x136
 #define LONG_OPT_NTASKSPERSOCKET 0x137
 #define LONG_OPT_NTASKSPERCORE	 0x138
-#define LONG_OPT_PRINTREQ	 0x139
 #define LONG_OPT_JOBMEM	         0x13a
 #define LONG_OPT_HINT	         0x13b
 
@@ -405,18 +404,6 @@ static int _verify_geometry(const char *arg, uint16_t *geometry)
 	return rc;
 }
 
-/* reset_str
- * given a pointer to a string, if it is not NULL free it and set it to NULL
- */
-static void
-reset_str(char **str)
-{
-	if (*str) {
-		xfree(*str);
-		*str=NULL;
-	}
-}
-
 /*
  * verify cpu_bind arguments
  * returns -1 on error, 0 otherwise
@@ -481,13 +468,13 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*cpu_bind_type &= ~CPU_BIND_NONE;
 			*cpu_bind_type |=  CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
 			char *list;
@@ -497,7 +484,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type |=  CPU_BIND_MAP;
 			*cpu_bind_type &= ~CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
@@ -514,7 +501,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			*cpu_bind_type &= ~CPU_BIND_RANK;
 			*cpu_bind_type &= ~CPU_BIND_MAP;
 			*cpu_bind_type |=  CPU_BIND_MASK;
-			reset_str(cpu_bind);	/* clear existing list */
+			xfree(*cpu_bind);
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
@@ -609,21 +596,21 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type |=  MEM_BIND_RANK;
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "local") == 0) {
 			*mem_bind_type &= ~MEM_BIND_NONE;
 			*mem_bind_type &= ~MEM_BIND_RANK;
 			*mem_bind_type |=  MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
@@ -634,7 +621,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type |=  MEM_BIND_MAP;
 			*mem_bind_type &= ~MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
 			} else {
@@ -652,7 +639,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			*mem_bind_type &= ~MEM_BIND_LOCAL;
 			*mem_bind_type &= ~MEM_BIND_MAP;
 			*mem_bind_type |=  MEM_BIND_MASK;
-			reset_str(mem_bind);	/* clear existing list */
+			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
 			} else {
@@ -1231,6 +1218,8 @@ _get_int(const char *arg, const char *what, bool positive)
 		exit(1);
 	} else if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
+	} else if (result < INT_MIN) {
+		error ("Numeric argument %ld to small for %s.", result, what);
 	}
 
 	return (int) result;
@@ -1393,7 +1382,6 @@ void set_options(const int argc, char **argv, int first)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
-		{"print-request",    no_argument,       0, LONG_OPT_PRINTREQ},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1941,9 +1929,6 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
 				true);
-			break;
-		case LONG_OPT_PRINTREQ:
-			opt.printreq = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2562,8 +2547,12 @@ static void _opt_list()
 	info("task_epilog    : %s", opt.task_epilog);
 	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
+	info("ntasks-per-node   : %d", opt.ntasks_per_node);
+	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
+	info("ntasks-per-core   : %d", opt.ntasks_per_core);
+	info("plane_size        : %u", opt.plane_size);
 	str = print_commandline();
-	info("remote command : `%s'", str);
+	info("remote command    : `%s'", str);
 	xfree(str);
 
 }
@@ -2588,7 +2577,7 @@ static void _usage(void)
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
-"            [--ntasks-per-core=n] [--print-request]\n"
+"            [--ntasks-per-core=n]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 		"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
