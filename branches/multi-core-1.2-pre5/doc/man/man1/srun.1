@@ -557,6 +557,8 @@ Similar to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
 is specified.
+NOTE: This option is not supported unless \fISelectType=CR_Socket\fR 
+or \fISelectType=CR_Socket_Memory\fR is configured.
 .TP
 \fB\-\-ntasks\-per\-core\fR=\fIntasks\fR
 Request that no more than \fIntasks\fR be invoked on each core.
@@ -564,6 +566,8 @@ Similar to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
 is specified.
+NOTE: This option is not supported unless \fISelectType=CR_Core\fR
+or \fISelectType=CR_Core_Memory\fR is configured.
 .TP
 \fB\-\-hint\fR=\fItype\fR
 Bind tasks according to application hints
