@@ -79,7 +79,7 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, NODE_PAGE},
-	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, NODE_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -744,23 +744,6 @@ display_it:
 		i++;
 		node_ptr = sview_node_info_ptr->node_ptr;
 		switch(search_info->search_type) {
-		case SEARCH_NODE_NAME:
-			if(!search_info->gchar_data)
-				continue;
-			while((host = hostlist_next(host_itr))) { 
-				if(!strcmp(host, node_ptr->name)) {
-					free(host);
-					found = 1;
-					break; 
-				}
-				free(host);
-			}
-			hostlist_iterator_reset(host_itr);
-			
-			if(!found)
-				continue;
-
-			break;
 		case SEARCH_NODE_STATE:
 			if(search_info->int_data == NO_VAL)
 				continue;
@@ -781,23 +764,23 @@ display_it:
 			
 			if(node_ptr->node_state != search_info->int_data)
 				continue;
-			if(search_info->gchar_data) {
-				while((host = hostlist_next(host_itr))) { 
-					if(!strcmp(host, node_ptr->name)) {
-						free(host);
-						found = 1;
-						break; 
-					}
-					free(host);
-				}
-				hostlist_iterator_reset(host_itr);
-				if(!found)
-					continue;
-			}			
-			
-			break;
+			/* no break here we want to continue to look
+			   for the name */
 		default:
-			continue;
+			if(!search_info->gchar_data)
+				continue;
+			while((host = hostlist_next(host_itr))) { 
+				if(!strcmp(host, node_ptr->name)) {
+					free(host);
+					found = 1;
+					break; 
+				}
+				free(host);
+			}
+			hostlist_iterator_reset(host_itr);
+			
+			if(!found)
+				continue;
 			break;
 		}
 		
