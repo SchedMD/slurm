@@ -314,6 +314,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 	
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);
 #endif
@@ -410,6 +416,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   job_state_string(job_ptr->job_state), -1);
 	
 #ifdef HAVE_BG
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);

@@ -99,7 +99,7 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 	popup_info_t *popup_win = NULL;
 
 	snprintf(title, 100, 
-		 "Info about block %s", grid_button->node_name);
+		 "Info about block containing %s", grid_button->node_name);
 
 	itr = list_iterator_create(popup_list);
 	while((popup_win = list_next(itr))) {
@@ -112,6 +112,8 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 
 	if(!popup_win) {
 		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE, title);
+		popup_win->spec_info->search_info->search_type =
+			SEARCH_BLOCK_NODENAME;
 		popup_win->spec_info->search_info->gchar_data =
 			g_strdup(grid_button->node_name);
 		if (!g_thread_create((gpointer)popup_thr, popup_win,

@@ -186,9 +186,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 				 sview_block_info_t *block_ptr, 
 				 int update)
 {
-	char *nodes = NULL;
 	char tmp_cnt[7];
-	char tmp_nodes[30];
 	GtkTreeIter iter;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -217,31 +215,17 @@ static void _layout_block_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   display_data_block[SORTID_NODES].name,
 				   tmp_cnt);
-	
-	nodes = block_ptr->nodes;		
-	
-	if(block_ptr->quarter != (uint16_t) NO_VAL) {
-		if(block_ptr->nodecard != (uint16_t) NO_VAL)
-			sprintf(tmp_nodes, "%s.%d.%d", nodes,
-				block_ptr->quarter,
-				block_ptr->nodecard);
-		else
-			sprintf(tmp_nodes, "%s.%d", nodes,
-				block_ptr->quarter);
-		nodes = tmp_nodes;
-	} 
+		
 	add_display_treestore_line(update, treestore, &iter, 
 				   display_data_block[SORTID_NODELIST].name,
-				   nodes);
+				   block_ptr->nodes);
 
 }
 
 static void _update_block_record(sview_block_info_t *block_ptr, 
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char *nodes = NULL;
 	char tmp_cnt[7];
-	char tmp_nodes[30];
 	
 	gtk_tree_store_set(treestore, iter, SORTID_POINTER, block_ptr, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
@@ -260,18 +244,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
-	nodes = block_ptr->nodes;			
-	if(block_ptr && (block_ptr->quarter != (uint16_t) NO_VAL)) {
-		if(block_ptr->nodecard != (uint16_t) NO_VAL)
-			sprintf(tmp_nodes, "%s.%d.%d", nodes,
-				block_ptr->quarter,
-				block_ptr->nodecard);
-		else
-			sprintf(tmp_nodes, "%s.%d", nodes,
-				block_ptr->quarter);
-		nodes = tmp_nodes;
-	} 
-	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, nodes, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
+			   block_ptr->nodes, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	
@@ -378,6 +352,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	static List block_list = NULL;
 	partition_info_t part;
 	sview_block_info_t *block_ptr = NULL;
+	char *nodes = NULL;
+	char tmp_nodes[50];
 	
 	if(!changed && block_list) {
 		return block_list;
@@ -413,6 +389,22 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= node_select_ptr->bg_info_array[i].quarter;
 		block_ptr->nodecard 
 			= node_select_ptr->bg_info_array[i].nodecard;
+
+		if(block_ptr->quarter != (uint16_t) NO_VAL) {
+			nodes = block_ptr->nodes;		
+			if(block_ptr->nodecard != (uint16_t) NO_VAL)
+				snprintf(tmp_nodes,  sizeof(tmp_nodes),
+					 "%s.%d.%d", nodes,
+					 block_ptr->quarter,
+					 block_ptr->nodecard);
+			else
+				snprintf(tmp_nodes, sizeof(tmp_nodes),
+					 "%s.%d", nodes,
+					 block_ptr->quarter);
+			xfree(block_ptr->nodes);
+			block_ptr->nodes = xstrdup(tmp_nodes);
+		}
+
 		block_ptr->node_cnt 
 			= node_select_ptr->bg_info_array[i].node_cnt;
 		block_ptr->bp_inx 
@@ -467,7 +459,8 @@ need_refresh:
 	itr = list_iterator_create(block_list);
 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
 		i++;
-		if(!strcmp(block_ptr->bg_block_name, name)) {
+		if(!strcmp(block_ptr->bg_block_name, name)
+		   || !strcmp(block_ptr->nodes, name)) {
 			j = 0;
 			while(block_ptr->bp_inx[j] >= 0) {
 				change_grid_color(
