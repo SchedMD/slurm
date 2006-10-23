@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  part_info.c - Functions related to partition display 
+ *  block_info.c - Functions related to Bluegene block display 
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2006 The Regents of the University of California.
@@ -97,6 +97,7 @@ static display_data_t display_data_block[] = {
 
 static display_data_t options_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
@@ -108,40 +109,10 @@ static display_data_t *local_display_data = NULL;
 
 static char* _convert_conn_type(enum connection_type conn_type);
 static char* _convert_node_use(enum node_use_type node_use);
-static char *_part_state_str(rm_partition_state_t state);
 static int _in_slurm_partition(int *part_inx, int *block_inx);
 static void _append_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter, 
 				 int line);
-
-
-
-static char *_part_state_str(rm_partition_state_t state)
-{
-	static char tmp[16];
-
-#ifdef HAVE_BG
-	switch (state) {
-		case RM_PARTITION_BUSY: 
-			return "BUSY";
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_NAV:
-			return "NAV";
-		case RM_PARTITION_READY:
-			return "READY";
-	}
-#endif
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
-}
 
 static void _block_list_del(void *object)
 {
@@ -211,6 +182,60 @@ static char* _convert_node_use(enum node_use_type node_use)
 	return "?";
 }
 
+static void _layout_block_record(GtkTreeView *treeview,
+				 sview_block_info_t *block_ptr, 
+				 int update)
+{
+	char *nodes = NULL;
+	char tmp_cnt[7];
+	char tmp_nodes[30];
+	GtkTreeIter iter;
+	GtkTreeStore *treestore = 
+		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_BLOCK].name,
+				   block_ptr->bg_block_name);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_PARTITION].name,
+				   block_ptr->slurm_part_name);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_STATE].name,
+				   bg_block_state_string(block_ptr->state));
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_USER].name,
+				   block_ptr->bg_user_name);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_CONN].name,
+				   _convert_conn_type(
+					   block_ptr->bg_conn_type));
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_USE].name,
+				   _convert_node_use(block_ptr->bg_node_use));
+	
+	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_NODES].name,
+				   tmp_cnt);
+	
+	nodes = block_ptr->nodes;		
+	
+	if(block_ptr->quarter != (uint16_t) NO_VAL) {
+		if(block_ptr->nodecard != (uint16_t) NO_VAL)
+			sprintf(tmp_nodes, "%s.%d.%d", nodes,
+				block_ptr->quarter,
+				block_ptr->nodecard);
+		else
+			sprintf(tmp_nodes, "%s.%d", nodes,
+				block_ptr->quarter);
+		nodes = tmp_nodes;
+	} 
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_block[SORTID_NODELIST].name,
+				   nodes);
+
+}
+
 static void _update_block_record(sview_block_info_t *block_ptr, 
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
@@ -224,7 +249,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_PARTITION, 
 			   block_ptr->slurm_part_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
-			   _part_state_str(block_ptr->state), -1);
+			   bg_block_state_string(block_ptr->state), -1);
 	gtk_tree_store_set(treestore, iter, SORTID_USER, 
 			   block_ptr->bg_user_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_CONN, 
@@ -409,59 +434,81 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	
 	return block_list;
 }
+
 void _display_info_block(List block_list,
 			 popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
-	/* char *name = (char *)spec_info->search_info->gchar_data; */
-/* 	int i, found = 0; */
-/* 	sview_block_info_t *block_ptr = NULL; */
+	char *name = (char *)spec_info->search_info->gchar_data;
+	int i = -1, j = 0, found = 0;
+	sview_block_info_t *block_ptr = NULL;
 	char *info = NULL;
-	char *not_found = NULL;
-	GtkWidget *label = NULL;
+	int update = 0;
+	GtkTreeView *treeview = NULL;
+	ListIterator itr = NULL;
 	
 	if(!spec_info->search_info->gchar_data) {
 		info = xstrdup("No pointer given!");
 		goto finished;
 	}
 
-	if(spec_info->display_widget) {
-		not_found = 
-			xstrdup(GTK_LABEL(spec_info->display_widget)->text);
-		gtk_widget_destroy(spec_info->display_widget);
-		spec_info->display_widget = NULL;
+need_refresh:
+	if(!spec_info->display_widget) {
+		treeview = create_treeview_2cols_attach_to_table(
+			popup_win->table);
+		spec_info->display_widget = 
+			gtk_widget_ref(GTK_WIDGET(treeview));
+	} else {
+		treeview = GTK_TREE_VIEW(spec_info->display_widget);
+		update = 1;
 	}
 	/* this is here for if later we have more stats on a bluegene
 	   block */
-	/* itr = list_iterator_create(block_list); */
-/* 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) { */
-/* 		if(!strcmp(block_ptr->bg_block_name, name)) { */
-/* 			if(!(info = slurm_sprint_block_info(&block_ptr, 0))) { */
-/* 				info = xmalloc(100); */
-/* 				sprintf(info,  */
-/* 					"Problem getting block " */
-/* 					"info for %s",  */
-/* 					block_ptr->bg_block_name); */
-/* 			} */
-/* 			found = 1; */
-/* 			break; */
-/* 		} */
-/* 	} */
-/* 	if(!found) { */
-/* 		char *temp = "BLOCK DOESN'T EXSIST\n"; */
-/* 		if(!not_found || strncmp(temp, not_found, strlen(temp)))  */
-/* 			info = xstrdup(temp); */
-/* 		xstrcat(info, not_found); */
-/* 	} */
-	info = xstrdup("No extra info avaliable.");
-finished:
-	label = gtk_label_new(info);
-	xfree(info);
-	xfree(not_found);
-	gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1); 
-	gtk_widget_show(label);	
-	spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+	itr = list_iterator_create(block_list);
+	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
+		i++;
+		if(!strcmp(block_ptr->bg_block_name, name)) {
+			j = 0;
+			while(block_ptr->bp_inx[j] >= 0) {
+				change_grid_color(
+					popup_win->grid_button_list,
+					block_ptr->bp_inx[j],
+					block_ptr->bp_inx[j+1], i);
+				j += 2;
+			}
+			_layout_block_record(treeview, block_ptr, update);
+			found = 1;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
 	
+	if(!found) {
+		if(!popup_win->not_found) { 
+			char *temp = "BLOCK DOESN'T EXSIST\n";
+			GtkTreeIter iter;
+			GtkTreeModel *model = NULL;
+	
+			/* only time this will be run so no update */
+			model = gtk_tree_view_get_model(treeview);
+			add_display_treestore_line(0, 
+						   GTK_TREE_STORE(model), 
+						   &iter,
+						   temp, "");
+		}
+		popup_win->not_found = true;
+	} else {
+		if(popup_win->not_found) { 
+			popup_win->not_found = false;
+			gtk_widget_destroy(spec_info->display_widget);
+			
+			goto need_refresh;
+		}
+	}
+	gtk_widget_show(spec_info->display_widget);
+	
+finished:
+
 	return;
 }
 	
