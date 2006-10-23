@@ -868,8 +868,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 #ifdef HAVE_BG
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
-#endif
 	char tmp_char[50];
+#endif
 	
 	if(!changed && info_list) {
 		goto update_color;
