@@ -873,7 +873,7 @@ extern void ba_fini()
  * 
  * IN ba_node: ba_node_t to put down
  */
-extern void ba_update_node_state(ba_node_t *ba_node, int state)
+extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 {
 	uint16_t node_base_state = state & NODE_STATE_BASE;
 

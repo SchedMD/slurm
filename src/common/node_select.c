@@ -102,7 +102,7 @@ typedef struct slurm_select_ops {
 						*part_desc_ptr);
 	int             (*get_info_from_plugin)(enum select_data_info cr_info,
 						void *data);
-	int             (*update_node_state)   (int index, int state);
+	int             (*update_node_state)   (int index, uint16_t state);
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
 } slurm_select_ops_t;
@@ -459,7 +459,7 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info,
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int select_g_update_node_state (int index, int state)
+extern int select_g_update_node_state (int index, uint16_t state)
 {
 	if (slurm_select_init() < 0)
                return SLURM_ERROR;

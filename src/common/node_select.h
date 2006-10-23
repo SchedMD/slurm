@@ -122,7 +122,7 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info,
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int select_g_update_node_state (int index, int state);
+extern int select_g_update_node_state (int index, uint16_t state);
 
 /* 
  * Alter the node count for a job given the type of system we are on
