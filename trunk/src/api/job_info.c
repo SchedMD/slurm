@@ -321,7 +321,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		strcat(tmp1, ":");
 		strcat(tmp1, tmp2);
 		if (job_ptr->min_threads > 0) {
-			_sprint_range(tmp2, job_ptr->min_threads, job_ptr->max_threads);
+			_sprint_range(tmp2, job_ptr->min_threads,
+				      job_ptr->max_threads);
 			strcat(tmp1, ":");
 			strcat(tmp1, tmp2);
 		}
