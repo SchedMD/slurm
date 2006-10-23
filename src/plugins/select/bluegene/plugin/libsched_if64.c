@@ -50,7 +50,7 @@ int get_parameters(void *params)
 		printf("YOU ARE OUTSIDE OF SLURM!!!! NOT RUNNING MPIRUN!\n");
 		return 1;
 	}
-	return 2;
+	return 0;
 }
 
 void mpirun_done(int res)

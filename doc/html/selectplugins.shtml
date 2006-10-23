@@ -322,6 +322,35 @@ syncrhonize plugin (and node) state with that of currectly active jobs.</p>
 list of slurm jobs from slurmctld job records.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
+
+<p class="commandline">int select_p_update_node_state (int index, uint16_t state);</p>
+<p style="margin-left:.2in"><b>Description</b>: push a change of state
+into the plugin the index should be the index from the slurmctld of
+the entire system.  The state should be the same state the node_record
+was set to in the slurmctld.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> index</span>&nbsp;&nbsp;&nbsp;(input) index
+of the node in reference to the entire system. <br>
+<span class="commandline"> state</span>&nbsp;&nbsp;&nbsp;(input) new
+state of the node.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
+
+<p class="commandline">int select_p_alter_node_cnt (enum
+select_node_cnt type, void *data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Used for systems like
+a Bluegene system where slurm sees 1 node where many nodes really
+exists, in Bluegene's case 1 node reflects 512 nodes in real live, but
+since usually 512 is the smallest allocatable block slurm only handles
+it as 1 node.  This is a function so the user can issue a 'real'
+number and the fuction will alter it so slurm can understand what the
+user really means in slurm terms.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> type</span>&nbsp;&nbsp;&nbsp;(input) enum
+telling the plug in what the user is really wanting.<br>
+<span class="commandline"> data</span>&nbsp;&nbsp;&nbsp;(input/output)
+Is a void * so depending on the type sent in argument 1 this should 
+adjust the variable returning what the user is asking for.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
