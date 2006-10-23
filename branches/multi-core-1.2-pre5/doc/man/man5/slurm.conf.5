@@ -399,31 +399,26 @@ On a multi\-core system, each core will be consided a CPU.
 On a multi\-core and hyperthreaded system, each thread will be 
 considered a CPU.
 On single\-core systems, each CPUs will be considered a CPU.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
 .TP
 \fBselect/CR_CPU_Memory\fR
 CPUs and memory are consumable resources.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
 .TP
 \fBselect/CR_Core\fR
 Cores are consumable resources.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
 .TP
 \fBselect/CR_Core_Memory\fR
 Cores and memory are consumable resources.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
 .TP
 \fBselect/CR_Socket\fR
 Sockets are consumable resources.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
 .TP
 \fBselect/CR_Socket_Memory\fR
 Memory and CPUs are consumable resources.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
 .TP
 \fBselect/CR_Memory\fR
 Memory is a consumable resource. 
-NOTE: This implies \fIShared=Yes\fR for all partitions.
+NOTE: This implies \fIShared=Yes\fR for all partitions
+unless \fIShared=Force\fR is explicitly configured.
 .TP
 \fBselect/bluegene\fR
 for a three\-dimentional BlueGene system. 
