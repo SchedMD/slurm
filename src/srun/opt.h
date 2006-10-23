@@ -170,7 +170,6 @@ typedef struct srun_options {
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/
-        bool printreq;          /* --print-request              */
 
 	/* constraint options */
 	int job_min_cpus;	/* --mincpus=n			*/
