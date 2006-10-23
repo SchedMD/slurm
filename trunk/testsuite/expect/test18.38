@@ -95,7 +95,7 @@ if {$got_pattern == 0} {
 #
 # Release the allocation by killing the first srun (really it kills the "sleep")
 #
-exec $scancel $jobid
+cancel_job $jobid
 exec kill $salloc_pid
 set spawn_id $salloc_sid
 expect {

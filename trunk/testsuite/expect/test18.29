@@ -103,7 +103,7 @@ send_user "cpu count is $cpu_cnt\n"
 # Check CPU count
 if {$cpu_cnt < 2} {
 	send_user "\nWARNING: The node only has one CPU\n"
-	exec $scancel $jobid
+	cancel_job $jobid
 	exit $exit_code
 }
 
@@ -189,7 +189,7 @@ if {$task_cnt > $expected_task_cnt} {
 #
 # Clean up the job allocation.
 #
-exec $scancel $jobid
+cancel_job $jobid
 set spawn_id $salloc_spawn_id
 expect {
 	eof {

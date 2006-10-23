@@ -94,7 +94,7 @@ while {[string compare $running ""]} {
 	sleep 1
 	if {$i == 30} {
 		send_user "\nFAILURE: job step is not completing\n"
-		exec $scancel -q $jobid
+		cancel_job $jobid
 		sleep 5
 		exec kill -9 $srun_pid
 		exit 1

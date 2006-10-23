@@ -76,7 +76,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
 		if {$job_id != 0}  {
-			exec $scancel --quiet $job_id
+			cancel_job $job_id
 		}
 		exit 1
 	}
@@ -130,7 +130,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
-		exec $scancel --quiet $job_id
+		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {
