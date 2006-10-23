@@ -667,7 +667,6 @@ static void _opt_default()
 	opt.jobid_set = false;
 
 	opt.distribution      = SLURM_DIST_UNKNOWN;
-	opt.distribution_set  = false;
 	opt.ntasks_per_node   = NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket = NO_VAL; 
 	opt.ntasks_per_core   = NO_VAL; 
@@ -2007,9 +2006,8 @@ static void _opt_list()
 	info("jobid             : %u %s", opt.jobid, 
 	     opt.jobid_set ? "(set)" : "(default)");
 	info("job name          : \"%s\"", opt.job_name);
-	info("distribution      : %s %s",
-	     format_task_dist_states(opt.distribution),
-	     opt.distribution_set ? "(set)" : "(default)");
+	info("distribution      : %s",
+	     format_task_dist_states(opt.distribution));
 	info("cpu_bind          : %s", 
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind          : %s",

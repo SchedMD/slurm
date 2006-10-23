@@ -90,7 +90,6 @@ typedef struct slaunch_options {
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
-	bool distribution_set;
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true of jobid explicitly set */

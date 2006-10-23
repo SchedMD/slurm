@@ -181,7 +181,8 @@ int slaunch(int argc, char **argv)
 		step_req.cpu_count = opt.num_tasks;
 	}
 	step_req.relative = opt.relative;
-	step_req.task_dist = opt.distribution;
+	if (opt.distribution != SLURM_DIST_UNKNOWN)
+		step_req.task_dist = opt.distribution;
 	step_req.overcommit = opt.overcommit ? 1 : 0;
 	step_req.host = NULL; /* let the SLURM API set this */
 	step_req.port = 0;    /* let the SLURM API set this */
