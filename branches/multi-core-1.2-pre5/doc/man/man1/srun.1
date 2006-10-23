@@ -549,7 +549,13 @@ allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
 
 .PP
-Affinity/Multi\-core Options (when the task/affinity plugin is enabled):
+Affinity/Multi\-core Options. Support for these options are configuration 
+dependent. 
+The task/affinity plugin must be configured.
+In addition either select/linear or select/cons_res plugin must be 
+configured.
+If select/cons_res is configured, it must have a parameter of CR_Core, 
+CR_Core_Memory, CR_Socket, or CR_Socket_Memory. 
 .TP
 \fB\-\-ntasks\-per\-socket\fR=\fIntasks\fR
 Request that no more than \fIntasks\fR be invoked on each socket.
