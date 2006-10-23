@@ -59,16 +59,12 @@ enum {
 	SORTID_START_TIME,
 	SORTID_END_TIME,
 	SORTID_SUSPEND_TIME,
+	SORTID_TIMELIMIT,
 	SORTID_NODES,
 	SORTID_NODELIST,
 	SORTID_REQ_NODELIST,
 	SORTID_EXC_NODELIST,
 	SORTID_CONTIGUOUS,
-	SORTID_SUBMIT,
-	SORTID_START,
-	SORTID_END,
-	SORTID_TIMELIMIT,
-	SORTID_SUSPEND,
 	SORTID_PRIORITY,
 	SORTID_NUM_PROCS,
 	SORTID_TASKS,
@@ -140,6 +136,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_SUSPEND_TIME, "Suspended Time", TRUE,
 	 -1, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time limit", FALSE, 1, refresh_job,
+	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 #ifdef HAVE_BG
@@ -159,16 +157,6 @@ static display_data_t display_data_job[] = {
 #endif
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, 0, 
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_SUBMIT, "Submit Time", FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_START, "Start Time", FALSE, 1, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_END, "End Time", FALSE, -1, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time limit", FALSE, 1, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_SUSPEND, "Suspend Time", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_PRIORITY, "Priority", FALSE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NUM_PROCS, "Num Processors", 
@@ -340,6 +328,34 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   display_data_job[SORTID_TIME].name, 
 				   tmp_char);
+	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_char,
+			    sizeof(tmp_char));
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_SUBMIT_TIME].name, 
+				   tmp_char);
+	slurm_make_time_str((time_t *)&job_ptr->start_time, tmp_char,
+			    sizeof(tmp_char));
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_START_TIME].name, 
+				   tmp_char);
+	if ((job_ptr->time_limit == INFINITE) && 
+	    (job_ptr->end_time > time(NULL)))
+		sprintf(tmp_char, "NONE");
+	else 
+		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
+				    sizeof(tmp_char));
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_END_TIME].name, 
+				   tmp_char);
+	snprint_time(tmp_char, sizeof(tmp_char), job_ptr->suspend_time);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_SUSPEND_TIME].name, 
+				   tmp_char);
+	snprint_time(tmp_char, sizeof(tmp_char), job_ptr->time_limit);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_TIMELIMIT].name, 
+				   tmp_char);
+		
 	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);	
 	add_display_treestore_line(update, treestore, &iter, 
 				   display_data_job[SORTID_JOBID].name, 
@@ -370,7 +386,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	convert_num_unit((float)sview_job_info_ptr->node_cnt,
 			 tmp_char, UNIT_NONE);
 #else
-	sprintf(tmp_char, "%u", job_ptr->num_nodes);
+	sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
 #endif
 	add_display_treestore_line(update, treestore, &iter, 
 				   display_data_job[SORTID_NODES].name, 
@@ -382,8 +398,34 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 	
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_job[SORTID_NODELIST].
-				   name, nodes);
+				   display_data_job[SORTID_NODES].name, 
+				   tmp_char);
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_ALLOC_NODE].
+				   name, job_ptr->alloc_node);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_REQ_NODELIST].
+				   name, job_ptr->req_nodes);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_EXC_NODELIST].
+				   name, job_ptr->exc_nodes);
+	if(job_ptr->contiguous)
+		sprintf(tmp_char, "yes");
+	else
+		sprintf(tmp_char, "no");
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_CONTIGUOUS].
+				   name, tmp_char);
+	
+	sprintf(tmp_char, "%u", job_ptr->priority);
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_PRIORITY].
+				   name, tmp_char);
+
+	add_display_treestore_line(update, treestore, &iter, 
+				   display_data_job[SORTID_COMMENT].
+				   name, job_ptr->comment);
 }
 
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr, 
@@ -447,7 +489,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	convert_num_unit((float)sview_job_info_ptr->node_cnt,
 			 tmp_char, UNIT_NONE);
 #else
-	sprintf(tmp_char, "%u", job_ptr->num_nodes);
+	sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
 #endif
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NODES, tmp_char, -1);
@@ -1232,7 +1274,7 @@ extern GtkListStore *create_model_job(int type)
 				   -1);	
 		break;
 #endif
-	case SORTID_START:
+	case SORTID_START_TIME:
 		break;
 	default:
 		break;
@@ -1475,7 +1517,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		type = "connection";
 		break;
 #endif
-	case SORTID_START:
+	case SORTID_START_TIME:
 		temp = (char *)new_text;
 		job_msg.begin_time = parse_time(temp);
 		type = "start time";
