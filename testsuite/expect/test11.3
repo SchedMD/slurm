@@ -78,7 +78,7 @@ foreach proto $protocols {
 		}
 		timeout {
 			send_user "\nFAILURE: poe not responding\n"
-			exec $scancel --quiet $job_id
+			cancel_job $job_id
 			set exit_code 1
 		}
 		eof {

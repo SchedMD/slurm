@@ -188,7 +188,7 @@ expect {
 }
 if {$job_id2 == 0} {
 	send_user "\nFAILURE: srun failed to report jobid\n"
-	exec $scancel $job_id1
+	cancel_job $job_id1
 	exit 1
 }
 
@@ -202,7 +202,7 @@ if {$job_id2 == 0} {
 sleep 5
 suspend_job $job_id1 suspend
 if {$not_supported == 1} {
-	exec $scancel $job_id1
+	cancel_job $job_id1
 	exit 0
 }
 if {$not_supported == 0} {
@@ -216,17 +216,17 @@ if {$not_supported == 0} {
 	suspend_job $job_id1 resume
 	if {[wait_for_job $job_id1 DONE] != 0} {
 		send_user "\nFAILURE: waiting for job $job_id1 to complete\n"
-		exec $scancel $job_id1
-		exec $scancel $job_id2
+		cancel_job $job_id1
+		cancel_job $job_id2
 		exit 1
 	}
 	suspend_job $job_id2 resume
 }
 if {[wait_for_job $job_id2 DONE] != 0} {
-        send_user "\nFAILURE: waiting for job $job_id1 to complete\n"
-        exec $scancel $job_id1
-	exec $scancel $job_id2
-        exit 1
+	send_user "\nFAILURE: waiting for job $job_id1 to complete\n"
+	cancel_job $job_id1
+	cancel_job $job_id2
+	exit 1
 }
 if {$not_supported == 0} {
 	wait_for_file $file_out1

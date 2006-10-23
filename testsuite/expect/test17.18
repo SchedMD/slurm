@@ -252,7 +252,7 @@ while { $delayed < $max_job_delay } {
 }
 if {$is_done == 0} {
 	send_user "\nFAILURE: unexpected JobState\n"
-	exec $scancel --quiet $job_id1
+	cancel_job $job_id1
 	set exit_code 1
 }
 

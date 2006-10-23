@@ -88,7 +88,7 @@ if { $found_job == 0 } {
 #
 # Kill the job
 #
-exec $scancel --quiet $job_id
+cancel_job $job_id
 
 #
 # Create a job allocation as some other user, namely root
