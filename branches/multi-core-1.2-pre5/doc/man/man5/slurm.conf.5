@@ -384,14 +384,52 @@ scheduler type to become effective.
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used. 
 Acceptable values include 
-"select/linear" for allocation of entire nodes assuming a
+.RS
+.TP
+\fBselect/linear\fR
+for allocation of entire nodes assuming a
 one\-dimentional array of nodes in which sequentially ordered 
-nodes are preferable, 
-"select/cons_res" for allocation of individual processors 
-within the available nodes, and  
-"select/bluegene" for a three\-dimentional Blue Gene system. 
-The default value is "select/bluegene" for Blue Gene systems 
-and "select/linear" for all other systems.
+nodes are preferable. 
+This is the default value for non\-BlueGene systems. 
+.TP
+\fBselect/CR_CPU\fR
+CPUs are consumable resources. 
+There is no notion of sockets, cores or threads.
+On a multi\-core system, each core will be consided a CPU.
+On a multi\-core and hyperthreaded system, each thread will be 
+considered a CPU.
+On single\-core systems, each CPUs will be considered a CPU.
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/CR_CPU_Memory\fR
+CPUs and memory are consumable resources.
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/CR_Core\fR
+Cores are consumable resources.
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/CR_Core_Memory\fR
+Cores and memory are consumable resources.
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/CR_Socket\fR
+Sockets are consumable resources.
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/CR_Socket_Memory\fR
+Memory and CPUs are consumable resources.
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/CR_Memory\fR
+Memory is a consumable resource. 
+NOTE: This implies \fIShared=Yes\fR for all partitions.
+.TP
+\fBselect/bluegene\fR
+for a three\-dimentional BlueGene system. 
+The default value is "select/bluegene" for BlueGene systems.
+.RE
+
 .TP
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
