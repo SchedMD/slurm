@@ -147,7 +147,7 @@ static display_data_t options_data_part[] = {
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #endif
-	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, PART_PAGE},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -1607,7 +1607,7 @@ display_it:
 				continue;
 
 			hostlist = hostlist_create(
-				(char *)spec_info->search_info->gchar_data);
+				spec_info->search_info->gchar_data);
 			host = hostlist_shift(hostlist);
 			hostlist_destroy(hostlist);
 			if(!host) 
@@ -1631,7 +1631,7 @@ display_it:
 		case BLOCK_PAGE:
 		case JOB_PAGE:
 			if(strcmp(part_ptr->name, 
-				  (char *)spec_info->search_info->gchar_data)) 
+				  spec_info->search_info->gchar_data)) 
 				continue;
 			break;
 		default:
@@ -1657,10 +1657,8 @@ display_it:
 		}
 	}
 	list_iterator_destroy(itr);
-#ifndef HAVE_BG
 	put_buttons_in_table(popup_win->grid_table,
 			     popup_win->grid_button_list);
-#endif
 	 
 	_update_info_part(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));
