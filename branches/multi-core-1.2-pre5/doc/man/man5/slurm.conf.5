@@ -392,11 +392,28 @@ one\-dimentional array of nodes in which sequentially ordered
 nodes are preferable. 
 This is the default value for non\-BlueGene systems. 
 .TP
+\fBselect/cons_res\fR
+The resources within a node are individually allocated as
+consumable resources. 
+Implies \fIShared=No\fR or \fIShared=Force\fR for all partitions 
+except as noted below. 
+\fBSelectTypeParameters\fR for more information.
+.TP
+\fBselect/bluegene\fR
+for a three\-dimentional BlueGene system. 
+The default value is "select/bluegene" for BlueGene systems.
+.RE
+
+.TP
+\fBSelectTypeParameters\fR
+This only apply for \fISelectType=select/cons_res\fR.
+.RS
+.TP
 \fBselect/CR_CPU\fR
-CPUs are consumable resources. 
+CPUs are consumable resources.
 There is no notion of sockets, cores or threads.
 On a multi\-core system, each core will be consided a CPU.
-On a multi\-core and hyperthreaded system, each thread will be 
+On a multi\-core and hyperthreaded system, each thread will be
 considered a CPU.
 On single\-core systems, each CPUs will be considered a CPU.
 .TP
@@ -416,12 +433,8 @@ Sockets are consumable resources.
 Memory and CPUs are consumable resources.
 .TP
 \fBselect/CR_Memory\fR
-Memory is a consumable resource. 
+Memory is a consumable resource.
 NOTE: This implies \fIShared=Yes\fR for all partitions.
-.TP
-\fBselect/bluegene\fR
-for a three\-dimentional BlueGene system. 
-The default value is "select/bluegene" for BlueGene systems.
 .RE
 
 .TP
