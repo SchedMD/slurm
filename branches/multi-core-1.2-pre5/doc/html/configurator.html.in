@@ -442,9 +442,8 @@ individual processors and memory<BR>
     <B>CR_CPU</B>: (default)
     CPUs as consumable resources. 
     <DD> No notion of sockets, cores, or threads. 
-    On a multi-core system CPUs will be cores
-    On a multi-core/hyperthread system CPUs will 
-    be threads
+    On a multi-core system, cores will be considered CPUs.
+    On a multi-core/hyperthread system, threads will be considered CPUs.
     On a single-core systems CPUs are CPUs. ;-)
 <DT> <input type="radio" name="cons_res_params" value="CR_Socket"
 	    onClick="javascript:set_select_type(this)">
@@ -474,8 +473,7 @@ individual processors and memory<BR>
 <B>Linear</B>: Node-base 
 resource allocation, does not manage indivual processor allocation<BR>
 <input type="radio" name="select_type" value="bluegene">
-<B>BlueGene</B>: For IBM
-Blue Gene systems only<BR>
+<B>BlueGene</B>: For IBM Blue Gene systems only<BR>
 <P>
 
 <H2>Task Launch</H2>
