@@ -429,7 +429,7 @@ Select one value for <B>SelectType</B>:<BR>
 individual processors and memory<BR>
 <DL>
 <DL>
-<DT>Cons_res <B>SelectTypeParameters</B>:
+<DT><B>SelectTypeParameters</B> (As used by <I>SelectType=Cons_res</I> only):
     <DD> Note: The -E extension for sockets, cores, and threads 
 	are ignored within the node allocation mechanism 
 	when CR_CPU or CR_CPU_MEMORY is selected. 
