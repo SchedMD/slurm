@@ -53,6 +53,7 @@ char     e_host_bu[E_HOST_SIZE] = "";
 uint16_t e_port = 0;
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
+uint16_t kill_wait;
 uint16_t use_host_exp = 0;
 
 static char *	_get_wiki_conf_path(void);
@@ -205,6 +206,13 @@ static void _parse_wiki_config(void)
 	s_p_hashtbl_t *tbl;
 	char *key = NULL, *priority_mode = NULL, *wiki_conf;
 	struct stat buf;
+	slurm_ctl_conf_t *conf;
+
+	/* Set default values */
+	conf = slurm_conf_lock();
+	strncpy(e_host, conf->control_addr, sizeof(e_host));
+	kill_wait = conf->kill_wait;
+	slurm_conf_unlock();
 
 	wiki_conf = _get_wiki_conf_path();
 	if ((wiki_conf == NULL) || (stat(wiki_conf, &buf) == -1)) {
@@ -227,7 +235,8 @@ static void _parse_wiki_config(void)
 	if ( s_p_get_string(&key, "EHost", tbl)) {
 		strncpy(e_host, key, sizeof(e_host));
 		xfree(key);
-	}
+	} else
+		debug("wiki: Using ControlAddr for EHost value");
 	if ( s_p_get_string(&key, "EHostBackup", tbl)) {
 		strncpy(e_host_bu, key, sizeof(e_host_bu));
 		xfree(key);
@@ -247,6 +256,15 @@ static void _parse_wiki_config(void)
 	s_p_hashtbl_destroy(tbl);
 	xfree(wiki_conf);
 
+#if 0
+	info("AuthKey            = %s", auth_key);
+	info("EHost              = %s", e_host);
+	info("EHostBackup        = %s", e_host_bu);
+	info("EPort              = %u", e_port);
+	info("JobAggregationTime = %u sec", job_aggregation_time);
+	info("JobPriority        = %s", init_prio_mode ? "run" : "hold");
+	info("KillWait           = %u sec", kill_wait);      
+#endif
 	return;
 }
 
