@@ -48,6 +48,8 @@ static int   err_code;
 
 /* Global configuration parameters */
 char     auth_key[KEY_SIZE] = "";
+char     e_host[E_HOST_SIZE] = "";
+char     e_host_bu[E_HOST_SIZE] = "";
 uint16_t e_port = 0;
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
@@ -194,6 +196,8 @@ static void _parse_wiki_config(void)
 {
 	s_p_options_t options[] = {
 		{"AuthKey", S_P_STRING},
+		{"EHost", S_P_STRING},
+		{"EHostBackup", S_P_STRING},
 		{"EPort", S_P_UINT16},
 		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING}, 
@@ -218,6 +222,14 @@ static void _parse_wiki_config(void)
 		debug("Warning: No wiki_conf AuthKey specified");
 	else {
 		strncpy(auth_key, key, sizeof(auth_key));
+		xfree(key);
+	}
+	if ( s_p_get_string(&key, "EHost", tbl)) {
+		strncpy(e_host, key, sizeof(e_host));
+		xfree(key);
+	}
+	if ( s_p_get_string(&key, "EHostBackup", tbl)) {
+		strncpy(e_host_bu, key, sizeof(e_host_bu));
 		xfree(key);
 	}
 	s_p_get_uint16(&e_port, "EPort", tbl);
@@ -459,8 +471,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 		job_release_task(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
-		if (!job_will_run(cmd_ptr, &err_code, &err_msg))
-			goto free_resp_msg;
+		job_will_run(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBMODIFY", 9) == 0) {
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBSIGNAL", 9) == 0) {
