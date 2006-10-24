@@ -108,9 +108,11 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	char *new_node_list, *picked_node_list = NULL;
 	bitstr_t *new_bitmap, *save_exc_bitmap, *save_req_bitmap;
 	uint32_t save_prio;
-	static char *reply_msg;
-	static int reply_msg_size = 0;
 	bitstr_t *picked_node_bitmap = NULL;
+	/* Just create a big static message buffer to avoid dealing with
+	 * xmalloc/xfree. We'll switch to compressed node naming soon
+	 * and this buffer can be set smaller then. */
+	static char reply_msg[16384];
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
@@ -172,21 +174,19 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	if (picked_node_bitmap) {
 		picked_node_list = bitmap2wiki_node_name(picked_node_bitmap);
 		i = strlen(picked_node_list);
-		if ((i + 64) > reply_msg_size) {
-			reply_msg_size = i + 1024;
-			xrealloc(reply_msg, reply_msg_size);
-		}
+		if ((i + 64) > sizeof(reply_msg))
+			error("wiki: will_run buffer overflow");
 	}
 
 	if (rc == SLURM_SUCCESS) {
 		*err_code = 0;
-		snprintf(reply_msg, reply_msg_size,
+		snprintf(reply_msg, sizeof(reply_msg),
 			"SC=0 Job %d runnable now TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
 	} else if (rc == ESLURM_NODES_BUSY) {
 		*err_code = 1;
-		snprintf(reply_msg, reply_msg_size,
+		snprintf(reply_msg, sizeof(reply_msg),
 			"SC=1 Job %d runnable later TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
@@ -195,7 +195,7 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 		error("wiki: job %d never runnable on hosts=%s %s", 
 			jobid, new_node_list, err_str);
 		*err_code = -740;
-		snprintf(reply_msg, reply_msg_size, 
+		snprintf(reply_msg, sizeof(reply_msg), 
 			"SC=-740 Job %d not runable: %s", 
 			jobid, err_str);
 		*err_msg = reply_msg;

@@ -40,9 +40,8 @@
 
 static pthread_mutex_t	event_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t		last_notify_time = (time_t) 0;
-static slurm_addr	moab_event_addr;
+static slurm_addr	moab_event_addr,  moab_event_addr_bu;
 static int		event_addr_set = 0;
-static char *		control_addr = NULL;
 
 /*
  * event_notify - Notify Moab of some event
@@ -69,16 +68,31 @@ extern int	event_notify(char *msg)
 	pthread_mutex_lock(&event_mutex);
 	if (event_addr_set == 0) {
 		/* Identify address for socket connection */
-		slurm_ctl_conf_t *conf = slurm_conf_lock();
-		control_addr = xstrdup(conf->control_addr);
-		slurm_conf_unlock();
-		slurm_set_addr(&moab_event_addr, e_port, control_addr);
+		if (e_host[0] == '\0') {
+			slurm_ctl_conf_t *conf = slurm_conf_lock();
+			strncpy(e_host, conf->control_addr, 
+				sizeof(e_host));
+			slurm_conf_unlock();
+		}
+		slurm_set_addr(&moab_event_addr, e_port, e_host);
 		event_addr_set = 1;
+		if (e_host_bu[0] != '\0') {
+			slurm_set_addr(&moab_event_addr_bu, e_port, 
+				e_host_bu);
+			event_addr_set = 2;
+		}
 	}
 	event_fd = slurm_open_msg_conn(&moab_event_addr);
+	if ((event_fd == -1) && (event_addr_set == 2))
+		event_fd = slurm_open_msg_conn(&moab_event_addr_bu);
 	if (event_fd == -1) {
+		char *host_name;
+		if (event_addr_set == 2)
+			host_name = e_host_bu;
+		else
+			host_name = e_host;
 		error("Unable to open wiki event port %s:%u: %m", 
-			control_addr, e_port);
+			host_name, e_port);
 		pthread_mutex_unlock(&event_mutex);
 		return -1;
 	}

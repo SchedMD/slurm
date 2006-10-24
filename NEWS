@@ -82,6 +82,12 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.18
+=========================
+ - In sched/wiki2, add support for EHost and EHostBackup configuration 
+   parameters in wiki.conf file
+ - In sched/wiki2, fix memory management bug for JOBWILLRUN command.
+
 * Changes in SLURM 1.1.17
 =========================
  - BLUEGENE - fix to make dynamic partitioning not go create block where
