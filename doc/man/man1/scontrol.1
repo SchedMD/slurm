@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2006" "scontrol 1.2" "Slurm components"
+.TH SCONTROL "1" "October 2006" "scontrol 1.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -317,7 +317,11 @@ Use quotes to enclose a reason having more than one word.
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
 "DRAIN" "RESUME", "DOWN", "IDLE", "ALLOC", and "ALLOCATED". 
 "RESUME is not an actual node state, but will return a DRAINED, DRAINING, 
-or DOWN node to service, either IDLE or ALLOCATED state as appropriate. 
+or DOWN node to service, either IDLE or ALLOCATED state as appropriate.
+Setting a node "DOWN" will cause all running and suspended jobs on that
+node to be terminated.
+If you want to remove a node from service, you typically want to set 
+it's state to "DRAIN". 
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 .TP
