@@ -1029,6 +1029,7 @@ static int _shutdown_backup_controller(int wait_time)
 {
 	int rc;
 	slurm_msg_t req;
+	DEF_TIMERS;
 
 	if ((slurmctld_conf.backup_addr == NULL) ||
 	    (slurmctld_conf.backup_addr[0] == '\0')) {
@@ -1044,13 +1045,14 @@ static int _shutdown_backup_controller(int wait_time)
 	req.data = NULL;
 	req.forward.cnt = 0;
 	req.ret_list = NULL;
+	START_TIMER;
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, CONTROL_TIMEOUT) < 0) {
-		error("shutdown_backup:send/recv: %m");
+		END_TIMER;
+		error("_shutdown_backup_controller:send/recv: %m, %s", TIME_STR);
 		return SLURM_ERROR;
 	}
-
 	if (rc) {
-		error("shutdown_backup: %s", slurm_strerror(rc));
+		error("_shutdown_backup_controller: %s", slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
 	debug("backup controller has relinquished control");
