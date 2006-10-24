@@ -429,12 +429,10 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
     	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	while (*p) {
-	    	if (*p == ',') {
-			if (!isdigit(*(p+1)))
-				*p = ';';
-		}
-		*p++;
+	while (p[0] != '\0') {
+	    	if ((p[0] == ',') && (!isdigit(p[1])))
+			p[0] = ';';
+		p++;
 	}
 
 	p = buf;
@@ -557,12 +555,10 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
     	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	while (*p) {
-	    	if (*p == ',') {
-			if (!isdigit(*(p+1)))
-				*p = ';';
-		}
-		*p++;
+	while (p[0] != '\0') {
+	    	if ((p[0] == ',') && (!isdigit(p[1])))
+			p[0] = ';';
+		p++;
 	}
 
 	p = buf;
@@ -738,12 +734,10 @@ _verify_hint(const char *arg,
 	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
-	while (*p) {
-		if (*p == ',') {
-			if (!isdigit(*(p+1)))
-				*p = ';';
-		}
-		*p++;
+	while (p[0] != '\0') {
+		if ((p[0] == ',') && (!isdigit(p[1])))
+			p[0] = ';';
+		p++;
 	}
 
 	p = buf;
