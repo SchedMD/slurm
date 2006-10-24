@@ -319,15 +319,13 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		return "Running";
 
 	if (state & JOB_COMPLETING) {
-		/* Give 60 seconds to clear out, then 
-		 * then consider job done. Let Moab 
-		 * deal with inconsistency between 
-		 * job state (DONE) and node state
-		 * (some IDLE and others still 
-		 * BUSY). */
+		/* Give configured KillWait+10 for job
+		 * to clear out, then then consider job 
+		 * done. Moab will allocate jobs to 
+		 * nodes that are already Idle. */ 
 		int age = (int) difftime(time(NULL), 
 			job_ptr->end_time);
-		if (age < 60)
+		if (age < (kill_wait+10))
 			return "Running";
 	}
 

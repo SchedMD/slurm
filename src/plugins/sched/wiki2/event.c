@@ -68,12 +68,6 @@ extern int	event_notify(char *msg)
 	pthread_mutex_lock(&event_mutex);
 	if (event_addr_set == 0) {
 		/* Identify address for socket connection */
-		if (e_host[0] == '\0') {
-			slurm_ctl_conf_t *conf = slurm_conf_lock();
-			strncpy(e_host, conf->control_addr, 
-				sizeof(e_host));
-			slurm_conf_unlock();
-		}
 		slurm_set_addr(&moab_event_addr, e_port, e_host);
 		event_addr_set = 1;
 		if (e_host_bu[0] != '\0') {

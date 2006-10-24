@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2, add support for EHost and EHostBackup configuration 
    parameters in wiki.conf file
  - In sched/wiki2, fix memory management bug for JOBWILLRUN command.
+ - In sched/wiki2, consider job Busy while in Completing state for 
+   KillWait+10 seconds (used to be 30 seconds).
 
 * Changes in SLURM 1.1.17
 =========================
