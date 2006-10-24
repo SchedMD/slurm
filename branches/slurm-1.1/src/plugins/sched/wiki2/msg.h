@@ -91,6 +91,7 @@ extern char	e_host[E_HOST_SIZE];
 extern char	e_host_bu[E_HOST_SIZE];
 extern uint16_t	e_port;
 extern uint16_t	job_aggregation_time;
+extern uint16_t kill_wait;
 extern uint16_t use_host_exp;
 
 extern int	event_notify(char *msg);
