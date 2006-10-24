@@ -77,8 +77,11 @@ extern int	event_notify(char *msg)
 		}
 	}
 	event_fd = slurm_open_msg_conn(&moab_event_addr);
-	if ((event_fd == -1) && (event_addr_set == 2))
+	if ((event_fd == -1) && (event_addr_set == 2)) {
+		debug("Unable to open wiki event port %s:%u: %m",
+			e_host, e_port);
 		event_fd = slurm_open_msg_conn(&moab_event_addr_bu);
+	}
 	if (event_fd == -1) {
 		char *host_name;
 		if (event_addr_set == 2)
@@ -88,6 +91,9 @@ extern int	event_notify(char *msg)
 		error("Unable to open wiki event port %s:%u: %m", 
 			host_name, e_port);
 		pthread_mutex_unlock(&event_mutex);
+		/* Don't retry again for a while (10 mins)
+		 * to avoid long delays from ETIMEDOUT */
+		last_notify_time = now + 600;
 		return -1;
 	}
 
