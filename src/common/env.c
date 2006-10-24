@@ -288,7 +288,7 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	} 
 
-	if ((int)env->distribution >= 0) {
+	if (env->distribution != SLURM_DIST_UNKNOWN) {
 		switch(env->distribution) {
 		case SLURM_DIST_CYCLIC:
 			dist      = "cyclic";
@@ -322,10 +322,6 @@ int setup_env(env_t *env)
 			dist      = "block";
 			lllp_dist = "block";
 			break;
-		case SLURM_DIST_UNKNOWN:
-			dist      = "unknown";
-			lllp_dist = "unknown";
-			break;
 		default:
 			error("unknown dist, type %d", env->distribution);
 			dist      = "unknown";
@@ -340,8 +336,8 @@ int setup_env(env_t *env)
 
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%d", 
 			    env->plane_size)) {
-		  error("Can't set SLURM_DIST_PLANESIZE env variable");
-		  rc = SLURM_FAILURE;
+			error("Can't set SLURM_DIST_PLANESIZE env variable");
+			rc = SLURM_FAILURE;
 		}
 
 		if (setenvf(&env->env, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
