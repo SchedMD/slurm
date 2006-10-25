@@ -569,23 +569,21 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 #else
 	/* From "man connect": Note that for IP sockets the timeout
 	 * may be very long when syncookies are enabled on the server.
-	 * Timeouts in excess of 3 minutes have been observed, resulting
-	 * in serious problems for slurmctld.
 	 *
-	 * This seems to fix the problem by making the connect call
-	 * non-blocking and polling. It has been validated, but not
-	 * enabled. It seems to be a rare failure mode and this
-	 * change can slow down all communications. */
-	int i, rc, flags;
-	struct timespec delay = {0, 0};
+	 * Timeouts in excess of 3 minutes have been observed, resulting
+	 * in serious problems for slurmctld. Making the connect call 
+	 * non-blocking and polling seems to fix the problem. */
+	int i, rc = -1, flags;
+	struct timespec delay = {0, 1000};
 
 	flags = fcntl(__fd, F_GETFL);
 	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
 	for (i=0; i<20; i++) {
 		if (i > 0) {
-			/* Sleep for (0.01 sec * i)
-			 * Total delay up to 2.0 sec */
-			delay.tv_nsec = 10000000 * i; 
+			/* Delay: min=1msec, max=1sec */
+			delay.tv_nsec *= 2;
+			if (delay.tv_nsec >= 1000000000)
+				break;
 			nanosleep(&delay, NULL);
 		}
 		rc = connect ( __fd , __addr , __len ) ;
