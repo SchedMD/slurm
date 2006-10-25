@@ -253,15 +253,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	bg_record = 
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 
-	slurm_mutex_lock(&block_state_mutex);
 	if(!bg_record) {
-		slurm_mutex_unlock(&block_state_mutex);
 		error("block %s not found in bg_list",
 		      bg_update_ptr->bg_block_id);
 		(void) slurm_fail_job(bg_update_ptr->job_id);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
+	slurm_mutex_lock(&block_state_mutex);
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
@@ -545,7 +544,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 static void *_block_agent(void *args)
 {
 	bg_update_t *bg_update_ptr = NULL;
-	
+				
 	/*
 	 * Don't just exit when there is no work left. Creating 
 	 * pthreads from within a dynamically linked object (plugin)
@@ -562,7 +561,7 @@ static void *_block_agent(void *args)
 		}
 		if (bg_update_ptr->op == START_OP)
 			_start_agent(bg_update_ptr);
-		else if (bg_update_ptr->op == TERM_OP) 
+		else if (bg_update_ptr->op == TERM_OP)
 			_term_agent(bg_update_ptr);
 		else if (bg_update_ptr->op == SYNC_OP)
 			_sync_agent(bg_update_ptr);

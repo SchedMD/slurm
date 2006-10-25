@@ -228,7 +228,7 @@ static int _lookat_path(bg_bp_t *bg_bp, ba_switch_t *curr_switch,
 		if(port_tar == curr_switch->ext_wire[port_tar].port_tar) {
 			//list_delete(conn_itr);
 			//continue;
-			debug3("I found these %d %d",port_tar, 
+			debug3("I found these %d %d", port_tar, 
 			       curr_switch->ext_wire[port_tar].port_tar);
 		}
 		if(((bg_conn->source == port_tar)
@@ -261,16 +261,16 @@ static int _lookat_path(bg_bp_t *bg_bp, ba_switch_t *curr_switch,
 	/* set source to the node you are on */
 	node_src = curr_switch->ext_wire[0].node_tar;
 
-	debug("dim %d trying from %d%d%d %d -> %d%d%d %d",
-	      dim,
-	      node_src[X], 
-	      node_src[Y], 
-	      node_src[Z],
-	      port_tar1,
-	      node_tar[X], 
-	      node_tar[Y], 
-	      node_tar[Z],
-	      port_tar);
+	debug2("dim %d trying from %d%d%d %d -> %d%d%d %d",
+	       dim,
+	       node_src[X], 
+	       node_src[Y], 
+	       node_src[Z],
+	       port_tar1,
+	       node_tar[X], 
+	       node_tar[Y], 
+	       node_tar[Z],
+	       port_tar);
 
 
 	bg_itr = list_iterator_create(bg_bp_list);
@@ -520,13 +520,26 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	int first_bp=1;
 	int first_switch=1;
 	
+	if(!bg_record->bg_block_list) {
+		error("There was no block_list given, can't create block");
+		return SLURM_ERROR;
+	}
+
 	bg_bp_list = list_create(NULL);
 	bg_record->switch_count = 0;
 	bg_record->bp_count = 0;
 		
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
-		debug2("node %d%d%d",
+		if(!ba_node->used) {
+			debug3("%d%d%d is a passthrough, "
+			       "not including in request",
+			       ba_node->coord[X], 
+			       ba_node->coord[Y], 
+			       ba_node->coord[Z]);
+			continue;
+		}
+		debug2("using node %d%d%d",
 		       ba_node->coord[X], 
 		       ba_node->coord[Y], 
 		       ba_node->coord[Z]);
