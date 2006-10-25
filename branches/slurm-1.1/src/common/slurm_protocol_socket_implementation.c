@@ -3,7 +3,7 @@
  *                                           based upon sockets.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -564,36 +564,28 @@ extern int _slurm_getsockname (int __fd, struct sockaddr * __addr,
 extern int _slurm_connect (int __fd, struct sockaddr const * __addr, 
                                 socklen_t __len)
 {
-#if 1
-	return connect ( __fd , __addr , __len ) ;
-#else
 	/* From "man connect": Note that for IP sockets the timeout
 	 * may be very long when syncookies are enabled on the server.
 	 *
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call 
 	 * non-blocking and polling seems to fix the problem. */
-	int i, rc = -1, flags;
-	struct timespec delay = {0, 1000};
+	int rc = -1, flags;
 
 	flags = fcntl(__fd, F_GETFL);
 	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
-	for (i=0; i<20; i++) {
-		if (i > 0) {
-			/* Delay: min=1msec, max=1sec */
-			delay.tv_nsec *= 2;
-			if (delay.tv_nsec >= 1000000000)
-				break;
-			nanosleep(&delay, NULL);
-		}
+	rc = connect ( __fd , __addr , __len ) ;
+	if ((rc == -1)
+	&&  ((errno == EINPROGRESS) || (errno == EALREADY))) {
+		struct pollfd ufds;
+		ufds.fd = __fd;
+		ufds.events = POLLOUT;
+		ufds. revents = 0;
+		poll(&ufds, 1, 5000);   /* 5 sec max wait */
 		rc = connect ( __fd , __addr , __len ) ;
-		if ((rc != -1)
-		||  ((errno != EINPROGRESS) && (errno != EALREADY)))
-			break;
 	}
 	fcntl(__fd, F_SETFL, flags);
 	return rc;
-#endif
 }
 
 /* Put the address of the peer connected to socket FD into *ADDR
