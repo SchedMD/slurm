@@ -63,28 +63,6 @@ for more information.  If \fB\-N\fR is not specified, the default
 behaviour is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
 .TP
-\fB\-B\fR \fB\-\-extra\-node\-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
-Request a specific allocation of resources with details as to the
-number and type of computational resources within a cluster:
-number of sockets (or physical processors) per node,
-cores per socket, and threads per core.
-The total amount of resources being requested is the product of all of
-the terms.
-As with \-\-nodes, each value can be a single number or a range (e.g. min\-max).
-An asterisk (*) can be used as a placeholder indicating that all available 
-resources of that type are to be utilized.
-As with nodes, the individual levels can also be specified in separate
-options if desired:
-.nf
-    \fB\-\-sockets\-per\-node\fR=\fIsockets\fR
-    \fB\-\-cores\-per\-socket\fR=\fIcores\fR
-    \fB\-\-threads\-per\-core\fR=\fIthreads\fR
-.fi
-When the task/affinity plugin is enabled,
-specifying an allocation in this manner also instructs SLURM to use
-a CPU affinity mask to guarantee the request is filled as specified.
-See the "Affinity/Multi\-core options" below for more details.
-.TP
 \fB\-r\fR, \fB\-\-relative\fR=\fIn\fR
 Run a job step relative to node \fIn\fR of the current allocation. 
 This option may be used to spread several job steps out among the
@@ -556,6 +534,29 @@ In addition either select/linear or select/cons_res plugin must be
 configured.
 If select/cons_res is configured, it must have a parameter of CR_Core, 
 CR_Core_Memory, CR_Socket, or CR_Socket_Memory. 
+
+.TP
+\fB\-B\fR \fB\-\-extra\-node\-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
+Request a specific allocation of resources with details as to the
+number and type of computational resources within a cluster:
+number of sockets (or physical processors) per node,
+cores per socket, and threads per core.
+The total amount of resources being requested is the product of all of
+the terms.
+As with \-\-nodes, each value can be a single number or a range (e.g. min\-max).
+An asterisk (*) can be used as a placeholder indicating that all available
+resources of that type are to be utilized.
+As with nodes, the individual levels can also be specified in separate
+options if desired:
+.nf
+    \fB\-\-sockets\-per\-node\fR=\fIsockets\fR
+    \fB\-\-cores\-per\-socket\fR=\fIcores\fR
+    \fB\-\-threads\-per\-core\fR=\fIthreads\fR
+.fi
+When the task/affinity plugin is enabled,
+specifying an allocation in this manner also instructs SLURM to use
+a CPU affinity mask to guarantee the request is filled as specified.
+
 .TP
 \fB\-\-ntasks\-per\-socket\fR=\fIntasks\fR
 Request that no more than \fIntasks\fR be invoked on each socket.
@@ -1394,6 +1395,15 @@ dev1
 
 .fi
 .PP
+This example demonstrates use of multi\-core options to control layout 
+of tasks. 
+We request that four sockets per node and two cores per socket be 
+dedicated to the job. 
+
+.nf
+
+> srun \-N2 \-B 4\-4:2\-2 a.out
+.fi
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
