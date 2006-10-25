@@ -70,7 +70,15 @@
 #define RETRY_BOOT_COUNT 3
 
 #ifdef HAVE_BG_FILES
-static int  _block_is_deallocating(bg_record_t *bg_record);
+
+typedef struct {
+	int jobid;
+} kill_job_struct_t;
+
+List kill_job_list = NULL;
+
+static int _block_is_deallocating(bg_record_t *bg_record);
+static void _destroy_kill_struct(void *object);
 
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
@@ -86,11 +94,17 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	} 
 	slurm_conf_unlock();
 	
+	if(jobid > -1) {
+		kill_job_struct_t *freeit = xmalloc(sizeof(kill_job_struct_t));
+		freeit->jobid = jobid;
+		list_push(kill_job_list, freeit);
+	}	
 	if(bg_record->target_name 
 	   && bg_record->user_name) {
 		if(!strcmp(bg_record->target_name, user_name)) {
 			if(strcmp(bg_record->target_name, 
-				  bg_record->user_name)) {
+				  bg_record->user_name)
+			   || (jobid > -1)) {
 				error("Block %s was in a ready state "
 				      "for user %s but is being freed. "
 				      "Job %d was lost.",
@@ -98,8 +112,6 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				      bg_record->user_name,
 				      jobid);
 				
-				if(jobid > -1)
-					slurm_fail_job(jobid);
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
@@ -136,6 +148,15 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			
 	return SLURM_SUCCESS;
 }
+static void _destroy_kill_struct(void *object)
+{
+	kill_job_struct_t *freeit = (kill_job_struct_t *)object;
+
+	if(freeit) {
+		xfree(freeit);
+	}
+}
+
 #endif
 
 
@@ -209,8 +230,12 @@ extern int update_block_list()
 	bg_record_t *bg_record = NULL;
 	time_t now;
 	int skipped_dealloc = 0;
+	kill_job_struct_t *freeit = NULL;
 	ListIterator itr = NULL;
 	
+	if(!kill_job_list)
+		kill_job_list = list_create(_destroy_kill_struct);
+
 	if(!bg_list) 
 		return updated;
 	
@@ -362,7 +387,12 @@ extern int update_block_list()
 			case RM_PARTITION_READY:
 				debug("block %s is ready.",
 				      bg_record->bg_block_id);
-				set_block_user(bg_record); 	
+				if(set_block_user(bg_record) == SLURM_ERROR) {
+					freeit = xmalloc(
+						sizeof(kill_job_struct_t));
+					freeit->jobid = bg_record->job_running;
+					list_push(kill_job_list, freeit);
+				}
 				break;
 			default:
 				debug("Hey the state of the "
@@ -380,6 +410,13 @@ extern int update_block_list()
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+	
+	/* kill all the jobs from unexpectedly freed blocks */
+	while((freeit = list_pop(kill_job_list))) {
+		debug2("killing job %d", freeit->jobid);
+		(void) slurm_fail_job(freeit->jobid);
+		_destroy_kill_struct(freeit);
+	}
 		
 #endif
 	return updated;

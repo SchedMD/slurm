@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
    KillWait+10 seconds (used to be 30 seconds).
  - BLUEGENE - Fixes to allow full block creation on the system and not to add
    passthrough nodes to the allocation when creating a block. 
+ - BLUEGENE - Fix deadlock issue with starting and failing jobs at the same
+   time
 
 * Changes in SLURM 1.1.17
 =========================
