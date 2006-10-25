@@ -198,7 +198,7 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 #define REMOVE_USER_NONE  0
 #define REMOVE_USER_FOUND 2
 extern int remove_all_users(char *bg_block_id, char *user_name);
-extern void set_block_user(bg_record_t *bg_record);
+extern int set_block_user(bg_record_t *bg_record);
 
 /* Return strings representing blue gene data types */
 extern char *convert_lifecycle(lifecycle_type_t lifecycle);

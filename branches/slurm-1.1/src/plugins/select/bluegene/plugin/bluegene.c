@@ -766,7 +766,11 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	return returnc;
 }
 
-extern void set_block_user(bg_record_t *bg_record) 
+/* if SLURM_ERROR you will need to fail the job with
+   slurm_fail_job(bg_record->job_running);
+*/
+
+extern int set_block_user(bg_record_t *bg_record) 
 {
 	int rc = 0;
 	debug("resetting the boot state flag and "
@@ -777,16 +781,18 @@ extern void set_block_user(bg_record_t *bg_record)
 	slurm_conf_lock();
 	if((rc = update_block_user(bg_record, 1)) == 1) {
 		last_bg_update = time(NULL);
+		rc = SLURM_SUCCESS;
 	} else if (rc == -1) {
 		error("Unable to add user name to block %s. "
 		      "Cancelling job.",
 		      bg_record->bg_block_id);
-		(void) slurm_fail_job(bg_record->job_running);
+		rc = SLURM_ERROR;
 	}	
 	xfree(bg_record->target_name);
 	bg_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
-	slurm_conf_unlock();			
+	slurm_conf_unlock();	
+	return rc;
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
