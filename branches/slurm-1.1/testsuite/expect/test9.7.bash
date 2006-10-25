@@ -53,14 +53,15 @@ else
 	iterations=3
 fi
 
-if [ $5 ]; then
-    inx=512
-else
-    inx=1
-fi
+bluegene=0
+if [ $# -gt 5 ]; then
+	if  [ $5 ]; then
+		bluegene=1
+	fi
+fi	
 
 exit_code=0
-
+inx=1
 log="test9.7.$$.output"
 touch $log
 while [ $inx -le $iterations ]
@@ -73,7 +74,11 @@ do
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	$exec2 -N1-$inx -n$inx -O -s -l hostname         >>$log 2>&1
+	if [ $bluegene ]; then
+		$exec2 -N1-512 -n1 -s -l hostname         >>$log 2>&1
+	else
+		$exec2 -N1-$inx -n$inx -O -s -l hostname  >>$log 2>&1
+	fi
 	rc=$?
 	if [ $rc -ne 0 ]; then
 		echo "exec2 rc=$rc" >> $log
