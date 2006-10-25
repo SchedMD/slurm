@@ -211,6 +211,10 @@ static void _parse_wiki_config(void)
 	/* Set default values */
 	conf = slurm_conf_lock();
 	strncpy(e_host, conf->control_addr, sizeof(e_host));
+	if (conf->backup_addr) {
+		strncpy(e_host_bu, conf->backup_addr,
+			sizeof(e_host));
+	} 
 	kill_wait = conf->kill_wait;
 	slurm_conf_unlock();
 

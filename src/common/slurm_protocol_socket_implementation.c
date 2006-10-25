@@ -565,7 +565,28 @@ extern int _slurm_getsockname (int __fd, struct sockaddr * __addr,
 extern int _slurm_connect (int __fd, struct sockaddr const * __addr, 
                                 socklen_t __len)
 {
-        return connect ( __fd , __addr , __len ) ;
+	/* From "man connect": Note that for IP sockets the timeout
+	 * may be very long when syncookies are enabled on the server.
+	 *
+	 * Timeouts in excess of 3 minutes have been observed, resulting
+	 * in serious problems for slurmctld. Making the connect call 
+	 * non-blocking and polling seems to fix the problem. */
+	int rc = -1, flags;
+
+	flags = fcntl(__fd, F_GETFL);
+	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
+	rc = connect ( __fd , __addr , __len ) ;
+	if ((rc == -1)
+	&&  ((errno == EINPROGRESS) || (errno == EALREADY))) {
+		struct pollfd ufds;
+		ufds.fd = __fd;
+		ufds.events = POLLOUT;
+		ufds. revents = 0;
+		poll(&ufds, 1, 5000);   /* 5 sec max wait */
+		rc = connect ( __fd , __addr , __len ) ;
+	}
+	fcntl(__fd, F_SETFL, flags);
+	return rc;
 }
 
 /* Put the address of the peer connected to socket FD into *ADDR

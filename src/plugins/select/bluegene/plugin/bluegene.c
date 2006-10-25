@@ -100,6 +100,7 @@ static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
 static void _set_bg_lists();
 static int  _validate_config_nodes(void);
 static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
+static int  _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b);
 static int _delete_old_blocks(void);
 static char *_get_bg_conf(void);
 static int _add_block_db(bg_record_t *bg_record, int *block_inx);
@@ -358,9 +359,16 @@ extern void process_nodes(bg_record_t *bg_record)
 	end[X] = -1;
 	end[Y] = -1;
 	end[Z] = -1;
-	
+
+	list_sort(bg_record->bg_block_list, (ListCmpF) _ba_node_cmpf_inc);
+
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = list_next(itr)) != NULL) {
+		debug4("%d%d%d is included in this block",
+		       ba_node->coord[X],
+		       ba_node->coord[Y],
+		       ba_node->coord[Z]);
+		       
 		if(ba_node->coord[X]>end[X]) {
 			bg_record->geo[X]++;
 			end[X] = ba_node->coord[X];
@@ -375,10 +383,12 @@ extern void process_nodes(bg_record_t *bg_record)
 		}
 	}
 	list_iterator_destroy(itr);
-	debug3("geo = %d%d%d\n",
+	debug3("geo = %d%d%d bp count is %d\n",
 	       bg_record->geo[X],
 	       bg_record->geo[Y],
-	       bg_record->geo[Z]);
+	       bg_record->geo[Z],
+	       bg_record->bp_count);
+
 	if ((bg_record->geo[X] == DIM_SIZE[X])
 	    && (bg_record->geo[Y] == DIM_SIZE[Y])
 	    && (bg_record->geo[Z] == DIM_SIZE[Z]))
@@ -425,6 +435,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->switch_count = fir_record->switch_count;
 	sec_record->boot_state = fir_record->boot_state;
 	sec_record->boot_count = fir_record->boot_count;
+	sec_record->full_block = fir_record->full_block;
 
 	for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {
 		sec_record->geo[i] = fir_record->geo[i];
@@ -755,7 +766,11 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	return returnc;
 }
 
-extern void set_block_user(bg_record_t *bg_record) 
+/* if SLURM_ERROR you will need to fail the job with
+   slurm_fail_job(bg_record->job_running);
+*/
+
+extern int set_block_user(bg_record_t *bg_record) 
 {
 	int rc = 0;
 	debug("resetting the boot state flag and "
@@ -766,16 +781,18 @@ extern void set_block_user(bg_record_t *bg_record)
 	slurm_conf_lock();
 	if((rc = update_block_user(bg_record, 1)) == 1) {
 		last_bg_update = time(NULL);
+		rc = SLURM_SUCCESS;
 	} else if (rc == -1) {
 		error("Unable to add user name to block %s. "
 		      "Cancelling job.",
 		      bg_record->bg_block_id);
-		(void) slurm_fail_job(bg_record->job_running);
+		rc = SLURM_ERROR;
 	}	
 	xfree(bg_record->target_name);
 	bg_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
-	slurm_conf_unlock();			
+	slurm_conf_unlock();	
+	return rc;
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
@@ -937,6 +954,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				      "no bg_found_block_list 1");
 			}
 			if(bg_record->bp_count>0 
+			   && !bg_record->full_block
 			   && bg_record->cpus_per_bp == procs_per_node) {
 				char *name = NULL;
 				if(overlapped == LAYOUT_OVERLAP)
@@ -996,6 +1014,22 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				}
 			}
 			if(found_record == NULL) {
+				if(bg_record->full_block) {
+					/* if this is defined we need
+					   to remove it since we are
+					   going to try to create it
+					   later on overlap systems
+					   this doesn't matter, but
+					   since we don't clear the
+					   table on static mode we
+					   can't do it here or it just
+					   won't work since other
+					   wires will be or are
+					   already set
+					*/ 
+					list_remove(itr);
+					continue;
+				}
 #ifdef HAVE_BG_FILES
 				if((rc = configure_block(bg_record)) 
 				   == SLURM_ERROR) {
@@ -1952,6 +1986,8 @@ static int _validate_config_nodes(void)
 #ifdef HAVE_BG_FILES
 	bg_record_t* bg_record = NULL;	
 	bg_record_t* init_bg_record = NULL;
+	bg_record_t* full_system_bg_record = NULL;	
+	int full_created = 0;
 	ListIterator itr_conf;
 	ListIterator itr_curr;
 	rm_partition_mode_t node_use;
@@ -1962,7 +1998,15 @@ static int _validate_config_nodes(void)
 	
 	if(!bg_recover) 
 		return SLURM_ERROR;
-	
+
+	if(!bg_curr_block_list)
+		return SLURM_ERROR;
+
+	itr_curr = list_iterator_create(bg_curr_block_list);
+	while ((init_bg_record = list_next(itr_curr))) 
+		if(init_bg_record->full_block) 
+			full_system_bg_record = init_bg_record;	
+		
 	itr_conf = list_iterator_create(bg_list);
 	while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
 		/* translate hostlist to ranged 
@@ -1970,7 +2014,7 @@ static int _validate_config_nodes(void)
 		   search here 
 		*/
 		node_use = SELECT_COPROCESSOR_MODE; 
-		itr_curr = list_iterator_create(bg_curr_block_list);
+		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
 			if (strcasecmp(bg_record->nodes, 
 				       init_bg_record->nodes))
@@ -1988,7 +2032,6 @@ static int _validate_config_nodes(void)
 				       bg_record);
 			break;
 		}
-		list_iterator_destroy(itr_curr);
 			
 		if (!bg_record->bg_block_id) {
 			format_node_name(bg_record, tmp_char);	
@@ -1997,6 +2040,9 @@ static int _validate_config_nodes(void)
 			     tmp_char);
 			rc = SLURM_ERROR;
 		} else {
+			if(bg_record->full_block)
+				full_created = 1;
+
 			list_push(bg_found_block_list, bg_record);
 			format_node_name(bg_record, tmp_char);
 			info("Existing: BlockID:%s Nodes:%s Conn:%s",
@@ -2011,8 +2057,26 @@ static int _validate_config_nodes(void)
 		}
 	}		
 	list_iterator_destroy(itr_conf);
+	list_iterator_destroy(itr_curr);
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		goto finished;
+
+	if(!full_created && full_system_bg_record) {
+		bg_record = xmalloc(sizeof(bg_record_t));
+		copy_bg_record(full_system_bg_record, bg_record);
+		list_push(bg_list, bg_record);
+		list_push(bg_found_block_list, bg_record);
+		format_node_name(bg_record, tmp_char);
+		info("Existing: BlockID:%s Nodes:%s Conn:%s",
+		     bg_record->bg_block_id, 
+		     tmp_char,
+		     convert_conn_type(bg_record->conn_type));
+		if(((bg_record->state == RM_PARTITION_READY)
+		    || (bg_record->state == RM_PARTITION_CONFIGURING))
+		   && !block_exist_in_list(bg_booted_block_list, 
+					   bg_record))
+			list_push(bg_booted_block_list, bg_record);
+	}
 		
 finished:
 	if(list_count(bg_list) == list_count(bg_curr_block_list))
@@ -2053,6 +2117,30 @@ static int _bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	else if(rec_a->nodecard > rec_b->nodecard)
 		return 1;
 
+	return 0;
+}
+
+static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
+{
+	if (node_a->coord[X] < node_b->coord[X])
+		return -1;
+	else if (node_a->coord[X] > node_b->coord[X])
+		return 1;
+	
+	if (node_a->coord[Y] < node_b->coord[Y])
+		return -1;
+	else if (node_a->coord[Y] > node_b->coord[Y])
+		return 1;
+
+	if (node_a->coord[Z] < node_b->coord[Z])
+		return -1;
+	else if (node_a->coord[Z] > node_b->coord[Z])
+		return 1;
+
+	error("You have the node %d%d%d in the list twice",
+	      node_a->coord[X],
+	      node_a->coord[Y],
+	      node_a->coord[Z]); 
 	return 0;
 }
 
