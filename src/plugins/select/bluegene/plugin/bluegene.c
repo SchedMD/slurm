@@ -2035,7 +2035,7 @@ static int _validate_config_nodes(void)
 			rc = SLURM_ERROR;
 		} else {
 			if(bg_record->full_block)
-				full_create = 1;
+				full_created = 1;
 
 			list_push(bg_found_block_list, bg_record);
 			format_node_name(bg_record, tmp_char);
@@ -2055,11 +2055,11 @@ static int _validate_config_nodes(void)
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		goto finished;
 
-	if(!full_Created && full_system_block_record) {
+	if(!full_created && full_system_bg_record) {
 		bg_record = xmalloc(sizeof(bg_record_t));
-		copy_bg_record(full_system_block_record, bg_record);
+		copy_bg_record(full_system_bg_record, bg_record);
 		list_push(bg_list, bg_record);
-		list_push(bg_Found_block_list, bg_reocrd);
+		list_push(bg_found_block_list, bg_record);
 		format_node_name(bg_record, tmp_char);
 		info("Existing: BlockID:%s Nodes:%s Conn:%s",
 		     bg_record->bg_block_id, 
