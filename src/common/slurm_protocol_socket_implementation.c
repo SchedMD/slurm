@@ -564,7 +564,7 @@ extern int _slurm_getsockname (int __fd, struct sockaddr * __addr,
 extern int _slurm_connect (int __fd, struct sockaddr const * __addr, 
                                 socklen_t __len)
 {
-#if 1
+#if 0
 	return connect ( __fd , __addr , __len ) ;
 #else
 	/* From "man connect": Note that for IP sockets the timeout
@@ -572,21 +572,23 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 *
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call 
-	 * non-blocking and polling seems to fix the problem on Linux. 
-	 * It fails on AIX. */
+	 * non-blocking and polling seems to fix the problem. */
 	int rc = -1, flags;
 
 	flags = fcntl(__fd, F_GETFL);
 	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
 	rc = connect(__fd , __addr , __len);
 	if ((rc == -1) && (errno == EINPROGRESS)) {
+		int poll_rc;
 		struct pollfd ufds;
 		ufds.fd = __fd;
-		ufds.events = POLLOUT;
+		ufds.events = POLLIN | POLLOUT;
 		ufds.revents = 0;
-		poll(&ufds, 1, 5000);   /* 5 sec max wait */
-		if (ufds.revents == POLLOUT)
-			rc = connect(__fd , __addr , __len);
+		poll_rc = poll(&ufds, 1, 5000);
+		if (poll_rc == 0)
+                        errno = ETIMEDOUT;
+		else if (poll_rc == 1)
+			rc = 0;
 	}
 	fcntl(__fd, F_SETFL, flags);
 	return rc;
