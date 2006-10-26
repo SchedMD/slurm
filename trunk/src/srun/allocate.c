@@ -628,7 +628,7 @@ _step_req_create(srun_job_t *j)
 		r->plane_size = opt.plane_size;
 		break;
 	default:
-		r->task_dist = (opt.nprocs <= r->node_count) 
+		r->task_dist = (r->num_tasks <= r->node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		break;
 
