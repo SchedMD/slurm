@@ -95,12 +95,12 @@ int max_dim[BA_SYSTEM_DIMENSIONS] = { 0 };
 /* some local functions */
 #ifdef HAVE_BG
 static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
+static int  _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b);
 #endif
 
 static void _set_bg_lists();
 static int  _validate_config_nodes(void);
 static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
-static int  _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b);
 static int _delete_old_blocks(void);
 static char *_get_bg_conf(void);
 static int _add_block_db(bg_record_t *bg_record, int *block_inx);
@@ -1940,6 +1940,30 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	}
 	return node_count;
 }
+
+static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
+{
+	if (node_a->coord[X] < node_b->coord[X])
+		return -1;
+	else if (node_a->coord[X] > node_b->coord[X])
+		return 1;
+	
+	if (node_a->coord[Y] < node_b->coord[Y])
+		return -1;
+	else if (node_a->coord[Y] > node_b->coord[Y])
+		return 1;
+
+	if (node_a->coord[Z] < node_b->coord[Z])
+		return -1;
+	else if (node_a->coord[Z] > node_b->coord[Z])
+		return 1;
+
+	error("You have the node %d%d%d in the list twice",
+	      node_a->coord[X],
+	      node_a->coord[Y],
+	      node_a->coord[Z]); 
+	return 0;
+}
 #endif //HAVE_BG
 
 static void _set_bg_lists()
@@ -2117,30 +2141,6 @@ static int _bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	else if(rec_a->nodecard > rec_b->nodecard)
 		return 1;
 
-	return 0;
-}
-
-static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
-{
-	if (node_a->coord[X] < node_b->coord[X])
-		return -1;
-	else if (node_a->coord[X] > node_b->coord[X])
-		return 1;
-	
-	if (node_a->coord[Y] < node_b->coord[Y])
-		return -1;
-	else if (node_a->coord[Y] > node_b->coord[Y])
-		return 1;
-
-	if (node_a->coord[Z] < node_b->coord[Z])
-		return -1;
-	else if (node_a->coord[Z] > node_b->coord[Z])
-		return 1;
-
-	error("You have the node %d%d%d in the list twice",
-	      node_a->coord[X],
-	      node_a->coord[Y],
-	      node_a->coord[Z]); 
 	return 0;
 }
 
