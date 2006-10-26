@@ -564,6 +564,9 @@ extern int _slurm_getsockname (int __fd, struct sockaddr * __addr,
 extern int _slurm_connect (int __fd, struct sockaddr const * __addr, 
                                 socklen_t __len)
 {
+#if 1
+	return connect ( __fd , __addr , __len ) ;
+#else
 	/* From "man connect": Note that for IP sockets the timeout
 	 * may be very long when syncookies are enabled on the server.
 	 *
@@ -586,6 +589,7 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	}
 	fcntl(__fd, F_SETFL, flags);
 	return rc;
+#endif
 }
 
 /* Put the address of the peer connected to socket FD into *ADDR
