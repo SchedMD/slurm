@@ -181,8 +181,39 @@ int slaunch(int argc, char **argv)
 		step_req.cpu_count = opt.num_tasks;
 	}
 	step_req.relative = opt.relative;
-	if (opt.distribution != SLURM_DIST_UNKNOWN)
-		step_req.task_dist = opt.distribution;
+	switch (opt.distribution) {
+	case SLURM_DIST_BLOCK:
+		step_req.task_dist = SLURM_DIST_BLOCK;
+		break;
+	case SLURM_DIST_ARBITRARY:
+		step_req.task_dist = SLURM_DIST_ARBITRARY;
+		break;
+	case SLURM_DIST_CYCLIC:
+		step_req.task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC:
+		step_req.task_dist = SLURM_DIST_CYCLIC_CYCLIC;
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK:
+		step_req.task_dist = SLURM_DIST_CYCLIC_BLOCK;
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC:
+		step_req.task_dist = SLURM_DIST_BLOCK_CYCLIC;
+		break;
+	case SLURM_DIST_BLOCK_BLOCK:
+		step_req.task_dist = SLURM_DIST_BLOCK_BLOCK;
+		break;
+	case SLURM_DIST_PLANE:
+		step_req.task_dist = SLURM_DIST_PLANE;
+		step_req.plane_size = opt.plane_size;
+		break;
+	default:
+		step_req.task_dist = (step_req.num_tasks <= 
+			step_req.node_count) 
+			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		break;
+
+	}
 	step_req.overcommit = opt.overcommit ? 1 : 0;
 	step_req.host = NULL; /* let the SLURM API set this */
 	step_req.port = 0;    /* let the SLURM API set this */
