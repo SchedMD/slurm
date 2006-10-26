@@ -84,6 +84,7 @@
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
+/* Change JOB_STATE_VERSION value when changing the state save format */
 #define JOB_STATE_VERSION      "VER004"
 
 /* Global variables */
@@ -267,15 +268,8 @@ int dump_all_job_state(void)
 	DEF_TIMERS;
 
 	START_TIMER;
-
-        /*
-         * write header: The version of the "job_state" file format.
-         * Putting a version in the header comes in handy for cases where
-         * we need to modify the format of the "job_state" file.
-         */
-	packstr( JOB_STATE_VERSION, buffer);
-
-	/* write header: time */
+	/* write header: version, time */
+	packstr(JOB_STATE_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
         /*
@@ -429,16 +423,17 @@ int load_all_job_state(void)
 				ver_str);
 		}
 	}
+	if (strcmp(ver_str, JOB_STATE_VERSION) != 0) {
+		error("Can not recover job state, data version incompatable");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
 
 	safe_unpack_time(&buf_time, buffer);
-
-        /*
-         * If the header has the version string then it also has the job id.
-         */
-	if (ver_str != NULL) {
-	        safe_unpack32( &saved_job_id, buffer);
-	        debug3("Job id in job_state header is %d", saved_job_id);
-	}
+	safe_unpack32( &saved_job_id, buffer);
+	debug3("Job id in job_state header is %u", saved_job_id);
 
 	while (remaining_buf(buffer) > 0) {
 		error_code = _load_job_state(buffer);
@@ -447,18 +442,10 @@ int load_all_job_state(void)
 		job_cnt++;
 	}
 
-        /*
-         * If the header has the version string then it also has the job id.
-	 * Use MAX of preserved value or configuration parameter 
-	 * FirstJobId (set above).
-         */
-	if (ver_str != NULL) {
-		job_id_sequence = MAX(saved_job_id, job_id_sequence);
-		debug3("Set job_id_sequence to %u", job_id_sequence);
-	}
+	job_id_sequence = MAX(saved_job_id, job_id_sequence);
+	debug3("Set job_id_sequence to %u", job_id_sequence);
 
 	free_buf(buffer);
-	xfree(ver_str);
 	info("Recovered state of %d jobs", job_cnt);
 	return error_code;
 
@@ -466,7 +453,6 @@ int load_all_job_state(void)
 	error("Incomplete job data checkpoint file");
 	info("State of %d jobs recovered", job_cnt);
 	free_buf(buffer);
-	xfree(ver_str);
 	return SLURM_FAILURE;
 }
 
