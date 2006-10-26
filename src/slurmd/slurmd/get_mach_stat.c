@@ -78,10 +78,10 @@
 
 static char* _cpuinfo_path = "/proc/cpuinfo";
 
-int compute_block_map(uint32_t numproc,
-			uint32_t **block_map, uint32_t **block_map_inv);
+int compute_block_map(uint16_t numproc,
+			uint16_t **block_map, uint16_t **block_map_inv);
 int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
-int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
+int chk_cpuinfo_uint16(char *buffer, char *keyword, uint16_t *val);
 int chk_cpuinfo_float(char *buffer, char *keyword, float *val);
 
 /* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
@@ -102,13 +102,13 @@ int
 main(int argc, char * argv[]) 
 {
 	int error_code;
-	uint32_t sockets, cores, threads;
-	uint32_t block_map_size;
-	uint32_t *block_map, *block_map_inv;
+	uint16_t sockets, cores, threads;
+	uint16_t block_map_size;
+	uint16_t *block_map, *block_map_inv;
 	struct config_record this_node;
 	char node_name[MAX_SLURM_NAME];
 	float speed;
-	uint32_t testnumproc = 0;
+	uint16_t testnumproc = 0;
 
 	if (argc > 1) {
 	    	_cpuinfo_path = argv[1];
@@ -183,7 +183,7 @@ getnodename (char *name, size_t len)
  *         return code - 0 if no error, otherwise errno
  */
 extern int 
-get_procs(uint32_t *procs) 
+get_procs(uint16_t *procs) 
 {
 #ifdef LPAR_INFO_FORMAT2
 	/* AIX 5.3 only */
@@ -195,7 +195,7 @@ get_procs(uint32_t *procs)
 		return EINVAL;
 	}
 	
-	*procs = (uint32_t)info.online_vcpus;
+	*procs = (uint16_t)info.online_vcpus;
 #else /* !LPAR_INFO_FORMAT2 */
 
 #  ifdef _SC_NPROCESSORS_ONLN
@@ -208,7 +208,7 @@ get_procs(uint32_t *procs)
 		return EINVAL;
 	} 
 
-	*procs = my_proc_tally;
+	*procs = (uint16_t) my_proc_tally;
 #  else
 #    ifdef HAVE_SYSCTLBYNAME
 	int ncpu;
@@ -219,7 +219,7 @@ get_procs(uint32_t *procs)
 		error("get_procs: error running sysctl(HW_NCPU)");
 		return EINVAL;
 	}
-	*procs = ncpu;
+	*procs = (uint16_t) ncpu;
 #    else /* !HAVE_SYSCTLBYNAME */
 	*procs = 1;
 #    endif /* HAVE_SYSCTLBYNAME */
@@ -387,15 +387,15 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 	return true;
 }
 
-/* chk_cpuinfo_uint32
+/* chk_cpuinfo_uint16
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
- *	exists, return the uint32 value for that keyword in *valptr.
+ *	exists, return the uint16 value for that keyword in *valptr.
  * Input:  buffer - single line of cpuinfo data
  *	   keyword - keyword to check for
- * Output: valptr - uint32 value corresponding to keyword
+ * Output: valptr - uint16 value corresponding to keyword
  *         return code - true if keyword found, false if not found
  */
-int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
+int chk_cpuinfo_uint16(char *buffer, char *keyword, uint16_t *val)
 {
 	char *valptr;
 	if (chk_cpuinfo_str(buffer, keyword, &valptr)) {
@@ -467,41 +467,41 @@ get_speed(float *speed)
  */
 typedef struct cpuinfo {
 	int seen;
-	uint32_t id;
-	uint32_t physid;
-	uint32_t physcnt;
-	uint32_t siblings;
-	uint32_t cores;
-	uint32_t coreid;
-	uint32_t corecnt;
+	uint16_t id;
+	uint16_t physid;
+	uint16_t physcnt;
+	uint16_t siblings;
+	uint16_t cores;
+	uint16_t coreid;
+	uint16_t corecnt;
 } cpuinfo_t;
 static cpuinfo_t *cpuinfo = NULL; /* array of CPU information for get_cpuinfo */
 				  /* Note: file static for qsort/_compare_cpus*/
 extern int
-get_cpuinfo(uint32_t numproc,
-		uint32_t *p_sockets, uint32_t *p_cores, uint32_t *p_threads,
-		uint32_t *block_map_size,
-		uint32_t **block_map, uint32_t **block_map_inv)
+get_cpuinfo(uint16_t numproc,
+		uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
+		uint16_t *block_map_size,
+		uint16_t **block_map, uint16_t **block_map_inv)
 {
 	FILE *cpu_info_file;
 	char buffer[128];
 	int retval;
-	uint32_t curcpu, sockets, cores, threads;
-	uint32_t numcpu	   = 0;		/* number of cpus seen */
-	uint32_t numphys   = 0;		/* number of unique "physical id"s */
-	uint32_t numcores  = 0;		/* number of unique "cores id"s */
+	uint16_t curcpu, sockets, cores, threads;
+	uint16_t numcpu	   = 0;		/* number of cpus seen */
+	uint16_t numphys   = 0;		/* number of unique "physical id"s */
+	uint16_t numcores  = 0;		/* number of unique "cores id"s */
 
-	uint32_t maxsibs   = 0;		/* maximum value of "siblings" */
-	uint32_t maxcores  = 0;		/* maximum value of "cores" */
-	uint32_t minsibs   = INT_MAX;	/* minimum value of "siblings" */
-	uint32_t mincores  = INT_MAX;	/* minimum value of "cores" */
+	uint16_t maxsibs   = 0;		/* maximum value of "siblings" */
+	uint16_t maxcores  = 0;		/* maximum value of "cores" */
+	uint16_t minsibs   = 0xffff;	/* minimum value of "siblings" */
+	uint16_t mincores  = 0xffff;	/* minimum value of "cores" */
 
-	uint32_t maxcpuid  = 0;		/* maximum CPU ID ("processor") */
-	uint32_t maxphysid = 0;		/* maximum "physical id" */
-	uint32_t maxcoreid = 0;		/* maximum "core id" */
-	uint32_t mincpuid  = INT_MAX;	/* minimum CPU ID ("processor") */
-	uint32_t minphysid = INT_MAX;	/* minimum "physical id" */
-	uint32_t mincoreid = INT_MAX;	/* minimum "core id" */
+	uint16_t maxcpuid  = 0;		/* maximum CPU ID ("processor") */
+	uint16_t maxphysid = 0;		/* maximum "physical id" */
+	uint16_t maxcoreid = 0;		/* maximum "core id" */
+	uint16_t mincpuid  = 0xffff;	/* minimum CPU ID ("processor") */
+	uint16_t minphysid = 0xffff;	/* minimum "physical id" */
+	uint16_t mincoreid = 0xffff;	/* minimum "core id" */
 #ifdef DEBUG_DETAIL
 	int i;
 #endif
@@ -524,31 +524,31 @@ get_cpuinfo(uint32_t numproc,
 	memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-		uint32_t val;
-		if (chk_cpuinfo_uint32(buffer, "processor", &val)) {
+		uint16_t val;
+		if (chk_cpuinfo_uint16(buffer, "processor", &val)) {
 			curcpu = val;
 			cpuinfo[val].seen = 1;
 			cpuinfo[val].id = val;
 			numcpu++;
 			maxcpuid = MAX(maxcpuid, val);
 			mincpuid = MIN(mincpuid, val);
-		} else if (chk_cpuinfo_uint32(buffer, "physical id", &val)) {
+		} else if (chk_cpuinfo_uint16(buffer, "physical id", &val)) {
 			cpuinfo[curcpu].physid = val;
 			if (cpuinfo[val].physcnt == 0) numphys++;
 			cpuinfo[val].physcnt++;
 			maxphysid = MAX(maxphysid, val);
 			minphysid = MIN(minphysid, val);
-		} else if (chk_cpuinfo_uint32(buffer, "core id", &val)) {
+		} else if (chk_cpuinfo_uint16(buffer, "core id", &val)) {
 			cpuinfo[curcpu].coreid = val;
 			if (cpuinfo[val].corecnt == 0) numcores++;
 			cpuinfo[val].corecnt++;
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
-		} else if (chk_cpuinfo_uint32(buffer, "siblings", &val)) {
+		} else if (chk_cpuinfo_uint16(buffer, "siblings", &val)) {
 			cpuinfo[curcpu].siblings = val;
 			maxsibs = MAX(maxsibs, val) ;
 			minsibs = MIN(minsibs, val) ;
-		} else if (chk_cpuinfo_uint32(buffer, "cpu cores", &val)) {
+		} else if (chk_cpuinfo_uint16(buffer, "cpu cores", &val)) {
 			cpuinfo[curcpu].cores = val;
 			maxcores = MAX(maxcores, val);
 			mincores = MIN(mincores, val);
@@ -685,7 +685,7 @@ get_cpuinfo(uint32_t numproc,
 /* physical cpu comparison with void * arguments to allow use with
  * libc qsort()
  */
-static int _icmp(uint32_t a, uint32_t b)
+static int _icmp(uint16_t a, uint16_t b)
 {
     	if (a < b) {
 		return -1;
@@ -697,8 +697,8 @@ static int _icmp(uint32_t a, uint32_t b)
 }
 
 int _compare_cpus(const void *a1, const void *b1) {
-	uint32_t *a = (uint32_t *) a1;
-	uint32_t *b = (uint32_t *) b1;
+	uint16_t *a = (uint16_t *) a1;
+	uint16_t *b = (uint16_t *) b1;
 	int cmp;
 
 	cmp = -1 * _icmp(cpuinfo[*a].seen,cpuinfo[*b].seen); /* seen to front */
@@ -717,24 +717,24 @@ int _compare_cpus(const void *a1, const void *b1) {
 	return cmp;
 }
 
-int compute_block_map(uint32_t numproc,
-		uint32_t **block_map, uint32_t **block_map_inv)
+int compute_block_map(uint16_t numproc,
+		uint16_t **block_map, uint16_t **block_map_inv)
 {
-	uint32_t i;
+	uint16_t i;
 	/* Compute abstract->machine block mapping (and inverse) */
 	if (block_map) {
-		*block_map = xmalloc(numproc * sizeof(uint32_t));
-		memset(*block_map, 0, numproc * sizeof(uint32_t));
+		*block_map = xmalloc(numproc * sizeof(uint16_t));
+		memset(*block_map, 0, numproc * sizeof(uint16_t));
 		for (i = 0; i < numproc; i++) {
 			(*block_map)[i] = i;
 		}
-		qsort(*block_map, numproc, sizeof(uint32_t), &_compare_cpus);
+		qsort(*block_map, numproc, sizeof(uint16_t), &_compare_cpus);
 	}
 	if (block_map_inv) {
-		*block_map_inv = xmalloc(numproc * sizeof(uint32_t));
-		memset(*block_map_inv, 0, numproc * sizeof(uint32_t));
+		*block_map_inv = xmalloc(numproc * sizeof(uint16_t));
+		memset(*block_map_inv, 0, numproc * sizeof(uint16_t));
 		for (i = 0; i < numproc; i++) {
-			uint32_t idx = (*block_map)[i];
+			uint16_t idx = (*block_map)[i];
 			(*block_map_inv)[idx] = i;
 		}
 	}
@@ -768,7 +768,7 @@ int compute_block_map(uint32_t numproc,
 		debug3("\n");
 		debug3("Physical Socket ID:  ");
 		for (i = 0; i < numproc; i++) {
-			uint32_t id = (*block_map)[i];
+			uint16_t id = (*block_map)[i];
 			debug3("%3d", cpuinfo[id].physid);
 		}
 		debug3("\n");

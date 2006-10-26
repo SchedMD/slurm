@@ -71,6 +71,9 @@
 #define _DEBUG		0
 #define MAX_RETRIES	10
 
+/* Change NODE_STATE_VERSION value when changing the state save format */
+#define NODE_STATE_VERSION      "VER001"
+
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
@@ -235,8 +238,9 @@ int dump_all_node_state ( void )
 	DEF_TIMERS;
 
 	START_TIMER;
-	/* write header: time */
-	pack_time  (time (NULL), buffer);
+	/* write header: version, time */
+	packstr(NODE_STATE_VERSION, buffer);
+	pack_time(time (NULL), buffer);
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
@@ -310,10 +314,10 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->name, buffer);
 	packstr (dump_node_ptr->reason, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
-	pack32  (dump_node_ptr->cpus, buffer);
-	pack32  (dump_node_ptr->sockets, buffer);
-	pack32  (dump_node_ptr->cores, buffer);
-	pack32  (dump_node_ptr->threads, buffer);
+	pack16  (dump_node_ptr->cpus, buffer);
+	pack16  (dump_node_ptr->sockets, buffer);
+	pack16  (dump_node_ptr->cores, buffer);
+	pack16  (dump_node_ptr->threads, buffer);
 	pack32  (dump_node_ptr->real_memory, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 }
@@ -331,12 +335,14 @@ extern int load_all_node_state ( bool state_only )
 	char *node_name, *reason = NULL, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state, name_len;
-	uint32_t cpus = 1, sockets = 1, cores = 1, threads = 1;
+	uint16_t cpus = 1, sockets = 1, cores = 1, threads = 1;
 	uint32_t real_memory, tmp_disk, data_size = 0;
 	struct node_record *node_ptr;
 	int state_fd;
 	time_t time_stamp;
 	Buf buffer;
+	char *ver_str = NULL;
+	uint16_t ver_str_len;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -372,6 +378,27 @@ extern int load_all_node_state ( bool state_only )
 	unlock_state_files ();
 
 	buffer = create_buf (data, data_size);
+
+	/*
+	 * Check the data version so that when the format changes, we 
+	 * we don't try to unpack data using the wrong format routines
+	 */
+	if (size_buf(buffer) >= sizeof(uint16_t) + strlen(NODE_STATE_VERSION)) {
+		char *ptr = get_buf_data(buffer);
+
+		if (memcmp( &ptr[sizeof(uint16_t)], NODE_STATE_VERSION, 3) == 0) {
+			safe_unpackstr_xmalloc( &ver_str, &ver_str_len, buffer);
+			debug3("Version string in node_state header is %s",
+				ver_str);
+		}
+	}
+	if (strcmp(ver_str, NODE_STATE_VERSION) != 0) {
+		error("Can not recover node state, data version incompatable");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
 	safe_unpack_time (&time_stamp, buffer);
 
 	while (remaining_buf (buffer) > 0) {
@@ -379,10 +406,10 @@ extern int load_all_node_state ( bool state_only )
 		safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 		safe_unpackstr_xmalloc (&reason, &name_len, buffer);
 		safe_unpack16 (&node_state,  buffer);
-		safe_unpack32 (&cpus,        buffer);
-		safe_unpack32 (&sockets,     buffer);
-		safe_unpack32 (&cores,       buffer);
-		safe_unpack32 (&threads,     buffer);
+		safe_unpack16 (&cpus,        buffer);
+		safe_unpack16 (&sockets,     buffer);
+		safe_unpack16 (&cores,       buffer);
+		safe_unpack16 (&threads,     buffer);
 		safe_unpack32 (&real_memory, buffer);
 		safe_unpack32 (&tmp_disk,    buffer);
 		base_state = node_state & NODE_STATE_BASE;
@@ -743,18 +770,18 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 	pack16  (dump_node_ptr->node_state, buffer);
 	if (slurmctld_conf.fast_schedule) {	
 		/* Only data from config_record used for scheduling */
-		pack32  (dump_node_ptr->config_ptr->cpus, buffer);
-		pack32  (dump_node_ptr->config_ptr->cores, buffer);
-		pack32  (dump_node_ptr->config_ptr->sockets, buffer);
-		pack32  (dump_node_ptr->config_ptr->threads, buffer);
+		pack16  (dump_node_ptr->config_ptr->cpus, buffer);
+		pack16  (dump_node_ptr->config_ptr->cores, buffer);
+		pack16  (dump_node_ptr->config_ptr->sockets, buffer);
+		pack16  (dump_node_ptr->config_ptr->threads, buffer);
 		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
 	} else {	
 		/* Individual node data used for scheduling */
-		pack32  (dump_node_ptr->cpus, buffer);
-		pack32  (dump_node_ptr->cores, buffer);
-		pack32  (dump_node_ptr->sockets, buffer);
-		pack32  (dump_node_ptr->threads, buffer);
+		pack16  (dump_node_ptr->cpus, buffer);
+		pack16  (dump_node_ptr->cores, buffer);
+		pack16  (dump_node_ptr->sockets, buffer);
+		pack16  (dump_node_ptr->threads, buffer);
 		pack32  (dump_node_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->tmp_disk, buffer);
 	}
@@ -1068,8 +1095,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int 
-validate_node_specs (char *node_name, uint32_t cpus, 
-			uint32_t sockets, uint32_t cores, uint32_t threads,
+validate_node_specs (char *node_name, uint16_t cpus, 
+			uint16_t sockets, uint16_t cores, uint16_t threads,
 			uint32_t real_memory, uint32_t tmp_disk, 
 			uint32_t job_count, uint32_t status)
 {
@@ -1087,6 +1114,32 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
 
+#if 1
+	/* Disable these tests if you want to emulate a system
+	 * with different hardware that configured (sockets, cores
+	 * and threads */
+	if (sockets < config_ptr->sockets) {
+		error("Node %s has low socket count %u", node_name, sockets);
+		error_code  = EINVAL;
+		reason_down = "Low socket count";
+	}
+	node_ptr->sockets = sockets;
+
+	if (cores < config_ptr->cores) {
+		error("Node %s has low core count %u", node_name, cores);
+		error_code  = EINVAL;
+		reason_down = "Low core count";
+	}
+	node_ptr->cores = cores;
+
+	if (threads < config_ptr->threads) {
+		error("Node %s has low thread count %u", node_name, threads);
+		error_code  = EINVAL;
+		reason_down = "Low thread count";
+	}
+	node_ptr->threads = threads;
+#endif
+
 	if (cpus < config_ptr->cpus) {
 		error ("Node %s has low cpu count %u", node_name, cpus);
 		error_code  = EINVAL;
@@ -1100,9 +1153,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		}
 	}
 	node_ptr->cpus = cpus;
-	node_ptr->sockets = sockets;
-	node_ptr->cores = cores;
-	node_ptr->threads = threads;
 
 	if (real_memory < config_ptr->real_memory) {
 		error ("Node %s has low real_memory size %u", 

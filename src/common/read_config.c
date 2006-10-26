@@ -97,10 +97,10 @@ typedef struct names_ll_s {
 	char *hostname;	/* NodeHostname */
 	char *address;	/* NodeAddr */
 	uint16_t port;
-	uint32_t cpus;
-	uint32_t sockets;
-	uint32_t cores;
-	uint32_t threads;
+	uint16_t cpus;
+	uint16_t sockets;
+	uint16_t cores;
+	uint16_t threads;
 	slurm_addr addr;
 	bool addr_initialized;
 	struct names_ll_s *next_alias;
@@ -260,15 +260,15 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _nodename_options[] = {
 		{"NodeHostname", S_P_STRING},
 		{"NodeAddr", S_P_STRING},
-		{"CoresPerSocket", S_P_UINT32},
+		{"CoresPerSocket", S_P_UINT16},
 		{"Feature", S_P_STRING},
 		{"Port", S_P_UINT16},
-		{"Procs", S_P_UINT32},
+		{"Procs", S_P_UINT16},
 		{"RealMemory", S_P_UINT32},
 		{"Reason", S_P_STRING},
-		{"Sockets", S_P_UINT32},
+		{"Sockets", S_P_UINT16},
 		{"State", S_P_STRING},
-		{"ThreadsPerCore", S_P_UINT32},
+		{"ThreadsPerCore", S_P_UINT16},
 		{"TmpDisk", S_P_UINT32},
 		{"Weight", S_P_UINT32},
 		{NULL}
@@ -313,8 +313,8 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
 			n->addresses = xstrdup(n->hostnames);
 
-		if (!s_p_get_uint32(&n->cores, "CoresPerSocket", tbl)
-		    && !s_p_get_uint32(&n->cores, "CoresPerSocket", dflt)) {
+		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl)
+		    && !s_p_get_uint16(&n->cores, "CoresPerSocket", dflt)) {
 			n->cores = 1;
 			no_cores = true;
 		}
@@ -330,8 +330,8 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 				n->port = SLURMD_PORT;
 		}
 
-		if (!s_p_get_uint32(&n->cpus, "Procs", tbl)
-		    && !s_p_get_uint32(&n->cpus, "Procs", dflt)) {
+		if (!s_p_get_uint16(&n->cpus, "Procs", tbl)
+		    && !s_p_get_uint16(&n->cpus, "Procs", dflt)) {
 			n->cpus = 1;
 			no_cpus = true;
 		}
@@ -343,8 +343,8 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
 			s_p_get_string(&n->reason, "Reason", dflt);
 
-		if (!s_p_get_uint32(&n->sockets, "Sockets", tbl)
-		    && !s_p_get_uint32(&n->sockets, "Sockets", dflt)) {
+		if (!s_p_get_uint16(&n->sockets, "Sockets", tbl)
+		    && !s_p_get_uint16(&n->sockets, "Sockets", dflt)) {
 			n->sockets = 1;
 			no_sockets = true;
 		}
@@ -353,8 +353,8 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		    && !s_p_get_string(&n->state, "State", dflt))
 			n->state = NULL;
 
-		if (!s_p_get_uint32(&n->threads, "ThreadsPerCore", tbl)
-		    && !s_p_get_uint32(&n->threads, "ThreadsPerCore", dflt)) {
+		if (!s_p_get_uint16(&n->threads, "ThreadsPerCore", tbl)
+		    && !s_p_get_uint16(&n->threads, "ThreadsPerCore", dflt)) {
 			n->threads = 1;
 			no_threads = true;
 		}
@@ -663,8 +663,8 @@ static int _get_hash_idx(const char *s)
 
 static void _push_to_hashtbls(char *alias, char *hostname,
 			      char *address, uint16_t port,
-			      uint32_t cpus, uint32_t sockets,
-			      uint32_t cores, uint32_t threads)
+			      uint16_t cpus, uint16_t sockets,
+			      uint16_t cores, uint16_t threads)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -948,8 +948,8 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address)
  * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
  */
 extern int slurm_conf_get_cpus_sct(const char *node_name,
-			uint32_t *cpus, uint32_t *sockets,
-			uint32_t *cores, uint32_t *threads)
+			uint16_t *cpus, uint16_t *sockets,
+			uint16_t *cores, uint16_t *threads)
 {
 	int idx;
 	names_ll_t *p;

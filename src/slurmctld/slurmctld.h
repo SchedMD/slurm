@@ -156,10 +156,10 @@ extern int bg_recover;		/* state recovery mode */
 
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
-	uint32_t cpus;		/* count of processors running on the node */
-	uint32_t sockets;	/* number of sockets per node */
-	uint32_t cores;		/* number of cores per CPU */
-	uint32_t threads;	/* number of threads per core */
+	uint16_t cpus;		/* count of processors running on the node */
+	uint16_t sockets;	/* number of sockets per node */
+	uint16_t cores;		/* number of cores per CPU */
+	uint16_t threads;	/* number of threads per core */
 	uint32_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint32_t weight;	/* arbitrary priority of node for 
@@ -178,10 +178,10 @@ struct node_record {
 					 * NODE_STATE_NO_RESPOND if not 
 					 * responding */
 	time_t last_response;		/* last response from the node */
-	uint32_t cpus;			/* count of processors on the node */
-	uint32_t sockets;		/* number of sockets per node */
-	uint32_t cores;			/* number of cores per CPU */
-	uint32_t threads;		/* number of threads per core */
+	uint16_t cpus;			/* count of processors on the node */
+	uint16_t sockets;		/* number of sockets per node */
+	uint16_t cores;			/* number of cores per CPU */
+	uint16_t threads;		/* number of threads per core */
 	uint32_t real_memory;		/* MB real memory on the node */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	struct config_record *config_ptr;  /* configuration spec ptr */
@@ -1356,10 +1356,10 @@ extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count,
  * global: node_record_table_ptr - pointer to global node table
  */
 extern int validate_node_specs (char *node_name,
-				uint32_t cpus,
-				uint32_t sockets,
-				uint32_t cores,
-				uint32_t threads,
+				uint16_t cpus,
+				uint16_t sockets,
+				uint16_t cores,
+				uint16_t threads,
 				uint32_t real_memory,
 				uint32_t tmp_disk, uint32_t job_count,
 				uint32_t status);

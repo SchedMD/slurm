@@ -107,7 +107,7 @@ static void _cr_update_reservation(int reserve, uint32_t *reserved,
 #define BLOCK_MAP(index)	_block_map(index, conf->block_map)
 #define BLOCK_MAP_INV(index)	_block_map(index, conf->block_map_inv)
 
-static uint32_t _block_map(uint32_t index, uint32_t *map);
+static uint16_t _block_map(uint16_t index, uint16_t *map);
 
 /* 
  * lllp_distribution
@@ -1202,14 +1202,14 @@ void _print_tasks_per_lllp (void)
  * IN - index to map
  * IN - map to use
  */
-static uint32_t _block_map(uint32_t index, uint32_t *map)
+static uint16_t _block_map(uint16_t index, uint16_t *map)
 {
 	if (map == NULL) {
 	    	return index;
 	}
 	/* make sure bit falls in map */
 	if (index >= conf->block_map_size) {
-		debug3("wrapping index %d into block_map_size of %d",
+		debug3("wrapping index %u into block_map_size of %u",
 		       index, conf->block_map_size);
 		index = index % conf->block_map_size;
 	}

@@ -436,7 +436,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->real_memory_size     = conf->real_memory_size;
 	msg->temporary_disk_space = conf->tmp_disk_space;
 
-	debug3("Procs=%u, S=%u, C=%u, T=%u, Memory=%u, TmpDisk=%u",
+	debug3("Procs=%u Sockets=%u Cores=%u Threads=%u Memory=%u TmpDisk=%u",
 	       msg->cpus, msg->sockets, msg->cores, msg->threads,
 	       msg->real_memory_size, msg->temporary_disk_space);
 
