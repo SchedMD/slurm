@@ -1023,10 +1023,10 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	pack_time(msg->timestamp, buffer);
 	pack32((uint32_t)msg->status, buffer);
 	packstr(msg->node_name, buffer);
-	pack32((uint32_t)msg->cpus, buffer);
-	pack32((uint32_t)msg->sockets, buffer);
-	pack32((uint32_t)msg->cores, buffer);
-	pack32((uint32_t)msg->threads, buffer);
+	pack16((uint32_t)msg->cpus, buffer);
+	pack16((uint32_t)msg->sockets, buffer);
+	pack16((uint32_t)msg->cores, buffer);
+	pack16((uint32_t)msg->threads, buffer);
 	pack32((uint32_t)msg->real_memory_size, buffer);
 	pack32((uint32_t)msg->temporary_disk_space, buffer);
 	pack32((uint32_t)msg->job_count, buffer);
@@ -1059,10 +1059,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	/* load the data values */
 	safe_unpack32(&node_reg_ptr->status, buffer);
 	safe_unpackstr_xmalloc(&node_reg_ptr->node_name, &uint16_tmp, buffer);
-	safe_unpack32(&node_reg_ptr->cpus, buffer);
-	safe_unpack32(&node_reg_ptr->sockets, buffer);
-	safe_unpack32(&node_reg_ptr->cores, buffer);
-	safe_unpack32(&node_reg_ptr->threads, buffer);
+	safe_unpack16(&node_reg_ptr->cpus, buffer);
+	safe_unpack16(&node_reg_ptr->sockets, buffer);
+	safe_unpack16(&node_reg_ptr->cores, buffer);
+	safe_unpack16(&node_reg_ptr->threads, buffer);
 	safe_unpack32(&node_reg_ptr->real_memory_size, buffer);
 	safe_unpack32(&node_reg_ptr->temporary_disk_space, buffer);
 	safe_unpack32(&node_reg_ptr->job_count, buffer);
@@ -1325,10 +1325,10 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 
 	safe_unpackstr_xmalloc(&node->name, &uint16_tmp, buffer);
 	safe_unpack16(&node->node_state, buffer);
-	safe_unpack32(&node->cpus, buffer);
-	safe_unpack32(&node->sockets, buffer);
-	safe_unpack32(&node->cores, buffer);
-	safe_unpack32(&node->threads, buffer);
+	safe_unpack16(&node->cpus, buffer);
+	safe_unpack16(&node->sockets, buffer);
+	safe_unpack16(&node->cores, buffer);
+	safe_unpack16(&node->threads, buffer);
 	safe_unpack32(&node->real_memory, buffer);
 	safe_unpack32(&node->tmp_disk, buffer);
 	safe_unpack32(&node->weight, buffer);

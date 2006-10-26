@@ -74,23 +74,23 @@ typedef struct slurmd_config {
 	char         ***argv;           /* pointer to argument vector      */
 	int          *argc;             /* pointer to argument count       */
 	char         *hostname;	 	/* local hostname		   */
-	uint32_t     cpus;              /* lowest-level logical processors */
-	uint32_t     sockets;           /* sockets count                   */
-	uint32_t     cores;             /* core count                      */
-	uint32_t     threads;           /* thread per core count           */
-	uint32_t     conf_cpus;         /* conf file logical processors    */
-	uint32_t     conf_sockets;      /* conf file sockets count         */
-	uint32_t     conf_cores;        /* conf file core count            */
-	uint32_t     conf_threads;      /* conf file thread per core count */
-	uint32_t     actual_cpus;       /* actual logical processors       */
-	uint32_t     actual_sockets;    /* actual sockets count            */
-	uint32_t     actual_cores;      /* actual core count               */
-	uint32_t     actual_threads;    /* actual thread per core count    */
+	uint16_t     cpus;              /* lowest-level logical processors */
+	uint16_t     sockets;           /* sockets count                   */
+	uint16_t     cores;             /* core count                      */
+	uint16_t     threads;           /* thread per core count           */
+	uint16_t     conf_cpus;         /* conf file logical processors    */
+	uint16_t     conf_sockets;      /* conf file sockets count         */
+	uint16_t     conf_cores;        /* conf file core count            */
+	uint16_t     conf_threads;      /* conf file thread per core count */
+	uint16_t     actual_cpus;       /* actual logical processors       */
+	uint16_t     actual_sockets;    /* actual sockets count            */
+	uint16_t     actual_cores;      /* actual core count               */
+	uint16_t     actual_threads;    /* actual thread per core count    */
 	uint32_t     real_memory_size;  /* amount of real memory	   */
 	uint32_t     tmp_disk_space;    /* size of temporary disk	   */
-	uint32_t     block_map_size;	/* size of block map               */
-	uint32_t     *block_map;	/* abstract->machine block map     */
-	uint32_t     *block_map_inv;	/* machine->abstract (inverse) map */
+	uint16_t     block_map_size;	/* size of block map               */
+	uint16_t     *block_map;	/* abstract->machine block map     */
+	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
 	uint16_t      cr_type;           /* Consumable Resource Type:       *
 					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
 					 * CR_DEFAULT, etc.                */

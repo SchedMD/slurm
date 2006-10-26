@@ -699,11 +699,11 @@ typedef struct job_step_info_response_msg {
 typedef struct node_info {
 	char *name;		/* node name */
 	uint16_t node_state;	/* see enum node_states */
-	uint32_t cpus;		/* configured count of cpus running on 
+	uint16_t cpus;		/* configured count of cpus running on 
 				 * the node */
-	uint32_t sockets;       /* number of sockets per node */
-	uint32_t cores;         /* number of cores per CPU */
-	uint32_t threads;       /* number of threads per core */
+	uint16_t sockets;       /* number of sockets per node */
+	uint16_t cores;         /* number of cores per CPU */
+	uint16_t threads;       /* number of threads per core */
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */

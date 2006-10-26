@@ -596,10 +596,10 @@ typedef struct file_bcast_msg {
 typedef struct slurm_node_registration_status_msg {
 	time_t timestamp;
 	char *node_name;
-	uint32_t cpus;
-	uint32_t sockets;
-	uint32_t cores;
-	uint32_t threads;
+	uint16_t cpus;
+	uint16_t sockets;
+	uint16_t cores;
+	uint16_t threads;
 	uint32_t real_memory_size;
 	uint32_t temporary_disk_space;
 	uint32_t job_count;	/* number of associate job_id's */
