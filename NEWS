@@ -95,6 +95,8 @@ documents those changes that are of interest to users and admins.
    passthrough nodes to the allocation when creating a block. 
  - BLUEGENE - Fix deadlock issue with starting and failing jobs at the same
    time
+ - Make connect() non-blocking and poll() with timeout to avoid huge 
+   waits under some conditions.
 
 * Changes in SLURM 1.1.17
 =========================
