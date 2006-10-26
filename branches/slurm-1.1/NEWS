@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
    time
  - Make connect() non-blocking and poll() with timeout to avoid huge 
    waits under some conditions.
+ - Set "ENVIRONMENT=BATCH" environment variable for "srun --batch" jobs only.
 
 * Changes in SLURM 1.1.17
 =========================
