@@ -132,7 +132,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_PATHNAME_TOO_LONG,
 	  "Pathname of a file or directory too long"   		},
 	{ ESLURM_NOT_TOP_PRIORITY,
-	  "Immediate execution impossible, higher priority jobs pending" },
+	  "Immediate execution impossible, insufficient priority" },
 	{ ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE,
 	  "Requested node configuration is not available"	},
 	{ ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
