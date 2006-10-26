@@ -572,20 +572,21 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 *
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call 
-	 * non-blocking and polling seems to fix the problem. */
+	 * non-blocking and polling seems to fix the problem on Linux. 
+	 * It fails on AIX. */
 	int rc = -1, flags;
 
 	flags = fcntl(__fd, F_GETFL);
 	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
-	rc = connect ( __fd , __addr , __len ) ;
-	if ((rc == -1)
-	&&  ((errno == EINPROGRESS) || (errno == EALREADY))) {
+	rc = connect(__fd , __addr , __len);
+	if ((rc == -1) && (errno == EINPROGRESS)) {
 		struct pollfd ufds;
 		ufds.fd = __fd;
 		ufds.events = POLLOUT;
-		ufds. revents = 0;
+		ufds.revents = 0;
 		poll(&ufds, 1, 5000);   /* 5 sec max wait */
-		rc = connect ( __fd , __addr , __len ) ;
+		if (ufds.revents == POLLOUT)
+			rc = connect(__fd , __addr , __len);
 	}
 	fcntl(__fd, F_SETFL, flags);
 	return rc;
