@@ -162,7 +162,6 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	desc->shared = opt.shared;
 
-	putenv("ENVIRONMENT=BATCH");
 	desc->environment = environ;
 	desc->env_size = envcount (environ);
 	desc->argv = opt.script_argv;

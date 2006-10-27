@@ -759,6 +759,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
+ *      ENVIRONMENT=BATCH
  *
  * Sets OBSOLETE variables:
  *	SLURM_JOBID
@@ -787,6 +788,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
 
 	/* OBSOLETE */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
