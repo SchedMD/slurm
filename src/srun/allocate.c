@@ -547,7 +547,6 @@ job_desc_msg_create_from_opts (char *script)
 		 */
 		xassert (opt.batch);
 
-		putenv("ENVIRONMENT=BATCH");
 		j->environment = environ;
 		j->env_size = envcount (environ);
 		j->script = script;
