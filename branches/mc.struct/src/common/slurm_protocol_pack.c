@@ -2264,32 +2264,32 @@ static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
 	/* load the data values */
-	pack16((uint16_t)job_desc_ptr->contiguous, buffer);
-	pack16((uint16_t)job_desc_ptr->task_dist, buffer);
-	pack32((uint32_t)job_desc_ptr->plane_size, buffer);
-	pack16((uint16_t)job_desc_ptr->kill_on_node_fail, buffer);
+	pack16(job_desc_ptr->contiguous, buffer);
+	pack16(job_desc_ptr->task_dist, buffer);
+	pack16(job_desc_ptr->plane_size, buffer);
+	pack16(job_desc_ptr->kill_on_node_fail, buffer);
 	packstr(job_desc_ptr->features, buffer);
-	pack32((uint32_t)job_desc_ptr->job_id, buffer);
+	pack32(job_desc_ptr->job_id, buffer);
 	packstr(job_desc_ptr->name, buffer);
 
 	packstr(job_desc_ptr->alloc_node, buffer);
-	pack32((uint32_t)job_desc_ptr->alloc_sid, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_procs, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_sockets, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_cores, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_threads, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_memory, buffer);
-	pack32((uint32_t)job_desc_ptr->job_max_memory, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_tmp_disk, buffer);
+	pack32(job_desc_ptr->alloc_sid, buffer);
+	pack16(job_desc_ptr->job_min_procs, buffer);
+	pack16(job_desc_ptr->job_min_sockets, buffer);
+	pack16(job_desc_ptr->job_min_cores, buffer);
+	pack16(job_desc_ptr->job_min_threads, buffer);
+	pack32(job_desc_ptr->job_min_memory, buffer);
+	pack32(job_desc_ptr->job_max_memory, buffer);
+	pack32(job_desc_ptr->job_min_tmp_disk, buffer);
 
 	packstr(job_desc_ptr->partition, buffer);
-	pack32((uint32_t)job_desc_ptr->priority, buffer);
-	pack32((uint32_t)job_desc_ptr->dependency, buffer);
+	pack32(job_desc_ptr->priority, buffer);
+	pack32(job_desc_ptr->dependency, buffer);
 	packstr(job_desc_ptr->account, buffer);
 	packstr(job_desc_ptr->comment, buffer);
-	pack16((uint16_t)job_desc_ptr->nice, buffer);
-	pack16((uint16_t)job_desc_ptr->overcommit, buffer);
-	pack32((uint32_t)job_desc_ptr->num_tasks, buffer);
+	pack16(job_desc_ptr->nice, buffer);
+	pack16(job_desc_ptr->overcommit, buffer);
+	pack32(job_desc_ptr->num_tasks, buffer);
 
 	packstr(job_desc_ptr->req_nodes, buffer);
 	packstr(job_desc_ptr->exc_nodes, buffer);
@@ -2303,35 +2303,35 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->out, buffer);
 	packstr(job_desc_ptr->work_dir, buffer);
 
-	pack16((uint16_t)job_desc_ptr->immediate, buffer);
-	pack16((uint16_t)job_desc_ptr->no_requeue, buffer);
-	pack16((uint16_t)job_desc_ptr->shared, buffer);
-	pack16((uint16_t)job_desc_ptr->cpus_per_task, buffer);
-	pack16((uint16_t)job_desc_ptr->ntasks_per_node, buffer);
-	pack16((uint16_t)job_desc_ptr->ntasks_per_socket, buffer);
-	pack16((uint16_t)job_desc_ptr->ntasks_per_core, buffer);
-	pack32((uint32_t)job_desc_ptr->time_limit, buffer);
+	pack16(job_desc_ptr->immediate, buffer);
+	pack16(job_desc_ptr->no_requeue, buffer);
+	pack16(job_desc_ptr->shared, buffer);
+	pack16(job_desc_ptr->cpus_per_task, buffer);
+	pack16(job_desc_ptr->ntasks_per_node, buffer);
+	pack16(job_desc_ptr->ntasks_per_socket, buffer);
+	pack16(job_desc_ptr->ntasks_per_core, buffer);
+	pack32(job_desc_ptr->time_limit, buffer);
 
-	pack32((uint32_t)job_desc_ptr->num_procs, buffer);
-	pack32((uint32_t)job_desc_ptr->min_nodes, buffer);
-	pack32((uint32_t)job_desc_ptr->max_nodes, buffer);
-	pack32((uint32_t)job_desc_ptr->min_sockets, buffer);
-	pack32((uint32_t)job_desc_ptr->max_sockets, buffer);
-	pack32((uint32_t)job_desc_ptr->min_cores, buffer);
-	pack32((uint32_t)job_desc_ptr->max_cores, buffer);
-	pack32((uint32_t)job_desc_ptr->min_threads, buffer);
-	pack32((uint32_t)job_desc_ptr->max_threads, buffer);
-	pack32((uint32_t)job_desc_ptr->user_id, buffer);
-	pack32((uint32_t)job_desc_ptr->group_id, buffer);
+	pack32(job_desc_ptr->num_procs, buffer);
+	pack16(job_desc_ptr->min_nodes, buffer);
+	pack16(job_desc_ptr->max_nodes, buffer);
+	pack16(job_desc_ptr->min_sockets, buffer);
+	pack16(job_desc_ptr->max_sockets, buffer);
+	pack16(job_desc_ptr->min_cores, buffer);
+	pack16(job_desc_ptr->max_cores, buffer);
+	pack16(job_desc_ptr->min_threads, buffer);
+	pack16(job_desc_ptr->max_threads, buffer);
+	pack32(job_desc_ptr->user_id, buffer);
+	pack32(job_desc_ptr->group_id, buffer);
 
-	pack16((uint16_t)job_desc_ptr->alloc_resp_port, buffer);
+	pack16(job_desc_ptr->alloc_resp_port, buffer);
 	packstr(job_desc_ptr->alloc_resp_hostname, buffer);
-	pack16((uint16_t)job_desc_ptr->other_port, buffer);
+	pack16(job_desc_ptr->other_port, buffer);
 	packstr(job_desc_ptr->other_hostname, buffer);
 	packstr(job_desc_ptr->network, buffer);
 	pack_time(job_desc_ptr->begin_time, buffer);
 
-	pack16((uint16_t)job_desc_ptr->mail_type, buffer);
+	pack16(job_desc_ptr->mail_type, buffer);
 	packstr(job_desc_ptr->mail_user, buffer);
 	if(job_desc_ptr->select_jobinfo)
 		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
