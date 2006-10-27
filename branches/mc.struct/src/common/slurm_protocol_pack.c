@@ -1737,7 +1737,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	safe_unpack16(&part->max_nodes,    buffer);
 	safe_unpack16(&part->min_nodes,    buffer);
 	safe_unpack16(&part->total_nodes,  buffer);
-	safe_unpack32(&part->node_scaling, buffer);
+	safe_unpack16(&part->node_scaling, buffer);
 	
 	safe_unpack32(&part->total_cpus,   buffer);
 	safe_unpack16(&part->default_part, buffer);

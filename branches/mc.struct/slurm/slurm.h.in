@@ -728,7 +728,7 @@ typedef struct partition_info {
 	uint16_t min_nodes;	/* per job */
 	uint16_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint32_t node_scaling;	/* select plugin node scaling factor */
+	uint16_t node_scaling;	/* select plugin node scaling factor */
 	uint16_t default_part;	/* 1 if this is default partition */
 	uint16_t hidden;	/* 1 if partition is hidden by default */
 	uint16_t root_only;	/* 1 if allocate must come for user root */

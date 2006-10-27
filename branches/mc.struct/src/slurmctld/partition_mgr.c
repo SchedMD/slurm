@@ -717,18 +717,18 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	altered = part_ptr->max_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack32((uint32_t)altered, buffer);
+	pack16((uint16_t) altered, buffer);
 	altered = part_ptr->min_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
  				&altered); 
-	pack32((uint32_t)altered, buffer);
+	pack16((uint16_t) altered, buffer);
 	altered = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack32((uint32_t)altered, buffer);
+	pack16((uint16_t) altered, buffer);
 	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
 				&node_scaling);
-	pack32(node_scaling, buffer);
+	pack16((uint16_t) node_scaling, buffer);
 	pack32((uint32_t)part_ptr->total_cpus, buffer);
 	pack16((uint16_t)default_part_flag, buffer);
 	pack16((uint16_t)part_ptr->hidden, buffer);
