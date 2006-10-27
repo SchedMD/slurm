@@ -1442,21 +1442,23 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->user_id, buffer);
-	pack32((uint32_t)msg->node_count, buffer);
-	pack32((uint32_t)msg->cpu_count, buffer);
-	pack32((uint32_t)msg->num_tasks, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+	pack32(msg->node_count, buffer);
+	pack32(msg->cpu_count, buffer);
+	pack32(msg->num_tasks, buffer);
 
-	pack16((uint16_t)msg->relative, buffer);
-	pack16((uint16_t)msg->task_dist, buffer);
-	pack32((uint32_t)msg->plane_size, buffer);
-	pack16((uint16_t)msg->port, buffer);
+	pack16(msg->relative, buffer);
+	pack16(msg->task_dist, buffer);
+	pack16(msg->plane_size, buffer);
+	pack16(msg->port, buffer);
+
 	packstr(msg->host, buffer);
 	packstr(msg->name, buffer);
 	packstr(msg->network, buffer);
 	packstr(msg->node_list, buffer);
-	pack8((uint8_t)msg->overcommit, buffer);
+
+	pack8(msg->overcommit, buffer);
 }
 
 static int
@@ -1481,10 +1483,12 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
 	safe_unpack16(&(tmp_ptr->plane_size), buffer);
 	safe_unpack16(&(tmp_ptr->port), buffer);
+
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
+
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
 
 	return SLURM_SUCCESS;
