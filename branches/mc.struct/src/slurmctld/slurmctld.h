@@ -257,14 +257,8 @@ extern time_t last_job_update;	/* time of last update to part records */
  * can be purged after initiation */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
-	uint32_t min_nodes;		/* minimum number of nodes */
-	uint32_t max_nodes;		/* maximum number of nodes */
-	uint32_t min_sockets;		/* minimum number of sockets per node */
-	uint32_t max_sockets;		/* maximum number of sockets per node */
-	uint32_t min_cores;		/* minimum number of cores per cpu */
-	uint32_t max_cores;		/* maximum number of cores per cpu */
-	uint32_t min_threads;		/* minimum number of threads per core */
-	uint32_t max_threads;		/* maximum number of threads per core */
+	uint16_t min_nodes;		/* minimum number of nodes */
+	uint16_t max_nodes;		/* maximum number of nodes */
 	char *req_nodes;		/* required nodes */
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
@@ -275,11 +269,8 @@ struct job_details {
 					   any other value accepts the default
 					   sharing policy. */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
-	task_dist_states_t task_dist;  /* task layout for this job. Only useful 
+	uint16_t task_dist;		/* task layout for this job. Only useful
                                          * when Consumable Resources is enabled */
-	uint32_t plane_size;            /* plane_size for SLURM_DIST_PLANE. 
-					 * Only useful when Consumable 
-					 * Resources is enabled */
 	uint16_t wait_reason;		/* reason job still pending, see
 					 * slurm.h:enum job_wait_reason */
 	uint32_t num_tasks;		/* number of tasks to start */
@@ -287,13 +278,8 @@ struct job_details {
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
-	uint16_t ntasks_per_socket;	/* number of tasks on each socket */
-	uint16_t ntasks_per_core;	/* number of tasks on each core */
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
-	uint32_t job_min_sockets;	/* minimum sockets per node */
-	uint32_t job_min_cores; 	/* minimum cores per processor */
-	uint32_t job_min_threads;	/* minimum threads per core */
 	uint32_t job_min_memory;	/* minimum memory per node, MB */
 	uint32_t job_max_memory;	/* maximum memory per node, MB */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
@@ -308,6 +294,7 @@ struct job_details {
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
 	uint16_t no_requeue;		/* don't requeue job if set */
+	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 };
 
 struct job_record {

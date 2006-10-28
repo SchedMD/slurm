@@ -308,18 +308,18 @@ int get_avail_cpus(struct job_record *job_ptr, int index)
 
 	if (job_ptr->details && job_ptr->details->cpus_per_task)
 		cpus_per_task = job_ptr->details->cpus_per_task;
-	if (job_ptr->details && job_ptr->details->max_sockets)
-		max_sockets = job_ptr->details->max_sockets;
-	if (job_ptr->details && job_ptr->details->max_cores)
-		max_cores = job_ptr->details->max_cores;
-	if (job_ptr->details && job_ptr->details->max_threads)
-		max_threads = job_ptr->details->max_threads;
+	if (job_ptr->details && job_ptr->details->mc_ptr->max_sockets)
+		max_sockets = job_ptr->details->mc_ptr->max_sockets;
+	if (job_ptr->details && job_ptr->details->mc_ptr->max_cores)
+		max_cores = job_ptr->details->mc_ptr->max_cores;
+	if (job_ptr->details && job_ptr->details->mc_ptr->max_threads)
+		max_threads = job_ptr->details->mc_ptr->max_threads;
 	if (job_ptr->details && job_ptr->details->ntasks_per_node)
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
-	if (job_ptr->details && job_ptr->details->ntasks_per_socket)
-		ntasks_per_socket = job_ptr->details->ntasks_per_socket;
-	if (job_ptr->details && job_ptr->details->ntasks_per_core)
-		ntasks_per_core = job_ptr->details->ntasks_per_core;
+	if (job_ptr->details && job_ptr->details->mc_ptr->ntasks_per_socket)
+		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
+	if (job_ptr->details && job_ptr->details->mc_ptr->ntasks_per_core)
+		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
 
         /* pick defaults for any unspecified items */
 	if (cpus_per_task <= 0)
@@ -412,13 +412,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	xassert(bitmap);
 	debug3("job min-[max]: -N %d-[%d]:%d-[%d]:%d-[%d]:%d-[%d]",
 		job_ptr->details->min_nodes,   job_ptr->details->max_nodes,
-		job_ptr->details->min_sockets, job_ptr->details->max_sockets,
-		job_ptr->details->min_cores,   job_ptr->details->max_cores,
-		job_ptr->details->min_threads, job_ptr->details->max_threads);
+		job_ptr->details->mc_ptr->min_sockets, job_ptr->details->mc_ptr->max_sockets,
+		job_ptr->details->mc_ptr->min_cores,   job_ptr->details->mc_ptr->max_cores,
+		job_ptr->details->mc_ptr->min_threads, job_ptr->details->mc_ptr->max_threads);
 	debug3("job ntasks-per: -node=%d -socket=%d -core=%d",
 		job_ptr->details->ntasks_per_node,
-		job_ptr->details->ntasks_per_socket,
-		job_ptr->details->ntasks_per_core);
+		job_ptr->details->mc_ptr->ntasks_per_socket,
+		job_ptr->details->mc_ptr->ntasks_per_core);
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
@@ -734,9 +734,9 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 		uint32_t *tmp_32 = (uint32_t *) data;
                 /* change this to something else Performance issue? SMB Fixme */
 		if ((job_ptr->details->cpus_per_task > 1) || 
-		    (job_ptr->details->max_sockets > 1) ||
-		    (job_ptr->details->max_cores > 1) ||
-		    (job_ptr->details->max_threads > 1)) {
+		    (job_ptr->details->mc_ptr->max_sockets > 1) ||
+		    (job_ptr->details->mc_ptr->max_cores > 1) ||
+		    (job_ptr->details->mc_ptr->max_threads > 1)) {
 			int index;
 			/* Replace with a hash-table lookup before releasing SMB Fixme  */
 			for (index = 0; index < select_node_cnt; index++) {

@@ -518,7 +518,7 @@ typedef struct job_info {
 	uint32_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint32_t num_procs;	/* number of processors required by job */
-	uint32_t num_nodes;	/* minimum number of nodes required by job */
+	uint16_t num_nodes;	/* minimum number of nodes required by job */
 	uint16_t max_nodes;	/* maximum number of nodes usable by job */
 	uint16_t min_sockets;	/* minimum number of sockets per node */
 	uint16_t max_sockets;	/* maximum number of sockets per node */

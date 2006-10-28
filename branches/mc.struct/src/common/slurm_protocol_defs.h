@@ -607,7 +607,6 @@ typedef struct multi_core_data {
 	uint16_t max_threads;	/* maximum number of threads per core usable
 				 * by job, default=unlimited (NO_VAL) */
 
-	uint16_t ntasks_per_node;   /* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
 	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */

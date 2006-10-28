@@ -66,6 +66,7 @@
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_protocol_pack.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -725,33 +726,22 @@ job_ptr->exit_code = exit_code;
  */
 void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	pack32((uint32_t) detail_ptr->min_nodes, buffer);
-	pack32((uint32_t) detail_ptr->max_nodes, buffer);
-	pack32((uint32_t) detail_ptr->min_sockets, buffer);
-	pack32((uint32_t) detail_ptr->max_sockets, buffer);
-	pack32((uint32_t) detail_ptr->min_cores, buffer);
-	pack32((uint32_t) detail_ptr->max_cores, buffer);
-	pack32((uint32_t) detail_ptr->min_threads, buffer);
-	pack32((uint32_t) detail_ptr->max_threads, buffer);
-	pack32((uint32_t) detail_ptr->total_procs, buffer);
-	pack32((uint32_t) detail_ptr->num_tasks, buffer);
+	pack16(detail_ptr->min_nodes, buffer);
+	pack16(detail_ptr->max_nodes, buffer);
+	pack32(detail_ptr->total_procs, buffer);
+	pack32(detail_ptr->num_tasks, buffer);
 
-	pack16((uint16_t) detail_ptr->shared, buffer);
-	pack16((uint16_t) detail_ptr->contiguous, buffer);
-	pack16((uint16_t) detail_ptr->cpus_per_task, buffer);
-	pack16((uint16_t) detail_ptr->ntasks_per_node, buffer);
-	pack16((uint16_t) detail_ptr->ntasks_per_socket, buffer);
-	pack16((uint16_t) detail_ptr->ntasks_per_core, buffer);
-	pack16((uint16_t) detail_ptr->no_requeue, buffer);
-	pack16((uint16_t) detail_ptr->overcommit, buffer);
+	pack16(detail_ptr->shared, buffer);
+	pack16(detail_ptr->contiguous, buffer);
+	pack16(detail_ptr->cpus_per_task, buffer);
+	pack16(detail_ptr->ntasks_per_node, buffer);
+	pack16(detail_ptr->no_requeue, buffer);
+	pack16(detail_ptr->overcommit, buffer);
 
-	pack32((uint32_t) detail_ptr->job_min_procs, buffer);
-	pack32((uint32_t) detail_ptr->job_min_sockets, buffer);
-	pack32((uint32_t) detail_ptr->job_min_cores, buffer);
-	pack32((uint32_t) detail_ptr->job_min_threads, buffer);
-	pack32((uint32_t) detail_ptr->job_min_memory, buffer);
-	pack32((uint32_t) detail_ptr->job_max_memory, buffer);
-	pack32((uint32_t) detail_ptr->job_min_tmp_disk, buffer);
+	pack32(detail_ptr->job_min_procs, buffer);
+	pack32(detail_ptr->job_min_memory, buffer);
+	pack32(detail_ptr->job_max_memory, buffer);
+	pack32(detail_ptr->job_min_tmp_disk, buffer);
 	pack_time(detail_ptr->begin_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
@@ -764,6 +754,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
 
+	pack_multi_core_data(detail_ptr->mc_ptr, buffer);
 	packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
 }
 
@@ -773,27 +764,19 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
-	uint32_t min_nodes, max_nodes, min_sockets, max_sockets;
-	uint32_t min_cores, max_cores, min_threads, max_threads;
-	uint32_t job_min_procs, job_min_sockets, job_min_cores, job_min_threads;
+	uint16_t min_nodes, max_nodes;
+	uint32_t job_min_procs, total_procs;
 	uint32_t job_min_memory, job_max_memory, job_min_tmp_disk;
 	uint32_t num_tasks;
-	uint16_t argc = 0, shared, contiguous;
+	uint16_t argc = 0, shared, contiguous, ntasks_per_node;
 	uint16_t cpus_per_task, name_len, no_requeue, overcommit;
-	uint16_t ntasks_per_node, ntasks_per_socket, ntasks_per_core;
-	uint32_t total_procs;
 	time_t begin_time, submit_time;
 	int i;
+	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	safe_unpack32(&min_nodes, buffer);
-	safe_unpack32(&max_nodes, buffer);
-	safe_unpack32(&min_sockets, buffer);
-	safe_unpack32(&max_sockets, buffer);
-	safe_unpack32(&min_cores, buffer);
-	safe_unpack32(&max_cores, buffer);
-	safe_unpack32(&min_threads, buffer);
-	safe_unpack32(&max_threads, buffer);
+	safe_unpack16(&min_nodes, buffer);
+	safe_unpack16(&max_nodes, buffer);
 	safe_unpack32(&total_procs, buffer);
 	safe_unpack32(&num_tasks, buffer);
 
@@ -801,15 +784,10 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
-	safe_unpack16(&ntasks_per_socket, buffer);
-	safe_unpack16(&ntasks_per_core, buffer);
 	safe_unpack16(&no_requeue, buffer);
 	safe_unpack16(&overcommit, buffer);
 
 	safe_unpack32(&job_min_procs, buffer);
-	safe_unpack32(&job_min_sockets, buffer);
-	safe_unpack32(&job_min_cores, buffer);
-	safe_unpack32(&job_min_threads, buffer);
 	safe_unpack32(&job_min_memory, buffer);
 	safe_unpack32(&job_max_memory, buffer);
 	safe_unpack32(&job_min_tmp_disk, buffer);
@@ -825,6 +803,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&out, &name_len, buffer);
 	safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
 
+	if (unpack_multi_core_data(&mc_ptr, buffer))
+		goto unpack_error;
 	safe_unpackstr_array(&argv, &argc, buffer);
 
 	/* validity test as possible */
@@ -856,24 +836,13 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	/* now put the details into the job record */
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->max_nodes = max_nodes;
-	job_ptr->details->min_sockets = min_sockets;
-	job_ptr->details->max_sockets = max_sockets;
-	job_ptr->details->min_cores = min_cores;
-	job_ptr->details->max_cores = max_cores;
-	job_ptr->details->min_threads = min_threads;
-	job_ptr->details->max_threads = max_threads;
 	job_ptr->details->total_procs = total_procs;
 	job_ptr->details->num_tasks = num_tasks;
 	job_ptr->details->shared = shared;
 	job_ptr->details->contiguous = contiguous;
 	job_ptr->details->cpus_per_task = cpus_per_task;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
-	job_ptr->details->ntasks_per_socket = ntasks_per_socket;
-	job_ptr->details->ntasks_per_core = ntasks_per_core;
 	job_ptr->details->job_min_procs = job_min_procs;
-	job_ptr->details->job_min_sockets = job_min_sockets;
-	job_ptr->details->job_min_cores = job_min_cores;
-	job_ptr->details->job_min_threads = job_min_threads;
 	job_ptr->details->job_min_memory = job_min_memory;
 	job_ptr->details->job_max_memory = job_max_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
@@ -890,7 +859,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->work_dir = work_dir;
 	job_ptr->details->argc = argc;
 	job_ptr->details->argv = argv;
-
+	job_ptr->details->mc_ptr = mc_ptr;
+	
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2232,6 +2202,43 @@ void _read_data_from_file(char *file_name, char **data)
 	return;
 }
 
+/* Given a job request, return a multi_core_data struct.
+ * Returns NULL if no values set in the job/step request */
+static multi_core_data_t *
+_set_multi_core_data(job_desc_msg_t * job_desc)
+{
+	multi_core_data_t * mc_ptr;
+
+	if ((job_desc->job_min_sockets   == (uint16_t) NO_VAL)
+	&&  (job_desc->job_min_cores     == (uint16_t) NO_VAL)
+	&&  (job_desc->job_min_threads   == (uint16_t) NO_VAL)
+	&&  (job_desc->min_sockets       == (uint16_t) NO_VAL)
+	&&  (job_desc->max_sockets       == (uint16_t) NO_VAL)
+	&&  (job_desc->min_cores         == (uint16_t) NO_VAL)
+	&&  (job_desc->max_cores         == (uint16_t) NO_VAL)
+	&&  (job_desc->min_threads       == (uint16_t) NO_VAL)
+	&&  (job_desc->max_threads       == (uint16_t) NO_VAL)
+	&&  (job_desc->ntasks_per_socket == (uint16_t) NO_VAL)
+	&&  (job_desc->ntasks_per_core   == (uint16_t) NO_VAL)
+	&&  (job_desc->plane_size        == (uint16_t) NO_VAL))
+		return NULL;
+
+	mc_ptr = xmalloc(sizeof(multi_core_data_t));
+	mc_ptr->job_min_sockets    = job_desc->job_min_sockets;
+	mc_ptr->job_min_cores      = job_desc->job_min_cores;
+	mc_ptr->job_min_threads    = job_desc->job_min_threads;
+	mc_ptr->min_sockets        = job_desc->min_sockets;
+	mc_ptr->max_sockets        = job_desc->max_sockets;
+	mc_ptr->min_cores          = job_desc->min_cores;
+	mc_ptr->max_cores          = job_desc->max_cores;
+	mc_ptr->min_threads        = job_desc->min_threads;
+	mc_ptr->max_threads        = job_desc->max_threads;
+	mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
+	mc_ptr->ntasks_per_core    = job_desc->ntasks_per_core;
+	mc_ptr->plane_size         = job_desc->plane_size;
+	return mc_ptr;
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC  
  *	structure into the actual slurmctld job record */
 static int
@@ -2300,12 +2307,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->argc   = 0;		   /* nothing left */
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
-	detail_ptr->min_sockets = job_desc->min_sockets;
-	detail_ptr->max_sockets = job_desc->max_sockets;
-	detail_ptr->min_cores = job_desc->min_cores;
-	detail_ptr->max_cores = job_desc->max_cores;
-	detail_ptr->min_threads = job_desc->min_threads;
-	detail_ptr->max_threads = job_desc->max_threads;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes = 
 				_copy_nodelist_no_dup(job_desc->req_nodes);
@@ -2325,28 +2326,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->contiguous = job_desc->contiguous;
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
-	if (job_desc->plane_size != (uint32_t) NO_VAL)
-		detail_ptr->plane_size = job_desc->plane_size;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
 		detail_ptr->cpus_per_task = job_desc->cpus_per_task;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL)
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
-	if (job_desc->ntasks_per_socket != (uint16_t) NO_VAL)
-		detail_ptr->ntasks_per_socket = job_desc->ntasks_per_socket;
-	if (job_desc->ntasks_per_core != (uint16_t) NO_VAL)
-		detail_ptr->ntasks_per_core = job_desc->ntasks_per_core;
 	if (job_desc->no_requeue != (uint16_t) NO_VAL)
 		detail_ptr->no_requeue = job_desc->no_requeue;
 	if (job_desc->job_min_procs != NO_VAL)
 		detail_ptr->job_min_procs = job_desc->job_min_procs;
 	detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
 			detail_ptr->cpus_per_task);
-	if (job_desc->job_min_sockets != NO_VAL)
-		detail_ptr->job_min_sockets = job_desc->job_min_sockets;
-	if (job_desc->job_min_cores != NO_VAL)
-		detail_ptr->job_min_cores = job_desc->job_min_cores;
-	if (job_desc->job_min_threads != NO_VAL)
-		detail_ptr->job_min_threads = job_desc->job_min_threads;
 	if (job_desc->job_min_memory != NO_VAL)
 		detail_ptr->job_min_memory = job_desc->job_min_memory;
 	if (job_desc->job_max_memory != NO_VAL)
@@ -2367,7 +2356,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->overcommit = job_desc->overcommit;
 	detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
-		select_g_copy_jobinfo(job_desc->select_jobinfo);	
+		select_g_copy_jobinfo(job_desc->select_jobinfo);
+	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2742,17 +2732,17 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	struct job_details *detail_ptr;
 	uint32_t size_tmp;
 
-	pack32((uint32_t)dump_job_ptr->job_id, buffer);
-	pack32((uint32_t)dump_job_ptr->user_id, buffer);
-	pack32((uint32_t)dump_job_ptr->group_id, buffer);
+	pack32(dump_job_ptr->job_id, buffer);
+	pack32(dump_job_ptr->user_id, buffer);
+	pack32(dump_job_ptr->group_id, buffer);
 
-	pack16((uint16_t) dump_job_ptr->job_state, buffer);
-	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);
-	pack32((uint32_t)dump_job_ptr->alloc_sid, buffer);
+	pack16(dump_job_ptr->job_state, buffer);
+	pack16(dump_job_ptr->batch_flag, buffer);
+	pack32(dump_job_ptr->alloc_sid, buffer);
 	if ((dump_job_ptr->time_limit == NO_VAL) && dump_job_ptr->part_ptr)
-		pack32((uint32_t)dump_job_ptr->part_ptr->max_time, buffer);
+		pack32(dump_job_ptr->part_ptr->max_time, buffer);
 	else
-		pack32((uint32_t)dump_job_ptr->time_limit, buffer);
+		pack32(dump_job_ptr->time_limit, buffer);
 
 	if (dump_job_ptr->details) {
 		pack_time(dump_job_ptr->details->submit_time, buffer);
@@ -2770,16 +2760,15 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
-
-	pack32((uint32_t)dump_job_ptr->priority, buffer);
+	pack32(dump_job_ptr->priority, buffer);
 
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	pack32((uint32_t)dump_job_ptr->dependency, buffer);
-	pack32((uint32_t)dump_job_ptr->exit_code, buffer);
+	pack32(dump_job_ptr->dependency, buffer);
+	pack32(dump_job_ptr->exit_code, buffer);
 
 	pack16(dump_job_ptr->num_cpu_groups, buffer);
 	size_tmp = dump_job_ptr->num_cpu_groups;
@@ -2792,7 +2781,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
-	pack32((uint32_t)dump_job_ptr->num_procs, buffer);
+	pack32(dump_job_ptr->num_procs, buffer);
 	
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 
@@ -2814,25 +2803,13 @@ static void _pack_default_job_details(struct job_details *detail_ptr, Buf buffer
 	if (detail_ptr) {
 		packstr(detail_ptr->features, buffer);
 
-		pack32((uint32_t) detail_ptr->min_nodes, buffer);
-		pack32((uint32_t) detail_ptr->max_nodes, buffer);
-		pack32((uint32_t) detail_ptr->min_sockets, buffer);
-		pack32((uint32_t) detail_ptr->max_sockets, buffer);
-		pack32((uint32_t) detail_ptr->min_cores, buffer);
-		pack32((uint32_t) detail_ptr->max_cores, buffer);
-		pack32((uint32_t) detail_ptr->min_threads, buffer);
-		pack32((uint32_t) detail_ptr->max_threads, buffer);
+		pack16(detail_ptr->min_nodes, buffer);
+		pack16(detail_ptr->max_nodes, buffer);
 	} else {
 		packnull(buffer);
 
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
+		pack16((uint32_t) 0, buffer);
+		pack16((uint32_t) 0, buffer);
 	}
 }
 
@@ -2840,26 +2817,22 @@ static void _pack_default_job_details(struct job_details *detail_ptr, Buf buffer
 static void _pack_pending_job_details(struct job_details *detail_ptr, Buf buffer)
 {
 	if (detail_ptr) {		
-		pack16((uint16_t) detail_ptr->shared, buffer);
-		pack16((uint16_t) detail_ptr->contiguous, buffer);
-		pack16((uint16_t) detail_ptr->cpus_per_task, buffer);
-		pack16((uint16_t) detail_ptr->ntasks_per_node, buffer);
-		pack16((uint16_t) detail_ptr->ntasks_per_socket, buffer);
-		pack16((uint16_t) detail_ptr->ntasks_per_core, buffer);
+		pack16(detail_ptr->shared, buffer);
+		pack16(detail_ptr->contiguous, buffer);
+		pack16(detail_ptr->cpus_per_task, buffer);
 
-		pack32((uint32_t) detail_ptr->job_min_procs, buffer);
-		pack32((uint32_t) detail_ptr->job_min_sockets, buffer);
-		pack32((uint32_t) detail_ptr->job_min_cores, buffer);
-		pack32((uint32_t) detail_ptr->job_min_threads, buffer);
-		pack32((uint32_t) detail_ptr->job_min_memory, buffer);
-		pack32((uint32_t) detail_ptr->job_max_memory, buffer);
-		pack32((uint32_t) detail_ptr->job_min_tmp_disk, buffer);
-		pack16((uint16_t) detail_ptr->wait_reason, buffer);
+		pack16(detail_ptr->job_min_procs, buffer);
+		pack32(detail_ptr->job_min_memory, buffer);
+		pack32(detail_ptr->job_max_memory, buffer);
+		pack32(detail_ptr->job_min_tmp_disk, buffer);
+		pack16(detail_ptr->wait_reason, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
 		pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
 		packstr(detail_ptr->exc_nodes, buffer);
 		pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
+
+		pack_multi_core_data(detail_ptr->mc_ptr, buffer);
 	} 
 
 	else {
@@ -2867,13 +2840,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr, Buf buffer
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
-		pack16((uint16_t) 0, buffer);
-		pack16((uint16_t) 0, buffer);
 
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
@@ -2883,6 +2850,8 @@ static void _pack_pending_job_details(struct job_details *detail_ptr, Buf buffer
 		packnull(buffer);
 		packnull(buffer);
 		packnull(buffer);
+
+		pack_multi_core_data(NULL, buffer);
 	}
 }
 
@@ -3197,6 +3166,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	struct part_record *tmp_part_ptr;
 	bitstr_t *req_bitmap = NULL;
 	time_t now = time(NULL);
+	multi_core_data_t *mc_ptr = NULL;
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
@@ -3213,6 +3183,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	detail_ptr = job_ptr->details;
+	if (detail_ptr)
+		mc_ptr = detail_ptr->mc_ptr;
 	last_job_update = now;
 
 	if ((job_specs->time_limit != NO_VAL) && (!IS_JOB_FINISHED(job_ptr))) {
@@ -3287,10 +3259,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->job_min_sockets != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->job_min_sockets > job_specs->job_min_sockets)) {
-			detail_ptr->job_min_sockets = job_specs->job_min_sockets;
+	if (job_specs->job_min_sockets != (uint16_t) NO_VAL) {
+		if (mc_ptr) {
+			mc_ptr->job_min_sockets = job_specs->job_min_sockets;
 			info("update_job: setting job_min_sockets to %u for "
 				"job_id %u", job_specs->job_min_sockets, 
 				job_specs->job_id);
@@ -3301,10 +3272,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->job_min_cores != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->job_min_cores > job_specs->job_min_cores)) {
-			detail_ptr->job_min_cores = job_specs->job_min_cores;
+	if (job_specs->job_min_cores != (uint16_t) NO_VAL) {
+		if (mc_ptr) {
+			mc_ptr->job_min_cores = job_specs->job_min_cores;
 			info("update_job: setting job_min_cores to %u for "
 				"job_id %u", job_specs->job_min_cores, 
 				job_specs->job_id);
@@ -3315,10 +3285,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->job_min_threads != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->job_min_threads > job_specs->job_min_threads)) {
-			detail_ptr->job_min_threads = job_specs->job_min_threads;
+	if (job_specs->job_min_threads != (uint16_t) NO_VAL) {
+		if (mc_ptr) {
+			mc_ptr->job_min_threads = job_specs->job_min_threads;
 			info("update_job: setting job_min_threads to %u for "
 				"job_id %u", job_specs->job_min_threads, 
 				job_specs->job_id);
@@ -3372,7 +3341,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_nodes != NO_VAL && detail_ptr) {
+	if (job_specs->min_nodes != (uint16_t) NO_VAL && detail_ptr) {
 		if (super_user ||
 		    (detail_ptr->min_nodes > job_specs->min_nodes)) {
 			detail_ptr->min_nodes = job_specs->min_nodes;
@@ -3386,10 +3355,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_sockets != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->min_sockets > job_specs->min_sockets)) {
-			detail_ptr->min_sockets = job_specs->min_sockets;
+	if (job_specs->min_sockets != (uint16_t) NO_VAL) {
+		if (mc_ptr) {
+			mc_ptr->min_sockets = job_specs->min_sockets;
 			info("update_job: setting min_sockets to %u for "
 				"job_id %u", job_specs->min_sockets, 
 				job_specs->job_id);
@@ -3400,10 +3368,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_cores != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->min_cores > job_specs->min_cores)) {
-			detail_ptr->min_cores = job_specs->min_cores;
+	if (job_specs->min_cores != (uint16_t) NO_VAL) {
+		if (mc_ptr) {
+			mc_ptr->min_cores = job_specs->min_cores;
 			info("update_job: setting min_cores to %u for "
 				"job_id %u", job_specs->min_cores, 
 				job_specs->job_id);
@@ -3414,10 +3381,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_threads != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->min_threads > job_specs->min_threads)) {
-			detail_ptr->min_threads = job_specs->min_threads;
+	if ((job_specs->min_threads != (uint16_t) NO_VAL)) {
+		if (mc_ptr) {
+			mc_ptr->min_threads = job_specs->min_threads;
 			info("update_job: setting min_threads to %u for "
 				"job_id %u", job_specs->min_threads, 
 				job_specs->job_id);
