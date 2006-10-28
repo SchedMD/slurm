@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  task_exec.c - execute program according to task rank
+ *  task_exec.c - Find the argv array for each task when multi-prog is enabled.
  *
- *  NOTE: This code could be moved to srun if desired. That would mean the 
+ *  NOTE: This code could be moved into the API if desired. That would mean the
  *  logic would be executed once per job instead of once per task. This would
  *  require substantial modifications to the srun, slurmd, slurmstepd, and
  *  communications logic; so we'll stick with the simple solution for now. 
@@ -10,7 +10,8 @@
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>
  *  and
  *  Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>,
+ *  and Christopher J. Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
@@ -121,15 +122,16 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
 {
 	char tmp[BUF_SIZE];
 
-	if (args_spec[1] == 't') {
-		/* task rank */
-		strcpy(tmp, &args_spec[2]);
-		sprintf(args_spec, "%d%s", task_rank, tmp);
-
-	} else if (args_spec[1] == 'o') {
-		/* task offset */
-		strcpy(tmp, &args_spec[2]);
-		sprintf(args_spec, "%d%s", task_offset, tmp);
+	if (args_spec[0] == '%') {
+		if (args_spec[1] == 't') {
+			/* task rank */
+			strcpy(tmp, &args_spec[2]);
+			sprintf(args_spec, "%d%s", task_rank, tmp);
+		} else if (args_spec[1] == 'o') {
+			/* task offset */
+			strcpy(tmp, &args_spec[2]);
+			sprintf(args_spec, "%d%s", task_offset, tmp);
+		}
 	}
 }
 
@@ -140,12 +142,14 @@ _build_path(char* fname, char **prog_env)
 {
 	int i;
 	char *path_env = NULL, *dir;
-	static char file_name[256], file_path[256];	/* return values */
+	char *file_name, *file_path;
 	struct stat buf;
+	int len = 256;
 
+	file_name = (char *)xmalloc(len);
 	/* make copy of file name (end at white space) */
-	snprintf(file_name, sizeof(file_name), "%s", fname);
-	for (i=0; i<sizeof(file_name); i++) {
+	snprintf(file_name, len, "%s", fname);
+	for (i=0; i < len; i++) {
 		if (file_name[i] == '\0')
 			break;
 		if (!isspace(file_name[i]))
@@ -168,48 +172,63 @@ _build_path(char* fname, char **prog_env)
 		break;
 	}
 
+	file_path = (char *)xmalloc(len);
 	dir = strtok(path_env, ":");
 	while (dir) {
-		snprintf(file_path, sizeof(file_path), "%s/%s", dir, file_name);
+		snprintf(file_path, len, "%s/%s", dir, file_name);
 		if (stat(file_path, &buf) == 0)
 			break;
 		dir = strtok(NULL, ":");
 	}
 	if (dir == NULL)	/* not found */
-		snprintf(file_path, sizeof(file_path), "%s", file_name);
+		snprintf(file_path, len, "%s", file_name);
 
+	xfree(file_name);
 	xfree(path_env);
 	return file_path;
 }
 
+/*
+ * FIXME - Need to rewrite to parse the file and grab all of the task argv
+ *	arrays in one pass.
+ */
 extern int
-task_exec(char *config_data, char **prog_env, int task_rank)
+multi_prog_get_argv(char *config_data, char **prog_env, int task_rank,
+		    int *argc, char ***argv)
 {
 	char *line;
 	int line_num = 0;
 	int task_offset;
-	char* p, *s, *ptrptr;
-	char* rank_spec, *prog_spec = NULL, *args_spec;
+	char *p, *s, *ptrptr;
+	char *rank_spec, *prog_spec = NULL, *args_spec;
 	int prog_argc = 0;
-	char* prog_argv[(BUF_SIZE - 4)/ 2];
+	char **prog_argv = NULL;
+	char *local_data = NULL;
 
-	if (task_rank < 0)
+	if (task_rank < 0) {
+		*argc = 0;
+		*argv = NULL;
 		return -1;
+	}
 
-	line = strtok_r(config_data, "\n", &ptrptr);
+	prog_argv = (char **)xmalloc(sizeof(char *) * 128);
+	local_data = xstrdup(config_data);
+
+	line = strtok_r(local_data, "\n", &ptrptr);
 	while (line) {
 		if (line_num > 0)
 			line = strtok_r(NULL, "\n", &ptrptr);
 		if (line == NULL) {
 			error("Could not identify executable program for this task");
-			return -1;
+			goto fail;
 		}
 		line_num ++;
 		if (strlen (line) >= (BUF_SIZE - 1)) {
 			error ("Line %d of configuration file too long", 
 				line_num);
-			return -1;
+			goto fail;
 		}
+		debug("line = %s", line);
 		
 		p = line;
 		while (*p != '\0' && isspace (*p)) /* remove leading spaces */
@@ -227,7 +246,7 @@ task_exec(char *config_data, char **prog_env, int task_rank)
 			p ++;
 		if (*p == '\0') {
 			error("Invalid configuration line: %s", line);
-			return -1;
+			goto fail;
 		}
 		*p ++ = '\0';
 
@@ -241,7 +260,7 @@ task_exec(char *config_data, char **prog_env, int task_rank)
 		if (prog_spec[0] == '\0') {
 			error("Program for task rank %d not specified.", 
 				task_rank);
-			return -1;
+			goto fail;
 		}
 		
 		prog_argv[0] = prog_spec; 
@@ -300,7 +319,7 @@ task_exec(char *config_data, char **prog_env, int task_rank)
 					error("Program arguments specification"
 						" format invalid: %s.", 
 						prog_argv[prog_argc -1]);
-					return -1;
+					goto fail;
 				}
 				p ++; /* skip closing quote */
 				s = args_spec;
@@ -316,15 +335,27 @@ task_exec(char *config_data, char **prog_env, int task_rank)
 				&& isspace (*args_spec))
 					args_spec ++;
 			}
+
 		}
 
 		prog_argv[prog_argc] = NULL;
-		if (execve (prog_spec, prog_argv, prog_env) == -1) {
-			error("Error executing program \"%s\": %m", prog_spec);
-			return -1;
-		}
+		debug("Task %d argc = %d", task_rank, prog_argc);
+		debug("Task %d argv[0] = %s", task_rank, prog_argv[0]);
+		if (prog_argv[1] != NULL)
+			debug("        argv[1] = %s", prog_argv[1]);
+
+
+		*argc = prog_argc;
+		*argv = prog_argv;
+		/* FIXME - local_data is leaked */
+		return 0;
 	}
 
 	error("Program for task rank %d not specified.", task_rank);
+fail:
+	xfree(prog_argv);
+	xfree(local_data);
+	*argc = 0;
+	*argv = NULL;
 	return -1;
 }

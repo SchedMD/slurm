@@ -846,9 +846,11 @@ done:
 		xfree(pids);
 		xfree(gtids);
 
-		len = strlen(job->argv[0]) + 1; /* +1 to include the \0 */
-		safe_write(fd, &len, sizeof(int));
-		safe_write(fd, job->argv[0], len);
+		for (i = 0; i < job->ntasks; i++) {
+			len = strlen(job->task[i]->argv[0]) + 1;
+			safe_write(fd, &len, sizeof(int));
+			safe_write(fd, job->task[i]->argv[0], len);
+		}
 	}
 
 	return SLURM_SUCCESS;

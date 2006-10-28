@@ -213,8 +213,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
 	int rc;
-	slurmd_task_info_t *t = NULL;
-
+	slurmd_task_info_t *task = job->task[i];
 
 	if (set_user_limits(job) < 0) {
 		debug("Unable to set user limits");
@@ -224,7 +223,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	if (i == 0)
 		_make_tmpdir(job);
-
 
         /*
 	 * Stall exec until all tasks have joined the same process group
@@ -242,9 +240,8 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->cpus_on_node = job->cpus;
 	job->envtp->env = job->env;
 	
-	t = job->task[i];
-	job->envtp->procid = t->gtid;
-	job->envtp->localid = t->id;
+	job->envtp->procid = task->gtid;
+	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();
 
 	job->envtp->distribution = job->task_dist;
@@ -266,22 +263,18 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
-				job->nprocs, job->task[i]->gtid) < 0) {
+				job->nprocs, task->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);
 		}
 
-		slurmd_mpi_init (job, job->task[i]->gtid);
+		slurmd_mpi_init (job, task->gtid);
 	
 		pdebug_stop_current(job);
 	}
 
-	/* 
-	 * If io_prepare_child() is moved above interconnect_attach()
-	 * this causes EBADF from qsw_attach(). Why?
-	 */
-	io_dup_stdio(job->task[i]);
+	io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
 
@@ -304,18 +297,14 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		_run_script("user task_prolog", job->task_prolog, job); 
 	}
 
-	log_fini();
-
 	if (job->env == NULL) {
 		debug("job->env is NULL");
 		job->env = (char **)xmalloc(sizeof(char *));
 		job->env[0] = (char *)NULL;
 	}
-	if (job->multi_prog)
-		task_exec(job->argv[1], job->env,
-			  (int)job->task[i]->gtid);
-	else
-		execve(job->argv[0], job->argv, job->env);
+
+	log_fini();
+	execve(task->argv[0], task->argv, job->env);
 
 	/* 
 	 * error() and clean up if execve() returns:

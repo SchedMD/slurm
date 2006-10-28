@@ -717,11 +717,11 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 
 	/* Build process table for any parallel debugger
          */
-	if ((remote_argc == 0) && (resp->executable_name)) {
+	if ((remote_argc == 0) && (resp->executable_names)) {
 		remote_argc = 1;
 		xrealloc(remote_argv, 2 * sizeof(char *));
-		remote_argv[0] = resp->executable_name;
-		resp->executable_name = NULL; /* nothing left to free */
+		remote_argv[0] = resp->executable_names[0];
+		resp->executable_names = NULL; /* nothing left to free */
 		remote_argv[1] = NULL;
 	}
 	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
