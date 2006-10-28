@@ -445,11 +445,16 @@ void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 
 void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
 {
+	int i;
+
 	if (msg) {
 		xfree(msg->node_name);
-		xfree(msg->executable_name);
 		xfree(msg->local_pids);
 		xfree(msg->gtids);
+		for (i = 0; i < msg->ntasks; i++) {
+			xfree(msg->executable_names[i]);
+		}
+		xfree(msg->executable_names);
 		xfree(msg);
 	}
 }

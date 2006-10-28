@@ -43,6 +43,6 @@
  *
  * "task_rank" is the task's GLOBAL rank within the job step.
  */
-extern int task_exec(char *config_data, char **prog_env, int task_rank);
-
+extern int multi_prog_get_argv(char *config_data, char **prog_env,
+			       int task_rank, int *argc, char ***argv);
 #endif /* !_SLURMD_TASK_EXEC_H */

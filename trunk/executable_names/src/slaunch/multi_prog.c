@@ -101,6 +101,8 @@ _set_range(int low_num, int high_num, char *exec_name)
 {
 	int i;
 
+	info("_set_range low = %d, high = %d, executable name = %s",
+	     low_num, high_num, exec_name);
 	for (i=low_num; i<=high_num; i++) {
 		MPIR_PROCDESC *tv;
 		tv = &MPIR_proctable[i];

@@ -104,6 +104,9 @@ typedef struct task_info {
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
+
+	int		argc;
+	char	      **argv;
 } slurmd_task_info_t;
 
 typedef struct slurmd_job {
