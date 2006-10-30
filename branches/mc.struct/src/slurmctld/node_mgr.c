@@ -1117,7 +1117,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 #if 1
 	/* Disable these tests if you want to emulate a system
 	 * with different hardware that configured (sockets, cores
-	 * and threads */
+	 * and/or threads) */
 	if (sockets < config_ptr->sockets) {
 		error("Node %s has low socket count %u", node_name, sockets);
 		error_code  = EINVAL;
