@@ -1667,7 +1667,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	debug2("before alteration asking for nodes %u-%u procs %u", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs);
-/* WHAT IS THIS DOING??  - Moe */	
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
@@ -3218,8 +3217,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->priority != NO_VAL) {
-		if (super_user ||
-		    (job_ptr->priority > job_specs->priority)) {
+		if (super_user
+		||  (job_ptr->priority > job_specs->priority)) {
 			job_ptr->priority = job_specs->priority;
 			info("update_job: setting priority to %u for "
 				"job_id %u", job_ptr->priority, 
@@ -3232,7 +3231,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->nice != NICE_OFFSET) {
-		if (super_user || (job_specs->nice < NICE_OFFSET)) {
+		if (!IS_JOB_PENDING(job_ptr)) 
+			error_code = ESLURM_DISABLED;
+		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
 			job_ptr->priority -= ((int)job_specs->nice - 
 					NICE_OFFSET);
 			info("update_job: setting priority to %u for "
@@ -3245,9 +3246,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
  
-	if (job_specs->job_min_procs != (uint16_t) NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->job_min_procs > job_specs->job_min_procs)) {
+	if (job_specs->job_min_procs != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||      (detail_ptr->job_min_procs > job_specs->job_min_procs)) {
 			detail_ptr->job_min_procs = job_specs->job_min_procs;
 			info("update_job: setting job_min_procs to %u for "
 				"job_id %u", job_specs->job_min_procs, 
@@ -3260,47 +3263,43 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->job_min_sockets != (uint16_t) NO_VAL) {
-		if (mc_ptr) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
 			mc_ptr->job_min_sockets = job_specs->job_min_sockets;
 			info("update_job: setting job_min_sockets to %u for "
 				"job_id %u", job_specs->job_min_sockets, 
 				job_specs->job_id);
-		} else {
-			error("Attempt to increase job_min_sockets for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
 	if (job_specs->job_min_cores != (uint16_t) NO_VAL) {
-		if (mc_ptr) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
 			mc_ptr->job_min_cores = job_specs->job_min_cores;
 			info("update_job: setting job_min_cores to %u for "
 				"job_id %u", job_specs->job_min_cores, 
 				job_specs->job_id);
-		} else {
-			error("Attempt to increase job_min_cores for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
 	if (job_specs->job_min_threads != (uint16_t) NO_VAL) {
-		if (mc_ptr) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
 			mc_ptr->job_min_threads = job_specs->job_min_threads;
 			info("update_job: setting job_min_threads to %u for "
 				"job_id %u", job_specs->job_min_threads, 
 				job_specs->job_id);
-		} else {
-			error("Attempt to increase job_min_threads for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
-	if (job_specs->job_min_memory != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->job_min_memory > job_specs->job_min_memory)) {
+	if (job_specs->job_min_memory != NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||      (detail_ptr->job_min_memory > job_specs->job_min_memory)) {
 			detail_ptr->job_min_memory = job_specs->job_min_memory;
 			info("update_job: setting job_min_memory to %u for "
 				"job_id %u", job_specs->job_min_memory, 
@@ -3312,9 +3311,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->job_min_tmp_disk != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->job_min_tmp_disk > job_specs->job_min_tmp_disk)) {
+	if (job_specs->job_min_tmp_disk != NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||    (detail_ptr->job_min_tmp_disk > job_specs->job_min_tmp_disk)) {
 			detail_ptr->job_min_tmp_disk = job_specs->job_min_tmp_disk;
 			info("update_job: setting job_min_tmp_disk to %u for "
 				"job_id %u", job_specs->job_min_tmp_disk, 
@@ -3328,8 +3329,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->num_procs != NO_VAL) {
-		if (super_user || 
-		    (job_ptr->num_procs > job_specs->num_procs)) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||       (job_ptr->num_procs > job_specs->num_procs)) {
 			job_ptr->num_procs = job_specs->num_procs;
 			info("update_job: setting num_procs to %u for "
 				"job_id %u", job_specs->num_procs, 
@@ -3341,9 +3344,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_nodes != (uint16_t) NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->min_nodes > job_specs->min_nodes)) {
+	if (job_specs->min_nodes != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||       (detail_ptr->min_nodes > job_specs->min_nodes)) {
 			detail_ptr->min_nodes = job_specs->min_nodes;
 			info("update_job: setting min_nodes to %u for "
 				"job_id %u", job_specs->min_nodes, 
@@ -3356,46 +3361,43 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->min_sockets != (uint16_t) NO_VAL) {
-		if (mc_ptr) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
 			mc_ptr->min_sockets = job_specs->min_sockets;
 			info("update_job: setting min_sockets to %u for "
 				"job_id %u", job_specs->min_sockets, 
 				job_specs->job_id);
-		} else {
-			error("Attempt to increase min_sockets for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
 	if (job_specs->min_cores != (uint16_t) NO_VAL) {
-		if (mc_ptr) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
 			mc_ptr->min_cores = job_specs->min_cores;
 			info("update_job: setting min_cores to %u for "
 				"job_id %u", job_specs->min_cores, 
 				job_specs->job_id);
-		} else {
-			error("Attempt to increase min_cores for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
 	if ((job_specs->min_threads != (uint16_t) NO_VAL)) {
-		if (mc_ptr) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
 			mc_ptr->min_threads = job_specs->min_threads;
 			info("update_job: setting min_threads to %u for "
 				"job_id %u", job_specs->min_threads, 
 				job_specs->job_id);
-		} else {
-			error("Attempt to increase min_threads for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
-	if (job_specs->shared != (uint16_t) NO_VAL && detail_ptr) {
-		if (super_user || (detail_ptr->shared > job_specs->shared)) {
+	if (job_specs->shared != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||       (detail_ptr->shared > job_specs->shared)) {
 			detail_ptr->shared = job_specs->shared;
 			info("update_job: setting shared to %u for job_id %u", 
 			     job_specs->shared, job_specs->job_id);
@@ -3406,9 +3408,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->contiguous != (uint16_t) NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->contiguous > job_specs->contiguous)) {
+	if (job_specs->contiguous != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+		||      (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
 			info("update_job: setting contiguous to %u for "
 				"job_id %u", job_specs->contiguous, 
@@ -3427,8 +3431,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_specs->job_id);
 	}
 
-	if (job_specs->features && detail_ptr) {
-		if (super_user) {
+	if (job_specs->features) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user) {
 			xfree(detail_ptr->features);
 			if (job_specs->features[0] != '\0') {
 				detail_ptr->features = job_specs->features;
@@ -3452,9 +3458,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->partition) {
 		tmp_part_ptr = find_part_record(job_specs->partition);
-		if (tmp_part_ptr == NULL)
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
-		if ((super_user && tmp_part_ptr)) {
+		else if (super_user) {
 			strncpy(job_ptr->partition, job_specs->partition,
 				MAX_SLURM_NAME);
 			job_ptr->part_ptr = tmp_part_ptr;
@@ -3468,8 +3476,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->req_nodes && detail_ptr) {
-		if (job_specs->req_nodes[0] == '\0') {
+	if (job_specs->req_nodes) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->req_nodes[0] == '\0') {
 			xfree(detail_ptr->req_nodes);
 			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 		} else if (super_user) {
@@ -3510,7 +3520,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->dependency != NO_VAL) {
-		if (job_specs->dependency == job_ptr->job_id)
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->dependency == job_ptr->job_id)
 			error_code = ESLURM_DEPENDENCY;
 		else {
 			job_ptr->dependency = job_specs->dependency;
