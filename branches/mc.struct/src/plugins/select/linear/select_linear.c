@@ -315,11 +315,11 @@ static int _get_avail_cpus(struct job_record *job_ptr, int index)
 		mc_ptr = job_ptr->details->mc_ptr;
 	}
 	if (mc_ptr) {
-		max_sockets = job_ptr->details->mc_ptr->max_sockets;
-		max_cores = job_ptr->details->mc_ptr->max_cores;
-		max_threads = job_ptr->details->mc_ptr->max_threads;
+		max_sockets       = job_ptr->details->mc_ptr->max_sockets;
+		max_cores         = job_ptr->details->mc_ptr->max_cores;
+		max_threads       = job_ptr->details->mc_ptr->max_threads;
 		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
+		ntasks_per_core   = job_ptr->details->mc_ptr->ntasks_per_core;
 	}
 
 	if (select_fast_schedule) { /* don't bother checking each node */
