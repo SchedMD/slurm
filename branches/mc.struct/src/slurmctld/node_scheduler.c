@@ -1198,7 +1198,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			continue;
 		}
 		node_set_ptr[node_set_inx].cpus_per_node =
-		    config_ptr->cpus;
+			config_ptr->cpus;
 		node_set_ptr[node_set_inx].real_memory =
 			config_ptr->real_memory;		
 		node_set_ptr[node_set_inx].weight =

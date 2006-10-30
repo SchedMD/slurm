@@ -1659,22 +1659,22 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
-	uint32_t total_nodes;
+	uint32_t total_nodes, max_procs;
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
 #endif
 
-	debug2("before alteration asking for nodes %d-%d procs %d", 
+	debug2("before alteration asking for nodes %u-%u procs %u", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs);
-	
+/* WHAT IS THIS DOING??  - Moe */	
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 	select_g_get_jobinfo(job_desc->select_jobinfo,
-			     SELECT_DATA_MAX_PROCS, &i);
+			     SELECT_DATA_MAX_PROCS, &max_procs);
 	
-	debug2("after alteration asking for nodes %d-%d procs %d-%d", 
+	debug2("after alteration asking for nodes %u-%u procs %u-%d", 
 		     job_desc->min_nodes, job_desc->max_nodes,
-		     job_desc->num_procs, i);
+		     job_desc->num_procs, max_procs);
 	
 	*job_pptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
@@ -2529,28 +2529,28 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */
-	if (job_desc_msg->min_sockets == NO_VAL)
+	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
-	if (job_desc_msg->min_cores == NO_VAL)
+	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
 		job_desc_msg->min_cores = 1;	/* default core count of 1 */
-	if (job_desc_msg->min_threads == NO_VAL)
+	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
-	if (job_desc_msg->min_nodes == NO_VAL)
+	if (job_desc_msg->min_nodes == (uint16_t) NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
-	if (job_desc_msg->min_sockets == NO_VAL)
+	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
-	if (job_desc_msg->min_cores == NO_VAL)
+	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
 		job_desc_msg->min_cores = 1;	/* default core count of 1 */
-	if (job_desc_msg->min_threads == NO_VAL)
+	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 
-	if (job_desc_msg->job_min_procs == NO_VAL)
+	if (job_desc_msg->job_min_procs == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_procs = 1;   /* default 1 cpu per node */
-	if (job_desc_msg->job_min_sockets == NO_VAL)
+	if (job_desc_msg->job_min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_sockets = 1; /* default 1 socket per node */
-	if (job_desc_msg->job_min_cores == NO_VAL)
+	if (job_desc_msg->job_min_cores == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_cores = 1;   /* default 1 core per socket */
-	if (job_desc_msg->job_min_threads == NO_VAL)
+	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
 	if (job_desc_msg->job_min_memory == NO_VAL)
 		job_desc_msg->job_min_memory = 1;  /* default 1MB mem per node */
@@ -3245,7 +3245,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
  
-	if (job_specs->job_min_procs != NO_VAL && detail_ptr) {
+	if (job_specs->job_min_procs != (uint16_t) NO_VAL && detail_ptr) {
 		if (super_user ||
 		    (detail_ptr->job_min_procs > job_specs->job_min_procs)) {
 			detail_ptr->job_min_procs = job_specs->job_min_procs;

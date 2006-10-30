@@ -443,21 +443,28 @@ job_desc_msg_create_from_opts (char *script)
 	j->exc_nodes      = opt.exc_nodes;
 	j->partition      = opt.partition;
 	j->min_nodes      = opt.min_nodes;
-	j->min_sockets    = opt.min_sockets_per_node;
-	j->min_cores      = opt.min_cores_per_socket;
-	j->min_threads    = opt.min_threads_per_core;
+	if (opt.min_sockets_per_node != NO_VAL)
+		j->min_sockets    = opt.min_sockets_per_node;
+	if (opt.min_cores_per_socket != NO_VAL)
+		j->min_cores      = opt.min_cores_per_socket;
+	if (opt.min_threads_per_core != NO_VAL)
+		j->min_threads    = opt.min_threads_per_core;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
 	if (opt.nice)
 		j->nice   = NICE_OFFSET + opt.nice;
 	j->task_dist      = opt.distribution;
-	j->plane_size     = opt.plane_size;
+	if (opt.plane_size != NO_VAL)
+		j->plane_size     = opt.plane_size;
 	j->group_id       = opt.gid;
 	j->mail_type      = opt.mail_type;
 
-	j->ntasks_per_node   = opt.ntasks_per_node;
-	j->ntasks_per_socket = opt.ntasks_per_socket;
-	j->ntasks_per_core   = opt.ntasks_per_core;
+	if (opt.ntasks_per_node != NO_VAL)
+		j->ntasks_per_node   = opt.ntasks_per_node;
+	if (opt.ntasks_per_socket != NO_VAL)
+		j->ntasks_per_socket = opt.ntasks_per_socket;
+	if (opt.ntasks_per_core != NO_VAL)
+		j->ntasks_per_core   = opt.ntasks_per_core;
 
 	if (opt.mail_user)
 		j->mail_user = xstrdup(opt.mail_user);
@@ -482,7 +489,7 @@ job_desc_msg_create_from_opts (char *script)
 	}
 #endif
 
-	if (opt.conn_type != -1)
+	if (opt.conn_type != (int16_t) NO_VAL)
 		j->conn_type = opt.conn_type;
 			
 	if (opt.no_rotate)
@@ -497,19 +504,19 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.max_threads_per_core)
 		j->max_threads  = opt.max_threads_per_core;
 
-	if (opt.job_min_cpus > -1)
+	if (opt.job_min_cpus != NO_VAL)
 		j->job_min_procs    = opt.job_min_cpus;
-	if (opt.job_min_sockets > -1)
+	if (opt.job_min_sockets != NO_VAL)
 		j->job_min_sockets  = opt.job_min_sockets;
-	if (opt.job_min_cores > -1)
+	if (opt.job_min_cores != NO_VAL)
 		j->job_min_cores    = opt.job_min_cores;
-	if (opt.job_min_threads > -1)
+	if (opt.job_min_threads != NO_VAL)
 		j->job_min_threads  = opt.job_min_threads;
-	if (opt.job_min_memory > -1)
+	if (opt.job_min_memory != NO_VAL)
 		j->job_min_memory   = opt.job_min_memory;
-	if (opt.job_max_memory > -1)
+	if (opt.job_max_memory != NO_VAL)
 		j->job_max_memory   = opt.job_max_memory;
-	if (opt.job_min_tmp_disk > -1)
+	if (opt.job_min_tmp_disk != NO_VAL)
 		j->job_min_tmp_disk = opt.job_min_tmp_disk;
 	if (opt.overcommit) {
 		j->num_procs    = opt.min_nodes;
@@ -524,7 +531,7 @@ job_desc_msg_create_from_opts (char *script)
 
 	if (opt.no_kill)
 		j->kill_on_node_fail   = 0;
-	if (opt.time_limit > -1)
+	if (opt.time_limit != NO_VAL)
 		j->time_limit          = opt.time_limit;
 	j->shared = opt.shared;
 

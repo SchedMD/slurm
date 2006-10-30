@@ -100,18 +100,18 @@ typedef struct srun_options {
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	int  max_threads;	/* --threads, -T (threads in srun) */
-	int  min_nodes;		/* --nodes=n,       -N n	*/ 
-	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
-	int  min_sockets_per_node; /* --sockets-per-node=n      */
-	int  max_sockets_per_node; /* --sockets-per-node=x-n    */
-	int  min_cores_per_socket; /* --cores-per-socket=n      */
-	int  max_cores_per_socket; /* --cores-per-socket=x-n    */
-	int  min_threads_per_core; /* --threads-per-core=n      */
-	int  max_threads_per_core; /* --threads-per-core=x-n    */
-	int  ntasks_per_node;   /* --ntasks-per-node=n		*/
-	int  ntasks_per_socket; /* --ntasks-per-socket=n	*/
-	int  ntasks_per_core;   /* --ntasks-per-core=n		*/
+	int32_t max_threads;	/* --threads, -T (threads in srun) */
+	int32_t min_nodes;	/* --nodes=n,       -N n	*/ 
+	int32_t max_nodes;	/* --nodes=x-n,       -N x-n	*/ 
+	int32_t min_sockets_per_node; /* --sockets-per-node=n      */
+	int32_t max_sockets_per_node; /* --sockets-per-node=x-n    */
+	int32_t min_cores_per_socket; /* --cores-per-socket=n      */
+	int32_t max_cores_per_socket; /* --cores-per-socket=x-n    */
+	int32_t min_threads_per_core; /* --threads-per-core=n      */
+	int32_t max_threads_per_core; /* --threads-per-core=x-n    */
+	int32_t ntasks_per_node;   /* --ntasks-per-node=n	*/
+	int32_t ntasks_per_socket; /* --ntasks-per-socket=n	*/
+	int32_t ntasks_per_core;   /* --ntasks-per-core=n	*/
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
@@ -172,12 +172,12 @@ typedef struct srun_options {
 	char *task_prolog;	/* --task-prolog=		*/
 
 	/* constraint options */
-	int job_min_cpus;	/* --mincpus=n			*/
-	int job_min_sockets;	/* --minsockets=n		*/
-	int job_min_cores;	/* --mincores=n			*/
-	int job_min_threads;	/* --minthreads=n		*/
-	int job_min_memory;	/* --mem=n			*/
-	int job_max_memory;	/* --job-mem=n			*/
+	int32_t job_min_cpus;	/* --mincpus=n			*/
+	int32_t job_min_sockets;/* --minsockets=n		*/
+	int32_t job_min_cores;	/* --mincores=n			*/
+	int32_t job_min_threads;/* --minthreads=n		*/
+	int32_t job_min_memory;	/* --mem=n			*/
+	int32_t job_max_memory;	/* --job-mem=n			*/
 	long job_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
@@ -209,13 +209,13 @@ extern opt_t opt;
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
-#define constraints_given() opt.job_min_cpus != INT_UNASSIGNED ||\
-			    opt.job_min_memory != INT_UNASSIGNED ||\
-			    opt.job_max_memory != INT_UNASSIGNED ||\
-			    opt.job_min_tmp_disk != INT_UNASSIGNED ||\
-			    opt.job_min_sockets != INT_UNASSIGNED ||\
-			    opt.job_min_cores != INT_UNASSIGNED ||\
-			    opt.job_min_threads != INT_UNASSIGNED ||\
+#define constraints_given() opt.job_min_cpus     != NO_VAL ||\
+			    opt.job_min_memory   != NO_VAL ||\
+			    opt.job_max_memory   != NO_VAL ||\
+			    opt.job_min_tmp_disk != NO_VAL ||\
+			    opt.job_min_sockets  != NO_VAL ||\
+			    opt.job_min_cores    != NO_VAL ||\
+			    opt.job_min_threads  != NO_VAL ||\
 			    opt.contiguous   
 
 /* process options:

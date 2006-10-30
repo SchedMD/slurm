@@ -332,7 +332,8 @@ int srun(int ac, char **av)
 	if (opt.ntasks_per_core != NO_VAL)
 		env->ntasks_per_core = opt.ntasks_per_core;
 	env->distribution = opt.distribution;
-	env->plane_size = opt.plane_size;
+	if (opt.plane_size != NO_VAL)
+		env->plane_size = opt.plane_size;
 	env->cpu_bind_type = opt.cpu_bind_type;
 	env->cpu_bind = opt.cpu_bind;
 	env->mem_bind_type = opt.mem_bind_type;
