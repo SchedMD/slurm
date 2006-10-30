@@ -295,17 +295,15 @@ extern int select_p_block_init(List part_list)
  * IN job_ptr - pointer to job being scheduled
  * IN index - index of node's configuration information in select_node_ptr
  */
-static int _get_avail_cpus(struct job_record *job_ptr, int index)
+static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 {
 	struct node_record *node_ptr;
-	int avail_cpus;
-	int cpus, sockets, cores, threads;
-	int cpus_per_task = 1;
-	int ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
-	int max_sockets = 0xffff, max_cores = 0xffff, max_threads = 0xffff;
+	uint16_t avail_cpus;
+	uint16_t cpus, sockets, cores, threads;
+	uint16_t cpus_per_task = 1;
+	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
+	uint16_t max_sockets = 0xffff, max_cores = 0xffff, max_threads = 0xffff;
 	multi_core_data_t *mc_ptr = NULL;
-
-	node_ptr = &(select_node_ptr[index]);
 
 	if (job_ptr->details) {
 		if (job_ptr->details->cpus_per_task)
@@ -322,6 +320,7 @@ static int _get_avail_cpus(struct job_record *job_ptr, int index)
 		ntasks_per_core   = job_ptr->details->mc_ptr->ntasks_per_core;
 	}
 
+	node_ptr = &(select_node_ptr[index]);
 	if (select_fast_schedule) { /* don't bother checking each node */
 		cpus    = node_ptr->config_ptr->cpus;
 		sockets = node_ptr->config_ptr->sockets;
@@ -335,10 +334,10 @@ static int _get_avail_cpus(struct job_record *job_ptr, int index)
 	}
 
 #if 0
-	info(" SMB5  host %s User_ sockets %d cores %d threads %d ", 
+	info(" SMB5  host %s User_ sockets %u cores %u threads %u ", 
 	     node_ptr->name, max_sockets, max_cores, max_threads);
 
-	info(" SMB5  host %s HW_ cpus %d sockets %d cores %d threads %d ", 
+	info(" SMB5  host %s HW_ cpus %u sockets %u cores %u threads %u ", 
 	     node_ptr->name, cpus, sockets, cores, threads);
 #endif
 
@@ -346,7 +345,8 @@ static int _get_avail_cpus(struct job_record *job_ptr, int index)
 			max_sockets, max_cores, max_threads, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, 
-			0, NULL, 0, SELECT_TYPE_INFO_NONE);
+			(uint16_t) 0, NULL, (uint16_t) 0, 
+			SELECT_TYPE_INFO_NONE);
 
 #if 0
 	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",

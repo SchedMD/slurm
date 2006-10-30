@@ -2223,18 +2223,55 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 		return NULL;
 
 	mc_ptr = xmalloc(sizeof(multi_core_data_t));
-	mc_ptr->job_min_sockets    = job_desc->job_min_sockets;
-	mc_ptr->job_min_cores      = job_desc->job_min_cores;
-	mc_ptr->job_min_threads    = job_desc->job_min_threads;
-	mc_ptr->min_sockets        = job_desc->min_sockets;
-	mc_ptr->max_sockets        = job_desc->max_sockets;
-	mc_ptr->min_cores          = job_desc->min_cores;
-	mc_ptr->max_cores          = job_desc->max_cores;
-	mc_ptr->min_threads        = job_desc->min_threads;
-	mc_ptr->max_threads        = job_desc->max_threads;
-	mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
-	mc_ptr->ntasks_per_core    = job_desc->ntasks_per_core;
-	mc_ptr->plane_size         = job_desc->plane_size;
+	if (job_desc->job_min_sockets != (uint16_t) NO_VAL)
+		mc_ptr->job_min_sockets    = job_desc->job_min_sockets;
+	else
+		mc_ptr->job_min_sockets    = 1;
+	if (job_desc->job_min_cores != (uint16_t) NO_VAL)
+		mc_ptr->job_min_cores      = job_desc->job_min_cores;
+	else
+		mc_ptr->job_min_cores      = 1;
+	if (job_desc->job_min_threads != (uint16_t) NO_VAL)
+		mc_ptr->job_min_threads    = job_desc->job_min_threads;
+	else
+		mc_ptr->job_min_threads    = 1;
+	if (job_desc->min_sockets != (uint16_t) NO_VAL)
+		mc_ptr->min_sockets        = job_desc->min_sockets;
+	else
+		mc_ptr->min_sockets        = 1;
+	if (job_desc->max_sockets != (uint16_t) NO_VAL)
+		mc_ptr->max_sockets        = job_desc->max_sockets;
+	else
+		mc_ptr->max_sockets        = 0xffff;
+	if (job_desc->min_cores != (uint16_t) NO_VAL)
+		mc_ptr->min_cores          = job_desc->min_cores;
+	else
+		mc_ptr->min_cores          = 1;
+	if (job_desc->max_cores != (uint16_t) NO_VAL)
+		mc_ptr->max_cores          = job_desc->max_cores;
+	else
+		mc_ptr->max_cores          = 0xffff;
+	if (job_desc->min_threads != (uint16_t) NO_VAL)
+		mc_ptr->min_threads        = job_desc->min_threads;
+	else
+		mc_ptr->min_threads        = 1;
+	if (job_desc->max_threads != (uint16_t) NO_VAL)
+		mc_ptr->max_threads        = job_desc->max_threads;
+	else
+		mc_ptr->max_threads        = 0xffff;
+	if (mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL)
+		mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
+	else
+		mc_ptr->ntasks_per_socket  = 0;
+	if (mc_ptr->ntasks_per_core != (uint16_t) NO_VAL)
+		mc_ptr->ntasks_per_core    = job_desc->ntasks_per_core;
+	else
+		mc_ptr->ntasks_per_core    = 0;
+	if (job_desc->plane_size != (uint16_t) NO_VAL)
+		mc_ptr->plane_size         = job_desc->plane_size;
+	else
+		mc_ptr->plane_size         = 0;
+
 	return mc_ptr;
 }
 

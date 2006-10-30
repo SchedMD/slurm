@@ -69,63 +69,44 @@
  *
  * Note: used in both the select/{linear,cons_res} plugins.
  */
-int slurm_get_avail_procs(const int mxsockets,
-			  const int mxcores,
-			  const int mxthreads,
-			  const int cpuspertask,
-			  const int ntaskspernode,
-			  const int ntaskspersocket,
-			  const int ntaskspercore,
-			  int *cpus, 
-			  int *sockets, 
-			  int *cores, 
-			  int *threads,
-			  const int alloc_sockets,
-			  const int *alloc_cores,
-			  const int alloc_lps,
+uint16_t slurm_get_avail_procs(const uint16_t mxsockets,
+			  const uint16_t mxcores,
+			  const uint16_t mxthreads,
+			  const uint16_t cpuspertask,
+			  const uint16_t ntaskspernode,
+			  const uint16_t ntaskspersocket,
+			  const uint16_t ntaskspercore,
+			  uint16_t *cpus, 
+			  uint16_t *sockets, 
+			  uint16_t *cores, 
+			  uint16_t *threads,
+			  const uint16_t alloc_sockets,
+			  const uint16_t *alloc_cores,
+			  const uint16_t alloc_lps,
 			  const select_type_plugin_info_t cr_type)
 {
-	int avail_cpus = 0, max_cpus = 0;
-	int max_avail_cpus = INT_MAX;	/* for alloc_* accounting */
-	int max_sockets   = mxsockets;
-	int max_cores     = mxcores;
-	int max_threads   = mxthreads;
-	int cpus_per_task = cpuspertask;
+	uint16_t avail_cpus = 0, max_cpus = 0;
+	uint16_t max_avail_cpus = 0xffff;	/* for alloc_* accounting */
+	uint16_t max_sockets   = mxsockets;
+	uint16_t max_cores     = mxcores;
+	uint16_t max_threads   = mxthreads;
+	uint16_t cpus_per_task = cpuspertask;
 	int i;
 
-        /* pick defaults for any unspecified items */
-	if (cpus_per_task <= 0)
-		cpus_per_task = 1;
-	if (max_sockets <= 0)
-		max_sockets = INT_MAX;
-	if (max_cores <= 0)
-		max_cores = INT_MAX;
-	if (max_threads <= 0)
-		max_threads = INT_MAX;
-
-	if (*threads <= 0)
-	    	*threads = 1;
-	if (*cores <= 0)
-	    	*cores = 1;
-	if (*sockets <= 0)
-	    	*sockets = *cpus / *cores / *threads;
 #if(0)
-	info("get_avail_procs User_ sockets %d cores %d threads %d ",
+	info("get_avail_procs User_ sockets %u cores %u threads %u ",
 			max_sockets, max_cores, max_threads);
-	info("get_avail_procs HW_   sockets %d cores %d threads %d ",
+	info("get_avail_procs HW_   sockets %u cores %u threads %u ",
 			*sockets, *cores, *threads);
-        info("get_avail_procs Ntask node    %d sockets %d core    %d ",
+        info("get_avail_procs Ntask node    %u sockets %u core    %u ",
                         ntaskspernode, ntaskspersocket, ntaskspercore);
-	info("get_avail_procs cr_type %d cpus %d Allocated sockets %d lps %d ",
+	info("get_avail_procs cr_type %d cpus %u Allocated sockets %u lps %u ",
 			cr_type, *cpus, alloc_sockets, alloc_lps);
 	if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
 		for (i = 0; i < *sockets; i++)
-			info("get_avail_procs alloc_cores[%d] = %d", i, alloc_cores[i]);
+			info("get_avail_procs alloc_cores[%d] = %u", i, alloc_cores[i]);
 	}
 #endif
-	if ((*threads <= 0) || (*cores <= 0) || (*sockets <= 0))
-		fatal(" ((threads <= 0) || (cores <= 0) || (sockets <= 0))");
-		
 	switch(cr_type) {
 	/* For the following CR types, nodes have no notion of socket, core,
 	   and thread.  Only one level of logical processors */ 
@@ -135,9 +116,12 @@ int slurm_get_avail_procs(const int mxsockets,
 		switch(cr_type) { 
 		case CR_CPU:
 		case CR_CPU_MEMORY:
-			*cpus -= alloc_lps;
-			if (*cpus < 0) 
+			if (*cpus >= alloc_lps)
+				*cpus -= alloc_lps;
+			else {
+				*cpus = 0;
 				error(" cons_res: *cpus < 0");
+			}
 			break;
 		default:
 			break;
@@ -158,24 +142,34 @@ int slurm_get_avail_procs(const int mxsockets,
 		switch(cr_type) { 
 		case CR_SOCKET:
 		case CR_SOCKET_MEMORY:
-			*sockets -= alloc_sockets; /* sockets count */
-			if (*sockets < 0) 
+			if (*sockets >= alloc_sockets)
+				*sockets -= alloc_sockets;
+			else {
+				*sockets = 0; 
 				error(" cons_res: *sockets < 0");
-			
-			*cpus -= alloc_lps;
-			if (*cpus < 0) 
+			}
+			if (*cpus >= alloc_lps)
+				*cpus -= alloc_lps;
+			else {
+				*cpus = 0;
 				error(" cons_res: *cpus < 0");
+			}
 			break;
 		case CR_CORE:
 		case CR_CORE_MEMORY:
-			*cpus -= alloc_lps;
-			if (*cpus < 0) 
+			if (*cpus >= alloc_lps)
+				*cpus -= alloc_lps;
+			else {
+				*cpus = 0;
 				error(" cons_res: *cpus < 0");
-
+			}
 			if (alloc_lps > 0) {
 				max_avail_cpus = 0;
-				for (i=0; i<*sockets; i++)
-					max_avail_cpus += *cores - alloc_cores[i];
+				for (i=0; i<*sockets; i++) {
+					if (*cores > alloc_cores[i])
+						max_avail_cpus += *cores - 
+							alloc_cores[i];
+				}
 				max_avail_cpus *= *threads;
 			}
 			break;
@@ -216,9 +210,9 @@ int slurm_get_avail_procs(const int mxsockets,
 	avail_cpus = MIN(avail_cpus, max_cpus);
 
 #if(0)
-	info("get_avail_procs return cpus %d sockets %d cores %d threads %d ",
+	info("get_avail_procs return cpus %u sockets %u cores %u threads %u ",
 			*cpus, *sockets, *cores, *threads);
-	info("get_avail_procs avail_cpus %d", avail_cpus);
+	info("get_avail_procs avail_cpus %u", avail_cpus);
 #endif
 	return(avail_cpus);
 }

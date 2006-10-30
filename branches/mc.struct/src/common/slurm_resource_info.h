@@ -49,20 +49,20 @@
 #  endif			/* HAVE_INTTYPES_H */
 #endif
 
-int slurm_get_avail_procs(const int mxsockets,
-				 const int mxcores,
-				 const int mxthreads,
-				 const int cpuspertask,
-				 const int ntaskspernode,
-				 const int ntaskspersocket,
-				 const int ntaskspercore,
-				 int *cpus, 
-				 int *sockets, 
-				 int *cores, 
-				 int *threads,
-				 const int alloc_sockets,
-				 const int *alloc_cores,
-				 const int alloc_lps,
+uint16_t slurm_get_avail_procs(const uint16_t mxsockets,
+				 const uint16_t mxcores,
+				 const uint16_t mxthreads,
+				 const uint16_t cpuspertask,
+				 const uint16_t ntaskspernode,
+				 const uint16_t ntaskspersocket,
+				 const uint16_t ntaskspercore,
+				 uint16_t *cpus, 
+				 uint16_t *sockets, 
+				 uint16_t *cores, 
+				 uint16_t *threads,
+				 const uint16_t alloc_sockets,
+				 const uint16_t *alloc_cores,
+				 const uint16_t alloc_lps,
 				 const select_type_plugin_info_t cr_type);
 
 void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type);
