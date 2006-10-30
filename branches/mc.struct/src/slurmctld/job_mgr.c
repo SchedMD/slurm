@@ -1087,7 +1087,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 			(long) job_specs->num_procs : -1L;
 	debug3("   num_procs=%ld", num_procs);
 
-	debug3("   -N min-[max]: %d-[%d]:%d-[%d]:%d-[%d]:%d-[%d]",
+	debug3("   -N min-[max]: %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
 		job_specs->min_nodes,   job_specs->max_nodes,
 		job_specs->min_sockets, job_specs->max_sockets,
 		job_specs->min_cores,   job_specs->max_cores,
