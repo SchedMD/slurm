@@ -75,24 +75,24 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 static void _lllp_free_masks(launch_tasks_request_msg_t *req,
 			     const uint32_t maxtasks,
 			     bitstr_t **masks);
-static void _single_mask(const int nsockets, 
-			 const int ncores, 
-			 const int nthreads, 
-			 const int socket_id,
-			 const int core_id, 
-			 const int thread_id,
+static void _single_mask(const uint16_t nsockets, 
+			 const uint16_t ncores, 
+			 const uint16_t nthreads, 
+			 const uint16_t socket_id,
+			 const uint16_t core_id, 
+			 const uint16_t thread_id,
 			 const bool bind_to_exact_socket,
 			 const bool bind_to_exact_core,
 			 const bool bind_to_exact_thread,
 			 bitstr_t ** single_mask);
-static void _get_resources_this_node(int *cpus,
-				     int *sockets,
-				     int *cores,
-				     int *threads,
-				     int *alloc_sockets,
-				     int *alloc_cores,
-				     int *alloc_lps,
-				     unsigned int *jobid);
+static void _get_resources_this_node(uint16_t *cpus,
+				     uint16_t *sockets,
+				     uint16_t *cores,
+				     uint16_t *threads,
+				     uint16_t *alloc_sockets,
+				     uint16_t *alloc_cores,
+				     uint16_t *alloc_lps,
+				     uint32_t *jobid);
 static void _cr_update_reservation(int reserve, uint32_t *reserved, 
 				   bitstr_t *mask);
 
@@ -526,18 +526,18 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 				  bool *bind_to_exact_socket,
 				  bool *bind_to_exact_core,
 				  bool *bind_to_exact_thread,
-				  int *usable_cpus,
-				  int *usable_sockets, 
-				  int *usable_cores,
-				  int *usable_threads,
-				  int *hw_sockets, 
-				  int *hw_cores,
-				  int *hw_threads,
-				  int *avail_cpus)
+				  uint16_t *usable_cpus,
+				  uint16_t *usable_sockets, 
+				  uint16_t *usable_cores,
+				  uint16_t *usable_threads,
+				  uint16_t *hw_sockets, 
+				  uint16_t *hw_cores,
+				  uint16_t *hw_threads,
+				  uint16_t *avail_cpus)
 {
 	int i;
-	int alloc_sockets = 0, alloc_lps = 0;
-	int alloc_cores[conf->sockets];
+	uint16_t alloc_sockets = 0, alloc_lps = 0;
+	uint16_t alloc_cores[conf->sockets];
 
 	if (req->cpu_bind_type & CPU_BIND_TO_THREADS) {
 		/* Default: in here in case we decide to change the
@@ -587,14 +587,14 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
  * OUT- Number of allocated logical processors on this node 
  * 
  */
-static void _get_resources_this_node(int *cpus,
-				     int *sockets,
-				     int *cores,
-				     int *threads,
-				     int *alloc_sockets,
-				     int *alloc_cores,
-				     int *alloc_lps,
-	                             unsigned int *jobid)
+static void _get_resources_this_node(uint16_t *cpus,
+				     uint16_t *sockets,
+				     uint16_t *cores,
+				     uint16_t *threads,
+				     uint16_t *alloc_sockets,
+				     uint16_t *alloc_cores,
+				     uint16_t *alloc_lps,
+	                             uint32_t *jobid)
 {
 	int bit_index = 0;
 	int i, j , k;
@@ -683,10 +683,10 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 {
 	int retval, i, taskcount = 0, taskid = 0;
 	int over_subscribe  = 0, space_remaining = 0;
-	int socket_index = 0, core_index = 0, thread_index = 0;
-	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	int usable_cpus = 0, avail_cpus = 0;
-	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
+	uint16_t socket_index = 0, core_index = 0, thread_index = 0;
+	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
+	uint16_t usable_cpus = 0, avail_cpus = 0;
+	uint16_t usable_sockets = 0, usable_cores = 0, usable_threads = 0;
 	
 	bitstr_t **masks = NULL;
 	bool bind_to_exact_socket = true;
@@ -786,10 +786,10 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 {
         int retval, j, k, l, m, taskcount = 0, taskid = 0;
 	int over_subscribe  = 0, space_remaining = 0;
-	int core_index = 0, thread_index = 0;
-	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	int usable_cpus = 0, avail_cpus = 0;
-	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
+	uint16_t core_index = 0, thread_index = 0;
+	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
+	uint16_t usable_cpus = 0, avail_cpus = 0;
+	uint16_t usable_sockets = 0, usable_cores = 0, usable_threads = 0;
 
 	bitstr_t **masks = NULL;
 	bool bind_to_exact_socket = true;
@@ -924,11 +924,11 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 				   bitstr_t ***masks_p)
 {
         int retval, j, k, l, m, taskid = 0, next = 0;
-	int core_index = 0, thread_index = 0;
-	int hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	int usable_cpus = 0, avail_cpus = 0;
-	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
-	int plane_size = req->plane_size;
+	uint16_t core_index = 0, thread_index = 0;
+	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
+	uint16_t usable_cpus = 0, avail_cpus = 0;
+	uint16_t usable_sockets = 0, usable_cores = 0, usable_threads = 0;
+	uint16_t plane_size = req->plane_size;
 	int max_plane_size = 0;
 
 	bitstr_t **masks = NULL; 
@@ -1224,12 +1224,12 @@ static uint16_t _block_map(uint16_t index, uint16_t *map)
  * This function allocates and returns a abstract (unmapped) bitmask given the
  * machine architecture, the index for the task, and the desired binding type
  */
-static void _single_mask(const int nsockets, 
-			 const int ncores, 
-			 const int nthreads, 
-			 const int socket_id,
-			 const int core_id, 
-			 const int thread_id,
+static void _single_mask(const uint16_t nsockets, 
+			 const uint16_t ncores, 
+			 const uint16_t nthreads, 
+			 const uint16_t socket_id,
+			 const uint16_t core_id, 
+			 const uint16_t thread_id,
 			 const bool bind_to_exact_socket,
 			 const bool bind_to_exact_core,
 			 const bool bind_to_exact_thread,
