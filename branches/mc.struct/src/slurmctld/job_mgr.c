@@ -1093,13 +1093,13 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		job_specs->min_cores,   job_specs->max_cores,
 		job_specs->min_threads, job_specs->max_threads);
 
-	job_min_procs    = (job_specs->job_min_procs != NO_VAL) ? 
+	job_min_procs    = (job_specs->job_min_procs != (uint16_t) NO_VAL) ? 
 			(long) job_specs->job_min_procs : -1L;
-	job_min_sockets  = (job_specs->job_min_sockets != NO_VAL) ? 
+	job_min_sockets  = (job_specs->job_min_sockets != (uint16_t) NO_VAL) ? 
 			(long) job_specs->job_min_sockets : -1L;
-	job_min_cores    = (job_specs->job_min_cores != NO_VAL) ? 
+	job_min_cores    = (job_specs->job_min_cores != (uint16_t) NO_VAL) ? 
 			(long) job_specs->job_min_cores : -1L;
-	job_min_threads  = (job_specs->job_min_threads != NO_VAL) ? 
+	job_min_threads  = (job_specs->job_min_threads != (uint16_t) NO_VAL) ? 
 			(long) job_specs->job_min_threads : -1L;
 	debug3("   job_min_procs=%ld job_min_sockets=%ld",
 	       job_min_procs, job_min_sockets);
@@ -1765,7 +1765,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 	}
 
-	if (job_desc->min_nodes == NO_VAL)
+	if (job_desc->min_nodes == (uint16_t) NO_VAL)
 		job_desc->min_nodes = 1;
 
 #if SYSTEM_DIMENSIONS
@@ -1787,7 +1787,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 #endif
 
-	if (job_desc->max_nodes == NO_VAL)
+	if (job_desc->max_nodes == (uint16_t) NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
 	&&  (job_desc->num_procs > part_ptr->total_cpus)) {
@@ -2332,7 +2332,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 	if (job_desc->no_requeue != (uint16_t) NO_VAL)
 		detail_ptr->no_requeue = job_desc->no_requeue;
-	if (job_desc->job_min_procs != NO_VAL)
+	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
 		detail_ptr->job_min_procs = job_desc->job_min_procs;
 	detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
 			detail_ptr->cpus_per_task);
@@ -2463,9 +2463,9 @@ static void _job_timed_out(struct job_record *job_ptr)
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate, 
 			      uid_t submit_uid)
 {	
-	if ((job_desc_msg->num_procs == NO_VAL) &&
-	    (job_desc_msg->min_nodes == NO_VAL) &&
-	    (job_desc_msg->req_nodes == NULL)) {
+	if ((job_desc_msg->num_procs == NO_VAL)
+	&&  (job_desc_msg->min_nodes == (uint16_t) NO_VAL)
+	&&  (job_desc_msg->req_nodes == NULL)) {
 		info("Job specified no num_procs, min_nodes or req_nodes");
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
@@ -2491,7 +2491,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->task_dist == (uint16_t) NO_VAL)
 		info("_validate_job_desc: job failed to specify distribution ");
-	if (job_desc_msg->plane_size == (uint32_t) NO_VAL)
+	if (job_desc_msg->plane_size == (uint16_t) NO_VAL)
 		job_desc_msg->plane_size = 0;
 
 	if (job_desc_msg->kill_on_node_fail == (uint16_t) NO_VAL)
