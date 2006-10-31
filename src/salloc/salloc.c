@@ -247,6 +247,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->rotate = 0;
 	if (opt.mincpus > -1)
 		desc->job_min_procs = opt.mincpus;
+	if (opt.minsockets > -1)
+		desc->job_min_sockets = opt.minsockets;
+	if (opt.mincores > -1)
+		desc->job_min_cores = opt.mincores;
+	if (opt.minthreads > -1)
+		desc->job_min_threads = opt.minthreads;
 	if (opt.realmem > -1)
 		desc->job_min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)
