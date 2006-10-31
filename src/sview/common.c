@@ -193,7 +193,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	gtk_tree_view_column_set_reorderable(col, true);
 	gtk_tree_view_column_set_resizable(col, true);
 	gtk_tree_view_column_set_expand(col, true);
-	gtk_tree_view_append_column(tree_view, col);
+	gtk_tree_view_insert_column(tree_view, col, display_data->id);
 	gtk_tree_view_column_set_sort_column_id(col, display_data->id);
 
 }
@@ -242,6 +242,30 @@ static void _selected_page(GtkMenuItem *menuitem,
 	case BLOCK_PAGE: 
 		popup_all_block(treedata->model, &treedata->iter, 
 				display_data->id);
+		break;
+	case ADMIN_PAGE:
+		switch(display_data->id) {
+		case JOB_PAGE:
+			admin_job(treedata->model, &treedata->iter, 
+				  display_data->name);
+			break;
+		case PART_PAGE:
+			admin_part(treedata->model, &treedata->iter, 
+				  display_data->name);
+			break;
+		case BLOCK_PAGE:
+			admin_block(treedata->model, &treedata->iter, 
+				    display_data->name);
+			break;
+		case NODE_PAGE:
+			admin_node(treedata->model, &treedata->iter, 
+				   display_data->name);
+			break;
+		default:
+			g_print("common admin got %d %d\n",
+				display_data->extra,
+				display_data->id);
+		}
 		break;
 	default:
 		g_print("common got %d %d\n", display_data->extra,
@@ -294,6 +318,34 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 	return line;
 }
 
+extern int find_col(display_data_t *display_data, int type)
+{
+	int i = 0;
+
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(display_data->id == type)
+			return i;
+		i++;
+	}
+	return -1;
+}
+
+extern const char *find_col_name(display_data_t *display_data, int type)
+{
+	int i = 0;
+
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(display_data->id == type)
+			return display_data->name;
+		i++;
+	}
+	return NULL;
+}
+
 extern void *get_pointer(GtkTreeView *tree_view, GtkTreePath *path, int loc)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
@@ -313,24 +365,33 @@ extern void *get_pointer(GtkTreeView *tree_view, GtkTreePath *path, int loc)
 	return ptr;
 }
 
-extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data)
+extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data,
+			     int count)
 {
 	GtkWidget *menuitem = NULL;
-	
-	while(display_data++) {
-		if(display_data->id == -1)
+	display_data_t *first_display_data = display_data;
+	int i = 0;
+	for(i=0; i<count; i++) {
+		while(display_data++) {
+			if(display_data->id == -1)
+				break;
+			if(!display_data->name)
+				continue;
+			if(display_data->id != i)
+				continue;
+			menuitem = gtk_check_menu_item_new_with_label(
+				display_data->name); 
+			
+			gtk_check_menu_item_set_active(
+				GTK_CHECK_MENU_ITEM(menuitem),
+				display_data->show);
+			g_signal_connect(menuitem, "toggled",
+					 G_CALLBACK(_toggle_state_changed), 
+					 display_data);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 			break;
-		if(!display_data->name)
-			continue;
-		menuitem = gtk_check_menu_item_new_with_label(
-			display_data->name); 
-	
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem),
-					       display_data->show);
-		g_signal_connect(menuitem, "toggled",
-				 G_CALLBACK(_toggle_state_changed), 
-				 display_data);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+		}
+		display_data = first_display_data;
 	}
 }
 
@@ -496,8 +557,10 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	int i=0;
 	
 	/*set up the types defined in the display_data_t */
-	for(i=0; i<count; i++)
-		types[i] = display_data[i].type;
+	for(i=0; i<count; i++) {
+		types[display_data[i].id] = display_data[i].type;
+	}
+	
 	treestore = gtk_tree_store_newv(count, types);
 	if(!treestore) {
 		g_error("Can't great treestore.\n");
@@ -514,18 +577,18 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 		case G_TYPE_INT:
 			gtk_tree_sortable_set_sort_func(
 				GTK_TREE_SORTABLE(treestore), 
-				i, 
+				display_data[i].id, 
 				_sort_iter_compare_func_int,
-				GINT_TO_POINTER(i), 
+				GINT_TO_POINTER(display_data[i].id), 
 				NULL); 
 			
 			break;
 		case G_TYPE_STRING:
 			gtk_tree_sortable_set_sort_func(
 				GTK_TREE_SORTABLE(treestore), 
-				i, 
+				display_data[i].id, 
 				_sort_iter_compare_func_char,
-				GINT_TO_POINTER(i), 
+				GINT_TO_POINTER(display_data[i].id), 
 				NULL); 
 			break;
 		default:
@@ -561,7 +624,7 @@ extern void right_button_pressed(GtkTreeView *tree_view,
 }
 
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
-			const display_data_t *display_data)
+			    const display_data_t *display_data)
 {
 	GtkTreePath *path = NULL;
 	GtkTreeSelection *selection = NULL;
@@ -1003,8 +1066,13 @@ extern void display_edit_note(char *edit_note)
 extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
 				       GtkTreeIter *iter,
-				       char *name, char *value)
+				       const char *name, char *value)
 {
+	if(!name) {
+		g_print("error, name = %s and value = %s\n",
+			name, value);
+		return;
+	}
 	if(update) {
 		char *display_name = NULL;
 		GtkTreePath *path = gtk_tree_path_new_first();

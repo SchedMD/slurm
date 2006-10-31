@@ -76,7 +76,7 @@ extern void set_menus_submit(void *arg, GtkTreePath *path,
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
-		make_fields_menu(menu, display_data_submit);
+		make_fields_menu(menu, display_data_submit, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_submit);

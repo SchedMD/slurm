@@ -79,6 +79,7 @@ enum { JOB_PAGE,
        NODE_PAGE, 
        BLOCK_PAGE, 
        SUBMIT_PAGE,
+       ADMIN_PAGE,
        INFO_PAGE,
        PAGE_CNT 
 };
@@ -281,6 +282,7 @@ extern void specific_info_part(popup_info_t *popup_win);
 extern void set_menus_part(void *arg, GtkTreePath *path, 
 			   GtkMenu *menu, int type);
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
@@ -296,6 +298,7 @@ extern void specific_info_block(popup_info_t *popup_win);
 extern void set_menus_block(void *arg, GtkTreePath *path, 
 			    GtkMenu *menu, int type);
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 
 // job_info.c
 extern void refresh_job(GtkAction *action, gpointer user_data);
@@ -312,6 +315,7 @@ extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, GtkTreePath *path, 
 			  GtkMenu *menu, int type);
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
@@ -332,6 +336,7 @@ extern void specific_info_node(popup_info_t *popup_win);
 extern void set_menus_node(void *arg, GtkTreePath *path, 
 			   GtkMenu *menu, int type);
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 
 // submit_info.c
 extern void get_info_submit(GtkTable *table, display_data_t *display_data);
@@ -340,8 +345,11 @@ extern void set_menus_submit(void *arg, GtkTreePath *path,
 // common.c
 extern void snprint_time(char *buf, size_t buf_size, time_t time);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
+extern int find_col(display_data_t *display_data, int type);
+extern const char *find_col_name(display_data_t *display_data, int type);
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
-extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data);
+extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data,
+			     int count);
 extern void make_popup_fields_menu(popup_info_t *popup_win, GtkMenu *men);
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path, 
 			      GtkMenu *menu, display_data_t *display_data);
@@ -378,5 +386,5 @@ extern void display_edit_note(char *edit_note);
 extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
 				       GtkTreeIter *iter,
-				       char *name, char *value);
+				       const char *name, char *value);
 #endif

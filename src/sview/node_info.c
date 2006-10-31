@@ -30,18 +30,19 @@
 
 #define _DEBUG 0
 
+/* These need to be in alpha order (except POS and CNT) */
 enum { 
 	SORTID_POS = POS_LOC,
+	SORTID_CPUS, 
+	SORTID_DISK, 
+	SORTID_FEATURES, 
+	SORTID_MEMORY, 
 	SORTID_NAME, 
+	SORTID_REASON,
 	SORTID_STATE,
 	SORTID_STATE_NUM,
-	SORTID_CPUS, 
-	SORTID_MEMORY, 
-	SORTID_DISK, 
-	SORTID_WEIGHT, 
-	SORTID_FEATURES, 
-	SORTID_REASON,
 	SORTID_UPDATED, 
+	SORTID_WEIGHT, 
 	SORTID_CNT
 };
 
@@ -74,6 +75,7 @@ static display_data_t display_data_node[] = {
 static display_data_t options_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Edit Node", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
@@ -98,39 +100,47 @@ static void _layout_node_record(GtkTreeView *treeview,
 		return;
 	
 	add_display_treestore_line(update, treestore, &iter,
-				   display_data_node[SORTID_NAME].name,
+				   find_col_name(display_data_node,
+						 SORTID_NAME),
 				   node_ptr->name);
 				   
 	upper = node_state_string(node_ptr->node_state);
 	lower = str_tolower(upper);
 	add_display_treestore_line(update, treestore, &iter,
-				   display_data_node[SORTID_STATE].name,
+				   find_col_name(display_data_node,
+						 SORTID_STATE),
 				   lower);
 	xfree(lower);
 	
 	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_node[SORTID_CPUS].name,
+				   find_col_name(display_data_node,
+						 SORTID_CPUS),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_node[SORTID_MEMORY].name,
+				   find_col_name(display_data_node,
+						 SORTID_MEMORY),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_node[SORTID_DISK].name,
+				   find_col_name(display_data_node,
+						 SORTID_DISK),
 				   tmp_cnt);
 	snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", node_ptr->weight);
 	add_display_treestore_line(update, treestore, &iter,
-				   display_data_node[SORTID_WEIGHT].name, 
+				   find_col_name(display_data_node,
+						 SORTID_WEIGHT), 
 				   tmp_cnt);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_node[SORTID_FEATURES].name, 
+				   find_col_name(display_data_node,
+						 SORTID_FEATURES), 
 				   node_ptr->features);
 	add_display_treestore_line(update, treestore, &iter,
-				   display_data_node[SORTID_REASON].name, 
+				   find_col_name(display_data_node,
+						 SORTID_REASON), 
 				   node_ptr->reason);
 	return;
 }
@@ -740,9 +750,9 @@ display_it:
 	while ((sview_node_info_ptr = list_next(itr))) {
 		int found = 0;
 		char *host = NULL;
-			
 		i++;
 		node_ptr = sview_node_info_ptr->node_ptr;
+		
 		switch(search_info->search_type) {
 		case SEARCH_NODE_STATE:
 			if(search_info->int_data == NO_VAL)
@@ -766,6 +776,7 @@ display_it:
 				continue;
 			/* no break here we want to continue to look
 			   for the name */
+		case SEARCH_NODE_NAME:
 		default:
 			if(!search_info->gchar_data)
 				continue;
@@ -783,16 +794,14 @@ display_it:
 				continue;
 			break;
 		}
-		
-		
-		
+				
 		list_push(send_info_list, sview_node_info_ptr);
 #ifdef HAVE_BG
 		change_grid_color(popup_win->grid_button_list,
-				  i, i, i);
+				  i, i, 0);
 #else
 		get_button_list_from_main(&popup_win->grid_button_list,
-					  i, i, i);		
+					  i, i, 0);		
 #endif
 	}
 	list_iterator_destroy(itr);
@@ -824,7 +833,7 @@ extern void set_menus_node(void *arg, GtkTreePath *path,
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
-		make_fields_menu(menu, display_data_node);
+		make_fields_menu(menu, display_data_node, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_node);
@@ -899,3 +908,9 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 	}
 }
+
+extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+{
+	return;
+}
+

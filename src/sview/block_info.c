@@ -54,15 +54,15 @@ typedef struct {
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_BLOCK,
+	SORTID_CONN,
 	SORTID_NODES, 
 	SORTID_NODELIST, 
-	SORTID_STATE,
-	SORTID_USER,
-	SORTID_CONN,
-	SORTID_USE,
 	SORTID_PARTITION, 
 	SORTID_POINTER,
+	SORTID_STATE,
 	SORTID_UPDATED, 
+	SORTID_USE,
+	SORTID_USER,
 	SORTID_CNT
 };
 
@@ -98,6 +98,7 @@ static display_data_t display_data_block[] = {
 static display_data_t options_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Edit Block", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
@@ -192,32 +193,40 @@ static void _layout_block_record(GtkTreeView *treeview,
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 	
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_BLOCK].name,
+				   find_col_name(display_data_block,
+						 SORTID_BLOCK),
 				   block_ptr->bg_block_name);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_PARTITION].name,
+				   find_col_name(display_data_block,
+						 SORTID_PARTITION),
 				   block_ptr->slurm_part_name);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_STATE].name,
+				   find_col_name(display_data_block, 
+						 SORTID_STATE),
 				   bg_block_state_string(block_ptr->state));
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_USER].name,
+				   find_col_name(display_data_block,
+						 SORTID_USER),
 				   block_ptr->bg_user_name);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_CONN].name,
+				   find_col_name(display_data_block,
+						 SORTID_CONN),
 				   _convert_conn_type(
 					   block_ptr->bg_conn_type));
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_USE].name,
+				   find_col_name(display_data_block,
+						 SORTID_USE),
 				   _convert_node_use(block_ptr->bg_node_use));
 	
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_NODES].name,
+				   find_col_name(display_data_block,
+						 SORTID_NODES),
 				   tmp_cnt);
 		
 	add_display_treestore_line(update, treestore, &iter, 
-				   display_data_block[SORTID_NODELIST].name,
+				   find_col_name(display_data_block,
+						 SORTID_NODELIST),
 				   block_ptr->nodes);
 
 }
@@ -917,7 +926,7 @@ extern void set_menus_block(void *arg, GtkTreePath *path,
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
-		make_fields_menu(menu, display_data_block);
+		make_fields_menu(menu, display_data_block, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_block);
@@ -1016,3 +1025,9 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		return;
 	}
 }
+
+extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+{
+	return;
+}
+
