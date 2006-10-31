@@ -2748,21 +2748,25 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 	pack32(msg->job_id, buffer);
 	pack32(msg->job_step_id, buffer);
-	pack32(msg->nnodes, buffer);
 	pack32(msg->nprocs, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
-	pack32(msg->max_sockets, buffer);
-	pack32(msg->max_cores, buffer);
-	pack32(msg->max_threads, buffer);
-	pack32(msg->cpus_per_task, buffer);
-	pack32(msg->ntasks_per_node, buffer);
-	pack32(msg->ntasks_per_socket, buffer);
-	pack32(msg->ntasks_per_core, buffer);
+
+	pack16(msg->nnodes, buffer);
+	pack16(msg->max_sockets, buffer);
+	pack16(msg->max_cores, buffer);
+	pack16(msg->max_threads, buffer);
+	pack16(msg->cpus_per_task, buffer);
+	pack16(msg->ntasks_per_node, buffer);
+	pack16(msg->ntasks_per_socket, buffer);
+	pack16(msg->ntasks_per_core, buffer);
+	pack16(msg->task_dist, buffer);
+	pack16(msg->plane_size, buffer);
+
 	slurm_cred_pack(msg->cred, buffer);
 	for(i=0; i<msg->nnodes; i++) {
 		pack32(msg->tasks_to_launch[i], buffer);
-		pack32(msg->cpus_allocated[i], buffer);
+		pack16(msg->cpus_allocated[i], buffer);
 		pack32_array(msg->global_task_ids[i], 
 			     msg->tasks_to_launch[i], 
 			     buffer);	
@@ -2778,8 +2782,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack16(msg->mem_bind_type, buffer);
 	packstr(msg->mem_bind, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
-	pack16(msg->task_dist, buffer);
-	pack32(msg->plane_size, buffer);
 	pack16(msg->task_flags, buffer);
 	pack16(msg->multi_prog, buffer);
 	pack16(msg->user_managed_io, buffer);
@@ -2794,7 +2796,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	}
 	packstr(msg->task_prolog, buffer);
 	packstr(msg->task_epilog, buffer);
-	pack32(msg->slurmd_debug, buffer);
+	pack16(msg->slurmd_debug, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
 	job_options_pack(msg->options, buffer);
 	packstr(msg->complete_nodelist, buffer);
@@ -2815,25 +2817,29 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
  
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->gid, buffer);
-	safe_unpack32(&msg->max_sockets, buffer);
-	safe_unpack32(&msg->max_cores, buffer);
-	safe_unpack32(&msg->max_threads, buffer);
-	safe_unpack32(&msg->cpus_per_task, buffer);
-	safe_unpack32(&msg->ntasks_per_node, buffer);
-	safe_unpack32(&msg->ntasks_per_socket, buffer);
-	safe_unpack32(&msg->ntasks_per_core, buffer);
+
+	safe_unpack16(&msg->nnodes, buffer);
+	safe_unpack16(&msg->max_sockets, buffer);
+	safe_unpack16(&msg->max_cores, buffer);
+	safe_unpack16(&msg->max_threads, buffer);
+	safe_unpack16(&msg->cpus_per_task, buffer);
+	safe_unpack16(&msg->ntasks_per_node, buffer);
+	safe_unpack16(&msg->ntasks_per_socket, buffer);
+	safe_unpack16(&msg->ntasks_per_core, buffer);
+	safe_unpack16(&msg->task_dist, buffer);
+	safe_unpack16(&msg->plane_size, buffer);
+
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 	msg->tasks_to_launch = xmalloc(sizeof(uint32_t) * msg->nnodes);
-	msg->cpus_allocated = xmalloc(sizeof(uint32_t) * msg->nnodes);
+	msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
 	msg->global_task_ids = xmalloc(sizeof(uint32_t *) * msg->nnodes);
 	for(i=0; i<msg->nnodes; i++) {
 		safe_unpack32(&msg->tasks_to_launch[i], buffer);
-		safe_unpack32(&msg->cpus_allocated[i], buffer);
+		safe_unpack16(&msg->cpus_allocated[i], buffer);
 		safe_unpack32_array(&msg->global_task_ids[i], 
 				    &uint32_tmp, 
 				    buffer);	
@@ -2855,8 +2861,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack16(&msg->mem_bind_type, buffer);
 	safe_unpackstr_xmalloc(&msg->mem_bind, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-	safe_unpack16(&msg->task_dist, buffer);
-	safe_unpack32(&msg->plane_size, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->multi_prog, buffer);
 	safe_unpack16(&msg->user_managed_io, buffer);
@@ -2875,7 +2879,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	}
 	safe_unpackstr_xmalloc(&msg->task_prolog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->task_epilog, &uint16_tmp, buffer);
-	safe_unpack32(&msg->slurmd_debug, buffer);
+	safe_unpack16(&msg->slurmd_debug, buffer);
 	
 	switch_alloc_jobinfo(&msg->switch_job);
 	if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {

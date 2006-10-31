@@ -256,7 +256,7 @@ static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
 	/* If this is the first call to this function, then we probably need
 	   to intialize some of the arrays */
 	if (layout->tasks == NULL)
-		layout->tasks = xmalloc(layout->node_cnt * sizeof(uint32_t *));
+		layout->tasks = xmalloc(layout->node_cnt * sizeof(uint16_t *));
 	if (layout->tids == NULL)
 		layout->tids = xmalloc(layout->node_cnt * sizeof(uint32_t *));
 
