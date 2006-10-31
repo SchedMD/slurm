@@ -560,15 +560,23 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 	*hw_cores   = *usable_cores;
 	*hw_threads = *usable_threads;
 
-	*avail_cpus = slurm_get_avail_procs(req->max_sockets, req->max_cores, 
-					    req->max_threads, req->cpus_per_task,
+	int min_sockets = 1;
+	int min_cores = 1;
+	*avail_cpus = slurm_get_avail_procs(req->max_sockets, 
+					    req->max_cores, 
+					    req->max_threads, 
+					    min_sockets,
+					    min_cores,
+					    req->cpus_per_task,
 					    req->ntasks_per_node,
 					    req->ntasks_per_socket,
 					    req->ntasks_per_core,
 					    usable_cpus, usable_sockets,
 					    usable_cores, usable_threads,
 					    alloc_sockets, alloc_cores,
-					    alloc_lps, conf->cr_type);
+					    alloc_lps, conf->cr_type,
+					    req->job_id,
+					    conf->hostname);
 	/* Allocate masks array */
 	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
 	for (i = 0; i < maxtasks; i++) { 

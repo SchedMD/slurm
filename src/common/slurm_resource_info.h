@@ -50,20 +50,23 @@
 #endif
 
 int slurm_get_avail_procs(const int mxsockets,
-				 const int mxcores,
-				 const int mxthreads,
-				 const int cpuspertask,
-				 const int ntaskspernode,
-				 const int ntaskspersocket,
-				 const int ntaskspercore,
-				 int *cpus, 
-				 int *sockets, 
-				 int *cores, 
-				 int *threads,
-				 const int alloc_sockets,
-				 const int *alloc_cores,
-				 const int alloc_lps,
-				 const select_type_plugin_info_t cr_type);
+			  const int mxcores,
+			  const int mxthreads,
+			  const int minsockets,
+			  const int mincores,
+			  const int cpuspertask,
+			  const int ntaskspernode,
+			  const int ntaskspersocket,
+			  const int ntaskspercore,
+			  int *cpus, 
+			  int *sockets, 
+			  int *cores, 
+			  int *threads,
+			  const int alloc_sockets,
+			  const int *alloc_cores,
+			  const int alloc_lps,
+			  const select_type_plugin_info_t cr_type,
+			  int job_id, char *name);
 
 void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type);
 void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type);

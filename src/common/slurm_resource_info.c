@@ -47,6 +47,10 @@
 #include <slurm/slurm.h>
 #include "src/common/slurm_resource_info.h"
 
+#if(0)
+#define DEBUG 1
+#endif
+
 /*
  * slurm_get_avail_procs - Get the number of "available" cpus on a node
  *	given this number given the number of cpus_per_task and
@@ -55,6 +59,8 @@
  * IN mxsockets      - Job requested max sockets
  * IN mxcores        - Job requested max cores
  * IN mxthreads      - Job requested max threads
+ * IN minsockets     - Job requested min sockets
+ * IN mincores       - Job requested min cores
  * IN cpuspertask    - Job requested cpus per task
  * IN ntaskspernode  - number of tasks per node
  * IN ntaskspersocket- number of tasks per socket
@@ -72,6 +78,8 @@
 int slurm_get_avail_procs(const int mxsockets,
 			  const int mxcores,
 			  const int mxthreads,
+			  const int minsockets,
+			  const int mincores,
 			  const int cpuspertask,
 			  const int ntaskspernode,
 			  const int ntaskspersocket,
@@ -83,13 +91,17 @@ int slurm_get_avail_procs(const int mxsockets,
 			  const int alloc_sockets,
 			  const int *alloc_cores,
 			  const int alloc_lps,
-			  const select_type_plugin_info_t cr_type)
+			  const select_type_plugin_info_t cr_type,
+			  int job_id,
+			  char *name)
 {
 	int avail_cpus = 0, max_cpus = 0;
 	int max_avail_cpus = INT_MAX;	/* for alloc_* accounting */
 	int max_sockets   = mxsockets;
 	int max_cores     = mxcores;
 	int max_threads   = mxthreads;
+	int min_sockets   = minsockets;
+	int min_cores     = mincores;
 	int cpus_per_task = cpuspertask;
 	int i;
 
@@ -109,18 +121,21 @@ int slurm_get_avail_procs(const int mxsockets,
 	    	*cores = 1;
 	if (*sockets <= 0)
 	    	*sockets = *cpus / *cores / *threads;
-#if(0)
-	info("get_avail_procs User_ sockets %d cores %d threads %d ",
-			max_sockets, max_cores, max_threads);
-	info("get_avail_procs HW_   sockets %d cores %d threads %d ",
-			*sockets, *cores, *threads);
-        info("get_avail_procs Ntask node    %d sockets %d core    %d ",
-                        ntaskspernode, ntaskspersocket, ntaskspercore);
-	info("get_avail_procs cr_type %d cpus %d Allocated sockets %d lps %d ",
-			cr_type, *cpus, alloc_sockets, alloc_lps);
-	if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
+#if(DEBUG)
+	info("get_avail_procs %d %s MAX User_ sockets %d cores %d threads %d ",
+			job_id, name, max_sockets, max_cores, max_threads);
+	info("get_avail_procs %d %s MIN User_ sockets %d cores %d",
+			job_id, name, min_sockets, min_cores);
+	info("get_avail_procs %d %s HW_   sockets %d cores %d threads %d ",
+			job_id, name, *sockets, *cores, *threads);
+        info("get_avail_procs %d %s Ntask node   %d sockets %d core    %d ",
+                        job_id, name, ntaskspernode, ntaskspersocket, ntaskspercore);
+	info("get_avail_procs %d %s cr_type %d cpus %d Allocated sockets %d lps %d ",
+			job_id, name, cr_type, *cpus, alloc_sockets, alloc_lps);
+	if (((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) && (alloc_lps != 0)) {
 		for (i = 0; i < *sockets; i++)
-			info("get_avail_procs alloc_cores[%d] = %d", i, alloc_cores[i]);
+			info("get_avail_procs %d %s alloc_cores[%d] = %d", 
+			     job_id, name, i, alloc_cores[i]);
 	}
 #endif
 	if ((*threads <= 0) || (*cores <= 0) || (*sockets <= 0))
@@ -149,44 +164,79 @@ int slurm_get_avail_procs(const int mxsockets,
 			max_cpus = MIN(max_cpus, ntaskspernode);
 		}
 		break;
+
 	/* For all other types, nodes contain sockets, cores, and threads */
-	case CR_SOCKET:
-	case CR_SOCKET_MEMORY:
 	case CR_CORE:
 	case CR_CORE_MEMORY:
-	default:
-		switch(cr_type) { 
-		case CR_SOCKET:
-		case CR_SOCKET_MEMORY:
-			*sockets -= alloc_sockets; /* sockets count */
-			if (*sockets < 0) 
-				error(" cons_res: *sockets < 0");
-			
-			*cpus -= alloc_lps;
-			if (*cpus < 0) 
-				error(" cons_res: *cpus < 0");
-			break;
-		case CR_CORE:
-		case CR_CORE_MEMORY:
-			*cpus -= alloc_lps;
-			if (*cpus < 0) 
-				error(" cons_res: *cpus < 0");
+		*cpus -= alloc_lps;
+		if (*cpus < 0) 
+			error(" cons_res: *cpus < 0");
 
-			if (alloc_lps > 0) {
-				max_avail_cpus = 0;
-				for (i=0; i<*sockets; i++)
-					max_avail_cpus += *cores - alloc_cores[i];
-				max_avail_cpus *= *threads;
+		if (alloc_lps > 0) {
+			max_avail_cpus = 0;
+			int tmp_diff = 0;
+			for (i=0; i<*sockets; i++) {
+				tmp_diff = *cores - alloc_cores[i];
+				if (min_cores <= tmp_diff)
+					max_avail_cpus += tmp_diff;
 			}
-			break;
-		default:
-			break;
+		} 
+
+		/*** honor socket/core/thread maximums ***/
+		*sockets = MIN(*sockets, max_sockets);
+		*threads = MIN(*threads, max_threads);
+		*cores   = MIN(*cores,   max_cores);
+
+		if (min_sockets > *sockets) {
+			*cpus = 0;
+		} else {
+			int max_cpus_socket = 0;
+			max_cpus = 0;
+			for (i=0; i<*sockets; i++) {
+				max_cpus_socket = 0;
+				if (min_cores <= *cores) {
+				        int num_threads = *threads;
+					if (ntaskspercore > 0) {
+						num_threads = MIN(num_threads,
+							       ntaskspercore);
+					}
+					max_cpus_socket = *cores * num_threads;
+				}
+				if (ntaskspersocket > 0) {
+					max_cpus_socket = MIN(max_cpus_socket,
+							      ntaskspersocket);
+				}
+				max_cpus += max_cpus_socket;
+			}
+			max_cpus = MIN(max_cpus, max_avail_cpus);
 		}
+
+		/*** honor any availability maximum ***/
+		max_cpus = MIN(max_cpus, max_avail_cpus);
+
+		if (ntaskspernode > 0) {
+			max_cpus = MIN(max_cpus, ntaskspernode);
+		}
+		break;
+
+	case CR_SOCKET:
+	case CR_SOCKET_MEMORY:
+	default:
+		*sockets -= alloc_sockets; /* sockets count */
+		if (*sockets < 0) 
+			error(" cons_res: *sockets < 0");
+		
+		*cpus -= alloc_lps;
+		if (*cpus < 0) 
+			error(" cons_res: *cpus < 0");
 
 		/*** honor socket/core/thread maximums ***/
 		*sockets = MIN(*sockets, max_sockets);
 		*cores   = MIN(*cores,   max_cores);
 		*threads = MIN(*threads, max_threads);
+
+		if (min_sockets > *sockets)
+			*cpus = 0;
 		
 		/*** compute an overall maximum cpu count honoring ntasks* ***/
 		max_cpus  = *threads;
@@ -206,7 +256,7 @@ int slurm_get_avail_procs(const int mxsockets,
 		max_cpus = MIN(max_cpus, max_avail_cpus);
 		break;
 	}
-
+	
 	/*** factor cpus_per_task into max_cpus ***/
 	max_cpus *= cpus_per_task; 
 
@@ -215,10 +265,10 @@ int slurm_get_avail_procs(const int mxsockets,
 	
 	avail_cpus = MIN(avail_cpus, max_cpus);
 
-#if(0)
-	info("get_avail_procs return cpus %d sockets %d cores %d threads %d ",
-			*cpus, *sockets, *cores, *threads);
-	info("get_avail_procs avail_cpus %d", avail_cpus);
+#if(DEBUG)
+	info("get_avail_procs %d %s return cpus %d sockets %d cores %d threads %d ",
+			job_id, name, *cpus, *sockets, *cores, *threads);
+	info("get_avail_procs %d %s avail_cpus %d",  job_id, name, avail_cpus);
 #endif
 	return(avail_cpus);
 }
