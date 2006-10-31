@@ -41,21 +41,29 @@ are not responding even if they are not in any partition?</a></li>
 
 <h2>For Users</h2>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
-When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
+When a job is terminating, both the job and its nodes enter the COMPLETING state. 
 As the SLURM daemon on each node determines that all processes associated with 
-the job have terminated, that node changes state to &quot;idle&quot; or some other 
-appropriate state. When every node allocated to a job has determined that all 
-processes associated with it have terminated, the job changes state to &quot;completed&quot; 
-or some other appropriate state. Normally, this happens within a fraction of one 
-second. However, if the job has processes that cannot be terminated with a SIGKILL, 
-the job and one or more nodes can remain in the completing state for an extended 
-period of time. This may be indicative of processes hung waiting for a core file 
-to complete I/O or operating system failure. If this state persists, the system 
-administrator should use the <span class="commandline">scontrol</span> command 
-to change the node's state to DOWN (e.g. &quot;scontrol update 
-NodeName=<i>name</i> State=DOWN Reason=hung_completing&quot;), reboot the node, 
-then reset the node's state to IDLE (e.g. &quot;scontrol update 
-NodeName=<i>name</i> State=RESUME&quot;).</p>
+the job have terminated, that node changes state to IDLE or some other appropriate 
+state. 
+When every node allocated to a job has determined that all processes associated 
+with it have terminated, the job changes state to COMPLETED or some other 
+appropriate state (e.g. FAILED). 
+Normally, this happens within a second. 
+However, if the job has processes that cannot be terminated with a SIGKILL
+signal, the job and one or more nodes can remain in the COMPLETING state 
+for an extended period of time. 
+This may be indicative of processes hung waiting for a core file 
+to complete I/O or operating system failure. 
+If this state persists, the system administrator should check for processes 
+associated with the job that can not be terminated then use the 
+<span class="commandline">scontrol</span> command to change the node's 
+state to DOWN (e.g. &quot;scontrol update NodeName=<i>name</i> State=DOWN Reason=hung_completing&quot;), 
+reboot the node, then reset the node's state to IDLE 
+(e.g. &quot;scontrol update NodeName=<i>name</i> State=RESUME&quot;).
+Note that setting the node DOWN will terminate all running or suspended 
+jobs associated with that node. 
+An alternative is to set the node's state to DRAIN until all jobs 
+associated with it terminate before setting it DOWN and re-booting.</p>
 
 <p><a name="rlimit"><b>2. Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</b></a><br>
 When the <span class="commandline">srun</span> command executes, it captures the 
@@ -342,6 +350,6 @@ partition. You can control the frequency of this ping with the
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 31 October 2006</p>
 
 <!--#include virtual="footer.txt"-->
