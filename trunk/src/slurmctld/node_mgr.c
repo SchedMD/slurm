@@ -392,7 +392,7 @@ extern int load_all_node_state ( bool state_only )
 				ver_str);
 		}
 	}
-	if (strcmp(ver_str, NODE_STATE_VERSION) != 0) {
+	if (ver_str && (strcmp(ver_str, NODE_STATE_VERSION) != 0)) {
 		error("Can not recover node state, data version incompatable");
 		xfree(ver_str);
 		free_buf(buffer);
