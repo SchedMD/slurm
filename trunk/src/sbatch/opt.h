@@ -85,6 +85,9 @@ typedef struct sbatch_options {
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
+	int minsockets;		/* --minsockets=n		*/
+	int mincores;		/* --mincores=n			*/
+	int minthreads;		/* --minthreads=n		*/
 	int realmem;		/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/

@@ -86,23 +86,26 @@
 #define OPT_JOBID       0x11
 
 /* generic getopt_long flags, integers and *not* valid characters */
+#define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
 #define LONG_OPT_MINCPU      0x108
 #define LONG_OPT_CONT        0x109
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
-#define LONG_OPT_CORE	     0x10e
-#define LONG_OPT_CONNTYPE    0x111
-#define LONG_OPT_EXCLUSIVE   0x115
-#define LONG_OPT_BEGIN       0x119
-#define LONG_OPT_MAIL_TYPE   0x11a
-#define LONG_OPT_MAIL_USER   0x11b
-#define LONG_OPT_NICE        0x11e
-#define LONG_OPT_BELL        0x124
-#define LONG_OPT_NO_BELL     0x125
-#define LONG_OPT_JOBID       0x126
-#define LONG_OPT_COMMENT     0x127
+#define LONG_OPT_MINSOCKETS  0x10c
+#define LONG_OPT_MINCORES    0x10d
+#define LONG_OPT_MINTHREADS  0x10e
+#define LONG_OPT_CORE	     0x10f
+#define LONG_OPT_CONNTYPE    0x110
+#define LONG_OPT_EXCLUSIVE   0x111
+#define LONG_OPT_BEGIN       0x112
+#define LONG_OPT_MAIL_TYPE   0x113
+#define LONG_OPT_MAIL_USER   0x114
+#define LONG_OPT_NICE        0x115
+#define LONG_OPT_BELL        0x116
+#define LONG_OPT_NO_BELL     0x117
+#define LONG_OPT_COMMENT     0x118
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -442,6 +445,9 @@ static void _opt_default()
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus	    = -1;
+	opt.minsockets      = -1;
+	opt.mincores        = -1;
+	opt.minthreads      = -1;
 	opt.realmem	    = -1;
 	opt.tmpdisk	    = -1;
 
@@ -658,23 +664,26 @@ void set_options(const int argc, char **argv)
 		{"nodelist",      required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
-		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
-		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
-		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
-		{"mem",              required_argument, 0, LONG_OPT_MEM},
-		{"tmp",              required_argument, 0, LONG_OPT_TMP},
-		{"uid",              required_argument, 0, LONG_OPT_UID},
-		{"gid",              required_argument, 0, LONG_OPT_GID},
-		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
-		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
-		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"bell",             no_argument,       0, LONG_OPT_BELL},
-		{"no-bell",          no_argument,       0, LONG_OPT_NO_BELL},
-		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
-		{NULL,               0,                 0, 0}
+		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
+		{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
+		{"minsockets",    required_argument, 0, LONG_OPT_MINSOCKETS},
+		{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
+		{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
+		{"mem",           required_argument, 0, LONG_OPT_MEM},
+		{"tmp",           required_argument, 0, LONG_OPT_TMP},
+		{"uid",           required_argument, 0, LONG_OPT_UID},
+		{"gid",           required_argument, 0, LONG_OPT_GID},
+		{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
+		{"begin",         required_argument, 0, LONG_OPT_BEGIN},
+		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
+		{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
+		{"nice",          optional_argument, 0, LONG_OPT_NICE},
+		{"bell",          no_argument,       0, LONG_OPT_BELL},
+		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
+		{"jobid",         required_argument, 0, LONG_OPT_JOBID},
+		{"comment",       required_argument, 0, LONG_OPT_COMMENT},
+		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:c:C:d:F:g:hHIJ:kK::n:N:p:qR:st:uU:vVw:W:x:";
 
@@ -809,6 +818,35 @@ void set_options(const int argc, char **argv)
                         break;
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
+			if (opt.mincpus < 0) {
+				error("invalid mincpus constraint %s", 
+				      optarg);
+				exit(1);
+			}
+			break;
+		case LONG_OPT_MINSOCKETS:
+			opt.minsockets = _get_int(optarg, "minsockets");
+			if (opt.minsockets < 0) {
+				error("invalid minsockets constraint %s", 
+				      optarg);
+				exit(1);
+			}
+			break;
+		case LONG_OPT_MINCORES:
+			opt.mincores = _get_int(optarg, "mincores");
+			if (opt.mincores < 0) {
+				error("invalid mincores constraint %s", 
+				      optarg);
+				exit(1);
+			}
+			break;
+		case LONG_OPT_MINTHREADS:
+			opt.minthreads = _get_int(optarg, "minthreads");
+			if (opt.minthreads < 0) {
+				error("invalid minthreads constraint %s", 
+				      optarg);
+				exit(1);
+			}
 			break;
 		case LONG_OPT_MEM:
 			opt.realmem = (int) _to_bytes(optarg);
@@ -1221,7 +1259,7 @@ static void _usage(void)
 "              [--immediate] [--no-kill]\n"
 "              [--share] [-m dist] [-J jobname] [--jobid=id]\n"
 "              [--verbose]\n"
-"              [-W sec]\n"
+"              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
@@ -1262,6 +1300,9 @@ static void _help(void)
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
+"      --minsockets=n          minimum number of sockets per node\n"
+"      --mincores=n            minimum number of cores per cpu\n"
+"      --minthreads=n          minimum number of threads per core\n"
 "      --mem=MB                minimum amount of real memory\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "      --contiguous            demand a contiguous range of nodes\n"
