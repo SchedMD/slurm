@@ -230,7 +230,12 @@ enum select_print_mode {
 	SELECT_PRINT_HEAD,	/* Print just the header */
 	SELECT_PRINT_DATA,	/* Print just the data */
 	SELECT_PRINT_MIXED,	/* Print "field=value" */
-	SELECT_PRINT_BG_ID	/* Print just the BG_ID */
+	SELECT_PRINT_BG_ID,	/* Print just the BG_ID */
+	SELECT_PRINT_CONNECTION,/* Print just the CONNECTION type */
+	SELECT_PRINT_ROTATE,    /* Print just the ROTATE */
+	SELECT_PRINT_GEOMETRY,	/* Print just the GEO */
+	SELECT_PRINT_START,	/* Print just the START location */
+	SELECT_PRINT_MAX_PROCS  /* Print just the MAX PROCS */
 };
 
 enum select_node_cnt {

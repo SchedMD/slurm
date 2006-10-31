@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -358,7 +358,6 @@ _terminate_job_step(const job_step_info_t *step,
 	rpc.signal = (uint32_t)-1; /* not used by slurmd */
 	rc = _local_send_recv_rc_msgs(allocation->node_list, 
 				      REQUEST_TERMINATE_TASKS, &rpc);
-
 	if (rc == -1 && errno == ESLURM_ALREADY_DONE) {
 		rc = 0;
 		errno = 0;

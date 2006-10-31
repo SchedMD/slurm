@@ -924,14 +924,17 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	slurm_msg_t_init(&msg);
 	msg.conn_fd = fd;
 	
-	if (timeout <= 0)
+	if (timeout <= 0) {
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
+		orig_timeout = timeout;
+	}
 	if(steps) {
 		orig_timeout = timeout/steps;
 		steps--;
 		orig_timeout -= (1000*steps);
-	}
+	} 
+
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
 	       orig_timeout, steps, timeout);
 	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
@@ -1986,10 +1989,21 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		error("slurm_send_recv_msgs: no nodelist given");
 		return NULL;
 	}
-
+#ifdef HAVE_FRONT_END
+	/* only send to the front end node */
+	name = nodelist_nth_host(nodelist, 0);
+	if(!name) {
+		error("slurm_send_recv_msgs: "
+		      "can't get the first name out of %s",
+		      nodelist);
+		return NULL;
+	}
+	hl = hostlist_create(name);
+	free(name);
+#else
 /* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);
-
+#endif
 	while((name = hostlist_shift(hl))) {
 		
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {

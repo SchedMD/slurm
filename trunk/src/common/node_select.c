@@ -958,7 +958,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		}
 		snprintf(buf, size, 
 			 "Connection=%s Rotate=%s MaxProcs=%s "
-			 "Geometry=%ux%ux%u Start=%s Block_ID=%s",
+			 "Geometry=%1ux%1ux%1u Start=%s Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 max_procs_char,
@@ -968,6 +968,36 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	case SELECT_PRINT_BG_ID:
 		snprintf(buf, size, "%s", jobinfo->bg_block_id);
 		break;
+	case SELECT_PRINT_CONNECTION:
+		snprintf(buf, size, "%s", 
+			 _job_conn_type_string(jobinfo->conn_type));
+		break;
+	case SELECT_PRINT_ROTATE:
+		snprintf(buf, size, "%s",
+			 _job_rotate_string(jobinfo->rotate));
+		break;
+	case SELECT_PRINT_GEOMETRY:
+		snprintf(buf, size, "%1ux%1ux%1u",
+			 geometry[0], geometry[1], geometry[2]);
+		break;
+	case SELECT_PRINT_START:
+		if (jobinfo->start[0] == (uint16_t) NO_VAL)
+			sprintf(start_char, "None");
+		else {
+			snprintf(start_char, sizeof(start_char), 
+				 "%1ux%1ux%1u", jobinfo->start[0],
+				 jobinfo->start[1], jobinfo->start[2]);
+		} 
+	case SELECT_PRINT_MAX_PROCS:
+		if (jobinfo->max_procs == NO_VAL)
+			sprintf(max_procs_char, "None");
+		else
+			convert_num_unit((float)jobinfo->max_procs,
+					 max_procs_char, UNIT_NONE);
+		
+		snprintf(buf, size, "%s", max_procs_char);
+		break;
+		
 	default:
 		error("select_g_sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)
