@@ -64,6 +64,7 @@ enum {
 	SORTID_ALLOC_NODE,
 	SORTID_BATCH,
 #ifdef HAVE_BG
+	SORTID_NODELIST, 
 	SORTID_BLOCK, 
 #endif
 	SORTID_COMMENT,
@@ -99,7 +100,9 @@ enum {
 	SORTID_NAME,
 	SORTID_NETWORK,
 	SORTID_NICE,
+#ifndef HAVE_BG
 	SORTID_NODELIST,
+#endif
 	SORTID_NODES,
 	SORTID_NTASKS_PER_CORE,
 	SORTID_NTASKS_PER_NODE,
@@ -324,6 +327,8 @@ struct signv {
 
 static display_data_t *local_display_data = NULL;
 
+static char *got_edit_signal = NULL;
+
 static void _update_info_step(sview_job_info_t *sview_job_info_ptr, 
 			      GtkTreeModel *model, 
 			      GtkTreeIter *step_iter,
@@ -539,8 +544,15 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	if(!job_msg)
 		return NULL;
 	switch(column) {
+	case SORTID_ACTION:
+		xfree(got_edit_signal);
+		if(!strcasecmp(new_text, "None"))
+			got_edit_signal = NULL;
+		else
+			got_edit_signal = xstrdup(new_text);
+		break;
 	case SORTID_TIMELIMIT:
-		if ((strcasecmp(new_text,"infinite") == 0))
+		if(!strcasecmp(new_text, "infinite"))
 			temp_int = INFINITE;
 		else
 			temp_int = strtol(new_text, (char **)NULL, 10);
@@ -761,7 +773,6 @@ static void _admin_edit_combo_box(GtkComboBox *combo,
 
 	_set_job_msg(job_msg, name, column);
 
-	g_print("got here %d %s\n", column, name);
 	g_free(name);
 }
 
@@ -773,7 +784,6 @@ static gboolean _admin_focus_out_job(GtkEntry *entry,
 	const char *name = gtk_entry_get_text(entry);
 	type -= DEFAULT_ENTRY_LENGTH;
 	_set_job_msg(job_msg, name, type);
-	g_print("got here %d %s\n", type, name);
 	
 	return false;
 }
@@ -2151,27 +2161,22 @@ extern GtkListStore *create_model_job(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "none",
+				   0, "None",
 				   -1);	
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "cancel",
+				   0, "Cancel",
 				   -1);	
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "suspend",
+				   0, "Suspend/Resume",
 				   -1);	
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "resume",
-				   -1);			
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   1, SORTID_ACTION,
-				   0, "checkpoint",
+				   0, "Checkpoint",
 				   -1);			
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
@@ -2319,6 +2324,16 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	type = _set_job_msg(job_msg, new_text, column);
 	if(errno)
 		goto print_error;
+	
+	if(got_edit_signal) {
+		type = got_edit_signal;
+		got_edit_signal = NULL;
+		admin_job(GTK_TREE_MODEL(treestore), &iter, got_edit_signal);
+		xfree(type);
+		goto no_input;
+	}
+			
+
 	temp = (char *)new_text;
 	
 	if(old_text && !strcmp(old_text, new_text)) {
@@ -2909,11 +2924,12 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		gtk_tree_model_get(model, iter, SORTID_POS, &jobid, -1);
 	}
 
-	if(!strcmp("Signal", type)) {
+	g_print("type = %s\n", type);
+	if(!strcasecmp("Signal", type)) {
 		entry = gtk_entry_new();
 		label = gtk_label_new("Signal?");
 		edit_type = EDIT_SIGNAL;
-	} else if(!strcmp("Cancel", type)) {
+	} else if(!strcasecmp("Cancel", type)) {
 		if(stepid != NO_VAL)
 			snprintf(tmp_char, sizeof(tmp_char), 
 				 "Are you sure you want to cancel job %u.%u?",
@@ -2924,7 +2940,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				 jobid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_CANCEL;
-	} else if(!strcmp("Suspend/Resume", type)) {
+	} else if(!strcasecmp("Suspend/Resume", type)) {
 		gtk_tree_model_get(model, iter, SORTID_STATE_NUM, &state, -1);
 		if(state == JOB_SUSPENDED)
 			tmp_char_ptr = "resume";
@@ -3010,6 +3026,8 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			} 
 			break;
 		case EDIT_EDIT:
+			if(got_edit_signal) 
+				goto end_it;
 			if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
 				tmp_char_ptr = g_strdup_printf(
 					"Job %u editted successfully",
@@ -3026,8 +3044,15 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			break;
 		}
 	}
+end_it:
 	slurm_free_job_desc_msg(job_msg);
 	gtk_widget_destroy(popup);
+	if(got_edit_signal) {
+		type = got_edit_signal;
+		got_edit_signal = NULL;
+		admin_job(model, iter, type);
+		xfree(type);
+	}			
 	return;
 }
 
