@@ -2022,6 +2022,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->min_cores         = mc_ptr->min_cores;
 		job->max_cores         = mc_ptr->max_cores;
 		job->min_threads       = mc_ptr->min_threads;
+		job->max_threads       = mc_ptr->max_threads;
 		job->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 		job->ntasks_per_core   = mc_ptr->ntasks_per_core;
 		xfree(mc_ptr);
