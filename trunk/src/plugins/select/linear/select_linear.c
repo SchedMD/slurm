@@ -303,6 +303,7 @@ int get_avail_cpus(struct job_record *job_ptr, int index)
 	int cpus_per_task = 0;
 	int ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
 	int max_sockets = 0, max_cores = 0, max_threads = 0;
+	int min_sockets = 0, min_cores = 0;
 
 	node_ptr = &(select_node_ptr[index]);
 
@@ -312,6 +313,10 @@ int get_avail_cpus(struct job_record *job_ptr, int index)
 		max_sockets = job_ptr->details->max_sockets;
 	if (job_ptr->details && job_ptr->details->max_cores)
 		max_cores = job_ptr->details->max_cores;
+	if (job_ptr->details && job_ptr->details->min_sockets)
+		min_sockets = job_ptr->details->min_sockets;
+	if (job_ptr->details && job_ptr->details->min_cores)
+		min_cores = job_ptr->details->min_cores;
 	if (job_ptr->details && job_ptr->details->max_threads)
 		max_threads = job_ptr->details->max_threads;
 	if (job_ptr->details && job_ptr->details->ntasks_per_node)
@@ -344,18 +349,20 @@ int get_avail_cpus(struct job_record *job_ptr, int index)
 	}
 
 #if 0
-	info(" SMB5  host %s User_ sockets %d cores %d threads %d ", 
+	info("host %s User_ sockets %d cores %d threads %d ", 
 	     node_ptr->name, max_sockets, max_cores, max_threads);
 
-	info(" SMB5  host %s HW_ cpus %d sockets %d cores %d threads %d ", 
+	info("host %s HW_ cpus %d sockets %d cores %d threads %d ", 
 	     node_ptr->name, cpus, sockets, cores, threads);
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
-			max_sockets, max_cores, max_threads, cpus_per_task,
+			max_sockets, max_cores, max_threads, 
+			min_sockets, min_cores, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, 
-			0, NULL, 0, SELECT_TYPE_INFO_NONE);
+			0, NULL, 0, SELECT_TYPE_INFO_NONE,
+			job_ptr->job_id, node_ptr->name);
 
 #if 0
 	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",

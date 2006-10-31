@@ -81,7 +81,8 @@ struct node_set {		/* set of nodes with same configuration */
 static int _add_node_set_info(struct node_set *node_set_ptr, 
 			      bitstr_t ** node_bitmap, 
 			      int *node_cnt, int *cpu_cnt, 
-			      const int mem_cnt, int cr_enabled);
+			      const int mem_cnt, int cr_enabled,
+			      int job_id);
 static int  _build_node_list(struct job_record *job_ptr, 
 			     struct node_set **node_set_pptr,
 			     int *node_set_size);
@@ -486,7 +487,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			job_ptr->details->job_max_memory = 0;
 		}
 
-                info("Job %u in exclusive mode? %d cr_enabled %d CR type %d num_procs %d", 
+                debug3("Job %u in exclusive mode? %d cr_enabled %d CR type %d num_procs %d", 
 		     job_ptr->job_id, 
 		     job_ptr->details->shared ? 0 : 1,
 		     cr_enabled,
@@ -629,7 +630,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					&total_nodes, 
 					&total_cpus,
 					total_mem, 
-					cr_disabled);
+					cr_disabled,
+					job_ptr->job_id);
 				if (error_code != SLURM_SUCCESS) {
 					if (cr_enabled) {
 						FREE_NULL_BITMAP(
@@ -680,7 +682,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                                         &avail_nodes, 
 							&avail_cpus, 
 							avail_mem,
-                                                        cr_enabled);
+                                                        cr_enabled,
+							job_ptr->job_id);
                         if (error_code != SLURM_SUCCESS) {
 				if (cr_enabled) { 
 					FREE_NULL_BITMAP(
@@ -857,7 +860,8 @@ static int
 _add_node_set_info(struct node_set *node_set_ptr, 
 		   bitstr_t ** node_bitmap, 
 		   int *node_cnt, int *cpu_cnt, 
-		   const int mem_cnt, int cr_enabled)
+		   const int mem_cnt, int cr_enabled,
+		   int job_id)
 {
         int error_code = SLURM_SUCCESS, i;
 	int this_cpu_cnt, this_mem_cnt, alloc_cpus, alloc_mem;
@@ -902,10 +906,12 @@ _add_node_set_info(struct node_set *node_set_ptr,
 				alloc_cpus;
 			this_mem_cnt = (node_set_ptr->real_memory - 
 				alloc_mem) - mem_cnt;                       
-#if(1)			
-			info("_add_node_set_info this_cpu_cnt %d this_mem_cnt %d",
-			     this_cpu_cnt, this_mem_cnt);
-#endif			
+
+			debug3("_add_node_set_info %d %s this_cpu_cnt %d"
+			       " this_mem_cnt %d", job_id, 
+			       node_record_table_ptr[i].name, this_cpu_cnt,
+			       this_mem_cnt);
+
 			if ((this_cpu_cnt > 0) && (this_mem_cnt > 0)) {
 				*node_cnt += 1;
 				*cpu_cnt  += this_cpu_cnt;
