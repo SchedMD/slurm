@@ -133,73 +133,20 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
 	}
 }
 
-/* Given a program name, translate it to a fully qualified pathname
- * as needed based upon the PATH environment variable */
-static char *
-_build_path(char* fname, char **prog_env)
-{
-	int i;
-	char *path_env = NULL, *dir;
-	char *file_name, *file_path;
-	struct stat buf;
-	int len = 256;
-
-	file_name = (char *)xmalloc(len);
-	/* make copy of file name (end at white space) */
-	snprintf(file_name, len, "%s", fname);
-	for (i=0; i < len; i++) {
-		if (file_name[i] == '\0')
-			break;
-		if (!isspace(file_name[i]))
-			continue;
-		file_name[i] = '\0';
-		break;
-	}
-
-	/* check if already absolute path */
-	if (file_name[0] == '/')
-		return file_name;
-
-	/* search for the file using PATH environment variable */
-	for (i=0; ; i++) {
-		if (prog_env[i] == NULL)
-			return file_name;
-		if (strncmp(prog_env[i], "PATH=", 5))
-			continue;
-		path_env = xstrdup(&prog_env[i][5]);
-		break;
-	}
-
-	file_path = (char *)xmalloc(len);
-	dir = strtok(path_env, ":");
-	while (dir) {
-		snprintf(file_path, len, "%s/%s", dir, file_name);
-		if (stat(file_path, &buf) == 0)
-			break;
-		dir = strtok(NULL, ":");
-	}
-	if (dir == NULL)	/* not found */
-		snprintf(file_path, len, "%s", file_name);
-
-	xfree(file_name);
-	xfree(path_env);
-	return file_path;
-}
-
 /*
  * FIXME - It would be nice to parse the multi-prog array just once
  *	to retrieve the argv arrays for each task on this node, rather
  *	than calling multi_prog_get_argv once for each task.
  */
 extern int
-multi_prog_get_argv(char *config_data, char **prog_env, int task_rank,
+multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 		    int *argc, char ***argv)
 {
 	char *line;
 	int line_num = 0;
 	int task_offset;
 	char *p, *s, *ptrptr;
-	char *rank_spec, *prog_spec = NULL, *args_spec;
+	char *rank_spec, *args_spec;
 	int prog_argc = 0;
 	char **prog_argv = NULL;
 	char *local_data = NULL;
@@ -211,7 +158,7 @@ multi_prog_get_argv(char *config_data, char **prog_env, int task_rank,
 	}
 
 	prog_argv = (char **)xmalloc(sizeof(char *) * 128);
-	local_data = xstrdup(config_data);
+	local_data = xstrdup(file_contents);
 
 	line = strtok_r(local_data, "\n", &ptrptr);
 	while (line) {
@@ -252,30 +199,9 @@ multi_prog_get_argv(char *config_data, char **prog_env, int task_rank,
 		if (!_in_range (task_rank, rank_spec, &task_offset))
 			continue;
 
+		/* skip all whitspace after the range spec */
 		while(*p != '\0' && isspace (*p))
-			p ++;
-		prog_spec = _build_path(p, prog_env);
-
-		if (prog_spec[0] == '\0') {
-			error("Program for task rank %d not specified.", 
-				task_rank);
-			goto fail;
-		}
-		
-		prog_argv[0] = prog_spec; 
-		prog_argv[1] = NULL;
-		prog_argc = 1;
-
-		while (*p != '\0' && !isspace (*p))
-			p ++;
-
-		/* If *p is already \0, then we are at the end of line;
-		   therre are no command line parameters. */
-		if (*p != '\0')
-			*p++ = '\0';
-
-		while (*p != '\0' && isspace (*p))
-			p ++;
+			p++;
 
 		args_spec = p;
 		while (*args_spec != '\0') { 
