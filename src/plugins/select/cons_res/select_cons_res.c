@@ -155,6 +155,8 @@ select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() 
 static struct node_cr_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
 static struct node_cr_record **cr_node_hash_table = NULL;
+static time_t last_cr_update_time;
+static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Restored node_cr_records - used by select_p_state_restore/node_init */
 static struct node_cr_record *prev_select_node_ptr = NULL;
@@ -477,13 +479,14 @@ static void _clear_job_list(void)
 	    	return;
 	}
 
+	slurm_mutex_lock(&cr_mutex);
 	job_iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
 		list_remove(job_iterator);
 		_xfree_select_cr_job(job);
 	}
-
 	list_iterator_destroy(job_iterator);
+	slurm_mutex_unlock(&cr_mutex);
 }
 
 /* Append a specific select_cr_job to select_cr_job_list. If the
@@ -496,6 +499,7 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 	struct select_cr_job *old_job = NULL;
 
 	ListIterator iterator = list_iterator_create(select_cr_job_list);
+	slurm_mutex_lock(&cr_mutex);
 	while ((old_job = (struct select_cr_job *) list_next(iterator))) {
 		if (old_job->job_id != job_id)
 			continue;
@@ -506,6 +510,7 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 
 	list_iterator_destroy(iterator);
 	list_append(select_cr_job_list, new_job);
+	slurm_mutex_unlock(&cr_mutex);
 	debug3 (" cons_res: _append_to_job_list job_id %u to list. "
 		"list_count %d ", job_id, list_count(select_cr_job_list));
 }
@@ -765,7 +770,8 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				break;
 			}
 #if(CR_DEBUG)
-			info("cons_res %u _clear_select_jobinfo (-) node %s alloc_ s %u lps %u",
+			info("cons_res %u _clear_select_jobinfo (-) node %s "
+			     "alloc_ s %u lps %u",
 			     job->job_id, this_node->node_ptr->name, 
 			     this_node->alloc_sockets, 
 			     this_node->alloc_lps);
@@ -778,7 +784,9 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 #endif
 		}
 	out:
+		slurm_mutex_lock(&cr_mutex);
 		list_remove(iterator);
+		slurm_mutex_unlock(&cr_mutex);
 		_xfree_select_cr_job(job);
 		break;
 	}
@@ -1033,8 +1041,12 @@ extern int select_p_state_save(char *dir_name)
 	int state_fd, i;
 	uint16_t job_cnt;
 	char *file_name;
+	static time_t last_save_time;
 
-	info("cons_res: select_p_state_save");
+	if (last_save_time > last_cr_update_time)
+		return SLURM_SUCCESS;
+
+	debug3("cons_res: select_p_state_save");
 
 	/*** create the state file ***/
         file_name = xstrdup(dir_name);
@@ -1044,8 +1056,7 @@ extern int select_p_state_save(char *dir_name)
         if (state_fd < 0) {
                 error ("Can't save state, error creating file %s",
                         file_name);
-                error_code = SLURM_ERROR;
-		return error_code;
+                return SLURM_ERROR;
 	}
 
 	buffer = init_buf(1024);
@@ -1056,6 +1067,7 @@ extern int select_p_state_save(char *dir_name)
 	pack16(cr_type,        buffer);
 	pack32(pstate_version, buffer);
 
+	slurm_mutex_lock(&cr_mutex);
 	/*** pack the select_cr_job array ***/
 	if (select_cr_job_list) {
 		job_cnt = list_count(select_cr_job_list);
@@ -1086,13 +1098,14 @@ extern int select_p_state_save(char *dir_name)
 			pack16((uint16_t) 0, buffer);
 		}
 	}
+	slurm_mutex_unlock(&cr_mutex);
 
 	/*** close the state file ***/
-	_cr_write_state_buffer(state_fd, buffer);
+	error_code = _cr_write_state_buffer(state_fd, buffer);
+	if (error_code == SLURM_SUCCESS)
+		last_save_time = time(NULL);
 	close (state_fd);
-
 	xfree(file_name);
-
 	if (buffer)
 		free_buf(buffer);
 
@@ -1688,10 +1701,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				break;
 			}
 		}
-		if (error_code != SLURM_SUCCESS)
+		if (error_code != SLURM_SUCCESS) {
+			_xfree_select_cr_job(job);
 			goto cleanup;
+		}
 
 		_append_to_job_list(job);
+		last_cr_update_time = time(NULL);
 	}
 	
  cleanup:
@@ -1744,6 +1760,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	rc = _clear_select_jobinfo(job_ptr);
+	last_cr_update_time = time(NULL);
 	if (rc != SLURM_SUCCESS) {
 		error(" error for %u in select/cons_res: "
 		      "_clear_select_jobinfo",
@@ -2096,7 +2113,8 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 				for (j = 0; j < this_node->node_ptr->sockets; j++)
 					this_node->alloc_cores[j] += job->alloc_cores[i][j];
 				for (j = 0; j < this_node->node_ptr->sockets; j++)
-					if (this_node->alloc_cores[j] <= this_node->node_ptr->cores)
+					if (this_node->alloc_cores[j] <= 
+					    this_node->node_ptr->cores)
 						continue;
 					else
 						error("Job %u Host %s too many allocated "
@@ -2119,12 +2137,14 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 			}
 #if(CR_DEBUG)
 			/* Remove debug only */
-			info("cons_res %u update_nodeinfo (+) node %s alloc_ lps %u sockets %u mem %u",
+			info("cons_res %u update_nodeinfo (+) node %s "
+			     "alloc_ lps %u sockets %u mem %u",
 			     job->job_id, this_node->node_ptr->name, this_node->alloc_lps, 
 			     this_node->alloc_sockets, this_node->alloc_memory);
 			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
 				for (j = 0; j < this_node->node_ptr->sockets; j++)
-					info("cons_res %u update_nodeinfo (+) node %s alloc_ cores %u",
+					info("cons_res %u update_nodeinfo (+) "
+					     "node %s alloc_ cores %u",
 					     job->job_id, this_node->node_ptr->name, 
 					     this_node->alloc_cores[j]);
 #endif
