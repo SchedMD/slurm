@@ -102,6 +102,7 @@
 #  endif
 #endif
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
@@ -149,12 +150,14 @@ const char plugin_name[] =
     "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 90;
+const uint32_t pstate_version = 1;	/* version control on saved state */
 
 /* node_cr_record keeps track of the resources within a node which 
  * have been reserved by already scheduled jobs. 
  */
 struct node_cr_record {
 	struct node_record *node_ptr;	/* ptr to the node that own these resources */
+	char *name;		/* reference copy of node_ptr name */
 	uint32_t used_cpus;	/* cpu count reserved by already scheduled jobs */
 	struct node_cr_record *node_next;/* next entry with same hash index */
 };
@@ -164,18 +167,22 @@ struct node_cr_record {
 struct select_cr_job {
 	uint32_t job_id;	/* job ID, default set by SLURM        */
 	uint16_t state;		/* job state information               */
-	int nprocs;		/* --nprocs=n,      -n n               */
-	int nhosts;		/* number of hosts allocated to job    */
+	int32_t nprocs;		/* --nprocs=n,      -n n               */
+	int32_t nhosts;		/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
-	int *cpus;		/* number of processors on each host   */
-	int *ntask;		/* number of tasks to run on each host */
+	int32_t *cpus;		/* number of processors on each host   */
+	int32_t *ntask;		/* number of tasks to run on each host */
 	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job    */
 };
 
-static struct node_cr_record *select_node_ptr; /* Array of node_cr_record. One
-						  entry for each node in the cluster */
-static int select_node_cnt;
-static struct node_cr_record **cr_node_hash_table = NULL; /* node_cr_record hash table */
+/* Array of node_cr_record. One entry for each node in the cluster */
+static struct node_cr_record *select_node_ptr = NULL;
+static int select_node_cnt = 0;
+static struct node_cr_record **cr_node_hash_table = NULL;
+
+/* Restored node_cr_records - used by select_p_state_restore/node_init */
+static struct node_cr_record *prev_select_node_ptr = NULL;
+static int prev_select_node_cnt = 0;
 
 static uint16_t select_fast_schedule;
 
@@ -362,9 +369,18 @@ static void _cr_exclusive_dist(struct select_cr_job *job)
 		job->ntask[i] = job->cpus[i];
 }
 
+/* xfree an array of node_cr_record */
+static void _xfree_select_nodes(struct node_cr_record *ptr, int select_node_cnt)
+{
+        xfree(ptr);
+}
+
 /* xfree a select_cr_job job */
 static void _xfree_select_cr_job(struct select_cr_job *job)
 {
+	if (job == NULL)
+		return;
+
 	xfree(job->host);
 	xfree(job->cpus);
 	xfree(job->ntask);
@@ -379,6 +395,10 @@ static void _clear_job_list(void)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
+
+	if (select_cr_job_list == NULL) {
+		return;
+	}
 
 	job_iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
@@ -578,13 +598,19 @@ extern int init(void)
 extern int fini(void)
 {
 	_clear_job_list();
-	if (select_cr_job_list);
+	if (select_cr_job_list) {
 		list_destroy(select_cr_job_list);
-	select_cr_job_list = NULL;
-	xfree(select_node_ptr);
+		select_cr_job_list = NULL;
+	}
+
+	_xfree_select_nodes(select_node_ptr, select_node_cnt);
 	select_node_ptr = NULL;
-	select_node_cnt = -1;
+	select_node_cnt = 0;   
 	xfree(cr_node_hash_table);
+
+	_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
+	prev_select_node_ptr = NULL;
+	prev_select_node_cnt = 0;   
 
 	verbose("%s shutting down ...", plugin_name);
 	return SLURM_SUCCESS;
@@ -595,46 +621,366 @@ extern int fini(void)
  * node selection API.
  */
 
+static int _cr_write_state_buffer(int fd, Buf buffer)
+{
+	int error_code = SLURM_SUCCESS;
+	char *buf  = get_buf_data(buffer);
+	size_t len = get_buf_offset(buffer);
+	while(1) {
+		int wrote = write (fd, buf, len);
+		if ((wrote < 0) && (errno == EINTR))
+			continue;
+		if (wrote == 0)
+			break;
+		if (wrote < 0) {
+			error ("Can't save select/cons_res state: %m");
+			error_code = SLURM_ERROR;
+			break;   
+		}
+		buf += wrote;
+		len -= wrote;
+		if (len == 0) {
+			break;
+		}
+		if (len <= 0) {
+			error ("Can't save select/cons_res state: %m");
+			error_code = SLURM_ERROR;
+			break;   
+		}
+	}
+	return error_code;
+}
+
+static int _cr_read_state_buffer(int fd, char **data_p, int *data_size_p)
+{
+	int error_code = SLURM_SUCCESS;
+        int data_allocated = 0, data_read = 0, data_size = 0;
+	char *data = NULL;
+	int buffer_size = 1024;
+
+        if (fd < 0) {
+	    	error_code = SLURM_ERROR; 
+                error("No fd for select/cons_res state recovery");
+	}
+
+	data_allocated = buffer_size;
+	data = xmalloc(data_allocated);
+	*data_p      = data;
+	*data_size_p = data_size;
+	while (1) {
+		data_read = read (fd, &data[data_size],
+				  buffer_size);
+		if ((data_read < 0) && (errno == EINTR)) {
+			continue;
+		}
+		if (data_read < 0) {
+			error ("Read error recovering select/cons_res state");
+			error_code = SLURM_ERROR;
+			break;
+		} else if (data_read == 0) {
+			break;
+		}
+		data_size      += data_read;
+		data_allocated += data_read;
+		xrealloc(data, data_allocated);
+		*data_p      = data;
+		*data_size_p = data_size;
+	}
+
+	return error_code;
+}
+
+static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
+{
+	int32_t nhosts = job->nhosts;
+	if (nhosts < 0) {
+		nhosts = 0;
+	}
+
+	pack32(job->job_id, buffer);
+	pack16(job->state, buffer);
+	pack32((uint32_t)job->nprocs, buffer);
+	pack32((uint32_t)job->nhosts, buffer);
+	packstr_array(job->host, nhosts, buffer);
+	pack32_array((uint32_t*)job->cpus, nhosts, buffer);
+	pack32_array((uint32_t*)job->ntask, nhosts, buffer);
+	pack_bit_fmt(job->node_bitmap, buffer);
+	pack16((uint16_t) _bitstr_bits(job->node_bitmap), buffer);
+
+	return 0;
+}
+
+static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
+{
+    	uint16_t len16;
+    	uint32_t len32;
+	int32_t nhosts = 0;
+	char *bit_fmt = NULL;
+	uint16_t bit_cnt; 
+
+	safe_unpack32(&job->job_id, buffer);
+	safe_unpack16(&job->state, buffer);
+	safe_unpack32((uint32_t*)&job->nprocs, buffer);
+	safe_unpack32((uint32_t*)&job->nhosts, buffer);
+	nhosts = job->nhosts;
+	if (nhosts < 0) {
+		nhosts = 0;
+	}
+	safe_unpackstr_array(&job->host, &len16, buffer);
+	safe_unpack32_array((uint32_t**)&job->cpus, &len32, buffer);
+	safe_unpack32_array((uint32_t**)&job->ntask, &len32, buffer);
+	safe_unpackstr_xmalloc(&bit_fmt, &len16, buffer);
+	safe_unpack16(&bit_cnt, buffer);
+	if (bit_fmt) {
+                job->node_bitmap = bit_alloc(bit_cnt);
+                if (job->node_bitmap == NULL)
+                        fatal("bit_alloc: %m");
+                if (bit_unfmt(job->node_bitmap, bit_fmt)) {
+                        error("error recovering exit_node_bitmap from %s",
+                                bit_fmt);
+                }
+                xfree(bit_fmt);
+	}
+	return 0;
+unpack_error:
+	xfree(bit_fmt);
+	return -1;
+}
+
 extern int select_p_state_save(char *dir_name)
 {
-	return SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
+	ListIterator job_iterator;
+	struct select_cr_job *job;
+	Buf buffer = NULL;
+	int state_fd, i;
+	char *file_name;
+
+	info("cons_res: select_p_state_save");
+
+	/*** create the state file ***/
+        file_name = xstrdup(dir_name);
+        xstrcat(file_name, "/cons_res_state");
+        (void) unlink(file_name);
+        state_fd = creat (file_name, 0600);
+        if (state_fd < 0) {
+                error ("Can't save state, error creating file %s",
+                        file_name);
+                error_code = SLURM_ERROR;
+		return error_code;
+	}
+
+	buffer = init_buf(1024);
+
+	/*** record the plugin type ***/
+	packstr((char*)plugin_type, buffer);
+	pack32(plugin_version, buffer);
+	pack32(pstate_version, buffer);
+
+	/*** pack the select_cr_job array ***/
+	if (select_cr_job_list) {
+		job_iterator = list_iterator_create(select_cr_job_list);
+		while ((job = (struct select_cr_job *) list_next(job_iterator))) {
+			pack32(job->job_id, buffer);
+			_cr_pack_job(job, buffer);
+		}
+		list_iterator_destroy(job_iterator);
+	}
+	pack32((uint32_t)(-1), buffer);		/* mark end of jobs */
+
+	/*** pack the node_cr_record array ***/
+	pack32((uint32_t)select_node_cnt, buffer);
+	for (i = 0; i < select_node_cnt; i++) {
+		/*** don't save select_node_ptr[i].node_ptr ***/
+		packstr((char*)select_node_ptr[i].node_ptr->name, buffer);
+		pack32(select_node_ptr[i].used_cpus, buffer);
+	}
+
+	/*** close the state file ***/
+	_cr_write_state_buffer(state_fd, buffer);
+	close (state_fd);
+
+        xfree(file_name);
+
+        if (buffer)
+                free_buf(buffer);
+
+	return error_code;
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
+	int error_code = SLURM_SUCCESS;
+	int state_fd, i;
+	char *file_name;
+	struct select_cr_job *job;
+	Buf buffer = NULL;
+    	uint16_t len16;
+	char *data = NULL;
+	int data_size = 0;
+	char *restore_plugin_type = NULL;
+    	uint32_t restore_plugin_version = 0;
+    	uint32_t restore_pstate_version = 0;
+	int job_id = -1;
+
+	info("cons_res: select_p_state_restore");
+
+        file_name = xstrdup(dir_name);
+        xstrcat(file_name, "/cons_res_state");
+        state_fd = open (file_name, O_RDONLY);
+        if (state_fd < 0) {
+                error ("Can't restore state, error opening file %s",
+                        file_name);
+                error ("Starting cons_res with clean slate");
+		return SLURM_SUCCESS;
+	}
+
+	error_code = _cr_read_state_buffer(state_fd, &data, &data_size);
+
+	if (error_code != SLURM_SUCCESS) {
+                error ("Can't restore state, error reading file %s",
+                        file_name);
+                error ("Starting cons_res with clean slate");
+		xfree(data);
+		return SLURM_SUCCESS;
+	}
+
+	buffer = create_buf (data, data_size);
+	data = NULL;    /* now in buffer, don't xfree() */
+
+	/*** retrieve the plugin type ***/
+	safe_unpackstr_xmalloc(&restore_plugin_type, &len16, buffer);
+	safe_unpack32(&restore_plugin_version, buffer);
+	safe_unpack32(&restore_pstate_version, buffer);
+
+	if ((strcmp(restore_plugin_type, plugin_type) != 0) ||
+	    (restore_plugin_version != plugin_version) ||
+	    (restore_pstate_version != pstate_version)) { 
+                error ("Can't restore state, state version mismtach: "
+			"saw %s/%d/%d, expected %s/%d/%d",
+			restore_plugin_type,
+			restore_plugin_version,
+			restore_pstate_version,
+			plugin_type,
+			plugin_version,
+			pstate_version);
+                error ("Starting cons_res with clean slate");
+		xfree(restore_plugin_type);
+		if (buffer)
+			free_buf(buffer);
+		return SLURM_SUCCESS;
+	}
+
+	/*** unpack the select_cr_job array ***/
+	_clear_job_list();
+	if (select_cr_job_list) {
+		list_destroy(select_cr_job_list);
+		select_cr_job_list = NULL;
+	}
+	select_cr_job_list = list_create(NULL);
+
+	safe_unpack32((uint32_t*)&job_id, buffer);
+	while (job_id >= 0) {	/* unpack until end of job marker (-1) */
+		job = xmalloc(sizeof(struct select_cr_job));
+		_cr_unpack_job(job, buffer);
+		list_append(select_cr_job_list, job);
+		safe_unpack32((uint32_t*)&job_id, buffer);   /* next marker */
+	}
+
+	/*** unpack the node_cr_record array ***/
+	if (prev_select_node_ptr) {	/* clear any existing data */
+		_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
+		prev_select_node_ptr = NULL;
+		prev_select_node_cnt = 0;
+	}
+	safe_unpack32((uint32_t*)&prev_select_node_cnt, buffer);
+	prev_select_node_ptr = xmalloc(sizeof(struct node_cr_record) *
+							(prev_select_node_cnt));
+	for (i = 0; i < prev_select_node_cnt; i++) {
+		/*** don't restore prev_select_node_ptr[i].node_ptr ***/
+		prev_select_node_ptr[i].node_ptr = NULL;
+		safe_unpackstr_xmalloc(&(prev_select_node_ptr[i].name), &len16, buffer);
+		safe_unpack32(&prev_select_node_ptr[i].used_cpus, buffer);
+	}
+
+	/*** cleanup after restore ***/
+        if (buffer)
+                free_buf(buffer);
+        xfree(restore_plugin_type);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+        if (buffer)
+                free_buf(buffer);
+        xfree(restore_plugin_type);
+
+	/* don't keep possibly invalid prev_select_node_ptr */
+	_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
+	prev_select_node_ptr = NULL;
+	prev_select_node_cnt = 0;
+
+	error ("Can't restore state, error unpacking file %s", file_name);
+	error ("Starting cons_res with clean slate");
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_init(List job_list)
 {
-	select_cr_job_list = list_create(NULL);
+	info("cons_res: select_p_job_init");
+
+    	if (!select_cr_job_list) {
+		select_cr_job_list = list_create(NULL);
+	}
+
+	/* Note: select_cr_job_list restored in select_p_state_restore */
 
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	int i = 0;
+	int i;
+
+	info("cons_res: select_p_node_init");
 
 	if (node_ptr == NULL) {
-		error("select_p_node_init: node_ptr == NULL");
+		error("select_g_node_init: node_ptr == NULL");
 		return SLURM_ERROR;
 	}
 
 	if (node_cnt < 0) {
-		error("select_p_node_init: node_cnt < 0");
+		error("select_g_node_init: node_cnt < 0");
 		return SLURM_ERROR;
 	}
 
 	select_node_cnt = node_cnt;
-	select_node_ptr =
-	    xmalloc(sizeof(struct node_cr_record) *
-		    (select_node_cnt));
+	select_node_ptr = xmalloc(sizeof(struct node_cr_record) *
+							select_node_cnt);
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
+		select_node_ptr[i].name     = node_ptr[i].name;
 		select_node_ptr[i].used_cpus = 0;
+
+		/* Restore any previous node data */
+		if (prev_select_node_ptr && (i < prev_select_node_cnt) &&
+			(strcmp(prev_select_node_ptr[i].name,
+				select_node_ptr[i].name) == 0)) {
+			info("recovered cons_res node data for %s",
+					    select_node_ptr[i].name);
+		    	
+			select_node_ptr[i].used_cpus
+				= prev_select_node_ptr[i].used_cpus;
+		}
+
 	}
+
+	/* Release any previous node data */
+	_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
+	prev_select_node_ptr = NULL;
+	prev_select_node_cnt = 0;
+
 	select_fast_schedule = slurm_get_fast_schedule();
 
 	_build_cr_node_hash_table();
