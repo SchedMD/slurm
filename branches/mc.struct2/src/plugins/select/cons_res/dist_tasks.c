@@ -63,9 +63,9 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 			  const uint16_t fast_schedule)
 {
 	int i, j, taskid = 0, rc = SLURM_SUCCESS;
-	int avail_cpus = 0, cpus, sockets, cores, threads;
+	uint16_t avail_cpus = 0, cpus, sockets, cores, threads;
 	bool over_subscribe = false;
-	int maxtasks = job->nprocs;
+	uint32_t maxtasks = job->nprocs;
 
 	for (j = 0; (taskid < maxtasks); j++) {	/* cycle counter */
 		bool space_remaining = false;
@@ -98,8 +98,8 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 			case CR_SOCKET:
 			case CR_SOCKET_MEMORY:
 			{
-				int alloc_sockets = 0;
-				int alloc_lps     = 0;
+				uint16_t alloc_sockets = 0;
+				uint16_t alloc_lps     = 0;
 				get_resources_this_node(&cpus, &sockets, 
 							&cores, &threads, 
 							this_node, &alloc_sockets, 
@@ -129,8 +129,8 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 			case CR_CORE:
 			case CR_CORE_MEMORY:
 			{
-				int alloc_sockets = 0;
-				int alloc_lps     = 0;
+				uint16_t alloc_sockets = 0;
+				uint16_t alloc_lps     = 0;
 				get_resources_this_node(&cpus, &sockets, 
 							&cores, &threads, 
 							this_node, &alloc_sockets,
@@ -177,7 +177,7 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 
 #if (CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _c_b_task_dist %u host %s nprocs %d maxtasks %d alloc_ lps %d ", 
+		info("cons_res _c_b_task_dist %u host %s nprocs %u maxtasks %u alloc_ lps %u", 
 		     job->job_id, job->host[i], job->nprocs, 
 		     maxtasks, job->alloc_lps[i]);
 	}
@@ -428,8 +428,8 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 	int taskcount = 0; 
 	int maxtasks  = job->nprocs;
 	int host_index;
-	int usable_cpus = 0;
-	int usable_sockets = 0, usable_cores = 0, usable_threads = 0;
+	uint16_t usable_cpus = 0;
+	uint16_t usable_sockets = 0, usable_cores = 0, usable_threads = 0;
 	int last_socket_index = -1;
 	int last_core_index = -1;
 	int job_index = -1;
@@ -449,9 +449,9 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 	     ((host_index < node_record_count) && (taskcount < job->nprocs));
 	     host_index++) {
 		struct node_cr_record *this_cr_node;
-		int alloc_sockets = 0;
-		int alloc_lps     = 0;
-		int avail_cpus    = 0;
+		uint16_t alloc_sockets = 0;
+		uint16_t alloc_lps     = 0;
+		uint16_t avail_cpus    = 0;
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
@@ -621,18 +621,18 @@ int cr_exclusive_dist(struct select_cr_job *job,
 }
 
 int cr_plane_dist(struct select_cr_job *job, 
-		  const int plane_size,
+		  const uint16_t plane_size,
 		  const select_type_plugin_info_t cr_type)
 {
 	int maxtasks    = job->nprocs;
 	int num_hosts   = job->nhosts;
 	int i, j, k, s, m, l, host_index;
-	int usable_cpus, usable_sockets, usable_cores, usable_threads;
+	uint16_t usable_cpus, usable_sockets, usable_cores, usable_threads;
 	int taskcount=0, last_socket_index = -1;
 	int job_index = -1;
 	bool count_done = false;
 
-	debug3("cons_res _cr_plane_dist plane_size %d ", plane_size);
+	debug3("cons_res _cr_plane_dist plane_size %u ", plane_size);
 	debug3("cons_res _cr_plane_dist  maxtasks %d num_hosts %d",
 	       maxtasks, num_hosts);
 
@@ -659,7 +659,7 @@ int cr_plane_dist(struct select_cr_job *job,
 
 #if(CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _cr_plane_dist %u host %s alloc_ lps %d ", 
+		info("cons_res _cr_plane_dist %u host %s alloc_ lps %u ", 
 		     job->job_id, job->host[i],  job->alloc_lps[i]);
 	}
 #endif
@@ -669,9 +669,9 @@ int cr_plane_dist(struct select_cr_job *job,
 	     ((host_index < node_record_count) && (taskcount < job->nprocs));
 	     host_index++) {
 		struct node_cr_record *this_cr_node = NULL;
-		int alloc_sockets = 0;
-		int alloc_lps     = 0;
-		int avail_cpus    = 0;
+		uint16_t alloc_sockets = 0;
+		uint16_t alloc_lps     = 0;
+		uint16_t avail_cpus    = 0;
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
