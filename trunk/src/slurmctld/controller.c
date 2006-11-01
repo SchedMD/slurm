@@ -338,9 +338,7 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
-		if (select_g_state_save(slurmctld_conf.state_save_location)
-				!= SLURM_SUCCESS )
-			error("failed to restore node selection state");
+		select_g_state_save(slurmctld_conf.state_save_location);
 		switch_save(slurmctld_conf.state_save_location);
 		if (slurmctld_config.resume_backup == false)
 			break;
@@ -869,6 +867,7 @@ void save_all_state(void)
 	schedule_job_save();
 	schedule_part_save();
 	schedule_node_save();
+	select_g_state_save(slurmctld_conf.state_save_location);
 }
 
 /* 
