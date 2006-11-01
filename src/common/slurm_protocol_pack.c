@@ -3952,11 +3952,11 @@ extern void
 pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
 {
 	if (multi_core == NULL) {
-		pack8((uint8_t) 'E', buffer);	/* flag as Empty */
+		pack8((uint8_t) 0, buffer);	/* flag as Empty */
 		return;
 	}
 
-	pack8((uint8_t) 'F', buffer);		/* flag as Full */
+	pack8((uint8_t) 0xff, buffer);		/* flag as Full */
 	pack16(multi_core->job_min_sockets, buffer);
 	pack16(multi_core->job_min_cores,   buffer);
 	pack16(multi_core->job_min_threads, buffer);
@@ -3976,14 +3976,14 @@ pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
 extern int 
 unpack_multi_core_data (multi_core_data_t **mc_ptr, Buf buffer)
 {
-	char flag;
+	uint8_t flag;
 	multi_core_data_t *multi_core;
 
 	*mc_ptr = NULL;
 	safe_unpack8(&flag, buffer);
-	if (flag == 'E')
+	if (flag == 0)
 		return SLURM_SUCCESS;
-	if (flag != 'F')
+	if (flag != 0xff)
 		return SLURM_ERROR;
 
 	multi_core = xmalloc(sizeof(multi_core_data_t));
