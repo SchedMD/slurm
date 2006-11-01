@@ -84,7 +84,6 @@
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
-#include "src/slurmd/slurmstepd/task_exec.h"
 
 /*
  * Static prototype definitions.

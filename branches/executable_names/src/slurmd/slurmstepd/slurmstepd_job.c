@@ -60,7 +60,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/fname.h"
-#include "src/slurmd/slurmstepd/task_exec.h"
+#include "src/slurmd/slurmstepd/multi_prog.h"
 
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
