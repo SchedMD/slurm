@@ -478,6 +478,7 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 		/* default to one, so most plugins don't have to */
 		uint32_t *nodes = (uint32_t *)data;
 		*nodes = 1;
+		return SLURM_SUCCESS;
 	}	
 	return (*(g_select_context->ops.alter_node_cnt))(type, data);
 }

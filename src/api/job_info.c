@@ -85,7 +85,7 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 		slurm_print_job_info(out, &job_ptr[i], one_liner);
 }
 
-static void _sprint_range(char *str, int lower, int upper)
+static void _sprint_range(char *str, uint16_t lower, uint16_t upper)
 {
     	char tmp[128];
 	convert_num_unit((float)lower, str, UNIT_NONE);
@@ -125,7 +125,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int i, j;
 	char time_str[32], select_buf[128];
 	struct group *group_info = NULL;
-	char tmp1[128], tmp2[128], tmp3[128], tmp4[128];
+	char tmp1[128], tmp2[128];
 	char tmp_line[128];
 	uint16_t quarter = (uint16_t) NO_VAL;
 	uint16_t nodecard = (uint16_t) NO_VAL;
@@ -337,13 +337,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 8 ******/
-	convert_num_unit((float)job_ptr->cpus_per_task, tmp1, UNIT_NONE);
-
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Shared=%s Contiguous=%d CPUs/task=%s", 
+		"Shared=%s Contiguous=%d CPUs/task=%u", 
 		 (job_ptr->shared == 0 ? "0" :
 		  job_ptr->shared == 1 ? "1" : "OK"),
-		 job_ptr->contiguous, tmp1);
+		 job_ptr->contiguous, job_ptr->cpus_per_task);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)
@@ -352,13 +350,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 9 ******/
-	convert_num_unit((float)job_ptr->job_min_procs, tmp1, UNIT_NONE);
-	convert_num_unit((float)job_ptr->job_min_sockets, tmp2, UNIT_NONE);
-	convert_num_unit((float)job_ptr->job_min_cores, tmp3, UNIT_NONE);
-	convert_num_unit((float)job_ptr->job_min_threads, tmp4, UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"MinProcs=%s MinSockets=%s MinCores=%s MinThreads=%s", 
-		tmp1, tmp2, tmp3, tmp4);
+		"MinProcs=%u MinSockets=%u MinCores=%u MinThreads=%u", 
+		job_ptr->job_min_procs, job_ptr->job_min_sockets, 
+		job_ptr->job_min_cores, job_ptr->job_min_threads);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

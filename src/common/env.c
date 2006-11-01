@@ -636,7 +636,7 @@ int setup_env(env_t *env)
  *
  * Returns an xmalloc'ed string.  Free with xfree().
  */
-static char *_uint32_array_to_str(int array_len, const uint32_t *array)
+static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 {
 	int i;
 	int previous = 0;
@@ -835,7 +835,7 @@ env_array_for_step(char ***dest,
 {
 	char *tmp;
 
-	tmp = _uint32_array_to_str(step->step_layout->node_cnt,
+	tmp = _uint16_array_to_str(step->step_layout->node_cnt,
 				   step->step_layout->tasks);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",

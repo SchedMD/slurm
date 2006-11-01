@@ -129,6 +129,7 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 	va_list ap;
 	int rc = SLURM_SUCCESS;
 	uint32_t node_inx;
+	uint16_t **uint16_array_pptr = (uint16_t **) NULL;
 	uint32_t *uint32_ptr;
 	uint32_t **uint32_array_pptr = (uint32_t **) NULL;
 	char **char_array_pptr = (char **) NULL;
@@ -154,8 +155,8 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 		*uint32_ptr = ctx->step_resp->job_step_id;
 		break;
 	case SLURM_STEP_CTX_TASKS:
-		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
-		*uint32_array_pptr = ctx->step_resp->step_layout->tasks;
+		uint16_array_pptr = (uint16_t **) va_arg(ap, void *);
+		*uint16_array_pptr = ctx->step_resp->step_layout->tasks;
 		break;
 		
 	case SLURM_STEP_CTX_TID:
@@ -295,7 +296,7 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx ctx)
 	new_layout->node_list = xstrdup(old_layout->node_list);
 	slurm_step_layout_destroy(old_layout);
 	new_layout->tasks =
-		(uint32_t *)xmalloc(sizeof(uint32_t) * new_layout->node_cnt);
+		(uint16_t *)xmalloc(sizeof(uint16_t) * new_layout->node_cnt);
 	new_layout->tids =
 		(uint32_t **)xmalloc(sizeof(uint32_t *) * new_layout->node_cnt);
 	for (i = 0; i < new_layout->node_cnt; i++) {

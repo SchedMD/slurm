@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Add version number to node state save file. Will not recover node 
     state information on restart from older version.
  -- Add logic to save/restore multi-core state information.
+ -- Updated multi-core logic to use types uint16_t and uint32_t instead 
+    of just type int.
 
 * Changes in SLURM 1.2.0-pre5
 =============================

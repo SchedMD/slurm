@@ -371,22 +371,22 @@ typedef struct last_update_msg {
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
-	uint32_t  nnodes;	/* number of nodes in this job step       */
+	uint16_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;
-	uint32_t  *tasks_to_launch;
+	uint16_t  *tasks_to_launch;
 	uint16_t  envc;
 	uint16_t  argc;
 	uint16_t  multi_prog;
-	uint32_t  *cpus_allocated;
-	uint32_t  max_sockets;
-	uint32_t  max_cores;
-	uint32_t  max_threads;
-	uint32_t  cpus_per_task;
-	uint32_t  ntasks_per_node;
-	uint32_t  ntasks_per_socket;
-	uint32_t  ntasks_per_core;
+	uint16_t  *cpus_allocated;
+	uint16_t  max_sockets;
+	uint16_t  max_cores;
+	uint16_t  max_threads;
+	uint16_t  cpus_per_task;
+	uint16_t  ntasks_per_node;
+	uint16_t  ntasks_per_socket;
+	uint16_t  ntasks_per_core;
 	char    **env;
 	char    **argv;
 	char     *cwd;
@@ -399,7 +399,7 @@ typedef struct launch_tasks_request_msg {
 
         /* Distribution at the lowest level of logical processor (lllp) */
 	uint16_t task_dist;  /* --distribution=, -m dist	*/
-	uint32_t plane_size; /* lllp distribution -> plane_size for
+	uint16_t plane_size; /* lllp distribution -> plane_size for
 			      * when -m plane=<# of lllp per plane> */      
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
@@ -421,7 +421,7 @@ typedef struct launch_tasks_request_msg {
 	char     *task_prolog;
 	char     *task_epilog;
 
-	uint32_t   slurmd_debug; /* remote slurmd debug level */
+	uint16_t   slurmd_debug; /* remote slurmd debug level */
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
@@ -589,6 +589,28 @@ typedef struct file_bcast_msg {
 	char *block[FILE_BLOCKS];	/* data for this block, 64k max */
 } file_bcast_msg_t; 
 
+typedef struct multi_core_data {
+	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
+	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
+	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
+
+	uint16_t min_sockets;	/* minimum number of sockets per node required
+				 * by job, default=0 */
+	uint16_t max_sockets;	/* maximum number of sockets per node usable 
+				 * by job, default=unlimited (NO_VAL) */
+	uint16_t min_cores;	/* minimum number of cores per cpu required
+				 * by job, default=0 */
+	uint16_t max_cores;	/* maximum number of cores per cpu usable
+				 * by job, default=unlimited (NO_VAL) */
+	uint16_t min_threads;	/* minimum number of threads per core required
+				 * by job, default=0 */
+	uint16_t max_threads;	/* maximum number of threads per core usable
+				 * by job, default=unlimited (NO_VAL) */
+
+	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
+	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
+	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */
+} multi_core_data_t;
 
 /*****************************************************************************\
  * Slurm API Message Types

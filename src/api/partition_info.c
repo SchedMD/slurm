@@ -169,18 +169,18 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->min_nodes, tmp1, UNIT_NONE);
 #else
-	sprintf(tmp1, "%d", part_ptr->min_nodes);
+	sprintf(tmp1, "%u", part_ptr->min_nodes);
 #endif
 	sprintf(tmp_line, "MinNodes=%s ", tmp1);
 	xstrcat(out, tmp_line);
 
-	if (part_ptr->max_nodes == INFINITE)
+	if (part_ptr->max_nodes == (uint16_t) INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
 	else {
 #ifdef HAVE_BG
 		convert_num_unit((float)part_ptr->max_nodes, tmp1, UNIT_NONE);
 #else
-		sprintf(tmp1, "%d", part_ptr->max_nodes);
+		sprintf(tmp1, "%u", part_ptr->max_nodes);
 #endif
 		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
 	}

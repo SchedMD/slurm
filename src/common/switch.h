@@ -128,7 +128,7 @@ extern int  switch_alloc_jobinfo (switch_jobinfo_t *jobinfo);
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
 extern int  switch_build_jobinfo (switch_jobinfo_t jobinfo, 
-		char *nodelist, uint32_t *tasks_per_node, 
+		char *nodelist, uint16_t *tasks_per_node, 
 		int cyclic_alloc, char *network);
 
 /* copy a switch job credential

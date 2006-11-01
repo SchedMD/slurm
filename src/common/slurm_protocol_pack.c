@@ -1358,17 +1358,17 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 
 	packstr(msg->allow_groups, buffer);
-	pack16((uint16_t)msg-> default_part, buffer);
-	pack32((uint32_t)msg-> max_time,     buffer);
-	pack32((uint32_t)msg-> max_nodes,    buffer);
-	pack32((uint32_t)msg-> min_nodes,    buffer);
+	pack16(msg-> default_part, buffer);
+	pack32(msg-> max_time,     buffer);
+	pack16(msg-> max_nodes,    buffer);
+	pack16(msg-> min_nodes,    buffer);
 	packstr(msg->name,         buffer);
 	packstr(msg->nodes,        buffer);
 
-	pack16((uint16_t)msg-> hidden,      buffer);
-	pack16((uint16_t)msg-> root_only,    buffer);
-	pack16((uint16_t)msg-> shared,       buffer);
-	pack16((uint16_t)msg-> state_up,     buffer);
+	pack16(msg-> hidden,      buffer);
+	pack16(msg-> root_only,    buffer);
+	pack16(msg-> shared,       buffer);
+	pack16(msg-> state_up,     buffer);
 }
 
 static int
@@ -1386,8 +1386,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&tmp_ptr->allow_groups, &uint16_tmp, buffer);
 	safe_unpack16(&tmp_ptr->default_part, buffer);
 	safe_unpack32(&tmp_ptr->max_time, buffer);
-	safe_unpack32(&tmp_ptr->max_nodes, buffer);
-	safe_unpack32(&tmp_ptr->min_nodes, buffer);
+	safe_unpack16(&tmp_ptr->max_nodes, buffer);
+	safe_unpack16(&tmp_ptr->min_nodes, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint16_tmp, buffer);
 
@@ -1442,21 +1442,23 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->user_id, buffer);
-	pack32((uint32_t)msg->node_count, buffer);
-	pack32((uint32_t)msg->cpu_count, buffer);
-	pack32((uint32_t)msg->num_tasks, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+	pack32(msg->node_count, buffer);
+	pack32(msg->cpu_count, buffer);
+	pack32(msg->num_tasks, buffer);
 
-	pack16((uint16_t)msg->relative, buffer);
-	pack16((uint16_t)msg->task_dist, buffer);
-	pack32((uint32_t)msg->plane_size, buffer);
-	pack16((uint16_t)msg->port, buffer);
+	pack16(msg->relative, buffer);
+	pack16(msg->task_dist, buffer);
+	pack16(msg->plane_size, buffer);
+	pack16(msg->port, buffer);
+
 	packstr(msg->host, buffer);
 	packstr(msg->name, buffer);
 	packstr(msg->network, buffer);
 	packstr(msg->node_list, buffer);
-	pack8((uint8_t)msg->overcommit, buffer);
+
+	pack8(msg->overcommit, buffer);
 }
 
 static int
@@ -1479,12 +1481,14 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 	safe_unpack16(&(tmp_ptr->relative), buffer);
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
-	safe_unpack32(&(tmp_ptr->plane_size), buffer);
+	safe_unpack16(&(tmp_ptr->plane_size), buffer);
 	safe_unpack16(&(tmp_ptr->port), buffer);
+
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
+
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
 
 	return SLURM_SUCCESS;
@@ -1734,10 +1738,10 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	if (part->name == NULL)
 		part->name = xmalloc(1);	/* part->name = "" implicit */
 	safe_unpack32(&part->max_time,     buffer);
-	safe_unpack32(&part->max_nodes,    buffer);
-	safe_unpack32(&part->min_nodes,    buffer);
-	safe_unpack32(&part->total_nodes,  buffer);
-	safe_unpack32(&part->node_scaling, buffer);
+	safe_unpack16(&part->max_nodes,    buffer);
+	safe_unpack16(&part->min_nodes,    buffer);
+	safe_unpack16(&part->total_nodes,  buffer);
+	safe_unpack16(&part->node_scaling, buffer);
 	
 	safe_unpack32(&part->total_cpus,   buffer);
 	safe_unpack16(&part->default_part, buffer);
@@ -1928,6 +1932,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
 	char *node_inx_str;
+	multi_core_data_t *mc_ptr;
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
@@ -1974,27 +1979,16 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	/*** unpack default job details ***/
 	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
-	safe_unpack32(&job->num_nodes, buffer);
-	safe_unpack32(&job->max_nodes, buffer);
-	safe_unpack32(&job->min_sockets, buffer);
-	safe_unpack32(&job->max_sockets, buffer);
-	safe_unpack32(&job->min_cores, buffer);
-	safe_unpack32(&job->max_cores, buffer);
-	safe_unpack32(&job->min_threads, buffer);
-	safe_unpack32(&job->max_threads, buffer);
+	safe_unpack16(&job->num_nodes, buffer);
+	safe_unpack16(&job->max_nodes, buffer);
+
 
 	/*** unpack pending job details ***/
 	safe_unpack16(&job->shared, buffer);
 	safe_unpack16(&job->contiguous, buffer);
 	safe_unpack16(&job->cpus_per_task, buffer);
-	safe_unpack16(&job->ntasks_per_node, buffer);
-	safe_unpack16(&job->ntasks_per_socket, buffer);
-	safe_unpack16(&job->ntasks_per_core, buffer);
+	safe_unpack16(&job->job_min_procs, buffer);
 
-	safe_unpack32(&job->job_min_procs, buffer);
-	safe_unpack32(&job->job_min_sockets, buffer);
-	safe_unpack32(&job->job_min_cores, buffer);
-	safe_unpack32(&job->job_min_threads, buffer);
 	safe_unpack32(&job->job_min_memory, buffer);
 	safe_unpack32(&job->job_max_memory, buffer);
 	safe_unpack32(&job->job_min_tmp_disk, buffer);
@@ -2015,6 +2009,23 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	else {
 		job->exc_node_inx = bitfmt2int(node_inx_str);
 		xfree(node_inx_str);
+	}
+
+	if (unpack_multi_core_data(&mc_ptr, buffer))
+		goto unpack_error;
+	if (mc_ptr) {
+		job->job_min_sockets   = mc_ptr->job_min_sockets;
+		job->job_min_cores     = mc_ptr->job_min_cores;
+		job->job_min_threads   = mc_ptr->job_min_threads;
+		job->min_sockets       = mc_ptr->min_sockets;
+		job->max_sockets       = mc_ptr->max_sockets;
+		job->min_cores         = mc_ptr->min_cores;
+		job->max_cores         = mc_ptr->max_cores;
+		job->min_threads       = mc_ptr->min_threads;
+		job->max_threads       = mc_ptr->max_threads;
+		job->ntasks_per_socket = mc_ptr->ntasks_per_socket;
+		job->ntasks_per_core   = mc_ptr->ntasks_per_core;
+		xfree(mc_ptr);
 	}
 
 	return SLURM_SUCCESS;
@@ -2264,32 +2275,32 @@ static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
 	/* load the data values */
-	pack16((uint16_t)job_desc_ptr->contiguous, buffer);
-	pack16((uint16_t)job_desc_ptr->task_dist, buffer);
-	pack32((uint32_t)job_desc_ptr->plane_size, buffer);
-	pack16((uint16_t)job_desc_ptr->kill_on_node_fail, buffer);
+	pack16(job_desc_ptr->contiguous, buffer);
+	pack16(job_desc_ptr->task_dist, buffer);
+	pack16(job_desc_ptr->plane_size, buffer);
+	pack16(job_desc_ptr->kill_on_node_fail, buffer);
 	packstr(job_desc_ptr->features, buffer);
-	pack32((uint32_t)job_desc_ptr->job_id, buffer);
+	pack32(job_desc_ptr->job_id, buffer);
 	packstr(job_desc_ptr->name, buffer);
 
 	packstr(job_desc_ptr->alloc_node, buffer);
-	pack32((uint32_t)job_desc_ptr->alloc_sid, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_procs, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_sockets, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_cores, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_threads, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_memory, buffer);
-	pack32((uint32_t)job_desc_ptr->job_max_memory, buffer);
-	pack32((uint32_t)job_desc_ptr->job_min_tmp_disk, buffer);
+	pack32(job_desc_ptr->alloc_sid, buffer);
+	pack16(job_desc_ptr->job_min_procs, buffer);
+	pack16(job_desc_ptr->job_min_sockets, buffer);
+	pack16(job_desc_ptr->job_min_cores, buffer);
+	pack16(job_desc_ptr->job_min_threads, buffer);
+	pack32(job_desc_ptr->job_min_memory, buffer);
+	pack32(job_desc_ptr->job_max_memory, buffer);
+	pack32(job_desc_ptr->job_min_tmp_disk, buffer);
 
 	packstr(job_desc_ptr->partition, buffer);
-	pack32((uint32_t)job_desc_ptr->priority, buffer);
-	pack32((uint32_t)job_desc_ptr->dependency, buffer);
+	pack32(job_desc_ptr->priority, buffer);
+	pack32(job_desc_ptr->dependency, buffer);
 	packstr(job_desc_ptr->account, buffer);
 	packstr(job_desc_ptr->comment, buffer);
-	pack16((uint16_t)job_desc_ptr->nice, buffer);
-	pack16((uint16_t)job_desc_ptr->overcommit, buffer);
-	pack32((uint32_t)job_desc_ptr->num_tasks, buffer);
+	pack16(job_desc_ptr->nice, buffer);
+	pack16(job_desc_ptr->overcommit, buffer);
+	pack32(job_desc_ptr->num_tasks, buffer);
 
 	packstr(job_desc_ptr->req_nodes, buffer);
 	packstr(job_desc_ptr->exc_nodes, buffer);
@@ -2303,35 +2314,35 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->out, buffer);
 	packstr(job_desc_ptr->work_dir, buffer);
 
-	pack16((uint16_t)job_desc_ptr->immediate, buffer);
-	pack16((uint16_t)job_desc_ptr->no_requeue, buffer);
-	pack16((uint16_t)job_desc_ptr->shared, buffer);
-	pack16((uint16_t)job_desc_ptr->cpus_per_task, buffer);
-	pack16((uint16_t)job_desc_ptr->ntasks_per_node, buffer);
-	pack16((uint16_t)job_desc_ptr->ntasks_per_socket, buffer);
-	pack16((uint16_t)job_desc_ptr->ntasks_per_core, buffer);
-	pack32((uint32_t)job_desc_ptr->time_limit, buffer);
+	pack16(job_desc_ptr->immediate, buffer);
+	pack16(job_desc_ptr->no_requeue, buffer);
+	pack16(job_desc_ptr->shared, buffer);
+	pack16(job_desc_ptr->cpus_per_task, buffer);
+	pack16(job_desc_ptr->ntasks_per_node, buffer);
+	pack16(job_desc_ptr->ntasks_per_socket, buffer);
+	pack16(job_desc_ptr->ntasks_per_core, buffer);
+	pack32(job_desc_ptr->time_limit, buffer);
 
-	pack32((uint32_t)job_desc_ptr->num_procs, buffer);
-	pack32((uint32_t)job_desc_ptr->min_nodes, buffer);
-	pack32((uint32_t)job_desc_ptr->max_nodes, buffer);
-	pack32((uint32_t)job_desc_ptr->min_sockets, buffer);
-	pack32((uint32_t)job_desc_ptr->max_sockets, buffer);
-	pack32((uint32_t)job_desc_ptr->min_cores, buffer);
-	pack32((uint32_t)job_desc_ptr->max_cores, buffer);
-	pack32((uint32_t)job_desc_ptr->min_threads, buffer);
-	pack32((uint32_t)job_desc_ptr->max_threads, buffer);
-	pack32((uint32_t)job_desc_ptr->user_id, buffer);
-	pack32((uint32_t)job_desc_ptr->group_id, buffer);
+	pack32(job_desc_ptr->num_procs, buffer);
+	pack16(job_desc_ptr->min_nodes, buffer);
+	pack16(job_desc_ptr->max_nodes, buffer);
+	pack16(job_desc_ptr->min_sockets, buffer);
+	pack16(job_desc_ptr->max_sockets, buffer);
+	pack16(job_desc_ptr->min_cores, buffer);
+	pack16(job_desc_ptr->max_cores, buffer);
+	pack16(job_desc_ptr->min_threads, buffer);
+	pack16(job_desc_ptr->max_threads, buffer);
+	pack32(job_desc_ptr->user_id, buffer);
+	pack32(job_desc_ptr->group_id, buffer);
 
-	pack16((uint16_t)job_desc_ptr->alloc_resp_port, buffer);
+	pack16(job_desc_ptr->alloc_resp_port, buffer);
 	packstr(job_desc_ptr->alloc_resp_hostname, buffer);
-	pack16((uint16_t)job_desc_ptr->other_port, buffer);
+	pack16(job_desc_ptr->other_port, buffer);
 	packstr(job_desc_ptr->other_hostname, buffer);
 	packstr(job_desc_ptr->network, buffer);
 	pack_time(job_desc_ptr->begin_time, buffer);
 
-	pack16((uint16_t)job_desc_ptr->mail_type, buffer);
+	pack16(job_desc_ptr->mail_type, buffer);
 	packstr(job_desc_ptr->mail_user, buffer);
 	if(job_desc_ptr->select_jobinfo)
 		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
@@ -2376,7 +2387,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	/* load the data values */
 	safe_unpack16(&job_desc_ptr->contiguous, buffer);
 	safe_unpack16(&job_desc_ptr->task_dist, buffer);
-	safe_unpack32(&job_desc_ptr->plane_size, buffer);
+	safe_unpack16(&job_desc_ptr->plane_size, buffer);
 	safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->features, &uint16_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->job_id, buffer);
@@ -2384,10 +2395,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->alloc_node, &uint16_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->alloc_sid, buffer);
-	safe_unpack32(&job_desc_ptr->job_min_procs, buffer);
-	safe_unpack32(&job_desc_ptr->job_min_sockets, buffer);
-	safe_unpack32(&job_desc_ptr->job_min_cores, buffer);
-	safe_unpack32(&job_desc_ptr->job_min_threads, buffer);
+	safe_unpack16(&job_desc_ptr->job_min_procs, buffer);
+	safe_unpack16(&job_desc_ptr->job_min_sockets, buffer);
+	safe_unpack16(&job_desc_ptr->job_min_cores, buffer);
+	safe_unpack16(&job_desc_ptr->job_min_threads, buffer);
 	safe_unpack32(&job_desc_ptr->job_min_memory, buffer);
 	safe_unpack32(&job_desc_ptr->job_max_memory, buffer);
 	safe_unpack32(&job_desc_ptr->job_min_tmp_disk, buffer);
@@ -2423,14 +2434,14 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
-	safe_unpack32(&job_desc_ptr->min_nodes, buffer);
-	safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-	safe_unpack32(&job_desc_ptr->min_sockets, buffer);
-	safe_unpack32(&job_desc_ptr->max_sockets, buffer);
-	safe_unpack32(&job_desc_ptr->min_cores, buffer);
-	safe_unpack32(&job_desc_ptr->max_cores, buffer);
-	safe_unpack32(&job_desc_ptr->min_threads, buffer);
-	safe_unpack32(&job_desc_ptr->max_threads, buffer);
+	safe_unpack16(&job_desc_ptr->min_nodes, buffer);
+	safe_unpack16(&job_desc_ptr->max_nodes, buffer);
+	safe_unpack16(&job_desc_ptr->min_sockets, buffer);
+	safe_unpack16(&job_desc_ptr->max_sockets, buffer);
+	safe_unpack16(&job_desc_ptr->min_cores, buffer);
+	safe_unpack16(&job_desc_ptr->max_cores, buffer);
+	safe_unpack16(&job_desc_ptr->min_threads, buffer);
+	safe_unpack16(&job_desc_ptr->max_threads, buffer);
 	safe_unpack32(&job_desc_ptr->user_id, buffer);
 	safe_unpack32(&job_desc_ptr->group_id, buffer);
 
@@ -2736,55 +2747,57 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 {
 	int i=0;
 	xassert(msg != NULL);
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack32((uint32_t)msg->nnodes, buffer);
-	pack32((uint32_t)msg->nprocs, buffer);
-	pack32((uint32_t)msg->uid, buffer);
-	pack32((uint32_t)msg->gid, buffer);
-	pack32((uint32_t)msg->max_sockets, buffer);
-	pack32((uint32_t)msg->max_cores, buffer);
-	pack32((uint32_t)msg->max_threads, buffer);
-	pack32((uint32_t)msg->cpus_per_task, buffer);
-	pack32((uint32_t)msg->ntasks_per_node, buffer);
-	pack32((uint32_t)msg->ntasks_per_socket, buffer);
-	pack32((uint32_t)msg->ntasks_per_core, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_step_id, buffer);
+	pack32(msg->nprocs, buffer);
+	pack32(msg->uid, buffer);
+	pack32(msg->gid, buffer);
+
+	pack16(msg->nnodes, buffer);
+	pack16(msg->max_sockets, buffer);
+	pack16(msg->max_cores, buffer);
+	pack16(msg->max_threads, buffer);
+	pack16(msg->cpus_per_task, buffer);
+	pack16(msg->ntasks_per_node, buffer);
+	pack16(msg->ntasks_per_socket, buffer);
+	pack16(msg->ntasks_per_core, buffer);
+	pack16(msg->task_dist, buffer);
+	pack16(msg->plane_size, buffer);
+
 	slurm_cred_pack(msg->cred, buffer);
 	for(i=0; i<msg->nnodes; i++) {
-		pack32((uint32_t)msg->tasks_to_launch[i], buffer);
-		pack32((uint32_t)msg->cpus_allocated[i], buffer);
+		pack16(msg->tasks_to_launch[i], buffer);
+		pack16(msg->cpus_allocated[i], buffer);
 		pack32_array(msg->global_task_ids[i], 
 			     msg->tasks_to_launch[i], 
 			     buffer);	
 	}
-	pack16((uint16_t)msg->num_resp_port, buffer);
+	pack16(msg->num_resp_port, buffer);
 	for(i = 0; i < msg->num_resp_port; i++)
-		pack16((uint16_t)msg->resp_port[i], buffer);
+		pack16(msg->resp_port[i], buffer);
 	slurm_pack_slurm_addr(&msg->orig_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
-	pack16((uint16_t)msg->cpu_bind_type, buffer);
+	pack16(msg->cpu_bind_type, buffer);
 	packstr(msg->cpu_bind, buffer);
-	pack16((uint16_t)msg->mem_bind_type, buffer);
+	pack16(msg->mem_bind_type, buffer);
 	packstr(msg->mem_bind, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
-	pack16((uint16_t)msg->task_dist, buffer);
-	pack32((uint32_t)msg->plane_size, buffer);
-	pack16((uint16_t)msg->task_flags, buffer);
-	pack16((uint16_t)msg->multi_prog, buffer);
-	pack16((uint16_t)msg->user_managed_io, buffer);
+	pack16(msg->task_flags, buffer);
+	pack16(msg->multi_prog, buffer);
+	pack16(msg->user_managed_io, buffer);
 	if (msg->user_managed_io == 0) {
 		packstr(msg->ofname, buffer);
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
 		pack8(msg->buffered_stdio, buffer);
-		pack16((uint16_t)msg->num_io_port, buffer);
+		pack16(msg->num_io_port, buffer);
 		for(i = 0; i < msg->num_io_port; i++)
-			pack16((uint16_t)msg->io_port[i], buffer);
+			pack16(msg->io_port[i], buffer);
 	}
 	packstr(msg->task_prolog, buffer);
 	packstr(msg->task_epilog, buffer);
-	pack32((uint32_t)msg->slurmd_debug, buffer);
+	pack16(msg->slurmd_debug, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
 	job_options_pack(msg->options, buffer);
 	packstr(msg->complete_nodelist, buffer);
@@ -2805,25 +2818,29 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
  
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->gid, buffer);
-	safe_unpack32(&msg->max_sockets, buffer);
-	safe_unpack32(&msg->max_cores, buffer);
-	safe_unpack32(&msg->max_threads, buffer);
-	safe_unpack32(&msg->cpus_per_task, buffer);
-	safe_unpack32(&msg->ntasks_per_node, buffer);
-	safe_unpack32(&msg->ntasks_per_socket, buffer);
-	safe_unpack32(&msg->ntasks_per_core, buffer);
+
+	safe_unpack16(&msg->nnodes, buffer);
+	safe_unpack16(&msg->max_sockets, buffer);
+	safe_unpack16(&msg->max_cores, buffer);
+	safe_unpack16(&msg->max_threads, buffer);
+	safe_unpack16(&msg->cpus_per_task, buffer);
+	safe_unpack16(&msg->ntasks_per_node, buffer);
+	safe_unpack16(&msg->ntasks_per_socket, buffer);
+	safe_unpack16(&msg->ntasks_per_core, buffer);
+	safe_unpack16(&msg->task_dist, buffer);
+	safe_unpack16(&msg->plane_size, buffer);
+
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
-	msg->tasks_to_launch = xmalloc(sizeof(uint32_t) * msg->nnodes);
-	msg->cpus_allocated = xmalloc(sizeof(uint32_t) * msg->nnodes);
+	msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
+	msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
 	msg->global_task_ids = xmalloc(sizeof(uint32_t *) * msg->nnodes);
 	for(i=0; i<msg->nnodes; i++) {
-		safe_unpack32(&msg->tasks_to_launch[i], buffer);
-		safe_unpack32(&msg->cpus_allocated[i], buffer);
+		safe_unpack16(&msg->tasks_to_launch[i], buffer);
+		safe_unpack16(&msg->cpus_allocated[i], buffer);
 		safe_unpack32_array(&msg->global_task_ids[i], 
 				    &uint32_tmp, 
 				    buffer);	
@@ -2845,8 +2862,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack16(&msg->mem_bind_type, buffer);
 	safe_unpackstr_xmalloc(&msg->mem_bind, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-	safe_unpack16(&msg->task_dist, buffer);
-	safe_unpack32(&msg->plane_size, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
 	safe_unpack16(&msg->multi_prog, buffer);
 	safe_unpack16(&msg->user_managed_io, buffer);
@@ -2865,7 +2880,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	}
 	safe_unpackstr_xmalloc(&msg->task_prolog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->task_epilog, &uint16_tmp, buffer);
-	safe_unpack32(&msg->slurmd_debug, buffer);
+	safe_unpack16(&msg->slurmd_debug, buffer);
 	
 	switch_alloc_jobinfo(&msg->switch_job);
 	if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {
@@ -3930,6 +3945,68 @@ static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer)
 unpack_error:
 	xfree(msg);
 	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+extern void 
+pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
+{
+	if (multi_core == NULL) {
+		pack8((uint8_t) 'E', buffer);	/* flag as Empty */
+		return;
+	}
+
+	pack8((uint8_t) 'F', buffer);		/* flag as Full */
+	pack16(multi_core->job_min_sockets, buffer);
+	pack16(multi_core->job_min_cores,   buffer);
+	pack16(multi_core->job_min_threads, buffer);
+
+	pack16(multi_core->min_sockets, buffer);
+	pack16(multi_core->max_sockets, buffer);
+	pack16(multi_core->min_cores,   buffer);
+	pack16(multi_core->max_cores,   buffer);
+	pack16(multi_core->min_threads, buffer);
+	pack16(multi_core->max_threads, buffer);
+
+	pack16(multi_core->ntasks_per_socket, buffer);
+	pack16(multi_core->ntasks_per_core,   buffer);
+	pack16(multi_core->plane_size,        buffer);
+}
+
+extern int 
+unpack_multi_core_data (multi_core_data_t **mc_ptr, Buf buffer)
+{
+	char flag;
+	multi_core_data_t *multi_core;
+
+	*mc_ptr = NULL;
+	safe_unpack8(&flag, buffer);
+	if (flag == 'E')
+		return SLURM_SUCCESS;
+	if (flag != 'F')
+		return SLURM_ERROR;
+
+	multi_core = xmalloc(sizeof(multi_core_data_t));
+	safe_unpack16(&multi_core->job_min_sockets, buffer);
+	safe_unpack16(&multi_core->job_min_cores,   buffer);
+	safe_unpack16(&multi_core->job_min_threads, buffer);
+
+	safe_unpack16(&multi_core->min_sockets, buffer);
+	safe_unpack16(&multi_core->max_sockets, buffer);
+	safe_unpack16(&multi_core->min_cores,   buffer);
+	safe_unpack16(&multi_core->max_cores,   buffer);
+	safe_unpack16(&multi_core->min_threads, buffer);
+	safe_unpack16(&multi_core->max_threads, buffer);
+
+	safe_unpack16(&multi_core->ntasks_per_socket, buffer);
+	safe_unpack16(&multi_core->ntasks_per_core,   buffer);
+	safe_unpack16(&multi_core->plane_size,        buffer);
+
+	*mc_ptr = multi_core;
+	return SLURM_SUCCESS;
+
+  unpack_error:
+	xfree(multi_core);
 	return SLURM_ERROR;
 }
 

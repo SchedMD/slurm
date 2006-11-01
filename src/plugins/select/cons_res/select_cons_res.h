@@ -93,8 +93,8 @@ struct node_cr_record {
 struct select_cr_job {
 	uint32_t job_id;	/* job ID, default set by SLURM        */
 	uint16_t state;		/* job state information               */
-	int32_t nprocs;		/* --nprocs=n,      -n n               */
-	int32_t nhosts;		/* number of hosts allocated to job    */
+	uint32_t nprocs;	/* --nprocs=n,      -n n               */
+	uint16_t nhosts;	/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
 	uint16_t *cpus;		/* number of processors on each host   */
 	uint16_t *alloc_lps;	/* number of allocated threads/lps on
@@ -103,7 +103,7 @@ struct select_cr_job {
 				 * host */
 	uint16_t **alloc_cores;	/* number of allocated cores on each
 				 * host */
-	uint16_t *alloc_memory;	/* number of allocated MB of real
+	uint32_t *alloc_memory;	/* number of allocated MB of real
 				 * memory on each host */
 	uint16_t max_sockets;
 	uint16_t max_cores;

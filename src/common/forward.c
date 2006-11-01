@@ -102,14 +102,15 @@ void *_forward_thread(void *arg)
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 
-		debug3("forward: send to %s ", name);
-
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
-		
-		debug3("forward: along with %s",
-		       fwd_msg->header.forward.nodelist);
+
+		if (fwd_msg->header.forward.nodelist[0]) {
+			debug3("forward: send to %s along with %s",
+			       name, fwd_msg->header.forward.nodelist);
+		} else
+			debug3("forward: send to %s ", name);
 		
 		pack_header(&fwd_msg->header, buffer);
 	
