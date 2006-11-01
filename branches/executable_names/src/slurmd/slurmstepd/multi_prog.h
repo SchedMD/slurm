@@ -38,6 +38,8 @@
 #ifndef _SLURMD_TASK_EXEC_H
 #define _SLURMD_TASK_EXEC_H
 
+#include "slurmstepd_job.h"
+
 /* Execute a single task based upon the config_data (contents of config_file)
  * and the environment variables supplied.
  *

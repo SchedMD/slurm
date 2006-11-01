@@ -11,7 +11,6 @@
  *  and
  *  Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>,
- *  and Christopher J. Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
@@ -55,8 +54,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "multi_prog.h"
-
-#define BUF_SIZE 256
 
 /*
  * Test if the specified rank is included in the supplied task range 
@@ -190,8 +187,9 @@ _build_path(char* fname, char **prog_env)
 }
 
 /*
- * FIXME - Need to rewrite to parse the file and grab all of the task argv
- *	arrays in one pass.
+ * FIXME - It would be nice to parse the multi-prog array just once
+ *	to retrieve the argv arrays for each task on this node, rather
+ *	than calling multi_prog_get_argv once for each task.
  */
 extern int
 multi_prog_get_argv(char *config_data, char **prog_env, int task_rank,
