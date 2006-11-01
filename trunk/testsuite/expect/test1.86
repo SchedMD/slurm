@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-5 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -111,7 +111,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -159,7 +159,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -196,7 +196,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -240,7 +240,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -277,7 +277,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -300,7 +300,7 @@ if {$matches == 0} {
 #	lines, so we use two send commands for this  execute line
 #
 set matches 0
-send "$srun -l -N1 -n1 --nodelist=$host_0"
+send "$srun -l -N1 -n1 --nodelist=$host_0 "
 send " --exclude=$host_0 $bin_hostname\n"
 expect {
 	-re "0: ($alpha_numeric)" {
@@ -314,7 +314,7 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -348,7 +348,7 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -387,7 +387,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -419,7 +419,7 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -444,7 +444,7 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+		send_user "srun completed\n\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"

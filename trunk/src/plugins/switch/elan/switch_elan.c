@@ -324,7 +324,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t *jp)
 }
 
 int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
-		uint32_t *tasks_per_node, int cyclic_alloc, char *network)
+		uint16_t *tasks_per_node, int cyclic_alloc, char *network)
 {
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 	hostlist_t host_list;

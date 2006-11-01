@@ -115,7 +115,7 @@ static int   _run_job_script(srun_job_t *job, env_t *env);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
-static char *_uint32_array_to_str(int count, const uint32_t *array);
+static char *_uint16_array_to_str(int count, const uint16_t *array);
 static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (void);
 static int   _print_script_exit_status(const char *argv0, int status);
@@ -332,7 +332,8 @@ int srun(int ac, char **av)
 	if (opt.ntasks_per_core != NO_VAL)
 		env->ntasks_per_core = opt.ntasks_per_core;
 	env->distribution = opt.distribution;
-	env->plane_size = opt.plane_size;
+	if (opt.plane_size != NO_VAL)
+		env->plane_size = opt.plane_size;
 	env->cpu_bind_type = opt.cpu_bind_type;
 	env->cpu_bind = opt.cpu_bind;
 	env->mem_bind_type = opt.mem_bind_type;
@@ -346,7 +347,7 @@ int srun(int ac, char **av)
 		env->select_jobinfo = job->select_jobinfo;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		env->task_count = _uint32_array_to_str(
+		env->task_count = _uint16_array_to_str(
 			job->nhosts, job->step_layout->tasks);
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
@@ -466,7 +467,7 @@ int srun(int ac, char **av)
  *
  * Returns an xmalloc'ed string.  Free with xfree().
  */
-static char *_uint32_array_to_str(int array_len, const uint32_t *array)
+static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 {
 	int i;
 	int previous = 0;
@@ -1002,7 +1003,7 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->jobid = job->jobid;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		env->task_count = _uint32_array_to_str(
+		env->task_count = _uint16_array_to_str(
 			job->nhosts, job->step_layout->tasks);
 	}
 	

@@ -138,4 +138,7 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
 /* 		char *partition, char *nodes, char *name, char *network, */
 /* 		Buf buffer ); */
 
+extern void pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer);
+extern int unpack_multi_core_data (multi_core_data_t **multi_core, Buf buffer);
+
 #endif

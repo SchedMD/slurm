@@ -207,7 +207,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		launch.task_flags |= TASK_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
-	launch.cpus_allocated = ctx->step_resp->step_layout->tasks;
+	launch.cpus_allocated  = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 	
 	launch.user_managed_io = params->user_managed_io ? 1 : 0;

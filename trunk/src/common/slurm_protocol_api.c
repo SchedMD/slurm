@@ -2024,14 +2024,16 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			continue;
 		}
 
-		debug3("sending to %s", name);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
-
 		forward_init(&msg->forward, NULL);
 		msg->forward.nodelist = xstrdup(buf);
 		msg->forward.timeout = timeout;
 		msg->forward.cnt = hostlist_count(hl);
-		debug3("along with to %s", msg->forward.nodelist);
+                if (msg->forward.nodelist[0]) {
+	        	debug3("sending to %s along with to %s", 
+                               name, msg->forward.nodelist);
+                } else
+                        debug3("sending to %s", name);
 		
 		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
 			xfree(msg->forward.nodelist);

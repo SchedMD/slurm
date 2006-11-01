@@ -33,6 +33,7 @@ source ./globals
 
 set test_id              "1.58"
 set exit_code            0
+set jobid                0
 
 print_header $test_id
 set timeout $max_job_delay

@@ -509,7 +509,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
 #else
-	sprintf(tmp_cnt, "%d", part_ptr->total_nodes);
+	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 #endif
 
 	if(!params.commandline) {
