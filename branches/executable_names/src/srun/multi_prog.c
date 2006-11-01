@@ -139,14 +139,14 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 
 	for (range = strtok_r(ranks, ",", &ptrptr); range != NULL;
 			range = strtok_r(NULL, ",", &ptrptr)) {
-		p = ranks;
+		p = range;
 		while (*p != '\0' && isdigit (*p))
 			p ++;
 
 		if (*p == '\0') { /* single rank */
 			low_num  = MAX(0, atoi(range));
 			high_num = MIN((ntasks-1), atoi(range));
-			_set_range(low_num, high_num, exec_path);	
+			_set_range(low_num, high_num, exec_path);
 		} else if (*p == '-') { /* lower-upper */
 			upper = ++ p;
 			while (isdigit (*p))
