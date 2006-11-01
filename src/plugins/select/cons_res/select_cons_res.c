@@ -830,11 +830,15 @@ extern int fini(void)
 		list_destroy(select_cr_job_list);
 		select_cr_job_list = NULL;
 	}
-	select_cr_job_list = NULL;
-	xfree(select_node_ptr);
+
+	_xfree_select_nodes(select_node_ptr, select_node_cnt);
 	select_node_ptr = NULL;
-	select_node_cnt = -1;
+	select_node_cnt = 0;
 	xfree(cr_node_hash_table);
+
+	_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
+	prev_select_node_ptr = NULL;
+	prev_select_node_cnt = 0;
 
 	verbose("%s shutting down ...", plugin_name);
 	return SLURM_SUCCESS;
