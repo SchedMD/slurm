@@ -54,6 +54,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "multi_prog.h"
 
 #define BUF_SIZE 256
 
