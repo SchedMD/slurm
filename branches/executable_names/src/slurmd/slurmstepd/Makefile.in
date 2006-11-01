@@ -76,7 +76,7 @@ PROGRAMS = $(sbin_PROGRAMS)
 am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
 	fname.$(OBJEXT) ulimits.$(OBJEXT) pdebug.$(OBJEXT) \
-	pam_ses.$(OBJEXT) req.$(OBJEXT) task_exec.$(OBJEXT) \
+	pam_ses.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
 	proctrack.$(OBJEXT) setproctitle.$(OBJEXT) \
 	slurmstepd_init.$(OBJEXT) run_script.$(OBJEXT) \
 	task_plugin.$(OBJEXT)
@@ -300,7 +300,7 @@ slurmstepd_SOURCES = \
 	pdebug.c pdebug.h		\
 	pam_ses.c pam_ses.h		\
 	req.c req.h			\
-	task_exec.c task_exec.h		\
+	multi_prog.c multi_prog.h	\
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
 	$(top_builddir)/src/slurmd/common/setproctitle.c \
@@ -393,6 +393,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mgr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_ses.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdebug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Po@am__quote@
@@ -403,7 +404,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_exec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ulimits.Po@am__quote@
 
