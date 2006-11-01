@@ -71,6 +71,8 @@ strong_alias(pack16,		slurm_pack16);
 strong_alias(unpack16,		slurm_unpack16);
 strong_alias(pack8,		slurm_pack8);
 strong_alias(unpack8,		slurm_unpack8);
+strong_alias(pack16_array,      slurm_pack16_array);
+strong_alias(unpack16_array,    slurm_unpack16_array);
 strong_alias(pack32_array,	slurm_pack32_array);
 strong_alias(unpack32_array,	slurm_unpack32_array);
 strong_alias(packmem,		slurm_packmem);
@@ -202,6 +204,35 @@ int unpack32(uint32_t * valp, Buf buffer)
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
 	*valp = ntohl(nl);
 	buffer->processed += sizeof(nl);
+	return SLURM_SUCCESS;
+}
+
+/* Given a *uint16_t, it will pack an array of size_val */
+void pack16_array(uint16_t * valp, uint32_t size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	pack32(size_val, buffer);
+
+	for (i = 0; i < size_val; i++) {
+		pack16(*(valp + i), buffer);
+	}
+}
+
+/* Given a int ptr, it will unpack an array of size_val
+ */
+int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	if (unpack32(size_val, buffer))
+		return SLURM_ERROR;
+
+	*valp = xmalloc((*size_val) * sizeof(uint16_t));
+	for (i = 0; i < *size_val; i++) {
+		if (unpack16((*valp) + i, buffer))
+			return SLURM_ERROR;
+	}
 	return SLURM_SUCCESS;
 }
 

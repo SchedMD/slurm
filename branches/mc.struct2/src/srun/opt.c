@@ -916,7 +916,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
-	opt.time_limit = -1;
+	opt.time_limit = NO_VAL;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
@@ -931,7 +931,7 @@ static void _opt_default()
 	opt.comment  = NULL;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
-	opt.plane_size   = 0;
+	opt.plane_size   = NO_VAL;
 
 	opt.ofname = NULL;
 	opt.ifname = NULL;
@@ -964,14 +964,13 @@ static void _opt_default()
 	_verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
 
-	/* constraint default (INT_UNASSIGNED is no constraint) */
-	opt.job_min_cpus    = INT_UNASSIGNED;
-	opt.job_min_sockets = INT_UNASSIGNED;
-	opt.job_min_cores   = INT_UNASSIGNED;
-	opt.job_min_threads = INT_UNASSIGNED;
-	opt.job_min_memory  = INT_UNASSIGNED;
-	opt.job_max_memory  = INT_UNASSIGNED;
-	opt.job_min_tmp_disk= INT_UNASSIGNED;
+	opt.job_min_cpus    = NO_VAL;
+	opt.job_min_sockets = NO_VAL;
+	opt.job_min_cores   = NO_VAL;
+	opt.job_min_threads = NO_VAL;
+	opt.job_min_memory  = NO_VAL;
+	opt.job_max_memory  = NO_VAL;
+	opt.job_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
@@ -986,7 +985,7 @@ static void _opt_default()
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
 	opt.no_rotate	    = false;
-	opt.conn_type	    = -1;
+	opt.conn_type	    = (uint16_t) NO_VAL;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -1126,7 +1125,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_DISTRIB:
 		if (strcmp(val, "unknown") == 0)
 			break;	/* ignore it, passed from salloc */
-	        opt.plane_size = 0;
 		dt = _verify_dist_type(val, &opt.plane_size);
 		if (dt == SLURM_DIST_UNKNOWN) {
 			error("\"%s=%s\" -- invalid distribution type. " 
@@ -1552,7 +1550,6 @@ void set_options(const int argc, char **argv, int first)
 		case (int)'m':
 			if(!first && opt.distribution)
 				break;
-			opt.plane_size = 0;
 			opt.distribution = _verify_dist_type(optarg, 
 							     &opt.plane_size);
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
@@ -2004,23 +2001,25 @@ static void _opt_args(int argc, char **argv)
 	}
 
         /* Check to see if user has specified enough resources to
-	   satisfy the plane distribution with the specified
-	   plane_size.  
-	   if (n/plane_size < N) and ((N-1) * plane_size >= n) -->
-	   problem Simple check will not catch all the problem/invalid
-	   cases.
-	   The limitations of the plane distribution in the cons_res
-	   environment are more extensive and are documented in the
-	   SLURM reference guide.  */
+	 * satisfy the plane distribution with the specified
+	 * plane_size.  
+	 * if (n/plane_size < N) and ((N-1) * plane_size >= n) -->
+	 * problem Simple check will not catch all the problem/invalid
+	 * cases.
+	 * The limitations of the plane distribution in the cons_res
+	 * environment are more extensive and are documented in the
+	 * SLURM reference guide.  */
 	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
 		if ((opt.nprocs/opt.plane_size) < opt.min_nodes) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.nprocs) {
 #if(0)
-				info("Too few processes ((n/plane_size) %d < N %d) and ((N-1)*(plane_size) %d >= n %d)) ",
+				info("Too few processes ((n/plane_size) %d < N %d) "
+				     "and ((N-1)*(plane_size) %d >= n %d)) ",
 				     opt.nprocs/opt.plane_size, opt.min_nodes, 
 				     (opt.min_nodes-1)*opt.plane_size, opt.nprocs);
 #endif
-				error("Too few processes for the requested {plane,node} distribution");
+				error("Too few processes for the requested "
+				      "{plane,node} distribution");
 				exit(1);
 			}
 		}
@@ -2486,7 +2485,7 @@ static void _opt_list()
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
-		info("plane size   : %d", opt.plane_size);
+		info("plane size   : %u", opt.plane_size);
 	info("cpu_bind       : %s", 
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind       : %s",

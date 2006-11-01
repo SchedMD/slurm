@@ -766,7 +766,7 @@ _free_hwcontext(uint32_t prog_num)
  */
 static int
 _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks, 
-		int nnodes, bitstr_t *nodeset, uint32_t *tasks_per_node,
+		int nnodes, bitstr_t *nodeset, uint16_t *tasks_per_node,
 		int cyclic_alloc, int max_tasks_per_node)
 {
 	int i, node_index;
@@ -866,7 +866,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
  */
 int
 qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset, 
-		uint32_t *tasks_per_node, int cyclic_alloc)
+		uint16_t *tasks_per_node, int cyclic_alloc)
 {
 	int i, max_tasks_per_node = 0;
 	int nnodes = bit_set_count(nodeset);

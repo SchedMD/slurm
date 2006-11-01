@@ -1133,6 +1133,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	int tmp_feature, check_node_config, config_filter = 0;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *exc_node_mask = NULL;
+	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 
 	node_set_inx = 0;
 	node_set_ptr = (struct node_set *) 
@@ -1156,20 +1157,20 @@ static int _build_node_list(struct job_record *job_ptr,
 		if (tmp_feature == 0)
 			continue;
 
-		if ((detail_ptr->min_sockets      > config_ptr->sockets    ) || 
-		    (detail_ptr->min_cores        > config_ptr->cores      ) || 
-		    (detail_ptr->min_threads      > config_ptr->threads    ) || 
-		    (detail_ptr->job_min_procs    > config_ptr->cpus       ) ||
-		    (detail_ptr->job_min_sockets  > config_ptr->sockets    ) || 
-		    (detail_ptr->job_min_cores    > config_ptr->cores      ) || 
-		    (detail_ptr->job_min_threads  > config_ptr->threads    ) || 
-		    (detail_ptr->job_min_memory   > config_ptr->real_memory) || 
-		    (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk))
+		config_filter = 0;
+		if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
+		||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
+		||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
-		else
-			config_filter = 0;
-
-
+		if (mc_ptr
+		&&  ((mc_ptr->min_sockets      > config_ptr->sockets    )
+		||   (mc_ptr->min_cores        > config_ptr->cores      )
+		||   (mc_ptr->min_threads      > config_ptr->threads    )
+		||   (mc_ptr->job_min_sockets  > config_ptr->sockets    )
+		||   (mc_ptr->job_min_cores    > config_ptr->cores      )
+		||   (mc_ptr->job_min_threads  > config_ptr->threads    )))
+			config_filter = 1;
+		
 		/* since nodes can register with more resources than defined */
 		/* in the configuration, we want to use those higher values */
 		/* for scheduling, but only as needed (slower) */
@@ -1203,7 +1204,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			continue;
 		}
 		node_set_ptr[node_set_inx].cpus_per_node =
-		    config_ptr->cpus;
+			config_ptr->cpus;
 		node_set_ptr[node_set_inx].real_memory =
 			config_ptr->real_memory;		
 		node_set_ptr[node_set_inx].weight =
@@ -1240,22 +1241,26 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *job_con)
 {
 	int i;
+	multi_core_data_t *mc_ptr = job_con->mc_ptr;
 
 	if (slurmctld_conf.fast_schedule) {	/* test config records */
 		struct config_record *node_con = NULL;
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 				continue;
+
 			node_con = node_record_table_ptr[i].config_ptr;
-			if ((job_con->min_sockets      <= node_con->sockets) &&
-			    (job_con->min_cores        <= node_con->cores)   &&
-			    (job_con->min_threads      <= node_con->threads) &&
-			    (job_con->job_min_procs    <= node_con->cpus)    &&
-			    (job_con->job_min_sockets  <= node_con->sockets) &&
-			    (job_con->job_min_cores    <= node_con->cores)   &&
-			    (job_con->job_min_threads  <= node_con->threads) &&
-			    (job_con->job_min_memory   <= node_con->real_memory) &&
-			    (job_con->job_min_tmp_disk <= node_con->tmp_disk))
+			if ((job_con->job_min_procs    > node_con->cpus)
+			||  (job_con->job_min_memory   > node_con->real_memory)
+			||  (job_con->job_min_tmp_disk > node_con->tmp_disk))
+				continue;
+			if (mc_ptr
+			&&  ((mc_ptr->min_sockets      > node_con->sockets)
+			||   (mc_ptr->min_cores        > node_con->cores  )
+			||   (mc_ptr->min_threads      > node_con->threads)
+			||   (mc_ptr->job_min_sockets  > node_con->sockets)
+			||   (mc_ptr->job_min_cores    > node_con->cores  )
+			||   (mc_ptr->job_min_threads  > node_con->threads)))
 				continue;
 
 			bit_clear(node_set_ptr->my_bitmap, i);
@@ -1268,17 +1273,19 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 				continue;
-			node_ptr = &node_record_table_ptr[i];
 
-			if ((job_con->min_sockets      <= node_ptr->sockets) &&
-			    (job_con->min_cores        <= node_ptr->cores)   &&
-			    (job_con->min_threads      <= node_ptr->threads) &&
-			    (job_con->job_min_procs    <= node_ptr->cpus)    &&
-			    (job_con->job_min_sockets  <= node_ptr->sockets) &&
-			    (job_con->job_min_cores    <= node_ptr->cores)   &&
-			    (job_con->job_min_threads  <= node_ptr->threads) &&
-			    (job_con->job_min_memory   <= node_ptr->real_memory) &&
-			    (job_con->job_min_tmp_disk <= node_ptr->tmp_disk))
+			node_ptr = &node_record_table_ptr[i];
+			if ((job_con->job_min_procs    > node_ptr->cpus)
+			||  (job_con->job_min_memory   > node_ptr->real_memory)
+			||  (job_con->job_min_tmp_disk > node_ptr->tmp_disk))
+				continue;
+			if (mc_ptr
+			&&  ((mc_ptr->min_sockets      > node_ptr->sockets)
+			||   (mc_ptr->min_cores        > node_ptr->cores  )
+			||   (mc_ptr->min_threads      > node_ptr->threads)
+			||   (mc_ptr->job_min_sockets  > node_ptr->sockets)
+			||   (mc_ptr->job_min_cores    > node_ptr->cores  )
+			||   (mc_ptr->job_min_threads  > node_ptr->threads)))
 				continue;
 
 			bit_clear(node_set_ptr->my_bitmap, i);

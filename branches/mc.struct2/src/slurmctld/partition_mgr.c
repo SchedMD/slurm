@@ -717,18 +717,18 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	altered = part_ptr->max_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack32((uint32_t)altered, buffer);
+	pack16((uint16_t) altered, buffer);
 	altered = part_ptr->min_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
  				&altered); 
-	pack32((uint32_t)altered, buffer);
+	pack16((uint16_t) altered, buffer);
 	altered = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack32((uint32_t)altered, buffer);
+	pack16((uint16_t) altered, buffer);
 	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
 				&node_scaling);
-	pack32(node_scaling, buffer);
+	pack16((uint16_t) node_scaling, buffer);
 	pack32((uint32_t)part_ptr->total_cpus, buffer);
 	pack16((uint16_t)default_part_flag, buffer);
 	pack16((uint16_t)part_ptr->hidden, buffer);
@@ -780,43 +780,43 @@ int update_part(update_part_msg_t * part_desc)
 	last_part_update = time(NULL);
 
 	if (part_desc->hidden != (uint16_t) NO_VAL) {
-		info("update_part: setting hidden to %d for partition %s", 
+		info("update_part: setting hidden to %u for partition %s", 
 		     part_desc->hidden, part_desc->name);
 		part_ptr->hidden = part_desc->hidden;
 	}
 
 	if (part_desc->max_time != NO_VAL) {
-		info("update_part: setting max_time to %d for partition %s", 
+		info("update_part: setting max_time to %u for partition %s", 
 		     part_desc->max_time, part_desc->name);
 		part_ptr->max_time = part_desc->max_time;
 	}
 
-	if (part_desc->max_nodes != NO_VAL) {
-		info("update_part: setting max_nodes to %d for partition %s", 
+	if (part_desc->max_nodes != (uint16_t) NO_VAL) {
+		info("update_part: setting max_nodes to %u for partition %s", 
 		     part_desc->max_nodes, part_desc->name);
 		part_ptr->max_nodes = part_desc->max_nodes;
 	}
 
-	if (part_desc->min_nodes != NO_VAL) {
-		info("update_part: setting min_nodes to %d for partition %s", 
+	if (part_desc->min_nodes != (uint16_t) NO_VAL) {
+		info("update_part: setting min_nodes to %u for partition %s", 
 		     part_desc->min_nodes, part_desc->name);
 		part_ptr->min_nodes = part_desc->min_nodes;
 	}
 
 	if (part_desc->root_only != (uint16_t) NO_VAL) {
-		info("update_part: setting root_only to %d for partition %s", 
+		info("update_part: setting root_only to %u for partition %s", 
 		     part_desc->root_only, part_desc->name);
 		part_ptr->root_only = part_desc->root_only;
 	}
 
 	if (part_desc->state_up != (uint16_t) NO_VAL) {
-		info("update_part: setting state_up to %d for partition %s", 
+		info("update_part: setting state_up to %u for partition %s", 
 		     part_desc->state_up, part_desc->name);
 		part_ptr->state_up = part_desc->state_up;
 	}
 
 	if (part_desc->shared != (uint16_t) NO_VAL) {
-		info("update_part: setting shared to %d for partition %s",
+		info("update_part: setting shared to %u for partition %s",
 		     part_desc->shared, part_desc->name);
 		part_ptr->shared = part_desc->shared;
 	}

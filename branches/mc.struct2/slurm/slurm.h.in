@@ -393,10 +393,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t job_id;	/* job ID, default set by SLURM */
 	char *name;		/* name of the job, default "" */
 	/* job constraints: */
-	uint32_t job_min_procs;    /* minimum processors per node, default=0 */
-	uint32_t job_min_sockets;  /* minimum sockets per node, default=0 */
-	uint32_t job_min_cores;    /* minimum cores per processor, default=0 */
-	uint32_t job_min_threads;  /* minimum threads per core, default=0 */
+	uint16_t job_min_procs;    /* minimum processors per node, default=0 */
+	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
+	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
+	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
 	uint32_t job_max_memory;   /* maximum real memory per node, default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
@@ -416,21 +416,21 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
 				 * default=0 */
-	uint32_t min_nodes;	/* minimum number of nodes required by job, 
+	uint16_t min_nodes;	/* minimum number of nodes required by job, 
 				 * default=0 */
-	uint32_t max_nodes;	/* maximum number of nodes usable by job, 
+	uint16_t max_nodes;	/* maximum number of nodes usable by job, 
 				 * default=0 */
-	uint32_t min_sockets;	/* minimum number of sockets per node required
+	uint16_t min_sockets;	/* minimum number of sockets per node required
 				 * by job, default=0 */
-	uint32_t max_sockets;	/* maximum number of sockets per node usable 
+	uint16_t max_sockets;	/* maximum number of sockets per node usable 
 				 * by job, default=unlimited (NO_VAL) */
-	uint32_t min_cores;	/* minimum number of cores per cpu required
+	uint16_t min_cores;	/* minimum number of cores per cpu required
 				 * by job, default=0 */
-	uint32_t max_cores;	/* maximum number of cores per cpu usable
+	uint16_t max_cores;	/* maximum number of cores per cpu usable
 				 * by job, default=unlimited (NO_VAL) */
-	uint32_t min_threads;	/* minimum number of threads per core required
+	uint16_t min_threads;	/* minimum number of threads per core required
 				 * by job, default=0 */
-	uint32_t max_threads;	/* maximum number of threads per core usable
+	uint16_t max_threads;	/* maximum number of threads per core usable
 				 * by job, default=unlimited (NO_VAL) */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
@@ -473,7 +473,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *network;		/* network use spec */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t task_dist;	/* see enum task_dist_state */
-	uint32_t plane_size;	/* plane size when task_dist =
+	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
@@ -523,14 +523,14 @@ typedef struct job_info {
 	uint32_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint32_t num_procs;	/* number of processors required by job */
-	uint32_t num_nodes;	/* minimum number of nodes required by job */
-	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint32_t min_sockets;	/* minimum number of sockets per node */
-	uint32_t max_sockets;	/* maximum number of sockets per node */
-	uint32_t min_cores;	/* minimum number of cores per cpu */
-	uint32_t max_cores;	/* maximum number of cores per cpu */
-	uint32_t min_threads;	/* minimum number of threads per core */
-	uint32_t max_threads;	/* maximum number of threads per core */
+	uint16_t num_nodes;	/* minimum number of nodes required by job */
+	uint16_t max_nodes;	/* maximum number of nodes usable by job */
+	uint16_t min_sockets;	/* minimum number of sockets per node */
+	uint16_t max_sockets;	/* maximum number of sockets per node */
+	uint16_t min_cores;	/* minimum number of cores per cpu */
+	uint16_t max_cores;	/* maximum number of cores per cpu */
+	uint16_t min_threads;	/* minimum number of threads per core */
+	uint16_t max_threads;	/* maximum number of threads per core */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
@@ -538,10 +538,10 @@ typedef struct job_info {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	/* job constraints: */
-	uint32_t job_min_procs;	   /* minimum processors per node, default=0 */
-	uint32_t job_min_sockets;  /* minimum sockets per node, default=0 */
-	uint32_t job_min_cores;    /* minimum cores per processor, default=0 */
-	uint32_t job_min_threads;  /* minimum threads per core, default=0 */
+	uint16_t job_min_procs;	   /* minimum processors per node, default=0 */
+	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
+	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
+	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
 	uint32_t job_max_memory;   /* maximum real memory per node, default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
@@ -579,7 +579,7 @@ typedef struct job_step_specs {
 	uint32_t num_tasks;	/* number of tasks required */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t task_dist;	/* see enum task_dist_state */
-	uint32_t plane_size;	/* plane size when task_dist =
+	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
 	char *host;		/* host to contact initiating srun */
@@ -596,7 +596,7 @@ typedef struct slurm_step_layout {
 	char *node_list;        /* list of nodes in step */
 	/* Array of length "node_cnt". Each element of the array
 	   is the number of tasks assigned to the corresponding node */
-	uint32_t *tasks;
+	uint16_t *tasks;
 
 	/* Array (of length "node_cnt") of task ID arrays.  The length
 	   of each subarray is designated by the corresponding value in
@@ -604,7 +604,7 @@ typedef struct slurm_step_layout {
 	uint32_t **tids;	/* host id => task id mapping */
 
 	uint16_t task_dist;	/* see enum task_dist_state */
-	uint32_t plane_size;	/* plane size when task_dist =
+	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 } slurm_step_layout_t;
 
@@ -729,11 +729,11 @@ typedef struct job_alloc_info_msg {
 typedef struct partition_info {
 	char *name;		/* name of the partition */
 	uint32_t max_time;	/* minutes or INFINITE */
-	uint32_t max_nodes;	/* per job or INFINITE */
-	uint32_t min_nodes;	/* per job */
-	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint16_t max_nodes;	/* per job or INFINITE */
+	uint16_t min_nodes;	/* per job */
+	uint16_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint32_t node_scaling;	/* select plugin node scaling factor */
+	uint16_t node_scaling;	/* select plugin node scaling factor */
 	uint16_t default_part;	/* 1 if this is default partition */
 	uint16_t hidden;	/* 1 if partition is hidden by default */
 	uint16_t root_only;	/* 1 if allocate must come for user root */
