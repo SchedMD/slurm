@@ -923,20 +923,23 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 	pack16(job->state, buffer);
 	pack32(job->nprocs, buffer);
 	pack16(job->nhosts, buffer);
+
 	packstr_array(job->host, nhosts, buffer);
 	pack16_array(job->cpus, nhosts, buffer);
 	pack16_array(job->alloc_lps, nhosts, buffer);
 	pack16_array(job->alloc_sockets, nhosts, buffer);
+
 	if (job->alloc_cores) {
-		pack16(1, buffer);
+		pack16((uint16_t) 1, buffer);
 		for (i = 0; i < nhosts; i++) {
 			uint16_t nsockets = node_record_table_ptr[i].sockets;
 			pack16_array(job->alloc_cores[i], nsockets, buffer);
 		}
 	} else {
-		pack16(0, buffer);
+		pack16((uint16_t) 0, buffer);
 	}
 	pack32_array(job->alloc_memory, nhosts, buffer);
+
 	pack16(job->max_sockets, buffer);
 	pack16(job->max_cores, buffer);
 	pack16(job->max_threads, buffer);
@@ -947,6 +950,7 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 	pack16(job->ntasks_per_socket, buffer);
 	pack16(job->ntasks_per_core, buffer);
 	pack16(job->cpus_per_task, buffer);
+
 	pack_bit_fmt(job->node_bitmap, buffer);
 	pack16(_bitstr_bits(job->node_bitmap), buffer);
 
@@ -959,7 +963,7 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
     	uint16_t len16, have_alloc_cores;
     	uint32_t len32;
 	int32_t nhosts = 0;
-	char *bit_fmt;
+	char *bit_fmt = NULL;
 	uint16_t bit_cnt; 
 
 	safe_unpack32(&job->job_id, buffer);
@@ -967,22 +971,25 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	safe_unpack32(&job->nprocs, buffer);
 	safe_unpack16(&job->nhosts, buffer);
 	nhosts = job->nhosts;
-	if (nhosts < 0) {
-		nhosts = 0;
-	}
+
 	safe_unpackstr_array(&job->host, &len16, buffer);
 	safe_unpack16_array(&job->cpus, &len32, buffer);
 	safe_unpack16_array(&job->alloc_lps, &len32, buffer);
 	safe_unpack16_array(&job->alloc_sockets, &len32, buffer);
+
 	safe_unpack16(&have_alloc_cores, buffer);
 	if (have_alloc_cores) {
-		job->alloc_cores = (uint16_t **) xmalloc(job->nhosts * sizeof(uint16_t *));
+		job->alloc_cores = (uint16_t **) xmalloc(job->nhosts * 
+				sizeof(uint16_t *));
 		for (i = 0; i < nhosts; i++) {
 			safe_unpack16_array(&job->alloc_cores[i], &len32, buffer);
 			/* should be nsockets in size */
 		}
 	}
-	safe_unpack32_array((uint32_t**)&job->alloc_memory, &len32, buffer); /* nhosts */
+	safe_unpack32_array((uint32_t**)&job->alloc_memory, &len32, buffer);
+	if (len32 != nhosts)
+		 goto unpack_error;
+
 	safe_unpack16(&job->max_sockets, buffer);
 	safe_unpack16(&job->max_cores, buffer);
 	safe_unpack16(&job->max_threads, buffer);
@@ -993,6 +1000,7 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	safe_unpack16(&job->ntasks_per_socket, buffer);
 	safe_unpack16(&job->ntasks_per_core, buffer);
 	safe_unpack16(&job->cpus_per_task, buffer);
+
 	safe_unpackstr_xmalloc(&bit_fmt, &len16, buffer);
 	safe_unpack16(&bit_cnt, buffer);
 	if (bit_fmt) {
@@ -1006,6 +1014,7 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
                 xfree(bit_fmt);
 	}
 	return 0;
+
 unpack_error:
 	xfree(bit_fmt);
 	return -1;
@@ -1018,6 +1027,7 @@ extern int select_p_state_save(char *dir_name)
 	struct select_cr_job *job;
 	Buf buffer = NULL;
 	int state_fd, i;
+	uint16_t job_cnt;
 	char *file_name;
 
 	info("cons_res: select_p_state_save");
@@ -1044,14 +1054,15 @@ extern int select_p_state_save(char *dir_name)
 
 	/*** pack the select_cr_job array ***/
 	if (select_cr_job_list) {
+		job_cnt = list_count(select_cr_job_list);
+		pack16(job_cnt, buffer);
 		job_iterator = list_iterator_create(select_cr_job_list);
 		while ((job = (struct select_cr_job *) list_next(job_iterator))) {
-			pack32(job->job_id, buffer);
 			_cr_pack_job(job, buffer);
 		}
 		list_iterator_destroy(job_iterator);
-	}
-	pack32((uint32_t)(-1), buffer);		/* mark end of jobs */
+	} else
+		pack16((uint16_t) 0, buffer);	/* job count */
 
 	/*** pack the node_cr_record array ***/
 	pack32((uint32_t)select_node_cnt, buffer);
@@ -1064,11 +1075,11 @@ extern int select_p_state_save(char *dir_name)
 		pack32(select_node_ptr[i].alloc_memory, buffer);
 		pack16(nsockets, buffer);
 		if (select_node_ptr[i].alloc_cores) {
-			pack16(1, buffer);
+			pack16((uint16_t) 1, buffer);
 			pack16_array(select_node_ptr[i].alloc_cores,
 							nsockets, buffer);
 		} else {
-			pack16(0, buffer);
+			pack16((uint16_t) 0, buffer);
 		}
 	}
 
@@ -1099,7 +1110,7 @@ extern int select_p_state_restore(char *dir_name)
 	uint32_t restore_plugin_version = 0;
 	uint16_t restore_plugin_crtype  = 0;
 	uint32_t restore_pstate_version = 0;
-	int job_id = -1;
+	uint16_t job_cnt;
 
 	info("cons_res: select_p_state_restore");
 
@@ -1161,12 +1172,12 @@ extern int select_p_state_restore(char *dir_name)
 	}
 	select_cr_job_list = list_create(NULL);
 
-	safe_unpack32((uint32_t*)&job_id, buffer);
-	while (job_id >= 0) {	/* unpack until end of job marker (-1) */
+	safe_unpack16(&job_cnt, buffer);
+	for (i=0; i<job_cnt; i++) {
 		job = xmalloc(sizeof(struct select_cr_job));
-		_cr_unpack_job(job, buffer);
+		if (_cr_unpack_job(job, buffer) != 0)
+			goto unpack_error;
 		list_append(select_cr_job_list, job);
-		safe_unpack32(&job_id, buffer);   /* next marker */
 	}
 
 	/*** unpack the node_cr_record array ***/
@@ -1177,7 +1188,7 @@ extern int select_p_state_restore(char *dir_name)
 	}
 	safe_unpack32((uint32_t*)&prev_select_node_cnt, buffer);
 	prev_select_node_ptr = xmalloc(sizeof(struct node_cr_record) *
-								(prev_select_node_cnt));
+							(prev_select_node_cnt));
 	for (i = 0; i < prev_select_node_cnt; i++) {
 		uint16_t nsockets = 0;
 		uint16_t have_alloc_cores = 0;
