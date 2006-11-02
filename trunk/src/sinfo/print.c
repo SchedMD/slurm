@@ -52,8 +52,10 @@
 
 #define MIN_NODE_FIELD_SIZE 9
 
-static int   _build_min_max_string(char *buffer, int buf_size, int min, 
-                                   int max, bool range);
+static int   _build_min_max_16_string(char *buffer, int buf_size, 
+				uint16_t min, uint16_t max, bool range);
+static int   _build_min_max_32_string(char *buffer, int buf_size, 
+				uint32_t min, uint32_t max, bool range);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
 static int   _print_str(char *str, int width, bool right, bool cut_output);
 static void  _set_node_field_size(List sinfo_list);
@@ -168,7 +170,28 @@ static int _print_secs(long time, int width, bool right, bool cut_output)
 }
 
 static int 
-_build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
+_build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max, bool range)
+{
+	char tmp_min[7];
+	char tmp_max[7];
+	convert_num_unit((float)min, tmp_min, UNIT_NONE);
+	convert_num_unit((float)max, tmp_max, UNIT_NONE);
+	
+	if (max == min)
+		return snprintf(buffer, buf_size, "%s", tmp_max);
+	else if (range) {
+		if (max == (uint16_t) INFINITE)
+			return snprintf(buffer, buf_size, "%s-infinite", 
+					tmp_min);
+		else
+			return snprintf(buffer, buf_size, "%s-%s", 
+					tmp_min, tmp_max);
+	} else
+		return snprintf(buffer, buf_size, "%s+", tmp_min);
+}
+
+static int 
+_build_min_max_32_string(char *buffer, int buf_size, uint32_t min, uint32_t max, bool range)
 {
 	char tmp_min[7];
 	char tmp_max[7];
@@ -265,7 +288,7 @@ int _print_cpus(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_cpus, 
 		                      sinfo_data->max_cpus, false);
 		_print_str(id, width, right_justify, true);
@@ -285,13 +308,13 @@ int _print_sct(sinfo_data_t * sinfo_data, int width,
 	char threads[FORMAT_STRING_SIZE];
 	char sct[(FORMAT_STRING_SIZE+1)*3];
 	if (sinfo_data) {
-		_build_min_max_string(sockets, FORMAT_STRING_SIZE, 
+		_build_min_max_16_string(sockets, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_sockets, 
 		                      sinfo_data->max_sockets, false);
-		_build_min_max_string(cores, FORMAT_STRING_SIZE, 
+		_build_min_max_16_string(cores, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_cores, 
 		                      sinfo_data->max_cores, false);
-		_build_min_max_string(threads, FORMAT_STRING_SIZE, 
+		_build_min_max_16_string(threads, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_threads, 
 		                      sinfo_data->max_threads, false);
 		sct[0] = '\0';
@@ -315,7 +338,7 @@ int _print_sockets(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_16_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_sockets, 
 		                      sinfo_data->max_sockets, false);
 		_print_str(id, width, right_justify, true);
@@ -333,7 +356,7 @@ int _print_cores(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_16_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_cores, 
 		                      sinfo_data->max_cores, false);
 		_print_str(id, width, right_justify, true);
@@ -351,7 +374,7 @@ int _print_threads(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_16_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_threads, 
 		                      sinfo_data->max_threads, false);
 		_print_str(id, width, right_justify, true);
@@ -369,7 +392,7 @@ int _print_disk(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_disk, 
 		                      sinfo_data->max_disk, false);
 		_print_str(id, width, right_justify, true);
@@ -418,7 +441,7 @@ int _print_memory(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_mem, 
 		                      sinfo_data->max_mem, false);
 		_print_str(id, width, right_justify, true);
@@ -637,7 +660,7 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 			if ((sinfo_data->part_info->min_nodes < 1) &&
 			    (sinfo_data->part_info->max_nodes > 0))
 				sinfo_data->part_info->min_nodes = 1;
-			_build_min_max_string(id, FORMAT_STRING_SIZE, 
+			_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 					      sinfo_data->part_info->min_nodes,
 					      sinfo_data->part_info->max_nodes,
 					      true);
@@ -713,7 +736,7 @@ int _print_weight(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_string(id, FORMAT_STRING_SIZE, 
+		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_weight, 
 		                      sinfo_data->max_weight, false);
 		_print_str(id, width, right_justify, true);
