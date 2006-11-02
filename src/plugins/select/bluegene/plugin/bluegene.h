@@ -75,7 +75,7 @@ typedef struct bg_record {
 	char *target_name;		/* when a block is freed this 
 					   is the name of the user we 
 					   want on the block */
-	int full_block;                 /* wether or not block is the full
+	int full_block;                 /* whether or not block is the full
 					   block */
 	uid_t user_uid;   		/* Owner of block uid	*/
 	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
@@ -177,7 +177,7 @@ extern void fini_bg(void);
 extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
 extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
-extern void process_nodes(bg_record_t *bg_record);
+extern void process_nodes(bg_record_t *bg_reord);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
 /* return bg_record from a bg_list */
