@@ -197,7 +197,7 @@ _build_min_max_32_string(char *buffer, int buf_size,
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
-		if (max == INFINITE)
+		if (max == (uint32_t) INFINITE)
 			return snprintf(buffer, buf_size, "%s-infinite", 
 					tmp_min);
 		else

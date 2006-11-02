@@ -84,10 +84,12 @@ void *_forward_thread(void *arg)
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
 					       SLURM_SOCKET_ERROR);
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-
-			free(name);
-			continue;
+ 			free(name);
+			if (hostlist_count(hl) > 0) {
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				continue;
+			}
+			goto cleanup;			
 		}
 		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
 			error("forward_thread to %s: %m", name);
@@ -95,10 +97,12 @@ void *_forward_thread(void *arg)
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
 					       SLURM_SOCKET_ERROR);
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-
 			free(name);
-			continue;
+			if (hostlist_count(hl) > 0) {
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				continue;
+			}
+			goto cleanup;			
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 
@@ -137,12 +141,14 @@ void *_forward_thread(void *arg)
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name, 
 					       errno);
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-			
-			free_buf(buffer);	
 			free(name);
-			buffer = init_buf(0);
-			continue;
+			if (hostlist_count(hl) > 0) {
+				free_buf(buffer);	
+				buffer = init_buf(0);
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				continue;
+			}
+			goto cleanup;			
 		}
 
 		if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
@@ -178,12 +184,16 @@ void *_forward_thread(void *arg)
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name, 
 					       errno);
-			slurm_mutex_unlock(fwd_msg->forward_mutex);
-			
-			free_buf(buffer);	
 			free(name);
-			buffer = init_buf(0);
-			continue;
+			if(ret_list)
+				list_destroy(ret_list);
+			if (hostlist_count(hl) > 0) {
+				free_buf(buffer);	
+				buffer = init_buf(0);
+				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				continue;
+			}
+			goto cleanup;			
 		}
 		break;
 	}
