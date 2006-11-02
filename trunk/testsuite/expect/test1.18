@@ -6,11 +6,8 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory
-#          named test1.18.prog
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -39,6 +36,7 @@ set exit_code   0
 set file_prog   "test$test_id.prog"
 set job_id      0
 set matches     0
+set tasks       8
 
 print_header $test_id
 
@@ -53,7 +51,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1-4 -v -t5 -l $file_prog]
+set srun_pid [spawn $srun -N1-$tasks -n$tasks -O -v -t5 -l $file_prog]
 set init_id $spawn_id
 expect {
         -i $init_id
@@ -63,6 +61,9 @@ expect {
 	}
 	-re "WAITING" {
 		incr matches
+		if {$matches < $tasks} {
+			exp_continue
+		}
 	}
 	timeout {
 		send_user "\nFAILURE: srun (launch) not responding\n"
@@ -93,6 +94,7 @@ expect {
         -i $attach_id
 	-re "WAITING" {
 		incr matches
+		send_user "\nsending exit message\n"
 		send -i $attach_id "exit\n"
 	}
 	timeout {
