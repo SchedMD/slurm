@@ -77,14 +77,23 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
+  $bin_date
   $bin_echo test1_N3_n6_cyclic
   $srun -n6 --distribution=cyclic $test_prog
+
+  $bin_date
   $bin_echo test2_n6_block
   $srun -n6 --distribution=block  $test_prog
+
+  $bin_date
   $bin_echo test3_n4_cyclic
   $srun -n4 --distribution=cyclic $test_prog
+
+  $bin_date
   $bin_echo test4_n4_block
   $srun -n4 --distribution=block  $test_prog
+
+  $bin_date
   $bin_echo TEST_COMPLETE
 "
 
@@ -182,5 +191,8 @@ if {[wait_for_file $file_out] == 0} {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "Check contents of $file_err\n"
 }
+
 exit $exit_code
