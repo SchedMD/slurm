@@ -195,8 +195,6 @@ extern void fini_bg(void)
 
 extern void print_bg_record(bg_record_t* bg_record)
 {
-	char tmp_char[256];
-
 	if (!bg_record) {
 		error("print_bg_record, record given is null");
 		return;
@@ -206,11 +204,11 @@ extern void print_bg_record(bg_record_t* bg_record)
 	if (bg_record->bg_block_id)
 		info("\tbg_block_id: %s", bg_record->bg_block_id);
 	info("\tnodes: %s", bg_record->nodes);
-	info("\tsize: %d BPs %d Nodes %d cpus", 
+	info("\tsize: %d BPs %u Nodes %d cpus", 
 	     bg_record->bp_count,
 	     bg_record->node_cnt,
 	     bg_record->cpus_per_bp * bg_record->bp_count);
-	info("\tgeo: %dx%dx%d", bg_record->geo[X], bg_record->geo[Y], 
+	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y], 
 	     bg_record->geo[Z]);
 	info("\tlifecycle: %s", convert_lifecycle(bg_record->block_lifecycle));
 	info("\tconn_type: %s", convert_conn_type(bg_record->conn_type));
@@ -221,10 +219,13 @@ extern void print_bg_record(bg_record_t* bg_record)
 		info("\tbitmap: %s", bitstring);
 	}
 #else
+{
+	char tmp_char[256];
 	format_node_name(bg_record, tmp_char);
 	info("Record: BlockID:%s Nodes:%s Conn:%s",
 	     bg_record->bg_block_id, tmp_char,
 	     convert_conn_type(bg_record->conn_type));
+}
 #endif
 }
 
