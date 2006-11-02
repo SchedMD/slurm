@@ -380,7 +380,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 						 SORTID_TIMELIMIT),
 				   time_buf);
 	
-	_build_min_max_16_string(time_buf, sizeof(time_buf), 
+	_build_min_max_32_string(time_buf, sizeof(time_buf), 
 			      part_ptr->min_nodes, 
 			      part_ptr->max_nodes, true);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -529,7 +529,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	
 	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
 	
-	_build_min_max_16_string(time_buf, sizeof(time_buf), 
+	_build_min_max_32_string(time_buf, sizeof(time_buf), 
 			      part_ptr->min_nodes, 
 			      part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
