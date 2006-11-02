@@ -169,7 +169,7 @@ _build_min_max_16_string(char *buffer, int buf_size,
 	char tmp_min[7];
 	char tmp_max[7];
 	convert_num_unit((float)min, tmp_min, UNIT_NONE);
-	if(max != INFINITE)
+	if(max != (uint16_t) INFINITE)
 		convert_num_unit((float)max, tmp_max, UNIT_NONE);
 	
 	if (max == min)
