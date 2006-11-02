@@ -174,7 +174,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	sprintf(tmp_line, "MinNodes=%s ", tmp1);
 	xstrcat(out, tmp_line);
 
-	if (part_ptr->max_nodes == (uint16_t) INFINITE)
+	if (part_ptr->max_nodes == INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
 	else {
 #ifdef HAVE_BG

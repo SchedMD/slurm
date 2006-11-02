@@ -371,7 +371,7 @@ typedef struct last_update_msg {
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
-	uint16_t  nnodes;	/* number of nodes in this job step       */
+	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;

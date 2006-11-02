@@ -98,8 +98,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->task_dist   = (uint16_t) NO_VAL;
 	job_desc_msg->time_limit  = (uint16_t) NO_VAL;
 	job_desc_msg->num_procs   = NO_VAL;
-	job_desc_msg->max_nodes   = (uint16_t) NO_VAL;
-	job_desc_msg->min_nodes   = (uint16_t) NO_VAL;
+	job_desc_msg->max_nodes   = NO_VAL;
+	job_desc_msg->min_nodes   = NO_VAL;
 	job_desc_msg->max_sockets = (uint16_t) NO_VAL;
 	job_desc_msg->min_sockets = (uint16_t) NO_VAL;
 	job_desc_msg->max_cores   = (uint16_t) NO_VAL;
@@ -143,8 +143,8 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->nodes 		= NULL;
 	update_part_msg->allow_groups 	= NULL;
 	update_part_msg->max_time 	= (uint32_t) NO_VAL;
-	update_part_msg->max_nodes 	= (uint16_t) NO_VAL;
-	update_part_msg->min_nodes 	= (uint16_t) NO_VAL;
+	update_part_msg->max_nodes 	= NO_VAL;
+	update_part_msg->min_nodes 	= NO_VAL;
 	update_part_msg->hidden 	= (uint16_t) NO_VAL;
 	update_part_msg->default_part 	= (uint16_t) NO_VAL;
 	update_part_msg->root_only 	= (uint16_t) NO_VAL;

@@ -747,7 +747,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 
 	tmp_offset = get_buf_offset (buffer);
 	set_buf_offset (buffer, 0);
-	pack32  ((uint32_t) nodes_packed, buffer);
+	pack32  (nodes_packed, buffer);
 	set_buf_offset (buffer, tmp_offset);
 
 	*buffer_size = get_buf_offset (buffer);

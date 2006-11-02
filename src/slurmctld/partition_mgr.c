@@ -366,12 +366,12 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack32(part_ptr->max_nodes, buffer);
 	pack32(part_ptr->min_nodes, buffer);
 
-	pack16((uint16_t)default_part_flag, buffer);
-	pack16((uint16_t)part_ptr->hidden, buffer);
-	pack16((uint16_t)part_ptr->root_only, buffer);
-	pack16((uint16_t)part_ptr->shared, buffer);
+	pack16(default_part_flag, buffer);
+	pack16(part_ptr->hidden, buffer);
+	pack16(part_ptr->root_only, buffer);
+	pack16(part_ptr->shared, buffer);
 
-	pack16((uint16_t)part_ptr->state_up, buffer);
+	pack16(part_ptr->state_up, buffer);
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->nodes, buffer);
 }
@@ -654,7 +654,8 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
-	int parts_packed, tmp_offset;
+	uint32_t parts_packed;
+	int tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
 
@@ -665,7 +666,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 
 	/* write haeader: version and time */
 	parts_packed = 0;
-	pack32((uint32_t) parts_packed, buffer);
+	pack32(parts_packed, buffer);
 	pack_time(now, buffer);
 
 	/* write individual partition records */
@@ -683,7 +684,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack32((uint32_t) parts_packed, buffer);
+	pack32(parts_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
 	*buffer_size = get_buf_offset(buffer);
@@ -713,29 +714,29 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 		default_part_flag = 0;
 
 	packstr(part_ptr->name, buffer);
-	pack32((uint32_t)part_ptr->max_time, buffer);
+	pack32(part_ptr->max_time, buffer);
 	altered = part_ptr->max_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack16((uint16_t) altered, buffer);
+	pack32(altered, buffer);
 	altered = part_ptr->min_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
  				&altered); 
-	pack16((uint16_t) altered, buffer);
+	pack32(altered, buffer);
 	altered = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack16((uint16_t) altered, buffer);
+	pack32(altered, buffer);
 	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
 				&node_scaling);
-	pack16((uint16_t) node_scaling, buffer);
-	pack32((uint32_t)part_ptr->total_cpus, buffer);
-	pack16((uint16_t)default_part_flag, buffer);
-	pack16((uint16_t)part_ptr->hidden, buffer);
-	pack16((uint16_t)part_ptr->root_only, buffer);
-	pack16((uint16_t)part_ptr->shared, buffer);
+	pack16(node_scaling, buffer);
+	pack32(part_ptr->total_cpus, buffer);
+	pack16(default_part_flag, buffer);
+	pack16(part_ptr->hidden, buffer);
+	pack16(part_ptr->root_only, buffer);
+	pack16(part_ptr->shared, buffer);
 
-	pack16((uint16_t)part_ptr->state_up, buffer);
+	pack16(part_ptr->state_up, buffer);
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->nodes, buffer);
 	if (part_ptr->node_bitmap) {
@@ -791,13 +792,13 @@ int update_part(update_part_msg_t * part_desc)
 		part_ptr->max_time = part_desc->max_time;
 	}
 
-	if (part_desc->max_nodes != (uint16_t) NO_VAL) {
+	if (part_desc->max_nodes != NO_VAL) {
 		info("update_part: setting max_nodes to %u for partition %s", 
 		     part_desc->max_nodes, part_desc->name);
 		part_ptr->max_nodes = part_desc->max_nodes;
 	}
 
-	if (part_desc->min_nodes != (uint16_t) NO_VAL) {
+	if (part_desc->min_nodes != NO_VAL) {
 		info("update_part: setting min_nodes to %u for partition %s", 
 		     part_desc->min_nodes, part_desc->name);
 		part_ptr->min_nodes = part_desc->min_nodes;
