@@ -109,7 +109,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	int rot_cnt = 0;
 	int created = 0;
 	int found = 0;
-	int max_procs = (uint16_t) NO_VAL;
+	uint32_t max_procs = NO_VAL;
 	List lists_of_lists = NULL;
 	List temp_list = NULL;
 	char tmp_char[256];
@@ -296,11 +296,10 @@ try_again:
 		
 		/* Check processor count */
 		proc_cnt = record->bp_count * record->cpus_per_bp;
-		debug3("asking for %d-%d looking at %d", 
+		debug3("asking for %u-%u looking at %d", 
 		      req_procs, max_procs, proc_cnt);
 		if ((proc_cnt < req_procs)
-		    || (max_procs != (uint16_t) NO_VAL 
-			&& proc_cnt > max_procs)) {
+		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
 			/* We use the proccessor count per partition here
 			   mostly to see if we can run on a smaller partition. 
 			 */
