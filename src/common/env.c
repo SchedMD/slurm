@@ -625,7 +625,7 @@ int setup_env(env_t *env)
  **********************************************************************/
 
 /*
- * Return a string representation of an array of uint32_t elements.
+ * Return a string representation of an array of uint16_t elements.
  * Each value in the array is printed in decimal notation and elements
  * are seperated by a comma.  If sequential elements in the array
  * contain the same value, the value is written out just once followed
@@ -800,7 +800,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
 }
 
 /*
- * Set in "dest the environment variables relevant to a SLURM job step,
+ * Set in "dest" the environment variables relevant to a SLURM job step,
  * overwriting any environment variables of the same name.  If the address
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
