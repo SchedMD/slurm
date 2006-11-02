@@ -45,6 +45,7 @@ print_header $test_id
 #
 # Delete left-over input script plus stdout/err files
 # Build input script file
+# Sleep between initiation of job steps to avoid overwhelming slurmd
 #
 exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
@@ -52,6 +53,7 @@ make_bash_script $file_in "
     j=`expr $steps_started + 10 - \$i`
     $srun $bin_sleep \$j &
 #    $slaunch $bin_sleep \$j &
+    $bin_sleep 1
   done
   $bin_sleep 5
   $squeue -s
