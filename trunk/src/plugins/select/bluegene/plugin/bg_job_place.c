@@ -673,6 +673,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			
 		} else {
 			slurm_mutex_lock(&block_state_mutex);
+			if ((record->full_block == 0)
+			&&  (job_ptr->part_ptr->shared == 0))
+				error("Small block used in non-shared partition");
+
 			/* set the block id and info about block */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID, 
