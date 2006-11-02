@@ -489,14 +489,14 @@ Update JOB_STATE_VERSION
 	pack_time(dump_job_ptr->suspend_time, buffer);
         pack_time(dump_job_ptr->pre_sus_time, buffer);
 
-	pack16((uint16_t) dump_job_ptr->job_state, buffer);
-	pack16((uint16_t)dump_job_ptr->next_step_id, buffer);
-	pack16((uint16_t)dump_job_ptr->kill_on_node_fail, buffer);
-	pack16((uint16_t)dump_job_ptr->kill_on_step_done, buffer);
-	pack16((uint16_t)dump_job_ptr->batch_flag, buffer);
-	pack16((uint16_t)dump_job_ptr->alloc_resp_port, buffer);
-	pack16((uint16_t)dump_job_ptr->other_port, buffer);
-	pack16((uint16_t)dump_job_ptr->mail_type, buffer);
+	pack16(dump_job_ptr->job_state, buffer);
+	pack16(dump_job_ptr->next_step_id, buffer);
+	pack16(dump_job_ptr->kill_on_node_fail, buffer);
+	pack16(dump_job_ptr->kill_on_step_done, buffer);
+	pack16(dump_job_ptr->batch_flag, buffer);
+	pack16(dump_job_ptr->alloc_resp_port, buffer);
+	pack16(dump_job_ptr->other_port, buffer);
+	pack16(dump_job_ptr->mail_type, buffer);
 
 	packstr(dump_job_ptr->alloc_resp_host, buffer);
 	packstr(dump_job_ptr->other_host, buffer);
@@ -726,8 +726,8 @@ job_ptr->exit_code = exit_code;
  */
 void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	pack16(detail_ptr->min_nodes, buffer);
-	pack16(detail_ptr->max_nodes, buffer);
+	pack32(detail_ptr->min_nodes, buffer);
+	pack32(detail_ptr->max_nodes, buffer);
 	pack32(detail_ptr->total_procs, buffer);
 	pack32(detail_ptr->num_tasks, buffer);
 
@@ -764,7 +764,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
-	uint16_t min_nodes, max_nodes;
+	uint32_t min_nodes, max_nodes;
 	uint32_t job_min_procs, total_procs;
 	uint32_t job_min_memory, job_max_memory, job_min_tmp_disk;
 	uint32_t num_tasks;
@@ -775,8 +775,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	safe_unpack16(&min_nodes, buffer);
-	safe_unpack16(&max_nodes, buffer);
+	safe_unpack32(&min_nodes, buffer);
+	safe_unpack32(&max_nodes, buffer);
 	safe_unpack32(&total_procs, buffer);
 	safe_unpack32(&num_tasks, buffer);
 
@@ -1764,7 +1764,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 	}
 
-	if (job_desc->min_nodes == (uint16_t) NO_VAL)
+	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
 
 #if SYSTEM_DIMENSIONS
@@ -1786,7 +1786,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 #endif
 
-	if (job_desc->max_nodes == (uint16_t) NO_VAL)
+	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
 	&&  (job_desc->num_procs > part_ptr->total_cpus)) {
@@ -2506,7 +2506,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			      uid_t submit_uid)
 {	
 	if ((job_desc_msg->num_procs == NO_VAL)
-	&&  (job_desc_msg->min_nodes == (uint16_t) NO_VAL)
+	&&  (job_desc_msg->min_nodes == NO_VAL)
 	&&  (job_desc_msg->req_nodes == NULL)) {
 		info("Job specified no num_procs, min_nodes or req_nodes");
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
@@ -2577,7 +2577,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->min_cores = 1;	/* default core count of 1 */
 	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
-	if (job_desc_msg->min_nodes == (uint16_t) NO_VAL)
+	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
@@ -2729,7 +2729,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
-	pack32((uint32_t) jobs_packed, buffer);
+	pack32(jobs_packed, buffer);
 	pack_time(now, buffer);
 
 	/* write individual job records */
@@ -2752,7 +2752,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack32((uint32_t) jobs_packed, buffer);
+	pack32(jobs_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
 	*buffer_size = get_buf_offset(buffer);
@@ -2845,13 +2845,13 @@ static void _pack_default_job_details(struct job_details *detail_ptr, Buf buffer
 	if (detail_ptr) {
 		packstr(detail_ptr->features, buffer);
 
-		pack16(detail_ptr->min_nodes, buffer);
-		pack16(detail_ptr->max_nodes, buffer);
+		pack32(detail_ptr->min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
 	} else {
 		packnull(buffer);
 
-		pack16((uint32_t) 0, buffer);
-		pack16((uint32_t) 0, buffer);
+		pack32((uint32_t) 0, buffer);
+		pack32((uint32_t) 0, buffer);
 	}
 }
 
@@ -3387,7 +3387,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_nodes != (uint16_t) NO_VAL) {
+	if (job_specs->min_nodes != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user

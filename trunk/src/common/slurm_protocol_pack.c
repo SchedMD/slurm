@@ -1101,17 +1101,17 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->error_code, buffer);
-	pack32((uint32_t)msg->job_id, buffer);
+	pack32(msg->error_code, buffer);
+	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
-	pack16((uint16_t)msg->num_cpu_groups, buffer);
+	pack16(msg->num_cpu_groups, buffer);
 	if (msg->num_cpu_groups) {
 		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
 		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
 	}
 
-	pack16((uint16_t)msg->node_cnt, buffer);
+	pack32(msg->node_cnt, buffer);
 	
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
@@ -1151,7 +1151,7 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 		tmp_ptr->cpu_count_reps = NULL;
 	}
 
-	safe_unpack16(&tmp_ptr->node_cnt, buffer);
+	safe_unpack32(&tmp_ptr->node_cnt, buffer);
 	
 	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
 	    ||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
@@ -1175,17 +1175,17 @@ _pack_job_alloc_info_response_msg(job_alloc_info_response_msg_t * msg,
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->error_code, buffer);
-	pack32((uint32_t)msg->job_id, buffer);
+	pack32(msg->error_code, buffer);
+	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
-	pack16((uint16_t)msg->num_cpu_groups, buffer);
+	pack16(msg->num_cpu_groups, buffer);
 	if (msg->num_cpu_groups) {
 		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
 		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
 	}
 
-	pack16((uint16_t)msg->node_cnt, buffer);
+	pack32(msg->node_cnt, buffer);
 	if (msg->node_cnt > 0)
 		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
 
@@ -1227,7 +1227,7 @@ _unpack_job_alloc_info_response_msg(job_alloc_info_response_msg_t ** msg,
 		tmp_ptr->cpu_count_reps = NULL;
 	}
 
-	safe_unpack16(&tmp_ptr->node_cnt, buffer);
+	safe_unpack32(&tmp_ptr->node_cnt, buffer);
 	if (tmp_ptr->node_cnt > 0) {
 		if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
 					     &uint16_tmp, buffer))
@@ -1360,8 +1360,8 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
 	packstr(msg->allow_groups, buffer);
 	pack16(msg-> default_part, buffer);
 	pack32(msg-> max_time,     buffer);
-	pack16(msg-> max_nodes,    buffer);
-	pack16(msg-> min_nodes,    buffer);
+	pack32(msg-> max_nodes,    buffer);
+	pack32(msg-> min_nodes,    buffer);
 	packstr(msg->name,         buffer);
 	packstr(msg->nodes,        buffer);
 
@@ -1386,8 +1386,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&tmp_ptr->allow_groups, &uint16_tmp, buffer);
 	safe_unpack16(&tmp_ptr->default_part, buffer);
 	safe_unpack32(&tmp_ptr->max_time, buffer);
-	safe_unpack16(&tmp_ptr->max_nodes, buffer);
-	safe_unpack16(&tmp_ptr->min_nodes, buffer);
+	safe_unpack32(&tmp_ptr->max_nodes, buffer);
+	safe_unpack32(&tmp_ptr->min_nodes, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint16_tmp, buffer);
 
@@ -1738,9 +1738,9 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	if (part->name == NULL)
 		part->name = xmalloc(1);	/* part->name = "" implicit */
 	safe_unpack32(&part->max_time,     buffer);
-	safe_unpack16(&part->max_nodes,    buffer);
-	safe_unpack16(&part->min_nodes,    buffer);
-	safe_unpack16(&part->total_nodes,  buffer);
+	safe_unpack32(&part->max_nodes,    buffer);
+	safe_unpack32(&part->min_nodes,    buffer);
+	safe_unpack32(&part->total_nodes,  buffer);
 	safe_unpack16(&part->node_scaling, buffer);
 	
 	safe_unpack32(&part->total_cpus,   buffer);
@@ -1979,8 +1979,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	/*** unpack default job details ***/
 	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
-	safe_unpack16(&job->num_nodes, buffer);
-	safe_unpack16(&job->max_nodes, buffer);
+	safe_unpack32(&job->num_nodes, buffer);
+	safe_unpack32(&job->max_nodes, buffer);
 
 
 	/*** unpack pending job details ***/
@@ -2324,8 +2324,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack32(job_desc_ptr->time_limit, buffer);
 
 	pack32(job_desc_ptr->num_procs, buffer);
-	pack16(job_desc_ptr->min_nodes, buffer);
-	pack16(job_desc_ptr->max_nodes, buffer);
+	pack32(job_desc_ptr->min_nodes, buffer);
+	pack32(job_desc_ptr->max_nodes, buffer);
 	pack16(job_desc_ptr->min_sockets, buffer);
 	pack16(job_desc_ptr->max_sockets, buffer);
 	pack16(job_desc_ptr->min_cores, buffer);
@@ -2434,8 +2434,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
-	safe_unpack16(&job_desc_ptr->min_nodes, buffer);
-	safe_unpack16(&job_desc_ptr->max_nodes, buffer);
+	safe_unpack32(&job_desc_ptr->min_nodes, buffer);
+	safe_unpack32(&job_desc_ptr->max_nodes, buffer);
 	safe_unpack16(&job_desc_ptr->min_sockets, buffer);
 	safe_unpack16(&job_desc_ptr->max_sockets, buffer);
 	safe_unpack16(&job_desc_ptr->min_cores, buffer);
@@ -2762,7 +2762,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
 
-	pack16(msg->nnodes, buffer);
+	pack32(msg->nnodes, buffer);
 	pack16(msg->max_sockets, buffer);
 	pack16(msg->max_cores, buffer);
 	pack16(msg->max_threads, buffer);
@@ -2831,7 +2831,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->gid, buffer);
 
-	safe_unpack16(&msg->nnodes, buffer);
+	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack16(&msg->max_sockets, buffer);
 	safe_unpack16(&msg->max_cores, buffer);
 	safe_unpack16(&msg->max_threads, buffer);

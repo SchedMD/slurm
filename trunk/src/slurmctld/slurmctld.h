@@ -257,8 +257,8 @@ extern time_t last_job_update;	/* time of last update to part records */
  * can be purged after initiation */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
-	uint16_t min_nodes;		/* minimum number of nodes */
-	uint16_t max_nodes;		/* maximum number of nodes */
+	uint32_t min_nodes;		/* minimum number of nodes */
+	uint32_t max_nodes;		/* maximum number of nodes */
 	char *req_nodes;		/* required nodes */
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
@@ -337,7 +337,7 @@ struct job_record {
 	uint32_t alloc_sid;		/* local sid making resource alloc */
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t next_step_id;		/* next step id to be used */
-	uint16_t node_cnt;		/* count of nodes allocated to job */
+	uint32_t node_cnt;		/* count of nodes allocated to job */
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
 					 * job */
 	List step_list;			/* list of job's steps */

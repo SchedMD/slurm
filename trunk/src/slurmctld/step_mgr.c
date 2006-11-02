@@ -858,10 +858,10 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		task_cnt = step_ptr->job_ptr->num_procs;
 		node_list = step_ptr->job_ptr->nodes;	
 	}
-	pack32((uint32_t)step_ptr->job_ptr->job_id, buffer);
-	pack16((uint16_t)step_ptr->step_id, buffer);
-	pack32((uint32_t)step_ptr->job_ptr->user_id, buffer);
-	pack32((uint32_t)task_cnt, buffer);
+	pack32(step_ptr->job_ptr->job_id, buffer);
+	pack16(step_ptr->step_id, buffer);
+	pack32(step_ptr->job_ptr->user_id, buffer);
+	pack32(task_cnt, buffer);
 
 	pack_time(step_ptr->start_time, buffer);
 	if (step_ptr->job_ptr->job_state == JOB_SUSPENDED) {
@@ -1384,9 +1384,9 @@ suspend_job_step(struct job_record *job_ptr)
  */
 extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 {
-	pack16((uint16_t) step_ptr->step_id, buffer);
-	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
-	pack16((uint16_t)step_ptr->port, buffer);
+	pack16(step_ptr->step_id, buffer);
+	pack16(step_ptr->cyclic_alloc, buffer);
+	pack16(step_ptr->port, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
 		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
@@ -1399,7 +1399,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
-	pack16((uint16_t)step_ptr->batch_step, buffer);
+	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer);
 		switch_pack_jobinfo(step_ptr->switch_job, buffer);

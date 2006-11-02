@@ -416,9 +416,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
 				 * default=0 */
-	uint16_t min_nodes;	/* minimum number of nodes required by job, 
+	uint32_t min_nodes;	/* minimum number of nodes required by job, 
 				 * default=0 */
-	uint16_t max_nodes;	/* maximum number of nodes usable by job, 
+	uint32_t max_nodes;	/* maximum number of nodes usable by job, 
 				 * default=0 */
 	uint16_t min_sockets;	/* minimum number of sockets per node required
 				 * by job, default=0 */
@@ -523,8 +523,8 @@ typedef struct job_info {
 	uint32_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint32_t num_procs;	/* number of processors required by job */
-	uint16_t num_nodes;	/* minimum number of nodes required by job */
-	uint16_t max_nodes;	/* maximum number of nodes usable by job */
+	uint32_t num_nodes;	/* minimum number of nodes required by job */
+	uint32_t max_nodes;	/* maximum number of nodes usable by job */
 	uint16_t min_sockets;	/* minimum number of sockets per node */
 	uint16_t max_sockets;	/* maximum number of sockets per node */
 	uint16_t min_cores;	/* minimum number of cores per cpu */
@@ -729,9 +729,9 @@ typedef struct job_alloc_info_msg {
 typedef struct partition_info {
 	char *name;		/* name of the partition */
 	uint32_t max_time;	/* minutes or INFINITE */
-	uint16_t max_nodes;	/* per job or INFINITE */
-	uint16_t min_nodes;	/* per job */
-	uint16_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t min_nodes;	/* per job */
+	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint16_t node_scaling;	/* select plugin node scaling factor */
 	uint16_t default_part;	/* 1 if this is default partition */
@@ -758,7 +758,7 @@ typedef struct resource_allocation_response_msg {
 	uint16_t num_cpu_groups;/* elements in below cpu arrays */
 	uint32_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
-	uint16_t node_cnt;	/* count of nodes */
+	uint32_t node_cnt;	/* count of nodes */
 	uint32_t error_code;	/* error code for warning message */
 	select_jobinfo_t select_jobinfo;	/* opaque data structure,
 			* use select_g_get_jobinfo() to access conents */
@@ -770,7 +770,7 @@ typedef struct job_alloc_info_response_msg {
 	uint16_t num_cpu_groups;/* elements in below cpu arrays */
 	uint32_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
-	uint16_t node_cnt;	/* count of nodes */
+	uint32_t node_cnt;	/* count of nodes */
 	slurm_addr *node_addr;	/* network addresses */
 	uint32_t error_code;	/* error code for warning message */
 	select_jobinfo_t select_jobinfo;	/* opaque data structure,
