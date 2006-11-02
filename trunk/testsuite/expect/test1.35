@@ -55,7 +55,7 @@ make_bash_script $file_in "
 #    $slaunch $bin_sleep \$j &
     $bin_sleep 1
   done
-  $bin_sleep 5
+  $bin_sleep 2
   $squeue -s
   wait
 "
