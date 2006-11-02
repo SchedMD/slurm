@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/slurmstepd/task_exec.h - Task specific exec
+ *  src/slurmd/slurmstepd/multi_prog.h - Task specific argv arrays
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMD_TASK_EXEC_H
-#define _SLURMD_TASK_EXEC_H
+#ifndef _SLURMD_MULTI_PROG_H
+#define _SLURMD_MULTI_PROG_H
 
 #include "slurmstepd_job.h"
 
@@ -47,4 +47,4 @@
  */
 extern int multi_prog_get_argv(char *config_data, char **prog_env,
 			       int task_rank, int *argc, char ***argv);
-#endif /* !_SLURMD_TASK_EXEC_H */
+#endif /* !_SLURMD_MULTI_PROG_H */

@@ -365,11 +365,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	execve(task->argv[0], task->argv, job->env);
 
 	/* 
-	 * error() and clean up if execve() returns:
+	 * print error message and clean up if execve() returns:
 	 */
-	error("execve(): %s: %m", job->argv[0]); 
-	printf("execve failed, %d %s\n", job->argc, job->argv[0]);
-	exit(errno);
+	fprintf(stderr, "Unable to run executable \"%s\" %x\n",
+		task->argv[0], task->argv[0]);
+	exit(42);
 }
 
 static void

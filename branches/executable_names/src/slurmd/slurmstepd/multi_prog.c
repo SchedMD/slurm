@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  task_exec.c - Find the argv array for each task when multi-prog is enabled.
+ *  multi_prog.c - Find the argv array for each task when multi-prog is enabled.
  *
  *  NOTE: This code could be moved into the API if desired. That would mean the
  *  logic would be executed once per job instead of once per task. This would
@@ -174,7 +174,6 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 				line_num);
 			goto fail;
 		}
-		debug("line = %s", line);
 		
 		p = line;
 		while (*p != '\0' && isspace (*p)) /* remove leading spaces */
@@ -264,11 +263,6 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 		}
 
 		prog_argv[prog_argc] = NULL;
-		debug("Task %d argc = %d", task_rank, prog_argc);
-		debug("Task %d argv[0] = %s", task_rank, prog_argv[0]);
-		if (prog_argv[1] != NULL)
-			debug("        argv[1] = %s", prog_argv[1]);
-
 
 		*argc = prog_argc;
 		*argv = prog_argv;
