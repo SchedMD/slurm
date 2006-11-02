@@ -2627,13 +2627,17 @@ static void
 _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 				  Buf buffer)
 {
+	int i;
+
 	xassert(msg != NULL);
 	packstr(msg->node_name,   buffer);
-	packstr(msg->executable_name, buffer);
 	pack32((uint32_t)msg->return_code,  buffer);
 	pack32((uint32_t)msg->ntasks,       buffer);
 	pack32_array(msg->gtids,      msg->ntasks, buffer);
 	pack32_array(msg->local_pids, msg->ntasks, buffer);
+	for (i = 0; i < msg->ntasks; i++) {
+		packstr(msg->executable_names[i], buffer);
+	}
 }
 
 static int
@@ -2643,18 +2647,23 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 	uint32_t ntasks;
 	uint16_t uint16_tmp;
 	reattach_tasks_response_msg_t *msg = xmalloc(sizeof(*msg));
+	int i;
 
 	xassert(msg_ptr != NULL);
 	*msg_ptr = msg;
 
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg->executable_name, &uint16_tmp, buffer);
 	safe_unpack32(&msg->return_code,  buffer);
 	safe_unpack32(&msg->ntasks,       buffer);
 	safe_unpack32_array(&msg->gtids,      &ntasks, buffer);
 	safe_unpack32_array(&msg->local_pids, &ntasks, buffer);
 	if (msg->ntasks != ntasks)
 		goto unpack_error;
+	msg->executable_names = (char **)xmalloc(sizeof(char *) * msg->ntasks);
+	for (i = 0; i < msg->ntasks; i++) {
+		safe_unpackstr_xmalloc(&(msg->executable_names[i]), &uint16_tmp,
+				       buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

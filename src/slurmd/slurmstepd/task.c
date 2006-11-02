@@ -84,7 +84,6 @@
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
-#include "src/slurmd/slurmstepd/task_exec.h"
 
 /*
  * Static prototype definitions.
@@ -205,6 +204,59 @@ _run_script(const char *name, const char *path, slurmd_job_t *job)
 	/* NOTREACHED */
 }
 
+/* Given a program name, translate it to a fully qualified pathname
+ * as needed based upon the PATH environment variable */
+static char *
+_build_path(char* fname, char **prog_env)
+{
+	int i;
+	char *path_env = NULL, *dir;
+	char *file_name, *file_path;
+	struct stat stat_buf;
+	int len = 256;
+
+	file_name = (char *)xmalloc(len);
+	/* make copy of file name (end at white space) */
+	snprintf(file_name, len, "%s", fname);
+	for (i=0; i < len; i++) {
+		if (file_name[i] == '\0')
+			break;
+		if (!isspace(file_name[i]))
+			continue;
+		file_name[i] = '\0';
+		break;
+	}
+
+	/* check if already absolute path */
+	if (file_name[0] == '/')
+		return file_name;
+
+	/* search for the file using PATH environment variable */
+	for (i=0; ; i++) {
+		if (prog_env[i] == NULL)
+			return file_name;
+		if (strncmp(prog_env[i], "PATH=", 5))
+			continue;
+		path_env = xstrdup(&prog_env[i][5]);
+		break;
+	}
+
+	file_path = (char *)xmalloc(len);
+	dir = strtok(path_env, ":");
+	while (dir) {
+		snprintf(file_path, len, "%s/%s", dir, file_name);
+		if (stat(file_path, &stat_buf) == 0)
+			break;
+		dir = strtok(NULL, ":");
+	}
+	if (dir == NULL)	/* not found */
+		snprintf(file_path, len, "%s", file_name);
+
+	xfree(file_name);
+	xfree(path_env);
+	return file_path;
+}
+
 /*
  *  Current process is running as the user when this is called.
  */
@@ -213,8 +265,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
 	int rc;
-	slurmd_task_info_t *t = NULL;
-
+	slurmd_task_info_t *task = job->task[i];
 
 	if (set_user_limits(job) < 0) {
 		debug("Unable to set user limits");
@@ -224,7 +275,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	if (i == 0)
 		_make_tmpdir(job);
-
 
         /*
 	 * Stall exec until all tasks have joined the same process group
@@ -241,47 +291,47 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->nodeid = job->nodeid;
 	job->envtp->cpus_on_node = job->cpus;
 	job->envtp->env = job->env;
-	
-	t = job->task[i];
-	job->envtp->procid = t->gtid;
-	job->envtp->localid = t->id;
+	job->envtp->procid = task->gtid;
+	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();
-
 	job->envtp->distribution = job->task_dist;
 	job->envtp->plane_size   = job->plane_size;
-
 	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
 	job->envtp->cpu_bind_type = job->cpu_bind_type;
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
-
 	job->envtp->distribution = -1;
 	setup_env(job->envtp);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
-	
 	job->env = job->envtp->env;
 	job->envtp->env = NULL;
 	xfree(job->envtp->task_count);
+
+	if (job->multi_prog) {
+		/*
+		 * Normally the client (srun/slauch) expands the command name
+		 * to a fully qualified path, but in --multi-prog mode it
+		 * is left up to the server to search the PATH for the
+		 * executable.
+		 */
+		task->argv[0] = _build_path(task->argv[0], job->env);
+	}
 	
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
-				job->nprocs, job->task[i]->gtid) < 0) {
+				job->nprocs, task->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);
 		}
 
-		slurmd_mpi_init (job, job->task[i]->gtid);
+		slurmd_mpi_init (job, task->gtid);
 	
 		pdebug_stop_current(job);
 	}
 
-	/* 
-	 * If io_prepare_child() is moved above interconnect_attach()
-	 * this causes EBADF from qsw_attach(). Why?
-	 */
-	io_dup_stdio(job->task[i]);
+	io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
 
@@ -290,6 +340,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit (1);
 	}
 
+	/* task plugin hook */
 	pre_launch(job);
 
 	if (conf->task_prolog) {
@@ -304,25 +355,20 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		_run_script("user task_prolog", job->task_prolog, job); 
 	}
 
-	log_fini();
-
 	if (job->env == NULL) {
 		debug("job->env is NULL");
 		job->env = (char **)xmalloc(sizeof(char *));
 		job->env[0] = (char *)NULL;
 	}
-	if (job->multi_prog)
-		task_exec(job->argv[1], job->env,
-			  (int)job->task[i]->gtid);
-	else
-		execve(job->argv[0], job->argv, job->env);
+
+	log_fini();
+	execve(task->argv[0], task->argv, job->env);
 
 	/* 
-	 * error() and clean up if execve() returns:
+	 * print error message and clean up if execve() returns:
 	 */
-	error("execve(): %s: %m", job->argv[0]); 
-	printf("execve failed, %d %s\n", job->argc, job->argv[0]);
-	exit(errno);
+	fprintf(stderr, "Unable to run executable \"%s\"\n", task->argv[0]);
+	exit(42);
 }
 
 static void

@@ -60,6 +60,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/fname.h"
+#include "src/slurmd/slurmstepd/multi_prog.h"
 
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
@@ -239,7 +240,7 @@ job_create(launch_tasks_request_msg_t *msg)
 			       msg->io_port[nodeid % msg->num_io_port],
 			       NULL);
 	}
-		
+	
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
 	job->buffered_stdio = msg->buffered_stdio;
@@ -313,6 +314,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
 	job->batch   = true;
+	job->multi_prog = 0;
 	job->overcommit = (bool) msg->overcommit;
 
 	job->uid     = (uid_t) msg->uid;
@@ -366,6 +368,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 					in_name,
 					_batchfilename(job, msg->out),
 					_batchfilename(job, msg->err));
+	job->task[0]->argc = job->argc;
+	job->task[0]->argv = job->argv;
 
 	return job;
 }
@@ -426,6 +430,15 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 		err = _expand_stdio_filename(efname, gtid[i], job);
 
 		job->task[i] = task_info_create(i, gtid[i], in, out, err);
+
+		if (job->multi_prog) {
+			multi_prog_get_argv(job->argv[1], job->env, gtid[i],
+					    &job->task[i]->argc,
+					    &job->task[i]->argv);
+		} else {
+			job->task[i]->argc = job->argc;
+			job->task[i]->argv = job->argv;
+		}
 	}
 }
 
@@ -564,6 +577,8 @@ task_info_create(int taskid, int gtaskid,
 	t->in          = NULL;
 	t->out         = NULL;
 	t->err         = NULL;
+	t->argc	       = 0;
+	t->argv	       = NULL;
 	slurm_mutex_unlock(&t->mutex);
 	return t;
 }
@@ -575,5 +590,6 @@ task_info_destroy(slurmd_task_info_t *t)
 	slurm_mutex_lock(&t->mutex);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
+	xfree(t->argv);
 	xfree(t);
 }
