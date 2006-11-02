@@ -324,7 +324,7 @@ stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
 	if (rc == SLURM_SUCCESS) {
 		/* Receive response info */
 		uint32_t ntasks;
-		int len;
+		int len, i;
 
 		safe_read(fd, &ntasks, sizeof(uint32_t));
 		resp->ntasks = ntasks;
@@ -336,9 +336,13 @@ stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
 		resp->gtids = xmalloc(len);
 		safe_read(fd, resp->gtids, len);
 
-		safe_read(fd, &len, sizeof(int));
-		resp->executable_name = xmalloc(len);
-		safe_read(fd, resp->executable_name, len);
+		resp->executable_names =
+			(char **)xmalloc(sizeof(char *) * ntasks);
+		for (i = 0; i < ntasks; i++) {
+			safe_read(fd, &len, sizeof(int));
+			resp->executable_names[i] = (char *)xmalloc(len);
+			safe_read(fd, resp->executable_names[i], len);
+		}
 	}
 
 	return rc;

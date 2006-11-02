@@ -248,19 +248,19 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg,
 			break;
 		}
 
-		debug("Node %s, executable %s, %d tasks",
-		      resp->node_name,
-		      resp->executable_name, resp->ntasks);
+		debug("Node %s, %d tasks", resp->node_name, resp->ntasks);
 		for (i = 0; i < resp->ntasks; i++) {
 			bit_set(tasks_started, resp->gtids[i]);
 			table = &MPIR_proctable[resp->gtids[i]];
 			/* FIXME - node_name is not necessarily
 			   a valid hostname */
 			table->host_name = xstrdup(resp->node_name);
-			table->executable_name = xstrdup(resp->executable_name);
+			table->executable_name =
+				xstrdup(resp->executable_names[i]);
 			table->pid = (int)resp->local_pids[i];
-			debug("\tTask id %u has pid %u",
-			      resp->gtids[i], resp->local_pids[i]);
+			debug("\tTask id %u has pid %u, executable name: %s",
+			      resp->gtids[i], resp->local_pids[i],
+			      resp->executable_names[i]);
 		}
 		break;
 	default:
