@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Add logic to save/restore multi-core state information.
  -- Updated multi-core logic to use types uint16_t and uint32_t instead 
     of just type int.
+ -- Race condition for forwarding logic fix from Hongjia Cao
 
 * Changes in SLURM 1.2.0-pre5
 =============================
