@@ -405,7 +405,7 @@ extern void process_nodes(bg_record_t *bg_record)
 	if (node_name2bitmap(bg_record->nodes, 
 			     false, 
 			     &bg_record->bitmap)) {
-		fatal("Unable to convert nodes %s to bitmap", 
+		fatal("1 Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
 #endif
