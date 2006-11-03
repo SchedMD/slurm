@@ -491,7 +491,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	debug2("list is %s", arbitrary_nodes);
 	step_alloc_hosts = hostlist_create(arbitrary_nodes);
 	if(hostlist_count(step_alloc_hosts) != step_layout->task_cnt) {
-		error("Asked for %d tasks have %d in the nodelist. "
+		error("Asked for %u tasks have %d in the nodelist."
 		      "Check your nodelist",
 		      step_layout->task_cnt, 
 		      hostlist_count(step_alloc_hosts));
@@ -509,7 +509,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 			if(task_cnt >= step_layout->task_cnt)
 				break;			
 		}
-		debug3("%s got %d tasks\n",
+		debug3("%s got %u tasks\n",
 		       host,
 		       step_layout->tasks[i]);
 		if(step_layout->tasks[i] == 0)
@@ -541,7 +541,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	hostlist_destroy(job_alloc_hosts);
 	hostlist_destroy(step_alloc_hosts);
 	if(task_cnt != step_layout->task_cnt) {
-		error("Asked for %d tasks but placed %d. Check your nodelist",
+		error("Asked for %u tasks but placed %d. Check your nodelist",
 		      step_layout->task_cnt, task_cnt);
 		return SLURM_ERROR;
 	}
@@ -710,11 +710,11 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 		step_layout->tasks[i]= temp_tasks[i];
 	xfree(temp_tasks);
 
-	info("node_cnt %d task_cnt %d plane_size %d",
+	info("node_cnt %u task_cnt %u plane_size %u",
 	     step_layout->node_cnt, step_layout->task_cnt, 
 	     step_layout->plane_size);
 	for(i = 0; i <step_layout->node_cnt; i++) {
-		info("tasks[%d]: %d", i, step_layout->tasks[i]);
+		info("tasks[%d]: %u", i, step_layout->tasks[i]);
 	}
 
 	if(step_layout->tasks == NULL)
@@ -735,9 +735,10 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 #if(0)
 	/* debugging only remove */
 	for (i=0; i < step_layout->node_cnt; i++) {
-		info ("Host %d _plane_ # of tasks %d", i, step_layout->tasks[i]);
+		info ("Host %d _plane_ # of tasks %u", i, step_layout->tasks[i]);
 		for (j=0; j<step_layout->tasks[i]; j++) {
-			info ("Host %d _plane_ taskid %d task %d", i, j, step_layout->tids[i][j]);
+			info ("Host %d _plane_ taskid %d task %u", 
+			      i, j, step_layout->tids[i][j]);
 		}
 	}
 #endif	  
