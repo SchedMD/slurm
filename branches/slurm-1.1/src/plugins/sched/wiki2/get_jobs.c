@@ -299,7 +299,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr)
 	uint32_t limit = job_ptr->time_limit;
 
 	if ((limit == NO_VAL) || (limit == INFINITE))
-		return (uint32_t) 0;
+		return (uint32_t) (365 * 24 * 60 * 60);	/* one year */
 	else
 		return (limit * 60);	/* seconds, not minutes */
 }
