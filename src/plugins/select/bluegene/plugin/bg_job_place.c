@@ -547,7 +547,7 @@ try_again:
 					     false, 
 					     &tmp_bitmap)) {
 				fatal("Unable to convert nodes %s to bitmap", 
-				      request.save_name);
+				      tmp_char);
 			}
 			
 			bit_and(slurm_block_bitmap, tmp_bitmap);
