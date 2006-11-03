@@ -483,7 +483,7 @@ update_tasks_state(srun_job_t *job, uint32_t nodeid)
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	slurm_mutex_lock(&job->task_mutex);
-	debug2("updating %d tasks state for node %d", 
+	debug2("updating %u tasks state for node %u", 
 	       job->step_layout->tasks[nodeid], nodeid);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
 		uint32_t tid = job->step_layout->tids[nodeid][i];
@@ -511,7 +511,7 @@ update_running_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
-	debug2("updating %d running tasks for node %d", 
+	debug2("updating %u running tasks for node %u", 
 	       job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
