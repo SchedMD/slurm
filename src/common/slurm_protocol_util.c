@@ -101,26 +101,26 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	int i;
 	int node_id = nodelist_find(msg->complete_nodelist, name);
 
-	debug3("job_id: %i", msg->job_id);
-	debug3("job_step_id: %i", msg->job_step_id);
-	debug3("uid: %i", msg->uid);
-	debug3("gid: %i", msg->gid);
-	debug3("tasks_to_launch: %i", msg->tasks_to_launch);
-	debug3("envc: %i", msg->envc);
+	debug3("job_id: %u", msg->job_id);
+	debug3("job_step_id: %u", msg->job_step_id);
+	debug3("uid: %u", msg->uid);
+	debug3("gid: %u", msg->gid);
+	debug3("tasks_to_launch: %u", msg->tasks_to_launch);
+	debug3("envc: %u", msg->envc);
 	for (i = 0; i < msg->envc; i++) {
-		debug3("env[%i]: %s", i, msg->env[i]);
+		debug3("env[%d]: %s", i, msg->env[i]);
 	}
 	debug3("cwd: %s", msg->cwd);
-	debug3("argc: %i", msg->argc);
+	debug3("argc: %u", msg->argc);
 	for (i = 0; i < msg->argc; i++) {
-		debug3("argv[%i]: %s", i, msg->argv[i]);
+		debug3("argv[%d]: %s", i, msg->argv[i]);
 	}
-	debug3("msg -> resp_port  = %d", msg->resp_port);
-	debug3("msg -> io_port    = %d", msg->io_port);
+	debug3("msg -> resp_port  = %u", msg->resp_port);
+	debug3("msg -> io_port    = %u", msg->io_port);
 	debug3("msg -> task_flags = %x", msg->task_flags);
 
 	for (i = 0; i < msg->tasks_to_launch[node_id]; i++) {
-		debug3("global_task_id[%i]: %i ", i,
+		debug3("global_task_id[%d]: %u ", i,
 		       msg->global_task_ids[node_id][i]);
 	}
 }
