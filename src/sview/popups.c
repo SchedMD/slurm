@@ -562,10 +562,6 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		"Search",
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-		GTK_STOCK_OK,
-		GTK_RESPONSE_OK,
-		GTK_STOCK_CANCEL,
-		GTK_RESPONSE_CANCEL,
 		NULL);
 	
 	int response = 0;	
@@ -575,18 +571,24 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 	GtkTreeIter iter;
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
-	
+
 	sview_search_info.gchar_data = NULL;
 	sview_search_info.int_data = NO_VAL;
 	sview_search_info.int_data2 = NO_VAL;
 			
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+	gtk_dialog_add_button(GTK_DIALOG(popup),
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+	
 	if(!strcmp(name, "jobid")) {
 		sview_search_info.search_type = SEARCH_JOB_ID;
-		entry = gtk_entry_new();
+		entry = create_entry();
 		label = gtk_label_new("Which job id?");
 	} else if(!strcmp(name, "user_jobs")) {
 		sview_search_info.search_type = SEARCH_JOB_USER;
-		entry = gtk_entry_new();
+		entry = create_entry();
 		label = gtk_label_new("Which user?");
 	} else if(!strcmp(name, "state_jobs")) {
 		display_data_t pulldown_display_data[] = {
@@ -606,7 +608,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new("Which state?");
 	} else if(!strcmp(name, "partition_name")) {
 		sview_search_info.search_type = SEARCH_PARTITION_NAME;
-		entry = gtk_entry_new();
+		entry = create_entry();
 		label = gtk_label_new("Which partition");
 	} else if(!strcmp(name, "partition_state")) {
 		display_data_t pulldown_display_data[] = {
@@ -620,7 +622,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new("Which state?");
 	} else if(!strcmp(name, "node_name")) {
 		sview_search_info.search_type = SEARCH_NODE_NAME;
-		entry = gtk_entry_new();	
+		entry = create_entry();	
 #ifdef HAVE_BG
 		label = gtk_label_new("Which base partition(s)?\n"
 				      "(ranged or comma separated)");
@@ -650,11 +652,11 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 #ifdef HAVE_BG
 	else if(!strcmp(name, "bg_block_name")) {
 		sview_search_info.search_type = SEARCH_BLOCK_NAME;
-		entry = gtk_entry_new();
+		entry = create_entry();
 		label = gtk_label_new("Which block?");
 	} else if(!strcmp(name, "bg_block_size")) {
 		sview_search_info.search_type = SEARCH_BLOCK_SIZE;
-		entry = gtk_entry_new();
+		entry = create_entry();
 		label = gtk_label_new("Which block size?");
 	} else if(!strcmp(name, "bg_block_state")) {
 		display_data_t pulldown_display_data[] = {
@@ -734,7 +736,7 @@ end_it:
 extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *table = gtk_table_new(1, 2, FALSE);
-	GtkWidget *label = gtk_label_new("Interval in Seconds ");
+	GtkWidget *label = NULL;
 	GtkObject *adjustment = gtk_adjustment_new(global_sleep_time,
 						   1, 10000,
 						   5, 60,
@@ -745,14 +747,18 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 		"Refresh Interval",
 		GTK_WINDOW (user_data),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-		GTK_STOCK_OK,
-		GTK_RESPONSE_OK,
-		GTK_STOCK_CANCEL,
-		GTK_RESPONSE_CANCEL,
 		NULL);
 	GError *error = NULL;
 	int response = 0;
 	char *temp = NULL;
+
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+	gtk_dialog_add_button(GTK_DIALOG(popup),
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+	label = gtk_label_new("Interval in Seconds ");
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 	

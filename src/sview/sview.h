@@ -72,6 +72,7 @@
 #define OPT_LONG_HIDE	0x102
 
 #define POS_LOC 0
+#define DEFAULT_ENTRY_LENGTH 500
 
 enum { JOB_PAGE, 
        STEP_PAGE, 
@@ -325,6 +326,8 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 			     int text_column, int num_column,
 			     const char *new_text,
 			     update_node_msg_t *node_msg);
+extern int update_state_node2(GtkDialog *dialog,
+			      const char *nodelist, const char *type);
 extern GtkListStore *create_model_node(int type);
 extern void admin_edit_node(GtkCellRendererText *cell,
 			    const char *path_string,
@@ -354,6 +357,7 @@ extern void make_popup_fields_menu(popup_info_t *popup_win, GtkMenu *men);
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path, 
 			      GtkMenu *menu, display_data_t *display_data);
 extern GtkScrolledWindow *create_scrolled_window();
+extern GtkWidget *create_entry();
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
 extern GtkTreeView *create_treeview(display_data_t *local);
 extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table);
