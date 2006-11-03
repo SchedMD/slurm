@@ -1671,7 +1671,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 	
-	debug2("after alteration asking for nodes %u-%u procs %u-%d", 
+	debug2("after alteration asking for nodes %u-%u procs %u-%u", 
 		     job_desc->min_nodes, job_desc->max_nodes,
 		     job_desc->num_procs, max_procs);
 	
@@ -1808,7 +1808,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->max_nodes && 
 	    (job_desc->max_nodes < job_desc->min_nodes)) {
-		info("Job's max_nodes < min_nodes");
+		info("Job's max_nodes(%u) < min_nodes(%u)",
+		     job_desc->max_nodes, job_desc->min_nodes);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
