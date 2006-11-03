@@ -801,7 +801,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 
 static bool
 _enough_nodes(int avail_nodes, int rem_nodes, 
-	      uint16_t min_nodes, uint16_t req_nodes)
+	      uint32_t min_nodes, uint32_t req_nodes)
 {
 	int needed_nodes;
 

@@ -708,7 +708,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 						 SORTID_JOB_SIZE),
 				   time_buf);
 	
-	if (part_ptr->min_nodes == (uint16_t) INFINITE)
+	if (part_ptr->min_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->min_nodes, 
@@ -718,7 +718,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 				   find_col_name(display_data_part,
 						 SORTID_MIN_NODES), 
 				   time_buf);
-	if (part_ptr->max_nodes == (uint16_t) INFINITE)
+	if (part_ptr->max_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->max_nodes, 
@@ -854,7 +854,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			      part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
 	
-	if (part_ptr->min_nodes == (uint16_t) INFINITE)
+	if (part_ptr->min_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->min_nodes, 
@@ -862,7 +862,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	}
 	gtk_tree_store_set(treestore, iter, SORTID_MIN_NODES, 
 			   time_buf, -1);
-	if (part_ptr->max_nodes == (uint16_t) INFINITE)
+	if (part_ptr->max_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->max_nodes, 
