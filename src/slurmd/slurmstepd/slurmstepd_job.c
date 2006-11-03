@@ -67,6 +67,7 @@ static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
 static void _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 				char *ifname, char *ofname, char *efname);
+static void _task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog);
 
 static struct passwd *
 _pwd_create(uid_t uid)
@@ -468,7 +469,7 @@ job_destroy(slurmd_job_t *job)
 	_pwd_destroy(job->pwd);
 
 	for (i = 0; i < job->ntasks; i++)
-		task_info_destroy(job->task[i]);
+		_task_info_destroy(job->task[i], job->multi_prog);
 	list_destroy(job->sruns);
 	xfree(job->envtp);
 	xfree(job->node_name);
@@ -584,13 +585,14 @@ task_info_create(int taskid, int gtaskid,
 }
 
 
-void 
-task_info_destroy(slurmd_task_info_t *t)
+static void 
+_task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog)
 {
 	slurm_mutex_lock(&t->mutex);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
-	/* xfree(t->argv);	This is a pointer to job->argv
-	 *			which has already been cleared */
+	if (multi_prog) {
+		xfree(t->argv);
+	} /* otherwise, t->argv is a pointer to job->argv */
 	xfree(t);
 }
