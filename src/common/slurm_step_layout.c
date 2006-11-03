@@ -179,7 +179,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	step_layout->node_list = xstrdup(tlist);
 	step_layout->node_cnt = node_cnt;
-	step_layout->tasks = xmalloc(sizeof(uint32_t) * node_cnt);
+	step_layout->tasks = xmalloc(sizeof(uint16_t) * node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) * node_cnt);
 /* 	step_layout->node_addr =  */
 /* 		xmalloc(sizeof(slurm_addr) * node_cnt); */
@@ -261,9 +261,9 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 /* 	memcpy(layout->node_addr, step_layout->node_addr,  */
 /* 	       (sizeof(slurm_addr) * layout->node_cnt)); */
 
-	layout->tasks = xmalloc(sizeof(uint32_t) * layout->node_cnt);
+	layout->tasks = xmalloc(sizeof(uint16_t) * layout->node_cnt);
 	memcpy(layout->tasks, step_layout->tasks, 
-	       (sizeof(uint32_t) * layout->node_cnt));
+	       (sizeof(uint16_t) * layout->node_cnt));
 
 	layout->tids  = xmalloc(sizeof(uint32_t *) * layout->node_cnt);
 	for (i=0; i<layout->node_cnt; i++) {
@@ -325,7 +325,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 /* 	if (uint16_tmp != step_layout->node_cnt) */
 /* 		goto unpack_error; */
 	
-	step_layout->tasks = xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
+	step_layout->tasks = xmalloc(sizeof(uint16_t) * step_layout->node_cnt);
 	step_layout->tids = xmalloc(sizeof(uint32_t *) 
 				    * step_layout->node_cnt);
 	for(i = 0; i < step_layout->node_cnt; i++) {
@@ -405,7 +405,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 
 /* 	step_layout->node_addr = xmalloc(sizeof(slurm_addr)  */
 /* 				     * step_layout->node_cnt); */
-	step_layout->tasks = xmalloc(sizeof(uint32_t) 
+	step_layout->tasks = xmalloc(sizeof(uint16_t) 
 				     * step_layout->node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
 				     * step_layout->node_cnt);
