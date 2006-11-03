@@ -234,7 +234,7 @@ static void _update_step_layout(int fd, slurm_step_layout_t *layout,
 	safe_write(fd, &nodeid, sizeof(int));
 	safe_write(fd, &layout->node_cnt, sizeof(uint32_t));
 	safe_write(fd, &layout->task_cnt, sizeof(uint32_t));
-	safe_write(fd, &layout->tasks[nodeid], sizeof(uint32_t));
+	safe_write(fd, &layout->tasks[nodeid], sizeof(uint16_t));
 	safe_write(fd, layout->tids[nodeid],
 		   layout->tasks[nodeid]*sizeof(uint32_t));
 
@@ -260,7 +260,7 @@ static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
 	if (layout->tids == NULL)
 		layout->tids = xmalloc(layout->node_cnt * sizeof(uint32_t *));
 
-	safe_read(fd, &layout->tasks[nodeid], sizeof(uint32_t));
+	safe_read(fd, &layout->tasks[nodeid], sizeof(uint16_t));
 	xassert(layout->tids[nodeid] == NULL);
 	layout->tids[nodeid] = xmalloc(layout->tasks[nodeid]*sizeof(uint32_t));
 	safe_read(fd, layout->tids[nodeid],
