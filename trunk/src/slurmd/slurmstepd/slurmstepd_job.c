@@ -590,6 +590,7 @@ task_info_destroy(slurmd_task_info_t *t)
 	slurm_mutex_lock(&t->mutex);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
-	xfree(t->argv);
+	/* xfree(t->argv);	This is a pointer to job->argv
+	 *			which has already been cleared */
 	xfree(t);
 }
