@@ -33,7 +33,6 @@
 #include <grp.h>
  
 #define _DEBUG 0
-#define DEFAULT_ENTRY_LENGTH 500
 #define MAX_CANCEL_RETRY 10
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))
 
@@ -48,7 +47,7 @@ typedef struct {
 
 enum { 
 	EDIT_SIGNAL = 1,
-	EDIT_SIGNAL_USER = 1,
+	EDIT_SIGNAL_USER,
 	EDIT_CANCEL,
 	EDIT_CANCEL_USER,
 	EDIT_SUSPEND,
@@ -338,12 +337,13 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name) 
 {
-	uint16_t sig_num;
+	uint16_t sig_num = (uint16_t)NO_VAL;
 	char *end_ptr, *sig_names = NULL;
 	int i;
-
+	
 	sig_num = (uint16_t) strtol(signal_name, &end_ptr, 10);
-	if ((*end_ptr == '\0') || (sig_num != 0))
+	
+	if ((*end_ptr == '\0') && (sig_num != 0))
 		return sig_num;
 	
 	for (i=0; i<SIZE(sig_name_num); i++) {
@@ -559,7 +559,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "timelimit";
 		if(temp_int <= 0 && temp_int != INFINITE)
-			goto end_it;
+			goto return_error;
 		job_msg->time_limit = (uint32_t)temp_int;
 		break;
 	case SORTID_PRIORITY:
@@ -567,7 +567,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "priority";
 		if(temp_int < 0)
-			goto end_it;
+			goto return_error;
 		job_msg->priority = (uint32_t)temp_int;
 		break;
 	case SORTID_NICE:
@@ -576,7 +576,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if (abs(temp_int) > NICE_OFFSET) {
 			//error("Invalid nice value, must be between "
 			//      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
-			goto end_it;
+			goto return_error;
 		}
 		job_msg->nice = NICE_OFFSET + temp_int;
 		
@@ -586,7 +586,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "requested procs";
 		if(temp_int <= 0)
-			goto end_it;
+			goto return_error;
 		job_msg->num_procs = (uint32_t)temp_int;
 		break;
 	case SORTID_MIN_NODES:
@@ -594,7 +594,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "min nodes";
 		if(temp_int <= 0)
-			goto end_it;
+			goto return_error;
 		job_msg->min_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_MIN_PROCS:
@@ -602,7 +602,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "min procs";
 		if(temp_int <= 0)
-			goto end_it;
+			goto return_error;
 		job_msg->job_min_procs = (uint32_t)temp_int;
 		break;
 	case SORTID_MIN_MEM:
@@ -610,7 +610,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "min memory";
 		if(temp_int <= 0)
-			goto end_it;
+			goto return_error;
 		job_msg->job_min_memory = (uint32_t)temp_int;
 		break;
 	case SORTID_TMP_DISK:
@@ -618,7 +618,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "min tmp disk";
 		if(temp_int <= 0)
-			goto end_it;
+			goto return_error;
 		job_msg->job_min_tmp_disk = (uint32_t)temp_int;
 		break;
 	case SORTID_PARTITION:		
@@ -666,7 +666,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		type = "dependency";
 		if(temp_int <= 0)
-			goto end_it;
+			goto return_error;
 		job_msg->dependency = (uint32_t)temp_int;
 		break;
 #ifdef HAVE_BG
@@ -679,13 +679,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			if (token == NULL) {
 				//error("insufficient dimensions in "
 				//      "Geometry");
-				goto end_it;
+				goto return_error;
 			}
 			geo[j] = (uint16_t) atoi(token);
 			if (geo[j] <= 0) {
 				//error("invalid --geometry argument");
 				xfree(original_ptr);
-				goto end_it;
+				goto return_error;
 				break;
 			}
 			geometry_tmp = next_ptr;
@@ -695,7 +695,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if (token != NULL) {
 			//error("too many dimensions in Geometry");
 			xfree(original_ptr);
-			goto end_it;
+			goto return_error;
 		}
 		
 		select_g_set_jobinfo(job_msg->select_jobinfo,
@@ -743,12 +743,16 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "unknown";
 		break;
 	}
-end_it:
+
+	return type;
+
+return_error:
+	errno = 1;
 	return type;
 }
 
-static void _admin_edit_combo_box(GtkComboBox *combo,
-				  job_desc_msg_t *job_msg)
+static void _admin_edit_combo_box_job(GtkComboBox *combo,
+				      job_desc_msg_t *job_msg)
 {
 	GtkTreeModel *model = NULL;
 	GtkTreeIter iter;
@@ -832,7 +836,7 @@ static GtkWidget *_admin_full_edit_job(job_desc_msg_t *job_msg,
 					      iter, display_data_job[i].id);
 			
 			g_signal_connect(entry, "changed",
-					 G_CALLBACK(_admin_edit_combo_box),
+					 G_CALLBACK(_admin_edit_combo_box_job),
 					 job_msg);
 			
 			renderer = gtk_cell_renderer_text_new();
@@ -842,7 +846,7 @@ static GtkWidget *_admin_full_edit_job(job_desc_msg_t *job_msg,
 						      renderer, "text", 0);
 		} else if(display_data_job[i].extra == 1) {
 			/* other edittable items that are unknown */
-			entry = gtk_entry_new();
+			entry = create_entry();
 			gtk_tree_model_get(model, iter, display_data_job[i].id,
 					   &temp_char, -1);
 			gtk_entry_set_max_length(GTK_ENTRY(entry), 
@@ -957,6 +961,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_TIME), 
 				   tmp_char);
+
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_char,
 			    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
@@ -1005,6 +1010,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_PARTITION),
 				   job_ptr->partition);
+
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_NODELIST), 
+				   nodes);
+
 #ifdef HAVE_BG
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
@@ -1083,10 +1094,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_NUM_PROCS),
 				   tmp_char);
 	
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_job,
-						 SORTID_NODES), 
-				   tmp_char);
+	
 	
 	snprintf(tmp_char, sizeof(tmp_char), "%s:%u",
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
@@ -1225,7 +1233,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			now_time = difftime(now_time, job_ptr->start_time);
 		}
 		snprint_time(tmp_char, sizeof(tmp_char), now_time);
-		nodes = job_ptr->nodes;	
+		nodes = sview_job_info_ptr->nodes;	
 	}
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_TIME, tmp_char, -1);
@@ -2326,22 +2334,20 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		goto print_error;
 	
 	if(got_edit_signal) {
-		type = got_edit_signal;
+		temp = got_edit_signal;
 		got_edit_signal = NULL;
-		admin_job(GTK_TREE_MODEL(treestore), &iter, got_edit_signal);
-		xfree(type);
+		admin_job(GTK_TREE_MODEL(treestore), &iter, temp);
+		xfree(temp);
 		goto no_input;
 	}
 			
 
-	temp = (char *)new_text;
-	
 	if(old_text && !strcmp(old_text, new_text)) {
-			temp = g_strdup_printf("No change in value.");
-			display_edit_note(temp);
-			g_free(temp);	
+		temp = g_strdup_printf("No change in value.");
+		display_edit_note(temp);
+		g_free(temp);	
 	} else if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
-		gtk_tree_store_set(treestore, &iter, column, temp, -1);
+		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
 				       job_msg->job_id,
 				       type,
@@ -2908,10 +2914,6 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		type,
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-		GTK_STOCK_OK,
-		GTK_RESPONSE_OK,
-		GTK_STOCK_CANCEL,
-		GTK_RESPONSE_CANCEL,
 		NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 	
@@ -2923,13 +2925,26 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		stepid = jobid;
 		gtk_tree_model_get(model, iter, SORTID_POS, &jobid, -1);
 	}
-
-	g_print("type = %s\n", type);
+	slurm_init_job_desc_msg(job_msg);
+		
+	
 	if(!strcasecmp("Signal", type)) {
-		entry = gtk_entry_new();
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_OK, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+		entry = create_entry();
 		label = gtk_label_new("Signal?");
 		edit_type = EDIT_SIGNAL;
 	} else if(!strcasecmp("Cancel", type)) {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_YES, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+		
 		if(stepid != NO_VAL)
 			snprintf(tmp_char, sizeof(tmp_char), 
 				 "Are you sure you want to cancel job %u.%u?",
@@ -2941,6 +2956,12 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_CANCEL;
 	} else if(!strcasecmp("Suspend/Resume", type)) {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_YES, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
 		gtk_tree_model_get(model, iter, SORTID_STATE_NUM, &state, -1);
 		if(state == JOB_SUSPENDED)
 			tmp_char_ptr = "resume";
@@ -2958,13 +2979,18 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_SUSPEND;
 	} else {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_OK, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
 		gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
 		snprintf(tmp_char, sizeof(tmp_char), 
 			 "Editing job %u think before you type",
 			 jobid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_EDIT;
-		slurm_init_job_desc_msg(job_msg);
 		job_msg->job_id = jobid;
 		entry = _admin_full_edit_job(job_msg, model, iter);
 	}
@@ -2981,6 +3007,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		case EDIT_SIGNAL:
 			signal = _xlate_signal_name(
 				gtk_entry_get_text(GTK_ENTRY(entry)));
+			g_print("got sig of %u\n", signal);
 			if(signal == (uint16_t)NO_VAL) {
 				tmp_char_ptr = g_strdup_printf(
 					"%s is not a valid signal.",
@@ -3030,11 +3057,11 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				goto end_it;
 			if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
 				tmp_char_ptr = g_strdup_printf(
-					"Job %u editted successfully",
+					"Job %u updated successfully",
 					jobid);
 			} else {
 				tmp_char_ptr = g_strdup_printf(
-					"Problem editting Job %u.",
+					"Problem updating job %u.",
 				       jobid);
 			}
 			display_edit_note(tmp_char_ptr);

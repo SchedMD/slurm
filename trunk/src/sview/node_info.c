@@ -440,6 +440,14 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 	if(!strcmp("drain", new_text)) {
 		state = NODE_STATE_DRAIN;
 		node_msg->reason = get_reason();
+		if(!node_msg->reason) {
+			upper = g_strdup_printf(
+				"You need a reason to drain nodes.");
+			display_edit_note(upper);
+			g_free(upper);
+			goto end_it;
+		} else if(!strcasecmp("cancelled", node_msg->reason))
+			goto end_it;
 	} else if(!strcmp("resume", new_text)) {
 		state = NODE_RESUME;
 	} else {
@@ -465,7 +473,113 @@ extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter,
 		display_edit_note(upper);
 		g_free(upper);
 	}
+end_it:
 	xfree(node_msg->reason);
+	return rc;
+}
+			
+extern int update_state_node2(GtkDialog *dialog,
+			      const char *nodelist, const char *type)
+{
+	uint16_t state = (uint16_t) NO_VAL;
+	char *upper = NULL, *lower = NULL;		     
+	int i = 0;
+	int rc = SLURM_SUCCESS;
+	char tmp_char[100];
+	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	
+	if(!dialog) {
+		dialog = GTK_DIALOG(
+			gtk_dialog_new_with_buttons(
+				type,
+				GTK_WINDOW(main_window),
+				GTK_DIALOG_MODAL
+				| GTK_DIALOG_DESTROY_WITH_PARENT,
+				NULL));	
+	}
+	label = gtk_dialog_add_button(dialog,
+				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(dialog), label);
+	gtk_dialog_add_button(dialog,
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+	
+	node_msg->reason = NULL;
+	node_msg->node_names = xstrdup(nodelist);
+
+	if(!strncasecmp("drain", type, 5)) {
+	   	snprintf(tmp_char, sizeof(tmp_char), 
+			 "Are you sure you want to drain nodes %s?\n\n"
+			 "Please put reason.",
+			 nodelist);
+		entry = create_entry();
+		label = gtk_label_new(tmp_char);
+		state = NODE_STATE_DRAIN;
+	} else if(!strncasecmp("resume", type, 5)) {
+		snprintf(tmp_char, sizeof(tmp_char), 
+			 "Are you sure you want to resume nodes %s?",
+			 nodelist);
+		label = gtk_label_new(tmp_char);
+		state = NODE_RESUME;
+	} else {
+		if(!strncasecmp("make", type, 4))
+			type = "idle";
+		else if(!strncasecmp("put", type, 3))
+			type = "down";
+		for(i = 0; i < NODE_STATE_END; i++) {
+			upper = node_state_string(i);
+			lower = str_tolower(upper);
+			if(!strcmp(lower, type)) {
+				snprintf(tmp_char, sizeof(tmp_char), 
+					 "Are you sure you want to set "
+					 "nodes %s to %s?",
+					 nodelist, lower);		
+				label = gtk_label_new(tmp_char);
+				state = i;
+				xfree(lower);
+				break;
+			}
+			xfree(lower);
+		}
+	}
+	node_msg->node_state = (uint16_t)state;
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, FALSE, FALSE, 0);
+	if(entry)
+		gtk_box_pack_start(GTK_BOX(dialog->vbox), 
+				   entry, TRUE, TRUE, 0);
+	gtk_widget_show_all(GTK_WIDGET(dialog));
+	i = gtk_dialog_run(dialog);
+	if (i == GTK_RESPONSE_OK) {
+		if(entry) {
+			node_msg->reason = xstrdup(
+				gtk_entry_get_text(GTK_ENTRY(entry)));
+			if(!node_msg->reason ||
+			   !strlen(node_msg->reason)) {
+				lower = g_strdup_printf(
+					"You need a reason to do that.");
+				display_edit_note(lower);
+				g_free(lower);
+				goto end_it;
+			}
+		}
+		if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
+			lower = g_strdup_printf(
+				"Nodes %s updated successfully.",
+				nodelist);
+			display_edit_note(lower);
+			g_free(lower);
+			
+		} else {
+			lower = g_strdup_printf(
+				"Problem updating nodes %s.",
+				nodelist);
+			display_edit_note(lower);
+			g_free(lower);
+		}
+	}
+end_it:
+	slurm_free_update_node_msg(node_msg);
 	return rc;
 }
 			
@@ -520,8 +634,7 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	GtkTreeStore *treestore = GTK_TREE_STORE(data);
 	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 	GtkTreeIter iter;
-	update_node_msg_t node_msg;
-	
+	char *nodelist = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -529,11 +642,16 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	case SORTID_STATE:
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
 				   SORTID_NAME, 
-				   &node_msg.node_names, -1);
-		update_state_node(treestore, &iter, 
-				  SORTID_STATE, SORTID_STATE_NUM,
-				  new_text, &node_msg);
-		g_free(node_msg.node_names);
+				   &nodelist, -1);
+		
+/* 		update_state_node(treestore, &iter,  */
+/* 				  SORTID_STATE, SORTID_STATE_NUM, */
+/* 				  new_text, &node_msg); */
+		update_state_node2(NULL, nodelist, new_text); 
+				  
+		g_free(nodelist);
+	default:
+		break;
 	}
 	gtk_tree_path_free (path);
 	

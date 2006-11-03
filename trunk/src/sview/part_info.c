@@ -60,6 +60,10 @@ typedef struct {
 	List sub_list;
 } sview_part_info_t;
 
+enum { 
+	EDIT_AVAIL = 1,
+	EDIT_EDIT
+};
 
 enum { 
 	SORTID_POS = POS_LOC,
@@ -140,7 +144,21 @@ static display_data_t display_data_part[] = {
 static display_data_t options_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, PART_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Drain", TRUE, ADMIN_PAGE},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, PART_PAGE, "Drain Base Partitions", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Resume Base Partitions", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Put Base Partitions Down",
+	 TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Make Base Partitions Idle",
+	 TRUE, ADMIN_PAGE},
+#else
+	{G_TYPE_STRING, PART_PAGE, "Drain Nodes", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Resume Nodes", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Put Nodes Down", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
+#endif
+	{G_TYPE_STRING, PART_PAGE, "Change Availablity Up/Down",
+	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Edit Part", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
 #ifdef HAVE_BG
@@ -154,6 +172,8 @@ static display_data_t options_data_part[] = {
 };
 
 static display_data_t *local_display_data = NULL;
+
+static char *got_edit_signal = NULL;
 
 static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore,
@@ -207,6 +227,306 @@ _build_min_max_32_string(char *buffer, int buf_size,
 		return snprintf(buffer, buf_size, "%s+", tmp_min);
 }
 
+static void _set_active_combo_part(GtkComboBox *combo, 
+				   GtkTreeModel *model, GtkTreeIter *iter,
+				   int type)
+{
+	char *temp_char = NULL;
+	int action = 0;
+	int i = 0;
+	char *upper = NULL;
+
+	gtk_tree_model_get(model, iter, type, &temp_char, -1);
+	if(!temp_char)
+		goto end_it;
+	switch(type) {
+	case SORTID_DEFAULT:
+	case SORTID_HIDDEN:
+	case SORTID_ROOT:
+		if(!strcmp(temp_char, "yes"))
+			action = 0;
+		else if(!strcmp(temp_char, "no"))
+			action = 1;
+		else 
+			action = 0;
+		
+		break;
+	case SORTID_SHARE:
+		if(!strcmp(temp_char, "yes"))
+			action = 0;
+		else if(!strcmp(temp_char, "no"))
+			action = 1;
+		else if(!strcmp(temp_char, "force"))
+			action = 2;
+		else 
+			action = 0;
+	case SORTID_AVAIL:
+		if(!strcmp(temp_char, "up"))
+			action = 0;
+		else if(!strcmp(temp_char, "down"))
+			action = 1;
+		else 
+			action = 0;
+		break;
+	case SORTID_STATE:
+		if(!strcasecmp(temp_char, "drain"))
+			action = 0;
+		else if(!strcasecmp(temp_char, "resume"))
+			action = 1;
+		else
+			for(i = 0; i < NODE_STATE_END; i++) {
+				upper = node_state_string(i);
+				if(!strcmp(upper, "UNKNOWN"))
+					continue;
+				if(!strcasecmp(temp_char, upper)) {
+					action = i + 2;
+					break;
+				}
+			}
+						
+		break;
+	default:
+		break;
+	}
+	g_free(temp_char);
+end_it:
+	gtk_combo_box_set_active(combo, action);
+	
+}
+
+/* don't free this char */
+static const char *_set_part_msg(update_part_msg_t *part_msg,
+				 const char *new_text,
+				 int column)
+{
+	char *type = NULL;
+	int temp_int = 0;
+	
+	if(!part_msg)
+		return NULL;
+	
+	switch(column) {
+	case SORTID_DEFAULT:
+		if (!strcasecmp(new_text, "yes")) 
+			part_msg->default_part = 1;
+		else
+			part_msg->default_part = 0;
+		
+		type = "default";
+		break;
+	case SORTID_HIDDEN:
+		if (!strcasecmp(new_text, "yes")) 
+			part_msg->hidden = 1;
+		else
+			part_msg->hidden = 0;
+		
+		type = "hidden";
+		break;
+	case SORTID_TIMELIMIT:
+		if ((strcasecmp(new_text,"infinite") == 0))
+			temp_int = INFINITE;
+		else
+			temp_int = strtol(new_text, (char **)NULL, 10);
+		
+		type = "timelimit";
+		if(temp_int <= 0 && temp_int != INFINITE)
+			goto return_error;
+		part_msg->max_time = (uint32_t)temp_int;
+		break;
+	case SORTID_MIN_NODES:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		type = "min_nodes";
+		
+		if(temp_int <= 0)
+			goto return_error;
+		part_msg->min_nodes = (uint32_t)temp_int;
+		break;
+	case SORTID_MAX_NODES:
+		if (!strcasecmp(new_text, "infinite")) {
+			temp_int = INFINITE;
+		} else {
+			temp_int = strtol(new_text, (char **)NULL, 10);
+		}
+		
+		type = "max_nodes";
+		if(temp_int <= 0 && temp_int != INFINITE)
+			goto return_error;
+		part_msg->max_nodes = (uint32_t)temp_int;
+		break;
+	case SORTID_ROOT:
+		if (!strcasecmp(new_text, "yes")) {
+			part_msg->default_part = 1;
+		} else {
+			part_msg->default_part = 0;
+		}
+		
+		type = "root";
+		break;
+	case SORTID_SHARE:
+		if (!strcasecmp(new_text, "yes")) {
+			part_msg->default_part = SHARED_YES;
+		} else if (!strcasecmp(new_text, "no")) {
+			part_msg->default_part = SHARED_NO;
+		} else {
+			part_msg->default_part = SHARED_FORCE;
+		}
+		type = "share";
+		break;
+	case SORTID_GROUPS:
+		type = "groups";
+		break;
+	case SORTID_NODELIST:
+		part_msg->nodes = xstrdup(new_text);
+		type = "nodelist";
+		break;
+	case SORTID_AVAIL:
+		if (!strcasecmp(new_text, "up"))
+			part_msg->state_up = 1;
+		else
+			part_msg->state_up = 0;
+		type = "availability";
+		break;
+	case SORTID_STATE:
+		type = (char *)new_text;
+		got_edit_signal = xstrdup(new_text);
+		break;			
+	}
+	
+	return type;
+
+return_error:
+	errno = 1;
+	return type;
+	
+}
+
+static void _admin_edit_combo_box_part(GtkComboBox *combo,
+				       update_part_msg_t *part_msg)
+{
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	int column = 0;
+	char *name = NULL;
+	
+	if(!part_msg)
+		return;
+
+	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
+		g_print("nothing selected\n");
+		return;
+	}
+	model = gtk_combo_box_get_model(combo);
+	if(!model) {
+		g_print("nothing selected\n");
+		return;
+	}
+	
+	gtk_tree_model_get(model, &iter, 0, &name, -1);
+	gtk_tree_model_get(model, &iter, 1, &column, -1);
+
+	_set_part_msg(part_msg, name, column);
+
+	g_free(name);
+}
+
+static gboolean _admin_focus_out_part(GtkEntry *entry,
+				      GdkEventFocus *event, 
+				      update_part_msg_t *part_msg)
+{
+	int type = gtk_entry_get_max_length(entry);
+	const char *name = gtk_entry_get_text(entry);
+	type -= DEFAULT_ENTRY_LENGTH;
+	_set_part_msg(part_msg, name, type);
+	
+	return false;
+}
+
+static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg, 
+					GtkTreeModel *model, GtkTreeIter *iter)
+{
+	GtkScrolledWindow *window = create_scrolled_window();
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkTable *table = NULL;
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	GtkTreeModel *model2 = NULL; 
+	GtkCellRenderer *renderer = NULL;
+	int i = 0, row = 0;
+	char *temp_char = NULL;
+
+	gtk_scrolled_window_set_policy(window,
+				       GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
+	bin = GTK_BIN(&window->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin = GTK_BIN(&view->bin);
+	table = GTK_TABLE(bin->child);
+	gtk_table_resize(table, SORTID_CNT, 2);
+	
+	gtk_table_set_homogeneous(table, FALSE);	
+
+	for(i = 0; i < SORTID_CNT; i++) {
+		if(display_data_part[i].extra == 0) {
+			/* edittable items that can only be known
+			   values */
+			model2 = GTK_TREE_MODEL(
+				create_model_part(display_data_part[i].id));
+			if(!model2) {
+				g_print("no model set up for %d(%s)\n",
+					display_data_part[i].id,
+					display_data_part[i].name);
+				continue;
+			}
+			entry = gtk_combo_box_new_with_model(model2);
+			g_object_unref(model2);
+			
+			_set_active_combo_part(GTK_COMBO_BOX(entry), model,
+					      iter, display_data_part[i].id);
+			
+			g_signal_connect(entry, "changed",
+					 G_CALLBACK(
+						 _admin_edit_combo_box_part),
+					 part_msg);
+			
+			renderer = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
+						   renderer, TRUE);
+			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
+						      renderer, "text", 0);
+		} else if(display_data_part[i].extra == 1) {
+			/* other edittable items that are unknown */
+			entry = create_entry();
+			gtk_tree_model_get(model, iter,
+					   display_data_part[i].id,
+					   &temp_char, -1);
+			gtk_entry_set_max_length(GTK_ENTRY(entry), 
+						 (DEFAULT_ENTRY_LENGTH+i));
+			
+			if(temp_char) {
+				gtk_entry_set_text(GTK_ENTRY(entry),
+						   temp_char);
+				g_free(temp_char);
+			}
+			g_signal_connect(entry, "focus-out-event",
+					 G_CALLBACK(_admin_focus_out_part),
+					 part_msg);
+		} else /* others can't be altered by the user */
+			continue;
+		label = gtk_label_new(display_data_part[i].name);
+		gtk_table_attach(table, label, 0, 1, row, row+1,
+				 GTK_FILL | GTK_EXPAND, GTK_SHRINK, 
+				 0, 0);
+		gtk_table_attach(table, entry, 1, 2, row, row+1,
+				 GTK_FILL, GTK_SHRINK,
+				 0, 0);
+		row++;
+	}
+	gtk_table_resize(table, row, 2);
+	
+	return GTK_WIDGET(window);
+}
+
 static void _subdivide_part(sview_part_info_t *sview_part_info,
 			    GtkTreeModel *model, 
 			    GtkTreeIter *sub_iter,
@@ -251,8 +571,8 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 			}
 			
 			while(1) {
-				/* search for the jobid and check to see if 
-				   it is in the list */
+				/* search for the state number and
+				   check to see if it is in the list */
 				gtk_tree_model_get(model, sub_iter, 
 						   SORTID_STATE_NUM, 
 						   &state, -1);
@@ -1241,12 +1561,12 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	GtkTreeStore *treestore = GTK_TREE_STORE(data);
 	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 	GtkTreeIter iter;
-	update_node_msg_t node_msg;
-	update_part_msg_t part_msg;
+	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
+	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
 	
 	char *temp = NULL;
 	char *old_text = NULL;
-	char *type = NULL;
+	const char *type = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
 	
@@ -1256,127 +1576,36 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
 	if(column != SORTID_STATE) {
-		slurm_init_part_desc_msg(&part_msg);
+		slurm_init_part_desc_msg(part_msg);
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
-				   SORTID_NAME, &part_msg.name, 
+				   SORTID_NAME, &temp, 
 				   column, &old_text,
 				   -1);
+		part_msg->name = xstrdup(temp);
+		g_free(temp);
 	}
 	
-	switch(column) {
-	case SORTID_DEFAULT:
-		if (!strcasecmp(new_text, "yes")) {
-			part_msg.default_part = 1;
-			temp = "*";
-		} else {
-			part_msg.default_part = 0;
-			temp = "";
-		}
-		type = "default";
-		break;
-	case SORTID_HIDDEN:
-		if (!strcasecmp(new_text, "yes")) {
-			part_msg.hidden = 1;
-			temp = "*";
-		} else {
-			part_msg.hidden = 0;
-			temp = "";
-		}
-		type = "hidden";
-		break;
-	case SORTID_TIMELIMIT:
-		if ((strcasecmp(new_text,"infinite") == 0))
-			part_msg.max_time = INFINITE;
-		else
-			part_msg.max_time = 
-				(uint32_t)strtol(new_text, (char **)NULL, 10);
-		temp = (char *)new_text;
-		type = "timelimit";
-		if((int32_t)part_msg.max_time <= 0
-		   && part_msg.max_time != INFINITE)
-			goto print_error;
-		break;
-	case SORTID_MIN_NODES:
-		part_msg.min_nodes = 
-			(uint16_t)strtol(new_text, (char **)NULL, 10);
-		
-		temp = (char *)new_text;
-		type = "min_nodes";
-		if((int32_t)part_msg.max_time <= 0)
-			goto print_error;
-		break;
-	case SORTID_MAX_NODES:
-		if (!strcasecmp(new_text, "infinite")) {
-			part_msg.max_nodes = (uint16_t) INFINITE;
-		} else {
-			part_msg.max_nodes = 
-				(uint16_t)strtol(new_text, (char **)NULL, 10);
-		}
-		temp = (char *)new_text;
-		type = "max_nodes";
-		if((int32_t)part_msg.max_time <= 0 
-		   && part_msg.max_nodes != (uint16_t) INFINITE)
-			goto print_error;
-		break;
-	case SORTID_ROOT:
-		if (!strcasecmp(new_text, "yes")) {
-			part_msg.default_part = 1;
-		} else {
-			part_msg.default_part = 0;
-		}
-		temp = (char *)new_text;
-		type = "root";
-		break;
-	case SORTID_SHARE:
-		if (!strcasecmp(new_text, "yes")) {
-			part_msg.default_part = SHARED_YES;
-		} else if (!strcasecmp(new_text, "no")) {
-			part_msg.default_part = SHARED_NO;
-		} else {
-			part_msg.default_part = SHARED_FORCE;
-		}
-		type = "share";
-		break;
-	case SORTID_GROUPS:
-		type = "groups";
-		break;
-	case SORTID_NODELIST:
-		temp = (char *)new_text;
-		part_msg.nodes = temp;
-		type = "nodelist";
-		break;
-	case SORTID_AVAIL:
-		slurm_init_part_desc_msg(&part_msg);
-		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
-				   SORTID_NAME, 
-				   &part_msg.name, -1);
-		if (!strcasecmp(new_text, "up"))
-			part_msg.state_up = 1;
-		else
-			part_msg.state_up = 0;
-		temp = (char *)new_text;
-		type = "availability";
-		break;
-	case SORTID_STATE:
-		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
-				   SORTID_NODELIST, 
-				   &node_msg.node_names, -1);
-		update_state_node(treestore, &iter, 
-				  SORTID_STATE, SORTID_STATE_NUM,
-				  new_text, &node_msg);
-		g_free(node_msg.node_names);
-		break;			
+	type = _set_part_msg(part_msg, new_text, column);
+	if(errno)
+		goto print_error;
+	if(got_edit_signal) {
+		temp = got_edit_signal;
+		got_edit_signal = NULL;
+		admin_part(GTK_TREE_MODEL(treestore), &iter, temp);
+		xfree(temp);
+		goto no_input;
 	}
-
+	
 	if(column != SORTID_STATE) {
 		if(old_text && !strcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
 			display_edit_note(temp);
 			g_free(temp);	
-		} else if(slurm_update_partition(&part_msg) == SLURM_SUCCESS) {
-			gtk_tree_store_set(treestore, &iter, column, temp, -1);
+		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
+			gtk_tree_store_set(treestore, &iter, column,
+					   new_text, -1);
 			temp = g_strdup_printf("Partition %s %s changed to %s",
-					       part_msg.name,
+					       part_msg->name,
 					       type,
 					       new_text);
 			display_edit_note(temp);
@@ -1385,16 +1614,16 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		print_error:
 			temp = g_strdup_printf("Partition %s %s can't be "
 					       "set to %s",
-					       part_msg.name,
+					       part_msg->name,
 					       type,
 					       new_text);
 			display_edit_note(temp);
 			g_free(temp);
 		}
-		g_free(part_msg.name);
-		
 	}
 no_input:
+	slurm_free_update_part_msg(part_msg);
+	slurm_free_update_node_msg(node_msg);
 	gtk_tree_path_free (path);
 	g_free(old_text);
 	g_static_mutex_unlock(&sview_mutex);
@@ -1856,6 +2085,111 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
+	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
+	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
+	char *partid = NULL;
+	char *nodelist = NULL;
+	char *state = NULL;
+	char tmp_char[100];
+	char *temp = NULL;
+	int edit_type = 0;
+	int response = 0;	
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		type,
+		GTK_WINDOW(main_window),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+
+	gtk_tree_model_get(model, iter, SORTID_NAME, &partid, -1);
+	gtk_tree_model_get(model, iter, SORTID_NODELIST, &nodelist, -1);
+	gtk_tree_model_get(model, iter, SORTID_AVAIL, &state, -1);
+	slurm_init_part_desc_msg(part_msg);
+	
+	part_msg->name = xstrdup(partid);
+	node_msg->node_names = xstrdup(nodelist);
+
+	if(!strcasecmp("Change Availablity Up/Down", type)) {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_YES, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+		
+		if(!strcasecmp("down", type)) 
+			temp = "up";
+		else
+			temp = "down";
+		snprintf(tmp_char, sizeof(tmp_char), 
+			 "Are you sure you want to set partition %s %s?",
+			 partid, temp);
+		label = gtk_label_new(tmp_char);
+		edit_type = EDIT_AVAIL;
+	} else if(!strcasecmp("Edit Part", type)) {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_OK, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+		gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
+		snprintf(tmp_char, sizeof(tmp_char), 
+			 "Editing partition %s think before you type",
+			 partid);
+		label = gtk_label_new(tmp_char);
+		edit_type = EDIT_EDIT;
+		entry = _admin_full_edit_part(part_msg, model, iter);
+	} else {
+		/* something that has to deal with a node state change */
+		update_state_node2(GTK_DIALOG(popup), nodelist, type);
+		goto end_it;
+	}
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+			   label, FALSE, FALSE, 0);
+	if(entry)
+		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+				   entry, TRUE, TRUE, 0);
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+	if (response == GTK_RESPONSE_OK) {
+		switch(edit_type) {
+		case EDIT_AVAIL:
+			if(got_edit_signal) 
+				goto end_it;
+			if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
+				temp = g_strdup_printf(
+					"Partition %s updated successfully",
+					partid);
+			} else {
+				temp = g_strdup_printf(
+					"Problem updating partition %s.",
+					partid);
+			}
+			display_edit_note(temp);
+			g_free(temp);
+			break;		
+		default:
+			break;
+		
+		}
+	}
+end_it:
+	g_free(state);
+	g_free(partid);
+	g_free(nodelist);
+	slurm_free_update_part_msg(part_msg);
+	slurm_free_update_node_msg(node_msg);
+	gtk_widget_destroy(popup);
+	if(got_edit_signal) {
+		type = got_edit_signal;
+		got_edit_signal = NULL;
+		admin_part(model, iter, type);
+		xfree(type);
+	}			
+	
 	return;
 }
 

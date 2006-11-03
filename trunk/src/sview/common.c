@@ -471,6 +471,15 @@ extern GtkScrolledWindow *create_scrolled_window()
 	return scrolled_window;
 }
 
+extern GtkWidget *create_entry()
+{
+	GtkWidget *entry = gtk_entry_new();
+	
+	gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
+
+	return entry;
+}
+
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 {
 	GtkScrolledWindow *scrolled_window = create_scrolled_window();
@@ -503,7 +512,7 @@ extern GtkTreeView *create_treeview(display_data_t *local)
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 
 	local->user_data = NULL;
-	g_signal_connect(G_OBJECT(tree_view), "button_press_event",
+	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(row_clicked),
 			 local);
 	gtk_widget_show(GTK_WIDGET(tree_view));
@@ -701,7 +710,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	label = gtk_label_new(popup_win->spec_info->title);
 	gtk_container_add(GTK_CONTAINER(popup_win->event_box), label);
 	
-	g_signal_connect(G_OBJECT(popup_win->event_box), 
+	g_signal_connect(G_OBJECT(popup_win->event_box),
 			 "button-press-event",
 			 G_CALLBACK(redo_popup),
 			 popup_win);
@@ -999,7 +1008,7 @@ extern char *get_reason()
 	GtkWidget *label = gtk_label_new("Reason ");
 	GtkWidget *entry = gtk_entry_new();
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
-		"State change Reason",
+		"State change reason",
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_OK,
@@ -1027,6 +1036,11 @@ extern char *get_reason()
 	{
 		reason_str = xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
 		len = strlen(reason_str) - 1;
+		if(len == -1) {
+			xfree(reason_str);
+			reason_str = NULL;
+			goto end_it;
+		}
 		/* Append user, date and time */
 		xstrcat(reason_str, " [");
 		user_name = getlogin();
@@ -1039,8 +1053,9 @@ extern char *get_reason()
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 		snprintf(time_buf, sizeof(time_buf), "@%s]", time_str); 
 		xstrcat(reason_str, time_buf);
-	}
-
+	} else 
+		reason_str = xstrdup("cancelled");
+end_it:
 	gtk_widget_destroy(popup);	
 	
 	return reason_str;
