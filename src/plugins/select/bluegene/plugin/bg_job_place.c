@@ -234,14 +234,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 				tmp_record->bg_block_list =
 					list_create(destroy_ba_node);
 				slurm_conf_lock();
-				tmp_record->nodes = 
-					xmalloc(sizeof(char)*
-						(len + strlen(slurmctld_conf.
-							      node_prefix)+1));
+				len += strlen(slurmctld_conf.node_prefix)+1;
+				tmp_record->nodes = xmalloc(len);
 				
-				sprintf(tmp_record->nodes, "%s%s", 
-					slurmctld_conf.node_prefix, 
-					tmp_nodes+i);
+				snprintf(tmp_record->nodes,
+					 len,
+					 "%s%s", 
+					 slurmctld_conf.node_prefix, 
+					 tmp_nodes+i);
 				slurm_conf_unlock();
 			
 				process_nodes(tmp_record);
@@ -472,7 +472,7 @@ try_again:
 				goto try_again;
 			}
 		}
-		format_node_name(*found_bg_record, tmp_char);
+		format_node_name(*found_bg_record, tmp_char, sizeof(tmp_char));
 	
 		debug("_find_best_block_match %s <%s>", 
 			(*found_bg_record)->bg_block_id, 
@@ -540,8 +540,9 @@ try_again:
 			slurm_mutex_unlock(&request_list_mutex);
 		
 			slurm_conf_lock();
-			sprintf(tmp_char, "%s%s", 
-				slurmctld_conf.node_prefix, request.save_name);
+			snprintf(tmp_char, sizeof(tmp_char), "%s%s", 
+				 slurmctld_conf.node_prefix,
+				 request.save_name);
 			slurm_conf_unlock();
 			if (node_name2bitmap(tmp_char, 
 					     false, 
