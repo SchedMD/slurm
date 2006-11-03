@@ -497,7 +497,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				     SELECT_DATA_MAX_PROCS, 
 				     &tmp);
 	
-		if(job_desc->min_nodes == (uint16_t) NO_VAL)
+		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
 		select_g_get_jobinfo(job_desc->select_jobinfo,
 				     SELECT_DATA_GEOMETRY, &req_geometry);
@@ -554,7 +554,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = 1;
 		}
 		
-		if(job_desc->max_nodes == (uint16_t) NO_VAL) 
+		if(job_desc->max_nodes == (uint32_t) NO_VAL) 
 			return SLURM_SUCCESS;
 		
 		if(job_desc->max_nodes > bluegene_bp_node_cnt) {
