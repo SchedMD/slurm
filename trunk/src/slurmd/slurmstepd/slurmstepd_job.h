@@ -209,6 +209,4 @@ void  srun_info_destroy(struct srun_info *srun);
 slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 				      char *ifname, char *ofname, char *efname);
 
-void task_info_destroy(slurmd_task_info_t *t);
-
 #endif /* !_SLURMSTEPD_JOB_H */
