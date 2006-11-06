@@ -152,7 +152,7 @@ expect {
 # Post-processing
 #
 if {$exit_code == 0} {
-	file delete $file_in $file_out
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

@@ -96,6 +96,7 @@ expect {
 		wait
 	}
 }
+exec $bin_rm -f $file_in
 # On Blue Gene/L each node has 1024 CPUs, more than slurmd can launch
 if {$fat_nodes == 1} {
 	exit 0
@@ -153,7 +154,6 @@ if {$task_cnt != [expr $cpu_cnt / 2]} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
