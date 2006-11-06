@@ -388,15 +388,13 @@ scontrol_update_job (int argc, char *argv[])
 
 			if (original_ptr)
 				xfree(original_ptr);
-			if (rc != 0) {
-				for (j=0; j<SYSTEM_DIMENSIONS; j++)
-					geo[j] = (uint16_t) NO_VAL;
+			if (rc != 0)
 				exit_code = 1;
-			} else
+			else {
+				for (j=0; j<SYSTEM_DIMENSIONS; j++)
+					job_msg.geometry[j] = geo[j];
 				update_cnt++;
-			select_g_set_jobinfo(job_msg.select_jobinfo,
-					     SELECT_DATA_GEOMETRY,
-					     (void *) &geo);
+			}
 		}
 
 		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
@@ -408,26 +406,7 @@ scontrol_update_job (int argc, char *argv[])
 			else
 				rotate = (uint16_t) strtol(&argv[i][7], 
 							   (char **) NULL, 10);
-			select_g_set_jobinfo(job_msg.select_jobinfo,
-					     SELECT_DATA_ROTATE,
-					     (void *) &rotate);
-			update_cnt++;
-		}
-		else if (strncasecmp(argv[i], "Connection=", 11) == 0) {
-			uint16_t conn_type;
-			if (strcasecmp(&argv[i][11], "torus") == 0)
-				conn_type = SELECT_TORUS;
-			else if (strcasecmp(&argv[i][11], "mesh") == 0)
-				conn_type = SELECT_MESH;
-			else if (strcasecmp(&argv[i][11], "nav") == 0)
-				conn_type = SELECT_NAV;
-			else
-				conn_type = 
-					(uint16_t) strtol(&argv[i][11], 
-							(char **) NULL, 10);
-			select_g_set_jobinfo(job_msg.select_jobinfo,
-					     SELECT_DATA_CONN_TYPE,
-					     (void *) &conn_type);
+			job_msg.rotate = rotate;
 			update_cnt++;
 		}
 #endif

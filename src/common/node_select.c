@@ -588,12 +588,14 @@ static char *_job_conn_type_string(uint16_t inx)
 	else if (inx == SELECT_SMALL)
 		return "small";
 	else
-		return "nav";
+		return "n/a";
 }
 
 static char *_job_rotate_string(uint16_t inx)
 {
-	if (inx)
+	if (inx == (uint16_t) NO_VAL)
+		return "n/a";
+	else if (inx)
 		return "yes";
 	else
 		return "no";
@@ -610,12 +612,12 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	xassert(jobinfo != NULL);
 	
 	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			(*jobinfo)->start[i] = (uint16_t) NO_VAL;
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			(*jobinfo)->geometry[i] = 0;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		(*jobinfo)->start[i]    = (uint16_t) NO_VAL;
+		(*jobinfo)->geometry[i] = (uint16_t) NO_VAL;
+	}
 	(*jobinfo)->conn_type = SELECT_NAV;
-	(*jobinfo)->rotate = 1;
+	(*jobinfo)->rotate = (uint16_t) NO_VAL;
 	(*jobinfo)->node_use = SELECT_NAV;
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
@@ -639,7 +641,11 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
 	char *tmp_char = (char *) data;
-	
+
+	if (jobinfo == NULL) {
+		error("select_g_set_jobinfo: jobinfo not set");
+		return SLURM_ERROR;
+	}
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("select_g_set_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
@@ -705,6 +711,10 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
 
+	if (jobinfo == NULL) {
+		error("select_g_get_jobinfo: jobinfo not set");
+		return SLURM_ERROR;
+	}
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("select_g_get_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
