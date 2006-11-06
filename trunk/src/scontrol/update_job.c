@@ -256,19 +256,19 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "ReqSockets=", 11) == 0) {
 			job_msg.min_sockets = 
-				(uint32_t) strtol(&argv[i][11],
+				(uint16_t) strtol(&argv[i][11],
 						 (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "ReqCores=", 9) == 0) {
 			job_msg.min_cores = 
-				(uint32_t) strtol(&argv[i][9],
+				(uint16_t) strtol(&argv[i][9],
 						 (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "ReqThreads=", 11) == 0) {
 			job_msg.min_threads = 
-				(uint32_t) strtol(&argv[i][11],
+				(uint16_t) strtol(&argv[i][11],
 						 (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -280,19 +280,19 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "MinSockets=", 11) == 0) {
 			job_msg.job_min_sockets = 
-				(uint32_t) strtol(&argv[i][11], 
+				(uint16_t) strtol(&argv[i][11], 
 						(char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinCores=", 9) == 0) {
 			job_msg.job_min_cores = 
-				(uint32_t) strtol(&argv[i][9], 
+				(uint16_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinThreads=", 11) == 0) {
 			job_msg.job_min_threads = 
-				(uint32_t) strtol(&argv[i][11], 
+				(uint16_t) strtol(&argv[i][11], 
 						(char **) NULL, 10);
 			update_cnt++;
 		}
