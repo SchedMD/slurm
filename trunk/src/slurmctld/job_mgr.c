@@ -1662,6 +1662,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint32_t total_nodes, max_procs;
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
+	uint16_t rotate;
 #endif
 
 	debug2("before alteration asking for nodes %u-%u procs %u", 
@@ -1769,13 +1770,17 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 #if SYSTEM_DIMENSIONS
 	select_g_get_jobinfo(job_desc->select_jobinfo,
-			     SELECT_DATA_GEOMETRY,
-			     &geo);
-	if ((geo[0] != (uint16_t) NO_VAL) && (geo[0] != 0)) {
-		int i, tot = 1;
+			     SELECT_DATA_GEOMETRY, &geo);
+	if (geo[0] == (uint16_t) NO_VAL) {
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			tot *= geo[i];
+			geo[i] = 0;
 		}
+		select_g_set_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_GEOMETRY, &geo);
+	} else if (geo[0] != 0) {
+		uint32_t i, tot = 1;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			tot *= geo[i];
 		if (job_desc->min_nodes > tot) {
 			info("MinNodes(%d) > GeometryNodes(%d)", 
 				job_desc->min_nodes, tot);
@@ -1783,6 +1788,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			goto cleanup;
 		}
 		job_desc->min_nodes = tot;
+	}
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_ROTATE, &rotate);
+	if (rotate == (uint16_t) NO_VAL) {
+		rotate = (uint16_t) 1;
+		select_g_set_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_ROTATE, &rotate);
 	}
 #endif
 
@@ -3468,13 +3480,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->kill_on_node_fail != (uint16_t) NO_VAL) {
-		job_ptr->kill_on_node_fail = job_specs->kill_on_node_fail;
-		info("update_job: setting kill_on_node_fail to %u for "
-			"job_id %u", job_specs->kill_on_node_fail, 
-			job_specs->job_id);
-	}
-
 	if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
@@ -3582,6 +3587,49 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else
 			error_code = ESLURM_DISABLED;
 	}
+
+#ifdef HAVE_BG
+{
+	uint16_t rotate = (uint16_t) NO_VAL;
+	uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
+
+	select_g_get_jobinfo(job_specs->select_jobinfo,
+			SELECT_DATA_ROTATE, &rotate);
+	if (rotate != (uint16_t) NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			info("update_job: setting rotate to %u for "
+				"jobid %u", rotate, job_ptr->job_id);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+				SELECT_DATA_ROTATE, &rotate);
+		}
+	}
+
+	select_g_get_jobinfo(job_specs->select_jobinfo,
+			SELECT_DATA_GEOMETRY, geometry);
+	if (geometry[0] != (uint16_t) NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (super_user) {
+			uint32_t i, tot = 1;
+			for (i=0; i<SYSTEM_DIMENSIONS; i++)
+				tot *= geometry[i];
+			info("update_job: setting rotate to %ux%ux%u "
+				"min_nodes=%u for jobid %u", 
+				geometry[0], geometry[1], 
+				geometry[2], tot, job_ptr->job_id);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+				SELECT_DATA_GEOMETRY, geometry);
+			detail_ptr->min_nodes = tot;
+		} else {
+			error("Attempt to change geometry for job %u",
+				job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+}
+#endif
 
 	return error_code;
 }
