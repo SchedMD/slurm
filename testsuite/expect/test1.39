@@ -6,11 +6,8 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory
-#          named test1.39.prog
 ############################################################################
-# Copyright (C) 2004 The Regents of the University of California.
+# Copyright (C) 2004-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -74,7 +71,8 @@ exec $bin_chmod 700 $file_prog
 #
 # Delete any left-over core files
 #
-foreach filename [glob -nocomplain *core*] {
+foreach filename [glob -nocomplain *core.light] {
+	send_user "\nWARNING: deleting $filename\n"
 	exec $bin_rm -f $filename
 }
 
@@ -102,7 +100,7 @@ expect {
 # Check for light-weight core file rather than full core file
 #
 set matches 0
-foreach filename [glob -nocomplain *core*] {
+foreach filename [glob -nocomplain *core.light] {
 	spawn $bin_file $filename
 	expect {
 		-re "text" {
