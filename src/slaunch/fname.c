@@ -75,7 +75,8 @@ fname_create(char *format, int jobid, int stepid)
 	}
 
 	if (strncasecmp(format, "none", (size_t) 4) == 0) {
-		return NULL;
+		fname->name = xstrdup ("/dev/null");
+		return fname;
 	}
 
 	taskid = strtoul(format, &p, 10);
