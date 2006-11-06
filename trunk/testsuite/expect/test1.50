@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -53,6 +53,11 @@ expect {
 		set matches 1
 		exp_continue
 	}
+	-re "Unable to run executable" {
+		send_user "\nNo worries, this error is expected\n"
+		set matches 1
+		 exp_continue
+	}
 	-re "job exceeded timelimit" {
 		send_user "\nFAILURE: srun didn't terminate properly\n"
 		set exit_code 1
@@ -72,7 +77,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
+if {$matches == 0} {
 	send_user "\nFAILURE: unexpected output from bad job name\n"
 	set exit_code 1
 }
