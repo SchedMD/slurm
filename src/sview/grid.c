@@ -159,7 +159,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 		return;
 	}
 	gtk_widget_destroy(grid_button->button);		
-				
+		
 	grid_button->button = gtk_event_box_new();
 	gtk_tooltips_set_tip(grid_button->tip,
 			     grid_button->button,
@@ -172,12 +172,15 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 			 "button-press-event",
 			 G_CALLBACK(_open_node),
 			 grid_button);
-	gtk_table_attach(grid_button->table, grid_button->button,
-			 grid_button->table_x, (grid_button->table_x+1), 
-			 grid_button->table_y, (grid_button->table_y+1),
-			 GTK_SHRINK, GTK_SHRINK,
-			 1, 1);
-
+	if(grid_button->table) 
+		gtk_table_attach(grid_button->table, grid_button->button,
+				 grid_button->table_x,
+				 (grid_button->table_x+1), 
+				 grid_button->table_y,
+				 (grid_button->table_y+1),
+				 GTK_SHRINK, GTK_SHRINK,
+				 1, 1);
+	
 	gdk_color_parse("black", &color);
 	gtk_widget_modify_bg(grid_button->button, 
 			     GTK_STATE_NORMAL, &color);
@@ -211,11 +214,14 @@ void _put_button_as_up(grid_button_t *grid_button)
 			 "button-press-event",
 			 G_CALLBACK(_open_node),
 			 grid_button);
-	gtk_table_attach(grid_button->table, grid_button->button,
-			 grid_button->table_x, (grid_button->table_x+1), 
-			 grid_button->table_y, (grid_button->table_y+1),
-			 GTK_SHRINK, GTK_SHRINK,
-			 1, 1);
+	if(grid_button->table) 
+		gtk_table_attach(grid_button->table, grid_button->button,
+				 grid_button->table_x,
+				 (grid_button->table_x+1), 
+				 grid_button->table_y,
+				 (grid_button->table_y+1),
+				 GTK_SHRINK, GTK_SHRINK,
+				 1, 1);
 	gtk_widget_show_all(grid_button->button);
 	return;
 }
@@ -268,11 +274,13 @@ extern grid_button_t *create_grid_button_from_another(
 	send_grid_button = xmalloc(sizeof(grid_button_t));
 	memcpy(send_grid_button, grid_button, sizeof(grid_button_t));
 	node_base_state = send_grid_button->state & NODE_STATE_BASE;
+	/* need to set the table to empty because we will want to fill
+	   this into the new table later */
+	send_grid_button->table = NULL;
 	if((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_CANCEL,
 			GTK_ICON_SIZE_SMALL_TOOLBAR);
-		
 		send_grid_button->button = gtk_event_box_new();
 		gtk_event_box_set_above_child(
 			GTK_EVENT_BOX(send_grid_button->button),
@@ -349,6 +357,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 		if ((grid_button->inx < start)
 		    ||  (grid_button->inx > end)) 
 			continue;
+		
 		node_base_state = grid_button->state & NODE_STATE_BASE;
 		if (node_base_state == NODE_STATE_DOWN) {
 			_put_button_as_down(grid_button, NODE_STATE_DOWN);

@@ -65,9 +65,13 @@ enum {
 	EDIT_EDIT
 };
 
+/* These need to be in alpha order (except POS and CNT) */
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_AVAIL, 
+#ifdef HAVE_BG
+	SORTID_NODELIST, 
+#endif
 	SORTID_CPUS, 
 	SORTID_DEFAULT,
 	SORTID_GROUPS,
@@ -77,8 +81,11 @@ enum {
 	SORTID_MEM, 
 	SORTID_MIN_NODES,
 	SORTID_NAME, 
+#ifndef HAVE_BG
 	SORTID_NODELIST, 
+#endif
 	SORTID_NODES, 
+	SORTID_ONLY_LINE, 
 	SORTID_ROOT, 
 	SORTID_SHARE, 
 	SORTID_STATE,
@@ -134,6 +141,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
@@ -556,6 +565,8 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 	}
 	itr = list_iterator_create(sview_part_info->sub_list);
 	if(list_count(sview_part_info->sub_list) == 1) {
+		gtk_tree_store_set(GTK_TREE_STORE(model), iter,
+				   SORTID_ONLY_LINE, 1, -1);
 		sview_part_sub = list_next(itr);
 		_update_part_sub_record(sview_part_sub,
 					GTK_TREE_STORE(model), 
@@ -900,7 +911,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   part_ptr->nodes, -1);
-
+	
+	gtk_tree_store_set(treestore, iter, SORTID_ONLY_LINE, 0, -1);
 	/* clear out info for the main listing */
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, -1, -1);
@@ -933,7 +945,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	char tmp[1024];
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
-
+	
 	upper = node_state_string(sview_part_sub->node_state);
 	lower = str_tolower(upper);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
@@ -1978,6 +1990,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	char *name = NULL;
 	char *state = NULL;
 	char title[100];
+	int only_line = 0;
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
@@ -1989,10 +2002,13 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		snprintf(title, 100, "Job(s) in partition %s", name);
 		break;
 	case NODE_PAGE:
-		gtk_tree_model_get(model, iter, SORTID_STATE, &state, -1);
-		
+		gtk_tree_model_get(model, iter, SORTID_ONLY_LINE,
+				   &only_line, -1);
+		if(!only_line)
+			gtk_tree_model_get(model, iter,
+					   SORTID_STATE, &state, -1);
 #ifdef HAVE_BG
-		if(!strlen(state))
+		if(!state || !strlen(state))
 			snprintf(title, 100, 
 				 "Base partition(s) in partition %s",
 				 name);
@@ -2002,7 +2018,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 				 "that are in '%s' state",
 				 name, state);
 #else
-		if(!strlen(state))
+		if(!state || !strlen(state))
 			snprintf(title, 100, "Node(s) in partition %s ",
 				 name);
 		else
@@ -2011,7 +2027,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 				 "'%s' state",
 				 name, state);
 #endif
-		g_free(state);
 		break;
 	case BLOCK_PAGE: 
 		snprintf(title, 100, "Block(s) in partition %s", name);
@@ -2042,6 +2057,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(PART_PAGE, id, title);
 	} else {
 		g_free(name);
+		g_free(state);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;
 	}
@@ -2057,7 +2073,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
-		if(strlen(state)) {
+		if(state && strlen(state)) {
 			popup_win->spec_info->search_info->search_type =
 				SEARCH_NODE_STATE;
 			gtk_tree_model_get(
@@ -2068,6 +2084,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win->spec_info->search_info->search_type = 
 				SEARCH_NODE_NAME;
 		}
+		g_free(state);
+		
 		//specific_info_node(popup_win);
 		break;
 	case SUBMIT_PAGE: 
@@ -2086,7 +2104,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
-	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
 	char *partid = NULL;
 	char *nodelist = NULL;
 	char *state = NULL;
@@ -2109,7 +2126,6 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	slurm_init_part_desc_msg(part_msg);
 	
 	part_msg->name = xstrdup(partid);
-	node_msg->node_names = xstrdup(nodelist);
 
 	if(!strcasecmp("Change Availablity Up/Down", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
@@ -2181,7 +2197,6 @@ end_it:
 	g_free(partid);
 	g_free(nodelist);
 	slurm_free_update_part_msg(part_msg);
-	slurm_free_update_node_msg(node_msg);
 	gtk_widget_destroy(popup);
 	if(got_edit_signal) {
 		type = got_edit_signal;

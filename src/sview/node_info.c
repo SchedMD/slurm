@@ -75,6 +75,19 @@ static display_data_t display_data_node[] = {
 static display_data_t options_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, NODE_PAGE, "Drain Base Partition", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Resume Base Partition", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Put Base Partition Down",
+	 TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Make Base Partition Idle",
+	 TRUE, ADMIN_PAGE},
+#else
+	{G_TYPE_STRING, NODE_PAGE, "Drain Node", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Resume Node", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Put Node Down", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Make Node Idle", TRUE, ADMIN_PAGE},
+#endif
 	{G_TYPE_STRING, NODE_PAGE, "Edit Node", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
@@ -892,27 +905,29 @@ display_it:
 			
 			if(node_ptr->node_state != search_info->int_data)
 				continue;
-			/* no break here we want to continue to look
-			   for the name */
+			break;
+			
 		case SEARCH_NODE_NAME:
 		default:
-			if(!search_info->gchar_data)
-				continue;
-			while((host = hostlist_next(host_itr))) { 
-				if(!strcmp(host, node_ptr->name)) {
-					free(host);
-					found = 1;
-					break; 
-				}
-				free(host);
-			}
-			hostlist_iterator_reset(host_itr);
-			
-			if(!found)
-				continue;
+			/* Nothing to do here since we just are
+			 * looking for the node name */
 			break;
 		}
-				
+		if(!search_info->gchar_data)
+			continue;
+		while((host = hostlist_next(host_itr))) { 
+			if(!strcmp(host, node_ptr->name)) {
+				free(host);
+				found = 1;
+				break; 
+			}
+			free(host);
+		}
+		hostlist_iterator_reset(host_itr);
+		
+		if(!found)
+			continue;
+		
 		list_push(send_info_list, sview_node_info_ptr);
 #ifdef HAVE_BG
 		change_grid_color(popup_win->grid_button_list,
@@ -1029,6 +1044,23 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
+	char *name = NULL;
+						
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		type,
+		GTK_WINDOW(main_window),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+
+	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+		
+	/* something that has to deal with a node state change */
+	update_state_node2(GTK_DIALOG(popup), name, type);
+	
+	g_free(name);
+	gtk_widget_destroy(popup);
+		
 	return;
 }
 
