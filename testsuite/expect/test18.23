@@ -58,6 +58,11 @@ expect {
 		set matches 1
 		exp_continue
 	}
+	-re "Unable to run executable" {
+		send_user "\nNo worries, this error is expected\n"
+		set matches 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id != 0} {
@@ -70,7 +75,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
+if {$matches == 0} {
 	send_user "\nFAILURE: unexpected output from bad job name\n"
 	set exit_code 1
 }
