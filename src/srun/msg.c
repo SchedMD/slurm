@@ -392,7 +392,10 @@ static void _node_fail_handler(int fd, srun_job_t *job)
 	}
 	slurm_mutex_unlock(&job->task_mutex);
 
-	client_io_handler_downnodes(job->client_io, node_ids, num_node_ids);
+	if (!opt.allocate) {
+		client_io_handler_downnodes(job->client_io, node_ids,
+					    num_node_ids);
+	}
 
 	if (!opt.no_kill) {
 		update_job_state(job, SRUN_JOB_FORCETERM);
