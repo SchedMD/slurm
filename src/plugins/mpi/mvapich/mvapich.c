@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -43,11 +43,14 @@
 #  include <pthread.h>
 #endif
 
+#include <stdlib.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <strings.h>
+#include <sys/poll.h>
+#include <sys/time.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -83,6 +86,7 @@ struct mvapich_args {
  */
 struct mvapich_info
 {
+	int do_poll;          
 	int fd;             /* fd for socket connection to MPI task  */
 	int rank;           /* This process' MPI rank                */
 	int pidlen;         /* length of pid buffer                  */
@@ -110,7 +114,22 @@ static int  mvapich_fd       = -1;
 static int  nprocs           = -1;
 static int  protocol_version = -1;
 static int  v5_phase         = 0;
+static int  connect_once     = 1;
+static int  mvapich_verbose  = 0;
+static int  do_timing        = 0;
 
+
+#define mvapich_debug(args...) \
+	do { \
+		if (mvapich_verbose) \
+			info ("mvapich: " args); \
+	} while (0);
+
+#define mvapich_debug2(args...) \
+	do { \
+		if (mvapich_verbose > 1) \
+			info ("mvapich: " args); \
+	} while (0);
 
 static struct mvapich_info * mvapich_info_create (void)
 {
@@ -152,27 +171,31 @@ static int mvapich_get_task_info (struct mvapich_info *mvi)
 {
 	int fd = mvi->fd;
 
-	if (fd_read_n (fd, &mvi->addrlen, sizeof (int)) < 0)
+	if (fd_read_n (fd, &mvi->addrlen, sizeof (int)) <= 0)
 		return error ("mvapich: Unable to read addrlen for rank %d: %m", 
 				mvi->rank);
 
 	mvi->addr = xmalloc (mvi->addrlen);
 
-	if (fd_read_n (fd, mvi->addr, mvi->addrlen) < 0)
+	if (fd_read_n (fd, mvi->addr, mvi->addrlen) <= 0)
 		return error ("mvapich: Unable to read addr info for rank %d: %m", 
 				mvi->rank);
 
 	if (!mvapich_requires_pids ())
 		return (0);
 
-	if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) < 0)
+	if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) <= 0)
 		return error ("mvapich: Unable to read pidlen for rank %d: %m", 
 				mvi->rank);
 
+
 	mvi->pid = xmalloc (mvi->pidlen);
 
-	if (fd_read_n (fd, mvi->pid, mvi->pidlen) < 0)
+	if (fd_read_n (fd, mvi->pid, mvi->pidlen) <= 0)
 		return error ("mvapich: Unable to read pid for rank %d: %m", mvi->rank);
+
+
+	mvi->do_poll = 0;
 
 	return (0);
 }
@@ -315,9 +338,15 @@ static void mvapich_bcast_hostids (void)
 
 	for (i = 0; i < nprocs; i++) {
 		struct mvapich_info *mvi = mvarray [i];
+		int co, rc;
 		if (fd_write_n (mvi->fd, hostids, len) < 0)
 			error ("mvapich: write hostid rank %d: %m", mvi->rank);
-		close (mvi->fd);
+
+		if ((rc = fd_read_n (mvi->fd, &co, sizeof (int))) <= 0) {
+			close (mvi->fd);
+			connect_once = 0;
+		} else
+			mvi->do_poll = 1;
 	}
 
 	xfree (hostids);
@@ -355,7 +384,7 @@ static void mvapich_barrier (void)
 	for (i = 0; i < nprocs; i++) {
 		m = mvarray[i];
 		if (fd_write_n (m->fd, &i, sizeof (i)) == -1)
-			error("mvapich write on barrier");
+			error("mvapich: write on barrier: %m");
 		close (m->fd);
 		m->fd = -1;
 	}
@@ -435,27 +464,119 @@ static void mvapich_mvarray_destroy (void)
 	xfree (mvarray);
 }
 
+static int mvapich_rank_from_fd (int fd)
+{
+	int rank = 0;
+	while (mvarray[rank]->fd != fd)
+		rank++;
+	return (rank);
+}
+
 static int mvapich_handle_connection (int fd)
 {
 	int version, rank;
 
-	if (mvapich_get_task_header (fd, &version, &rank) < 0)
-		return (-1);
+	if (v5_phase == 0 || !connect_once) {
+		if (mvapich_get_task_header (fd, &version, &rank) < 0)
+			return (-1);
 
-	if (rank > nprocs - 1) 
-		return (error ("mvapich: task reported invalid rank (%d)",
-			       rank));
+		if (rank > nprocs - 1) 
+			return (error ("mvapich: task reported invalid rank (%d)", rank));
+	} else {
+		rank = mvapich_rank_from_fd (fd);
+	}
 
-	if (mvapich_handle_task (fd, mvarray [rank]) < 0)
+	if (mvapich_handle_task (fd, mvarray [rank]) < 0) 
 		return (-1);
 
 	return (0);
+}
+
+static int poll_mvapich_fds (void)
+{
+	int i = 0;
+	int j = 0;
+	int rc;
+	int fd;
+	int nfds = 0;
+	struct pollfd *fds = xmalloc (nprocs * sizeof (struct pollfd));
+
+	for (i = 0; i < nprocs; i++) {
+		if (mvarray[i]->do_poll) {
+			fds[j].fd = mvarray[i]->fd;
+			fds[j].events = POLLIN;
+			j++;
+			nfds++;
+		}
+	}
+
+	mvapich_debug2 ("Going to poll %d fds", nfds);
+	if ((rc = poll (fds, nfds, -1)) < 0) 
+		return (error ("mvapich: poll: %m"));
+
+	i = 0;
+	while (fds[i].revents != POLLIN)
+		i++;
+
+	fd = fds[i].fd;
+	xfree (fds);
+
+	return (fd);
+}
+
+static int mvapich_get_next_connection (int listenfd)
+{
+	slurm_addr addr;
+	int fd;
+
+	if (connect_once && v5_phase > 0) {
+		return (poll_mvapich_fds ());
+	} 
+		
+	if ((fd = slurm_accept_msg_conn (mvapich_fd, &addr)) < 0) {
+		error ("mvapich: accept: %m");
+		return (-1);
+	}
+	mvapich_debug2 ("accept() = %d", fd);
+
+	return (fd);
+}
+
+static void do_timings (void)
+{
+	static int initialized = 0;
+	static struct timeval initv = { 0, 0 };
+	struct timeval tv;
+	struct timeval result;
+
+	if (!do_timing)
+		return;
+
+	if (!initialized) {
+		if (gettimeofday (&initv, NULL) < 0)
+			error ("mvapich: do_timings(): gettimeofday(): %m\n");
+		initialized = 1;
+		return;
+	}
+
+	if (gettimeofday (&tv, NULL) < 0) {
+		error ("mvapich: do_timings(): gettimeofday(): %m\n");
+		return;
+	}
+
+	timersub (&tv, &initv, &result);
+
+	info ("mvapich: Intialization took %d.%03d seconds", result.tv_sec,
+			result.tv_usec/1000);
+
+	return;
 }
 
 static void *mvapich_thr(void *arg)
 {
 	srun_job_t *job = arg;
 	int i = 0;
+	int first = 1;
 
 	debug ("mvapich-0.9.x/gen2: thread started: %ld", pthread_self ());
 
@@ -464,12 +585,17 @@ static void *mvapich_thr(void *arg)
 again:
 	i = 0;
 	while (i < nprocs) {
-		slurm_addr addr;
 		int fd;
 		
-		if ((fd = slurm_accept_msg_conn (mvapich_fd, &addr)) < 0) {
+		if ((fd = mvapich_get_next_connection (mvapich_fd)) < 0) {
 			error ("mvapich: accept: %m");
 			goto fail;
+		}
+
+		if (first) {
+			mvapich_debug ("first task checked in");
+			do_timings ();
+			first = 0;
 		}
 
 		if (mvapich_handle_connection (fd) < 0) 
@@ -478,6 +604,7 @@ again:
 		i++;
 	}
 
+	mvapich_debug ("bcasting mvapich info to %d tasks", nprocs);
 	mvapich_bcast ();
 
 	if (protocol_version == 5 && v5_phase == 0) {
@@ -485,7 +612,11 @@ again:
 		goto again;
 	}
 
+	mvapich_debug ("calling mvapich_barrier");
 	mvapich_barrier ();
+	mvapich_debug ("all tasks have checked in");
+
+	do_timings ();
 
 	mvapich_wait_for_abort (job);
 
@@ -499,16 +630,38 @@ fail:
 	return (void *)0;
 }
 
+static int process_environment (void)
+{
+	char *val;
+
+	if (getenv ("MVAPICH_CONNECT_TWICE"))
+		connect_once = 0;
+
+	if ((val = getenv ("SLURM_MVAPICH_DEBUG"))) {
+		int level = atoi (val);
+		if (level > 0)
+			mvapich_verbose = level;
+	}
+
+	if (getenv ("SLURM_MVAPICH_TIMING"))
+		do_timing = 1;
+
+	return (0);
+}
+
 extern int mvapich_thr_create(srun_job_t *job)
 {
 	short port;
 	pthread_attr_t attr;
 	pthread_t tid;
 
+	if (process_environment () < 0)
+		return error ("mvapich: Failed to read environment settings\n");
+
 	nprocs = opt.nprocs;
 
 	if (net_stream_listen(&mvapich_fd, &port) < 0)
-		error ("Unable to create ib listen port: %m");
+		return error ("Unable to create ib listen port: %m");
 
 	/*
 	 * Accept in a separate thread.
@@ -525,6 +678,8 @@ extern int mvapich_thr_create(srun_job_t *job)
 	setenvf (NULL, "MPIRUN_PORT",   "%d", port);
 	setenvf (NULL, "MPIRUN_NPROCS", "%d", nprocs);
 	setenvf (NULL, "MPIRUN_ID",     "%d", job->jobid);
+	if (connect_once)
+		setenvf (NULL, "MPIRUN_CONNECT_ONCE", "1");
 
 	verbose ("mvapich-0.9.[45] master listening on port %d", port);
 

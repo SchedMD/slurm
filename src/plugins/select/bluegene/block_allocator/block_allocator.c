@@ -3205,22 +3205,22 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	int count=0, i, set=0;
 	int *start = NULL;
 	int *end = NULL;
-	char *name = xmalloc(sizeof(char)*BUFSIZE);
+	char *name = xmalloc(BUFSIZE);
 	ListIterator itr;
 	hostlist_t hostlist = hostlist_create(NULL);
-	
+	char temp_name[4];
+
 	if(!nodes)
 		return NULL;
 	itr = list_iterator_create(nodes);
 	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
-		snprintf(name, BUFSIZE, "%d%d%d", 
-			ba_node[count]->coord[X],
-			ba_node[count]->coord[Y],
-			ba_node[count]->coord[Z]);
-		debug3("name = %s",name);
+		snprintf(temp_name, sizeof(temp_name), "%d%d%d", 
+			 ba_node[count]->coord[X],
+			 ba_node[count]->coord[Y],
+			 ba_node[count]->coord[Z]);
+		debug3("name = %s", temp_name);
 		count++;
-		hostlist_push(hostlist, name);
-				
+		hostlist_push(hostlist, temp_name);
 	}
 	list_iterator_destroy(itr);
 		
