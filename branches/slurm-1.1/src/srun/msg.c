@@ -365,7 +365,9 @@ static void _node_fail_handler(int fd, srun_job_t *job)
 	safe_read(fd, nodelist, len);
 	nodelist[len] = '\0';
 
-	io_node_fail(nodelist, job);
+	if (!opt.allocate) {
+		io_node_fail(nodelist, job);
+	}
 
 	if (opt.no_kill) {
 		error("Node failure on %s.", nodelist);

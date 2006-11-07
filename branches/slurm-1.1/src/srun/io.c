@@ -1038,11 +1038,16 @@ _handle_io_init_msg(int fd, srun_job_t *job)
 extern int 
 io_node_fail(char *nodelist, srun_job_t *job)
 {
-	hostlist_t fail_list = hostlist_create(nodelist);
+	hostlist_t fail_list;
 	char *node_name;
 	int node_inx;
 	int rc = SLURM_SUCCESS;
 
+	if (job->ioserver == NULL) {
+		return SLURM_ERROR;
+	}
+
+	fail_list = hostlist_create(nodelist);
 	if (!fail_list) {
 		error("Invalid node list `%s' specified", nodelist);
 		return SLURM_ERROR;
@@ -1055,9 +1060,13 @@ io_node_fail(char *nodelist, srun_job_t *job)
 				continue;
 			break;
 		}
-		if(node_inx < job->nhosts) 
+		if (node_inx < job->nhosts) {
+			if (job->ioserver[node_inx] == NULL) {
+				hostlist_destroy(fail_list);
+				return SLURM_ERROR;
+			}
 			job->ioserver[node_inx]->shutdown = true;
-		else {
+		} else {
 			error("Invalid node name `%s' specified for job", 
 			      node_name);
 			rc = SLURM_ERROR;
