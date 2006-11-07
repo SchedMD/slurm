@@ -83,11 +83,12 @@ start_again:
 	/* figure out where we are in the tree and set the timeout for
 	   to wait for our childern correctly (timeout+1 sec per step)
 	   to let the child timeout */
-	steps = (fwd_msg->header.forward.cnt+1)/slurm_get_tree_width();
-	fwd_msg->timeout = (1000*steps);
-	steps++;
-	fwd_msg->timeout += (start_timeout*steps);
-	
+	if(fwd_msg->header.forward.cnt>0) {
+		steps = (fwd_msg->header.forward.cnt+1)/slurm_get_tree_width();
+		fwd_msg->timeout = (5000*steps);
+		steps++;
+		fwd_msg->timeout += (start_timeout*steps);
+	}
 /* 	info("sending to %s with %d forwards", */
 /* 	     fwd_msg->node_name, fwd_msg->header.forward.cnt); */
 	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
@@ -594,6 +595,7 @@ extern int forward_set(forward_t *forward,
 /* 	info("forwarding to %s",name); */
 	
 	if(span > 0) {
+		span++;
 		forward->addr = xmalloc(sizeof(slurm_addr) * span);
 		forward->name = xmalloc(sizeof(char) 
 					* (MAX_SLURM_NAME * span));
@@ -666,6 +668,7 @@ extern int forward_set_launch(forward_t *forward,
 /* 	info("forwarding to %s",name); */
 	
 	if(span > 0) {
+		span++;
 		forward->addr = xmalloc(sizeof(slurm_addr) * span);
 		forward->name = 
 			xmalloc(sizeof(char) * (MAX_SLURM_NAME * span));
