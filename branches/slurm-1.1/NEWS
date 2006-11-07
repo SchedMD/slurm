@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  - Add logic to save/restore select/cons_res state information.
  - BLUEGENE - make all sprintf's into snprintf's
  - Fix timeout calculation to work correctly for fan out.
+ - Fix for "srun -A" segfault on a node failure.
 
 * Changes in SLURM 1.1.17
 =========================
