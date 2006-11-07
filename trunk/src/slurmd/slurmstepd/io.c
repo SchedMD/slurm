@@ -406,7 +406,10 @@ again:
 			_free_all_outgoing_msgs(client->msg_queue, client->job);
 			return SLURM_SUCCESS;
 		}
-		error("Get error on write() in _client_write: %m");
+		/* Bad place for an error message, because it might try to write
+		   to exectly the fd that is having trouble, and hang.
+		   Not sure why it hangs... */
+		/* error("Get error on write() in _client_write: %m"); */
 		return SLURM_SUCCESS;
 	}
 	debug5("Wrote %d bytes to socket", n);
