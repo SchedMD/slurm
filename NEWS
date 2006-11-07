@@ -88,6 +88,9 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.19
+=========================
+
 * Changes in SLURM 1.1.18
 =========================
  - In sched/wiki2, add support for EHost and EHostBackup configuration 
