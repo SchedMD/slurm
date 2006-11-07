@@ -569,7 +569,7 @@ static int _write_line(int fd, void *buf, int len)
 /*
  * Write as many lines from the message as possible.  Return
  * the number of bytes from the message that have been written,
- * or 0 on eof, or -1 on error.
+ * or -1 on error.
  *
  * Prepend a label of the task number if label parameter was
  * specified.
@@ -586,7 +586,7 @@ static int _write_msg(int fd, void *buf, int len, int taskid,
 	int remaining = len;
 	int written = 0;
 	int line_len;
-	int rc = SLURM_SUCCESS;
+	int rc = -1;
 
 	while (remaining > 0) {
 		start = buf + written;
