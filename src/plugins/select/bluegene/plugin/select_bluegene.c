@@ -468,7 +468,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
-		(*nodes) = bluegene_bp_node_cnt;
+		if((*nodes) != INFINITE)
+			(*nodes) = bluegene_bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
 		if((*nodes) == 1) {
@@ -480,7 +481,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		(*nodes) *= bluegene_bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
-		(*nodes) *= bluegene_bp_node_cnt;
+		if((*nodes) != INFINITE)
+			(*nodes) *= bluegene_bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
 		select_g_get_jobinfo(job_desc->select_jobinfo,

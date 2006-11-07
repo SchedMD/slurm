@@ -564,6 +564,9 @@ extern int _slurm_getsockname (int __fd, struct sockaddr * __addr,
 extern int _slurm_connect (int __fd, struct sockaddr const * __addr, 
                                 socklen_t __len)
 {
+#if 0
+	return connect ( __fd , __addr , __len ) ;
+#else
 	/* From "man connect": Note that for IP sockets the timeout
 	 * may be very long when syncookies are enabled on the server.
 	 *
@@ -574,18 +577,22 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 
 	flags = fcntl(__fd, F_GETFL);
 	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
-	rc = connect ( __fd , __addr , __len ) ;
-	if ((rc == -1)
-	&&  ((errno == EINPROGRESS) || (errno == EALREADY))) {
+	rc = connect(__fd , __addr , __len);
+	if ((rc == -1) && (errno == EINPROGRESS)) {
+		int poll_rc;
 		struct pollfd ufds;
 		ufds.fd = __fd;
-		ufds.events = POLLOUT;
-		ufds. revents = 0;
-		poll(&ufds, 1, 5000);   /* 5 sec max wait */
-		rc = connect ( __fd , __addr , __len ) ;
+		ufds.events = POLLIN | POLLOUT;
+		ufds.revents = 0;
+		poll_rc = poll(&ufds, 1, 5000);
+		if (poll_rc == 0)
+                        errno = ETIMEDOUT;
+		else if (poll_rc == 1)
+			rc = 0;
 	}
 	fcntl(__fd, F_SETFL, flags);
 	return rc;
+#endif
 }
 
 /* Put the address of the peer connected to socket FD into *ADDR

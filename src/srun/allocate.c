@@ -518,6 +518,8 @@ job_desc_msg_create_from_opts (char *script)
 		 */
 		xassert (opt.batch);
 
+		if (opt.batch)
+			putenv("ENVIRONMENT=BATCH");
 		if (opt.overcommit)
 			putenv("SLURM_OVERCOMMIT=1");
 		if (opt.nprocs_set) {
