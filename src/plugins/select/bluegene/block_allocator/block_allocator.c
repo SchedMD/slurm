@@ -2444,6 +2444,15 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	int *node_curr;
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL; 
+
+	if(source < 0 || source > NUM_PORTS_PER_NODE) {
+		fatal("source port was %d can only be 0->%d",
+		      source, NUM_PORTS_PER_NODE);
+	}
+	if(target < 0 || target > NUM_PORTS_PER_NODE) {
+		fatal("target port was %d can only be 0->%d",
+		      target, NUM_PORTS_PER_NODE);
+	}
 	/*set the switch to not be used */
 	if(!curr_switch->int_wire[source].used) {
 		debug("I reached the end, the source isn't used");
@@ -2451,6 +2460,11 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	}
 	curr_switch->int_wire[source].used = 0;
 	port_tar = curr_switch->int_wire[source].port_tar;
+	if(port_tar < 0 || port_tar > NUM_PORTS_PER_NODE) {
+		fatal("port_tar port was %d can only be 0->%d",
+		      source, NUM_PORTS_PER_NODE);
+	}
+	
 	port_tar1 = port_tar;
 	curr_switch->int_wire[source].port_tar = source;
 	curr_switch->int_wire[port_tar].used = 0;
