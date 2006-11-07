@@ -932,7 +932,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	if(steps) {
 		orig_timeout = timeout/steps;
 		steps--;
-		orig_timeout -= (1000*steps);
+		orig_timeout -= (5000*steps);
 	} 
 
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
@@ -1765,7 +1765,7 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 			   to let the child timeout */
 	
 			steps = req->forward.cnt/slurm_get_tree_width();
-			timeout = (1000*steps);
+			timeout = (5000*steps);
 			steps++;
 			
 			timeout += (req->forward.timeout*steps);

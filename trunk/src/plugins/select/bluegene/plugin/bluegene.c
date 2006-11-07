@@ -221,7 +221,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 #else
 {
 	char tmp_char[256];
-	format_node_name(bg_record, tmp_char);
+	format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 	info("Record: BlockID:%s Nodes:%s Conn:%s",
 	     bg_record->bg_block_id, tmp_char,
 	     convert_conn_type(bg_record->conn_type));
@@ -406,7 +406,7 @@ extern void process_nodes(bg_record_t *bg_record)
 	if (node_name2bitmap(bg_record->nodes, 
 			     false, 
 			     &bg_record->bitmap)) {
-		fatal("Unable to convert nodes %s to bitmap", 
+		fatal("1 Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
 #endif
@@ -615,21 +615,23 @@ end_it:
 	return;
 }
 
-extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
+extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 {
 	if(bg_record->quarter != (uint16_t)NO_VAL) {
 		if(bg_record->nodecard != (uint16_t)NO_VAL) {
-			sprintf(tmp_char,"%s.%d.%d",
-				bg_record->nodes,
-				bg_record->quarter,
-				bg_record->nodecard);
+			snprintf(buf, buf_size,
+				 "%s.%d.%d",
+				 bg_record->nodes,
+				 bg_record->quarter,
+				 bg_record->nodecard);
 		} else {
-			sprintf(tmp_char,"%s.%d",
-				bg_record->nodes,
-				bg_record->quarter);
+			snprintf(buf, buf_size,
+				 "%s.%d",
+				 bg_record->nodes,
+				 bg_record->quarter);
 		}
 	} else {
-		sprintf(tmp_char,"%s",bg_record->nodes);
+		snprintf(buf, buf_size, "%s", bg_record->nodes);
 	}
 	return SLURM_SUCCESS;
 }
@@ -1040,9 +1042,9 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				}
 #else
 				if (!bg_record->bg_block_id) { 
-					bg_record->bg_block_id = 
-						xmalloc(sizeof(char)*8);
-					snprintf(bg_record->bg_block_id, 8, 
+					bg_record->bg_block_id = xmalloc(8);
+					snprintf(bg_record->bg_block_id,
+						 8,
 						 "RMP%d", 
 						 block_inx++);
 				}
@@ -1301,13 +1303,15 @@ extern int create_full_system_block(int *block_inx)
 	geo[Z] = max_dim[Z];
 #endif
 	slurm_conf_lock();
-	name = xmalloc(sizeof(char)*(10+strlen(slurmctld_conf.node_prefix)));
+	i = (10+strlen(slurmctld_conf.node_prefix));
+	name = xmalloc(i);
 	if((geo[X] == 0) && (geo[Y] == 0) && (geo[Z] == 0))
-		sprintf(name, "%s000", slurmctld_conf.node_prefix);
+		snprintf(name, i, "%s000",
+			 slurmctld_conf.node_prefix);
 	else
-		sprintf(name, "%s[000x%d%d%d]",
-			slurmctld_conf.node_prefix,
-			geo[X], geo[Y], geo[Z]);
+		snprintf(name, i, "%s[000x%d%d%d]",
+			 slurmctld_conf.node_prefix,
+			 geo[X], geo[Y], geo[Z]);
 	slurm_conf_unlock();
 			
 	if(bg_found_block_list) {
@@ -1398,9 +1402,9 @@ extern int create_full_system_block(int *block_inx)
 	}
 #else
 	if (!bg_record->bg_block_id) { 
-		bg_record->bg_block_id = 
-			xmalloc(sizeof(char)*8);
-		snprintf(bg_record->bg_block_id, 8, "RMP%d", (*block_inx)++);
+		bg_record->bg_block_id = xmalloc(8);
+		snprintf(bg_record->bg_block_id, 8,
+			 "RMP%d", (*block_inx)++);
 	}
 #endif	/* HAVE_BG_FILES */
 	print_bg_record(bg_record);
@@ -1928,9 +1932,10 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				slurm_conf_lock();
-				sprintf(node_name_tmp, "%s%d%d%d", 
-					slurmctld_conf.node_prefix,
-					x, y, z);		
+				snprintf(node_name_tmp, sizeof(node_name_tmp),
+					 "%s%d%d%d", 
+					 slurmctld_conf.node_prefix,
+					 x, y, z);		
 				slurm_conf_unlock();
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
@@ -2059,7 +2064,8 @@ static int _validate_config_nodes(void)
 		}
 			
 		if (!bg_record->bg_block_id) {
-			format_node_name(bg_record, tmp_char);	
+			format_node_name(bg_record, tmp_char,
+					 sizeof(tmp_char));
 			info("Block found in bluegene.conf to be "
 			     "created: Nodes:%s", 
 			     tmp_char);
@@ -2069,7 +2075,8 @@ static int _validate_config_nodes(void)
 				full_created = 1;
 
 			list_push(bg_found_block_list, bg_record);
-			format_node_name(bg_record, tmp_char);
+			format_node_name(bg_record, tmp_char,
+					 sizeof(tmp_char));
 			info("Existing: BlockID:%s Nodes:%s Conn:%s",
 			     bg_record->bg_block_id, 
 			     tmp_char,
@@ -2091,7 +2098,7 @@ static int _validate_config_nodes(void)
 		copy_bg_record(full_system_bg_record, bg_record);
 		list_push(bg_list, bg_record);
 		list_push(bg_found_block_list, bg_record);
-		format_node_name(bg_record, tmp_char);
+		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 		info("Existing: BlockID:%s Nodes:%s Conn:%s",
 		     bg_record->bg_block_id, 
 		     tmp_char,
@@ -2306,8 +2313,9 @@ static int _add_block_db(bg_record_t *bg_record, int *block_inx)
 		return SLURM_ERROR;
 	}
 #else
-	bg_record->bg_block_id = xmalloc(sizeof(char)*8);
-	snprintf(bg_record->bg_block_id, 8, "RMP%d", 
+	bg_record->bg_block_id = xmalloc(8);
+	snprintf(bg_record->bg_block_id, 8,
+		 "RMP%d", 
 		 (*block_inx)++);
 #endif
 	return SLURM_SUCCESS;
@@ -2429,11 +2437,13 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 			debug2("found it here %s, %s",
 			       bg_record->bg_block_id,
 			       bg_record->nodes);
-			request->save_name = xmalloc(sizeof(char) * 4);
-			sprintf(request->save_name, "%d%d%d",
-				bg_record->start[X],
-				bg_record->start[Y],
-				bg_record->start[Z]);
+			request->save_name = xmalloc(4);
+			snprintf(request->save_name,
+				 4,
+				 "%d%d%d",
+				 bg_record->start[X],
+				 bg_record->start[Y],
+				 bg_record->start[Z]);
 			rc = SLURM_SUCCESS;
 			goto finished;
 		}
@@ -2449,11 +2459,13 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 			debug2("1 got %d on quarter %d",
 			       total_proc_cnt, last_quarter);
 			if(total_proc_cnt == request->procs) {
-				request->save_name = xmalloc(sizeof(char) * 4);
-				sprintf(request->save_name, "%d%d%d",
-					bg_record->start[X],
-					bg_record->start[Y],
-					bg_record->start[Z]);
+				request->save_name = xmalloc(4);
+				snprintf(request->save_name, 
+					 4,
+					 "%d%d%d",
+					 bg_record->start[X],
+					 bg_record->start[Y],
+					 bg_record->start[Z]);
 				if(!my_block_list) {
 					rc = SLURM_SUCCESS;
 					goto finished;	
@@ -2516,11 +2528,13 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 			debug2("found it here %s, %s",
 			       bg_record->bg_block_id,
 			       bg_record->nodes);
-			request->save_name = xmalloc(sizeof(char) * 4);
-			sprintf(request->save_name, "%d%d%d",
-				bg_record->start[X],
-				bg_record->start[Y],
-				bg_record->start[Z]);
+			request->save_name = xmalloc(4);
+			snprintf(request->save_name,
+				 4,
+				 "%d%d%d",
+				 bg_record->start[X],
+				 bg_record->start[Y],
+				 bg_record->start[Z]);
 			rc = SLURM_SUCCESS;
 			goto finished;
 		} 
@@ -2537,11 +2551,13 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 			debug2("got %d on quarter %d",
 			       total_proc_cnt, last_quarter);
 			if(total_proc_cnt == request->procs) {
-				request->save_name = xmalloc(sizeof(char) * 4);
-				sprintf(request->save_name, "%d%d%d",
-					bg_record->start[X],
-					bg_record->start[Y],
-					bg_record->start[Z]);
+				request->save_name = xmalloc(4);
+				snprintf(request->save_name,
+					 4,
+					 "%d%d%d",
+					 bg_record->start[X],
+					 bg_record->start[Y],
+					 bg_record->start[Z]);
 				if(!my_block_list) {
 					rc = SLURM_SUCCESS;
 					goto finished;	
@@ -2568,16 +2584,18 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 	}
 found_one:
 	if(bg_record) {
-		format_node_name(bg_record, tmp_char);
+		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 			
 		debug2("going to split %s, %s",
 		       bg_record->bg_block_id,
 		       tmp_char);
-		request->save_name = xmalloc(sizeof(char) * 4);
-		sprintf(request->save_name, "%d%d%d",
-			bg_record->start[X],
-			bg_record->start[Y],
-			bg_record->start[Z]);
+		request->save_name = xmalloc(4);
+		snprintf(request->save_name, 
+			 4,
+			 "%d%d%d",
+			 bg_record->start[X],
+			 bg_record->start[Y],
+			 bg_record->start[Z]);
 		if(!my_block_list) {
 			rc = SLURM_SUCCESS;
 			goto finished;	
@@ -2674,12 +2692,9 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	if(i<len) {
 		len -= i;
 		slurm_conf_lock();
-		bg_record->nodes = xmalloc(sizeof(char)*
-					   (len
-					    +strlen(slurmctld_conf.node_prefix)
-					    +1));
-		
-		sprintf(bg_record->nodes, "%s%s", 
+		len += strlen(slurmctld_conf.node_prefix)+1;
+		bg_record->nodes = xmalloc(len);
+		snprintf(bg_record->nodes, len, "%s%s", 
 			slurmctld_conf.node_prefix, blockreq->block+i);
 		slurm_conf_unlock();
 			

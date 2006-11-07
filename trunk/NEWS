@@ -103,6 +103,8 @@ documents those changes that are of interest to users and admins.
    waits under some conditions.
  - Set "ENVIRONMENT=BATCH" environment variable for "srun --batch" jobs only.
  - Add logic to save/restore select/cons_res state information.
+ - BLUEGENE - make all sprintf's into snprintf's
+ - Fix timeout calculation to work correctly for fan out.
 
 * Changes in SLURM 1.1.17
 =========================
