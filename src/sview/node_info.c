@@ -502,7 +502,8 @@ extern int update_state_node2(GtkDialog *dialog,
 	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
-	
+	int no_dialog = 0;
+
 	if(!dialog) {
 		dialog = GTK_DIALOG(
 			gtk_dialog_new_with_buttons(
@@ -511,6 +512,7 @@ extern int update_state_node2(GtkDialog *dialog,
 				GTK_DIALOG_MODAL
 				| GTK_DIALOG_DESTROY_WITH_PARENT,
 				NULL));	
+		no_dialog = 1;
 	}
 	label = gtk_dialog_add_button(dialog,
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
@@ -593,6 +595,9 @@ extern int update_state_node2(GtkDialog *dialog,
 	}
 end_it:
 	slurm_free_update_node_msg(node_msg);
+	if(no_dialog)
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+		
 	return rc;
 }
 			
