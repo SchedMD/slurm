@@ -205,7 +205,8 @@ task id.
 do not line buffer stdout from remote tasks. This option cannot be used
 with \fI\-\-label\fR. 
 .TP
-\fB\-m\fR, \fB\-\-distribution\fR=(\fIblock\fR|\fIcyclic\fR|\fIhostfile\fR)
+\fB\-m\fR, \fB\-\-distribution\fR=
+(\fIblock\fR|\fIcyclic\fR|\fIhostfile\fR|\fIplane=<options>\fR)
 Specify an alternate distribution method for remote processes.
 .RS
 .TP
@@ -225,6 +226,15 @@ The cyclic method distributes processes in a round\-robin fashion across
 the allocated nodes. That is, process one will be allocated to the first
 node, process two to the second, and so on. This is the default behavior
 if the number of tasks is no larger than the number of nodes requested.
+.TP
+.B plane
+The tasks are distributed in blocks of a specified size.
+The options include a number representing the size of the task block.
+This is followed by an optional specification of the task distribution 
+scheme within a block of tasks and between the blocks of tasks.
+For more details (including examples and diagrams), please see
+http://www.llnl.gov/linux/slurm/mc_support.html and
+http://www.llnl.gov/linux/slurm/dist_plane.html.
 .TP
 .B hostfile
 The hostfile method of distribution will allocate processes in\-order as 
