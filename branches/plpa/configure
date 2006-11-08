@@ -463,7 +463,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os PROJECT SLURM_API_VERSION SLURM_API_CURRENT SLURM_API_MAJOR SLURM_API_AGE SLURM_API_REVISION VERSION SLURM_MAJOR SLURM_MINOR SLURM_MICRO RELEASE SLURM_VERSION INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CMD_LDFLAGS LIB_LDFLAGS SO_LDFLAGS HAVE_AIX_TRUE HAVE_AIX_FALSE HAVE_AIX PROCTRACKDIR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CPP EGREP HAVE_AIX_PROCTRACK_TRUE HAVE_AIX_PROCTRACK_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL WITH_GNU_LD_TRUE WITH_GNU_LD_FALSE HAVE_SCHED_SETAFFINITY_TRUE HAVE_SCHED_SETAFFINITY_FALSE NUMA_LIBS HAVE_NUMA_TRUE HAVE_NUMA_FALSE PAM_LIBS HAVE_PAM_TRUE HAVE_PAM_FALSE LIBOBJS HAVE_UNSETENV_TRUE HAVE_UNSETENV_FALSE PTHREAD_CC PTHREAD_LIBS PTHREAD_CFLAGS BG_INCLUDES SEMAPHORE_SOURCES SEMAPHORE_LIBS NCURSES HAVE_SOME_CURSES_TRUE HAVE_SOME_CURSES_FALSE HAVE_SOME_CURSES HAVEPKGCONFIG GTK2_CFLAGS GTK2_LIBS HAVE_GTK_TRUE HAVE_GTK_FALSE DEBUG_MODULES_TRUE DEBUG_MODULES_FALSE SLURMCTLD_PORT SLURMD_PORT ELAN_LIBS HAVE_ELAN_TRUE HAVE_ELAN_FALSE HAVE_ELAN FEDERATION_LDFLAGS HAVE_FEDERATION_TRUE HAVE_FEDERATION_FALSE HAVE_FEDERATION HAVE_SGI_JOB_TRUE HAVE_SGI_JOB_FALSE READLINE_LIBS SSL_LDFLAGS SSL_LIBS SSL_CPPFLAGS MUNGE_LIBS MUNGE_CPPFLAGS MUNGE_LDFLAGS WITH_MUNGE_TRUE WITH_MUNGE_FALSE AUTHD_LIBS AUTHD_CFLAGS WITH_AUTHD_TRUE WITH_AUTHD_FALSE LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os PROJECT SLURM_API_VERSION SLURM_API_CURRENT SLURM_API_MAJOR SLURM_API_AGE SLURM_API_REVISION VERSION SLURM_MAJOR SLURM_MINOR SLURM_MICRO RELEASE SLURM_VERSION INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CMD_LDFLAGS LIB_LDFLAGS SO_LDFLAGS HAVE_AIX_TRUE HAVE_AIX_FALSE HAVE_AIX PROCTRACKDIR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CPP EGREP HAVE_AIX_PROCTRACK_TRUE HAVE_AIX_PROCTRACK_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL WITH_GNU_LD_TRUE WITH_GNU_LD_FALSE HAVE_SCHED_SETAFFINITY_TRUE HAVE_SCHED_SETAFFINITY_FALSE NUMA_LIBS HAVE_NUMA_TRUE HAVE_NUMA_FALSE PLPA_LIBS HAVE_PLPA_TRUE HAVE_PLPA_FALSE PAM_LIBS HAVE_PAM_TRUE HAVE_PAM_FALSE LIBOBJS HAVE_UNSETENV_TRUE HAVE_UNSETENV_FALSE PTHREAD_CC PTHREAD_LIBS PTHREAD_CFLAGS BG_INCLUDES SEMAPHORE_SOURCES SEMAPHORE_LIBS NCURSES HAVE_SOME_CURSES_TRUE HAVE_SOME_CURSES_FALSE HAVE_SOME_CURSES HAVEPKGCONFIG GTK2_CFLAGS GTK2_LIBS HAVE_GTK_TRUE HAVE_GTK_FALSE DEBUG_MODULES_TRUE DEBUG_MODULES_FALSE SLURMCTLD_PORT SLURMD_PORT ELAN_LIBS HAVE_ELAN_TRUE HAVE_ELAN_FALSE HAVE_ELAN FEDERATION_LDFLAGS HAVE_FEDERATION_TRUE HAVE_FEDERATION_FALSE HAVE_FEDERATION HAVE_SGI_JOB_TRUE HAVE_SGI_JOB_FALSE READLINE_LIBS SSL_LDFLAGS SSL_LIBS SSL_CPPFLAGS MUNGE_LIBS MUNGE_CPPFLAGS MUNGE_LDFLAGS WITH_MUNGE_TRUE WITH_MUNGE_FALSE AUTHD_LIBS AUTHD_CFLAGS WITH_AUTHD_TRUE WITH_AUTHD_FALSE LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -22083,6 +22083,100 @@ echo "$as_me: WARNING: Unable to locate NUMA memory affinity functions" >&2;}
   fi
 
 #
+# Test for PLPA functions (see http://www.open-mpi.org/software/plpa)
+#
+  echo "$as_me:$LINENO: checking for plpa_sched_getaffinity in -lplpa" >&5
+echo $ECHO_N "checking for plpa_sched_getaffinity in -lplpa... $ECHO_C" >&6
+if test "${ac_cv_lib_plpa_plpa_sched_getaffinity+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lplpa  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char plpa_sched_getaffinity ();
+int
+main ()
+{
+plpa_sched_getaffinity ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_plpa_plpa_sched_getaffinity=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_plpa_plpa_sched_getaffinity=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_plpa_plpa_sched_getaffinity" >&5
+echo "${ECHO_T}$ac_cv_lib_plpa_plpa_sched_getaffinity" >&6
+if test $ac_cv_lib_plpa_plpa_sched_getaffinity = yes; then
+  ac_have_plpa=yes; PLPA_LIBS="-lplpa"
+fi
+
+
+
+
+
+if test "x$ac_have_plpa" = "xyes"; then
+  HAVE_PLPA_TRUE=
+  HAVE_PLPA_FALSE='#'
+else
+  HAVE_PLPA_TRUE='#'
+  HAVE_PLPA_FALSE=
+fi
+
+  if test "x$ac_have_plpa" = "xyes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_PLPA 1
+_ACEOF
+
+  else
+    { echo "$as_me:$LINENO: WARNING: Unable to locate PLPA processor affinity functions" >&5
+echo "$as_me: WARNING: Unable to locate PLPA processor affinity functions" >&2;}
+  fi
+
+#
 # Test for other affinity functions as appropriate
 # TBD
 
@@ -26046,6 +26140,13 @@ echo "$as_me: error: conditional \"HAVE_NUMA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${HAVE_PLPA_TRUE}" && test -z "${HAVE_PLPA_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_PLPA\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_PLPA\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${HAVE_PAM_TRUE}" && test -z "${HAVE_PAM_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_PAM\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -26828,6 +26929,9 @@ s,@HAVE_SCHED_SETAFFINITY_FALSE@,$HAVE_SCHED_SETAFFINITY_FALSE,;t t
 s,@NUMA_LIBS@,$NUMA_LIBS,;t t
 s,@HAVE_NUMA_TRUE@,$HAVE_NUMA_TRUE,;t t
 s,@HAVE_NUMA_FALSE@,$HAVE_NUMA_FALSE,;t t
+s,@PLPA_LIBS@,$PLPA_LIBS,;t t
+s,@HAVE_PLPA_TRUE@,$HAVE_PLPA_TRUE,;t t
+s,@HAVE_PLPA_FALSE@,$HAVE_PLPA_FALSE,;t t
 s,@PAM_LIBS@,$PAM_LIBS,;t t
 s,@HAVE_PAM_TRUE@,$HAVE_PAM_TRUE,;t t
 s,@HAVE_PAM_FALSE@,$HAVE_PAM_FALSE,;t t
