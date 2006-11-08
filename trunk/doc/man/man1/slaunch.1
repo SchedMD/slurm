@@ -91,29 +91,41 @@ The \-\-wait option can be used to insure that a job step terminates in a timely
 fashion in the event that one or more tasks terminate prematurely.
 
 .TP
-\fB\-m\fR, \fB\-\-distribution\fR[=]<\fI(cyclic|block|arbitrary)\fR>
-Select a task distribution pattern.  (The default is cyclic.)
+\fB\-m\fR, \fB\-\-distribution\fR=
+(\fIblock\fR|\fIcyclic\fR|\fIhostfile\fR|\fIplane=<options>\fR)
+Specify an alternate distribution method for remote processes.
 .RS
+.TP
+.B block
+The block method of distribution will allocate processes in\-order to
+the cpus on a node. If the number of processes exceeds the number of
+cpus on all of the nodes in the allocation then all nodes will be
+utilized. For example, consider an allocation of three nodes each with
+two cpus. A four\-process block distribution request will distribute
+those processes to the nodes with processes one and two on the first
+node, process three on the second node, and process four on the third node.
+Block distribution is the default behavior if the number of tasks
+exceeds the number of nodes requested.
 .TP
 .B cyclic
 The cyclic method distributes processes in a round\-robin fashion across
-the allocated nodes. That is, task zero will be allocated to the first
-node, task one to the second, and so on.
+the allocated nodes. That is, process one will be allocated to the first
+node, process two to the second, and so on. This is the default behavior
+if the number of tasks is no larger than the number of nodes requested.
 .TP
-.B block
-The block method of distribution will allocate tasks in\-order to
-the cpus on a node. If the number of tasks exceeds the number of 
-cpus on all of the nodes in the allocation then all nodes will be 
-utilized. For example, consider an allocation of three nodes each with 
-two cpus. A four\-task block distribution request will distribute 
-those tasks to the nodes with tasks zero and one on the first 
-node, task two on the second node, and task three on the third node.
+.B plane
+The tasks are distributed in blocks of a specified size.
+The options include a number representing the size of the task block.
+This is followed by an optional specification of the task distribution
+scheme within a block of tasks and between the blocks of tasks.
+For more details (including examples and diagrams), please see
+http://www.llnl.gov/linux/slurm/mc_support.html and
+http://www.llnl.gov/linux/slurm/dist_plane.html.
 .TP
-.B arbitrary
-The arbitrary method of distribution allows the user to manually specify any
-arbitrary layout of tasks on nodes.  Normally the arbitrary task distribution
-method will be invoked implicitly by using one of the options
-\-\-task\-layout\-byid, \-\-task\-layout\-byname, or \-\-task\-layout\-file.
+.B hostfile
+The hostfile method of distribution will allocate processes in\-order as
+listed in file designated by the environment variable SLURM_HOSTFILE.  If
+this variable is listed it will over ride any other method specified.
 .RE
 
 .TP 
