@@ -84,12 +84,14 @@ slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmd_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1)
+	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_slurmd_test_OBJECTS = $(am__objects_1) testconfig.$(OBJEXT)
 slurmd_test_OBJECTS = $(am_slurmd_test_OBJECTS)
 am__DEPENDENCIES_2 = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1)
+	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 slurmd_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -202,6 +204,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -290,7 +293,7 @@ slurmd_LDADD = \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
-	$(SSL_LIBS) 
+	$(PLPA_LIBS) $(SSL_LIBS) 
 
 slurmd_test_LDADD = $(slurmd_LDADD)
 SLURMD_SOURCES = \

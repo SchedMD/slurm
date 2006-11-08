@@ -104,7 +104,7 @@
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 
-/* define if you have the numa library */
+/* define if numa library installed */
 #undef HAVE_NUMA
 
 /* define if you have the PAM library */
@@ -112,6 +112,9 @@
 
 /* Define to 1 if you have the <pam/pam_appl.h> header file. */
 #undef HAVE_PAM_PAM_APPL_H
+
+/* define if plpa library installed */
+#undef HAVE_PLPA
 
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
