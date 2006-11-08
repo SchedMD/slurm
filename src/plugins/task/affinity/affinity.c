@@ -2,7 +2,7 @@
  *  src/plugins/task/affinity/affinity.c - task affinity plugin
  *  $Id: affinity.c,v 1.2 2005/11/04 02:46:51 palermo Exp $
  *****************************************************************************
- *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2005-2006 Hewlett-Packard Development Company, L.P.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -33,6 +33,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include "affinity.h"
+
+#ifdef HAVE_PLPA
+#  include <plpa.h>
+#endif
 
 void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 {
@@ -94,7 +98,8 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
-	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type, job->cpu_bind);
+	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type, 
+		job->cpu_bind);
 	CPU_ZERO(mask);
 
 	if (job->cpu_bind_type & CPU_BIND_NONE) {
@@ -178,10 +183,14 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 	int rval;
 	char mstr[1 + CPU_SETSIZE / 4];
 
-#ifdef SCHED_GETAFFINITY_THREE_ARGS
-	rval = sched_setaffinity(pid, size, mask);
+#ifdef HAVE_PLPA
+	rval = plpa_sched_setaffinity(pid, size, (plpa_cpu_set_t *) mask);
 #else
+#  ifdef SCHED_GETAFFINITY_THREE_ARGS
+	rval = sched_setaffinity(pid, size, mask);
+#  else
 	rval = sched_setaffinity(pid, mask);
+#  endif
 #endif
 	if (rval)
 		verbose("sched_setaffinity(%d,%d,0x%s) failed with status %d",
@@ -195,10 +204,14 @@ int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 	char mstr[1 + CPU_SETSIZE / 4];
 
 	CPU_ZERO(mask);
-#ifdef SCHED_GETAFFINITY_THREE_ARGS
-	rval = sched_getaffinity(pid, size, mask);
+#ifdef HAVE_PLPA
+	rval = plpa_sched_getaffinity(pid, size, (plpa_cpu_set_t *) mask);
 #else
+#  ifdef SCHED_GETAFFINITY_THREE_ARGS
+	rval = sched_getaffinity(pid, size, mask);
+#  else
 	rval = sched_getaffinity(pid, mask);
+#  endif
 #endif
 	if (rval)
 		verbose("sched_getaffinity(%d,%d,0x%s) failed with status %d",

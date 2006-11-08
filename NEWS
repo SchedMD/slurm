@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Updated multi-core logic to use types uint16_t and uint32_t instead 
     of just type int.
  -- Race condition for forwarding logic fix from Hongjia Cao
+ -- Add support for Portable Linux Processor Affinity (PLPA, see
+    http://www.open-mpi.org/software/plpa).
 
 * Changes in SLURM 1.2.0-pre5
 =============================
