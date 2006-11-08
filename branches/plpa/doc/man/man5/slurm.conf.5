@@ -568,10 +568,16 @@ Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific 
 processors).
 Acceptable values include
-"task/none" for systems requiring no special handling
-or "tasks/affinity" to enable the \-\-cpu_bind and/or \-\-mem_bind 
-affinity srun options.
+"task/none" for systems requiring no special handling and
+"task/affinity" to enable the \-\-cpu_bind and/or \-\-mem_bind 
+srun options.
 The default value is "task/none".
+If you "task/affinity" and encounter problems, it may be due to 
+the variety of system calls used to implement task affinity on 
+different operating systems. 
+If that is the case, you may want to use Portable Linux 
+Process Affinity (PLPA, see http://www.open-mpi.org/software/plpa), 
+which is supported by SLURM.
 The order of task prolog/epilog execution is as follows:
 .RS
 .TP
