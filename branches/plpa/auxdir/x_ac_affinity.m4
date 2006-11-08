@@ -18,7 +18,6 @@ AC_DEFUN([X_AC_AFFINITY], [
 
 # Test if sched_setaffinity function exists and argument count (it can vary)
   AC_CHECK_FUNCS(sched_setaffinity, [have_sched_setaffinity=yes])
-  AM_CONDITIONAL(HAVE_SCHED_SETAFFINITY, test "x$have_sched_setaffinity" = "xyes")
 
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#define _GNU_SOURCE
     #include <sched.h>]], [[cpu_set_t mask;
@@ -53,16 +52,20 @@ AC_DEFUN([X_AC_AFFINITY], [
 	[ac_have_plpa=yes; PLPA_LIBS="-lplpa"])
 
   AC_SUBST(PLPA_LIBS)
-  AM_CONDITIONAL(HAVE_PLPA, test "x$ac_have_plpa" = "xyes")
   if test "x$ac_have_plpa" = "xyes"; then
+    have_sched_setaffinity=yes
     AC_DEFINE(HAVE_PLPA, 1, [define if plpa library installed])
   else
     AC_MSG_WARN([Unable to locate PLPA processor affinity functions])
   fi
 
+
 #
 # Test for other affinity functions as appropriate
 # TBD
 
+#
+# Set HAVE_SCHED_SETAFFINITY if any task affinity supported
+AM_CONDITIONAL(HAVE_SCHED_SETAFFINITY, test "x$have_sched_setaffinity" = "xyes")
 ])
 
