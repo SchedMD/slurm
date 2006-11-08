@@ -1,0 +1,69 @@
+
+htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+
+generated_html = \
+	api.html \
+	authplugins.html \
+	big_sys.html \
+	bluegene.html \
+	checkpoint_plugins.html \
+	cons_res.html \
+	dist_plane.html \
+	documentation.html \
+	download.html \
+	faq.html \
+	help.html \
+	ibm.html \
+	jobacctplugins.html \
+	jobcompplugins.html \
+	mail.html \
+	maui.html \
+	mc_support.html \
+	moab.html \
+	mpiplugins.html \
+	news.html \
+	overview.html \
+	platforms.html \
+	plugins.html \
+	proctrack_plugins.html \
+	programmer_guide.html \
+	publications.html \
+	quickstart_admin.html \
+	quickstart.html \
+	schedplugins.html \
+	selectplugins.html \
+	slurm.html \
+	switchplugins.html \
+ 	team.html \
+ 	testimonials.html \
+	troubleshoot.html
+
+html_DATA = \
+	${generated_html} \
+	arch.gif \
+	configurator.html \
+	coding_style.pdf \
+	entities.gif \
+	lll.gif \
+	mc_support.gif \
+	plane_ex1.gif \
+	plane_ex2.gif \
+	plane_ex3.gif \
+	plane_ex4.gif \
+	plane_ex5.gif \
+	plane_ex6.gif \
+	plane_ex7.gif \
+	slurm_banner_filler.jpg \
+	slurm_banner_left.jpg \
+	slurm_banner_right.jpg \
+	slurm_design.pdf \
+	slurmstyles.css
+
+MOSTLYCLEANFILES = ${generated_html}
+
+EXTRA_DIST = $(html_DATA)
+
+SUFFIXES = .html
+
+.shtml.html:
+	`dirname $<`/shtml2html.py $<
