@@ -306,7 +306,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @HAVE_SCHED_SETAFFINITY_FALSE@	schedutils.c \
 @HAVE_SCHED_SETAFFINITY_FALSE@	task_affinity.c
 
-task_affinity_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:
