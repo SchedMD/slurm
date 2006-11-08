@@ -74,9 +74,6 @@ typedef struct slaunch_options {
 
 	int  num_tasks;		/* --ntasks=n,      -n n	*/
 	bool num_tasks_set;	/* true if ntasks explicitly set */
-	int  ntasks_per_node;   /* --ntasks-per-node=n		*/
-	int  ntasks_per_socket; /* --ntasks-per-socket=n	*/
-	int  ntasks_per_core;   /* --ntasks-per-core=n		*/
 	uint32_t plane_size;    /* lllp distribution -> plane_size for
 				 * when -m plane=<# of lllp per
 				 * plane> */      

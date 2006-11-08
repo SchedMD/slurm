@@ -116,9 +116,6 @@
 #define LONG_OPT_RIN_FILTER		0x119
 #define LONG_OPT_ROUT_FILTER		0x11a
 #define LONG_OPT_RERR_FILTER		0x11b
-#define LONG_OPT_NTASKSPERNODE		0x11c
-#define LONG_OPT_NTASKSPERSOCKET	0x11d
-#define LONG_OPT_NTASKSPERCORE		0x11e
 
 /*---- forward declarations of static functions  ----*/
 
@@ -663,10 +660,7 @@ static void _opt_default()
 	opt.jobid_set = false;
 
 	opt.distribution      = SLURM_DIST_UNKNOWN;
-	opt.ntasks_per_node   = NO_VAL; /* ntask max limits */
-	opt.ntasks_per_socket = NO_VAL; 
-	opt.ntasks_per_core   = NO_VAL; 
-	opt.plane_size        = 0;
+	opt.plane_size        = NO_VAL;
 
 	opt.local_ofname = NULL;
 	opt.local_ifname = NULL;
@@ -979,9 +973,6 @@ void set_options(const int argc, char **argv)
 		{"task-input-filter", required_argument, 0, LONG_OPT_RIN_FILTER},
 		{"task-output-filter",required_argument, 0, LONG_OPT_ROUT_FILTER},
 		{"task-error-filter", required_argument, 0, LONG_OPT_RERR_FILTER},
-		{"ntasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"ntasks-per-socket", required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
-		{"ntasks-per-core",   required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{NULL,                0,                 0, 0}
 	};
 	char *opt_string =
@@ -1267,18 +1258,6 @@ void set_options(const int argc, char **argv)
 			opt.remote_error_filter =
 				_get_pos_int(optarg, "task-error-filter");
 			error("task-error-filter not yet implemented");
-			break;
-		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",
-				true);
-			break;
-		case LONG_OPT_NTASKSPERSOCKET:
-			opt.ntasks_per_socket = _get_int(optarg, 
-				"ntasks-per-socket", true);
-			break;
-		case LONG_OPT_NTASKSPERCORE:
-			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
-				true);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2025,9 +2004,6 @@ static void _opt_list()
 	info("task_epilog       : %s", opt.task_epilog);
 	info("comm_hostname     : %s", opt.comm_hostname);
 	info("multi_prog        : %s", opt.multi_prog ? "yes" : "no");
-	info("ntasks-per-node   : %d", opt.ntasks_per_node);
-	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
-	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
 	str = print_remote_command();
 	info("remote command : %s", str);
@@ -2050,8 +2026,6 @@ static void _usage(void)
 "               [--prolog=fname] [--epilog=fname]\n"
 "               [--task-prolog=fname] [--task-epilog=fname]\n"
 "               [--comm-hostname=<hostname|address>] [--multi-prog]\n"
-"               [--ntasks-per-node=#] [--ntasks-per-socket=#]\n"
-"               [--ntasks-per-core=#]\n"
 "               [-w hosts...] [-L hostids...] executable [args...]\n");
 }
 
@@ -2104,9 +2078,6 @@ static void _help(void)
 "      --comm-hostname=hostname hostname for PMI communications with slaunch\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
-"      --ntasks-per-node=#     number of tasks to launch per node\n"
-"      --ntasks-per-socket=#   number of tasks to launch per socket\n"
-"      --ntasks-per-core=#     number of tasks to launch per core\n"
 "  -w, --nodelist-byname=hosts...   request a specific list of hosts\n"
 "  -L, --nodelist-byid=hosts...     request a specific list of hosts\n");
 	conf = slurm_conf_lock();
