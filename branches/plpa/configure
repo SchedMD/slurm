@@ -22140,7 +22140,7 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_plpa_plpa_sched_getaffinity" >&5
 echo "${ECHO_T}$ac_cv_lib_plpa_plpa_sched_getaffinity" >&6
 if test $ac_cv_lib_plpa_plpa_sched_getaffinity = yes; then
-  ac_have_plpa=yes; PLPA_LIBS="-lplpa"
+  ac_have_plpa=yes; PLPA_LIBS="-rpath /usr/local/lib -lplpa"
 fi
 
 
