@@ -66,7 +66,7 @@ extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
 						     uint16_t node_cnt, 
 						     uint32_t task_cnt,
 						     uint16_t task_dist,
-						     uint32_t plane_size);
+						     uint16_t plane_size);
 
 /* 
  * fake_slurm_step_layout_create - used when you don't allocate a job from the

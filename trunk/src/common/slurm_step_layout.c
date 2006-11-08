@@ -56,7 +56,7 @@
 static int _init_task_layout(slurm_step_layout_t *step_layout, 
 			     const char *arbitrary_nodes, 
 			     uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
-			     uint16_t task_dist, uint32_t plane_size);
+			     uint16_t task_dist, uint16_t plane_size);
 
 static int _task_layout_block(slurm_step_layout_t *step_layout, 
 			      uint32_t *cpus);
@@ -91,7 +91,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint16_t num_hosts, 
 	uint32_t num_tasks,
 	uint16_t task_dist,
-	uint32_t plane_size)
+	uint16_t plane_size)
 {
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout = 
@@ -165,7 +165,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 
 	if(node_cnt <= 0 || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
 		error("there is a problem with your fake_step_layout request\n"
-		      "node_cnt = %d, task_cnt = %d, tlist = %s",
+		      "node_cnt = %u, task_cnt = %u, tlist = %s",
 		      node_cnt, task_cnt, tlist);
 		xfree(step_layout);
 		return NULL;
@@ -389,7 +389,7 @@ char *slurm_step_layout_host_name (slurm_step_layout_t *s, int taskid)
 static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes,
 			     uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
-			     uint16_t task_dist, uint32_t plane_size)
+			     uint16_t task_dist, uint16_t plane_size)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
 	hostlist_t hl = NULL;
@@ -640,9 +640,10 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
  * hosts.
  *
  */
-uint32_t *task_count_layout_plane(const uint32_t node_cnt, 
-				  const uint32_t num_tasks,
-				  const uint32_t plane_size)
+static uint32_t *
+_task_count_layout_plane(const uint32_t node_cnt, 
+		 	 const uint32_t num_tasks,
+			 const uint16_t plane_size)
 {
 	int i, left = 0;
 	uint32_t *ntask = NULL;
@@ -693,7 +694,7 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	int i, j, taskid = 0;
 	uint32_t *temp_tasks = NULL;
 
-	debug3("_task_layout_plane plane_size %d ", step_layout->plane_size);
+	debug3("_task_layout_plane plane_size %u", step_layout->plane_size);
 
 	if(step_layout->plane_size <= 0)
 	        return SLURM_ERROR;
@@ -702,9 +703,9 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 		step_layout->tids[i] = xmalloc(sizeof(int) * step_layout->task_cnt);
 	}
 
-	temp_tasks = task_count_layout_plane(step_layout->node_cnt, 
-					     step_layout->task_cnt,
-					     step_layout->plane_size);
+	temp_tasks = _task_count_layout_plane(step_layout->node_cnt, 
+					      step_layout->task_cnt,
+					      step_layout->plane_size);
 
 	for(i=0; i < step_layout->node_cnt; i++)
 		step_layout->tasks[i]= temp_tasks[i];
