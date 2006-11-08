@@ -72,18 +72,18 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
 	 TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block,
-	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block,
-	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, -1, refresh_block,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type", 
 	 TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, -1, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
 	 TRUE, -1, refresh_block,
@@ -98,7 +98,10 @@ static display_data_t display_data_block[] = {
 static display_data_t options_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, BLOCK_PAGE},
-	{G_TYPE_STRING, BLOCK_PAGE, "Edit Block", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Put block in error state",
+	 TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Put block in free state",
+	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
@@ -557,9 +560,98 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 	return error_code;
 }
 
+extern int update_state_block(GtkDialog *dialog,
+			      const char *blockid, const char *type)
+{
+	int i = 0;
+	int rc = SLURM_SUCCESS;
+	char tmp_char[100];
+	update_part_msg_t part_msg;
+	GtkWidget *label = NULL;
+	int no_dialog = 0;
+
+	if(!dialog) {
+		dialog = GTK_DIALOG(
+			gtk_dialog_new_with_buttons(
+				type,
+				GTK_WINDOW(main_window),
+				GTK_DIALOG_MODAL
+				| GTK_DIALOG_DESTROY_WITH_PARENT,
+				NULL));	
+		no_dialog = 1;
+	}
+	slurm_init_part_desc_msg(&part_msg);
+	/* means this is for bluegene */
+	part_msg.hidden = (uint16_t)INFINITE;
+	part_msg.name = (char *)blockid;
+	
+	label = gtk_dialog_add_button(dialog,
+				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(dialog), label);
+	gtk_dialog_add_button(dialog,
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+	
+	if(!strcasecmp("Error", type)
+	   || !strcasecmp("Put block in error state", type)) {
+		snprintf(tmp_char, sizeof(tmp_char), 
+			 "Are you sure you want to put block %s "
+			 "in an error state?",
+			 blockid);
+		part_msg.state_up = 0;
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), 
+			 "Are you sure you want to put block %s "
+			 "in a free state?",
+			 blockid);
+		part_msg.state_up = 1;
+	}
+	
+	label = gtk_label_new(tmp_char);
+			
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, FALSE, FALSE, 0);
+
+	gtk_widget_show_all(GTK_WIDGET(dialog));
+	i = gtk_dialog_run(dialog);
+	if (i == GTK_RESPONSE_OK) {
+		if(slurm_update_partition(&part_msg) == SLURM_SUCCESS) {
+			snprintf(tmp_char, sizeof(tmp_char), 
+				 "Block %s updated successfully",
+				blockid);
+		} else {
+			snprintf(tmp_char, sizeof(tmp_char), 
+				 "Problem updating block %s.",
+				 blockid);
+		}
+		display_edit_note(tmp_char);
+	}
+
+	if(no_dialog)
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+	return rc;
+}
+
 extern GtkListStore *create_model_block(int type)
 {
 	GtkListStore *model = NULL;
+	GtkTreeIter iter;
+	switch(type) {
+	case SORTID_STATE:
+		model = gtk_list_store_new(2, G_TYPE_STRING,
+					   G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "Error",
+				   1, SORTID_STATE,
+				   -1);	
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "Free",
+				   1, SORTID_STATE,
+				   -1);	
+		break;
+	default:
+		break;
+	}
 	
 	return model;
 }
@@ -569,7 +661,34 @@ extern void admin_edit_block(GtkCellRendererText *cell,
 			     const char *new_text,
 			     gpointer data)
 {
-	g_print("Something block related altered\n");
+	GtkTreeStore *treestore = GTK_TREE_STORE(data);
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeIter iter;
+	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
+						       "column"));
+	
+	char *blockid = NULL;
+	char *old_text = NULL;
+	if(!new_text || !strcmp(new_text, ""))
+		goto no_input;
+
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
+	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
+			   SORTID_BLOCK, &blockid, 
+			   column, &old_text,
+			   -1);
+	switch(column) {
+	case SORTID_STATE:
+		update_state_block(NULL, blockid, new_text);
+		break;
+	default:
+		break;
+	}
+
+	g_free(blockid);
+	g_free(old_text);
+no_input:
+	gtk_tree_path_free(path);
 	g_static_mutex_unlock(&sview_mutex);
 }
 
@@ -1028,6 +1147,21 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
+	char *blockid = NULL;
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		type,
+		GTK_WINDOW(main_window),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+
+	gtk_tree_model_get(model, iter, SORTID_BLOCK, &blockid, -1);
+	
+	update_state_block(GTK_DIALOG(popup), blockid, type);
+	
+	g_free(blockid);
+	gtk_widget_destroy(popup);
+	
 	return;
 }
 
