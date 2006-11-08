@@ -24,14 +24,14 @@ AC_DEFUN([X_AC_GTK],
         ac_have_gtk="no"
     fi
 
-### Check for libglade package
-    if test "$ac_have_gtk" == "yes"; then   
-        $HAVEPKGCONFIG --exists libglade-2.0
-        if ! test $? -eq 0 ; then
-            AC_MSG_WARN([*** libbglade-2.0 is not available.])
-            ac_have_gtk="no"
-        fi
-    fi
+### Check for libglade package (We don't need this right now so don't add it)
+#    if test "$ac_have_gtk" == "yes"; then   
+#        $HAVEPKGCONFIG --exists libglade-2.0
+#        if ! test $? -eq 0 ; then
+#            AC_MSG_WARN([*** libbglade-2.0 is not available.])
+#            ac_have_gtk="no"
+#        fi
+#    fi
 
 
 ### Check for gtk2.6 package
@@ -57,11 +57,13 @@ AC_DEFUN([X_AC_GTK],
 
 ### Run a test program
     if test "$ac_have_gtk" == "yes" ; then
-        GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
-        GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
-        if test ! -z "GLADE_STATIC"  ; then
-            GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
-        fi
+ #       GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
+        GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags gtk+-2.0 gthread-2.0`
+#        GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
+       GTK2_LIBS=`$HAVEPKGCONFIG --libs gtk+-2.0 gthread-2.0`
+#        if test ! -z "GLADE_STATIC"  ; then
+#            GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
+#        fi
         save_CFLAGS="$CFLAGS"
         save_LIBS="$LIBS"
         CFLAGS="$GTK2_CFLAGS $save_CFLAGS"
