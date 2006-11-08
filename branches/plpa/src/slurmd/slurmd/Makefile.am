@@ -13,6 +13,7 @@ slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
+	$(PLPA_LIBS)				   \
 	$(SSL_LIBS) 
 
 slurmd_test_LDADD = $(slurmd_LDADD)

@@ -49,7 +49,7 @@ AC_DEFUN([X_AC_AFFINITY], [
 #
   AC_CHECK_LIB([plpa],
 	[plpa_sched_getaffinity],
-	[ac_have_plpa=yes; PLPA_LIBS="-lplpa"])
+	[ac_have_plpa=yes; PLPA_LIBS="-rpath /usr/local/lib -lplpa"])
 
   AC_SUBST(PLPA_LIBS)
   if test "x$ac_have_plpa" = "xyes"; then
