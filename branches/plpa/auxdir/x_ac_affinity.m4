@@ -36,13 +36,28 @@ AC_DEFUN([X_AC_AFFINITY], [
   AC_CHECK_LIB([numa],
         [numa_available],
         [ac_have_numa=yes; NUMA_LIBS="-lnuma"])
-                                                                                                     
+
   AC_SUBST(NUMA_LIBS)
   AM_CONDITIONAL(HAVE_NUMA, test "x$ac_have_numa" = "xyes")
   if test "x$ac_have_numa" = "xyes"; then
-    AC_DEFINE(HAVE_NUMA, 1, [define if you have the numa library])
+    AC_DEFINE(HAVE_NUMA, 1, [define if numa library installed])
   else
     AC_MSG_WARN([Unable to locate NUMA memory affinity functions])
+  fi
+
+#
+# Test for PLPA functions (see http://www.open-mpi.org/software/plpa)
+#
+  AC_CHECK_LIB([plpa],
+	[plpa_sched_getaffinity],
+	[ac_have_plpa=yes; PLPA_LIBS="-lplpa"])
+
+  AC_SUBST(PLPA_LIBS)
+  AM_CONDITIONAL(HAVE_PLPA, test "x$ac_have_plpa" = "xyes")
+  if test "x$ac_have_plpa" = "xyes"; then
+    AC_DEFINE(HAVE_PLPA, 1, [define if plpa library installed])
+  else
+    AC_MSG_WARN([Unable to locate PLPA processor affinity functions])
   fi
 
 #
