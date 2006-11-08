@@ -88,7 +88,6 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Put Node Down", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node Idle", TRUE, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, NODE_PAGE, "Edit Node", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
@@ -437,60 +436,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	*info_ptr = new_node_ptr;
 	return error_code;
 }
-
-extern int update_state_node(GtkTreeStore *treestore, GtkTreeIter *iter, 
-			     int text_column, int num_column,
-			     const char *new_text,
-			     update_node_msg_t *node_msg)
-{
-	uint16_t state = (uint16_t) NO_VAL;
-	char *upper = NULL, *lower = NULL;		     
-	int i = 0;
-	int rc = SLURM_SUCCESS;
-
-	node_msg->reason = NULL;
-
-	if(!strcmp("drain", new_text)) {
-		state = NODE_STATE_DRAIN;
-		node_msg->reason = get_reason();
-		if(!node_msg->reason) {
-			upper = g_strdup_printf(
-				"You need a reason to drain nodes.");
-			display_edit_note(upper);
-			g_free(upper);
-			goto end_it;
-		} else if(!strcasecmp("cancelled", node_msg->reason))
-			goto end_it;
-	} else if(!strcmp("resume", new_text)) {
-		state = NODE_RESUME;
-	} else {
-		for(i = 0; i < NODE_STATE_END; i++) {
-			upper = node_state_string(i);
-			lower = str_tolower(upper);
-			if(!strcmp(lower, new_text)) {
-				state = i;
-				xfree(lower);
-				break;
-			}
-			xfree(lower);
-		}
-	}
-	node_msg->node_state = (uint16_t)state;
-	
-	if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
-	       	gtk_tree_store_set(treestore, iter, text_column, new_text,
-				   num_column,	state, -1);
-		upper = g_strdup_printf("Node(s) %s state changed to %s",
-					node_msg->node_names,
-					new_text);
-		display_edit_note(upper);
-		g_free(upper);
-	}
-end_it:
-	xfree(node_msg->reason);
-	return rc;
-}
-			
+		
 extern int update_state_node2(GtkDialog *dialog,
 			      const char *nodelist, const char *type)
 {
@@ -655,6 +601,9 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	char *nodelist = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), 
 						       "column"));
+	if(!new_text || !strcmp(new_text, ""))
+		goto no_input;
+
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 	switch(column) {
 	case SORTID_STATE:
@@ -671,8 +620,8 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	default:
 		break;
 	}
-	gtk_tree_path_free (path);
-	
+no_input:
+	gtk_tree_path_free(path);
 	g_static_mutex_unlock(&sview_mutex);
 }
 

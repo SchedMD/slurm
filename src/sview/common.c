@@ -193,7 +193,8 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	gtk_tree_view_column_set_reorderable(col, true);
 	gtk_tree_view_column_set_resizable(col, true);
 	gtk_tree_view_column_set_expand(col, true);
-	gtk_tree_view_insert_column(tree_view, col, display_data->id);
+	gtk_tree_view_append_column(tree_view, col);
+	//	gtk_tree_view_insert_column(tree_view, col, display_data->id);
 	gtk_tree_view_column_set_sort_column_id(col, display_data->id);
 
 }
