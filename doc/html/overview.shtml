@@ -44,7 +44,7 @@ building block approach. These plugins presently include:
 <ul>
 <li><a href="authplugins.html">Authentication of communications</a>: 
 <a href="http://www.theether.org/authd/">authd</a>, 
-<a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a>, or none (default).</li>
+<a href="http://home.gna.org/munge/">munge</a>, or none (default).</li>
 
 <li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX or none.</li>
 
@@ -148,6 +148,6 @@ PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
 PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
-<p style="text-align:center;">Last modified 29 September 2006</p>
+<p style="text-align:center;">Last modified 8 November 2006</p>
 
 <!--#include virtual="footer.txt"-->

@@ -63,7 +63,7 @@ build requirements are present. Build dependencies for various plugins
 and commands are denoted below.
 </p>
 <ul>
-<li> <b>Munge</b> The auth/munge plugin will be built if Chris Dunlap's Munge
+<li> <b>Munge</b> The auth/munge plugin will be built if the Munge authentication
                   library is installed. </li>
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if 
                   the libauth library and its dependency libe are installed. 
@@ -416,7 +416,7 @@ Currently, only three
 authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, and 
 <b>auth/munge</b>. The auth/none plugin is built and used by default, but either 
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris Dunlap's 
-<a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a> should be installed in order to 
+<a href="http://home.gna.org/munge/">munge</a> should be installed in order to 
 get properly authenticated communications. 
 Unless you are experience with authd, we recommend the use of munge.
 The configure script in the top-level directory of this distribution will determine 
@@ -604,6 +604,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 October 2006</p>
+<p style="text-align:center;">Last modified 8 November 2006</p>
 
 <!--#include virtual="footer.txt"-->
