@@ -73,6 +73,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/log.h"
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/safeopen.h"
 #include "src/common/xassert.h"
@@ -239,8 +240,13 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->logfp = fp;
 	}
 
-	if (log->logfp && (fileno(log->logfp) < 0))
-		log->logfp = NULL;
+	if (log->logfp) {
+		int fd;
+		if ((fd = fileno(log->logfp)) < 0)
+			log->logfp = NULL;
+		else
+			fd_set_close_on_exec(fd);
+	}
 
 	log->initialized = 1;
  out:
