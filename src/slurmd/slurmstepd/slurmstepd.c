@@ -209,7 +209,6 @@ _init_from_slurmd(int sock, char **argv,
 	conf->log_opts.stderr_level = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
-	/* forward the log options to slurmstepd */
 	//log_alter(conf->log_opts, 0, NULL);
 	/*
 	 * If daemonizing, turn off stderr logging -- also, if
@@ -225,7 +224,7 @@ _init_from_slurmd(int sock, char **argv,
 	} else
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
-	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
+	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	/* acct info */
 	jobacct_g_startpoll(conf->job_acct_freq);
 	
