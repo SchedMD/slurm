@@ -67,6 +67,7 @@
 #include "src/common/slurm_resource_info.h"
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/proc_req.h"
 
 #define SELECT_DEBUG 0
 

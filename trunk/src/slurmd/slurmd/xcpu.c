@@ -48,6 +48,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -114,7 +116,7 @@ extern int xcpu_signal(int sig, char *nodes)
 		_sig_name(sig));
 
 	/* For each node, look for processes */
-	while (node = hostlist_shift(hl)) {
+	while ((node = hostlist_shift(hl))) {
 		snprintf(dir_path, sizeof(dir_path), 
 			"%s/%s/xcpu",
 			XCPU_DIR, node);
