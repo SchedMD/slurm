@@ -2327,7 +2327,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	req_step_msg.task_dist = SLURM_DIST_CYCLIC;
 	req_step_msg.port = 0;
 	req_step_msg.host = NULL;
-	req_step_msg.name = NULL;
+	req_step_msg.name = job_desc_msg->name;
 	req_step_msg.network = NULL;
 	req_step_msg.node_list = NULL;
 
