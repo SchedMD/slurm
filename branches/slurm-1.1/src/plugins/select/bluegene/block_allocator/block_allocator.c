@@ -947,8 +947,7 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 
 
 /** 
- * Doh!  Admin made a boo boo.  Note: Undo only has one history
- * element, so two consecutive undo's will fail.
+ * Doh!  Admin made a boo boo.  
  *
  * returns SLURM_SUCCESS if undo was successful.
  */
@@ -958,7 +957,7 @@ extern int remove_block(List nodes, int new_count)
 	ba_node_t* ba_node = NULL;
 	ba_switch_t *curr_switch = NULL; 
 	ListIterator itr;
-		
+	
 	itr = list_iterator_create(nodes);
 	while((ba_node = (ba_node_t*) list_next(itr)) != NULL) {
 		ba_node->used = false;
@@ -972,7 +971,12 @@ extern int remove_block(List nodes, int new_count)
 		}
 	}
 	list_iterator_destroy(itr);
-	color_count=new_count;			
+	if(new_count == -1)
+		color_count--;
+	else
+		color_count=new_count;			
+	if(color_count < 0)
+		color_count = 0;
 	return 1;
 }
 
@@ -2573,12 +2577,12 @@ extern int set_bp_map(void)
 	bp_map_list = list_create(_bp_map_list_del);
 
 	if (!have_db2) {
-		error("Can't access DB2 library, run from service node");
+		fatal("Can't access DB2 library, run from service node");
 		return -1;
 	}
 
 	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
-		error("Missing DB2INSTANCE or VWSPATH env var."
+		fatal("Missing DB2INSTANCE or VWSPATH env var."
 			"Execute 'db2profile'");
 		return -1;
 	}
