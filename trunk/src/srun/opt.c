@@ -2073,6 +2073,8 @@ static void _opt_args(int argc, char **argv)
 static bool _opt_verify(void)
 {
 	bool verified = true;
+	hostlist_t hl = NULL;
+	int hl_cnt = 0;
 
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
@@ -2187,6 +2189,19 @@ static bool _opt_verify(void)
 		core_format_enable (opt.core_type);
 
 		/* massage the numbers */
+		if (opt.nodelist) {
+			hl = hostlist_create(opt.nodelist);
+			if (!hl)
+				fatal("memory allocation failure");
+			hostlist_uniq(hl);
+			hl_cnt = hostlist_count(hl);
+			if (opt.nodes_set)
+				opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
+			else {
+				opt.min_nodes = hl_cnt;
+				opt.nodes_set = true;
+			}
+		}
 		if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
 			/* 1 proc / node default */
 			opt.nprocs = opt.min_nodes;
@@ -2216,14 +2231,26 @@ static bool _opt_verify(void)
 				      opt.nprocs, opt.min_nodes, opt.nprocs);
 
 				opt.min_nodes = opt.nprocs;
-				if (   opt.max_nodes 
-				       && (opt.min_nodes > opt.max_nodes) )
+				if (opt.max_nodes 
+				&&  (opt.min_nodes > opt.max_nodes) )
 					opt.max_nodes = opt.min_nodes;
+				if (hl_cnt > opt.min_nodes) {
+					int del_cnt, i;
+					char *host;
+					del_cnt = hl_cnt - opt.min_nodes;
+					for (i=0; i<del_cnt; i++) {
+						host = hostlist_pop(hl);
+						free(host);
+					}
+					hostlist_ranged_string(hl, strlen(opt.nodelist)+1, 
+							       opt.nodelist);
+				}
 			}
 
 		} /* else if (opt.nprocs_set && !opt.nodes_set) */
-
 	}
+	if (hl)
+		hostlist_destroy(hl);
 
 	if (opt.max_threads <= 0) {	/* set default */
 		error("Thread value invalid, reset to 1");
