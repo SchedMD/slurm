@@ -496,10 +496,13 @@ extern struct part_record *create_part_record (void);
 extern struct step_record * create_step_record (struct job_record *job_ptr);
 
 /* 
- * delete_all_step_records - delete all step record for specified job_ptr
- * IN job_ptr - pointer to job table entry to have step record added
+ * delete_step_records - delete step record for specified job_ptr
+ * IN job_ptr - pointer to job table entry to have step records removed
+ * IN filter  - determine which job steps to delete
+ *              0: delete all job steps
+ *              1: delete only job steps without a switch allocation
  */
-extern void delete_all_step_records (struct job_record *job_ptr);
+extern void delete_step_records (struct job_record *job_ptr, int filter);
 
 /* 
  * delete_job_details - delete a job's detail record and clear it's pointer
