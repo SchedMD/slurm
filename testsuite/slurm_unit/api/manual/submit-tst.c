@@ -45,9 +45,9 @@ main (int argc, char *argv[])
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1; 
 	job_mesg. name = ("job01");
-	job_mesg. min_procs = 1;
-	job_mesg. min_memory = 100;
-	job_mesg. min_tmp_disk = 200;
+	job_mesg. job_min_procs = 1;
+	job_mesg. job_min_memory = 100;
+	job_mesg. job_min_tmp_disk = 200;
 	job_mesg. priority = 100;
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 100;
@@ -82,9 +82,9 @@ main (int argc, char *argv[])
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1; 
 		job_mesg. name = ("job02+");
-		job_mesg. min_procs = 1;
-		job_mesg. min_memory = 100 + i;
-		job_mesg. min_tmp_disk = 200 + i;
+		job_mesg. job_min_procs = 1;
+		job_mesg. job_min_memory = 100 + i;
+		job_mesg. job_min_tmp_disk = 200 + i;
 		job_mesg. priority = 100 + i;
 		job_mesg. script = "/bin/hostname\n";
 		job_mesg. shared = 0;
