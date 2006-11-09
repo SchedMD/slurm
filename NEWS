@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Race condition for forwarding logic fix from Hongjia Cao
  -- Add support for Portable Linux Processor Affinity (PLPA, see
     http://www.open-mpi.org/software/plpa).
+ -- Modify srun to ignore entries on --nodelist for job step creation 
+    if their count exceeds the task count. Based on slurm.hp.srun.patch.
 
 * Changes in SLURM 1.2.0-pre5
 =============================
