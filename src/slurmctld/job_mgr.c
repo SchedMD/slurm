@@ -999,7 +999,8 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				error("node_cnt underflow on JobId=%u", 
 			   	      job_ptr->job_id);
 			if (job_ptr->node_cnt == 0) {
-				job_ptr->job_state &= (~JOB_COMPLETING);
+				job_ptr->job_state &= (~JOB_COMPLETING);\
+				delete_step_records(job_ptr, 1);
 				slurm_sched_schedule();
 			}
 			if (node_ptr->comp_job_cnt)
@@ -2659,7 +2660,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->comment);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
-		delete_all_step_records(job_ptr);
+		delete_step_records(job_ptr, 0);
 		list_destroy(job_ptr->step_list);
 	}
 	job_count--;

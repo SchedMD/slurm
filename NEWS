@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
  -- Race condition for forwarding logic fix from Hongjia Cao
  -- Add support for Portable Linux Processor Affinity (PLPA, see
     http://www.open-mpi.org/software/plpa).
+ -- When a job epilog completes on all non-DOWN nodes, immediately purge
+    it's job steps that lack switch windows. Needed for LSF operation. 
+    Based upon slurm.hp.node_fail.patch.
  -- Modify srun to ignore entries on --nodelist for job step creation 
     if their count exceeds the task count. Based on slurm.hp.srun.patch.
 
