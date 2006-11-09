@@ -361,14 +361,13 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		job->env[0] = (char *)NULL;
 	}
 
-	log_fini();
 	execve(task->argv[0], task->argv, job->env);
 
 	/* 
 	 * print error message and clean up if execve() returns:
 	 */
-	fprintf(stderr, "Unable to run executable \"%s\"\n", task->argv[0]);
-	exit(42);
+	error("execve(): %s: %m", task->argv[0]); 
+	exit(errno);
 }
 
 static void
