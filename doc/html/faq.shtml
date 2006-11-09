@@ -14,6 +14,7 @@ to run on nodes?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
 job?</a></li>
 <li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
+<li><a href="#orphan">Why do I have job steps when my job has already COMPLETED?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -202,6 +203,23 @@ Some jobs actually launch thousands of job steps this way. The job
 steps will be allocated nodes that are not already allocated to 
 other job steps. This essential provides a second level of resource 
 management within the job for the job steps.</p>
+
+<p><a name="orphan"><b>10. Why do I have job steps when my job has 
+already COMPLETED?</b></a><br>
+NOTE: This only applies to systems configured with 
+<i>SwitchType=switch/elan</i> or <i>SwitchType=switch/federation</i>.
+All other systems will purge all job steps on job completion.</p>
+<p>SLURM maintains switch (network interconnect) information within 
+the job step for Quadrics Elan and IBM Federation switches. 
+This information must be maintained until we are absolutely certain 
+that the processes associated with the switch have been terminated 
+to avoid the possibility of re-using switch resources for other 
+jobs (even on different nodes).
+SLURM considers jobs COMPLETED when all nodes allocated to the 
+job are either DOWN or confirm termination of all it's processes.
+This enables SLURM to purge job information in a timely fashion 
+even when there are many failing nodes.
+Unfortunately the job step information may persist longer.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -425,6 +443,6 @@ for more details about configuring multiple slurmd support.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 October 2006</p>
+<p style="text-align:center;">Last modified 9 November 2006</p>
 
 <!--#include virtual="footer.txt"-->
