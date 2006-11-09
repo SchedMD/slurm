@@ -1289,7 +1289,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		select_node_ptr[i].alloc_sockets  = 0;
 		select_node_ptr[i].alloc_memory   = 0;
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
-			info("select_g_node_init sockets %d ", 
+			info("select_g_node_init node:%s sockets:%u",
+			     select_node_ptr[i].name, 
 			     select_node_ptr[i].node_ptr->sockets);
 			select_node_ptr[i].alloc_cores    = 
 				xmalloc(sizeof(int) * 
@@ -1303,7 +1304,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		if (prev_select_node_ptr && (i < prev_select_node_cnt) &&
 			(strcmp(prev_select_node_ptr[i].name,
 				select_node_ptr[i].name) == 0)) {
-			info("recovered cons_res node data for %s",
+			debug2("recovered cons_res node data for %s",
 					    select_node_ptr[i].name);
 		    	
 			select_node_ptr[i].alloc_lps
