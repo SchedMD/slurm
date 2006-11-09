@@ -916,8 +916,9 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	bg_record_t *found_record = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
 	static int block_inx = 0;
+	char temp[256];
 	List results = NULL;
-
+	
 #ifdef HAVE_BG_FILES
 	init_wires();
 #endif
@@ -1003,6 +1004,21 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 						slurm_mutex_unlock(
 							&block_state_mutex);
 						return SLURM_ERROR;
+					}
+					slurm_conf_lock();
+					snprintf(temp, sizeof(temp), "%s%s",
+						 slurmctld_conf.node_prefix,
+						 name);
+					slurm_conf_unlock();
+					xfree(name);
+					if(strcmp(temp, bg_record->nodes)) {
+						fatal("given list of %s "
+						      "but allocated %s, "
+						      "your order might be "
+						      "wrong in the "
+						      "bluegene.conf",
+						      bg_record->nodes,
+						      temp);
 					}
 					if(bg_record->bg_block_list)
 						list_destroy(bg_record->
@@ -1208,6 +1224,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				       request->size);
 				request->start_req = 1;
 				rc = SLURM_SUCCESS;
+				if(results)
+					list_destroy(results);
 				results = list_create(NULL);
 				if (!allocate_block(request, results)){
 					debug2("allocate failure for size %d "
@@ -1227,6 +1245,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 no_list:
 	if(!bg_record) {		
 		rc = SLURM_SUCCESS;
+		if(results)
+			list_destroy(results);
 		results = list_create(NULL);
 		if (!allocate_block(request, results)) {
 			debug("allocate failure for size %d base partitions", 
@@ -1254,7 +1274,7 @@ no_list:
 		else {
 			if(_add_block_db(bg_record, &block_inx) == SLURM_ERROR)
 				goto finished;
-			list_push(bg_list, bg_record);
+			list_append(bg_list, bg_record);
 			print_bg_record(bg_record);
 		}
 	}
@@ -1385,6 +1405,7 @@ extern int create_full_system_block(int *block_inx)
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
+	xfree(name);
 	if(bg_record->bg_block_list)
 		list_destroy(bg_record->bg_block_list);
 	bg_record->bg_block_list =
@@ -1407,7 +1428,7 @@ extern int create_full_system_block(int *block_inx)
 	}
 #endif	/* HAVE_BG_FILES */
 	print_bg_record(bg_record);
-	list_push(bg_list, bg_record);
+	list_append(bg_list, bg_record);
 
 no_total:
 	if(records)
@@ -2095,7 +2116,7 @@ static int _validate_config_nodes(void)
 	if(!full_created && full_system_bg_record) {
 		bg_record = xmalloc(sizeof(bg_record_t));
 		copy_bg_record(full_system_bg_record, bg_record);
-		list_push(bg_list, bg_record);
+		list_append(bg_list, bg_record);
 		list_push(bg_found_block_list, bg_record);
 		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 		info("Existing: BlockID:%s Nodes:%s Conn:%s",
@@ -2376,7 +2397,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 			if(_add_block_db(found_record, block_inx) 
 			   == SLURM_ERROR)
 				return SLURM_ERROR;
-			list_push(bg_list, found_record);
+			list_append(bg_list, found_record);
 			print_bg_record(found_record);
 		}
 		node_cnt += bluegene_bp_node_cnt/small_size;
@@ -2480,7 +2501,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 					if(_add_block_db(bg_record, block_inx)
 					   == SLURM_ERROR)
 						return SLURM_ERROR;
-					list_push(bg_list, bg_record);
+					list_append(bg_list, bg_record);
 					print_bg_record(bg_record);
 				}
 				rc = SLURM_SUCCESS;
@@ -2571,7 +2592,7 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 					if(_add_block_db(bg_record, block_inx)
 					   == SLURM_ERROR)
 						return SLURM_ERROR;
-					list_push(bg_list, bg_record);
+					list_append(bg_list, bg_record);
 					print_bg_record(bg_record);
 				}
 				rc = SLURM_SUCCESS;
@@ -2709,7 +2730,9 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->job_running = NO_JOB_RUNNING;
 	
 	if(bg_record->conn_type != SELECT_SMALL) {
-		list_push(records, bg_record);
+		/* this needs to be an append so we keep things in the
+		   order we got them, they will be sorted later */
+		list_append(records, bg_record);
 		/* this isn't a correct list so we need to set it later for
 		   now we just used it to be the bp number */
 		if(!used_nodes) {
@@ -2761,7 +2784,10 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 								    quarter,
 								    nodecard);
 								 
-				list_push(records, found_record);
+				/* this needs to be an append so we
+				   keep things in the order we got
+				   them, they will be sorted later */
+				list_append(records, found_record);
 				node_cnt += bluegene_bp_node_cnt/small_size;
 				if(node_cnt == 128) {
 					node_cnt = 0;
