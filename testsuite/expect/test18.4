@@ -38,7 +38,13 @@ set job_id      0
 
 print_header $test_id
 
-for {set inx 1} {$inx < 8} {set inx [expr $inx * 2]} {
+if { [test_xcpu] } {
+	set max_tasks 1
+} else {
+	set max_tasks 8
+}
+
+for {set inx 1} {$inx <= $max_tasks} {set inx [expr $inx * 2]} {
 	set tasks_set $inx
 	set tasks_get 0
 	set timeout $max_job_delay

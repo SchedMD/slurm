@@ -2778,7 +2778,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 		pack16(msg->tasks_to_launch[i], buffer);
 		pack16(msg->cpus_allocated[i], buffer);
 		pack32_array(msg->global_task_ids[i], 
-			     msg->tasks_to_launch[i], 
+			     (uint32_t) msg->tasks_to_launch[i], 
 			     buffer);	
 	}
 	pack16(msg->num_resp_port, buffer);
@@ -2853,7 +2853,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32_array(&msg->global_task_ids[i], 
 				    &uint32_tmp, 
 				    buffer);	
-		if (msg->tasks_to_launch[i] != uint32_tmp)
+		if (msg->tasks_to_launch[i] != (uint16_t) uint32_tmp)
 			goto unpack_error;
 
 	}

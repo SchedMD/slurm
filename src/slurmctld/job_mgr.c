@@ -2545,8 +2545,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
 
-	if (job_desc_msg->task_dist == (uint16_t) NO_VAL)
-		info("_validate_job_desc: job failed to specify distribution ");
+	if (job_desc_msg->task_dist == (uint16_t) NO_VAL) {
+		/* not typically set by salloc or sbatch */
+		job_desc_msg->task_dist = SLURM_DIST_CYCLIC;
+	}
 	if (job_desc_msg->plane_size == (uint16_t) NO_VAL)
 		job_desc_msg->plane_size = 0;
 
