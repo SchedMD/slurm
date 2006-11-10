@@ -1833,9 +1833,11 @@ extern int read_bg_conf(void)
 	char *layout = NULL;
 	blockreq_t **blockreq_array = NULL;
 	image_t **image_array = NULL;
+	image_t *image = NULL;
 	static time_t last_config_update = (time_t) 0;
 	struct stat config_stat;
-		
+	ListIterator itr = NULL;
+
 	debug("Reading the bluegene.conf file");
 
 	/* check if config file has changed */
@@ -1870,7 +1872,19 @@ extern int read_bg_conf(void)
 		}
 	}
 	if (!s_p_get_string(&default_blrtsimage, "DefaultBlrtsImage", tbl)) {
-		fatal("BlrtsImage not configured in bluegene.conf");
+		if(!list_count(bg_blrtsimage_list))
+			fatal("DefaultBlrtsImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_blrtsimage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_blrtsimage = xstrdup(image->name);
+		info("Warning: using %s as the default BlrtsImage.  "
+		     "If this isn't correct please set DefaultBlrtsImage",
+		     default_blrtsimage); 
+	} else {
+		/* we might want to add the default to the list */
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
@@ -1880,7 +1894,19 @@ extern int read_bg_conf(void)
 		}
 	}
 	if (!s_p_get_string(&default_linuximage, "DefaultLinuxImage", tbl)) {
-		fatal("LinuxImage not configured in bluegene.conf");
+		if(!list_count(bg_linuximage_list))
+			fatal("DefaultLinuxImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_linuximage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_linuximage = xstrdup(image->name);
+		info("Warning: using %s as the default LinuxImage.  "
+		     "If this isn't correct please set DefaultLinuxImage",
+		     default_linuximage); 
+	} else {
+		
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
@@ -1891,7 +1917,19 @@ extern int read_bg_conf(void)
 	}
 	if (!s_p_get_string(&default_mloaderimage,
 			    "DefaultMloaderImage", tbl)) {
-		fatal("MloaderImage not configured in bluegene.conf");
+		if(!list_count(bg_mloaderimage_list))
+			fatal("DefaultMloaderImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_mloaderimage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_mloaderimage = xstrdup(image->name);
+		info("Warning: using %s as the default MloaderImage.  "
+		     "If this isn't correct please set DefaultMloaderImage",
+		     default_mloaderimage); 
+	} else {
+		
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
@@ -1902,7 +1940,17 @@ extern int read_bg_conf(void)
 	}
 	if (!s_p_get_string(&default_ramdiskimage,
 			    "DefaultRamDiskImage", tbl)) {
-		fatal("RamDiskImage not configured in bluegene.conf");
+		if(!list_count(bg_ramdiskimage_list))
+			fatal("DefaultRamDiskImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_ramdiskimage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_ramdiskimage = xstrdup(image->name);
+		info("Warning: using %s as the default RamDiskImage.  "
+		     "If this isn't correct please set DefaultRamDiskImage",
+		     default_ramdiskimage); 
 	} else {
 		
 	}
