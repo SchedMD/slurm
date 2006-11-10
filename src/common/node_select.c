@@ -138,15 +138,19 @@ struct select_jobinfo {
 	uint16_t altered;       /* see if we have altered this job 
 				 * or not yet */
 	uint32_t max_procs;	/* maximum processors to use */
+	char *blrtsimage;       /* BlrtsImage for this block */
+	char *linuximage;       /* LinuxImage for this block */
+	char *mloaderimage;     /* mloaderImage for this block */
+	char *ramdiskimage;     /* RamDiskImage for this block */
 };
 #endif
 
 /*
  * Local functions
  */
+static slurm_select_ops_t *_select_get_ops(slurm_select_context_t *c);
 static slurm_select_context_t *_select_context_create(const char *select_type);
 static int _select_context_destroy(slurm_select_context_t *c);
-static slurm_select_ops_t *_select_get_ops(slurm_select_context_t *c);
 
 /*
  * Locate and load the appropriate plugin
@@ -392,7 +396,8 @@ extern int select_g_get_extra_jobinfo (struct node_record *node_ptr,
 /* 
  * Get select data from a specific node record
  * IN node_pts  - current node record
- * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN cr_info   - type of data to get from the node record 
+ *                (see enum select_data_info)
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_select_nodeinfo (struct node_record *node_ptr, 
@@ -579,6 +584,69 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 }
 
 #ifdef HAVE_BG		/* node selection specific logic */
+static void _free_node_info(bg_info_record_t *bg_info_record)
+{
+	xfree(bg_info_record->nodes);
+	xfree(bg_info_record->owner_name);
+	xfree(bg_info_record->bg_block_id);
+	xfree(bg_info_record->bp_inx);
+	xfree(bg_info_record->blrtsimage);
+	xfree(bg_info_record->linuximage);
+	xfree(bg_info_record->mloaderimage);
+	xfree(bg_info_record->ramdiskimage);
+}
+
+/* NOTE: The matching pack functions are directly in the select/bluegene 
+ * plugin. The unpack functions can not be there since the plugin is 
+ * dependent upon libraries which do not exist on the BlueGene front-end 
+ * nodes. */
+static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
+	char *bp_inx_str;
+	
+	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->owner_name, &uint16_tmp, 
+			       buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint16_tmp, 
+			       buffer);
+
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->state     = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->conn_type = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->node_use = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->quarter = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->nodecard = (int) uint16_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	bg_info_record->node_cnt = (int) uint32_tmp;
+	safe_unpackstr_xmalloc(&bp_inx_str, &uint16_tmp, buffer);
+	if (bp_inx_str == NULL) {
+		bg_info_record->bp_inx = bitfmt2int("");
+	} else {
+		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
+		xfree(bp_inx_str);
+	}
+	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage, &uint16_tmp, 
+			       buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->linuximage, &uint16_tmp, 
+			       buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage, &uint16_tmp, 
+			       buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage, &uint16_tmp, 
+			       buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_free_node_info(bg_info_record);
+	return SLURM_ERROR;
+}
+
 static char *_job_conn_type_string(uint16_t inx)
 {
 	if (inx == SELECT_TORUS)
@@ -625,7 +693,11 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	(*jobinfo)->nodecard = (uint16_t) NO_VAL;
 	(*jobinfo)->node_cnt = NO_VAL;
 	(*jobinfo)->max_procs =  NO_VAL;
-	
+	(*jobinfo)->blrtsimage = NULL;
+	(*jobinfo)->linuximage = NULL;
+	(*jobinfo)->mloaderimage = NULL;
+	(*jobinfo)->ramdiskimage = NULL;
+
 	return SLURM_SUCCESS;
 }
 
@@ -689,6 +761,26 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_MAX_PROCS:
 		jobinfo->max_procs = *uint32;
 		break;
+	case SELECT_DATA_BLRTS_IMAGE:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->blrtsimage);
+		jobinfo->blrtsimage = xstrdup(tmp_char);
+		break;
+	case SELECT_DATA_LINUX_IMAGE:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->linuximage);
+		jobinfo->linuximage = xstrdup(tmp_char);
+		break;
+	case SELECT_DATA_MLOADER_IMAGE:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->mloaderimage);
+		jobinfo->mloaderimage = xstrdup(tmp_char);
+		break;
+	case SELECT_DATA_RAMDISK_IMAGE:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->ramdiskimage);
+		jobinfo->ramdiskimage = xstrdup(tmp_char);
+		break;	
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
 		      data_type);
@@ -762,6 +854,34 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_MAX_PROCS:
 		*uint32 = jobinfo->max_procs;
 		break;
+	case SELECT_DATA_BLRTS_IMAGE:
+		if ((jobinfo->blrtsimage == NULL)
+		    ||  (jobinfo->blrtsimage[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->blrtsimage);
+		break;
+	case SELECT_DATA_LINUX_IMAGE:
+		if ((jobinfo->linuximage == NULL)
+		    ||  (jobinfo->linuximage[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->linuximage);
+		break;
+	case SELECT_DATA_MLOADER_IMAGE:
+		if ((jobinfo->mloaderimage == NULL)
+		    ||  (jobinfo->mloaderimage[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->mloaderimage);
+		break;
+	case SELECT_DATA_RAMDISK_IMAGE:
+		if ((jobinfo->ramdiskimage == NULL)
+		    ||  (jobinfo->ramdiskimage[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->ramdiskimage);
+		break;
 	default:
 		debug("select_g_get_jobinfo data_type %d invalid", 
 		      data_type);
@@ -802,6 +922,11 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->node_cnt = jobinfo->node_cnt;
 		rc->altered = jobinfo->altered;
 		rc->max_procs = jobinfo->max_procs;
+		rc->blrtsimage = xstrdup(jobinfo->blrtsimage);
+		rc->linuximage = xstrdup(jobinfo->linuximage);
+		rc->mloaderimage = xstrdup(jobinfo->mloaderimage);
+		rc->ramdiskimage = xstrdup(jobinfo->ramdiskimage);
+		
 	}
 
 	return rc;
@@ -823,6 +948,10 @@ extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
 	} else {
 		(*jobinfo)->magic = 0;
 		xfree((*jobinfo)->bg_block_id);
+		xfree((*jobinfo)->blrtsimage);
+		xfree((*jobinfo)->linuximage);
+		xfree((*jobinfo)->mloaderimage);
+		xfree((*jobinfo)->ramdiskimage);
 		xfree(*jobinfo);
 	}
 	return rc;
@@ -851,11 +980,19 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack32((uint32_t)jobinfo->node_cnt, buffer);
 		pack32((uint32_t)jobinfo->max_procs, buffer);
 		packstr(jobinfo->bg_block_id, buffer);
+		packstr(jobinfo->blrtsimage, buffer);
+		packstr(jobinfo->linuximage, buffer);
+		packstr(jobinfo->mloaderimage, buffer);
+		packstr(jobinfo->ramdiskimage, buffer);
 	} else {
 		for (i=0; i<((SYSTEM_DIMENSIONS*2)+4); i++)
 			pack16((uint16_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
+		packstr("", buffer);
+		packstr("", buffer);
+		packstr("", buffer);
+		packstr("", buffer);
 		packstr("", buffer);
 	}
 
@@ -884,6 +1021,11 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
 	safe_unpack32(&(jobinfo->max_procs), buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint16_tmp, buffer);
+
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -898,12 +1040,13 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
  * RET        - the string, same as buf
  */
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
-		char *buf, size_t size, int mode)
+				     char *buf, size_t size, int mode)
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
 	char max_procs_char[7], start_char[32];
-
+	char *tmp_image = "default";
+		
 	if (buf == NULL) {
 		error("select_g_sprint_jobinfo: buf is null");
 		return NULL;
@@ -967,6 +1110,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 				"%1ux%1ux%1u", jobinfo->start[0],
 				jobinfo->start[1], jobinfo->start[2]);
 		}
+		
 		snprintf(buf, size, 
 			 "Connection=%s Rotate=%s MaxProcs=%s "
 			 "Geometry=%1ux%1ux%1u Start=%s Block_ID=%s",
@@ -993,9 +1137,9 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		break;
 	case SELECT_PRINT_START:
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
-			sprintf(start_char, "None");
+			sprintf(buf, "None");
 		else {
-			snprintf(start_char, sizeof(start_char), 
+			snprintf(buf, size, 
 				 "%1ux%1ux%1u", jobinfo->start[0],
 				 jobinfo->start[1], jobinfo->start[2]);
 		} 
@@ -1008,7 +1152,26 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		
 		snprintf(buf, size, "%s", max_procs_char);
 		break;
-		
+	case SELECT_PRINT_BLRTS_IMAGE:
+		if(jobinfo->blrtsimage)
+			tmp_image = jobinfo->blrtsimage;
+		snprintf(buf, size, "%s", tmp_image);		
+		break;
+	case SELECT_PRINT_LINUX_IMAGE:
+		if(jobinfo->linuximage)
+			tmp_image = jobinfo->linuximage;
+		snprintf(buf, size, "%s", tmp_image);		
+		break;
+	case SELECT_PRINT_MLOADER_IMAGE:
+		if(jobinfo->mloaderimage)
+			tmp_image = jobinfo->mloaderimage;
+		snprintf(buf, size, "%s", tmp_image);		
+		break;
+	case SELECT_PRINT_RAMDISK_IMAGE:
+		if(jobinfo->ramdiskimage)
+			tmp_image = jobinfo->ramdiskimage;
+		snprintf(buf, size, "%s", tmp_image);		
+		break;		
 	default:
 		error("select_g_sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)
@@ -1016,59 +1179,6 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	}
 	
 	return buf;
-}
-
-/* NOTE: The matching pack functions are directly in the select/bluegene 
- * plugin. The unpack functions can not be there since the plugin is 
- * dependent upon libraries which do not exist on the BlueGene front-end 
- * nodes. */
-static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
-{
-	uint16_t uint16_tmp;
-	uint32_t uint32_tmp;
-	char *bp_inx_str;
-	
-	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->owner_name, &uint16_tmp, 
-		buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint16_tmp, 
-		buffer);
-
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->state     = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->conn_type = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->node_use = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->quarter = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->nodecard = (int) uint16_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	bg_info_record->node_cnt = (int) uint32_tmp;
-	safe_unpackstr_xmalloc(&bp_inx_str, &uint16_tmp, buffer);
-	if (bp_inx_str == NULL) {
-		bg_info_record->bp_inx = bitfmt2int("");
-	} else {
-		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
-		xfree(bp_inx_str);
-	}
-		
-	return SLURM_SUCCESS;
-
-unpack_error:
-	xfree(bg_info_record->nodes);
-	xfree(bg_info_record->owner_name);
-	xfree(bg_info_record->bg_block_id);
-	xfree(bg_info_record->bp_inx);
-	return SLURM_ERROR;
-}
-
-static void _free_node_info(bg_info_record_t *bg_info_record)
-{
-	xfree(bg_info_record->nodes);
-	xfree(bg_info_record->owner_name);
-	xfree(bg_info_record->bg_block_id);
 }
 
 /* Unpack node select info from a buffer */

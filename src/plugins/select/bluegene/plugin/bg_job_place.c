@@ -89,9 +89,10 @@ pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
  * 
  */
 static int _find_best_block_match(struct job_record* job_ptr, 
-				  bitstr_t* slurm_block_bitmap, uint32_t min_nodes,
-				  uint32_t max_nodes, uint32_t req_nodes,
-				  int spec, bg_record_t** found_bg_record, 
+				  bitstr_t* slurm_block_bitmap,
+				  uint32_t min_nodes, uint32_t max_nodes,
+				  uint32_t req_nodes, int spec,
+				  bg_record_t** found_bg_record, 
 				  bool test_only)
 {
 	ListIterator itr;
@@ -116,7 +117,11 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	bitstr_t* tmp_bitmap = NULL;
 	int start_req = 0;
 	static int total_cpus = 0;
-
+	char *blrtsimage;              /* BlrtsImage for this request */
+	char *linuximage;              /* LinuxImage for this request */
+	char *mloaderimage;            /* mloaderImage for this request */
+	char *ramdiskimage;            /* RamDiskImage for this request */
+	int rc = SLURM_SUCCESS;
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
 			* procs_per_node;
@@ -197,6 +202,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_ROTATE, &rotate);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_BLRTS_IMAGE, &blrtsimage);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_LINUX_IMAGE, &linuximage);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_MLOADER_IMAGE, &mloaderimage);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_RAMDISK_IMAGE, &ramdiskimage);
 	
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
 		target_size = 1;
@@ -478,7 +491,8 @@ try_again:
 			tmp_char);
 		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
 		slurm_mutex_unlock(&block_state_mutex);
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
+		goto end_it;
 	}
 
 	/* all these assume that the *found_bg_record is NULL */
@@ -507,17 +521,24 @@ try_again:
 		request.rotate = rotate;
 		request.elongate = true;
 		request.start_req = start_req;
+		request.blrtsimage = blrtsimage;
+		request.linuximage = linuximage;
+		request.mloaderimage = mloaderimage;
+		request.ramdiskimage = ramdiskimage;
+	
 		debug("trying with all free blocks");
 		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
 			error("this job will never run on "
 			      "this system");
 			xfree(request.save_name);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto end_it;
 		} else {
 			if(!request.save_name) {
 				error("no name returned from "
 				      "create_dynamic_block");
-				return SLURM_ERROR;
+				rc = SLURM_ERROR;
+				goto end_it;
 			} 
 
 			/* 
@@ -553,7 +574,8 @@ try_again:
 			bit_and(slurm_block_bitmap, tmp_bitmap);
 			bit_free(tmp_bitmap);
 			xfree(request.save_name);
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
+			goto end_it;
 		}
 	} else if(!created) {
 		debug2("going to create %d", target_size);
@@ -592,6 +614,10 @@ try_again:
 			request.rotate = rotate;
 			request.elongate = true;
 			request.start_req = start_req;
+			request.blrtsimage = blrtsimage;
+			request.linuximage = linuximage;
+			request.mloaderimage = mloaderimage;
+			request.ramdiskimage = ramdiskimage;
 			/* 1- try empty space
 			   2- we see if we can create one in the 
 			   unused bps
@@ -613,7 +639,15 @@ try_again:
 	}
 not_dynamic:
 	debug("_find_best_block_match none found");
-	return SLURM_ERROR;
+	rc = SLURM_ERROR;
+
+end_it:
+	xfree(blrtsimage);
+	xfree(linuximage);
+	xfree(mloaderimage);
+	xfree(ramdiskimage);
+		
+	return rc;
 }
 
 /*
@@ -642,6 +676,19 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
 	      buf, min_nodes, req_nodes, max_nodes);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_BLRTS_IMAGE);
+	debug2("BlrtsImage=%s", buf);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_LINUX_IMAGE);
+	debug2("LinuxImage=%s", buf);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_MLOADER_IMAGE);
+	debug2("MloaderImage=%s", buf);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_RAMDISK_IMAGE);
+	debug2("RamDiskImage=%s", buf);
+	
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
 	
@@ -698,6 +745,21 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
 					     &tmp16);
+
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_BLRTS_IMAGE,
+					     record->blrtsimage);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_LINUX_IMAGE,
+					     record->linuximage);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_MLOADER_IMAGE,
+					     record->mloaderimage);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_RAMDISK_IMAGE,
+					     record->ramdiskimage);
+
+			
 			slurm_mutex_unlock(&block_state_mutex);
 		}
 		if(test_only) {

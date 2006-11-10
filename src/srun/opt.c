@@ -153,6 +153,10 @@
 #define LONG_OPT_NTASKSPERCORE	 0x138
 #define LONG_OPT_JOBMEM	         0x13a
 #define LONG_OPT_HINT	         0x13b
+#define LONG_OPT_BLRTS_IMAGE     0x140
+#define LONG_OPT_LINUX_IMAGE     0x141
+#define LONG_OPT_MLOADER_IMAGE   0x142
+#define LONG_OPT_RAMDISK_IMAGE   0x143
 
 /*---- global variables, defined in opt.h ----*/
 char **remote_argv;
@@ -986,6 +990,10 @@ static void _opt_default()
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
 	opt.no_rotate	    = false;
 	opt.conn_type	    = (uint16_t) NO_VAL;
+	opt.blrtsimage = NULL;
+	opt.linuximage = NULL;
+	opt.mloaderimage = NULL;
+	opt.ramdiskimage = NULL;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -1036,6 +1044,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
 	{"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
 	{"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           },
+	{"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
 	{"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
 	{"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
 	{"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
@@ -1048,6 +1057,8 @@ env_vars_t env_vars[] = {
 	{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
 	{"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
 	{"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
+	{"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL           },
+	{"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
 	{"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
 	{"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL           },
 	{"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL           },
@@ -1057,6 +1068,7 @@ env_vars_t env_vars[] = {
 	{"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
 	{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
 	{"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
+	{"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
 	{"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
 	{"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
 	{"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL           },
@@ -1374,6 +1386,10 @@ void set_options(const int argc, char **argv, int first)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
+		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
+		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"mloader-image",      required_argument, 0, LONG_OPT_MLOADER_IMAGE},
+		{"ramdisk-image",      required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1920,6 +1936,30 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
 				true);
+			break;
+		case LONG_OPT_BLRTS_IMAGE:
+			if(!first && opt.blrtsimage)
+				break;			
+			xfree(opt.blrtsimage);
+			opt.blrtsimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_LINUX_IMAGE:
+			if(!first && opt.linuximage)
+				break;			
+			xfree(opt.linuximage);
+			opt.linuximage = xstrdup(optarg);
+			break;
+		case LONG_OPT_MLOADER_IMAGE:
+			if(!first && opt.mloaderimage)
+				break;			
+			xfree(opt.mloaderimage);
+			opt.mloaderimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_RAMDISK_IMAGE:
+			if(!first && opt.ramdiskimage)
+				break;			
+			xfree(opt.ramdiskimage);
+			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2545,12 +2585,22 @@ static void _opt_list()
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type >= 0)
+	if (opt.conn_type != (uint16_t) NO_VAL)
 		info("conn_type      : %u", opt.conn_type);
 	str = print_geometry();
 	info("geometry       : %s", str);
 	xfree(str);
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
+	
+	if (opt.blrtsimage)
+		info("BlrtsImage     : %s", opt.blrtsimage);
+	if (opt.linuximage)
+		info("LinuxImage     : %s", opt.linuximage);
+	if (opt.mloaderimage)
+		info("MloaderImage   : %s", opt.mloaderimage);
+	if (opt.ramdiskimage)
+		info("RamDiskImage   : %s", opt.ramdiskimage);
+
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
@@ -2599,7 +2649,9 @@ static void _usage(void)
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
 "            [--ntasks-per-core=n]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-		"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+"            [--blrts-image=path] [--linux-image=path]\n"
+"            [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 		"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 		"            [--prolog=fname] [--epilog=fname]\n"
@@ -2739,6 +2791,10 @@ static void _help(void)
 		"  -R, --no-rotate             disable geometry rotation\n"
 		"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 		"                              if not set, then tries to fit TORUS else MESH\n"
+		"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
+		"      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
+		"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
+		"      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
 		"\n"
 #endif
 		"Help options:\n"

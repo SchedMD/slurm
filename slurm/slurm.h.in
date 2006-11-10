@@ -223,7 +223,11 @@ enum select_data_type {
 	SELECT_DATA_NODECARD,	/* data-> uint16_t nodecard */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_DATA_ALTERED,    /* data-> uint16_t altered */
-	SELECT_DATA_MAX_PROCS	/* data-> uint32_t max_procs */
+	SELECT_DATA_MAX_PROCS,	/* data-> uint32_t max_procs */
+	SELECT_DATA_BLRTS_IMAGE,/* data-> char blrtsimage */
+	SELECT_DATA_LINUX_IMAGE,/* data-> char linuximage */
+	SELECT_DATA_MLOADER_IMAGE,/* data-> char mloaderimage */
+	SELECT_DATA_RAMDISK_IMAGE/* data-> char ramdiskimage */
 };
 
 enum select_print_mode {
@@ -235,7 +239,11 @@ enum select_print_mode {
 	SELECT_PRINT_ROTATE,    /* Print just the ROTATE */
 	SELECT_PRINT_GEOMETRY,	/* Print just the GEO */
 	SELECT_PRINT_START,	/* Print just the START location */
-	SELECT_PRINT_MAX_PROCS  /* Print just the MAX PROCS */
+	SELECT_PRINT_MAX_PROCS,  /* Print just the MAX PROCS */
+	SELECT_PRINT_BLRTS_IMAGE,/* Print just the BLRTS IMAGE */
+	SELECT_PRINT_LINUX_IMAGE,/* Print just the LINUX IMAGE */
+	SELECT_PRINT_MLOADER_IMAGE,/* Print just the MLOADER IMAGE */
+	SELECT_PRINT_RAMDISK_IMAGE/* Print just the RAMDISK IMAGE */
 };
 
 enum select_node_cnt {
@@ -491,6 +499,11 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 #endif
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
+	char *blrtsimage;       /* BlrtsImage for block */
+	char *linuximage;       /* LinuxImage for block */
+	char *mloaderimage;     /* mloaderImage for block */
+	char *ramdiskimage;     /* RamDiskImage for block */
+
 /* End of Blue Gene specific values */
 
 	select_jobinfo_t select_jobinfo; /* opaque data type,

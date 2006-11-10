@@ -129,6 +129,10 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 #endif
 	job_desc_msg->conn_type   = (uint16_t) NO_VAL;
 	job_desc_msg->rotate      = (uint16_t) NO_VAL;
+	job_desc_msg->blrtsimage = NULL;
+	job_desc_msg->linuximage = NULL;
+	job_desc_msg->mloaderimage = NULL;
+	job_desc_msg->ramdiskimage = NULL;
 	job_desc_msg->select_jobinfo = NULL;
 }
 
