@@ -61,8 +61,13 @@ List bg_freeing_list = NULL;  	        /* blocks that being freed */
 List bg_request_list = NULL;  	        /* list of request that can't 
 					   be made just yet */
 
-char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
-char *bluegene_ramdisk = NULL, *bridge_api_file = NULL; 
+List bg_blrtsimage_list = NULL;
+List bg_linuximage_list = NULL;
+List bg_mloaderimage_list = NULL;
+List bg_ramdiskimage_list = NULL;
+char *default_blrtsimage = NULL, *default_linuximage = NULL;
+char *default_mloaderimage = NULL, *default_ramdiskimage = NULL;
+char *bridge_api_file = NULL; 
 bg_layout_t bluegene_layout_mode = NO_VAL;
 uint16_t bluegene_numpsets = 0;
 uint16_t bluegene_bp_node_cnt = 0;
@@ -178,10 +183,30 @@ extern void fini_bg(void)
 	}
 	slurm_mutex_unlock(&request_list_mutex);
 		
-	xfree(bluegene_blrts);
-	xfree(bluegene_linux);
-	xfree(bluegene_mloader);
-	xfree(bluegene_ramdisk);
+	if(bg_blrtsimage_list) {
+		list_destroy(bg_blrtsimage_list);
+		bg_blrtsimage_list = NULL;
+	}
+	
+	if(bg_linuximage_list) {
+		list_destroy(bg_linuximage_list);
+		bg_linuximage_list = NULL;
+	}
+	
+	if(bg_mloaderimage_list) {
+		list_destroy(bg_mloaderimage_list);
+		bg_mloaderimage_list = NULL;
+	}
+
+	if(bg_ramdiskimage_list) {
+		list_destroy(bg_ramdiskimage_list);
+		bg_ramdiskimage_list = NULL;
+	}
+
+	xfree(default_blrtsimage);
+	xfree(default_linuximage);
+	xfree(default_mloaderimage);
+	xfree(default_ramdiskimage);
 	xfree(bridge_api_file);
 	xfree(bg_conf);
 	
@@ -245,7 +270,12 @@ extern void destroy_bg_record(void *object)
 		}
 		if(bg_record->bitmap)
 			bit_free(bg_record->bitmap);
-		
+
+		xfree(bg_record->blrtsimage);
+		xfree(bg_record->linuximage);
+		xfree(bg_record->mloaderimage);
+		xfree(bg_record->ramdiskimage);
+
 		xfree(bg_record);
 		bg_record = NULL;
 	}
@@ -427,6 +457,16 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->user_name = xstrdup(fir_record->user_name);
 	xfree(sec_record->target_name);
 	sec_record->target_name = xstrdup(fir_record->target_name);
+
+	xfree(sec_record->blrtsimage);
+	sec_record->blrtsimage = xstrdup(fir_record->blrtsimage);
+	xfree(sec_record->linuximage);
+	sec_record->linuximage = xstrdup(fir_record->linuximage);
+	xfree(sec_record->mloaderimage);
+	sec_record->mloaderimage = xstrdup(fir_record->mloaderimage);
+	xfree(sec_record->ramdiskimage);
+	sec_record->ramdiskimage = xstrdup(fir_record->ramdiskimage);
+
 	sec_record->user_uid = fir_record->user_uid;
 	sec_record->block_lifecycle = fir_record->block_lifecycle;
 	sec_record->state = fir_record->state;
@@ -1263,6 +1303,10 @@ no_list:
 	requests = list_create(destroy_bg_record);
 	
 	blockreq.block = request->save_name;
+	blockreq.blrtsimage = request->blrtsimage;
+	blockreq.linuximage = request->linuximage;
+	blockreq.mloaderimage = request->mloaderimage;
+	blockreq.ramdiskimage = request->ramdiskimage;
 	blockreq.conn_type = request->conn_type;
 	blockreq.nodecards = num_nodecard;
 	blockreq.quarters = num_quarter;
@@ -1370,6 +1414,10 @@ extern int create_full_system_block(int *block_inx)
 
 	records = list_create(destroy_bg_record);
 	blockreq.block = name;
+	blockreq.blrtsimage = NULL;
+	blockreq.linuximage = NULL;
+	blockreq.mloaderimage = NULL;
+	blockreq.ramdiskimage = NULL;
 	blockreq.conn_type = SELECT_TORUS;
 	blockreq.nodecards = 0;
 	blockreq.quarters = 0;
@@ -1784,6 +1832,7 @@ extern int read_bg_conf(void)
 	s_p_hashtbl_t *tbl = NULL;
 	char *layout = NULL;
 	blockreq_t **blockreq_array = NULL;
+	image_t **image_array = NULL;
 	static time_t last_config_update = (time_t) 0;
 	struct stat config_stat;
 		
@@ -1813,14 +1862,51 @@ extern int read_bg_conf(void)
 		fatal("something wrong with opening/reading bluegene "
 		      "conf file");
 	
-	if (!s_p_get_string(&bluegene_blrts, "BlrtsImage", tbl)) 
+	_set_bg_lists();	
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "BlrtsImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_blrtsimage_list, image_array[i]);
+		}
+	}
+	if (!s_p_get_string(&default_blrtsimage, "DefaultBlrtsImage", tbl)) {
 		fatal("BlrtsImage not configured in bluegene.conf");
-	if (!s_p_get_string(&bluegene_linux, "LinuxImage", tbl)) 
+	}
+
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "LinuxImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_linuximage_list, image_array[i]);
+		}
+	}
+	if (!s_p_get_string(&default_linuximage, "DefaultLinuxImage", tbl)) {
 		fatal("LinuxImage not configured in bluegene.conf");
-	if (!s_p_get_string(&bluegene_mloader, "MloaderImage", tbl)) 
+	}
+
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "MloaderImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_mloaderimage_list, image_array[i]);
+		}
+	}
+	if (!s_p_get_string(&default_mloaderimage,
+			    "DefaultMloaderImage", tbl)) {
 		fatal("MloaderImage not configured in bluegene.conf");
-	if (!s_p_get_string(&bluegene_ramdisk, "RamDiskImage", tbl)) 
+	}
+
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "RamDiskImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_ramdiskimage_list, image_array[i]);
+		}
+	}
+	if (!s_p_get_string(&default_ramdiskimage,
+			    "DefaultRamDiskImage", tbl)) {
 		fatal("RamDiskImage not configured in bluegene.conf");
+	} else {
+		
+	}
+
 	if (!s_p_get_uint16(&bluegene_numpsets, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
 	if (!s_p_get_uint16(&bridge_api_verb, "BridgeAPIVerbose", tbl))
@@ -1872,7 +1958,6 @@ extern int read_bg_conf(void)
 	if(bluegene_nodecard_node_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
 
-	_set_bg_lists();	
 	/* add blocks defined in file */
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
 		if (!s_p_get_array((void ***)&blockreq_array, 
@@ -1996,33 +2081,47 @@ static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
 static void _set_bg_lists()
 {
 	slurm_mutex_lock(&block_state_mutex);
-	if (bg_found_block_list)
+	if(bg_found_block_list)
 		list_destroy(bg_found_block_list);
 	bg_found_block_list = list_create(NULL);
-	if (bg_booted_block_list) 
+	if(bg_booted_block_list) 
 		list_destroy(bg_booted_block_list);
 	bg_booted_block_list = list_create(NULL);
-	if (bg_job_block_list) 
+	if(bg_job_block_list) 
 		list_destroy(bg_job_block_list);
 	bg_job_block_list = list_create(NULL);	
 	num_unused_cpus = 
 		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * procs_per_node;
-	if (bg_curr_block_list)
+	if(bg_curr_block_list)
 		list_destroy(bg_curr_block_list);	
 	bg_curr_block_list = list_create(destroy_bg_record);
 	
 	
-	if (bg_list) 
+	if(bg_list) 
 		list_destroy(bg_list);
 	bg_list = list_create(destroy_bg_record);
 
 	slurm_mutex_lock(&request_list_mutex);
-	if (bg_request_list) 
+	if(bg_request_list) 
 		list_destroy(bg_request_list);
 	bg_request_list = list_create(delete_ba_request);
 	slurm_mutex_unlock(&request_list_mutex);
-		
-	slurm_mutex_unlock(&block_state_mutex);		
+	
+	slurm_mutex_unlock(&block_state_mutex);	
+	
+	if(bg_blrtsimage_list)
+		list_destroy(bg_blrtsimage_list);
+	bg_blrtsimage_list = list_create(destroy_image);
+	if(bg_linuximage_list)
+		list_destroy(bg_linuximage_list);
+	bg_linuximage_list = list_create(destroy_image);
+	if(bg_mloaderimage_list)
+		list_destroy(bg_mloaderimage_list);
+	bg_mloaderimage_list = list_create(destroy_image);
+	if(bg_ramdiskimage_list)
+		list_destroy(bg_ramdiskimage_list);
+	bg_ramdiskimage_list = list_create(destroy_image);
+	
 }
 
 /*
@@ -2645,6 +2744,10 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(destroy_ba_node);
 	found_record->nodes = xstrdup(bg_record->nodes);
+	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
+	found_record->linuximage = xstrdup(bg_record->linuximage);
+	found_record->mloaderimage = xstrdup(bg_record->mloaderimage);
+	found_record->ramdiskimage = xstrdup(bg_record->ramdiskimage);
 
 	process_nodes(found_record);
 				
@@ -2729,6 +2832,27 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->cpus_per_bp = procs_per_node;
 	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
 	bg_record->job_running = NO_JOB_RUNNING;
+
+	if(blockreq->blrtsimage)
+		bg_record->blrtsimage = xstrdup(blockreq->blrtsimage);
+	else
+		bg_record->blrtsimage = xstrdup(default_blrtsimage);
+
+	if(blockreq->linuximage)
+		bg_record->linuximage = xstrdup(blockreq->linuximage);
+	else
+		bg_record->linuximage = xstrdup(default_linuximage);
+
+	if(blockreq->mloaderimage)
+		bg_record->mloaderimage = xstrdup(blockreq->mloaderimage);
+	else
+		bg_record->mloaderimage = xstrdup(default_mloaderimage);
+
+	if(blockreq->ramdiskimage)
+		bg_record->ramdiskimage = xstrdup(blockreq->ramdiskimage);
+	else
+		bg_record->ramdiskimage = xstrdup(default_ramdiskimage);
+	info("default is %s", bg_record->blrtsimage);
 	
 	if(bg_record->conn_type != SELECT_SMALL) {
 		/* this needs to be an append so we keep things in the

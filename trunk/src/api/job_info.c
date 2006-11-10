@@ -123,7 +123,7 @@ extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j;
-	char time_str[32], select_buf[128];
+	char time_str[32], select_buf[122];
 	struct group *group_info = NULL;
 	char tmp1[128], tmp2[128];
 	char tmp_line[128];
@@ -444,13 +444,66 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 16 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
+				select_buf, sizeof(select_buf),
+				SELECT_PRINT_MIXED);
 	if (select_buf[0] != '\0') {
 		if (one_liner)
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
 		xstrcat(out, select_buf);
+	}
+	/****** Line 17 (optional) ******/
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+				select_buf, sizeof(select_buf),
+				SELECT_PRINT_BLRTS_IMAGE);
+	if (select_buf[0] != '\0') {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "BlrtsImage=%s", select_buf);
+		xstrcat(out, tmp_line);
+	}
+	/****** Line 18 (optional) ******/
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+				select_buf, sizeof(select_buf),
+				SELECT_PRINT_LINUX_IMAGE);
+	if (select_buf[0] != '\0') {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "LinuxImage=%s", select_buf);
+		xstrcat(out, tmp_line);
+	}
+	/****** Line 19 (optional) ******/
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+				select_buf, sizeof(select_buf),
+				SELECT_PRINT_MLOADER_IMAGE);
+	if (select_buf[0] != '\0') {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "MloaderImage=%s", select_buf);
+		xstrcat(out, tmp_line);
+	}
+	/****** Line 20 (optional) ******/
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+				select_buf, sizeof(select_buf),
+				SELECT_PRINT_RAMDISK_IMAGE);
+	if (select_buf[0] != '\0') {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "RamDiskImage=%s", select_buf);
+		xstrcat(out, tmp_line);
 	}
 	xstrcat(out, "\n\n");
 

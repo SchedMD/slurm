@@ -60,6 +60,10 @@ typedef struct {
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	char *blrtsimage;       /* BlrtsImage for this block */
+	char *linuximage;       /* LinuxImage for this block */
+	char *mloaderimage;     /* mloaderImage for this block */
+	char *ramdiskimage;     /* RamDiskImage for this block */
 } bg_info_record_t;
 
 typedef struct {

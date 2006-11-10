@@ -489,11 +489,20 @@ job_desc_msg_create_from_opts (char *script)
 	}
 #endif
 
-	if (opt.conn_type != (int16_t) NO_VAL)
+	if (opt.conn_type != (uint16_t) NO_VAL)
 		j->conn_type = opt.conn_type;
 			
 	if (opt.no_rotate)
 		j->rotate = 0;
+
+	if (opt.blrtsimage)
+		j->blrtsimage = xstrdup(opt.blrtsimage);
+	if (opt.linuximage)
+		j->linuximage = xstrdup(opt.linuximage);
+	if (opt.mloaderimage)
+		j->mloaderimage = xstrdup(opt.mloaderimage);
+	if (opt.ramdiskimage)
+		j->ramdiskimage = xstrdup(opt.ramdiskimage);
 
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;

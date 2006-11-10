@@ -103,6 +103,10 @@ typedef struct bg_record {
 					   determine quarter of BP */
 	uint16_t nodecard;             /* used for small blocks 
 					  determine nodecard of quarter */
+	char *blrtsimage;              /* BlrtsImage for this block */
+	char *linuximage;              /* LinuxImage for this block */
+	char *mloaderimage;            /* mloaderImage for this block */
+	char *ramdiskimage;            /* RamDiskImage for this block */
 } bg_record_t;
 
 typedef struct {
@@ -144,6 +148,10 @@ extern List bg_booted_block_list;  	/* blocks that are booted */
 extern List bg_freeing_list;  	        /* blocks that being freed */
 extern List bg_request_list;  	        /* list of request that can't 
 					   be made just yet */
+extern List bg_blrtsimage_list;
+extern List bg_linuximage_list;
+extern List bg_mloaderimage_list;
+extern List bg_ramdiskimage_list;
 
 extern bool agent_fini;
 extern pthread_mutex_t block_state_mutex;

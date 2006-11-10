@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -192,15 +192,23 @@ typedef struct srun_options {
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
 
+	/* BLUEGENE SPECIFIC */
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool no_rotate;		/* --no_rotate, -R		*/
-	int16_t conn_type;	/* --conn-type 			*/
+	uint16_t conn_type;	/* --conn-type 			*/
+	char *blrtsimage;       /* --blrtsimage BlrtsImage for block */
+	char *linuximage;       /* --linuximage LinuxImage for block */
+	char *mloaderimage;     /* --mloaderimage mloaderImage for block */
+	char *ramdiskimage;     /* --ramdiskimage RamDiskImage for block */
+	/*********************/
+
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
+	
 } opt_t;
 
 extern opt_t opt;

@@ -91,6 +91,10 @@ typedef struct {
  */
 typedef struct {
 	char *save_name;
+	char *blrtsimage;              /* BlrtsImage for this block */
+	char *linuximage;              /* LinuxImage for this block */
+	char *mloaderimage;            /* mloaderImage for this block */
+	char *ramdiskimage;            /* RamDiskImage for this block */
 	int geometry[BA_SYSTEM_DIMENSIONS];
 	int start[BA_SYSTEM_DIMENSIONS];
 	int start_req;
@@ -107,13 +111,27 @@ typedef struct {
 	List elongate_geos;
 } ba_request_t; 
 
-typedef struct blockreq {
+typedef struct {
 	char *block;
+	char *blrtsimage;              /* BlrtsImage for this block */
+	char *linuximage;              /* LinuxImage for this block */
+	char *mloaderimage;            /* mloaderImage for this block */
+	char *ramdiskimage;            /* RamDiskImage for this block */
 	int conn_type;
 	uint16_t quarters;
 	uint16_t nodecards;
 } blockreq_t;
 
+typedef struct {
+	char *name;
+	bool def;
+	List groups;
+} image_t;
+
+typedef struct {
+	char *name;
+	gid_t gid;
+} image_group_t;
 /** 
  * structure that holds the configuration settings for each connection
  * 
@@ -210,6 +228,12 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *line, char **leftover);
 
 extern void destroy_blockreq(void *ptr);
+extern int parse_image(void **dest, slurm_parser_enum_t type,
+		       const char *key, const char *value, 
+		       const char *line, char **leftover);
+
+extern void destroy_image_group_list(void *ptr);
+extern void destroy_image(void *ptr);
 extern void destroy_ba_node(void *ptr);
 
 /**

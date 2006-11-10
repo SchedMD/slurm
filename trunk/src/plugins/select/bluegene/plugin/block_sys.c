@@ -104,20 +104,20 @@ static void _pre_allocate(bg_record_t *bg_record)
 	int send_psets=bluegene_numpsets;
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
-				  bluegene_blrts)) != STATUS_OK)
+				  bg_record->blrtsimage)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionBlrtsImg)", bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionLinuxImg,   
-				  bluegene_linux)) != STATUS_OK) 
+				  bg_record->linuximage)) != STATUS_OK) 
 		error("bridge_set_data(RM_PartitionLinuxImg)", bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
-				  bluegene_mloader)) != STATUS_OK)
+				  bg_record->mloaderimage)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionMloaderImg)", 
 		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionRamdiskImg, 
-				  bluegene_ramdisk)) != STATUS_OK)
+				  bg_record->ramdiskimage)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionRamdiskImg)", 
 		      bg_err_str(rc));
 

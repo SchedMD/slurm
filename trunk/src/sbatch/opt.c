@@ -102,6 +102,10 @@
 #define LONG_OPT_NICE        0x115
 #define LONG_OPT_NO_REQUEUE  0x116
 #define LONG_OPT_COMMENT     0x117
+#define LONG_OPT_BLRTS_IMAGE     0x140
+#define LONG_OPT_LINUX_IMAGE     0x141
+#define LONG_OPT_MLOADER_IMAGE   0x142
+#define LONG_OPT_RAMDISK_IMAGE   0x143
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -419,7 +423,7 @@ static void _opt_default()
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
 	opt.no_rotate	    = false;
-	opt.conn_type	    = -1;
+	opt.conn_type	    = (uint16_t) NO_VAL;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -449,15 +453,19 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
+  {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL           },
+  {"SBATCH_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL           },
+  {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
   {"SBATCH_NO_REQUEUE",    OPT_BOOL,       &opt.no_requeue,    NULL           },
-  {"SBATCH_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
+  {"SBATCH_NO_ROTATE",     OPT_BOOL,       &opt.no_rotate,     NULL           },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
+  {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {NULL, 0, NULL, NULL}
 };
@@ -609,6 +617,10 @@ static struct option long_options[] = {
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
+	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
+	{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
+	{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
+	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1114,7 +1126,7 @@ static void _set_options(int argc, char **argv)
 				opt.nice = 100;
 			if (abs(opt.nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
+				      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(1);
 			}
 			break;
@@ -1124,6 +1136,22 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
+			break;
+		case LONG_OPT_BLRTS_IMAGE:
+			xfree(opt.blrtsimage);
+			opt.blrtsimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_LINUX_IMAGE:
+			xfree(opt.linuximage);
+			opt.linuximage = xstrdup(optarg);
+			break;
+		case LONG_OPT_MLOADER_IMAGE:
+			xfree(opt.mloaderimage);
+			opt.mloaderimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_RAMDISK_IMAGE:
+			xfree(opt.ramdiskimage);
+			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1481,12 +1509,22 @@ static void _opt_list()
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type >= 0)
+	if (opt.conn_type != (uint16_t) NO_VAL)
 		info("conn_type      : %u", opt.conn_type);
 	str = print_geometry();
 	info("geometry       : %s", str);
 	xfree(str);
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
+
+	if (opt.blrtsimage)
+		info("BlrtsImage     : %s", opt.blrtsimage);
+	if (opt.linuximage)
+		info("LinuxImage     : %s", opt.linuximage);
+	if (opt.mloaderimage)
+		info("MloaderImage   : %s", opt.mloaderimage);
+	if (opt.ramdiskimage)
+		info("RamDiskImage   : %s", opt.ramdiskimage);
+
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -1514,6 +1552,8 @@ static void _usage(void)
 "              [--account=name] [--dependency=jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+"              [--blrts-image=path] [--linux-image=path]\n"
+"              [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--no-requeue]\n"
@@ -1569,12 +1609,16 @@ static void _help(void)
 "                              cpu consumable resource is enabled\n"
 "\n"
 #ifdef HAVE_BG				/* Blue gene specific options */
-  "Blue Gene related options:\n"
-  "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-  "  -R, --no-rotate             disable geometry rotation\n"
-  "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-  "                              if not set, then tries to fit TORUS else MESH\n"
-  "\n"
+"Blue Gene related options:\n"
+"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
+"  -R, --no-rotate             disable geometry rotation\n"
+"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
+"                              if not set, then tries to fit TORUS else MESH\n"
+"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
+"      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
+"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
+"      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
+"\n"
 #endif
 "Help options:\n"
 "  -h, --help                  show this help message\n"

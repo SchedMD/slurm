@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "block_allocator.h"
+#include "src/common/uid.h"
 
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
@@ -73,10 +74,10 @@ int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
 
 s_p_options_t bg_conf_file_options[] = {
-	{"BlrtsImage", S_P_STRING}, 
-	{"LinuxImage", S_P_STRING},
-	{"MloaderImage", S_P_STRING},
-	{"LinuxImage", S_P_STRING},
+	{"DefaultBlrtsImage", S_P_STRING}, 
+	{"DefaultLinuxImage", S_P_STRING},
+	{"DefaultMloaderImage", S_P_STRING},
+	{"DefaultRamDiskImage", S_P_STRING},
 	{"BridgeAPILogFile", S_P_STRING},
 	{"RamDiskImage", S_P_STRING},
 	{"LayoutMode", S_P_STRING},
@@ -85,6 +86,12 @@ s_p_options_t bg_conf_file_options[] = {
 	{"NodeCardNodeCnt", S_P_UINT16},
 	{"Numpsets", S_P_UINT16},
 	{"BPs", S_P_ARRAY, parse_blockreq, destroy_blockreq},
+	/* these are just going to be put into a list that will be
+	   freed later don't free them after reading them */
+	{"BlrtsImage", S_P_ARRAY, parse_image, NULL}, 
+	{"LinuxImage", S_P_ARRAY, parse_image, NULL},
+	{"MloaderImage", S_P_ARRAY, parse_image, NULL},
+	{"RamDiskImage", S_P_ARRAY, parse_image, NULL},
 	{NULL}
 };
 
@@ -213,6 +220,10 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		{"Type", S_P_STRING},
 		{"Nodecards", S_P_UINT16},
 		{"Quarters", S_P_UINT16},
+		{"BlrtsImage", S_P_STRING},
+		{"LinuxImage", S_P_STRING},
+		{"MloaderImage", S_P_STRING},
+		{"RamDiskImage", S_P_STRING},
 		{NULL}
 	};
 	s_p_hashtbl_t *tbl;
@@ -224,7 +235,11 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	
 	n = xmalloc(sizeof(blockreq_t));
 	n->block = xstrdup(value);
-
+	s_p_get_string(&n->blrtsimage, "BlrtsImage", tbl);
+	s_p_get_string(&n->linuximage, "LinuxImage", tbl);
+	s_p_get_string(&n->mloaderimage, "MloaderImage", tbl);
+	s_p_get_string(&n->ramdiskimage, "RamDiskImage", tbl);
+	
 	s_p_get_string(&tmp, "Type", tbl);
 	if (!tmp || !strcasecmp(tmp,"TORUS"))
 		n->conn_type = SELECT_TORUS;
@@ -250,6 +265,87 @@ extern void destroy_blockreq(void *ptr)
 	blockreq_t *n = (blockreq_t *)ptr;
 	if(n) {
 		xfree(n->block);
+		xfree(n->blrtsimage);
+		xfree(n->linuximage);
+		xfree(n->mloaderimage);
+		xfree(n->ramdiskimage);
+		xfree(n);
+	}
+}
+
+extern int parse_image(void **dest, slurm_parser_enum_t type,
+		       const char *key, const char *value, 
+		       const char *line, char **leftover)
+{
+	s_p_options_t image_options[] = {
+		{"GROUPS", S_P_STRING},
+		{NULL}
+	};
+	s_p_hashtbl_t *tbl = NULL;
+	char *tmp = NULL;
+	image_t *n = NULL;
+	image_group_t *image_group = NULL;
+	int i = 0, j = 0;
+
+	tbl = s_p_hashtbl_create(image_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+	
+	n = xmalloc(sizeof(image_t));
+	n->name = xstrdup(value);
+	n->def = false;
+	debug3("image %s", n->name);
+	n->groups = list_create(destroy_image_group_list);
+	s_p_get_string(&tmp, "Groups", tbl);
+	if(tmp) {
+		for(i=0; i<strlen(tmp); i++) {
+			if(tmp[i] == ':') {
+				image_group = xmalloc(sizeof(image_group));
+				image_group->name = xmalloc(i-j+2);
+				snprintf(image_group->name,
+					 (i-j)+1, "%s", tmp+j);
+				image_group->gid =
+					gid_from_string(image_group->name);
+				debug3("adding group %s %d", image_group->name,
+				       image_group->gid);
+				list_append(n->groups, image_group);
+				j=i;
+				j++;
+			} 		
+		}
+		if(j != i) {
+			image_group = xmalloc(sizeof(image_group));
+			image_group->name = xmalloc(i-j+2);
+			snprintf(image_group->name, (i-j)+1, "%s", tmp+j);
+			image_group->gid = gid_from_string(image_group->name);
+			debug3("adding group %s %d", image_group->name,
+			       image_group->gid);
+			list_append(n->groups, image_group);
+		}
+	}
+	s_p_hashtbl_destroy(tbl);
+
+	*dest = (void *)n;
+	return 1;
+}
+
+extern void destroy_image_group_list(void *ptr)
+{
+	image_group_t *image_group = (image_group_t *)ptr;
+	if(image_group) {
+		xfree(image_group->name);
+		xfree(image_group);
+	}
+}
+
+extern void destroy_image(void *ptr)
+{
+	image_t *n = (image_t *)ptr;
+	if(n) {
+		xfree(n->name);
+		if(n->groups) {
+			list_destroy(n->groups);
+			n->groups = NULL;
+		}
 		xfree(n);
 	}
 }
@@ -593,6 +689,10 @@ extern void delete_ba_request(void *arg)
 		xfree(ba_request->save_name);
 		if(ba_request->elongate_geos)
 			list_destroy(ba_request->elongate_geos);
+		xfree(ba_request->blrtsimage);
+		xfree(ba_request->linuximage);
+		xfree(ba_request->mloaderimage);
+		xfree(ba_request->ramdiskimage);
 		
 		xfree(ba_request);
 	}

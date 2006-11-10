@@ -1664,6 +1664,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	uint16_t rotate;
+	uint16_t conn_type;
 #endif
 
 	debug2("before alteration asking for nodes %u-%u procs %u", 
@@ -1796,6 +1797,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		rotate = (uint16_t) 1;
 		select_g_set_jobinfo(job_desc->select_jobinfo,
 				     SELECT_DATA_ROTATE, &rotate);
+	}
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_CONN_TYPE, &conn_type);
+	if (conn_type == (uint16_t) NO_VAL) {
+		conn_type = (uint16_t) SELECT_TORUS;
+		select_g_set_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_CONN_TYPE, &conn_type);
 	}
 #endif
 
