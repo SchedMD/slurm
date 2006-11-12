@@ -1710,7 +1710,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		   slurm_msg_t *resp, int timeout)
 {
 	int retry = 0;
-	int rc = 0; 
+	int rc = -1; 
 	slurm_msg_t_init(resp);
 
 	if(slurm_send_node_msg(fd, req) >= 0) {
