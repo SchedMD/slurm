@@ -357,6 +357,7 @@ static int _background_process_msg(slurm_msg_t * msg)
 		} else if (super_user && 
 			   (msg->msg_type == REQUEST_CONTROL)) {
 			debug3("Ignoring RPC: REQUEST_CONTROL");
+			error_code = ESLURM_DISABLED;
 		} else {
 			error("Invalid RPC received %d from uid %u", 
 			      msg->msg_type, uid);

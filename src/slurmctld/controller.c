@@ -1051,11 +1051,14 @@ static int _shutdown_backup_controller(int wait_time)
 		error("_shutdown_backup_controller:send/recv: %m, %s", TIME_STR);
 		return SLURM_ERROR;
 	}
-	if (rc) {
+	if (rc == ESLURM_DISABLED)
+		debug("backup controller responding");
+	else if (rc == 0)
+		debug("backup controller has relinquished control");
+	else {
 		error("_shutdown_backup_controller: %s", slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
-	debug("backup controller has relinquished control");
 
 	/* FIXME: Ideally the REQUEST_CONTROL RPC does not return until all   
 	 * other activity has ceased and the state has been saved. That is   
