@@ -15,6 +15,7 @@ to run on nodes?</a></li>
 job?</a></li>
 <li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
 <li><a href="#orphan">Why do I have job steps when my job has already COMPLETED?</a></li>
+<li><a href="#multi_batch">How can I run a job within an existing job allocation?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -220,6 +221,22 @@ job are either DOWN or confirm termination of all it's processes.
 This enables SLURM to purge job information in a timely fashion 
 even when there are many failing nodes.
 Unfortunately the job step information may persist longer.</p>
+
+<p><a name="multi_batch"><b>11. How can I run a job within an existing
+job allocation?</b></a><br>
+There is a srun option <i>--jobid</i> that can be used to specify 
+a job's ID. 
+For a batch job or within an existing resource allocation, the 
+environment variable <i>SLURM_JOBID</i> has already been defined, 
+so all job steps will run within that job allocation unless 
+otherwise specified.
+The one exception to this is when submitting batch jobs. 
+When a batch job is submitted from within an existing batch job, 
+it is treated as a new job allocation request and will get a 
+new job ID unless explicitly set with the <i>--jobid</i> option. 
+If you specify that a batch job should use an existing allocation, 
+that job allocation will be released upon the termination of 
+that batch job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -443,6 +460,6 @@ for more details about configuring multiple slurmd support.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 November 2006</p>
+<p style="text-align:center;">Last modified 12 November 2006</p>
 
 <!--#include virtual="footer.txt"-->
