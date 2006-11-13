@@ -588,8 +588,14 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 		poll_rc = poll(&ufds, 1, 5000);
 		if (poll_rc == 0)
                         errno = ETIMEDOUT;
-		else if (poll_rc == 1)
-			rc = 0;
+		else if (poll_rc == 1) {
+			/* poll successfully completed */
+			if (ufds.revents & POLLERR)
+				debug2("connect failure");
+			else
+				rc = 0;
+		} else
+			error("poll: %m");
 	}
 	fcntl(__fd, F_SETFL, flags);
 	return rc;
