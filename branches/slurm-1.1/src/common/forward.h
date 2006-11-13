@@ -44,6 +44,8 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/dist_tasks.h"
 
+#define FORWARD_EXTRA_STEP_WAIT_MS 5000
+
 /*
  * forward_init    - initilize forward structure 
  * IN: forward     - forward_t *   - struct to store forward info

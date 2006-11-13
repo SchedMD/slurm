@@ -1374,11 +1374,12 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		if(req->forward.cnt>0) {
 			/* figure out where we are in the tree and set
 			   the timeout for to wait for our childern
-			   correctly (timeout+1 sec per step)
+			   correctly
+			   (timeout+FORWARD_EXTRA_STEP_WAIT_MS sec per step)
 			   to let the child timeout */
 			
-			steps = req->forward.cnt/slurm_get_tree_width();
-			timeout = (5000*steps);
+			steps = (req->forward.cnt+1)/slurm_get_tree_width();
+			timeout = (FORWARD_EXTRA_STEP_WAIT_MS*steps);
 			steps++;
 			timeout += (req->forward.timeout*steps);
 		}
@@ -1666,11 +1667,12 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 		if(msg->forward.cnt>0) {
 			/* figure out where we are in the tree and set
 			   the timeout for to wait for our childern
-			   correctly (timeout+5 sec per step)
+			   correctly
+			   (timeout+FORWARD_EXTRA_STEP_WAIT_MS sec per step)
 			   to let the child timeout */
 			
-			steps = msg->forward.cnt/slurm_get_tree_width();
-			timeout = (5000*steps);
+			steps = (msg->forward.cnt+1)/slurm_get_tree_width();
+			timeout = (FORWARD_EXTRA_STEP_WAIT_MS*steps);
 			steps++;
 			timeout += (msg->forward.timeout*steps);
 		}
