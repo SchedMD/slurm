@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  - BLUEGENE - make sure the order of blocks read in from the bluegene.conf
    are created in that order (static mode).
+ - Fix logic in connect(), slurmctld fail-over was broken in v1.1.18.
 
 * Changes in SLURM 1.1.18
 =========================
