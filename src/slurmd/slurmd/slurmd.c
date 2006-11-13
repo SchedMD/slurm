@@ -2,7 +2,7 @@
  *  src/slurmd/slurmd/slurmd.c - main slurm node server daemon
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -90,6 +90,7 @@
 
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
+slurmd_conf_t * conf;
 
 /*
  * count of active threads

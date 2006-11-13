@@ -2,7 +2,7 @@
  *  src/slurmd/slurmstepd/slurmstepd.c - SLURM job-step manager.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> 
  *  and Christopher Morrone <morrone2@llnl.gov>.
@@ -73,6 +73,9 @@ static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
 int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
 };
+
+/* global variable */
+slurmd_conf_t * conf;
 
 int 
 main (int argc, char *argv[])

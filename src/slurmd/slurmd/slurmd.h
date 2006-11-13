@@ -2,7 +2,7 @@
  * src/slurmd/slurmd/slurmd.h - header for slurmd
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -126,7 +126,7 @@ typedef struct slurmd_config {
 	uint16_t        fast_schedule;	/* use config from file/slurmctld  */
 } slurmd_conf_t;
 
-slurmd_conf_t * conf;
+extern slurmd_conf_t * conf;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)
