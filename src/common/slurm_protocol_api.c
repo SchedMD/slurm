@@ -930,9 +930,8 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		orig_timeout = timeout;
 	}
 	if(steps) {
-		orig_timeout = timeout/steps;
+		orig_timeout = (timeout - (5000*(steps-1)))/steps;
 		steps--;
-		orig_timeout -= (5000*steps);
 	} 
 
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
