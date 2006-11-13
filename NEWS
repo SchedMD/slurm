@@ -106,6 +106,7 @@ documents those changes that are of interest to users and admins.
  - BLUEGENE - make sure the order of blocks read in from the bluegene.conf
    are created in that order (static mode).
  - Fix logic in connect(), slurmctld fail-over was broken in v1.1.18.
+ - Fix logic to calculate the correct timeout for fan out.
 
 * Changes in SLURM 1.1.18
 =========================
@@ -123,7 +124,6 @@ documents those changes that are of interest to users and admins.
  - Set "ENVIRONMENT=BATCH" environment variable for "srun --batch" jobs only.
  - Add logic to save/restore select/cons_res state information.
  - BLUEGENE - make all sprintf's into snprintf's
- - Fix timeout calculation to work correctly for fan out.
  - Fix for "srun -A" segfault on a node failure.
 
 * Changes in SLURM 1.1.17
