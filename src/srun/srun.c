@@ -124,6 +124,7 @@ static int   _print_script_exit_status(const char *argv0, int status);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
+static int   _slurm_debug_env_val (void);
 
 int srun(int ac, char **av)
 {
@@ -140,7 +141,8 @@ int srun(int ac, char **av)
 	env->nodeid = -1;
 	env->cli = NULL;
 	env->env = NULL;
-	
+
+	logopt.stderr_level += _slurm_debug_env_val();
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 
 	/* Initialize plugin stack, read options from plugins, etc.
@@ -422,6 +424,22 @@ int srun(int ac, char **av)
 	log_fini();
 	exit(exitcode);
 }
+
+static int _slurm_debug_env_val (void)
+{
+	long int level = 0;
+	const char *val;
+
+	if ((val = getenv ("SLURM_DEBUG"))) {
+		char *p;
+		if ((level = strtol (val, &p, 10)) < -LOG_LEVEL_INFO)
+			level = -LOG_LEVEL_INFO;
+		if (p && *p != '\0')
+			level = 0;
+	}
+	return ((int) level);
+}
+
 
 static char *
 _task_count_string (srun_job_t *job)
