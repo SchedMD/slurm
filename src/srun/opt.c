@@ -137,8 +137,6 @@
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x123
 
-opt_t opt;
-
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
