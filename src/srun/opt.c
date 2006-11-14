@@ -90,7 +90,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_DEBUG       0x03
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
@@ -1050,7 +1049,6 @@ env_vars_t env_vars[] = {
 	{"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
 	{"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
 	{"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-	{"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
 	{"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
 	{"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
 	{"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
@@ -1123,14 +1121,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid. ignoring...", e->var, val);
-		}
-		break;
-
-	case OPT_DEBUG:
-		if (val != NULL) {
-			_verbose = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) 
-				error("%s=%s invalid", e->var, val);
 		}
 		break;
 
