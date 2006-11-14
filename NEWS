@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     including deletion of all job steps (Chris Holmes, HP, slurm,patch).
  -- Recognize ISO-8859 input to srun as a script (for non-English scripts).
  -- switch/elan: Fix bug in propagation of ELAN_STATKEY environment variable.
+ -- Fix bug in slurmstepd IO code that can result in it spinning if a
+    certain error occurs.
 
 * Changes in SLURM 1.0.15
 =========================
