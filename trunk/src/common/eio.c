@@ -277,20 +277,11 @@ _poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[],
 	       List objList)
 {
 	int i;
-	ListIterator iter;
-	eio_obj_t *obj;
 
 	for (i = 0; i < nfds; i++) {
 		if (pfds[i].revents > 0)
 			_poll_handle_event(pfds[i].revents, map[i], objList);
 	}
-
-	iter = list_iterator_create(objList);
-	while ((obj = list_next(iter))) {
-		if (_is_writable(obj) && obj->ops->handle_write)
-			(*obj->ops->handle_write) (obj, objList);
-	}
-	list_iterator_destroy(iter);
 }
 
 static void

@@ -167,7 +167,11 @@ int srun(int ac, char **av)
 	/* reinit log with new verbosity (if changed by command line)
 	 */
 	if (_verbose || opt.quiet) {
-		logopt.stderr_level += _verbose;
+		/* If log level is already increased, only increment the
+		 *   level to the difference of _verbose an LOG_LEVEL_INFO
+		 */
+		if ((_verbose -= (logopt.stderr_level - LOG_LEVEL_INFO)) > 0)
+			logopt.stderr_level += _verbose;
 		logopt.stderr_level -= opt.quiet;
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);

@@ -187,6 +187,12 @@ _client_readable(eio_obj_t *obj)
 
 	if (client->in_eof) {
 		debug5("  false");
+		/* We no longer want the _client_read() function to handle
+		   errors on write now that the read side of the connection
+		   is closed.  Setting handle_read to NULL will result in
+		   the _client_write function handling errors, and closing
+		   down the write end of the connection. */
+		obj->ops->handle_read = NULL;
 		return false;
 	}
 
@@ -194,6 +200,7 @@ _client_readable(eio_obj_t *obj)
 		debug5("  false, shutdown");
 		shutdown(obj->fd, SHUT_RD);
 		client->in_eof = true;
+		return false;
 	}
 
 	if (client->in_msg != NULL
@@ -395,22 +402,16 @@ _client_write(eio_obj_t *obj, List objs)
 	buf = client->out_msg->data + (client->out_msg->length - client->out_remaining);
 again:
 	if ((n = write(obj->fd, buf, client->out_remaining)) < 0) {
-		if (errno == EINTR)
+		if (errno == EINTR) {
 			goto again;
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+		} else if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			debug5("_client_write returned EAGAIN");
 			return SLURM_SUCCESS;
-		}
-		if (errno == EPIPE) {
+		} else {
 			client->out_eof = true;
 			_free_all_outgoing_msgs(client->msg_queue, client->job);
 			return SLURM_SUCCESS;
 		}
-		/* Bad place for an error message, because it might try to write
-		   to exectly the fd that is having trouble, and hang.
-		   Not sure why it hangs... */
-		/* error("Get error on write() in _client_write: %m"); */
-		return SLURM_SUCCESS;
 	}
 	debug5("Wrote %d bytes to socket", n);
 	client->out_remaining -= n;
@@ -1146,12 +1147,18 @@ _send_eof_msg(struct task_read_info *out)
 	Buf packbuf;
 
 	debug4("Entering _send_eof_msg");
+	out->eof_msg_sent = true;
 	
 	if (_outgoing_buf_free(out->job)) {
 		msg = list_dequeue(out->job->free_outgoing);
 	} else {
-		debug5("  free_outgoing msg list empty, can't send eof_msg");
-		return;
+		/* eof message must be allowed to allocate new memory
+		   because _task_readable() will return "true" until
+		   the eof message is enqueued.  For instance, if
+		   a poll returns POLLHUP on the incoming task pipe,
+		   put there are no outgoing message buffers available,
+		   the slurmstepd will start spinning. */
+		msg = alloc_io_buf();
 	}
 
 	header.type = out->type;
@@ -1175,7 +1182,6 @@ _send_eof_msg(struct task_read_info *out)
 	}
 	list_iterator_destroy(clients);
 
-	out->eof_msg_sent = true;
 	debug4("Leaving  _send_eof_msg");
 }
 
