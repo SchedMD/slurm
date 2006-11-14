@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.20
+=========================
+
+
 * Changes in SLURM 1.1.19
 =========================
  - BLUEGENE - make sure the order of blocks read in from the bluegene.conf
