@@ -881,7 +881,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				    max_nodes, req_nodes, spec, 
 				    &record, test_only);
 	
-	if (rc == SLURM_SUCCESS) {
+	if(rc == SLURM_SUCCESS) {
 		if(!record) {
 			debug2("can run, but block not made");
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
@@ -898,7 +898,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     SELECT_DATA_NODE_CNT,
 					     &min_nodes);
 			
-			for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 				geo[i] = 0;
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_GEOMETRY, 
@@ -906,9 +906,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			
 		} else {
 			slurm_mutex_lock(&block_state_mutex);
-			if ((record->full_block == 0)
-			&&  (job_ptr->part_ptr->shared == 0))
-				error("Small block used in non-shared partition");
+
+			if((record->quarter != (uint16_t)NO_VAL)
+			   && (job_ptr->part_ptr->shared == 0))
+				error("Small block used in "
+				      "non-shared partition");
 
 			/* set the block id and info about block */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
@@ -930,21 +932,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
 					     &tmp16);
-
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLRTS_IMAGE,
-					     record->blrtsimage);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_LINUX_IMAGE,
-					     record->linuximage);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_MLOADER_IMAGE,
-					     record->mloaderimage);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_RAMDISK_IMAGE,
-					     record->ramdiskimage);
-
-			
 			slurm_mutex_unlock(&block_state_mutex);
 		}
 		if(test_only) {

@@ -56,17 +56,13 @@
 #include "src/slurmctld/slurmctld.h"
 #include "../block_allocator/block_allocator.h"
 
-typedef int lifecycle_type_t;
-
-enum block_lifecycle {DYNAMIC, STATIC};
-
 typedef enum bg_layout_type {
 	LAYOUT_STATIC,  /* no overlaps, except for full system block
 			   blocks never change */
 	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in 
 			   bluegene.conf file */
 	LAYOUT_DYNAMIC	/* slurm will make all blocks */
-}bg_layout_t;
+} bg_layout_t;
 
 typedef struct bg_record {
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
@@ -78,7 +74,6 @@ typedef struct bg_record {
 	int full_block;                 /* whether or not block is the full
 					   block */
 	uid_t user_uid;   		/* Owner of block uid	*/
-	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated block   */
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
@@ -209,7 +204,6 @@ extern int remove_all_users(char *bg_block_id, char *user_name);
 extern int set_block_user(bg_record_t *bg_record);
 
 /* Return strings representing blue gene data types */
-extern char *convert_lifecycle(lifecycle_type_t lifecycle);
 extern char *convert_conn_type(rm_connection_type_t conn_type);
 extern char *convert_node_use(rm_partition_mode_t pt);
 

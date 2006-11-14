@@ -235,7 +235,6 @@ extern void print_bg_record(bg_record_t* bg_record)
 	     bg_record->cpus_per_bp * bg_record->bp_count);
 	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y], 
 	     bg_record->geo[Z]);
-	info("\tlifecycle: %s", convert_lifecycle(bg_record->block_lifecycle));
 	info("\tconn_type: %s", convert_conn_type(bg_record->conn_type));
 	info("\tnode_use: %s", convert_node_use(bg_record->node_use));
 	if (bg_record->bitmap) {
@@ -468,7 +467,6 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->ramdiskimage = xstrdup(fir_record->ramdiskimage);
 
 	sec_record->user_uid = fir_record->user_uid;
-	sec_record->block_lifecycle = fir_record->block_lifecycle;
 	sec_record->state = fir_record->state;
 	sec_record->conn_type = fir_record->conn_type;
 	sec_record->node_use = fir_record->node_use;
@@ -836,14 +834,6 @@ extern int set_block_user(bg_record_t *bg_record)
 		xstrdup(slurmctld_conf.slurm_user_name);
 	slurm_conf_unlock();	
 	return rc;
-}
-
-extern char* convert_lifecycle(lifecycle_type_t lifecycle)
-{
-	if (lifecycle == DYNAMIC)
-		return "DYNAMIC";
-	else 
-		return "STATIC";
 }
 
 extern char* convert_conn_type(rm_connection_type_t conn_type)
@@ -2254,6 +2244,23 @@ static int _validate_config_nodes(void)
 			if(bg_record->nodecard !=
 			   init_bg_record->nodecard)
 				continue; /* wrong nodecard */
+			if(bg_record->blrtsimage &&
+			   strcasecmp(bg_record->blrtsimage,
+				      init_bg_record->blrtsimage)) 
+				continue;
+			if(bg_record->linuximage &&
+			   strcasecmp(bg_record->linuximage,
+				      init_bg_record->linuximage))
+				continue;
+			if(bg_record->mloaderimage &&
+			   strcasecmp(bg_record->mloaderimage,
+				      init_bg_record->mloaderimage))
+				continue;
+			if(bg_record->ramdiskimage &&
+			   strcasecmp(bg_record->ramdiskimage,
+				      init_bg_record->ramdiskimage))
+				continue;
+		       			
 			copy_bg_record(init_bg_record, 
 				       bg_record);
 			break;
