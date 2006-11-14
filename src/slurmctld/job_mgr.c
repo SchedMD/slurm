@@ -1125,7 +1125,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 			if ((job_ptr->details == NULL) ||
 			    (job_ptr->kill_on_node_fail) ||
 			    (job_ptr->node_cnt <= 1)) {
-				error("Killing job_id %u on failed node %s",
+				info("Killing job_id %u on failed node %s",
 				      job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
