@@ -50,10 +50,10 @@ int parse_select_type_param(char *select_type_parameters,
 				   select_type_plugin_info_t *param)
 {
 	int rc = SLURM_SUCCESS;	
-	char *str_parameters;
+	char *str_parameters, *st_str = NULL;
 
 
-	char *st_str = xstrdup(select_type_parameters);
+	st_str = xstrdup(select_type_parameters);
 	if ((str_parameters = strtok(st_str,",")) != NULL) {
 		do {
 			if (strcasecmp(str_parameters, "CR_Socket") == 0) {
@@ -71,14 +71,15 @@ int parse_select_type_param(char *select_type_parameters,
 			} else if (strcasecmp(str_parameters, "CR_CPU_Memory") == 0) {
 				*param = CR_CPU_MEMORY;
 			} else {
-				error( "Bad SelectType Parameter: %s\n", str_parameters );
+				error("Bad SelectType Parameter: %s\n", 
+				      str_parameters );
 				rc = SLURM_ERROR;
-				xfree(str_parameters);
+				xfree(st_str);
 				return rc;
 			}
 		} while ((str_parameters = strtok(NULL,",")));
 	}
-	xfree(str_parameters);
+	xfree(st_str);
 	
 	return rc;
 }
