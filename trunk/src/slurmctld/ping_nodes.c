@@ -237,9 +237,10 @@ void ping_nodes (void)
 		ping_agent_args->node_count++;
 	}
 
-	if (ping_agent_args->node_count == 0)
+	if (ping_agent_args->node_count == 0) {
+		hostlist_destroy(ping_agent_args->hostlist);
 		xfree (ping_agent_args);
-	else {
+	} else {
 		hostlist_uniq(ping_agent_args->hostlist);
 		hostlist_ranged_string(ping_agent_args->hostlist, 
 			sizeof(host_str), host_str);
@@ -248,9 +249,10 @@ void ping_nodes (void)
 		agent_queue_request(ping_agent_args);
 	}
 
-	if (reg_agent_args->node_count == 0)
+	if (reg_agent_args->node_count == 0) {
+		hostlist_destroy(reg_agent_args->hostlist);
 		xfree (reg_agent_args);
-	else {
+	} else {
 		hostlist_uniq(reg_agent_args->hostlist);
 		hostlist_ranged_string(reg_agent_args->hostlist, 
 			sizeof(host_str), host_str);
