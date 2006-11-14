@@ -50,10 +50,13 @@
 
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/srun/srun_job.h"
 
 int spank_init (slurmd_job_t *job);
 
 int spank_user (slurmd_job_t *job);
+
+int spank_local_user (srun_job_t *job, opt_t *, int argc, char **argv);
 
 int spank_user_task (slurmd_job_t *job, int taskid);
 
