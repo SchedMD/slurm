@@ -127,7 +127,6 @@ struct select_jobinfo {
 						 * dimensions, e.g. XYZ */
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
-	uint16_t node_use;	/* see enum node_use_type */
 	char *bg_block_id;	/* Blue Gene block ID */
 	uint16_t magic;		/* magic number */
 	uint16_t quarter;       /* for bg to tell which quarter of a small
@@ -617,8 +616,6 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->conn_type = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->node_use = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->quarter = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->nodecard = (int) uint16_tmp;
@@ -686,7 +683,6 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	}
 	(*jobinfo)->conn_type = SELECT_NAV;
 	(*jobinfo)->rotate = (uint16_t) NO_VAL;
-	(*jobinfo)->node_use = SELECT_NAV;
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
 	(*jobinfo)->quarter = (uint16_t) NO_VAL;
@@ -734,9 +730,6 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		break;
 	case SELECT_DATA_ROTATE:
 		jobinfo->rotate = *uint16;
-		break;
-	case SELECT_DATA_NODE_USE:
-		jobinfo->node_use = *uint16;
 		break;
 	case SELECT_DATA_CONN_TYPE:
 		jobinfo->conn_type = *uint16;
@@ -826,9 +819,6 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_ROTATE:
 		*uint16 = jobinfo->rotate;
 		break;
-	case SELECT_DATA_NODE_USE:
-		*uint16 = jobinfo->node_use;
-		break;
 	case SELECT_DATA_CONN_TYPE:
 		*uint16 = jobinfo->conn_type;
 		break;
@@ -914,7 +904,6 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		}
 		rc->conn_type = jobinfo->conn_type;
 		rc->rotate = jobinfo->rotate;
-		rc->node_use = jobinfo->node_use;
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
 		rc->quarter = jobinfo->quarter;

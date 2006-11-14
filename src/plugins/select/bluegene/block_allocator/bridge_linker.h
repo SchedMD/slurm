@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -86,6 +86,8 @@ extern status_t bridge_get_block(pm_partition_id_t pid,
 				 rm_partition_t **partition);
 extern status_t bridge_get_block_info(pm_partition_id_t pid, 
 				      rm_partition_t **partition);
+extern status_t bridge_modify_block(rm_partition_t *partition, 
+				    enum rm_modify_op op, const void *data);
 extern status_t bridge_set_block_owner(pm_partition_id_t, const char *);
 extern status_t bridge_add_block_user(pm_partition_id_t, const char *);
 extern status_t bridge_remove_block_user(pm_partition_id_t, const char *);

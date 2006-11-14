@@ -675,8 +675,59 @@ int read_bg_blocks()
 				bg_record->user_uid = pw_ent->pw_uid;
 			} 
 		}
-				
-		bg_record->block_lifecycle = STATIC;
+		
+		/* get the images of the block */
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionBlrtsImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionBlrtsImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No BlrtsImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->blrtsimage = xstrdup(user_name);
+
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionLinuxImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionLinuxImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No LinuxImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->linuximage = xstrdup(user_name);
+
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionMloaderImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionMloaderImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No MloaderImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->mloaderimage = xstrdup(user_name);
+
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionRamdiskImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No RamdiskImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->ramdiskimage = xstrdup(user_name);
 						
 	clean_up:	
 		if (bg_recover

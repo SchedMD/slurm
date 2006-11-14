@@ -216,7 +216,6 @@ enum select_data_type {
 	SELECT_DATA_START,	/* data-> uint16_t start[SYSTEM_DIMENSIONS] */
 	SELECT_DATA_GEOMETRY,	/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
 	SELECT_DATA_ROTATE,	/* data-> uint16_t rotate */
-	SELECT_DATA_NODE_USE,	/* data-> uint16_t node_use */
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
 	SELECT_DATA_BLOCK_ID,	/* data-> char bg_block_id */
 	SELECT_DATA_QUARTER,	/* data-> uint16_t quarter */
