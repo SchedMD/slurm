@@ -128,10 +128,10 @@ typedef struct {
 
 /* Global variables */
 extern rm_BGL_t *bg;
-extern char *bluegene_blrts;
-extern char *bluegene_linux;
-extern char *bluegene_mloader;
-extern char *bluegene_ramdisk;
+extern char *default_blrtsimage;
+extern char *default_linuximage;
+extern char *default_mloaderimage;
+extern char *default_ramdiskimage;
 extern char *bridge_api_file;
 extern bg_layout_t bluegene_layout_mode;
 extern uint16_t bluegene_numpsets;

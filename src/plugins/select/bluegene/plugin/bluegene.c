@@ -1869,6 +1869,7 @@ extern int read_bg_conf(void)
 			  &count, "BlrtsImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_blrtsimage_list, image_array[i]);
+			image_array[i] = NULL;
 		}
 	}
 	if (!s_p_get_string(&default_blrtsimage, "DefaultBlrtsImage", tbl)) {
@@ -1884,13 +1885,20 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set DefaultBlrtsImage",
 		     default_blrtsimage); 
 	} else {
-		/* we might want to add the default to the list */
+		debug3("default BlrtsImage %s", default_blrtsimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_blrtsimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_blrtsimage_list, image);
 	}
-
+		
 	if (s_p_get_array((void ***)&image_array, 
 			  &count, "LinuxImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_linuximage_list, image_array[i]);
+			image_array[i] = NULL;
 		}
 	}
 	if (!s_p_get_string(&default_linuximage, "DefaultLinuxImage", tbl)) {
@@ -1906,13 +1914,20 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set DefaultLinuxImage",
 		     default_linuximage); 
 	} else {
-		
+		debug3("default LinuxImage %s", default_linuximage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_linuximage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_linuximage_list, image);		
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
 			  &count, "MloaderImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_mloaderimage_list, image_array[i]);
+			image_array[i] = NULL;
 		}
 	}
 	if (!s_p_get_string(&default_mloaderimage,
@@ -1929,13 +1944,20 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set DefaultMloaderImage",
 		     default_mloaderimage); 
 	} else {
-		
+		debug3("default MloaderImage %s", default_mloaderimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_mloaderimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_mloaderimage_list, image);		
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
 			  &count, "RamDiskImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_ramdiskimage_list, image_array[i]);
+			image_array[i] = NULL;
 		}
 	}
 	if (!s_p_get_string(&default_ramdiskimage,
@@ -1952,7 +1974,13 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set DefaultRamDiskImage",
 		     default_ramdiskimage); 
 	} else {
-		
+		debug3("default RamDiskImage %s", default_ramdiskimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_ramdiskimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_ramdiskimage_list, image);		
 	}
 
 	if (!s_p_get_uint16(&bluegene_numpsets, "Numpsets", tbl))
@@ -2900,8 +2928,7 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		bg_record->ramdiskimage = xstrdup(blockreq->ramdiskimage);
 	else
 		bg_record->ramdiskimage = xstrdup(default_ramdiskimage);
-	info("default is %s", bg_record->blrtsimage);
-	
+		
 	if(bg_record->conn_type != SELECT_SMALL) {
 		/* this needs to be an append so we keep things in the
 		   order we got them, they will be sorted later */
