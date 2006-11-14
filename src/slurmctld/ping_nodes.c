@@ -245,7 +245,7 @@ void ping_nodes (void)
 
 		/* Do not keep pinging down nodes since this can induce
 		 * huge delays in hierarchical communication fail-over */
-		if (no_resp_flag)
+		if ((no_resp_flag) && (base_state == NODE_STATE_DOWN))
 			continue;
 
 		(void) hostlist_push_host(ping_hostlist, node_ptr->name);
