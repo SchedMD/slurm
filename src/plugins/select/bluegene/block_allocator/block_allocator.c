@@ -321,6 +321,7 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 			       image_group->gid);
 			list_append(n->groups, image_group);
 		}
+		xfree(tmp);
 	}
 	s_p_hashtbl_destroy(tbl);
 
