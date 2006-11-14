@@ -1116,7 +1116,7 @@ extern int select_p_state_restore(char *dir_name)
 {
 	int error_code = SLURM_SUCCESS;
 	int state_fd, i;
-	char *file_name;
+	char *file_name = NULL;
 	struct select_cr_job *job;
 	Buf buffer = NULL;
 	uint16_t len16;
@@ -1138,6 +1138,7 @@ extern int select_p_state_restore(char *dir_name)
 		error ("Can't restore state, error opening file %s",
 			file_name);
 		error ("Starting cons_res with clean slate");
+		xfree(file_name);
 		return SLURM_SUCCESS;
 	}
 
@@ -1148,6 +1149,7 @@ extern int select_p_state_restore(char *dir_name)
 			file_name);
 		error ("Starting cons_res with clean slate");
 		xfree(data);
+		xfree(file_name);
 		return SLURM_SUCCESS;
 	}
 
@@ -1165,7 +1167,7 @@ extern int select_p_state_restore(char *dir_name)
 	    (restore_plugin_crtype  != cr_type) ||
 	    (restore_pstate_version != pstate_version)) { 
 		error ("Can't restore state, state version mismtach: "
-			"saw %s/%d/%d/%d, expected %s/%d/%d/%d",
+			"saw %s/%u/%u/%u, expected %s/%u/%u/%u",
 			restore_plugin_type,
 			restore_plugin_version,
 			restore_plugin_crtype,
@@ -1178,6 +1180,7 @@ extern int select_p_state_restore(char *dir_name)
 		xfree(restore_plugin_type);
 		if (buffer)
 			free_buf(buffer);
+		xfree(file_name);
 		return SLURM_SUCCESS;
 	}
 
@@ -1211,7 +1214,8 @@ extern int select_p_state_restore(char *dir_name)
 		uint16_t have_alloc_cores = 0;
 		/*** don't restore prev_select_node_ptr[i].node_ptr ***/
 		prev_select_node_ptr[i].node_ptr = NULL;
-		safe_unpackstr_xmalloc(&(prev_select_node_ptr[i].name), &len16, buffer);
+		safe_unpackstr_xmalloc(&(prev_select_node_ptr[i].name), 
+				       &len16, buffer);
 		safe_unpack16(&prev_select_node_ptr[i].alloc_lps, buffer);
 		safe_unpack16(&prev_select_node_ptr[i].alloc_sockets, buffer);
 		safe_unpack32(&prev_select_node_ptr[i].alloc_memory, buffer);
@@ -1230,6 +1234,7 @@ extern int select_p_state_restore(char *dir_name)
         if (buffer)
                 free_buf(buffer);
         xfree(restore_plugin_type);
+	xfree(file_name);
 
 	return SLURM_SUCCESS;
 
