@@ -225,8 +225,7 @@ int srun(int ac, char **av)
 		}
 		if (_become_user () < 0)
 			info ("Warning: unable to assume uid=%lu\n", opt.uid);
-		if (_verbose)
-			_print_job_information(resp);
+		_print_job_information(resp);
 		
 		job = job_create_allocation(resp);
 		if(!job)
@@ -305,8 +304,7 @@ int srun(int ac, char **av)
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
-		if (_verbose)
-			_print_job_information(resp);
+		_print_job_information(resp);
 		job = job_create_allocation(resp);
 		if(!job)
 			exit(1);
@@ -554,7 +552,7 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 		else
 			break;
 	}
-	info("%s",job_details);
+	verbose("%s",job_details);
 }
 
 
