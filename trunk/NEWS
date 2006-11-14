@@ -4,8 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.0-pre7
 =============================
  -- BLUEGENE - added configurable images for bluegene block creation.
-    (No documentation out side of srun and sbatch just yet,
-     no sercurity either)
+    (No documentation out side of srun and sbatch just yet)
 
 * Changes in SLURM 1.2.0-pre6
 =============================

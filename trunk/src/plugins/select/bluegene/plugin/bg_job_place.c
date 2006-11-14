@@ -99,6 +99,8 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	ListIterator itr2;
 	bg_record_t *record = NULL;
 	bg_record_t *found_record = NULL;
+	image_t *image = NULL;
+	image_group_t *image_group = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t start[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
@@ -110,6 +112,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	int rot_cnt = 0;
 	int created = 0;
 	int found = 0;
+	int allow = 0;
 	uint32_t max_procs = NO_VAL;
 	List lists_of_lists = NULL;
 	List temp_list = NULL;
@@ -122,6 +125,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	char *mloaderimage;            /* mloaderImage for this request */
 	char *ramdiskimage;            /* RamDiskImage for this request */
 	int rc = SLURM_SUCCESS;
+
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
 			* procs_per_node;
@@ -204,12 +208,145 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLRTS_IMAGE, &blrtsimage);
+	if(!blrtsimage)
+		blrtsimage = xstrdup(default_blrtsimage);
+	
+	allow = 0;
+	itr = list_iterator_create(bg_blrtsimage_list);
+	while((image = list_next(itr))) {
+		if(!strcasecmp(blrtsimage, image->name)
+		   || !strcasecmp("*", image->name)) {
+			if(image->def) {
+				allow = 1;
+				break;
+			}
+			if(!image->groups || !list_count(image->groups)) {
+				allow = 1;
+				break;
+			}				
+			itr2 = list_iterator_create(image->groups);
+			while((image_group = list_next(itr))) {
+				if(image_group->gid == job_ptr->group_id) {
+						allow = 1;
+						break;
+				}
+			}
+			list_iterator_destroy(itr2);
+			if(allow)
+				break;	
+		}
+	}
+	list_iterator_destroy(itr);
+	if(!allow) {
+		error("User %u:%u is not allowed to use BlrtsImage %s",
+		      blrtsimage);
+		return SLURM_ERROR;
+	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_LINUX_IMAGE, &linuximage);
+	if(!linuximage)
+		linuximage = xstrdup(default_linuximage);
+	allow = 0;
+	itr = list_iterator_create(bg_linuximage_list);
+	while((image = list_next(itr))) {
+		if(!strcasecmp(linuximage, image->name)
+		   || !strcasecmp("*", image->name)) {
+			if(image->def) {
+				allow = 1;
+				break;
+			}
+			if(!image->groups || !list_count(image->groups)) {
+				allow = 1;
+				break;
+			}				
+			itr2 = list_iterator_create(image->groups);
+			while((image_group = list_next(itr))) {
+				if(image_group->gid == job_ptr->group_id) {
+						allow = 1;
+						break;
+				}
+			}
+			list_iterator_destroy(itr2);
+			if(allow)
+				break;	
+		}
+	}
+	list_iterator_destroy(itr);
+	if(!allow) {
+		error("User %u:%u is not allowed to use LinuxImage %s",
+		      linuximage);
+		return SLURM_ERROR;
+	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MLOADER_IMAGE, &mloaderimage);
+	if(!mloaderimage)
+		mloaderimage = xstrdup(default_mloaderimage);
+	allow = 0;
+	itr = list_iterator_create(bg_mloaderimage_list);
+	while((image = list_next(itr))) {
+		if(!strcasecmp(mloaderimage, image->name)
+		   || !strcasecmp("*", image->name)) {
+			if(image->def) {
+				allow = 1;
+				break;
+			}
+			if(!image->groups || !list_count(image->groups)) {
+				allow = 1;
+				break;
+			}				
+			itr2 = list_iterator_create(image->groups);
+			while((image_group = list_next(itr))) {
+				if(image_group->gid == job_ptr->group_id) {
+						allow = 1;
+						break;
+				}
+			}
+			list_iterator_destroy(itr2);
+			if(allow)
+				break;	
+		}
+	}
+	list_iterator_destroy(itr);
+	if(!allow) {
+		error("User %u:%u is not allowed to use MloaderImage %s",
+		      mloaderimage);
+		return SLURM_ERROR;
+	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_RAMDISK_IMAGE, &ramdiskimage);
+	if(!ramdiskimage)
+		ramdiskimage = xstrdup(default_ramdiskimage);
+	allow = 0;
+	itr = list_iterator_create(bg_ramdiskimage_list);
+	while((image = list_next(itr))) {
+		if(!strcasecmp(ramdiskimage, image->name)
+		   || !strcasecmp("*", image->name)) {
+			if(image->def) {
+				allow = 1;
+				break;
+			}
+			if(!image->groups || !list_count(image->groups)) {
+				allow = 1;
+				break;
+			}				
+			itr2 = list_iterator_create(image->groups);
+			while((image_group = list_next(itr))) {
+				if(image_group->gid == job_ptr->group_id) {
+						allow = 1;
+						break;
+				}
+			}
+			list_iterator_destroy(itr2);
+			if(allow)
+				break;	
+		}
+	}
+	list_iterator_destroy(itr);
+	if(!allow) {
+		error("User %u:%u is not allowed to use RamDiskImage %s",
+		      ramdiskimage);
+		return SLURM_ERROR;
+	}
 	
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
 		target_size = 1;
