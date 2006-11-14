@@ -2363,22 +2363,23 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
 					     SELECT_DATA_ROTATE, 
 					     &(job_desc_ptr->rotate));
-		if (job_desc_ptr->blrtsimage)
+		if (job_desc_ptr->blrtsimage) {
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
 					     SELECT_DATA_BLRTS_IMAGE, 
-					     &(job_desc_ptr->blrtsimage));
+					     job_desc_ptr->blrtsimage);
+		}
 		if (job_desc_ptr->linuximage)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
 					     SELECT_DATA_BLRTS_IMAGE, 
-					     &(job_desc_ptr->linuximage));
+					     job_desc_ptr->linuximage);
 		if (job_desc_ptr->mloaderimage)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
 					     SELECT_DATA_BLRTS_IMAGE, 
-					     &(job_desc_ptr->mloaderimage));
+					     job_desc_ptr->mloaderimage);
 		if (job_desc_ptr->ramdiskimage)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
 					     SELECT_DATA_BLRTS_IMAGE, 
-					     &(job_desc_ptr->ramdiskimage));
+					     job_desc_ptr->ramdiskimage);
 		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
 		select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
 	}
