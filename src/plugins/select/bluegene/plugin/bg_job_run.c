@@ -328,7 +328,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	rc = 0;
 	if(bg_update_ptr->blrtsimage 
 	   && strcasecmp(bg_update_ptr->blrtsimage, bg_record->blrtsimage)) {
-		debug3("changeing BlrtsImage from %s to %s",
+		debug3("changing BlrtsImage from %s to %s",
 		       bg_record->blrtsimage, bg_update_ptr->blrtsimage);
 		xfree(bg_record->blrtsimage);
 		bg_record->blrtsimage = xstrdup(bg_update_ptr->blrtsimage);
@@ -336,7 +336,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}
 	if(bg_update_ptr->linuximage
 	   && strcasecmp(bg_update_ptr->linuximage, bg_record->linuximage)) {
-		debug3("changeing LinuxImage from %s to %s",
+		debug3("changing LinuxImage from %s to %s",
 		       bg_record->linuximage, bg_update_ptr->linuximage);
 		xfree(bg_record->linuximage);
 		bg_record->linuximage = xstrdup(bg_update_ptr->linuximage);
@@ -345,7 +345,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_update_ptr->mloaderimage
 	   && strcasecmp(bg_update_ptr->mloaderimage,
 			 bg_record->mloaderimage)) {
-		debug3("changeing MloaderImage from %s to %s",
+		debug3("changing MloaderImage from %s to %s",
 		       bg_record->mloaderimage, bg_update_ptr->mloaderimage);
 		xfree(bg_record->mloaderimage);
 		bg_record->mloaderimage = xstrdup(bg_update_ptr->mloaderimage);
@@ -354,7 +354,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_update_ptr->ramdiskimage
 	   && strcasecmp(bg_update_ptr->ramdiskimage,
 			 bg_record->ramdiskimage)) {
-		debug3("changeing RamDiskImage from %s to %s",
+		debug3("changing RamDiskImage from %s to %s",
 		       bg_record->ramdiskimage, bg_update_ptr->ramdiskimage);
 		xfree(bg_record->ramdiskimage);
 		bg_record->ramdiskimage = xstrdup(bg_update_ptr->ramdiskimage);
