@@ -439,8 +439,8 @@ static void _xfree_select_nodes(struct node_cr_record *ptr, int select_node_cnt)
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {
-		if (ptr[i].alloc_cores)
-			xfree(ptr[i].alloc_cores);
+		xfree(ptr[i].alloc_cores);
+		xfree(ptr[i].name);
 	}
 	xfree(ptr);
 }
@@ -1213,7 +1213,6 @@ extern int select_p_state_restore(char *dir_name)
 		uint16_t nsockets = 0;
 		uint16_t have_alloc_cores = 0;
 		/*** don't restore prev_select_node_ptr[i].node_ptr ***/
-		prev_select_node_ptr[i].node_ptr = NULL;
 		safe_unpackstr_xmalloc(&(prev_select_node_ptr[i].name), 
 				       &len16, buffer);
 		safe_unpack16(&prev_select_node_ptr[i].alloc_lps, buffer);
@@ -1225,8 +1224,6 @@ extern int select_p_state_restore(char *dir_name)
 			safe_unpack16_array(
 			    	&prev_select_node_ptr[i].alloc_cores,
 				&len32, buffer);
-		} else {
-			prev_select_node_ptr[i].alloc_cores = NULL;
 		}
 	}
 
@@ -1289,7 +1286,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
-		select_node_ptr[i].name     = node_ptr[i].name;
+		select_node_ptr[i].name     = xstrdup(node_ptr[i].name);
 		select_node_ptr[i].alloc_lps      = 0;
 		select_node_ptr[i].alloc_sockets  = 0;
 		select_node_ptr[i].alloc_memory   = 0;
@@ -1300,9 +1297,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			select_node_ptr[i].alloc_cores    = 
 				xmalloc(sizeof(int) * 
 					select_node_ptr[i].node_ptr->sockets);
-			for (j = 0; j < select_node_ptr[i].node_ptr->sockets; j++) {
-				select_node_ptr[i].alloc_cores[j] = 0;
-			}
 		}
 
 		/* Restore any previous node data */
