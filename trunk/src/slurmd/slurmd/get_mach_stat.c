@@ -534,14 +534,14 @@ get_cpuinfo(uint16_t numproc,
 			mincpuid = MIN(mincpuid, val);
 		} else if (chk_cpuinfo_uint16(buffer, "physical id", &val)) {
 			cpuinfo[curcpu].physid = val;
-			if (cpuinfo[curcpu].physcnt == 0) numphys++;
-			cpuinfo[curcpu].physcnt++;
+			if (cpuinfo[val].physcnt == 0) numphys++;
+			cpuinfo[val].physcnt++;
 			maxphysid = MAX(maxphysid, val);
 			minphysid = MIN(minphysid, val);
 		} else if (chk_cpuinfo_uint16(buffer, "core id", &val)) {
 			cpuinfo[curcpu].coreid = val;
-			if (cpuinfo[curcpu].corecnt == 0) numcores++;
-			cpuinfo[curcpu].corecnt++;
+			if (cpuinfo[val].corecnt == 0) numcores++;
+			cpuinfo[val].corecnt++;
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
 		} else if (chk_cpuinfo_uint16(buffer, "siblings", &val)) {
