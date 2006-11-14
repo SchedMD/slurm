@@ -5,7 +5,6 @@ documents those changes that are of interest to users and admins.
 =============================
  -- BLUEGENE - added configurable images for bluegene block creation.
     (No documentation out side of srun and sbatch just yet)
- -- patch from Anne_marie.Wunderlin@bull.com slurmd segmentation fault
 
 * Changes in SLURM 1.2.0-pre6
 =============================
