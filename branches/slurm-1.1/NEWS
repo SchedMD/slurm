@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.20
 =========================
-
+ - Added new SPANK plugin hook slurm_spank_local_user_init() called
+   from srun after node allocation.
 
 * Changes in SLURM 1.1.19
 =========================

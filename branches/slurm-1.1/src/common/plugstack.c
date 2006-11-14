@@ -52,6 +52,7 @@
 #include "src/common/optz.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/srun/srun_job.h"
 
 #include <slurm/spank.h>
 
@@ -60,6 +61,7 @@
 
 struct spank_plugin_operations {
 	spank_f *init;
+	spank_f *local_user_init;
 	spank_f *user_init;
 	spank_f *user_task_init;
 	spank_f *task_post_fork;
@@ -67,9 +69,10 @@ struct spank_plugin_operations {
 	spank_f *exit;
 };
 
-const int n_spank_syms = 6;
+const int n_spank_syms = 7;
 const char *spank_syms[] = {
 	"slurm_spank_init",
+	"slurm_spank_local_user_init",
 	"slurm_spank_user_init",
 	"slurm_spank_task_init",
 	"slurm_spank_task_post_fork",
@@ -126,6 +129,7 @@ typedef enum spank_handle_type {
  */
 typedef enum step_fn {
 	SPANK_INIT = 0,
+	LOCAL_USER_INIT,
 	STEP_USER_INIT,
 	STEP_USER_TASK_INIT,
 	STEP_TASK_POST_FORK,
@@ -138,10 +142,16 @@ struct spank_handle {
 	int                  magic;  /* Magic identifier to ensure validity. */
 	spank_handle_type_t  type;   /* remote(slurmd) || local(srun)        */
 	step_fn_t            phase;  /* Which spank fn are we called from?   */
-	slurmd_job_t *       job;    /* Reference to current slurmd job      */
+	void               * job;    /* Reference to current srun|slurmd job */
 	slurmd_task_info_t * task;   /* Reference to current task (if valid) */
 };
 
+struct srun_job_info {
+	srun_job_t *job;
+	opt_t      *opt;
+	int         argc;
+	char      **argv;
+};
 
 /*
  *  SPANK plugins stack
@@ -411,7 +421,7 @@ static int _spank_stack_create(const char *path, List * listp)
 }
 
 static int
-_spank_handle_init(struct spank_handle *spank, slurmd_job_t * job,
+_spank_handle_init(struct spank_handle *spank, void * arg,
 		   int taskid, step_fn_t fn)
 {
 	memset(spank, 0, sizeof(*spank));
@@ -419,11 +429,15 @@ _spank_handle_init(struct spank_handle *spank, slurmd_job_t * job,
 
 	spank->phase = fn;
 
-	if (job != NULL) {
-		spank->type = S_TYPE_REMOTE;
-		spank->job = job;
-		if (taskid >= 0)
-			spank->task = job->task[taskid];
+	if (arg != NULL) {
+		spank->job = arg;
+		if (fn == LOCAL_USER_INIT)
+			spank->type = S_TYPE_LOCAL;
+		else {
+			spank->type = S_TYPE_REMOTE;
+			if (taskid >= 0)
+				spank->task = ((slurmd_job_t *) arg)->task[taskid];
+		}
 	} else {
 		spank->type = S_TYPE_LOCAL;
 	}
@@ -435,6 +449,8 @@ static const char *_step_fn_name(step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return ("init");
+	case LOCAL_USER_INIT:
+		return ("local_user_init");
 	case STEP_USER_INIT:
 		return ("user_init");
 	case STEP_USER_TASK_INIT:
@@ -451,7 +467,7 @@ static const char *_step_fn_name(step_fn_t type)
 	return ("unknown");
 }
 
-static int _do_call_stack(step_fn_t type, slurmd_job_t * job, int taskid)
+static int _do_call_stack(step_fn_t type, void * job, int taskid)
 {
 	int rc = 0;
 	ListIterator i;
@@ -480,6 +496,14 @@ static int _do_call_stack(step_fn_t type, slurmd_job_t * job, int taskid)
 						      sp->argv);
 				debug2("spank: %s: %s = %d\n", name,
 				       fn_name, rc);
+			}
+			break;
+		case LOCAL_USER_INIT:
+			if (sp->ops.local_user_init) {
+				rc = (*sp->ops.local_user_init) (spank, sp->ac, 
+			 				         sp->argv);
+				debug2("spank: %s: %s = %d\n", name,
+						fn_name, rc);
 			}
 			break;
 		case STEP_USER_INIT:
@@ -565,9 +589,22 @@ int spank_init(slurmd_job_t * job)
 	return (0);
 }
 
+
 int spank_user(slurmd_job_t * job)
 {
 	return (_do_call_stack(STEP_USER_INIT, job, -1));
+}
+
+int spank_local_user(srun_job_t * job, opt_t *opt, int ac, char **av)
+{
+	struct srun_job_info si[1];
+
+	si->job  = job;
+	si->opt  = opt;
+	si->argc = ac;
+	si->argv = av;
+
+	return (_do_call_stack(LOCAL_USER_INIT, si, -1));
 }
 
 int spank_user_task(slurmd_job_t * job, int taskid)
@@ -980,8 +1017,47 @@ global_to_local_id (slurmd_job_t *job, uint32_t gid, uint32_t *p2uint32)
 	
 
 /*
+ *  Return 1 if spank_item_t is valid for S_TYPE_LOCAL
+ */
+static int valid_in_local_context (spank_item_t item)
+{
+	int rc = 0;
+	switch (item) {
+	case S_JOB_UID: 
+	case S_JOB_GID:
+	case S_JOB_ID:
+	case S_JOB_STEPID:
+	case S_JOB_ARGV:
+	case S_JOB_ENV:
+	case S_JOB_TOTAL_TASK_COUNT:
+	case S_JOB_NNODES:
+		rc = 1;
+		break;
+	default:
+		rc = 0;
+	}
+	return (rc);
+}
+
+
+/*
  *  Global functions for SPANK plugins
  */
+
+int spank_symbol_supported (const char *name)
+{
+	int i;
+
+	if ((name == NULL))
+		return (-1);
+
+	for (i = 0; i < n_spank_syms; i++) {
+		if (strcmp (spank_syms [i], name) == 0)
+			return (1);
+	}
+
+	return (0);
+}
 
 int spank_remote(spank_t spank)
 {
@@ -1006,70 +1082,102 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	pid_t  pid;
 	char ***p2argv;
 	slurmd_task_info_t *task;
-	va_list vargs; spank_err_t rc = ESPANK_SUCCESS;
+	slurmd_job_t  *slurmd_job = NULL;
+	struct srun_job_info *srun_job = NULL;
+	va_list vargs; 
+	spank_err_t rc = ESPANK_SUCCESS;
 
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
-	if (spank->type != S_TYPE_REMOTE)
+	if ( (spank->type != S_TYPE_REMOTE) 
+	  && (!valid_in_local_context(item)))
 		return (ESPANK_NOT_REMOTE);
 
 	if (spank->job == NULL)
 		return (ESPANK_BAD_ARG);
 
+	if (spank->type == S_TYPE_LOCAL)
+		srun_job = spank->job;
+	else
+		slurmd_job = spank->job;
+
 	va_start(vargs, item);
 	switch (item) {
 	case S_JOB_UID:
 		p2uid = va_arg(vargs, uid_t *);
-		*p2uid = spank->job->uid;
+		if (spank->type == S_TYPE_LOCAL)
+			*p2uid = srun_job->opt->uid;
+		else
+			*p2uid = slurmd_job->uid;
 		break;
 	case S_JOB_GID:
 		p2gid = va_arg(vargs, gid_t *);
-		*p2gid = spank->job->gid;
+		if (spank->type == S_TYPE_LOCAL)
+			*p2gid = srun_job->opt->gid;
+		else
+			*p2gid = slurmd_job->gid;
 		break;
 	case S_JOB_SUPPLEMENTARY_GIDS:
 		p2gids = va_arg(vargs, gid_t **);
 		p2int = va_arg(vargs, int *);
-		*p2gids = spank->job->gids;
-		*p2int = spank->job->ngids;
+		*p2gids = slurmd_job->gids;
+		*p2int = slurmd_job->ngids;
 		break;
 	case S_JOB_ID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = spank->job->jobid;
+		if (spank->type == S_TYPE_LOCAL)
+			*p2uint32 = srun_job->job->jobid;
+		else
+			*p2uint32 = slurmd_job->jobid;
 		break;
 	case S_JOB_STEPID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = spank->job->stepid;
+		if (spank->type == S_TYPE_LOCAL)
+			*p2uint32 = srun_job->job->stepid;
+		else
+			*p2uint32 = slurmd_job->stepid;
 		break;
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = spank->job->nnodes;
+		if (spank->type == S_TYPE_LOCAL)
+			*p2uint32 = srun_job->job->step_layout->num_hosts;
+		else
+			*p2uint32 = slurmd_job->nnodes;
 		break;
 	case S_JOB_NODEID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = spank->job->nodeid;
+		*p2uint32 = slurmd_job->nodeid;
 		break;
 	case S_JOB_LOCAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = spank->job->ntasks;
+		*p2uint32 = slurmd_job->ntasks;
 		break;
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = spank->job->nprocs;
+		if (spank->type == S_TYPE_LOCAL)
+			*p2uint32 = srun_job->job->step_layout->num_tasks;
+		else
+			*p2uint32 = slurmd_job->nprocs;
 		break;
 	case S_JOB_NCPUS:
 		p2uint16 = va_arg(vargs, uint16_t *);
-		*p2uint16 = spank->job->cpus;
+		*p2uint16 = slurmd_job->cpus;
 		break;
 	case S_JOB_ARGV:
 		p2int = va_arg(vargs, int *);
-		*p2int = spank->job->argc;
 		p2argv = va_arg(vargs, char ***);
-		*p2argv = spank->job->argv;
+		if (spank->type == S_TYPE_LOCAL) {
+			*p2int = srun_job->argc;
+			*p2argv = srun_job->argv;
+		} else {
+			*p2int = slurmd_job->argc;
+			*p2argv = slurmd_job->argv;
+		}
 		break;
 	case S_JOB_ENV:
 		p2argv = va_arg(vargs, char ***);
-		*p2argv = spank->job->env;
+		*p2argv = slurmd_job->env;
 		break;
 	case S_TASK_ID:
 		p2int = va_arg(vargs, int *);
@@ -1112,7 +1220,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 
 		if (!tasks_execd(spank))
 			rc = ESPANK_NOT_EXECD;
-		else if (!(task = job_task_info_by_pid (spank->job, pid)))
+		else if (!(task = job_task_info_by_pid (slurmd_job, pid)))
 			rc = ESPANK_NOEXIST;
 		else 
 			*p2uint32 = task->gtid;
@@ -1124,7 +1232,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 
 		if (!tasks_execd(spank))
 			rc = ESPANK_NOT_EXECD;
-		else if (!(task = job_task_info_by_pid (spank->job, pid)))
+		else if (!(task = job_task_info_by_pid (slurmd_job, pid)))
 			rc = ESPANK_NOEXIST;
 		else 
 			*p2uint32 = task->id;
@@ -1134,15 +1242,15 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		*p2uint32 = (uint32_t) -1;
 
-		if (uint32 <= spank->job->ntasks) 
-			*p2uint32 = spank->job->task[uint32]->gtid;
+		if (uint32 <= slurmd_job->ntasks) 
+			*p2uint32 = slurmd_job->task[uint32]->gtid;
 		else 
 			rc = ESPANK_NOEXIST;
 		break;
 	case S_JOB_GLOBAL_TO_LOCAL_ID:
 		uint32 = va_arg(vargs, uint32_t);
 		p2uint32 = va_arg(vargs, uint32_t *);
-		rc = global_to_local_id (spank->job, uint32, p2uint32);
+		rc = global_to_local_id (slurmd_job, uint32, p2uint32);
 		break;
 	default:
 		rc = ESPANK_BAD_ARG;
@@ -1169,7 +1277,7 @@ spank_err_t spank_getenv(spank_t spank, const char *var, char *buf,
 	if (len < 0)
 		return (ESPANK_BAD_ARG);
 
-	if (!(val = getenvp(spank->job->env, var)))
+	if (!(val = getenvp(((slurmd_job_t *) spank->job)->env, var)))
 		return (ESPANK_ENV_NOEXIST);
 
 	if (strlcpy(buf, val, len) >= len)
@@ -1181,6 +1289,8 @@ spank_err_t spank_getenv(spank_t spank, const char *var, char *buf,
 spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 			 int overwrite)
 {
+	slurmd_job_t * job;
+
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
@@ -1193,10 +1303,12 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 	if ((var == NULL) || (val == NULL))
 		return (ESPANK_BAD_ARG);
 
-	if (getenvp(spank->job->env, var) && !overwrite)
+	job = spank->job;
+
+	if (getenvp(job->env, var) && !overwrite)
 		return (ESPANK_ENV_EXISTS);
 
-	if (setenvf(&spank->job->env, var, "%s", val) < 0)
+	if (setenvf(&job->env, var, "%s", val) < 0)
 		return (ESPANK_ERROR);
 
 	return (ESPANK_SUCCESS);
@@ -1216,7 +1328,7 @@ spank_err_t spank_unsetenv (spank_t spank, const char *var)
 	if (var == NULL)
 		return (ESPANK_BAD_ARG);
 
-	unsetenvp(spank->job->env, var);
+	unsetenvp(((slurmd_job_t *) spank->job)->env, var);
 	
 	return (ESPANK_SUCCESS);
 }
