@@ -1051,6 +1051,7 @@ static void _excise_node_from_job(struct job_record *job_ptr,
 				  struct node_record *node_ptr)
 {
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
+	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
 	xfree(job_ptr->cpus_per_node);
 	xfree(job_ptr->cpu_count_reps);
