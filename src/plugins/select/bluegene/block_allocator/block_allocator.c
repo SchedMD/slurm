@@ -229,12 +229,17 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl;
 	char *tmp = NULL;
 	blockreq_t *n = NULL;
-
+	hostlist_t hl = NULL;
+	char temp[BUFSIZE];
 	tbl = s_p_hashtbl_create(block_options);
 	s_p_parse_line(tbl, *leftover, leftover);
 	
 	n = xmalloc(sizeof(blockreq_t));
-	n->block = xstrdup(value);
+	hl = hostlist_create(value);
+	hostlist_ranged_string(hl, BUFSIZE, temp);
+	hostlist_destroy(hl);
+
+	n->block = xstrdup(temp);
 	s_p_get_string(&n->blrtsimage, "BlrtsImage", tbl);
 	s_p_get_string(&n->linuximage, "LinuxImage", tbl);
 	s_p_get_string(&n->mloaderimage, "MloaderImage", tbl);
