@@ -132,6 +132,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 		slurm_step_layout_destroy(step_layout);
 		step_layout = NULL;
 	}
+	xfree(arbitrary_nodes);
 	return step_layout;
 }
 
