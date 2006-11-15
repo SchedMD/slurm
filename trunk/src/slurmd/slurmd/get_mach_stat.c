@@ -526,30 +526,53 @@ get_cpuinfo(uint16_t numproc,
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		uint16_t val;
 		if (chk_cpuinfo_uint16(buffer, "processor", &val)) {
+			numcpu++;
 			curcpu = val;
+		    	if (val >= numproc) {	/* out of bounds, ignore */
+				continue;
+			}
 			cpuinfo[val].seen = 1;
 			cpuinfo[val].id = val;
-			numcpu++;
 			maxcpuid = MAX(maxcpuid, val);
 			mincpuid = MIN(mincpuid, val);
 		} else if (chk_cpuinfo_uint16(buffer, "physical id", &val)) {
-			cpuinfo[curcpu].physid = val;
+		    	if (val >= numproc) {	/* out of bounds, ignore */
+				continue;
+			}
+			if (curcpu < numproc) {
+				cpuinfo[curcpu].physid = val;
+			}
 			if (cpuinfo[val].physcnt == 0) numphys++;
 			cpuinfo[val].physcnt++;
 			maxphysid = MAX(maxphysid, val);
 			minphysid = MIN(minphysid, val);
 		} else if (chk_cpuinfo_uint16(buffer, "core id", &val)) {
-			cpuinfo[curcpu].coreid = val;
+		    	if (val >= numproc) {	/* out of bounds, ignore */
+				continue;
+			}
+			if (curcpu < numproc) {
+				cpuinfo[curcpu].coreid = val;
+			}
 			if (cpuinfo[val].corecnt == 0) numcores++;
 			cpuinfo[val].corecnt++;
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
 		} else if (chk_cpuinfo_uint16(buffer, "siblings", &val)) {
-			cpuinfo[curcpu].siblings = val;
-			maxsibs = MAX(maxsibs, val) ;
-			minsibs = MIN(minsibs, val) ;
+		    	if (val >= numproc) {	/* out of bounds, ignore */
+				continue;
+			}
+			if (curcpu < numproc) {
+				cpuinfo[curcpu].siblings = val;
+			}
+			maxsibs = MAX(maxsibs, val);
+			minsibs = MIN(minsibs, val);
 		} else if (chk_cpuinfo_uint16(buffer, "cpu cores", &val)) {
-			cpuinfo[curcpu].cores = val;
+		    	if (val >= numproc) {	/* out of bounds, ignore */
+				continue;
+			}
+			if (curcpu < numproc) {
+				cpuinfo[curcpu].cores = val;
+			}
 			maxcores = MAX(maxcores, val);
 			mincores = MIN(mincores, val);
 		}

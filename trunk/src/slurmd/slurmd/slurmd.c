@@ -590,10 +590,6 @@ _read_config()
 
 	get_memory(&conf->real_memory_size);
 
-#if 0 /* fixme */
-	lllp_ctx_alloc();
-#endif
-
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
@@ -731,9 +727,6 @@ _init_conf()
 	conf->sockets     = 0;
 	conf->cores       = 0;
 	conf->threads     = 0;
-#if 0
-	conf->lllp_reserved = NULL;
-#endif
 	conf->block_map_size = 0;
 	conf->block_map   = NULL;
 	conf->block_map_inv = NULL;
@@ -779,9 +772,6 @@ _destroy_conf()
 		xfree(conf->tmpfs);
 		slurm_mutex_destroy(&conf->config_mutex);
 		slurm_cred_ctx_destroy(conf->vctx);
-#if 0 /* fixme */
-		lllp_ctx_destroy();
-#endif
 		xfree(conf);
 	}
 	return;

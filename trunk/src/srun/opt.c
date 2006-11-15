@@ -704,13 +704,13 @@ _verify_socket_core_thread_count(const char *arg,
 	buf[j][i] = '\0';
 
 	ret_val = true;
-	tmp_val = _get_resource_range(&buf[0][0], "first arg of -E", 
+	tmp_val = _get_resource_range(&buf[0][0], "first arg of -B", 
 				      min_sockets, max_sockets, true);
 	ret_val = ret_val && tmp_val;
-	tmp_val = _get_resource_range(&buf[1][0], "second arg of -E", 
+	tmp_val = _get_resource_range(&buf[1][0], "second arg of -B", 
 				      min_cores, max_cores, true);
 	ret_val = ret_val && tmp_val;
-	tmp_val = _get_resource_range(&buf[2][0], "third arg of -E", 
+	tmp_val = _get_resource_range(&buf[2][0], "third arg of -B", 
 				      min_threads, max_threads, true);
 	ret_val = ret_val && tmp_val;
 
