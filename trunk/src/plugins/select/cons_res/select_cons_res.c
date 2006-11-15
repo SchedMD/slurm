@@ -453,7 +453,11 @@ static void _xfree_select_cr_job(struct select_cr_job *job)
 	if (job == NULL)
 		return;
 
-	xfree(job->host);
+	if (job->host) {
+		for (i=0; i<job->nhosts; i++)
+			xfree(job->host[i]);
+		xfree(job->host);
+	}
 	xfree(job->cpus);
 	xfree(job->alloc_lps);	
 	xfree(job->alloc_sockets);
@@ -985,6 +989,9 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	nhosts = job->nhosts;
 
 	safe_unpackstr_array(&job->host, &len16, buffer);
+	if (len16 != nhosts)
+		goto unpack_error;
+
 	safe_unpack16_array(&job->cpus, &len32, buffer);
 	safe_unpack16_array(&job->alloc_lps, &len32, buffer);
 	safe_unpack16_array(&job->alloc_sockets, &len32, buffer);
@@ -1028,6 +1035,7 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	return 0;
 
 unpack_error:
+	_xfree_select_cr_job(job);
 	xfree(bit_fmt);
 	return -1;
 }
@@ -1279,10 +1287,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		return SLURM_ERROR;
 	}
 
+	/* completely rebuild node data */
+	_xfree_select_nodes(select_node_ptr, select_node_cnt);
 	select_node_cnt = node_cnt;
 	select_node_ptr = xmalloc(sizeof(struct node_cr_record) *
 							select_node_cnt);
-
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
@@ -1645,7 +1654,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(bitmap, i) == 0)
 				continue;
-			job->host[j] = node_record_table_ptr[i].name;
+			if (j >= job->nhosts) {
+				error("select_cons_res: job nhosts too small\n");
+				break;
+			}
+			job->host[j] = xstrdup(node_record_table_ptr[i].name);
 			job->cpus[j] = node_record_table_ptr[i].cpus;
 			job->alloc_lps[j] = 0;
 			job->alloc_sockets[j] = 0;
