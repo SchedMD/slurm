@@ -616,6 +616,8 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->conn_type = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->node_use = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->quarter = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->nodecard = (int) uint16_tmp;

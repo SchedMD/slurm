@@ -111,7 +111,7 @@ extern void get_slurm_part()
 					  slurm_strerror(slurm_get_errno()));
 				ba_system_ptr->ycord++;
 			} else {
-				printf("slurm_load_partitions: %s",
+				printf("slurm_load_partitions: %s\n",
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -201,7 +201,7 @@ extern void get_bg_part()
 					  slurm_strerror(slurm_get_errno()));
 				ba_system_ptr->ycord++;
 			} else {
-				printf("slurm_load_partitions: %s",
+				printf("slurm_load_partitions: %s\n",
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -225,11 +225,11 @@ extern void get_bg_part()
 			if(!params.commandline) {
 				mvwprintw(ba_system_ptr->text_win,
 					  ba_system_ptr->ycord, 1,
-					  "slurm_load_partitions: %s",
+					  "slurm_load_node_select: %s",
 					  slurm_strerror(slurm_get_errno()));
 				ba_system_ptr->ycord++;
 			} else {
-				printf("slurm_load_partitions: %s",
+				printf("slurm_load_node_select: %s\n",
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
