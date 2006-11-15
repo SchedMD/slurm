@@ -190,6 +190,10 @@ static void _bg_list_del(void *x)
 	bg_update_t *bg_update_ptr = (bg_update_t *) x;
 
 	if (bg_update_ptr) {
+		xfree(bg_update_ptr->blrtsimage);
+		xfree(bg_update_ptr->linuximage);
+		xfree(bg_update_ptr->mloaderimage);
+		xfree(bg_update_ptr->ramdiskimage);
 		xfree(bg_update_ptr->bg_block_id);
 		xfree(bg_update_ptr);
 	}
