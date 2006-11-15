@@ -1075,6 +1075,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		goto cleanup;
 	}
 
+	/* This job may be getting requeued, clear vestigial 
+	 * state information before over-writting and leaking 
+	 * memory. */
+	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	xfree(job_ptr->nodes);
+
 	job_ptr->node_bitmap = select_bitmap;
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
