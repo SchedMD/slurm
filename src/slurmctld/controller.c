@@ -108,8 +108,8 @@
  *
  * The OpenSSL code produces a bunch of errors related to use of 
  *    non-initialized memory use. 
- * The switch/elan functions will report two blocks "possibly lost" 
- *    (56 and 640 bytes), they are really not lost.
+ * The switch/elan functions will report one block "possibly lost" 
+ *    (640 bytes), it is really not lost.
  * The _keyvalue_regex_init() function will generate two blocks "definitely
  *    lost", both of size zero. We haven't bothered to address this.
  * On some systems, pthread_create() will generated a small number of 
