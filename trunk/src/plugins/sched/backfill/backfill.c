@@ -14,7 +14,7 @@
  *  "lx[06-08]", we can't start it without possibly delaying the higher 
  *  priority job.
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -79,8 +79,9 @@ typedef struct node_space_map {
 } node_space_map_t;
 
 /*********************** local variables *********************/
-static bool altered_job = false;
-static bool new_work = false;
+static bool altered_job   = false;
+static bool new_work      = false;
+static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static List pend_job_list = NULL;
@@ -93,7 +94,7 @@ static node_space_map_t node_space[MAX_JOB_CNT + 1];
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
 #define __DEBUG        0
-#define SLEEP_TIME     2
+#define SLEEP_TIME     1
 
 /*********************** local functions *********************/
 static int  _add_pending_job(struct job_record *job_ptr, 
@@ -162,6 +163,13 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
 }
 
+/* Terminate backfill_agent */
+extern void stop_backfill_agent(void)
+{
+	stop_backfill = true;
+}
+
+
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *
 backfill_agent(void *args)
@@ -175,9 +183,9 @@ backfill_agent(void *args)
 
 	if (slurm_get_root_filter())
 		filter_root = true;
-	while (1) {
+	while (!stop_backfill) {
 		sleep(SLEEP_TIME);      /* don't run continuously */
-		if (!_more_work())
+		if ((!_more_work()) || stop_backfill)
 			continue;
 
 		gettimeofday(&tv1, NULL);
@@ -210,6 +218,7 @@ backfill_agent(void *args)
 			schedule();	/* has own locks */
 		}
 	}
+	return NULL;
 }
 
 /* trigger the attempt of a backfill */

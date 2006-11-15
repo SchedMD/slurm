@@ -112,6 +112,7 @@ void fini( void )
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {
 		verbose( "Backfill scheduler plugin shutting down" );
+		stop_backfill_agent();
 		_cancel_thread( backfill_thread );
 		backfill_thread = false;
 	}
