@@ -259,14 +259,11 @@ extern void destroy_bg_record(void *object)
 
 	if (bg_record) {
 		xfree(bg_record->bg_block_id);
-		bg_record->bg_block_id = NULL;
 		xfree(bg_record->nodes);
 		xfree(bg_record->user_name);
 		xfree(bg_record->target_name);
-		if(bg_record->bg_block_list) {
+		if(bg_record->bg_block_list)
 			list_destroy(bg_record->bg_block_list);
-			bg_record->bg_block_list = NULL;
-		}
 		if(bg_record->bitmap)
 			bit_free(bg_record->bitmap);
 
@@ -276,7 +273,6 @@ extern void destroy_bg_record(void *object)
 		xfree(bg_record->ramdiskimage);
 
 		xfree(bg_record);
-		bg_record = NULL;
 	}
 }
 
