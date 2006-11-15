@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -48,7 +48,7 @@ typedef struct {
 				  rm_partition_t **partition);
 	status_t (*get_partition_info)(pm_partition_id_t pid,
 				       rm_partition_t **partition);
-	status_t (*modify_partition)(rm_partition_t *partition, 
+	status_t (*modify_partition)(pm_partition_id_t pid, 
 				     enum rm_modify_op op, const void *data);
 	status_t (*set_part_owner)(pm_partition_id_t pid, const char *name);
 	status_t (*add_part_user)(pm_partition_id_t pid, const char *name);
@@ -253,7 +253,7 @@ extern status_t bridge_get_block_info(pm_partition_id_t pid,
 
 }
 
-extern status_t bridge_modify_block(rm_partition_t *partition, 
+extern status_t bridge_modify_block(pm_partition_id_t pid, 
 				    enum rm_modify_op op, const void *data)
 {
 	int rc = CONNECTION_ERROR;
@@ -261,7 +261,7 @@ extern status_t bridge_modify_block(rm_partition_t *partition,
 		return rc;
 	
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.modify_partition))(partition, op, data);
+	rc = (*(bridge_api.modify_partition))(pid, op, data);
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 

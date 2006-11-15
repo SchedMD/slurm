@@ -73,6 +73,9 @@ typedef struct bg_record {
 					   want on the block */
 	int full_block;                 /* whether or not block is the full
 					   block */
+	int modifying;                  /* flag to say the block is
+					   being modified or not at
+					   job launch usually */
 	uid_t user_uid;   		/* Owner of block uid	*/
 	rm_partition_state_t state;   	/* the allocated block   */
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */

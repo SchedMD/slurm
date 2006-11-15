@@ -86,7 +86,7 @@ extern status_t bridge_get_block(pm_partition_id_t pid,
 				 rm_partition_t **partition);
 extern status_t bridge_get_block_info(pm_partition_id_t pid, 
 				      rm_partition_t **partition);
-extern status_t bridge_modify_block(rm_partition_t *partition, 
+extern status_t bridge_modify_block(pm_partition_id_t pid, 
 				    enum rm_modify_op op, const void *data);
 extern status_t bridge_set_block_owner(pm_partition_id_t, const char *);
 extern status_t bridge_add_block_user(pm_partition_id_t, const char *);
