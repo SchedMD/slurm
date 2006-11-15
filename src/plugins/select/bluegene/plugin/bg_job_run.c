@@ -362,37 +362,43 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}
 
 	if(rc) {
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->modifying = 1;
+		slurm_mutex_unlock(&block_state_mutex);
+			
 		bg_free_block(bg_record);
 #ifdef HAVE_BG_FILES
-		if ((rc = bridge_modify_block(bg_record->bg_block,
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_BlrtsImg,   
 					      bg_record->blrtsimage))
 		    != STATUS_OK)
 			error("bridge_modify_block(RM_MODIFY_BlrtsImg)",
 			      bg_err_str(rc));
 		
-		if ((rc = bridge_modify_block(bg_record->bg_block,
-					  RM_MODIFY_LinuxImg,   
-					  bg_record->linuximage))
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
+					      RM_MODIFY_LinuxImg,   
+					      bg_record->linuximage))
 		    != STATUS_OK) 
 			error("bridge_modify_block(RM_MODIFY_LinuxImg)",
 			      bg_err_str(rc));
 		
-		if ((rc = bridge_modify_block(bg_record->bg_block,
-					  RM_MODIFY_MloaderImg, 
-					  bg_record->mloaderimage))
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
+					      RM_MODIFY_MloaderImg, 
+					      bg_record->mloaderimage))
 		    != STATUS_OK)
 			error("bridge_modify_block(RM_MODIFY_MloaderImg)", 
 			      bg_err_str(rc));
 		
-		if ((rc = bridge_modify_block(bg_record->bg_block,
-					  RM_MODIFY_RamdiskImg, 
-					  bg_record->ramdiskimage))
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
+					      RM_MODIFY_RamdiskImg, 
+					      bg_record->ramdiskimage))
 		    != STATUS_OK)
 			error("bridge_modify_block(RM_MODIFY_RamdiskImg)", 
 			      bg_err_str(rc));
 #endif
-		
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->modifying = 0;		
+		slurm_mutex_unlock(&block_state_mutex);		
 	}
 
 	if(bg_record->state == RM_PARTITION_FREE) {
@@ -812,15 +818,39 @@ extern int start_job(struct job_record *job_ptr)
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLRTS_IMAGE, 
 			     &(bg_update_ptr->blrtsimage));
+	if(!bg_update_ptr->blrtsimage) {
+		bg_update_ptr->blrtsimage = xstrdup(default_blrtsimage);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_BLRTS_IMAGE, 
+				     bg_update_ptr->blrtsimage);
+	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_LINUX_IMAGE, 
 			     &(bg_update_ptr->linuximage));
+	if(!bg_update_ptr->linuximage) {
+		bg_update_ptr->linuximage = xstrdup(default_linuximage);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_LINUX_IMAGE, 
+				     bg_update_ptr->linuximage);
+	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MLOADER_IMAGE, 
 			     &(bg_update_ptr->mloaderimage));
+	if(!bg_update_ptr->mloaderimage) {
+		bg_update_ptr->mloaderimage = xstrdup(default_mloaderimage);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_MLOADER_IMAGE, 
+				     bg_update_ptr->mloaderimage);
+	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_RAMDISK_IMAGE, 
 			     &(bg_update_ptr->ramdiskimage));
+	if(!bg_update_ptr->ramdiskimage) {
+		bg_update_ptr->ramdiskimage = xstrdup(default_ramdiskimage);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_RAMDISK_IMAGE, 
+				     bg_update_ptr->ramdiskimage);
+	}
 	bg_record = 
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if (bg_record) {

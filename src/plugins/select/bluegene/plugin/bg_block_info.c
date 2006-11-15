@@ -84,6 +84,9 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 {
 	int jobid = bg_record->job_running;
 	char *user_name = NULL;
+
+	if(bg_record->modifying)
+		return SLURM_SUCCESS;
 	slurm_conf_lock();
 	user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
@@ -399,10 +402,18 @@ extern int update_block_list()
 					list_push(kill_job_list, freeit);
 				}
 				break;
+			case RM_PARTITION_DEALLOCATING:
+				debug2("Block %s is in a deallocating state "
+				       "during a boot.  Doing nothing until "
+				       "free state.",
+				       bg_record->bg_block_id);
+				break;
 			default:
-				debug("Hey the state of the "
-				      "Block is %d doing nothing.",
-				      bg_record->state);
+				debug("Hey the state of block "
+				      "%s is %d(%s) doing nothing.",
+				      bg_record->bg_block_id,
+				      bg_record->state,
+				      bg_block_state_string(bg_record->state));
 				break;
 			}
 		}

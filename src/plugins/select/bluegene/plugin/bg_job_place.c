@@ -209,7 +209,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLRTS_IMAGE, &blrtsimage);
-	if(blrtsimage) {	
+	if(blrtsimage) {
 		allow = 0;
 		itr = list_iterator_create(bg_blrtsimage_list);
 		while((image = list_next(itr))) {
@@ -225,7 +225,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 					break;
 				}				
 				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr))) {
+				while((image_group = list_next(itr2))) {
 					if(image_group->gid
 					   == job_ptr->group_id) {
 						allow = 1;
@@ -263,7 +263,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 					break;
 				}				
 				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr))) {
+				while((image_group = list_next(itr2))) {
 					if(image_group->gid
 					   == job_ptr->group_id) {
 						allow = 1;
@@ -301,7 +301,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 					break;
 				}				
 				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr))) {
+				while((image_group = list_next(itr2))) {
 					if(image_group->gid
 					   == job_ptr->group_id) {
 						allow = 1;
@@ -341,7 +341,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 					break;
 				}				
 				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr))) {
+				while((image_group = list_next(itr2))) {
 					if(image_group->gid
 					   == job_ptr->group_id) {
 						allow = 1;
