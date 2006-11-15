@@ -175,6 +175,14 @@ extern void fini_bg(void)
 		list_destroy(bg_booted_block_list);
 		bg_booted_block_list = NULL;
 	}
+	if (bg_free_block_list) {
+		list_destroy(bg_free_block_list);
+		bg_free_block_list = NULL;
+	}
+	if (bg_destroy_block_list) {
+		list_destroy(bg_destroy_block_list);
+		bg_destroy_block_list = NULL;
+	}
 	
 	slurm_mutex_lock(&request_list_mutex);
 	if (bg_request_list) {
