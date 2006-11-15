@@ -393,7 +393,6 @@ qsw_init(qsw_libstate_t oldstate)
 	else {
 		new->ls_prognum = QSW_PRG_START + 
 			(lrand48() % (QSW_PRG_END - QSW_PRG_START + 1));
-		new->step_ctx_list = list_create(_step_ctx_del);
 	}
 	qsw_internal_state = new;
 	return 0;
