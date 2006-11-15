@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	slurm_conf_destroy();
 	slurm_api_clear_config();
-	sleep(1);
+	sleep(2);
 #endif
 
 	info("Slurmctld shutdown completing");

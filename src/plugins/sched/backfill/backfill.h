@@ -38,6 +38,9 @@
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args);
 
+/* Terminate backfill_agent */
+extern void stop_backfill_agent(void);
+
 /* trigger the attempt of a backfill */
 extern void run_backfill (void);
 
