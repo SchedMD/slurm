@@ -244,7 +244,7 @@ _has_state_changed(void)
 static void 
 _attempt_backfill(struct part_record *part_ptr)
 {
-	int i, error_code = 0;
+	int i, cg_hung = 0, error_code = 0;
 	uint32_t max_pending_prio = 0;
 	uint32_t min_pend_job_size = INFINITE;
 	struct job_record *job_ptr;
@@ -274,6 +274,7 @@ _attempt_backfill(struct part_record *part_ptr)
 			if (wait_time > 600) {
 				/* Job has been in completing state for 
 				 * >10 minutes, try to schedule around it */
+				cg_hung++;
 				continue;
 			}
 #if __DEBUG
@@ -302,7 +303,7 @@ _attempt_backfill(struct part_record *part_ptr)
 	if (error_code) 
 		goto cleanup;
 
-	i = list_count(run_job_list);
+	i = list_count(run_job_list) + cg_hung;
 	if ( (i == 0) || (i > MAX_JOB_CNT) )
 		goto cleanup;		/* no running jobs or already have many */
 	if (list_is_empty(pend_job_list))
