@@ -771,16 +771,16 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 	if (slurmctld_conf.fast_schedule) {	
 		/* Only data from config_record used for scheduling */
 		pack16  (dump_node_ptr->config_ptr->cpus, buffer);
-		pack16  (dump_node_ptr->config_ptr->cores, buffer);
 		pack16  (dump_node_ptr->config_ptr->sockets, buffer);
+		pack16  (dump_node_ptr->config_ptr->cores, buffer);
 		pack16  (dump_node_ptr->config_ptr->threads, buffer);
 		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
 	} else {	
 		/* Individual node data used for scheduling */
 		pack16  (dump_node_ptr->cpus, buffer);
-		pack16  (dump_node_ptr->cores, buffer);
 		pack16  (dump_node_ptr->sockets, buffer);
+		pack16  (dump_node_ptr->cores, buffer);
 		pack16  (dump_node_ptr->threads, buffer);
 		pack32  (dump_node_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->tmp_disk, buffer);
