@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - added configurable images for bluegene block creation.
  -- Plug a bunch of memory leaks.
  -- Added proctrack to track processes monitored by job accouting plugin
+ -- Fixed bug with aix not looking in the correct dir for the proctrack
+    include files
 
 * Changes in SLURM 1.2.0-pre6
 =============================
