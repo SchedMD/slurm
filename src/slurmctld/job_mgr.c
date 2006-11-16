@@ -2848,9 +2848,11 @@ void reset_job_bitmaps(void)
 
 		_reset_step_bitmaps(job_ptr);
 
-		if ((job_ptr->kill_on_step_done) &&
-		    (list_count(job_ptr->step_list) <= 1))
+		if ((job_ptr->kill_on_step_done)
+		&&  (list_count(job_ptr->step_list) <= 1)) {
+			info("Single job step done, job is complete");
 			job_fail = true;
+		}
 
 		if (job_fail) {
 			if (job_ptr->job_state == JOB_PENDING) {
