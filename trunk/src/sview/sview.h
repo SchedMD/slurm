@@ -55,6 +55,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <glib.h>
+#include <glib/gtypes.h>
 #include <gtk/gtk.h>
 
 #include "src/common/bitstring.h"
