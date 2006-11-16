@@ -79,10 +79,8 @@ static void _remap_slurmctld_errno(void);
 void slurm_conf_mutex_reinit()
 {
 	pthread_mutex_unlock(&config_lock);
-	if (pthread_mutex_destroy(&config_lock) != 0)
-		error("Unable to destroy config mutex for reinit: %m");
-	if (pthread_mutex_init(&config_lock, NULL) != 0)
-		error("Unable to init config mutex for reinit: %m");
+	pthread_mutex_destroy(&config_lock);
+	pthread_mutex_init(&config_lock, NULL);
 }
 
 void slurm_conf_install_fork_handlers()
