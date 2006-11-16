@@ -888,20 +888,6 @@ int job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 		} 
 	}
 
-	if (opt.nprocs_set && (opt.nprocs < total)) {
-		/* reduce node count to match proc count */
-		int i, size = bit_size(req_bitmap);
-		int curcount = 0;
-		total = opt.nprocs;
-		for (i = 0; i < size; i++) {
-			if (bit_test(req_bitmap, i)) {
-				curcount++;
-				if (curcount > opt.nprocs)
-					bit_clear(req_bitmap, i);
-			}
-		}
-	}
-
 	if (total != resp->node_cnt)
 		_job_resp_hack(resp, req_bitmap);
 	if (!opt.overcommit) {
