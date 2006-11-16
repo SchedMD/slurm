@@ -937,6 +937,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			goto fail1;
                 }
 		jobacct_id.nodeid = job->nodeid;
+		jobacct_id.contid = job->cont_id;
 		jobacct_id.taskid = job->task[i]->gtid;
 		jobacct_g_add_task(job->task[i]->pid, 
 				   &jobacct_id);

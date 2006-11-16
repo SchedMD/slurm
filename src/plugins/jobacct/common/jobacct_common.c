@@ -62,6 +62,7 @@ extern int common_init_struct(struct jobacctinfo *jobacct,
 		jobacct_id_t temp_id;
 		temp_id.taskid = (uint16_t)NO_VAL;
 		temp_id.nodeid = (uint32_t)NO_VAL;
+		temp_id.contid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
 	}
 	jobacct->rusage.ru_utime.tv_sec = 0;
@@ -490,11 +491,11 @@ extern void total_jobacct_pids(List prec_list)
 
 	itr = list_iterator_create(task_list);
 	while((jobacct = list_next(itr))) {
-		slurm_container_get_pids(jobacct->pid, &pids, &npids);
+		slurm_container_get_pids(jobacct->contid, &pids, &npids);
 		prec = list_find_first(prec_list, (ListFindF)list_find_prec,
 				       &jobacct->pid);
 		if(!prec) {
-			debug4("main pid %d doesn't exist",
+			debug("main pid %d doesn't exist",
 			      jobacct->pid);
 			continue;
 		}
@@ -504,11 +505,11 @@ extern void total_jobacct_pids(List prec_list)
 						     (ListFindF)list_find_prec,
 						     &pids[i]);
 			if(!prec_child) {
-				debug4("child pid %d doesn't exist",
+				debug("child pid %d doesn't exist",
 				       pids[i]);
 				continue;
 			}
-			debug3("adding %d to %d rss = %f vsize = %f", 
+			debug("adding %d to %d rss = %f vsize = %f", 
 			       prec_child->pid, prec->pid, 
 			       prec_child->rss, prec_child->vsize);
 			
@@ -527,7 +528,7 @@ extern void total_jobacct_pids(List prec_list)
 		jobacct->min_cpu = jobacct->tot_cpu = 
 			MAX(jobacct->min_cpu, 
 			    (prec->usec + prec->ssec));
-		debug2("%d size now %d %d time %d",
+		debug("%d size now %d %d time %d",
 		       jobacct->pid, jobacct->max_rss, 
 		       jobacct->max_vsize, jobacct->tot_cpu);
 	}

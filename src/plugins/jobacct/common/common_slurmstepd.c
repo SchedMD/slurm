@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -64,6 +64,7 @@ extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
+	jobacct->contid = jobacct_id->contid;
 	jobacct->pid = pid;
 	jobacct->min_cpu = 0;
 	debug2("adding task %u pid %d on node %u to jobacct", 
