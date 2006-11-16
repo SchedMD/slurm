@@ -76,15 +76,19 @@ static void _remap_slurmctld_errno(void);
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
-void slurm_conf_mutex_init()
+void slurm_conf_mutex_reinit()
 {
-	pthread_mutex_init(&config_lock, NULL); 
+	pthread_mutex_unlock(&config_lock);
+	if (pthread_mutex_destroy(&config_lock) != 0)
+		error("Unable to destroy config mutex for reinit: %m");
+	if (pthread_mutex_init(&config_lock, NULL) != 0)
+		error("Unable to init config mutex for reinit: %m");
 }
 
 void slurm_conf_install_fork_handlers()
 {
 	int err;
-	if ((err = pthread_atfork(NULL, NULL, &slurm_conf_mutex_init)))
+	if ((err = pthread_atfork(NULL, NULL, &slurm_conf_mutex_reinit)))
 		fatal("can't install slurm_conf atfork handler");
 	return;
 }
@@ -123,18 +127,17 @@ extern void  slurm_api_set_conf_file(char *pathname)
 	return;
 }
 
-/* slurm_api_set_default_config
- *      called by the send_controller_msg function to insure that at least 
- *	the compiled in default slurm_protocol_config object is initialized
+/* Internal implementation of "slurm_api_set_default_config" without
+ * any locking calls.  The caller of this function must be holding the
+ * config_lock!
  * RET int		 - return code
  */
-int slurm_api_set_default_config()
+static int _internal_api_set_default_config()
 {
 	int rc = SLURM_SUCCESS;
 	struct stat config_stat;
 	static time_t last_config_update = (time_t) 0;
 
-	slurm_mutex_lock(&config_lock);
 	config_stat.st_mtime = 0;
 	if (slurmctld_conf.slurm_conf
 	&&  (stat(slurmctld_conf.slurm_conf, &config_stat) < 0)) {
@@ -180,7 +183,22 @@ int slurm_api_set_default_config()
 	proto_conf = &proto_conf_default;
 
       cleanup:
+	return rc;
+}
+
+/* slurm_api_set_default_config
+ *      called by the send_controller_msg function to insure that at least 
+ *	the compiled in default slurm_protocol_config object is initialized
+ * RET int		 - return code
+ */
+int slurm_api_set_default_config()
+{
+	int rc;
+
+	slurm_mutex_lock(&config_lock);
+	rc = _internal_api_set_default_config();
 	slurm_mutex_unlock(&config_lock);
+
 	return rc;
 }
 
@@ -198,8 +216,10 @@ void slurm_api_clear_config(void)
  *	exit with lock set */
 static inline void _lock_update_config()
 {
-	slurm_api_set_default_config();
 	slurm_mutex_lock(&config_lock);
+	_internal_api_set_default_config();
+
+	/* Caller must release the lock! */
 }
 
 /* slurm_get_mpi_default
