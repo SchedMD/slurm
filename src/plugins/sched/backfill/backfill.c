@@ -250,6 +250,7 @@ _attempt_backfill(struct part_record *part_ptr)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	part_specs_t part_specs;
+	time_t now = time(NULL);
 
 #if __DEBUG
 	info("backfill: attempt on partition %s", part_ptr->name);
@@ -269,6 +270,12 @@ _attempt_backfill(struct part_record *part_ptr)
 			continue;	/* job in different partition */
 
 		if (job_ptr->job_state & JOB_COMPLETING) {
+			long wait_time = (long) difftime(now, job_ptr->end_time);
+			if (wait_time > 600) {
+				/* Job has been in completing state for 
+				 * >10 minutes, try to schedule around it */
+				continue;
+			}
 #if __DEBUG
 			info("backfill: Job %u completing, skip partition", 
 					job_ptr->job_id);
