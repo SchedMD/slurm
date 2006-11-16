@@ -56,10 +56,11 @@
 #include <sys/stat.h>
 
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
-#include "src/common/node_select.h"
+#include "src/slurmd/common/proctrack.h"
 
 #include <ctype.h>
 
@@ -86,6 +87,16 @@ struct jobacctinfo {
 				 (used to figure out ave later) */
 };
 
+typedef struct prec {	/* process record */
+	pid_t	pid;
+	pid_t	ppid;
+	int     usec;   /* user cpu time */
+	int     ssec;   /* system cpu time */
+	int     pages;  /* pages */
+	float	rss;	/* rss */
+	float	vsize;	/* virtual size */
+} prec_t;
+
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
 #ifndef __jobacctinfo_t_defined
 #  define  __jobacctinfo_t_defined
@@ -107,6 +118,8 @@ extern void common_aggregate(struct jobacctinfo *dest,
 extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
 extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
+extern int list_find_prec(prec_t *prec, pid_t *pid);
+extern void total_jobacct_pids(List prec_list);
 
 /*in common_slurmctld.c */
 extern int common_init_slurmctld(char *job_acct_log);

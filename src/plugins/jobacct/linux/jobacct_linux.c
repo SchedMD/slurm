@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -76,16 +76,6 @@ const uint32_t plugin_version = 100;
 
 /* Other useful declarations */
 
-typedef struct prec {	/* process record */
-	pid_t	pid;
-	pid_t	ppid;
-	int     usec;   /* user cpu time */
-	int     ssec;   /* system cpu time */
-	int     pages;  /* pages */
-	int	rss;	/* rss */
-	int	vsize;	/* virtual size */
-} prec_t;
-
 static int freq = 0;
 /* Finally, pre-define all local routines. */
 
@@ -101,6 +91,12 @@ static void _destroy_prec(void *object);
  */
 extern int init ( void )
 {
+	char *proctrack = slurm_get_proctrack_type();
+	if(strcasecmp(proctrack, "proctrack/linuxproc")) {
+		fatal("Must run %s with Proctracktype=proctrack/linuxproc",
+		      plugin_name);
+	}
+	xfree(proctrack);
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -346,11 +342,8 @@ static void _get_process_data() {
 	List prec_list = NULL;
 
 	int		i;
-	ListIterator itr;
-	ListIterator itr2;
-	prec_t *prec = NULL;
-	struct jobacctinfo *jobacct = NULL;
-	static int processing = 0;
+	prec_t          *prec = NULL;
+	static int      processing = 0;
 
 	if(processing) {
 		debug("already running, returning");
@@ -409,46 +402,8 @@ static void _get_process_data() {
 		fclose(statFile);
 	}
 	
-	if (!list_count(prec_list)) {
-		goto finished;	/* We have no business being here! */
-	}
-	
-	slurm_mutex_lock(&jobacct_lock);
-	if(!task_list || !list_count(task_list)) {
-		slurm_mutex_unlock(&jobacct_lock);
-		goto finished;
-	}
-
-	itr = list_iterator_create(task_list);
-	while((jobacct = list_next(itr))) {
-		itr2 = list_iterator_create(prec_list);
-		while((prec = list_next(itr2))) {
-			if (prec->pid == jobacct->pid) {
-				/* find all my descendents */
-				_get_offspring_data(prec_list, 
-						    prec, prec->pid);
-				/* tally their usage */
-				jobacct->max_rss = jobacct->tot_rss = 
-					MAX(jobacct->max_rss, prec->rss);
-				jobacct->max_vsize = jobacct->tot_vsize = 
-					MAX(jobacct->max_vsize, prec->vsize);
-				jobacct->max_pages = jobacct->tot_pages =
-					MAX(jobacct->max_pages, prec->pages);
-				jobacct->min_cpu = jobacct->tot_cpu = 
-					MAX(jobacct->min_cpu, 
-					    (prec->usec + prec->ssec));
-				debug2("%d size now %d %d time %d",
-				      jobacct->pid, jobacct->max_rss, 
-				      jobacct->max_vsize, jobacct->tot_cpu);
-				
-				break;
-			}
-		}
-		list_iterator_destroy(itr2);
-	}
-	list_iterator_destroy(itr);	
-	slurm_mutex_unlock(&jobacct_lock);
-	
+	total_jobacct_pids(prec_list);
+		
 finished:
 	list_destroy(prec_list);
 	processing = 0;	
@@ -490,7 +445,8 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 		     &d, &d, &d, &tmpu32, &tmpu32,
 		     &tmpu32, &prec->pages, &tmpu32, &prec->usec, &prec->ssec,
 		     &tmpu32, &tmpu32, &tmpu32, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &prec->vsize, &prec->rss, &tmpu32);
+		     &tmpu32, &tmpu32,
+		     (int *)&prec->vsize, (int *)&prec->rss, &tmpu32);
 	/* The fields in the record are
 	 *	pid, command, state, ppid, pgrp,
 	 *	session, tty_nr, tpgid, flags, minflt,
@@ -515,7 +471,7 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg) {
 
-	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
+	while(!jobacct_shutdown) { /* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 
 		}
