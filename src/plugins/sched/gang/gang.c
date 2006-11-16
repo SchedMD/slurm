@@ -143,6 +143,8 @@ _gang_thread(void *no_data)
 		sleep(slice_time);
 	}
 	pthread_exit((void *) 0);
+
+	return NULL;
 }
 
 /*
