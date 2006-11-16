@@ -81,7 +81,7 @@ static char* _cpuinfo_path = "/proc/cpuinfo";
 int compute_block_map(uint16_t numproc,
 			uint16_t **block_map, uint16_t **block_map_inv);
 int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
-int chk_cpuinfo_uint16(char *buffer, char *keyword, uint16_t *val);
+int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 int chk_cpuinfo_float(char *buffer, char *keyword, float *val);
 
 /* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
@@ -387,7 +387,7 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 	return true;
 }
 
-/* chk_cpuinfo_uint16
+/* chk_cpuinfo_uint32
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
  *	exists, return the uint16 value for that keyword in *valptr.
  * Input:  buffer - single line of cpuinfo data
@@ -395,7 +395,7 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
  * Output: valptr - uint16 value corresponding to keyword
  *         return code - true if keyword found, false if not found
  */
-int chk_cpuinfo_uint16(char *buffer, char *keyword, uint16_t *val)
+int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
 {
 	char *valptr;
 	if (chk_cpuinfo_str(buffer, keyword, &valptr)) {
@@ -466,13 +466,13 @@ get_speed(float *speed)
  *         return code - 0 if no error, otherwise errno
  */
 typedef struct cpuinfo {
-	int seen;
-	uint16_t id;
-	uint16_t physid;
+	uint16_t seen;
+	uint32_t cpuid;
+	uint32_t physid;
 	uint16_t physcnt;
 	uint16_t siblings;
 	uint16_t cores;
-	uint16_t coreid;
+	uint32_t coreid;
 	uint16_t corecnt;
 } cpuinfo_t;
 static cpuinfo_t *cpuinfo = NULL; /* array of CPU information for get_cpuinfo */
@@ -496,15 +496,13 @@ get_cpuinfo(uint16_t numproc,
 	uint16_t minsibs   = 0xffff;	/* minimum value of "siblings" */
 	uint16_t mincores  = 0xffff;	/* minimum value of "cores" */
 
-	uint16_t maxcpuid  = 0;		/* maximum CPU ID ("processor") */
-	uint16_t maxphysid = 0;		/* maximum "physical id" */
-	uint16_t maxcoreid = 0;		/* maximum "core id" */
-	uint16_t mincpuid  = 0xffff;	/* minimum CPU ID ("processor") */
-	uint16_t minphysid = 0xffff;	/* minimum "physical id" */
-	uint16_t mincoreid = 0xffff;	/* minimum "core id" */
-#ifdef DEBUG_DETAIL
+	uint32_t maxcpuid  = 0;		/* maximum CPU ID ("processor") */
+	uint32_t maxphysid = 0;		/* maximum "physical id" */
+	uint32_t maxcoreid = 0;		/* maximum "core id" */
+	uint32_t mincpuid  = 0xffffffff;/* minimum CPU ID ("processor") */
+	uint32_t minphysid = 0xffffffff;/* minimum "physical id" */
+	uint32_t mincoreid = 0xffffffff;/* minimum "core id" */
 	int i;
-#endif
 
 	*p_sockets = numproc;		/* initially all single core/thread */
 	*p_cores   = 1;
@@ -515,64 +513,72 @@ get_cpuinfo(uint16_t numproc,
 
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error ("get_cpuinfo: error %d opening %s\n", errno, _cpuinfo_path);
+		error ("get_cpuinfo: error %d opening %s\n", 
+			errno, _cpuinfo_path);
 		return errno;
 	}
 
-	/* Note: assumes all processor IDs are within [0:numproc-1] */
+	/* Note: treats processor physical IDs as tokens, not indexes */
 	cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
 	memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-		uint16_t val;
-		if (chk_cpuinfo_uint16(buffer, "processor", &val)) {
+		uint32_t val;
+		if (chk_cpuinfo_uint32(buffer, "processor", &val)) {
 			numcpu++;
 			curcpu = val;
 		    	if (val >= numproc) {	/* out of bounds, ignore */
+				error("cpuid is %u (> %d), ignored", 
+					val, numproc);
 				continue;
 			}
 			cpuinfo[val].seen = 1;
-			cpuinfo[val].id = val;
+			cpuinfo[val].cpuid = val;
 			maxcpuid = MAX(maxcpuid, val);
 			mincpuid = MIN(mincpuid, val);
-		} else if (chk_cpuinfo_uint16(buffer, "physical id", &val)) {
-		    	if (val >= numproc) {	/* out of bounds, ignore */
-				continue;
+		} else if (chk_cpuinfo_uint32(buffer, "physical id", &val)) {
+			for (i=0; i<numproc; i++) {
+				if ((cpuinfo[i].physid == val)
+				&&  (cpuinfo[i].physcnt))
+					break;
 			}
-			if (curcpu < numproc) {
-				cpuinfo[curcpu].physid = val;
-			}
-			if (cpuinfo[val].physcnt == 0) numphys++;
-			cpuinfo[val].physcnt++;
+			if (i == numproc)
+				numphys++;
+			cpuinfo[curcpu].physcnt++;
+			cpuinfo[curcpu].physid = val;
 			maxphysid = MAX(maxphysid, val);
 			minphysid = MIN(minphysid, val);
-		} else if (chk_cpuinfo_uint16(buffer, "core id", &val)) {
+		} else if (chk_cpuinfo_uint32(buffer, "core id", &val)) {
 		    	if (val >= numproc) {	/* out of bounds, ignore */
+				error("coreid is %u (> %d), ignored", 
+					val, numproc);
 				continue;
 			}
-			if (curcpu < numproc) {
+			if (curcpu < numproc)
 				cpuinfo[curcpu].coreid = val;
-			}
-			if (cpuinfo[val].corecnt == 0) numcores++;
+			if (cpuinfo[val].corecnt == 0)
+				numcores++;
 			cpuinfo[val].corecnt++;
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
-		} else if (chk_cpuinfo_uint16(buffer, "siblings", &val)) {
+		} else if (chk_cpuinfo_uint32(buffer, "siblings", &val)) {
 		    	if (val >= numproc) {	/* out of bounds, ignore */
+				error("siblings is %u (> %d), ignored",
+					val, numproc);
 				continue;
 			}
-			if (curcpu < numproc) {
+			if (curcpu < numproc)
 				cpuinfo[curcpu].siblings = val;
-			}
 			maxsibs = MAX(maxsibs, val);
 			minsibs = MIN(minsibs, val);
-		} else if (chk_cpuinfo_uint16(buffer, "cpu cores", &val)) {
+		} else if (chk_cpuinfo_uint32(buffer, "cpu cores", &val)) {
 		    	if (val >= numproc) {	/* out of bounds, ignore */
+				error("cores is %u (> %d), ignored",
+					val, numproc);
 				continue;
 			}
-			if (curcpu < numproc) {
+			if (curcpu < numproc)
 				cpuinfo[curcpu].cores = val;
-			}
 			maxcores = MAX(maxcores, val);
 			mincores = MIN(mincores, val);
 		}
@@ -608,8 +614,8 @@ get_cpuinfo(uint16_t numproc,
 		if (cores == 0) {
 			cores = numcpu / sockets;	/* assume multi-core */
 			if (cores > 1) {
-				debug3("Warning: cpuinfo missing 'core id' or 'cpu cores' "
-					"but assuming multi-core");
+				debug3("Warning: cpuinfo missing 'core id' or "
+					"'cpu cores' but assuming multi-core");
 			}
 		}
 		if (cores == 0)
@@ -636,9 +642,9 @@ get_cpuinfo(uint16_t numproc,
 	debug3("numcores:   %u\n", numcores);
 
 	debug3("cores:      %u->%u\n", mincores, maxcores);
-	debug3("sibs:       %u->%u\n", minsibs, maxsibs);
+	debug3("sibs:       %u->%u\n", minsibs,  maxsibs);
 
-	debug3("cpuid:      %u->%u\n", mincpuid, maxcpuid);
+	debug3("cpuid:      %u->%u\n", mincpuid,  maxcpuid);
 	debug3("physid:     %u->%u\n", minphysid, maxphysid);
 	debug3("coreid:     %u->%u\n", mincoreid, maxcoreid);
 
@@ -708,9 +714,19 @@ get_cpuinfo(uint16_t numproc,
 /* physical cpu comparison with void * arguments to allow use with
  * libc qsort()
  */
-static int _icmp(uint16_t a, uint16_t b)
+static int _icmp16(uint16_t a, uint16_t b)
 {
     	if (a < b) {
+		return -1;
+	} else if (a == b) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+static int _icmp32(uint32_t a, uint32_t b)
+{
+	if (a < b) {
 		return -1;
 	} else if (a == b) {
 		return 0;
@@ -724,19 +740,19 @@ int _compare_cpus(const void *a1, const void *b1) {
 	uint16_t *b = (uint16_t *) b1;
 	int cmp;
 
-	cmp = -1 * _icmp(cpuinfo[*a].seen,cpuinfo[*b].seen); /* seen to front */
+	cmp = -1 * _icmp16(cpuinfo[*a].seen,cpuinfo[*b].seen); /* seen to front */
 	if (cmp != 0)
 		return cmp;
 
-	cmp = _icmp(cpuinfo[*a].physid, cpuinfo[*b].physid); /* key 1: physid */
+	cmp = _icmp32(cpuinfo[*a].physid, cpuinfo[*b].physid); /* key 1: physid */
 	if (cmp != 0)
 		return cmp;
 
-	cmp = _icmp(cpuinfo[*a].coreid, cpuinfo[*b].coreid); /* key 2: coreid */
+	cmp = _icmp32(cpuinfo[*a].coreid, cpuinfo[*b].coreid); /* key 2: coreid */
 	if (cmp != 0)
 		return cmp;
 
-	cmp = _icmp(cpuinfo[*a].id, cpuinfo[*b].id); 	     /* key 3: cpu id */
+	cmp = _icmp32(cpuinfo[*a].cpuid, cpuinfo[*b].cpuid);   /* key 3: cpu id */
 	return cmp;
 }
 
@@ -798,7 +814,8 @@ int compute_block_map(uint16_t numproc,
 	}
 
 	if (block_map_inv) {
-		debug3("\nMachine -> Abstract logical CPU ID block mapping: (inverse)\n");
+		debug3("\nMachine -> Abstract logical CPU ID block mapping: "
+			"(inverse)\n");
 		debug3("Input: (Machine ID)  ");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3d", i);
