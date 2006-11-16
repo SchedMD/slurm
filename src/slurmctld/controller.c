@@ -352,11 +352,21 @@ int main(int argc, char *argv[])
 			slurmctld_conf.slurmctld_pidfile);
 
 #ifdef MEMORY_LEAK_DEBUG
+{
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
+	int i;
+
 	/* Give running agents a chance to complete and purge */
-	sleep(5);
+	sleep(1);
 	agent_purge();
+	for (i=0; i<4; i++) {
+		if (get_agent_count() == 0)
+			break;
+		sleep(5);
+		agent_purge();
+	}
+	
 
 	/* Purge our local data structures */
 	job_fini();
@@ -378,6 +388,7 @@ int main(int argc, char *argv[])
 	slurm_conf_destroy();
 	slurm_api_clear_config();
 	sleep(2);
+}
 #endif
 
 	info("Slurmctld shutdown completing");
