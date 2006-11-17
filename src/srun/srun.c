@@ -324,9 +324,6 @@ int srun(int ac, char **av)
 
 	/* job structure should now be filled in */
 
-	if (spank_local_user (job, &opt, remote_argc, remote_argv) < 0)
-		job_fatal(job, "Failure in local plugin stack");
-
 	/*
 	 *  Enhance environment for job
 	 */
