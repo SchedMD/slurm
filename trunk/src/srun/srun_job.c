@@ -60,7 +60,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/io_hdr.h"
-#include "src/common/global_srun.h"
+#include "src/common/forward.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -68,6 +68,7 @@
 #include "src/srun/attach.h"
 #include "src/srun/msg.h"
 
+typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 
 /*
  * allocation information structure used to store general information
@@ -84,6 +85,13 @@ typedef struct allocation_info {
 	select_jobinfo_t select_jobinfo;
 } allocation_info_t;
 
+typedef struct thd {
+        pthread_t	thread;			/* thread ID */
+        pthread_attr_t	attr;			/* thread attributes */
+        state_t		state;      		/* thread state */
+} thd_t;
+
+int message_thread = 0;
 /*
  * Prototypes:
  */
@@ -596,6 +604,120 @@ report_task_status(srun_job_t *job)
 
 }
 
+void 
+fwd_signal(srun_job_t *job, int signo, int max_threads)
+{
+	int i;
+	slurm_msg_t req;
+	kill_tasks_msg_t msg;
+	static pthread_mutex_t sig_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pipe_enum_t pipe_enum = PIPE_SIGNALED;
+	hostlist_t hl;
+	char *name = NULL;
+	char buf[8192];
+	List ret_list = NULL;
+	ListIterator itr;
+	ret_data_info_t *ret_data_info = NULL;
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&sig_mutex);
+
+	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
+		slurm_mutex_lock(&job->state_mutex);
+		job->signaled = true;
+		slurm_mutex_unlock(&job->state_mutex);
+		if(message_thread) {
+			write(job->forked_msg->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->forked_msg->par_msg->msg_pipe[1],
+			      &job->signaled,sizeof(int));
+		}
+	}
+
+	debug2("forward signal %d to job", signo);
+
+	/* common to all tasks */
+	msg.job_id      = job->jobid;
+	msg.job_step_id = job->stepid;
+	msg.signal      = (uint32_t) signo;
+	
+	hl = hostlist_create("");
+	for (i = 0; i < job->nhosts; i++) {
+		if (job->host_state[i] != SRUN_HOST_REPLIED) {
+			name = nodelist_nth_host(
+				job->step_layout->node_list, i);
+			debug2("%s has not yet replied\n", name);
+			free(name);
+			continue;
+		}
+		if (job_active_tasks_on_host(job, i) == 0)
+			continue;
+		name = nodelist_nth_host(job->step_layout->node_list, i);
+		hostlist_push(hl, name);
+		free(name);
+	}
+	if(!hostlist_count(hl)) {
+		hostlist_destroy(hl);
+		goto nothing_left;
+	}
+	hostlist_ranged_string(hl, sizeof(buf), buf);
+	hostlist_destroy(hl);
+	name = xstrdup(buf);
+
+	slurm_msg_t_init(&req);	
+	req.msg_type = REQUEST_SIGNAL_TASKS;
+	req.data     = &msg;
+	
+	debug3("sending signal to host %s", name);
+	
+	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) { 
+		error("fwd_signal: slurm_send_recv_msgs really failed bad");
+		xfree(name);
+		slurm_mutex_unlock(&sig_mutex);
+		return;
+	}
+	xfree(name);
+	itr = list_iterator_create(ret_list);		
+	while((ret_data_info = list_next(itr))) {
+		rc = slurm_get_return_code(ret_data_info->type, 
+					   ret_data_info->data);
+		/*
+		 *  Report error unless it is "Invalid job id" which 
+		 *    probably just means the tasks exited in the meanwhile.
+		 */
+		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
+		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
+			error("%s: signal: %s", 
+			      ret_data_info->node_name, 
+			      slurm_strerror(rc));
+			destroy_data_info(ret_data_info);
+		}
+	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);
+nothing_left:
+	debug2("All tasks have been signalled");
+	
+	slurm_mutex_unlock(&sig_mutex);
+}
+
+int
+job_active_tasks_on_host(srun_job_t *job, int hostid)
+{
+	int i;
+	int retval = 0;
+
+	slurm_mutex_lock(&job->task_mutex);
+	for (i = 0; i < job->step_layout->tasks[hostid]; i++) {
+		uint32_t *tids = job->step_layout->tids[hostid];
+		xassert(tids != NULL);
+		debug("Task %d state: %d", tids[i], job->task_state[tids[i]]);
+		if (job->task_state[tids[i]] == SRUN_TASK_RUNNING) 
+			retval++;
+	}
+	slurm_mutex_unlock(&job->task_mutex);
+	return retval;
+}
 
 static inline int
 _estimate_nports(int nclients, int cli_per_port)
