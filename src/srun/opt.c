@@ -1833,8 +1833,7 @@ _create_path_list(void)
 
 	if (!path) {
 		error("Error in PATH environment variable");
-		list_destroy(l);
-		return NULL;
+		return l;
 	}
 
 	c = lc = path;
