@@ -56,7 +56,7 @@
 #include "src/common/xstring.h"
 #include "src/common/net.h"
 #include "src/common/fd.h"
-#include "src/common/global_srun.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 
 /* NOTE: MVAPICH has changed protocols without changing version numbers.

@@ -67,7 +67,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/mpi.h"
 #include "src/common/forward.h"
-#include "src/common/global_srun.h"
 #include "src/api/pmi_server.h"
 
 #include "src/srun/srun_job.h"
@@ -77,6 +76,7 @@
 #include "src/srun/attach.h"
 #include "src/srun/allocate.h"
 #include "src/srun/multi_prog.h"
+#include "src/srun/signals.h"
 
 #include "src/common/xstring.h"
 
