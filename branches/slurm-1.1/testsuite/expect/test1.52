@@ -36,7 +36,6 @@ source ./globals
 set test_id     "1.52"
 set exit_code   0
 set num_nodes   2
-set num_tasks   2
 set node_count  0
 set task_count  0
 set job_id      0
@@ -75,11 +74,12 @@ expect {
 }
 set node0 0
 set node1 0
+set node2 0
 
 for {set i 0} {$i<3} {incr i} {
 
 	if { $i==1 } {
-		if { $node0 == 0 || $node1 == 0 } {
+		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			send_user "\nFAILURE: node names not set from \
 				previous srun\n"
 			exit 1
@@ -87,33 +87,43 @@ for {set i 0} {$i<3} {incr i} {
 		set env(SLURM_HOSTFILE) $hostfile
 		set 1node0 $node0
 		set 1node1 $node1
+		set 1node2 $node2
 		set file [open $hostfile "w"]
-		puts $file "$node1\n$node0"
+		puts $file "$node2\n$node0\n$node1"
 		close $file
 	} elseif { $i==2 } {
-		 if { $node0 == 0 || $node1 == 0 } {
+		if { $node_count < 3 } {
+			send_user "WARNING: system must have at least 3 \
+				   nodes to finish this test.  This system \
+				   only has $node_count.\n"
+			exit $exit_code
+		}
+		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			send_user "\nFAILURE: node names not set from \
 				previous srun\n"
 			exit 1
 		}
 		set env(SLURM_HOSTFILE) $hostfile
-		set 2node0 $node0
+		set 2node0 $node1
 		set 2node1 $node0
+		set 2node2 $node0
 		set file [open $hostfile "w"]
-		puts $file "$node0\n$node0"
+		puts $file "$node1\n$node0\n$node0"
 		close $file
 	}
 	#
 	# execute srun with a specific node count
 	#
-	spawn $srun -N2 -l $bin_hostname
+	spawn $srun -N3 -l $bin_hostname
 	expect {
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)
-			} else {
+			} elseif {$task_id == 1} {
 				set node1 $expect_out(2,string)
+			} else {
+				set node2 $expect_out(2,string)
 			}
 			exp_continue
 		}
@@ -130,18 +140,24 @@ for {set i 0} {$i<3} {incr i} {
 		}
 	}
 	if { $i == 1 } {
-		if { [string compare $node0 $1node1] } {
+		if { [string compare $node0 $1node2] } {
 			send_user "\nFAILURE: tasks not distributed by hostfile\n"
 			set exit_code 1
 		} elseif { [string compare $node1 $1node0] } {
 			send_user "\nFAILURE: tasks not distributed by hostfile\n"
 			set exit_code 1
-		}
-	} elseif { $i == 2 } {
-		if { [string compare $node0 $2node1] } {
+		} elseif { [string compare $node2 $1node1] } {
 			send_user "\nFAILURE: tasks not distributed by hostfile\n"
 			set exit_code 1
-		} elseif { [string compare $node1 $2node0] } {
+		}
+	} elseif { $i == 2 } {
+		if { [string compare $node0 $2node0] } {
+			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			set exit_code 1
+		} elseif { [string compare $node1 $2node1] } {
+			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			set exit_code 1
+		} elseif { [string compare $node2 $2node1] } {
 			send_user "\nFAILURE: tasks not distributed by hostfile\n"
 			set exit_code 1
 		}
