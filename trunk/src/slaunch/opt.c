@@ -772,7 +772,6 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	task_dist_states_t dt;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -819,15 +818,13 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_DISTRIB:
-		if (strcmp(val, "unknown") == 0)
-			break;	/* ignore it, passed from salloc */
 	        opt.plane_size = 0;
-		dt = _verify_dist_type(val, &opt.plane_size);
-		if (dt == SLURM_DIST_UNKNOWN) {
-			error("\"%s=%s\" -- invalid distribution type. " 
-			      "ignoring...", e->var, val);
-		} else 
-			opt.distribution = dt;
+		opt.distribution = _verify_dist_type(val, &opt.plane_size);
+		if (opt.distribution == SLURM_DIST_UNKNOWN) {
+			error("\"%s=%s\" -- invalid distribution type. ",
+			      e->var, val);
+			exit(1);
+		}
 		break;
 
 	case OPT_CPU_BIND:
@@ -1063,7 +1060,7 @@ void set_options(const int argc, char **argv)
 			xfree(opt.nodelist_byid);
 			opt.nodelist_byid = xstrdup(optarg);
 			break;
-		case (int)'m':
+		case 'm':
 			opt.plane_size = 0;
 			opt.distribution = _verify_dist_type(optarg, 
 							     &opt.plane_size);
