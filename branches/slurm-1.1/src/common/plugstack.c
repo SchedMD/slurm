@@ -146,13 +146,6 @@ struct spank_handle {
 	slurmd_task_info_t * task;   /* Reference to current task (if valid) */
 };
 
-struct srun_job_info {
-	srun_job_t *job;
-	opt_t      *opt;
-	int         argc;
-	char      **argv;
-};
-
 /*
  *  SPANK plugins stack
  */
@@ -595,16 +588,9 @@ int spank_user(slurmd_job_t * job)
 	return (_do_call_stack(STEP_USER_INIT, job, -1));
 }
 
-int spank_local_user(srun_job_t * job, opt_t *opt, int ac, char **av)
+int spank_local_user(struct spank_launcher_job_info *job)
 {
-	struct srun_job_info si[1];
-
-	si->job  = job;
-	si->opt  = opt;
-	si->argc = ac;
-	si->argv = av;
-
-	return (_do_call_stack(LOCAL_USER_INIT, si, -1));
+	return (_do_call_stack(LOCAL_USER_INIT, job, -1));
 }
 
 int spank_user_task(slurmd_job_t * job, int taskid)
@@ -1083,7 +1069,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	char ***p2argv;
 	slurmd_task_info_t *task;
 	slurmd_job_t  *slurmd_job = NULL;
-	struct srun_job_info *srun_job = NULL;
+	struct spank_launcher_job_info *launcher_job = NULL;
 	va_list vargs; 
 	spank_err_t rc = ESPANK_SUCCESS;
 
@@ -1098,7 +1084,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		return (ESPANK_BAD_ARG);
 
 	if (spank->type == S_TYPE_LOCAL)
-		srun_job = spank->job;
+		launcher_job = spank->job;
 	else
 		slurmd_job = spank->job;
 
@@ -1107,14 +1093,14 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_UID:
 		p2uid = va_arg(vargs, uid_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uid = srun_job->opt->uid;
+			*p2uid = launcher_job->uid;
 		else
 			*p2uid = slurmd_job->uid;
 		break;
 	case S_JOB_GID:
 		p2gid = va_arg(vargs, gid_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2gid = srun_job->opt->gid;
+			*p2gid = launcher_job->gid;
 		else
 			*p2gid = slurmd_job->gid;
 		break;
@@ -1127,21 +1113,21 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_ID:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uint32 = srun_job->job->jobid;
+			*p2uint32 = launcher_job->jobid;
 		else
 			*p2uint32 = slurmd_job->jobid;
 		break;
 	case S_JOB_STEPID:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uint32 = srun_job->job->stepid;
+			*p2uint32 = launcher_job->stepid;
 		else
 			*p2uint32 = slurmd_job->stepid;
 		break;
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uint32 = srun_job->job->step_layout->num_hosts;
+			*p2uint32 = launcher_job->step_layout->num_hosts;
 		else
 			*p2uint32 = slurmd_job->nnodes;
 		break;
@@ -1156,7 +1142,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uint32 = srun_job->job->step_layout->num_tasks;
+			*p2uint32 = launcher_job->step_layout->num_tasks;
 		else
 			*p2uint32 = slurmd_job->nprocs;
 		break;
@@ -1168,8 +1154,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2int = va_arg(vargs, int *);
 		p2argv = va_arg(vargs, char ***);
 		if (spank->type == S_TYPE_LOCAL) {
-			*p2int = srun_job->argc;
-			*p2argv = srun_job->argv;
+			*p2int = launcher_job->argc;
+			*p2argv = launcher_job->argv;
 		} else {
 			*p2int = slurmd_job->argc;
 			*p2argv = slurmd_job->argv;
