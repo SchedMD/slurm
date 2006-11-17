@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -62,7 +62,6 @@ extern int common_init_struct(struct jobacctinfo *jobacct,
 		jobacct_id_t temp_id;
 		temp_id.taskid = (uint16_t)NO_VAL;
 		temp_id.nodeid = (uint32_t)NO_VAL;
-		temp_id.contid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
 	}
 	jobacct->rusage.ru_utime.tv_sec = 0;
@@ -459,81 +458,4 @@ extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer)
 unpack_error:
 	xfree(*jobacct);
        	return SLURM_ERROR;
-}
-
-extern int list_find_prec(prec_t *prec, pid_t *pid)
-{
-	return (prec->pid == *pid);
-}
-
-/* the mutex jobacct_lock needs to be unlocked before this function is
-   called */
-extern void total_jobacct_pids(List prec_list)
-{
-	prec_t *prec = NULL;
-	prec_t *prec_child = NULL;
-	struct jobacctinfo *jobacct = NULL;
-	ListIterator itr;
-	int i = 0;
-	pid_t *pids = NULL;
-	int npids = 0;
-
-	if (!prec_list || !list_count(prec_list)) {
-		return;	/* We have no business being here! */
-	}
-
-	slurm_mutex_lock(&jobacct_lock);
-	if(!task_list || !list_count(task_list) || !prec_list) {
-		slurm_mutex_unlock(&jobacct_lock);
-		return; /* no use in looking if we don't have anything
-			   to look at */
-	}
-
-	itr = list_iterator_create(task_list);
-	while((jobacct = list_next(itr))) {
-		slurm_container_get_pids(jobacct->contid, &pids, &npids);
-		prec = list_find_first(prec_list, (ListFindF)list_find_prec,
-				       &jobacct->pid);
-		if(!prec) {
-			debug("main pid %d doesn't exist",
-			      jobacct->pid);
-			continue;
-		}
-			
-		for(i=0; i<npids; i++) {
-			prec_child = list_find_first(prec_list,
-						     (ListFindF)list_find_prec,
-						     &pids[i]);
-			if(!prec_child) {
-				debug("child pid %d doesn't exist",
-				       pids[i]);
-				continue;
-			}
-			debug("adding %d to %d rss = %f vsize = %f", 
-			       prec_child->pid, prec->pid, 
-			       prec_child->rss, prec_child->vsize);
-			
-			prec->usec += prec_child->usec;
-			prec->ssec += prec_child->ssec;
-			prec->pages += prec_child->pages;
-			prec->rss += prec_child->rss;
-			prec->vsize += prec_child->vsize;
-		}
-		jobacct->max_rss = jobacct->tot_rss = 
-			MAX(jobacct->max_rss, (int)prec->rss);
-		jobacct->max_vsize = jobacct->tot_vsize = 
-			MAX(jobacct->max_vsize, (int)prec->vsize);
-		jobacct->max_pages = jobacct->tot_pages =
-			MAX(jobacct->max_pages, prec->pages);
-		jobacct->min_cpu = jobacct->tot_cpu = 
-			MAX(jobacct->min_cpu, 
-			    (prec->usec + prec->ssec));
-		debug("%d size now %d %d time %d",
-		       jobacct->pid, jobacct->max_rss, 
-		       jobacct->max_vsize, jobacct->tot_cpu);
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&jobacct_lock);
-
-	return;
 }

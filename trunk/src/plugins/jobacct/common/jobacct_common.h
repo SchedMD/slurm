@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -56,11 +56,10 @@
 #include <sys/stat.h>
 
 #include "src/common/slurm_jobacct.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/common/node_select.h"
 
 #include <ctype.h>
 
@@ -68,7 +67,6 @@
 
 struct jobacctinfo {
 	pid_t pid;
-	uint32_t contid;
 	struct rusage rusage; /* returned by wait3 */
 	uint32_t max_vsize; /* max size of virtual memory */
 	jobacct_id_t max_vsize_id; /* contains which task number it was on */
@@ -87,16 +85,6 @@ struct jobacctinfo {
 	uint32_t tot_cpu; /* total cpu time 
 				 (used to figure out ave later) */
 };
-
-typedef struct prec {	/* process record */
-	pid_t	pid;
-	pid_t	ppid;
-	int     usec;   /* user cpu time */
-	int     ssec;   /* system cpu time */
-	int     pages;  /* pages */
-	float	rss;	/* rss */
-	float	vsize;	/* virtual size */
-} prec_t;
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
 #ifndef __jobacctinfo_t_defined
@@ -119,8 +107,6 @@ extern void common_aggregate(struct jobacctinfo *dest,
 extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
 extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
-extern int list_find_prec(prec_t *prec, pid_t *pid);
-extern void total_jobacct_pids(List prec_list);
 
 /*in common_slurmctld.c */
 extern int common_init_slurmctld(char *job_acct_log);

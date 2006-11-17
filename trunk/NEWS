@@ -5,7 +5,6 @@ documents those changes that are of interest to users and admins.
 =============================
  -- BLUEGENE - added configurable images for bluegene block creation.
  -- Plug a bunch of memory leaks.
- -- Added proctrack to track processes monitored by job accouting plugin
  -- Support processors, core, and physical IDs that are not in numeric 
     order (in slurmd to gathering node state information, based on patch
     by Don Albert, Bull).
