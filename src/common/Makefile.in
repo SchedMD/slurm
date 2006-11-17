@@ -73,17 +73,16 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	xassert.h xstring.c xstring.h xsignal.c xsignal.h forward.c \
-	forward.h global_srun.c global_srun.h strlcpy.c strlcpy.h \
-	list.c list.h net.c net.h fd.c fd.h log.c log.h cbuf.c cbuf.h \
-	safeopen.c safeopen.h bitstring.c bitstring.h mpi.c mpi.h \
-	pack.c pack.h parse_config.c parse_config.h parse_spec.c \
-	parse_spec.h plugin.c plugin.h plugrack.c plugrack.h \
-	read_config.c read_config.h node_select.c node_select.h env.c \
-	env.h slurm_cred.h slurm_cred.c slurm_errno.c \
-	slurm_protocol_api.c slurm_protocol_api.h \
-	slurm_protocol_pack.c slurm_protocol_pack.h \
-	slurm_protocol_util.c slurm_protocol_util.h \
-	slurm_protocol_socket_implementation.c \
+	forward.h strlcpy.c strlcpy.h list.c list.h net.c net.h fd.c \
+	fd.h log.c log.h cbuf.c cbuf.h safeopen.c safeopen.h \
+	bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
+	parse_config.c parse_config.h parse_spec.c parse_spec.h \
+	plugin.c plugin.h plugrack.c plugrack.h read_config.c \
+	read_config.h node_select.c node_select.h env.c env.h \
+	slurm_cred.h slurm_cred.c slurm_errno.c slurm_protocol_api.c \
+	slurm_protocol_api.h slurm_protocol_pack.c \
+	slurm_protocol_pack.h slurm_protocol_util.c \
+	slurm_protocol_util.h slurm_protocol_socket_implementation.c \
 	slurm_protocol_socket_common.h slurm_protocol_common.h \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
@@ -99,11 +98,11 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	timers.h slurm_xlator.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
-	forward.lo global_srun.lo strlcpy.lo list.lo net.lo fd.lo \
-	log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
-	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
-	read_config.lo node_select.lo env.lo slurm_cred.lo \
-	slurm_errno.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
+	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
+	safeopen.lo bitstring.lo mpi.lo pack.lo parse_config.lo \
+	parse_spec.lo plugin.lo plugrack.lo read_config.lo \
+	node_select.lo env.lo slurm_cred.lo slurm_errno.lo \
+	slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
 	util-net.lo slurm_auth.lo slurm_jobacct.lo slurm_jobcomp.lo \
@@ -340,8 +339,6 @@ libcommon_la_SOURCES = \
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
 	forward.c forward.h     	\
-	global_srun.c                   \
-	global_srun.h                   \
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	net.c net.h                     \
@@ -486,7 +483,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_srun.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
