@@ -222,6 +222,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				      hostfile);
 				opt.nodelist = xstrdup(nodelist);
 				free(nodelist);
+				opt.distribution = SLURM_DIST_ARBITRARY;
 			}
 		}
 	}
