@@ -124,6 +124,7 @@ static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 static int   _change_rlimit_rss(void);
 static int   _slurm_debug_env_val (void);
+static int   _call_spank_local_user (srun_job_t *job);
 
 int srun(int ac, char **av)
 {
@@ -324,6 +325,9 @@ int srun(int ac, char **av)
 
 	/* job structure should now be filled in */
 
+	if (_call_spank_local_user (job) < 0)
+		job_fatal(job, "Failure in local plugin stack");
+
 	/*
 	 *  Enhance environment for job
 	 */
@@ -458,6 +462,22 @@ int srun(int ac, char **av)
 	log_fini();
 	exit(exitcode);
 }
+
+static int _call_spank_local_user (srun_job_t *job)
+{
+	struct spank_launcher_job_info info[1];
+
+	info->uid = opt.uid;
+	info->gid = opt.gid;
+	info->jobid = job->jobid;
+	info->stepid = job->stepid;
+	info->step_layout = job->step_layout;	
+	info->argc = remote_argc;
+	info->argv = remote_argv;
+
+	return spank_local_user(info);
+}
+
 
 static int _slurm_debug_env_val (void)
 {
