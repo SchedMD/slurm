@@ -183,25 +183,13 @@ int slaunch(int argc, char **argv)
 	step_req.relative = opt.relative;
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
-		step_req.task_dist = SLURM_DIST_BLOCK;
-		break;
 	case SLURM_DIST_ARBITRARY:
-		step_req.task_dist = SLURM_DIST_ARBITRARY;
-		break;
 	case SLURM_DIST_CYCLIC:
-		step_req.task_dist = SLURM_DIST_CYCLIC;
-		break;
 	case SLURM_DIST_CYCLIC_CYCLIC:
-		step_req.task_dist = SLURM_DIST_CYCLIC_CYCLIC;
-		break;
 	case SLURM_DIST_CYCLIC_BLOCK:
-		step_req.task_dist = SLURM_DIST_CYCLIC_BLOCK;
-		break;
 	case SLURM_DIST_BLOCK_CYCLIC:
-		step_req.task_dist = SLURM_DIST_BLOCK_CYCLIC;
-		break;
 	case SLURM_DIST_BLOCK_BLOCK:
-		step_req.task_dist = SLURM_DIST_BLOCK_BLOCK;
+		step_req.task_dist = opt.distribution;
 		break;
 	case SLURM_DIST_PLANE:
 		step_req.task_dist = SLURM_DIST_PLANE;
