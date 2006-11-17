@@ -264,12 +264,13 @@ _has_state_changed(void)
 static void 
 _attempt_backfill(struct part_record *part_ptr)
 {
-	int i, error_code = 0;
+	int i, cg_hung = 0, error_code = 0;
 	uint32_t max_pending_prio = 0;
 	uint32_t min_pend_job_size = INFINITE;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	part_specs_t part_specs;
+	time_t now = time(NULL);
 
 #if __DEBUG
 	info("backfill: attempt on partition %s", part_ptr->name);
@@ -289,6 +290,13 @@ _attempt_backfill(struct part_record *part_ptr)
 			continue;	/* job in different partition */
 
 		if (job_ptr->job_state & JOB_COMPLETING) {
+			long wait_time = (long) difftime(now, job_ptr->end_time);
+			if (wait_time > 600) {
+				/* Job has been in completing state for 
+				 * >10 minutes, try to schedule around it */
+				cg_hung++;
+				continue;
+			}
 #if __DEBUG
 			info("backfill: Job %u completing, skip partition", 
 					job_ptr->job_id);
@@ -315,7 +323,7 @@ _attempt_backfill(struct part_record *part_ptr)
 	if (error_code) 
 		goto cleanup;
 
-	i = list_count(run_job_list);
+	i = list_count(run_job_list) + cg_hung;
 	if ( (i == 0) || (i > MAX_JOB_CNT) )
 		goto cleanup;		/* no running jobs or already have many */
 	if (list_is_empty(pend_job_list))

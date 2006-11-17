@@ -19,11 +19,11 @@ behavior of SLURM job launch.
 .SH "SPANK PLUGINS"
 \fBSPANK\fR plugins are loaded in two separate contexts during a 
 \fBSLURM\fR job.  In "local" context, the plugin is loaded by \fBsrun\fR
-or other \fBSLURM\fR user interface. In local context, the plugin options
-are read by \fBSPANK\fR, and options are presented to the user. In 
-"remote" context, the plugin is running on a compute node of the job,
-in other words, the plugin is loaded by \fBslurmd\fR. Only the 
-\fBinit\fR and \fBexit\fR functions are called in local context.
+or other \fBSLURM\fR user interface. In local context, options provided by 
+plugins are read by \fBSPANK\fR, and these options are presented to the user. 
+In "remote" context, the plugin is loaded on a compute node of the job,
+in other words, the plugin is loaded by \fBslurmd\fR. In local context, only
+the \fBinit\fR, \fBexit\fR, and \fBuser_local_init\fR functions are called.
 Plugins may query the context in which they are running with the
 \fBspank_remote\fR function defined in \fB<slurm/spank.h>\fR.
 .LP
@@ -34,6 +34,9 @@ launch. A plugin may define the following functions:
 Called just after plugins are loaded. In remote context, this is
 just after job step is initialized. For local context, this is before
 user options are processed.
+.TP
+\fBslurm_spank_local_user_init\fR
+Called in local (srun) context only after all options have been processed.
 .TP
 \fBslurm_spank_user_init\fR 
 Called after privileges are temporarily dropped. (remote context only)
@@ -67,6 +70,19 @@ SLURM when the plugin calls functions like \fBspank_get_item\fR and
 \fBspank_getenv\fR. Configured arguments (See \fBCONFIGURATION\fR
 below) are passed in the argument vector \fBargv\fR with argument
 count \fBac\fR.
+.LP
+\fBSPANK\fR plugins can query the current list of supported slurm_spank\*
+symbols to determine if the current version supports a given plugin hook.
+This may be useful because the list of plugin symbols may grow in the
+future. The query is done using the \fBspank_symbol_supported\fR function,
+which has the following prototype:
+.nf
+
+    int \fBspank_symbol_supported\fR (const char *sym);
+
+.fi
+.LP
+The return value is 1 if the symbol is supported, 0 if not.
 .LP
 \fBSPANK\fR plugins do not have direct access to internally defined SLURM 
 data structures. Instead, information about the currently executing
@@ -117,6 +133,10 @@ the job's environment. The prototypes are:
 		           const char *val, int overwrite);
  spank_err_t \fBspank_unsetenv\fR (spank_t spank, const char *var);
 .fi
+.LP
+These are only necessary in remote context since modifications of
+the standard process environment using \fBsetenv\fR(3), \fBgetenv\fR(3),
+and \fBunsetenv\fR(3) may be used in local context.
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
 for \fBspank_getenv\fR usage.
