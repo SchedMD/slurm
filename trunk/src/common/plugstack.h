@@ -51,9 +51,21 @@
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+struct spank_launcher_job_info {
+	uid_t       uid;
+	gid_t       gid;
+	uint32_t    jobid;
+	uint32_t    stepid;
+	slurm_step_layout_t *step_layout;
+	int         argc;
+	char      **argv;
+};
+
 int spank_init (slurmd_job_t *job);
 
 int spank_user (slurmd_job_t *job);
+
+int spank_local_user (struct spank_launcher_job_info *job);
 
 int spank_user_task (slurmd_job_t *job, int taskid);
 

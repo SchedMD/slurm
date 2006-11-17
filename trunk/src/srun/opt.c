@@ -2376,8 +2376,7 @@ _create_path_list(void)
 
 	if (!path) {
 		error("Error in PATH environment variable");
-		list_destroy(l);
-		return NULL;
+		return l;
 	}
 
 	c = lc = path;
@@ -2679,7 +2678,7 @@ static void _help(void)
 "  -l, --label                 prepend task number to lines of stdout/err\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
-"                              (type = block|cyclic|hostfile)\n"
+"                              (type = block|cyclic|arbitrary)\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              run under already allocated job\n"
 "      --mpi=type              type of MPI being used\n"

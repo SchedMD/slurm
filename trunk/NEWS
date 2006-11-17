@@ -107,6 +107,12 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.20
+=========================
+ - Added new SPANK plugin hook slurm_spank_local_user_init() called
+   from srun after node allocation.
+ - Fixed bug with hostfile support not working on a direct srun
+
 * Changes in SLURM 1.1.19
 =========================
  - BLUEGENE - make sure the order of blocks read in from the bluegene.conf
@@ -491,6 +497,10 @@ documents those changes that are of interest to users and admins.
  -- switch/elan: Fix bug in propagation of ELAN_STATKEY environment variable.
  -- Fix bug in slurmstepd IO code that can result in it spinning if a
     certain error occurs.
+ -- Remove nodes from srun's required node list if their count exceeds 
+    the number of requested tasks.
+ -- sched/backfill to schedule around jobs that are hung in a completing 
+    state.
 
 * Changes in SLURM 1.0.15
 =========================

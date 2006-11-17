@@ -413,6 +413,7 @@ job_desc_msg_create_from_opts (char *script)
 			} else {
 				debug("loading nodes from hostfile %s",
 				      hostfile);
+				opt.nodelist = xstrdup(nodelist);
 				j->req_nodes = xstrdup(nodelist);
 				free(nodelist);
 				opt.distribution = SLURM_DIST_ARBITRARY;

@@ -230,7 +230,7 @@ void ping_nodes (void)
 
 		/* Do not keep pinging down nodes since this can induce
 		 * huge delays in hierarchical communication fail-over */
-		if (no_resp_flag)
+		if ((no_resp_flag) && (base_state == NODE_STATE_DOWN))
 			continue;
 
 		hostlist_push(ping_agent_args->hostlist, node_ptr->name);
