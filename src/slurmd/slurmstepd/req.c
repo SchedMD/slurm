@@ -560,9 +560,8 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 
 	if (killpg(job->pgid, signal) == -1) {
 		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pgid %d: %s", 
-			signal, job->jobid, job->stepid, job->pgid,
-			slurm_strerror(rc));
+		verbose("Error sending signal %d to %u.%u, pgid %d: %m", 
+			signal, job->jobid, job->stepid, job->pgid);
 	} else {
 		verbose("Sent signal %d to %u.%u, pgid %d", 
 			signal, job->jobid, job->stepid, job->pgid);
@@ -634,9 +633,9 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 
 	if (kill(job->task[ltaskid]->pid, signal) == -1) {
 		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pid %d: %s", 
+		verbose("Error sending signal %d to %u.%u, pid %d: %m", 
 			signal, job->jobid, job->stepid,
-			job->task[ltaskid]->pid, slurm_strerror(rc));
+			job->task[ltaskid]->pid);
 	} else {
 		verbose("Sent signal %d to %u.%u, pid %d", 
 			signal, job->jobid, job->stepid,
@@ -699,9 +698,8 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	if (slurm_container_signal(job->cont_id, signal) < 0) {
 		rc = -1;
 		errnum = errno;
-		verbose("Error sending signal %d to %u.%u: %s", 
-			signal, job->jobid, job->stepid, 
-			slurm_strerror(rc));
+		verbose("Error sending signal %d to %u.%u: %m", 
+			signal, job->jobid, job->stepid);
 	} else {
 		verbose("Sent signal %d to %u.%u", 
 			signal, job->jobid, job->stepid);
@@ -759,9 +757,8 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 	if (slurm_container_signal(job->cont_id, SIGKILL) < 0) {
 		rc = -1;
 		errnum = errno;
-		verbose("Error sending signal %d to %u.%u: %s", 
-			SIGKILL, job->jobid, job->stepid, 
-			slurm_strerror(rc));
+		verbose("Error sending signal %d to %u.%u: %m", 
+			SIGKILL, job->jobid, job->stepid);
 	} else {
 		verbose("Sent signal %d to %u.%u", 
 			signal, job->jobid, job->stepid);
