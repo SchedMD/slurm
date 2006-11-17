@@ -76,7 +76,7 @@ expect {
 set node0 0
 set node1 0
 
-for {set i 0} {$i<2} {incr i} {
+for {set i 0} {$i<3} {incr i} {
 
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 } {
@@ -89,6 +89,18 @@ for {set i 0} {$i<2} {incr i} {
 		set 1node1 $node1
 		set file [open $hostfile "w"]
 		puts $file "$node1\n$node0"
+		close $file
+	} elseif { $i==2 } {
+		 if { $node0 == 0 || $node1 == 0 } {
+			send_user "\nFAILURE: node names not set from \
+				previous srun\n"
+			exit 1
+		}
+		set env(SLURM_HOSTFILE) $hostfile
+		set 2node0 $node0
+		set 2node1 $node0
+		set file [open $hostfile "w"]
+		puts $file "$node0\n$node0"
 		close $file
 	}
 	#
@@ -117,14 +129,25 @@ for {set i 0} {$i<2} {incr i} {
 		eof {
 		}
 	}
+	if { $i == 1 } {
+		if { [string compare $node0 $1node1] } {
+			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			set exit_code 1
+		} elseif { [string compare $node1 $1node0] } {
+			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			set exit_code 1
+		}
+	} elseif { $i == 2 } {
+		if { [string compare $node0 $2node1] } {
+			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			set exit_code 1
+		} elseif { [string compare $node1 $2node0] } {
+			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			set exit_code 1
+		}
+	}
 }
-if { [string compare $node0 $1node1] } {
-	send_user "\nFAILURE: tasks not distributed by hostfile\n"
-	set exit_code 1
-} elseif { [string compare $node1 $1node0] } {
-	send_user "\nFAILURE: tasks not distributed by hostfile\n"
-	set exit_code 1
-}
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
