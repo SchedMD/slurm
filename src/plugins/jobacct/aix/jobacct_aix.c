@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -83,11 +83,21 @@ const uint32_t plugin_version = 100;
 	
 /* Other useful declarations */
 #ifdef HAVE_AIX
+typedef struct prec {	/* process record */
+	pid_t   pid;
+	pid_t   ppid;
+	int     usec;   /* user cpu time */
+	int     ssec;   /* system cpu time */
+	int     pages;  /* pages */
+	float	rss;	/* maxrss */
+	float	vsize;	/* max virtual size */
+} prec_t;
 
 static int freq = 0;
 static int pagesize = 0;
 /* Finally, pre-define all the routines. */
 
+static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
@@ -107,12 +117,6 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
  */
 extern int init ( void )
 {
-	char *proctrack = slurm_get_proctrack_type();
-	if(strcasecmp(proctrack, "proctrack/aix")) {
-		fatal("must run %s with Proctracktype=proctrack/aix",
-		      plugin_name);
-	}
-	xfree(proctrack);
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -289,6 +293,50 @@ void jobacct_p_suspendpoll()
 
 #ifdef HAVE_AIX
 
+/* 
+ * _get_offspring_data() -- collect memory usage data for the offspring
+ *
+ * For each process that lists <pid> as its parent, add its memory
+ * usage data to the ancestor's <prec> record. Recurse to gather data
+ * for *all* subsequent generations.
+ *
+ * IN:	prec_list       list of prec's
+ * 	ancestor	The entry in prec_list to which the data
+ * 			should be added. Even as we recurse, this will
+ * 			always be the prec for the base of the family
+ * 			tree.
+ * 	pid		The process for which we are currently looking 
+ * 			for offspring.
+ *
+ * OUT:	none.
+ *
+ * RETVAL:	none.
+ *
+ * THREADSAFE! Only one thread ever gets here.
+ */
+static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
+{
+	ListIterator itr;
+	prec_t *prec = NULL;
+	
+	itr = list_iterator_create(prec_list);
+	while((prec = list_next(itr))) {
+		if (prec->ppid == pid) {
+			_get_offspring_data(prec_list, ancestor, prec->pid);
+			debug2("adding %d to %d rss = %f vsize = %f", 
+			      prec->pid, ancestor->pid, 
+			      prec->rss, prec->vsize);
+			ancestor->usec += prec->usec;
+			ancestor->ssec += prec->ssec;
+			ancestor->pages += prec->pages;
+			ancestor->rss += prec->rss;
+			ancestor->vsize += prec->vsize;
+		}
+	}
+	list_iterator_destroy(itr);
+	
+	return;
+}
 
 /*
  * _get_process_data() - Build a table of all current processes
@@ -310,7 +358,10 @@ static void _get_process_data()
 	int pid = 0;
 	static int processing = 0;
 	prec_t *prec = NULL;
+	struct jobacctinfo *jobacct = NULL;
 	List prec_list = NULL;
+	ListIterator itr;
+	ListIterator itr2;
 	
 	if(processing) {
 		debug("already running, returning");
@@ -338,8 +389,47 @@ static void _get_process_data()
 		/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
 /*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
 	}
-
-	total_jobacct_pids(prec_list);
+	if(!list_count(prec_list))
+		goto finished;
+	
+	slurm_mutex_lock(&jobacct_lock);
+	if(!task_list || !list_count(task_list)) {
+		slurm_mutex_unlock(&jobacct_lock);
+		goto finished;
+	}
+	itr = list_iterator_create(task_list);
+	while((jobacct = list_next(itr))) {
+		itr2 = list_iterator_create(prec_list);
+		while((prec = list_next(itr2))) {
+			//debug2("pid %d ? %d", prec->ppid, jobacct->pid);
+			if (prec->pid == jobacct->pid) {
+				/* find all my descendents */
+				_get_offspring_data(prec_list, prec, 
+						    prec->pid);
+						
+				/* tally their usage */
+				jobacct->max_rss = jobacct->tot_rss = 
+					MAX(jobacct->max_rss, (int)prec->rss);
+				jobacct->max_vsize = jobacct->tot_vsize = 
+					MAX(jobacct->max_vsize, 
+					    (int)prec->vsize);
+				jobacct->max_pages = jobacct->tot_pages =
+					MAX(jobacct->max_pages, prec->pages);
+				jobacct->min_cpu = jobacct->tot_cpu = 
+					MAX(jobacct->min_cpu,
+					    (prec->usec + prec->ssec));
+				debug2("%d size now %d %d time %d",
+				      jobacct->pid, jobacct->max_rss, 
+				      jobacct->max_vsize, jobacct->tot_cpu);
+				
+				break;
+			}
+		}
+		list_iterator_destroy(itr2);
+	}
+	list_iterator_destroy(itr);	
+	slurm_mutex_unlock(&jobacct_lock);
+finished:
 	list_destroy(prec_list);
 	processing = 0;	
 
@@ -355,7 +445,7 @@ static void _get_process_data()
 static void *_watch_tasks(void *arg) 
 {
 
-	while(!jobacct_shutdown) {    /* Do this until shutdown is requested */
+	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 
 		}
@@ -363,6 +453,7 @@ static void *_watch_tasks(void *arg)
 	} 
 	return NULL;
 }
+
 
 static void _destroy_prec(void *object)
 {
