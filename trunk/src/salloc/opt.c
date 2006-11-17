@@ -1257,7 +1257,7 @@ static void _usage(void)
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate] [--no-kill]\n"
-"              [--share] [-m dist] [-J jobname] [--jobid=id]\n"
+"              [--share] [-J jobname] [--jobid=id]\n"
 "              [--verbose]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
