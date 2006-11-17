@@ -122,6 +122,8 @@ static void _mpir_set_executable_names(const char *executable_name);
 static void _mpir_dump_proctable(void);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
+static int _call_spank_local_user(slurm_step_ctx step_ctx,
+				  slurm_job_step_launch_t *step_params);
 
 int slaunch(int argc, char **argv)
 {
@@ -284,6 +286,8 @@ int slaunch(int argc, char **argv)
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	verbose("Launching job step %u.%u", job_id, step_id);
+
+	_call_spank_local_user(step_ctx, &params);
 
 	if (slurm_step_launch(step_ctx, &params, &callbacks) != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
@@ -793,6 +797,27 @@ _task_state_struct_free(void)
 	bit_free(task_state.finish_normal);
 	bit_free(task_state.finish_abnormal);
 }
+
+
+/* FIXME - maybe we can push this under the step_launch function? */
+static int _call_spank_local_user (slurm_step_ctx step_ctx,
+				   slurm_job_step_launch_t *step_params)
+{
+	struct spank_launcher_job_info info[1];
+	job_step_create_response_msg_t *step_resp;
+
+	info->uid = getuid();
+	info->gid = step_params->gid;
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &info->jobid);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &info->stepid);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
+	info->step_layout = step_resp->step_layout;
+	info->argc = step_params->argc;
+	info->argv = step_params->argv;
+
+	return spank_local_user(info);
+}
+
 
 /**********************************************************************
  * Functions for manipulating the MPIR_* global variables which
