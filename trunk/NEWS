@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed bug with aix not looking in the correct dir for the proctrack
     include files
  -- Removed global_srun.* from common merged it into srun proper
+ -- Added bluegene troubleshooting 
 
 * Changes in SLURM 1.2.0-pre6
 =============================

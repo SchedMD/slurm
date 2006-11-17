@@ -290,6 +290,7 @@ fail due to lack of memory or other resources.
 It is best to minimize other work on the front-end node executing slurmd
 so as to maximize its performance and minimize other risk factors.</p>
 
+<a name="bluegene-conf"><h2>Bluegene.conf File Creation</h2></a>
 <p>In addition to the normal <i>slurm.conf</i> file, a new 
 <i>bluegene.conf</i> configuration file is required with information pertainate 
 to the sytem.
@@ -593,6 +594,6 @@ scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 September 2006</p>
+<p style="text-align:center;">Last modified 17 November 2006</p>
 
 <!--#include virtual="footer.txt"-->
