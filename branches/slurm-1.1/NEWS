@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  - Added new SPANK plugin hook slurm_spank_local_user_init() called
    from srun after node allocation.
+ - Fixed bug with hostfile support not working on a direct srun
 
 * Changes in SLURM 1.1.19
 =========================
