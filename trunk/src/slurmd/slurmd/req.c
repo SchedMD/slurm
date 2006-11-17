@@ -648,6 +648,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
 	bool     super_user = false;
+	bool     first_job_run;
 	slurm_addr self;
 	slurm_addr *cli = &msg->orig_addr;
 	socklen_t adlen;
@@ -672,6 +673,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	info("launch task %u.%u request from %u.%u@%s (port %hu)", req->job_id,
 	     req->job_step_id, req->uid, req->gid, host, port);
 
+	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
 				  req->tasks_to_launch[nodeid],
 				  &step_hset) < 0) {
@@ -687,7 +689,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 #ifndef HAVE_FRONT_END
-	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) {
+	if (first_job_run) {
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
 			error("[job %u] prolog failed", req->job_id);
