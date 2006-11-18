@@ -284,11 +284,10 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 	if ((revents & POLLHUP) && obj->ops->handle_close) {
 		(*obj->ops->handle_close) (obj, objList);
 	} else if (((revents & POLLIN) || (revents & POLLHUP)) 
-	    && obj->ops->handle_read ) {
+		   && obj->ops->handle_read ) {
 		(*obj->ops->handle_read ) (obj, objList);
-	}
-
-	if ((revents & POLLOUT) && obj->ops->handle_write) {
+	} else if (((revents & POLLOUT) || (revents & POLLHUP))
+		   && obj->ops->handle_write) {
 		(*obj->ops->handle_write) (obj, objList);
 	}
 }
