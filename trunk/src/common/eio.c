@@ -128,7 +128,7 @@ static void _mark_shutdown_true(List obj_list)
 {
 	ListIterator objs;
 	eio_obj_t *obj;
-	
+
 	objs = list_iterator_create(obj_list);
 	while ((obj = list_next(objs))) {
 		obj->shutdown = true;
