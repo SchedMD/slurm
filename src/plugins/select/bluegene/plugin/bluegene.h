@@ -224,7 +224,7 @@ extern void *bluegene_agent(void *args);
  */
 extern int create_defined_blocks(bg_layout_t overlapped);
 extern int create_dynamic_block(ba_request_t *request, List my_block_list);
-extern int create_full_system_block(int *block_inx);
+extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);

@@ -56,7 +56,7 @@ List bg_sys_allocated = NULL;
  * OUT - bp: will point to BP at location loc
  * OUT - rc: error code (0 = success)
  */
-#ifdef HAVE_BG_FILES
+
 static void _pre_allocate(bg_record_t *bg_record);
 static int _post_allocate(bg_record_t *bg_record);
 
@@ -100,6 +100,7 @@ static void _print_list(List list)
  */
 static void _pre_allocate(bg_record_t *bg_record)
 {
+#ifdef HAVE_BG_FILES
 	int rc;
 	int send_psets=bluegene_numpsets;
 
@@ -145,6 +146,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 /* 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,  */
 /* 			&bg_record->bg_block_id)) != STATUS_OK) */
 /* 		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc)); */
+#endif
 }
 
 /** 
@@ -152,12 +154,15 @@ static void _pre_allocate(bg_record_t *bg_record)
  */
 static int _post_allocate(bg_record_t *bg_record)
 {
-	int rc, i;
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BG_FILES	
+	int i;
 	pm_partition_id_t block_id;
 	struct passwd *pw_ent = NULL;
+
 	/* Add partition record to the DB */
 	debug2("adding block\n");
-	
+
 	for(i=0;i<MAX_ADD_RETRY; i++) {
 		if ((rc = bridge_add_block(bg_record->bg_block)) 
 		    != STATUS_OK) {
@@ -176,7 +181,6 @@ static int _post_allocate(bg_record_t *bg_record)
 			error("bridge_free_block(): %s", bg_err_str(rc));
 		fatal("couldn't add last block.");
 	}
-	
 	debug2("done adding\n");
 	
 	/* Get back the new block id */
@@ -214,9 +218,17 @@ static int _post_allocate(bg_record_t *bg_record)
 	/* We are done with the block */
 	if ((rc = bridge_free_block(bg_record->bg_block)) != STATUS_OK)
 		error("bridge_free_block(): %s", bg_err_str(rc));	
+#else
+	static int block_inx = 0;
+	bg_record->bg_block_id = xmalloc(8);
+	snprintf(bg_record->bg_block_id, 8,
+		 "RMP%d", block_inx++);
+#endif	
+
 	return rc;
 }
 
+#ifdef HAVE_BG_FILES
 static int _find_nodecard(bg_record_t *bg_record, 
 			  rm_partition_t *block_ptr)
 {
@@ -316,12 +328,16 @@ cleanup:
 	free(my_card_name);
 	return SLURM_SUCCESS;
 }
+#endif
 
 extern int configure_block(bg_record_t *bg_record)
 {
 	/* new block to be added */
+#ifdef HAVE_BG_FILES
 	bridge_new_block(&bg_record->bg_block); 
+#endif
 	_pre_allocate(bg_record);
+
 	if(bg_record->cpus_per_bp < procs_per_node)
 		configure_small_block(bg_record);
 	else
@@ -331,6 +347,7 @@ extern int configure_block(bg_record_t *bg_record)
 	return 1;
 }
 
+#ifdef HAVE_BG_FILES
 /*
  * Download from MMCS the initial BG block information
  */

@@ -39,26 +39,28 @@
 
 #include "bluegene.h"
 
-#ifdef HAVE_BG_FILES
 
 List bg_bp_list;
 
+#ifdef HAVE_BG_FILES
 static int _get_bp_by_location(rm_BGL_t* my_bg, 
 			       int* curr_coord, 
 			       rm_BP_t** bp);
 //static int _set_switch(rm_switch_t* curr_switch, ba_connection_t *int_wire);
 static int _add_switch_conns(rm_switch_t* curr_switch, 
 			     bg_switch_t *bg_switch);
+#endif
+static int _destroy_bg_bp_list(List bg_bp);
 static int _lookat_path(bg_bp_t *bg_bp, 
 			ba_switch_t *curr_switch, 
 			int source, 
 			int target, 
 			int dim);
-static int _destroy_bg_bp_list(List bg_bp);
 /** 
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
+#ifdef HAVE_BG_FILES
 static int _get_bp_by_location(rm_BGL_t* my_bg, int* curr_coord, rm_BP_t** bp)
 {
 	int i, bp_num, rc;
@@ -150,7 +152,6 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		}
 		conn.part_state = RM_PARTITION_READY;
 		
-		
 		if(firstconnect) {
 			if ((rc = bridge_set_data(curr_switch, 
 						  RM_SwitchFirstConnection, 
@@ -177,7 +178,6 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				return SLURM_ERROR;
 			}
 		} 
-		
 			
 		conn_num++;
 		debug2("adding %d -> %d",bg_conn->source, bg_conn->target);
@@ -190,8 +190,37 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		
 		return SLURM_ERROR;
 	} 
-	
 				
+	return SLURM_SUCCESS;
+}
+#endif
+
+static int _destroy_bg_bp_list(List bg_bp_list)
+{
+	bg_switch_t *bg_switch;
+	bg_conn_t *bg_conn;
+	bg_bp_t *bg_bp;
+	
+	if(bg_bp_list) {
+		while((bg_bp = list_pop(bg_bp_list)) != NULL) {
+			while((bg_switch = list_pop(bg_bp->switch_list)) 
+			      != NULL) {
+				while((bg_conn = list_pop(
+					       bg_switch->conn_list)) 
+				      != NULL) {
+					if(bg_conn)
+						xfree(bg_conn);
+				}
+				list_destroy(bg_switch->conn_list);
+				if(bg_switch)
+					xfree(bg_switch);
+			}
+			list_destroy(bg_bp->switch_list);
+			if(bg_bp)
+				xfree(bg_bp);
+		}
+		list_destroy(bg_bp_list);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -300,41 +329,13 @@ static int _lookat_path(bg_bp_t *bg_bp, ba_switch_t *curr_switch,
 	return SLURM_SUCCESS;
 }
 
-static int _destroy_bg_bp_list(List bg_bp_list)
-{
-	bg_switch_t *bg_switch;
-	bg_conn_t *bg_conn;
-	bg_bp_t *bg_bp;
-	
-	if(bg_bp_list) {
-		while((bg_bp = list_pop(bg_bp_list)) != NULL) {
-			while((bg_switch = list_pop(bg_bp->switch_list)) 
-			      != NULL) {
-				while((bg_conn = list_pop(
-					       bg_switch->conn_list)) 
-				      != NULL) {
-					if(bg_conn)
-						xfree(bg_conn);
-				}
-				list_destroy(bg_switch->conn_list);
-				if(bg_switch)
-					xfree(bg_switch);
-			}
-			list_destroy(bg_bp->switch_list);
-			if(bg_bp)
-				xfree(bg_bp);
-		}
-		list_destroy(bg_bp_list);
-	}
-	return SLURM_SUCCESS;
-}
-
 extern int configure_small_block(bg_record_t *bg_record)
 {
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BG_FILES	
 	bool small = true;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
-	int rc = SLURM_SUCCESS;
 	rm_BP_t *curr_bp = NULL;
 	rm_bp_id_t bp_id = NULL;
 	int num_ncards = 0;
@@ -342,13 +343,14 @@ extern int configure_small_block(bg_record_t *bg_record)
 	rm_nodecard_list_t *ncard_list = NULL;
 	rm_quarter_t quarter;
 	int num, i;
-
+#endif
 	if(bg_record->bp_count != 1) {
 		error("Requesting small block with %d bps, needs to be 1.",
 		      bg_record->bp_count);
 		return SLURM_ERROR;
 	}
 	
+#ifdef HAVE_BG_FILES	
 	/* set that we are doing a small block */
 	
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall, 
@@ -495,7 +497,7 @@ cleanup:
 		error("bridge_free_nodecard_list(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
-	
+#endif
 	debug2("making the small block");
 	return rc;
 }
@@ -506,20 +508,22 @@ cleanup:
 extern int configure_block_switches(bg_record_t * bg_record)
 {
 	int i, rc = SLURM_SUCCESS;
-	ListIterator itr, switch_itr, bg_itr;
+	ListIterator itr, bg_itr;
 	ba_node_t* ba_node = NULL;
-	rm_BP_t *curr_bp = NULL;
-	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
-	rm_switch_t *curr_switch = NULL;
 	ba_switch_t *ba_switch = NULL;
+	bg_bp_t *bg_bp = NULL;
+	bg_switch_t *bg_switch = NULL;
+#ifdef HAVE_BG_FILES
+	ListIterator switch_itr;
 	char *bpid = NULL, *curr_bpid = NULL;
 	int found_bpid = 0;
 	int switch_count;
-	bg_bp_t *bg_bp = NULL;
-	bg_switch_t *bg_switch = NULL;
 	int first_bp=1;
 	int first_switch=1;
-	
+	rm_BP_t *curr_bp = NULL;
+	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
+	rm_switch_t *curr_switch = NULL;
+#endif	
 	if(!bg_record->bg_block_list) {
 		error("There was no block_list given, can't create block");
 		return SLURM_ERROR;
@@ -584,6 +588,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	list_iterator_destroy(bg_itr);
 
 	
+#ifdef HAVE_BG_FILES
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionBPNum,
 				  &bg_record->bp_count)) 
@@ -594,7 +599,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		
 		goto cleanup;
 	}
+#endif
 	debug3("BP count %d",bg_record->bp_count);
+#ifdef HAVE_BG_FILES
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionSwitchNum,
 				  &bg_record->switch_count)) 
@@ -605,9 +612,10 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		
 		goto cleanup;
 	}
-	
+#endif	
 	debug3("switch count %d",bg_record->switch_count);
 		
+#ifdef HAVE_BG_FILES
 	first_bp = 1;
 	first_switch = 1;
 	
@@ -775,10 +783,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	}
 	rc = SLURM_SUCCESS;
 cleanup:
+#endif
 	if (_destroy_bg_bp_list(bg_bp_list) == SLURM_ERROR)
 		return SLURM_ERROR;	
-	
 	return rc;	
 }
 
-#endif
