@@ -399,7 +399,7 @@ int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
 {
 	char *valptr;
 	if (chk_cpuinfo_str(buffer, keyword, &valptr)) {
-		*val = (float) strtoul(valptr, (char **)NULL, 10);
+		*val = strtoul(valptr, (char **)NULL, 10);
 		return true;
 	} else {
 		return false;
@@ -537,28 +537,45 @@ get_cpuinfo(uint16_t numproc,
 			maxcpuid = MAX(maxcpuid, val);
 			mincpuid = MIN(mincpuid, val);
 		} else if (chk_cpuinfo_uint32(buffer, "physical id", &val)) {
+			/* see if the ID has already been seen */
 			for (i=0; i<numproc; i++) {
 				if ((cpuinfo[i].physid == val)
 				&&  (cpuinfo[i].physcnt))
 					break;
 			}
-			if (i == numproc)
-				numphys++;
-			cpuinfo[curcpu].physcnt++;
-			cpuinfo[curcpu].physid = val;
+
+			if (i == numproc) {		/* new ID... */
+				numphys++;		/* ...increment total */
+			} else {			/* existing ID... */
+				cpuinfo[i].physcnt++;	/* ...update ID cnt */
+			}
+
+			if (curcpu < numproc) {
+				cpuinfo[curcpu].physcnt++;
+				cpuinfo[curcpu].physid = val;
+			}
+
 			maxphysid = MAX(maxphysid, val);
 			minphysid = MIN(minphysid, val);
 		} else if (chk_cpuinfo_uint32(buffer, "core id", &val)) {
-		    	if (val >= numproc) {	/* out of bounds, ignore */
-				error("coreid is %u (> %d), ignored", 
-					val, numproc);
-				continue;
+			/* see if the ID has already been seen */
+			for (i = 0; i < numproc; i++) {
+				if ((cpuinfo[i].coreid == val)
+				&&  (cpuinfo[i].corecnt))
+					break;
 			}
-			if (curcpu < numproc)
+
+			if (i == numproc) {		/* new ID... */
+				numcores++;		/* ...increment total */
+			} else {			/* existing ID... */
+				cpuinfo[i].corecnt++;	/* ...update ID cnt */
+			}
+
+			if (curcpu < numproc) {
+				cpuinfo[curcpu].corecnt++;
 				cpuinfo[curcpu].coreid = val;
-			if (cpuinfo[val].corecnt == 0)
-				numcores++;
-			cpuinfo[val].corecnt++;
+			}
+
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
 		} else if (chk_cpuinfo_uint32(buffer, "siblings", &val)) {
