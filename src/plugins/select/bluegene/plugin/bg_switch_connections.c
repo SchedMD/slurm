@@ -412,7 +412,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	
 	if(!bp_id) {
 		error("No BP ID was returned from database");
-		continue;
+		return SLURM_ERROR;
 	}
 
 	if ((rc = bridge_get_nodecards(bp_id, &ncard_list))
