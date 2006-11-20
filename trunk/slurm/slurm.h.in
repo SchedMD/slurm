@@ -500,7 +500,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *blrtsimage;       /* BlrtsImage for block */
 	char *linuximage;       /* LinuxImage for block */
-	char *mloaderimage;     /* mloaderImage for block */
+	char *mloaderimage;     /* MloaderImage for block */
 	char *ramdiskimage;     /* RamDiskImage for block */
 
 /* End of Blue Gene specific values */
