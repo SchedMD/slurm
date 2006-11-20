@@ -290,6 +290,9 @@ struct job_record {
 	select_jobinfo_t select_jobinfo;	/* opaque data */
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
+	char *nodes_completing;		/* nodes still in completing state
+					 * for this job, used to insure
+					 * epilog is not re-run for job */
 	uint32_t num_procs;		/* count of required/allocated processors */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
@@ -1153,6 +1156,8 @@ extern int sync_job_files(void);
  */
 extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
 
+/* Reset nodes_completing field for all jobs */
+extern void update_job_nodes_completing(void);
 
 /* Reset slurmctld logging based upon configuration parameters
  * uses common slurmctld_conf data structure */
