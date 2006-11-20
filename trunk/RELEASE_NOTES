@@ -36,6 +36,9 @@ CONFIGURATION FILE CHANGES
 * Several new configuration parameters can be used to specify architectural
   details of the node: Sockets, CoresPerSocket, and ThreadsPerCore.
 
+* For BlueGene systems only: Alternate BlrtsImage, LinuxImage, MloaderImage,
+  and RamDiskImage file can be specified along with specific groups that 
+  can use them.
 
 OTHER CHANGES
 
