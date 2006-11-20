@@ -504,7 +504,7 @@ Update JOB_STATE_VERSION
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 
-	pack16(dump_job_ptr->job_state, buffer);
+	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16((uint16_t)dump_job_ptr->next_step_id, buffer);
 	pack16((uint16_t)dump_job_ptr->kill_on_node_fail, buffer);
 	pack16((uint16_t)dump_job_ptr->kill_on_step_done, buffer);
