@@ -770,6 +770,11 @@ int read_slurm_conf(int recover)
 	old_node_table_ptr = 
 		node_record_table_ptr;  /* save node states for reconfig RPC */
 	node_record_table_ptr = NULL;
+	if (recover == 0) {
+		/* in order to re-use job state information,
+		 * update nodes_completing string (based on node_bitmap) */
+		update_job_nodes_completing();
+	}
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
 		return error_code;
