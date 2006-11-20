@@ -488,7 +488,7 @@ Update JOB_STATE_VERSION
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
-        pack_time(dump_job_ptr->pre_sus_time, buffer);
+	pack_time(dump_job_ptr->pre_sus_time, buffer);
 
 	pack16(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->next_step_id, buffer);
@@ -501,6 +501,14 @@ Update JOB_STATE_VERSION
 
 	packstr(dump_job_ptr->alloc_resp_host, buffer);
 	packstr(dump_job_ptr->other_host, buffer);
+	if (dump_job_ptr->job_state & JOB_COMPLETING) {
+		if (dump_job_ptr->nodes_completing == NULL) {
+			dump_job_ptr->nodes_completing =
+				bitmap2node_name(
+				dump_job_ptr->node_bitmap);
+		}
+		packstr(dump_job_ptr->nodes_completing, buffer);
+	}
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
@@ -545,7 +553,7 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *alloc_resp_host = NULL, *other_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
-	char *comment = NULL;
+	char *comment = NULL, *nodes_completing = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -583,6 +591,8 @@ job_ptr->exit_code = exit_code;
 
 	safe_unpackstr_xmalloc(&alloc_resp_host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&other_host, &name_len, buffer);
+	if (job_state & JOB_COMPLETING)
+		safe_unpackstr_xmalloc(&nodes_completing);
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
@@ -666,6 +676,11 @@ job_ptr->exit_code = exit_code;
 	xfree(job_ptr->nodes);
 	job_ptr->nodes  = nodes;
 	nodes           = NULL;	/* reused, nothing left to free */
+	if (nodes_completing) {
+		xfree(job_ptr->nodes_completing);
+		job_ptr->nodes_completing = nodes_completing;
+		nodes_completing = NULL;  /* reused, nothing left to free */
+	}
 	xfree(job_ptr->alloc_node);
 	job_ptr->alloc_node = alloc_node;
 	alloc_node          = NULL;	/* reused, nothing left to free */
@@ -709,6 +724,7 @@ job_ptr->exit_code = exit_code;
 	xfree(alloc_resp_host);
 	xfree(other_host);
 	xfree(nodes);
+	xfree(nodes_completing);
 	xfree(partition);
 	xfree(name);
 	xfree(alloc_node);
@@ -2659,6 +2675,7 @@ static void _list_delete_job(void *job_entry)
 	delete_job_details(job_ptr);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->nodes);
+	xfree(job_ptr->nodes_completing);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->cpus_per_node);
 	xfree(job_ptr->cpu_count_reps);
@@ -2984,8 +3001,15 @@ void reset_job_bitmaps(void)
 		job_ptr->part_ptr = part_ptr;
 
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
-		if ((job_ptr->nodes) && 
-		    (node_name2bitmap(job_ptr->nodes, false, 
+		if ((job_ptr->nodes_completing)
+		&&  (node_name2bitmap(job_ptr->nodes_completing,
+				      false,  &job_ptr->node_bitmap))) {
+			error("Invalid nodes (%s) for job_id %u",
+			      job_ptr->nodes_completing,
+			      job_ptr->job_id);
+			job_fail = true;
+		} else if ((job_ptr->nodes)
+		&&  (node_name2bitmap(job_ptr->nodes, false,
 				      &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u", 
 		    	      job_ptr->nodes, job_ptr->job_id);
@@ -4063,6 +4087,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 #endif
 
 	step_epilog_complete(job_ptr, node_name);
+	/* nodes_completing is out of date, rebuild when next saved */
+	xfree(job_ptr->nodes_completing);
 	if (!(job_ptr->job_state & JOB_COMPLETING)) {	/* COMPLETED */
 		if ((job_ptr->job_state == JOB_PENDING)
 		&&  (job_ptr->batch_flag)) {
@@ -4557,4 +4583,26 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	timeout_msg->step_id = NO_VAL;
 	timeout_msg->timeout = job_ptr->end_time;
 	return SLURM_SUCCESS;
+}
+
+/* Reset nodes_completing field for all jobs.
+ * Job write lock must be set before calling. */
+extern void update_job_nodes_completing(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+
+	if (!job_list)
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->job_state & JOB_COMPLETING) == 0)
+			continue;
+		if (job_ptr->nodes_completing)  /* no change */
+			continue;
+		node_name2bitmap(job_ptr->nodes_completing,
+				 false,  &job_ptr->node_bitmap);
+	}
+	list_iterator_destroy(job_iterator);
 }

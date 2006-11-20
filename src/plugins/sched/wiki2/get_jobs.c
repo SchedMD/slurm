@@ -265,6 +265,11 @@ static uint32_t _get_job_min_disk(struct job_record *job_ptr)
 
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
 {
+	if (job_ptr->job_state > JOB_PENDING) {
+		/* return actual count of allocated nodes */
+		return job_ptr->node_cnt;
+	}
+
 	if (job_ptr->details)
 		return job_ptr->details->min_nodes;
 	return (uint32_t) 1;
