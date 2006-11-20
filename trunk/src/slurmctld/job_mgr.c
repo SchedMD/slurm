@@ -591,8 +591,10 @@ job_ptr->exit_code = exit_code;
 
 	safe_unpackstr_xmalloc(&alloc_resp_host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&other_host, &name_len, buffer);
-	if (job_state & JOB_COMPLETING)
-		safe_unpackstr_xmalloc(&nodes_completing);
+	if (job_state & JOB_COMPLETING) {
+		safe_unpackstr_xmalloc(&nodes_completing, 
+			&name_len, buffer);
+	}
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
