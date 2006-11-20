@@ -107,23 +107,6 @@ typedef struct bg_record {
 	char *ramdiskimage;            /* RamDiskImage for this block */
 } bg_record_t;
 
-typedef struct {
-	int source;
-	int target;
-} bg_conn_t;
-
-typedef struct {
-	int dim;
-	List conn_list;
-} bg_switch_t;
-
-typedef struct {
-	int *coord;
-	int used;
-	List switch_list;
-} bg_bp_t;
-
-
 /* Global variables */
 extern rm_BGL_t *bg;
 extern char *default_blrtsimage;
