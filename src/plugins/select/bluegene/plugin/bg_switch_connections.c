@@ -497,13 +497,14 @@ cleanup:
  */
 extern int configure_block_switches(bg_record_t * bg_record)
 {
-	int rc = SLURM_SUCCESS, i = 0;
+	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 #ifdef HAVE_BG_FILES
 	char *bpid = NULL;
 	int first_bp=1;
 	int first_switch=1;
+	int i = 0;
 	rm_BP_t *curr_bp = NULL;
 	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
 #endif	
