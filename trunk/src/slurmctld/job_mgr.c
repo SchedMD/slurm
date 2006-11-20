@@ -479,11 +479,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->dependency, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
-#if 0
-//FIXME: Update in slurm v1.2
-Update JOB_STATE_VERSION
 	pack32(dump_job_ptr->exit_code, buffer);
-#endif
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -545,7 +541,7 @@ Update JOB_STATE_VERSION
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t dependency, num_procs;
+	uint32_t dependency, exit_code, num_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
@@ -567,13 +563,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&alloc_sid, buffer);
 	safe_unpack32(&dependency, buffer);
 	safe_unpack32(&num_procs, buffer);
-#if 0
-//FIXME: Update in slurm v1.2
-//Also expose for get_job_info
-uint32_t exit_code;
 	safe_unpack32(&exit_code, buffer);
-job_ptr->exit_code = exit_code;
-#endif
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -671,6 +661,7 @@ job_ptr->exit_code = exit_code;
 	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
 	job_ptr->dependency   = dependency;
+	job_ptr->exit_code    = exit_code;
 	job_ptr->num_procs    = num_procs;
 	job_ptr->time_last_active = time(NULL);
 	strncpy(job_ptr->name, name, MAX_JOBNAME_LEN);
