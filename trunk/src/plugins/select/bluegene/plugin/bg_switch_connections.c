@@ -48,8 +48,7 @@ static int _get_switches_by_bpid(rm_BGL_t* my_bg, const char *bpid,
 			       rm_switch_t **curr_switch);
 //static int _set_switch(rm_switch_t* curr_switch, ba_connection_t *int_wire);
 static int _add_switch_conns(rm_switch_t* curr_switch, 
-			     bg_switch_t *bg_switch);
-static int _add_switches_for_bp(ba_node_t *ba_node, const char *bpid);
+			     ba_switch_t *ba_switch);
 #endif
 
 /** 
@@ -111,7 +110,8 @@ static int _get_switches_by_bpid(
 	rm_switch_t *curr_switch = NULL;
 	int i, rc;
 	int found_bpid = 0;
-	
+	char *curr_bpid = NULL;
+
 	if(!switch_num) {
 		if ((rc = bridge_get_data(my_bg, RM_SwitchNum, &switch_num)) 
 		    != STATUS_OK) {
@@ -164,85 +164,94 @@ static int _get_switches_by_bpid(
 }
 
 static int _add_switch_conns(rm_switch_t* curr_switch, 
-			     bg_switch_t *bg_switch)
+			     ba_switch_t *bg_switch)
 {
 	ListIterator itr;
-	bg_conn_t *bg_conn;
-	
 	int firstconnect=1;
+
+	/* max number of connections in a switch */
+	int num_connections = 3;
+	ba_connection_t *ba_conn = NULL;
 	rm_connection_t conn;
-	int j, rc;
+	int i, rc;
 	int conn_num=0;
-	int port = 0;
+	int source = 0;
 	
-	itr = list_iterator_create(bg_switch->conn_list);
-	while((bg_conn = list_next(itr)) != NULL) {
-		if(bg_conn->source == bg_conn->target)
-			continue;
-		
-		for(j=0;j<2;j++) {
-			switch(j) {
-			case 0:
-				port = bg_conn->source;
-				break;
-			case 1:
-				port = bg_conn->target;
-				break;
-			}
-			switch(port) {
+	for(i=0;i<num_connections;i++) {
+		/* set the source port(-) to check */
+		switch(i) {
+		case 0:
+			source = 1;
+			conn.p1 = RM_PORT_S1;
+			break;
+		case 1:
+			source = 2;
+			conn.p1 = RM_PORT_S2;
+			break;
+		case 2:
+			source = 4;
+			conn.p1 = RM_PORT_S4;
+			break;
+		default:
+			error("we are to far into the switch connections");
+			break;
+		}
+		ba_conn = &bg_switch->int_wire[source];
+		if(ba_conn->used) {
+			switch(ba_conn->port_tar) {
 			case 0:
 				conn.p2 = RM_PORT_S0; 
-				break;
-			case 1:
-				conn.p1 = RM_PORT_S1;
-				break;
-			case 2:
-				conn.p1 = RM_PORT_S2;
 				break;
 			case 3:
 				conn.p2 = RM_PORT_S3; 
 				break;
-			case 4:
-				conn.p1 = RM_PORT_S4;
-				break;
 			case 5:
 				conn.p2 = RM_PORT_S5; 
-				break;
+				break;	
+			default:
+				error("we are trying to connection %d -> %d "
+				      "which can't happen", 
+				      source, ba_conn->port_tar);
+				break;	
 			}
-		}
-		conn.part_state = RM_PARTITION_READY;
-		
-		if(firstconnect) {
-			if ((rc = bridge_set_data(curr_switch, 
-						  RM_SwitchFirstConnection, 
-						  &conn)) 
-			    != STATUS_OK) {
-				list_iterator_destroy(itr);
-				
-				fatal("bridge_set_data"
-				      "(RM_SwitchFirstConnection): %s", 
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-			firstconnect=0;
-		} else {
-			if ((rc = bridge_set_data(curr_switch, 
-						  RM_SwitchNextConnection,
-						  &conn)) 
-			    != STATUS_OK) {
-				list_iterator_destroy(itr);
-				
-				fatal("bridge_set_data"
-				      "(RM_SwitchNextConnection): %s",
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-		} 
+			conn.part_state = RM_PARTITION_READY;
 			
-		conn_num++;
-		debug2("adding %d -> %d",bg_conn->source, bg_conn->target);
+			if(firstconnect) {
+				if ((rc = bridge_set_data(
+					     curr_switch, 
+					     RM_SwitchFirstConnection, 
+					     &conn)) 
+				    != STATUS_OK) {
+					list_iterator_destroy(itr);
+					
+					fatal("bridge_set_data"
+					      "(RM_SwitchFirstConnection): "
+					      "%s", 
+					      bg_err_str(rc));
+					return SLURM_ERROR;
+				}
+				firstconnect=0;
+			} else {
+				if ((rc = bridge_set_data(
+					     curr_switch, 
+					     RM_SwitchNextConnection,
+					     &conn)) 
+				    != STATUS_OK) {
+					list_iterator_destroy(itr);
+					
+					fatal("bridge_set_data"
+					      "(RM_SwitchNextConnection): %s",
+					      bg_err_str(rc));
+					return SLURM_ERROR;
+				}
+			} 
+			
+			conn_num++;
+			debug2("adding %d -> %d", 
+			       source,
+			       ba_conn->port_tar);
+		}
 	}
-	list_iterator_destroy(itr);
 	if(conn_num) {
 		if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum,
 					  &conn_num)) 
@@ -256,59 +265,13 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		debug("we got a switch with no connections");
 		return SLURM_ERROR;
 	}
-				
+	
 	return SLURM_SUCCESS;
-}
-
-static int _add_switches_for_bp(ba_node_t *ba_node, const char *bpid)
-{
-	int i = 0;
-	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
-	
-	if(_get_switches_by_bpid(bg, bpid, coord_switch)
-	   != SLURM_SUCCESS) {
-		error("Didn't get all the switches for bp %s", bpid);
-		return;
-	}
-	
-	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
-		if(_add_switch_conns(coord_switch[i],
-				     ba_node->axis_switch[i]
-				     == SLURM_SUCCESS)) {
-			debug2("adding switch dim %d", i);
-			bg_record->switch_count++;
-			if (first_switch){
-				if ((rc = bridge_set_data(
-					     bg_record->bg_block,
-					     RM_PartitionFirstSwitch,
-					     coord_switch[i])) 
-				    != STATUS_OK) {
-					fatal("bridge_set_data("
-					      "RM_PartitionFirst"
-					      "Switch): %s", 
-					      bg_err_str(rc));
-				}
-				
-				first_switch = 0;
-			} else {
-				if ((rc = bridge_set_data(
-					     bg_record->bg_block,
-					     RM_PartitionNextSwitch,
-					     coord_switch[i])) 
-				    != STATUS_OK) {
-					fatal("bridge_set_data("
-					      "RM_PartitionNext"
-					      "Switch): %s", 
-					      bg_err_str(rc));
-				}
-			}
-		}
-	}
 }
 #endif
 
 extern int configure_small_block(bg_record_t *bg_record)
-{
+	{
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG_FILES	
 	bool small = true;
@@ -485,19 +448,15 @@ cleanup:
  */
 extern int configure_block_switches(bg_record_t * bg_record)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, i = 0;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 #ifdef HAVE_BG_FILES
-	ListIterator switch_itr;
-	char *bpid = NULL, *curr_bpid = NULL;
-	int found_bpid = 0;
-	int switch_count;
+	char *bpid = NULL;
 	int first_bp=1;
 	int first_switch=1;
 	rm_BP_t *curr_bp = NULL;
 	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
-	rm_switch_t *curr_switch = NULL;
 #endif	
 	if(!bg_record->bg_block_list) {
 		error("There was no block_list given, can't create block");
@@ -535,8 +494,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 							  RM_PartitionFirstBP, 
 							  curr_bp)) 
 				    != STATUS_OK) {
-					list_iterator_destroy(bg_itr);
-					
+					list_iterator_destroy(itr);	
 					fatal("bridge_set_data("
 					      "RM_PartitionFirstBP): %s", 
 					      bg_err_str(rc));
@@ -547,8 +505,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 							  RM_PartitionNextBP, 
 							  curr_bp)) 
 				    != STATUS_OK) {
-					list_iterator_destroy(bg_itr);
-					
+					list_iterator_destroy(itr);
 					fatal("bridge_set_data"
 					      "(RM_PartitionNextBP): %s", 
 					      bg_err_str(rc));
@@ -559,7 +516,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 #ifdef HAVE_BG_FILES
 		if ((rc = bridge_get_data(curr_bp, RM_BPID, &bpid)) 
 		    != STATUS_OK) {
-			list_iterator_destroy(bg_itr);
+			list_iterator_destroy(itr);
 			fatal("bridge_get_data: RM_BPID: %s", bg_err_str(rc));
 		}		
 		
@@ -567,9 +524,44 @@ extern int configure_block_switches(bg_record_t * bg_record)
 			error("No BP ID was returned from database");
 			continue;
 		}
+		if(_get_switches_by_bpid(bg, bpid, coord_switch)
+		   != SLURM_SUCCESS) {
+			error("Didn't get all the switches for bp %s", bpid);
+			continue;
+		}
 		
-		if(_add_switches_for_bp(ba_node, bpid) == SLURM_ERROR) {
-			fatal("unable to add switches for %s", bpid);
+		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
+			if(_add_switch_conns(coord_switch[i],
+					     &ba_node->axis_switch[i])
+			   == SLURM_SUCCESS) {
+				debug2("adding switch dim %d", i);
+				bg_record->switch_count++;
+				if (first_switch){
+					if ((rc = bridge_set_data(
+						     bg_record->bg_block,
+						     RM_PartitionFirstSwitch,
+						     coord_switch[i])) 
+					    != STATUS_OK) {
+						fatal("bridge_set_data("
+						      "RM_PartitionFirst"
+						      "Switch): %s", 
+						      bg_err_str(rc));
+					}
+					
+					first_switch = 0;
+				} else {
+					if ((rc = bridge_set_data(
+						     bg_record->bg_block,
+						     RM_PartitionNextSwitch,
+						     coord_switch[i])) 
+					    != STATUS_OK) {
+						fatal("bridge_set_data("
+						      "RM_PartitionNext"
+						      "Switch): %s", 
+						      bg_err_str(rc));
+					}
+				}
+			}
 		}
 		xfree(bpid);	
 #endif	
