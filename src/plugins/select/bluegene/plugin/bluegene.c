@@ -2328,7 +2328,7 @@ static int _add_block_db(bg_record_t *bg_record, int *block_inx)
 {
 #ifdef HAVE_BG_FILES
 	if(configure_block(bg_record) == SLURM_ERROR) {
-		xfree(bg_record);
+		destroy_bg_record(bg_record);
 		error("unable to configure block in api");
 		return SLURM_ERROR;
 	}
