@@ -46,9 +46,12 @@ List bg_bp_list;
 static int _get_bp_by_location(rm_BGL_t* my_bg, 
 			       int* curr_coord, 
 			       rm_BP_t** bp);
+static int _get_switches_by_bpid(rm_BGL_t* my_bg, const char *bpid,
+			       rm_switch_t **curr_switch);
 //static int _set_switch(rm_switch_t* curr_switch, ba_connection_t *int_wire);
 static int _add_switch_conns(rm_switch_t* curr_switch, 
 			     bg_switch_t *bg_switch);
+static int _add_switches_for_bp(ba_node_t *ba_node, const char *bpid);
 #endif
 static int _destroy_bg_bp_list(List bg_bp);
 static int _lookat_path(bg_bp_t *bg_bp, 
@@ -63,12 +66,16 @@ static int _lookat_path(bg_bp_t *bg_bp,
 #ifdef HAVE_BG_FILES
 static int _get_bp_by_location(rm_BGL_t* my_bg, int* curr_coord, rm_BP_t** bp)
 {
-	int i, bp_num, rc;
+	static int bp_num = 0;
+	int i, rc;
 	rm_location_t loc;
 
-	if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num)) != STATUS_OK) {
-		fatal("bridge_get_data: RM_BPNum: %s", bg_err_str(rc));
-		return SLURM_ERROR;
+	if(!bp_num) {
+		if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num))
+		    != STATUS_OK) {
+			fatal("bridge_get_data: RM_BPNum: %s", bg_err_str(rc));
+			return SLURM_ERROR;
+		}
 	}
 
 	for (i=0; i<bp_num; i++){
@@ -100,6 +107,69 @@ static int _get_bp_by_location(rm_BGL_t* my_bg, int* curr_coord, rm_BP_t** bp)
 	}
 
 	// error("_get_bp_by_location: could not find specified bp.");
+	return SLURM_ERROR;
+}
+
+static int _get_switches_by_bpid(
+	rm_BGL_t* my_bg, const char *bpid,
+	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS])
+{
+	static int switch_num = 0;
+	rm_switch_t *curr_switch = NULL;
+	int i, rc;
+	int found_bpid = 0;
+	
+	if(!switch_num) {
+		if ((rc = bridge_get_data(my_bg, RM_SwitchNum, &switch_num)) 
+		    != STATUS_OK) {
+			fatal("bridge_get_data: RM_SwitchNum: %s",
+			      bg_err_str(rc));
+			return SLURM_ERROR;
+		}
+	}
+
+	for (i=0; i<switch_num; i++) {
+		if(i) {
+			if ((rc = bridge_get_data(bg, RM_NextSwitch, 
+						  &curr_switch)) 
+			    != STATUS_OK) {
+				list_iterator_destroy(bg_itr);
+				fatal("bridge_get_data"
+				      "(RM_NextSwitch): %s",
+				      bg_err_str(rc));
+			}
+		} else {
+			if ((rc = bridge_get_data(bg, RM_FirstSwitch, 
+						  &curr_switch)) 
+			    != STATUS_OK) {
+				list_iterator_destroy(bg_itr);
+				fatal("bridge_get_data"
+				      "(RM_FirstSwitch): %s",
+				      bg_err_str(rc));
+			}
+		}
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID, 
+					  &curr_bpid)) != STATUS_OK) {
+			list_iterator_destroy(bg_itr);
+			fatal("bridge_get_data: RM_SwitchBPID: %s", 
+			      bg_err_str(rc));
+		}
+		
+		if(!curr_bpid) {
+			error("No BP ID was returned from database");
+			continue;
+		}
+		
+		if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
+			coord_switch[found_bpid] = curr_switch;
+			found_bpid++;
+			if(found_bpid==BA_SYSTEM_DIMENSIONS) {
+				free(curr_bpid);
+				return SLURM_SUCCESS;
+			}
+		}
+		free(curr_bpid);
+	}
 	return SLURM_ERROR;
 }
 
@@ -183,15 +253,67 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		debug2("adding %d -> %d",bg_conn->source, bg_conn->target);
 	}
 	list_iterator_destroy(itr);
-	
-	if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum, &conn_num)) 
-	    != STATUS_OK) {
-		fatal("bridge_set_data: RM_SwitchConnNum: %s", bg_err_str(rc));
-		
+	if(conn_num) {
+		if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum,
+					  &conn_num)) 
+		    != STATUS_OK) {
+			fatal("bridge_set_data: RM_SwitchConnNum: %s",
+			      bg_err_str(rc));
+			
+			return SLURM_ERROR;
+		} 
+	} else {
+		debug("we got a switch with no connections");
 		return SLURM_ERROR;
-	} 
+	}
 				
 	return SLURM_SUCCESS;
+}
+
+static int _add_switches_for_bp(ba_node_t *ba_node, const char *bpid)
+{
+	int i = 0;
+	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
+	
+	if(_get_switches_by_bpid(bg, bpid, coord_switch)
+	   != SLURM_SUCCESS) {
+		error("Didn't get all the switches for bp %s", bpid);
+		return;
+	}
+	
+	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
+		if(_add_switch_conns(coord_switch[i],
+				     ba_node->axis_switch[i]
+				     == SLURM_SUCCESS)) {
+			debug2("adding switch dim %d", i);
+			bg_record->switch_count++;
+			if (first_switch){
+				if ((rc = bridge_set_data(
+					     bg_record->bg_block,
+					     RM_PartitionFirstSwitch,
+					     coord_switch[i])) 
+				    != STATUS_OK) {
+					fatal("bridge_set_data("
+					      "RM_PartitionFirst"
+					      "Switch): %s", 
+					      bg_err_str(rc));
+				}
+				
+				first_switch = 0;
+			} else {
+				if ((rc = bridge_set_data(
+					     bg_record->bg_block,
+					     RM_PartitionNextSwitch,
+					     coord_switch[i])) 
+				    != STATUS_OK) {
+					fatal("bridge_set_data("
+					      "RM_PartitionNext"
+					      "Switch): %s", 
+					      bg_err_str(rc));
+				}
+			}
+		}
+	}
 }
 #endif
 
@@ -507,12 +629,9 @@ cleanup:
  */
 extern int configure_block_switches(bg_record_t * bg_record)
 {
-	int i, rc = SLURM_SUCCESS;
-	ListIterator itr, bg_itr;
+	int rc = SLURM_SUCCESS;
+	ListIterator itr;
 	ba_node_t* ba_node = NULL;
-	ba_switch_t *ba_switch = NULL;
-	bg_bp_t *bg_bp = NULL;
-	bg_switch_t *bg_switch = NULL;
 #ifdef HAVE_BG_FILES
 	ListIterator switch_itr;
 	char *bpid = NULL, *curr_bpid = NULL;
@@ -528,115 +647,34 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		error("There was no block_list given, can't create block");
 		return SLURM_ERROR;
 	}
-
+	
 	bg_bp_list = list_create(NULL);
 	bg_record->switch_count = 0;
 	bg_record->bp_count = 0;
-		
+	
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
+#ifdef HAVE_BG_FILES
+		if (_get_bp_by_location(bg, ba_node->coord, &curr_bp) 
+		    == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+#endif
 		if(!ba_node->used) {
 			debug3("%d%d%d is a passthrough, "
 			       "not including in request",
 			       ba_node->coord[X], 
 			       ba_node->coord[Y], 
+			       ba_node->coord[Z]);			
+		} else {
+			debug2("using node %d%d%d",
+			       ba_node->coord[X], 
+			       ba_node->coord[Y], 
 			       ba_node->coord[Z]);
-			continue;
-		}
-		debug2("using node %d%d%d",
-		       ba_node->coord[X], 
-		       ba_node->coord[Y], 
-		       ba_node->coord[Z]);
-		bg_itr = list_iterator_create(bg_bp_list);
-		while((bg_bp = list_next(bg_itr)) != NULL) {
-			if((bg_bp->coord[X] == ba_node->coord[X])
-			   && (bg_bp->coord[Y] == ba_node->coord[Y])
-			   && (bg_bp->coord[Z] == ba_node->coord[Z]))
-				break;
-		}
-		list_iterator_destroy(bg_itr);
-		
-		if(bg_bp == NULL) {
-			bg_bp = xmalloc(sizeof(bg_bp_t));
-			bg_bp->coord = ba_node->coord;
-			bg_bp->switch_list = list_create(NULL);
-			list_append(bg_bp_list, bg_bp);
-		}
-		bg_record->bp_count++;
-		bg_bp->used = 1;
-		for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {			
-			ba_switch = &ba_node->axis_switch[i];
-			if(ba_switch->int_wire[0].used) {
-				_lookat_path(bg_bp, ba_switch, 0, 1, i);
-			}
-		}
-	}
-	list_iterator_destroy(itr);
-	
-	bg_itr = list_iterator_create(bg_bp_list);
-	while((bg_bp = list_next(bg_itr)) != NULL) {
-		debug3("node %d%d%d %d",
-		       bg_bp->coord[X], 
-		       bg_bp->coord[Y], 
-		       bg_bp->coord[Z], list_count(bg_bp->switch_list));
-		itr = list_iterator_create(bg_bp->switch_list);
-		while((bg_switch = list_next(itr)) != NULL) {
-			bg_record->switch_count++;
-		}
-		list_iterator_destroy(itr);
-	}
-	list_iterator_destroy(bg_itr);
-
-	
-#ifdef HAVE_BG_FILES
-	if ((rc = bridge_set_data(bg_record->bg_block,
-				  RM_PartitionBPNum,
-				  &bg_record->bp_count)) 
-	    != STATUS_OK) {
-		fatal("bridge_set_data: RM_PartitionBPNum: %s", 
-		      bg_err_str(rc));
-		rc = SLURM_ERROR;
-		
-		goto cleanup;
-	}
-#endif
-	debug3("BP count %d",bg_record->bp_count);
-#ifdef HAVE_BG_FILES
-	if ((rc = bridge_set_data(bg_record->bg_block,
-				  RM_PartitionSwitchNum,
-				  &bg_record->switch_count)) 
-	    != STATUS_OK) {
-		fatal("bridge_set_data: RM_PartitionSwitchNum: %s", 
-		      bg_err_str(rc));
-		rc = SLURM_ERROR;
-		
-		goto cleanup;
-	}
-#endif	
-	debug3("switch count %d",bg_record->switch_count);
-		
-#ifdef HAVE_BG_FILES
-	first_bp = 1;
-	first_switch = 1;
-	
-	if ((rc = bridge_get_data(bg, RM_SwitchNum, &switch_count)) 
-	    != STATUS_OK) {
-		fatal("bridge_get_data: RM_SwitchNum: %s", bg_err_str(rc));
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-	
-	bg_itr = list_iterator_create(bg_bp_list);
-	while((bg_bp = list_next(bg_itr)) != NULL) {			
-		if (_get_bp_by_location(bg, bg_bp->coord, &curr_bp) 
-		    == SLURM_ERROR) {
-			list_iterator_destroy(bg_itr);
-			rc = SLURM_ERROR;
-			goto cleanup;
-		}
-		
-		if(bg_bp->used) {
+			bg_record->bp_count++;
 			
+#ifdef HAVE_BG_FILES
 			if (first_bp){
 				if ((rc = bridge_set_data(bg_record->bg_block,
 							  RM_PartitionFirstBP, 
@@ -661,127 +699,52 @@ extern int configure_block_switches(bg_record_t * bg_record)
 					      bg_err_str(rc));
 				}
 			}
-			
-		}
-
-		if ((rc = bridge_get_data(curr_bp,  RM_BPID, &bpid)) 
+#endif
+		} 
+#ifdef HAVE_BG_FILES
+		if ((rc = bridge_get_data(curr_bp, RM_BPID, &bpid)) 
 		    != STATUS_OK) {
 			list_iterator_destroy(bg_itr);
 			fatal("bridge_get_data: RM_BPID: %s", bg_err_str(rc));
 		}		
-
+		
 		if(!bpid) {
 			error("No BP ID was returned from database");
 			continue;
 		}
-
-		found_bpid = 0;
-		for (i=0; i<switch_count; i++) {
-			if(i) {
-				if ((rc = bridge_get_data(bg, RM_NextSwitch, 
-							  &curr_switch)) 
-				    != STATUS_OK) {
-					list_iterator_destroy(bg_itr);
-					fatal("bridge_get_data"
-					      "(RM_NextSwitch): %s",
-					      bg_err_str(rc));
-				}
-			} else {
-				if ((rc = bridge_get_data(bg, RM_FirstSwitch, 
-							  &curr_switch)) 
-				    != STATUS_OK) {
-					list_iterator_destroy(bg_itr);
-					fatal("bridge_get_data"
-					      "(RM_FirstSwitch): %s",
-					      bg_err_str(rc));
-				}
-			}
-			if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID, 
-						  &curr_bpid)) != STATUS_OK) {
-				list_iterator_destroy(bg_itr);
-				fatal("bridge_get_data: RM_SwitchBPID: %s", 
-				      bg_err_str(rc));
-			}
-
-			if(!curr_bpid) {
-				error("No BP ID was returned from database");
-				continue;
-			}
-
-			if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
-				coord_switch[found_bpid] = curr_switch;
-				found_bpid++;
-				if(found_bpid==BA_SYSTEM_DIMENSIONS) {
-					free(curr_bpid);
-					break;
-				}
-			}
-			free(curr_bpid);
+		
+		if(_add_switches_for_bp(ba_node, bpid) == SLURM_ERROR) {
+			fatal("unable to add switches for %s", bpid);
 		}
-
-		free(bpid);
-
-		if(found_bpid==BA_SYSTEM_DIMENSIONS) {
-						
-			debug2("adding bp %d%d%d",
-			       bg_bp->coord[X],
-			       bg_bp->coord[Y],
-			       bg_bp->coord[Z]);
-			switch_itr = list_iterator_create(bg_bp->switch_list);
-			while((bg_switch = list_next(switch_itr)) != NULL) {
-				
-				debug2("adding switch dim %d",
-				       bg_switch->dim);
-				     
-				if (_add_switch_conns(coord_switch
-						      [bg_switch->dim],
-						      bg_switch) 
-				    == SLURM_ERROR) {
-					list_iterator_destroy(switch_itr);
-					list_iterator_destroy(bg_itr);
-					rc = SLURM_ERROR;
-					goto cleanup;
-				}
-				
-				
-				if (first_switch){
-					if ((rc = bridge_set_data(
-						     bg_record->bg_block,
-						     RM_PartitionFirstSwitch,
-						     coord_switch
-						     [bg_switch->dim])) 
-					    != STATUS_OK) {
-						list_iterator_destroy(
-							switch_itr);
-						list_iterator_destroy(bg_itr);
-						fatal("bridge_set_data("
-						      "RM_PartitionFirst"
-						      "Switch): %s", 
-						      bg_err_str(rc));
-					}
-					
-					first_switch = 0;
-				} else {
-					if ((rc = bridge_set_data(
-						     bg_record->bg_block,
-						     RM_PartitionNextSwitch,
-						     coord_switch
-						     [bg_switch->dim])) 
-					    != STATUS_OK) {
-						list_iterator_destroy(
-							switch_itr);
-						list_iterator_destroy(bg_itr);
-						fatal("bridge_set_data("
-						      "RM_PartitionNext"
-						      "Switch): %s", 
-						      bg_err_str(rc));
-					}
-				}
-			}
-			list_iterator_destroy(switch_itr);
-		}
+		xfree(bpid);	
+#endif	
 	}
+#ifdef HAVE_BG_FILES
+	if ((rc = bridge_set_data(bg_record->bg_block,
+				  RM_PartitionBPNum,
+				  &bg_record->bp_count)) 
+	    != STATUS_OK) {
+		fatal("bridge_set_data: RM_PartitionBPNum: %s", 
+		      bg_err_str(rc));
+		rc = SLURM_ERROR;
+		
+		goto cleanup;
+	}
+	if ((rc = bridge_set_data(bg_record->bg_block,
+				  RM_PartitionSwitchNum,
+				  &bg_record->switch_count)) 
+	    != STATUS_OK) {
+		fatal("bridge_set_data: RM_PartitionSwitchNum: %s", 
+		      bg_err_str(rc));
+		rc = SLURM_ERROR;
+		
+		goto cleanup;
+	}
+#endif	
+	debug3("BP count %d", bg_record->bp_count);
+	debug3("switch count %d", bg_record->switch_count);
 	rc = SLURM_SUCCESS;
+#ifdef HAVE_BG_FILES
 cleanup:
 #endif
 	if (_destroy_bg_bp_list(bg_bp_list) == SLURM_ERROR)
