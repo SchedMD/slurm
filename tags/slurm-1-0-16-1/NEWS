@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
     the number of requested tasks.
  -- sched/backfill to schedule around jobs that are hung in a completing 
     state.
+ -- Avoid possibly re-running the epilog for a job on slurmctld restart or
+    reconfig by saving and restoring a hostlist of nodes still completing
+    the job.
 
 * Changes in SLURM 1.0.15
 =========================
