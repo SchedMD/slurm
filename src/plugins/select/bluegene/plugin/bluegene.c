@@ -1860,15 +1860,15 @@ extern int read_bg_conf(void)
 	
 	_set_bg_lists();	
 	if (s_p_get_array((void ***)&image_array, 
-			  &count, "BlrtsImage", tbl)) {
+			  &count, "AltBlrtsImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_blrtsimage_list, image_array[i]);
 			image_array[i] = NULL;
 		}
 	}
-	if (!s_p_get_string(&default_blrtsimage, "DefaultBlrtsImage", tbl)) {
+	if (!s_p_get_string(&default_blrtsimage, "BlrtsImage", tbl)) {
 		if(!list_count(bg_blrtsimage_list))
-			fatal("DefaultBlrtsImage not configured "
+			fatal("BlrtsImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_blrtsimage_list);
 		image = list_next(itr);
@@ -1876,7 +1876,7 @@ extern int read_bg_conf(void)
 		list_iterator_destroy(itr);
 		default_blrtsimage = xstrdup(image->name);
 		info("Warning: using %s as the default BlrtsImage.  "
-		     "If this isn't correct please set DefaultBlrtsImage",
+		     "If this isn't correct please set BlrtsImage",
 		     default_blrtsimage); 
 	} else {
 		debug3("default BlrtsImage %s", default_blrtsimage);
@@ -1889,15 +1889,15 @@ extern int read_bg_conf(void)
 	}
 		
 	if (s_p_get_array((void ***)&image_array, 
-			  &count, "LinuxImage", tbl)) {
+			  &count, "AltLinuxImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_linuximage_list, image_array[i]);
 			image_array[i] = NULL;
 		}
 	}
-	if (!s_p_get_string(&default_linuximage, "DefaultLinuxImage", tbl)) {
+	if (!s_p_get_string(&default_linuximage, "LinuxImage", tbl)) {
 		if(!list_count(bg_linuximage_list))
-			fatal("DefaultLinuxImage not configured "
+			fatal("LinuxImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_linuximage_list);
 		image = list_next(itr);
@@ -1905,7 +1905,7 @@ extern int read_bg_conf(void)
 		list_iterator_destroy(itr);
 		default_linuximage = xstrdup(image->name);
 		info("Warning: using %s as the default LinuxImage.  "
-		     "If this isn't correct please set DefaultLinuxImage",
+		     "If this isn't correct please set LinuxImage",
 		     default_linuximage); 
 	} else {
 		debug3("default LinuxImage %s", default_linuximage);
@@ -1918,16 +1918,16 @@ extern int read_bg_conf(void)
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
-			  &count, "MloaderImage", tbl)) {
+			  &count, "AltMloaderImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_mloaderimage_list, image_array[i]);
 			image_array[i] = NULL;
 		}
 	}
 	if (!s_p_get_string(&default_mloaderimage,
-			    "DefaultMloaderImage", tbl)) {
+			    "MloaderImage", tbl)) {
 		if(!list_count(bg_mloaderimage_list))
-			fatal("DefaultMloaderImage not configured "
+			fatal("MloaderImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_mloaderimage_list);
 		image = list_next(itr);
@@ -1935,7 +1935,7 @@ extern int read_bg_conf(void)
 		list_iterator_destroy(itr);
 		default_mloaderimage = xstrdup(image->name);
 		info("Warning: using %s as the default MloaderImage.  "
-		     "If this isn't correct please set DefaultMloaderImage",
+		     "If this isn't correct please set MloaderImage",
 		     default_mloaderimage); 
 	} else {
 		debug3("default MloaderImage %s", default_mloaderimage);
@@ -1948,16 +1948,16 @@ extern int read_bg_conf(void)
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
-			  &count, "RamDiskImage", tbl)) {
+			  &count, "AltRamDiskImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_ramdiskimage_list, image_array[i]);
 			image_array[i] = NULL;
 		}
 	}
 	if (!s_p_get_string(&default_ramdiskimage,
-			    "DefaultRamDiskImage", tbl)) {
+			    "RamDiskImage", tbl)) {
 		if(!list_count(bg_ramdiskimage_list))
-			fatal("DefaultRamDiskImage not configured "
+			fatal("RamDiskImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_ramdiskimage_list);
 		image = list_next(itr);
@@ -1965,7 +1965,7 @@ extern int read_bg_conf(void)
 		list_iterator_destroy(itr);
 		default_ramdiskimage = xstrdup(image->name);
 		info("Warning: using %s as the default RamDiskImage.  "
-		     "If this isn't correct please set DefaultRamDiskImage",
+		     "If this isn't correct please set RamDiskImage",
 		     default_ramdiskimage); 
 	} else {
 		debug3("default RamDiskImage %s", default_ramdiskimage);
