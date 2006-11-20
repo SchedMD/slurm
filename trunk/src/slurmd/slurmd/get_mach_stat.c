@@ -528,7 +528,7 @@ get_cpuinfo(uint16_t numproc,
 			numcpu++;
 			curcpu = val;
 		    	if (val >= numproc) {	/* out of bounds, ignore */
-				error("cpuid is %u (> %d), ignored", 
+				debug("cpuid is %u (> %d), ignored", 
 					val, numproc);
 				continue;
 			}
@@ -580,7 +580,7 @@ get_cpuinfo(uint16_t numproc,
 			mincoreid = MIN(mincoreid, val);
 		} else if (chk_cpuinfo_uint32(buffer, "siblings", &val)) {
 		    	if (val >= numproc) {	/* out of bounds, ignore */
-				error("siblings is %u (> %d), ignored",
+				debug("siblings is %u (> %d), ignored",
 					val, numproc);
 				continue;
 			}
@@ -590,7 +590,7 @@ get_cpuinfo(uint16_t numproc,
 			minsibs = MIN(minsibs, val);
 		} else if (chk_cpuinfo_uint32(buffer, "cpu cores", &val)) {
 		    	if (val >= numproc) {	/* out of bounds, ignore */
-				error("cores is %u (> %d), ignored",
+				debug("cores is %u (> %d), ignored",
 					val, numproc);
 				continue;
 			}
