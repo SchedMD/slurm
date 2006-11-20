@@ -255,8 +255,8 @@ int main(int argc, char *argv[])
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
-	if (select_g_state_restore(slurmctld_conf.state_save_location))
-		fatal( "failed to restore node selection plugin state");
+	if (slurm_select_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin state");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -290,11 +290,17 @@ int main(int argc, char *argv[])
 		info("Running as primary controller");
 
 		/* Recover node scheduler state info */
-		if (select_g_state_restore(slurmctld_conf.state_save_location)
-				!= SLURM_SUCCESS ) {
+		if (recover) {
+			error_code = select_g_state_restore(
+					slurmctld_conf.state_save_location);
+		} else {
+			error_code = select_g_state_restore(NULL);
+		}
+		if (error_code != SLURM_SUCCESS ) {
 			error("failed to restore node selection state");
 			abort();
 		}
+
 
 		/*
 		 * create attached thread to process RPCs
@@ -342,6 +348,7 @@ int main(int argc, char *argv[])
 		switch_save(slurmctld_conf.state_save_location);
 		if (slurmctld_config.resume_backup == false)
 			break;
+		recover = 2;
 	}
 
 	/* Since pidfile is created as user root (its owner is
