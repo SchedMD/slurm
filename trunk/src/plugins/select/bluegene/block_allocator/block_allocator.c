@@ -74,10 +74,10 @@ int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
 
 s_p_options_t bg_conf_file_options[] = {
-	{"DefaultBlrtsImage", S_P_STRING}, 
-	{"DefaultLinuxImage", S_P_STRING},
-	{"DefaultMloaderImage", S_P_STRING},
-	{"DefaultRamDiskImage", S_P_STRING},
+	{"BlrtsImage", S_P_STRING}, 
+	{"LinuxImage", S_P_STRING},
+	{"MloaderImage", S_P_STRING},
+	{"RamDiskImage", S_P_STRING},
 	{"BridgeAPILogFile", S_P_STRING},
 	{"RamDiskImage", S_P_STRING},
 	{"LayoutMode", S_P_STRING},
@@ -88,10 +88,10 @@ s_p_options_t bg_conf_file_options[] = {
 	{"BPs", S_P_ARRAY, parse_blockreq, destroy_blockreq},
 	/* these are just going to be put into a list that will be
 	   freed later don't free them after reading them */
-	{"BlrtsImage", S_P_ARRAY, parse_image, NULL}, 
-	{"LinuxImage", S_P_ARRAY, parse_image, NULL},
-	{"MloaderImage", S_P_ARRAY, parse_image, NULL},
-	{"RamDiskImage", S_P_ARRAY, parse_image, NULL},
+	{"AltBlrtsImage", S_P_ARRAY, parse_image, NULL}, 
+	{"AltLinuxImage", S_P_ARRAY, parse_image, NULL},
+	{"AltMloaderImage", S_P_ARRAY, parse_image, NULL},
+	{"AltRamDiskImage", S_P_ARRAY, parse_image, NULL},
 	{NULL}
 };
 
