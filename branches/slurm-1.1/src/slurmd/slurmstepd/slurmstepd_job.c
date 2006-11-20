@@ -503,9 +503,13 @@ static char **
 _array_copy(int n, char **src)
 {
 	char **dst = xmalloc((n+1) * sizeof(char *));
+	int i;
+
+	for (i = 0; i < n; i++) {
+		dst[i] = xstrdup(src[i]);
+	}
 	dst[n] = NULL;
-	while ((--n >= 0) && (src[n] != NULL))
-		dst[n] = xstrdup(src[n]);
+
 	return dst;
 }
 
