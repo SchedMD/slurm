@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     info for jobs changed.
  -- BLUEGENE - Changed logic for wiring bgl blocks to be more maintainable.
     (Haven't tested on large system yet, works on 2 base partition system)
+ -- Do not read the select/cons_res state save file if slurmctld is 
+    cold-started (with the "-c" option).
 
 * Changes in SLURM 1.2.0-pre6
 =============================
