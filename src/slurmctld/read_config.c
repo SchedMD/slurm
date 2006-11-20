@@ -676,6 +676,11 @@ int read_slurm_conf(int recover)
 	node_record_table_ptr = NULL;
 
 	conf = slurm_conf_lock();
+	if (recover == 0) {
+		/* in order to re-use job state information,
+		 * update nodes_completing string (based on node_bitmap) */
+		update_job_nodes_completing();
+	}
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
 		slurm_conf_unlock();
