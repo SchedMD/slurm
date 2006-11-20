@@ -108,10 +108,8 @@ static int  _validate_config_nodes(void);
 static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 static int _delete_old_blocks(void);
 static char *_get_bg_conf(void);
-static int _add_block_db(bg_record_t *bg_record, int *block_inx);
-static int _split_block(bg_record_t *bg_record, int procs, int *block_inx);
-static int _breakup_blocks(ba_request_t *request, List my_block_list, 
-			   int *block_inx);
+static int _split_block(bg_record_t *bg_record, int procs);
+static int _breakup_blocks(ba_request_t *request, List my_block_list);
 static bg_record_t *_create_small_record(bg_record_t *bg_record, 
 					 uint16_t quarter, uint16_t nodecard);
 static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq);
@@ -950,7 +948,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	int i;
 	bg_record_t *found_record = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
-	static int block_inx = 0;
 	char temp[256];
 	List results = NULL;
 	
@@ -1083,22 +1080,12 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 					list_remove(itr);
 					continue;
 				}
-#ifdef HAVE_BG_FILES
 				if((rc = configure_block(bg_record)) 
 				   == SLURM_ERROR) {
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
 					return rc;
 				}
-#else
-				if (!bg_record->bg_block_id) { 
-					bg_record->bg_block_id = xmalloc(8);
-					snprintf(bg_record->bg_block_id,
-						 8,
-						 "RMP%d", 
-						 block_inx++);
-				}
-#endif
 				print_bg_record(bg_record);
 			}
 		}
@@ -1109,7 +1096,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
-	create_full_system_block(&block_inx);
+	create_full_system_block();
 	sort_bg_record_inc_size(bg_list);
 	
 #ifdef _PRINT_BLOCKS_AND_EXIT
@@ -1141,7 +1128,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 {
 	int rc = SLURM_SUCCESS;
-	static int block_inx = 0;
 	
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
@@ -1209,8 +1195,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			num_quarter=4;
 		}
 		
-		if(_breakup_blocks(request, my_block_list, &block_inx) 
-		   != SLURM_SUCCESS) {
+		if(_breakup_blocks(request, my_block_list) != SLURM_SUCCESS) {
 			debug2("small block not able to be placed");
 			//rc = SLURM_ERROR;
 		} else 
@@ -1311,8 +1296,13 @@ no_list:
 		if(block_exist_in_list(bg_list, bg_record))
 			destroy_bg_record(bg_record);
 		else {
-			if(_add_block_db(bg_record, &block_inx) == SLURM_ERROR)
+			if(configure_block(bg_record) == SLURM_ERROR) {
+				destroy_bg_record(bg_record);
+				error("create_dynamic_block: "
+				      "unable to configure block in api");
 				goto finished;
+			}
+			
 			list_append(bg_list, bg_record);
 			print_bg_record(bg_record);
 		}
@@ -1334,7 +1324,7 @@ finished:
 	return rc;
 }
 
-extern int create_full_system_block(int *block_inx)
+extern int create_full_system_block()
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
@@ -1457,19 +1447,13 @@ extern int create_full_system_block(int *block_inx)
 		       bg_record->bg_block_list);
 	list_destroy(results);
 				
-#ifdef HAVE_BG_FILES
 	if((rc = configure_block(bg_record)) == SLURM_ERROR) {
-		error("unable to configure block in api");
+		error("create_full_system_block: "
+		      "unable to configure block in api");
 		destroy_bg_record(bg_record);
 		goto no_total;
 	}
-#else
-	if (!bg_record->bg_block_id) { 
-		bg_record->bg_block_id = xmalloc(8);
-		snprintf(bg_record->bg_block_id, 8,
-			 "RMP%d", (*block_inx)++);
-	}
-#endif	/* HAVE_BG_FILES */
+
 	print_bg_record(bg_record);
 	list_append(bg_list, bg_record);
 
@@ -2511,24 +2495,7 @@ static char *_get_bg_conf(void)
 	return rc;
 }
 
-static int _add_block_db(bg_record_t *bg_record, int *block_inx)
-{
-#ifdef HAVE_BG_FILES
-	if(configure_block(bg_record) == SLURM_ERROR) {
-		xfree(bg_record);
-		error("unable to configure block in api");
-		return SLURM_ERROR;
-	}
-#else
-	bg_record->bg_block_id = xmalloc(8);
-	snprintf(bg_record->bg_block_id, 8,
-		 "RMP%d", 
-		 (*block_inx)++);
-#endif
-	return SLURM_SUCCESS;
-}
-
-static int _split_block(bg_record_t *bg_record, int procs, int *block_inx) 
+static int _split_block(bg_record_t *bg_record, int procs) 
 {
 	bg_record_t *found_record = NULL;
 	bool full_bp = false; 
@@ -2581,9 +2548,12 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 		if(block_exist_in_list(bg_list, found_record)) {
 			destroy_bg_record(found_record);
 		} else {
-			if(_add_block_db(found_record, block_inx) 
-			   == SLURM_ERROR)
+			if(configure_block(found_record) == SLURM_ERROR) {
+				destroy_bg_record(found_record);
+				error("_split_block: "
+				      "unable to configure block in api");
 				return SLURM_ERROR;
+			}
 			list_append(bg_list, found_record);
 			print_bg_record(found_record);
 		}
@@ -2597,8 +2567,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 	return SLURM_SUCCESS;
 }
 
-static int _breakup_blocks(ba_request_t *request, List my_block_list, 
-			   int *block_inx)
+static int _breakup_blocks(ba_request_t *request, List my_block_list)
 {
 	int rc = SLURM_ERROR;
 	bg_record_t *bg_record = NULL;
@@ -2685,9 +2654,14 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 				if(block_exist_in_list(bg_list, bg_record))
 					destroy_bg_record(bg_record);
 				else {
-					if(_add_block_db(bg_record, block_inx)
-					   == SLURM_ERROR)
+					if(configure_block(bg_record)
+					   == SLURM_ERROR) {
+						destroy_bg_record(bg_record);
+						error("_breakup_blocks: "
+						      "unable to configure "
+						      "block in api");
 						return SLURM_ERROR;
+					}
 					list_append(bg_list, bg_record);
 					print_bg_record(bg_record);
 				}
@@ -2776,9 +2750,14 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list,
 				if(block_exist_in_list(bg_list, bg_record))
 					destroy_bg_record(bg_record);
 				else {
-					if(_add_block_db(bg_record, block_inx)
-					   == SLURM_ERROR)
+					if(configure_block(bg_record)
+					   == SLURM_ERROR) {
+						destroy_bg_record(bg_record);
+						error("_breakup_blocks: "
+						      "unable to configure "
+						      "block in api 2");
 						return SLURM_ERROR;
+					}
 					list_append(bg_list, bg_record);
 					print_bg_record(bg_record);
 				}
@@ -2807,7 +2786,7 @@ found_one:
 			rc = SLURM_SUCCESS;
 			goto finished;	
 		}
-		_split_block(bg_record, request->procs,	block_inx);
+		_split_block(bg_record, request->procs);
 		rc = SLURM_SUCCESS;
 		goto finished;
 	}
