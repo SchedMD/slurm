@@ -410,14 +410,20 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 
 	
+	if(!bp_id) {
+		error("No BP ID was returned from database");
+		continue;
+	}
+
 	if ((rc = bridge_get_nodecards(bp_id, &ncard_list))
 	    != STATUS_OK) {
 		error("bridge_get_nodecards(%s): %d",
 		      bp_id, rc);
-		
+		free(bp_id);
 		return SLURM_ERROR;
 	}
-	
+	free(bp_id);
+		
 			
 	if((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
 	   != STATUS_OK) {
