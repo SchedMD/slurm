@@ -40,8 +40,6 @@
 #include "bluegene.h"
 
 
-List bg_bp_list;
-
 #ifdef HAVE_BG_FILES
 static int _get_bp_by_location(rm_BGL_t* my_bg, 
 			       int* curr_coord, 
@@ -53,12 +51,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			     bg_switch_t *bg_switch);
 static int _add_switches_for_bp(ba_node_t *ba_node, const char *bpid);
 #endif
-static int _destroy_bg_bp_list(List bg_bp);
-static int _lookat_path(bg_bp_t *bg_bp, 
-			ba_switch_t *curr_switch, 
-			int source, 
-			int target, 
-			int dim);
+
 /** 
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
@@ -133,7 +126,6 @@ static int _get_switches_by_bpid(
 			if ((rc = bridge_get_data(bg, RM_NextSwitch, 
 						  &curr_switch)) 
 			    != STATUS_OK) {
-				list_iterator_destroy(bg_itr);
 				fatal("bridge_get_data"
 				      "(RM_NextSwitch): %s",
 				      bg_err_str(rc));
@@ -142,7 +134,6 @@ static int _get_switches_by_bpid(
 			if ((rc = bridge_get_data(bg, RM_FirstSwitch, 
 						  &curr_switch)) 
 			    != STATUS_OK) {
-				list_iterator_destroy(bg_itr);
 				fatal("bridge_get_data"
 				      "(RM_FirstSwitch): %s",
 				      bg_err_str(rc));
@@ -150,7 +141,6 @@ static int _get_switches_by_bpid(
 		}
 		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID, 
 					  &curr_bpid)) != STATUS_OK) {
-			list_iterator_destroy(bg_itr);
 			fatal("bridge_get_data: RM_SwitchBPID: %s", 
 			      bg_err_str(rc));
 		}
@@ -316,140 +306,6 @@ static int _add_switches_for_bp(ba_node_t *ba_node, const char *bpid)
 	}
 }
 #endif
-
-static int _destroy_bg_bp_list(List bg_bp_list)
-{
-	bg_switch_t *bg_switch;
-	bg_conn_t *bg_conn;
-	bg_bp_t *bg_bp;
-	
-	if(bg_bp_list) {
-		while((bg_bp = list_pop(bg_bp_list)) != NULL) {
-			while((bg_switch = list_pop(bg_bp->switch_list)) 
-			      != NULL) {
-				while((bg_conn = list_pop(
-					       bg_switch->conn_list)) 
-				      != NULL) {
-					if(bg_conn)
-						xfree(bg_conn);
-				}
-				list_destroy(bg_switch->conn_list);
-				if(bg_switch)
-					xfree(bg_switch);
-			}
-			list_destroy(bg_bp->switch_list);
-			if(bg_bp)
-				xfree(bg_bp);
-		}
-		list_destroy(bg_bp_list);
-	}
-	return SLURM_SUCCESS;
-}
-
-static int _lookat_path(bg_bp_t *bg_bp, ba_switch_t *curr_switch, 
-			int source, int target, int dim) 
-{
-	ListIterator bg_itr, switch_itr, conn_itr;
-	bg_switch_t *bg_switch;
-	bg_conn_t *bg_conn;
-	int *node_tar;
-	int port_tar;
-	int port_tar1;
-	int *node_src;
-	ba_switch_t *next_switch; 
-	
-	switch_itr = list_iterator_create(bg_bp->switch_list);
-	while((bg_switch = list_next(switch_itr)) != NULL) {
-		if(bg_switch->dim == dim)
-			break;
-	}
-	list_iterator_destroy(switch_itr);
-	
-	if(bg_switch == NULL) {
-		bg_switch = xmalloc(sizeof(bg_switch_t));
-		bg_switch->dim=dim;
-		bg_switch->conn_list = list_create(NULL);
-		list_append(bg_bp->switch_list, bg_switch);
-	}
-		
-	port_tar = curr_switch->int_wire[source].port_tar;
-	
-	conn_itr = list_iterator_create(bg_switch->conn_list);
-	while((bg_conn = list_next(conn_itr)) != NULL) {
-		if(port_tar == curr_switch->ext_wire[port_tar].port_tar) {
-			//list_delete(conn_itr);
-			//continue;
-			debug3("I found these %d %d", port_tar, 
-			       curr_switch->ext_wire[port_tar].port_tar);
-		}
-		if(((bg_conn->source == port_tar)
-		    && (bg_conn->target == source))
-		   || ((bg_conn->source == source)
-		       && (bg_conn->target == port_tar)))
-			break;
-	}
-	list_iterator_destroy(conn_itr);
-	
-	if(bg_conn == NULL) {
-		bg_conn = xmalloc(sizeof(bg_conn_t));
-		bg_conn->source = source;
-		bg_conn->target = port_tar;
-		
-		list_append(bg_switch->conn_list, bg_conn);
-	} else {		
-		return SLURM_SUCCESS;	
-	}
-	if(port_tar==target) {
-		return SLURM_SUCCESS;
-	}
-	/* keep this around to tell us where we are coming from */
-	port_tar1 = port_tar;
-	/* set port target to to where the external wire is 
-	   going to on the next node */
-	port_tar = curr_switch->ext_wire[port_tar1].port_tar;
-	/* set node target to where the external wire is going to */
-	node_tar = curr_switch->ext_wire[port_tar1].node_tar;
-	/* set source to the node you are on */
-	node_src = curr_switch->ext_wire[0].node_tar;
-
-	debug2("dim %d trying from %d%d%d %d -> %d%d%d %d",
-	       dim,
-	       node_src[X], 
-	       node_src[Y], 
-	       node_src[Z],
-	       port_tar1,
-	       node_tar[X], 
-	       node_tar[Y], 
-	       node_tar[Z],
-	       port_tar);
-
-
-	bg_itr = list_iterator_create(bg_bp_list);
-	while((bg_bp = list_next(bg_itr)) != NULL) {
-		if((bg_bp->coord[X] == node_tar[X]) 
-		   && (bg_bp->coord[Y] == node_tar[Y]) 
-		   && (bg_bp->coord[Z] == node_tar[Z]))
-			break;
-	}
-	list_iterator_destroy(bg_itr);
-	/* It appears this is a past through node */
-	if(bg_bp == NULL) {
-		bg_bp = xmalloc(sizeof(bg_bp_t));
-		bg_bp->coord = node_tar;
-		bg_bp->switch_list = list_create(NULL);
-		list_append(bg_bp_list, bg_bp);
-		bg_bp->used = 0;
-	}
-	
-	next_switch = &ba_system_ptr->
-		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
-	
-	if(_lookat_path(bg_bp, next_switch, port_tar, target, dim) 
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-	
-	return SLURM_SUCCESS;
-}
 
 extern int configure_small_block(bg_record_t *bg_record)
 {
@@ -648,7 +504,6 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		return SLURM_ERROR;
 	}
 	
-	bg_bp_list = list_create(NULL);
 	bg_record->switch_count = 0;
 	bg_record->bp_count = 0;
 	
@@ -747,8 +602,6 @@ extern int configure_block_switches(bg_record_t * bg_record)
 #ifdef HAVE_BG_FILES
 cleanup:
 #endif
-	if (_destroy_bg_bp_list(bg_bp_list) == SLURM_ERROR)
-		return SLURM_ERROR;	
 	return rc;	
 }
 
