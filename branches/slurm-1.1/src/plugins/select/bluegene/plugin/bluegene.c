@@ -170,6 +170,16 @@ extern void fini_bg(void)
 		list_destroy(bg_booted_block_list);
 		bg_booted_block_list = NULL;
 	}
+	/* wait for the free threads to finish up don't destroy the
+	 * bg_free_block_list here */
+	while(free_cnt > 0)
+		usleep(1000);
+	/* wait for the destroy threads to finish up don't destroy the
+	 * bg_destroy_block_list here */
+	while(destroy_cnt > 0)
+		usleep(1000);
+	
+	/* this is destroyed in the thread don't destroy here */
 	
 	slurm_mutex_lock(&request_list_mutex);
 	if (bg_request_list) {
@@ -1588,9 +1598,9 @@ extern void *mult_free_block(void *args)
 		list_destroy(bg_freeing_list);
 		bg_freeing_list = NULL;
 	}
-	slurm_mutex_unlock(&freed_cnt_mutex);
 	if(free_cnt == 0)
 		list_destroy(bg_free_block_list);
+	slurm_mutex_unlock(&freed_cnt_mutex);
 	return NULL;
 }
 
@@ -1682,18 +1692,14 @@ extern void *mult_destroy_block(void *args)
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
 	destroy_cnt--;
-	slurm_mutex_unlock(&freed_cnt_mutex);	
-	
-	slurm_mutex_lock(&freed_cnt_mutex);
 	if(bg_freeing_list) {
 		list_destroy(bg_freeing_list);
 		bg_freeing_list = NULL;
 	}
-	slurm_mutex_unlock(&freed_cnt_mutex);
-
 	if(destroy_cnt == 0)
 		list_destroy(bg_destroy_block_list);
-	
+	slurm_mutex_unlock(&freed_cnt_mutex);
+
 	return NULL;
 }
 
