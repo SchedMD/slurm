@@ -165,6 +165,7 @@ static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 		int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
+static void _send_step_complete_msgs(slurmd_job_t *job);
 static void _wait_for_all_tasks(slurmd_job_t *job);
 static int  _wait_for_any_task(slurmd_job_t *job, bool waitflag);
 
@@ -224,15 +225,15 @@ _batch_finish(slurmd_job_t *job, int rc)
 	if (job->batchdir && (rmdir(job->batchdir) < 0))
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
-	if (job->stepid == NO_VAL) {
+	if ((job->stepid == NO_VAL) || (job->stepid == SLURM_BATCH_SCRIPT)) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, rc, status);
+		_send_complete_batch_script_msg(job, rc, status);
 	} else {
 		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, job->stepid, rc, status);
+		_send_step_complete_msgs(job);
 	}
-
-	_send_complete_batch_script_msg(job, rc, status);
 }
 
 /*
@@ -290,7 +291,10 @@ cleanup1:
 	error("batch script setup failed for job %u.%u",
 	      msg->job_id, msg->step_id);
 
-	_send_complete_batch_script_msg(job, -1, -1);
+	if (msg->step_id == SLURM_BATCH_SCRIPT)
+		_send_complete_batch_script_msg(job, -1, -1);
+	else
+		_send_step_complete_msgs(job);
 
 	return NULL;
 }

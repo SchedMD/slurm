@@ -1702,8 +1702,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				     slurm_strerror(error_code));
 				slurm_send_rc_msg(msg, error_code);
 			} else {
-				info("_launch_batch_step JobId=%u %s",
-					job_desc_msg->job_id, TIME_STR);
+				info("_launch_batch_step StepId=%u.%u %s",
+					job_desc_msg->job_id, step_id,
+					TIME_STR);
 				submit_msg.job_id     = job_desc_msg->job_id;
 				submit_msg.step_id    = step_id;
 				submit_msg.error_code = error_code;
