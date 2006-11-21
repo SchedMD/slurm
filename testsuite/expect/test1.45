@@ -7,9 +7,6 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.45.input
 ############################################################################
 # Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,7 +34,10 @@ source ./globals
 
 set test_id      "1.45"
 set file_in      "test$test_id.input"
+set file_out1    "test$test_id.output1"
+set file_out2    "test$test_id.output2"
 set exit_code    0
+set job_id_0     0
 set job_id_1     0
 set job_id_2     0
 
@@ -46,17 +46,18 @@ print_header $test_id
 #
 # Delete left-over stdout/err files
 #
-file delete none
+exec $bin_rm -f $file_in $file_out1 $file_out2
 
 #
 # Build input script file
 #
-make_bash_script $file_in "$bin_hostname"
+make_bash_script $file_in "
+  $bin_id
+  $bin_sleep 20"
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
-set timeout $max_job_delay
 if { [test_bluegene] } {
 	set node_cnt 1-2048
 } else {
@@ -67,22 +68,21 @@ if { [test_bluegene] } {
 	}
 }
 
+set timeout $max_job_delay
 spawn $srun -N$node_cnt -A -v -t1
 expect {
 	-re "jobid ($number):" {
-		set job_id_1 $expect_out(1,string)
-		send "$srun -b --jobid=$job_id_1 -o none -e none $file_in \n"
-		exp_continue
-	}
-	-re "jobid ($number) submitted" {
-		set job_id_2 $expect_out(1,string)
-		send "exit \n"
+		set job_id_0 $expect_out(1,string)
+		send "$srun -b --jobid=$job_id_0 -o $file_out1 $file_in \n"
 		exp_continue
 	}
 	-re "jobid ($number).0 submitted" {
-		set job_id_2 $expect_out(1,string)
-		send "exit \n"
+		set job_id_1 $expect_out(1,string)
+		send "$srun -b --jobid=$job_id_0 -o $file_out2 $bin_id \n"
 		exp_continue
+	}
+	-re "jobid ($number).1 submitted" {
+		set job_id_2 $expect_out(1,string)
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -95,22 +95,119 @@ expect {
 	}
 }
 
-if {$job_id_1 == 0} {
+if {$job_id_0 == 0} {
 	send_user "\nFAILURE: job allocation failure\n"
+	kill_srun
 	exit 1
 }
-if {$job_id_1 != $job_id_2} {
-	send_user "\nFAILURE: batch job did not run in existing allocation\n"
+if {($job_id_1 == 0) || ($job_id_2 == 0)} {
+	send_user "\nFAILURE: batch job submit failure\n"
+	cancel_job $job_id_0
 	exit 1
 }
 
-if [file exists none] {
-	send_user "\nFAILURE: created file 'none', should have mapped to no file\n"
+if {($job_id_0 != $job_id_2) || ($job_id_1 != $job_id_2)} {
+	send_user "\nFAILURE: batch job did not run in existing allocation\n"
+	cancel_job $job_id_0
+	cancel_job $job_id_1
+	cancel_job $job_id_2
 	exit 1
 }
+
+#
+# Check that the job step is reported
+#
+set matches 0
+spawn $scontrol show step $job_id_0.0
+expect {
+	-re "Invalid" {
+		send_user "\nFAILURE: batch step not found\n"
+		set matches 1
+		set exit_code 1
+		exp_continue
+	}
+	-re "$job_id_0.0" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: batch step not found\n"
+	set exit_code 1
+}
+
+#
+# Check batch job step output
+#
+if {[wait_for_file $file_out1] == 0} {
+	set matches 0
+	spawn $bin_cat $file_out1
+	expect {
+		-re "uid=" {
+			set matches 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches == 0} {
+		send_user "\nFAILURE: Job output missing\n"
+		set exit_code 1
+	}
+}
+if {[wait_for_file $file_out2] == 0} {
+	set matches 0
+	spawn $bin_cat $file_out2
+	expect {
+		-re "uid=" {
+			set matches 1
+			exp_continue
+		}
+		-re "srun.*command not found" {
+			send_user "\nWARNING: srun is not installed on this computer\n"
+			set matches 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches == 0} {
+		send_user "\nFAILURE: Job output missing\n"
+		set exit_code 1
+	}
+}
+
+#
+# Make sure job is still active, then cancel it
+#
+set matches 0
+spawn $scontrol -o show job $job_id_0
+expect {
+	-re "JobState=RUNNING" {
+		set matches 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: Job not still running\n"
+	set exit_code 1
+}
+cancel_job $job_id_0
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in $file_out1 $file_out2
 }
 exit $exit_code
