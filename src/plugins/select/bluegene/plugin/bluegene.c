@@ -1233,8 +1233,11 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				request->start_req = 1;
 				rc = SLURM_SUCCESS;
 				if(results)
-					list_destroy(results);
-				results = list_create(NULL);
+					list_delete_all(
+						results,
+						&empty_null_destroy_list, "");
+				else
+					results = list_create(NULL);
 				if (!allocate_block(request, results)){
 					debug2("allocate failure for size %d "
 					       "base partitions", 
@@ -1254,8 +1257,10 @@ no_list:
 	if(!bg_record) {		
 		rc = SLURM_SUCCESS;
 		if(results)
-			list_destroy(results);
-		results = list_create(NULL);
+			list_delete_all(results, 
+					&empty_null_destroy_list, "");
+		else
+			results = list_create(NULL);
 		if (!allocate_block(request, results)) {
 			debug("allocate failure for size %d base partitions", 
 			      request->size);
