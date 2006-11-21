@@ -641,8 +641,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
-	if (batch_step
-	&&  (job_ptr->batch_flag || job_ptr->next_step_id)) {
+	if (batch_step) {
 		info("user %u attempting to run batch script within "
 			"an existing job", step_specs->user_id);
 		/* This seems hazardous to allow, but LSF seems to 
@@ -842,9 +841,10 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	} else {
 		/* Return data for specific job_id.step_id */
 		job_ptr = find_job_record(job_id);
-		if (((show_flags & SHOW_ALL) == 0) && 
-		    (job_ptr->part_ptr) && 
-		    (job_ptr->part_ptr->hidden))
+		if (((show_flags & SHOW_ALL) == 0) 
+		&&  (job_ptr != NULL)
+		&&  (job_ptr->part_ptr) 
+		&&  (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
 		step_ptr = find_step_record(job_ptr, step_id);
 		if (step_ptr == NULL)
@@ -1072,6 +1072,11 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
+	if (step_ptr->batch_step) {
+		*rem = 0;
+		delete_step_record(job_ptr, req->job_step_id);
+		return SLURM_SUCCESS;
+	}
 	if (req->range_last < req->range_first) {
 		error("step_partial_comp: range: %u-%u", req->range_first, 
 			req->range_last);

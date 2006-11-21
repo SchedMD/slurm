@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - BLUEGENE - Wait on a fini to make sure all threads are finished before
    cleaning up.
+ - Fix logic to execute a batch job step (under an existing resource allocation)
+   as needed by LSF.
 
 * Changes in SLURM 1.1.20
 =========================
