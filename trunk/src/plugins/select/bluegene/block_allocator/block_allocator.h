@@ -262,6 +262,12 @@ extern int new_ba_request(ba_request_t* ba_request);
 extern void delete_ba_request(void *arg);
 
 /**
+ * empty a list that we don't want to destroy the memory of the
+ * elements always returns 1
+*/
+extern int empty_null_destroy_list(void *arg, void *key);
+
+/**
  * print a block request 
  */
 extern void print_ba_request(ba_request_t* ba_request);

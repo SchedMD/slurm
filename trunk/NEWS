@@ -120,6 +120,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - BLUEGENE - Wait on a fini to make sure all threads are finished before
    cleaning up.
+ - BLUEGENE - replacements to not destroy lists but just empty it to avoid
+   losing the pointer to the list in the block allocator.
  - Fix logic to execute a batch job step (under an existing resource allocation)
    as needed by LSF.
 
