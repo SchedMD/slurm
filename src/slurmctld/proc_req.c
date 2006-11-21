@@ -2249,7 +2249,8 @@ _xduparray(uint16_t size, char ** array)
 	return result;
 }
 
-/* like _xduparray(), but performs a single xmalloc() */
+/* Like _xduparray(), but performs two xmalloc().  The output format of this 
+ * must be identical to _read_data_array_from_file() */
 static char **
 _xduparray2(uint16_t size, char ** array) 
 {
@@ -2261,10 +2262,9 @@ _xduparray2(uint16_t size, char ** array)
 
 	for (i=0; i<size; i++)
 		len += (strlen(array[i]) + 1);
-	ptr = xmalloc(sizeof(char *) * size + len);
-	result = (char **) ptr;
+	ptr = xmalloc(len);
+	result = (char **) xmalloc(sizeof(char *) * size);
 
-	ptr += (sizeof(char *) * size);
 	for (i=0; i<size; i++) {
 		result[i] = ptr;
 		len = strlen(array[i]);
