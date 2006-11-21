@@ -103,6 +103,11 @@ extern int init ( void )
 		return SLURM_ERROR;
 	}
 
+	if ((pid_t)0 != getuid()) {
+		error("proctrack/aix requires the slurmd to run as root.");
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
