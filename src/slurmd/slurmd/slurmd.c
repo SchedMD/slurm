@@ -249,6 +249,8 @@ main (int argc, char *argv[])
 
 	_slurmd_fini();
 	_destroy_conf();
+	info("Slurmd shutdown completing");
+	log_fini();
        	return 0;
 }
 
@@ -972,13 +974,24 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
+/**************************************************************************\
+ * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
+ * "configure --enable-memory-leak-debug" then execute
+ * > valgrind --tool=memcheck --leak-check=yes --num-callers=6
+ *    --leak-resolution=med slurmd -D
+ *
+ * Then exercise the slurmd functionality before executing
+ * > scontrol shutdown
+\**************************************************************************/
 static int
 _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
+	int slurm_proctrack_init();
+	switch_fini();
 	slurmd_task_fini(); 
 	slurm_conf_destroy();
-	
+	slurm_proctrack_fini();
 	return SLURM_SUCCESS;
 }
 
