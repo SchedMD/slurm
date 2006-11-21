@@ -2265,6 +2265,7 @@ _xduparray2(uint16_t size, char ** array)
 
 	ptr += (sizeof(char *) * size);
 	for (i=0; i<size; i++) {
+		result[i] = ptr;
 		len = strlen(array[i]);
 		strcpy(ptr, array[i]);
 		ptr += (len + 1);

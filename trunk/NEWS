@@ -113,6 +113,11 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.21
+=========================
+ - BLUEGENE - Wait on a fini to make sure all threads are finished before
+   cleaning up.
+
 * Changes in SLURM 1.1.20
 =========================
  - Added new SPANK plugin hook slurm_spank_local_user_init() called
