@@ -179,8 +179,8 @@ extern int fini ( void )
 	int rc = SLURM_SUCCESS;
 
 	pthread_mutex_lock( &thread_flag_mutex );
+	agent_fini = true;
 	if ( bluegene_thread ) {
-		agent_fini = true;
 		verbose("Bluegene select plugin shutting down");
 		rc = _wait_for_thread(bluegene_thread);
 		bluegene_thread = 0;
