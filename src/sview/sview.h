@@ -55,6 +55,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#if defined(HAVE_AIX)
+#undef func_data
+#endif
 #include <gtk/gtk.h>
 
 #include "src/common/bitstring.h"
