@@ -94,6 +94,7 @@ typedef struct {
 } gids_t;
 
 static int  _abort_job(uint32_t job_id);
+static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
 static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
@@ -848,7 +849,10 @@ _rpc_batch_job(slurm_msg_t *msg)
 	else if (rc != 0) {
 		/* prolog or job launch failure, 
 		 * tell slurmctld that the job failed */
-		(void) _abort_job(req->job_id);
+		if (req->step_id == SLURM_BATCH_SCRIPT)
+			(void) _abort_job(req->job_id);
+		else
+			(void) _abort_step(req->job_id, req->step_id);
 	}
 }
 
@@ -865,6 +869,25 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
+	return slurm_send_only_controller_msg(&resp_msg);
+}
+
+static int
+_abort_step(uint32_t job_id, uint32_t step_id)
+{
+	step_complete_msg_t resp;
+	slurm_msg_t resp_msg;
+
+	resp.job_id       = job_id;
+	resp.job_step_id  = step_id;
+	resp.range_first  = 0;
+	resp.range_last   = 0;
+	resp.step_rc      = 1;
+	resp.jobacct      = jobacct_g_alloc(NULL);
+	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
+	resp_msg.data     = &resp;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
 
