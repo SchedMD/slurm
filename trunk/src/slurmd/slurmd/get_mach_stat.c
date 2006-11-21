@@ -127,6 +127,8 @@ main(int argc, char * argv[])
 				  &this_node.threads,
 				  &block_map_size,
 				  &block_map, &block_map_inv);
+	xfree(block_map);	/* not used here */
+	xfree(block_map_inv);	/* not used here */
 	error_code += get_memory(&this_node.real_memory);
 	error_code += get_tmp_disk(&this_node.tmp_disk, "/tmp");
 #ifdef USE_CPU_SPEED
@@ -464,6 +466,7 @@ get_speed(float *speed)
  *         block_map - asbtract->physical block distribution map 
  *         block_map_inv - physical->abstract block distribution map (inverse)
  *         return code - 0 if no error, otherwise errno
+ * NOTE: User must xfree block_map and block_map_inv  
  */
 typedef struct cpuinfo {
 	uint16_t seen;
@@ -519,8 +522,10 @@ get_cpuinfo(uint16_t numproc,
 	}
 
 	/* Note: treats processor physical IDs as tokens, not indexes */
-	cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
-	memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
+	if (cpuinfo)
+		memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
+	else
+		cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		uint32_t val;
@@ -698,8 +703,9 @@ get_cpuinfo(uint16_t numproc,
  *   actual machine processor ID ordering (which can be BIOS/OS dependendent)
  * Input:  numproc - number of processors on the system
  *	   cpu - array of cpuinfo (file static for qsort/_compare_cpus)
- * Output: block_map - asbtract->physical block distribution map 
+ * Output: block_map, block_map_inv - asbtract->physical block distribution map 
  *         return code - 0 if no error, otherwise errno
+ * NOTE: User must free block_map and block_map_inv
  *
  * For example, given a system with 8 logical processors arranged as:
  *
@@ -780,7 +786,6 @@ int compute_block_map(uint16_t numproc,
 	/* Compute abstract->machine block mapping (and inverse) */
 	if (block_map) {
 		*block_map = xmalloc(numproc * sizeof(uint16_t));
-		memset(*block_map, 0, numproc * sizeof(uint16_t));
 		for (i = 0; i < numproc; i++) {
 			(*block_map)[i] = i;
 		}
@@ -788,7 +793,6 @@ int compute_block_map(uint16_t numproc,
 	}
 	if (block_map_inv) {
 		*block_map_inv = xmalloc(numproc * sizeof(uint16_t));
-		memset(*block_map_inv, 0, numproc * sizeof(uint16_t));
 		for (i = 0; i < numproc; i++) {
 			uint16_t idx = (*block_map)[i];
 			(*block_map_inv)[idx] = i;
