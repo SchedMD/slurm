@@ -56,9 +56,13 @@
 #include <string.h>
 #include <unistd.h>
 #if defined(HAVE_AIX)
-#undef func_data
+/* AIX defines a func_data macro which conflicts with func_data
+ * variable names in the gtk.h headers */
+#  undef func_data
+#  include <gtk/gtk.h>
+#else
+#  include <gtk/gtk.h>
 #endif
-#include <gtk/gtk.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
