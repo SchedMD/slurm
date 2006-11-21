@@ -758,6 +758,8 @@ static void
 _destroy_conf()
 {
 	if(conf) {
+		xfree(conf->block_map);
+		xfree(conf->block_map_inv);
 		xfree(conf->hostname);
 		xfree(conf->node_name);
 		xfree(conf->conffile);
