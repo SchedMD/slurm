@@ -727,6 +727,15 @@ extern void print_ba_request(ba_request_t* ba_request)
 }
 
 /**
+ * empty a list that we don't want to destroy the memory of the
+ * elements always returns 1
+*/
+extern int empty_null_destroy_list(void *arg, void *key)
+{
+	return 1;
+}
+
+/**
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
  * 
@@ -1161,9 +1170,8 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 		return SLURM_ERROR;
 
 	remove_block(nodes, new_count);
-	list_destroy(nodes);
-	nodes = list_create(NULL);
-	
+	list_delete_all(nodes, &empty_null_destroy_list, "");
+		
 	name = set_bg_block(nodes, ba_node->coord, geo, conn_type);
 	if(!name)
 		return SLURM_ERROR;
@@ -1350,8 +1358,7 @@ extern char *set_bg_block(List results, int *start,
 	if(!found) {
 		debug2("trying less efficient code");
 		remove_block(results, color_count);
-		list_destroy(results);
-		results = list_create(NULL);
+		list_delete_all(results, &empty_null_destroy_list, "");
 		list_append(results, ba_node);
 		found = _find_x_path2(results, ba_node,
 				      ba_node->coord,
@@ -2981,8 +2988,8 @@ start_again:
 			
 			if(results) {
 				remove_block(results, color_count);
-				list_destroy(results);
-				results = list_create(NULL);
+				list_delete_all(results,
+						&empty_null_destroy_list, "");
 			}
 			if(ba_request->start_req) 
 				goto requested_end;
