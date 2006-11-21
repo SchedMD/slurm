@@ -179,8 +179,6 @@ extern void fini_bg(void)
 	while(destroy_cnt > 0)
 		usleep(1000);
 	
-	/* this is destroyed in the thread don't destroy here */
-	
 	slurm_mutex_lock(&request_list_mutex);
 	if (bg_request_list) {
 		list_destroy(bg_request_list);
