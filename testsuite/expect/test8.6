@@ -46,7 +46,7 @@ set 16knode_block_cnt 8
 set 32knode_block_cnt 8
 
 # job paramters
-set sleep_time  10
+set sleep_time  2
 
 print_header $test_id
 
@@ -73,7 +73,7 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 	global srun number kill_srun
 	set start_cnt 0	
 	for {set inx 0} {$inx < $job_cnt} {incr inx} {
-		spawn $srun --batch --output=/dev/null -t2 -N$node_cnt-$node_cnt $file_in
+		set srun_pid [spawn $srun --batch --output=/dev/null -t2 -N$node_cnt-$node_cnt $file_in]
 		expect {
 			-re "More processors requested than permitted"
 			{
@@ -91,8 +91,8 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 			}
 			timeout {
 				send_user "\nFAILURE: srun not responding\n"
-				kill_srun
-				exit 1
+				slow_kill $srun_pid
+				return 0
 			}
 			eof {
 				wait
@@ -104,6 +104,41 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 	} else {
 		return 1
 	}	
+}
+
+# Wait up to 900 seconds for all jobs to terminate
+# Return 0 if all jobs done, remainin job count otherwise
+proc wait_for_all_jobs { job_name } {
+	global squeue bin_sleep
+
+	set last_matches 0
+	send_user "Waiting for all jobs to terminate\n"
+	for {set inx 0} {$inx < 60} {incr inx} {
+		exec $bin_sleep 15
+		set matches 0
+		log_user 0
+		spawn $squeue -o %j
+		expect {
+			-re "$job_name" {
+				incr matches
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		log_user 1
+		if {$matches == 0} { 
+			send_user "All jobs complete\n"
+			return 0
+		}
+		send_user "  $matches jobs remaining\n"
+		if {$matches == $last_matches} {
+			return $matches
+		}
+		set last_matches $matches
+	}
+	return $matches
 }
 
 if {[run_batch_jobs 32 $32node_block_cnt $file_in ] != 1} {
@@ -170,9 +205,14 @@ if {[run_batch_jobs 512 $512node_block_cnt $file_in ] != 1} {
 	send_user "\nFAILURE: 512 cnodes can't be created\n"
 	set exit_code 1	
 }
-exec rm -f $file_in
-	
+
+if {[wait_for_all_jobs $file_in] != 0} {
+	send_user "\nFAILURE: some submitted jobs failed to terminate\n"
+	set exit_code 1
+}
+
 if {$exit_code == 0} {
+	exec rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
