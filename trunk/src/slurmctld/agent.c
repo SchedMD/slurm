@@ -1257,6 +1257,7 @@ static void _slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg)
 {
 	if (msg) {
 		if (msg->environment) {
+			xfree(msg->environment[0]);
 			xfree(msg->environment);
 		}
 		slurm_free_job_launch_msg(msg);

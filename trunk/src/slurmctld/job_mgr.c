@@ -2120,6 +2120,7 @@ char *get_job_script(struct job_record *job_ptr)
  * OUT data - pointer to array of pointers to strings (e.g. env),
  *	must be xfreed when no longer needed
  * OUT size - number of elements in data
+ * NOTE: The output format of this must be identical with _xduparray2()
  */
 static void
 _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
