@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 1.2" "September 2006" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.2" "November 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -349,19 +349,23 @@ By default the specified geometry can rotate in three dimensions.
 
 .TP
 \fB\-\-blrts\-image\fR[=]<\fIpath\fR>
-Path to blrts image for bluegene block. Default if not set
+Path to blrts image for bluegene block.
+Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-linux\-image\fR[=]<\fIpath\fR>
-Path to linux image for bluegene block.  Default if not set
+Path to linux image for bluegene block.
+Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-mloader\-image\fR[=]<\fIpath\fR>
-Path to mloader image for bluegene block.  Default if not set
+Path to mloader image for bluegene block.
+Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-ramdisk\-image\fR[=]<\fIpath\fR>
-Path to ramdisk image for bluegene block.  Default if not set
+Path to ramdisk image for bluegene block.
+Default from \fIblugene.conf\fR if not set.
 
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
