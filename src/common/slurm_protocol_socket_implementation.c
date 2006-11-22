@@ -209,7 +209,7 @@ ssize_t _slurm_msg_sendto(slurm_fd fd, char *buffer, size_t size,
 ssize_t _slurm_msg_sendto_timeout(slurm_fd fd, char *buffer, size_t size, 
                                   uint32_t flags, int timeout)
 {
-        size_t   len;
+        int   len;
         uint32_t usize;
         SigFunc *ohandler;
 
