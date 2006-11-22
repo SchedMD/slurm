@@ -1,4 +1,4 @@
-.TH "bluegene.conf" "5" "March 2006" "bluegene.conf 1.1" "Slurm configuration file"
+.TH "bluegene.conf" "5" "November 2006" "bluegene.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 bluegene.conf \- Slurm configuration file for BlueGene systems 
 .SH "DESCRIPTION"
@@ -69,18 +69,23 @@ the user groups allowed to use this image (i.e. Groups=da:jette) if
 Groups= is not stated then this image will be able to be used by all
 groups. You can but as many alternative images as you want in the conf file.
 
+.TP
 \fBAltLinuxImage\fR
 Alternative LinuxImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
 the user groups allowed to use this image (i.e. Groups=da:jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can but as many alternative images as you want in the conf file.
+
+.TP
 \fBAltMloaderImage\fR
 Alternative MloaderImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
 the user groups allowed to use this image (i.e. Groups=da:jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can but as many alternative images as you want in the conf file.
+
+.TP
 \fBAltRamDiskImage\fR
 Alternative RamDiskImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
