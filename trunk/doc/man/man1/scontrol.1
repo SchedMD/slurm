@@ -414,7 +414,7 @@ PartitionName=class TotalNodes=10 TotalCPUs=20 RootOnly=NO
 .br
    MinNodes=1 MaxNodes=2 AllowGroups=students
 .br
-   Nodes=lx[0031\-0040] NodeIndices=31,40,\-1
+   Nodes=lx[0031-0040] NodeIndices=31,40,-1
 .br 
 scontrol: update PartitionName=class MaxTime=99 MaxNodes=4
 .br 
@@ -428,7 +428,7 @@ JobId=65539 UserId=1500 JobState=PENDING TimeLimit=100
 .br
    ReqNodes=400 Contiguous=1 MinProcs=4 MinMemory=1024
 .br 
-   MinTmpDisk=2034ReqNodeList=lx[3000\-3003] 
+   MinTmpDisk=2034 ReqNodeList=lx[3000-3003] 
 .br
    Features=(null) JobScript=/bin/hostname 
 .br 
