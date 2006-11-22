@@ -1300,6 +1300,7 @@ extern int check_and_set_node_list(List nodes)
 	}
 	rc = SLURM_SUCCESS;
 end_it:
+	list_iterator_destroy(itr);
 #endif
 	return rc;
 }
