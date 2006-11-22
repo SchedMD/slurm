@@ -1718,6 +1718,10 @@ extern int free_block_list(List delete_list)
 	int *count = NULL;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
+
+	if(!delete_list || !list_count(delete_list))
+		return SLURM_SUCCESS;
+
 	/* set up which list to push onto */
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		block_list = &bg_destroy_block_list;
@@ -1732,8 +1736,6 @@ extern int free_block_list(List delete_list)
 	if ((*block_list == NULL) 
 	    && ((*block_list = list_create(NULL)) == NULL))
 		fatal("malloc failure in free_block_list");
-	/* already running MAX_AGENTS we don't really need more 
-	   since they never end */
 	
 	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
 		/* push job onto queue in a FIFO */
@@ -1741,6 +1743,8 @@ extern int free_block_list(List delete_list)
 		if (list_push(*block_list, found_record) == NULL)
 			fatal("malloc failure in _block_op/list_push");
 		
+		/* already running MAX_AGENTS we don't really need more 
+		   since they don't end until we shut down the controller */
 		if (*count > MAX_AGENT_COUNT) 
 			continue;
 		
