@@ -3337,13 +3337,16 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	int count=0, i, set=0;
 	int *start = NULL;
 	int *end = NULL;
-	char *name = xmalloc(BUFSIZE);
+	char *name;
 	ListIterator itr;
-	hostlist_t hostlist = hostlist_create(NULL);
+	hostlist_t hostlist;
 	char temp_name[4];
 
 	if(!nodes)
 		return NULL;
+
+	name = xmalloc(BUFSIZE);
+	hostlist = hostlist_create(NULL);
 	itr = list_iterator_create(nodes);
 	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
 		snprintf(temp_name, sizeof(temp_name), "%d%d%d", 
