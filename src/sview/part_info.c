@@ -510,7 +510,8 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 					   display_data_part[i].id,
 					   &temp_char, -1);
 			gtk_entry_set_max_length(GTK_ENTRY(entry), 
-						 (DEFAULT_ENTRY_LENGTH+i));
+						 (DEFAULT_ENTRY_LENGTH +
+						  display_data_part[i].id));
 			
 			if(temp_char) {
 				gtk_entry_set_text(GTK_ENTRY(entry),
