@@ -272,6 +272,7 @@ int PMI_Finalize( void )
 	kvs_recs = NULL;
 	kvs_rec_cnt = 0;
 	pthread_mutex_unlock(&kvs_mutex);
+	slurm_pmi_finalize();
 
 	return PMI_SUCCESS;
 }

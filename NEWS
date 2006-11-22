@@ -122,8 +122,9 @@ documents those changes that are of interest to users and admins.
    cleaning up.
  - BLUEGENE - replacements to not destroy lists but just empty it to avoid
    losing the pointer to the list in the block allocator.
- - Fix logic to execute a batch job step (under an existing resource allocation)
-   as needed by LSF.
+ - Fix logic to execute a batch job step (under an existing resource 
+   allocation) as needed by LSF.
+ - Patches from Hongjia Cao (pmi finialize issues and type declaration)
 
 * Changes in SLURM 1.1.20
 =========================
