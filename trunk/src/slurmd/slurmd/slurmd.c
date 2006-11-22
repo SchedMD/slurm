@@ -985,6 +985,10 @@ cleanup:
  *
  * Then exercise the slurmd functionality before executing
  * > scontrol shutdown
+ *
+ * There should be some definitely lost records from 
+ * init_setproctitle (setproctitle.c), but it should otherwise account 
+ * for all memory.
 \**************************************************************************/
 static int
 _slurmd_fini()
@@ -996,6 +1000,7 @@ _slurmd_fini()
 	slurm_conf_destroy();
 	slurm_proctrack_fini();
 	slurm_auth_fini();
+	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	return SLURM_SUCCESS;
 }
 
