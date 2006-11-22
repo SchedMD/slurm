@@ -559,7 +559,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 #endif
 	if(!job_msg)
 		return NULL;
-	g_print("editting %d blrts = %d\n", column, SORTID_BLRTSIMAGE);
 	
 	switch(column) {
 	case SORTID_ACTION:
@@ -790,7 +789,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		
 		break;
 	case SORTID_BLRTSIMAGE:
-		g_print("got here for BlrtsImage = %s\n", new_text);
 		type = "BlrtsImage";
 		if(!job_msg->select_jobinfo)
 			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
@@ -3185,7 +3183,6 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		case EDIT_SIGNAL:
 			signal = _xlate_signal_name(
 				gtk_entry_get_text(GTK_ENTRY(entry)));
-			g_print("got sig of %u\n", signal);
 			if(signal == (uint16_t)NO_VAL) {
 				tmp_char_ptr = g_strdup_printf(
 					"%s is not a valid signal.",
