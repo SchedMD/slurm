@@ -992,13 +992,20 @@ extern void ba_fini()
 		return;
 	}
 
-	if (path)
+	if (path) {
 		list_destroy(path);
-	if (best_path)
+		path = NULL;
+	}
+	if (best_path) {
 		list_destroy(best_path);
+		best_path = NULL;
+	}
 #ifdef HAVE_BG_FILES
-	if (bp_map_list)
+	if (bp_map_list) {
 		list_destroy(bp_map_list);
+		bp_map_list = NULL;
+		_bp_map_initialized = false;
+	}
 	bridge_fini();
 #endif
 	_delete_ba_system();
