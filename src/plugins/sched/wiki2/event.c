@@ -61,7 +61,7 @@ extern int	event_notify(char *msg)
 
 	if (job_aggregation_time
 	&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
-		/* Already sent recent event notification */
+		debug2("wiki event notification already sent recently");
 		return 0;
 	}
 
