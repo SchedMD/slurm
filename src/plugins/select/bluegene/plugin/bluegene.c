@@ -1601,8 +1601,10 @@ extern void *mult_free_block(void *args)
 		list_destroy(bg_freeing_list);
 		bg_freeing_list = NULL;
 	}
-	if(free_cnt == 0)
+	if(free_cnt == 0) {
 		list_destroy(bg_free_block_list);
+		bg_free_block_list = NULL;
+	}
 	slurm_mutex_unlock(&freed_cnt_mutex);
 	return NULL;
 }
@@ -1699,8 +1701,10 @@ extern void *mult_destroy_block(void *args)
 		list_destroy(bg_freeing_list);
 		bg_freeing_list = NULL;
 	}
-	if(destroy_cnt == 0)
+	if(destroy_cnt == 0) {
 		list_destroy(bg_destroy_block_list);
+		bg_destroy_block_list = NULL;
+	}
 	slurm_mutex_unlock(&freed_cnt_mutex);
 
 	return NULL;
