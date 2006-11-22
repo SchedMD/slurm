@@ -241,3 +241,12 @@ void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	xfree(kvs_set_ptr);
 }
 
+/* Finalization processing */
+void slurm_pmi_finalize(void)
+{
+	if (pmi_fd >= 0) {
+		slurm_shutdown_msg_engine(pmi_fd);
+		pmi_fd = -1;
+	}
+	srun_port = 0;
+}
