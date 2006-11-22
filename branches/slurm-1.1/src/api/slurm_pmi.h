@@ -81,4 +81,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 /* Free kvs_comm_set returned by slurm_get_kvs_comm_set() */
 void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr);
 
+/* Finalization processing */
+void slurm_pmi_finalize(void);
+
 #endif
