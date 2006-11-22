@@ -264,6 +264,7 @@ void slurm_xfree(void **item, const char *file, int line, const char *func)
 		int *p = (int *)*item - 2;
 		/* magic cookie still there? */
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);	
+		p[0] = 0;	/* make sure xfree isn't called twice */
 		MALLOC_LOCK();
 		free(p);
 		MALLOC_UNLOCK();
