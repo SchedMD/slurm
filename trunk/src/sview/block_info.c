@@ -49,16 +49,23 @@ typedef struct {
 				 * start_range_2, .., -1  */
 	bool printed;
 	char *color;
+	char *blrtsimage;       /* BlrtsImage for this block */
+	char *linuximage;       /* LinuxImage for this block */
+	char *mloaderimage;     /* mloaderImage for this block */
+	char *ramdiskimage;     /* RamDiskImage for this block */
 } sview_block_info_t;
 
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_BLOCK,
+	SORTID_BLRTSIMAGE,
 	SORTID_CONN,
+	SORTID_LINUXIMAGE,
+	SORTID_MLOADERIMAGE,
 	SORTID_NODES, 
 	SORTID_NODELIST, 
 	SORTID_PARTITION, 
-	SORTID_POINTER,
+	SORTID_RAMDISKIMAGE,
 	SORTID_STATE,
 	SORTID_UPDATED, 
 	SORTID_USE,
@@ -88,8 +95,14 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
 	 TRUE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_POINTER, SORTID_POINTER, NULL, FALSE, -1, refresh_block,
-	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_BLRTSIMAGE, "Blrts Image",
+	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_LINUXIMAGE, "linux Image",
+	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
+	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
+	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -127,6 +140,10 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
+		xfree(block_ptr->blrtsimage);
+		xfree(block_ptr->linuximage);
+		xfree(block_ptr->mloaderimage);
+		xfree(block_ptr->ramdiskimage);
 		
 		xfree(block_ptr);
 		
@@ -231,7 +248,22 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_NODELIST),
 				   block_ptr->nodes);
-
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_block,
+						 SORTID_BLRTSIMAGE),
+				   block_ptr->blrtsimage);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_LINUXIMAGE),
+				   block_ptr->linuximage);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_MLOADERIMAGE),
+				   block_ptr->mloaderimage);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_RAMDISKIMAGE),
+				   block_ptr->ramdiskimage);
 }
 
 static void _update_block_record(sview_block_info_t *block_ptr, 
@@ -239,7 +271,6 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 {
 	char tmp_cnt[7];
 	
-	gtk_tree_store_set(treestore, iter, SORTID_POINTER, block_ptr, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
 			   block_ptr->bg_block_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_PARTITION, 
@@ -258,6 +289,15 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
 			   block_ptr->nodes, -1);
+
+	gtk_tree_store_set(treestore, iter, SORTID_BLRTSIMAGE,
+			   block_ptr->blrtsimage, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_LINUXIMAGE,
+			   block_ptr->linuximage, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_MLOADERIMAGE,
+			   block_ptr->mloaderimage, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_RAMDISKIMAGE,
+			   block_ptr->ramdiskimage, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	
@@ -391,6 +431,15 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_user_name 
 			= xstrdup(node_select_ptr->
 				  bg_info_array[i].owner_name);
+		block_ptr->blrtsimage = xstrdup(
+			node_select_ptr->bg_info_array[i].blrtsimage);
+		block_ptr->linuximage = xstrdup(
+			node_select_ptr->bg_info_array[i].linuximage);
+		block_ptr->mloaderimage = xstrdup(
+			node_select_ptr->bg_info_array[i].mloaderimage);
+		block_ptr->ramdiskimage = xstrdup(
+			node_select_ptr->bg_info_array[i].ramdiskimage);
+		
 		block_ptr->state 
 			= node_select_ptr->bg_info_array[i].state;
 		block_ptr->bg_conn_type 

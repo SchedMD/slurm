@@ -70,9 +70,7 @@ static int _sort_iter_compare_func_char(GtkTreeModel *model,
 			goto cleanup; /* both equal => ret = 0 */
 		
 		ret = (name1 == NULL) ? -1 : 1;
-	}
-	else
-	{
+	} else {
 		/* sort like a human would 
 		   meaning snowflake2 would be greater than
 		   snowflake12 */

@@ -63,6 +63,7 @@ enum {
 	SORTID_ALLOC_NODE,
 	SORTID_BATCH,
 #ifdef HAVE_BG
+	SORTID_BLRTSIMAGE,
 	SORTID_NODELIST, 
 	SORTID_BLOCK, 
 #endif
@@ -82,6 +83,9 @@ enum {
 #endif
 	SORTID_GROUP, 
 	SORTID_JOBID, 
+#ifdef HAVE_BG
+	SORTID_LINUXIMAGE,
+#endif
 	SORTID_MAX_CORES,
 	SORTID_MAX_MEM,
 	SORTID_MAX_NODES,
@@ -96,6 +100,9 @@ enum {
 	SORTID_MIN_PROCS,
 	SORTID_MIN_SOCKETS,
 	SORTID_MIN_THREADS,
+#ifdef HAVE_BG
+	SORTID_MLOADERIMAGE,
+#endif
 	SORTID_NAME,
 	SORTID_NETWORK,
 	SORTID_NICE,
@@ -109,6 +116,9 @@ enum {
 	SORTID_NUM_PROCS,
 	SORTID_PARTITION, 
 	SORTID_PRIORITY,
+#ifdef HAVE_BG
+	SORTID_RAMDISKIMAGE,
+#endif
 	SORTID_REASON,
 	SORTID_REQ_NODELIST,
 	SORTID_REQ_PROCS,
@@ -147,6 +157,22 @@ static display_data_t display_data_job[] = {
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_GEOMETRY, "Geometry", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_START, "Start", 
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_ROTATE, "Rotate", 
+	 FALSE, 0, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_CONNECTION, "Connection", 
+	 FALSE, 0, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_BLRTSIMAGE, "Blrts Image",
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_LINUXIMAGE, "linux Image",
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -258,16 +284,6 @@ static display_data_t display_data_job[] = {
 	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMENT, "Comment", 
 	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_GEOMETRY, "Geometry", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_START, "Start", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ROTATE, "Rotate", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_CONNECTION, "Connection", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
-#endif
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -429,7 +445,7 @@ static void _cancel_step_id(uint32_t job_id, uint32_t step_id,
 		g_free(temp);
 		sleep ( 5 + i );
 	}
-	g_print("error is %d %d\n", error_code, errno);
+
 	if (error_code) {
 		error_code = slurm_get_errno();
 		if (error_code != ESLURM_ALREADY_DONE) {
@@ -543,6 +559,8 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 #endif
 	if(!job_msg)
 		return NULL;
+	g_print("editting %d blrts = %d\n", column, SORTID_BLRTSIMAGE);
+	
 	switch(column) {
 	case SORTID_ACTION:
 		xfree(got_edit_signal);
@@ -698,8 +716,45 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		}
 		
+		if(!job_msg->select_jobinfo)
+			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
 		select_g_set_jobinfo(job_msg->select_jobinfo,
 				     SELECT_DATA_GEOMETRY,
+				     (void *) &geo);
+		
+		break;
+	case SORTID_START:
+		type = "start";
+		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+		for (j=0; j<SYSTEM_DIMENSIONS; j++)
+			geo[j] = (uint16_t) NO_VAL;
+		for (j=0; j<SYSTEM_DIMENSIONS; j++) {
+			if (token == NULL) {
+				//error("insufficient dimensions in "
+				//      "Geometry");
+				goto return_error;
+			}
+			geo[j] = (uint16_t) atoi(token);
+			if (geo[j] <= 0) {
+				//error("invalid --geometry argument");
+				xfree(original_ptr);
+				goto return_error;
+				break;
+			}
+			geometry_tmp = next_ptr;
+			token = strtok_r(geometry_tmp, delimiter, 
+					 &next_ptr);
+		}
+		if (token != NULL) {
+			//error("too many dimensions in Geometry");
+			xfree(original_ptr);
+			goto return_error;
+		}
+		
+		if(!job_msg->select_jobinfo)
+			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
+		select_g_set_jobinfo(job_msg->select_jobinfo,
+				     SELECT_DATA_START,
 				     (void *) &geo);
 		
 		break;
@@ -734,6 +789,39 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 				     (void *) &conn_type);
 		
 		break;
+	case SORTID_BLRTSIMAGE:
+		g_print("got here for BlrtsImage = %s\n", new_text);
+		type = "BlrtsImage";
+		if(!job_msg->select_jobinfo)
+			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
+		select_g_set_jobinfo(job_msg->select_jobinfo,
+				     SELECT_DATA_BLRTS_IMAGE,
+				     (void *) new_text);
+		break;
+	case SORTID_LINUXIMAGE:		
+		type = "LinuxImage";
+		if(!job_msg->select_jobinfo)
+			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
+		select_g_set_jobinfo(job_msg->select_jobinfo,
+				     SELECT_DATA_LINUX_IMAGE,
+				     (void *) new_text);
+		break;
+	case SORTID_MLOADERIMAGE:		
+		type = "MloaderImage";
+		if(!job_msg->select_jobinfo)
+			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
+		select_g_set_jobinfo(job_msg->select_jobinfo,
+				     SELECT_DATA_MLOADER_IMAGE,
+				     (void *) new_text);
+		break;
+	 case SORTID_RAMDISKIMAGE:		
+		type = "RamdiskImage";
+		if(!job_msg->select_jobinfo)
+			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
+		select_g_set_jobinfo(job_msg->select_jobinfo,
+				     SELECT_DATA_RAMDISK_IMAGE,
+				     (void *) new_text);
+		break;
 #endif
 	case SORTID_START_TIME:
 		job_msg->begin_time = parse_time((char *)new_text);
@@ -744,9 +832,15 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 	}
 
+#ifdef HAVE_BG
+	xfree(geometry_tmp);
+#endif
 	return type;
 
 return_error:
+#ifdef HAVE_BG
+	xfree(geometry_tmp);
+#endif
 	errno = 1;
 	return type;
 }
@@ -850,7 +944,8 @@ static GtkWidget *_admin_full_edit_job(job_desc_msg_t *job_msg,
 			gtk_tree_model_get(model, iter, display_data_job[i].id,
 					   &temp_char, -1);
 			gtk_entry_set_max_length(GTK_ENTRY(entry), 
-						 (DEFAULT_ENTRY_LENGTH+i));
+						 (DEFAULT_ENTRY_LENGTH +
+						  display_data_job[i].id));
 			
 			if(temp_char) {
 				gtk_entry_set_text(GTK_ENTRY(entry),
@@ -1092,9 +1187,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_NUM_PROCS),
-				   tmp_char);
-	
-	
+				   tmp_char);	
 	
 	snprintf(tmp_char, sizeof(tmp_char), "%s:%u",
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
@@ -1110,6 +1203,94 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_EXC_NODELIST),
 				   job_ptr->exc_nodes);
+#ifdef HAVE_BG
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_BLOCK), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_BG_ID));
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_CONNECTION), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_CONNECTION));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_ROTATE), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_ROTATE));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_GEOMETRY), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_GEOMETRY));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_START), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_START));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_MAX_PROCS), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_MAX_PROCS));
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_BLRTSIMAGE), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_BLRTS_IMAGE));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_LINUXIMAGE), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_LINUX_IMAGE));
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_MLOADERIMAGE), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_MLOADER_IMAGE));
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_RAMDISKIMAGE), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_RAMDISK_IMAGE));
+	
+#endif
+
 	if(job_ptr->contiguous)
 		sprintf(tmp_char, "yes");
 	else
@@ -1321,6 +1502,37 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_MAX_PROCS), -1);
+	
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_BLRTSIMAGE, 
+			   select_g_sprint_jobinfo(
+				   job_ptr->select_jobinfo, 
+				   tmp_char, 
+				   sizeof(tmp_char), 
+				   SELECT_PRINT_BLRTS_IMAGE), -1);
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_LINUXIMAGE, 
+			   select_g_sprint_jobinfo(
+				   job_ptr->select_jobinfo, 
+				   tmp_char, 
+				   sizeof(tmp_char), 
+				   SELECT_PRINT_LINUX_IMAGE), -1);
+	
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_MLOADERIMAGE, 
+			   select_g_sprint_jobinfo(
+				   job_ptr->select_jobinfo, 
+				   tmp_char, 
+				   sizeof(tmp_char), 
+				   SELECT_PRINT_MLOADER_IMAGE), -1);
+	
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_RAMDISKIMAGE, 
+			   select_g_sprint_jobinfo(
+				   job_ptr->select_jobinfo, 
+				   tmp_char, 
+				   sizeof(tmp_char), 
+				   SELECT_PRINT_RAMDISK_IMAGE), -1);
 	
 #endif
 	gtk_tree_store_set(treestore, iter, 
@@ -2192,26 +2404,6 @@ extern GtkListStore *create_model_job(int type)
 				   0, "requeue",
 				   -1);			
 		break;
-	case SORTID_TIMELIMIT:
-		break;
-	case SORTID_PRIORITY:
-		break;
-	case SORTID_NICE:
-		break;
-	case SORTID_NUM_PROCS:
-		break;
-	case SORTID_MIN_NODES:
-		break;
-	case SORTID_MIN_PROCS:
-		break;
-	case SORTID_MIN_MEM:
-		break;
-	case SORTID_TMP_DISK:
-		break;
-	case SORTID_PARTITION:
-		break;
-	case SORTID_NAME:
-		break;
 	case SORTID_SHARED:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
@@ -2238,19 +2430,8 @@ extern GtkListStore *create_model_job(int type)
 				   1, SORTID_CONTIGUOUS,
 				   -1);	
 		break;
-	case SORTID_REQ_NODELIST:
-		break;
-	case SORTID_FEATURES:
-		break;
-	case SORTID_ACCOUNT:
-		break;
-	case SORTID_DEPENDENCY:
-		break;
 #ifdef HAVE_BG
-	case SORTID_GEOMETRY:
-		break;
 	case SORTID_ROTATE:
-		g_print("got here rotate\n");
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
@@ -2264,7 +2445,6 @@ extern GtkListStore *create_model_job(int type)
 				   -1);	
 		break;
 	case SORTID_CONNECTION:
-		g_print("got here connection\n");
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
@@ -2283,8 +2463,6 @@ extern GtkListStore *create_model_job(int type)
 				   -1);	
 		break;
 #endif
-	case SORTID_START_TIME:
-		break;
 	default:
 		break;
 	}
