@@ -58,6 +58,7 @@
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -878,6 +879,8 @@ _slurmd_init()
 		return SLURM_FAILURE;
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
+	if (slurm_auth_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
@@ -992,6 +995,7 @@ _slurmd_fini()
 	slurmd_task_fini(); 
 	slurm_conf_destroy();
 	slurm_proctrack_fini();
+	slurm_auth_fini();
 	return SLURM_SUCCESS;
 }
 
