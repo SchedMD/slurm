@@ -144,6 +144,13 @@ slurmd_req(slurm_msg_t *msg)
 {
 	int rc;
 
+	if (msg == NULL) {
+		if (waiters)
+			list_destroy(waiters);
+		waiters = NULL;
+		return;
+	}
+
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		/* Mutex locking moved into _rpc_batch_job() due to 

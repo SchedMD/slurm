@@ -42,6 +42,8 @@
 
 /* Process request contained in slurm message `msg' from client at
  * msg->orig_addr
+ *
+ * If msg == NULL, then purge allocated memory.
  */
 void slurmd_req(slurm_msg_t *msg);
 
