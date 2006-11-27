@@ -956,12 +956,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 {
 	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
-	struct job_details *detail_ptr = job_ptr->details;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int super_user = false;
-	enum job_wait_reason fail_reason;
+	enum job_state_reason fail_reason;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -994,8 +993,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	         (job_ptr->details->min_nodes > part_ptr->max_nodes))
 		 fail_reason = WAIT_PART_NODE_LIMIT;
 	if (fail_reason != WAIT_NO_REASON) {
-		if (detail_ptr)
-			detail_ptr->wait_reason = fail_reason;
+		job_ptr->state_reason = fail_reason;
 		last_job_update = time(NULL);
 		if (job_ptr->priority == 0)	/* user/admin hold */
 			return ESLURM_JOB_HELD;
@@ -1055,8 +1053,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	if (error_code) {
-		if (detail_ptr)
-			detail_ptr->wait_reason = WAIT_RESOURCES;
+		job_ptr->state_reason = WAIT_RESOURCES;
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Required nodes are down or 
 			 * too many nodes requested */
@@ -1090,8 +1087,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	/* assign the nodes and stage_in the job */
-	if (detail_ptr)
-		detail_ptr->wait_reason = WAIT_NO_REASON;
+	job_ptr->state_reason = WAIT_NO_REASON;
 	job_ptr->nodes = bitmap2node_name(select_bitmap);
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);

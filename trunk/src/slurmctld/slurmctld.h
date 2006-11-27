@@ -271,8 +271,6 @@ struct job_details {
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	uint16_t task_dist;		/* task layout for this job. Only useful
                                          * when Consumable Resources is enabled */
-	uint16_t wait_reason;		/* reason job still pending, see
-					 * slurm.h:enum job_wait_reason */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint16_t overcommit;		/* processors being over subscribed */
 	uint16_t cpus_per_task;		/* number of processors required for 
@@ -374,6 +372,8 @@ struct job_record {
 	uint32_t requid;            	/* requester user ID */
 	uint32_t exit_code;		/* exit code for job (status from 
 					 * wait call) */
+	uint16_t state_reason;		/* reason job still pending or failed
+					 * see slurm.h:enum job_wait_reason */
 };
 
 struct 	step_record {

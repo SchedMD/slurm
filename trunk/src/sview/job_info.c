@@ -1368,7 +1368,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_REASON),
-				   job_reason_string(job_ptr->wait_reason));
+				   job_reason_string(job_ptr->state_reason));
 
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
@@ -1661,7 +1661,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_FEATURES, job_ptr->features, -1);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_REASON,
-			   job_reason_string(job_ptr->wait_reason), -1);
+			   job_reason_string(job_ptr->state_reason), -1);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NETWORK, job_ptr->network, -1);
 	gtk_tree_store_set(treestore, iter,

@@ -741,7 +741,7 @@ void inline slurm_free_node_select_msg(
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 
-extern char *job_reason_string(enum job_wait_reason inx);
+extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);
 extern char *node_state_string(enum node_states inx);

@@ -1938,10 +1938,12 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack32(&job->user_id, buffer);
 	safe_unpack32(&job->group_id, buffer);
 
-	safe_unpack16(&job->job_state,  buffer);
-	safe_unpack16(&job->batch_flag, buffer);
-	safe_unpack32(&job->alloc_sid,  buffer);
-	safe_unpack32(&job->time_limit, buffer);
+	safe_unpack16(&job->job_state,    buffer);
+	safe_unpack16(&job->batch_flag,   buffer);
+	safe_unpack16(&job->state_reason, buffer);
+
+	safe_unpack32(&job->alloc_sid,    buffer);
+	safe_unpack32(&job->time_limit,   buffer);
 
 	safe_unpack_time(&job->submit_time, buffer);
 	safe_unpack_time(&job->start_time, buffer);
@@ -1992,7 +1994,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack32(&job->job_min_memory, buffer);
 	safe_unpack32(&job->job_max_memory, buffer);
 	safe_unpack32(&job->job_min_tmp_disk, buffer);
-	safe_unpack16(&job->wait_reason, buffer);
 
 	safe_unpackstr_xmalloc(&job->req_nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint16_tmp, buffer);

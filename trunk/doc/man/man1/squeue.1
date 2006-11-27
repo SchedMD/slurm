@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "March 2006" "squeue 1.1" "Slurm components"
+.TH SQUEUE "1" "November 2006" "squeue 1.2" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -174,13 +174,15 @@ Priority of the job (converted to a floating point number between 0.0 and 1.0
 Partition of the job or job step
 .TP
 \fB%r\fR
-The reason a job is waiting for execution.
+The reason a job is in its current state.
 See the \fBJOB REASON CODES\fR section below for more information.
 .TP
 \fB%R\fR
-For running or completed jobs: the list of allocate nodes.
 For pending jobs: the reason a job is waiting for execution 
-is printed within parenthesis. 
+is printed within parenthesis.
+For terminated jobs with failure: an explanation as to why the 
+job failed is printed within parenthesis.
+For all other job states: the list of allocate nodes. 
 See the \fBJOB REASON CODES\fR section below for more information.
 .TP
 \fB%s\fR 
@@ -308,6 +310,28 @@ One or more higher priority jobs exist for this partition.
 .TP
 \fBResources\fR
 The job is waiting for resources to become availble.
+.TP
+\fBNodeDown\fR
+A node required by the job is down.
+.TP
+\fBBadConstraints\fR
+The job's constraints can not be satisfied.
+.TP
+\fBSystemFailure\fR
+Failure of the SLURM system, a file system, the network, etc.
+.TP
+\fBJobLaunchFailure\fR
+The job could not be launched. 
+This may be due to a file system problem, invalid program name, etc.
+.TP
+\fBNonZeroExitCode\fR
+The job terminated with a non\-zero exit code.
+.TP
+\fBTimeLimit\fR
+The job exhausted its time limit.
+.TP
+\fBInactiveLimit\fR
+The job reached the system InactiveLimit.
 
 .SH "JOB STATE CODES"
 Jobs typically pass through several states in the course of their 
