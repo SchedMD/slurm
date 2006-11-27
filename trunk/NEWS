@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Modity job state "reason" field to report why a job failed (previously 
     previously reported only reason waiting to run). Requires cold-start of 
     slurmctld (-c option).
+ -- For sched/wiki2 job state request, return REJMESSAGE= with reason for 
+    a job's failure.
 
 * Changes in SLURM 1.2.0-pre7
 =============================

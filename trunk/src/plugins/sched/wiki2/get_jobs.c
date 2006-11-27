@@ -190,6 +190,13 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xstrcat(buf, tmp);
 	}
 
+	if (job_ptr->job_state == JOB_FAILED) {
+		snprintf(tmp, sizeof(tmp),
+			"REJMESSAGE=\"%s\";",
+			job_reason_string(job_ptr->state_reason));
+		xstrcat(buf, tmp);
+	}
+
 	snprintf(tmp, sizeof(tmp), 
 		"UPDATETIME=%u;WCLIMIT=%u;",
 		(uint32_t) job_ptr->time_last_active,
