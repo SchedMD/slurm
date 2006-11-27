@@ -1081,14 +1081,14 @@ extern int kill_job_by_part_name(char *part_name)
 				job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 			deallocate_nodes(job_ptr, false, suspended);
-		}
-		if (job_ptr->job_state == JOB_PENDING) {
+		} else if (job_ptr->job_state == JOB_PENDING) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
 				job_ptr->job_id, part_name);
-			job_ptr->job_state      = JOB_CANCELLED;
-			job_ptr->start_time     = now;
-			job_ptr->end_time       = now;
+			job_ptr->job_state	= JOB_CANCELLED;
+			job_ptr->start_time	= now;
+			job_ptr->end_time	= now;
+			job_ptr->exit_code	= 1;
 			job_completion_logger(job_ptr);
 		}
 
