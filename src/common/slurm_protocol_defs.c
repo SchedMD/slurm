@@ -526,7 +526,7 @@ void inline slurm_free_suspend_msg(suspend_msg_t *msg)
 }
 
 /* Given a job's reason for waiting, return a descriptive string */
-extern char *job_reason_string(enum job_wait_reason inx)
+extern char *job_reason_string(enum job_state_reason inx)
 {
 	switch (inx) {
 		case WAIT_NO_REASON:
@@ -547,6 +547,22 @@ extern char *job_reason_string(enum job_wait_reason inx)
 			return "JobHeld";
 		case WAIT_TIME:
 			return "BeginTime";
+		case FAIL_DOWN_PARTITION:
+			return "PartitionDown";
+		case FAIL_DOWN_NODE:
+			return "NodeDown";
+		case FAIL_BAD_CONSTRAINTS:
+			return "BadConstraints";
+		case FAIL_SYSTEM:
+			return "SystemFailure";
+		case FAIL_LAUNCH:
+			return "JobLaunchFailure";
+		case FAIL_EXIT_CODE:
+			return "NonZeroExitCode";
+		case FAIL_TIMEOUT:
+			return "TimeLimit";
+		case FAIL_INACTIVE_LIMIT:
+			return "InactiveLimit";
 		default:
 			return "?";
 	}

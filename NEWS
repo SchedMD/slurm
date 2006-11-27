@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0-pre8
 =============================
+ -- Modity job state "reason" field to report why a job failed (previously 
+    previously reported only reason waiting to run). Requires cold-start of 
+    slurmctld (-c option).
 
 * Changes in SLURM 1.2.0-pre7
 =============================

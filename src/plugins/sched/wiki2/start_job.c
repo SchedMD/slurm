@@ -182,12 +182,11 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 			job_ptr->priority = 0;
 			if (job_ptr->job_state == JOB_FAILED)
 				wait_string = "Invalid request, job aborted";
-			else if (job_ptr->details) {
-				wait_reason = job_ptr->details->wait_reason;
+			else {
+				wait_reason = job_ptr->state_reason;
 				wait_string = job_reason_string(wait_reason);
-				job_ptr->details->wait_reason = WAIT_HELD;
-			} else
-				wait_string = "Unknown";
+				job_ptr->state_reason = WAIT_HELD;
+			}
 			*err_code = -910 - wait_reason;
 			snprintf(tmp_msg, sizeof(tmp_msg),
 				"Could not start job %u: %s",

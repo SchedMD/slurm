@@ -172,9 +172,11 @@ enum job_states {
 
 #define NICE_OFFSET 10000	/* offset for job's nice value */
 
-/* Reason for job to be pending rather than executing. If multiple reasons 
- * exists, only one is given for the sake of system efficiency */
-enum job_wait_reason {
+/* Reason for job to be pending rather than executing or reason for job 
+ * failure. If multiple reasons exists, only one is given for the sake of 
+ * system efficiency */
+enum job_state_reason {
+/* Reasons for job to be pending */
 	WAIT_NO_REASON = 0,	/* not set or job not pending */
 	WAIT_PRIORITY,		/* higher priority jobs exist */
 	WAIT_DEPENDENCY,	/* depedent job has not completed */
@@ -183,7 +185,17 @@ enum job_wait_reason {
 	WAIT_PART_TIME_LIMIT,	/* request exceeds partition time limit */
 	WAIT_PART_STATE,	/* requested partition is down */
 	WAIT_HELD,		/* job is held, priority==0 */
-	WAIT_TIME		/* job waiting for specific begin time */
+	WAIT_TIME,		/* job waiting for specific begin time */
+	WAIT_TBD1,
+	WAIT_TBD2,
+	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
+	FAIL_DOWN_NODE,		/* some node in the allocation failed */
+	FAIL_BAD_CONSTRAINTS,	/* constraints can not be satisfied */
+	FAIL_SYSTEM,		/* slurm system failure */
+	FAIL_LAUNCH,		/* unable to launch job */
+	FAIL_EXIT_CODE,		/* exit code was non-zero */
+	FAIL_TIMEOUT,		/* reached end of time limit */
+	FAIL_INACTIVE_LIMIT	/* reached slurm InactiveLimit */
 };
 
 enum job_acct_types {
@@ -569,8 +581,8 @@ typedef struct job_info {
 	uint32_t dependency;	/* defer until specified job completes */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *account;		/* charge to specified account */
-	uint16_t wait_reason;	/* reason job still pending, see
-				 * slurm.h:enum job_wait_reason */
+	uint16_t state_reason;	/* reason job still pending or failed, see
+				 * slurm.h:enum job_state_reason */
 	char *network;		/* network specification */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	select_jobinfo_t select_jobinfo; /* opaque data type,

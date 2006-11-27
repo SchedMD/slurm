@@ -339,7 +339,7 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 	else {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%s", 
-			job_reason_string(job->wait_reason));
+			job_reason_string(job->state_reason));
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -557,10 +557,12 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 #else
 		_print_str("NODELIST(REASON)", width, right, false);
 #endif
-	} else if (job->job_state == JOB_PENDING) {
+	} else if ((job->job_state == JOB_PENDING)
+	||         (job->job_state == JOB_TIMEOUT)
+	||         (job->job_state == JOB_FAILED)) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
-			job_reason_string(job->wait_reason));
+			job_reason_string(job->state_reason));
 		_print_str(id, width, right, true);
 	} else {
 #ifdef HAVE_BG
