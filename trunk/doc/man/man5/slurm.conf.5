@@ -102,20 +102,37 @@ See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
 be used to purge files, disable user login, etc. By default there is no epilog.
+
 .TP
 \fBFastSchedule\fR
-If set to 1 (the default), then consider the configuration of each node 
-to be that specified in the configuration file. If set to 0, then base 
-scheduling decisions upon the actual configuration of each individual node. 
-If the number of node configuration entries in the configuration file 
-is significantly lower than the number of nodes, setting FastSchedule to 
-1 will permit much faster scheduling decisions to be made. 
-(The scheduler can just check the values in a few configuration records 
-instead of possibly thousands of node records. If a job can't be initiated 
+Controls how a nodes configuration specifications in slurm.conf are used.
+If the number of node configuration entries in the configuration file
+is significantly lower than the number of nodes, setting FastSchedule to
+1 will permit much faster scheduling decisions to be made.
+(The scheduler can just check the values in a few configuration records
+instead of possibly thousands of node records. If a job can't be initiated
 immediately, the scheduler may execute these tests repeatedly.)
-Note that on systems with hyper\-threading, the processor count 
-reported by the node will be twice the actually processor count. 
+Note that on systems with hyper\-threading, the processor count
+reported by the node will be twice the actually processor count.
 Consider which value you want to be used for scheduling purposes.
+.RS
+.TP 5
+\fB1\fR (default)
+Consider the configuration of each node to be that specified in the
+configuration file and any node with less
+than the configured resouces will be set DOWN.
+.TP
+\fB0\fR
+Base scheduling decisions upon the actual configuration of 
+each individual node. 
+.TP
+\fB2\fR
+Consider the configuration of each node to be that specified in the 
+slurm.conf configuration file and any node with less resources 
+than configured will not be set DOWN. 
+This can be useful for testing purposes.
+.RE
+
 .TP
 \fBFirstJobId\fR
 The job id to be used for the first submitted to SLURM without a 
@@ -409,7 +426,7 @@ The default value is "select/bluegene" for BlueGene systems.
 This only apply for \fISelectType=select/cons_res\fR.
 .RS
 .TP
-\fBselect/CR_CPU\fR
+\fBCR_CPU\fR
 CPUs are consumable resources.
 There is no notion of sockets, cores or threads.
 On a multi\-core system, each core will be consided a CPU.
@@ -417,22 +434,22 @@ On a multi\-core and hyperthreaded system, each thread will be
 considered a CPU.
 On single\-core systems, each CPUs will be considered a CPU.
 .TP
-\fBselect/CR_CPU_Memory\fR
+\fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
 .TP
-\fBselect/CR_Core\fR
+\fBCR_Core\fR
 Cores are consumable resources.
 .TP
-\fBselect/CR_Core_Memory\fR
+\fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
 .TP
-\fBselect/CR_Socket\fR
+\fBCR_Socket\fR
 Sockets are consumable resources.
 .TP
-\fBselect/CR_Socket_Memory\fR
+\fBCR_Socket_Memory\fR
 Memory and CPUs are consumable resources.
 .TP
-\fBselect/CR_Memory\fR
+\fBCR_Memory\fR
 Memory is a consumable resource.
 NOTE: This implies \fIShared=Yes\fR for all partitions.
 .RE
