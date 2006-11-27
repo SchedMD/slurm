@@ -71,7 +71,7 @@ int parse_select_type_param(char *select_type_parameters,
 			} else if (strcasecmp(str_parameters, "CR_CPU_Memory") == 0) {
 				*param = CR_CPU_MEMORY;
 			} else {
-				error("Bad SelectType Parameter: %s\n", 
+				error("Bad SelectTypeParameter: %s\n", 
 				      str_parameters );
 				rc = SLURM_ERROR;
 				xfree(st_str);

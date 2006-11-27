@@ -8,6 +8,10 @@ documents those changes that are of interest to users and admins.
     slurmctld (-c option).
  -- For sched/wiki2 job state request, return REJMESSAGE= with reason for 
     a job's failure.
+ -- New FastSchedule configuration parameter option "2" means to base 
+    scheduling decisions upon the node's configuration as specified in 
+    slurm.conf and ignore the node's actual hardware configuration. This 
+    can be useful for testing. 
 
 * Changes in SLURM 1.2.0-pre7
 =============================

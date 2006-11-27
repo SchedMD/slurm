@@ -1114,33 +1114,32 @@ validate_node_specs (char *node_name, uint16_t cpus,
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
 
-#if 1
-	/* Disable these tests if you want to emulate a system
-	 * with different hardware that configured (sockets, cores
-	 * and/or threads) */
-	if (sockets < config_ptr->sockets) {
+	if ((slurmctld_conf.fast_schedule != 2)
+	&&  (sockets < config_ptr->sockets)) {
 		error("Node %s has low socket count %u", node_name, sockets);
 		error_code  = EINVAL;
 		reason_down = "Low socket count";
 	}
 	node_ptr->sockets = sockets;
 
-	if (cores < config_ptr->cores) {
+	if ((slurmctld_conf.fast_schedule != 2)
+	&&  (cores < config_ptr->cores)) {
 		error("Node %s has low core count %u", node_name, cores);
 		error_code  = EINVAL;
 		reason_down = "Low core count";
 	}
 	node_ptr->cores = cores;
 
-	if (threads < config_ptr->threads) {
+	if ((slurmctld_conf.fast_schedule != 2)
+	&&  (threads < config_ptr->threads)) {
 		error("Node %s has low thread count %u", node_name, threads);
 		error_code  = EINVAL;
 		reason_down = "Low thread count";
 	}
 	node_ptr->threads = threads;
-#endif
 
-	if (cpus < config_ptr->cpus) {
+	if ((slurmctld_conf.fast_schedule != 2)
+	&&  (cpus < config_ptr->cpus)) {
 		error ("Node %s has low cpu count %u", node_name, cpus);
 		error_code  = EINVAL;
 		reason_down = "Low CPUs";
@@ -1154,7 +1153,8 @@ validate_node_specs (char *node_name, uint16_t cpus,
 	}
 	node_ptr->cpus = cpus;
 
-	if (real_memory < config_ptr->real_memory) {
+	if ((slurmctld_conf.fast_schedule != 2) 
+	&&  (real_memory < config_ptr->real_memory)) {
 		error ("Node %s has low real_memory size %u", 
 		       node_name, real_memory);
 		error_code  = EINVAL;
@@ -1162,7 +1162,8 @@ validate_node_specs (char *node_name, uint16_t cpus,
 	}
 	node_ptr->real_memory = real_memory;
 
-	if (tmp_disk < config_ptr->tmp_disk) {
+	if ((slurmctld_conf.fast_schedule != 2)
+	&&  (tmp_disk < config_ptr->tmp_disk)) {
 		error ("Node %s has low tmp_disk size %u",
 		       node_name, tmp_disk);
 		error_code = EINVAL;
