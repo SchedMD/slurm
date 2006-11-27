@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
    allocation) as needed by LSF.
  - Patches from Hongjia Cao (pmi finialize issues and type declaration)
  - In sched/wiki2, enclose a job's COMMENT value in double quotes.
+ - Delete pending job if it's associated partition is deleted.
 
 * Changes in SLURM 1.1.20
 =========================

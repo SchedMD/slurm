@@ -1054,6 +1054,7 @@ extern int kill_job_by_part_name(char *part_name)
 	struct job_record  *job_ptr;
 	struct part_record *part_ptr;
 	int job_count = 0;
+	time_t now = time(NULL);
 
 	part_ptr = find_part_record (part_name);
 	if (part_ptr == NULL)	/* No such partition */
@@ -1080,6 +1081,15 @@ extern int kill_job_by_part_name(char *part_name)
 				job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 			deallocate_nodes(job_ptr, false, suspended);
+		}
+		if (job_ptr->job_state == JOB_PENDING) {
+			job_count++;
+			info("Killing job_id %u on defunct partition %s",
+				job_ptr->job_id, part_name);
+			job_ptr->job_state      = JOB_CANCELLED;
+			job_ptr->start_time     = now;
+			job_ptr->end_time       = now;
+			job_completion_logger(job_ptr);
 		}
 
 	}
