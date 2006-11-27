@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -96,7 +96,6 @@ create_step_record (struct job_record *job_ptr)
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time ( NULL ) ;
 	step_ptr->jobacct = jobacct_g_alloc(NULL);
-	
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
 
@@ -374,16 +373,16 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	}
 	
 	step_ptr = find_step_record(job_ptr, step_id);
-	if (step_ptr == NULL)
+	if (step_ptr == NULL) 
 		return ESLURM_INVALID_JOB_ID;
 	else 
 		jobacct_g_step_complete_slurmctld(step_ptr);
 	
 	if ((job_ptr->kill_on_step_done)
-	&&  (list_count(job_ptr->step_list) <= 1)
-	&&  (!IS_JOB_FINISHED(job_ptr)))
+	    &&  (list_count(job_ptr->step_list) <= 1)
+	    &&  (!IS_JOB_FINISHED(job_ptr))) 
 		return job_complete(job_id, uid, requeue, job_return_code);
-
+	
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_COMPLETE RPC from uid %d",
 		      uid);
@@ -1073,8 +1072,16 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 	if (step_ptr->batch_step) {
-		*rem = 0;
-		delete_step_record(job_ptr, req->job_step_id);
+		if(rem)
+			*rem = 0;
+		step_ptr->exit_code = 0;
+		if (max_rc)
+			*max_rc = step_ptr->exit_code;
+		/* we don't want to delete the step record here since
+		   right after we delete this step again if we delete
+		   it here we won't find it when we try the second
+		   time */
+		//delete_step_record(job_ptr, req->job_step_id);
 		return SLURM_SUCCESS;
 	}
 	if (req->range_last < req->range_first) {
