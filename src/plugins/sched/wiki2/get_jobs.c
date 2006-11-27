@@ -217,7 +217,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 
 	if (job_ptr->account && job_ptr->account[0]) {
 		snprintf(tmp, sizeof(tmp),
-			"COMMENT=%s;", job_ptr->account);
+			"COMMENT=\"%s\";", job_ptr->account);
 		xstrcat(buf, tmp);
 	}
 
