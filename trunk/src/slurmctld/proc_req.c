@@ -1539,6 +1539,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 	lock_slurmctld(job_write_lock);
 	rc = step_partial_comp(req, &rem, &step_rc);
+
 	if (rc || rem) {	/* some error or not totally done */
 		if (rc) {
 			info("step_partial_comp: %s",
