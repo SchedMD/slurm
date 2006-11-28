@@ -225,6 +225,9 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 	if(job_ptr->batch_flag)
 		track_steps = 1;
 
+	job_ptr->requid = -1; /* force to -1 for sacct to know this
+			       * hasn't been set yet */
+
 	tmp = snprintf(buf, BUFFER_SIZE,
 		       "%d %s %d %ld %u %s %s",
 		       JOB_START, jname,
@@ -250,10 +253,13 @@ extern int common_job_complete_slurmctld(struct job_record *job_ptr)
 		debug("jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	snprintf(buf, BUFFER_SIZE, "%d %u %d",
+	/* leave the requid as a %d since we want to see if it is -1
+	   in sacct */
+	snprintf(buf, BUFFER_SIZE, "%d %u %d %d",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING));
+		 job_ptr->job_state & (~JOB_COMPLETING),
+		 job_ptr->requid);
 	
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
 }
@@ -310,7 +316,8 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	else
 		account = "(null)";
 
-	step->job_ptr->requid = -1;     /* force to -1 */
+	step->job_ptr->requid = -1; /* force to -1 for sacct to know this
+				     * hasn't been set yet  */
 
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -359,7 +366,7 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* max pages node */
 		 0,	/* min cpu node */
 		 account,
-		 step->requid); /* requester user id */
+		 step->job_ptr->requid); /* requester user id */
 		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
@@ -497,7 +504,7 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->max_pages_id.nodeid,	/* max pages task */
 		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
 		 account,
-		 step->requid); /* requester user id */
+		 step->job_ptr->requid); /* requester user id */
 		 
 	return _print_record(step->job_ptr, now, buf);	
 }
