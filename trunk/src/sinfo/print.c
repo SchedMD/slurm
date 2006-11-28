@@ -311,10 +311,14 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpt[7];
 	if (sinfo_data) {
 #ifdef HAVE_BG
-		convert_to_kilo(sinfo_data->cpus_alloc, tmpa);
-		convert_to_kilo(sinfo_data->cpus_idle,  tmpi);
-		convert_to_kilo(sinfo_data->cpus_other, tmpo);
-		convert_to_kilo(sinfo_data->cpus_total, tmpt);
+		convert_num_unit((float)sinfo_data->cpus_alloc, 
+				 tmpa, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->cpus_idle, 
+				 tmpi, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->cpus_other, 
+				 tmpo, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->cpus_total, 
+				 tmpt, UNIT_NONE);
 #else
 		sprintf(tmpa, "%u", sinfo_data->cpus_alloc);
 		sprintf(tmpi, "%u", sinfo_data->cpus_idle);
