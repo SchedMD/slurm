@@ -358,7 +358,7 @@ static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size)
 
 	debug("wiki msg send:%s", buf);
 
-	(void) sprintf(header, "%08ul\n", (uint32_t) size);
+	(void) sprintf(header, "%08ld\n", (long int) size);
 	if (_write_bytes((int) new_fd, header, 9) != 9) {
 		error("wiki: failed to write message header %m");
 		return 0;
