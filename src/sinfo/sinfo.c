@@ -327,7 +327,7 @@ static int _build_sinfo_data(List sinfo_list,
 			while ((sinfo_ptr = list_next(i))) {
 				if (!_match_part_data(sinfo_ptr, part_ptr))
 					continue;
-				if (sinfo_ptr->nodes_tot
+				if (sinfo_ptr->nodes_total
 				&& (!_match_node_data(sinfo_ptr, node_ptr)))
 					continue;
 				_update_sinfo(sinfo_ptr, node_ptr);
@@ -519,12 +519,16 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint16_t base_state;
-	int node_scaling = 1;
+	int node_scaling;
 
 	if(sinfo_ptr->part_info->node_scaling)
 		node_scaling = sinfo_ptr->part_info->node_scaling;
-	
-	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
+	else
+		node_scaling = 1;
+
+	base_state = sinfo_ptr->node_state & NODE_STATE_BASE;
+
+	if (sinfo_ptr->nodes_total == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
 		sinfo_ptr->reason     = node_ptr->reason;
@@ -583,7 +587,6 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 			sinfo_ptr->max_weight = node_ptr->weight;
 	}
 
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if (node_ptr->node_state & NODE_STATE_DRAIN)
 		sinfo_ptr->nodes_other += node_scaling;
 	else if ((base_state == NODE_STATE_ALLOCATED)
@@ -593,7 +596,19 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->nodes_idle += node_scaling;
 	else 
 		sinfo_ptr->nodes_other += node_scaling;
-	sinfo_ptr->nodes_tot += node_scaling;
+	sinfo_ptr->nodes_total += node_scaling;
+
+	sinfo_ptr->cpus_alloc += node_ptr->used_cpus;
+	sinfo_ptr->cpus_total += node_ptr->cpus;
+	if ((sinfo_ptr->node_state & NODE_STATE_DRAIN) ||
+	    (base_state == NODE_STATE_DOWN)) {
+		sinfo_ptr->cpus_other += node_ptr->cpus -
+					 node_ptr->used_cpus;
+	} else {
+		sinfo_ptr->cpus_idle += node_ptr->cpus -
+					node_ptr->used_cpus;
+	}
+
 	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
 }
 
@@ -622,14 +637,27 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		sinfo_ptr->node_state = node_ptr->node_state;
 		if ((base_state == NODE_STATE_ALLOCATED)
 		||  (node_ptr->node_state & NODE_STATE_COMPLETING))
-			sinfo_ptr->nodes_alloc += node_scaling;
+			sinfo_ptr->nodes_alloc = node_scaling;
 		else if (base_state == NODE_STATE_IDLE)
-			sinfo_ptr->nodes_idle += node_scaling;
+			sinfo_ptr->nodes_idle = node_scaling;
 		else 
-			sinfo_ptr->nodes_other += node_scaling;
-		sinfo_ptr->nodes_tot += node_scaling;
+			sinfo_ptr->nodes_other = node_scaling;
+		sinfo_ptr->nodes_total = node_scaling;
 		sinfo_ptr->min_cpus = node_ptr->cpus;
 		sinfo_ptr->max_cpus = node_ptr->cpus;
+
+		sinfo_ptr->cpus_alloc = node_ptr->used_cpus;
+		sinfo_ptr->cpus_total = node_ptr->cpus;
+		if ((sinfo_ptr->node_state & NODE_STATE_DRAIN) ||
+		    (base_state == NODE_STATE_DOWN)) {
+			sinfo_ptr->cpus_idle  = 0;
+			sinfo_ptr->cpus_other = node_ptr->cpus -
+						node_ptr->used_cpus;
+		} else {
+			sinfo_ptr->cpus_idle  = node_ptr->cpus -
+						node_ptr->used_cpus;
+			sinfo_ptr->cpus_other = 0;
+		}
 
 		sinfo_ptr->min_sockets = node_ptr->sockets;
 		sinfo_ptr->max_sockets = node_ptr->sockets;

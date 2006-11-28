@@ -124,10 +124,10 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"NodeName=%s State=%s%s%s CPUs=%u "
+		"NodeName=%s State=%s%s%s CPUs=%u AllocCPUs=%u "
 		"RealMemory=%u TmpDisk=%u",
 		node_ptr->name, node_state_string(my_state),
-		comp_str, drain_str, node_ptr->cpus,
+		comp_str, drain_str, node_ptr->cpus, node_ptr->used_cpus,
 		node_ptr->real_memory, node_ptr->tmp_disk);
 	xstrcat(out, tmp_line);
 	if (one_liner)

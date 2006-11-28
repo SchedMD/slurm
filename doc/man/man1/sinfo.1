@@ -1,4 +1,4 @@
-.TH SINFO "1" "October 2006" "sinfo 1.2" "Slurm components"
+.TH SINFO "1" "November 2006" "sinfo 1.2" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -108,6 +108,12 @@ the different node states will be placed on separate lines.
 .TP
 \fB%c\fR 
 Number of CPUs per node
+.TP
+\fB%C\fR
+Number of CPUs by state in the format
+"allocated/idle/other/total". Do not use this with a node
+state option ("%t" or "%T") or the different node states will
+be placed on separate lines.
 .TP
 \fB%d\fR 
 Size of temporary disk space per node in megabytes

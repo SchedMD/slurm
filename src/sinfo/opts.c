@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  opts.c - sinfo command line option processing functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -454,6 +454,12 @@ _parse_format( char* format )
 			format_add_cpus( params.format_list, 
 					field_size, 
 					right_justify, 
+					suffix );
+		} else if (field[0] == 'C') {
+			params.match_flags.cpus_flag = true;
+			format_add_cpus_aiot( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'd') {
 			params.match_flags.disk_flag = true;

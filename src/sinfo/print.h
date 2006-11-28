@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  print.h - sinfo print job definitions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -70,6 +70,8 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_avail)
 #define format_add_cpus(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_cpus)
+#define format_add_cpus_aiot(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_cpus_aiot)
 #define format_add_sct(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_sct)
 #define format_add_sockets(list,wid,right,suffix) \
@@ -122,6 +124,8 @@ int  print_sinfo_list(List sinfo_list);
 int _print_avail(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_cpus(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_sct(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

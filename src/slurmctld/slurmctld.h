@@ -418,12 +418,12 @@ extern List job_list;			/* list of job_record entries */
 */
 enum select_data_info {
 	SELECT_CR_PLUGIN,    /* data-> uint32 1 if CR plugin */
-	SELECT_CPU_COUNT,    /* data-> uint32_t count_cpus (CR support) */   
+	SELECT_CPU_COUNT,    /* data-> uint16 count_cpus (CR support) */   
 	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
-	SELECT_ALLOC_CPUS,   /* data-> uint32 alloc cpus (CR support) */
+	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
 	SELECT_ALLOC_MEMORY, /* data-> uint32 alloc mem  (CR support) */
-	SELECT_AVAIL_CPUS,   /* data-> uint32 avail cpus (CR support) */ 
+	SELECT_AVAIL_CPUS,   /* data-> uint16 avail cpus (CR support) */ 
 	SELECT_AVAIL_MEMORY  /* data-> uint32 avail mem  (CR support) */ 
 } ;
 

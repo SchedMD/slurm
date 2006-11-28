@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  print.c - sinfo print job functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and 
  *  Morris Jette <jette1@llnl.gov>
@@ -300,6 +300,37 @@ int _print_cpus(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+/* Cpus, allocated/idle/other/total */
+int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
+		     bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+	char tmpa[7];
+	char tmpi[7];
+	char tmpo[7];
+	char tmpt[7];
+	if (sinfo_data) {
+#ifdef HAVE_BG
+		convert_to_kilo(sinfo_data->cpus_alloc, tmpa);
+		convert_to_kilo(sinfo_data->cpus_idle,  tmpi);
+		convert_to_kilo(sinfo_data->cpus_other, tmpo);
+		convert_to_kilo(sinfo_data->cpus_total, tmpt);
+#else
+		sprintf(tmpa, "%u", sinfo_data->cpus_alloc);
+		sprintf(tmpi, "%u", sinfo_data->cpus_idle);
+		sprintf(tmpo, "%u", sinfo_data->cpus_other);
+		sprintf(tmpt, "%u", sinfo_data->cpus_total);
+#endif
+		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s",
+			 tmpa, tmpi, tmpo, tmpt);
+		_print_str(id, width, right_justify, true);
+	} else
+		_print_str("CPUS(A/I/O/T)", width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_sct(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
@@ -484,9 +515,10 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	char tmp[7];
 	if (sinfo_data) {
 #ifdef HAVE_BG		
-		convert_num_unit((float)sinfo_data->nodes_tot, tmp, UNIT_NONE);
+		convert_num_unit((float)sinfo_data->nodes_total, tmp, 
+				UNIT_NONE);
 #else
-		sprintf(tmp, "%d", sinfo_data->nodes_tot);
+		sprintf(tmp, "%d", sinfo_data->nodes_total);
 #endif
 		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
 		_print_str(id, width, right_justify, true);
@@ -541,13 +573,13 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 				 tmpi, UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_other, 
 				 tmpo, UNIT_NONE);
-		convert_num_unit((float)sinfo_data->nodes_tot,
+		convert_num_unit((float)sinfo_data->nodes_total,
 				 tmpt, UNIT_NONE);
 #else
-		sprintf(tmpa, "%d", sinfo_data->nodes_alloc);
-		sprintf(tmpi, "%d", sinfo_data->nodes_idle);
-		sprintf(tmpo, "%d", sinfo_data->nodes_other);
-		sprintf(tmpt, "%d", sinfo_data->nodes_tot);
+		sprintf(tmpa, "%u", sinfo_data->nodes_alloc);
+		sprintf(tmpi, "%u", sinfo_data->nodes_idle);
+		sprintf(tmpo, "%u", sinfo_data->nodes_other);
+		sprintf(tmpt, "%u", sinfo_data->nodes_total);
 #endif
 
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s", 
@@ -677,7 +709,7 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
-	if (sinfo_data && sinfo_data->nodes_tot) {
+	if (sinfo_data && sinfo_data->nodes_total) {
 		char *upper_state = node_state_string_compact(
 				sinfo_data->node_state);
 		char *lower_state = _str_tolower(upper_state);
@@ -696,7 +728,7 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
-	if (sinfo_data && sinfo_data->nodes_tot) {
+	if (sinfo_data && sinfo_data->nodes_total) {
 		char *upper_state = node_state_string(sinfo_data->node_state);
 		char *lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
