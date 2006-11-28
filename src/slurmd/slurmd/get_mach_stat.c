@@ -394,7 +394,7 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
  *	exists, return the uint16 value for that keyword in *valptr.
  * Input:  buffer - single line of cpuinfo data
  *	   keyword - keyword to check for
- * Output: valptr - uint16 value corresponding to keyword
+ * Output: valptr - uint32 value corresponding to keyword
  *         return code - true if keyword found, false if not found
  */
 int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
@@ -473,10 +473,10 @@ typedef struct cpuinfo {
 	uint32_t cpuid;
 	uint32_t physid;
 	uint16_t physcnt;
-	uint16_t siblings;
-	uint16_t cores;
 	uint32_t coreid;
 	uint16_t corecnt;
+	uint16_t siblings;
+	uint16_t cores;
 } cpuinfo_t;
 static cpuinfo_t *cpuinfo = NULL; /* array of CPU information for get_cpuinfo */
 				  /* Note: file static for qsort/_compare_cpus*/
@@ -521,11 +521,14 @@ get_cpuinfo(uint16_t numproc,
 		return errno;
 	}
 
-	/* Note: treats processor physical IDs as tokens, not indexes */
+
+	/* Note: assumes all processor IDs are within [0:numproc-1] */
+	/*       treats physical/core IDs as tokens, not indices */
 	if (cpuinfo)
 		memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
 	else
 		cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
+
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		uint32_t val;
@@ -584,7 +587,8 @@ get_cpuinfo(uint16_t numproc,
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
 		} else if (chk_cpuinfo_uint32(buffer, "siblings", &val)) {
-		    	if (val >= numproc) {	/* out of bounds, ignore */
+			/* Note: this value is a count, not an index */
+		    	if (val > numproc) {	/* out of bounds, ignore */
 				debug("siblings is %u (> %d), ignored",
 					val, numproc);
 				continue;
@@ -594,7 +598,8 @@ get_cpuinfo(uint16_t numproc,
 			maxsibs = MAX(maxsibs, val);
 			minsibs = MIN(minsibs, val);
 		} else if (chk_cpuinfo_uint32(buffer, "cpu cores", &val)) {
-		    	if (val >= numproc) {	/* out of bounds, ignore */
+			/* Note: this value is a count, not an index */
+		    	if (val > numproc) {	/* out of bounds, ignore */
 				debug("cores is %u (> %d), ignored",
 					val, numproc);
 				continue;
