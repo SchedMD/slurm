@@ -74,12 +74,12 @@ expect {
 	}
 	-re "SLURM_CPUS_ON_NODE=($number)" {
 		set cpu_cnt $expect_out(1,string)
+		incr task_cnt
 		exp_continue
 	}
 	-re "($number): ($alpha_numeric)" {
 		set task $expect_out(1,string)
 		set host $expect_out(2,string)
-		incr task_cnt
 		exp_continue
 	}
 	-re "Task count specification invalid" {
