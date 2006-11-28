@@ -391,14 +391,6 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 	thd = xmalloc (job->thr_count * sizeof (thd_t));
 	for (i = 0; i < job->thr_count; i++) {
-		/* if (job->step_layout->tasks[i] == 0)	{	 */
-/* 			/\* No tasks for this node *\/ */
-/* 			debug("Node %s is unused",job->step_layout->host[i]); */
-/* 			job->host_state[i] = SRUN_HOST_REPLIED; */
-/* 			thd[i].thread = (pthread_t) NULL; */
-/* 			continue; */
-/* 		} */
-
 		if (job->state > SRUN_JOB_LAUNCHING)
 			break;
 
@@ -406,8 +398,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		while (active >= opt.max_threads || rc < 0) 
 			rc = _wait_on_active(thd, job);
 		if (joinable >= (opt.max_threads/2))
-			_join_attached_threads(job->thr_count, 
-					       thd);
+			_join_attached_threads(job->thr_count, thd);
 		active++;
 		pthread_mutex_unlock(&active_mutex);
 
@@ -529,10 +520,9 @@ again:
 	ret_list = slurm_send_recv_rc_packed_msg(req, opt.msg_timeout);
 	if(!ret_list) {
 		th->state = DSH_FAILED;
-			
 		goto cleanup;
 	}
-	itr = list_iterator_create(ret_list);		
+	itr = list_iterator_create(ret_list);
 	while((ret_type = list_next(itr)) != NULL) {
 		data_itr = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(data_itr)) != NULL) {
@@ -541,15 +531,17 @@ again:
 						       ret_data_info->nodeid);
 				continue;
 			}
-			errno = ret_type->err;
-			if (errno != EINTR)
+
+			if (ret_type->err != EINTR) {
+				errno = ret_type->err;
 				verbose("first launch error on %s: %m",
 					job->step_layout->
 					host[ret_data_info->nodeid]);
+			}
 			
-			if ((errno != ETIMEDOUT) 
+			if ((ret_type->err != ETIMEDOUT) 
 			    && (job->state == SRUN_JOB_LAUNCHING)
-			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
+			    && (ret_type->err != ESLURMD_INVALID_JOB_CREDENTIAL) 
 			    &&  retry--) {
 				list_iterator_destroy(data_itr);
 				list_iterator_destroy(itr);
@@ -558,14 +550,16 @@ again:
 				goto again;
 			}
 			
-			if (errno == EINTR)
+			if (ret_type->err == EINTR) {
 				verbose("launch on %s canceled", 
 					job->step_layout->
 					host[ret_data_info->nodeid]);
-			else
+			} else {
+				errno = ret_type->err;
 				error("second launch error on %s: %m", 
 				      job->step_layout->
 				      host[ret_data_info->nodeid]);
+			}
 			
 			_update_failed_node(job, ret_data_info->nodeid);
 			
