@@ -145,7 +145,7 @@ const char plugin_name[] =
     "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 90;
-const uint32_t pstate_version = 2;	/* version control on saved state */
+const uint32_t pstate_version = 3;	/* version control on saved state */
 
 #define CR_JOB_STATE_SUSPENDED 1
 
@@ -298,6 +298,32 @@ struct node_cr_record * find_cr_node_record (const char *name)
 	return (struct node_cr_record *) NULL;
 }
 
+void chk_resize_node(struct node_cr_record *node, uint16_t sockets)
+{
+    	int i;
+	if ((node->alloc_cores == NULL) ||
+			(sockets > node->num_sockets)) {
+		debug3("cons_res: increasing node %s num_sockets from %u to %u",
+			node->node_ptr->name, node->num_sockets, sockets);
+	    	xrealloc(node->alloc_cores, sockets * sizeof(uint16_t));
+		/* NOTE: xrealloc zero fills added memory */
+		node->num_sockets = sockets;
+	}
+}
+
+void chk_resize_job(struct select_cr_job *job, uint16_t node_id, uint16_t sockets)
+{
+    	int i;
+	if ((job->alloc_cores[node_id] == NULL) ||
+	    		(sockets > job->num_sockets[node_id])) {
+		debug3("cons_res: increasing job %u node %u num_sockets from %u to %u",
+			job->job_id, node_id, job->num_sockets[node_id], sockets);
+	    	xrealloc(job->alloc_cores[node_id], sockets * sizeof(uint16_t));
+		/* NOTE: xrealloc zero fills added memory */
+		job->num_sockets[node_id] = sockets;
+	}
+}
+
 void get_resources_this_node(uint16_t *cpus, 
 			     uint16_t *sockets, 
 			     uint16_t *cores,
@@ -412,6 +438,7 @@ static uint16_t _get_avail_lps(struct job_record *job_ptr,
 		alloc_lps     = 0;
 	}
 
+	chk_resize_node(this_cr_node, sockets);
 	avail_cpus = slurm_get_avail_procs(max_sockets,
 					   max_cores,
 					   max_threads,
@@ -441,6 +468,7 @@ static void _xfree_select_nodes(struct node_cr_record *ptr, int select_node_cnt)
 	for (i = 0; i < select_node_cnt; i++) {
 		xfree(ptr[i].alloc_cores);
 		xfree(ptr[i].name);
+		ptr[i].num_sockets = 0;
 	}
 	xfree(ptr);
 }
@@ -466,6 +494,7 @@ static void _xfree_select_cr_job(struct select_cr_job *job)
 		for (i = 0; i < job->nhosts; i++)
 			xfree(job->alloc_cores[i]);
 		xfree(job->alloc_cores);
+		xfree(job->num_sockets);
 	}
 	FREE_NULL_BITMAP(job->node_bitmap);
 	xfree(job);
@@ -560,6 +589,7 @@ static void _count_cpus(unsigned *bitmap, uint16_t sum)
 		case CR_CORE_MEMORY:
 		{
 			int core_cnt = 0;
+			chk_resize_node(this_node, this_node->node_ptr->sockets);
 			for (i = 0; i < this_node->node_ptr->sockets; i++)
 				core_cnt += this_node->alloc_cores[i];
 			if (slurmctld_conf.fast_schedule) {
@@ -712,7 +742,9 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;
 				}
-				for (j =0; j < this_node->node_ptr->sockets; j++) {
+				chk_resize_node(this_node, this_node->node_ptr->sockets);
+				chk_resize_job(job, i, this_node->num_sockets);
+				for (j =0; j < this_node->num_sockets; j++) {
 					if (this_node->alloc_cores[j] >= job->alloc_cores[i][j])
 						this_node->alloc_cores[j] -= job->alloc_cores[i][j];
 					else {
@@ -730,7 +762,9 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				}
 				if (rc == SLURM_ERROR) {
 					this_node->alloc_lps = 0;
-					this_node->alloc_cores = 0;
+					for (j =0; j < this_node->num_sockets; j++) {
+						this_node->alloc_cores[j] = 0;
+					}
 					this_node->alloc_memory = 0;
 					goto out;
 				}
@@ -780,7 +814,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 			     this_node->alloc_sockets, 
 			     this_node->alloc_lps);
 			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
-				for (j =0; j < this_node->node_ptr->sockets; j++)
+				for (j =0; j < this_node->num_sockets; j++)
 					info("cons_res %u _clear_select_jobinfo (-) "
 					     " node %s alloc_  c %u",
 					     job->job_id, this_node->node_ptr->name, 
@@ -948,7 +982,8 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 	if (job->alloc_cores) {
 		pack16((uint16_t) 1, buffer);
 		for (i = 0; i < nhosts; i++) {
-			uint16_t nsockets = node_record_table_ptr[i].sockets;
+			uint16_t nsockets = job->num_sockets[i];
+			pack16(nsockets, buffer);
 			pack16_array(job->alloc_cores[i], nsockets, buffer);
 		}
 	} else {
@@ -998,11 +1033,15 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 
 	safe_unpack16(&have_alloc_cores, buffer);
 	if (have_alloc_cores) {
+		job->num_sockets = (uint16_t *) xmalloc(job->nhosts * 
+				sizeof(uint16_t));
 		job->alloc_cores = (uint16_t **) xmalloc(job->nhosts * 
 				sizeof(uint16_t *));
 		for (i = 0; i < nhosts; i++) {
+			safe_unpack16(&job->num_sockets[i], buffer);
 			safe_unpack16_array(&job->alloc_cores[i], &len32, buffer);
-			/* should be nsockets in size */
+			if (len32 != job->num_sockets[i])
+				goto unpack_error;
 		}
 	}
 	safe_unpack32_array((uint32_t**)&job->alloc_memory, &len32, buffer);
@@ -1091,14 +1130,14 @@ extern int select_p_state_save(char *dir_name)
 	/*** pack the node_cr_record array ***/
 	pack32((uint32_t)select_node_cnt, buffer);
 	for (i = 0; i < select_node_cnt; i++) {
-		uint16_t nsockets = select_node_ptr[i].node_ptr->sockets;
-		/*** don'save restore select_node_ptr[i].node_ptr ***/
+		/*** don't save select_node_ptr[i].node_ptr ***/
 		packstr((char*)select_node_ptr[i].node_ptr->name, buffer);
 		pack16(select_node_ptr[i].alloc_lps, buffer);
 		pack16(select_node_ptr[i].alloc_sockets, buffer);
 		pack32(select_node_ptr[i].alloc_memory, buffer);
-		pack16(nsockets, buffer);
+		pack16(select_node_ptr[i].num_sockets, buffer);
 		if (select_node_ptr[i].alloc_cores) {
+			uint16_t nsockets = select_node_ptr[i].num_sockets;
 			pack16((uint16_t) 1, buffer);
 			pack16_array(select_node_ptr[i].alloc_cores,
 							nsockets, buffer);
@@ -1222,7 +1261,6 @@ extern int select_p_state_restore(char *dir_name)
 	prev_select_node_ptr = xmalloc(sizeof(struct node_cr_record) *
 							(prev_select_node_cnt));
 	for (i = 0; i < prev_select_node_cnt; i++) {
-		uint16_t nsockets = 0;
 		uint16_t have_alloc_cores = 0;
 		/*** don't restore prev_select_node_ptr[i].node_ptr ***/
 		safe_unpackstr_xmalloc(&(prev_select_node_ptr[i].name), 
@@ -1230,7 +1268,7 @@ extern int select_p_state_restore(char *dir_name)
 		safe_unpack16(&prev_select_node_ptr[i].alloc_lps, buffer);
 		safe_unpack16(&prev_select_node_ptr[i].alloc_sockets, buffer);
 		safe_unpack32(&prev_select_node_ptr[i].alloc_memory, buffer);
-		safe_unpack16(&nsockets, buffer);
+		safe_unpack16(&prev_select_node_ptr[i].num_sockets, buffer);
 		safe_unpack16(&have_alloc_cores, buffer);
 		if (have_alloc_cores) {
 			safe_unpack16_array(
@@ -1307,9 +1345,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			info("select_g_node_init node:%s sockets:%u",
 			     select_node_ptr[i].name, 
 			     select_node_ptr[i].node_ptr->sockets);
+			select_node_ptr[i].num_sockets =
+			     select_node_ptr[i].node_ptr->sockets;
 			select_node_ptr[i].alloc_cores    = 
 				xmalloc(sizeof(int) * 
-					select_node_ptr[i].node_ptr->sockets);
+					select_node_ptr[i].num_sockets);
 		}
 
 		/* Restore any previous node data */
@@ -1327,7 +1367,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 				= prev_select_node_ptr[i].alloc_memory;
 			if (select_node_ptr[i].alloc_cores &&
 				prev_select_node_ptr[i].alloc_cores) {
-				for (j = 0; j < select_node_ptr[i].node_ptr->sockets; j++) {
+				chk_resize_node(&(select_node_ptr[i]),
+					prev_select_node_ptr[i].num_sockets);
+				select_node_ptr[i].num_sockets = 
+					prev_select_node_ptr[i].num_sockets;
+				for (j = 0; j < select_node_ptr[i].num_sockets; j++) {
 					select_node_ptr[i].alloc_cores[j]
 						 = prev_select_node_ptr[i].alloc_cores[j];
 				}
@@ -1405,11 +1449,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of 
 				 * consecutive nodes */
-	consec_cpus = xmalloc(sizeof(int) * consec_size);
+	consec_cpus  = xmalloc(sizeof(int) * consec_size);
 	consec_nodes = xmalloc(sizeof(int) * consec_size);
 	consec_start = xmalloc(sizeof(int) * consec_size);
-	consec_end = xmalloc(sizeof(int) * consec_size);
-	consec_req = xmalloc(sizeof(int) * consec_size);
+	consec_end   = xmalloc(sizeof(int) * consec_size);
+	consec_req   = xmalloc(sizeof(int) * consec_size);
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
@@ -1642,16 +1686,20 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			bit_set(job->node_bitmap, i);
 		}
 		
-		job->host      = (char **) xmalloc(job->nhosts * sizeof(char *));
-		job->cpus      = (uint16_t *) xmalloc(job->nhosts * sizeof(uint16_t));
-		job->alloc_lps = (uint16_t *) xmalloc(job->nhosts * sizeof(uint16_t));
+		job->host          = (char **)    xmalloc(job->nhosts * sizeof(char *));
+		job->cpus          = (uint16_t *) xmalloc(job->nhosts * sizeof(uint16_t));
+		job->alloc_lps     = (uint16_t *) xmalloc(job->nhosts * sizeof(uint16_t));
 		job->alloc_sockets = (uint16_t *) xmalloc(job->nhosts * sizeof(uint16_t));
 		job->alloc_memory  = (uint32_t *) xmalloc(job->nhosts * sizeof(uint32_t));
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
-			job->alloc_cores   = (uint16_t **) xmalloc(job->nhosts * sizeof(uint16_t *));
-			for (i = 0; i < job->nhosts; i++)
+			job->num_sockets = (uint16_t *)  xmalloc(job->nhosts * sizeof(uint16_t));
+			job->alloc_cores = (uint16_t **) xmalloc(job->nhosts * sizeof(uint16_t *));
+			for (i = 0; i < job->nhosts; i++) {
+				job->num_sockets[i] = 
+					node_record_table_ptr[i].sockets;
 				job->alloc_cores[i] = (uint16_t *) xmalloc(
-					node_record_table_ptr[i].sockets * sizeof(uint16_t));
+					job->num_sockets[i] * sizeof(uint16_t));
+			}
 		}
 
 		j = 0;
@@ -1668,7 +1716,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			job->alloc_sockets[j] = 0;
 			job->alloc_memory[j] = job_ptr->details->job_max_memory; 
 			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
-				for (k = 0; k < node_record_table_ptr[i].sockets; k++)
+				chk_resize_job(job, j, node_record_table_ptr[i].sockets);
+				job->num_sockets[j] = node_record_table_ptr[i].sockets;
+				for (k = 0; k < job->num_sockets[j]; k++)
 					job->alloc_cores[j][k]   = 0;
 			}
 			j++;
@@ -2057,7 +2107,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			break;
 		case CR_CORE:
 		case CR_CORE_MEMORY:
-			for (i = 0; i < this_cr_node->node_ptr->sockets; i++)  
+			for (i = 0; i < this_cr_node->num_sockets; i++)  
 				*tmp_16 += this_cr_node->alloc_cores[i] *
 					node_ptr->threads;
 			break;
@@ -2127,9 +2177,11 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 					error("Job %u Host %s too many allocated lps %u",
 					      job->job_id, this_node->node_ptr->name, 
 					      this_node->alloc_lps);
-				for (j = 0; j < this_node->node_ptr->sockets; j++)
+				chk_resize_node(this_node, this_node->node_ptr->sockets);
+				chk_resize_job(job, i, this_node->num_sockets);
+				for (j = 0; j < this_node->num_sockets; j++)
 					this_node->alloc_cores[j] += job->alloc_cores[i][j];
-				for (j = 0; j < this_node->node_ptr->sockets; j++)
+				for (j = 0; j < this_node->num_sockets; j++)
 					if (this_node->alloc_cores[j] <= 
 					    this_node->node_ptr->cores)
 						continue;
@@ -2159,7 +2211,7 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 			     job->job_id, this_node->node_ptr->name, this_node->alloc_lps, 
 			     this_node->alloc_sockets, this_node->alloc_memory);
 			if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
-				for (j = 0; j < this_node->node_ptr->sockets; j++)
+				for (j = 0; j < this_node->num_sockets; j++)
 					info("cons_res %u update_nodeinfo (+) "
 					     "node %s alloc_ cores %u",
 					     job->job_id, this_node->node_ptr->name, 

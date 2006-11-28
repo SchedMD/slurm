@@ -74,6 +74,7 @@ struct node_cr_record {
 	char *name;		/* reference copy of node_ptr name */
 	uint16_t alloc_lps;	/* cpu count reserved by already scheduled jobs */
 	uint16_t alloc_sockets;	/* socket count reserved by already scheduled jobs */
+	uint16_t num_sockets;	/* number of sockets in alloc_cores */
 	uint16_t *alloc_cores;	/* core count per socket reserved by
 				 * already scheduled jobs */
 	uint32_t alloc_memory;	/* real memory reserved by already scheduled jobs */
@@ -99,8 +100,9 @@ struct select_cr_job {
 	uint16_t *cpus;		/* number of processors on each host   */
 	uint16_t *alloc_lps;	/* number of allocated threads/lps on
 				 * each host */
-	uint16_t *alloc_sockets;	/* number of allocated sockets on each
+	uint16_t *alloc_sockets;/* number of allocated sockets on each
 				 * host */
+	uint16_t *num_sockets;	/* number of sockets in alloc_cores[node] */
 	uint16_t **alloc_cores;	/* number of allocated cores on each
 				 * host */
 	uint32_t *alloc_memory;	/* number of allocated MB of real

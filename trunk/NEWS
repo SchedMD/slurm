@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
     can be useful for testing. 
  -- Add sinfo output format option "%C" for CPUs (active/idle/other/total).
     Based upon work by Anne-Marie Wunderlin (BULL).
+ -- Assorted multi-core bug fixes (patch1.2.0-pre7.061128.mcorefixes).
 
 * Changes in SLURM 1.2.0-pre7
 =============================
