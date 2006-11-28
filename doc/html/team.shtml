@@ -4,6 +4,7 @@
 <p>SLURM development has been a joint effort of 
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory</a> (LLNL),
 <a href="http://www.hp.com/">HP</a>,
+<a href="http://www.bull.com/">Bull</a>,
 <a href="http://www.lnxi.com/">Linux NetworX</a>.
 
 <p>The current SLURM development staff includes: </p>
@@ -12,10 +13,8 @@
 <li>Danny Auble (LLNL)</li>
 <li>Susanne Balle (HP)</li>
 <li>Mark Grondona (LLNL)</li>
-<li>Chris Holmes (HP)</li>
 <li>Chris Morrone (LLNL)</li>
 <li>Daniel Palermo (HP)</li>
-<li>Andy Riebs (HP)</li>
 </ul>
 
 <p> SLURM contributers include: </p>
@@ -30,6 +29,7 @@
 <li>Joey Ekstrom (LLNL/Bringham Young University)</li>
 <li>Jim Garlick (LLNL)</li>
 <li>Takao Hatazaki (HP, Japan)</li>
+<li>Chris Holmes (HP)</li>
 <li>Nathan Huff (North Dakota State University)</li>
 <li>David Jackson (Cluster Resources)</li>
 <li>Greg Johnson (LANL) </li>
@@ -40,11 +40,13 @@
 <li>Gennaro Oliva (Institute of High Performance Computing and 
 Networking, Italy)</li>
 <li>Dan Phung (LLNL/Columbia University)</li>
+<li>Andy Riebs (HP)</li>
 <li>Jeff Squyres (LAM MPI)</li>
 <li>Kevin Tew (LLNL/Bringham Young University)</li>
 <li>Jay Windley (Linux NetworX)</li>
+<li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 November 2006</p>
+<p style="text-align:center;">Last modified 28 November 2006</p>
 
 <!--#include virtual="footer.txt"-->
