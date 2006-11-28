@@ -171,7 +171,7 @@ void ping_nodes (void)
 		node_dead_time = last_ping_time -
 				slurmctld_conf.slurmd_timeout;
 	}
-	still_live_time = now - (slurmctld_conf.slurmd_timeout / 2);
+	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
 	last_ping_time  = now;
 
 	offset += MAX_REG_THREADS;
