@@ -14,7 +14,8 @@ work.</p>
 
 <p>SLURM has been developed through the collaborative efforts of 
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
-<a href="http://www.hp.com/">Hewlett-Packard</a>, and
+<a href="http://www.hp.com/">Hewlett-Packard</a>, 
+<a href="http://www.bull.com/">Bull</a>, and
 <a href="http://www.lnxi.com/">Linux NetworX</a>.
 HP distributes and supports SLURM as a component in their XC System Software.</p>
 

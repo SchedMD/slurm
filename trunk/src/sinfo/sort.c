@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sort.c - sinfo sorting functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -418,7 +418,7 @@ static int _sort_by_nodes(void *void1, void *void2)
 	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
 
-	diff = sinfo1->nodes_tot - sinfo2->nodes_tot;
+	diff = sinfo1->nodes_total - sinfo2->nodes_total;
 
 	if (reverse_order)
 		diff = -diff;

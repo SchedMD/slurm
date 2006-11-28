@@ -730,6 +730,7 @@ typedef struct node_info {
 	uint16_t node_state;	/* see enum node_states */
 	uint16_t cpus;		/* configured count of cpus running on 
 				 * the node */
+	uint16_t used_cpus;	/* count of used cpus on this node */
 	uint16_t sockets;       /* number of sockets per node */
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t threads;       /* number of threads per core */

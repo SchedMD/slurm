@@ -1329,9 +1329,12 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	safe_unpack16(&node->sockets, buffer);
 	safe_unpack16(&node->cores, buffer);
 	safe_unpack16(&node->threads, buffer);
+
 	safe_unpack32(&node->real_memory, buffer);
 	safe_unpack32(&node->tmp_disk, buffer);
 	safe_unpack32(&node->weight, buffer);
+	safe_unpack16(&node->used_cpus, buffer);
+
 	safe_unpackstr_xmalloc(&node->features, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->reason, &uint16_tmp, buffer);
 

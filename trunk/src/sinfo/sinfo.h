@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -75,7 +75,13 @@ typedef struct {
 	uint32_t nodes_alloc;
 	uint32_t nodes_idle;
 	uint32_t nodes_other;
-	uint32_t nodes_tot;
+	uint32_t nodes_total;
+
+	uint32_t cpus_alloc;
+	uint32_t cpus_idle;
+	uint32_t cpus_other;
+	uint32_t cpus_total;
+
 	uint32_t min_cpus;
 	uint32_t max_cpus;
 	uint32_t min_sockets;
