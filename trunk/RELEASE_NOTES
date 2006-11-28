@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.2
-3 October 2006 (through 1.2.0-pre3)
+28 November 2006 (through 1.2.0-pre7)
 
 
 NEW COMMANDS
@@ -34,7 +34,11 @@ CONFIGURATION FILE CHANGES
   obsolute by the new wiki.conf file.
 
 * Several new configuration parameters can be used to specify architectural
-  details of the node: Sockets, CoresPerSocket, and ThreadsPerCore.
+  details of the nodes: Sockets, CoresPerSocket, and ThreadsPerCore.
+
+* For select/cons_res, an assortment of consumable resources can be supported 
+  including: CPUs, cores, socekts and/or memory. See new configuration 
+  parameter SelectTypeParameters.
 
 * For BlueGene systems only: Alternate BlrtsImage, LinuxImage, MloaderImage,
   and RamDiskImage file can be specified along with specific groups that 
@@ -44,8 +48,8 @@ OTHER CHANGES
 
 * Several srun options are available to control layout of tasks across the 
   cores on a node: --extra-node-info, --ntasks-per-node, --sockets-per-node,
-  --cores-per-socket, --threads-per-core, --minsockets, --mincores, --minthreads,
-  --ntasks-per-socket, --ntasks-per-core, and --ntasks-per-node.
+  --cores-per-socket, --threads-per-core, --minsockets, --mincores, 
+  --minthreads, --ntasks-per-socket, --ntasks-per-core, and --ntasks-per-node.
 
 * New scontrol, sinfo and squeue options can be used to view socket, core,
   and task details by job and/or node.
@@ -61,6 +65,11 @@ OTHER CHANGES
   with "scontrol show job". Used by sched/wiki.
 
 * Added support for OS X operaing system.
+
+* A job step's actual run time is mantained with suspend/resume use.
+
+* Added support for Portable Linux Processor Affinity in the task/affinity 
+  plugin (PLPA, see http://www.open-mpi.org/software/plpa).
 
 * There is a new version of the Wiki scheduler plugin to interface with
   the Maui Scheduler and Moab. It can be accessed with the slurm.conf
