@@ -1,0 +1,90 @@
+RELEASE NOTES FOR SLURM VERSION 1.2
+28 November 2006 (through 1.2.0-pre7)
+
+
+NEW COMMANDS
+
+* Several new commands have been added to perform individual srun functions.
+  The srun command will continue to exist, but these commands may offer 
+  greater clarity and ease of use. The srun options --allocate, --attach, 
+  and --batch will eventially cease being supported. The new commands are 
+  salloc  - Create a job allocation (functions like "srun --allocate")
+  sattach - Attach to an existing job step (functions like "srun --attach")
+  sbatch  - Submit a batch job script (functions like "srun --batch")
+  slaunch - Launch tasks (requires a pre-existing job allocation)
+  See the indivual man pages for more information. 
+
+* A new GUI is available for viewing and modifying state information, sview.
+  Note that sview will only be built on systems which have libglade-2.0 and 
+  gtk+-2.0 installed.
+
+
+CONFIGURATION FILE CHANGES
+
+* The slurm.conf configuration file now supports a "Include" directive to
+  include other files inline.
+
+* Added new configuration parameter MessageTimeout (replaces #define in the
+  code).
+
+* Added new configuration parameter MailProg (in case mail program is not
+  at "/bin/mail").
+
+* Removed defunct configuration parameter, ShedulerAuth. It has been rendered 
+  obsolute by the new wiki.conf file.
+
+* Several new configuration parameters can be used to specify architectural
+  details of the nodes: Sockets, CoresPerSocket, and ThreadsPerCore.
+
+* For select/cons_res, an assortment of consumable resources can be supported 
+  including: CPUs, cores, socekts and/or memory. See new configuration 
+  parameter SelectTypeParameters.
+
+* For BlueGene systems only: Alternate BlrtsImage, LinuxImage, MloaderImage,
+  and RamDiskImage file can be specified along with specific groups that 
+  can use them.
+
+OTHER CHANGES
+
+* Several srun options are available to control layout of tasks across the 
+  cores on a node: --extra-node-info, --ntasks-per-node, --sockets-per-node,
+  --cores-per-socket, --threads-per-core, --minsockets, --mincores, 
+  --minthreads, --ntasks-per-socket, --ntasks-per-core, and --ntasks-per-node.
+
+* New scontrol, sinfo and squeue options can be used to view socket, core,
+  and task details by job and/or node.
+
+* Permit batch jobs to be requeued ("scontrol requeue <jobid>" or
+  "srun --batch --no-requeue ..." to prevent).
+
+* View a job's exit code using "scontrol show job".
+
+* Added "account" field to job and step accounting information and sacct output.
+
+* Added new job field, "comment". Set by srun, salloc and sbatch. View
+  with "scontrol show job". Used by sched/wiki.
+
+* Added support for OS X operaing system.
+
+* A job step's actual run time is mantained with suspend/resume use.
+
+* Added support for Portable Linux Processor Affinity in the task/affinity 
+  plugin (PLPA, see http://www.open-mpi.org/software/plpa).
+
+* There is a new version of the Wiki scheduler plugin to interface with
+  the Maui Scheduler and Moab. It can be accessed with the slurm.conf
+  parameter "SchedulerType=sched/wiki2" (it will replace "sched/wiki"
+  in SLURM version 1.2, but will co-exist in version 1.1.10+). If you 
+  currently use sched/wiki, you will at least need to add a wiki.conf 
+  file. Key differences include:
+  - Node and job data returned is correct (several errors in old plugin)
+  - Node data includes partition information (CCLASS field)
+  - Improved error handling
+  - Support added for configuration file ("wiki.conf" in same directory
+    as "slurm.conf" file, see "man wiki.conf" for details)
+  - Support added for job suspend/resume and requeue
+  - Authentication of communications now supported
+  - Notification of scheduler on events (job submitted or termination)
+
+
+See the file NEWS for more details.
