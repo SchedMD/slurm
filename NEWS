@@ -143,6 +143,9 @@ documents those changes that are of interest to users and admins.
  - fix for handling batch steps completing correctly and setting the 
    return code.
  - In sched/wiki2, support newly defined SIGNALJOB command.
+ - Altered ncurses check to make sure programs can link before saying we 
+   have a working curses lib and header.
+ - BLUEGENE - added --enable-bluegene-emulation configure option to 1.1
 
 * Changes in SLURM 1.1.20
 =========================
