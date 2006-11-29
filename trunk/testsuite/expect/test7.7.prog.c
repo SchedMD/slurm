@@ -316,7 +316,7 @@ static void _signal_job(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=JOBSIGNAL ARG=%ld SIGNAL=URG",
+		"TS=%u AUTH=root DT=CMD=SIGNALJOB ARG=%ld VALUE=URG",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }

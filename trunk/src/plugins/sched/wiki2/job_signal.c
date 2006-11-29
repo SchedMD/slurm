@@ -111,30 +111,34 @@ extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
 		*err_code = -300;
-		*err_msg = "JOBSIGNAL lacks ARG=";
-		error("wiki: JOBSIGNAL lacks ARG=");
+		*err_msg = "SIGNALJOB lacks ARG=";
+		error("wiki: SIGNALJOB lacks ARG=");
 		return -1;
 	}
-	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
+	arg_ptr +=4;
+	jobid = strtoul(arg_ptr, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
-		error("wiki: JOBSIGNAL has invalid jobid");
+		error("wiki: SIGNALJOB has invalid jobid %s",
+			arg_ptr);
 		return -1;
 	}
-	sig_ptr = strstr(cmd_ptr, "SIGNAL=");
+
+	sig_ptr = strstr(cmd_ptr, "VALUE=");
 	if (sig_ptr == NULL) {
 		*err_code = -300;
-		*err_msg = "JOBSIGNAL lacks SIGNAL=";
-		error("wiki: JOBSIGNAL lacks SIGNAL=");
+		*err_msg = "SIGNALJOB lacks VALUE=";
+		error("wiki: SIGNALJOB lacks VALUE=");
 		return -1;
 	}
-	sig_num = _xlate_signal(sig_ptr+7);
+	sig_ptr += 6;
+	sig_num = _xlate_signal(sig_ptr);
 	if (sig_num == 0) {
 		*err_code = -300;
-		*err_msg = "JOBSIGNAL has invalid signal value";
-		error("wiki: JOBSIGNAL has invalid signal value: %s",
-			(sig_ptr+7));
+		*err_msg = "SIGNALJOB has invalid signal value";
+		error("wiki: SIGNALJOB has invalid signal value: %s",
+			sig_ptr);
 		return -1;
 	}
 
@@ -149,7 +153,7 @@ extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 
 	snprintf(reply_msg, sizeof(reply_msg),
-		"job %u signalled successfully", jobid);
+		"job %u signalled", jobid);
 	*err_msg = reply_msg;
 	return 0;
 }
