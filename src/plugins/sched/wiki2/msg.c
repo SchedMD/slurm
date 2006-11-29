@@ -496,7 +496,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		job_will_run(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBMODIFY", 9) == 0) {
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBSIGNAL", 9) == 0) {
+	} else if (strncmp(cmd_ptr, "SIGNALJOB", 9) == 0) {
 		job_signal_wiki(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "INITIALIZE", 10) == 0) {
 		initialize_wiki(cmd_ptr, &err_code, &err_msg);
