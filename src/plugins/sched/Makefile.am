@@ -1,3 +1,3 @@
 # Makefile for scheduler plugins
 
-SUBDIRS = backfill builtin gang hold wiki2
+SUBDIRS = backfill builtin gang hold wiki wiki2

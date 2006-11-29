@@ -260,6 +260,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
 %{_libdir}/slurm/sched_gang.so
+%{_libdir}/slurm/sched_wiki.so
 %{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so

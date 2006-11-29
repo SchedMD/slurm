@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     Based upon work by Anne-Marie Wunderlin (BULL).
  -- Assorted multi-core bug fixes (patch1.2.0-pre7.061128.mcorefixes).
  -- Report SelectTypeParameters from "scontrol show config".
+ -- Build sched/wiki plugin for Maui Scheduler (based upon new sched/wiki2 
+    code for Moab Scheduler).
 
 * Changes in SLURM 1.2.0-pre7
 =============================

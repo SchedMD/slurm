@@ -56,7 +56,6 @@ static char *	_get_node_state(struct node_record *node_ptr);
  * Response format
  * ARG=<cnt>#<NODEID>:STATE=<state>;
  *                    FEATURE=<feature:feature>;
- *                    CCLASS=<part>:<cpus>[,<part>:<cpus>];
  *                    CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
  *         [#<NODEID>:...];
  */
@@ -148,7 +147,6 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 {
 	char tmp[512], *buf = NULL;
 	int i;
-	uint32_t cpu_cnt;
 
 	if (!node_ptr)
 		return NULL;
@@ -159,36 +157,9 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 		_get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 	
-	if (state_info == SLURM_INFO_STATE)
+	if ((state_info == SLURM_INFO_STATE) ||
+	    (state_info == SLURM_INFO_VOLITILE))
 		return buf;
-
-
-	/* SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
-	if (slurmctld_conf.fast_schedule) {
-		/* config from slurm.conf */
-		cpu_cnt = node_ptr->config_ptr->cpus;
-	} else {
-		/* config as reported by slurmd */
-		cpu_cnt = node_ptr->cpus;
-	}
-	for (i=0; i<node_ptr->part_cnt; i++) {
-		char *header;
-		if (i == 0)
-			header = "CCLASS=";
-		else
-			header = ",";
-		snprintf(tmp, sizeof(tmp), "%s%s:%u", 
-			header,
-			node_ptr->part_pptr[i]->name,
-			cpu_cnt);
-		xstrcat(buf, tmp);
-	}
-	if (i > 0)
-		xstrcat(buf, ";");
-
-	if (state_info == SLURM_INFO_VOLITILE)
-		return buf;
-
 
 	/* SLURM_INFO_ALL only */
 	if (slurmctld_conf.fast_schedule) {
