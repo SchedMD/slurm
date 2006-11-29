@@ -80,16 +80,9 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr,
 				  old_time) * 60);
 	}
 	if (bank_ptr) {
-#if 1
-		error("wiki: JOBMODIFY does not currently support BANK");
-#else
-		/* for slurm v1.2, wiki currently usses account field 
-		 * as moab "comment" field */
-		info("wiki: change job %d bank %s", 
-			jobid, bank_ptr);
+		info("wiki: change job %d bank %s", jobid, bank_ptr);
 		xfree(job_ptr->account);
 		job_ptr->account = xstrdup(bank_ptr);
-#endif
 	}
 
 	if (part_name_ptr) {
