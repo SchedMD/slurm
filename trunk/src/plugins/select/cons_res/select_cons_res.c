@@ -300,7 +300,6 @@ struct node_cr_record * find_cr_node_record (const char *name)
 
 void chk_resize_node(struct node_cr_record *node, uint16_t sockets)
 {
-    	int i;
 	if ((node->alloc_cores == NULL) ||
 			(sockets > node->num_sockets)) {
 		debug3("cons_res: increasing node %s num_sockets from %u to %u",
@@ -313,7 +312,6 @@ void chk_resize_node(struct node_cr_record *node, uint16_t sockets)
 
 void chk_resize_job(struct select_cr_job *job, uint16_t node_id, uint16_t sockets)
 {
-    	int i;
 	if ((job->alloc_cores[node_id] == NULL) ||
 	    		(sockets > job->num_sockets[node_id])) {
 		debug3("cons_res: increasing job %u node %u num_sockets from %u to %u",
