@@ -17,7 +17,22 @@ AC_DEFUN([X_AC_BLUEGENE],
 [
    	AC_ARG_WITH(db2, AS_HELP_STRING(--with-db2-dir=PATH,Specify path to DB2 library's parent directory), [ trydb2dir=$withval ])
 
-   	bg_default_dirs="/bgl/BlueLight/ppcfloor/bglsys /opt/IBM/db2/V8.1 /u/bgdb2cli/sqllib /home/bgdb2cli/sqllib"
+	# test for bluegene emulation mode
+   	AC_ARG_ENABLE(bluegene-emulation, AS_HELP_STRING(--enable-bluegene-emulation,Run SLURM in bluegene mode on a non-bluegene system), 
+	[ case "$enableval" in
+	  yes) bluegene_emulation=yes ;;
+	  no)  bluegene_emulation=no ;;
+	  *)   AC_MSG_ERROR([bad value "$enableval" for --enable-bluegene-emulation])  ;;
+    	esac ])	
+ 			
+	if test "x$bluegene_emulation" = "xyes"; then
+		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+      		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
+    		AC_MSG_NOTICE([Running in bluegene emulation mode])
+		bg_default_dirs=""
+	else
+  	   	bg_default_dirs="/bgl/BlueLight/ppcfloor/bglsys /opt/IBM/db2/V8.1 /u/bgdb2cli/sqllib /home/bgdb2cli/sqllib"
+	fi
 
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
