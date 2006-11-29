@@ -60,6 +60,31 @@ extern long slurm_api_version (void)
 	return (long) SLURM_API_VERSION;
 }
 
+static char *
+_select_info(uint16_t select_type_param)
+{
+	switch (select_type_param) {
+		case SELECT_TYPE_INFO_NONE:
+			return "NONE";
+		case CR_CPU:
+			return "CR_CPU";
+		case CR_SOCKET:
+			return "CR_SOCKET";
+		case CR_CORE:
+			return "CR_CORE";
+		case CR_MEMORY:
+			return "CR_MEMORY";
+		case CR_SOCKET_MEMORY:
+			return "CR_SOCKET_MEMORY";
+		case CR_CORE_MEMORY:
+			return "CR_CORE_MEMORY";
+		case CR_CPU_MEMORY:
+			return "CR_CPU_MEMORY";
+		default:
+			return "unknown";
+	}
+}
+
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
@@ -157,6 +182,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->schedtype);
 	fprintf(out, "SelectType        = %s\n",
 		slurm_ctl_conf_ptr->select_type);
+	if (slurm_ctl_conf_ptr->select_type_param) {
+		fprintf(out, "SelectTypeParameters = %s\n",
+			_select_info(slurm_ctl_conf_ptr->
+			select_type_param));
+	}
 	fprintf(out, "SlurmUser         = %s(%u)\n", 
 		slurm_ctl_conf_ptr->slurm_user_name,
 		slurm_ctl_conf_ptr->slurm_user_id);
