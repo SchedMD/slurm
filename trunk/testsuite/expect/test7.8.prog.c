@@ -234,7 +234,6 @@ int main(int argc, char * argv[])
 	_start_job(job_id1);
 	_cancel_job(job_id2);
 	sleep(5);
-	_start_job(job_id1);
 	_get_jobs();
 
 	printf("SUCCESS\n");
