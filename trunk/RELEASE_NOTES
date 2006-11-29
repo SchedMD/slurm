@@ -62,7 +62,7 @@ OTHER CHANGES
 * Added "account" field to job and step accounting information and sacct output.
 
 * Added new job field, "comment". Set by srun, salloc and sbatch. View
-  with "scontrol show job". Used by sched/wiki.
+  with "scontrol show job". Used by sched/wiki2.
 
 * Added support for OS X operaing system.
 
@@ -72,11 +72,12 @@ OTHER CHANGES
   plugin (PLPA, see http://www.open-mpi.org/software/plpa).
 
 * There is a new version of the Wiki scheduler plugin to interface with
-  the Maui Scheduler and Moab. It can be accessed with the slurm.conf
-  parameter "SchedulerType=sched/wiki2" (it will replace "sched/wiki"
-  in SLURM version 1.2, but will co-exist in version 1.1.10+). If you 
-  currently use sched/wiki, you will at least need to add a wiki.conf 
-  file. Key differences include:
+  the Moab Scheduler. It can be accessed with the slurm.conf parameter 
+  "SchedulerType=sched/wiki2". Continue using "SchedulerType=sched/wiki"
+  for the Maui Scheduler at this time. Some time in early 2007 the Maui 
+  Scheduler should be upgraded to use the additional capabilities 
+  offered by sched/wiki2. If you use sched/wiki2, you will at least 
+  need to add a wiki.conf file. Key differences include:
   - Node and job data returned is correct (several errors in old plugin)
   - Node data includes partition information (CCLASS field)
   - Improved error handling
@@ -85,6 +86,6 @@ OTHER CHANGES
   - Support added for job suspend/resume and requeue
   - Authentication of communications now supported
   - Notification of scheduler on events (job submitted or termination)
-
+  - There is no longer a "sched-wiki" RPM. All files are in the main RPM.
 
 See the file NEWS for more details.

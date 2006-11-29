@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for wiki scheduler plugin
+# Makefile for wiki2 scheduler plugin
 
 SOURCES = $(sched_wiki2_la_SOURCES)
 
