@@ -74,18 +74,27 @@ OTHER CHANGES
 * There is a new version of the Wiki scheduler plugin to interface with
   the Moab Scheduler. It can be accessed with the slurm.conf parameter 
   "SchedulerType=sched/wiki2". Continue using "SchedulerType=sched/wiki"
-  for the Maui Scheduler at this time. Some time in early 2007 the Maui 
-  Scheduler should be upgraded to use the additional capabilities 
-  offered by sched/wiki2. If you use sched/wiki2, you will at least 
-  need to add a wiki.conf file. Key differences include:
+  for the Maui Scheduler at this time and see the section below for details. 
+  If you use sched/wiki2, you will at least need to add a wiki.conf file. 
+  Key differences include:
   - Node and job data returned is correct (several errors in old plugin)
   - Node data includes partition information (CCLASS field)
   - Improved error handling
   - Support added for configuration file ("wiki.conf" in same directory
     as "slurm.conf" file, see "man wiki.conf" for details)
-  - Support added for job suspend/resume and requeue
+  - Support added for job modify, suspend/resume, and requeue
   - Authentication of communications now supported
   - Notification of scheduler on events (job submitted or termination)
+  - There is no longer a "sched-wiki" RPM. All files are in the main RPM.
+
+* The sched/wiki plugin has been re-written for use with the Maui Scheduler.
+  Some time in early 2007 the Maui Scheduler should be upgraded to use 
+  the additional capabilities offered by sched/wiki2. Changes in sched/wiki
+  include:
+  - Node and job data returned is correct (several errors in old plugin)
+  - Support added for configuration file ("wiki.conf" in same directory
+    as "slurm.conf" file, see "man wiki.conf" for details). Currntly 
+    wiki.conf is only used to store an authentication key. 
   - There is no longer a "sched-wiki" RPM. All files are in the main RPM.
 
 See the file NEWS for more details.
