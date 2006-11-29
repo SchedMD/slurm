@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sched_wiki.c - Wiki plugin for Moab and Maui schedulers.
+ *  sched_wiki.c - Wiki plugin for Maui schedulers.
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -42,8 +42,8 @@
 #include "src/common/log.h"
 #include "./msg.h"
 
-const char		plugin_name[]	= "Wiki (Maui and Moab) Scheduler plugin";
-const char		plugin_type[]	= "sched/wiki2";
+const char		plugin_name[]	= "Wiki (Maui) Scheduler plugin";
+const char		plugin_type[]	= "sched/wiki";
 const uint32_t		plugin_version	= 90;
 
 /* A plugin-global errno. */
@@ -54,7 +54,7 @@ static int plugin_errno = SLURM_SUCCESS;
 /**************************************************************************/
 extern int init( void )
 {
-	verbose( "Wiki2 scheduler plugin loaded" );
+	verbose( "Wiki scheduler plugin loaded" );
 	return spawn_msg_thread();
 }
 
@@ -72,7 +72,6 @@ extern void fini( void )
 /***************************************************************************/
 extern int slurm_sched_plugin_schedule( void )
 {
-	(void) event_notify("Requested by slurm");
 	return SLURM_SUCCESS;
 }
 
@@ -82,7 +81,6 @@ extern int slurm_sched_plugin_schedule( void )
 /**************************************************************************/
 extern uint32_t slurm_sched_plugin_initial_priority( uint32_t last_prio )
 {
-	(void) event_notify("Job submit");
 	if (init_prio_mode == PRIO_DECREMENT) {
 		if (last_prio >= 2)
 			return (last_prio - 1);
