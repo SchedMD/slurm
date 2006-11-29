@@ -508,7 +508,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 
  resp_msg:
 	snprintf(response, sizeof(response),
-		"SC=%d;RESPONSE=%s", err_code, err_msg);
+		"SC=%d RESPONSE=%s", err_code, err_msg);
 	_send_reply(new_fd, response);
 	return;
 
