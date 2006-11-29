@@ -24015,6 +24015,73 @@ fi
    elif test "$ac_have_curses" = "yes"; then
       NCURSES="-lcurses"
       ac_have_some_curses="yes"
+   fi
+
+   if test "$ac_have_some_curses" = "yes"; then
+        save_LIBS="$LIBS"
+        LIBS="$NCURSES $save_LIBS"
+        cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+          #include <ncurses.h>
+
+int
+main ()
+{
+
+          int main()
+          {
+            (void) initscr();
+            (void) endwin();
+          }
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  :
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_have_some_curses="no"
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+        LIBS="$save_LIBS"
+        if test "$ac_have_some_curses" == "yes"; then
+            echo "$as_me:$LINENO: result: NCURSES test program built properly." >&5
+echo "${ECHO_T}NCURSES test program built properly." >&6
+        else
+            { echo "$as_me:$LINENO: WARNING: *** NCURSES test program execution failed." >&5
+echo "$as_me: WARNING: *** NCURSES test program execution failed." >&2;}
+        fi
    else
       { echo "$as_me:$LINENO: WARNING: Can not build smap without curses or ncurses library" >&5
 echo "$as_me: WARNING: Can not build smap without curses or ncurses library" >&2;}
