@@ -57,6 +57,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/param.h>
+#include <slurm/slurm_errno.h>
 #include <stdlib.h>
 
 #if HAVE_SYS_SOCKET_H
@@ -592,7 +593,7 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 			else
 				rc = 0;
 		} else {
-			errno = ETIMEDOUT;        
+			slurm_seterrno(ETIMEDOUT);        
 			debug2("poll: %m");
                 }
 	}
