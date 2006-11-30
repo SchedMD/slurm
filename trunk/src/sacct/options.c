@@ -1624,6 +1624,7 @@ void do_fdump(char* f[], int lc)
 
 	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
 			   "status",	 /* F_STATUS */ 
+			   "requid",     /* F_JOB_REQUID */
 			   NULL};	 
 		
 	i = atoi(f[F_RECTYPE]);

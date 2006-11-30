@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -162,6 +162,7 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 /* JOB_TERM / JOB_SUSPEND fields */
 enum {	F_TOT_ELAPSED = HEADER_LENGTH,
 	F_TERM_STATUS,
+	F_JOB_REQUID,
 	JOB_TERM_LENGTH
 };
 

@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -306,6 +306,8 @@ int _parse_line(char *f[], void **data, int len)
 		*job = _init_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
+		if(len > F_JOB_REQUID) 
+			(*job)->requid = atoi(f[F_JOB_REQUID]);
 		break;
 	default:
 		printf("UNKOWN TYPE %d",i);
@@ -526,6 +528,7 @@ void process_terminated(char *f[], int lc, int show_full, int len)
 	job->elapsed = temp->elapsed;
 	job->end = temp->header.timestamp;
 	job->status = temp->status;
+	job->requid = temp->requid;
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;
 	job->show_full = show_full;

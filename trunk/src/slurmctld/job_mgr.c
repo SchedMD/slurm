@@ -1644,12 +1644,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->job_state  = JOB_CANCELLED;
 		job_ptr->start_time = now;
 		job_ptr->end_time   = now;
+		job_ptr->requid = uid;
 		job_completion_logger(job_ptr);
 	} else {
 		if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
-			if (job_ptr->requid == -1)
- 				job_ptr->requid = uid;
+			job_ptr->requid = uid;
 		} else if (WEXITSTATUS(job_return_code)) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
