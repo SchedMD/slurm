@@ -508,7 +508,7 @@ int read_bg_blocks()
 			
 			bg_record->cpus_per_bp = procs_per_node/i;
 			bg_record->node_cnt = bluegene_bp_node_cnt/i;
-			
+				
 			debug3("%s is in quarter %d nodecard %d",
 			       bg_record->bg_block_id,
 			       bg_record->quarter,
@@ -530,7 +530,12 @@ int read_bg_blocks()
 			}
 			
 		}
-
+		
+		if(set_ionodes(bg_record) == SLURM_ERROR) 
+			error("couldn't create ionode_bitmap "
+			      "for %d.%d",
+			      bg_record->quarter, bg_record->nodecard);
+		
 		bg_record->bg_block_list =
 			get_and_set_block_wiring(bg_record->bg_block_id);
 		if(!bg_record->bg_block_list)

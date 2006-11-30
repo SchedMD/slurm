@@ -492,14 +492,9 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 			continue;
 		found = 1;
 		nodes = bg_info_ptr->nodes;			
-		if((bg_info_ptr->quarter != (uint16_t) NO_VAL)) {
-			if(bg_info_ptr->nodecard != (uint16_t) NO_VAL)
-				sprintf(tmp_nodes, "%s.%d.%d", nodes,
-					bg_info_ptr->quarter,
-					bg_info_ptr->nodecard);
-			else
-				sprintf(tmp_nodes, "%s.%d", nodes,
-					bg_info_ptr->quarter);
+		if(bg_info_ptr->ionodes) {
+			sprintf(tmp_nodes, "%s[%s]", nodes,
+				bg_info_ptr->ionodes);
 			nodes = tmp_nodes;
 		}
 		send_grid_button = create_grid_button_from_another(

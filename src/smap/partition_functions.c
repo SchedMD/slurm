@@ -48,14 +48,13 @@ typedef struct {
 	char *bg_block_name;
 	char *slurm_part_name;
 	char *nodes;
+	char *ionodes;
 	enum connection_type bg_conn_type;
 	enum node_use_type bg_node_use;
 	rm_partition_state_t state;
 	int letter_num;
 	List nodelist;
 	int size;
-	uint16_t quarter;	
-	uint16_t nodecard;	
 	int node_cnt;	
 	bool printed;
 
@@ -268,10 +267,8 @@ extern void get_bg_part()
 			= new_bg_ptr->bg_info_array[i].conn_type;
 		block_ptr->bg_node_use 
 			= new_bg_ptr->bg_info_array[i].node_use;
-		block_ptr->quarter 
-			= new_bg_ptr->bg_info_array[i].quarter;
-		block_ptr->nodecard 
-			= new_bg_ptr->bg_info_array[i].nodecard;
+		block_ptr->ionodes 
+			= xstrdup(new_bg_ptr->bg_info_array[i].ionodes);
 		block_ptr->node_cnt 
 			= new_bg_ptr->bg_info_array[i].node_cnt;
 	       
@@ -657,21 +654,13 @@ static int _print_text_part(partition_info_t *part_ptr,
 			i++;
 		}
 		if((params.display == BGPART) && db2_info_ptr
-		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
-			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL) {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, ".%d.%d", 
-					  db2_info_ptr->quarter,
-					  db2_info_ptr->nodecard);
-			} else {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, ".%d", 
-					  db2_info_ptr->quarter);
-			}
+		   && (db2_info_ptr->ionodes)) {
+			mvwprintw(ba_system_ptr->text_win, 
+				  ba_system_ptr->ycord,
+				  ba_system_ptr->xcord, "[%s]", 
+				  db2_info_ptr->ionodes);
 		}
-			
+		
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -726,14 +715,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->nodes;
 		
 		if((params.display == BGPART) && db2_info_ptr
-		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
-			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL)
-				printf("%s.%d.%d\n", nodes, 
-				       db2_info_ptr->quarter,
-				       db2_info_ptr->nodecard);
-			else 
-				printf("%s.%d\n", nodes, 
-				       db2_info_ptr->quarter);
+		   && (db2_info_ptr->ionodes)) {
+			printf("%s[%s]\n", nodes, db2_info_ptr->ionodes);
 		} else
 			printf("%s\n",nodes);
 	}
@@ -750,6 +733,7 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
+		xfree(block_ptr->ionodes);
 		if(block_ptr->nodelist)
 			list_destroy(block_ptr->nodelist);
 		

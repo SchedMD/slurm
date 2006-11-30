@@ -2044,8 +2044,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	job_info_t *job_ptr = NULL;
 	job_step_info_t *step_ptr = NULL;
 #ifdef HAVE_BG
-	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t nodecard = (uint16_t) NO_VAL;
+	char *ionodes = NULL;
 	char tmp_char[50];
 #endif
 
@@ -2077,22 +2076,15 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		sview_job_info_ptr->nodes = NULL;
 #ifdef HAVE_BG
 		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_QUARTER, 
-				     &quarter);
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_NODECARD, 
-				     &nodecard);
+				     SELECT_DATA_IONODES, 
+				     &ionodes);
 		select_g_get_jobinfo(job_ptr->select_jobinfo, 
 				     SELECT_DATA_NODE_CNT, 
 				     &sview_job_info_ptr->node_cnt);
-		if(quarter != (uint16_t) NO_VAL) {
-			if(nodecard != (uint16_t) NO_VAL)
-				snprintf(tmp_char, sizeof(tmp_char),
-					 "%s.%u.%u", 
-					 job_ptr->nodes, quarter, nodecard);
-			else
-				snprintf(tmp_char, sizeof(tmp_char), "%s.%u",
-					 job_ptr->nodes, quarter);
+		if(ionodes) {
+			snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
+					 job_ptr->nodes, ionodes);
+			xfree(ionodes);
 			sview_job_info_ptr->nodes = xstrdup(tmp_char);
 		}
 #endif

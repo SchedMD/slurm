@@ -41,8 +41,6 @@ typedef struct {
 	enum node_use_type bg_node_use;
 	rm_partition_state_t state;
 	int size;
-	uint16_t quarter;	
-	uint16_t nodecard;	
 	int node_cnt;	
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
@@ -144,7 +142,9 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->linuximage);
 		xfree(block_ptr->mloaderimage);
 		xfree(block_ptr->ramdiskimage);
-		
+		/* don't xfree(block_ptr->bp_inx);
+		   it isn't copied like the chars and is freed in the api
+		 */
 		xfree(block_ptr);
 		
 	}
@@ -404,7 +404,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	static List block_list = NULL;
 	partition_info_t part;
 	sview_block_info_t *block_ptr = NULL;
-	char *nodes = NULL;
 	char tmp_nodes[50];
 	
 	if(!changed && block_list) {
@@ -427,7 +426,15 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 				  bg_info_array[i].bg_block_id);
 		block_ptr->nodes 
 			= xstrdup(node_select_ptr->bg_info_array[i].nodes);
-		
+		if(node_select_ptr->bg_info_array[i].ionodes) {
+			snprintf(tmp_nodes, sizeof(tmp_nodes),
+				 "%s[%s]",
+				 block_ptr->nodes,
+				 node_select_ptr->bg_info_array[i].ionodes);
+			xfree(block_ptr->nodes);
+			block_ptr->nodes = xstrdup(tmp_nodes);
+		}
+				
 		block_ptr->bg_user_name 
 			= xstrdup(node_select_ptr->
 				  bg_info_array[i].owner_name);
@@ -446,25 +453,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= node_select_ptr->bg_info_array[i].conn_type;
 		block_ptr->bg_node_use 
 			= node_select_ptr->bg_info_array[i].node_use;
-		block_ptr->quarter 
-			= node_select_ptr->bg_info_array[i].quarter;
-		block_ptr->nodecard 
-			= node_select_ptr->bg_info_array[i].nodecard;
-
-		if(block_ptr->quarter != (uint16_t) NO_VAL) {
-			nodes = block_ptr->nodes;		
-			if(block_ptr->nodecard != (uint16_t) NO_VAL)
-				snprintf(tmp_nodes,  sizeof(tmp_nodes),
-					 "%s.%d.%d", nodes,
-					 block_ptr->quarter,
-					 block_ptr->nodecard);
-			else
-				snprintf(tmp_nodes, sizeof(tmp_nodes),
-					 "%s.%d", nodes,
-					 block_ptr->quarter);
-			xfree(block_ptr->nodes);
-			block_ptr->nodes = xstrdup(tmp_nodes);
-		}
 
 		block_ptr->node_cnt 
 			= node_select_ptr->bg_info_array[i].node_cnt;
@@ -1168,9 +1156,9 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE: 
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
-		/* strip off the quarter and nodecard part */
+		/* strip off the ionodes part */
 		while(name[i]) {
-			if(name[i] == '.') {
+			if(name[i] == '[') {
 				name[i] = '\0';
 				break;
 			}

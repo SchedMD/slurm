@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -547,8 +547,7 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right, 
 		char* suffix)
 {
-	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t nodecard = (uint16_t) NO_VAL;
+	char *ionodes = NULL;
 	char tmp_char[6];
 	
 	if (job == NULL) {	/* Print the Header instead */
@@ -567,24 +566,19 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	} else {
 #ifdef HAVE_BG
 		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_QUARTER, 
-				     &quarter);
-		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_NODECARD, 
-				     &nodecard);
+				     SELECT_DATA_IONODES, 
+				     &ionodes);
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
-		if(quarter != (uint16_t) NO_VAL) {
-			if(nodecard != (uint16_t) NO_VAL) 
-				sprintf(tmp_char,".%d.%d",quarter,nodecard);
-			else
-				sprintf(tmp_char,".%d",quarter);
+		if(ionodes) {
+			sprintf(tmp_char, "[%s]", ionodes);
 			_print_str(tmp_char, width, right, false);
 		}
 	}
 	if (suffix)
 		printf("%s", suffix);
+	xfree(ionodes);
 	return SLURM_SUCCESS;
 }
 

@@ -129,10 +129,8 @@ struct select_jobinfo {
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *bg_block_id;	/* Blue Gene block ID */
 	uint16_t magic;		/* magic number */
-	uint16_t quarter;       /* for bg to tell which quarter of a small
+	char *ionodes;          /* for bg to tell which ionodes of a small
 				 * block the job is running */ 
-	uint16_t nodecard;       /* for bg to tell which nodecard of a quarter 
-				 *  of a small block the job is running */ 
 	uint32_t node_cnt;      /* how many cnodes in block */ 
 	uint16_t altered;       /* see if we have altered this job 
 				 * or not yet */
@@ -586,6 +584,7 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 static void _free_node_info(bg_info_record_t *bg_info_record)
 {
 	xfree(bg_info_record->nodes);
+	xfree(bg_info_record->ionodes);
 	xfree(bg_info_record->owner_name);
 	xfree(bg_info_record->bg_block_id);
 	xfree(bg_info_record->bp_inx);
@@ -606,6 +605,8 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	char *bp_inx_str;
 	
 	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), &uint16_tmp,
+			       buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->owner_name, &uint16_tmp, 
 			       buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint16_tmp, 
@@ -687,8 +688,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	(*jobinfo)->rotate = (uint16_t) NO_VAL;
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
-	(*jobinfo)->quarter = (uint16_t) NO_VAL;
-	(*jobinfo)->nodecard = (uint16_t) NO_VAL;
+	(*jobinfo)->ionodes = NULL;
 	(*jobinfo)->node_cnt = NO_VAL;
 	(*jobinfo)->max_procs =  NO_VAL;
 	(*jobinfo)->blrtsimage = NULL;
@@ -741,11 +741,9 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		xfree(jobinfo->bg_block_id);
 		jobinfo->bg_block_id = xstrdup(tmp_char);
 		break;
-	case SELECT_DATA_QUARTER:
-		jobinfo->quarter = *uint16;
-		break;
-	case SELECT_DATA_NODECARD:
-		jobinfo->nodecard = *uint16;
+	case SELECT_DATA_IONODES:
+		xfree(jobinfo->ionodes);
+		jobinfo->ionodes = xstrdup(tmp_char);
 		break;
 	case SELECT_DATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
@@ -831,11 +829,12 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		else
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
 		break;
-	case SELECT_DATA_QUARTER:
-		*uint16 = jobinfo->quarter;
-		break;
-	case SELECT_DATA_NODECARD:
-		*uint16 = jobinfo->nodecard;
+	case SELECT_DATA_IONODES:
+		if ((jobinfo->ionodes == NULL)
+		    ||  (jobinfo->ionodes[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->ionodes);
 		break;
 	case SELECT_DATA_NODE_CNT:
 		*uint32 = jobinfo->node_cnt;
@@ -908,8 +907,7 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->rotate = jobinfo->rotate;
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
-		rc->quarter = jobinfo->quarter;
-		rc->nodecard = jobinfo->nodecard;
+		rc->ionodes = xstrdup(jobinfo->ionodes);
 		rc->node_cnt = jobinfo->node_cnt;
 		rc->altered = jobinfo->altered;
 		rc->max_procs = jobinfo->max_procs;
@@ -966,20 +964,20 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		}
 		pack16((uint16_t)jobinfo->conn_type, buffer);
 		pack16((uint16_t)jobinfo->rotate, buffer);
-		pack16((uint16_t)jobinfo->quarter, buffer);
-		pack16((uint16_t)jobinfo->nodecard, buffer);
 		pack32((uint32_t)jobinfo->node_cnt, buffer);
 		pack32((uint32_t)jobinfo->max_procs, buffer);
 		packstr(jobinfo->bg_block_id, buffer);
+		packstr(jobinfo->ionodes, buffer);
 		packstr(jobinfo->blrtsimage, buffer);
 		packstr(jobinfo->linuximage, buffer);
 		packstr(jobinfo->mloaderimage, buffer);
 		packstr(jobinfo->ramdiskimage, buffer);
 	} else {
-		for (i=0; i<((SYSTEM_DIMENSIONS*2)+4); i++)
+		for (i=0; i<((SYSTEM_DIMENSIONS*2)+2); i++)
 			pack16((uint16_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
+		packstr("", buffer);
 		packstr("", buffer);
 		packstr("", buffer);
 		packstr("", buffer);
@@ -1007,11 +1005,10 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	}
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
-	safe_unpack16(&(jobinfo->quarter), buffer);
-	safe_unpack16(&(jobinfo->nodecard), buffer);
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
 	safe_unpack32(&(jobinfo->max_procs), buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint16_tmp, buffer);

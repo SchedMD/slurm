@@ -254,21 +254,17 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 	char tmp_cnt[7];
 	uint32_t node_cnt = 0;
-	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t nodecard = (uint16_t) NO_VAL;
+	char *ionodes = NULL;
 	
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_QUARTER, 
-			     &quarter);
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODECARD, 
-			     &nodecard);
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);
 	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
-		quarter = (uint16_t) NO_VAL;
+		xfree(ionodes);
 #else
 	node_cnt = job_ptr->num_nodes;
 #endif
@@ -334,8 +330,10 @@ static int _print_text_job(job_info_t * job_ptr)
 			if ((printed = mvwaddch(ba_system_ptr->text_win,
 						ba_system_ptr->ycord, 
 						ba_system_ptr->xcord,
-						job_ptr->nodes[i])) < 0)
+						job_ptr->nodes[i])) < 0) {
+				xfree(ionodes);
 				return printed;
+			}
 			ba_system_ptr->xcord++;
 			width = ba_system_ptr->text_win->_maxx 
 				- ba_system_ptr->xcord;
@@ -348,21 +346,13 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 			i++;
 		}
-		if(quarter != (uint16_t) NO_VAL) {
-			if(nodecard != (uint16_t) NO_VAL) {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, ".%d.%d", 
-					  quarter,
-					  nodecard);
-				ba_system_ptr->xcord += 4;
-			} else {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, ".%d", 
-					  quarter);
-				ba_system_ptr->xcord += 2;
-			}
+		if(ionodes) {
+			mvwprintw(ba_system_ptr->text_win, 
+				  ba_system_ptr->ycord,
+				  ba_system_ptr->xcord, "[%s]", 
+				  ionodes);
+			ba_system_ptr->xcord += strlen(ionodes)+2;
+			xfree(ionodes);
 		}
 
 		ba_system_ptr->xcord = 1;
@@ -393,11 +383,9 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%5s ", tmp_cnt);
 		
 		printf("%s", job_ptr->nodes);
-		if(quarter != (uint16_t) NO_VAL) {
-			if(nodecard != (uint16_t) NO_VAL)
-				printf(".%d.%d", quarter, nodecard);
-			else
-				printf(".%d", quarter);
+		if(ionodes) {
+			printf("[%s]", ionodes);
+			xfree(ionodes);
 		}
 
 		printf("\n");

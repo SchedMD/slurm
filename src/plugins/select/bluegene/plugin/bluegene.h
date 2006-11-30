@@ -67,6 +67,8 @@ typedef enum bg_layout_type {
 typedef struct bg_record {
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	char *nodes;			/* String of nodes in block */
+	char *ionodes; 		        /* String of ionodes in block
+					 * NULL if not a small block*/
 	char *user_name;		/* user using the block */
 	char *target_name;		/* when a block is freed this 
 					   is the name of the user we 
@@ -93,14 +95,17 @@ typedef struct bg_record {
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name 
 					   of block */
+	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
+					   keep track which ionodes we
+					   are on.  NULL if not a small block*/
 	int job_running;                /* job id if there is a job running 
 					   on the block */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
 	uint16_t quarter;               /* used for small blocks 
 					   determine quarter of BP */
-	uint16_t nodecard;             /* used for small blocks 
-					  determine nodecard of quarter */
+	uint16_t nodecard;              /* used for small blocks 
+					   determine nodecard of quarter */
 	char *blrtsimage;              /* BlrtsImage for this block */
 	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
@@ -118,7 +123,9 @@ extern bg_layout_t bluegene_layout_mode;
 extern uint16_t bluegene_numpsets;
 extern uint16_t bluegene_bp_node_cnt;
 extern uint16_t bluegene_nodecard_node_cnt;
+extern uint16_t bluegene_nodecard_ionode_cnt;
 extern uint16_t bluegene_quarter_node_cnt;
+extern uint16_t bluegene_quarter_ionode_cnt;
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 
@@ -216,6 +223,7 @@ extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int free_block_list(List delete_list);
 extern int read_bg_conf(void);
+extern int set_ionodes(bg_record_t *bg_record);
 
 /* block_sys.c */
 /*****************************************************/

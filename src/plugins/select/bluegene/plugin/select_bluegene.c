@@ -537,7 +537,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = procs_per_node * tmp;
 		} else { 
-			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt)
+			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt
+			   && bluegene_nodecard_ionode_cnt)
 				job_desc->min_nodes = 
 					bluegene_nodecard_node_cnt;
 			else if(job_desc->min_nodes 
@@ -568,7 +569,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = tmp;
 			tmp = NO_VAL;
 		} else {
-			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt)
+			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt
+			   && bluegene_nodecard_ionode_cnt)
 				job_desc->max_nodes = 
 					bluegene_nodecard_node_cnt;
 			else if(job_desc->max_nodes 
