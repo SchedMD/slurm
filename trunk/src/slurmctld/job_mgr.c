@@ -1377,13 +1377,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	}
 
 	test_only = will_run || (allocate == 0);
-	if (!test_only)
-		last_job_update = time(NULL);
 
 	no_alloc = test_only || too_fragmented || 
 		(!top_prio) || (!independent);
 	error_code = select_nodes(job_ptr, no_alloc, NULL);
-
+	if (!test_only) {
+		last_job_update = time(NULL);
+		slurm_sched_schedule();	/* work for external scheduler */
+	}
 	if ((error_code == ESLURM_NODES_BUSY)
 	    ||  (error_code == ESLURM_JOB_HELD)
 	    ||  (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
@@ -1394,10 +1395,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
-		} else		/* job remains queued */
+		} else {	/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) {
 				error_code = SLURM_SUCCESS;
 			}
+		}
 		return error_code;
 	}
 

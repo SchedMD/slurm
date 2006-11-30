@@ -428,10 +428,13 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		ave_cpu = jobacct->tot_cpu;
 		ave_cpu /= cpus;	
 		ave_cpu /= 100;
-	} 
-	ave_cpu2 = jobacct->min_cpu;
-	ave_cpu2 /= 100;
-	
+	}
+ 
+	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
+		ave_cpu2 = jobacct->min_cpu;
+		ave_cpu2 /= 100;
+	}
+
 	if (step->job_ptr->account && step->job_ptr->account[0])
 		account = step->job_ptr->account;
 	else
