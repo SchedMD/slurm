@@ -907,7 +907,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		} else {
 			slurm_mutex_lock(&block_state_mutex);
 
-			if((record->quarter != (uint16_t)NO_VAL)
+			if((record->ionodes)
 			   && (job_ptr->part_ptr->shared == 0))
 				error("Small block used in "
 				      "non-shared partition");
@@ -917,11 +917,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     SELECT_DATA_BLOCK_ID, 
 					     record->bg_block_id);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_QUARTER, 
-					     &record->quarter);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_NODECARD, 
-					     &record->nodecard);
+					     SELECT_DATA_IONODES, 
+					     record->ionodes);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT, 
 					     &record->node_cnt);

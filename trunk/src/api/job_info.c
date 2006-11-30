@@ -127,19 +127,15 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	struct group *group_info = NULL;
 	char tmp1[128], tmp2[128];
 	char tmp_line[128];
-	uint16_t quarter = (uint16_t) NO_VAL;
-	uint16_t nodecard = (uint16_t) NO_VAL;
+	char *ionodes = NULL;
 	uint16_t term_sig = 0;
 	char *out = NULL;
 	
 #ifdef HAVE_BG
 	char *nodelist = "BP_List";
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_QUARTER, 
-			     &quarter);
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODECARD, 
-			     &nodecard);
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
 #else
 	char *nodelist = "NodeList";
 #endif	
@@ -228,17 +224,15 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 6 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "%s=%s", nodelist, job_ptr->nodes);
+	snprintf(tmp_line, sizeof(tmp_line), "%s=%s",
+		 nodelist, job_ptr->nodes);
 	xstrcat(out, tmp_line);
-	if(job_ptr->nodes) {
-		if(quarter != (uint16_t) NO_VAL) {
-			if(nodecard != (uint16_t) NO_VAL) 
-				sprintf(tmp_line, ".%u.%u", quarter, nodecard);
-			else
-				sprintf(tmp_line, ".%u", quarter);
-			xstrcat(out, tmp_line);
-		} 
-	}
+	if(ionodes) {
+		sprintf(tmp_line, "[%s]", ionodes);
+		xstrcat(out, tmp_line);
+		xfree(ionodes);
+	} 
+	
 	sprintf(tmp_line, " %sIndices=", nodelist);
 	xstrcat(out, tmp_line);
 	for (j = 0;  (job_ptr->node_inx && (job_ptr->node_inx[j] != -1)); 

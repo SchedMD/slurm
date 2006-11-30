@@ -211,6 +211,7 @@ extern int block_ready(struct job_record *job_ptr)
 extern void pack_block(bg_record_t *bg_record, Buf buffer)
 {
 	packstr(bg_record->nodes, buffer);
+	packstr(bg_record->ionodes, buffer);
 	packstr(bg_record->user_name, buffer);
 	packstr(bg_record->bg_block_id, buffer);
 	pack16((uint16_t)bg_record->state, buffer);

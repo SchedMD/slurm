@@ -49,6 +49,7 @@
 
 typedef struct {
 	char *nodes;
+	char *ionodes;
 	char *owner_name;
 	char *bg_block_id;
 	int state;

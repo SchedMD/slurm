@@ -229,16 +229,15 @@ enum select_data_type {
 	SELECT_DATA_GEOMETRY,	/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
 	SELECT_DATA_ROTATE,	/* data-> uint16_t rotate */
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
-	SELECT_DATA_BLOCK_ID,	/* data-> char bg_block_id */
-	SELECT_DATA_QUARTER,	/* data-> uint16_t quarter */
-	SELECT_DATA_NODECARD,	/* data-> uint16_t nodecard */
+	SELECT_DATA_BLOCK_ID,	/* data-> char *bg_block_id */
+	SELECT_DATA_IONODES,	/* data-> char *ionodes */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_DATA_ALTERED,    /* data-> uint16_t altered */
 	SELECT_DATA_MAX_PROCS,	/* data-> uint32_t max_procs */
-	SELECT_DATA_BLRTS_IMAGE,/* data-> char blrtsimage */
-	SELECT_DATA_LINUX_IMAGE,/* data-> char linuximage */
-	SELECT_DATA_MLOADER_IMAGE,/* data-> char mloaderimage */
-	SELECT_DATA_RAMDISK_IMAGE/* data-> char ramdiskimage */
+	SELECT_DATA_BLRTS_IMAGE,/* data-> char *blrtsimage */
+	SELECT_DATA_LINUX_IMAGE,/* data-> char *linuximage */
+	SELECT_DATA_MLOADER_IMAGE,/* data-> char *mloaderimage */
+	SELECT_DATA_RAMDISK_IMAGE/* data-> char *ramdiskimage */
 };
 
 enum select_print_mode {

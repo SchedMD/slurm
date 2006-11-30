@@ -72,7 +72,9 @@ bg_layout_t bluegene_layout_mode = NO_VAL;
 uint16_t bluegene_numpsets = 0;
 uint16_t bluegene_bp_node_cnt = 0;
 uint16_t bluegene_quarter_node_cnt = 0;
+uint16_t bluegene_quarter_ionode_cnt = 0;
 uint16_t bluegene_nodecard_node_cnt = 0;
+uint16_t bluegene_nodecard_ionode_cnt = 0;
 uint16_t bridge_api_verb = 0;
 bool agent_fini = false;
 time_t last_bg_update;
@@ -267,12 +269,15 @@ extern void destroy_bg_record(void *object)
 	if (bg_record) {
 		xfree(bg_record->bg_block_id);
 		xfree(bg_record->nodes);
+		xfree(bg_record->ionodes);
 		xfree(bg_record->user_name);
 		xfree(bg_record->target_name);
 		if(bg_record->bg_block_list)
 			list_destroy(bg_record->bg_block_list);
 		if(bg_record->bitmap)
 			bit_free(bg_record->bitmap);
+		if(bg_record->ionode_bitmap)
+			bit_free(bg_record->ionode_bitmap);
 
 		xfree(bg_record->blrtsimage);
 		xfree(bg_record->linuximage);
@@ -290,15 +295,22 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 	int rc = 0;
 
 	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+		/* check for full node bitmap compare */
 		if(bit_equal(bg_record->bitmap, found_record->bitmap)
-		   && (bg_record->quarter == found_record->quarter)
-		   && (bg_record->nodecard == found_record->nodecard)){
-			debug3("This partition %s %d %d "
-			       "is already in the list %s",
-			       bg_record->nodes,
-			       bg_record->quarter,
-			       bg_record->nodecard,
-			       found_record->bg_block_id);
+		   && bit_equal(bg_record->ionode_bitmap,
+				found_record->ionode_bitmap)) {
+			if(bg_record->ionodes)
+				debug3("This block %s[%s] "
+				       "is already in the list %s",
+				       bg_record->nodes,
+				       bg_record->ionodes,
+				       found_record->bg_block_id);
+			else
+				debug3("This block %s "
+				       "is already in the list %s",
+				       bg_record->nodes,
+				       found_record->bg_block_id);
+				
 			rc = 1;
 			break;
 		}
@@ -455,6 +467,8 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
 	xfree(sec_record->nodes);
 	sec_record->nodes = xstrdup(fir_record->nodes);
+	xfree(sec_record->ionodes);
+	sec_record->ionodes = xstrdup(fir_record->ionodes);
 	xfree(sec_record->user_name);
 	sec_record->user_name = xstrdup(fir_record->user_name);
 	xfree(sec_record->target_name);
@@ -490,6 +504,15 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	   && (sec_record->bitmap = bit_copy(fir_record->bitmap)) == NULL) {
 		error("Unable to copy bitmap for %s", fir_record->nodes);
 		sec_record->bitmap = NULL;
+	}
+	if(sec_record->ionode_bitmap)
+		bit_free(sec_record->ionode_bitmap);
+	if(fir_record->ionode_bitmap 
+	   && (sec_record->ionode_bitmap
+	       = bit_copy(fir_record->ionode_bitmap)) == NULL) {
+		error("Unable to copy ionode_bitmap for %s",
+		      fir_record->nodes);
+		sec_record->ionode_bitmap = NULL;
 	}
 	if(sec_record->bg_block_list)
 		list_destroy(sec_record->bg_block_list);
@@ -1190,9 +1213,24 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
 		request->conn_type = SELECT_SMALL;
 		if(request->procs == (procs_per_node/16)) {
+			if(!bluegene_nodecard_ionode_cnt) {
+				error("can't create this size %d "
+				      "on this system numpsets is %d",
+				      request->procs,
+				      bluegene_numpsets);
+				goto finished;
+			}
+
 			num_nodecard=4;
 			num_quarter=3;
 		} else {
+			if(!bluegene_quarter_ionode_cnt) {
+				error("can't create this size %d "
+				      "on this system numpsets is %d",
+				      request->procs,
+				      bluegene_numpsets);
+				goto finished;
+			}
 			num_quarter=4;
 		}
 		
@@ -2010,7 +2048,6 @@ extern int read_bg_conf(void)
 
 		bluegene_quarter_node_cnt = bluegene_bp_node_cnt/4;
 	}
-	
 
 	if (!s_p_get_uint16(
 		    &bluegene_nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
@@ -2021,6 +2058,16 @@ extern int read_bg_conf(void)
 	
 	if(bluegene_nodecard_node_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
+
+	if(bluegene_numpsets) {
+		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
+		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
+		if((int)bluegene_nodecard_ionode_cnt < 1) {
+			bluegene_nodecard_ionode_cnt = 0;
+		}
+	} else {
+		fatal("your numpsets is 0");
+	}
 
 	/* add blocks defined in file */
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
@@ -2070,6 +2117,41 @@ extern int read_bg_conf(void)
 	debug("Blocks have finished being created.");
 	s_p_hashtbl_destroy(tbl);
 
+	return SLURM_SUCCESS;
+}
+
+extern int set_ionodes(bg_record_t *bg_record)
+{
+	int i = 0;
+	int start_bit = 0;
+	int size = 0;
+	char bitstring[BITSIZE];
+	
+	if(!bg_record)
+		return SLURM_ERROR;
+	/* set the bitmap blank here if it is a full node we don't
+	   want anything set we also don't want the bg_record->ionodes set.
+	*/
+	bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
+	if(bg_record->quarter == (uint16_t)NO_VAL) {
+		return SLURM_SUCCESS;
+	}
+
+	start_bit = bluegene_quarter_ionode_cnt*bg_record->quarter;
+		
+	if(bg_record->nodecard != (uint16_t)NO_VAL) {
+		start_bit += bluegene_nodecard_ionode_cnt*bg_record->nodecard;
+		size = bluegene_nodecard_ionode_cnt;
+	} else
+		size = bluegene_quarter_ionode_cnt;
+	size += start_bit;
+
+	for(i=start_bit; i<size; i++)
+		bit_set(bg_record->ionode_bitmap, i);
+	
+	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+	bg_record->ionodes = xstrdup(bitstring);
+	
 	return SLURM_SUCCESS;
 }
 
@@ -2520,7 +2602,7 @@ static int _split_block(bg_record_t *bg_record, int procs)
 	if(bg_record->quarter == (uint16_t) NO_VAL)
 		full_bp = true;
 	
-	if(procs == (procs_per_node/16)) {
+	if(procs == (procs_per_node/16) && bluegene_nodecard_ionode_cnt) {
 		num_nodecard=4;
 		if(full_bp)
 			num_quarter=3;
@@ -2836,7 +2918,10 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
 	found_record->quarter = quarter; 
 	found_record->nodecard = nodecard;
-			
+	
+	if(set_ionodes(found_record) == SLURM_ERROR) 
+		error("couldn't create ionode_bitmap for %d.%d",
+		      found_record->quarter, found_record->nodecard);
 	return found_record;
 }
 
@@ -2877,6 +2962,9 @@ static int _add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	}
 	bg_record->quarter = (uint16_t)NO_VAL;
 	bg_record->nodecard = (uint16_t)NO_VAL;
+	if(set_ionodes(bg_record) == SLURM_ERROR) {
+		error("_add_bg_record: problem creating ionodes");
+	}
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
 	debug2("asking for %s %d %d %s", 

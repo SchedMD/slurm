@@ -86,9 +86,12 @@ date
 coordinates in the X, Y and Z dimensions with a zero origin.
 For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2.  In a system 
 configured with <i>small blocks</i> (any block less than a full base partition) there will be divisions
-into the base partition notation.  For example, bg012.0 represents the first quarter of a midplane in 
-BlueGene/L this would be 128 c-node block, and bg012.1.0 would represent the first nodecard in the second
-quarter of the base partition, or a 32 c-node block.
+into the base partition notation.  For example, if there were 64 psets in the
+configuration, bg012[0-15] represents
+the first quarter or first 16 ionodes of a midplane.  In BlueGene/L
+this would be 128 c-node block.  To represent the first nodecar in the
+second quarter or ionodes 16-19 the notation would be bg012[16-19], or
+a 32 c-node block.
 Since jobs must allocate consecutive base partitions in all three dimensions, we have developed 
 an abbreviated format for describing the base partitions in one of these three-dimensional blocks. 
 The base partition has a prefix determined from the system which is followed by the end-points 

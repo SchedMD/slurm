@@ -270,8 +270,7 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	int cpus = 0;
 	char node_list[BUFFER_SIZE];
 #ifdef HAVE_BG
-	uint16_t quarter = (uint16_t)NO_VAL;
-	uint16_t nodecard = (uint16_t)NO_VAL;
+	char *ionodes = NULL;
 #endif
 	float float_tmp = 0;
 	char *account;
@@ -284,20 +283,13 @@ extern int common_step_start_slurmctld(struct step_record *step)
 #ifdef HAVE_BG
 	cpus = step->job_ptr->num_procs;
 	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
-			     SELECT_DATA_QUARTER, 
-			     &quarter);
-	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODECARD, 
-			     &nodecard);
-	if(quarter != (uint16_t)NO_VAL 
-	   && nodecard != (uint16_t)NO_VAL)
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
+	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d.%d", step->job_ptr->nodes, 
-			 quarter, nodecard);
-	else if(quarter != (uint16_t)NO_VAL)
-		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d", step->job_ptr->nodes, quarter);
-	else
+			 "%s[%s]", step->job_ptr->nodes, ionodes);
+		xfree(ionodes);
+	} else
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step->job_ptr->nodes);
 	
@@ -381,8 +373,7 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	char node_list[BUFFER_SIZE];
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step->jobacct;
 #ifdef HAVE_BG
-	uint16_t quarter = (uint16_t)NO_VAL;
-	uint16_t nodecard = (uint16_t)NO_VAL;
+	char *ionodes = NULL;
 #endif
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
@@ -405,20 +396,13 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 #ifdef HAVE_BG
 	cpus = step->job_ptr->num_procs;
 	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
-			     SELECT_DATA_QUARTER, 
-			     &quarter);
-	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODECARD, 
-			     &nodecard);
-	if(quarter != (uint16_t)NO_VAL 
-	   && nodecard != (uint16_t)NO_VAL)
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
+	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d.%d", step->job_ptr->nodes, 
-			 quarter, nodecard);
-	else if(quarter != (uint16_t)NO_VAL)
-		snprintf(node_list, BUFFER_SIZE, 
-			 "%s.%d", step->job_ptr->nodes, quarter);
-	else
+			 "%s[%s]", step->job_ptr->nodes, ionodes);
+		xfree(ionodes);
+	} else
 		snprintf(node_list, BUFFER_SIZE, "%s", 
 			 step->job_ptr->nodes);
 	
