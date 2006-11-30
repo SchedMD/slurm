@@ -676,11 +676,20 @@ static bool _wait_for_server_thread(void)
 			break;
 		} else {
 			/* wait for state change and retry, 
-			 * just a delay and not an error */
+			 * just a delay and not an error.
+			 * This can happen when the epilog completes
+			 * on a bunch of nodes at the same time, which
+			 * can easily happen for highly parallel jobs. */
 			if (print_it) {
-				info("server_thread_count over limit (%d), "
-					"waiting", 
-					slurmctld_config.server_thread_count);
+				static time_t last_print_time = 0;
+				time_t now = time(NULL);
+				if (difftime(now, last_print_time) > 2) {
+					verbose("server_thread_count over "
+						"limit (%d), waiting", 
+						slurmctld_config.
+						server_thread_count);
+					last_print_time = now;
+				}
 				print_it = false;
 			}
 			pthread_cond_wait(&server_thread_cond, 
