@@ -469,7 +469,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 }
 
 /* Return TRUE if the specified pathname is recognized as that of a shared 
- * object (i.e. containing ".so") */
+ * object (i.e. containing ".so\0") */
 static bool
 _so_file ( char *file_name )
 {
@@ -479,8 +479,8 @@ _so_file ( char *file_name )
 		return false;
 
 	for (i=0; file_name[i] ;i++) {
-		if ( (file_name[i] == '.') && (file_name[i+1] == 's') && 
-				(file_name[i+2] == 'o') )
+		if ( (file_name[i]   == '.') && (file_name[i+1] == 's') && 
+		     (file_name[i+2] == 'o') && (file_name[i+3] == '\0') )
 			return true;
 	}
 	return false;
