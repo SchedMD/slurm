@@ -7,17 +7,19 @@ documents those changes that are of interest to users and admins.
    cleaning up.
  - BLUEGENE - replacements to not destroy lists but just empty it to avoid
    losing the pointer to the list in the block allocator.
- - Fix logic to execute a batch job step (under an existing resource 
+ - BLUEGENE - added --enable-bluegene-emulation configure option to 1.1
+ - In sched/wiki2, enclose a job's COMMENT value in double quotes.
+ - In sched/wiki2, support newly defined SIGNALJOB command.
+ - In sched/wiki2, maintain open event socket, don't open and close 
+   for each event.
+ - Fix logic to execute a batch job step (under an existing resource
    allocation) as needed by LSF.
  - Patches from Hongjia Cao (pmi finialize issues and type declaration)
- - In sched/wiki2, enclose a job's COMMENT value in double quotes.
  - Delete pending job if it's associated partition is deleted.
  - fix for handling batch steps completing correctly and setting the 
    return code.
- - In sched/wiki2, support newly defined SIGNALJOB command.
  - Altered ncurses check to make sure programs can link before saying we 
    have a working curses lib and header.
- - BLUEGENE - added --enable-bluegene-emulation configure option to 1.1
 
 * Changes in SLURM 1.1.20
 =========================

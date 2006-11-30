@@ -42,6 +42,7 @@ static pthread_mutex_t	event_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t		last_notify_time = (time_t) 0;
 static slurm_addr	moab_event_addr,  moab_event_addr_bu;
 static int		event_addr_set = 0;
+static slurm_fd		event_fd = (slurm_fd) -1;
 
 /*
  * event_notify - Notify Moab of some event
@@ -52,7 +53,6 @@ extern int	event_notify(char *msg)
 {
 	time_t now = time(NULL);
 	int rc;
-	slurm_fd event_fd = (slurm_fd) -1;
 
 	if (e_port == 0) {
 		/* Event notification disabled */
@@ -61,13 +61,15 @@ extern int	event_notify(char *msg)
 
 	if (job_aggregation_time
 	&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
-		debug2("wiki event notification already sent recently");
+		info("wiki event notification already sent recently");
 		return 0;
 	}
 
 	pthread_mutex_lock(&event_mutex);
+
+	/* Identify address for socket connection.
+	 * Done only on first call, then cached. */
 	if (event_addr_set == 0) {
-		/* Identify address for socket connection */
 		slurm_set_addr(&moab_event_addr, e_port, e_host);
 		event_addr_set = 1;
 		if (e_host_bu[0] != '\0') {
@@ -76,20 +78,25 @@ extern int	event_notify(char *msg)
 			event_addr_set = 2;
 		}
 	}
-	event_fd = slurm_open_msg_conn(&moab_event_addr);
+
+	/* Open the event port on moab as needed */
+	if (event_fd == -1) {
+		event_fd = slurm_open_msg_conn(&moab_event_addr);
+		if (event_fd == -1) {
+			error("Unable to open primary wiki "
+				"event port %s:%u: %m",
+				e_host, e_port);
+		}
+	}
 	if ((event_fd == -1) && (event_addr_set == 2)) {
-		debug("Unable to open wiki event port %s:%u: %m",
-			e_host, e_port);
 		event_fd = slurm_open_msg_conn(&moab_event_addr_bu);
+		if (event_fd == -1) {
+			error("Unable to open backup wiki "
+				"event port %s:%u: %m",
+				e_host_bu, e_port);
+		}
 	}
 	if (event_fd == -1) {
-		char *host_name;
-		if (event_addr_set == 2)
-			host_name = e_host_bu;
-		else
-			host_name = e_host;
-		error("Unable to open wiki event port %s:%u: %m", 
-			host_name, e_port);
 		pthread_mutex_unlock(&event_mutex);
 		/* Don't retry again for a while (10 mins)
 		 * to avoid long delays from ETIMEDOUT */
@@ -116,9 +123,6 @@ extern int	event_notify(char *msg)
 		rc = -1;
 	}
 
-	/* We disconnect and reconnect on every message to
-	 * gracefully handle some failure modes of Moab */
-	(void) slurm_shutdown_msg_conn(event_fd);
 	pthread_mutex_unlock(&event_mutex);
 
 	return rc;
