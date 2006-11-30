@@ -401,7 +401,6 @@ struct 	step_record {
 					   step */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					    in the step */
-	uint32_t requid;            	/* requester user ID */
 };
 
 extern List job_list;			/* list of job_record entries */

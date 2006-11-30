@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     ionode range instead of quarter nodecard notation. 
     (i.e. bgl000[0-4] instead of bgl000.0.0)
  -- Patch from Hongjia Cao (EINPROGRESS error message change)
+ -- Fix for correct requid for jobacct plugin
 
 * Changes in SLURM 1.2.0-pre7
 =============================
