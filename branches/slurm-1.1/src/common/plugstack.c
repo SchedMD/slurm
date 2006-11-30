@@ -40,6 +40,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "src/common/plugin.h"
 #include "src/common/xmalloc.h"
@@ -808,36 +809,132 @@ int spank_process_option(int optval, const char *arg)
 	return (0);
 }
 
+static char * 
+_find_word_boundary(char *str, char *from, char **next)
+{
+	char *p = from;
+
+	/* 
+	 * Back up past any non-whitespace if we are pointing in 
+	 *  the middle of a word.
+	 */
+	while ((p != str) && !isspace (*p))
+		--p;
+
+	/*
+	 * Next holds next word boundary
+	 */
+	*next = p+1;
+
+	/*
+	 * Now move back to the end of the previous word
+	 */
+	while ((p != str) && isspace (*p))
+		--p;
+
+	if (p == str) {
+		*next = str;
+		return (NULL);
+	}
+
+	return (p+1);
+}
+
+static char * 
+_get_next_segment (char **from, int width, char *buf, int bufsiz)
+{
+	int len;
+	char * seg = *from;
+	char *p;
+
+	if (**from == '\0')
+		return (NULL);
+
+	if ((len = strlen (*from)) <= width) {
+		*from = *from + len;
+		return (seg);
+	}
+
+	if (!(p = _find_word_boundary (seg, *from + width, from))) {
+		/*  
+		 *	Need to break up a word. Use user-supplied buffer.
+		 */
+		strlcpy (buf, seg, width+1);
+		buf [width - 1]  = '-';
+		/*
+		 * Adjust from to character eaten by '-'
+		 *  And return pointer to buf.
+		 */
+		*from = seg + width - 1;
+		return (buf);
+	}
+
+	*p = '\0';
+
+	return (seg);
+}
+
+static int 
+_term_columns ()
+{
+	char *val;
+	int  cols = 80;
+
+	if ((val = getenv ("COLUMNS"))) {
+		char *p;
+		long lval = strtol (val, &p, 10);
+
+		if (p && (*p == '\0'))
+			cols = (int) lval;
+	}
+
+	return (cols);
+}
+
 static void
-_spank_opt_print(struct spank_option *opt, FILE * fp, int left_pad,
-		 int width)
+_spank_opt_print(struct spank_option *opt, FILE * fp, int left_pad, int width)
 {
 	int n;
 	char *equals = "";
 	char *arginfo = "";
-	char buf[81];
+	char *p, *q;
+	char info [81];
+	char seg [81];
+	char buf [4096];
 
+	int  columns = _term_columns ();
+	int  descrsiz = columns - width;
 
 	if (opt->arginfo) {
 		equals = "=";
 		arginfo = opt->arginfo;
 	}
 
-	n = snprintf(buf, sizeof(buf), "%*s--%s%s%s",
+	n = snprintf(info, sizeof(info), "%*s--%s%s%s",
 		     left_pad, "", opt->name, equals, arginfo);
 
-	if ((n < 0) || (n > sizeof(buf))) {
+	if ((n < 0) || (n > columns)) {
 		const char trunc[] = "+";
 		int len = strlen(trunc);
-		char *p = buf + sizeof(buf) - len - 1;
-
+		p = info + columns - len - 1;
 		snprintf(p, len + 1, "%s", trunc);
 	}
 
+	
+	q = buf;
+	strlcpy (buf, opt->usage, sizeof (buf));
+
+	p = _get_next_segment (&q, descrsiz, seg, sizeof (seg));
+
 	if (n < width)
-		fprintf(fp, "%-*s%s\n", width, buf, opt->usage);
+		fprintf(fp, "%-*s%s\n", width, info, p);
 	else
-		fprintf(fp, "\n%s\n%*s%s\n", buf, width, "", opt->usage);
+		fprintf(fp, "\n%s\n%*s%s\n", info, width, "", p);
+
+	/* Get remaining line-wrapped lines.
+	 */
+	while ((p = _get_next_segment (&q, descrsiz, seg, sizeof (seg)))) 
+		fprintf(fp, "%*s%s\n", width, "", p);
 
 	return;
 }
