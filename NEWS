@@ -536,6 +536,10 @@ documents those changes that are of interest to users and admins.
  -- Remove some use of cr_enabled flag in slurmctld job record, use 
     new flag "test_only" in select_g_job_test() instead.
 
+* Changes in SLURM 1.0.17
+=========================
+ -- Set correct user groups for task epilogs.
+
 * Changes in SLURM 1.0.16
 =========================
  -- For "srun --attach=X" to other users job, report an error and exit (it

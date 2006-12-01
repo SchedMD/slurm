@@ -89,8 +89,8 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
-static int   _run_script(const char *name, const char *path, 
-		slurmd_job_t *job);
+static int   _run_script_and_set_env(const char *name, const char *path, 
+				     slurmd_job_t *job);
 static void  _update_env(char *buf, char ***env);
 
 /* Search for "export NAME=value" records in buf and 
@@ -127,16 +127,17 @@ _update_env(char *buf, char ***env)
 }
 
 /*
- * Run a task prolog script
- * name IN: class of program ("system prolog", "user prolog", etc.),
- *	if prefix is "user" then also set uid
+ * Run a task prolog script.  Also read the stdout of the script and set
+ * 	environment variables in the task's environment as specified
+ *	in the script's standard output.
+ * name IN: class of program ("system prolog", "user prolog", etc.)
  * path IN: pathname of program to run
  * job IN/OUT: pointer to associated job, can update job->env 
  *	if prolog
  * RET 0 on success, -1 on failure.
  */
 static int
-_run_script(const char *name, const char *path, slurmd_job_t *job)
+_run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 {
 	int status, rc, nread;
 	pid_t cpid;
@@ -348,11 +349,13 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		slurm_mutex_lock(&conf->config_mutex);
 		my_prolog = xstrdup(conf->task_prolog);
 		slurm_mutex_unlock(&conf->config_mutex);
-		_run_script("slurm task_prolog", my_prolog, job);
+		_run_script_and_set_env("slurm task_prolog",
+					my_prolog, job);
 		xfree(my_prolog);
 	}
 	if (job->task_prolog) {
-		_run_script("user task_prolog", job->task_prolog, job); 
+		_run_script_and_set_env("user task_prolog",
+					job->task_prolog, job); 
 	}
 
 	if (job->env == NULL) {

@@ -173,6 +173,8 @@ static void _setargs(slurmd_job_t *job);
 
 static void _random_sleep(slurmd_job_t *job);
 static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
+static int  _run_script_as_user(const char *name, const char *path,
+				slurmd_job_t *job, int max_wait, char **env);
 
 /*
  * Batch job mangement prototypes:
@@ -1099,17 +1101,18 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			setup_env(job->envtp);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
-				run_script("user task_epilog", 
-					   job->task_epilog, 
-					   job->jobid, job->uid, 2, job->env);
+				_run_script_as_user("user task_epilog",
+						    job->task_epilog,
+						    job, 2, job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;
 				slurm_mutex_lock(&conf->config_mutex);
 				my_epilog = xstrdup(conf->task_epilog);
 				slurm_mutex_unlock(&conf->config_mutex);
-				run_script("slurm task_epilog", my_epilog, 
-					job->jobid, job->uid, -1, job->env);
+				_run_script_as_user("slurm task_epilog",
+						    my_epilog,
+						    job, -1, job->env);
 				xfree(my_epilog);
 			}
 			job->envtp->procid = i;
@@ -1125,7 +1128,6 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 done:
 	return completed;
 }
-	
 
 static void
 _wait_for_all_tasks(slurmd_job_t *job)
@@ -1597,4 +1599,86 @@ _initgroups(slurmd_job_t *job)
 		return -1;
 	}
 	return 0;
+}
+
+/*
+ * Run a script as a specific user, with the specified uid, gid, and 
+ * extended groups.
+ *
+ * name IN: class of program (task prolog, task epilog, etc.), 
+ * path IN: pathname of program to run
+ * job IN: slurd job structue, used to get uid, gid, and groups
+ * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * env IN: environment variables to use on exec, sets minimal environment
+ *	if NULL
+ *
+ * RET 0 on success, -1 on failure. 
+ */
+int
+_run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
+		    int max_wait, char **env)
+{
+	int status, rc, opt;
+	pid_t cpid;
+
+	xassert(env);
+	if (path == NULL || path[0] == '\0')
+		return 0;
+
+	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
+
+	if ((cpid = fork()) < 0) {
+		error ("executing %s: fork: %m", name);
+		return -1;
+	}
+	if (cpid == 0) {
+		struct priv_state sprivs;
+		char *argv[2];
+
+		argv[0] = (char *)xstrdup(path);
+		argv[1] = NULL;
+
+		if (_drop_privileges(job, true, &sprivs) < 0) {
+			error("run_script_as_user _drop_privileges: %m");
+			/* child process, should not return */
+			exit(127);
+		}
+
+		if (_become_user(job, &sprivs) < 0) {
+			error("run_script_as_user _become_user failed: %m");
+			/* child process, should not return */
+			exit(127);
+		}
+	
+		setpgrp();
+		execve(path, argv, env);
+		error("execve(): %m");
+		exit(127);
+	}
+
+	if (max_wait < 0)
+		opt = 0;
+	else
+		opt = WNOHANG;
+
+	while (1) {
+		rc = waitpid(cpid, &status, opt);
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return 0;
+		} else if (rc == 0) {
+			sleep(1);
+			if ((--max_wait) == 0) {
+				killpg(cpid, SIGKILL);
+				opt = 0;
+			}
+		} else  {
+			killpg(cpid, SIGKILL);	/* kill children too */
+			return status;
+		}
+	}
+
+	/* NOTREACHED */
 }
