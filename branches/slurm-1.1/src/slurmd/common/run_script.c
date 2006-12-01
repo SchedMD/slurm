@@ -48,18 +48,17 @@
 
 
 /*
- * Run a prolog or epilog script
- * name IN: class of program (prolog, epilog, etc.), 
- *	if prefix is "user" then also set uid
+ * Run a prolog or epilog script (does NOT drop privileges)
+ * name IN: class of program (prolog, epilog, etc.),
  * path IN: pathname of program to run
- * jobid, uid IN: info on associated job
+ * jobid IN: info on associated job
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
- * env IN: environment variables to use on exec, sets minimal environment
+ * env IN: environment variables to use on exec, sets minimal environment 
  *	if NULL
- * RET 0 on success, -1 on failure. 
+ * RET 0 on success, -1 on failure.
  */
 int
-run_script(const char *name, const char *path, uint32_t jobid, uid_t uid, 
+run_script(const char *name, const char *path, uint32_t jobid,
 	   int max_wait, char **env)
 {
 	int status, rc, opt;
@@ -86,8 +85,6 @@ run_script(const char *name, const char *path, uint32_t jobid, uid_t uid,
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
-		if (strncmp(name, "user", 4) == 0)
-			setuid(uid);
 		setpgrp();
 		execve(path, argv, env);
 		error("execve(): %m");
