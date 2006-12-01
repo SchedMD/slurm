@@ -86,7 +86,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		*err_code = -300;
 		*err_msg = "STARTJOB TASKLIST is invalid";
 		error("wiki: STARTJOB TASKLIST is invalid: %s",
-			node_ptr");
+			node_ptr);
 		return -1;
 	}
 	hostlist_uniq(hl);	/* for now, don't worry about task layout */
