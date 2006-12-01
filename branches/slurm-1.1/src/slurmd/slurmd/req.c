@@ -957,6 +957,7 @@ _abort_job(uint32_t job_id)
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
 	forward_init(&resp_msg.forward, NULL);
+	resp_msg.forward_struct_init = 0;
 	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
@@ -976,6 +977,7 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
 	forward_init(&resp_msg.forward, NULL);
+	resp_msg.forward_struct_init = 0;
 	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
@@ -1782,6 +1784,7 @@ _epilog_complete(uint32_t jobid, int rc)
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
 	forward_init(&msg.forward, NULL);
+	msg.forward_struct_init = 0;
 	msg.ret_list = NULL;
 	
 	if (slurm_send_only_controller_msg(&msg) < 0) {

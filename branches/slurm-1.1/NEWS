@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
    return code.
  - Altered ncurses check to make sure programs can link before saying we 
    have a working curses lib and header.
+ - Fixed an init issue with forward_struct_init not being set correctly in
+   a few locations in the slurmd.
 
 * Changes in SLURM 1.1.20
 =========================
