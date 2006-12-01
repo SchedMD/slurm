@@ -1104,7 +1104,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				_run_script_as_user("user task_epilog",
 						    job->task_epilog,
 						    job, 2, job->env);
-			} else if (conf->task_epilog) {
+			}
+			if (conf->task_epilog) {
 				char *my_epilog;
 				slurm_mutex_lock(&conf->config_mutex);
 				my_epilog = xstrdup(conf->task_epilog);

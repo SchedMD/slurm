@@ -136,6 +136,10 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.22
+=========================
+
+
 * Changes in SLURM 1.1.21
 =========================
  - BLUEGENE - Wait on a fini to make sure all threads are finished before
@@ -542,8 +546,6 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.17
 =========================
  -- Set correct user groups for task epilogs.
- -- Make it so we only run 1 task pro/epilog either the user specified or the 
-    slurm.conf one if either.
 
 * Changes in SLURM 1.0.16
 =========================

@@ -343,11 +343,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	/* task plugin hook */
 	pre_launch(job);
-	
-	if (job->task_prolog) {
-		_run_script_and_set_env("user task_prolog",
-					job->task_prolog, job); 
-	} else if (conf->task_prolog) {
+	if (conf->task_prolog) {
 		char *my_prolog;
 		slurm_mutex_lock(&conf->config_mutex);
 		my_prolog = xstrdup(conf->task_prolog);
@@ -356,7 +352,10 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 					my_prolog, job);
 		xfree(my_prolog);
 	}
-	
+	if (job->task_prolog) {
+		_run_script_and_set_env("user task_prolog",
+					job->task_prolog, job); 
+	}
 
 	if (job->env == NULL) {
 		debug("job->env is NULL");
