@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.0-pre9
+=============================
+ -- Fix for select/cons_res state preservation over slurmctld restart,
+    patch.1.2.0-pre7.061130.cr_state from Dan Palermo.
+
 * Changes in SLURM 1.2.0-pre8
 =============================
  -- Modity job state "reason" field to report why a job failed (previously 

@@ -1022,8 +1022,11 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	nhosts = job->nhosts;
 
 	safe_unpackstr_array(&job->host, &len16, buffer);
-	if (len16 != nhosts)
+	if (len16 != nhosts) {
+		error("cons_res unpack_job: expected %u hosts, saw %u",
+				nhosts, len16);
 		goto unpack_error;
+	}
 
 	safe_unpack16_array(&job->cpus, &len32, buffer);
 	safe_unpack16_array(&job->alloc_lps, &len32, buffer);
@@ -1157,6 +1160,95 @@ extern int select_p_state_save(char *dir_name)
 	return error_code;
 }
 
+
+/* _cr_find_prev_node
+ *	Return the index in the previous node list for the host
+ *	with the given name.  The previous index matched is used
+ *	as a starting point in to achieve O(1) performance when
+ *	matching node data in sequence between two identical lists
+ *	of hosts
+ */
+static int _cr_find_prev_node(char *name, int prev_i)
+{
+    	int i, cnt = 0;
+    	if (prev_i < 0) {
+	    	prev_i = -1;
+	}
+
+	/* scan forward from previous index for a match */
+	for (i = prev_i + 1; i < prev_select_node_cnt; i++) {
+		cnt++;
+		if (strcmp(name, prev_select_node_ptr[i].name) == 0) {
+			debug3("_cr_find_prev_node fwd: %d %d cmp", i, cnt);
+		    	return i;
+		}
+	}
+
+	/* if not found, scan from beginning to previous index for a match */
+	for (i = 0; i < MIN(prev_i + 1, prev_select_node_cnt); i++) {
+		cnt++;
+		if (strcmp(name, prev_select_node_ptr[i].name) == 0) {
+			debug3("_cr_find_prev_node beg: %d %d cmp", i, cnt);
+		    	return i;
+		}
+	}
+
+	debug3("_cr_find_prev_node none: %d %d cmp", -1, cnt);
+	return -1;	/* no match found */
+}
+
+static void _cr_restore_node_data(void)
+{
+	int i, j, tmp, prev_i;
+
+    	if ((select_node_ptr == NULL) || (select_node_cnt <= 0)) {
+	    	/* can't restore, nodes not yet initialized */
+		/* will attempt restore later in select_p_node_init */
+	    	return;
+	}
+
+    	if ((prev_select_node_ptr == NULL) || (prev_select_node_cnt <= 0)) {
+	    	/* can't restore, node restore data not present */
+		/* will attempt restore later in select_p_state_restore */
+	    	return;
+	}
+
+	prev_i = -1;		/* index of previous matched node */
+	for (i = 0; i < select_node_cnt; i++) {
+		tmp = _cr_find_prev_node(select_node_ptr[i].name, prev_i);
+		if (tmp < 0) {		/* not found in prev node list */
+		    	continue;	/* skip update for this node */
+		}
+		prev_i = tmp;	/* found a match */
+
+		debug2("recovered cons_res node data for %s",
+				    select_node_ptr[i].name);
+		
+		select_node_ptr[i].alloc_lps
+			= prev_select_node_ptr[prev_i].alloc_lps;
+		select_node_ptr[i].alloc_sockets
+			= prev_select_node_ptr[prev_i].alloc_sockets;
+		select_node_ptr[i].alloc_memory
+			= prev_select_node_ptr[prev_i].alloc_memory;
+		if (select_node_ptr[i].alloc_cores &&
+			prev_select_node_ptr[prev_i].alloc_cores) {
+			chk_resize_node(&(select_node_ptr[i]),
+			    prev_select_node_ptr[prev_i].num_sockets);
+			select_node_ptr[i].num_sockets = 
+			    prev_select_node_ptr[prev_i].num_sockets;
+			for (j = 0; j < select_node_ptr[i].num_sockets; j++) {
+				select_node_ptr[i].alloc_cores[j]
+					 = prev_select_node_ptr[prev_i].alloc_cores[j];
+			}
+		}
+	}
+
+	/* Release any previous node data */
+	_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
+	prev_select_node_ptr = NULL;
+	prev_select_node_cnt = 0;
+}
+
 extern int select_p_state_restore(char *dir_name)
 {
 	int error_code = SLURM_SUCCESS;
@@ -1247,6 +1339,7 @@ extern int select_p_state_restore(char *dir_name)
 		if (_cr_unpack_job(job, buffer) != 0)
 			goto unpack_error;
 		list_append(select_cr_job_list, job);
+		debug2("recovered cons_res job data for job %u", job->job_id);
 	}
 
 	/*** unpack the node_cr_record array ***/
@@ -1281,6 +1374,8 @@ extern int select_p_state_restore(char *dir_name)
         xfree(restore_plugin_type);
 	xfree(file_name);
 
+	_cr_restore_node_data();	/* if nodes already initialized */
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1313,7 +1408,7 @@ extern int select_p_job_init(List job_list)
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	int i, j;
+	int i;
 
 	info("cons_res: select_p_node_init");
 
@@ -1349,38 +1444,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 				xmalloc(sizeof(int) * 
 					select_node_ptr[i].num_sockets);
 		}
-
-		/* Restore any previous node data */
-		if (prev_select_node_ptr && (i < prev_select_node_cnt) &&
-			(strcmp(prev_select_node_ptr[i].name,
-				select_node_ptr[i].name) == 0)) {
-			debug2("recovered cons_res node data for %s",
-					    select_node_ptr[i].name);
-		    	
-			select_node_ptr[i].alloc_lps
-				= prev_select_node_ptr[i].alloc_lps;
-			select_node_ptr[i].alloc_sockets
-				= prev_select_node_ptr[i].alloc_sockets;
-			select_node_ptr[i].alloc_memory
-				= prev_select_node_ptr[i].alloc_memory;
-			if (select_node_ptr[i].alloc_cores &&
-				prev_select_node_ptr[i].alloc_cores) {
-				chk_resize_node(&(select_node_ptr[i]),
-					prev_select_node_ptr[i].num_sockets);
-				select_node_ptr[i].num_sockets = 
-					prev_select_node_ptr[i].num_sockets;
-				for (j = 0; j < select_node_ptr[i].num_sockets; j++) {
-					select_node_ptr[i].alloc_cores[j]
-						 = prev_select_node_ptr[i].alloc_cores[j];
-				}
-			}
-		}
 	}
 
-	/* Release any previous node data */
-	_xfree_select_nodes(prev_select_node_ptr, prev_select_node_cnt);
-	prev_select_node_ptr = NULL;
-	prev_select_node_cnt = 0;
+	_cr_restore_node_data();	/* if restore data present */
 
 	select_fast_schedule = slurm_get_fast_schedule();
 
