@@ -414,10 +414,13 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		hostname = hostlist_shift(hostname_list);
 		address = hostlist_shift(address_list);
 #endif		
-
-		if (strcmp(alias, highest_node_name) <= 0)
+		if (strcmp(alias, highest_node_name) <= 0) {
+			/* find_node_record locks this to get the
+			   alias so we need to unlock */
+			slurm_conf_unlock();
 			node_rec = find_node_record(alias);
-		else {
+			slurm_conf_lock();			
+		} else {
 			strncpy(highest_node_name, alias, MAX_SLURM_NAME);
 			node_rec = NULL;
 		}
