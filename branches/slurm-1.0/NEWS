@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.17
+=========================
+ -- Set correct user groups for task epilogs.
+
 * Changes in SLURM 1.0.16
 =========================
  -- For "srun --attach=X" to other users job, report an error and exit (it
