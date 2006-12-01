@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.2
-28 November 2006 (through 1.2.0-pre7)
+1 December 2006 (through 1.2.0-pre8)
 
 
 NEW COMMANDS
@@ -11,7 +11,6 @@ NEW COMMANDS
   salloc  - Create a job allocation (functions like "srun --allocate")
   sattach - Attach to an existing job step (functions like "srun --attach")
   sbatch  - Submit a batch job script (functions like "srun --batch")
-  slaunch - Launch tasks (requires a pre-existing job allocation)
   See the indivual man pages for more information. 
 
 * A new GUI is available for viewing and modifying state information, sview.
@@ -35,6 +34,8 @@ CONFIGURATION FILE CHANGES
 
 * Several new configuration parameters can be used to specify architectural
   details of the nodes: Sockets, CoresPerSocket, and ThreadsPerCore.
+  For multi-core systems, these parameters will typically need to be 
+  specified in the configuration file.
 
 * For select/cons_res, an assortment of consumable resources can be supported 
   including: CPUs, cores, socekts and/or memory. See new configuration 
@@ -53,6 +54,9 @@ OTHER CHANGES
 
 * New scontrol, sinfo and squeue options can be used to view socket, core,
   and task details by job and/or node.
+
+* The scontrol and squeue commands will provide a more detailed explanation 
+  of why a job was put into FAILED state.
 
 * Permit batch jobs to be requeued ("scontrol requeue <jobid>" or
   "srun --batch --no-requeue ..." to prevent).
