@@ -147,6 +147,7 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2, support newly defined SIGNALJOB command.
  - In sched/wiki2, maintain open event socket, don't open and close 
    for each event.
+ - In sched/wiki2, fix for scalability problem starting large jobs.
  - Fix logic to execute a batch job step (under an existing resource
    allocation) as needed by LSF.
  - Patches from Hongjia Cao (pmi finialize issues and type declaration)
