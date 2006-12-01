@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.22
+=========================
+
+
 * Changes in SLURM 1.1.21
 =========================
  - BLUEGENE - Wait on a fini to make sure all threads are finished before
