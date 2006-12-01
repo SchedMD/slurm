@@ -51,7 +51,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	int i;
 	uint32_t jobid;
 	hostlist_t hl;
-	char host_string[1024];
+	char host_string[2048];
 	static char reply_msg[128];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
@@ -82,12 +82,22 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 			node_ptr[i] = ',';
 	}
 	hl = hostlist_create(node_ptr);
+	if (hl == NULL) {
+		*err_code = -300;
+		*err_msg = "STARTJOB TASKLIST is invalid";
+		error("wiki: STARTJOB TASKLIST is invalid: %s",
+			node_ptr);
+		return -1;
+	}
+	hostlist_uniq(hl);	/* for now, don't worry about task layout */
+	hostlist_sort(hl);
 	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
 	hostlist_destroy(hl);
 	if (i < 0) {
 		*err_code = -300;
 		*err_msg = "STARTJOB has invalid TASKLIST";
-		error("wiki: STARTJOB has invalid TASKLIST");
+		error("wiki: STARTJOB has invalid TASKLIST: %s",
+			host_string);
 		return -1;
 	}
 	if (_start_job(jobid, host_string, err_code, err_msg) != 0)
@@ -146,7 +156,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		*err_msg = "Invalid TASKLIST";
 		error("wiki: Attempt to set invalid node list for job %u, %s",
 			jobid, hostlist);
-		xfree(hostlist);
+		xfree(new_node_list);
 		rc = -1;
 		goto fini;
 	}
