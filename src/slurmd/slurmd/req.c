@@ -884,7 +884,8 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 {
 	step_complete_msg_t resp;
 	slurm_msg_t resp_msg;
-
+	slurm_msg_t_init(&resp_msg);
+	
 	resp.job_id       = job_id;
 	resp.job_step_id  = step_id;
 	resp.range_first  = 0;
@@ -893,8 +894,6 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp.jobacct      = jobacct_g_alloc(NULL);
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
-	forward_init(&resp_msg.forward, NULL);
-	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
 
