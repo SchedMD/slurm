@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "September 2006" "slurm.conf 1.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "December 2006" "slurm.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -805,12 +805,16 @@ The default value is 1.
 Number of physical processor sockets/chips on the node (e.g. "2").
 If Sockets is omitted, it will be inferred from
 \fBProcs\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+\fBNOTE\fR: If you have multi\-core processors, you will likely 
+need to specify these parameters.
 The default value is 1.
 .TP
 \fBCoresPerSocket\fR
 Number of cores in a single physical processor socket (e.g. "2").
 The CoresPerSocket value describes physical cores, not the
 logical number of processors per socket.
+\fBNOTE\fR: If you have multi\-core processors, you will likely
+need to specify this parameter.
 The default value is 1.
 .TP
 \fBThreadsPerCore\fR
