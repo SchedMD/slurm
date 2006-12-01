@@ -61,6 +61,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+#include "src/common/read_config.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
@@ -444,23 +445,37 @@ struct node_record *
 find_node_record (char *name) 
 {
 	int i;
+	char *alias = NULL;
+	int alias_set = 0;
 
 	if ((name == NULL)
 	||  (name[0] == '\0')) {
 		info("find_node_record passed NULL name");
 		return NULL;
 	}
+	/* Get the alias we have just to make sure the user isn't
+	 * trying to use the real hostname to run on something that has
+	 * been aliased.  
+	 */
+	alias = slurm_conf_get_nodename(name);
+	if(alias)
+		alias_set = 1;
+	else
+		alias = name;
 
 	/* try to find via hash table, if it exists */
 	if (node_hash_table) {
 		struct node_record *node_ptr;
-
-		i = _hash_index (name);
+			
+		i = _hash_index (alias);
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {
 			xassert(node_ptr->magic == NODE_MAGIC);
-			if (strncmp(node_ptr->name, name, MAX_SLURM_NAME) == 0)
+			if (!strcmp(node_ptr->name, alias)) {
+				if(alias_set)
+					xfree(alias);
 				return node_ptr;
+			}
 			node_ptr = node_ptr->node_next;
 		}
 		error ("find_node_record: lookup failure for %s", name);
@@ -469,11 +484,16 @@ find_node_record (char *name)
 	/* revert to sequential search */
 	else {
 		for (i = 0; i < node_record_count; i++) {
-			if (strcmp (name, node_record_table_ptr[i].name) == 0)
+			if (!strcmp (alias, node_record_table_ptr[i].name)) {
+				if(alias_set)
+					xfree(alias);
 				return (&node_record_table_ptr[i]);
+			} 
 		}
 	}
 
+	if(alias_set)
+		xfree(alias);
 	return (struct node_record *) NULL;
 }
 
