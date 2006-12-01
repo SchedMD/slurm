@@ -60,6 +60,10 @@ expect {
 		set sched_port $expect_out(1,string)
 		exp_continue
 	}
+	-re "SchedulerType *= sched/wiki2" {
+		set sched_wiki 0
+		exp_continue
+	}
 	-re "SchedulerType *= sched/wiki" {
 		set sched_wiki 1
 		exp_continue
