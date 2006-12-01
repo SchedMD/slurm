@@ -47,6 +47,7 @@ void _elapsed_time(long secs, long usecs, char *str);
 void _elapsed_time(long secs, long usecs, char *str)
 {
 	long	days, hours, minutes, seconds;
+	long    subsec = 0;
 	
 	if(secs < 0) {
 		snprintf(str, FORMAT_STRING_SIZE, "'N/A'");
@@ -57,7 +58,10 @@ void _elapsed_time(long secs, long usecs, char *str)
 		secs++;
 		usecs -= 1E6;
 	}
-
+	if(usecs > 0) {
+		/* give me 3 significant digits to tack onto the sec */
+		subsec = (usecs/1000);
+	}
 	seconds =  secs % 60;
 	minutes = (secs / 60)   % 60;
 	hours   = (secs / 3600) % 24;
@@ -73,8 +77,8 @@ void _elapsed_time(long secs, long usecs, char *str)
 		         hours, minutes, seconds);
 	else
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld",
-		         minutes, seconds);
+			 "%ld:%2.2ld.%3.3ld",
+		         minutes, seconds, subsec);
 }
 
 void print_fields(type_t type, void *object)
