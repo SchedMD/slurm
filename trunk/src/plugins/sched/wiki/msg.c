@@ -315,7 +315,7 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
 static char *	_recv_msg(slurm_fd new_fd)
 {
 	char header[10];
-	uint32_t size;
+	unsigned long size;
 	char *buf;
 
 	if (_read_bytes((int) new_fd, header, 9) != 9) {
@@ -325,7 +325,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 		return NULL;
 	}
 
-	if (sscanf(header, "%ul", &size) != 1) {
+	if (sscanf(header, "%lu", &size) != 1) {
 		err_code = -244;
 		err_msg = "malformed message header";
 		error("wiki: malformed message header (%s)", header);
@@ -357,7 +357,7 @@ static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size)
 
 	debug("wiki msg send:%s", buf);
 
-	(void) sprintf(header, "%08ld\n", (long int) size);
+	(void) sprintf(header, "%08lu\n", (unsigned long) size);
 	if (_write_bytes((int) new_fd, header, 9) != 9) {
 		error("wiki: failed to write message header %m");
 		return 0;
