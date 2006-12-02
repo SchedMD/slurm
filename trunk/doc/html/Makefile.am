@@ -34,8 +34,8 @@ generated_html = \
 	selectplugins.html \
 	slurm.html \
 	switchplugins.html \
- 	team.html \
- 	testimonials.html \
+	team.html \
+	testimonials.html \
 	troubleshoot.html
 
 html_DATA = \
@@ -53,11 +53,10 @@ html_DATA = \
 	plane_ex5.gif \
 	plane_ex6.gif \
 	plane_ex7.gif \
-	slurm_banner_filler.jpg \
-	slurm_banner_left.jpg \
-	slurm_banner_right.jpg \
+	slurm_banner.gif \
 	slurm_design.pdf \
-	slurmstyles.css
+	slurmstyles.css \
+	linuxstyles.css
 
 MOSTLYCLEANFILES = ${generated_html}
 
