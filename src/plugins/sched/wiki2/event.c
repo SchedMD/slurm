@@ -88,6 +88,15 @@ static int _open_fd(time_t now)
 	return 0;
 }
 
+static void _close_fd(void)
+{
+	if (event_fd == -1)
+		return;
+
+	(void) slurm_shutdown_msg_engine(event_fd);
+	event_fd = -1;
+}
+
 /*
  * event_notify - Notify Moab of some event
  * msg IN - event type, NULL to close connection
@@ -105,7 +114,7 @@ extern int	event_notify(char *msg)
 
 	if (job_aggregation_time
 	&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
-		info("wiki event notification already sent recently");
+		debug("wiki event notification already sent recently");
 		return 0;
 	}
 
@@ -113,9 +122,9 @@ extern int	event_notify(char *msg)
 	while (retry) {
 		if ((event_fd == -1) && ((rc = _open_fd(now)) == -1)) {
 			/* Can't even open socket.
-			 * Don't retry again for a while (10 mins)
+			 * Don't retry again for a while (2 mins)
 			 * to avoid long delays from ETIMEDOUT */
-			last_notify_time = now + 600;
+			last_notify_time = now + 120;
 			break;
 		}
 
@@ -124,9 +133,15 @@ extern int	event_notify(char *msg)
 		 * just that some of it went through to wake up Moab)
 		 */
 		if (write(event_fd, "1234", 5) > 0) {
-			info("wiki event_notification sent: %s", msg);
+			verbose("wiki event_notification sent: %s", msg);
 			last_notify_time = now;
 			rc = 0;
+			/* Dave Jackson says to leave the connection 
+			 * open, but Moab isn't. Without the _close_fd()
+			 * here, the next write() generates a broken pipe
+			 * error. Just remove the _close_fd() and this
+			 * comment when Moab maintains the connection. */
+			_close_fd();
 			break;	/* success */
 		}
 
@@ -136,14 +151,14 @@ extern int	event_notify(char *msg)
 		if ((errno == EAGAIN) || (errno == EINTR))
 			continue;
 
-		/* close socket, re-open later */
-		(void) slurm_shutdown_msg_engine(event_fd);
-		event_fd = -1;
-
-		if (errno != EPIPE)
+		_close_fd();
+		if (errno == EPIPE) {
+			/* If Moab closed the socket we get an EPIPE, 
+			 * retry once */
+			continue;
+		} else {
 			break;
-		/* If Moab closed the socket we get an EPIPE, 
-		 * retry once */
+		}
 	}
 	pthread_mutex_unlock(&event_mutex);
 
