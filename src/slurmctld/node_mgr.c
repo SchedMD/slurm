@@ -90,6 +90,7 @@ bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 static int	_delete_config_record (void);
 static void 	_dump_node_state (struct node_record *dump_node_ptr, 
 				  Buf buffer);
+static struct node_record * _find_alias_node_record (char *name);
 static int	_hash_index (char *name);
 static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
@@ -324,6 +325,65 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 }
 
+/* 
+ * _find_alias_node_record - find a record for node with the alias of
+ * the specified name supplied
+ * input: name - name to be aliased of the desired node 
+ * output: return pointer to node record or NULL if not found
+ * global: node_record_table_ptr - pointer to global node table
+ *         node_hash_table - table of hash indecies
+ */
+static struct node_record * 
+_find_alias_node_record (char *name) 
+{
+	int i;
+	char *alias = NULL;
+	
+	if ((name == NULL)
+	||  (name[0] == '\0')) {
+		info("_find_alias_node_record: passed NULL name");
+		return NULL;
+	}
+	/* Get the alias we have just to make sure the user isn't
+	 * trying to use the real hostname to run on something that has
+	 * been aliased.  
+	 */
+	alias = slurm_conf_get_nodename(name);
+	
+	if(!alias)
+		return NULL;
+	
+	/* try to find via hash table, if it exists */
+	if (node_hash_table) {
+		struct node_record *node_ptr;
+			
+		i = _hash_index (alias);
+		node_ptr = node_hash_table[i];
+		while (node_ptr) {
+			xassert(node_ptr->magic == NODE_MAGIC);
+			if (!strcmp(node_ptr->name, alias)) {
+				xfree(alias);
+				return node_ptr;
+			}
+			node_ptr = node_ptr->node_next;
+		}
+		error ("_find_alias_node_record: lookup failure for %s", name);
+	} 
+
+	/* revert to sequential search */
+	else {
+		for (i = 0; i < node_record_count; i++) {
+			if (!strcmp (alias, node_record_table_ptr[i].name)) {
+				xfree(alias);
+				return (&node_record_table_ptr[i]);
+			} 
+		}
+	}
+
+	xfree(alias);
+	return (struct node_record *) NULL;
+}
+
 /*
  * load_all_node_state - Load the node state from file, recover on slurmctld 
  *	restart. Execute this after loading the configuration file data.
@@ -359,7 +419,7 @@ extern int load_all_node_state ( bool state_only )
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
-			data_read = read (state_fd, &data[data_size], BUF_SIZE);
+			data_read = read(state_fd, &data[data_size], BUF_SIZE);
 			if (data_read < 0) {
 				if (errno == EINTR)
 					continue;
@@ -443,7 +503,8 @@ extern int load_all_node_state ( bool state_only )
 			node_cnt++;
 			if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 				if (node_state & NODE_STATE_DRAIN)
-					 node_ptr->node_state = NODE_STATE_DRAIN;
+					 node_ptr->node_state =
+						 NODE_STATE_DRAIN;
 				else if (base_state == NODE_STATE_DOWN)
 					node_ptr->node_state = NODE_STATE_DOWN;
 			}
@@ -491,35 +552,22 @@ struct node_record *
 find_node_record (char *name) 
 {
 	int i;
-	char *alias = NULL;
-	int alias_set = 0;
-
+	
 	if ((name == NULL)
 	||  (name[0] == '\0')) {
 		info("find_node_record passed NULL name");
 		return NULL;
 	}
-	/* Get the alias we have just to make sure the user isn't
-	 * trying to use the real hostname to run on something that has
-	 * been aliased.  
-	 */
-	alias = slurm_conf_get_nodename(name);
-	if(alias)
-		alias_set = 1;
-	else
-		alias = name;
-
+	
 	/* try to find via hash table, if it exists */
 	if (node_hash_table) {
 		struct node_record *node_ptr;
 			
-		i = _hash_index (alias);
+		i = _hash_index (name);
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {
 			xassert(node_ptr->magic == NODE_MAGIC);
-			if (!strcmp(node_ptr->name, alias)) {
-				if(alias_set)
-					xfree(alias);
+			if (!strcmp(node_ptr->name, name)) {
 				return node_ptr;
 			}
 			node_ptr = node_ptr->node_next;
@@ -535,17 +583,15 @@ find_node_record (char *name)
 	/* revert to sequential search */
 	else {
 		for (i = 0; i < node_record_count; i++) {
-			if (!strcmp (alias, node_record_table_ptr[i].name)) {
-				if(alias_set)
-					xfree(alias);
+			if (!strcmp (name, node_record_table_ptr[i].name)) {
 				return (&node_record_table_ptr[i]);
 			} 
 		}
 	}
-
-	if(alias_set)
-		xfree(alias);
-	return (struct node_record *) NULL;
+	
+	/* look for the alias node record if the user put this in
+	   instead of what slurm sees the node name as */
+	return _find_alias_node_record (name);
 }
 
 /* 
