@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.0-pre10
+==============================
+ -- Fix for sinfo node state counts by thpe (%A and %F output options).
+
 * Changes in SLURM 1.2.0-pre9
 =============================
  -- Fix for select/cons_res state preservation over slurmctld restart,
