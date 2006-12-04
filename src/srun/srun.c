@@ -104,13 +104,13 @@
  * forward declaration of static funcs
  */
 static void  _print_job_information(resource_allocation_response_msg_t *resp);
-static char *_build_script (char *pathname, int file_type);
+static char *_build_script (const char *argv0, char *pathname, int file_type);
 static char *_get_shell (void);
 static void  _send_options(const int argc, char **argv);
 static void  _get_options (const char *buffer);
 static char *_get_token(char *buf_ptr);
 static int   _is_file_text (char *, char**);
-static int   _run_batch_job (void);
+static int   _run_batch_job (const char *argv0);
 static int   _run_job_script(srun_job_t *job, env_t *env);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
@@ -206,7 +206,7 @@ int srun(int ac, char **av)
 		env->mem_bind = opt.mem_bind;
 		setup_env(env);
 
-		if (_run_batch_job() < 0)
+		if (_run_batch_job(av[0]) < 0)
 			exit (1);
 		exit (0);
 
@@ -578,7 +578,7 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 
 /* submit a batch job and return error code */
 static int
-_run_batch_job(void)
+_run_batch_job(const char *argv0)
 {
 	int file_type, retries;
 	int rc = SLURM_SUCCESS;
@@ -598,7 +598,8 @@ _run_batch_job(void)
 	 * }
 	 */
 
-	if ((script = _build_script (remote_argv[0], file_type)) == NULL) {
+	if ((script = _build_script (argv0, remote_argv[0], file_type))
+	    == NULL) {
 		error ("unable to build script from file %s", remote_argv[0]);
 		return SLURM_ERROR;
 	}
@@ -810,7 +811,7 @@ _is_file_text (char *fname, char **shell_ptr)
 
 /* allocate and build a string containing a script for a batch job */
 static char *
-_build_script (char *fname, int file_type)
+_build_script (const char *argv0, char *fname, int file_type)
 {
 	cbuf_t cb = cbuf_create(512, 1048576);
 	int   fd     = -1;
@@ -827,7 +828,7 @@ _build_script (char *fname, int file_type)
 	if (file_type != TYPE_SCRIPT) {
 		xstrfmtcat(buffer, "#!%s\n", _get_shell());
 		if (file_type == 0) {
-			xstrcat(buffer, "srun ");
+			xstrfmtcat(buffer, "%s ", argv0); /* path to srun */
 			for (i = 0; i < remote_argc; i++)
 				xstrfmtcat(buffer, "%s ", remote_argv[i]);
 			xstrcatchar(buffer, '\n');
