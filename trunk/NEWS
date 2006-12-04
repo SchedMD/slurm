@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Fix for select/cons_res state preservation over slurmctld restart,
     patch.1.2.0-pre7.061130.cr_state from Dan Palermo.
+ -- Validate product of socket*core*thread count on node registration rather 
+    than individual values. Correct values will need to be specified in slurm.conf 
+    with FastSchedule=1 for correct multi-core scheduling behavior.
 
 * Changes in SLURM 1.2.0-pre8
 =============================
