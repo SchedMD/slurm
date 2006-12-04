@@ -147,8 +147,6 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.22
 =========================
- - Fix for user to use the NodeHostname (when specified in the slurm.conf file)
-   to start jobs on.  
    
 * Changes in SLURM 1.1.21
 =========================
@@ -172,6 +170,8 @@ documents those changes that are of interest to users and admins.
    have a working curses lib and header.
  - Fixed an init issue with forward_struct_init not being set correctly in
    a few locations in the slurmd.
+ - Fix for user to use the NodeHostname (when specified in the slurm.conf file)
+   to start jobs on.
 
 * Changes in SLURM 1.1.20
 =========================
