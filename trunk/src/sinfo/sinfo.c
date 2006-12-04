@@ -526,7 +526,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	else
 		node_scaling = 1;
 
-	base_state = sinfo_ptr->node_state & NODE_STATE_BASE;
+	base_state = node_ptr->node_state & NODE_STATE_BASE;
 
 	if (sinfo_ptr->nodes_total == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
