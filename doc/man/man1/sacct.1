@@ -587,7 +587,9 @@ The format of the output is identical to that of the \f3end\fP field.
 
 .TP 
 \f3systemcpu\fP 
-The amount of system CPU time.
+The amount of system CPU time. (If job was running on multiple cpus this
+is a combination of all the times so this number could be much larger
+than the elapsed time.)
 The format of the output is identical to that of the 
 \f3elapsed\fP 
 field.
@@ -608,7 +610,9 @@ The user name of the user who ran the job.
 
 .TP 
 \f3usercpu\fP 
-The amount of user CPU time.
+The amount of user CPU time. (If job was running on multiple cpus this
+is a combination of all the times so this number could be much larger
+than the elapsed time.)
 The format of the output is identical to that of the 
 \f3elapsed\fP field.
 
