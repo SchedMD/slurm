@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "October 2006" "scontrol 1.2" "Slurm components"
+.TH SCONTROL "1" "December 2006" "scontrol 1.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -309,6 +309,12 @@ Possible values are "YES" and "NO".
 Identify the node(s) to be updated. Multiple node names may be specified using 
 simple node range expressions (e.g. "lx[10\-20]"). This specification is required.
 .TP
+\fIFeatures\fP=<features>
+Identify features to be associated with the specified nodes.
+Any previously identified features will be overwritten with the new value.
+Note that features specified in the slurm.conf file will overwrite manually 
+set values, so update slurm.conf for any changes meant to be persistent.
+.TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED" or "DRAINING" state.
 Use quotes to enclose a reason having more than one word.
@@ -324,6 +330,7 @@ If you want to remove a node from service, you typically want to set
 it's state to "DRAIN". 
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
+
 .TP
 \fBSPECIFICATIONS FOR UPDATE AND DELETE COMMANDS, PARTITIONS\fR
 .TP

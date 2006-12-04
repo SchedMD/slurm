@@ -1068,6 +1068,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				this_node_name, node_ptr->reason);
 		}
 
+		if ((update_node_msg->features) &&
+		    (update_node_msg->features[0])) {
+			/* FIXME: Update config list as needed */
+			info("update_node: node %s reason set to: %s",
+				this_node_name, update_node_msg->features);
+		}
+
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		if ((base_state != NODE_STATE_DOWN)
 		&&  ((node_ptr->node_state & NODE_STATE_DRAIN) == 0))
@@ -1077,6 +1084,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	}
 
 	hostlist_destroy (host_list);
+
 	return error_code;
 }
 

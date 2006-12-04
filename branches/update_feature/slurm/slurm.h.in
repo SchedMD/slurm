@@ -897,6 +897,7 @@ typedef struct slurm_update_node_msg {
 	char *node_names;	/* comma separated list of required nodes */
 	uint16_t node_state;	/* see enum node_states */
 	char *reason;   	/* reason for node being DOWN or DRAINING */
+	char *features;		/* new feature for node */
 } update_node_msg_t;
 
 typedef struct partition_info update_part_msg_t;

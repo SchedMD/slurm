@@ -921,6 +921,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			update_node_msg_t update_node_msg;
 			update_node_msg.node_names =
 			    comp_msg->node_name;
+			update_node_msg.features = NULL;
 			update_node_msg.node_state = NODE_STATE_DOWN;
 			update_node_msg.reason = "step complete failure";
 			error_code = update_node(&update_node_msg);
