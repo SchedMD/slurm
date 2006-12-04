@@ -1170,6 +1170,10 @@ validate_node_specs (char *node_name, uint16_t cpus,
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
 
+#if 0
+	/* Testing the socket, core, and thread count here can produce 
+	 * an error if the user did not specify the values on slurm.conf
+	 * for a multi-core system */
 	if ((slurmctld_conf.fast_schedule != 2)
 	&&  (sockets < config_ptr->sockets)) {
 		error("Node %s has low socket count %u", node_name, sockets);
@@ -1193,6 +1197,23 @@ validate_node_specs (char *node_name, uint16_t cpus,
 		reason_down = "Low thread count";
 	}
 	node_ptr->threads = threads;
+#else
+	if (slurmctld_conf.fast_schedule != 2) {
+		int tot1, tot2;
+		tot1 = sockets * cores * threads;
+		tot2 = config_ptr->sockets * config_ptr->cores *
+			config_ptr->threads;
+		if (tot1 < tot2) {
+			error("Node %s has low socket*core*thread count %u",
+				node_name, tot1);
+			error_code = EINVAL;
+			reason_down = "Low socket*core*thread count";
+		}
+	}
+	node_ptr->sockets = sockets;
+	node_ptr->cores   = cores;
+	node_ptr->threads = threads;
+#endif
 
 	if ((slurmctld_conf.fast_schedule != 2)
 	&&  (cpus < config_ptr->cpus)) {
