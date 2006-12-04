@@ -105,7 +105,7 @@ static void _close_fd(void)
 extern int	event_notify(char *msg)
 {
 	time_t now = time(NULL);
-	int rc, retry = 2;
+	int rc = 0, retry = 2;
 
 	if (e_port == 0) {
 		/* Event notification disabled */
