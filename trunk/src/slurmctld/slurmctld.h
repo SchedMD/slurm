@@ -196,6 +196,9 @@ struct node_record {
 	uint16_t no_share_job_cnt;	/* count of jobs running that will
 					 * not share nodes */
 	char *reason; 			/* why a node is DOWN or DRAINING */
+	char *features;			/* associated features, used only
+					 * for state save/restore, DO NOT
+					 * use for scheduling purposes */
 	struct node_record *node_next;	/* next entry with same hash index */ 
 };
 
@@ -926,7 +929,7 @@ extern int load_all_job_state ( void );
  * load_all_node_state - Load the node state from file, recover on slurmctld 
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
- * IN state_only - if true over-write only node state and reason fields
+ * IN state_only - if true over-write only node state, features and reason
  * RET 0 or error code
  */
 extern int load_all_node_state ( bool state_only );
@@ -1152,6 +1155,12 @@ extern void reset_job_bitmaps (void);
 /* After a node is returned to service, reset the priority of jobs 
  * which may have been held due to that node being unavailable */
 extern void reset_job_priority(void);
+
+/*
+ * restore_node_features - Restore node features based upon state
+ *      saved (preserves interactive updates)
+ */
+extern void restore_node_features(void);
 
 /* run_backup - this is the backup controller, it should run in standby 
  *	mode, assuming control when the primary controller stops responding */
