@@ -18,9 +18,11 @@ header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and
 <i>doc/html/configurator.html</i>.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.</li>
-<li>Create OpenSSL Keys:<br>
+<li>Create OpenSSL keys:<br>
 <i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
-<i>openssl rsa -in  &lt;sysconfdir&gt/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i></li>
+<i>openssl rsa -in  &lt;sysconfdir&gt/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i><br>
+Note that you will build the OpenSSL key files on one node and distribute them
+to all of the nodes in the cluster.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
 <p>NOTE: Items 1 through 4 can be replaced with</p>
@@ -398,8 +400,10 @@ An example of how to do this is shown below. Specify file names that
 match the values of <b>JobCredentialPrivateKey</b> and 
 <b>JobCredentialPublicCertificate</b> in your configuration file. 
 The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b>. 
-The <b>JobCredentialPublicCertificate</b> file must be readable by all users. 
-Both files must be available on all nodes in the cluster. 
+The <b>JobCredentialPublicCertificate</b> file must be readable by all users.
+Note that you should build the key files one one node and then distribute 
+them to all nodes in the cluster.
+This insures that all nodes have a consistent set of encryption keys.
 These keys are used by <i>slurmctld</i> to construct a job credential, 
 which is sent to <i>srun</i> and then forwarded to <i>slurmd</i> to 
 initiate job steps.</p>
@@ -604,6 +608,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 November 2006</p>
+<p style="text-align:center;">Last modified 5 December 2006</p>
 
 <!--#include virtual="footer.txt"-->
