@@ -287,17 +287,18 @@ _poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[],
 static void
 _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 {
-	if ((revents & POLLERR ) && obj->ops->handle_error) {
+	if ((revents & (POLLERR|POLLNVAL))
+	    && obj->ops->handle_error) {
 		if ((*obj->ops->handle_error) (obj, objList) < 0) 
 			return;
 	}
 
 	if ((revents & POLLHUP) && obj->ops->handle_close) {
 		(*obj->ops->handle_close) (obj, objList);
-	} else if (((revents & POLLIN) || (revents & POLLHUP)) 
+	} else if ((revents & (POLLIN|POLLHUP|POLLERR|POLLNVAL))
 		   && obj->ops->handle_read ) {
 		(*obj->ops->handle_read ) (obj, objList);
-	} else if (((revents & POLLOUT) || (revents & POLLHUP))
+	} else if ((revents & (POLLOUT|POLLHUP|POLLERR|POLLNVAL))
 		   && obj->ops->handle_write) {
 		(*obj->ops->handle_write) (obj, objList);
 	}
