@@ -39,6 +39,16 @@ typedef struct eio_handle_components eio_handle_t;
  *
  * handle_*() functions also pass the List of io_obj's from the event loop
  *
+ * If either "handle_error" (for POLLERR and POLLNVAL) or "handle_close"
+ * (for POLLHUP) are not defined, the eio server will fallback to handle_read
+ * if defined, and fallback to handle_write if handle_read is not defined
+ * either.
+ *
+ * If there are no handlers at all when POLLERR or POLLNVAL occurs, the eio
+ * server will set the eio_obj_t shutdown flag to "true".  Keep in mind
+ * that the shutdown flag is essentially just an advisory flag.  The
+ * "readable" and "writable" functions have the final say over whether a
+ * file descriptor will continue to be polled.
  */
 struct io_operations {
 	bool (*readable    )(eio_obj_t *);       

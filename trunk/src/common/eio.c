@@ -290,13 +290,7 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 	bool read_called = false;
 	bool write_called = false;
 
-	if (revents & POLLNVAL) {
-		debug("POLLNVAL on fd %d, shutting down eio object", obj->fd);
-		obj->shutdown = true;
-		return;
-	}
-
-	if (revents & POLLERR) {
+	if (revents & POLLERR || revents & POLLNVAL) {
 		if (obj->ops->handle_error) {
 			(*obj->ops->handle_error) (obj, objList);
 		} else if (obj->ops->handle_read) {
@@ -306,7 +300,9 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 			(*obj->ops->handle_write) (obj, objList);
 			write_called = true;
 		} else {
-			debug("No handler for POLLERR");
+			debug("No handler for %s on fd %d",
+			      revents & POLLERR ? "POLLERR" : "POLLNVAL",
+			      obj->fd);
 			obj->shutdown = true;
 		}
 		return;
