@@ -590,7 +590,8 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 		if (poll_rc == 1) {
 			/* poll successfully completed */
 			if (ufds.revents & POLLERR) {
-				int err = 0, size;
+				int err = 0;
+				socklen_t size;
 				getsockopt(__fd, SOL_SOCKET, SO_ERROR, &err, &size);
 				slurm_seterrno(err);
 				debug2("connect failure: %m");
