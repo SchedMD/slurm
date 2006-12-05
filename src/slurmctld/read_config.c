@@ -662,7 +662,7 @@ static int _build_all_partitionline_info()
 int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
-	int error_code;
+	int error_code, i;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
@@ -676,10 +676,17 @@ int read_slurm_conf(int recover)
 
 	/* initialization */
 	START_TIMER;
+
+	/* save node states for reconfig RPC */
 	old_node_record_count = node_record_count;
-	old_node_table_ptr = 
-		node_record_table_ptr;  /* save node states for reconfig RPC */
+	old_node_table_ptr    = node_record_table_ptr;
+	for (i=0; i<node_record_count; i++) {
+		xfree(old_node_table_ptr[i].features);
+		old_node_table_ptr[i].features = xstrdup(
+			old_node_table_ptr[i].config_ptr->feature);
+	}
 	node_record_table_ptr = NULL;
+	node_record_count = 0;
 
 	conf = slurm_conf_lock();
 	if (recover == 0) {
@@ -709,7 +716,7 @@ int read_slurm_conf(int recover)
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		xfree(old_node_table_ptr);
+		_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 		return EINVAL;
 	}
 
@@ -749,6 +756,7 @@ int read_slurm_conf(int recover)
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
+	restore_node_features();
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
@@ -802,6 +810,11 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 			node_ptr->reason	= old_node_table_ptr[i].reason;
 			old_node_table_ptr[i].reason = NULL;
 		}
+		if (old_node_table_ptr[i].features) {
+			xfree(node_ptr->features);
+			node_ptr->features = old_node_table_ptr[i].features;
+			old_node_table_ptr[i].features = NULL;
+		}
 	}
 }
 
@@ -813,6 +826,7 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 
 	for (i = 0; i < old_node_record_count; i++) {
 		xfree(old_node_table_ptr[i].part_pptr);
+		xfree(old_node_table_ptr[i].features);
 		xfree(old_node_table_ptr[i].reason);
 	}
 	xfree(old_node_table_ptr);

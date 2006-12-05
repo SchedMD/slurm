@@ -312,9 +312,10 @@ simple node range expressions (e.g. "lx[10\-20]"). This specification is require
 \fIFeatures\fP=<features>
 Identify features to be associated with the specified nodes.
 Any previously identified features will be overwritten with the new value.
-\fBNOTE:\fR These manually set values will be lost whenever the slurmctld 
-daemon is restarted or reconfigured, so update slurm.conf with any 
-changes meant to be persistent.
+\fBNOTE:\fR The Features associated with nodes will be reset to
+the values specified in slurm.conf (if any) upon slurmctld restart 
+or reconfiguration.
+Update slurm.conf with any changes meant to be persistent.
 .TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED" or "DRAINING" state.

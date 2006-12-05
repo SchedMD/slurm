@@ -73,7 +73,7 @@
 #define MAX_RETRIES	10
 
 /* Change NODE_STATE_VERSION value when changing the state save format */
-#define NODE_STATE_VERSION      "VER001"
+#define NODE_STATE_VERSION      "VER002"
 
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
@@ -319,6 +319,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 {
 	packstr (dump_node_ptr->name, buffer);
 	packstr (dump_node_ptr->reason, buffer);
+	packstr (dump_node_ptr->config_ptr->feature, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
 	pack16  (dump_node_ptr->sockets, buffer);
@@ -391,13 +392,13 @@ _find_alias_node_record (char *name)
  * load_all_node_state - Load the node state from file, recover on slurmctld 
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
- * IN state_only - if true over-write only node state and reason fields
+ * IN state_only - if true over-write only node state, features and reason
  * RET 0 or error code
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int load_all_node_state ( bool state_only )
 {
-	char *node_name, *reason = NULL, *data = NULL, *state_file;
+	char *node_name, *reason = NULL, *data = NULL, *state_file, *features;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state, name_len;
 	uint16_t cpus = 1, sockets = 1, cores = 1, threads = 1;
@@ -469,7 +470,8 @@ extern int load_all_node_state ( bool state_only )
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state;
 		safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
-		safe_unpackstr_xmalloc (&reason, &name_len, buffer);
+		safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+		safe_unpackstr_xmalloc (&features,  &name_len, buffer);
 		safe_unpack16 (&node_state,  buffer);
 		safe_unpack16 (&cpus,        buffer);
 		safe_unpack16 (&sockets,     buffer);
@@ -502,6 +504,7 @@ extern int load_all_node_state ( bool state_only )
 		if (node_ptr == NULL) {
 			error ("Node %s has vanished from configuration", 
 			       node_name);
+			xfree(features);
 			xfree(reason);
 		} else if (state_only) {
 			node_cnt++;
@@ -516,11 +519,15 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason = reason;
 			else
 				xfree(reason);
+			xfree(node_ptr->features);
+			node_ptr->features = features;
 		} else {
 			node_cnt++;
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
 			node_ptr->reason        = reason;
+			xfree(node_ptr->features);
+			node_ptr->features = features;
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
@@ -636,6 +643,12 @@ static int _hash_index (char *name)
 int init_node_conf (void) 
 {
 	last_node_update = time (NULL);
+	int i;
+
+	for (i=0; i<node_record_count; i++) {
+		xfree(node_record_table_ptr[i].features);
+		xfree(node_record_table_ptr[i].reason);
+	}
 
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
@@ -1089,6 +1102,51 @@ int update_node ( update_node_msg_t * update_node_msg )
 	}
 
 	return error_code;
+}
+
+/*
+ * restore_node_features - Restore node features based upon state 
+ *	saved (preserves interactive updates)
+ */
+extern void restore_node_features(void)
+{
+	int i, j, update_cnt = 0;
+	char *node_list;
+
+	/* Identify all nodes that have features field
+	 * preserved and not explicitly set in slurm.conf 
+	 * to a different value */
+	for (i=0; i<node_record_count; i++) {
+		if (!node_record_table_ptr[i].features)
+			continue;
+		if (node_record_table_ptr[i].config_ptr->feature) {
+			/* use Features explicitly set in slurm.conf */
+			continue;
+		}
+		update_cnt++;
+	}
+	if (update_cnt == 0)
+		return;
+
+	for (i=0; i<node_record_count; i++) {
+		if (!node_record_table_ptr[i].features)
+			continue;
+		node_list = xstrdup(node_record_table_ptr[i].name);
+
+		for (j=(i+1); j<node_record_count; j++) {
+			if (!node_record_table_ptr[j].features ||
+			    strcmp(node_record_table_ptr[i].features,
+			    node_record_table_ptr[j].features))
+				continue;
+			xstrcat(node_list, ",");
+			xstrcat(node_list, node_record_table_ptr[j].name);
+			xfree(node_record_table_ptr[j].features);
+		}
+		_update_node_features(node_list, 
+			node_record_table_ptr[i].features);
+		xfree(node_record_table_ptr[i].features);
+		xfree(node_list);
+	}
 }
 
 /*
@@ -2156,6 +2214,7 @@ void node_fini(void)
 
 	for (i=0; i< node_record_count; i++) {
 		xfree(node_record_table_ptr[i].part_pptr);
+		xfree(node_record_table_ptr[i].features);
 		xfree(node_record_table_ptr[i].reason);
 	}
 
