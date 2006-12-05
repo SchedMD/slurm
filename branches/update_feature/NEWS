@@ -4,6 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.0-pre10
 ==============================
  -- Fix for sinfo node state counts by state (%A and %F output options).
+ -- Add ability to change a node's features via "scontrol update". NOTE: 
+    Update slurm.conf also to preserve changes over slurmctld restart or 
+    reconfig.
 
 * Changes in SLURM 1.2.0-pre9
 =============================

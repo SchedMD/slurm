@@ -485,9 +485,10 @@ extern int load_all_node_state ( bool state_only )
 		    (cores == 0) || 
 		    (threads == 0) || 
 		    (base_state  >= NODE_STATE_END)) {
-			error ("Invalid data for node %s: procs=%u, sockets=%u, cores=%u, "
-				"threads=%u, state=%u",
-				node_name, cpus, sockets, cores, threads, node_state);
+			error ("Invalid data for node %s: procs=%u, "
+				"sockets=%u, cores=%u, threads=%u, state=%u",
+				node_name, cpus, 
+				sockets, cores, threads, node_state);
 			error ("No more node data will be processed from the "
 				"checkpoint file");
 			xfree (node_name);
