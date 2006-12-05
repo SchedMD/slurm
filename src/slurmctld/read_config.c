@@ -337,7 +337,7 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 }
 #endif /* HAVE_BG */
 /* 
- * _build_single_nodeline_info - rom the slurm.conf reader, build table,
+ * _build_single_nodeline_info - From the slurm.conf reader, build table,
  * 	and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
@@ -554,10 +554,8 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->tmp_disk = node->tmp_disk;
 		config_ptr->weight = node->weight;
-		if (node->feature) {
-			xfree(config_ptr->feature);
+		if (node->feature)
 			config_ptr->feature = xstrdup(node->feature);
-		}
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
