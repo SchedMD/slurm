@@ -563,7 +563,7 @@ static int _write_msg(int fd, void *buf, int len, int taskid)
 	int remaining = len;
 	int written = 0;
 	int line_len;
-	int rc;
+	int rc = -1;
 
 	while (remaining > 0) {
 		start = buf + written;
