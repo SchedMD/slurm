@@ -55,12 +55,16 @@ scontrol_update_node (int argc, char *argv[])
 	char *user_name;
 
 	node_msg.node_names = NULL;
+	node_msg.features = NULL;
 	node_msg.reason = NULL;
 	node_msg.node_state = (uint16_t) NO_VAL;
 	for (i=0; i<argc; i++) {
 		if (strncasecmp(argv[i], "NodeName=", 9) == 0)
 			node_msg.node_names = &argv[i][9];
-		else if (strncasecmp(argv[i], "Reason=", 7) == 0) {
+		else if (strncasecmp(argv[i], "Features=", 9) == 0) {
+			node_msg.features = &argv[i][9];
+			update_cnt++;
+		} else if (strncasecmp(argv[i], "Reason=", 7) == 0) {
 			char time_buf[64], time_str[32];
 			time_t now;
 			int len = strlen(&argv[i][7]);
