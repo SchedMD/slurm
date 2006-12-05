@@ -312,8 +312,9 @@ simple node range expressions (e.g. "lx[10\-20]"). This specification is require
 \fIFeatures\fP=<features>
 Identify features to be associated with the specified nodes.
 Any previously identified features will be overwritten with the new value.
-Note that features specified in the slurm.conf file will overwrite manually 
-set values, so update slurm.conf for any changes meant to be persistent.
+\fBNOTE:\fR These manually set values will be lost whenever the slurmctld 
+daemon is restarted or reconfigured, so update slurm.conf with any 
+changes meant to be persistent.
 .TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED" or "DRAINING" state.
