@@ -101,6 +101,9 @@ static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 static void 	_pack_node (struct node_record *dump_node_ptr, bool cr_flag,
 				Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
+static void	_update_config_ptr(bitstr_t *bitmap,
+				struct config_record *config_ptr);
+static int	_update_node_features(char *node_names, char *features);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new); 
 #if _DEBUG
 static void	_dump_hash (void);
@@ -482,9 +485,10 @@ extern int load_all_node_state ( bool state_only )
 		    (cores == 0) || 
 		    (threads == 0) || 
 		    (base_state  >= NODE_STATE_END)) {
-			error ("Invalid data for node %s: procs=%u, sockets=%u, cores=%u, "
-				"threads=%u, state=%u",
-				node_name, cpus, sockets, cores, threads, node_state);
+			error ("Invalid data for node %s: procs=%u, "
+				"sockets=%u, cores=%u, threads=%u, state=%u",
+				node_name, cpus, 
+				sockets, cores, threads, node_state);
 			error ("No more node data will be processed from the "
 				"checkpoint file");
 			xfree (node_name);
@@ -1075,9 +1079,102 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		free (this_node_name);
 	}
-
 	hostlist_destroy (host_list);
+
+	if ((error_code == 0) && (update_node_msg->features) &&
+	    (update_node_msg->features[0])) {
+		error_code = _update_node_features(
+			update_node_msg->node_names, 
+			update_node_msg->features);
+	}
+
 	return error_code;
+}
+
+/*
+ * _update_node_features - Update features associated with nodes
+ *	build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN features - New features value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_features(char *node_names, char *features)
+{
+	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	ListIterator config_iterator;
+	struct config_record *config_ptr, *new_config_ptr;
+	struct config_record *first_new = NULL;
+	int rc, config_cnt, tmp_cnt;
+
+	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	if (rc) {
+		info("_update_node_features: invalid node_name");
+		return rc;
+	}
+
+	/* For each config_record with one of these nodes, 
+	 * update it (if all nodes updated) or split it into 
+	 * a new entry */
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((config_ptr = (struct config_record *)
+			list_next(config_iterator))) {
+		if (config_ptr == first_new)
+			break;	/* done with all original records */
+
+		tmp_bitmap = bit_copy(node_bitmap);
+		bit_and(tmp_bitmap, config_ptr->node_bitmap);
+		config_cnt = bit_set_count(config_ptr->node_bitmap);
+		tmp_cnt = bit_set_count(tmp_bitmap);
+		if (tmp_cnt == 0) {
+			/* no overlap, leave alone */
+		} else if (tmp_cnt == config_cnt) {
+			/* all nodes changed, update in situ */
+			xfree(config_ptr->feature);
+			config_ptr->feature = xstrdup(features);
+		} else {
+			/* partial update, split config_record */
+			new_config_ptr = create_config_record();
+			if (first_new == NULL);
+				first_new = new_config_ptr;
+			memcpy(new_config_ptr, config_ptr, 
+				sizeof(struct config_record));
+			new_config_ptr->feature = xstrdup(features);
+			new_config_ptr->node_bitmap = 
+				bit_copy(tmp_bitmap);
+			new_config_ptr->nodes = 
+				bitmap2node_name(tmp_bitmap);
+			_update_config_ptr(tmp_bitmap, new_config_ptr);
+
+			/* Update remaining records */ 
+			bit_not(tmp_bitmap);
+			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			xfree(config_ptr->nodes);
+			config_ptr->nodes = bitmap2node_name(
+				config_ptr->node_bitmap);
+		}
+		bit_free(tmp_bitmap);
+	}
+	list_iterator_destroy(config_iterator);
+	bit_free(node_bitmap);
+ 
+	info("_update_node_features: nodes %s reason set to: %s",
+		node_names, features);
+	return SLURM_SUCCESS;
+}
+
+/* Reset the config pointer for updated jobs */
+static void _update_config_ptr(bitstr_t *bitmap, 
+		struct config_record *config_ptr)
+{
+	int i;
+
+	for (i=0; i<node_record_count; i++) {
+		if (bit_test(bitmap, i) == 0)
+			continue;
+		node_record_table_ptr[i].config_ptr = config_ptr;
+	}
 }
 
 /* 

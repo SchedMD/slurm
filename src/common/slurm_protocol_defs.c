@@ -289,6 +289,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_names);
+		xfree(msg->features);
 		xfree(msg->reason);
 		xfree(msg);
 	}

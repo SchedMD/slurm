@@ -985,7 +985,8 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 
 	packstr(msg->node_names, buffer);
-	pack16((uint16_t)msg->node_state, buffer);
+	pack16(msg->node_state, buffer);
+	packstr(msg->features, buffer);
 	packstr(msg->reason, buffer);
 }
 
@@ -1002,11 +1003,13 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer)
 
 	safe_unpackstr_xmalloc(&tmp_ptr->node_names, &uint16_tmp, buffer);
 	safe_unpack16(&tmp_ptr->node_state, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->features, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(tmp_ptr->node_names);
+	xfree(tmp_ptr->features);
 	xfree(tmp_ptr->reason);
 	xfree(tmp_ptr);
 	*msg = NULL;
