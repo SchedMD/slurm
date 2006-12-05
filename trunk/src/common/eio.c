@@ -290,7 +290,7 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 	bool read_called = false;
 	bool write_called = false;
 
-	if (revents & POLLERR || revents & POLLNVAL) {
+	if (revents & (POLLERR|POLLNVAL)) {
 		if (obj->ops->handle_error) {
 			(*obj->ops->handle_error) (obj, objList);
 		} else if (obj->ops->handle_read) {
