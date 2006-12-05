@@ -112,7 +112,8 @@ expect {
 #
 # Validate node's new state
 #
-set read_state 0
+set read_state  0
+set reason_code ""
 spawn $scontrol show node $node_name
 expect {
 	-re "State=($alpha_cap).DRAIN" {
