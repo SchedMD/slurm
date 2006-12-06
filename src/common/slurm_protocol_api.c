@@ -576,6 +576,19 @@ char *slurm_get_task_plugin(void)
 	slurm_conf_unlock();
         return task_plugin;
 }
+
+/* slurm_get_task_plugin_param */
+uint16_t slurm_get_task_plugin_param(void)
+{
+        uint16_t task_plugin_param;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        task_plugin_param = conf->task_plugin_param;
+        slurm_conf_unlock();
+        return task_plugin_param;
+}
+
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {

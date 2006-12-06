@@ -347,6 +347,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->task_epilog         = xstrdup(conf->task_epilog);
 	conf_ptr->task_prolog         = xstrdup(conf->task_prolog);
 	conf_ptr->task_plugin         = xstrdup(conf->task_plugin);
+	conf_ptr->task_plugin_param   = conf->task_plugin_param;
 	conf_ptr->tmp_fs              = xstrdup(conf->tmp_fs);
 	conf_ptr->wait_time           = conf->wait_time;
 	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);

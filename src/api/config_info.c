@@ -85,6 +85,18 @@ _select_info(uint16_t select_type_param)
 	}
 }
 
+static char *_task_plugin_param(uint16_t task_plugin_param)
+{
+	switch(task_plugin_param) {
+		case TASK_PARAM_NONE:
+			return "none";
+		case TASK_PARAM_CPUSETS:
+			return "cpusets";
+		default:
+			return "unknown";
+	}
+}
+
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
@@ -229,6 +241,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->task_epilog);
 	fprintf(out, "TaskPlugin        = %s\n",
 		 slurm_ctl_conf_ptr->task_plugin);
+	fprintf(out, "TaskPluginParam   = %s\n",
+		_task_plugin_param(slurm_ctl_conf_ptr->task_plugin_param));
 	fprintf(out, "TaskProlog        = %s\n",
 		slurm_ctl_conf_ptr->task_prolog);
 	fprintf(out, "TmpFS             = %s\n", 

@@ -616,6 +616,13 @@ environment variable
 .TP
 \fB7. post_term()\fR: function in TaskPlugin
 .RE 
+
+.TP
+\fBTaskPluginParam\fR
+Optional parameters for the task plugin.
+The only acceptable parameter today is "cpusets".
+By default, there are no task plugin parameters.
+
 .TP
 \fBTaskProlog\fR
 Fully qualified pathname of a program to be execute as the slurm job's 

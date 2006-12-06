@@ -261,6 +261,9 @@ char *slurm_get_task_prolog(void);
  * RET task_plugin name, must be xfreed by caller */
 char *slurm_get_task_plugin(void);
 
+/* slurm_get_task_plugin_param */
+uint16_t slurm_get_task_plugin_param(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/
