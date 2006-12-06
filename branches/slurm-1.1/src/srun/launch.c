@@ -555,10 +555,11 @@ again:
 					job->step_layout->
 					host[ret_data_info->nodeid]);
 			} else {
-				errno = ret_type->err;
-				error("second launch error on %s: %m", 
+				slurm_seterrno(ret_type->err);
+				error("second launch error on %s: %s", 
 				      job->step_layout->
-				      host[ret_data_info->nodeid]);
+				      host[ret_data_info->nodeid],
+				      slurm_strerror(ret_type->err));
 			}
 			
 			_update_failed_node(job, ret_data_info->nodeid);
