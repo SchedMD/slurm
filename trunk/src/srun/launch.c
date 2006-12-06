@@ -218,9 +218,10 @@ launch(void *arg)
 		nodeid = nodelist_find(job->step_layout->node_list,
 				       ret_data->node_name);
 		if (rc != SLURM_SUCCESS) {
-			errno = ret_data->err;
-			error("Task launch failed on node %s(%d): %m",
-			      ret_data->node_name, nodeid);
+			slurm_seterrno(ret_data->err);
+			error("Task launch failed on node %s(%d): %s",
+			      ret_data->node_name, nodeid, 
+			      slurm_strerror(rc));
 			_update_failed_node(job, nodeid);
 			fail_launch_cnt++;
 		} else {
