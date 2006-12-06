@@ -43,6 +43,7 @@ set file_err      "test$test_id.error"
 set file_flag_1   "test$test_id.run.1"
 set file_flag_2   "test$test_id.run.2"
 set file_flag_3   "test$test_id.run.3"
+set file_flag_4   "test$test_id.run.4"
 set job_id        0
 
 print_header $test_id
@@ -59,7 +60,10 @@ if {[is_super_user] == 0} {
 exec $bin_rm -f $file_in $file_out $file_err
 exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3
 make_bash_script $file_in "
-    if   \[ -f $file_flag_2 \]
+    if   \[ -f $file_flag_3 \]
+    then
+        $bin_touch $file_flag_4
+    elif \[ -f $file_flag_2 \]
     then 
         $bin_touch $file_flag_3
     elif \[ -f $file_flag_1 \]
@@ -68,14 +72,14 @@ make_bash_script $file_in "
     else
         $bin_touch $file_flag_1
     fi
-    $srun $bin_sleep 20
+    $srun -n4 -O -l $bin_sleep 20
 "
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in]
+set srun_pid [spawn $srun -N1-4 --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -102,7 +106,31 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to begin\n"
 	set exit_code 1
 }
-exec $bin_sleep 2
+exec $bin_sleep 5
+spawn $scontrol requeue $job_id
+expect {
+	-re "error" {
+		send_user "\nFAILURE: some scontrol error happened\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Wait for job to restart, then requeue it again
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to begin\n"
+	set exit_code 1
+}
+exec $bin_sleep 5
 spawn $scontrol requeue $job_id
 expect {
 	-re "error" {
@@ -134,8 +162,12 @@ if {[wait_for_file $file_flag_2] != 0} {
 	send_user "\nFAILURE: file $file_flag_2 is missing\n"
 	set exit_code 1
 }
-if {[file exists $file_flag_3]} {
-	send_user "\nFAILURE: file $file_flag_3 is found\n"
+if {[wait_for_file $file_flag_3] != 0} {
+	send_user "\nFAILURE: file $file_flag_3 is missing\n"
+	set exit_code 1
+}
+if {[file exists $file_flag_4]} {
+	send_user "\nFAILURE: file $file_flag_4 is found\n"
 	set exit_code 1
 }
 
@@ -145,7 +177,7 @@ if {[file exists $file_flag_3]} {
 #
 set job_id        0
 
-exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3
+exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
 
 set srun_pid [spawn $srun --no-requeue --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
@@ -175,7 +207,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	set exit_code 1
 }
 set disabled 0
-exec $bin_sleep 2
+exec $bin_sleep 5
 spawn $scontrol requeue $job_id
 expect {
 	-re "error.*disabled" {
@@ -211,14 +243,11 @@ if {[file exists $file_flag_2]} {
 	send_user "\nFAILURE: file $file_flag_2 is found\n"
 	set exit_code 1
 }
-if {[file exists $file_flag_3]} {
-	send_user "\nFAILURE: file $file_flag_3 is found\n"
-	set exit_code 1
-}
+
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3
+	exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
