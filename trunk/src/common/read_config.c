@@ -190,6 +190,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskEpilog", S_P_STRING},
 	{"TaskProlog", S_P_STRING},
 	{"TaskPlugin", S_P_STRING},
+	{"TaskPluginParam", S_P_STRING},
 	{"TmpFS", S_P_STRING},
 	{"TreeWidth", S_P_UINT16},
 	{"UsePAM", S_P_BOOLEAN},
@@ -1622,6 +1623,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl))
 		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
+
+	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
+		if (strcasecmp(temp_str, "cpusets") == 0)
+			conf->task_plugin_param = TASK_PARAM_CPUSETS;
+		else {
+			fatal("Bad TaskPluginParam: %s", temp_str);
+			conf->task_plugin_param = TASK_PARAM_NONE;
+		}
+		xfree(temp_str);
+	}
 
 	s_p_get_string(&conf->task_epilog, "TaskEpilog", hashtbl);
 	s_p_get_string(&conf->task_prolog, "TaskProlog", hashtbl);

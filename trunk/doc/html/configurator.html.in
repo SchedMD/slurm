@@ -132,6 +132,7 @@ function displayfile()
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
+   "#TaskPluginParam= <br>" +
    "#TmpFs= <br>" +
    "#UsePAM= <br>" +
    "# <br>" +
