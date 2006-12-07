@@ -577,7 +577,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	}
 
 	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
-		error("job credential for %d.%d, expected %d.%d",
+		error("job credential for %u.%u  expected %u.%u",
 		      arg.jobid, arg.stepid, jobid, stepid); 
 		goto fail;
 	}
@@ -598,7 +598,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	}
 
 	if (!hostset_within(hset, conf->node_name)) {
-		error("job credential invalid for this host [%d.%d %ld %s]",
+		error("job credential invalid for this host [%u.%u %ld %s]",
 		      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
 		goto fail;
 	}
@@ -610,22 +610,22 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
                 /* Left in here for debugging purposes */
 #if(0)
                 if(host_index >= 0)
-                  info(" cons_res %u alloc_lps_cnt %d "
-			"task[%d] = %d = task_to_launch %d host %s ", 
+                  info(" cons_res %u alloc_lps_cnt %u "
+			"task[%d] = %u = task_to_launch %d host %s ", 
 			arg.jobid, arg.alloc_lps_cnt, host_index, 
 			arg.alloc_lps[host_index], 
 			tasks_to_launch, conf->node_name);
 #endif
 
                 if (host_index < 0) { 
-                        error("job cr credential invalid host_index %d for job %d",
+                        error("job cr credential invalid host_index %d for job %u",
                               host_index, arg.jobid);
                         goto fail; 
                 }
                 
                 if (tasks_to_launch > arg.alloc_lps[host_index]) {
 			error("cons_res: More than one tasks per logical "
-				"processor (%d > %d) on host [%d.%d %ld %s] ",
+				"processor (%d > %u) on host [%u.%u %ld %s] ",
 				tasks_to_launch, arg.alloc_lps[host_index], 
 				arg.jobid, arg.stepid, (long) arg.uid, 
 				arg.hostlist);
@@ -688,17 +688,21 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	     req->job_step_id, req->uid, req->gid, host, port);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
+	/* NOTE: slurm_cred_revoked() will create a new job credential
+	 * if this credential is issued after any previous credential 
+	 * for the job was revoked. This occurs when a job is requeued. 
+	 * Do this before running _check_job_credential(). */
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		info("Job credential revoked for %u", jobid);
+		errnum = ESLURMD_CREDENTIAL_REVOKED;
+		goto done;
+	}
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
 				  req->tasks_to_launch[nodeid],
 				  &step_hset) < 0) {
 		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
-		goto done;
-	}
-	if (slurm_cred_revoked(conf->vctx, req->cred)) {
-		info("Job credential revoked for %u", jobid);
-		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
 
