@@ -1269,18 +1269,18 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 
 	while ((j = list_next(i))) {
 		if (j->revoked) {
-			strcpy(t2, "revoked:");
-			timestr(&j->revoked, (t2+8), (64-8));
+			strcpy(t2, " revoked:");
+			timestr(&j->revoked, (t2+9), (64-9));
 		} else {
 			t2[0] = '\0';
 		}
 		if (j->expiration) {
-			strcpy(t3, "expires:");
-			timestr(&j->revoked, (t3+8), (64-8));
+			strcpy(t3, " expires:");
+			timestr(&j->revoked, (t3+9), (64-9));
 		} else {
 			t3[0] = '\0';
 		}
-		debug3("job state %u: ctime:%s %s %s",
+		debug3("job state %u: ctime:%s%s%s",
 		        j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
 
 		if (j->revoked && (now > j->expiration)) {
@@ -1375,7 +1375,7 @@ _job_state_pack_one(job_state_t *j, Buf buffer)
 static job_state_t *
 _job_state_unpack_one(Buf buffer)
 {
-	char         buf1[64], buf2[64];
+	char         t1[64], t2[64], t3[64];
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	safe_unpack32(    &j->jobid,      buffer);
@@ -1383,18 +1383,25 @@ _job_state_unpack_one(Buf buffer)
 	safe_unpack_time( &j->ctime,      buffer);
 	safe_unpack_time( &j->expiration, buffer);
 
-	debug3("cred_unpack:job %d ctime:%s%s%s",
-               j->jobid, 
-	       timestr (&j->ctime, buf1, 64), 
-	       (j->revoked ? " revoked:" : " expires:"),
-	       j->revoked ? timestr (&j->expiration, buf2, 64) : "");
-
 	if (j->revoked) {
-		if (j->expiration == (time_t) MAX_TIME) {
-			info ("Warning: revoke on job %d has no expiration", 
-			      j->jobid);
-			j->expiration = j->revoked + 600;
-		}
+		strcpy(t2, " revoked:");
+		timestr(&j->revoked, (t2+9), (64-9));
+	} else {
+		t2[0] = '\0';
+	}
+	if (j->expiration) {
+		strcpy(t3, " expires:");
+		timestr(&j->revoked, (t3+9), (64-9));
+	} else {
+		t3[0] = '\0';
+	}
+	debug3("cred_unpack: job %u ctime:%s%s%s",
+               j->jobid, timestr (&j->ctime, t1, 64), t2, t3); 
+
+	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
+		info ("Warning: revoke on job %u has no expiration", 
+		      j->jobid);
+		j->expiration = j->revoked + 600;
 	}
 
 	return j;
