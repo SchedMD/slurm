@@ -1260,7 +1260,7 @@ _job_state_destroy(job_state_t *j)
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
-	char          t1[64], t2[64];
+	char          t1[64], t2[64], t3[64];
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	job_state_t  *j   = NULL;
@@ -1268,11 +1268,20 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	i = list_iterator_create(ctx->job_list);
 
 	while ((j = list_next(i))) {
-		debug3 ("job state %u: ctime:%s%s%s",
-		        j->jobid, timestr (&j->ctime, t1, 64),
-			j->revoked ? " revoked:" : " expires:",
-		        timestr (&j->ctime, t1, 64),
-			j->revoked ? timestr (&j->expiration, t2, 64) : "");
+		if (j->revoked) {
+			strcpy(t2, "revoked:");
+			timestr(&j->revoked, (t2+8), (64-8));
+		} else {
+			t2[0] = '\0';
+		}
+		if (j->expiration) {
+			strcpy(t3, "expires:");
+			timestr(&j->revoked, (t3+8), (64-8));
+		} else {
+			t3[0] = '\0';
+		}
+		debug3("job state %u: ctime:%s %s %s",
+		        j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
 
 		if (j->revoked && (now > j->expiration)) {
 			list_delete(i);
