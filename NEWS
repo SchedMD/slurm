@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     Update slurm.conf also to preserve changes over slurmctld restart or 
     reconfig.
  -- Added new slurm.conf parameter TaskPluginParam.
+ -- Fix for job requeue and credential revoke logic from Hongjia Cao (NUDT).
 
 * Changes in SLURM 1.2.0-pre9
 =============================
