@@ -552,8 +552,14 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
 	 */
-	if (((rc = slurm_cred_verify(conf->vctx, cred, &arg)) < 0) && !user_ok)
-		return SLURM_ERROR;
+	if ((rc = slurm_cred_verify(conf->vctx, cred, &arg)) < 0) {
+		if (!user_ok) {
+			return SLURM_ERROR;
+		} else {
+			debug("_check_job_credential slurm_cred_verify failed:"
+			      " %m, but continuing anyway.");
+		}
+	}
 
 	/*
 	 * If uid is the slurm user id or root, do not bother
