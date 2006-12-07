@@ -168,4 +168,5 @@ Before new major release:
  - Review and release web pages
  - Review and release code
  - Run "make check"
- - Test the prolog and epilog run 
+ - Test that the prolog and epilog run
+ - Run the test suite with SlurmUser NOT being self 
