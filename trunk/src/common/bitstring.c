@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
@@ -1034,8 +1035,11 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
 		if ((i < bitsize) && bit_test(bitmap,i++)) current |= 0x2;
 		if ((i < bitsize) && bit_test(bitmap,i++)) current |= 0x4;
 		if ((i < bitsize) && bit_test(bitmap,i++)) current |= 0x8;
-		current += '0';
-		if (current > '9') current += ('A' - '9');
+		if (current <= 9) {
+			current += '0';
+		} else {
+			current += 'A' - 10;
+		}
 		*ptr-- = current;
 	}
 
@@ -1054,6 +1058,7 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
 int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str) 
 {
 	int bit_index = 0, len = strlen(str);
+	int rc = 0;
 	const char *curpos = str + len - 1;
 	char current;
 	bitoff_t bitsize = bit_size(bitmap);
@@ -1065,8 +1070,18 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 
 	while(curpos >= str) {
 		current = (int) *curpos; 
-		if (current <= '9') current -= '0';
-		if (current > '9') current -= ('A' - '9');
+		if (isxdigit(current)) {	/* valid hex digit */
+			if (isdigit(current)) {
+				current -= '0';
+			} else {
+				current = toupper(current);
+				current -= 'A' - 10;
+			}
+		} else {			/* not a valid hex digit */
+		    	current = 0;
+			rc = -1;
+		}
+
 		if ((current & 1) && (bit_index   < bitsize))
 			bit_set(bitmap, bit_index);
 		if ((current & 2) && (bit_index+1 < bitsize))
@@ -1079,7 +1094,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 		curpos--;
 		bit_index+=4;
 	}
-	return 0;
+	return rc;
 }
 
 /* bit_fmt_binmask
