@@ -35,6 +35,10 @@ CONFIGURATION FILE CHANGES
 * Added new configuration parameter MailProg (in case mail program is not
   at "/bin/mail").
 
+* Added new configuration parameter TaskPluginParam (for future use, to 
+  control which task affinity functions are used, "cpusets" or "sched" for 
+  schedsetaffinity).
+
 * Removed defunct configuration parameter, ShedulerAuth. It has been rendered 
   obsolute by the new wiki.conf file.
 

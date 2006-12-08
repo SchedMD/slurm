@@ -92,6 +92,8 @@ static char *_task_plugin_param(uint16_t task_plugin_param)
 			return "none";
 		case TASK_PARAM_CPUSETS:
 			return "cpusets";
+		case TASK_PARAM_SCHED:
+			return "sched";
 		default:
 			return "unknown";
 	}
