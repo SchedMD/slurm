@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.22
 =========================
+ - Add squeue option to print a job step's task count (-o %A).
    
 * Changes in SLURM 1.1.21
 =========================
