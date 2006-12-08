@@ -147,13 +147,13 @@ main(int argc, char * argv[])
 }
 
 
-/* getnodename - equivalent to gethostname, but return only the first 
+/* gethostname_short - equivalent to gethostname, but return only the first 
  * component of the fully qualified name 
  * (e.g. "linux123.foo.bar" becomes "linux123") 
  * OUT name
  */
 int
-getnodename (char *name, size_t len)
+gethostname_short (char *name, size_t len)
 {
 	int error_code, name_len;
 	char *dot_ptr, path_name[1024];
@@ -276,9 +276,9 @@ get_mach_name(char *node_name)
 {
     int error_code;
 
-    error_code = getnodename(node_name, MAX_SLURM_NAME);
+    error_code = gethostname_short(node_name, MAX_SLURM_NAME);
     if (error_code != 0)
-	error ("get_mach_name: getnodename error %d\n", error_code);
+	error ("get_mach_name: gethostname_short error %d\n", error_code);
 
     return error_code;
 }

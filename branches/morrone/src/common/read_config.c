@@ -981,13 +981,13 @@ extern int slurm_conf_get_cpus_sct(const char *node_name,
 }
 
 
-/* getnodename - equivalent to gethostname, but return only the first 
+/* gethostname_short - equivalent to gethostname, but return only the first 
  * component of the fully qualified name 
  * (e.g. "linux123.foo.bar" becomes "linux123") 
  * OUT name
  */
 int
-getnodename (char *name, size_t len)
+gethostname_short (char *name, size_t len)
 {
 	int error_code, name_len;
 	char *dot_ptr, path_name[1024];
@@ -1360,7 +1360,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	    && strcasecmp("localhost", conf->backup_controller) == 0) {
 		xfree(conf->backup_controller);
 		conf->backup_controller = xmalloc (MAX_SLURM_NAME);
-		if (getnodename(conf->backup_controller, MAX_SLURM_NAME)) 
+		if (gethostname_short(conf->backup_controller, MAX_SLURM_NAME))
 			fatal("getnodename: %m");
 	}
 	if (s_p_get_string(&conf->backup_addr, "BackupAddr", hashtbl)) {
@@ -1379,7 +1379,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if (strcasecmp("localhost", conf->control_machine) == 0) {
 		xfree (conf->control_machine);
 		conf->control_machine = xmalloc(MAX_SLURM_NAME);
-		if (getnodename(conf->control_machine, MAX_SLURM_NAME))
+		if (gethostname_short(conf->control_machine, MAX_SLURM_NAME))
 			fatal("getnodename: %m");
 	}
 

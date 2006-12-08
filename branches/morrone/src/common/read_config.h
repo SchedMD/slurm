@@ -279,13 +279,13 @@ extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 
 /*
- * getnodename - equivalent to gethostname(), but return only the first 
+ * gethostname_short - equivalent to gethostname(), but return only the first 
  *      component of the fully qualified name (e.g. "linux123.foo.bar" 
  *      becomes "linux123") 
  * NOTE: NodeName in the config may be different from real hostname.
  *       Use get_conf_node_name() to get the former.
  */
-extern int getnodename (char *name, size_t len);
+extern int gethostname_short (char *name, size_t len);
 
 
 #endif /* !_READ_CONFIG_H */

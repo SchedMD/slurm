@@ -1007,7 +1007,7 @@ static void _opt_default()
 
 	mode	= MODE_NORMAL;
 
-	getnodename(hostname, sizeof(hostname));
+	gethostname_short(hostname, sizeof(hostname));
 	opt.ctrl_comm_ifhn  = xstrdup(hostname);
 
 	/*

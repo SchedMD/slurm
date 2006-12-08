@@ -147,7 +147,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		strncpy(hostname, env_pmi_ifhn, sizeof(hostname));
 		hostname[sizeof(hostname)-1] = 0;
 	} else
-		getnodename(hostname, sizeof(hostname));
+		gethostname_short(hostname, sizeof(hostname));
 
 	data.task_id = pmi_rank;
 	data.size = pmi_size;
