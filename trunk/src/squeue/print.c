@@ -1190,6 +1190,21 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_num_tasks(job_step_info_t * step, int width, bool right, 
+			  char* suffix)
+{
+	char tmp_char[6];
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("TASKS", width, right, true);
+	else {
+		convert_to_kilo(step->num_tasks, tmp_char);
+		_print_str(tmp_char, width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 /* filter job records per input specifications, 
  * returns >0 if job should be filter out (not printed) */
 static int _filter_job(job_info_t * job)
