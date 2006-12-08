@@ -226,7 +226,7 @@ launch(void *arg)
 			fail_launch_cnt++;
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
-			errno = ret_data->err;
+			slurm_seterrno(rc);
 			info("Launch success on node %s(%d)",
 			     ret_data->node_name, nodeid);
 #endif
