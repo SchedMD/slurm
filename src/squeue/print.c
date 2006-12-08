@@ -1196,10 +1196,8 @@ int _print_step_num_tasks(job_step_info_t * step, int width, bool right,
 	char tmp_char[6];
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("TASKS", width, right, true);
-	else {
-		convert_to_kilo(step->num_tasks, tmp_char);
+	else
 		_print_str(tmp_char, width, right, true);
-	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
