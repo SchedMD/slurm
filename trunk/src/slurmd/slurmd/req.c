@@ -688,19 +688,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	     req->job_step_id, req->uid, req->gid, host, port);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
-	/* NOTE: slurm_cred_revoked() will create a new job credential
-	 * if this credential is issued after any previous credential 
-	 * for the job was revoked. This occurs when a job is requeued. 
-	 * Do this before running _check_job_credential(). */
-	if (slurm_cred_revoked(conf->vctx, req->cred)) {
-		info("Job credential revoked for %u", jobid);
-		errnum = ESLURMD_CREDENTIAL_REVOKED;
-		goto done;
-	}
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
 				  req->tasks_to_launch[nodeid],
 				  &step_hset) < 0) {
-		errnum = ESLURMD_INVALID_JOB_CREDENTIAL;
+		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
 		goto done;
@@ -795,6 +786,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
 	}
+	slurm_cred_handle_reissue(conf->vctx, req->cred);
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		error("Job %u already killed, do not launch batch job",
 			req->job_id);

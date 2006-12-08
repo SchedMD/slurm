@@ -163,7 +163,13 @@ slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
 /*
  * Verify the signed credential `cred,' and return cred contents in
  * the cred_arg structure. The credential is cached and cannot be reused.
- * 
+ *
+ * Will perform at least the following checks:
+ *   - Credential signature is valid
+ *   - Credential has not expired
+ *   - If credential is reissue will purge the old credential
+ *   - Credential has not been revoked
+ *   - Credential has not been replayed
  */
 int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred, 
 		      slurm_cred_arg_t *arg);
@@ -174,6 +180,14 @@ int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
 int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+
+/*
+ * Check to see if this credential is a reissue of an existing credential
+ * (this can happen, for instance, with "scontrol restart").  If
+ * this credential is a reissue, then the old credential is cleared
+ * from the cred context "ctx".
+ */
+void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 
 /*
  * Revoke all credentials for job id jobid
