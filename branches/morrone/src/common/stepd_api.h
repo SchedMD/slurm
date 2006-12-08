@@ -96,7 +96,7 @@ int stepd_terminate(int fd);
  * Returns a socket descriptor for the opened socket on success, 
  * and -1 on error.
  */
-int stepd_connect(char *directory, char *nodename,
+int stepd_connect(const char *directory, const char *nodename,
 		  uint32_t jobid, uint32_t stepid);
 
 /*

@@ -835,29 +835,39 @@ extern void slurm_conf_nodehash_init(void)
 
 
 /*
- * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
+ * Caller needs to call slurm_conf_lock() and hold the lock before
+ * calling this function (and call slurm_conf_unlock() afterwards).
  */
-extern char *slurm_conf_get_hostname(const char *node_name)
+static char *_internal_get_hostname(const char *node_name)
 {
 	int idx;
 	names_ll_t *p;
 
-	slurm_conf_lock();
 	_init_slurmd_nodehash();
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
-			char *hostname = xstrdup(p->hostname);
-			slurm_conf_unlock();
-			return hostname;
+			return xstrdup(p->hostname);
 		}
 		p = p->next_alias;
 	}
+	return NULL;
+}
+
+/*
+ * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
+ */
+extern char *slurm_conf_get_hostname(const char *node_name)
+{
+	char *hostname = NULL;
+
+	slurm_conf_lock();
+	hostname = _internal_get_hostname(node_name);
 	slurm_conf_unlock();
 
-	return NULL;
+	return hostname;
 }
 
 /*
@@ -1659,3 +1669,25 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 }
 
+/*
+ * Replace first "%h" in path string with NodeHostname.
+ * Replace first "%n" in path string with NodeName.
+ *
+ * NOTE: Caller should be holding slurm_conf_lock() when calling this function.
+ *
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *
+slurm_conf_expand_slurmd_path(const char *path, const char *node_name)
+{
+	char *hostname;
+	char *dir = NULL;
+
+	dir = xstrdup(path);
+	hostname = _internal_get_hostname(node_name);
+	xstrsubstitute(dir, "%h", hostname);
+	xfree(hostname);
+	xstrsubstitute(dir, "%n", node_name);
+	
+	return dir;
+}

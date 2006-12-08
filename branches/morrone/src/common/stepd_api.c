@@ -58,6 +58,7 @@
 #include "src/common/slurm_jobacct.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
 
 /*
@@ -134,14 +135,36 @@ _step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 }
 
 
+static char *
+_guess_nodename()
+{
+	char host[256];
+	char *nodename = NULL;
+
+	if (gethostname_short(host, 256) != 0)
+		return NULL;
+
+	nodename = slurm_conf_get_nodename(host);
+	if (nodename == NULL) /* no match?  lets try localhost */
+		nodename = slurm_conf_get_nodename("localhost");
+
+	return nodename;
+}
+
 /*
  * Connect to a slurmstepd proccess by way of its unix domain socket.
+ *
+ * Both "directory" and "nodename" may be null, in which case stepd_connect
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
  *
  * Returns a socket descriptor for the opened socket on success, 
  * and -1 on error.
  */
 int
-stepd_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
+stepd_connect(const char *directory, const char *nodename,
+	      uint32_t jobid, uint32_t stepid)
 {
 	int req = REQUEST_CONNECT;
 	int fd = -1;
@@ -149,6 +172,18 @@ stepd_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 	void *auth_cred;
 	Buf buffer;
 	int len;
+
+	if (nodename == NULL) {
+		nodename = _guess_nodename();
+	}
+	if (directory == NULL) {
+		slurm_ctl_conf_t *cf;
+
+		cf = slurm_conf_lock();
+		directory = slurm_conf_expand_slurmd_path(
+			cf->slurmd_spooldir, nodename);
+		slurm_conf_unlock();
+	}
 
 	buffer = init_buf(0);
 	/* Create an auth credential */
