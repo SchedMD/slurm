@@ -1,6 +1,12 @@
 RELEASE NOTES FOR SLURM VERSION 1.2
-1 December 2006 (through 1.2.0-pre8)
+8 December 2006 (through 1.2.0-pre9)
 
+
+IMPORTANT NOTE:
+SLURM state files in version 1.2 are different from those of version 1.1.
+After installing SLURM version 1.2, plan to restart without preserving 
+jobs or other state information. Restart daemons with the "-c" option or 
+use "/etc/init.d/slurm startclean".
 
 NEW COMMANDS
 
