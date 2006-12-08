@@ -126,6 +126,7 @@ struct select_jobinfo {
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. XYZ */
 	uint16_t conn_type;	/* see enum connection_type */
+	uint16_t reboot;	/* reboot block before starting job */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *bg_block_id;	/* Blue Gene block ID */
 	uint16_t magic;		/* magic number */
@@ -659,7 +660,7 @@ static char *_job_conn_type_string(uint16_t inx)
 		return "n/a";
 }
 
-static char *_job_rotate_string(uint16_t inx)
+static char *_yes_no_string(uint16_t inx)
 {
 	if (inx == (uint16_t) NO_VAL)
 		return "n/a";
@@ -685,6 +686,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 		(*jobinfo)->geometry[i] = (uint16_t) NO_VAL;
 	}
 	(*jobinfo)->conn_type = SELECT_NAV;
+	(*jobinfo)->reboot = (uint16_t) NO_VAL;
 	(*jobinfo)->rotate = (uint16_t) NO_VAL;
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
@@ -729,6 +731,9 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_GEOMETRY:
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
 			jobinfo->geometry[i] = uint16[i];
+		break;
+	case SELECT_DATA_REBOOT:
+		jobinfo->reboot = *uint16;
 		break;
 	case SELECT_DATA_ROTATE:
 		jobinfo->rotate = *uint16;
@@ -815,6 +820,9 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			uint16[i] = jobinfo->geometry[i];
 		}
+		break;
+	case SELECT_DATA_REBOOT:
+		*uint16 = jobinfo->reboot;
 		break;
 	case SELECT_DATA_ROTATE:
 		*uint16 = jobinfo->rotate;
@@ -904,6 +912,7 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 			rc->geometry[i] = (uint16_t)jobinfo->geometry[i];
 		}
 		rc->conn_type = jobinfo->conn_type;
+		rc->reboot = jobinfo->reboot;
 		rc->rotate = jobinfo->rotate;
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
@@ -959,13 +968,16 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		/* NOTE: If new elements are added here, make sure to 
 		 * add equivalant pack of zeros below for NULL pointer */
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			pack16((uint16_t)jobinfo->start[i], buffer);
-			pack16((uint16_t)jobinfo->geometry[i], buffer);
+			pack16(jobinfo->start[i], buffer);
+			pack16(jobinfo->geometry[i], buffer);
 		}
-		pack16((uint16_t)jobinfo->conn_type, buffer);
-		pack16((uint16_t)jobinfo->rotate, buffer);
-		pack32((uint32_t)jobinfo->node_cnt, buffer);
-		pack32((uint32_t)jobinfo->max_procs, buffer);
+		pack16(jobinfo->conn_type, buffer);
+		pack16(jobinfo->reboot, buffer);
+		pack16(jobinfo->rotate, buffer);
+
+		pack32(jobinfo->node_cnt, buffer);
+		pack32(jobinfo->max_procs, buffer);
+
 		packstr(jobinfo->bg_block_id, buffer);
 		packstr(jobinfo->ionodes, buffer);
 		packstr(jobinfo->blrtsimage, buffer);
@@ -973,10 +985,12 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		packstr(jobinfo->mloaderimage, buffer);
 		packstr(jobinfo->ramdiskimage, buffer);
 	} else {
-		for (i=0; i<((SYSTEM_DIMENSIONS*2)+2); i++)
+		for (i=0; i<((SYSTEM_DIMENSIONS*2)+3); i++)
 			pack16((uint16_t) 0, buffer);
+
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
+
 		packstr("", buffer);
 		packstr("", buffer);
 		packstr("", buffer);
@@ -1004,9 +1018,12 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 		safe_unpack16(&(jobinfo->geometry[i]), buffer);
 	}
 	safe_unpack16(&(jobinfo->conn_type), buffer);
+	safe_unpack16(&(jobinfo->reboot), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
+
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
 	safe_unpack32(&(jobinfo->max_procs), buffer);
+
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage), &uint16_tmp, buffer);
@@ -1062,7 +1079,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		snprintf(buf, size,
-			 "CONNECT ROTATE MAX_PROCS GEOMETRY START BLOCK_ID");
+			 "CONNECT REBOOT ROTATE MAX_PROCS GEOMETRY START BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
 		if (jobinfo->max_procs == NO_VAL)
@@ -1078,9 +1095,10 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 				jobinfo->start[1], jobinfo->start[2]);
 		} 
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %9s    %1ux%1ux%1u %5s %-16s",
+			 "%7.7s %6.6s %6.6s %9s    %1ux%1ux%1u %5s %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
-			 _job_rotate_string(jobinfo->rotate),
+			 _yes_no_string(jobinfo->reboot),
+			 _yes_no_string(jobinfo->rotate),
 			 max_procs_char,
 			 geometry[0], geometry[1], geometry[2],
 			 start_char, jobinfo->bg_block_id);
@@ -1100,10 +1118,11 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		}
 		
 		snprintf(buf, size, 
-			 "Connection=%s Rotate=%s MaxProcs=%s "
+			 "Connection=%s Reboot=%s Rotate=%s MaxProcs=%s "
 			 "Geometry=%1ux%1ux%1u Start=%s Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
-			 _job_rotate_string(jobinfo->rotate),
+			 _yes_no_string(jobinfo->reboot),
+			 _yes_no_string(jobinfo->rotate),
 			 max_procs_char,
 			 geometry[0], geometry[1], geometry[2],
 			 start_char, jobinfo->bg_block_id);
@@ -1115,9 +1134,13 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		snprintf(buf, size, "%s", 
 			 _job_conn_type_string(jobinfo->conn_type));
 		break;
+	case SELECT_PRINT_REBOOT:
+		snprintf(buf, size, "%s",
+			 _yes_no_string(jobinfo->reboot));
+		break;
 	case SELECT_PRINT_ROTATE:
 		snprintf(buf, size, "%s",
-			 _job_rotate_string(jobinfo->rotate));
+			 _yes_no_string(jobinfo->rotate));
 		break;
 	case SELECT_PRINT_GEOMETRY:
 		snprintf(buf, size, "%1ux%1ux%1u",

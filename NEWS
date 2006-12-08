@@ -7,7 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Add ability to change a node's features via "scontrol update". NOTE: 
     Update slurm.conf also to preserve changes over slurmctld restart or 
     reconfig.
-    NOTE: Node state information can not be preserved from earlier versions.
+    NOTE: Job and node state information can not be preserved from earlier 
+          versions.
  -- Added new slurm.conf parameter TaskPluginParam.
  -- Fix for job requeue and credential revoke logic from Hongjia Cao (NUDT).
  -- Fix for incorrectly generated masks for task/affinity plugin,
@@ -16,7 +17,8 @@ documents those changes that are of interest to users and admins.
     of "0x". patch.1.2.0-pre9.061208.srun_maskparse from Dan Palermo (HP).
  -- Add -c support to the -B automatic mask generation for multi-core 
     support, patch.1.2.0-pre9.061208.mcore_cpuspertask from Dan Palermo (HP).
- 
+ -- BLUEGENE - Added --reboot option to srun, salloc, and sbatch commands.
+
 * Changes in SLURM 1.2.0-pre9
 =============================
  -- Fix for select/cons_res state preservation over slurmctld restart,

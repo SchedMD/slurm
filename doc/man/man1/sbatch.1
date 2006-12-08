@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 1.2" "November 2006" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.2" "December 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -245,7 +245,7 @@ Job allocation number.
 .TP 
 \fB%N\fR
 Node name. (Will result in a separate file per node.)
-.RS \-10
+.RE
 
 .TP
 \fB\-U\fR, \fB\-\-account\fR[=]<\fIaccount\fR>
@@ -346,6 +346,10 @@ SLURM will normally allocate a TORUS if possible for a given geometry.
 Disables rotation of the job's requested geometry in order to fit an 
 appropriate partition.
 By default the specified geometry can rotate in three dimensions.
+
+.TP
+\fB\-\-reboot\fR
+Force the allocated nodes to reboot before starting the job.
 
 .TP
 \fB\-\-blrts\-image\fR[=]<\fIpath\fR>

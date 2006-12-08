@@ -243,6 +243,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 #endif
 	if (opt.conn_type != -1)
 		desc->conn_type = opt.conn_type;
+	if (opt.reboot)
+		desc->reboot = 1;
 	if (opt.no_rotate)
 		desc->rotate = 0;
 	if (opt.mincpus > -1)

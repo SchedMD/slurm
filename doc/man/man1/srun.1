@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "October 2006" "srun 1.2" "slurm components"
+.TH SRUN "1" "December 2006" "srun 1.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -782,6 +782,7 @@ represent the required geometry giving dimensions in the X, Y and
 Z directions. For example "\-\-geometry=2x3x4", specifies a block 
 of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on 
 Blue Gene).
+
 .TP
 \fB\-\-conn\-type\fR=\fItype\fR
 Require the partition connection type to be of a certain type.  
@@ -789,11 +790,16 @@ On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.
 If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
 You should not normally set this option.
 SLURM will normally allocate a TORUS if possible for a given geometry.
+
 .TP
 \fB\-R\fR, \fB\-\-no\-rotate\fR
 Disables rotation of the job's requested geometry in order to fit an 
 appropriate partition.
 By default the specified geometry can rotate in three dimensions.
+
+.TP
+\fB\-\-reboot\fR
+Force the allocated nodes to reboot before starting the job.
 
 .TP
 \fB\-\-blrts\-image\fR=\fIpath\fR

@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.2" "September 2006" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.2" "December 2006" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -327,7 +327,9 @@ Disables rotation of the job's requested geometry in order to fit an
 appropriate partition.
 By default the specified geometry can rotate in three dimensions.
 
-Output version information and exit.
+.TP
+\fB\-\-reboot\fR
+Force the allocated nodes to reboot before starting the job.
 
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
