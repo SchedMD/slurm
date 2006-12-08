@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "November 2006" "squeue 1.2" "Slurm components"
+.TH SQUEUE "1" "December 2006" "squeue 1.2" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -79,6 +79,10 @@ The field specifications available include:
 \fB%a\fR
 Account associated with the job
 .TP
+\fB%A\fR
+Number of tasks created by a job step.
+This reports the value of the \fBsrun \-\-ntasks\fR option.
+.TP
 \fB%b\fR 
 Time at which the job began execution
 .TP
@@ -88,9 +92,8 @@ This reports the value of the \fBsrun \-\-mincpus\fR option with a
 default value of zero.
 .TP
 \fB%C\fR 
-Number of CPUs (processors) requested to the job or job step.
-This reports the value of the \fBsrun \-\-ntasks\fR option with a
-default value of zero.
+Number of CPUs (processors) requested by the job or allocated to 
+it if already running.
 .TP
 \fB%d\fR 
 Minimum size of temporary disk space (in MB) requested by the job.
