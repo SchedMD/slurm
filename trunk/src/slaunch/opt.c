@@ -191,6 +191,25 @@ static void _print_version(void)
 }
 
 /*
+ * _isvalue
+ * returns 1 is the argument appears to be a value, 0 otherwise
+ */
+static int _isvalue(char *arg) {
+    	if (isdigit(*arg)) {	 /* decimal values and 0x... hex values */
+	    	return 1;
+	}
+
+	while (isxdigit(*arg)) { /* hex values not preceded by 0x */
+		arg++;
+	}
+	if (*arg == ',' || *arg == '\0') { /* end of field or string */
+	    	return 1;
+	}
+
+	return 0;	/* not a value */
+}
+
+/*
  * verify cpu_bind arguments
  * returns -1 on error, 0 otherwise
  */
@@ -216,7 +235,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
 	while (p[0] != '\0') {
-		if ((p[0] == ',') && (!isdigit(p[1])))
+	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
 			p[0] = ';';
 		p++;
 	}
@@ -342,7 +361,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
 	while (p[0] != '\0') {
-		if ((p[0] == ',') && (!isdigit(p[1])))
+	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
 			p[0] = ';';
 		p++;
 	}

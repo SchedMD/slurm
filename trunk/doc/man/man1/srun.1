@@ -630,9 +630,8 @@ with '0x' in which case they interpreted as hexadecimal values.
 .B mask_cpu:<list>
 bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
-CPU masks are \fBalways\fR interpreted as hexadecimal values.
-Note that masks must be preceded with a '0x' if they don't begin
-with [0-9] so they are seen as numerical values by srun.
+CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
+preceded with an optional '0x'.
 .TP
 .B sockets
 auto\-generated masks bind to sockets
