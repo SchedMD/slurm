@@ -63,6 +63,9 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 				   const uint32_t *gtid,
 				   const uint32_t maxtasks,
 				   bitstr_t ***masks_p);
+static void _lllp_enlarge_masks(launch_tasks_request_msg_t *req,
+				const uint32_t maxtasks,
+				bitstr_t **masks);
 static void _lllp_use_available(launch_tasks_request_msg_t *req,
 				const uint32_t maxtasks,
 				bitstr_t **masks);
@@ -112,7 +115,7 @@ static uint16_t _block_map(uint16_t index, uint16_t *map);
 /* 
  * lllp_distribution
  *
- * Note: lllp stands for lowest level of logical processors. 
+ * Note: lllp stands for Lowest Level of Logical Processors. 
  *
  * When automatic binding is enabled:
  *      - no binding flags set >= CPU_BIND_NONE, and
@@ -179,6 +182,10 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	}
 
 	if (masks) {
+		_task_layout_display_masks(req, gtid, maxtasks, masks); 
+		if (req->cpus_per_task > 1) {
+			_lllp_enlarge_masks(req, maxtasks, masks);
+		}
 		_task_layout_display_masks(req, gtid, maxtasks, masks); 
 	    	_lllp_use_available(req, maxtasks, masks);
 		_task_layout_display_masks(req, gtid, maxtasks, masks); 
@@ -263,6 +270,74 @@ _compute_min_overlap(bitstr_t *bitmask, uint32_t *resv,
 					min_overlap, min_rotval);
 	*p_min_overlap = min_overlap;
 	*p_min_rotval  = min_rotval;
+}
+
+/*
+ * _lllp_enlarge_masks
+ *
+ * Given an array of masks, update the masks to honor the number
+ * of cpus requested per task in req->cpus_per_task.  Note: not
+ * concerned with mask overlap between tasks as _lllp_use_available
+ * will take care of that.
+ *
+ * IN- job launch request
+ * IN- maximum number of tasks
+ * IN/OUT- array of masks
+ */
+static void _lllp_enlarge_masks (launch_tasks_request_msg_t *req,
+				const uint32_t maxtasks,
+				bitstr_t **masks)
+{
+	int i, j, k, l;
+	int cpus_per_task = req->cpus_per_task;
+
+	debug3("_lllp_enlarge_masks");
+
+	/* enlarge each mask */
+	for (i = 0; i < maxtasks; i++) {
+		bitstr_t *bitmask = masks[i];
+		bitstr_t *addmask;
+		int bitmask_size = bit_size(bitmask);
+		int num_added = 0;
+
+		/* get current number of set bits in bitmask */
+		int num_set = bit_set_count(bitmask);
+		if (num_set >= cpus_per_task) {
+			continue;
+		}
+
+		/* add bits by selecting disjoint cores first, then threads */
+		for (j = conf->threads; j > 0; j--) {
+			/* rotate current bitmask to find new candidate bits */
+		        for (k = 1; k < bitmask_size / j; k++) {
+				addmask = bit_rotate_copy(bitmask, k*j,
+								bitmask_size);
+
+			    	/* check candidate bits to add into to bitmask */
+				for (l = 0; l < bitmask_size; l++) {
+					if (bit_test(addmask,l) &&
+					    !bit_test(bitmask,l)) {
+						bit_set(bitmask,l);
+						num_set++;
+						num_added++;
+					}
+					if (num_set >= cpus_per_task) {
+						break;
+					}
+				}
+
+				/* done with candidate mask */
+				bit_free(addmask);
+				if (num_set >= cpus_per_task) {
+					break;
+				}
+			}
+			if (num_set >= cpus_per_task) {
+				break;
+			}
+		}
+		debug3("  mask %d => added %d bits", i, num_added);
+	}
 }
 
 /*
