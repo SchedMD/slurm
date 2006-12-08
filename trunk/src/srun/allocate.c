@@ -2,7 +2,7 @@
  * src/srun/allocate.c - srun functions for managing node allocations
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -493,6 +493,8 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.conn_type != (uint16_t) NO_VAL)
 		j->conn_type = opt.conn_type;
 			
+	if (opt.reboot)
+		j->reboot = 1;
 	if (opt.no_rotate)
 		j->rotate = 0;
 

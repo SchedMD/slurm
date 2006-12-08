@@ -97,6 +97,7 @@ typedef struct salloc_options {
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
+	bool reboot;		/* --reboot			*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	int16_t conn_type;	/* --conn-type 			*/
 	time_t begin;		/* --begin			*/

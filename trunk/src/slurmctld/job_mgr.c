@@ -86,7 +86,7 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER004"
+#define JOB_STATE_VERSION      "VER005"
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -1710,6 +1710,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint32_t total_nodes, max_procs;
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
+	uint16_t reboot;
 	uint16_t rotate;
 	uint16_t conn_type;
 #endif
@@ -1839,9 +1840,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_desc->min_nodes = tot;
 	}
 	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_REBOOT, &reboot);
+	if (reboot == (uint16_t) NO_VAL) {
+		reboot = 0;	/* default is no reboot */
+		select_g_set_jobinfo(job_desc->select_jobinfo,
+				     SELECT_DATA_REBOOT, &reboot);
+	}
+	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_ROTATE, &rotate);
 	if (rotate == (uint16_t) NO_VAL) {
-		rotate = (uint16_t) 1;
+		rotate = 1;	/* refault is to rotate */
 		select_g_set_jobinfo(job_desc->select_jobinfo,
 				     SELECT_DATA_ROTATE, &rotate);
 	}
@@ -3669,6 +3677,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 #ifdef HAVE_BG
  {
+	 uint16_t reboot = (uint16_t) NO_VAL;
 	 uint16_t rotate = (uint16_t) NO_VAL;
 	 uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
 	 char *image = NULL;
@@ -3685,6 +3694,19 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					      SELECT_DATA_ROTATE, &rotate);
 		 }
 	 }
+
+	 select_g_get_jobinfo(job_specs->select_jobinfo,
+			      SELECT_DATA_REBOOT, &reboot);
+	 if (reboot != (uint16_t) NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			info("update_job: setting reboot to %u for "
+			     "jobid %u", reboot, job_ptr->job_id);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_REBOOT, &reboot);
+		}
+	}
 	
 	 select_g_get_jobinfo(job_specs->select_jobinfo,
 			      SELECT_DATA_GEOMETRY, geometry);
@@ -3695,7 +3717,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 uint32_t i, tot = 1;
 			 for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				 tot *= geometry[i];
-			 info("update_job: setting rotate to %ux%ux%u "
+			 info("update_job: setting geometry to %ux%ux%u "
 			      "min_nodes=%u for jobid %u", 
 			      geometry[0], geometry[1], 
 			      geometry[2], tot, job_ptr->job_id);

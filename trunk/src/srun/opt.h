@@ -194,6 +194,7 @@ typedef struct srun_options {
 
 	/* BLUEGENE SPECIFIC */
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
+	bool reboot;		/* --reboot			*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	uint16_t conn_type;	/* --conn-type 			*/
 	char *blrtsimage;       /* --blrtsimage BlrtsImage for block */

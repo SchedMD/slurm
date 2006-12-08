@@ -156,6 +156,7 @@
 #define LONG_OPT_LINUX_IMAGE     0x141
 #define LONG_OPT_MLOADER_IMAGE   0x142
 #define LONG_OPT_RAMDISK_IMAGE   0x143
+#define LONG_OPT_REBOOT          0x144
 
 /*---- global variables, defined in opt.h ----*/
 char **remote_argv;
@@ -1006,6 +1007,7 @@ static void _opt_default()
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
+	opt.reboot          = false;
 	opt.no_rotate	    = false;
 	opt.conn_type	    = (uint16_t) NO_VAL;
 	opt.blrtsimage = NULL;
@@ -1188,7 +1190,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_CONN_TYPE:
 		opt.conn_type = _verify_conn_type(val);
 		break;
-	
+
 	case OPT_NO_ROTATE:
 		opt.no_rotate = true;
 		break;
@@ -1398,8 +1400,9 @@ void set_options(const int argc, char **argv, int first)
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
-		{"mloader-image",      required_argument, 0, LONG_OPT_MLOADER_IMAGE},
-		{"ramdisk-image",      required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
+		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1970,6 +1973,9 @@ void set_options(const int argc, char **argv, int first)
 				break;			
 			xfree(opt.ramdiskimage);
 			opt.ramdiskimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_REBOOT:
+			opt.reboot = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2599,6 +2605,7 @@ static void _opt_list()
 	str = print_geometry();
 	info("geometry       : %s", str);
 	xfree(str);
+	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	
 	if (opt.blrtsimage)
@@ -2658,7 +2665,7 @@ static void _usage(void)
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
 "            [--ntasks-per-core=n]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
 "            [--blrts-image=path] [--linux-image=path]\n"
 "            [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
@@ -2798,6 +2805,7 @@ static void _help(void)
 		"Blue Gene related options:\n"
 		"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
 		"  -R, --no-rotate             disable geometry rotation\n"
+		"      --reboot                reboot block before starting job\n"
 		"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 		"                              if not set, then tries to fit TORUS else MESH\n"
 		"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
