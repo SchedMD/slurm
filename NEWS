@@ -7,10 +7,13 @@ documents those changes that are of interest to users and admins.
  -- Add ability to change a node's features via "scontrol update". NOTE: 
     Update slurm.conf also to preserve changes over slurmctld restart or 
     reconfig.
+    NOTE: Node state information can not be preserved from earlier versions.
  -- Added new slurm.conf parameter TaskPluginParam.
  -- Fix for job requeue and credential revoke logic from Hongjia Cao (NUDT).
  -- Fix for incorrectly generated masks for task/affinity plugin
     patch.1.2.0-pre9.061207.bitfmthex from Dan Palermo (HP).
+ -- Make mask_cpu options of srun and slaunch commands not requeue prefix
+    of "0x". patch.1.2.0-pre9.061208.srun_maskparse from Dan Palermo (HP).
 
 * Changes in SLURM 1.2.0-pre9
 =============================
