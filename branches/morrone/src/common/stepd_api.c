@@ -58,7 +58,7 @@
 #include "src/common/slurm_jobacct.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurmd/common/stepd_api.h"
+#include "src/common/stepd_api.h"
 
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
