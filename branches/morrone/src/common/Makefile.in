@@ -95,7 +95,7 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	hostlist.h slurm_step_layout.c slurm_step_layout.h \
 	checkpoint.c checkpoint.h parse_time.c parse_time.h \
 	job_options.c job_options.h global_defaults.c timers.c \
-	timers.h slurm_xlator.h
+	timers.h slurm_xlator.h stepd_api.c stepd_api.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
@@ -110,7 +110,7 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	$(am__objects_1) slurm_selecttype_info.lo \
 	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
 	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
-	timers.lo
+	timers.lo stepd_api.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libdaemonize_la_LIBADD =
@@ -394,7 +394,8 @@ libcommon_la_SOURCES = \
 	job_options.c job_options.h	\
 	global_defaults.c		\
 	timers.c timers.h		\
-	slurm_xlator.h			
+	slurm_xlator.h			\
+	stepd_api.c stepd_api.h		
 
 EXTRA_libcommon_la_SOURCES = \
 	$(extra_unsetenv_src)
@@ -516,6 +517,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timers.Plo@am__quote@
