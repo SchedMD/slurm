@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/common/stepd_api.c - slurmstepd message API
+ *  src/common/stepd_api.c - slurmstepd message API
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.

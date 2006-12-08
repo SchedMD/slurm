@@ -54,9 +54,9 @@
 #include "src/common/eio.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

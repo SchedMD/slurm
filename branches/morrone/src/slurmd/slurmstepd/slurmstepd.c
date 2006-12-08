@@ -49,10 +49,10 @@
 #include "src/common/xsignal.h"
 #include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
+#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
-#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"

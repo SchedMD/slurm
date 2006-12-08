@@ -54,8 +54,7 @@
 #include "src/common/env.h"
 #include "src/common/io_hdr.h"
 #include "src/common/job_options.h"
-
-#include "src/slurmd/common/stepd_api.h"
+#include "src/common/stepd_api.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
