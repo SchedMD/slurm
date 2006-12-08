@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  print.h - squeue print job definitions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -249,6 +249,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_nodes)
 #define step_format_add_name(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_name)
+#define step_format_add_num_tasks(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_num_tasks)
 
 /*****************************************************************************
  * Step Line Print Functions
@@ -270,6 +272,8 @@ int _print_step_time_used(job_step_info_t * step, int width,
 int _print_step_name(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_nodes(job_step_info_t * step, int width,
+			bool right_justify, char *suffix);
+int _print_step_num_tasks(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 
 #endif
