@@ -465,7 +465,8 @@ extern int update_state_node2(GtkDialog *dialog,
 	gtk_window_set_default(GTK_WINDOW(dialog), label);
 	gtk_dialog_add_button(dialog,
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-	
+
+	node_msg->features = NULL;
 	node_msg->reason = NULL;
 	node_msg->node_names = xstrdup(nodelist);
 
