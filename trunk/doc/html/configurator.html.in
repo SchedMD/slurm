@@ -132,7 +132,7 @@ function displayfile()
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
-   "#TaskPluginParam= <br>" +
+   "TaskPluginParam=" + get_radio_value(document.config.task_plugin_param) + "<br>" +
    "#TmpFs= <br>" +
    "#UsePAM= <br>" +
    "# <br>" +
@@ -486,6 +486,15 @@ Select one value for <B>TaskPlugin</B>:<BR>
 <input type="radio" name="task_plugin" value="affinity"> <B>Affinity</B>: 
 CPU affinity support
 (see srun man pages for the --cpu_bind, --mem_bind, and -E options)
+<DL><DL>
+<DT><B>TaskPluginParam</B> (As used by <I>TaskPlugin=Affinity</I> only):
+<DT><input type="radio" name="task_plugin_param" value="Cpusets">
+    <B>Cpusets</B>: Use <I>cpusets</I> to control task binding.
+    To become available in the Spring of 2007.
+<DT><input type="radio" name="task_plugin_param" value="Sched" checked>
+    <B>Sched</B>: Use <I>sched_setaffinity</I> or <I>plpa_sched_setaffinity</I>
+    (if available) to bind tasks to processors.
+</DL></DL>
 <P>
 
 <H2>Prolog and Epilog</H2>
@@ -618,6 +627,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 29 September 2006</p>
+Last modified 8 December 2006</p>
 </BODY>
 

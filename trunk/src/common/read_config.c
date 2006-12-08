@@ -1627,6 +1627,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
 		if (strcasecmp(temp_str, "cpusets") == 0)
 			conf->task_plugin_param = TASK_PARAM_CPUSETS;
+		else if (strcasecmp(temp_str, "sched") == 0)
+			conf->task_plugin_param = TASK_PARAM_SCHED;
 		else {
 			fatal("Bad TaskPluginParam: %s", temp_str);
 			conf->task_plugin_param = TASK_PARAM_NONE;

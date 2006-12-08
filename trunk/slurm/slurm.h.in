@@ -395,6 +395,7 @@ typedef enum select_type_plugin_info {
 /* Values for slurm_ctl_conf.task_plugin_param */
 #define TASK_PARAM_NONE    0x0000
 #define TASK_PARAM_CPUSETS 0x0001
+#define TASK_PARAM_SCHED   0x0002
 
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
