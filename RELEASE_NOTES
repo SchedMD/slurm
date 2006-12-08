@@ -103,8 +103,9 @@ OTHER CHANGES
   include:
   - Node and job data returned is correct (several errors in old plugin)
   - Support added for configuration file ("wiki.conf" in same directory
-    as "slurm.conf" file, see "man wiki.conf" for details). Currntly 
-    wiki.conf is only used to store an authentication key. 
+    as "slurm.conf" file, see "man wiki.conf" for details). Currently 
+    wiki.conf is only used to store an authentication key, which is not 
+    used by most versions of the Maui Scheduler.
   - There is no longer a "sched-wiki" RPM. All files are in the main RPM.
 
 See the file NEWS for more details.
