@@ -101,7 +101,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	if (job_list == NULL) {
 		*err_code = -140;
-		*err_msg = "Still performing initialization");
+		*err_msg = "Still performing initialization";
 		error("wiki: job_list not yet initilized");
 		return -1;
 	}
