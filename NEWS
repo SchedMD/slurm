@@ -4,7 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.22
 =========================
  - Add squeue option to print a job step's task count (-o %A).
-   
+ - Initialize forward_struct to avoid trying to free a bad pointer,
+   patch from Anton Blanchard (SAMBA).
+
 * Changes in SLURM 1.1.21
 =========================
  - BLUEGENE - Wait on a fini to make sure all threads are finished before
