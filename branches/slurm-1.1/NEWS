@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  - Add squeue option to print a job step's task count (-o %A).
  - Initialize forward_struct to avoid trying to free a bad pointer,
    patch from Anton Blanchard (SAMBA).
+ - In sched/wiki2, fix fatal race condition on slurmctld startup.
 
 * Changes in SLURM 1.1.21
 =========================
