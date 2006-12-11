@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     of "0x". patch.1.2.0-pre9.061208.srun_maskparse from Dan Palermo (HP).
  -- Add -c support to the -B automatic mask generation for multi-core 
     support, patch.1.2.0-pre9.061208.mcore_cpuspertask from Dan Palermo (HP).
+ -- Fix bug in MASK_CPU calculation, 
+    patch.1.2.0-pre9.061211.avail_cpuspertask from Dan Palermo (HP).
  -- BLUEGENE - Added --reboot option to srun, salloc, and sbatch commands.
 
 * Changes in SLURM 1.2.0-pre9
