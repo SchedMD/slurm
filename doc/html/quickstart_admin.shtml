@@ -16,7 +16,12 @@ and <i>--sysconfdir=</i></li>
 <li>Type <i>make install</i> to install the programs, documentation, libaries,
 header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and
-<i>doc/html/configurator.html</i>.</li>
+<i>doc/html/configurator.html</i>.<br>
+NOTE: The <i>SlurmUser</i> must be created as needed prior to starting SLURM.<br>
+NOTE: The parent directories for SLURM's log files, process ID files,
+state save directories, etc. are not created by SLURM.
+They must be created and made writable by <i>SlurmUser</i> as needed prior to 
+starting SLURM daemons.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.</li>
 <li>Create OpenSSL keys:<br>
 <i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
@@ -314,6 +319,12 @@ In this case &quot;emcri&quot; is the private management network interface
 for the host &quot;mcri&quot;. Port numbers to be used for 
 communications are specified as well as various timer values.</p>
 
+<p>The <i>SlurmUser</i> must be created as needed prior to starting SLURM.
+The parent directories for SLURM's log files, process ID files,
+state save directories, etc. are not created by SLURM.
+They must be created and made writable by <i>SlurmUser</i> as needed prior to
+starting SLURM daemons.</p>
+
 <p>A description of the nodes and their grouping into partitions is required. 
 A simple node range expression may optionally be used to specify
 ranges of nodes to avoid building a configuration file with large
@@ -412,9 +423,8 @@ initiate job steps.</p>
 <i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
 <i>openssl rsa -in &lt;sysconfdir&gt;/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i> 
 </p>
-<p>SLURM does not use reserved ports to authenticate communication between 
-components, but relies upon an external entity to determine the user who 
-initiated a request.  
+<p>Authentication of communications from SLURM commands to the daemons 
+or between the daemons uses a different security mechanism that is configurable.
 You must specify one &quot;auth&quot; plugin for this purpose. 
 Currently, only three 
 authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, and 
@@ -608,6 +618,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 December 2006</p>
+<p style="text-align:center;">Last modified 11 December 2006</p>
 
 <!--#include virtual="footer.txt"-->
