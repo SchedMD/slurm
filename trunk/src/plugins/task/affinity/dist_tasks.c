@@ -358,20 +358,16 @@ static void _lllp_use_available (launch_tasks_request_msg_t *req,
 	int resv_incr, i;
 	uint32_t *resv;
 	int rotval, prev_rotval;
-	bool recheck_threads = FALSE;
 
 	/* select the unit of reservation rotation increment based on CR type */
 	if ((conf->cr_type == CR_SOCKET) 
 	    || (conf->cr_type == CR_SOCKET_MEMORY)) {
-		resv_incr = conf->cores * conf->threads;
+		resv_incr = conf->cores * conf->threads; /* socket contents */
 	} else if ((conf->cr_type == CR_CORE) 
 		   || (conf->cr_type == CR_CORE_MEMORY)) {
-		resv_incr = conf->threads;
+		resv_incr = conf->threads;		 /* core contents */
 	} else {
-		resv_incr = conf->threads;
-		if (resv_incr > 1) {
-			recheck_threads = TRUE;
-		}
+		resv_incr = conf->threads;		 /* core contents */
 	}
 	if (resv_incr < 1) {		/* make sure increment is non-zero */ 
 		debug3("_lllp_use_available changed resv_incr %d to 1", resv_incr);
@@ -401,11 +397,11 @@ static void _lllp_use_available (launch_tasks_request_msg_t *req,
 
 		/* make sure the reservation increment is larger than the number
 		 * of contiguous bits in the mask to maintain any properties
-		 * present in the mask (e.g. use both cores on one socket
+		 * present in the mask (e.g. use both cores on one socket)
 		 */
 		int this_resv_incr = resv_incr;
 		while (this_resv_incr < contig_bits) {
-			this_resv_incr *= 2;
+			this_resv_incr += resv_incr;
 		}
 
 		/* rotate mask to find the minimum reservation overlap starting
@@ -418,18 +414,20 @@ static void _lllp_use_available (launch_tasks_request_msg_t *req,
 					&min_overlap, &min_rotval);
 
 		/* if we didn't find a zero overlap, recheck at a thread
-		 * granularity if allowed with current settings
+		 * granularity
 		 */
-		if ((min_overlap != 0) && recheck_threads) {
+		if (min_overlap != 0) {
 		        int prev_resv_incr = this_resv_incr;
 			this_resv_incr = 1;
-			while (this_resv_incr < contig_bits) {
-				this_resv_incr *= 2;
-			}
 			if (this_resv_incr != prev_resv_incr) {
+				int this_min_overlap, this_min_rotval;
 				_compute_min_overlap(bitmask, resv,
 					rotmask_size, rotval, this_resv_incr,
-					&min_overlap, &min_rotval);
+					&this_min_overlap, &this_min_rotval);
+				if (this_min_overlap < min_overlap) {
+					min_overlap = this_min_overlap;
+					min_rotval  = this_min_rotval;
+				}
 			}
 		}
 
