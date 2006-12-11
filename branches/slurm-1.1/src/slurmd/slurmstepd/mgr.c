@@ -444,6 +444,7 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	resp.msg_type    = MESSAGE_TASK_EXIT;
 	resp.srun_node_id = job->nodeid;
 	resp.forward.cnt = 0;
+	resp.forward_struct = NULL;
 	resp.ret_list = NULL;
 	resp.orig_addr.sin_addr.s_addr = 0;
 
