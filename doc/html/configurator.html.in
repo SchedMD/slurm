@@ -90,6 +90,21 @@ function get_select_type_params()
   }
 }
 
+// When generating TaskPluginParam return the parameters that
+// correspond to the checked task_plugin
+function get_task_plugin_param()
+{
+  for (var i=0; i<document.config.task_plugin.length; i++) {
+    if (document.config.task_plugin[i].checked) {
+       if (document.config.task_plugin[i].value == "affinity") {
+         return "TaskPluginParam=" + 
+		get_radio_value(document.config.task_plugin_param)
+       }
+    }
+  }
+  return "#TaskPluginParam="
+}
+
 
 function displayfile()
 {
@@ -132,7 +147,7 @@ function displayfile()
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
-   "TaskPluginParam=" + get_radio_value(document.config.task_plugin_param) + "<br>" +
+   get_task_plugin_param() + "<br>" +
    "#TmpFs= <br>" +
    "#UsePAM= <br>" +
    "# <br>" +
@@ -493,7 +508,8 @@ CPU affinity support
     To become available in the Spring of 2007.
 <DT><input type="radio" name="task_plugin_param" value="Sched" checked>
     <B>Sched</B>: Use <I>sched_setaffinity</I> or <I>plpa_sched_setaffinity</I>
-    (if available) to bind tasks to processors.
+    (if available) to bind tasks to processors. This is the default mode of
+    operation.
 </DL></DL>
 <P>
 
