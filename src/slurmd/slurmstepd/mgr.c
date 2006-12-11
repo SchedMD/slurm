@@ -447,7 +447,8 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	resp.forward_struct = NULL;
 	resp.ret_list = NULL;
 	resp.orig_addr.sin_addr.s_addr = 0;
-
+	resp.forward_struct_init = 0;
+	
 	/*
 	 *  XXX Hack for TCP timeouts on exit of large, synchronized
 	 *  jobs. Delay a random amount if job->nnodes > 100
