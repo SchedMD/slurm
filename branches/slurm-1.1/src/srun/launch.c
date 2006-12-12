@@ -510,12 +510,18 @@ static void * _p_launch_task(void *arg)
 	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
-	
+	int i = 0;
+
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
-	if (_verbose)
+	if (_verbose) {
 		_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
-	
+		for(i=0; i<req->forward.cnt; i++)
+			_print_launch_msg(msg, 
+					  job->step_layout->
+					  host[req->forward.node_id[i]],
+					  req->forward.node_id[i]);
+	}
 again:
 	ret_list = slurm_send_recv_rc_packed_msg(req, opt.msg_timeout);
 	if(!ret_list) {
