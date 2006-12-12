@@ -699,7 +699,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
-		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
 			error("[job %u] prolog failed", req->job_id);
 			errnum = ESLURMD_PROLOG_FAILED;
