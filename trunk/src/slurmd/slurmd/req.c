@@ -72,13 +72,13 @@
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
 #include "src/common/fd.h"
+#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
-#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/task_plugin.h"
 

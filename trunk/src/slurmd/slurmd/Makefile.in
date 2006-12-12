@@ -77,8 +77,8 @@ PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
 	read_proc.$(OBJEXT) reverse_tree_math.$(OBJEXT) xcpu.$(OBJEXT) \
 	proctrack.$(OBJEXT) setproctitle.$(OBJEXT) \
-	slurmstepd_init.$(OBJEXT) stepd_api.$(OBJEXT) \
-	run_script.$(OBJEXT) task_plugin.$(OBJEXT)
+	slurmstepd_init.$(OBJEXT) run_script.$(OBJEXT) \
+	task_plugin.$(OBJEXT)
 am_slurmd_OBJECTS = $(am__objects_1) config.$(OBJEXT)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -309,8 +309,6 @@ SLURMD_SOURCES = \
 	$(top_builddir)/src/slurmd/common/setproctitle.h \
 	$(top_builddir)/src/slurmd/common/slurmstepd_init.c \
 	$(top_builddir)/src/slurmd/common/slurmstepd_init.h \
-	$(top_builddir)/src/slurmd/common/stepd_api.c \
-	$(top_builddir)/src/slurmd/common/stepd_api.h \
 	$(top_builddir)/src/slurmd/common/run_script.c \
 	$(top_builddir)/src/slurmd/common/run_script.h \
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
@@ -422,7 +420,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testconfig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpu.Po@am__quote@
@@ -489,20 +486,6 @@ slurmstepd_init.obj: $(top_builddir)/src/slurmd/common/slurmstepd_init.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/slurmstepd_init.c' object='slurmstepd_init.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o slurmstepd_init.obj `if test -f '$(top_builddir)/src/slurmd/common/slurmstepd_init.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmd/common/slurmstepd_init.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmd/common/slurmstepd_init.c'; fi`
-
-stepd_api.o: $(top_builddir)/src/slurmd/common/stepd_api.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT stepd_api.o -MD -MP -MF "$(DEPDIR)/stepd_api.Tpo" -c -o stepd_api.o `test -f '$(top_builddir)/src/slurmd/common/stepd_api.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/stepd_api.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/stepd_api.Tpo" "$(DEPDIR)/stepd_api.Po"; else rm -f "$(DEPDIR)/stepd_api.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/stepd_api.c' object='stepd_api.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o stepd_api.o `test -f '$(top_builddir)/src/slurmd/common/stepd_api.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/stepd_api.c
-
-stepd_api.obj: $(top_builddir)/src/slurmd/common/stepd_api.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT stepd_api.obj -MD -MP -MF "$(DEPDIR)/stepd_api.Tpo" -c -o stepd_api.obj `if test -f '$(top_builddir)/src/slurmd/common/stepd_api.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmd/common/stepd_api.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmd/common/stepd_api.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/stepd_api.Tpo" "$(DEPDIR)/stepd_api.Po"; else rm -f "$(DEPDIR)/stepd_api.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/stepd_api.c' object='stepd_api.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o stepd_api.obj `if test -f '$(top_builddir)/src/slurmd/common/stepd_api.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmd/common/stepd_api.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmd/common/stepd_api.c'; fi`
 
 run_script.o: $(top_builddir)/src/slurmd/common/run_script.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT run_script.o -MD -MP -MF "$(DEPDIR)/run_script.Tpo" -c -o run_script.o `test -f '$(top_builddir)/src/slurmd/common/run_script.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/run_script.c; \

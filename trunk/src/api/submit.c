@@ -82,7 +82,7 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 		req->alloc_sid = getsid(0);
 
 	if ( (req->alloc_node == NULL)
-	    && (getnodename(host, sizeof(host)) == 0) ) {
+	    && (gethostname_short(host, sizeof(host)) == 0) ) {
 		req->alloc_node = host;
 		host_set  = true;
 	}

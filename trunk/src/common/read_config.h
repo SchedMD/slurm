@@ -226,12 +226,18 @@ extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
 /*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
  *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_hostname(const char *node_name);
 
 /*
  * slurm_conf_get_nodename - Return the NodeName for given NodeHostname
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
@@ -279,13 +285,23 @@ extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 
 /*
- * getnodename - equivalent to gethostname(), but return only the first 
+ * gethostname_short - equivalent to gethostname(), but return only the first 
  *      component of the fully qualified name (e.g. "linux123.foo.bar" 
  *      becomes "linux123") 
  * NOTE: NodeName in the config may be different from real hostname.
  *       Use get_conf_node_name() to get the former.
  */
-extern int getnodename (char *name, size_t len);
+extern int gethostname_short (char *name, size_t len);
 
+/*
+ * Replace first "%h" in path string with NodeHostname.
+ * Replace first "%n" in path string with NodeName.
+ *
+ * NOTE: Caller should be holding slurm_conf_lock() when calling this function.
+ *
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *slurm_conf_expand_slurmd_path(const char *path,
+					   const char *node_name);
 
 #endif /* !_READ_CONFIG_H */

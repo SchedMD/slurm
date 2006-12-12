@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/common/stepd_api.h - slurmstepd message API
+ *  src/common/stepd_api.h - slurmstepd message API
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
@@ -66,7 +66,9 @@ typedef enum {
 	REQUEST_STEP_SUSPEND,
 	REQUEST_STEP_RESUME,
 	REQUEST_STEP_TERMINATE,
-	REQUEST_STEP_COMPLETION
+	REQUEST_STEP_COMPLETION,
+	REQUEST_STEP_TASK_INFO,
+	REQUEST_STEP_LIST_PIDS
 } step_msg_t;
 
 typedef enum {
@@ -83,6 +85,14 @@ typedef struct {
 	uint32_t nodeid;
 } slurmstepd_info_t;
 
+typedef struct {
+	int             id;	    /* local task id */
+	uint32_t        gtid;	    /* global task id */
+	pid_t           pid;	    /* task pid */
+	bool            exited;     /* true if task has exited */
+	int             estatus;    /* exit status if exited is true*/
+} slurmstepd_task_info_t;
+
 /*
  * Cleanup stale stepd domain sockets.
  */
@@ -93,10 +103,15 @@ int stepd_terminate(int fd);
 /*
  * Connect to a slurmstepd proccess by way of its unix domain socket.
  *
+ * Both "directory" and "nodename" may be null, in which case stepd_connect
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
+ *
  * Returns a socket descriptor for the opened socket on success, 
  * and -1 on error.
  */
-int stepd_connect(char *directory, char *nodename,
+int stepd_connect(const char *directory, const char *nodename,
 		  uint32_t jobid, uint32_t stepid);
 
 /*
@@ -148,6 +163,11 @@ int stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
  * Scan for available running slurm step daemons by checking
  * "directory" for unix domain sockets with names beginning in "nodename".
  *
+ * Both "directory" and "nodename" may be null, in which case stepd_available
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
+ *
  * Returns a List of pointers to step_loc_t structures.
  */
 List stepd_available(const char *directory, const char *nodename);
@@ -196,5 +216,12 @@ int stepd_completion(int fd, step_complete_msg_t *sent);
  */
 int stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, 
 		       stat_jobacct_msg_t *resp);
+
+
+int stepd_task_info(int fd, slurmstepd_task_info_t **task_info,
+		    uint32_t *task_info_count);
+
+int stepd_list_pids(int fd, pid_t **pids_array, int *pids_count);
+
 
 #endif /* _STEPD_API_H */
