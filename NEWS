@@ -172,6 +172,8 @@ documents those changes that are of interest to users and admins.
  - Initialize forward_struct to avoid trying to free a bad pointer,
    patch from Anton Blanchard (SAMBA).
  - In sched/wiki2, fix fatal race condition on slurmctld startup.
+ - Fix for displaying launching verbose messages for each node under the
+   tree instead of just the head one.
 
 * Changes in SLURM 1.1.21
 =========================

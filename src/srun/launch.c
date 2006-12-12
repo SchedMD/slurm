@@ -198,9 +198,12 @@ launch(void *arg)
 	msg.data            = &r;
 	
 	if (_verbose) {
-		char *name = nodelist_nth_host(job->step_layout->node_list, 0);
-		_print_launch_msg(&r, name);
-		free(name);
+		for(i=0; i<job->step_layout->node_cnt; i++) {
+			char *name = nodelist_nth_host(
+				job->step_layout->node_list, i);
+			_print_launch_msg(&r, name);
+			free(name);
+		}
 	}
 	if(!(ret_list = slurm_send_recv_msgs(
 		     job->step_layout->node_list,
@@ -328,9 +331,6 @@ rwfail:
 	error("_update_contacted_node: "
 	      "write from srun message-handler process failed");
 }
-
-
-
 
 static void 
 _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
