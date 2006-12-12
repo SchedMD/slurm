@@ -102,54 +102,50 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 {
 	char bind_type[42];
+	char action[42];
 	char status[42];
-	char prefix[42];
-	char suffix[42];
 	char mstr[1 + NUMA_NUM_NODES / 4];
-	int task_id = job->envtp->procid;
+	int task_gid = job->envtp->procid;
+	int task_lid = job->envtp->localid;
 	pid_t mypid = job->envtp->task_pid;
 
 	if (!(job->mem_bind_type & MEM_BIND_VERBOSE))
 		return;
 
+	action[0] = '\0';
 	status[0] = '\0';
-	prefix[0] = '\0';
-	suffix[0] = '\0';
 
 	if (job->mem_bind_type & MEM_BIND_NONE) {
-		strcpy(bind_type, "set to NO");
-		strcpy(prefix, "current ");
-		sprintf(suffix, "is mask 0x");
+		strcpy(action, "");
+		strcpy(bind_type, "=NONE");
 	} else {
-		strcpy(prefix, "setting ");
-		sprintf(suffix, "to mask 0x");
+		strcpy(action, " set");
 		if (job->mem_bind_type & MEM_BIND_RANK) {
-			strcpy(bind_type, "set to RANK");
+			strcpy(bind_type, "=RANK");
 		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
-			strcpy(bind_type, "set to LOCAL");
+			strcpy(bind_type, "=LOC ");
 		} else if (job->mem_bind_type & MEM_BIND_MAP) {
-			strcpy(bind_type, "set to MAP_MEM");
+			strcpy(bind_type, "=MAP ");
 		} else if (job->mem_bind_type & MEM_BIND_MASK) {
-			strcpy(bind_type, "set to MASK_MEM");
+			strcpy(bind_type, "=MASK");
 		} else if (job->mem_bind_type & (~MEM_BIND_VERBOSE)) {
-			strcpy(bind_type, "set to UNKNOWN");
+			strcpy(bind_type, "=UNK ");
 		} else {
-			strcpy(bind_type, "not set");
-			strcpy(prefix, "current ");
-			sprintf(suffix, "is mask 0x");
+			strcpy(action, "");
+			strcpy(bind_type, "=NULL");
 		}
 	}
 
-	fprintf(stderr, "SLURM_MEM_BIND_TYPE %s, "
-			"%s%saffinity of task %u pid %u on host %s %s%s\n",
+	fprintf(stderr, "mem_bind%s - "
+			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
 			bind_type,
-			status,
-			prefix,
-			task_id,
-			mypid,
 			conf->hostname,
-			suffix,
-			_memset_to_str(mask, mstr));
+			task_gid,
+			task_lid,
+			mypid,
+			_memset_to_str(mask, mstr),
+			action,
+			status);
 }
 
 int get_memset(nodemask_t *mask, slurmd_job_t *job)

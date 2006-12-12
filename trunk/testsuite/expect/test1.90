@@ -167,7 +167,7 @@ if {$task_mask != $task_cnt} {
 set verbose_cnt 0
 send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
-	-re "setting affinity of task" {
+	-re "mem_bind=MAP" {
 		incr verbose_cnt
 		exp_continue
 	}
