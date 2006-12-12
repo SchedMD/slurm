@@ -61,6 +61,21 @@
 #include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
 
+static bool
+_slurm_authorized_user()
+{
+	uid_t uid, slurm_user_id;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	slurm_user_id = (uid_t)conf->slurm_user_id;
+	slurm_conf_unlock();
+
+	uid = getuid();
+
+	return ((uid == (uid_t)0) || (uid == slurm_user_id));
+}
+
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
  * Presumably the ECONNREFUSED means that nothing is attached to the listening
@@ -73,6 +88,11 @@ _handle_stray_socket(const char *socket_name)
 	struct stat buf;
 	uid_t uid;
 	time_t now;
+
+	/* Only attempt to remove the stale socket if process is running
+	   as root or the SlurmUser. */
+	if (!_slurm_authorized_user())
+		return;
 
 	if (stat(socket_name, &buf) == -1) {
 		debug3("_handle_stray_socket: unable to stat %s: %m",
