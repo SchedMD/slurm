@@ -1136,7 +1136,7 @@ static int
 _handle_list_pids(int fd, slurmd_job_t *job)
 {
 	int i;
-	pid_t **pids = NULL;
+	pid_t *pids = NULL;
 	int npids = 0;
 
 	debug("_handle_list_pids for job %u.%u", job->jobid, job->stepid);
