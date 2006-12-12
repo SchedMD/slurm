@@ -1476,19 +1476,23 @@ void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
 	char opt_dist[10];
 	char *dist_str = NULL;
 	char *dist_str_next = NULL;
+	int bitmap_size = bit_size(bitmap_test);
+	unsigned int i;
 	dist_str = cpu_bind;
 	
 	if (cpu_bind_type & CPU_BIND_RANK) {
-		unsigned int i = 0;
-		for (i = 0; i < MIN(numtasks,bit_size(bitmap_test)); i++) {
+		for (i = 0; i < MIN(numtasks,bitmap_size); i++) {
 			bit_set(bitmap_test, i);
 		}
 		return;
 	}
 
+	i = 0;
 	while (dist_str != NULL) {
-	    	/* get next mask from cpu_bind */
-		if (*dist_str == ',') {
+		if (i >= numtasks) {	/* no more tasks need masks */
+		    	break;
+		}
+		if (*dist_str == ',') {	/* get next mask from cpu_bind */
 			dist_str++;
 		}
 		dist_str_next = strchr(dist_str, ',');
@@ -1510,11 +1514,14 @@ void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
 			} else {
 				mycpu = strtoul(opt_dist, NULL, 10);
 			}
-			bit_set(bitmap_test, mycpu);
+			if (mycpu < bitmap_size) {
+				bit_set(bitmap_test, mycpu);
+			}
 		}
 
 		dist_str = dist_str_next;
 		dist_str_next = NULL;
+	    	i++;
 	}
 }
 
@@ -1569,14 +1576,14 @@ static void _cr_update_lllp(int reserve,
 		_cr_update_reservation(reserve, lllp_reserved, 
 				       bitmap_test);
 
-		bit_free(bitmap_test);	/*** fixme: store with job_id? ***/
+		bit_free(bitmap_test);	/* not currently stored with job_id */
 
 		/*** display the updated lllp_reserved counts ***/
 		buffer[0] = '\0';
-		for (i=0; i < num_bits; i++) {
+		for (i=num_bits-1; i >=0; i--) {
 			sprintf(buftmp, "%d", lllp_reserved[i]);
 			if (strlen(buftmp) + strlen(buffer) + 1 < buf_len) {
-			        if (i) strcat(buffer,",");
+			        if (i < (num_bits-1)) strcat(buffer,",");
 				strcat(buffer,buftmp);
 			} else {/* out of space...indicate incomplete string */
 				buffer[strlen(buffer)-1] = '*';
@@ -1589,7 +1596,7 @@ static void _cr_update_lllp(int reserve,
 		} else {
 			strcpy(buf_action, "release");
 		}
-		info("LLLP update %s %s ", buf_action, buffer);
+		info("LLLP update %s: %s (Proc ID %d...0)", buf_action, buffer, num_bits-1);
 	}
 }
 
@@ -1603,7 +1610,7 @@ void cr_reserve_lllp(uint32_t job_id,
 	uint32_t numtasks = 0;
 	char buf_type[100];
 
-	debug3("reserve LLLP %d\n", job_id);
+	debug3("reserve LLLP job %d\n", job_id);
 
 	if (req->tasks_to_launch) {
 		numtasks = req->tasks_to_launch[node_id];
@@ -1641,7 +1648,7 @@ void cr_release_lllp(uint32_t job_id)
 	uint32_t numtasks = 0;
 	char buf_type[100];
 
-	debug3("release LLLP %d", job_id);
+	debug3("release LLLP job %d", job_id);
 
     	/* retrieve cpu_bind_type, cpu_bind from job_id */
 	slurm_mutex_lock(&lllp_ctx->mutex);

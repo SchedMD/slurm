@@ -439,19 +439,20 @@ types of application hints to the SLURM multi-core support:
 
 For example, given a cluster with nodes containing two sockets,
 each containing two cores, the following commands illustrate the
-behavior of these flags:
+behavior of these flags.  In the verbose --cpu_bind output, tasks
+are described as 'hostname, task Global_ID Local_ID [PID]':
 <pre>
 % srun -n 4 --hint=compute_bound --cpu_bind=verbose sleep 1
-setting affinity of task 0 pid 15425 on host hydra12 to mask 0x1
-setting affinity of task 2 pid 15427 on host hydra12 to mask 0x2
-setting affinity of task 1 pid 15426 on host hydra12 to mask 0x4
-setting affinity of task 3 pid 15428 on host hydra12 to mask 0x8
+cpu_bind=MASK - hydra12, task  0  0 [15425]: mask 0x1 set
+cpu_bind=MASK - hydra12, task  1  1 [15426]: mask 0x4 set
+cpu_bind=MASK - hydra12, task  2  2 [15427]: mask 0x2 set
+cpu_bind=MASK - hydra12, task  3  3 [15428]: mask 0x8 set
 
 % srun -n 4 --hint=memory_bound --cpu_bind=verbose sleep 1
-setting affinity of task 1 pid 15551 on host hydra12 to mask 0x4
-setting affinity of task 0 pid 15550 on host hydra12 to mask 0x1
-setting affinity of task 2 pid 14974 on host <u><b>hydra13</b></u> to mask 0x1
-setting affinity of task 3 pid 14975 on host <u><b>hydra13</b></u> to mask 0x4
+cpu_bind=MASK - hydra12, task  0  0 [15550]: mask 0x1 set
+cpu_bind=MASK - hydra12, task  1  1 [15551]: mask 0x4 set
+cpu_bind=MASK - <u><b>hydra13</b></u>, task  2  <u><b>0</b></u> [14974]: mask 0x1 set
+cpu_bind=MASK - <u><b>hydra13</b></u>, task  3  <u><b>1</b></u> [14975]: mask 0x4 set
 </pre>
 
 <p>See also 'srun --hint=help' and 'man srun'</p>
