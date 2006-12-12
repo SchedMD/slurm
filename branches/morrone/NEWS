@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Fix for job requeue and credential revoke logic from Hongjia Cao (NUDT).
  -- Fix for incorrectly generated masks for task/affinity plugin
     patch.1.2.0-pre9.061207.bitfmthex from Dan Palermo (HP).
+ -- Add "scontrol listpids [JOBID.STEPID]" support.
 
 * Changes in SLURM 1.2.0-pre9
 =============================

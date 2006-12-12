@@ -98,8 +98,20 @@ Print information one line per record.
 .TP
 \fIpidinfo\fP \fIPROC_ID\fP
 Print the Slurm job id and scheduled termination time corresponding to the 
-supplied process id, \fIPROC_ID\fP, on the current node. This will only 
-work for processes which Slurm spawns and their descendants.
+supplied process id, \fIPROC_ID\fP, on the current node.  This will work only
+with processes on node on which scontrol is run, and only for those processes
+spawned by SLURM and their descendants.
+.TP
+\fIlistpids\fP [JOBID[.STEPID]] [NodeName]
+Print a listing of the process IDs in a job step (if JOBID.STEPID is provided),
+or all of the job steps in a job (if JOBID is provided), or all of the job
+steps in all of the jobs on the local node (if JOBID is not provided or JOBID
+is "*").  This will work only with processes on node on which scontrol is run,
+and only for those processes spawned by SLURM and their descendants.
+
+Note that the NodeName option is only really useful when you have multiple
+slurmd daemons running on the same host machine.  Multiple slurmd daemons on
+one host are, in general, only used by SLURM developers.
 .TP
 \fIping\fP
 Ping the primary and secondary slurmctld daemon and report if 
