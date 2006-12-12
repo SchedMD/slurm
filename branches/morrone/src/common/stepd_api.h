@@ -103,6 +103,11 @@ int stepd_terminate(int fd);
 /*
  * Connect to a slurmstepd proccess by way of its unix domain socket.
  *
+ * Both "directory" and "nodename" may be null, in which case stepd_connect
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
+ *
  * Returns a socket descriptor for the opened socket on success, 
  * and -1 on error.
  */
@@ -157,6 +162,11 @@ int stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
 /*
  * Scan for available running slurm step daemons by checking
  * "directory" for unix domain sockets with names beginning in "nodename".
+ *
+ * Both "directory" and "nodename" may be null, in which case stepd_available
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
  *
  * Returns a List of pointers to step_loc_t structures.
  */

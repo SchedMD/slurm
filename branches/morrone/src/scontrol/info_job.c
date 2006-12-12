@@ -452,12 +452,11 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 		return;
 	}
 
-	printf("%-6s %-6s %-7s %-8s\n", "PID", "STEP", "LOCALID", "GLOBALID");
-
 	stepd_task_info(fd, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
-		printf("%-6d %-6u %-7d %-8d\n",
+		printf("%-8d %-8u %-6u %-7d %-8d\n",
 		       task_info[i].pid,
+		       jobid,
 		       stepid,
 		       task_info[i].id,
 		       task_info[i].gtid);
@@ -466,8 +465,8 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	stepd_list_pids(fd, &pids, &count);
 	for (i = 0; i < count; i++) {
 		if (!_in_task_array(pids[i], task_info, tcount)) {
-			printf("%-6d %-6u %-7s %-8s\n",
-			       pids[i], stepid, "-", "-");
+			printf("%-8d %-8u %-6u %-7s %-8s\n",
+			       pids[i], jobid, stepid, "-", "-");
 		}
 	}
 
@@ -482,7 +481,37 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 static void
 _list_pids_all_steps(const char *node_name, uint32_t jobid)
 {
-	fprintf(stderr, "_list_pids_all_steps() not yet implemented!\n");
+	List steps;
+	ListIterator itr;
+	step_loc_t *stepd;
+
+	steps = stepd_available(NULL, node_name);
+	itr = list_iterator_create(steps);
+	while((stepd = list_next(itr))) {
+		if (jobid == stepd->jobid) {
+			_list_pids_one_step(stepd->nodename, stepd->jobid,
+					    stepd->stepid);
+		}
+	}
+	list_iterator_destroy(itr);
+	list_destroy(steps);
+}
+
+static void
+_list_pids_all_jobs(const char *node_name)
+{
+	List steps;
+	ListIterator itr;
+	step_loc_t *stepd;
+
+	steps = stepd_available(NULL, node_name);
+	itr = list_iterator_create(steps);
+	while((stepd = list_next(itr))) {
+		_list_pids_one_step(stepd->nodename, stepd->jobid,
+				    stepd->stepid);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(steps);
 }
 
 /* 
@@ -499,16 +528,22 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 extern void
 scontrol_list_pids(const char *jobid_str, const char *node_name)
 {
-	uint32_t jobid, stepid;
+	uint32_t jobid = 0, stepid = 0;
 
 	/* Job ID is required */
-	if (!_parse_jobid(jobid_str, &jobid)) {
+	if (jobid_str != NULL
+	    && jobid_str[0] != '*'
+	    && !_parse_jobid(jobid_str, &jobid)) {
 		exit_code = 1;
 		return;
 	}
 
 	/* Step ID is optional */
-	if (_parse_stepid(jobid_str, &stepid)) {
+	printf("%-8s %-8s %-6s %-7s %-8s\n",
+	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
+	if (jobid_str == NULL || jobid_str[0] == '*') {
+		_list_pids_all_jobs(node_name);
+	} else if (_parse_stepid(jobid_str, &stepid)) {
 		_list_pids_one_step(node_name, jobid, stepid);
 	} else {
 		_list_pids_all_steps(node_name, jobid);

@@ -445,6 +445,11 @@ _sockname_regex(regex_t *re, const char *filename,
  * Scan for available running slurm step daemons by checking
  * "directory" for unix domain sockets with names beginning in "nodename".
  *
+ * Both "directory" and "nodename" may be null, in which case stepd_available
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
+ *
  * Returns a List of pointers to step_loc_t structures.
  */
 List
@@ -455,6 +460,18 @@ stepd_available(const char *directory, const char *nodename)
 	struct dirent *ent;
 	regex_t re;
 	struct stat stat_buf;
+
+	if (nodename == NULL) {
+		nodename = _guess_nodename();
+	}
+	if (directory == NULL) {
+		slurm_ctl_conf_t *cf;
+
+		cf = slurm_conf_lock();
+		directory = slurm_conf_expand_slurmd_path(
+			cf->slurmd_spooldir, nodename);
+		slurm_conf_unlock();
+	}
 
 	l = list_create((ListDelF) _free_step_loc_t);
 	_sockname_regex_init(&re, nodename);

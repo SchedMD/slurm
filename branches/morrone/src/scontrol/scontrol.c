@@ -719,14 +719,9 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
-		} else if (argc < 2) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "missing argument for keyword:%s\n", 
-				 argv[0]);
 		} else {
-			scontrol_list_pids (argv[1],
-					    argc == 2 ? NULL : argv[2]);
+			scontrol_list_pids (argc == 1 ? NULL : argv[1],
+					    argc <= 2 ? NULL : argv[2]);
 		}
 	}
 	else {
