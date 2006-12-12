@@ -414,6 +414,266 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	return rc;
 }
 
+extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	bg_record_t *bg_record = NULL, *found_record = NULL;
+	time_t now;
+	char reason[128], tmp[64], time_str[32];
+	blockreq_t blockreq; 
+	int i = 0, j = 0;
+	char coord[BA_SYSTEM_DIMENSIONS];
+	char ionodes[128];
+	int set = 0;
+	int set_error = 0;
+	bitstr_t *ionode_bitmap = NULL;
+	List requests = NULL;
+	List delete_list = NULL;
+	ListIterator itr;
+	
+	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+		info("You can't use this call unless you are on a Dynamically "
+		     "allocated system.  Please use update BlockName instead");
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	memset(coord, -1, BA_SYSTEM_DIMENSIONS);
+	memset(ionodes, 0, 128);
+	if(!part_desc_ptr->name) {
+		error("update_sub_node: No name specified");
+		rc = SLURM_ERROR;
+		goto end_it;
+				
+	}
+
+	now = time(NULL);
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
+			
+	while (part_desc_ptr->name[j] != '\0') {
+		if (part_desc_ptr->name[j] == '[') {
+			if(set<1) {
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			i = j++;
+			if((part_desc_ptr->name[j] >= 58 
+			   && part_desc_ptr->name[j] <= 47)) {
+				error("update_sub_node: sub part is empty");
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			while(part_desc_ptr->name[i] != '\0') {
+				if(part_desc_ptr->name[i] == ']') 
+					break;
+				i++;
+			}
+			if(part_desc_ptr->name[i] != ']') {
+				error("update_sub_node: "
+				      "No close (']') on sub part");
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			
+			strncpy(ionodes, part_desc_ptr->name+j, i-j); 
+			set++;
+			break;
+		} else if((part_desc_ptr->name[j] < 58 
+			   && part_desc_ptr->name[j] > 47)) {
+			if(set) {
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			for(i = 0; i < BA_SYSTEM_DIMENSIONS; i++) {
+				if((part_desc_ptr->name[i] >= 58)
+				    || (part_desc_ptr->name[i] <= 47)) {
+					error("update_sub_node: "
+					      "misformatted name given %s",
+					      part_desc_ptr->name);
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
+			}
+			strncpy(coord, part_desc_ptr->name+j,
+				BA_SYSTEM_DIMENSIONS); 
+			
+			j += BA_SYSTEM_DIMENSIONS-1;
+			set++;
+		}
+		j++;
+	}
+	
+	if(set != 2) {
+		error("update_sub_node: "
+		      "I didn't get the base partition and the sub part.");
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	ionode_bitmap = bit_alloc(bluegene_numpsets);
+	bit_unfmt(ionode_bitmap, ionodes);		
+
+	requests = list_create(destroy_bg_record);
+	
+	blockreq.block = coord;
+	blockreq.blrtsimage = NULL;
+	blockreq.linuximage = NULL;
+	blockreq.mloaderimage = NULL;
+	blockreq.ramdiskimage = NULL;
+	blockreq.conn_type = SELECT_SMALL;
+	blockreq.nodecards = 16;
+	blockreq.quarters = 0;
+	add_bg_record(requests, NULL, &blockreq);
+	
+	delete_list = list_create(NULL);
+	while((bg_record = list_pop(requests))) {
+		set_error = 0;
+		if(bit_overlap(bg_record->ionode_bitmap, ionode_bitmap))
+			set_error = 1;
+		
+		slurm_mutex_lock(&block_state_mutex);
+		itr = list_iterator_create(bg_list);
+		while((found_record = list_next(itr))) {
+			if(!found_record || (bg_record == found_record))
+				continue;
+			if(bit_equal(bg_record->bitmap, found_record->bitmap)
+			   && bit_equal(bg_record->ionode_bitmap, 
+					found_record->ionode_bitmap)) {
+				debug2("block %s[%s] already there",
+				       found_record->nodes, 
+				       found_record->ionodes);
+				/* we don't need to set this error, it
+				   doesn't overlap
+				*/
+				if(!set_error)
+					break;
+				
+				snprintf(reason, sizeof(reason),
+					 "update_sub_node: "
+					 "Admin set block %s state to %s %s",
+					 found_record->bg_block_id, 
+					 _block_state_str(
+						 part_desc_ptr->state_up),
+					 tmp); 
+				info("%s",reason);
+				if(found_record->job_running 
+				   > NO_JOB_RUNNING) {
+					slurm_fail_job(
+						found_record->job_running);
+				}
+			
+				if(!part_desc_ptr->state_up) {
+					found_record->job_running =
+						BLOCK_ERROR_STATE;
+					found_record->state =
+						RM_PARTITION_ERROR;
+				} else if(part_desc_ptr->state_up){
+					found_record->job_running =
+						NO_JOB_RUNNING;
+					found_record->state =
+						RM_PARTITION_FREE;
+				} else {
+					error("update_sub_node: "
+					      "Unknown state %d given",
+					      part_desc_ptr->state_up);
+					rc = SLURM_ERROR;
+					break;
+				}	
+				break;
+			} else if(!set_error
+				  && bit_equal(bg_record->bitmap,
+					       found_record->bitmap)
+				  && bit_overlap(
+					  bg_record->ionode_bitmap, 
+					  found_record->ionode_bitmap)) {
+				break;
+			}
+			
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&block_state_mutex);
+		/* we already found an existing record */
+		if(found_record) {
+			destroy_bg_record(bg_record);
+			continue;
+		}
+		/* we need to add this record since it doesn't exist */
+		if(configure_block(bg_record) == SLURM_ERROR) {
+			destroy_bg_record(bg_record);
+			error("update_sub_node: "
+			      "unable to configure block in api");
+		}
+		debug2("adding block %s to fill in small blocks "
+		       "around bad blocks",
+		       bg_record->bg_block_id);
+		print_bg_record(bg_record);
+		slurm_mutex_lock(&block_state_mutex);
+		list_append(bg_list, bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
+		
+		/* We are just adding the block not deleting any or
+		   setting this one to an error state.
+		*/
+		if(!set_error)
+			continue;
+				
+		if(!part_desc_ptr->state_up) {
+			bg_record->job_running = BLOCK_ERROR_STATE;
+			bg_record->state = RM_PARTITION_ERROR;
+		} else if(part_desc_ptr->state_up){
+			bg_record->job_running = NO_JOB_RUNNING;
+			bg_record->state = RM_PARTITION_FREE;
+		} else {
+			error("update_sub_node: Unknown state %d given",
+			      part_desc_ptr->state_up);
+			rc = SLURM_ERROR;
+			continue;
+		}
+		snprintf(reason, sizeof(reason),
+			 "update_sub_node: "
+			 "Admin set block %s state to %s %s",
+			 bg_record->bg_block_id, 
+			 _block_state_str(part_desc_ptr->state_up),
+			 tmp); 
+		info("%s",reason);
+				
+		/* remove overlapping blocks */
+		slurm_mutex_lock(&block_state_mutex);
+		itr = list_iterator_create(bg_list);
+		while((found_record = list_next(itr))) {
+			if ((!found_record) || (bg_record == found_record))
+				continue;
+			if(!blocks_overlap(bg_record, found_record)) {
+				debug2("block %s isn't part of %s",
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);
+				continue;
+			}
+			debug2("removing block %s because there is something "
+			       "wrong with part of the base partition",
+			       found_record->bg_block_id);
+			if(found_record->job_running > NO_JOB_RUNNING) {
+				slurm_fail_job(found_record->job_running);
+			}
+			list_push(delete_list, found_record);
+			list_remove(itr);
+			num_block_to_free++;
+		}		
+		list_iterator_destroy(itr);
+		free_block_list(delete_list);
+		slurm_mutex_unlock(&block_state_mutex);		
+	}
+	list_destroy(delete_list);
+	bit_free(ionode_bitmap);
+		
+	/* This only works for the error state, not free */
+	
+	last_bg_update = time(NULL);
+	
+end_it:	
+	return rc;
+}
+
 extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
 				       struct job_record *job_ptr, 
                                        enum select_data_info info,

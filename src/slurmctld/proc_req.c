@@ -651,7 +651,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		pack_all_node(&dump, &dump_size, node_req_msg->show_flags, 
-				g_slurm_auth_get_uid(msg->auth_cred));
+			      g_slurm_auth_get_uid(msg->auth_cred));
 		unlock_slurmctld(node_read_lock);
 		END_TIMER;
 		debug2("_slurm_rpc_dump_nodes, size=%d %s",
@@ -1914,6 +1914,8 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		/* do RPC call */
 		if(part_desc_ptr->hidden == (uint16_t)INFINITE) 
 			error_code = select_g_update_block(part_desc_ptr);
+		else if(part_desc_ptr->root_only == (uint16_t)INFINITE) 
+			error_code = select_g_update_sub_node(part_desc_ptr);
 		else {
 			lock_slurmctld(part_write_lock);
 			error_code = update_part(part_desc_ptr);

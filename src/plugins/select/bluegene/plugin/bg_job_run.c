@@ -284,8 +284,6 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 
 	
-	num_block_to_free = 0;
-	num_block_freed = 0;
 	delete_list = list_create(NULL);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_list);
@@ -578,8 +576,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		
-		bg_record->job_running = NO_JOB_RUNNING;
+		if(bg_record->job_running > NO_JOB_RUNNING)
+			bg_record->job_running = NO_JOB_RUNNING;
 		
 		/* remove user from list */
 		
