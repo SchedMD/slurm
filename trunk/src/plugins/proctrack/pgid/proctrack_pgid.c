@@ -186,6 +186,6 @@ slurm_container_wait(uint32_t cont_id)
 extern int
 slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
-	error("proctrack/aix does not implement slurm_container_get_pids");
+	error("proctrack/pgid does not implement slurm_container_get_pids");
 	return SLURM_ERROR;
 }
