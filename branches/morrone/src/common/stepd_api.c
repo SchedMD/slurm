@@ -101,7 +101,8 @@ _handle_stray_socket(const char *socket_name)
 }
 
 static int
-_step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
+_step_connect(const char *directory, const char *nodename,
+	      uint32_t jobid, uint32_t stepid)
 {
 	int fd;
 	int len;
@@ -683,7 +684,7 @@ rwfail:
 
 /*
  *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
 int
@@ -712,7 +713,7 @@ rwfail:
 
 /*
  *
- * Returns jobacctinfo_t struct on success, NULL if error.  
+ * Returns jobacctinfo_t struct on success, NULL on error.  
  * jobacctinfo_t must be freed after calling this function.
  */
 int 
@@ -738,5 +739,86 @@ rwfail:
 	jobacct_g_free(resp->jobacct);
 	resp->jobacct = NULL;
 	return rc;
+}
+
+/*
+ * List all of task process IDs and their local and global SLURM IDs.
+ *
+ * Returns SLURM_SUCCESS on success.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_task_info(int fd, slurmstepd_task_info_t **task_info,
+		uint32_t *task_info_count)
+{
+	int req = REQUEST_STEP_TASK_INFO;
+	slurmstepd_task_info_t *task;
+	uint32_t ntasks;
+	int i;
+
+	safe_write(fd, &req, sizeof(int));
+
+	safe_read(fd, &ntasks, sizeof(uint32_t));
+	task = (slurmstepd_task_info_t *)xmalloc(
+		ntasks * sizeof(slurmstepd_task_info_t));
+	for (i = 0; i < ntasks; i++) {
+		safe_read(fd, &(task[i].id), sizeof(int));
+		safe_read(fd, &(task[i].gtid), sizeof(uint32_t));
+		safe_read(fd, &(task[i].pid), sizeof(pid_t));
+		safe_read(fd, &(task[i].exited), sizeof(bool));
+		safe_read(fd, &(task[i].estatus), sizeof(int));
+	}
+
+	if (ntasks == 0) {
+		*task_info_count = 0;
+		*task_info = NULL;
+	} else {
+		*task_info_count = ntasks;
+		*task_info = task;
+	}
+
+	return SLURM_SUCCESS;
+rwfail:
+	*task_info_count = 0;
+	*task_info = NULL;
+	return SLURM_ERROR;
+}
+
+/*
+ * List all of process IDs in the proctrack container.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_list_pids(int fd, pid_t **pids_array, int *pids_count)
+{
+	int req = REQUEST_STEP_LIST_PIDS;
+	int npids;
+	pid_t *pids;
+	int i;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/* read the pid list */
+	safe_read(fd, &npids, sizeof(int));
+	pids = (pid_t *)xmalloc(npids * sizeof(pid_t));
+	for (i = 0; i < npids; i++) {
+		safe_read(fd, &pids[i], sizeof(pid_t));
+	}
+
+	if (npids == 0) {
+		*pids_count = 0;
+		*pids_array = NULL;
+	} else {
+		*pids_count = npids;
+		*pids_array = pids;
+	}
+
+	return SLURM_SUCCESS;
+rwfail:
+	*pids_count = 0;
+	*pids_array = NULL;
+	return SLURM_ERROR;
 }
 

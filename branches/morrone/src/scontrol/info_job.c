@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/stepd_api.h"
 
 static bool	_in_node_bit_list(int inx, int *node_list_array);
 
@@ -363,5 +364,153 @@ scontrol_print_step (char *job_step_id_str)
 				        job_id, step_id);
 		} else if (quiet_flag != 1)
 			printf ("No job steps in the system\n");
+	}
+}
+
+/* Return 1 on success, 0 on failure to find a jobid in the string */
+static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
+{
+	char *ptr, *job;
+	long jobid;
+
+	job = xstrdup(jobid_str);
+	ptr = index(job, '.');
+	if (ptr != NULL) {
+		*ptr = '\0';
+	}
+
+	jobid = strtol(job, &ptr, 10);
+	if (!xstring_is_whitespace(ptr)) {
+		fprintf(stderr, "\"%s\" does not look like a jobid\n", job);
+		xfree(job);
+		return 0;
+	}
+
+	*out_jobid = (uint32_t) jobid;
+	xfree(job);
+	return 1;
+}
+
+/* Return 1 on success, 0 on failure to find a stepid in the string */
+static int _parse_stepid(const char *jobid_str, uint32_t *out_stepid)
+{
+	char *ptr, *job, *step;
+	long stepid;
+
+	job = xstrdup(jobid_str);
+	ptr = index(job, '.');
+	if (ptr == NULL) {
+		/* did not find a period, so no step ID in this string */
+		xfree(job);
+		return 0;
+	} else {
+		step = ptr + 1;
+	}
+
+	stepid = strtol(step, &ptr, 10);
+	if (!xstring_is_whitespace(ptr)) {
+		fprintf(stderr, "\"%s\" does not look like a stepid\n", step);
+		xfree(job);
+		return 0;
+	}
+
+	*out_stepid = (uint32_t) stepid;
+	xfree(job);
+	return 1;
+}
+
+
+static bool
+_in_task_array(pid_t pid, slurmstepd_task_info_t *task_array,
+	       uint32_t task_array_count)
+{
+	int i;
+
+	for (i = 0; i < task_array_count; i++) {
+		if (pid == task_array[i].pid)
+			return true;
+	}
+
+	return false;
+}
+
+
+static void
+_list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
+{
+	int fd;
+	slurmstepd_task_info_t *task_info;
+	pid_t *pids;
+	int count = 0;
+	uint32_t tcount = 0;
+	int i;
+
+	fd = stepd_connect(NULL, node_name, jobid, stepid);
+	if (fd == -1) {
+		exit_code = 1;
+		perror("Unable to connect to slurmstepd");
+		return;
+	}
+
+	printf("%-6s %-6s %-7s %-8s\n", "PID", "STEP", "LOCALID", "GLOBALID");
+
+	stepd_task_info(fd, &task_info, &tcount);
+	for (i = 0; i < (int)tcount; i++) {
+		printf("%-6d %-6u %-7d %-8d\n",
+		       task_info[i].pid,
+		       stepid,
+		       task_info[i].id,
+		       task_info[i].gtid);
+	}
+
+	stepd_list_pids(fd, &pids, &count);
+	for (i = 0; i < count; i++) {
+		if (!_in_task_array(pids[i], task_info, tcount)) {
+			printf("%-6d %-6u %-7s %-8s\n",
+			       pids[i], stepid, "-", "-");
+		}
+	}
+
+
+	if (count > 0)
+		xfree(pids);
+	if (tcount > 0)
+		xfree(task_info);
+	close(fd);
+}
+
+static void
+_list_pids_all_steps(const char *node_name, uint32_t jobid)
+{
+	fprintf(stderr, "_list_pids_all_steps() not yet implemented!\n");
+}
+
+/* 
+ * scontrol_list_pids - given a slurmd job ID or job ID + step ID,
+ *	print the process IDs of the processes each job step (or
+ *	just the specified step ID).
+ * IN jobid_str - string representing a jobid: jobid[.stepid]
+ * IN node_name - May be NULL, in which case it will attempt to
+ *	determine the NodeName of the local host on its own.
+ *	This is mostly of use when multiple-slurmd support is in use,
+ *	because if NULL is used when there are multiple slurmd on the
+ *	node, one of them will be selected more-or-less at random.
+ */
+extern void
+scontrol_list_pids(const char *jobid_str, const char *node_name)
+{
+	uint32_t jobid, stepid;
+
+	/* Job ID is required */
+	if (!_parse_jobid(jobid_str, &jobid)) {
+		exit_code = 1;
+		return;
+	}
+
+	/* Step ID is optional */
+	if (_parse_stepid(jobid_str, &stepid)) {
+		_list_pids_one_step(node_name, jobid, stepid);
+	} else {
+		_list_pids_all_steps(node_name, jobid);
 	}
 }

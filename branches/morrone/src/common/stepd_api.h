@@ -66,7 +66,9 @@ typedef enum {
 	REQUEST_STEP_SUSPEND,
 	REQUEST_STEP_RESUME,
 	REQUEST_STEP_TERMINATE,
-	REQUEST_STEP_COMPLETION
+	REQUEST_STEP_COMPLETION,
+	REQUEST_STEP_TASK_INFO,
+	REQUEST_STEP_LIST_PIDS
 } step_msg_t;
 
 typedef enum {
@@ -82,6 +84,14 @@ typedef struct {
 	uint32_t stepid;
 	uint32_t nodeid;
 } slurmstepd_info_t;
+
+typedef struct {
+	int             id;	    /* local task id */
+	uint32_t        gtid;	    /* global task id */
+	pid_t           pid;	    /* task pid */
+	bool            exited;     /* true if task has exited */
+	int             estatus;    /* exit status if exited is true*/
+} slurmstepd_task_info_t;
 
 /*
  * Cleanup stale stepd domain sockets.
@@ -196,5 +206,12 @@ int stepd_completion(int fd, step_complete_msg_t *sent);
  */
 int stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, 
 		       stat_jobacct_msg_t *resp);
+
+
+int stepd_task_info(int fd, slurmstepd_task_info_t **task_info,
+		    uint32_t *task_info_count);
+
+int stepd_list_pids(int fd, pid_t **pids_array, int *pids_count);
+
 
 #endif /* _STEPD_API_H */
