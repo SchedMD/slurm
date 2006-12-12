@@ -373,7 +373,7 @@ _print_daemons (void)
 	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
 
-	getnodename(me, MAX_SLURM_NAME);
+	gethostname_short(me, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
 		if ((strcmp(b, me) == 0) ||
 		    (strcasecmp(b, "localhost") == 0))
@@ -487,7 +487,6 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		} else
 			scontrol_pid_info ((pid_t) atol (argv[1]) );
-
 	}
 	else if (strncasecmp (argv[0], "ping", 3) == 0) {
 		if (argc > 1) {
@@ -713,6 +712,17 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		_print_version();
+	}
+	else if (strncasecmp (argv[0], "listpids", 8) == 0) {
+		if (argc > 3) {
+			exit_code = 1;
+			fprintf (stderr, 
+				 "too many arguments for keyword:%s\n", 
+				 argv[0]);
+		} else {
+			scontrol_list_pids (argc == 1 ? NULL : argv[1],
+					    argc <= 2 ? NULL : argv[2]);
+		}
 	}
 	else {
 		exit_code = 1;

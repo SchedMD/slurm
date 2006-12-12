@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
-	if ((error_code = getnodename(node_name, MAX_SLURM_NAME)))
+	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */

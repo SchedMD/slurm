@@ -79,7 +79,8 @@ libcommon_la_SOURCES = 			\
 	job_options.c job_options.h	\
 	global_defaults.c		\
 	timers.c timers.h		\
-	slurm_xlator.h			
+	slurm_xlator.h			\
+	stepd_api.c stepd_api.h		
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_unsetenv_src)

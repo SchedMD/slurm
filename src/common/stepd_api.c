@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/common/stepd_api.c - slurmstepd message API
+ *  src/common/stepd_api.c - slurmstepd message API
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
@@ -58,7 +58,23 @@
 #include "src/common/slurm_jobacct.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurmd/common/stepd_api.h"
+#include "src/common/read_config.h"
+#include "src/common/stepd_api.h"
+
+static bool
+_slurm_authorized_user()
+{
+	uid_t uid, slurm_user_id;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	slurm_user_id = (uid_t)conf->slurm_user_id;
+	slurm_conf_unlock();
+
+	uid = getuid();
+
+	return ((uid == (uid_t)0) || (uid == slurm_user_id));
+}
 
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
@@ -72,6 +88,11 @@ _handle_stray_socket(const char *socket_name)
 	struct stat buf;
 	uid_t uid;
 	time_t now;
+
+	/* Only attempt to remove the stale socket if process is running
+	   as root or the SlurmUser. */
+	if (!_slurm_authorized_user())
+		return;
 
 	if (stat(socket_name, &buf) == -1) {
 		debug3("_handle_stray_socket: unable to stat %s: %m",
@@ -100,7 +121,8 @@ _handle_stray_socket(const char *socket_name)
 }
 
 static int
-_step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
+_step_connect(const char *directory, const char *nodename,
+	      uint32_t jobid, uint32_t stepid)
 {
 	int fd;
 	int len;
@@ -134,14 +156,36 @@ _step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 }
 
 
+static char *
+_guess_nodename()
+{
+	char host[256];
+	char *nodename = NULL;
+
+	if (gethostname_short(host, 256) != 0)
+		return NULL;
+
+	nodename = slurm_conf_get_nodename(host);
+	if (nodename == NULL) /* no match?  lets try localhost */
+		nodename = slurm_conf_get_nodename("localhost");
+
+	return nodename;
+}
+
 /*
  * Connect to a slurmstepd proccess by way of its unix domain socket.
+ *
+ * Both "directory" and "nodename" may be null, in which case stepd_connect
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
  *
  * Returns a socket descriptor for the opened socket on success, 
  * and -1 on error.
  */
 int
-stepd_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
+stepd_connect(const char *directory, const char *nodename,
+	      uint32_t jobid, uint32_t stepid)
 {
 	int req = REQUEST_CONNECT;
 	int fd = -1;
@@ -149,6 +193,18 @@ stepd_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 	void *auth_cred;
 	Buf buffer;
 	int len;
+
+	if (nodename == NULL) {
+		nodename = _guess_nodename();
+	}
+	if (directory == NULL) {
+		slurm_ctl_conf_t *cf;
+
+		cf = slurm_conf_lock();
+		directory = slurm_conf_expand_slurmd_path(
+			cf->slurmd_spooldir, nodename);
+		slurm_conf_unlock();
+	}
 
 	buffer = init_buf(0);
 	/* Create an auth credential */
@@ -409,6 +465,11 @@ _sockname_regex(regex_t *re, const char *filename,
  * Scan for available running slurm step daemons by checking
  * "directory" for unix domain sockets with names beginning in "nodename".
  *
+ * Both "directory" and "nodename" may be null, in which case stepd_available
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
+ *
  * Returns a List of pointers to step_loc_t structures.
  */
 List
@@ -419,6 +480,18 @@ stepd_available(const char *directory, const char *nodename)
 	struct dirent *ent;
 	regex_t re;
 	struct stat stat_buf;
+
+	if (nodename == NULL) {
+		nodename = _guess_nodename();
+	}
+	if (directory == NULL) {
+		slurm_ctl_conf_t *cf;
+
+		cf = slurm_conf_lock();
+		directory = slurm_conf_expand_slurmd_path(
+			cf->slurmd_spooldir, nodename);
+		slurm_conf_unlock();
+	}
 
 	l = list_create((ListDelF) _free_step_loc_t);
 	_sockname_regex_init(&re, nodename);
@@ -648,7 +721,7 @@ rwfail:
 
 /*
  *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
 int
@@ -677,7 +750,7 @@ rwfail:
 
 /*
  *
- * Returns jobacctinfo_t struct on success, NULL if error.  
+ * Returns jobacctinfo_t struct on success, NULL on error.  
  * jobacctinfo_t must be freed after calling this function.
  */
 int 
@@ -703,5 +776,86 @@ rwfail:
 	jobacct_g_free(resp->jobacct);
 	resp->jobacct = NULL;
 	return rc;
+}
+
+/*
+ * List all of task process IDs and their local and global SLURM IDs.
+ *
+ * Returns SLURM_SUCCESS on success.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_task_info(int fd, slurmstepd_task_info_t **task_info,
+		uint32_t *task_info_count)
+{
+	int req = REQUEST_STEP_TASK_INFO;
+	slurmstepd_task_info_t *task;
+	uint32_t ntasks;
+	int i;
+
+	safe_write(fd, &req, sizeof(int));
+
+	safe_read(fd, &ntasks, sizeof(uint32_t));
+	task = (slurmstepd_task_info_t *)xmalloc(
+		ntasks * sizeof(slurmstepd_task_info_t));
+	for (i = 0; i < ntasks; i++) {
+		safe_read(fd, &(task[i].id), sizeof(int));
+		safe_read(fd, &(task[i].gtid), sizeof(uint32_t));
+		safe_read(fd, &(task[i].pid), sizeof(pid_t));
+		safe_read(fd, &(task[i].exited), sizeof(bool));
+		safe_read(fd, &(task[i].estatus), sizeof(int));
+	}
+
+	if (ntasks == 0) {
+		*task_info_count = 0;
+		*task_info = NULL;
+	} else {
+		*task_info_count = ntasks;
+		*task_info = task;
+	}
+
+	return SLURM_SUCCESS;
+rwfail:
+	*task_info_count = 0;
+	*task_info = NULL;
+	return SLURM_ERROR;
+}
+
+/*
+ * List all of process IDs in the proctrack container.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_list_pids(int fd, pid_t **pids_array, int *pids_count)
+{
+	int req = REQUEST_STEP_LIST_PIDS;
+	int npids;
+	pid_t *pids;
+	int i;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/* read the pid list */
+	safe_read(fd, &npids, sizeof(int));
+	pids = (pid_t *)xmalloc(npids * sizeof(pid_t));
+	for (i = 0; i < npids; i++) {
+		safe_read(fd, &pids[i], sizeof(pid_t));
+	}
+
+	if (npids == 0) {
+		*pids_count = 0;
+		*pids_array = NULL;
+	} else {
+		*pids_count = npids;
+		*pids_array = pids;
+	}
+
+	return SLURM_SUCCESS;
+rwfail:
+	*pids_count = 0;
+	*pids_array = NULL;
+	return SLURM_ERROR;
 }
 

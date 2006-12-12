@@ -72,11 +72,11 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/bitstring.h"
+#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
-#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
@@ -721,7 +721,7 @@ _init_conf()
 	char  host[MAXHOSTNAMELEN];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
-	if (getnodename(host, MAXHOSTNAMELEN) < 0) {
+	if (gethostname_short(host, MAXHOSTNAMELEN) < 0) {
 		error("Unable to get my hostname: %m");
 		exit(1);
 	}

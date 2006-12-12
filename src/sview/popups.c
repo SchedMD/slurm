@@ -522,7 +522,7 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
 
-	getnodename(me, MAX_SLURM_NAME);
+	gethostname_short(me, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
 		if ((strcmp(b, me) == 0) ||
 		    (strcasecmp(b, "localhost") == 0))
