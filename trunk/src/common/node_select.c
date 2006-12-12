@@ -99,6 +99,8 @@ typedef struct slurm_select_ops {
 	int             (*update_nodeinfo)     (struct job_record *job_ptr);
         int             (*update_block)        (update_part_msg_t
 						*part_desc_ptr);
+        int             (*update_sub_node)     (update_part_msg_t
+						*part_desc_ptr);
 	int             (*get_info_from_plugin)(enum select_data_info cr_info,
 						void *data);
 	int             (*update_node_state)   (int index, uint16_t state);
@@ -175,6 +177,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_get_select_nodeinfo",
                 "select_p_update_nodeinfo",
 		"select_p_update_block",
+ 		"select_p_update_sub_node",
                 "select_p_get_info_from_plugin",
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt"
@@ -426,7 +429,6 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr)
 
 /* 
  * Update specific block (usually something has gone wrong)  
- * IN cr_info   - type of data to update for a given job record
  * IN part_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_part_msg_t *part_desc_ptr)
@@ -435,6 +437,18 @@ extern int select_g_update_block (update_part_msg_t *part_desc_ptr)
                return SLURM_ERROR;
 
        return (*(g_select_context->ops.update_block))(part_desc_ptr);
+}
+
+/* 
+ * Update specific sub nodes (usually something has gone wrong)  
+ * IN part_desc_ptr - information about the block
+ */
+extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.update_sub_node))(part_desc_ptr);
 }
 
 /* 
@@ -946,6 +960,7 @@ extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
 	} else {
 		(*jobinfo)->magic = 0;
 		xfree((*jobinfo)->bg_block_id);
+		xfree((*jobinfo)->ionodes);
 		xfree((*jobinfo)->blrtsimage);
 		xfree((*jobinfo)->linuximage);
 		xfree((*jobinfo)->mloaderimage);

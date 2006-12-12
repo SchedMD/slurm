@@ -224,6 +224,7 @@ extern void *mult_destroy_block(void *args);
 extern int free_block_list(List delete_list);
 extern int read_bg_conf(void);
 extern int set_ionodes(bg_record_t *bg_record);
+extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq);
 
 /* block_sys.c */
 /*****************************************************/

@@ -83,6 +83,7 @@ strong_alias(bit_unfmt_binmask,	slurm_bit_unfmt_binmask);
 strong_alias(bit_fls,		slurm_bit_fls);
 strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
 strong_alias(bit_super_set,	slurm_bit_super_set);
+strong_alias(bit_overlap,	slurm_bit_overlap);
 strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
@@ -338,7 +339,7 @@ bit_noc(bitstr_t *b, int n, int seed)
 		}
 	}
 
-	cnt = 0;					/* start at beginning */
+	cnt = 0;	/* start at beginning */
 	for (bit = 0; bit < _bitstr_bits(b); bit++) {
 		if (bit_test(b, bit)) {		/* fail */
 			if (bit >= seed)
@@ -499,6 +500,26 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
 	return 1;
 }
 
+/*
+ * return number of bits set in b1 that are also set in b2, 0 if no overlap
+ */
+extern int
+bit_overlap(bitstr_t *b1, bitstr_t *b2)
+{
+	int count = 0;
+	bitstr_t *my_bitmap = NULL;
+	
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	my_bitmap = bit_copy(b1);
+	bit_and(my_bitmap, b2);
+	count = bit_set_count(my_bitmap);
+	bit_free(my_bitmap);
+
+	return count;
+}
 /*
  * return 1 if b1 and b2 are identical, 0 otherwise
  */
@@ -1219,3 +1240,4 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 
 	return cnt;
 }
+

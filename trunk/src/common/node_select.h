@@ -98,10 +98,15 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr);
 
 /* 
  * Update specific block (usually something has gone wrong)  
- * IN cr_info   - type of data to update for a given job record
  * IN part_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_part_msg_t *part_desc_ptr);
+
+/* 
+ * Update specific sub nodes (usually something has gone wrong)  
+ * IN part_desc_ptr - information about the block
+ */
+extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr);
 
 /* 
  * Get select data from a plugin
