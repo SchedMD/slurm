@@ -448,7 +448,14 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	fd = stepd_connect(NULL, node_name, jobid, stepid);
 	if (fd == -1) {
 		exit_code = 1;
-		perror("Unable to connect to slurmstepd");
+		if (errno == ENOENT) {
+			fprintf(stderr,
+				"Job step %u.%u does not exist on this node.\n",
+				jobid, stepid);
+			exit_code = 1;
+		} else {
+			perror("Unable to connect to slurmstepd");
+		}
 		return;
 	}
 
@@ -484,17 +491,33 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 	List steps;
 	ListIterator itr;
 	step_loc_t *stepd;
+	int count = 0;
 
 	steps = stepd_available(NULL, node_name);
+	if (list_count(steps) == 0) {
+		fprintf(stderr, "Job %u does not exist on this node.\n",
+			jobid);
+		list_destroy(steps);
+		exit_code = 1;
+		return;
+	}
+
 	itr = list_iterator_create(steps);
 	while((stepd = list_next(itr))) {
 		if (jobid == stepd->jobid) {
 			_list_pids_one_step(stepd->nodename, stepd->jobid,
 					    stepd->stepid);
+			count++;
 		}
 	}
 	list_iterator_destroy(itr);
 	list_destroy(steps);
+
+	if (count == 0) {
+		fprintf(stderr, "Job %u does not exist on this node.\n",
+			jobid);
+		exit_code = 1;
+	}
 }
 
 static void
@@ -505,6 +528,13 @@ _list_pids_all_jobs(const char *node_name)
 	step_loc_t *stepd;
 
 	steps = stepd_available(NULL, node_name);
+	if (list_count(steps) == 0) {
+		fprintf(stderr, "No job steps exist on this node.\n");
+		list_destroy(steps);
+		exit_code = 1;
+		return;
+	}
+
 	itr = list_iterator_create(steps);
 	while((stepd = list_next(itr))) {
 		_list_pids_one_step(stepd->nodename, stepd->jobid,
@@ -530,7 +560,7 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 {
 	uint32_t jobid = 0, stepid = 0;
 
-	/* Job ID is required */
+	/* Job ID is optional */
 	if (jobid_str != NULL
 	    && jobid_str[0] != '*'
 	    && !_parse_jobid(jobid_str, &jobid)) {
