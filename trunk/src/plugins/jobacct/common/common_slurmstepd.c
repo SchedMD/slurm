@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  jobacct_common.c - common functions for almost all jobacct plugins.
  *****************************************************************************
- *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Danny Auble, <da@llnl.gov>
  *  UCRL-CODE-217948.
@@ -44,13 +43,18 @@ bool jobacct_shutdown = false;
 bool suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
+DIR *SlashProc = NULL;
 
 extern int common_endpoll()
 {
 	jobacct_shutdown = true;
+
+	if (SlashProc)
+		(void) closedir(SlashProc);
        
 	return SLURM_SUCCESS;
 }
+
 extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	struct jobacctinfo *jobacct = common_alloc_jobacct(jobacct_id);

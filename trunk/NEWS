@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
  -- Add "scontrol listpids [JOBID[.STEPID]]" support.
  -- Multi-core support patches, fixed SEGV and clean up output for large 
     task counts, patch.1.2.0-pre9.061212.cpubind_verbose from Dan Palermo (HP).
+ -- Make sure jobacct plugin files are closed before exec of user tasks to 
+    prevent problems with job checkpoint/restart (based on work by 
+    Hongjia Cao, NUDT).
 
 * Changes in SLURM 1.2.0-pre9
 =============================

@@ -882,6 +882,7 @@ _fork_all_tasks(slurmd_job_t *job)
 				if (j > i)
 					close(readfds[j]);
 			}
+			jobacct_g_endpoll();	/* close jobacct files */
 
 			if (conf->propagate_prio == 1)
 				_set_prio_process(job);
