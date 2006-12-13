@@ -55,6 +55,10 @@ expect {
 		exit 1
 	}
 }
+if {$jobid == 0} {
+	send_user "\nFAILURE: srun failed to create an allocation\n"
+	exit 1
+}
 
 #
 # Now try to use the srun --jobid option to run in the already existing
