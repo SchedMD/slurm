@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2, fix fatal race condition on slurmctld startup.
  - Fix for displaying launching verbose messages for each node under the
    tree instead of just the head one.
+ - Fix job suspend bug, job accounting plugin with SEGV when given a 
+   bad job ID.
 
 * Changes in SLURM 1.1.21
 =========================
