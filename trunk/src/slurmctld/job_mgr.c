@@ -4598,11 +4598,9 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
-	
-    reply:
-	if(job_ptr)
-		jobacct_g_suspend_slurmctld(job_ptr);
+	jobacct_g_suspend_slurmctld(job_ptr);
 
+    reply:
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;

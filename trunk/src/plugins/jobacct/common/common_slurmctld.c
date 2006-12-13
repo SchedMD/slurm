@@ -516,9 +516,9 @@ extern int common_suspend_slurmctld(struct job_record *job_ptr)
 	if ((elapsed=now-temp) < 0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
 	
-	/* here we are really just going for a marker in time to tell where
-	   the process was suspended, we don't really need to keep track of 
-	   anything else */
+	/* here we are really just going for a marker in time to tell when
+	 * the process was suspended or resumed (check job state), we don't 
+	 * really need to keep track of anything else */
 	snprintf(buf, BUFFER_SIZE, "%d %u %d",
 		 JOB_SUSPEND,
 		 elapsed,
