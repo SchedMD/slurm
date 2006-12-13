@@ -108,6 +108,10 @@ expect {
 }
 if {$matches != 0} {
 	send_user "FAILURE: $matches of $interations tests failed\n"
+	send_user "  This should happen very rarely when JobAcctFrequency\n"
+	send_user "  is set to a small value and typically is indicative\n"
+	send_user "  of a non-checkpointable job. For more information,\n"
+	send_user "  see src/plugins/jobacct/linux/jobacct_linux.c\n"
 	set exit_code 1
 }
 

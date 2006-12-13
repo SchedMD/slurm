@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  jobacct_linux.c - slurm job accounting plugin.
  *****************************************************************************
- *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Andy Riebs, <andy.riebs@hp.com>, who borrowed heavily
  *  from other parts of SLURM, and Danny Auble, <da@llnl.gov>
@@ -39,6 +38,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
+#include <fcntl.h>
 #include "src/plugins/jobacct/common/jobacct_common.h"
 
 /*
@@ -336,7 +336,6 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
  *    wrong.
  */
 static void _get_process_data() {
-	static	DIR	*SlashProc;		/* For /proc */ 
 	static	int	SlashProcOpen = 0;
 
 	struct		dirent *SlashProcEntry;
@@ -345,7 +344,7 @@ static void _get_process_data() {
 	char		statFileName[256];	/* Allow ~20x extra length */
 	List prec_list = NULL;
 
-	int		i;
+	int		i, fd;
 	ListIterator itr;
 	ListIterator itr2;
 	prec_t *prec = NULL;
@@ -402,6 +401,18 @@ static void _get_process_data() {
 
 		if ((statFile=fopen(statFileName,"r"))==NULL)
 			continue;	/* Assume the process went away */
+
+		/*
+		 * Close the file on exec() of user tasks.
+		 *
+		 * NOTE: If we fork() slurmstepd after the fopen() and 
+		 * before fcntl() then the user task may have this 
+		 * extra file open, which can cause problems for 
+		 * checkpoint/restart, but this should be a very 
+		 * rare problem in practice.
+		 */ 
+		fd = fileno(statFile);
+		fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 		prec = xmalloc(sizeof(prec_t));
 		if (_get_process_data_line(statFile, prec))
