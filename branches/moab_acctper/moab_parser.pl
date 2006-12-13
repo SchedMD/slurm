@@ -43,25 +43,43 @@ use XML::Simple;
 use Time::Local;
 use Time::localtime;
 use Data::Dumper;
+use POSIX("strftime");
+
+
 
 #define variables for this info to be sent to
-$db_host = "norman";
-$db_dir = "/tmp";
-$db_user = "lcrm";
+$db_host = "ramon";
+$db_dir = "/lcrm_root/data/db_data";
+$db_user = "lrm";
 
 $conhost = `hostname -s`;
 $conhost =~ s/\n//g;
 
-$diff = 3600;
-$tm = localtime;
-$endtime = timelocal(0, 0, $tm->hour, $tm->mday, $tm->mon, $tm->year);
-$starttime = $endtime - ($diff-1);
+$time_period = 5; #period you want to grab (i.e. last so many minutes)
 
-$time_in_mins = sprintf("%.4d.%.2d.%.2d.%.2d.%.2d",
-			($tm->year + 1900) , ($tm->mon + 1) , $tm->mday, 
-			$tm->hour , $tm->min);
+#get seconds to go from in the last period minus 1 so we don't have overlap
+$diff = ($time_period * 60) - 1; 
+$tm = localtime; # get the localtime;
+$min = $tm->min;
+#get the last time period
+while(($min%$time_period)) {
+	$min--;
+}
 
-$file = "lcrm_" . $conhost . "_" . $time_in_mins;
+#get the endtime and the starttime of the period
+$endtime = timelocal(0, $min, $tm->hour, $tm->mday, $tm->mon, $tm->year);
+$starttime = $endtime - ($diff);
+
+# $time_in_mins = sprintf("%.4d.%.2d.%.2d.%.2d.%.2d.",
+# 			($tm->year + 1900) , ($tm->mon + 1) , $tm->mday, 
+# 			$tm->hour , $tm->min);
+
+$file_time = strftime("%Y.%m.%d.%H.%M.%Z",
+		      0, $min, $tm->hour,
+		      $tm->mday, $tm->mon, $tm->year,
+		      $tm->wday, $tm->yday, $tm->isdst);
+
+$file = "moab_" . $conhost . "_" . $file_time . ".dat";
 
 $db_file = "$db_dir/$file";
 $send_file = "/tmp/$file";
@@ -112,27 +130,29 @@ foreach $queue (@{$doc->{queue}}) {
 			next;
 		}
 		$start = $job->{StartTime};
-
-		if($start > $endtime) {
+		$timestamp = $job->{AWDuration} + $job->{SuspendDuration}
+		+ $start;		
+		
+		$end = $timestamp;
+		if($start > $endtime || $end < $starttime) {
 			next;
 		}	
 		
+		$info = "$job->{JobID} $start $starttime";
 		# get just this hours info
 		if($start < $starttime) {
 			$start = $starttime;
 		}
 		
-		$timestamp = $job->{AWDuration} + $job->{SuspendDuration}
-		+ $start;		
-		
-		$end = $timestamp;
+		$info .= " $end $endtime ";
 		if($end > $endtime) {
 			$end = $endtime;
 		}
-		$running_time = ($end - $start);
+		$running_time = ($end - $start) * $job->{ReqProcs};
+		$info .= "$end $start $running_time ";
 		
 		if($job->{PAL}) {
-			#print "got $end - $start = $running_time $job->{AWDuration} extra to subtract for job $job->{JobID}\n";
+			print "got $end - $start * $job->{ReqProcs} = $running_time $job->{AWDuration} extra to subtract for job $job->{JobID}\n";
 			$parts{$job->{PAL}} -= $running_time;
 		}
 
@@ -141,51 +161,41 @@ foreach $queue (@{$doc->{queue}}) {
 			next;
 		}
 		
-		$info = "";
-		#$info .= "$job->{JobID} "; #JOBID
+		#$info = "";
+		#$info .= "$job->{JobID}\t"; #JOBID
 		if($job->{PAL}) {
-			$info .= "$job->{PAL} "; #host
-			$info .= "$job->{PAL}_part "; #partition
-			# get just this hours info
-			# if($job->{StartTime} < $starttime) {
-# 				$extra = $job->{AWDuration} 
-# 				- ($starttime - $job->{StartTime});
-# 			} else {
-# 				$extra = $job->{AWDuration};
-# 			}
-# 			$parts{$job->{PAL}} -= $extra;
-			
-
+			$info .= "$job->{PAL}\t"; #host
+			$info .= "$job->{PAL}_part\t"; #partition
 		} else {
-			$info .= "- - "; #host partition
+			$info .= "-\t-\t"; #host partition
 		}
 		
 		if($job->{Class}) {
-			$info .= "$job->{Class} "; #pool
+			$info .= "$job->{Class}\t"; #pool
 		} else {
-			$info .= "- "; #pool
+			$info .= "-\t"; #pool
 		}
 		
-		$info .= "$timestamp "; #timestamp
+		$info .= "$timestamp\t"; #timestamp
 		
 		if($job->{User}) {
-			$info .= "$job->{User} "; #user
+			$info .= "$job->{User}\t"; #user
 		} else {
-			$info .= "- "; #user
+			$info .= "-\t"; #user
 		}
 		
 		if($job->{Account}) {
-			$info .= "$job->{Account} "; #bank
+			$info .= "$job->{Account}\t"; #bank
 		} else {
-			$info .= "- "; #bank
+			$info .= "-\t"; #bank
 		}
 		
-		$info .= "MOAB "; #type
+		$info .= "MOAB\t"; #type
 		
 		$ucpus = $job->{AWDuration} * $job->{ReqProcs};
-		$info .= "$ucpus "; #ucpu
+		$info .= "$ucpus\t"; #ucpu
 		
-		$info .= "0 0 0\n"; #icpu memint vmemint
+		$info .= "0\t0\t0\n"; #icpu memint vmemint
 		print FILE $info;
 	}
 }
@@ -219,28 +229,29 @@ for($i=0; $i < $doc->{queue}->{count}; $i++) {
 	if($end > $endtime) {
 		$end = $endtime;
 	}
-	
-	$running_time = ($end - $start); 
+	$running_time = ($end - $start) * $job->{ReqProcs};; 
+	print "$end - $start = $running_time\n";
 	if($job->{PAL}) {
 		$parts{$job->{PAL}} -= $running_time;
+		 print "subtracting " . $running_time . " for running job $job->{JobID}\n";
 	}
 }
 
 while (($part, $icpu) = each(%parts)) {
-	$info = "$part "; #host
-	$info = "$part "; #partition
-	$info .= "no_pool "; #pool
-	$info .= "$endtime "; #timestamp
-	$info .= "(NULL) "; #user
-	$info .= "noreport "; #bank
-	$info .= "IDLE "; #type
-	$info .= "$icpu "; #ucpu
-	$info .= "0 0 0\n"; #icpu memint vmemint
+	$info = "$part\t"; #host
+	$info = "$part\t"; #partition
+	$info .= "no_pool\t"; #pool
+	$info .= "$endtime\t"; #timestamp
+	$info .= "(NULL)\t"; #user
+	$info .= "noreport\t"; #bank
+	$info .= "IDLE\t"; #type
+	$info .= "$icpu\t"; #ucpu
+	$info .= "0\t0\t0\n"; #icpu memint vmemint
 	print FILE $info;
 }
 close FILE;
-system("more $send_file");
-
+system("cat $send_file");
+print "scp $send_file $db_user\@$db_host:$db_file 2>/dev/null\n";
 #system("scp $send_file $db_user@$db_host:$db_file 2>/dev/null");
 
 system("rm -f $send_file");
