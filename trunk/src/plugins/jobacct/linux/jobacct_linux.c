@@ -375,11 +375,11 @@ static void _get_process_data() {
 	while ((SlashProcEntry=readdir(SlashProc))) {
 
 		/* Save a few cyles by simulating
-		   strcat(statFileName, SlashProcEntry->d_name);
-		   strcat(statFileName, "/stat");
-		   while checking for a numeric filename (which really
-		   should be a pid).
-		*/
+		 * strcat(statFileName, SlashProcEntry->d_name);
+		 * strcat(statFileName, "/stat");
+		 * while checking for a numeric filename (which really
+		 * should be a pid).
+		 */
 		optr = statFileName+sizeof("/proc");
 		iptr = SlashProcEntry->d_name;
 		i = 0;
@@ -395,16 +395,18 @@ static void _get_process_data() {
 			continue;
 		iptr = (char*)"/stat";
 
-		do { *optr++ = *iptr++; } while (*iptr);
+		do {
+			*optr++ = *iptr++;
+		} while (*iptr);
 		*optr = 0;
 
 		if ((statFile=fopen(statFileName,"r"))==NULL)
 			continue;	/* Assume the process went away */
 
 		prec = xmalloc(sizeof(prec_t));
-		if (_get_process_data_line(statFile, prec)) {
+		if (_get_process_data_line(statFile, prec))
 			list_append(prec_list, prec);
-		} else 
+		else 
 			xfree(prec);
 		fclose(statFile);
 	}
