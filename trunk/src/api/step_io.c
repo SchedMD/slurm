@@ -1267,11 +1267,15 @@ client_io_handler_destroy(client_io_t *cio)
 {
 	xassert(cio);
 
-	/* FIXME - need to make certain that IO engine is shutdown
+	/* FIXME - perhaps should make certain that IO engine is shutdown
 	   (by calling client_io_handler_finish()) before freeing anything */
 
-	bit_free(cio->ioservers_ready_bits);
 	pthread_mutex_destroy(&cio->ioservers_lock);
+	bit_free(cio->ioservers_ready_bits);
+	xfree(cio->ioserver); /* need to destroy the obj first? */
+	xfree(cio->listenport);
+	xfree(cio->listensock);
+	eio_handle_destroy(cio->eio);
 	xfree(cio->io_key);
 	xfree(cio);
 }
