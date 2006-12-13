@@ -42,6 +42,31 @@ set interations      50
 print_header $test_id
 
 #
+# Test is incompatible with switch/elan
+#
+set switch_elan 0
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "switch/elan" {
+		set switch_elan 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$switch_elan == 1} {
+	send_user "\nWARNING: not running compatable switch, this test is not applicable\n"
+	exit $exit_code
+}
+
+#
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output 
 # of the ulimit program is inconsistent across systems.
