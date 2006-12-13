@@ -138,6 +138,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch_tasks_request_msg_t launch;
 	int i;
 	char **env = NULL;
+	int rc = SLURM_SUCCESS;
 
 	debug("Entering slurm_step_launch");
 	memset(&launch, 0, sizeof(launch));
@@ -223,11 +224,15 @@ int slurm_step_launch (slurm_step_ctx ctx,
 						 ctx->step_req->node_count,
 						 ctx->step_resp->cred,
 						 params->labelio);
-		if (ctx->launch_state->io.normal == NULL)
-			return SLURM_ERROR;
+		if (ctx->launch_state->io.normal == NULL) {
+			rc = SLURM_ERROR;
+			goto fail1;
+		}
 		if (client_io_handler_start(ctx->launch_state->io.normal) 
-		    != SLURM_SUCCESS)
-			return SLURM_ERROR;
+		    != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+			goto fail1;
+		}
 		launch.num_io_port = ctx->launch_state->io.normal->num_listen;
 		launch.io_port = xmalloc(sizeof(uint16_t)*launch.num_io_port);
 		for (i = 0; i < launch.num_io_port; i++) {
@@ -250,8 +255,17 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	}
 
 	_launch_tasks(ctx, &launch);
+
+	/* clean up */
+	xfree(launch.resp_port);
+	if (!ctx->launch_state->user_managed_io) {
+		xfree(launch.io_port);
+	}
+fail1:
+	xfree(launch.complete_nodelist);
 	env_array_free(env);
-	return SLURM_SUCCESS;
+	job_options_destroy(launch.options);
+	return rc;
 }
 
 /*
