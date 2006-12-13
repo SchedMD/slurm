@@ -2065,6 +2065,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 				}
 			list_iterator_destroy(itr);
 		}
+		xfree(msg->forward.nodelist);
 		free(name);
 		break;		
 	}
