@@ -405,11 +405,11 @@ static void _get_process_data() {
 		/*
 		 * Close the file on exec() of user tasks.
 		 *
-		 * NOTE: If we fork() slurmstepd after the fopen() and 
-		 * before fcntl() then the user task may have this 
-		 * extra file open, which can cause problems for 
-		 * checkpoint/restart, but this should be a very 
-		 * rare problem in practice.
+		 * NOTE: If we fork() slurmstepd after the fopen() above
+		 * and before the fcntl() below, then the user task may
+		 * have this extra file open, which can cause problems for
+		 * checkpoint/restart, but this should be a very rare 
+		 * problem in practice.
 		 */ 
 		fd = fileno(statFile);
 		fcntl(fd, F_SETFD, FD_CLOEXEC);
