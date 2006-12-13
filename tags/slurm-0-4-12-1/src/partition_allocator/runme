@@ -1,6 +1,0 @@
-#!/bin/bash
-
-export X_DIM_CONF=X_dim_torus.conf
-export Y_DIM_CONF=Y_dim_torus.conf
-export Z_DIM_CONF=Z_dim_torus.conf
-./partition_allocator 2 2 2
