@@ -4271,10 +4271,9 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		step_ptr->time_last_active = now;
 	}
 	list_iterator_destroy(step_iterator);
-	
-    reply:
 	jobacct_g_suspend_slurmctld(job_ptr);
 
+    reply:
 	if (conn_fd >= 0) {
 		rc_msg.return_code = rc;
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;
