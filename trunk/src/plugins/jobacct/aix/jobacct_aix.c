@@ -367,6 +367,11 @@ static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
 static void _get_process_data() 
 {
 	struct procsinfo proc;
+	pid_t *pids = NULL;
+	int npids = 0;
+
+	int i;
+
 	int pid = 0;
 	static int processing = 0;
 	prec_t *prec = NULL;
