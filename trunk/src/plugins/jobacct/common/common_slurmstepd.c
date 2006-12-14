@@ -45,6 +45,7 @@ List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 DIR *SlashProc = NULL;
 uint32_t cont_id = (uint32_t)NO_VAL;
+bool pgid_plugin = false;
 
 extern int common_endpoll()
 {
@@ -58,6 +59,9 @@ extern int common_endpoll()
 
 extern int common_set_proctrack_container_id(uint32_t id)
 {
+	if(pgid_plugin)
+		return SLURM_SUCCESS;
+
 	if(cont_id != (uint32_t)NO_VAL) 
 		info("Warning: jobacct: set_proctrack_container_id: "
 		     "cont_id is already set to %d you are setting it to %d",

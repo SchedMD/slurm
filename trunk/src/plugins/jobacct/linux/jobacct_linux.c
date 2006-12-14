@@ -102,9 +102,12 @@ static void _destroy_prec(void *object);
 extern int init ( void )
 {
 	char *proctrack = slurm_get_proctrack_type();
-	if(strcasecmp(proctrack, "proctrack/linuxproc")) {
-		fatal("Must run %s with Proctracktype=proctrack/linuxproc",
+	if(!strcasecmp(proctrack, "proctrack/pgid")) {
+		error("we will use a much slower algorythm with "
+		      "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
+		      "or Proctracktype=proctrack/rms with %s",
 		      plugin_name);
+		pgid_plugin = true;
 	}
 	xfree(proctrack);
 
@@ -348,6 +351,11 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
  *    wrong.
  */
 static void _get_process_data() {
+	static	DIR	*slash_proc;		/* For /proc */ 
+	static	int	slash_proc_open = 0;
+
+	struct	dirent *slash_proc_entry;
+	char		*iptr = NULL, *optr = NULL;
 	FILE		*stat_fp = NULL;
 	char		proc_stat_file[256];	/* Allow ~20x extra length */
 	List prec_list = NULL;
@@ -361,7 +369,7 @@ static void _get_process_data() {
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
 
-	if(cont_id == (uint32_t)NO_VAL) {
+	if(!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;	
 	}
@@ -373,36 +381,89 @@ static void _get_process_data() {
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
 
-	/* get only the processes in the proctrack container */
-	slurm_container_get_pids(cont_id, &pids, &npids);
-	if(!npids) {
-		debug4("no pids in this container %d", cont_id);
-		goto finished;
+	if(!pgid_plugin) {
+		/* get only the processes in the proctrack container */
+		slurm_container_get_pids(cont_id, &pids, &npids);
+		if(!npids) {
+			debug4("no pids in this container %d", cont_id);
+			goto finished;
+		}
+		for (i = 0; i < npids; i++) {
+			snprintf(proc_stat_file, 256,
+				 "/proc/%d/stat", pids[i]);
+			if ((stat_fp = fopen(proc_stat_file, "r"))==NULL)
+				continue;  /* Assume the process went away */
+			/*
+			 * Close the file on exec() of user tasks.
+			 *
+			 * NOTE: If we fork() slurmstepd after the
+			 * fopen() above and before the fcntl() below,
+			 * then the user task may have this extra file
+			 * open, which can cause problems for
+			 * checkpoint/restart, but this should be a very rare 
+			 * problem in practice.
+			 */ 
+			fd = fileno(stat_fp);
+			fcntl(fd, F_SETFD, FD_CLOEXEC);
+			
+			prec = xmalloc(sizeof(prec_t));
+			if (_get_process_data_line(stat_fp, prec))
+				list_append(prec_list, prec);
+			else 
+				xfree(prec);
+			fclose(stat_fp);
+		}
+	} else {
+		if (slash_proc_open) {
+			rewinddir(slash_proc);
+		} else {
+			slash_proc=opendir("/proc");
+			if (slash_proc == NULL) {
+				perror("opening /proc");
+				goto finished;
+			}
+			slash_proc_open=1;
+		}
+		strcpy(proc_stat_file, "/proc/");
+		
+		while ((slash_proc_entry = readdir(slash_proc))) {
+			
+			/* Save a few cyles by simulating
+			   strcat(statFileName, SlashProcEntry->d_name);
+			   strcat(statFileName, "/stat");
+			   while checking for a numeric filename (which really
+			   should be a pid).
+			*/
+			optr = proc_stat_file + sizeof("/proc");
+			iptr = slash_proc_entry->d_name;
+			i = 0;
+			do {
+				if((*iptr < '0') 
+				   || ((*optr++ = *iptr++) > '9')) {
+					i = -1;
+					break;
+				}
+			} while (*iptr);
+			
+			if(i == -1)
+				continue;
+			iptr = (char*)"/stat";
+			
+			do { *optr++ = *iptr++; } while (*iptr);
+			*optr = 0;
+			
+			if ((stat_fp = fopen(proc_stat_file,"r"))==NULL)
+				continue;  /* Assume the process went away */
+			
+			prec = xmalloc(sizeof(prec_t));
+			if (_get_process_data_line(stat_fp, prec)) {
+				list_append(prec_list, prec);
+			} else 
+				xfree(prec);
+			fclose(stat_fp);
+		}
 	}
-	for (i = 0; i < npids; i++) {
-		snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
-		if ((stat_fp = fopen(proc_stat_file, "r"))==NULL)
-			continue;	/* Assume the process went away */
-		/*
-		 * Close the file on exec() of user tasks.
-		 *
-		 * NOTE: If we fork() slurmstepd after the fopen() above
-		 * and before the fcntl() below, then the user task may
-		 * have this extra file open, which can cause problems for
-		 * checkpoint/restart, but this should be a very rare 
-		 * problem in practice.
-		 */ 
-		fd = fileno(stat_fp);
-		fcntl(fd, F_SETFD, FD_CLOEXEC);
-
-		prec = xmalloc(sizeof(prec_t));
-		if (_get_process_data_line(stat_fp, prec))
-			list_append(prec_list, prec);
-		else 
-			xfree(prec);
-		fclose(stat_fp);
-	}
-
+		
 	if (!list_count(prec_list)) {
 		goto finished;	/* We have no business being here! */
 	}
@@ -509,9 +570,8 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg) {
 
-	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
+	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
 		if(!suspended) {
-			info("getting the data");
 			_get_process_data();	/* Update the data */ 
 		}
 		sleep(freq);
