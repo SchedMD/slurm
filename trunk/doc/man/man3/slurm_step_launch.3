@@ -100,29 +100,83 @@ SLURM controller.
 
 .SH "EXAMPLE
 .LP
-#include <signal.h>
-.br
 #include <stdio.h>
 .br
 #include <stdlib.h>
-.br
-#include <string.h>
-.br
-#include <unistd.h>
-.br
-#include <sys/types.h>
 .br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
 .LP
+static void _task_start(launch_tasks_response_msg_t *msg)
+.br
+	printf("task startup completed\\n");
+.br
+}
+.br
+static void _task_finish(task_exit_msg_t *msg)
+.br
+	printf("tasks completed\\n");
+.br
+}
+.LP
 int main (int argc, char *argv[])
 .br 
 {
 .br
-	/* To be done */
+	job_step_create_request_msg_t step_req;
 .br
-	exit (0);
+	slurm_step_ctx step_ctx;
+.br
+	slurm_job_step_launch_t params;
+.br
+	slurm_job_step_launch_callbacks_t callbacks;
+.br
+	
+.LP
+	/* Set up step_req here */
+.br
+	step_ctx = slurm_step_ctx_create(&step_req);
+.br
+	if (step_ctx == NULL) {
+.br
+		slurm_perror("slurm_step_ctx_create");
+.br
+		exit(1);
+.br
+	}
+.LP
+	slurm_job_step_launch_t_init(&params);
+.br
+	/* Set params values here */
+.br
+	callbacks.task_start = _task_start;
+.br
+	callbacks.task_finish = _task_finish;
+.br
+	if (slurm_step_launch(step_ctx, &params, &callbacks)
+.br
+			!= SLURM_SUCCESS) {
+.br
+		slurm_perror("slurm_step_launch");
+.br
+		exit(1);
+.br
+	}
+.br
+	if (slurm_step_launch_wait_start(step_ctx) != SLURM_SUCCESS) {
+.br
+		slurm_perror("slurm_step_launch_wait_start");
+.br
+		exit(1);
+.br
+	}
+.br
+	slurm_step_launch_wait_finish(step_ctx);
+.br
+	slurm_step_ctx_destroy(step_ctx);
+.br
+	exit(0);
 .br
 }
 
@@ -150,7 +204,6 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
 .LP 
-\fBslurm_allocate_resources\fR(3), \fBslurm_job_step_create\fR(3), 
-\fBslurm_kill_job\fR(3), 
+\fBslurm_step_ctx_create\fR(3), \fBslurm_step_ctx_destroy\fR(3), 
 \fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3),
 \fBsalloc\fR(1), \fBsrun\fR(1) 
