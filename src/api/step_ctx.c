@@ -79,9 +79,9 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 		_copy_step_req((job_step_create_request_msg_t *)user_step_req);
 
 	/* If step_req->host is NULL, then the user wants us
-	 * to handle messages from the controller on our own.  We handle
-	 * the messages in the step_launch.c mesage handler, but we
-	 * need to open the socket right now so we can tell the
+	 * to handle messages from the controller here in the API code.
+	 * We will handle the messages in the step_launch.c mesage handler,
+	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
 	if (step_req->host == NULL) {
@@ -336,3 +336,32 @@ static job_step_create_request_msg_t *_copy_step_req(
 	return copy;
 }
 
+/* 
+ * slurm_step_ctx_create_params_init - This initializes parameters
+ *	in the structure that you will pass to slurm_step_ctx_create().
+ *	This function will NOT allocate any new memory.
+ * IN ptr - pointer to a structure allocated by the user.  The structure will
+ *      be intialized.
+ */
+extern void slurm_step_ctx_create_params_init (
+	job_step_create_request_msg_t *ptr)
+{
+	char *jobid_str;
+
+	memset(ptr, 0, sizeof(job_step_create_request_msg_t));
+
+	ptr->relative = (uint16_t)NO_VAL;
+	ptr->task_dist = SLURM_DIST_CYCLIC;
+	ptr->plane_size = (uint16_t)NO_VAL;
+
+	ptr->user_id = (uint32_t)getuid();
+
+	if ((jobid_str = getenv("SLURM_JOB_ID")) != NULL) {
+		ptr->job_id = (uint32_t)atol(jobid_str);
+	} else if ((jobid_str = getenv("SLURM_JOBID")) != NULL) {
+		/* handle old style env variable for backwards compatibility */
+		ptr->job_id = (uint32_t)atol(jobid_str);
+	} else {
+		ptr->job_id = (uint32_t)NO_VAL;
+	}
+}
