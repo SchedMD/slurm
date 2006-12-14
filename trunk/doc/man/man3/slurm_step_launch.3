@@ -100,9 +100,27 @@ SLURM controller.
 
 .SH "EXAMPLE
 .LP
+/*
+.br
+ * To compile:
+.br
+ * gcc test.c \-o test \-g \-pthread \-lslurm
+.br
+ *
+.br
+ * Or if Slurm is not in your default search paths:
+.br
+ * gcc test.c \-o test \-g \-pthread \-I{$SLURM_DIR}/include 
+.br
+ *     \-Wl,\-\-rpath={$SLURM_DIR}/lib \-L{$SLURM_DIR}/lib \-lslurm
+.br
+ */
+.br
 #include <stdio.h>
 .br
 #include <stdlib.h>
+.br
+#include <string.h>
 .br
 #include <slurm/slurm.h>
 .br
@@ -110,13 +128,17 @@ SLURM controller.
 .LP
 static void _task_start(launch_tasks_response_msg_t *msg)
 .br
-	printf("task startup completed\\n");
+{
+.br
+	printf("Task startup completed\\n");
 .br
 }
-.br
+.LP
 static void _task_finish(task_exit_msg_t *msg)
 .br
-	printf("tasks completed\\n");
+{
+.br
+	printf("Tasks completed\\n");
 .br
 }
 .LP
@@ -132,9 +154,13 @@ int main (int argc, char *argv[])
 .br
 	slurm_job_step_launch_callbacks_t callbacks;
 .br
-	
+	uint32_t job_id, step_id;
 .LP
-	/* Set up step_req here */
+	slurm_step_ctx_create_params_init(&step_req);
+.br
+	step_req.node_count = 1;
+.br
+	step_req.num_tasks = 1;
 .br
 	step_ctx = slurm_step_ctx_create(&step_req);
 .br
@@ -145,10 +171,22 @@ int main (int argc, char *argv[])
 		exit(1);
 .br
 	}
+.br
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID,
+.br
+			&job_id);
+.br
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID,
+.br
+			&step_id);
+.br
+	printf("Ready to start job %u step %u\n", job_id, step_id);
 .LP
 	slurm_job_step_launch_t_init(&params);
 .br
-	/* Set params values here */
+	params.argc = argc \- 1;
+.br
+	params.argv = argv + 1;
 .br
 	callbacks.task_start = _task_start;
 .br
@@ -163,6 +201,8 @@ int main (int argc, char *argv[])
 		exit(1);
 .br
 	}
+.br
+	printf("Sent step launch RPC\\n");
 .br
 	if (slurm_step_launch_wait_start(step_ctx) != SLURM_SUCCESS) {
 .br
