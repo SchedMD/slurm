@@ -175,7 +175,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	if (params->env == NULL) {
-		env_array_merge(&env, environ);
+		env_array_merge(&env, (const char **)environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);
 	}
