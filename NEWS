@@ -180,6 +180,9 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.23
+=========================
+
 * Changes in SLURM 1.1.22
 =========================
  - Add squeue option to print a job step's task count (-o %A).
@@ -188,7 +191,7 @@ documents those changes that are of interest to users and admins.
  - In sched/wiki2, fix fatal race condition on slurmctld startup.
  - Fix for displaying launching verbose messages for each node under the
    tree instead of just the head one.
- - Fix job suspend bug, job accounting plugin with SEGV when given a 
+ - Fix job suspend bug, job accounting plugin would SEGV when given a 
    bad job ID.
 
 * Changes in SLURM 1.1.21
