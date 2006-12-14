@@ -189,11 +189,12 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	&&  (job_ptr->details)
 	&&  (job_ptr->details->req_nodes)
 	&&  (job_ptr->details->req_nodes[0])) {
+		char *hosts = bitmap2wiki_node_name(
+			job_ptr->details->req_node_bitmap);
 		snprintf(tmp, sizeof(tmp),
-			"HOSTLIST=%s;",
-			bitmap2wiki_node_name(
-			job_ptr->details->req_node_bitmap));
+			"HOSTLIST=%s;", hosts);
 		xstrcat(buf, tmp);
+		xfree(hosts);
 	}
 
 	if (job_ptr->job_state == JOB_FAILED) {
@@ -363,4 +364,33 @@ static uint32_t	_get_job_suspend_time(struct job_record *job_ptr)
 				job_ptr->suspend_time);
 	}
 	return (uint32_t) 0;
+}
+
+/*
+ * bitmap2wiki_node_name  - given a bitmap, build a list of colon separated
+ *	node names (if we can't use node range expressions), or the
+ *	normal slurm node name expression
+ *
+ * IN bitmap - bitmap pointer
+ * RET pointer to node list or NULL on error
+ * globals: node_record_table_ptr - pointer to node table
+ * NOTE: the caller must xfree the memory at node_list when no longer required
+ */
+extern char *   bitmap2wiki_node_name(bitstr_t *bitmap)
+{
+	int i, first = 1;
+	char *buf = NULL;
+
+	if (bitmap == NULL)
+		return xstrdup("");
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test (bitmap, i) == 0)
+			continue;
+		if (first == 0)
+			xstrcat(buf, ":");
+		first = 0;
+		xstrcat(buf, node_record_table_ptr[i].name);
+	}
+	return buf;
 }
