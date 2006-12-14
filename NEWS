@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0-pre11
 ==============================
+ -- Add multi-core options to slurm_step_launch API.
+ -- Add man pages for slurm_step_launch() and related functions.
  -- Jobacct plugin only looks at the proctrack list instead of the entire
     list of processes running on the node. Cutting down a lot of unnecessary
     file opens in linux and cutting down the time to query the procs by
