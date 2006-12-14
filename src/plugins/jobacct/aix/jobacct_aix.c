@@ -118,9 +118,12 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
 extern int init ( void )
 {
 	char *proctrack = slurm_get_proctrack_type();
-	if(strcasecmp(proctrack, "proctrack/aix")) {
-		fatal("Must run %s with Proctracktype=proctrack/aix",
+	if(!strcasecmp(proctrack, "proctrack/pgid")) {
+		error("we will use a much slower algorithm with "
+		      "proctrack/pgid, use Proctracktype=proctrack/aix "
+		      "with %s",
 		      plugin_name);
+		pgid_plugin = true;
 	}
 	xfree(proctrack);
 
@@ -380,7 +383,7 @@ static void _get_process_data()
 	ListIterator itr;
 	ListIterator itr2;
 	
-	if(cont_id == (uint32_t)NO_VAL) {
+	if(!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;	
 	}
@@ -392,32 +395,54 @@ static void _get_process_data()
 	
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
-	/* get only the processes in the proctrack container */
-	slurm_container_get_pids(cont_id, &pids, &npids);
-	if(!npids) {
-		debug4("no pids in this container %d", cont_id);
-		goto finished;
-	}
-	for (i = 0; i < npids; i++) {
-		pid = pids[i];
-		if(!getprocs(&proc, sizeof(proc), 0, 0, &pid, 1)) 
-			continue; /* Assume the process went away */
-		prec = xmalloc(sizeof(prec_t));
-		list_append(prec_list, prec);
-		prec->pid = proc.pi_pid;
-		prec->ppid = proc.pi_ppid;		
-		prec->usec = proc.pi_ru.ru_utime.tv_sec +
-			proc.pi_ru.ru_utime.tv_usec * 1e-6;
-		prec->ssec = proc.pi_ru.ru_stime.tv_sec +
-			proc.pi_ru.ru_stime.tv_usec * 1e-6;
-		prec->pages = proc.pi_majflt;
-		prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
-		//prec->rss *= 1024;
-		prec->vsize = (proc.pi_tsize / 1024);
-		prec->vsize += (proc.pi_dvm * pagesize);
-		//prec->vsize *= 1024;
-		/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
+
+	if(!pgid_plugin) {
+		/* get only the processes in the proctrack container */
+		slurm_container_get_pids(cont_id, &pids, &npids);
+		if(!npids) {
+			debug4("no pids in this container %d", cont_id);
+			goto finished;
+		}
+		for (i = 0; i < npids; i++) {
+			pid = pids[i];
+			if(!getprocs(&proc, sizeof(proc), 0, 0, &pid, 1)) 
+				continue; /* Assume the process went away */
+			prec = xmalloc(sizeof(prec_t));
+			list_append(prec_list, prec);
+			prec->pid = proc.pi_pid;
+			prec->ppid = proc.pi_ppid;		
+			prec->usec = proc.pi_ru.ru_utime.tv_sec +
+				proc.pi_ru.ru_utime.tv_usec * 1e-6;
+			prec->ssec = proc.pi_ru.ru_stime.tv_sec +
+				proc.pi_ru.ru_stime.tv_usec * 1e-6;
+			prec->pages = proc.pi_majflt;
+			prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
+			//prec->rss *= 1024;
+			prec->vsize = (proc.pi_tsize / 1024);
+			prec->vsize += (proc.pi_dvm * pagesize);
+			//prec->vsize *= 1024;
+			/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
 /*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
+		}
+	} else {
+		while(getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
+			prec = xmalloc(sizeof(prec_t));
+			list_append(prec_list, prec);
+			prec->pid = proc.pi_pid;
+			prec->ppid = proc.pi_ppid;		
+			prec->usec = proc.pi_ru.ru_utime.tv_sec +
+				proc.pi_ru.ru_utime.tv_usec * 1e-6;
+			prec->ssec = proc.pi_ru.ru_stime.tv_sec +
+				proc.pi_ru.ru_stime.tv_usec * 1e-6;
+			prec->pages = proc.pi_majflt;
+			prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
+			//prec->rss *= 1024;
+			prec->vsize = (proc.pi_tsize / 1024);
+			prec->vsize += (proc.pi_dvm * pagesize);
+			//prec->vsize *= 1024;
+			/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
+/*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
+		}
 	}
 	if(!list_count(prec_list))
 		goto finished;
