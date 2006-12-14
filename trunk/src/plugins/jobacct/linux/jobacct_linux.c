@@ -455,6 +455,19 @@ static void _get_process_data() {
 			if ((stat_fp = fopen(proc_stat_file,"r"))==NULL)
 				continue;  /* Assume the process went away */
 			
+			/*
+			 * Close the file on exec() of user tasks.
+			 *
+			 * NOTE: If we fork() slurmstepd after the
+			 * fopen() above and before the fcntl() below,
+			 * then the user task may have this extra file
+			 * open, which can cause problems for
+			 * checkpoint/restart, but this should be a very rare 
+			 * problem in practice.
+			 */ 
+			fd = fileno(stat_fp);
+			fcntl(fd, F_SETFD, FD_CLOEXEC);
+
 			prec = xmalloc(sizeof(prec_t));
 			if (_get_process_data_line(stat_fp, prec)) {
 				list_append(prec_list, prec);
