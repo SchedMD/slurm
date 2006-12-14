@@ -103,28 +103,35 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 	memset(ptr, 0, sizeof(slurm_job_step_launch_t));
-	ptr->argc = 0;
-	ptr->argv = NULL;
-	ptr->envc = 0;
-	ptr->env = NULL;
-	ptr->cwd = NULL;
-	ptr->user_managed_io = false;
+	/* Values are set to zero or NULL above */
+/*	ptr->argc = 0;			*/
+/*	ptr->argv = NULL;		*/
+/*	ptr->envc = 0;			*/
+/*	ptr->env = NULL;		*/
+/*	ptr->cwd = NULL;		*/
+/*	ptr->user_managed_io = false;	*/
 	ptr->buffered_stdio = true;
-	ptr->labelio = false;
-	ptr->remote_output_filename = NULL;
-	ptr->remote_error_filename = NULL;
-	ptr->remote_input_filename = NULL;
+/*	ptr->labelio = false;		*/
+/*	ptr->remote_output_filename = NULL;	*/
+/*	ptr->remote_error_filename = NULL;	*/
+/*	ptr->remote_input_filename = NULL;	*/
 	memcpy(&ptr->local_fds, &fds, sizeof(fds));
 	ptr->gid = getgid();
-	ptr->multi_prog = false;
-	ptr->slurmd_debug = 0;
-	ptr->parallel_debug = false;
-	ptr->task_prolog = NULL;
-	ptr->task_epilog = NULL;
-	ptr->cpu_bind_type = 0;
-	ptr->cpu_bind = NULL;
-	ptr->mem_bind_type = 0;
-	ptr->mem_bind = NULL;
+/*	ptr->multi_prog = false;	*/
+/*	ptr->slurmd_debug = 0;		*/
+/*	ptr->parallel_debug = false;	*/
+/*	ptr->task_prolog = NULL;	*/
+/*	ptr->task_epilog = NULL;	*/
+/*	ptr->cpu_bind_type = 0;		*/
+/*	ptr->cpu_bind = NULL;		*/
+/*	ptr->mem_bind_type = 0;		*/
+/*	ptr->mem_bind = NULL;		*/
+/*	ptr->cpus_per_task = 0;		*/
+/*	ptr->ntasks_per_node = 0;	*/
+/*	ptr->ntasks_per_socket = 0;	*/
+/*	ptr->ntasks_per_core = 0;	*/
+/*	ptr->task_dist = 0;		*/
+/*	ptr->plane_size = 0;		*/
 }
 
 /*
@@ -209,6 +216,12 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.mem_bind_type = params->mem_bind_type;
 	launch.mem_bind = params->mem_bind;
 	launch.multi_prog = params->multi_prog ? 1 : 0;
+	launch.cpus_per_task	= params->cpus_per_task;
+	launch.ntasks_per_node	= params->ntasks_per_node;
+	launch.ntasks_per_socket= params->ntasks_per_socket;
+	launch.ntasks_per_core	= params->ntasks_per_core;
+	launch.task_dist	= params->task_dist;
+	launch.plane_size	= params->plane_size;
 	launch.options = job_options_create();
 	launch.complete_nodelist = 
 		xstrdup(ctx->step_resp->step_layout->node_list);
