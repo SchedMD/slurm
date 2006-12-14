@@ -449,12 +449,13 @@ static void _get_process_data() {
 				continue;
 			iptr = (char*)"/stat";
 			
-			do { *optr++ = *iptr++; } while (*iptr);
+			do {
+				*optr++ = *iptr++;
+			} while (*iptr);
 			*optr = 0;
 			
 			if ((stat_fp = fopen(proc_stat_file,"r"))==NULL)
 				continue;  /* Assume the process went away */
-			
 			/*
 			 * Close the file on exec() of user tasks.
 			 *
@@ -469,9 +470,9 @@ static void _get_process_data() {
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(stat_fp, prec)) {
+			if (_get_process_data_line(stat_fp, prec))
 				list_append(prec_list, prec);
-			} else 
+			else 
 				xfree(prec);
 			fclose(stat_fp);
 		}
