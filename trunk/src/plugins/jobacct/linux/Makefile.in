@@ -79,7 +79,7 @@ pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_linux_la_LIBADD =
 am_jobacct_linux_la_OBJECTS = jobacct_linux.lo jobacct_common.lo \
-	common_slurmctld.lo common_slurmstepd.lo
+	common_slurmctld.lo common_slurmstepd.lo proctrack.lo
 jobacct_linux_la_OBJECTS = $(am_jobacct_linux_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -284,7 +284,9 @@ pkglib_LTLIBRARIES = jobacct_linux.la
 jobacct_linux_la_SOURCES = jobacct_linux.c \
 	$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c \
 	$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c \
-	$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
+	$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c \
+	$(top_builddir)/src/slurmd/common/proctrack.c \
+	$(top_builddir)/src/slurmd/common/proctrack.h 
 
 jobacct_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
@@ -360,6 +362,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common_slurmstepd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_linux.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -402,6 +405,13 @@ common_slurmstepd.lo: $(top_builddir)/src/plugins/jobacct/common/common_slurmste
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c' object='common_slurmstepd.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common_slurmstepd.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
+
+proctrack.lo: $(top_builddir)/src/slurmd/common/proctrack.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT proctrack.lo -MD -MP -MF "$(DEPDIR)/proctrack.Tpo" -c -o proctrack.lo `test -f '$(top_builddir)/src/slurmd/common/proctrack.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/proctrack.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/proctrack.Tpo" "$(DEPDIR)/proctrack.Plo"; else rm -f "$(DEPDIR)/proctrack.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/proctrack.c' object='proctrack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o proctrack.lo `test -f '$(top_builddir)/src/slurmd/common/proctrack.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/proctrack.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
