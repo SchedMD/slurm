@@ -63,6 +63,8 @@
 #include "src/api/step_ctx.h"
 #include "src/api/pmi_server.h"
 
+extern char **environ;
+
 /**********************************************************************
  * General declarations for step launch code
  **********************************************************************/
@@ -172,7 +174,11 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.argv = params->argv;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	env_array_merge(&env, (const char **)params->env);
+	if (params->env == NULL) {
+		env_array_merge(&env, environ);
+	} else {
+		env_array_merge(&env, (const char **)params->env);
+	}
 	{
 		/* FIXME - hostname and IP need to be user settable */
 		char *launcher_hostname = xshort_hostname();
