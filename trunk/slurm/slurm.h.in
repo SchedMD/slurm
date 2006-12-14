@@ -618,7 +618,7 @@ typedef struct job_step_specs {
 	char *network;		/* network use spec */
 	char *name;		/* name of the job step, default "" */
 	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
-				   0 to disallow overcommit. */
+				   0 to disallow overcommit. default is 0 */
 } job_step_create_request_msg_t;
 
 typedef struct slurm_step_layout {
@@ -1152,6 +1152,16 @@ extern int slurm_terminate_job_step PARAMS((
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS
 \*****************************************************************************/
+
+/* 
+ * slurm_step_ctx_create_params_init - This initializes parameters
+ *	in the structure that you will pass to slurm_step_ctx_create().
+ *	This function will NOT allocate any new memory.
+ * IN ptr - pointer to a structure allocated by the user.  The structure will
+ *      be intialized.
+ */
+extern void slurm_step_ctx_create_params_init PARAMS((
+	job_step_create_request_msg_t *ptr));
 
 /*
  * slurm_step_ctx_create - Create a job step and its context. 

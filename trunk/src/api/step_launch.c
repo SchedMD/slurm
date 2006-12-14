@@ -68,8 +68,7 @@
  **********************************************************************/
 static int _launch_tasks(slurm_step_ctx ctx,
 			 launch_tasks_request_msg_t *launch_msg);
-/* static int _get_step_addresses(const slurm_step_ctx ctx, */
-/* 			       slurm_addr **address, int *num_addresses); */
+static char *_lookup_cwd(void);
 
 /**********************************************************************
  * Message handler declarations
@@ -187,7 +186,11 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	}
 	launch.envc = envcount(env);
 	launch.env = env;
-	launch.cwd = params->cwd;
+	if (params->cwd != NULL) {
+		launch.cwd = xstrdup(params->cwd);
+	} else {
+		launch.cwd = _lookup_cwd();
+	}
 	launch.nnodes = ctx->step_req->node_count;
 	launch.nprocs = ctx->step_req->num_tasks;
 	launch.slurmd_debug = params->slurmd_debug;
@@ -263,6 +266,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	}
 fail1:
 	xfree(launch.complete_nodelist);
+	xfree(launch.cwd);
 	env_array_free(env);
 	job_options_destroy(launch.options);
 	return rc;
@@ -836,4 +840,16 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
 	return SLURM_SUCCESS;
+}
+
+/* returns an xmalloc cwd string, or NULL if lookup failed. */
+static char *_lookup_cwd(void)
+{
+	char buf[PATH_MAX];
+
+	if (getcwd(buf, PATH_MAX) != NULL) {
+		return xstrdup(buf);
+	} else {
+		return NULL;
+	}
 }
