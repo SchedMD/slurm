@@ -9,7 +9,7 @@ salloc [\fIoptions\fP] <\fIcommand\fP> [\fIcommand args\fR]
 .LP 
 salloc is used to allocate a SLURM job allocation, which is a set of resources (nodes), possibly with some set of constraints (e.g. number of processors per node).  When salloc successfully obtains the requested allocation, it then runs the command specified by the user.  Finally, when the user specified command is complete, salloc relinquishes the job allocation.
 
-The command may be any program the user wishes.  Some typical commands are xterm, a shell script containing slaunch commands, and slaunch (see the EXAMPLES section).
+The command may be any program the user wishes.  Some typical commands are xterm, a shell script containing srun commands, and srun (see the EXAMPLES section).
 .SH "OPTIONS"
 .LP 
 
@@ -422,7 +422,7 @@ While salloc is waiting for a PENDING job allocation, most signals will cause sa
 However, if the allocation has been granted and salloc has already started the command speficied in its command line parameters salloc will ignore most signals.  salloc will not exit or release the allocation until the command exits.  The noteable exception is SIGHUP; a HUP signal will cause salloc to release the allocation and exit without waiting for the command to finish.
 .SH "EXAMPLES"
 .LP 
-To get an allocation, and open a new xterm in which slaunch commands may be typed interactively:
+To get an allocation, and open a new xterm in which srun commands may be typed interactively:
 .IP 
 $ salloc \-N16 xterm
 .br 
@@ -434,7 +434,7 @@ salloc: Relinquishing job allocation 65537
 .LP 
 To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):
 .IP 
-salloc \-N5 slaunch \-n10 myprogram
+salloc \-N5 srun \-n10 myprogram
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
@@ -456,4 +456,4 @@ details.
 
 .SH "SEE ALSO"
 .LP 
-sinfo(1), slaunch(1), sattach(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)
+sinfo(1), sattach(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)

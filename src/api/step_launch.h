@@ -61,7 +61,8 @@ struct step_launch_state {
 	/* message thread variables */
 	eio_handle_t *msg_handle;
 	pthread_t msg_thread;
-	/* set to -1 if slaunch message handler should not attempt to handle */
+	/* set to -1 if step launch message handler should not attempt
+	   to handle */
 	int slurmctld_socket_fd;
 	uint16_t num_resp_port;
 	uint16_t *resp_port; /* array of message response ports */
