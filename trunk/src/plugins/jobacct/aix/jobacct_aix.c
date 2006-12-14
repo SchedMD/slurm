@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -117,6 +117,13 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
  */
 extern int init ( void )
 {
+	char *proctrack = slurm_get_proctrack_type();
+	if(strcasecmp(proctrack, "proctrack/aix")) {
+		fatal("Must run %s with Proctracktype=proctrack/aix",
+		      plugin_name);
+	}
+	xfree(proctrack);
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -268,6 +275,11 @@ int jobacct_p_endpoll()
 	return common_endpoll();
 }
 
+int jobacct_p_set_proctrack_container_id(uint32_t id)
+{
+	return common_set_proctrack_container_id(id);
+}
+
 int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	return common_add_task(pid, jobacct_id);
@@ -363,6 +375,11 @@ static void _get_process_data()
 	ListIterator itr;
 	ListIterator itr2;
 	
+	if(cont_id == (uint32_t)NO_VAL) {
+		debug("cont_id hasn't been set yet not running poll");
+		return;	
+	}
+
 	if(processing) {
 		debug("already running, returning");
 		return;
@@ -370,8 +387,16 @@ static void _get_process_data()
 	
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
-	/* get the whole process table */
-	while(getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
+	/* get only the processes in the proctrack container */
+	slurm_container_get_pids(cont_id, &pids, &npids);
+	if(!npids) {
+		debug4("no pids in this container %d", cont_id);
+		goto finished;
+	}
+	for (i = 0; i < npids; i++) {
+		pid = pids[i];
+		if(!getprocs(&proc, sizeof(proc), 0, 0, &pid, 1)) 
+			continue; /* Assume the process went away */
 		prec = xmalloc(sizeof(prec_t));
 		list_append(prec_list, prec);
 		prec->pid = proc.pi_pid;

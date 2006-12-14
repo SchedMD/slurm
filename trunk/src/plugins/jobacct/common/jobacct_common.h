@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -60,6 +60,8 @@
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+
+#include "src/slurmd/common/proctrack.h"
 
 #include <ctype.h>
 
@@ -108,7 +110,7 @@ extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
 extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
 
-/*in common_slurmctld.c */
+/* in common_slurmctld.c */
 extern int common_init_slurmctld(char *job_acct_log);
 extern int common_fini_slurmctld();
 extern int common_job_start_slurmctld(struct job_record *job_ptr);
@@ -117,17 +119,20 @@ extern int common_step_start_slurmctld(struct step_record *step);
 extern int common_step_complete_slurmctld(struct step_record *step);
 extern int common_suspend_slurmctld(struct job_record *job_ptr);
 
-/*in common slurmstepd.c */
+/* in common_slurmstepd.c */
 extern int common_endpoll();
+extern int common_set_proctrack_container_id(uint32_t id);
 extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 extern struct jobacctinfo *common_stat_task(pid_t pid);
 extern struct jobacctinfo *common_remove_task(pid_t pid);
 extern void common_suspendpoll();
 
+/* defined in common_slurmstepd.c */
 extern bool jobacct_shutdown;
 extern bool suspended;
 extern List task_list;
 extern pthread_mutex_t jobacct_lock;
 extern DIR  *SlashProc;
+extern uint32_t cont_id;
 
 #endif

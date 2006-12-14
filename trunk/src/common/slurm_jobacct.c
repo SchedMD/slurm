@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -97,6 +97,7 @@ typedef struct slurm_jobacct_ops {
 	int (*jobacct_suspend)        (struct job_record *job_ptr);
 	int (*jobacct_startpoll)      (int frequency);
 	int (*jobacct_endpoll)	      ();
+	int (*jobacct_set_proctrack_container_id)(uint32_t id);
 	int (*jobacct_add_task)       (pid_t pid, jobacct_id_t *jobacct_id);
 	jobacctinfo_t *(*jobacct_stat_task)(pid_t pid);
 	jobacctinfo_t *(*jobacct_remove_task)(pid_t pid);
@@ -200,6 +201,7 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t *c )
 		"jobacct_p_suspend_slurmctld",
 		"jobacct_p_startpoll",
 		"jobacct_p_endpoll",
+		"jobacct_p_set_proctrack_container_id",
 		"jobacct_p_add_task",
 		"jobacct_p_stat_task",
 		"jobacct_p_remove_task",
@@ -546,6 +548,21 @@ extern int jobacct_g_endpoll()
 		retval = (*(g_jobacct_context->ops.jobacct_endpoll))();
 	slurm_mutex_unlock( &g_jobacct_context_lock );	
 	return retval;
+}
+
+extern int jobacct_g_set_proctrack_container_id(uint32_t id)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.
+			    jobacct_set_proctrack_container_id))(id);
+	slurm_mutex_unlock( &g_jobacct_context_lock );	
+	return retval;
+	
 }
 
 extern int jobacct_g_add_task(pid_t pid, jobacct_id_t *jobacct_id)
