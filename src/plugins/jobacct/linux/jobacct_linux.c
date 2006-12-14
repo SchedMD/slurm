@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -101,6 +101,13 @@ static void _destroy_prec(void *object);
  */
 extern int init ( void )
 {
+	char *proctrack = slurm_get_proctrack_type();
+	if(strcasecmp(proctrack, "proctrack/linuxproc")) {
+		fatal("Must run %s with Proctracktype=proctrack/linuxproc",
+		      plugin_name);
+	}
+	xfree(proctrack);
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -211,7 +218,7 @@ int jobacct_p_startpoll(int frequency)
 	
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
-	
+	 
 	debug("jobacct LINUX plugin loaded");
 
 	/* Parse the JobAcctParameters */
@@ -256,6 +263,11 @@ int jobacct_p_endpoll()
 	slurm_mutex_unlock(&jobacct_lock);
 	
 	return common_endpoll();
+}
+
+int jobacct_p_set_proctrack_container_id(uint32_t id)
+{
+	return common_set_proctrack_container_id(id);
 }
 
 int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
@@ -336,13 +348,11 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
  *    wrong.
  */
 static void _get_process_data() {
-	static	int	SlashProcOpen = 0;
-
-	struct		dirent *SlashProcEntry;
-	FILE		*statFile;
-	char		*iptr, *optr;
-	char		statFileName[256];	/* Allow ~20x extra length */
+	FILE		*stat_fp = NULL;
+	char		proc_stat_file[256];	/* Allow ~20x extra length */
 	List prec_list = NULL;
+	pid_t *pids = NULL;
+	int npids = 0;
 
 	int		i, fd;
 	ListIterator itr;
@@ -351,57 +361,28 @@ static void _get_process_data() {
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
 
+	if(cont_id == (uint32_t)NO_VAL) {
+		debug("cont_id hasn't been set yet not running poll");
+		return;	
+	}
+
 	if(processing) {
 		debug("already running, returning");
 		return;
 	}
-	
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
 
-	if (SlashProcOpen) {
-		rewinddir(SlashProc);
-	} else {
-		SlashProc=opendir("/proc");
-		if (SlashProc == NULL) {
-			perror("opening /proc");
-			goto finished;
-		}
-		SlashProcOpen=1;
+	/* get only the processes in the proctrack container */
+	slurm_container_get_pids(cont_id, &pids, &npids);
+	if(!npids) {
+		debug4("no pids in this container %d", cont_id);
+		goto finished;
 	}
-	strcpy(statFileName, "/proc/");
-
-	while ((SlashProcEntry=readdir(SlashProc))) {
-
-		/* Save a few cyles by simulating
-		 * strcat(statFileName, SlashProcEntry->d_name);
-		 * strcat(statFileName, "/stat");
-		 * while checking for a numeric filename (which really
-		 * should be a pid).
-		 */
-		optr = statFileName+sizeof("/proc");
-		iptr = SlashProcEntry->d_name;
-		i = 0;
-		do {
-			if((*iptr < '0') 
-			   || ((*optr++ = *iptr++) > '9')) {
-				i = -1;
-				break;
-			}
-		} while (*iptr);
-
-		if(i == -1)
-			continue;
-		iptr = (char*)"/stat";
-
-		do {
-			*optr++ = *iptr++;
-		} while (*iptr);
-		*optr = 0;
-
-		if ((statFile=fopen(statFileName,"r"))==NULL)
+	for (i = 0; i < npids; i++) {
+		snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
+		if ((stat_fp = fopen(proc_stat_file, "r"))==NULL)
 			continue;	/* Assume the process went away */
-
 		/*
 		 * Close the file on exec() of user tasks.
 		 *
@@ -411,17 +392,17 @@ static void _get_process_data() {
 		 * checkpoint/restart, but this should be a very rare 
 		 * problem in practice.
 		 */ 
-		fd = fileno(statFile);
+		fd = fileno(stat_fp);
 		fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 		prec = xmalloc(sizeof(prec_t));
-		if (_get_process_data_line(statFile, prec))
+		if (_get_process_data_line(stat_fp, prec))
 			list_append(prec_list, prec);
 		else 
 			xfree(prec);
-		fclose(statFile);
+		fclose(stat_fp);
 	}
-	
+
 	if (!list_count(prec_list)) {
 		goto finished;	/* We have no business being here! */
 	}
@@ -530,6 +511,7 @@ static void *_watch_tasks(void *arg) {
 
 	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
 		if(!suspended) {
+			info("getting the data");
 			_get_process_data();	/* Update the data */ 
 		}
 		sleep(freq);

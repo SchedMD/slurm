@@ -14,7 +14,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -44,6 +44,7 @@ bool suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 DIR *SlashProc = NULL;
+uint32_t cont_id = (uint32_t)NO_VAL;
 
 extern int common_endpoll()
 {
@@ -52,6 +53,17 @@ extern int common_endpoll()
 	if (SlashProc)
 		(void) closedir(SlashProc);
        
+	return SLURM_SUCCESS;
+}
+
+extern int common_set_proctrack_container_id(uint32_t id)
+{
+	if(cont_id != (uint32_t)NO_VAL) 
+		info("Warning: jobacct: set_cont_id: cont_id is "
+		     "already set to %d you are setting it to %d",
+		     cont_id, id);
+	cont_id = id;
+
 	return SLURM_SUCCESS;
 }
 
