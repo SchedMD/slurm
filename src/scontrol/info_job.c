@@ -461,12 +461,14 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 
 	stepd_task_info(fd, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
-		printf("%-8d %-8u %-6u %-7d %-8d\n",
-		       task_info[i].pid,
-		       jobid,
-		       stepid,
-		       task_info[i].id,
-		       task_info[i].gtid);
+		if (!task_info[i].exited) {
+			printf("%-8d %-8u %-6u %-7d %-8d\n",
+			       task_info[i].pid,
+			       jobid,
+			       stepid,
+			       task_info[i].id,
+			       task_info[i].gtid);
+		}
 	}
 
 	stepd_list_pids(fd, &pids, &count);
