@@ -82,7 +82,7 @@ on a node.</li>
 <li>Permit batch jobs to be requeued.</li>
 <li>Expanded support of Moab and Maui schedulers.</li>
 <li><i>Srun</i> command augmented by new commands for each operation:
-<i>salloc</i>, <i>slaunch</i>, <i>sbatch</i>, and <i>sattach</i>.</li>
+<i>salloc</i>, <i>sbatch</i>, and <i>sattach</i>.</li>
 <li>Sched/wiki plugin (for Moab and Maui Schedulers) rewritten to 
 provide vastly improved integration.</li>
 <li>BlueGene plugin permits use of different boot images per job 

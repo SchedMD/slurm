@@ -600,7 +600,7 @@ _handle_msg(message_thread_state_t *mts, slurm_msg_t *msg)
 
 /**********************************************************************
  * Functions for manipulating the MPIR_* global variables which
- * are accessed by parallel debuggers which trace slaunch.
+ * are accessed by parallel debuggers which trace sattach.
  **********************************************************************/
 static void
 _mpir_init(int num_tasks)

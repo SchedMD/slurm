@@ -621,7 +621,7 @@ int setup_env(env_t *env)
 
 /**********************************************************************
  * From here on are the new environment variable management functions,
- * used by the "new" commands: salloc, sbatch, an slaunch.
+ * used by the "new" commands: salloc, sbatch, and the step launch APIs.
  **********************************************************************/
 
 /*
