@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
- *  UCRL-CODE-217948.
+ *  UCRL-CODE-226842.
  *  
  *  Much of this code was derived or adapted from the log.c component of 
  *  openssh which contains the following notices:
