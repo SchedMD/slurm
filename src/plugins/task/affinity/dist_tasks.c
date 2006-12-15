@@ -1085,23 +1085,25 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
  *  
  */
 typedef struct {
-        uint32_t jobid;
+	uint32_t jobid;
+	uint32_t jobstepid;
 	uint32_t numtasks;
-        cpu_bind_type_t cpu_bind_type;
-        char *cpu_bind;
+	cpu_bind_type_t cpu_bind_type;
+	char *cpu_bind;
 } lllp_job_state_t;
 
 static lllp_job_state_t *
-_lllp_job_state_create(uint32_t job_id,
+_lllp_job_state_create(uint32_t job_id, uint32_t job_step_id,
 		       cpu_bind_type_t cpu_bind_type, char *cpu_bind,
 		       uint32_t numtasks)
 {
 	lllp_job_state_t *j;
-        debug3("creating job %d lllp state", job_id);
+	debug3("creating job [%u.%u] lllp state", job_id, job_step_id);
 
 	j = xmalloc(sizeof(lllp_job_state_t));
 
 	j->jobid	 = job_id;
+	j->jobstepid	 = job_step_id;
 	j->numtasks	 = numtasks;
 	j->cpu_bind_type = cpu_bind_type;
 	j->cpu_bind	 = NULL;
@@ -1115,13 +1117,16 @@ _lllp_job_state_create(uint32_t job_id,
 static void
 _lllp_job_state_destroy(lllp_job_state_t *j)
 {
-        debug3("destroying job %d lllp state", j->jobid);
+	debug3("destroying job [%u.%u] lllp state", j->jobid, j->jobstepid);
         if (j) {
 		if (j->cpu_bind)
 			xfree(j->cpu_bind);
 	    	xfree(j);
 	}
 }
+
+#if 0
+/* Note: now inline in cr_release_lllp to support multiple job steps */
 static lllp_job_state_t *
 _find_lllp_job_state(uint32_t jobid)
 {
@@ -1147,9 +1152,10 @@ _remove_lllp_job_state(uint32_t jobid)
 	}
         list_iterator_destroy(i);
 }
+#endif
 
 void
-_insert_lllp_job_state(lllp_job_state_t *j)
+_append_lllp_job_state(lllp_job_state_t *j)
 {
         list_append(lllp_ctx->job_list, j);
 }
@@ -1548,7 +1554,7 @@ static void _cr_update_reservation(int reserve, uint32_t *reserved,
 	}
 }
 
-static void _cr_update_lllp(int reserve,
+static void _cr_update_lllp(int reserve, uint32_t job_id, uint32_t job_step_id,
 			    cpu_bind_type_t cpu_bind_type, char *cpu_bind,
 			    uint32_t numtasks)
 {
@@ -1596,7 +1602,8 @@ static void _cr_update_lllp(int reserve,
 		} else {
 			strcpy(buf_action, "release");
 		}
-		info("LLLP update %s: %s (Proc ID %d...0)", buf_action, buffer, num_bits-1);
+		info("LLLP update %s [%u.%u]: %s (CPU IDs: %d...0)",
+			buf_action, job_id, job_step_id, buffer, num_bits-1);
 	}
 }
 
@@ -1610,15 +1617,15 @@ void cr_reserve_lllp(uint32_t job_id,
 	uint32_t numtasks = 0;
 	char buf_type[100];
 
-	debug3("reserve LLLP job %d\n", job_id);
+	debug3("reserve LLLP job [%u.%u]\n", job_id, req->job_step_id);
 
 	if (req->tasks_to_launch) {
 		numtasks = req->tasks_to_launch[node_id];
 	}
 
 	slurm_sprint_cpu_bind_type(buf_type, cpu_bind_type);
-	debug3("reserve lllp job %d: %d tasks; %s[%d], %s",
-	       job_id, numtasks,
+	debug3("reserve lllp job [%u.%u]: %d tasks; %s[%d], %s",
+	       job_id, req->job_step_id, numtasks,
 	       buf_type, cpu_bind_type, cpu_bind);
 	if (cpu_bind_type == 0)
 		return;
@@ -1627,46 +1634,49 @@ void cr_reserve_lllp(uint32_t job_id,
     	/* store job_id, cpu_bind_type, cpu_bind */
 	slurm_mutex_lock(&lllp_ctx->mutex);
 
-	if ((j = _find_lllp_job_state(job_id))) {
-		_remove_lllp_job_state(job_id);	/* clear any stale state */
-	}
-
-	j = _lllp_job_state_create(job_id, cpu_bind_type, cpu_bind, numtasks);
+	j = _lllp_job_state_create(job_id, req->job_step_id,
+					cpu_bind_type, cpu_bind, numtasks);
 
 	if (j) {
-		_insert_lllp_job_state(j);
-		_cr_update_lllp(1, cpu_bind_type, cpu_bind, numtasks);
+		_append_lllp_job_state(j);
+		_cr_update_lllp(1, job_id, req->job_step_id,
+					cpu_bind_type, cpu_bind, numtasks);
 	}
 	slurm_mutex_unlock(&lllp_ctx->mutex);
 }
 
 void cr_release_lllp(uint32_t job_id)
 {
+	ListIterator  i = NULL;
 	lllp_job_state_t *j;
 	cpu_bind_type_t cpu_bind_type = 0;
 	char *cpu_bind = NULL;
 	uint32_t numtasks = 0;
 	char buf_type[100];
 
-	debug3("release LLLP job %d", job_id);
+	debug3("release LLLP job [%u.*]", job_id);
 
     	/* retrieve cpu_bind_type, cpu_bind from job_id */
 	slurm_mutex_lock(&lllp_ctx->mutex);
-	j = _find_lllp_job_state(job_id);
-	if (j) {
-	    	cpu_bind_type = j->cpu_bind_type;
-		cpu_bind      = j->cpu_bind;
-		numtasks      = j->numtasks;
-		slurm_sprint_cpu_bind_type(buf_type, cpu_bind_type);
-		debug3("release search lllp job %d: %d tasks; %s[%d], %s",
-		       j->jobid, numtasks,
-		       buf_type, cpu_bind_type, cpu_bind);
+	i = list_iterator_create(lllp_ctx->job_list);
+	while ((j = list_next(i))) {
+		if (j->jobid == job_id) {
+			cpu_bind_type = j->cpu_bind_type;
+			cpu_bind      = j->cpu_bind;
+			numtasks      = j->numtasks;
+			slurm_sprint_cpu_bind_type(buf_type, cpu_bind_type);
+			debug3("release search lllp job %u: %d tasks; %s[%d], %s",
+			       j->jobid, numtasks,
+			       buf_type, cpu_bind_type, cpu_bind);
 
-		_cr_update_lllp(0, cpu_bind_type, cpu_bind, numtasks);
+			_cr_update_lllp(0, job_id, j->jobstepid,
+					cpu_bind_type, cpu_bind, numtasks);
 
-		/* done with saved state, remove entry */
-		_remove_lllp_job_state(job_id);
+			/* done with saved state, remove entry */
+			list_delete(i);
+		}
 	}
+	list_iterator_destroy(i);
 	slurm_mutex_unlock(&lllp_ctx->mutex);
 }
 
