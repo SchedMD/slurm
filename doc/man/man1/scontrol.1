@@ -50,59 +50,81 @@ record counts, etc.
 Print version information and exit.
 .TP
 \fBCOMMANDS\fR
+
 .TP
-\fIall\fP
+\fBall\fP
 Show all partitiion, their jobs and jobs steps. This causes information to be 
 displayed about partitions that are configured as hidden and partitions that
 are unavailable to user's group.
+
 .TP
-\fIabort\fP
+\fBabort\fP
 Instruct the Slurm controller to terminate immediately and generate a core file.
+
 .TP
-\fIcheckpoint\fP \fICKPT_OP\fP \fIID\fP
+\fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP
 Perform a checkpoint activity on the job step(s) with the specified identification.
-\fICKPT_OP\fP may be 
-\fIdisable\fP (disable future checkpoints), 
-\fIenable\fP (enable future checkpoints),, 
-\fIable\fP (test if presently not disabled, report start time if checkpoint in progress),
-\fIcreate\fP (create a checkpoint and continue the job step), 
-\fIvacate\fP (create a checkpoint and terminate the job step), 
-\fIerror\fP (report the result for the last checkpoint request, error code and message), or 
-\fIrestart\fP (restart execution of the previously checkpointed job steps).
-\fIID\fP can be used to identify a specific job (e.g. "<job_id>", 
-which applies to all of its existing steps) 
+\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
+which applies to all of its existing steps)
 or a specific job step (e.g. "<job_id>.<step_id>").
+Acceptable values for \fICKPT_OP\fP include:
+.RS
 .TP
-\fIcompleting\fP
+\fIdisable\fP (disable future checkpoints)
+.TP 
+\fIenable\fP (enable future checkpoints)
+.TP
+\fIable\fP (test if presently not disabled, report start time if checkpoint in progress)
+.TP
+\fIcreate\fP (create a checkpoint and continue the job step)
+.TP
+\fIvacate\fP (create a checkpoint and terminate the job step) 
+.TP
+\fIerror\fP (report the result for the last checkpoint request, error code and message) 
+.TP
+\fIrestart\fP (restart execution of the previously checkpointed job steps)
+.RE
+
+.TP
+\fBcompleting\fP
 Display all jobs in a COMPLETING state along with associated nodes in either a 
 COMPLETING or DOWN state.
+
 .TP
-\fIdelete\fP \fISPECIFICATION\fP
+\fBdelete\fP \fISPECIFICATION\fP
 Delete the entry with the specified \fISPECIFICATION\fP.
 The only supported \fISPECIFICATION\fP presently is of the form
 \fIPartitionName=<name>\fP.
+
 .TP
-\fIexit\fP
+\fBexit\fP
 Terminate the execution of scontrol.
+This is an independent command with no options meant for use in interactive mode.
+
 .TP
-\fIhelp\fP
+\fBhelp\fP
 Display a description of scontrol options and commands.
+
 .TP
-\fIhide\fP
+\fBhide\fP
 Do not display partitiion, job or jobs step information for partitions that are 
 configured as hidden or partitions that are unavailable to the user's group. 
 This is the default behavior.
+
 .TP
-\fIoneliner\fP
+\fBoneliner\fP
 Print information one line per record.
+This is an independent command with no options meant for use in interactive mode.
+
 .TP
-\fIpidinfo\fP \fIPROC_ID\fP
+\fBpidinfo\fP \fIPROC_ID\fP
 Print the Slurm job id and scheduled termination time corresponding to the 
 supplied process id, \fIPROC_ID\fP, on the current node.  This will work only
 with processes on node on which scontrol is run, and only for those processes
 spawned by SLURM and their descendants.
+
 .TP
-\fIlistpids\fP [JOBID[.STEPID]] [NodeName]
+\fBlistpids\fP [JOBID[.STEPID]] [NodeName]
 Print a listing of the process IDs in a job step (if JOBID.STEPID is provided),
 or all of the job steps in a job (if JOBID is provided), or all of the job
 steps in all of the jobs on the local node (if JOBID is not provided or JOBID
@@ -114,19 +136,24 @@ are unable to identify all processes associated with a job or job step.
 Note that the NodeName option is only really useful when you have multiple
 slurmd daemons running on the same host machine.  Multiple slurmd daemons on
 one host are, in general, only used by SLURM developers.
+
 .TP
-\fIping\fP
+\fBping\fP
 Ping the primary and secondary slurmctld daemon and report if 
 they are responding.
+
 .TP
-\fIquiet\fP
+\fBquiet\fP
 Print no warning or informational messages, only fatal error messages.
 This is an independent command with no options meant for use in interactive mode.
+
 .TP
-\fIquit\fP
+\fBquit\fP
 Terminate the execution of scontrol.
+This is an independent command with no options meant for use in interactive mode.
+
 .TP
-\fIreconfigure\fP
+\fBreconfigure\fP
 Instruct all Slurm daemons to re\-read the configuration file. 
 This command does not restart the daemons.
 This mechanism would be used to modify configuration parameters (Epilog, 
@@ -140,14 +167,17 @@ however, SLURM daemons should be shutdown and restarted if any of these
 parameters are to be changed: AuthType, BackupAddr, BackupController, 
 ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort 
 or SlurmdPort.
+
 .TP
-\fIresume\fP \fIjob_id\fP
+\fBresume\fP \fIjob_id\fP
 Resume a previously suspended job.
+
 .TP
-\fIrequeue\fP \fIjob_id\fP
+\fBrequeue\fP \fIjob_id\fP
 Requeue a running or pending SLURM batch job.
+
 .TP
-\fIshow\fP \fIENTITY\fP \fIID\fP
+\fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIjob\fP, \fInode\fP, 
 \fIpartition\fP or \fIstep\fP.
@@ -159,20 +189,23 @@ Multiple node names may be specified using simple node range expressions
 (e.g. "lx[10\-20]"). All other \fIID\fP values must identify a single 
 element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 By default, all elements of the entity type specified are printed.
+
 .TP
-\fIshutdown\fP
+\fBshutdown\fP
 Instruct all Slurm daemons to save current state and terminate.
 The Slurm controller (slurmctld) forwards the request all other daemons 
 (slurmd daemon on each compute node). 
+
 .TP
-\fIsuspend\fP \fIjob_id\fP
+\fBsuspend\fP \fIjob_id\fP
 Suspend a running job.
 Use the \fIresume\fP command to resume its execution.
 User processes must stop on receipt of SIGSTOP signal and resume 
 upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
+
 .TP
-\fIupdate\fP \fISPECIFICATION\fP 
+\fBupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.
 \fISPECIFICATION\fP is in the same format as the Slurm configuration file 
 and the output of the \fIshow\fP command described above. It may be desirable 
@@ -184,17 +217,21 @@ particular, the hardware configuration of a node or the physical addition or
 removal of nodes from the cluster may only be accomplished through editing 
 the Slurm configuration file and executing the \fIreconfigure\fP command 
 (described above).
+
 .TP
-\fIverbose\fP
+\fBverbose\fP
 Print detailed event logging. 
 This includes time\-stamps on data structures, record counts, etc.
 This is an independent command with no options meant for use in interactive mode.
+
 .TP
-\fIversion\fP
+\fBversion\fP
 Display the version number of scontrol being executed.
+
 .TP
-\fI!!\fP
+\fB!!\fP
 Repeat the last command executed.
+
 .TP
 \fBSPECIFICATIONS FOR SHOW AND UPDATE COMMANDS, JOBS\fR
 .TP
