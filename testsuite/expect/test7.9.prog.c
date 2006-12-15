@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #define _DEBUG 0
@@ -35,6 +36,10 @@ main (int argc, char **argv)
 	int i;
 	struct stat buf;
 
+	/* sleep for 0 to 100 msec to induce some randomness
+	 * and better detect any synchronization issues */
+	usleep(time(NULL) % 100000);
+ 
 	/* start at fd=3
 	 * skip stdin, stdout, and stderr */
 	for (i=3; i<256; i++) {
