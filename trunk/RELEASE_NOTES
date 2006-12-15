@@ -117,5 +117,8 @@ OTHER CHANGES
 
 * For BlueGene system only: Added "--reboot" option to srun, salloc, and 
   sbatch commands to force booting of nodes before starting the job.
- 
+
+* Added "scontrol listpids" command to identify processes associated with 
+  specific jobs and/or steps.
+  
 See the file NEWS for more details.
