@@ -137,12 +137,17 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: $matches of [expr $interations + 1] tests failed\n"
-	send_user "  This should happen very rarely when JobAcctFrequency\n"
-	send_user "  is set to a small value and typically is indicative\n"
-	send_user "  of a non-checkpointable job. For more information,\n"
+	set tot [expr $interations + 1]
+	if {$matches <= 2} {
+		send_user "\nWARNING: $matches of $tot tests failed\n"
+	} else {
+		send_user "\nFAILURE: $matches of $tot tests failed\n"
+		set exit_code 1
+	}
+	send_user "  This should happen very rarely, typically when\n"
+	send_user "  JobAcctFrequency is set to a small value and is\n"
+	send_user "  indicative of a non-checkpointable job. For details,\n"
 	send_user "  see src/plugins/jobacct/linux/jobacct_linux.c\n"
-	set exit_code 1
 }
 
 if {$exit_code == 0} {
