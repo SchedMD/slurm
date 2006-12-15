@@ -133,7 +133,6 @@ extern bool jobacct_shutdown;
 extern bool suspended;
 extern List task_list;
 extern pthread_mutex_t jobacct_lock;
-extern DIR  *slash_proc;
 extern uint32_t cont_id;
 extern bool pgid_plugin;
 
