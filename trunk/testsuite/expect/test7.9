@@ -48,6 +48,10 @@ set switch_elan 0
 log_user 0
 spawn $scontrol show config
 expect {
+	-re "proctrack/rms" {
+		set switch_elan 1
+		exp_continue
+	}
 	-re "switch/elan" {
 		set switch_elan 1
 		exp_continue
