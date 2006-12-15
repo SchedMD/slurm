@@ -87,6 +87,8 @@ typedef struct prec {	/* process record */
 } prec_t;
 
 static int freq = 0;
+static DIR  *slash_proc = NULL;
+
 /* Finally, pre-define all local routines. */
 
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
@@ -265,6 +267,9 @@ int jobacct_p_endpoll()
 	task_list = NULL;
 	slurm_mutex_unlock(&jobacct_lock);
 	
+	if (slash_proc)
+		(void) closedir(slash_proc);
+
 	return common_endpoll();
 }
 
@@ -586,8 +591,8 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
  * IN, OUT:	Irrelevant; this is invoked by pthread_create()
  */
 
-static void *_watch_tasks(void *arg) {
-
+static void *_watch_tasks(void *arg)
+{
 	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 

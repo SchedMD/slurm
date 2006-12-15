@@ -43,7 +43,6 @@ bool jobacct_shutdown = false;
 bool suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
-DIR *slash_proc = NULL;
 uint32_t cont_id = (uint32_t)NO_VAL;
 bool pgid_plugin = false;
 
@@ -51,9 +50,6 @@ extern int common_endpoll()
 {
 	jobacct_shutdown = true;
 
-	if (slash_proc)
-		(void) closedir(slash_proc);
-       
 	return SLURM_SUCCESS;
 }
 
