@@ -586,6 +586,12 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 	return 1;
 }
 
+static void _task_sleep(int rem)
+{
+	while (rem)
+		rem = sleep(rem);	/* subject to interupt */
+}
+
 /* _watch_tasks() -- monitor slurm jobs and track their memory usage
  *
  * IN, OUT:	Irrelevant; this is invoked by pthread_create()
@@ -593,16 +599,18 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg)
 {
-	int rem;
+	/* Give chance for processes to spawn before starting 
+	 * the polling. This should largely eliminate the 
+	 * the chance of having /proc open when the tasks are 
+	 * spawned, which would prevent a valid checkpoint/restart
+	 * with some systems */
+	_task_sleep(1);
 
 	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 
 		}
-
-		rem = freq;
-		while (rem)		/* subject to interupt */
-			sleep(rem);
+		_task_sleep(freq);
 	} 
 	return NULL;
 }
