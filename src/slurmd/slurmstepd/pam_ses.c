@@ -113,10 +113,9 @@ pam_setup (char *user, char *host)
 			!= PAM_SUCCESS) {
                 error ("pam_setcred: %s", pam_strerror(pam_h, rc));
                 return SLURM_ERROR;
-        } else
-                 if ((rc = pam_open_session (pam_h, 0)) != PAM_SUCCESS) {
-                        error("pam_open_session: %s", pam_strerror(pam_h, rc));
-                        return SLURM_ERROR;
+        } else if ((rc = pam_open_session (pam_h, 0)) != PAM_SUCCESS) {
+                error("pam_open_session: %s", pam_strerror(pam_h, rc));
+                return SLURM_ERROR;
         }
 
 	return SLURM_SUCCESS;
