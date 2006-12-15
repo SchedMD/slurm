@@ -138,7 +138,7 @@ expect {
 }
 if {$matches != 0} {
 	set tot [expr $interations + 1]
-	if {$matches <= 2} {
+	if {$matches <= 3} {
 		send_user "\nWARNING: $matches of $tot tests failed\n"
 	} else {
 		send_user "\nFAILURE: $matches of $tot tests failed\n"
