@@ -364,8 +364,8 @@ static int _background_process_msg(slurm_msg_t * msg)
 			   (msg->msg_type == REQUEST_CONTROL)) {
 			debug3("Ignoring RPC: REQUEST_CONTROL");
 		} else {
-			error("Invalid RPC received %d from uid %u", 
-			      msg->msg_type, uid);
+			error("Invalid RPC received %d while in standby mode", 
+			      msg->msg_type);
 			error_code = ESLURM_IN_STANDBY_MODE;
 		}
 	}
