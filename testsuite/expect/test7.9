@@ -87,6 +87,7 @@ make_bash_script $file_in "
   done
 "
 
+set job_id 0
 spawn $sbatch --output=$file_out -t1 ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
