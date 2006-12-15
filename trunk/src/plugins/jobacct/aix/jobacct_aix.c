@@ -301,9 +301,14 @@ struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 	return common_remove_task(pid);
 }
 
-void jobacct_p_suspendpoll()
+void jobacct_p_suspend_poll()
 {
-	common_suspendpoll();
+	common_suspend_poll();
+}
+
+void jobacct_p_resume_poll()
+{
+	common_resume_poll();
 }
 
 #ifdef HAVE_AIX

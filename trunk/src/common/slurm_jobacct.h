@@ -98,7 +98,8 @@ extern int jobacct_g_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_g_remove_task(pid_t pid);
-extern void jobacct_g_suspendpoll();
+extern void jobacct_g_suspend_poll();
+extern void jobacct_g_resume_poll();
 
 #endif /*__SLURM_JOBACCT_H__*/
 

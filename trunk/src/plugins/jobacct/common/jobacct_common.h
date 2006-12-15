@@ -125,14 +125,15 @@ extern int common_set_proctrack_container_id(uint32_t id);
 extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 extern struct jobacctinfo *common_stat_task(pid_t pid);
 extern struct jobacctinfo *common_remove_task(pid_t pid);
-extern void common_suspendpoll();
+extern void common_suspend_poll();
+extern void common_resume_poll();
 
 /* defined in common_slurmstepd.c */
 extern bool jobacct_shutdown;
 extern bool suspended;
 extern List task_list;
 extern pthread_mutex_t jobacct_lock;
-extern DIR  *SlashProc;
+extern DIR  *slash_proc;
 extern uint32_t cont_id;
 extern bool pgid_plugin;
 

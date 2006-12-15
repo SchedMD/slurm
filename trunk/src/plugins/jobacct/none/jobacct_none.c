@@ -230,7 +230,12 @@ struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 	return NULL;
 }
 
-void jobacct_p_suspendpoll()
+void jobacct_p_suspend_poll()
+{
+	return;
+}
+
+void jobacct_p_resume_poll()
 {
 	return;
 }

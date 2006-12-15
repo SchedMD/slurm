@@ -43,7 +43,7 @@ bool jobacct_shutdown = false;
 bool suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
-DIR *SlashProc = NULL;
+DIR *slash_proc = NULL;
 uint32_t cont_id = (uint32_t)NO_VAL;
 bool pgid_plugin = false;
 
@@ -51,8 +51,8 @@ extern int common_endpoll()
 {
 	jobacct_shutdown = true;
 
-	if (SlashProc)
-		(void) closedir(SlashProc);
+	if (slash_proc)
+		(void) closedir(slash_proc);
        
 	return SLURM_SUCCESS;
 }
@@ -163,10 +163,12 @@ error:
 	return ret_jobacct;
 }
 
-extern void common_suspendpoll()
+extern void common_suspend_poll()
 {
-	if(suspended)
-		suspended = false;
-	else
-		suspended = true;
+	suspended = true;
+}
+
+extern void common_resume_poll()
+{
+	suspended = false;
 }
