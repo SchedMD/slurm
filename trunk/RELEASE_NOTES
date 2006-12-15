@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.2
-8 December 2006 (through 1.2.0-pre9)
+15 December 2006 (through 1.2.0-pre10)
 
 
 IMPORTANT NOTE:
@@ -112,4 +112,10 @@ OTHER CHANGES
     used by most versions of the Maui Scheduler.
   - There is no longer a "sched-wiki" RPM. All files are in the main RPM.
 
+* The features associated with a node can now be changed using the 
+  "scontrol update" and "sview" commands.
+
+* For BlueGene system only: Added "--reboot" option to srun, salloc, and 
+  sbatch commands to force booting of nodes before starting the job.
+ 
 See the file NEWS for more details.
