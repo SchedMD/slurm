@@ -289,9 +289,14 @@ struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 	return common_remove_task(pid);
 }
 
-void jobacct_p_suspendpoll()
+void jobacct_p_suspend_poll()
 {
-	common_suspendpoll();
+	common_suspend_poll();
+}
+
+void jobacct_p_resume_poll()
+{
+	common_resume_poll();
 }
 
 /* 
@@ -351,7 +356,6 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
  *    wrong.
  */
 static void _get_process_data() {
-	static	DIR	*slash_proc;		/* For /proc */ 
 	static	int	slash_proc_open = 0;
 
 	struct	dirent *slash_proc_entry;
@@ -429,7 +433,7 @@ static void _get_process_data() {
 		while ((slash_proc_entry = readdir(slash_proc))) {
 			
 			/* Save a few cyles by simulating
-			   strcat(statFileName, SlashProcEntry->d_name);
+			   strcat(statFileName, slash_proc_entry->d_name);
 			   strcat(statFileName, "/stat");
 			   while checking for a numeric filename (which really
 			   should be a pid).

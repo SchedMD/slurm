@@ -915,7 +915,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_suspendpoll();
+	jobacct_g_suspend_poll();
 
 	/*
 	 * Signal the container
@@ -972,7 +972,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_suspendpoll();
+	jobacct_g_resume_poll();
 	/*
 	 * Signal the container
 	 */
