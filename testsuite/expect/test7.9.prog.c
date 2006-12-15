@@ -28,6 +28,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define _DEBUG 0
+
 main (int argc, char **argv) 
 {
 	int i;
@@ -36,8 +38,17 @@ main (int argc, char **argv)
 	/* start at fd=3
 	 * skip stdin, stdout, and stderr */
 	for (i=3; i<256; i++) {
-		if (fstat(i, &buf) == 0)
-			printf("FAILED: File descriptor %d is open\n", i);
+		if (fstat(i, &buf))
+			continue;
+		printf("FAILED: File descriptor %d is open\n", i);
+#if _DEBUG
+		printf("  st_mode:   0%o\n",(int) buf.st_mode);
+		printf("  st_uid:    %d\n", (int) buf.st_uid);
+		printf("  st_gid:    %d\n", (int) buf.st_gid);
+		printf("  st_size:   %d\n", (int) buf.st_size);
+		printf("  st_ino:    %d\n", (int) buf.st_ino);
+		printf("  st_dev:    %d\n", (int) buf.st_dev);
+#endif
 	}
 	exit(0);
 }
