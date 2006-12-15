@@ -37,7 +37,7 @@ set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_prog        "test$test_id.prog"
-set interations      50
+set iterations       50
 
 print_header $test_id
 
@@ -66,7 +66,7 @@ expect {
 }
 log_user 1
 if {$switch_elan == 1} {
-	send_user "\nWARNING: not running compatable switch, this test is not applicable\n"
+	send_user "\nWARNING: not running compatible switch, this test is not applicable\n"
 	exit $exit_code
 }
 
@@ -82,9 +82,9 @@ make_bash_script $file_in "
   $bin_echo 'testing within script'
   $file_prog
   $bin_echo ' '
-  $bin_echo 'testing $interations sets of spawned tasks'
+  $bin_echo 'testing $iterations sets of spawned tasks'
   inx=1
-  while \[ \$inx -le $interations \]
+  while \[ \$inx -le $iterations \]
   do
     $srun $file_prog
     inx=\$((inx+1))
@@ -137,14 +137,14 @@ expect {
 	}
 }
 if {$matches != 0} {
-	set tot [expr $interations + 1]
+	set tot [expr $iterations + 1]
 	if {$matches <= 3} {
 		send_user "\nWARNING: $matches of $tot tests failed\n"
 	} else {
 		send_user "\nFAILURE: $matches of $tot tests failed\n"
 		set exit_code 1
 	}
-	send_user "  This should happen very rarely, typically when\n"
+	send_user "  This should happen infrequently, typically when\n"
 	send_user "  JobAcctFrequency is set to a small value and is\n"
 	send_user "  indicative of a non-checkpointable job. For details,\n"
 	send_user "  see src/plugins/jobacct/linux/jobacct_linux.c\n"
