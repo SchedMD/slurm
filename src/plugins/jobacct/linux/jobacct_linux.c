@@ -593,11 +593,16 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 
 static void *_watch_tasks(void *arg)
 {
+	int rem;
+
 	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
 		if(!suspended) {
 			_get_process_data();	/* Update the data */ 
 		}
-		sleep(freq);
+
+		rem = freq;
+		while (rem)		/* subject to interupt */
+			sleep(rem);
 	} 
 	return NULL;
 }
