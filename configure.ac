@@ -300,6 +300,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/mvapich/Makefile
 		 src/plugins/mpi/lam/Makefile
 		 src/plugins/mpi/none/Makefile
+		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
