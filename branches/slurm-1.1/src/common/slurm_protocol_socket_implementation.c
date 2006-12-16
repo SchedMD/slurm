@@ -619,7 +619,7 @@ done:
 	if (err) {
 		slurm_seterrno(err);
 		debug2("_slurm_connect failed: %m");
-                slurm_seterrno(err);
+		slurm_seterrno(err);
 		return -1;
 	}
 
