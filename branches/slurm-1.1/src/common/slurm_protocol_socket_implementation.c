@@ -603,10 +603,10 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 		debug2("_slurm_connect poll timeout: %m");
 		return -1;
 	} else {
-		/* poll saw an event on the socket */
-		/* We need to check if the connection succeeded by
-		   using getsockopt.  The revent is not necessarily
-		   POLLERR when the connection fails! */
+		/* poll saw some event on the socket
+		 * We need to check if the connection succeeded by
+		 * using getsockopt.  The revent is not necessarily
+		 * POLLERR when the connection fails! */
 		len = sizeof(err);
 		if (getsockopt(__fd, SOL_SOCKET, SO_ERROR,
 			       &err, &len) < 0)
@@ -617,9 +617,9 @@ done:
 	fcntl(__fd, F_SETFL, flags);
 
 	if (err) {
-		errno = err;
+		slurm_seterrno(err);
 		debug2("_slurm_connect failed: %m");
-		errno = err;
+                slurm_seterrno(err);
 		return -1;
 	}
 
