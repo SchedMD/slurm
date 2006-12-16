@@ -575,37 +575,56 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call 
 	 * non-blocking and polling seems to fix the problem. */
-	int rc = -1, flags;
+	int rc, flags, err;
+	socklen_t len;
+	struct pollfd ufds;
 
 	flags = fcntl(__fd, F_GETFL);
 	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
+
+	err = 0;
 	rc = connect(__fd , __addr , __len);
-	if ((rc == -1) && (errno == EINPROGRESS)) {
-		int poll_rc;
-		struct pollfd ufds;
-		ufds.fd = __fd;
-		ufds.events = POLLIN | POLLOUT;
-		ufds.revents = 0;
-		poll_rc = poll(&ufds, 1, 5000);
-		if (poll_rc == 1) {
-			/* poll successfully completed */
-			if (ufds.revents & POLLERR) {
-				int err = 0;
-				socklen_t size;
-				if (getsockopt(__fd, SOL_SOCKET, SO_ERROR, 
-						&err, &size) == 0) {
-					slurm_seterrno(err);
-				}
-				debug2("connect failure: %m");
-			} else
-				rc = 0;
-		} else {
-			slurm_seterrno(ETIMEDOUT);        
-			debug2("poll: %m");
-                }
+	if (rc < 0 && errno != EINPROGRESS)
+		return -1;
+	if (rc == 0)
+		goto done;  /* connect completed immediately */
+
+	ufds.fd = __fd;
+	ufds.events = POLLIN | POLLOUT;
+	ufds.revents = 0;
+
+	rc = poll(&ufds, 1, 5000);
+	if (rc == -1) {
+		/* poll failed */
+		error("_slurm_connect poll failed: %m");
+		return -1;
+	} else if (rc == 0) {
+		/* poll timed out before any socket events */
+		slurm_seterrno(ETIMEDOUT);
+		debug2("_slurm_connect poll timeout: %m");
+		return -1;
+	} else {
+		/* poll saw an event on the socket */
+		/* We need to check if the connection succeeded by
+		   using getsockopt.  The revent is not necessarily
+		   POLLERR when the connection fails! */
+		len = sizeof(err);
+		if (getsockopt(__fd, SOL_SOCKET, SO_ERROR,
+			       &err, &len) < 0)
+			return -1; /* solaris pending error */
 	}
+
+done:
 	fcntl(__fd, F_SETFL, flags);
-	return rc;
+
+	if (err) {
+		errno = err;
+		debug2("_slurm_connect failed: %m");
+		errno = err;
+		return -1;
+	}
+
+	return 0;
 #endif
 }
 
