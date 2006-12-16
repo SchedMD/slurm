@@ -14,9 +14,9 @@
 
 @SET_MAKE@
 
-# Makefile for mpi/none plugin
+# Makefile for mpi/openmpi plugin
 
-SOURCES = $(mpi_none_la_SOURCES)
+SOURCES = $(mpi_openmpi_la_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -39,7 +39,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
-subdir = src/plugins/mpi/none
+subdir = src/plugins/mpi/openmpi
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -77,9 +77,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-mpi_none_la_LIBADD =
-am_mpi_none_la_OBJECTS = mpi_none.lo
-mpi_none_la_OBJECTS = $(am_mpi_none_la_OBJECTS)
+mpi_openmpi_la_LIBADD =
+am_mpi_openmpi_la_OBJECTS = mpi_openmpi.lo
+mpi_openmpi_la_OBJECTS = $(am_mpi_openmpi_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -91,8 +91,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link --tag=CC $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(mpi_none_la_SOURCES)
-DIST_SOURCES = $(mpi_none_la_SOURCES)
+SOURCES = $(mpi_openmpi_la_SOURCES)
+DIST_SOURCES = $(mpi_openmpi_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -277,11 +277,11 @@ target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = mpi_none.la
+pkglib_LTLIBRARIES = mpi_openmpi.la
 
-# Null MPI plugin.
-mpi_none_la_SOURCES = mpi_none.c
-mpi_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+# OpenMPI MPI plugin.
+mpi_openmpi_la_SOURCES = mpi_openmpi.c
+mpi_openmpi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -295,9 +295,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/mpi/none/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/mpi/openmpi/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/mpi/none/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/mpi/openmpi/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -342,8 +342,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-mpi_none.la: $(mpi_none_la_OBJECTS) $(mpi_none_la_DEPENDENCIES) 
-	$(LINK) -rpath $(pkglibdir) $(mpi_none_la_LDFLAGS) $(mpi_none_la_OBJECTS) $(mpi_none_la_LIBADD) $(LIBS)
+mpi_openmpi.la: $(mpi_openmpi_la_OBJECTS) $(mpi_openmpi_la_DEPENDENCIES) 
+	$(LINK) -rpath $(pkglibdir) $(mpi_openmpi_la_LDFLAGS) $(mpi_openmpi_la_OBJECTS) $(mpi_openmpi_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -351,7 +351,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_openmpi.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
