@@ -6,7 +6,7 @@
 </div>
 
 <div id="footer2">
-<div id="left2"><img src="http://cmg.llnl.gov/linux/linux_new/images/nnsa_doe_uc_comp.gif" width="250" height="30" border="0" usemap="#Map2"></div>
+<div id="left2"><img src="nnsa_doe_uc_comp.gif" width="250" height="30" border="0" usemap="#Map2"></div>
 <div id="center2"><a href="http://www.llnl.gov/" target="_blank" class="footer">Lawrence Livermore National Laboratory</a><br />
 <span class="smalltextblue">7000 East Avenue &#8226; Livermore, CA 94550</span></div>
 <div id="right2"><span class="smalltextblue">Operated by
