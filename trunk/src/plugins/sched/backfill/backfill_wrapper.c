@@ -119,6 +119,13 @@ void fini( void )
 	pthread_mutex_unlock( &thread_flag_mutex );
 }
 
+/**************************************************************************/
+/* TAG(              slurm_sched_plugin_reconfig                        ) */
+/**************************************************************************/
+int slurm_sched_plugin_reconfig( void )
+{
+       return SLURM_SUCCESS;
+}
 
 /***************************************************************************/
 /*  TAG(                   slurm_sched_plugin_schedule                   ) */

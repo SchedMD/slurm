@@ -30,9 +30,14 @@ scheduling services. This is the default behavior and implements first-in-first-
 without any delay in the expected initiation time of any higher priority job.</li>
 <li><b>wiki</b>&#151;Use 
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a> (Wiki version) or 
+The Maui Scheduler</a> (Wiki version) 
+as an external entity to control SLURM job scheduling.</li>
+<li><b>wiki2</b>&#151;Use
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.</li>
+Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.
+Note that wiki2 is an expanded version of the wiki plugin with additional 
+functions supported specifically for Moab.</li>
+
 </ul>
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 
@@ -71,6 +76,14 @@ SLURM_SUCCESS. </p>
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
+
+<p class="commandline">int slurm_sched_plugin_reconfig (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Reread any configuration files.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On fail
+ure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
 
 <p class="commandline">int slurm_sched_plugin_schedule (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: For passive schedulers, invoke a scheduling pass.</p>
@@ -118,6 +131,6 @@ releases of SLURM may revise this API. A scheduler plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 18 December 2006</p>
 
 <!--#include virtual="footer.txt"-->

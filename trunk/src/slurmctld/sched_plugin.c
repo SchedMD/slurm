@@ -53,6 +53,7 @@ typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
 	uint32_t	(*initial_priority)	( uint32_t );
 	void            (*job_is_pending)     	( void );
+	int		(*reconfig)		( void );
 	int		(*get_errno)		( void );
 	char *		(*strerror)		( int );
 } slurm_sched_ops_t;
@@ -86,6 +87,7 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 		"slurm_sched_plugin_schedule",
 		"slurm_sched_plugin_initial_priority",
 		"slurm_sched_plugin_job_is_pending",
+		"slurm_sched_plugin_reconfig",
 		"slurm_sched_get_errno",
 		"slurm_sched_strerror"
 	};
@@ -229,6 +231,18 @@ slurm_sched_fini( void )
 	return rc;
 }
 
+
+/* *********************************************************************** */
+/*  TAG(                        slurm_sched_reconfig                    )  */
+/* *********************************************************************** */
+extern int
+slurm_sched_reconfig( void )
+{
+	if ( slurm_sched_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_sched_context->ops.reconfig))();
+}
 
 /* *********************************************************************** */
 /*  TAG(                        slurm_sched_schedule                    )  */

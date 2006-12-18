@@ -61,6 +61,13 @@ extern void fini( void )
 	term_gang_thread();
 }
 
+/**************************************************************************/
+/* TAG(              slurm_sched_plugin_reconfig                        ) */
+/**************************************************************************/
+int slurm_sched_plugin_reconfig( void )
+{
+	return SLURM_SUCCESS;
+}
 
 /***************************************************************************/
 /*  TAG(                   slurm_sched_plugin_schedule                   ) */

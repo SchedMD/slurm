@@ -738,6 +738,7 @@ int read_slurm_conf(int recover)
 					    old_node_record_count);
 		}
 		reset_first_job_id();
+		(void) slurm_sched_reconfig();
 	}
 
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)

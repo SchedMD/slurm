@@ -61,6 +61,11 @@ extern int slurm_sched_fini(void);
  */
 
 /*
+ * Perform reconfig, re-read any configuration files
+ */
+int slurm_sched_reconfig( void );
+
+/*
  * For passive schedulers, invoke a scheduling pass.
  */
 int slurm_sched_schedule( void );
