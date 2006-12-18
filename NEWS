@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Multi-core bug fix, mask re-use with multiple job steps,
     patch.1.2.0-pre10.061214.affinity_stepid from Dan Palermo (HP).
  -- Modify jobacct/linux plugin to completely eliminate open /proc files.
+ -- Added slurm_sched_plugin_reconfig() function to re-read config files.
  
 * Changes in SLURM 1.2.0-pre10
 ==============================
