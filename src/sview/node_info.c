@@ -63,7 +63,7 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, -1, refresh_node,
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, 1, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -88,6 +88,7 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Put Node Down", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node Idle", TRUE, ADMIN_PAGE},
 #endif
+	{G_TYPE_STRING, NODE_PAGE, "Update Features", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
@@ -436,9 +437,95 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	*info_ptr = new_node_ptr;
 	return error_code;
 }
+
+extern int update_features_node(GtkDialog *dialog, const char *nodelist,
+				const char *old_features)
+{
+	char tmp_char[100];
+	char *edit = NULL;
+	GtkWidget *entry = NULL;
+	GtkWidget *label = NULL;
+	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
+	int response = 0;
+	int no_dialog = 0;
+	int rc = SLURM_SUCCESS;
+	
+	if(!dialog) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Update Features for Node(s) %s?", nodelist);
+	
+		dialog = GTK_DIALOG(
+			gtk_dialog_new_with_buttons(
+				tmp_char,
+				GTK_WINDOW(main_window),
+				GTK_DIALOG_MODAL
+				| GTK_DIALOG_DESTROY_WITH_PARENT,
+				NULL));	
+		no_dialog = 1;
+	}
+	label = gtk_dialog_add_button(dialog,
+				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(dialog), label);
+	gtk_dialog_add_button(dialog,
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+	node_msg->node_names = xstrdup(nodelist);
+	node_msg->features = NULL;
+	node_msg->reason = NULL;
+	node_msg->node_state = (uint16_t) NO_VAL;
+	
+	snprintf(tmp_char, sizeof(tmp_char),
+		 "Features for Node(s) %s?", nodelist);
+	label = gtk_label_new(tmp_char);		
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), 
+			   label, FALSE, FALSE, 0);
+	
+	entry = create_entry();
+	if(!entry)
+		goto end_it;
+
+	if(old_features) 
+		gtk_entry_set_text(GTK_ENTRY(entry), old_features);
+	
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+	gtk_widget_show_all(GTK_WIDGET(dialog));
+	
+	response = gtk_dialog_run(dialog);
+	if (response == GTK_RESPONSE_OK) {				
+		node_msg->features =
+			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
+		if(!node_msg->features) {
+			edit = g_strdup_printf("No features given.");
+			display_edit_note(edit);
+			g_free(edit);
+			goto end_it;
+		}
+		if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
+			edit = g_strdup_printf(
+				"Nodes %s updated successfully.",
+				nodelist);
+			display_edit_note(edit);
+			g_free(edit);
+			
+		} else {
+			edit = g_strdup_printf(
+				"Problem updating nodes %s.",
+				nodelist);
+			display_edit_note(edit);
+			g_free(edit);
+		}
+	}
+
+end_it:
+	slurm_free_update_node_msg(node_msg);
+	if(no_dialog)
+		gtk_widget_destroy(GTK_WIDGET(dialog));
 		
-extern int update_state_node2(GtkDialog *dialog,
-			      const char *nodelist, const char *type)
+	return rc;
+}
+		
+extern int update_state_node(GtkDialog *dialog,
+			     const char *nodelist, const char *type)
 {
 	uint16_t state = (uint16_t) NO_VAL;
 	char *upper = NULL, *lower = NULL;		     
@@ -505,6 +592,8 @@ extern int update_state_node2(GtkDialog *dialog,
 			xfree(lower);
 		}
 	}
+	if(!label)
+		goto end_it;
 	node_msg->node_state = (uint16_t)state;
 	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, FALSE, FALSE, 0);
 	if(entry)
@@ -612,10 +701,7 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 				   SORTID_NAME, 
 				   &nodelist, -1);
 		
-/* 		update_state_node(treestore, &iter,  */
-/* 				  SORTID_STATE, SORTID_STATE_NUM, */
-/* 				  new_text, &node_msg); */
-		update_state_node2(NULL, nodelist, new_text); 
+		update_state_node(NULL, nodelist, new_text); 
 				  
 		g_free(nodelist);
 	default:
@@ -1000,7 +1086,6 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *name = NULL;
-						
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
@@ -1010,9 +1095,15 @@ extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 		
-	/* something that has to deal with a node state change */
-	update_state_node2(GTK_DIALOG(popup), name, type);
-	
+	if(!strcasecmp("Update Features", type)) { /* update features */
+		char *old_features = NULL;
+		gtk_tree_model_get(model, iter, SORTID_FEATURES,
+				   &old_features, -1);
+		update_features_node(GTK_DIALOG(popup), name, old_features);
+		g_free(old_features);
+
+	} else /* something that has to deal with a node state change */
+		update_state_node(GTK_DIALOG(popup), name, type);
 	g_free(name);
 	gtk_widget_destroy(popup);
 		

@@ -331,8 +331,10 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void refresh_node(GtkAction *action, gpointer user_data);
 /* don't destroy the list from this function */
 extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed);
-extern int update_state_node2(GtkDialog *dialog,
-			      const char *nodelist, const char *type);
+extern int update_features_node(GtkDialog *dialog, const char *nodelist,
+				const char *old_features);
+extern int update_state_node(GtkDialog *dialog,
+			     const char *nodelist, const char *type);
 extern GtkListStore *create_model_node(int type);
 extern void admin_edit_node(GtkCellRendererText *cell,
 			    const char *path_string,

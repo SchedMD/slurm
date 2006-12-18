@@ -74,6 +74,7 @@ enum {
 #endif
 	SORTID_CPUS, 
 	SORTID_DEFAULT,
+	SORTID_FEATURES, 
 	SORTID_GROUPS,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
@@ -86,6 +87,7 @@ enum {
 #endif
 	SORTID_NODES, 
 	SORTID_ONLY_LINE, 
+	SORTID_REASON,
 	SORTID_ROOT, 
 	SORTID_SHARE, 
 	SORTID_STATE,
@@ -140,6 +142,10 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, 1, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_part,
+	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, -1, refresh_part,
@@ -160,11 +166,14 @@ static display_data_t options_data_part[] = {
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Make Base Partitions Idle",
 	 TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Update Base Partition Features",
+	 TRUE, ADMIN_PAGE},
 #else
 	{G_TYPE_STRING, PART_PAGE, "Drain Nodes", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Resume Nodes", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Put Nodes Down", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Update Node Features", TRUE, ADMIN_PAGE},
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Change Availablity Up/Down",
 	 TRUE, ADMIN_PAGE},
@@ -660,6 +669,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	sview_part_sub_t other_part_sub;
 	char tmp[1024];
 	char *temp_char = NULL;
+	int global_set = 0;
 
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -810,6 +820,13 @@ static void _layout_part_record(GtkTreeView *treeview,
 		
 		temp_part_sub->min_weight += sview_part_sub->min_weight;
 		temp_part_sub->max_weight += sview_part_sub->max_weight;
+		if(!global_set) {
+			global_set = 1;
+			/* store features and reasons in the others
+			   group */
+			other_part_sub.features = temp_part_sub->features;
+			other_part_sub.reason = temp_part_sub->reason;
+		}
 	}
 	convert_num_unit((float)alloc_part_sub.node_cnt, tmp_cnt, UNIT_NONE);
 	convert_num_unit((float)idle_part_sub.node_cnt, tmp_cnt1, UNIT_NONE);
@@ -819,6 +836,15 @@ static void _layout_part_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   "Nodes (Allocated/Idle/Other)",
 				   tmp);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_part,
+						 SORTID_FEATURES), 
+				   other_part_sub.features);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_part,
+						 SORTID_REASON), 
+				   other_part_sub.reason);
+
 }
 
 static void _update_part_record(sview_part_info_t *sview_part_info,
@@ -922,6 +948,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_set(treestore, iter, SORTID_MEM, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
+	gtk_tree_store_set(treestore, iter, SORTID_FEATURES, "", -1);	
+	gtk_tree_store_set(treestore, iter, SORTID_REASON, "", -1);	
 	
 	childern = gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						&sub_iter, iter);
@@ -983,6 +1011,10 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			   tmp, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
 	
+	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
+			   sview_part_sub->features, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_REASON,
+			   sview_part_sub->reason, -1);
 		
 	return;
 }
@@ -1574,7 +1606,6 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	GtkTreeStore *treestore = GTK_TREE_STORE(data);
 	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 	GtkTreeIter iter;
-	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
 	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
 	
 	char *temp = NULL;
@@ -1636,7 +1667,6 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 no_input:
 	slurm_free_update_part_msg(part_msg);
-	slurm_free_update_node_msg(node_msg);
 	gtk_tree_path_free (path);
 	g_free(old_text);
 	g_static_mutex_unlock(&sview_mutex);
@@ -2127,7 +2157,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	slurm_init_part_desc_msg(part_msg);
 	
 	part_msg->name = xstrdup(partid);
-
+		
 	if(!strcasecmp("Change Availablity Up/Down", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
@@ -2158,9 +2188,17 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_EDIT;
 		entry = _admin_full_edit_part(part_msg, model, iter);
+	} else if(!strncasecmp("Update", type, 6)) {
+		char *old_features = NULL;
+		gtk_tree_model_get(model, iter, SORTID_FEATURES,
+				   &old_features, -1);
+		update_features_node(GTK_DIALOG(popup),
+				     nodelist, old_features);
+		g_free(old_features);
+		goto end_it;
 	} else {
 		/* something that has to deal with a node state change */
-		update_state_node2(GTK_DIALOG(popup), nodelist, type);
+		update_state_node(GTK_DIALOG(popup), nodelist, type);
 		goto end_it;
 	}
 
@@ -2194,6 +2232,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		}
 	}
 end_it:
+		
 	g_free(state);
 	g_free(partid);
 	g_free(nodelist);
