@@ -8,8 +8,8 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
-<meta name="LLNLRandR" content="UCRL-WEB-217616">
-<meta name="LLNLRandRdate" content="7 December 2005">
+<meta name="LLNLRandR" content="UCRL-WEB-225274">
+<meta name="LLNLRandRdate" content="18 December 2006">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
