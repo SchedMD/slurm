@@ -1094,8 +1094,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	}
 	hostlist_destroy (host_list);
 
-	if ((error_code == 0) && (update_node_msg->features) &&
-	    (update_node_msg->features[0])) {
+	if ((error_code == 0) && (update_node_msg->features)) {
 		error_code = _update_node_features(
 			update_node_msg->node_names, 
 			update_node_msg->features);
