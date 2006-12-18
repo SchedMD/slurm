@@ -40,11 +40,11 @@ with 1532 nodes each having eight Power5 processors</li>
 <li>Peloton with 1152 nodes each having four sockets with dual core Opteron processors and an InfiniBand switch</li>
 </ul>
 There are about 150 downloads of SLURM per month from LLNL's FTP server alone.
-As of September 2006, SLURM has been downloaded over 3500 times to over 500 
-distinct sites in 38 countries. 
+As of December 2006, SLURM has been downloaded over 4300 times to over 500 
+distinct sites in 40 countries. 
 SLURM is also distributed and supported by <a href="http://www.hp.com">
 Hewlett-Packard</a> as the resource manager in their XC System Software.</p>
 
-<p style="text-align:center;">Last modified 19 October 2006</p>
+<p style="text-align:center;">Last modified 18 December 2006</p>
 
 <!--#include virtual="footer.txt"-->

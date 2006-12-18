@@ -44,6 +44,7 @@ html_DATA = \
 	configurator.html \
 	coding_style.pdf \
 	entities.gif \
+	lci.7.tutorial.pdf \
 	lll.gif \
 	mc_support.gif \
 	plane_ex1.gif \

@@ -120,13 +120,13 @@ run jobs as another user.</p>
 # wiki.conf
 # SLURM's wiki plugin configuration file
 #
-# Matches KEY in moab-private.cfg
-AuthKey=1234
+# Matches Maui's --with-key configuration parameter
+AuthKey=42
 </pre>
 </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 November 2006</p>
+<p style="text-align:center;">Last modified 18 December 2006</p>
 
 <!--#include virtual="footer.txt"-->
