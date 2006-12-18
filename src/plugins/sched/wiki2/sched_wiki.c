@@ -101,6 +101,14 @@ void slurm_sched_plugin_job_is_pending( void )
 }
 
 /**************************************************************************/
+/* TAG(              slurm_sched_plugin_reconfig                        ) */
+/**************************************************************************/
+int slurm_sched_plugin_reconfig( void )
+{
+	return parse_wiki_config();
+}
+
+/**************************************************************************/
 /* TAG(              slurm_sched_get_errno                              ) */
 /**************************************************************************/
 int slurm_sched_get_errno( void )
