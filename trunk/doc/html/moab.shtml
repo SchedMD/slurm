@@ -58,6 +58,10 @@ to schedule the computer.
 This numeric value should match <i>EPORT</i> configured 
 in the <i>moab.cnf</i> file.</p>
 
+<p><b>EHost</b> is the event notification host for Moab.
+This identifies the computer on which the Moab daemons 
+executes which should be notified of events.</p>
+
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
 of large numbers of events occuring about the same time.
 If an event occurs within this number of seconds since Moab was
@@ -89,6 +93,8 @@ JobPriority=hold
 #
 # Moab event notification port, matches EPORT in moab.cfg
 EPort=15017
+# Moab event notification host, where the Moab daemon runs
+#EHost=tux0
 #
 # Moab event notifcation throttle, matches JOBAGGREGATIONTIME
 # in moab.cfg (integer value in seconds)
@@ -111,6 +117,6 @@ KEY=1234
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 November 2006</p>
+<p style="text-align:center;">Last modified 18 December 2006</p>
 
 <!--#include virtual="footer.txt"-->
