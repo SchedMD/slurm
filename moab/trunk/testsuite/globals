@@ -230,7 +230,7 @@ proc wait_for_job { job_id desired_state } {
 
 	set sleep_time  1
 	while 1 {
-		set fd [open "|$checkjob $job_id"]
+		set fd [open "|$checkjob $job_id | grep State:"]
 		gets $fd line
 		catch {close $fd}
 		if {[regexp {State: *(\w+)} $line foo state] != 1} {

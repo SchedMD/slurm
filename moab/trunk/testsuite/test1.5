@@ -1,0 +1,132 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of Moab functionality
+#          Time limit check: msub -l walltime=secs
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+############################################################################
+source ./globals
+
+set test_id     "1.5"
+set exit_code   0
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
+set job_id      0
+set sleep_time  180
+
+print_header $test_id
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec rm -f $file_in $file_out $file_err
+make_bash_script $file_in "
+  sleep $sleep_time
+  echo FINI
+"
+
+#
+# Execute a couple of three minute jobs; one with a one minute time
+# limit and the other with a four minute time limit. Confirm jobs
+# are terminated on a timeout as required. Note that SLURM time
+# limit enforcement has a resolution of about one minute.
+#
+set msub_pid [spawn $msub -o $file_out -e $file_err -l walltime=60 $file_in]  
+expect {
+	-re "$alpha_numeric.($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: msub not responding\n"
+		slow_kill $msub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: msub job submit failure\n"
+	exit 1
+}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	exit 1
+}
+
+set got_fini 0
+if {[wait_for_file $file_out] == 0} {
+	spawn cat $file_out
+	expect {
+		-re "FINI" {
+			set got_fini 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+if {$got_fini == 1} {
+	send_user "\nFAILURE: msub timelimit not enforced\n"
+	set exit_code 1
+}
+
+set job_id 0
+set msub_pid [spawn $msub -o $file_out -e $file_err -l walltime=300 $file_in]
+expect {
+	-re "$alpha_numeric.($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: msub not responding\n"
+		slow_kill $msub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: msub job submit failure\n"
+	exit 1
+}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	exit 1
+}
+
+set got_fini 0
+if {[wait_for_file $file_out] == 0} {
+	spawn cat $file_out
+	expect {
+		-re "FINI" {
+			set got_fini 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+if {$got_fini == 0} {
+	send_user "\nFAILURE: msub timelimit not enforced\n"
+	set exit_code 1
+}
+
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec rm $file_in $file_out
+}
+exit $exit_code
