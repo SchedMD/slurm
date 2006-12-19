@@ -57,3 +57,6 @@ test2.#    Testing of showq command.
 
 test3.#    Testing of canceljob command.
 ========================================
+test3.1    Cancelation of pending jobs
+test3.2    Cancelation of running jobs
+test3.3    Cancelation of terminated jobs
