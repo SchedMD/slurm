@@ -128,8 +128,8 @@ static int _call_spank_local_user(slurm_step_ctx step_ctx,
 int slaunch(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_step_create_request_msg_t step_req;
-	slurm_job_step_launch_t params;
+	slurm_step_ctx_params_t ctx_params[1];
+	slurm_job_step_launch_t launch_params;
 	slurm_job_step_launch_callbacks_t callbacks;
 	char **env;
 	uint32_t job_id, step_id;
@@ -169,20 +169,20 @@ int slaunch(int argc, char **argv)
 	/*
 	 * Create a job step context.
 	 */
-	step_req.job_id = opt.jobid;
+	slurm_step_ctx_params_t_init(ctx_params);
+	ctx_params->job_id = opt.jobid;
 	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", step_req.job_id);
-	step_req.user_id = getuid();
-	step_req.node_count = opt.num_nodes;
-	step_req.num_tasks = opt.num_tasks;
+	xstrfmtcat(totalview_jobid, "%u", ctx_params->job_id);
+	ctx_params->node_count = opt.num_nodes;
+	ctx_params->task_count = opt.num_tasks;
 	if (opt.cpus_per_task_set) {
-		step_req.cpu_count = opt.num_tasks * opt.cpus_per_task;
+		ctx_params->cpu_count = opt.num_tasks * opt.cpus_per_task;
 	} else if (opt.overcommit) {
-		step_req.cpu_count = 0;
+		ctx_params->cpu_count = 0;
 	} else {
-		step_req.cpu_count = opt.num_tasks;
+		ctx_params->cpu_count = opt.num_tasks;
 	}
-	step_req.relative = opt.relative;
+	ctx_params->relative = opt.relative;
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_ARBITRARY:
@@ -191,22 +191,20 @@ int slaunch(int argc, char **argv)
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_BLOCK_CYCLIC:
 	case SLURM_DIST_BLOCK_BLOCK:
-		step_req.task_dist = opt.distribution;
+		ctx_params->task_dist = opt.distribution;
 		break;
 	case SLURM_DIST_PLANE:
-		step_req.task_dist = SLURM_DIST_PLANE;
-		step_req.plane_size = opt.plane_size;
+		ctx_params->task_dist = SLURM_DIST_PLANE;
+		ctx_params->plane_size = opt.plane_size;
 		break;
 	default:
-		step_req.task_dist = (step_req.num_tasks <= 
-			step_req.node_count) 
+		ctx_params->task_dist = (ctx_params->task_count <= 
+			ctx_params->node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		break;
 
 	}
-	step_req.overcommit = opt.overcommit ? 1 : 0;
-	step_req.host = NULL; /* let the SLURM API set this */
-	step_req.port = 0;    /* let the SLURM API set this */
+	ctx_params->overcommit = opt.overcommit;
 
 	/* SLURM overloads the node_list parameter in the
 	 * job_step_create_request_msg_t.  It can either be a node list,
@@ -217,17 +215,17 @@ int slaunch(int argc, char **argv)
 	if (opt.task_layout_byid_set
 	    || opt.task_layout_byname_set
 	    || opt.task_layout_file_set) {
-		step_req.node_list = opt.task_layout;
+		ctx_params->node_list = opt.task_layout;
 	} else if (opt.nodelist != NULL) {
-		step_req.node_list = opt.nodelist;
+		ctx_params->node_list = opt.nodelist;
 	} else {
-		step_req.node_list = NULL; /* let the controller pick nodes */
+		ctx_params->node_list = NULL; /* let the controller pick nodes */
 	}
 
-	step_req.network = opt.network;
-	step_req.name = opt.job_name;
+	ctx_params->network = opt.network;
+	ctx_params->name = opt.job_name;
 	
-	step_ctx = slurm_step_ctx_create(&step_req);
+	step_ctx = slurm_step_ctx_create(ctx_params);
 	if (step_ctx == NULL) {
 		error("Failed creating job step context: %m");
 		exit(1);
@@ -248,48 +246,48 @@ int slaunch(int argc, char **argv)
 	 * Use the job step context to launch the tasks.
 	 */
 	_task_state_struct_init(opt.num_tasks);
-	slurm_job_step_launch_t_init(&params);
-	params.gid = opt.gid;
-	params.argc = opt.argc;
-	params.argv = opt.argv;
-	params.multi_prog = opt.multi_prog ? true : false;
-	params.envc = envcount(env);
-	params.env = env;
-	params.cwd = opt.cwd;
-	params.slurmd_debug = opt.slurmd_debug;
-	params.buffered_stdio = opt.unbuffered ? false : true;
-	params.labelio = opt.labelio ? true : false;
-	params.remote_output_filename = opt.remote_ofname;
-	params.remote_input_filename = opt.remote_ifname;
-	params.remote_error_filename = opt.remote_efname;
-	params.task_prolog = opt.task_prolog;
-	params.task_epilog = opt.task_epilog;
-	params.cpu_bind = opt.cpu_bind;
-	params.cpu_bind_type = opt.cpu_bind_type;
-	params.mem_bind = opt.mem_bind;
-	params.mem_bind_type = opt.mem_bind_type;
+	slurm_job_step_launch_t_init(&launch_params);
+	launch_params.gid = opt.gid;
+	launch_params.argc = opt.argc;
+	launch_params.argv = opt.argv;
+	launch_params.multi_prog = opt.multi_prog ? true : false;
+	launch_params.envc = envcount(env);
+	launch_params.env = env;
+	launch_params.cwd = opt.cwd;
+	launch_params.slurmd_debug = opt.slurmd_debug;
+	launch_params.buffered_stdio = opt.unbuffered ? false : true;
+	launch_params.labelio = opt.labelio ? true : false;
+	launch_params.remote_output_filename = opt.remote_ofname;
+	launch_params.remote_input_filename = opt.remote_ifname;
+	launch_params.remote_error_filename = opt.remote_efname;
+	launch_params.task_prolog = opt.task_prolog;
+	launch_params.task_epilog = opt.task_epilog;
+	launch_params.cpu_bind = opt.cpu_bind;
+	launch_params.cpu_bind_type = opt.cpu_bind_type;
+	launch_params.mem_bind = opt.mem_bind;
+	launch_params.mem_bind_type = opt.mem_bind_type;
 	
-	_setup_local_fds(&params.local_fds, step_ctx);
+	_setup_local_fds(&launch_params.local_fds, step_ctx);
 	if (MPIR_being_debugged) {
-		params.parallel_debug = true;
+		launch_params.parallel_debug = true;
 		pmi_server_max_threads(1);
 	} else {
-		params.parallel_debug = false;
+		launch_params.parallel_debug = false;
 	}
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
 
 	_run_slaunch_prolog(env);
 
-	_mpir_init(step_req.num_tasks);
+	_mpir_init(ctx_params->task_count);
 
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	verbose("Launching job step %u.%u", job_id, step_id);
 
-	_call_spank_local_user(step_ctx, &params);
+	_call_spank_local_user(step_ctx, &launch_params);
 
-	if (slurm_step_launch(step_ctx, &params, &callbacks) != SLURM_SUCCESS) {
+	if (slurm_step_launch(step_ctx, &launch_params, &callbacks) != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
 	}
@@ -298,9 +296,10 @@ int slaunch(int argc, char **argv)
 		/* Only set up MPIR structures if the step launched
 		   correctly. */
 		if (opt.multi_prog)
-			mpir_set_multi_name(step_req.num_tasks, params.argv[0]);
+			mpir_set_multi_name(ctx_params->task_count,
+					    launch_params.argv[0]);
 		else
-			_mpir_set_executable_names(params.argv[0]);
+			_mpir_set_executable_names(launch_params.argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint();
 		if (opt.debugger_test)
