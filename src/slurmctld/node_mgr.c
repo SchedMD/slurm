@@ -1189,7 +1189,10 @@ static int _update_node_features(char *node_names, char *features)
 		} else if (tmp_cnt == config_cnt) {
 			/* all nodes changed, update in situ */
 			xfree(config_ptr->feature);
-			config_ptr->feature = xstrdup(features);
+			if (features[0])
+				config_ptr->feature = xstrdup(features);
+			else
+				config_ptr->feature = NULL;
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = create_config_record();
@@ -1197,7 +1200,10 @@ static int _update_node_features(char *node_names, char *features)
 				first_new = new_config_ptr;
 			memcpy(new_config_ptr, config_ptr, 
 				sizeof(struct config_record));
-			new_config_ptr->feature = xstrdup(features);
+			if (features[0])
+				new_config_ptr->feature = xstrdup(features);
+			else
+				config_ptr->feature = NULL;
 			new_config_ptr->node_bitmap = 
 				bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = 
