@@ -47,6 +47,7 @@ test1.5    Time limit test: msub -l walltime=secs
 test1.6    msub --about
 test1.7    msub --loglevel=#
 test1.8    Working directory test: msub -d path
+test1.9    Eligible start time test: msub -a
 
 test2.#    Testing of showq command.
 ====================================

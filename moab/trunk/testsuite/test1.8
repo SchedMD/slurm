@@ -84,6 +84,6 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-	exec rm $file_in $file_out
+	exec rm -f $file_in $file_out
 }
 exit $exit_code
