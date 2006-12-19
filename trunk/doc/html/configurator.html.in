@@ -580,8 +580,10 @@ determined by system type<BR>
 Select one value for <B>JobAcctType</B>:<BR>
 <input type="radio" name="job_acct_type" value="none" checked> <B>None</B>: No 
 job accounting<BR>
+<input type="radio" name="job_acct_type" value="aix"> <B>AIX</B>: Specifc
+AIX process table information gathered, use with AIX systems only<BR>
 <input type="radio" name="job_acct_type" value="linux"> <B>Linux</B>: Specifc
-Linux proc table information gathered, use with Linux systems only<BR>
+Linux process table information gathered, use with Linux systems only<BR>
 <input type="text" name="job_acct_frequency" value=""> <B>JobAcctFrequency</B>:
 polling interval in seconds.<BR>
 <input type="text" name="job_acct_logfile" value=""> <B>JobAcctLogFile</B>:
@@ -643,6 +645,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 8 December 2006</p>
+Last modified 19 December 2006</p>
 </BODY>
 
