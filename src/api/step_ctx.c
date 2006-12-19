@@ -53,17 +53,14 @@
 
 #include "src/api/step_ctx.h"
 
-static job_step_create_request_msg_t *_copy_step_req(
-	job_step_create_request_msg_t *step_req);
-
 /*
  * slurm_step_ctx_create - Create a job step and its context. 
- * IN step_req - description of job step request
+ * IN step_params - job step parameters
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
 extern slurm_step_ctx
-slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
+slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_request_msg_t *step_req = NULL;
@@ -72,28 +69,34 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 	short port = 0;
 	int errnum = 0;
 	
-	/* First copy the user's user_step_req struct in case we
-	 * need to modify anything before contacting the slurmctld
-	 */
-	step_req =
-		_copy_step_req((job_step_create_request_msg_t *)user_step_req);
+	/* First copy the user's step_params into a step request struct */
+	step_req = (job_step_create_request_msg_t *)
+		xmalloc(sizeof(job_step_create_request_msg_t));
+	step_req->job_id = step_params->job_id;
+	step_req->user_id = (uint32_t)step_params->uid;
+	step_req->node_count = step_params->node_count;
+	step_req->cpu_count = step_params->cpu_count;
+	step_req->num_tasks = step_params->task_count;
+	step_req->relative = step_params->relative;
+	step_req->task_dist = step_params->task_dist;
+	step_req->plane_size = step_params->plane_size;
+	step_req->node_list = xstrdup(step_params->node_list);
+	step_req->network = xstrdup(step_params->network);
+	step_req->name = xstrdup(step_params->name);
+	step_req->overcommit = step_params ? 1 : 0;
 
-	/* If step_req->host is NULL, then the user wants us
-	 * to handle messages from the controller here in the API code.
-	 * We will handle the messages in the step_launch.c mesage handler,
+	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
-	if (step_req->host == NULL) {
-		if (net_stream_listen(&sock, &port) < 0) {
-			errnum = errno;
-			error("unable to intialize step context socket: %m");
-			slurm_free_job_step_create_request_msg(step_req);
-			goto fail;
-		}
-		step_req->port = port;
-		step_req->host = xshort_hostname();
+	if (net_stream_listen(&sock, &port) < 0) {
+		errnum = errno;
+		error("unable to intialize step context socket: %m");
+		slurm_free_job_step_create_request_msg(step_req);
+		goto fail;
 	}
+	step_req->port = port;
+	step_req->host = xshort_hostname();
 
 	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
@@ -107,7 +110,7 @@ slurm_step_ctx_create (const job_step_create_request_msg_t *user_step_req)
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
-	ctx->step_req   = step_req; /* is already a copy of user_step_req */
+	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
 
 	ctx->launch_state = step_launch_state_create(ctx);
@@ -314,47 +317,26 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx ctx)
 	return SLURM_SUCCESS;
 }
 
-static job_step_create_request_msg_t *_copy_step_req(
-	job_step_create_request_msg_t *step_req)
-{
-	job_step_create_request_msg_t *copy;
-
-	copy = xmalloc(sizeof(job_step_create_request_msg_t));
-	if (copy == NULL)
-		return NULL;
-
-	memcpy(copy, step_req, sizeof(job_step_create_request_msg_t));
-	if (step_req->host != NULL)
-		copy->host = xstrdup(step_req->host);
-	if (step_req->node_list != NULL)
-		copy->node_list = xstrdup(step_req->node_list);
-	if (step_req->network != NULL)
-		copy->network = xstrdup(step_req->network);
-	if (step_req->name != NULL)
-		copy->name = xstrdup(step_req->name);
-
-	return copy;
-}
-
 /* 
- * slurm_step_ctx_create_params_init - This initializes parameters
+ * slurm_step_ctx_params_t_init - This initializes parameters
  *	in the structure that you will pass to slurm_step_ctx_create().
  *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.  The structure will
  *      be intialized.
  */
-extern void slurm_step_ctx_create_params_init (
-	job_step_create_request_msg_t *ptr)
+extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 {
 	char *jobid_str;
 
+	/* zero the entire structure */
 	memset(ptr, 0, sizeof(job_step_create_request_msg_t));
 
+	/* now set anything that shouldn't be 0 or NULL by default */
 	ptr->relative = (uint16_t)NO_VAL;
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = (uint16_t)NO_VAL;
 
-	ptr->user_id = (uint32_t)getuid();
+	ptr->uid = getuid();
 
 	if ((jobid_str = getenv("SLURM_JOB_ID")) != NULL) {
 		ptr->job_id = (uint32_t)atol(jobid_str);

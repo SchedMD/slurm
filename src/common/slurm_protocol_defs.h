@@ -368,6 +368,34 @@ typedef struct last_update_msg {
 	time_t last_update;
 } last_update_msg_t;
 
+typedef struct job_step_specs {
+	uint32_t job_id;	/* job ID */
+	uint32_t user_id;	/* user the job runs as */
+	uint32_t node_count;	/* count of required nodes */
+	uint32_t cpu_count;	/* count of required processors */
+	uint32_t num_tasks;	/* number of tasks required */
+	uint16_t relative;	/* first node to use of job's allocation */
+	uint16_t task_dist;	/* see enum task_dist_state */
+	uint16_t plane_size;	/* plane size when task_dist =
+				   SLURM_DIST_PLANE */
+	uint16_t port;		/* port to contact initiating srun */
+	char *host;		/* host to contact initiating srun */
+	char *node_list;	/* list of required nodes */
+	char *network;		/* network use spec */
+	char *name;		/* name of the job step, default "" */
+	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
+				   0 to disallow overcommit. default is 0 */
+} job_step_create_request_msg_t;
+
+typedef struct job_step_create_response_msg {
+	uint32_t job_step_id;	/* assigned job step id */
+	slurm_step_layout_t *step_layout; /* information about how the 
+                                             step is laid out */
+	slurm_cred_t cred;      /* slurm job credential */
+	switch_jobinfo_t switch_job;	/* switch context, opaque 
+                                           data structure */
+} job_step_create_response_msg_t;
+
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
@@ -690,6 +718,8 @@ void inline slurm_free_update_part_msg(update_part_msg_t * msg);
 void inline slurm_free_delete_part_msg(delete_part_msg_t * msg);
 void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
+void inline
+slurm_free_job_step_create_response_msg(job_step_create_response_msg_t *msg);
 void inline 
 slurm_free_complete_job_allocation_msg(complete_job_allocation_msg_t * msg);
 void inline

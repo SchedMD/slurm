@@ -712,4 +712,16 @@ extern char *nodelist_nth_host(const char *nodelist, int inx);
 extern int nodelist_find(const char *nodelist, const char *name);
 extern void convert_num_unit(float num, char *buf, int orig_type);
 extern int revert_num_unit(const char *buf);
+
+/*
+ * slurm_job_step_create - Ask the slurm controller for a new job step
+ *	credential.
+ * IN slurm_step_alloc_req_msg - description of job step request
+ * OUT slurm_step_alloc_resp_msg - response to request
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the response using slurm_free_job_step_create_response_msg
+ */
+extern int slurm_job_step_create (
+	job_step_create_request_msg_t *slurm_step_alloc_req_msg, 
+	job_step_create_response_msg_t **slurm_step_alloc_resp_msg);
 #endif
