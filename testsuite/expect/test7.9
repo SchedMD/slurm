@@ -96,14 +96,11 @@ exec $bin_make -f /dev/null $file_prog
 
 make_bash_script $file_in "
   $bin_echo 'testing within script'
-  $file_prog
+  ./$file_prog
   $bin_echo ' '
   $bin_echo 'testing $iterations sets of spawned tasks'
-  inx=1
-  while \[ \$inx -le $iterations \]
-  do
+  for ((i=0; i<$iterations; i++)) ; do
     $srun $file_prog
-    inx=\$((inx+1))
   done
 "
 
