@@ -162,6 +162,22 @@ proc print_header { test_id } {
 	send_user "TEST: $test_id\n"
 }
 
+################################################################
+#
+# Proc: print_date
+#
+# Purpose:  Print the time and date
+#
+################################################################
+
+proc print_date { } {
+	spawn date
+	expect {
+		eof {
+			wait
+		}
+	}
+}
 
 ################################################################
 #
@@ -233,7 +249,7 @@ proc wait_for_job { job_id desired_state } {
 		set fd [open "|$checkjob -A $job_id"]
 		gets $fd line
 		catch {close $fd}
-		if {[regexp {State=(\w+);} $line foo state] != 1} {
+		if {[regexp {STATE=(\w+);} $line foo state] != 1} {
 			set state "NOT_FOUND"
 		}
 
