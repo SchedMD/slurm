@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          Time limit check: msub -l walltime=secs
+#          msub --loglevel=#
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,12 +13,11 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.5"
+set test_id     "1.7"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
-set sleep_time  180
 
 print_header $test_id
 
@@ -28,18 +27,24 @@ print_header $test_id
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
-  sleep $sleep_time
-  echo FINI
+  id
+  exit 0
 "
 
 #
-# Execute a couple of three minute jobs; one with a one minute time
-# limit and the other with a four minute time limit. Confirm jobs
-# are terminated on a timeout as required. Note that SLURM time
-# limit enforcement has a resolution of about one minute.
+# Test of msub --loglevel=1
 #
-set msub_pid [spawn $msub -o $file_out -l walltime=60 $file_in]  
+set log_info 0
+set msub_pid [spawn $msub --loglevel=1 -o $file_out $file_in]  
 expect {
+	-re "INFO:" {
+		set log_info 1
+		exp_continue
+	}
+	-re "MSURecvData" {
+		set log_info -1
+		exp_continue
+	}
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
@@ -57,32 +62,26 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: msub job submit failure\n"
 	exit 1
 }
+if {$log_info == 0} {
+	send_user "\nFAILURE: msub failed to process --loglevel option\n"
+	set exit_code 1
+}
 if {[wait_for_job $job_id DONE] != 0} {
 	send_user "\nFAILURE: error on job\n"
 	exit 1
 }
 
-set got_fini 0
-if {[wait_for_file $file_out] == 0} {
-	spawn cat $file_out
-	expect {
-		-re "FINI" {
-			set got_fini 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$got_fini == 1} {
-	send_user "\nFAILURE: msub timelimit not enforced\n"
-	set exit_code 1
-}
-
-set job_id 0
-set msub_pid [spawn $msub -o $file_out -l walltime=300 $file_in]
+#
+# Test of msub --loglevel=2
+#
+set job_id   0
+set log_info 0
+set msub_pid [spawn $msub --loglevel=2 -o $file_out $file_in]
 expect {
+	-re "MSURecvData" {
+		set log_info 1
+		exp_continue
+	}
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
@@ -100,29 +99,14 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: msub job submit failure\n"
 	exit 1
 }
+if {$log_info == 0} {
+	send_user "\nFAILURE: msub failed to process --loglevel option\n"
+	set exit_code 1
+}
 if {[wait_for_job $job_id DONE] != 0} {
 	send_user "\nFAILURE: error on job\n"
 	exit 1
 }
-
-set got_fini 0
-if {[wait_for_file $file_out] == 0} {
-	spawn cat $file_out
-	expect {
-		-re "FINI" {
-			set got_fini 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$got_fini == 0} {
-	send_user "\nFAILURE: msub timelimit not enforced\n"
-	set exit_code 1
-}
-
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

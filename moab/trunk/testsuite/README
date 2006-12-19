@@ -45,6 +45,7 @@ test1.3    msub -e <errorpath> -o <outputpath>
 test1.4    Confirm the job runs with the proper user and group ID
 test1.5    Time limit check: msub -l walltime=secs
 test1.6    msub --about
+test1.7    msub --loglevel=#
 
 test2.#    Testing of showq command.
 ====================================
