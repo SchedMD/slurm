@@ -41,6 +41,7 @@ test1.#    Testing of msub command.
 ===================================
 test1.1    msub --help
 test1.2    msub --version
+test1.3    msub -e <errorpath> -o <outputpath>
 
 test2.#    Testing of showq command.
 ====================================
