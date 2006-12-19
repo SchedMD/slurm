@@ -64,6 +64,9 @@ if {[wait_for_job $job_id DONE] != 0} {
 
 set got_fini 0
 if {[wait_for_file $file_out] == 0} {
+#	Allow enough time for file to flush all output, slow on Moab
+	exec sleep 60
+
 	spawn cat $file_out
 	expect {
 		-re "FINI" {
@@ -107,6 +110,9 @@ if {[wait_for_job $job_id DONE] != 0} {
 
 set got_fini 0
 if {[wait_for_file $file_out] == 0} {
+#	Allow enough time for file to flush all output, slow on Moab
+	exec sleep 60
+
 	spawn cat $file_out
 	expect {
 		-re "FINI" {

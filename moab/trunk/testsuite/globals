@@ -60,7 +60,7 @@ cset max_job_delay 120
 # Files must be propogated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
-cset max_file_delay 60
+cset max_file_delay 120
 
 #
 # The error message that the "sleep" command prints when we run "sleep aaa".
@@ -185,7 +185,7 @@ proc wait_for_file { file_name } {
 		}
 		if [file exists $file_name] {
 #			Add small delay for I/O buffering
-			exec sleep 1
+			exec sleep 10
 			return 0
 		}
 	}
@@ -230,10 +230,10 @@ proc wait_for_job { job_id desired_state } {
 
 	set sleep_time  1
 	while 1 {
-		set fd [open "|$checkjob $job_id | grep State:"]
+		set fd [open "|$checkjob -A $job_id"]
 		gets $fd line
 		catch {close $fd}
-		if {[regexp {State: *(\w+)} $line foo state] != 1} {
+		if {[regexp {State=(\w+);} $line foo state] != 1} {
 			set state "NOT_FOUND"
 		}
 
