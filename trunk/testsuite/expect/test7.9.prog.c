@@ -24,6 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 #include <stdio.h>
+#include <stdlib.h> /* exit() prototype is here */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
