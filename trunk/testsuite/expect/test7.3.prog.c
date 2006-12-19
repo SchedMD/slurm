@@ -46,11 +46,10 @@ int main (int argc, char *argv[])
 	int i, min_nodes = 1, max_nodes = 1, nodes, tasks = 0, rc = 0;
 	job_desc_msg_t job_req;
 	resource_allocation_response_msg_t *job_resp;
-	job_step_create_request_msg_t step_req;
+	slurm_step_ctx_params_t step_params[1];
 	slurm_step_ctx ctx = NULL;
-	slurm_job_step_launch_t launch;
+	slurm_job_step_launch_t launch[1];
 	char *task_argv[3];
-	char cwd[PATH_MAX];
 	int *fd_array = NULL;
 	int num_fd;
 
@@ -111,13 +110,12 @@ int main (int argc, char *argv[])
 	/*
 	 * Create a job step context.
 	 */
-	memset(&step_req, 0, sizeof(job_step_create_request_msg_t));
-	step_req.job_id = job_resp->job_id;
-	step_req.user_id = getuid();
-	step_req.node_count = nodes;
-	step_req.num_tasks = tasks;
+	slurm_step_ctx_params_t_init(step_params);
+	step_params->job_id = job_resp->job_id;
+	step_params->node_count = nodes;
+	step_params->task_count = tasks;
 
-	ctx = slurm_step_ctx_create(&step_req);
+	ctx = slurm_step_ctx_create(step_params);
 	if (ctx == NULL) {
 		slurm_perror("slurm_step_ctx_create");
 		rc = 1;
@@ -139,16 +137,14 @@ int main (int argc, char *argv[])
 	 * "user managed" IO means a TCP stream for each task, directly
          * connected to the stdin, stdout, and stderr the task.
 	 */
-	slurm_job_step_launch_t_init(&launch);
+	slurm_job_step_launch_t_init(launch);
 	task_argv[0] = "./test7.3.io";
-	launch.argv = task_argv;
-	launch.argc = 1;
-	getcwd(cwd, PATH_MAX);
-	launch.cwd = cwd;
-	launch.user_managed_io = true; /* This is the key to using
+	launch->argv = task_argv;
+	launch->argc = 1;
+	launch->user_managed_io = true; /* This is the key to using
 					  "user managed" IO */
 	
-	if (slurm_step_launch(ctx, &launch, NULL) != SLURM_SUCCESS) {
+	if (slurm_step_launch(ctx, launch, NULL) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
 		rc = 1;
 		goto done;

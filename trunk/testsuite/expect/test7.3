@@ -114,7 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: spawn_task not responding\n"
+		send_user "\nFAILURE: spawn IO not responding\n"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -124,7 +124,7 @@ expect {
 }
 
 if {$matches != [expr $task_cnt * 3]} {
-	send_user "\nFAILURE: spawn_task communications failure\n"
+	send_user "\nFAILURE: spawn IO communications failure\n"
 	set exit_code 1
 }
 
