@@ -60,4 +60,4 @@ test3.#    Testing of canceljob command.
 test3.1    Cancelation of pending jobs
 test3.2    Cancelation of running jobs
 test3.3    Cancelation of terminated jobs
-test3.4    canceljob -h
+test3.4    canceljob --help
