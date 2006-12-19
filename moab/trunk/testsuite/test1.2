@@ -1,0 +1,49 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of Moab functionality
+#          msub --version
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+############################################################################
+source ./globals
+
+set test_id     "1.2"
+set exit_code   0
+
+print_header $test_id
+
+#
+# Report the msub version message
+#
+ 
+set matches     0
+set msub_pid [spawn $msub --version]  
+expect {
+	-re "client version" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: msub not responding\n"
+		slow_kill $msub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE: msub --version message not as expected\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
