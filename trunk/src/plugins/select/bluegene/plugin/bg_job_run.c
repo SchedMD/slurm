@@ -72,6 +72,7 @@ typedef struct bg_update {
 	enum update_op op;	/* start | terminate | sync */
 	uid_t uid;		/* new user */
 	uint32_t job_id;	/* SLURM job id */	
+	uint16_t reboot;	/* reboot block before starting job */
 	pm_partition_id_t bg_block_id;
 	char *blrtsimage;       /* BlrtsImage for this block */
 	char *linuximage;       /* LinuxImage for this block */
@@ -401,8 +402,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->modifying = 0;		
 		slurm_mutex_unlock(&block_state_mutex);		
-	}
-
+	} else if(bg_update_ptr->reboot) 
+		bg_free_block(bg_record);
+	
 	if(bg_record->state == RM_PARTITION_FREE) {
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			sleep(2);	
@@ -820,6 +822,9 @@ extern int start_job(struct job_record *job_ptr)
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLRTS_IMAGE, 
 			     &(bg_update_ptr->blrtsimage));
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_REBOOT, 
+			     &(bg_update_ptr->reboot));
 	if(!bg_update_ptr->blrtsimage) {
 		bg_update_ptr->blrtsimage = xstrdup(default_blrtsimage);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,

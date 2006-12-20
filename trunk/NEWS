@@ -13,7 +13,8 @@ documents those changes that are of interest to users and admins.
     patch.1.2.0-pre10.061214.affinity_stepid from Dan Palermo (HP).
  -- Modify jobacct/linux plugin to completely eliminate open /proc files.
  -- Added slurm_sched_plugin_reconfig() function to re-read config files.
- 
+ -- BLUEGENE - --reboot option to srun, salloc, and sbatch actually works.
+
 * Changes in SLURM 1.2.0-pre10
 ==============================
  -- Fix for sinfo node state counts by state (%A and %F output options).
