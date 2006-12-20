@@ -494,7 +494,8 @@ stepd_available(const char *directory, const char *nodename)
 	}
 
 	l = list_create((ListDelF) _free_step_loc_t);
-	_sockname_regex_init(&re, nodename);
+	if(_sockname_regex_init(&re, nodename) == -1)
+		goto done;
 
 	/*
 	 * Make sure that "directory" exists and is a directory.
