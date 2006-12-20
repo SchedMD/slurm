@@ -123,14 +123,14 @@ static void _mpir_dump_proctable(void);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
 static int _call_spank_local_user(slurm_step_ctx step_ctx,
-				  slurm_job_step_launch_t *step_params);
+				  slurm_step_launch_params_t *step_params);
 
 int slaunch(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_ctx_params_t ctx_params[1];
-	slurm_job_step_launch_t launch_params;
-	slurm_job_step_launch_callbacks_t callbacks;
+	slurm_step_launch_params_t launch_params[1];
+	slurm_step_launch_callbacks_t callbacks[1];
 	char **env;
 	uint32_t job_id, step_id;
 
@@ -246,36 +246,36 @@ int slaunch(int argc, char **argv)
 	 * Use the job step context to launch the tasks.
 	 */
 	_task_state_struct_init(opt.num_tasks);
-	slurm_job_step_launch_t_init(&launch_params);
-	launch_params.gid = opt.gid;
-	launch_params.argc = opt.argc;
-	launch_params.argv = opt.argv;
-	launch_params.multi_prog = opt.multi_prog ? true : false;
-	launch_params.envc = envcount(env);
-	launch_params.env = env;
-	launch_params.cwd = opt.cwd;
-	launch_params.slurmd_debug = opt.slurmd_debug;
-	launch_params.buffered_stdio = opt.unbuffered ? false : true;
-	launch_params.labelio = opt.labelio ? true : false;
-	launch_params.remote_output_filename = opt.remote_ofname;
-	launch_params.remote_input_filename = opt.remote_ifname;
-	launch_params.remote_error_filename = opt.remote_efname;
-	launch_params.task_prolog = opt.task_prolog;
-	launch_params.task_epilog = opt.task_epilog;
-	launch_params.cpu_bind = opt.cpu_bind;
-	launch_params.cpu_bind_type = opt.cpu_bind_type;
-	launch_params.mem_bind = opt.mem_bind;
-	launch_params.mem_bind_type = opt.mem_bind_type;
+	slurm_step_launch_params_t_init(launch_params);
+	launch_params->gid = opt.gid;
+	launch_params->argc = opt.argc;
+	launch_params->argv = opt.argv;
+	launch_params->multi_prog = opt.multi_prog ? true : false;
+	launch_params->envc = envcount(env);
+	launch_params->env = env;
+	launch_params->cwd = opt.cwd;
+	launch_params->slurmd_debug = opt.slurmd_debug;
+	launch_params->buffered_stdio = opt.unbuffered ? false : true;
+	launch_params->labelio = opt.labelio ? true : false;
+	launch_params->remote_output_filename = opt.remote_ofname;
+	launch_params->remote_input_filename = opt.remote_ifname;
+	launch_params->remote_error_filename = opt.remote_efname;
+	launch_params->task_prolog = opt.task_prolog;
+	launch_params->task_epilog = opt.task_epilog;
+	launch_params->cpu_bind = opt.cpu_bind;
+	launch_params->cpu_bind_type = opt.cpu_bind_type;
+	launch_params->mem_bind = opt.mem_bind;
+	launch_params->mem_bind_type = opt.mem_bind_type;
 	
-	_setup_local_fds(&launch_params.local_fds, step_ctx);
+	_setup_local_fds(&launch_params->local_fds, step_ctx);
 	if (MPIR_being_debugged) {
-		launch_params.parallel_debug = true;
+		launch_params->parallel_debug = true;
 		pmi_server_max_threads(1);
 	} else {
-		launch_params.parallel_debug = false;
+		launch_params->parallel_debug = false;
 	}
-	callbacks.task_start = _task_start;
-	callbacks.task_finish = _task_finish;
+	callbacks->task_start = _task_start;
+	callbacks->task_finish = _task_finish;
 
 	_run_slaunch_prolog(env);
 
@@ -285,9 +285,10 @@ int slaunch(int argc, char **argv)
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	verbose("Launching job step %u.%u", job_id, step_id);
 
-	_call_spank_local_user(step_ctx, &launch_params);
+	_call_spank_local_user(step_ctx, launch_params);
 
-	if (slurm_step_launch(step_ctx, &launch_params, &callbacks) != SLURM_SUCCESS) {
+	if (slurm_step_launch(step_ctx, launch_params, callbacks)
+	    != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
 	}
@@ -297,9 +298,9 @@ int slaunch(int argc, char **argv)
 		   correctly. */
 		if (opt.multi_prog)
 			mpir_set_multi_name(ctx_params->task_count,
-					    launch_params.argv[0]);
+					    launch_params->argv[0]);
 		else
-			_mpir_set_executable_names(launch_params.argv[0]);
+			_mpir_set_executable_names(launch_params->argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint();
 		if (opt.debugger_test)
@@ -800,7 +801,7 @@ _task_state_struct_free(void)
 
 /* FIXME - maybe we can push this under the step_launch function? */
 static int _call_spank_local_user (slurm_step_ctx step_ctx,
-				   slurm_job_step_launch_t *step_params)
+				   slurm_step_launch_params_t *step_params)
 {
 	struct spank_launcher_job_info info[1];
 	job_step_create_response_msg_t *step_resp;

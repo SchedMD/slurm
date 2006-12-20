@@ -92,17 +92,17 @@ static struct io_operations message_socket_ops = {
  **********************************************************************/
 
 /* 
- * slurm_job_step_launch_t_init - initialize a user-allocated
+ * slurm_step_launch_params_t_init - initialize a user-allocated
  *      slurm_job_step_launch_t structure with default values.
  *	default values.  This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.
  *      The structure will be intialized.
  */
-void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
+void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
-	memset(ptr, 0, sizeof(slurm_job_step_launch_t));
+	memset(ptr, 0, sizeof(slurm_step_launch_params_t));
 	/* Values are set to zero or NULL above */
 /*	ptr->argc = 0;			*/
 /*	ptr->argv = NULL;		*/
@@ -141,8 +141,8 @@ void slurm_job_step_launch_t_init (slurm_job_step_launch_t *ptr)
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
 int slurm_step_launch (slurm_step_ctx ctx,
-		       const slurm_job_step_launch_t *params,
-		       const slurm_job_step_launch_callbacks_t *callbacks)
+		       const slurm_step_launch_params_t *params,
+		       const slurm_step_launch_callbacks_t *callbacks)
 {
 	launch_tasks_request_msg_t launch;
 	int i;
@@ -163,11 +163,11 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	if (callbacks != NULL) {
 		/* copy the user specified callback pointers */
 		memcpy(&(ctx->launch_state->callback), callbacks,
-		       sizeof(slurm_job_step_launch_callbacks_t));
+		       sizeof(slurm_step_launch_callbacks_t));
 	} else {
 		/* set all callbacks to NULL */
 		memset(&(ctx->launch_state->callback), 0,
-		       sizeof(slurm_job_step_launch_callbacks_t));
+		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
 	/* Create message receiving sockets and handler thread */
