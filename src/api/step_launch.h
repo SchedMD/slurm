@@ -77,7 +77,7 @@ struct step_launch_state {
 					step_resp, do not free */
 
 	/* user registered callbacks */
-	slurm_job_step_launch_callbacks_t callback;
+	slurm_step_launch_callbacks_t callback;
 };
 
 /*
