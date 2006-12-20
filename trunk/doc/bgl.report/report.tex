@@ -342,7 +342,7 @@ node selection.
 SLURM provides resource management on several Linux clusters 
 exceeding 1000 nodes and it is impractical to display or otherwise 
 work with hundreds of individual node names. 
-SLURM addresses this by using regular expressions to indicate 
+SLURM addresses this by using a compressed hostlist range format to indicate 
 ranges of node names. 
 For example, "linux[0-1023]" was used to represent 1024 nodes 
 with names having a prefix of "linux" and a numeric suffic ranging 
@@ -355,7 +355,7 @@ from 0 to 7, Y from 0 to 3, and Z from 0 to 3 on the LLNL system).
 For example, "bgl012" would represent the base partition at
 the position X=0, Y=1 and Z=2.
 Since BGL resources naturally tend to be rectangular prisms in 
-shape, we modified the regular expression to indicate the two 
+shape, we modified the hostlist range format to indicate the two 
 extreme base partition locations. 
 The name prefix is always "bgl". 
 Within the brackets one lists the base partition with the smallest
@@ -366,7 +366,7 @@ partitions: bgl200, bgl201, bgl210, bgl211, bgl300, bgl301, bgl310
 and bgl311.
 Note that this method does can not accomodate blocks of base 
 partitions that wrap over the torus boundaries particularly well, 
-although a regular expression of this sort is supported: 
+although a hostlist range format of this sort is supported: 
 "bgl[000x-011,700x711]".
 
 The node selection functionality is another topology aware 
