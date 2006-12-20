@@ -293,7 +293,7 @@ int slaunch(int argc, char **argv)
 		goto cleanup;
 	}
 
-	if (slurm_step_launch_wait_start(step_ctx)) {
+	if (slurm_step_launch_wait_start(step_ctx) == SLURM_SUCCESS) {
 		/* Only set up MPIR structures if the step launched
 		   correctly. */
 		if (opt.multi_prog)

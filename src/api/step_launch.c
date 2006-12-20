@@ -309,7 +309,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 				sls->abort_action_taken = true;
 			}
 			pthread_mutex_unlock(&sls->lock);
-			return 0;
+			return SLURM_ERROR;
 		}
 		pthread_cond_wait(&sls->cond, &sls->lock);
 	}
@@ -325,14 +325,14 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 					sls->abort_action_taken = true;
 				}
 				pthread_mutex_unlock(&sls->lock);
-				return 0;
+				return SLURM_ERROR;
 			}
 			pthread_cond_wait(&sls->cond, &sls->lock);
 		}
 	}
 
 	pthread_mutex_unlock(&sls->lock);
-	return 1;
+	return SLURM_SUCCESS;
 }
 
 /*

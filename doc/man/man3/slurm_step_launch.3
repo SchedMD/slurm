@@ -2,7 +2,7 @@
 
 .SH "NAME"
 
-slurm_job_step_launch_t_init slurm_step_launch, slurm_step_launch_wait_start,
+slurm_step_launch_params_t_init, slurm_step_launch, slurm_step_launch_wait_start,
 slurm_step_launch_wait_finish, slurm_step_launch_abort \- Slurm job step launch functions
 
 .SH "SYNTAX"
@@ -10,9 +10,9 @@ slurm_step_launch_wait_finish, slurm_step_launch_abort \- Slurm job step launch 
 #include <slurm/slurm.h>
 .LP 
 .LP
-void \fBslurm_job_step_launch_t_init\fR (
+void \fBslurm_step_launch_params_t_init\fR (
 .br
-	slurm_job_step_launch_t *\fIlaunch_req\fP 
+	slurm_step_launch_params_t *\fIlaunch_req\fP 
 .br
 );
 .LP
@@ -20,9 +20,9 @@ int \fBslurm_step_launch\fR (
 .br
 	slurm_step_ctx \fIctx\fP,
 .br
-	const slurm_job_step_launch_t *\fIlaunch_req\fP,
+	const slurm_step_launch_params_t *\fIlaunch_req\fP,
 .br
-	const slurm_job_step_launch_callbacks_t \fIcallbacks\fP
+	const slurm_step_launch_callbacks_t \fIcallbacks\fP
 .br
 );
 .LP
@@ -60,8 +60,8 @@ the job step to be launched.
 
 .SH "DESCRIPTION"
 .LP
-\fBslurm_job_step_launch_t_init\fR Iinitialize a user-allocated
-slurm_job_step_launch_t structure with default values.
+\fBslurm_step_launch_params_t_init\fR Iinitialize a user-allocated
+slurm_step_launch_params_t structure with default values.
 default values.  This function will NOT allocate any new memory.
 .LP
 \fBslurm_step_launch\fR Launch a parallel job step.
@@ -77,7 +77,8 @@ the fully launched job step. Can be called from a signal handler.
 .SH "RETURN VALUE"
 .LP
 \fBslurm_step_launch\fR and \fBslurm_step_launch_wait_start\fR
-will return SLURM_SUCCESS or SLURM_ERROR (with errno set).
+will return SLURM_SUCCESS when all tasks have successfully started,
+or SLURM_ERROR if the job step is aborted during launch.
 
 .SH "ERRORS"
 .LP
@@ -100,125 +101,79 @@ SLURM controller.
 
 .SH "EXAMPLE
 .LP
+.nf
 /*
-.br
  * To compile:
-.br
  * gcc test.c \-o test \-g \-pthread \-lslurm
-.br
  *
-.br
  * Or if Slurm is not in your default search paths:
-.br
- * gcc test.c \-o test \-g \-pthread \-I{$SLURM_DIR}/include 
-.br
+ * gcc test.c \-o test \-g \-pthread \-I{$SLURM_DIR}/include \\
  *     \-Wl,\-\-rpath={$SLURM_DIR}/lib \-L{$SLURM_DIR}/lib \-lslurm
-.br
  */
-.br
 #include <stdio.h>
-.br
 #include <stdlib.h>
-.br
 #include <string.h>
-.br
 #include <slurm/slurm.h>
-.br
 #include <slurm/slurm_errno.h>
-.LP
+
 static void _task_start(launch_tasks_response_msg_t *msg)
-.br
 {
-.br
-	printf("Task startup completed\\n");
-.br
+	printf("%d tasks started on node %s\\n",
+		msg->count_of_pids, msg->node_name);
 }
-.LP
+
 static void _task_finish(task_exit_msg_t *msg)
-.br
 {
-.br
-	printf("Tasks completed\\n");
-.br
+	printf("%d tasks finished\\n", msg->num_tasks);
 }
-.LP
+
 int main (int argc, char *argv[])
-.br 
 {
-.br
-	job_step_create_request_msg_t step_req;
-.br
+	slurm_step_ctx_params_t step_params;
 	slurm_step_ctx step_ctx;
-.br
-	slurm_job_step_launch_t params;
-.br
-	slurm_job_step_launch_callbacks_t callbacks;
-.br
+	slurm_step_launch_params_t params;
+	slurm_step_launch_callbacks_t callbacks;
 	uint32_t job_id, step_id;
-.LP
-	slurm_step_ctx_create_params_init(&step_req);
-.br
-	step_req.node_count = 1;
-.br
-	step_req.num_tasks = 1;
-.br
-	step_ctx = slurm_step_ctx_create(&step_req);
-.br
+
+	slurm_step_ctx_params_t_init(&step_params);
+	step_params.node_count = 1;
+	step_params.task_count = 4;
+	step_params.overcommit = true;
+
+	step_ctx = slurm_step_ctx_create(&step_params);
 	if (step_ctx == NULL) {
-.br
 		slurm_perror("slurm_step_ctx_create");
-.br
 		exit(1);
-.br
 	}
-.br
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID,
-.br
-			&job_id);
-.br
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID,
-.br
-			&step_id);
-.br
-	printf("Ready to start job %u step %u\n", job_id, step_id);
-.LP
-	slurm_job_step_launch_t_init(&params);
-.br
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
+	printf("Ready to start job %u step %u\\n", job_id, step_id);
+
+	slurm_step_launch_params_t_init(&params);
 	params.argc = argc \- 1;
-.br
 	params.argv = argv + 1;
-.br
 	callbacks.task_start = _task_start;
-.br
 	callbacks.task_finish = _task_finish;
-.br
 	if (slurm_step_launch(step_ctx, &params, &callbacks)
-.br
 			!= SLURM_SUCCESS) {
-.br
 		slurm_perror("slurm_step_launch");
-.br
 		exit(1);
-.br
 	}
-.br
 	printf("Sent step launch RPC\\n");
-.br
+
 	if (slurm_step_launch_wait_start(step_ctx) != SLURM_SUCCESS) {
-.br
-		slurm_perror("slurm_step_launch_wait_start");
-.br
-		exit(1);
-.br
+		fprintf(stderr, "job step was aborted during launch\\n");
+	} else {
+		printf("All tasks have started\\n");
 	}
-.br
+
 	slurm_step_launch_wait_finish(step_ctx);
-.br
+	printf("All tasks have finished\\n");
+
 	slurm_step_ctx_destroy(step_ctx);
-.br
 	exit(0);
-.br
 }
+.fi
 
 .SH "NOTE"
 These functions are included in the libslurm library, 
