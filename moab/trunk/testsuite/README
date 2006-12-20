@@ -50,6 +50,8 @@ test1.8    Working directory test: msub -d path
 test1.9    Eligible start time test: msub -a
 test1.10   msub -A <account>
 test1.11   msub -j (option to merge stdout and stderr)
+test1.12   msub -h (option to hold job)
+
 
 test2.#    Testing of showq command.
 ====================================
