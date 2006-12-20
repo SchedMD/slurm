@@ -1,0 +1,67 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of Moab functionality
+#          msub -m (mail option)
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+############################################################################
+source ./globals
+
+set test_id     "1.13"
+set exit_code   0
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set job_id      0
+
+print_header $test_id
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec rm -f $file_in $file_out
+make_bash_script $file_in "
+  sleep 10
+  exit 0
+"
+
+#
+# Test of msub -m be (send mail at beginning and end)
+#
+set log_info 0
+set msub_pid [spawn $msub -m be -o $file_out $file_in]  
+expect {
+	-re "$alpha_numeric.($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: msub not responding\n"
+		slow_kill $msub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: msub job submit failure\n"
+	exit 1
+}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	exit 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nCheck for two mail messages for this job's beginning and end\n"
+	send_user "\nSUCCESS (or at least not apparent failures)\n"
+	exec rm -f $file_in $file_out
+}
+exit $exit_code
