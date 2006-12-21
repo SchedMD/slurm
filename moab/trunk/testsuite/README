@@ -4,13 +4,14 @@
 # Written by Morris Jette <jette1@llnl.gov>
 ############################################################################
 
-This directory contains a battery of Moab regression tests. The tests make 
-use of the "expect" scripting language. You can create "globals.local" and 
-identify locations of files to be used in testing, especially the variable 
-"moab_dir", which is the installation directory of Moab to be used for testing.
-These tests expect single node jobs submitted to the default partition to 
-respond within a two minutes. 
+This directory contains a battery of Moab regression tests. Some tests are
+dependent upon having a Slurm resource manager.
 
+The tests make use of the "expect" scripting language. You can create 
+"globals.local" and identify locations of files to be used in testing, 
+especially the variable "moab_dir", which is the installation directory 
+of Moab to be used for testing.  These tests expect single node jobs 
+submitted to the default partition to respond within a two minutes.  
 If that is not the case, modify the value of "max_job_delay" in the 
 "globals.local" file to an appropriate value or the tests will report 
 failures due to timeouts.  If there are file propagation delays (e.g. 
