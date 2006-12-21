@@ -222,7 +222,13 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
-	if (job_ptr->account && job_ptr->account[0]) {
+	if (job_ptr->dependency) {
+		/* Kludge for job dependency set via srun */
+		snprintf(tmp, sizeof(tmp),
+			"COMMENT=\"DEPEND=afterany:%u\";",
+			job_ptr->dependency);
+		xstrcat(buf, tmp);
+	} else if (job_ptr->account && job_ptr->account[0]) {
 		snprintf(tmp, sizeof(tmp),
 			"COMMENT=\"%s\";", job_ptr->account);
 		xstrcat(buf, tmp);
