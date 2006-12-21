@@ -15,8 +15,8 @@ source ./globals
 
 set test_id     "1.8"
 set exit_code   0
-set file_in     "test$test_id.input"
 set cwd         [exec pwd]
+set file_in     "$cwd/test$test_id.input"
 set file_out    "$cwd/test$test_id.output"
 set job_id      0
 
