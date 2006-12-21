@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.23
 =========================
+ - Fix bug in non-blocking connect() code.
 
 * Changes in SLURM 1.1.22
 =========================
