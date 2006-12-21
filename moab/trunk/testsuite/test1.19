@@ -113,7 +113,7 @@ cancel_job $job_id1
 cancel_job $job_id2
 
 if {$exit_code == 0} {
-	exec rm -f $file_in $file_out
+	exec rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
