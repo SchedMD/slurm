@@ -47,6 +47,10 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: msub not responding\n"
 		slow_kill $msub_pid
@@ -104,6 +108,10 @@ set job_id 0
 set msub_pid [spawn $msub -v PATH,$test_env_name1 -o $file_out -j oe $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

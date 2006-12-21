@@ -41,6 +41,10 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: msub not responding\n"
 		slow_kill $msub_pid
