@@ -60,6 +60,7 @@ if {$job_id == 0} {
 }
 if {[wait_for_job $job_id DONE] != 0} {
 	send_user "\nFAILURE: error on job\n"
+	cancel_job $job_id
 	exit 1
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          msub -j (option to merge stdout and stderr)
+#          msub -N (job name option)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,11 +13,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.11"
+set test_id     "1.14"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
+set job_name    "AaBbCcDd"
 
 print_header $test_id
 
@@ -27,15 +28,14 @@ print_header $test_id
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
-  id
-  sleep aaa
+  sleep 60
   exit 0
 "
 
 #
-# Test of msub output and error file merge
+# Test of msub with name $job_name:
 #
-set msub_pid [spawn $msub -o $file_out -j oe $file_in]  
+set msub_pid [spawn $msub -N $job_name -o $file_out $file_in]  
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
@@ -54,43 +54,31 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: msub job submit failure\n"
 	exit 1
 }
-if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: error on job\n"
-	cancel_job $job_id
-	exit 1
-}
 
 #
-# Test output file
+# Check Name reported by checkjob
 #
-set got_job_grps 0
-set got_sleep_err 0
-if {[wait_for_file $file_out] == 0} {
-	spawn sort $file_out
-	expect {
-		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
-			set got_sleep_err 1
-			exp_continue
-		}
-		-re "(uid=.*\n)" {
-			set job_grp_info $expect_out(1,string)
-			set got_job_grps 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+set matches 0
+set checkjob_pid [spawn $checkjob $job_id]
+expect {
+	-re "AName: *$job_name" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: checkjob not responding\n"
+		slow_kill $checkjob_pid
+		set exit_code 1
+	}
+	eof {
+		wait
 	}
 }
-if {$got_job_grps == 0} {
-	send_user "\nFAILURE: msub stdout missing\n"
+if {$matches == 0} {
+	send_user "\nFAILURE: Name for job not set properly\n"
 	set exit_code 1
 }
-if {$got_sleep_err == 0} {
-	send_user "\nFAILURE: msub stderr missing\n"
-	set exit_code 1
-}
+cancel_job $job_id
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
