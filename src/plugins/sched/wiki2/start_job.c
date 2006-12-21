@@ -175,7 +175,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	if (job_ptr->details->req_node_bitmap)
 		bit_free(job_ptr->details->req_node_bitmap);
 	job_ptr->details->req_node_bitmap = new_bitmap;
-	job_ptr->priority = 1000000;
+	job_ptr->priority = 100000000;
 
  fini:	unlock_slurmctld(job_write_lock);
 	if (rc == 0) {	/* New job to start ASAP */
@@ -188,8 +188,12 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 			uint16_t wait_reason = 0;
 			char *wait_string;
 
-			error("wiki: failed to start job %u", jobid);
+			/* restore job state */
 			job_ptr->priority = 0;
+			xfree(job_ptr->details->req_nodes);
+			if (job_ptr->details->req_node_bitmap)
+				bit_free(job_ptr->details->req_node_bitmap);
+
 			if (job_ptr->job_state == JOB_FAILED)
 				wait_string = "Invalid request, job aborted";
 			else {
