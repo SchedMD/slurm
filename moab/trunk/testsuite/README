@@ -56,6 +56,8 @@ test1.13   msub -m (mail option)
 test1.14   msub -N (job name option)
 test1.15   msub -p (job priority option)
 test1.16   msub -V -v <env>  (environment variable propagation)
+test1.17   msub -l nodes=# (resource specification)
+test1.18   msub -l ppn=# (resource specification)
 
 
 test2.#    Testing of checkjob command.
