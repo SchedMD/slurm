@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          Time limit test: msub -l walltime=secs
+#          msub -V -v <env>  (environment variable propagation)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,12 +13,18 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.5"
-set exit_code   0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set job_id      0
-set sleep_time  180
+set test_id          "1.16"
+set test_env_name1   "TEST_ENV1_$test_id"
+set test_env_val1    123
+set test_env_name2   "TEST_ENV2_$test_id"
+set test_env_val2    456
+set exit_code        0
+set file_in          "test$test_id.input"
+set file_out         "test$test_id.output"
+
+global env
+set env($test_env_name1) $test_env_val1
+set env($test_env_name2) $test_env_val2
 
 print_header $test_id
 
@@ -28,18 +34,14 @@ print_header $test_id
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
-  echo BEGIN
-  sleep $sleep_time
-  echo FINI
+  env
+  exit 0
 "
 
 #
-# Execute a couple of three minute jobs; one with a one minute time
-# limit and the other with a four minute time limit. Confirm jobs
-# are terminated on a timeout as required. Note that SLURM time
-# limit enforcement has a resolution of about one minute.
+# Spawn a job to propagate all env vars
 #
-set msub_pid [spawn $msub -o $file_out -j oe -l walltime=60 $file_in]  
+set msub_pid [spawn $msub -V -o $file_out -j oe $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
@@ -64,29 +66,42 @@ if {[wait_for_job $job_id DONE] != 0} {
 	exit 1
 }
 
-set got_fini 0
+#
+# Check for env var that we set
+#
+set matches 0
 if {[wait_for_file $file_out] == 0} {
-#	Allow enough time for file to flush all output, slow on Moab
-#	exec sleep 60
-
-	spawn cat $file_out
+	spawn sort $file_out
 	expect {
-		-re "FINI" {
-			set got_fini 1
+		-re "$test_env_name1=($number)" {
+			if {$expect_out(1,string) == $test_env_val1} {
+				incr matches
+			}
 			exp_continue
+		}
+		-re "$test_env_name2=($number)" {
+			if {$expect_out(1,string) == $test_env_val2} {
+				incr matches
+			}
 		}
 		eof {
 			wait
 		}
 	}
 }
-if {$got_fini == 1} {
-	send_user "\nFAILURE: msub timelimit not enforced\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: Environment variables not propagated\n"
 	set exit_code 1
+} else {
+	send_user "\nSo far, so good with all full propagation\n"
 }
 
+#
+# Spawn a job to propagate selectd env vars
+#
+exec rm -f $file_out
 set job_id 0
-set msub_pid [spawn $msub -o $file_out -j oe -l walltime=300 $file_in]
+set msub_pid [spawn $msub -v PATH,$test_env_name1 -o $file_out -j oe $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
@@ -111,30 +126,34 @@ if {[wait_for_job $job_id DONE] != 0} {
 	exit 1
 }
 
-set got_fini 0
+#
+# Check for env var that we set
+#
+set matches 0
 if {[wait_for_file $file_out] == 0} {
-#	Allow enough time for file to flush all output, slow on Moab
-#	exec sleep 60
-
-	spawn cat $file_out
+	spawn sort $file_out
 	expect {
-		-re "FINI" {
-			set got_fini 1
+		-re "$test_env_name1=($number)" {
+			if {$expect_out(1,string) == $test_env_val1} {
+				incr matches
+			}
 			exp_continue
+		}
+		-re "$test_env_name2=($number)" {
+			set matches -100
 		}
 		eof {
 			wait
 		}
 	}
 }
-if {$got_fini == 0} {
-	send_user "\nFAILURE: msub timelimit not enforced\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: Wrong environment variables not propagated\n"
 	set exit_code 1
 }
-
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec rm -f $file_in $file_out
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code

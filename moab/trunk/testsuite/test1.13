@@ -18,6 +18,7 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
+set job_name    "Test$test_id"
 
 print_header $test_id
 
@@ -35,7 +36,7 @@ make_bash_script $file_in "
 # Test of msub -m be (send mail at beginning and end)
 #
 set log_info 0
-set msub_pid [spawn $msub -m be -o $file_out $file_in]  
+set msub_pid [spawn $msub -m be -N $job_name -o $file_out -j oe $file_in]  
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)

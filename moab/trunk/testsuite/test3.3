@@ -34,7 +34,7 @@ make_bash_script $file_in "
 #
 # Test of msub start time at 2355:
 #
-set msub_pid [spawn $msub -a 2355 -o $file_out $file_in]  
+set msub_pid [spawn $msub -a 2355 -o $file_out -j oe $file_in]  
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)

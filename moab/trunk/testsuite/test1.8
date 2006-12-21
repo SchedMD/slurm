@@ -35,7 +35,7 @@ make_bash_script $file_in "
 #
 # Test of msub working directoy test
 #
-set msub_pid [spawn $msub -d /tmp -o $file_out $file_in]  
+set msub_pid [spawn $msub -d /tmp -o $file_out -j oe $file_in]  
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)

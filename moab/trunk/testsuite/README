@@ -54,10 +54,12 @@ test1.12   msub -h (option to hold job)
 test1.13   msub -m (mail option)
 test1.14   msub -N (job name option)
 test1.15   msub -p (job priority option)
+test1.16   msub -V -v <env>  (environment variable propagation)
 
 
-test2.#    Testing of showq command.
-====================================
+test2.#    Testing of checkjob command.
+=============================---=======
+Extensively tested in many of the other command tests.
 
 
 test3.#    Testing of canceljob command.
