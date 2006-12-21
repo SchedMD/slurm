@@ -1,7 +1,7 @@
-.TH "Slurm API" "3" "March 2005" "Morris Jette" "Slurm task spawn functions"
+.TH "Slurm API" "3" "March 2005" "Morris Jette" "Slurm job step context functions"
 
 .SH "NAME"
-slurm_step_ctx_create, slurm_step_ctx_get, slurm_jobinfo_ctx_get, slurm_spawn,
+slurm_step_ctx_create, slurm_step_ctx_get, slurm_jobinfo_ctx_get,
 slurm_spawn_kill, slurm_step_ctx_destroy \- Slurm task spawn functions
 
 .SH "SYNTAX"
@@ -32,16 +32,6 @@ int \fBslurm_jobinfo_ctx_get\fR (
 	int \fIdata_type\fP, 
 .br
 	void *\fIdata\fP
-.br
-);
-.LP
-int \fBslurm_step_ctx_set\fR (
-.br
-	slurm_step_ctx \fIctx\fP,
-.br
-	int \fIctx_key\fP,
-.br
-	...
 .br
 );
 .LP
@@ -78,8 +68,7 @@ Job step context. Created by \fBslurm_step_ctx_create\fR, used in subsequent
 function calls, and destroyed by \fBslurm_step_ctx_destroy\fR.
 .TP
 \fIctx_key\fP
-Identifies the fields in \fIctx\fP to be collected by \fBslurm_step_ctx_get\fR
-or set by \fBslurm_step_ctx_set\fR.
+Identifies the fields in \fIctx\fP to be collected by \fBslurm_step_ctx_get\fR.
 .TP
 \fIdata\fP
 Storage location for requested data. See \fIdata_type\fP below.
@@ -113,11 +102,6 @@ in a timely fashion to avoid having job step credentials time out. If
 \fBslurm_step_ctx_get\fR Get values from a job step context.
 \fIctx_key\fP identifies the fields to be gathered from the job step context.
 Subsequent arguments to this function are dependent upon the value
-of \fIctx_key\fP. See the \fBCONTEXT KEYS\fR section for details.
-.LP
-\fBslurm_step_ctx_set\fR Set values in a job step context.
-\fIctx_key\fP identifies the fields to be set in the job step context.
-Subsequent arguments to this function are dependent upon the value 
 of \fIctx_key\fP. See the \fBCONTEXT KEYS\fR section for details.
 .LP
 \fBslurm_spawn\fR Spawn tasks based upon a job step context
