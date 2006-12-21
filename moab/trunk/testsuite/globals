@@ -93,7 +93,7 @@ proc cancel_job { job_id } {
 	global canceljob
 
 	send_user "cancelling $job_id\n"
-	exec $canceljob $job_id
+	catch {exec $canceljob $job_id}
 	exec sleep 1
 	return [wait_for_job $job_id "DONE"]
 }

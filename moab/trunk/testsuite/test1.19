@@ -1,0 +1,119 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of Moab functionality
+#          msub -l depend (job dependency)
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+############################################################################
+source ./globals
+
+set test_id          "1.19"
+set exit_code        0
+set file_in          "test$test_id.input"
+
+print_header $test_id
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec rm -f $file_in
+make_bash_script $file_in "
+  sleep 60
+  exit 0
+"
+
+#
+# Spawn two jobs, the second dependent upon the first to complete
+#
+set job_id1 0
+set job_id2 0
+set msub_pid [spawn $msub -o /dev/null -j oe $file_in]
+expect {
+	-re "$alpha_numeric.($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: msub not responding\n"
+		slow_kill $msub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: msub job submit failure\n"
+	exit 1
+}
+
+set msub_pid [spawn $msub -o /dev/null -j oe -l depend=afterany:$job_id1 $file_in]
+expect {
+	-re "$alpha_numeric.($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	-re "($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: msub not responding\n"
+		slow_kill $msub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	cancel_job $job_id1
+	send_user "\nFAILURE: msub job submit failure\n"
+	exit 1
+}
+
+
+#
+# Make sure job1 is not still running after job2 starts
+#
+if {[wait_for_job $job_id2 RUNNING] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	set exit_code 1
+}
+
+set checkjob_pid [spawn $checkjob -A $job_id1]
+expect {
+	-re "STATE=Running" {
+		send_user "\nFAILURE: msub failed to honor job dependency\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: checkjob not responding\n"
+		slow_kill $checkjob_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+cancel_job $job_id1
+cancel_job $job_id2
+
+if {$exit_code == 0} {
+	exec rm -f $file_in $file_out
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

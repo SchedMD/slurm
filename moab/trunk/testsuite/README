@@ -58,6 +58,7 @@ test1.15   msub -p (job priority option)
 test1.16   msub -V -v <env>  (environment variable propagation)
 test1.17   msub -l nodes=# (resource specification)
 test1.18   msub -l ppn=# (resource specification)
+test1.19   msub -l depend (job dependency)
 
 
 test2.#    Testing of checkjob command.
