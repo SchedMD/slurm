@@ -1193,11 +1193,10 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 int _print_step_num_tasks(job_step_info_t * step, int width, bool right, 
 			  char* suffix)
 {
-	char tmp_char[6];
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("TASKS", width, right, true);
 	else
-		_print_str(tmp_char, width, right, true);
+		_print_int(step->num_tasks, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
