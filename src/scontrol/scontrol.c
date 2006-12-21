@@ -501,7 +501,7 @@ _process_command (int argc, char *argv[])
 	else if (strncasecmp (argv[0], "quiet", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
-			fprintf (stderr, "too many arguments for keyword:%s\n", 
+			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
 		quiet_flag = 1;
@@ -942,6 +942,12 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      hide                     do not display information about hidden partitions.\n\
+     listpids <job_id<.step>> List pids associated with the given jobid, or\n\
+                              all jobs if no id is given (This will only   \n\
+                              display the processes on the node which the  \n\
+                              scontrol is ran on, and only for those       \n\
+                              processes spawned by SLURM and their         \n\
+                              descendants)                                 \n\
      oneliner                 report output one record per line.           \n\
      pidinfo <pid>            return slurm job information for given pid.  \n\
      ping                     print status of slurmctld daemons.           \n\
