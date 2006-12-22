@@ -83,7 +83,7 @@ test40.#   Testing of psub command.
 ===================================
 test40.1   psub -H   (help)
 test40.2   psub -e <errorpath> -o <outputpath>
-
+test40.3   psub -tW  (wall time limit)
 
 test41.# to test59.# Reserved for LCRM command tests.
 =====================================================

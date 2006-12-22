@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          msub -l walltime=secs (time limit) 
+#          psub -tW  (wall time limit) 
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,7 +13,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.5"
+set test_id     "40.3"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
@@ -39,19 +39,15 @@ make_bash_script $file_in "
 # are terminated on a timeout as required. Note that SLURM time
 # limit enforcement has a resolution of about one minute.
 #
-set msub_pid [spawn $msub -o $file_out -j oe -l walltime=60 $file_in]  
+set psub_pid [spawn $psub -o $file_out -oe -tW 1 $file_in]  
 expect {
-	-re "$alpha_numeric.($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "($number)" {
+	-re "Job ($number) submitted" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: msub not responding\n"
-		slow_kill $msub_pid
+		send_user "\nFAILURE: psub not responding\n"
+		slow_kill $psub_pid
 		set exit_code 1
 	}
 	eof {
@@ -59,7 +55,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: msub job submit failure\n"
+	send_user "\nFAILURE: psub job submit failure\n"
 	exit 1
 }
 if {[wait_for_job $job_id DONE] != 0} {
@@ -82,24 +78,20 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$got_fini == 1} {
-	send_user "\nFAILURE: msub timelimit not enforced\n"
+	send_user "\nFAILURE: psub timelimit not enforced\n"
 	set exit_code 1
 }
 
 set job_id 0
-set msub_pid [spawn $msub -o $file_out -j oe -l walltime=300 $file_in]
+set psub_pid [spawn $psub -o $file_out -oe -tW 5 $file_in]
 expect {
-	-re "$alpha_numeric.($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "($number)" {
+	-re "Job ($number) submitted" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: msub not responding\n"
-		slow_kill $msub_pid
+		send_user "\nFAILURE: psub not responding\n"
+		slow_kill $psub_pid
 		set exit_code 1
 	}
 	eof {
@@ -107,7 +99,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: msub job submit failure\n"
+	send_user "\nFAILURE: psub job submit failure\n"
 	exit 1
 }
 if {[wait_for_job $job_id DONE] != 0} {
@@ -130,7 +122,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$got_fini == 0} {
-	send_user "\nFAILURE: msub timelimit not enforced\n"
+	send_user "\nFAILURE: psub timelimit not enforced\n"
 	set exit_code 1
 }
 
