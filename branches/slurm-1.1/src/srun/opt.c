@@ -1470,7 +1470,7 @@ void set_options(const int argc, char **argv, int first)
 			opt.begin = parse_time(optarg);
 			break;
 		case LONG_OPT_MAIL_TYPE:
-			opt.mail_type = _parse_mail_type(optarg);
+			opt.mail_type |= _parse_mail_type(optarg);
 			if (opt.mail_type == 0)
 				fatal("--mail-type=%s invalid", optarg);
 			break;
@@ -1807,6 +1807,7 @@ static char *_print_mail_type(const uint16_t type)
 {
 	if (type == 0)
 		return "NONE";
+
 	if (type == MAIL_JOB_BEGIN)
 		return "BEGIN";
 	if (type == MAIL_JOB_END)
@@ -1816,7 +1817,7 @@ static char *_print_mail_type(const uint16_t type)
 	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL))
 		return "ALL";
 
-	return "UNKNOWN";
+	return "MULTIPLE";
 }
 
 static void
