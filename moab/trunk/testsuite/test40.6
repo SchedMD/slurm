@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          msub -A <account>
+#          psub -b <bank_account>
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,7 +13,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.10"
+set test_id     "40.6"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
@@ -32,21 +32,17 @@ make_bash_script $file_in "
 "
 
 #
-# Test of msub output and error files
+# Test of psub output and error files
 #
-set msub_pid [spawn $msub -A dummy_acct -o $file_out -h -j oe -l walltime=80 $file_in]  
+set psub_pid [spawn $psub -b dummy_acct -o $file_out -oe -tW 1 $file_in]  
 expect {
-	-re "$alpha_numeric.($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "($number)" {
+	-re "Job ($number) submitted" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: msub not responding\n"
-		slow_kill $msub_pid
+		send_user "\nFAILURE: psub not responding\n"
+		slow_kill $psub_pid
 		set exit_code 1
 	}
 	eof {
@@ -54,7 +50,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: msub job submit failure\n"
+	send_user "\nFAILURE: psub job submit failure\n"
 	exit 1
 }
 
@@ -79,7 +75,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: msub account missing\n"
+	send_user "\nFAILURE: psub account missing\n"
 	set exit_code 1
 }
 cancel_job $job_id

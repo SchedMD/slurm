@@ -86,6 +86,7 @@ test40.2   psub -e <errorpath> -o <outputpath>
 test40.3   psub -tW  (wall time limit)
 test40.4   psub -mb -me (mail option)
 test40.5   psub -r  (job name option)
+test40.6   psub -b <bank_account>
 
 
 test41.# to test59.# Reserved for LCRM command tests.
