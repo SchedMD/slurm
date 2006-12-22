@@ -112,7 +112,7 @@ static struct mvapich_info **mvarray = NULL;
 static int  mvapich_fd       = -1;
 static int  nprocs           = -1;
 static int  protocol_version = -1;
-static int  v5_phase         = 0;
+static int  protocol_phase   = 0;
 static int  connect_once     = 1;
 static int  mvapich_verbose  = 0;
 static int  do_timing        = 0;
@@ -150,9 +150,18 @@ static void mvapich_info_destroy (struct mvapich_info *mvi)
 static int mvapich_requires_pids (void)
 {
 	if ( protocol_version == MVAPICH_VERSION_REQUIRES_PIDS 
-	  || protocol_version == 5)
+	  || protocol_version == 5
+	  || protocol_version == 6 )
 		return (1);
 	return (0);
+}
+
+/*
+ *  Return non-zero if protocol version has two phases.
+ */
+static int mvapich_dual_phase (void)
+{
+	return (protocol_version == 5 || protocol_version == 6);
 }
 
 static int mvapich_abort_sends_rank (void)
@@ -216,9 +225,9 @@ static int mvapich_get_hostid (struct mvapich_info *mvi)
 static int mvapich_get_task_header (int fd, int *version, int *rank)
 {
 	/*
-	 *  V5 only sends version on first pass
+	 *  dual phase only sends version on first pass
 	 */
-	if (protocol_version != 5 || v5_phase == 0) {
+	if (!mvapich_dual_phase () || protocol_phase == 0) {
 		if (fd_read_n (fd, version, sizeof (int)) < 0) 
 			return error ("mvapich: Unable to read version from task: %m");
 	} 
@@ -226,7 +235,7 @@ static int mvapich_get_task_header (int fd, int *version, int *rank)
 	if (fd_read_n (fd, rank, sizeof (int)) < 0) 
 		return error ("mvapich: Unable to read task rank: %m");
 
-	if (protocol_version == 5 && v5_phase > 0)
+	if (mvapich_dual_phase () && protocol_phase > 0)
 		return (0);
 
 	if (protocol_version == -1)
@@ -250,7 +259,8 @@ static int mvapich_handle_task (int fd, struct mvapich_info *mvi)
 		case 3:
 			return mvapich_get_task_info (mvi);
 		case 5:
-			if (v5_phase == 0)
+		case 6:
+			if (protocol_phase == 0)
 				return mvapich_get_hostid (mvi);
 			else
 				return mvapich_get_task_info (mvi);
@@ -350,7 +360,7 @@ static void mvapich_bcast_hostids (void)
 
 static void mvapich_bcast (void)
 {
-	if (protocol_version < 5 || v5_phase > 0)
+	if (!mvapich_dual_phase () || protocol_phase > 0)
 		return mvapich_bcast_addrs ();
 	else
 		return mvapich_bcast_hostids ();
@@ -388,7 +398,8 @@ static void mvapich_barrier (void)
 	return;
 }
 
-static void mvapich_print_abort_message (slurm_step_layout_t *sl, int rank)
+static void 
+mvapich_print_abort_message (slurm_step_layout_t *sl, int rank, int dest)
 {
 	char *host;
 
@@ -399,8 +410,14 @@ static void mvapich_print_abort_message (slurm_step_layout_t *sl, int rank)
 
 	host = step_layout_host_name (sl, rank);
 
-	info ("mvapich: Received ABORT message from MPI rank %d [on %s]", 
-	      rank, host);
+	if (dest >= 0) {
+		info ("mvapich: %M: ABORT from MPI rank %d [on %s] dest rank %d [on %s]",
+				rank, host, dest, step_layout_host_name (sl, dest));
+	}
+	else {
+		info ("mvapich: %M: ABORT from MPI rank %d [on %s]", 
+				rank, host);
+	}
 	return;
 }
 
@@ -409,6 +426,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 {
 	int rlen;
 	char rbuf[1024];
+	int *p = (int *) rbuf;
 
 	/*
 	 *  Wait for abort notification from any process.
@@ -434,7 +452,10 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 		}
 		close(newfd);
 
-		mvapich_print_abort_message (job->step_layout, *((int *) rbuf));
+		if (rlen > sizeof (int)) 
+			mvapich_print_abort_message (job->step_layout, p[1], p[0]);
+		else 
+			mvapich_print_abort_message (job->step_layout, p[0], -1);
 
 		fwd_signal(job, SIGKILL);
 	}
@@ -472,9 +493,11 @@ static int mvapich_handle_connection (int fd)
 {
 	int version, rank;
 
-	if (v5_phase == 0 || !connect_once) {
+	if (protocol_phase == 0 || !connect_once) {
 		if (mvapich_get_task_header (fd, &version, &rank) < 0)
 			return (-1);
+
+		mvarray [rank]->rank = rank;
 
 		if (rank > nprocs - 1) 
 			return (error ("mvapich: task reported invalid rank (%d)", rank));
@@ -526,7 +549,7 @@ static int mvapich_get_next_connection (int listenfd)
 	slurm_addr addr;
 	int fd;
 
-	if (connect_once && v5_phase > 0) {
+	if (connect_once && protocol_phase > 0) {
 		return (poll_mvapich_fds ());
 	} 
 		
@@ -604,8 +627,8 @@ again:
 	mvapich_debug ("bcasting mvapich info to %d tasks", nprocs);
 	mvapich_bcast ();
 
-	if (protocol_version == 5 && v5_phase == 0) {
-		v5_phase = 1;
+	if (mvapich_dual_phase () && protocol_phase == 0) {
+		protocol_phase = 1;
 		goto again;
 	}
 
