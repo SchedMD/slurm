@@ -34,7 +34,7 @@ make_bash_script $file_in "
 #
 set job_id1 0
 set job_id2 0
-set msub_pid [spawn $msub -o /dev/null -j oe $file_in]
+set msub_pid [spawn $msub -o /dev/null -j oe -l walltime=100 $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id1 $expect_out(1,string)
@@ -58,7 +58,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set msub_pid [spawn $msub -o /dev/null -j oe -l depend=afterany:$job_id1 $file_in]
+set msub_pid [spawn $msub -o /dev/null -j oe -l depend=afterany:$job_id1 -l walltime=100 $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id2 $expect_out(1,string)

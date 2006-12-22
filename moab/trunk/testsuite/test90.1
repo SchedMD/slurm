@@ -26,7 +26,7 @@ make_bash_script $file_in "hosname"
 # Initiate $task_cnt parallel tasks
 #
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	set msub_pid [spawn $msub -o /dev/null -j oe -N test90.1 $file_in]
+	set msub_pid [spawn $msub -o /dev/null -j oe -N test90.1 -l walltime=100 $file_in]
 	expect {
 		-re "$alpha_numeric.($number)" {
 			set task_id($inx) $expect_out(1,string)

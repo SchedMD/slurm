@@ -49,7 +49,7 @@ do
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	$exec2 -l nodes=1 -N test90.2 -o /dev/null -j oe test90.2.input >>$log 2>&1
+	$exec2 -l nodes=1 -N test90.2 -o /dev/null -j oe test90.2.input -l walltime=100 >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
 		echo "exec2 rc=$rc" >> $log

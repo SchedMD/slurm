@@ -34,7 +34,7 @@ make_bash_script $file_in "
 #
 # Test of msub output and error files
 #
-set msub_pid [spawn $msub -A dummy_acct -o $file_out -h -j oe $file_in]  
+set msub_pid [spawn $msub -A dummy_acct -o $file_out -h -j oe -l walltime=80 $file_in]  
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)

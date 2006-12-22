@@ -28,7 +28,7 @@ print_header $test_id
 # Test of msub with some priority:
 #
 exec rm -f $file_out
-set msub_pid [spawn -noecho $bin_bash -c "echo id | $msub -p 123 -o $file_out -j oe"]  
+set msub_pid [spawn -noecho $bin_bash -c "echo id | $msub -p 123 -o $file_out -j oe -l walltime=100"]  
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)

@@ -7,7 +7,7 @@
 # for example:
 #
 # $ cat globals.local
-# set slurm_dir     "/usr/local"
+# set moab_dir      "/usr/local"
 # set max_job_delay 300
 #
 ############################################################################
@@ -31,7 +31,7 @@ if [file exists globals.local] {
 }
 
 #
-# Specify the slurm install directory.
+# Specify the moab install directory.
 # Used to locate binaries, libraries, and header files.
 #
 cset moab_dir    "/usr/local"
@@ -40,6 +40,9 @@ cset checkjob    "${moab_dir}/bin/checkjob"
 cset mshow       "${moab_dir}/bin/mshow"
 cset msub        "${moab_dir}/bin/msub"
 cset showq       "${moab_dir}/bin/showq"
+
+cset lcrm_dir    "/usr/local"
+cset psub        "${lcrm_dir}/bin/psub"
 
 #
 # Specify locations of other executable files used

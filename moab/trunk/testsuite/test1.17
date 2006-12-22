@@ -36,7 +36,7 @@ make_bash_script $file_in "
 exec rm -f $file_out
 set job_id 0
 set size 1
-set msub_pid [spawn $msub -o $file_out -l nodes=$size -j oe $file_in]
+set msub_pid [spawn $msub -o $file_out -l nodes=$size -j oe -l walltime=100 $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
@@ -95,7 +95,7 @@ exec rm -f $file_out
 set job_id   0
 set size     2
 set oversize 0
-set msub_pid [spawn $msub -o $file_out -l nodes=$size -j oe $file_in]
+set msub_pid [spawn $msub -o $file_out -l nodes=$size -j oe -l walltime=100 $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)

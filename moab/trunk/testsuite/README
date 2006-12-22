@@ -63,7 +63,7 @@ test1.20   Build script from stdin
 
 
 test2.#    Testing of checkjob command.
-=============================---=======
+=======================================
 Extensively tested in many of the other command tests.
 
 
@@ -79,8 +79,14 @@ test4.# to test39.# Reserved for Moab command tests
 ===================================================
 
 
-test40.# to test59.# Reserved for LCRM command tests
+test40.#   Testing of psub command.
+===================================
+test40.1   psub -H   (help)
+
+
+test41.# to test59.# Reserved for LCRM command tests
 ====================================================
+
 
 test90.#   Stress tests
 ========================================

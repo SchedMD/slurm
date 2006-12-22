@@ -41,7 +41,7 @@ make_bash_script $file_in "
 #
 # Spawn a job to propagate all env vars
 #
-set msub_pid [spawn $msub -V -o $file_out -j oe $file_in]
+set msub_pid [spawn $msub -V -o $file_out -j oe -l walltime=100 $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
@@ -105,7 +105,7 @@ if {$matches != 2} {
 #
 exec rm -f $file_out
 set job_id 0
-set msub_pid [spawn $msub -v PATH,$test_env_name1 -o $file_out -j oe $file_in]
+set msub_pid [spawn $msub -v PATH,$test_env_name1 -o $file_out -j oe -l walltime=100 $file_in]
 expect {
 	-re "$alpha_numeric.($number)" {
 		set job_id $expect_out(1,string)
