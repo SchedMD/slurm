@@ -37,6 +37,7 @@ if [file exists globals.local] {
 cset moab_dir    "/usr/local"
 cset canceljob   "${moab_dir}/bin/canceljob"
 cset checkjob    "${moab_dir}/bin/checkjob"
+cset mshow       "${moab_dir}/bin/mshow"
 cset msub        "${moab_dir}/bin/msub"
 cset showq       "${moab_dir}/bin/showq"
 
@@ -339,4 +340,60 @@ proc make_bash_script { script_name script_contents } {
 	puts $fd $script_contents
 	close $fd
 	exec chmod 700 $script_name
+}
+
+################################################################
+#
+# Proc: name_job_count
+#
+# Return the count of running or pending jobs with the given name
+#
+################################################################
+
+proc name_job_count { prog_name } {
+	set matches 0
+	spawn squeue
+	expect {
+		-re "$prog_name" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	return $matches
+}
+
+################################################################
+#
+# Proc: test_bluegene
+#
+# Purpose: Determine if the system is a bluegene system
+#
+# Returns 1 if the system is a bluegene, 0 otherwise
+#
+################################################################
+
+proc test_bluegene { } {
+	global bin_bash
+
+	log_user 0
+	set bluegene 0
+	spawn scontrol show config
+	expect {
+		-re "select/bluegene" {
+			set bluegene 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $bluegene
 }

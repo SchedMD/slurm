@@ -61,6 +61,7 @@ test1.18   msub -l ppn=# (resource specification)
 test1.19   msub -l depend (job dependency)
 test1.20   Interactive mode (build script from stdin)  
 
+
 test2.#    Testing of checkjob command.
 =============================---=======
 Extensively tested in many of the other command tests.
@@ -72,3 +73,18 @@ test3.1    Cancelation of pending jobs
 test3.2    Cancelation of running jobs
 test3.3    Cancelation of terminated jobs
 test3.4    canceljob --help
+
+
+test4.# to test39.# Reserved for Moab command tests
+===================================================
+
+
+test40.# to test59.# Reserved for LCRM command tests
+====================================================
+
+test90.#   Stress tests
+========================================
+test90.1   Submit many simultaneous jobs
+test90.2   Stress test multiple simultaneous commands via multiple threads
+
+
