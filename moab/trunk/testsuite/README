@@ -59,7 +59,7 @@ test1.16   msub -V -v <env>  (environment variable propagation)
 test1.17   msub -l nodes=# (resource specification)
 test1.18   msub -l ppn=# (resource specification)
 test1.19   msub -l depend (job dependency)
-test1.20   Interactive mode (build script from stdin)  
+test1.20   Build script from stdin
 
 
 test2.#    Testing of checkjob command.

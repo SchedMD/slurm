@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          Interactive mode (build script from stdin)
+#          Build script from stdin
 #
 # NOTE     We have no means of checking that the priority was set, just 
 #          that msub doesn't choke on the job
