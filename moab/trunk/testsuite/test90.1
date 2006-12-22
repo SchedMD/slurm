@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 ############################################################################
-# Purpose: Stress test multiple simultaneous commands via multiple threads
+# Purpose: Submit many simultaneous jobs
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -12,13 +12,10 @@
 ############################################################################
 source ./globals
 
-set test_id      "90.2"
+set test_id      "90.1"
 set exit_code    0
 set file_in      "test$test_id.input"
-set file_script  "./test$test_id.bash"
-set interations  5
-set sleep_time   1
-set task_cnt     10
+set job_cnt      20
 
 print_header $test_id
 
@@ -28,56 +25,48 @@ make_bash_script $file_in "hosname"
 #
 # Initiate $task_cnt parallel tasks
 #
-for {set inx 0} {$inx < $task_cnt} {incr inx} {
-	spawn $bin_bash $file_script $mshow $msub $showq $sleep_time $interations
-	set task_id($inx) $spawn_id
-}
-
-#
-# Test output for successful completion messasge
-#
-set success_cnt 0
-set timeout [expr $max_job_delay * $interations * $task_cnt]
-for {set inx 0} {$inx < $task_cnt} {incr inx} {
-	set spawn_id $task_id($inx)
+for {set inx 0} {$inx < $job_cnt} {incr inx} {
+	set msub_pid [spawn $msub -o /dev/null -j oe -N test90.1 $file_in]
 	expect {
-		"########## EXIT_CODE 0 ##########" {
-			incr success_cnt
+		-re "$alpha_numeric.($number)" {
+			set task_id($inx) $expect_out(1,string)
+			exp_continue
+		}
+		-re "($number)" {
+			set task_id($inx) $expect_out(1,string)
+			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: Timeout on task $inx\n"
+			send_user "\nFAILURE: msub not responding\n"
+			slow_kill $msub_pid
+			set exit_code 1
 		}
 		eof {
 			wait
-			send_user "\nFAILURE: EOF on task $inx\n"
 		}
 	}
-}
-
-if {$success_cnt != $task_cnt} {
-	send_user "\nFAILURE: Only $success_cnt of $task_cnt tests passed\n"
-	set exit_code 1
 }
 
 #
 # Check that all jobs have terminated
 #
 exec sleep 30
-set matches [name_job_count "test90.2"]
+set matches [name_job_count "test90.1"]
 if {$matches != 0} {
 	send_user "\nWARNING: $matches jobs still not done\n"
 	send_user "  sleeping 60 seconds more\n"
 	exec sleep 60
-	set matches [name_job_count "test90.2"]
+	set matches [name_job_count "test90.1"]
 }
 if {$matches != 0} {
 	send_user "\nWARNING: $matches jobs still not done\n"
 	send_user "  sleeping 60 seconds more\n"
 	exec sleep 60
-	set matches [name_job_count "test90.2"]
+	set matches [name_job_count "test90.1"]
 }
 if {$matches != 0} {
 	send_user "\nFAILURE: $matches jobs still not done\n"
+	send_user "  Moab is scheduling very slowly\n"
 	set exit_code 1
 }
 
@@ -85,6 +74,6 @@ if {$exit_code == 0} {
 	exec rm -f $file_in
 	send_user "\nSUCCESS\n"
 } else {
-	exec scancel -n test90.2
+	exec scancel -n test90.1
 }
 exit $exit_code
