@@ -75,22 +75,22 @@ test3.3    Cancelation of terminated jobs
 test3.4    canceljob --help
 
 
-test4.# to test39.# Reserved for Moab command tests
-===================================================
+test4.# to test39.# Reserved for Moab command tests.
+====================================================
 
 
 test40.#   Testing of psub command.
 ===================================
 test40.1   psub -H   (help)
+test40.2   psub -e <errorpath> -o <outputpath>
 
 
-test41.# to test59.# Reserved for LCRM command tests
-====================================================
+test41.# to test59.# Reserved for LCRM command tests.
+=====================================================
 
 
-test90.#   Stress tests
-========================================
+test90.#   Stress tests.
+========================
 test90.1   Submit many simultaneous jobs
 test90.2   Stress test multiple simultaneous commands via multiple threads
-
 
