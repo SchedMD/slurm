@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          msub -N (job name option)
+#          psub -mb -me (mail option)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,12 +13,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.14"
+set test_id     "40.4"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
-set job_name    "AaBbCcDd"
+set job_name    "Test$test_id"
 
 print_header $test_id
 
@@ -28,26 +28,23 @@ print_header $test_id
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
-  sleep 40
+  sleep 10
   exit 0
 "
 
 #
-# Test of msub with name $job_name:
+# Test of psub -mb -me (send mail at beginning and end)
 #
-set msub_pid [spawn $msub -N $job_name -o $file_out -j oe -l walltime=100 $file_in]  
+set log_info 0
+set psub_pid [spawn $psub -mb -me -r $job_name -o $file_out -oe -tW 1 $file_in]  
 expect {
-	-re "$alpha_numeric.($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "($number)" {
+	-re "Job ($number) submitted" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: msub not responding\n"
-		slow_kill $msub_pid
+		send_user "\nFAILURE: psub not responding\n"
+		slow_kill $psub_pid
 		set exit_code 1
 	}
 	eof {
@@ -55,37 +52,18 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: msub job submit failure\n"
+	send_user "\nFAILURE: psub job submit failure\n"
+	exit 1
+}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	cancel_job $job_id
 	exit 1
 }
 
-#
-# Check Name reported by checkjob
-#
-set matches 0
-set checkjob_pid [spawn $checkjob $job_id]
-expect {
-	-re "AName: *$job_name" {
-		set matches 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: checkjob not responding\n"
-		slow_kill $checkjob_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches == 0} {
-	send_user "\nFAILURE: Name for job not set properly\n"
-	set exit_code 1
-}
-cancel_job $job_id
-
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+	send_user "\nCheck for two mail messages for this job's beginning and end\n"
+	send_user "\nSUCCESS (or at least not apparent failures)\n"
 	exec rm -f $file_in $file_out
 }
 exit $exit_code

@@ -64,7 +64,7 @@ test1.20   Build script from stdin
 
 test2.#    Testing of checkjob command.
 =======================================
-Extensively tested in many of the other command tests.
+Extensively tested in many of the other tests
 
 
 test3.#    Testing of canceljob command.
@@ -84,6 +84,9 @@ test40.#   Testing of psub command.
 test40.1   psub -H   (help)
 test40.2   psub -e <errorpath> -o <outputpath>
 test40.3   psub -tW  (wall time limit)
+test40.4   psub -mb -me (mail option)
+test40.5   psub -r  (job name option)
+
 
 test41.# to test59.# Reserved for LCRM command tests.
 =====================================================
