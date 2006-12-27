@@ -1,0 +1,82 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of Moab functionality
+#          psub -i  (invoke command, not a shell)
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+############################################################################
+source ./globals
+
+set test_id     "40.13"
+set exit_code   0
+set file_out    "test$test_id.output"
+set job_id      0
+
+print_header $test_id
+
+#
+# Delete left-over stdout file
+#
+exec rm -f $file_out
+
+#
+# Test of psub output and error file merge
+#
+set psub_pid [spawn $psub -x -o $file_out -eo -tW 1 -i id]  
+expect {
+	-re "($number) submitted" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: psub not responding\n"
+		slow_kill $psub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: psub job submit failure\n"
+	exit 1
+}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	cancel_job $job_id
+	exit 1
+}
+
+#
+# Test output file
+#
+set got_job_grps 0
+if {[wait_for_file $file_out] == 0} {
+	spawn sort $file_out
+	expect {
+		-re "(uid=.*\n)" {
+			set job_grp_info $expect_out(1,string)
+			set got_job_grps 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+if {$got_job_grps == 0} {
+	send_user "\nFAILURE: psub stdout missing\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec rm -f $file_out
+}
+exit $exit_code
