@@ -400,3 +400,33 @@ proc test_bluegene { } {
 
 	return $bluegene
 }
+
+################################################################
+#
+# Proc: default_partition
+#
+# Purpose: Use scontrol to determine the name of the default partition
+#
+# Returns: Name of the current default partition
+#
+################################################################
+
+proc default_partition {} {
+	global scontrol
+
+	set name ""
+	set fd [open "|$scontrol --all --oneliner show partition"]
+	while {[gets $fd line] != -1} {
+		if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
+				== 1} {
+			break
+		}
+	}
+	catch {close $fd}
+
+	if {[string length $name] == 0} {
+		send_user "ERROR: could not identify the default partition\n"
+	}
+
+	return $name
+}
