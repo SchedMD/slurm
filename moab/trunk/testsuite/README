@@ -98,7 +98,12 @@ test40.14  Test for LCRM environment variables set in spawned shell
 test40.15  Test processing of "#PSUB" options within script
 
 
-test41.# to test59.# Reserved for LCRM command tests.
+test41.#   Testing of pstat command.
+====================================
+test41.1   pstat -h  (help)
+
+
+test42.# to test59.# Reserved for LCRM command tests.
 =====================================================
 
 

@@ -42,6 +42,7 @@ cset msub        "${moab_dir}/bin/msub"
 cset showq       "${moab_dir}/bin/showq"
 
 cset lcrm_dir    "/usr/local"
+cset pstat       "${lcrm_dir}/bin/pstat"
 cset psub        "${lcrm_dir}/bin/psub"
 
 #
