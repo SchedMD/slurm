@@ -101,6 +101,7 @@ test40.15  Test processing of "#PSUB" options within script
 test41.#   Testing of pstat command.
 ====================================
 test41.1   pstat -h  (help)
+test41.2   pstat (basic functionality)
 
 
 test42.# to test59.# Reserved for LCRM command tests.
