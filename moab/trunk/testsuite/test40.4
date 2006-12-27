@@ -36,9 +36,9 @@ make_bash_script $file_in "
 # Test of psub -mb -me (send mail at beginning and end)
 #
 set log_info 0
-set psub_pid [spawn $psub -mb -me -r $job_name -o $file_out -eo -tW 1 $file_in]  
+set psub_pid [spawn $psub -x -mb -me -r $job_name -o $file_out -eo -tW 1 $file_in]  
 expect {
-	-re "Job ($number) submitted" {
+	-re "($number) submitted" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
