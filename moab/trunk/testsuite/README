@@ -90,6 +90,7 @@ test40.6   psub -b <bank_account>
 test40.7   psub -d  (job dependency)
 test40.8   psub -eo (option to merge stdout and stderr)
 test40.9   psub -A  (eligible start time)
+test40.10  psub -pool <partition_name>
 
 
 test41.# to test59.# Reserved for LCRM command tests.

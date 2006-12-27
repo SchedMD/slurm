@@ -412,10 +412,9 @@ proc test_bluegene { } {
 ################################################################
 
 proc default_partition {} {
-	global scontrol
 
 	set name ""
-	set fd [open "|$scontrol --all --oneliner show partition"]
+	set fd [open "|scontrol --all --oneliner show partition"]
 	while {[gets $fd line] != -1} {
 		if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
 				== 1} {
