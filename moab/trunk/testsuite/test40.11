@@ -95,6 +95,7 @@ if {$got_fini == 1} {
 	send_user "\nSo far, so good. Time limit enforced properly\n"
 }
 
+exec rm -f $file_out
 set job_id 0
 set psub_pid [spawn $psub -x -o $file_out -eo -tM 5 $file_in1]
 expect {

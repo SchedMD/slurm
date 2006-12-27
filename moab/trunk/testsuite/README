@@ -92,6 +92,7 @@ test40.8   psub -eo (option to merge stdout and stderr)
 test40.9   psub -A  (eligible start time)
 test40.10  psub -pool <partition_name>
 test40.11  psub -tM  (CPU time limit)
+test40.12  psub -ln  (node count)
 
 
 test41.# to test59.# Reserved for LCRM command tests.
