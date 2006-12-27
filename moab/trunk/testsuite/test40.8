@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          psub -b <bank_account>
+#          psub -eo (option to merge stdout and stderr)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,7 +13,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "40.6"
+set test_id     "40.8"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
@@ -27,14 +27,15 @@ print_header $test_id
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
-  sleep 40
+  id
+  sleep aaa
   exit 0
 "
 
 #
-# Test of psub output and error files
+# Test of psub output and error file merge
 #
-set psub_pid [spawn $psub -x -b dummy_acct -o $file_out -eo -tW 1 $file_in]  
+set psub_pid [spawn $psub -x -o $file_out -eo -tW 1 $file_in]  
 expect {
 	-re "($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -53,32 +54,43 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: psub job submit failure\n"
 	exit 1
 }
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	cancel_job $job_id
+	exit 1
+}
 
 #
-# Test account reported by checkjob
+# Test output file
 #
-set matches 0
-set checkjob_pid [spawn $checkjob -A $job_id]
-expect {
-	-re "ACCOUNT=dummy_acct;" {
-		set matches 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: checkjob not responding\n"
-		slow_kill $checkjob_pid
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
+set got_job_grps 0
+set got_sleep_err 0
+if {[wait_for_file $file_out] == 0} {
+	spawn sort $file_out
+	expect {
+		-re "$sleep_error_message" {
+			send_user "\nNo worries, this error is expected\n"
+			set got_sleep_err 1
+			exp_continue
+		}
+		-re "(uid=.*\n)" {
+			set job_grp_info $expect_out(1,string)
+			set got_job_grps 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
 }
-if {$matches == 0} {
-	send_user "\nFAILURE: psub account missing\n"
+if {$got_job_grps == 0} {
+	send_user "\nFAILURE: psub stdout missing\n"
 	set exit_code 1
 }
-cancel_job $job_id
+if {$got_sleep_err == 0} {
+	send_user "\nFAILURE: psub stderr missing\n"
+	set exit_code 1
+}
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

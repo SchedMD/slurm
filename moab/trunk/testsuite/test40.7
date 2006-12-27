@@ -25,7 +25,7 @@ print_header $test_id
 #
 exec rm -f $file_in
 make_bash_script $file_in "
-  sleep 40
+  sleep 60
   exit 0
 "
 
@@ -34,7 +34,7 @@ make_bash_script $file_in "
 #
 set job_id1 0
 set job_id2 0
-set psub_pid [spawn $psub -o /dev/null -eo -tW 1 $file_in]
+set psub_pid [spawn $psub -x -o /dev/null -eo -tW 2 $file_in]
 expect {
 	-re "($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -54,7 +54,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set psub_pid [spawn $psub -o /dev/null -eo -d $job_id1 -tW 1 $file_in]
+set psub_pid [spawn $psub -x -o /dev/null -eo -d $job_id1 -tW 2 $file_in]
 expect {
 	-re "($number) submitted" {
 		set job_id2 $expect_out(1,string)
