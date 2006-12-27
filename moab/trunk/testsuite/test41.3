@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          pstat (basic functionality)
+#          pstat -f -n <job_id> (full details for specific job id)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,12 +13,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "41.2"
+set test_id     "41.3"
 set exit_code   0
 set file_in     "test$test_id.input"
-set job_id1     0
-set job_id2     0
-
+set job_id      0
 
 print_header $test_id
 
@@ -35,10 +33,10 @@ make_bash_script $file_in "
 #
 # Test of psub bank account
 #
-set psub_pid [spawn $psub -x -r TEST.$test_id.1 -b dummy_acct1 -o /dev/null -eo -tW 1 $file_in]  
+set psub_pid [spawn $psub -x -r TEST.$test_id -b dummy_acct -A 23:55 -o /dev/null -eo -tW 1 $file_in]  
 expect {
 	-re "($number) submitted" {
-		set job_id1 $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -50,53 +48,29 @@ expect {
 		wait
 	}
 }
-if {$job_id1 == 0} {
+if {$job_id == 0} {
 	send_user "\nFAILURE: psub job submit failure\n"
 	exit 1
 }
-set psub_pid [spawn $psub -x -r TEST.$test_id.2 -b dummy_acct2 -o /dev/null -eo -tW 1 $file_in]
-expect {
-	-re "($number) submitted" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: psub not responding\n"
-		slow_kill $psub_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	send_user "\nFAILURE: psub job submit failure\n"
-	cancel_job $job_id1
-	exit 1
-}
-
 
 #
-# Test account and job name reported by pstat
+# Test account, job name, and start time  reported by pstat
 #
-set bank_matches 0
-set name_matches 0
-set pstat_pid [spawn $pstat]
+set bank_matches  0
+set name_matches  0
+set start_matches 0
+set pstat_pid [spawn $pstat -f -n $job_id]
 expect {
-	-re "TEST.$test_id.1" {
+	-re "job name: *TEST.$test_id" {
 		incr name_matches
 		exp_continue
 	}
-	-re "dummy_acct1" {
+	-re "bank: *dummy_acct" {
 		incr bank_matches
 		exp_continue
 	}
-	-re "TEST.$test_id.2" {
-		incr name_matches
-		exp_continue
-	}
-	-re "dummy_acct2" {
-		incr bank_matches
+	-re "earliest start time:.*($number)/($number)/($number) 23:55" {
+		incr start_matches
 		exp_continue
 	}
 	timeout {
@@ -109,16 +83,19 @@ expect {
 		wait
 	}
 }
-if {$bank_matches != 2} {
-	send_user "\nFAILURE: psub account missing [expr 2 - $bank_matches]\n"
+if {$bank_matches != 1} {
+	send_user "\nFAILURE: psub account missing\n"
 	set exit_code 1
 }
-if {$name_matches != 2} {
-	send_user "\nFAILURE: psub job name missing [expr 2 - $name_matches]\n"
+if {$name_matches != 1} {
+	send_user "\nFAILURE: psub job name missing\n"
 	set exit_code 1
 }
-cancel_job $job_id1
-cancel_job $job_id2
+if {$start_matches != 1} {
+	send_user "\nFAILURE: psub start time missing\n"
+	set exit_code 1
+}
+cancel_job $job_id
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
