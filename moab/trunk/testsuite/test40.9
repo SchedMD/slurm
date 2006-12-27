@@ -79,6 +79,56 @@ if {$matches == 0} {
 }
 cancel_job $job_id
 
+#
+# Test of psub start time at 18:33 Friday
+#
+set job_id      0
+exec rm -f $file_out
+set psub_pid [spawn $psub -x -A "Friday, 18:33" -o $file_out -eo -tW 1 $file_in]  
+expect {
+	-re "($number) submitted" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: psub not responding\n"
+		slow_kill $psub_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: psub job submit failure\n"
+	exit 1
+}
+
+#
+# Check start time reported by checkjob
+#
+set matches 0
+set checkjob_pid [spawn $checkjob $job_id]
+expect {
+	-re "StartDate: \[0-9:\]* *Fri ($alpha) ($number) 18:33:($number)" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: checkjob not responding\n"
+		slow_kill $checkjob_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: StartDate for job not set properly\n"
+	set exit_code 1
+}
+cancel_job $job_id
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 	exec rm -f $file_in $file_out
