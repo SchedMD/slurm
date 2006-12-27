@@ -94,6 +94,7 @@ test40.10  psub -pool <partition_name>
 test40.11  psub -tM  (CPU time limit)
 test40.12  psub -ln  (node count)
 test40.13  psub -i  (invoke command, not a shell)
+test40.14  Test for LCRM environment variables set in spawned shell
 
 
 test41.# to test59.# Reserved for LCRM command tests.
