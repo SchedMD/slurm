@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of Moab functionality
-#          pstat -R -v (running jobs with verbose format)
+#          pstat -u <user_id> -b <bank> (test user and bank filtering)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,7 +13,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "41.5"
+set test_id     "41.6"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id1     0
@@ -33,7 +33,7 @@ make_bash_script $file_in "
 "
 
 #
-# Test of psub bank account, submit two jobs with second one dependent upon first
+# Test of psub bank account
 #
 set psub_pid [spawn $psub -x -r TEST.$test_id.1 -b dummy_acct1 -o /dev/null -eo -tW 1 $file_in]  
 expect {
@@ -54,7 +54,7 @@ if {$job_id1 == 0} {
 	send_user "\nFAILURE: psub job submit failure\n"
 	exit 1
 }
-set psub_pid [spawn $psub -x -r TEST.$test_id.2 -b dummy_acct2 -d $job_id1 -o /dev/null -eo -tW 1 $file_in]
+set psub_pid [spawn $psub -x -r TEST.$test_id.2 -b dummy_acct2 -o /dev/null -eo -tW 1 $file_in]
 expect {
 	-re "($number) submitted" {
 		set job_id2 $expect_out(1,string)
@@ -74,26 +74,35 @@ if {$job_id2 == 0} {
 	cancel_job $job_id1
 	exit 1
 }
-if {[wait_for_job $job_id2 RUNNING] != 0} {
-	send_user "\nFAILURE: error job\n"
-	cancel_job $job_id1
-	cancel_job $job_id2
-	set exit_code 1
+
+#
+# Get my user name
+#
+set user_name ""
+spawn id -u -n
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
 }
 
 #
-# Test account and job name reported by pstat
+# Test user name filtering by pstat
 #
-set job1_matches 0
-set job2_matches 0
-set pstat_pid [spawn $pstat -R -v]
+set name_matches 0
+set pstat_pid [spawn $pstat -f -u $user_name]
 expect {
-	-re "TEST.$test_id.1" {
-		set job1_matches 1
-		exp_continue
-	}
-	-re "TEST.$test_id.2" {
-		set job2_matches 1
+	-re "user: *($alpha_numeric_under)" {
+		if {[string compare $user_name $expect_out(1,string)] == 0} {
+			incr name_matches
+		} else {
+			send_user "\nFAILURE: pstat user filter failed\n"
+			set exit_code 1
+		}
 		exp_continue
 	}
 	timeout {
@@ -106,14 +115,48 @@ expect {
 		wait
 	}
 }
-if {$job1_matches != 1} {
-	send_user "\nFAILURE: Running job not reported\n"
+if {$name_matches != 2} {
+	send_user "\nFAILURE: psub job user missing [expr 2 - $name_matches]\n"
 	set exit_code 1
+} else {
+	send_user "\nUser name filtering fine\n"
 }
-if {$job2_matches != 0} {
-	send_user "\nFAILURE: Pending job reported (or job dependency not honored)\n"
+
+#
+# Test user name filtering by pstat
+#
+set bank_matches 0
+set pstat_pid [spawn $pstat -f -b dummy_acct2]
+expect {
+	-re "bank: *($alpha_numeric_under)" {
+		if {[string compare "dummy_acct2" $expect_out(1,string)] == 0} {
+			incr bank_matches
+		} else {
+			send_user "\nFAILURE: pstat bank filter failed\n"
+			set exit_code 1
+		} 
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: pstat not responding\n"
+		slow_kill $pstat_pid
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$bank_matches != 1} {
+	send_user "\nFAILURE: psub job bank missing [expr 1 - $bank_matches]\n"
 	set exit_code 1
+} else {
+	send_user "\nBank filtering fine\n"
 }
+
+#
+# Clean up
+#
 cancel_job $job_id1
 cancel_job $job_id2
 
