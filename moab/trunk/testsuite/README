@@ -106,6 +106,7 @@ test41.3   pstat -f n <job_id> (full details for specific job id)
 test41.4   pstat -H -L (No header and long output format)
 test41.5   pstat -R -v (running jobs with verbose format)
 test41.6   pstat -u <user_id> -b <bank> (test user and bank filtering)
+test41.7   pstat -T -f <job_id>  (full details for specific terminated job)
 
 
 test42.# to test59.# Reserved for LCRM command tests.
