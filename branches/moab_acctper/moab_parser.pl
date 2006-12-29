@@ -45,8 +45,6 @@ use Time::localtime;
 use Data::Dumper;
 use POSIX("strftime");
 
-
-
 #define variables for this info to be sent to
 $db_host = "ramon";
 $db_dir = "/lcrm_root/data/db_data";
@@ -55,10 +53,10 @@ $db_user = "lrm";
 $conhost = `hostname -s`;
 $conhost =~ s/\n//g;
 
-$time_period = 5; #period you want to grab (i.e. last so many minutes)
+$time_period = 1; #period you want to grab (i.e. last so many minutes)
 
-#get seconds to go from in the last period minus 1 so we don't have overlap
-$diff = ($time_period * 60) - 1; 
+#get seconds to go from in the last period 
+$diff = ($time_period * 60); 
 $tm = localtime; # get the localtime;
 $min = $tm->min;
 #get the last time period
@@ -69,6 +67,9 @@ while(($min%$time_period)) {
 #get the endtime and the starttime of the period
 $endtime = timelocal(0, $min, $tm->hour, $tm->mday, $tm->mon, $tm->year);
 $starttime = $endtime - ($diff);
+
+#subtract 1 second to not overlap
+#$endtime -= 1;
 
 # $time_in_mins = sprintf("%.4d.%.2d.%.2d.%.2d.%.2d.",
 # 			($tm->year + 1900) , ($tm->mon + 1) , $tm->mday, 
@@ -86,14 +87,14 @@ $send_file = "/tmp/$file";
 
 open FILE , ">$send_file";
 
-# $tm = localtime($starttime);
-# printf("Start: %02d:%02d:%02d-%04d/%02d/%02d\n",
-#     $tm->hour, $tm->min, $tm->sec, $tm->year+1900,
-#     $tm->mon+1, $tm->mday);
-# $tm = localtime($endtime);
-# printf("End: %02d:%02d:%02d-%04d/%02d/%02d\n",
-#     $tm->hour, $tm->min, $tm->sec, $tm->year+1900,
-#     $tm->mon+1, $tm->mday);
+$tm = localtime($starttime);
+printf("Start: $starttime: %02d:%02d:%02d-%04d/%02d/%02d\n",
+    $tm->hour, $tm->min, $tm->sec, $tm->year+1900,
+    $tm->mon+1, $tm->mday);
+$tm = localtime($endtime);
+printf("End: $endtime: %02d:%02d:%02d-%04d/%02d/%02d\n",
+    $tm->hour, $tm->min, $tm->sec, $tm->year+1900,
+    $tm->mon+1, $tm->mday);
 
 #Get the partitions and there proc count
 $output = `mdiag -t --format=xml`;
@@ -101,6 +102,7 @@ $xs1 = XML::Simple->new();
 $doc = $xs1->XMLin($output);
 
 %parts = ();
+%found_jobs = ();
 foreach $par (@{$doc->{par}}) {
 	# we don't want the full part here ("ALL")
 	if(!$par->{'PROC.cfg'} || ($par->{ID} eq "ALL")) {
@@ -125,39 +127,49 @@ foreach $queue (@{$doc->{queue}}) {
 		} else {
 			$job = $queue->{job}->[$i];
 		}
-
+		
 		if(!$job->{AWDuration}) {
 			next;
 		}
 		$start = $job->{StartTime};
 		$timestamp = $job->{AWDuration} + $job->{SuspendDuration}
 		+ $start;		
-		
+
 		$end = $timestamp;
 		if($start > $endtime || $end < $starttime) {
 			next;
 		}	
 		
-		$info = "$job->{JobID} $start $starttime";
+		#$info = "$job->{JobID} $start $starttime";
 		# get just this hours info
 		if($start < $starttime) {
 			$start = $starttime;
 		}
 		
-		$info .= " $end $endtime ";
+		#$info .= " $end $endtime ";
 		if($end > $endtime) {
 			$end = $endtime;
 		}
-		$running_time = ($end - $start) * $job->{ReqProcs};
-		$info .= "$end $start $running_time ";
 		
 		if($job->{PAL}) {
-			print "got $end - $start * $job->{ReqProcs} = $running_time $job->{AWDuration} extra to subtract for job $job->{JobID}\n";
+			# This doesn't take into consideration any  
+			# suspended time
+
+			$running_time = ($end - $start);
+			print "got $end | $job->{CompletionTime} - $start " .
+				"= $running_time ";
+			$running_time *= $job->{ReqProcs};
+			print "* $job->{ReqProcs} = $running_time " .
+				"$job->{AWDuration} to subtract for " .
+				"job $job->{JobID}\n";
 			$parts{$job->{PAL}} -= $running_time;
 		}
 
+		$found_jobs{$job->{JobID}} = 1;
 
 		if(($timestamp > $endtime) || ($timestamp < $starttime)) {
+			print "here ($timestamp > $endtime) " .
+				"|| ($timestamp < $starttime)\n";
 			next;
 		}
 		
@@ -229,17 +241,27 @@ for($i=0; $i < $doc->{queue}->{count}; $i++) {
 	if($end > $endtime) {
 		$end = $endtime;
 	}
-	$running_time = ($end - $start) * $job->{ReqProcs};; 
-	print "$end - $start = $running_time\n";
+	
+	if($found_jobs{$job->{JobID}}) {
+		print "Hey! job $job->{JobID} is completed!!! " . 
+			"Why is it still running?!?!?\n";
+		next;
+	}
+
 	if($job->{PAL}) {
+		$running_time = ($end - $start); 
+		print "$end - $start = $running_time\n";
+		$running_time *= $job->{ReqProcs}; 
+		print "subtracting " . $running_time . 
+			" for running job $job->{JobID}\n";
 		$parts{$job->{PAL}} -= $running_time;
-		 print "subtracting " . $running_time . " for running job $job->{JobID}\n";
+		
 	}
 }
 
 while (($part, $icpu) = each(%parts)) {
 	$info = "$part\t"; #host
-	$info = "$part\t"; #partition
+	$info .= "$part". "_part\t"; #partition
 	$info .= "no_pool\t"; #pool
 	$info .= "$endtime\t"; #timestamp
 	$info .= "(NULL)\t"; #user
@@ -251,7 +273,8 @@ while (($part, $icpu) = each(%parts)) {
 }
 close FILE;
 system("cat $send_file");
-print "scp $send_file $db_user\@$db_host:$db_file 2>/dev/null\n";
+$info = "scp $send_file $db_user\@$db_host:$db_file 2>/dev/null\n";
+#print $info;
 #system("scp $send_file $db_user@$db_host:$db_file 2>/dev/null");
 
 system("rm -f $send_file");
