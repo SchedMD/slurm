@@ -301,8 +301,8 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
 	ptr = buf;
 	while (bytes_remaining > 0) {
 		bytes_written = write(fd, ptr, bytes_remaining);
-		if (bytes_written < 0)
-			return 0;
+		if (bytes_written <= 0)
+			return (size - bytes_remaining);
 		bytes_remaining -= bytes_written;
 		ptr += bytes_written;
 	}
