@@ -330,7 +330,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_step_ctx_create.3 \
 	man3/slurm_step_ctx_destroy.3 \
 	man3/slurm_step_ctx_get.3 \
-	man3/slurm_step_ctx_set.3 \
 	man3/slurm_step_launch.3 \
 	man3/slurm_step_launch_abort.3 \
 	man3/slurm_step_launch_wait_finish.3 \
