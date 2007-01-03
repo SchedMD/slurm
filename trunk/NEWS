@@ -188,6 +188,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.24
 =========================
  - In sched/wiki2, add support for direct "srun --dependency=" use.
+ - mpi/mvapich: Add support for MVAPICH protocol version 6.
 
 * Changes in SLURM 1.1.23
 =========================

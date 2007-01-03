@@ -111,7 +111,6 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	int i;
 	int rot_cnt = 0;
 	int created = 0;
-	int found = 0;
 	int allow = 0;
 	int check_image = 1;
 	uint32_t max_procs = NO_VAL;
@@ -449,15 +448,16 @@ try_again:
 		debug3("%s job_running = %d", 
 		       record->bg_block_id, record->job_running);
 		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
-		if(record->job_running == BLOCK_ERROR_STATE)
+		if(record->job_running == BLOCK_ERROR_STATE) {
+			debug("block %s is in an error state (can't use)", 
+			      record->bg_block_id);			
 			continue;
-		else if((record->job_running != NO_JOB_RUNNING) 
-		   && !test_only) {
+		} else if((record->job_running != NO_JOB_RUNNING) 
+			  && !test_only) {
 			debug("block %s in use by %s job %d", 
 			      record->bg_block_id,
 			      record->user_name,
 			      record->job_running);
-			found = 1;
 			continue;
 		}
 		
@@ -574,8 +574,8 @@ try_again:
 			} 
 		}
 		list_iterator_destroy(itr2);
+
 		if(found_record) {
-			found = 1;
 			continue;
 		} 
 
@@ -641,7 +641,6 @@ try_again:
 				continue;	/* Not usable */
 		}
 		*found_bg_record = record;
-		found = 1;
 		debug2("we found one! %s", (*found_bg_record)->bg_block_id);
 		break;
 	}
