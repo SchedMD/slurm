@@ -1692,9 +1692,15 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
-		if ((job_desc_msg->job_id != SLURM_BATCH_SCRIPT)
-		&&  (find_job_record(job_desc_msg->job_id) != NULL)) {
+		lock_slurmctld(job_write_lock);
+		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
+			job_ptr = find_job_record(job_desc_msg->job_id);
+			if (job_ptr && IS_JOB_FINISHED(job_ptr))
+				job_ptr = NULL;
+		} else
+			job_ptr = NULL;
 
+		if (job_ptr) {	/* Active job allocation */
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 			/* Non-super users not permitted to run job steps on front-end.
 	 		 * A single slurmd can not handle a heavy load. */
@@ -1702,10 +1708,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				info("Attempt to execute batch job step by uid=%u",
 					(unsigned int) uid);
 				slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
+				unlock_slurmctld(job_write_lock);
 				return;
 			}
 #endif
-			lock_slurmctld(job_write_lock);
 			error_code = _launch_batch_step(job_desc_msg, uid,
 							&step_id);
 			unlock_slurmctld(job_write_lock);
@@ -1736,7 +1742,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			return;
 		}
 
-		lock_slurmctld(job_write_lock);
+		/* Create new job allocation */
 		error_code = job_allocate(job_desc_msg, 
 				job_desc_msg->immediate, false,
 				false, uid, &job_ptr);
