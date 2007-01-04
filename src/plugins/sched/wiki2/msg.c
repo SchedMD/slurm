@@ -38,6 +38,7 @@
 #include "./crypto.h"
 #include "./msg.h"
 #include "src/common/uid.h"
+#include <sys/poll.h>
 
 static bool thread_running = false;
 static bool thread_shutdown = false;
@@ -294,10 +295,23 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
 {
 	size_t bytes_remaining, bytes_written;
 	char *ptr;
+	struct pollfd ufds;
+	int rc;
 
 	bytes_remaining = size;
 	ptr = buf;
+	ufds.fd = fd;
+	ufds.events = POLLOUT;
 	while (bytes_remaining > 0) {
+		rc = poll(&ufds, 1, 10000);	/* 10 sec timeout */
+		if (rc == 0)		/* timed out */
+			break;
+		if ((rc == -1) && 	/* some error */
+		    ((errno== EINTR) || (errno == EAGAIN)))
+			continue;
+		if ((ufds.revents & POLLOUT) == 0) /* some poll error */
+			break;
+
 		bytes_written = write(fd, ptr, bytes_remaining);
 		if (bytes_written <= 0)
 			return (size - bytes_remaining);
@@ -494,7 +508,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		job_release_task(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
 		job_will_run(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBMODIFY", 9) == 0) {
+	} else if (strncmp(cmd_ptr, "MODIFYJOB", 9) == 0) {
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "SIGNALJOB", 9) == 0) {
 		job_signal_wiki(cmd_ptr, &err_code, &err_msg);
