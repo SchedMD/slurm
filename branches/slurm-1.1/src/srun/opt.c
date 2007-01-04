@@ -2131,7 +2131,7 @@ static void _help(void)
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
-"     --multi-prog             if set the program name specified is the\n"
+"      --multi-prog            if set the program name specified is the\n"
 "                              configuration specificaiton for multiple programs\n"
 "\n"
 "Allocate only:\n"
