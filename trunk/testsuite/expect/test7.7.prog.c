@@ -327,7 +327,7 @@ static void _modify_job(long my_job_id)
 	char out_msg[256];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=JOBMODIFY ARG=%ld "
+		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
 		/* PARTITION=pdebug" */
 		"TIMELIMIT=10 BANK=test_bank",
 		(uint32_t) now, my_job_id);
