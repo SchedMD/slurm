@@ -189,6 +189,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - In sched/wiki2, add support for direct "srun --dependency=" use.
  - mpi/mvapich: Add support for MVAPICH protocol version 6.
+ - In sched/wiki2, change "JOBMODIFY" command to "MODIFYJOB".
+ - For sched/wiki2, permit normal user to specify arbitrary job id.
 
 * Changes in SLURM 1.1.23
 =========================

@@ -60,11 +60,11 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr,
 
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
-		error("wiki: JOBMODIFY has invalid jobid %u", jobid);
+		error("wiki: MODIFYJOB has invalid jobid %u", jobid);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if (IS_JOB_FINISHED(job_ptr)) {
-		error("wiki: JOBMODIFY jobid %d is finished", jobid);
+		error("wiki: MODIFYJOB jobid %d is finished", jobid);
 		return ESLURM_DISABLED;
 	}
 
@@ -89,7 +89,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr,
 		struct part_record *part_ptr;
 		part_ptr = find_part_record(part_name_ptr);
 		if (part_ptr == NULL) {
-			error("wiki: JOBMODIFY has invalid partition %s",
+			error("wiki: MODIFYJOB has invalid partition %s",
 				part_name_ptr);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
@@ -117,15 +117,15 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
 		*err_code = -300;
-		*err_msg = "JOBMODIFY lacks ARG=";
-		error("wiki: JOBMODIFY lacks ARG=");
+		*err_msg = "MODIFYJOB lacks ARG=";
+		error("wiki: MODIFYJOB lacks ARG=");
 		return -1;
 	}
 	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
-		error("wiki: JOBMODIFY has invalid jobid");
+		error("wiki: MODIFYJOB has invalid jobid");
 		return -1;
 	}
 	bank_ptr = strstr(cmd_ptr, "BANK=");
