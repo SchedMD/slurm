@@ -206,7 +206,7 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	FREE_NULL_BITMAP(picked_node_bitmap);
 	xfree(new_node_list);
 	bit_free(new_bitmap);
-	bit_free(job_ptr->details->req_node_bitmap);
+	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	job_ptr->details->exc_node_bitmap = save_exc_bitmap;
 	job_ptr->details->req_node_bitmap = save_req_bitmap;
 	job_ptr->priority = save_prio;
