@@ -1463,31 +1463,23 @@ static void _mail_free(void *arg)
 static void _mail_proc(mail_info_t *mi)
 {
 	pid_t pid;
-	int pfd[2];
-
-	if (pipe(pfd) == -1) {
-		error("pipe(): %m");
-		goto fini;
-	}
 
 	pid = fork();
-	if (pid < 0) {
+	if (pid < 0) {		/* error */
 		error("fork(): %m");
-		(void) close(pfd[0]);
-		(void) close(pfd[1]);
-	} else if (pid == 0) { /* child */
+	} else if (pid == 0) {	/* child */
+		int fd;
 		(void) close(0);
-		dup(pfd[0]);
-		(void) close(pfd[0]);
-		(void) close(pfd[1]);
 		(void) close(1);
 		(void) close(2);
-		execle("/bin/mail", "mail", mi->user_name, 
-			"-s", mi->message, NULL, NULL);
+		fd = open("/dev/null", O_RDWR);
+		dup(fd);
+		dup(fd);
+		execle("/bin/mail", "mail", 
+			"-s", mi->message, mi->user_name,
+			NULL, NULL);
 		exit(1);
-	} else {	/* parent */
-		(void) close(pfd[0]);
-		(void) close(pfd[1]);
+	} else {		/* parent */
 		waitpid(pid, NULL, 0);
 	}
 fini:	_mail_free(mi);
