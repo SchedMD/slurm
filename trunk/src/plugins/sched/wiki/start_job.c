@@ -166,7 +166,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		error("wiki: clearing exc_nodes for job %u", jobid);
 		xfree(job_ptr->details->exc_nodes);
 		if (job_ptr->details->exc_node_bitmap)
-			bit_free(job_ptr->details->exc_node_bitmap);
+			FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 	}
 
 	/* start it now */
@@ -192,7 +192,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 			job_ptr->priority = 0;
 			xfree(job_ptr->details->req_nodes);
 			if (job_ptr->details->req_node_bitmap)
-				bit_free(job_ptr->details->req_node_bitmap);
+				FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 
 			if (job_ptr->job_state == JOB_FAILED)
 				wait_string = "Invalid request, job aborted";
