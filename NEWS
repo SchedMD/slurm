@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Modify jobacct/linux plugin to completely eliminate open /proc files.
  -- Added slurm_sched_plugin_reconfig() function to re-read config files.
  -- BLUEGENE - --reboot option to srun, salloc, and sbatch actually works.
+ -- Modified step context and step launch APIs.
 
 * Changes in SLURM 1.2.0-pre10
 ==============================
