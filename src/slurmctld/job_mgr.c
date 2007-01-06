@@ -2666,8 +2666,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->nice = NICE_OFFSET;
 	}
 
-	if (job_desc_msg->num_procs == NO_VAL)
-		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
 	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
@@ -2676,6 +2674,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
+	if (job_desc_msg->num_procs == NO_VAL)
+		job_desc_msg->num_procs = job_desc_msg->min_nodes;
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
 	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
