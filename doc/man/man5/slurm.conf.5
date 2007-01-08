@@ -321,6 +321,7 @@ with the same priority (aka nice value) as the users process which
 launched the job on the submit node.
 If set to "0", or left unset, the users job will inherit the
 scheduling priority from the slurm daemon.
+
 .TP
 \fBPropagateResourceLimits\fR
 A list of comma separated resource limit names.
@@ -337,6 +338,41 @@ the default action is to propagate all limits.
 Only one of the parameters, either
 \fBPropagateResourceLimits\fR or \fBPropagateResourceLimitsExcept\fR,
 may be specified.
+The following limit names are supported by Slurm (although some 
+options may not be supported on some systems):
+.RS
+.TP 10
+\fBAS\fR
+The maximum address space for a processes
+.TP
+\fBCORE\fR
+The maximum size of core file
+.TP
+\fBCPU\fR
+The maximum amount of CPU time
+.TP
+\fBDATA\fR
+The maximum size of a process’s data segment
+.TP
+\fBFSIZE\fR
+The maximum size of files created
+.TP
+\fBMEMLOCK\fR
+The maximum size that may be locked into memory
+.TP
+\fBNOFILE\fR
+The maximum number of open files
+.TP
+\fBNPROC\fR
+The maximum number of processes available
+.TP
+\fBRSS\fR
+The maximum resident set size
+.TP
+\fBSTACK\fR
+The maximum stack size
+.RE
+
 .TP
 \fBPropagateResourceLimitsExcept\fR
 A list of comma separated resource limit names.
@@ -344,6 +380,8 @@ By default, all resource limits will be propagated, (as described by
 the \fBPropagateResourceLimits\fR parameter), except for the limits
 appearing in this list.   The user can override this by specifying which
 resource limits to propagate with the srun commands "\-\-propagate" option.
+See \fBPropagateResourceLimits\fR above for a list of valid limit names.
+
 .TP
 \fBReturnToService\fR
 If set to 1, then a non\-responding (DOWN) node will become available 
@@ -1167,6 +1205,7 @@ details.
 .SH "SEE ALSO"
 .LP
 \fBbluegene.conf\fR(5),
+\fBgetrlimit\fR(2),
 \fBgethostbyname\fR(3), \fBgroup\fR(5), \fBhostname\fR(1), 
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), \fBspank(8)\fR,
 \fBsyslog\fR(2), \fBwiki.conf\fR(5)
