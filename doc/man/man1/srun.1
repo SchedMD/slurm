@@ -389,6 +389,41 @@ Allows users to specify which of the modifiable (soft) resource limits
 to propagate to the compute nodes and apply to their jobs.  If
 \fIrlimits\fR is not specified, then all resource limits will be
 propagated.
+The following limit names are supported by Slurm (although some
+options may not be supported on some systems):
+.RS
+.TP 10
+\fBAS\fR
+The maximum address space for a processes
+.TP
+\fBCORE\fR
+The maximum size of core file
+.TP
+\fBCPU\fR
+The maximum amount of CPU time
+.TP
+\fBDATA\fR
+The maximum size of a process’s data segment
+.TP
+\fBFSIZE\fR
+The maximum size of files created
+.TP
+\fBMEMLOCK\fR
+The maximum size that may be locked into memory
+.TP
+\fBNOFILE\fR
+The maximum number of open files
+.TP
+\fBNPROC\fR
+The maximum number of processes available
+.TP
+\fBRSS\fR
+The maximum resident set size
+.TP
+\fBSTACK\fR
+The maximum stack size
+.RE
+
 .TP
 \fB\-\-prolog\fR=\fIexecutable\fR
 \fBsrun\fR will run \fIexecutable\fR just before launching the job step.
@@ -1233,5 +1268,7 @@ dev1
 .fi
 .PP
 .SH "SEE ALSO"
-\fBscancel\fR(1), \fBscontrol\fR(1), \fBsqueue\fR(1), \fBslurm.conf\fR(5),
-\fBsched_setaffinity\fR(2), \fBnuma\fR(3)
+\fBscancel\fR(1), \fBscontrol\fR(1), \fBsqueue\fR(1),
+\fBgetrlimit\fR(2),
+\fBsched_setaffinity\fR(2), \fBnuma\fR(3),
+\fBslurm.conf\fR(5)
