@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  - For sched/wiki2, permit normal user to specify arbitrary job id.
  - In sched/wiki2, set buffer pointer to NULL after free() to avoid 
    possible memory corruption.
+ - In sched/wiki2, report a job's exit code on completion.
  - For AIX, fix mail for job event notification.
  - Add documentation for propagation options in man srun and slurm.conf.
 
