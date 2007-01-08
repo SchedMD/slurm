@@ -245,8 +245,6 @@ int main(int argc, char *argv[])
 	/*
 	 * Initialize plugins.
 	 */
-	if ( slurm_sched_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize scheduling plugin" );
 	if ( slurm_select_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
@@ -264,6 +262,7 @@ int main(int argc, char *argv[])
 		if (slurmctld_conf.backup_controller &&
 		    (strcmp(node_name,
 			    slurmctld_conf.backup_controller) == 0)) {
+			slurm_sched_fini();	/* make sure shutdown */
 			run_backup();
 		} else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
@@ -285,6 +284,8 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		info("Running as primary controller");
+		if (slurm_sched_init() != SLURM_SUCCESS)
+			fatal("failed to initialize scheduling plugin");
 
 		/* Recover node scheduler state info */
 		if (select_g_state_restore(slurmctld_conf.state_save_location)
