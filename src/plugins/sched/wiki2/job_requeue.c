@@ -53,15 +53,15 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
 		*err_code = -300;
-		*err_msg = "JOBREQUEUE lacks ARG";
-		error("wiki: JOBREQUEUE lacks ARG");
+		*err_msg = "REQUEUEJOB lacks ARG";
+		error("wiki: REQUEUEJOB lacks ARG");
 		return -1;
 	}
 	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
-		error("wiki: JOBREQUEUE has invalid jobid");
+		error("wiki: REQUEUEJOB has invalid jobid");
 		return -1;
 	}
 
