@@ -496,7 +496,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		start_job(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 		cancel_job(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBREQUEUE", 10) == 0) {
+	} else if (strncmp(cmd_ptr, "REQUEUEJOB", 10) == 0) {
 		job_requeue_wiki(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 		suspend_job(cmd_ptr, &err_code, &err_msg);
