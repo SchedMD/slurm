@@ -907,10 +907,12 @@ char **env_array_create(void)
  * if and only if a variable by that name does not already exist in the
  * array.
  *
+ * "value_fmt" supports printf-style formatting.
+ *
  * Return 1 on success, and 0 on error.
  */
-int env_array_append(char ***array_ptr, const char *name,
-		     const char *value_fmt, ...)
+int env_array_append_fmt(char ***array_ptr, const char *name,
+			 const char *value_fmt, ...)
 {
 	char buf[BUFSIZ];
 	char **ep = NULL;
@@ -943,10 +945,45 @@ int env_array_append(char ***array_ptr, const char *name,
 }
 
 /*
+ * Append a single environment variable to an environment variable array,
+ * if and only if a variable by that name does not already exist in the
+ * array.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_append(char ***array_ptr, const char *name,
+		     const char *value)
+{
+	char **ep = NULL;
+	char *str = NULL;
+
+	if (array_ptr == NULL) {
+		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
+	}
+
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		return 0;
+	}
+
+	xstrfmtcat (str, "%s=%s", name, value);
+	ep = _extend_env(array_ptr);
+	*ep = str;
+	
+	return 1;
+}
+
+/*
  * Append a single environment variable to an environment variable array
  * if a variable by that name does not already exist.  If a variable
  * by the same name is found in the array, it is overwritten with the
  * new value.
+ *
+ * "value_fmt" supports printf-style formatting.
  *
  * Return 1 on success, and 0 on error.
  */
