@@ -1350,7 +1350,7 @@ static void _mail_proc(mail_info_t *mi)
 	} else {		/* parent */
 		waitpid(pid, NULL, 0);
 	}
-fini:	_mail_free(mi);
+	_mail_free(mi);
 	return;
 }
 
