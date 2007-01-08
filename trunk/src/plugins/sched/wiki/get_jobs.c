@@ -328,6 +328,8 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		return "Idle";
 	if (base_state == JOB_RUNNING)
 		return "Running";
+	if (base_state == JOB_SUSPENDED)
+		return "Suspended";
 
 	if (state & JOB_COMPLETING) {
 		/* Give configured KillWait+10 for job
@@ -342,8 +344,6 @@ static char *	_get_job_state(struct job_record *job_ptr)
 
 	if (base_state == JOB_COMPLETE)
 		return "Completed";
-	if (base_state == JOB_SUSPENDED)
-		return "Suspended";
 	else /* JOB_CANCELLED, JOB_FAILED, JOB_TIMEOUT, JOB_NODE_FAIL */
 		return "Removed";
 }

@@ -37,6 +37,7 @@
 
 #include <grp.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include "./msg.h"
 #include "src/common/list.h"
@@ -73,6 +74,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  *                    UNAME=<user>;GNAME=<group>;RCLASS=<part>;
  *                    NODES=<node_cnt>;RMEM=<mem_size>;RDISK=<disk_space>;
  *                    COMMENT=<comment>;[COMPLETETIME=<end_time>;]
+ *                    [EXITCODE=<code>;]
  *         [#<JOBID>;...];
  */
 /* RET 0 on success, -1 on failure */
@@ -342,6 +344,8 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		return "Idle";
 	if (base_state == JOB_RUNNING)
 		return "Running";
+	if (base_state == JOB_SUSPENDED)
+		return "Suspended";
 
 	if (state & JOB_COMPLETING) {
 		/* Give configured KillWait+10 for job
@@ -356,12 +360,10 @@ static char *	_get_job_state(struct job_record *job_ptr)
 
 	if (base_state == JOB_COMPLETE)
 		state_str = "Completed";
-	else if (base_state == JOB_SUSPENDED)
-		state_str = "Suspended";
 	else /* JOB_CANCELLED, JOB_FAILED, JOB_TIMEOUT, JOB_NODE_FAIL */
 		state_str = "Removed";
 	snprintf(return_msg, sizeof(return_msg), "%s;EXITCODE=%u",
-		state_str, job_ptr->exit_code);
+		state_str, WEXITSTATUS(job_ptr->exit_code));
 	return return_msg;
 }
 
