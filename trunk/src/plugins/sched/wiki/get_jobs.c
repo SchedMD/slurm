@@ -68,7 +68,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  * RET 0 on success, -1 on failure
  *
  * Response format
- * ARG=<cnt>#<JOBID>;UPDATE_TIME=<uts>;STATE=<state>;UCLIMIT=<time_limit>;
+ * ARG=<cnt>#<JOBID>;UPDATE_TIME=<uts>;STATE=<state>;WCLIMIT=<time_limit>;
  *                    TASKS=<cpus>;QUEUETIME=<submit_time>;STARTTIME=<time>;
  *                    UNAME=<user>;GNAME=<group>;PARTITIONMASK=<part>;
  *                    NODES=<node_cnt>;RMEM=<mem_size>;RDISK=<disk_space>;
