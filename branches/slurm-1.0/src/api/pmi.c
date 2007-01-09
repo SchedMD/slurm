@@ -785,7 +785,6 @@ static void _init_kvs( char kvsname[] )
 	kvs_recs[i].kvs_name = strndup(kvsname, PMI_MAX_KVSNAME_LEN);
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
-	kvs_recs[i].kvs_key_states = NULL;
 	kvs_recs[i].kvs_keys = NULL;
 	kvs_recs[i].kvs_values = NULL;
 }
