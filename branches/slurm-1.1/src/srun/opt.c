@@ -2184,6 +2184,9 @@ static void _help(void)
 "             mask_mem:<list>    bind by setting menory of CPU masks on tasks as specified\n"
 "                                where <list> is <mask1>,<mask2>,...<maskN>\n");
 
+	printf("\n\
+Options provided by plugins:");
+	printf("\n");
 	spank_print_options (stdout, 6, 30);
 	printf("\n");
 
