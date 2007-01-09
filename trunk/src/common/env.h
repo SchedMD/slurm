@@ -232,4 +232,16 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
  */
 void env_array_set_environment(char **env_array);
 
+/*
+ * Return an array of strings representing the specified user's default
+ * environment variables, as determined by calling
+ * "/bin/su - <username> -c /usr/bin/env".
+ *
+ * On error, returns NULL.
+ *
+ * NOTE: The calling process must have an effective uid of root for
+ * this function to succeed.
+ */
+char **env_array_user_default(const char *username);
+
 #endif

@@ -44,6 +44,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "src/common/log.h"
@@ -1171,3 +1173,61 @@ void env_array_merge(char ***dest_array, const char **src_array)
 	}
 }
 
+/*
+ * Strip out trailing carriage returns and newlines
+ */
+static void _strip_cr_nl(char *line)
+{
+	int len = strlen(line);
+	char *ptr;
+
+	for (ptr = line+len-1; ptr >= line; ptr--) {
+		if (*ptr=='\r' || *ptr=='\n') {
+			*ptr = '\0';
+		} else {
+			return;
+		}
+	}
+}
+
+/*
+ * Return an array of strings representing the specified user's default
+ * environment variables, as determined by calling
+ * "/bin/su - <username> -c /usr/bin/env".
+ *
+ * On error, returns NULL.
+ *
+ * NOTE: The calling process must have an effective uid of root for
+ * this function to succeed.
+ */
+char **env_array_user_default(const char *username)
+{
+	FILE *su;
+	char line[BUFSIZ];
+	char name[BUFSIZ];
+	char value[BUFSIZ];
+	char *cmdstr = xstrdup("");
+	char **env = NULL;
+
+	if (geteuid() != (uid_t)0) {
+		info("WARNING: you must be root to use --get-user-env");
+		return NULL;
+	}
+
+	xstrfmtcat(cmdstr, "/bin/su - %s -c /usr/bin/env", username);
+	su = popen(cmdstr, "r");
+	xfree(cmdstr);
+	if (su == NULL) {
+		return NULL;
+	}
+
+	env = env_array_create();
+	while (fgets(line, BUFSIZ, su) != NULL) {
+		_strip_cr_nl(line);
+		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
+		env_array_overwrite(&env, name, value);
+	}
+	pclose(su);
+
+	return env;
+}
