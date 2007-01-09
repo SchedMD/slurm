@@ -136,6 +136,7 @@
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x123
+#define LONG_OPT_GET_USER_ENV    0x145
 
 /*---- forward declarations of static functions  ----*/
 
@@ -784,7 +785,8 @@ static void _opt_default()
 		opt.max_threads     = 1;
 		opt.msg_timeout     = 15;
 	}
-
+	
+	opt.get_user_env = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1053,6 +1055,7 @@ void set_options(const int argc, char **argv, int first)
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
+		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1511,6 +1514,9 @@ void set_options(const int argc, char **argv, int first)
 				break;
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
+			break;
+		case LONG_OPT_GET_USER_ENV:
+			opt.get_user_env = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

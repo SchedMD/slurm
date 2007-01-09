@@ -75,4 +75,91 @@ void	unsetenvp(char **env, const char *name);
 char *	getenvp(char **env, const char *name);
 int     setup_env(env_t *env);
 
+/*
+ * Return an empty environment variable array (contains a single
+ * pointer to NULL).
+ */
+char **env_array_create(void);
+
+/*
+ * Merge all of the environment variables in src_array into the
+ * array dest_array.  Any variables already found in dest_array
+ * will be overwritten with the value from src_array.
+ */
+void env_array_merge(char ***dest_array, const char **src_array);
+
+/* 
+ * Copy env_array must be freed by env_array_free 
+ */
+char **env_array_copy(const char **array);
+
+/*
+ * Free the memory used by an environment variable array.
+ */
+void env_array_free(char **env_array);
+
+/*
+ * Append a single environment variable to an environment variable array,
+ * if and only if a variable by that name does not already exist in the
+ * array.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_append(char ***array_ptr, const char *name,
+		     const char *value);
+
+/*
+ * Append a single environment variable to an environment variable array,
+ * if and only if a variable by that name does not already exist in the
+ * array.
+ *
+ * "value_fmt" supports printf-style formatting.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_append_fmt(char ***array_ptr, const char *name,
+			 const char *value_fmt, ...);
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite(char ***array_ptr, const char *name,
+			const char *value);
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.  The "value_fmt" string may contain printf-style options.
+ *
+ * "value_fmt" supports printf-style formatting.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite_fmt(char ***array_ptr, const char *name,
+			    const char *value_fmt, ...);
+
+/*
+ * Set all of the environment variables in a supplied environment
+ * variable array.
+ */
+void env_array_set_environment(char **env_array);
+
+/*
+ * Return an array of strings representing the specified user's default
+ * environment variables, as determined by calling
+ * "/bin/su - <username> -c /usr/bin/env".
+ *
+ * On error, returns NULL.
+ *
+ * NOTE: The calling process must have an effective uid of root for
+ * this function to succeed.
+ */
+char **env_array_user_default(const char *username);
+
 #endif
