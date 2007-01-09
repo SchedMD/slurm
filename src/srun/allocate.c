@@ -41,8 +41,10 @@
 #endif
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/poll.h>
-
+#include <sys/types.h>
+#include <pwd.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -52,6 +54,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
+#include "src/common/env.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
@@ -61,6 +64,8 @@
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  5	/* seconds */
 #define MAX_RETRIES    10
+
+extern char **environ;
 
 /*
  * Static Prototypes
@@ -409,7 +414,6 @@ _intr_handler(int signo)
 job_desc_msg_t *
 job_desc_msg_create_from_opts (char *script)
 {
-	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	
 	slurm_init_job_desc_msg(j);
@@ -529,8 +533,19 @@ job_desc_msg_create_from_opts (char *script)
 			putenv(buf);
 		}
 
-		j->environment = environ;
-		j->env_size = envcount (environ);
+		j->environment = NULL;
+		if (opt.get_user_env) {
+			struct passwd *pw = NULL;
+			pw = getpwuid(opt.uid);
+			if (pw != NULL) {
+				j->environment =
+					env_array_user_default(pw->pw_name);
+				/* FIXME - should we abort if j->environment
+				   is NULL? */
+			}
+		}
+		env_array_merge(&j->environment, environ);
+		j->env_size = envcount (j->environment);
 		j->script = script;
 		j->argv = remote_argv;
 		j->argc = remote_argc;

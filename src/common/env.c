@@ -44,6 +44,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "src/common/log.h"
@@ -537,4 +539,350 @@ int setup_env(env_t *env)
 #endif
 	
 	return SLURM_SUCCESS;
+}
+
+/***********************************************************************
+ * Environment variable array support functions
+ ***********************************************************************/
+
+/*
+ * Return an empty environment variable array (contains a single
+ * pointer to NULL).
+ */
+char **env_array_create(void)
+{
+	char **env_array;
+
+	env_array = (char **)xmalloc(sizeof(char **));
+	env_array[0] = NULL;
+
+	return env_array;
+}
+
+/*
+ * Append a single environment variable to an environment variable array,
+ * if and only if a variable by that name does not already exist in the
+ * array.
+ *
+ * "value_fmt" supports printf-style formatting.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_append_fmt(char ***array_ptr, const char *name,
+			 const char *value_fmt, ...)
+{
+	char buf[BUFSIZ];
+	char **ep = NULL;
+	char *str = NULL;
+	va_list ap;
+
+	buf[0] = '\0';
+	if (array_ptr == NULL) {
+		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
+	}
+
+	va_start(ap, value_fmt);
+	vsnprintf (buf, BUFSIZ, value_fmt, ap);
+	va_end(ap);
+	
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		return 0;
+	}
+
+	xstrfmtcat (str, "%s=%s", name, buf);
+	ep = _extend_env(array_ptr);
+	*ep = str;
+	
+	return 1;
+}
+
+/*
+ * Append a single environment variable to an environment variable array,
+ * if and only if a variable by that name does not already exist in the
+ * array.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_append(char ***array_ptr, const char *name,
+		     const char *value)
+{
+	char **ep = NULL;
+	char *str = NULL;
+
+	if (array_ptr == NULL) {
+		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
+	}
+
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		return 0;
+	}
+
+	xstrfmtcat (str, "%s=%s", name, value);
+	ep = _extend_env(array_ptr);
+	*ep = str;
+	
+	return 1;
+}
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.
+ *
+ * "value_fmt" supports printf-style formatting.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite_fmt(char ***array_ptr, const char *name,
+			    const char *value_fmt, ...)
+{
+	char buf[BUFSIZ];
+	char **ep = NULL;
+	char *str = NULL;
+	va_list ap;
+
+	buf[0] = '\0';
+	if (array_ptr == NULL) {
+		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
+	}
+
+	va_start(ap, value_fmt);
+	vsnprintf (buf, BUFSIZ, value_fmt, ap);
+	va_end(ap);
+	
+	xstrfmtcat (str, "%s=%s", name, buf);
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		xfree (*ep);
+	} else {
+		ep = _extend_env(array_ptr);
+	}
+
+	*ep = str;
+	
+	return 1;
+}
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite(char ***array_ptr, const char *name,
+			const char *value)
+{
+	char **ep = NULL;
+	char *str = NULL;
+
+	if (array_ptr == NULL) {
+		return 0;
+	}
+
+	if (*array_ptr == NULL) {
+		*array_ptr = env_array_create();
+	}
+
+	xstrfmtcat (str, "%s=%s", name, value);
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		xfree (*ep);
+	} else {
+		ep = _extend_env(array_ptr);
+	}
+
+	*ep = str;
+	
+	return 1;
+}
+
+/* 
+ * Copy env_array must be freed by env_array_free 
+ */
+char **env_array_copy(const char **array)
+{
+	char **ptr = NULL;
+
+	env_array_merge(&ptr, array);
+
+	return ptr;
+}
+
+/*
+ * Free the memory used by an environment variable array.
+ */
+void env_array_free(char **env_array)
+{
+	char **ptr;
+
+	if (env_array == NULL)
+		return;
+
+	for (ptr = env_array; *ptr != NULL; ptr++) {
+		xfree(*ptr);
+	}
+	xfree(env_array);
+}
+
+/*
+ * Given an environment variable "name=value" string,
+ * copy the name portion into the "name" buffer, and the
+ * value portion into the "value" buffer.
+ *
+ * Return 1 on success, 0 on failure.
+ */
+static int _env_array_entry_splitter(const char *entry,
+				     char *name, int name_len,
+				     char *value, int value_len)
+{
+	char *ptr;
+	int len;
+
+	ptr = index(entry, '=');
+	len = ptr - entry;
+	if (len > name_len-1)
+		return 0;
+	strncpy(name, entry, len);
+	name[len] = '\0';
+
+	ptr = ptr + 1;
+	len = strlen(ptr);
+	if (len > value_len-1)
+		return 0;
+	strncpy(value, ptr, len);
+	value[len] = '\0';
+
+	return 1;
+}
+
+/*
+ * Work similarly to putenv() (from C stdlib), but uses setenv()
+ * under the covers.  This avoids having pointers from the global
+ * array "environ" into "string".
+ *
+ * Return 1 on success, 0 on failure.
+ */
+static int _env_array_putenv(const char *string)
+{
+	char name[BUFSIZ];
+	char value[BUFSIZ];
+
+	if (!_env_array_entry_splitter(string, name, BUFSIZ, value, BUFSIZ))
+		return 0;
+	if (setenv(name, value, 1) == -1)
+		return 0;
+	
+	return 1;
+}
+
+/*
+ * Set all of the environment variables in a supplied environment
+ * variable array.
+ */
+void env_array_set_environment(char **env_array)
+{
+	char **ptr;
+
+	if (env_array == NULL)
+		return;
+
+	for (ptr = env_array; *ptr != NULL; ptr++) {
+		_env_array_putenv(*ptr);
+	}
+}
+
+/*
+ * Merge all of the environment variables in src_array into the
+ * array dest_array.  Any variables already found in dest_array
+ * will be overwritten with the value from src_array.
+ */
+void env_array_merge(char ***dest_array, const char **src_array)
+{
+	char **ptr;
+	char name[BUFSIZ];
+	char value[BUFSIZ];
+
+	if (src_array == NULL)
+		return;
+
+	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
+		_env_array_entry_splitter(*ptr, name, BUFSIZ, value, BUFSIZ);
+		env_array_overwrite(dest_array, name, value);
+	}
+}
+
+/*
+ * Strip out trailing carriage returns and newlines
+ */
+static void _strip_cr_nl(char *line)
+{
+	int len = strlen(line);
+	char *ptr;
+
+	for (ptr = line+len-1; ptr >= line; ptr--) {
+		if (*ptr=='\r' || *ptr=='\n') {
+			*ptr = '\0';
+		} else {
+			return;
+		}
+	}
+}
+
+/*
+ * Return an array of strings representing the specified user's default
+ * environment variables, as determined by calling
+ * "/bin/su - <username> -c /usr/bin/env".
+ *
+ * On error, returns NULL.
+ *
+ * NOTE: The calling process must have an effective uid of root for
+ * this function to succeed.
+ */
+char **env_array_user_default(const char *username)
+{
+	FILE *su;
+	char line[BUFSIZ];
+	char name[BUFSIZ];
+	char value[BUFSIZ];
+	char *cmdstr = xstrdup("");
+	char **env = NULL;
+
+	if (geteuid() != (uid_t)0) {
+		info("WARNING: you must be root to use --get-user-env");
+		return NULL;
+	}
+
+	xstrfmtcat(cmdstr, "/bin/su - %s -c /usr/bin/env", username);
+	su = popen(cmdstr, "r");
+	xfree(cmdstr);
+	if (su == NULL) {
+		return NULL;
+	}
+
+	env = env_array_create();
+	while (fgets(line, BUFSIZ, su) != NULL) {
+		_strip_cr_nl(line);
+		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
+		env_array_overwrite(&env, name, value);
+	}
+	pclose(su);
+
+	return env;
 }
