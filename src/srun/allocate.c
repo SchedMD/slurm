@@ -544,7 +544,7 @@ job_desc_msg_create_from_opts (char *script)
 				   is NULL? */
 			}
 		}
-		env_array_merge(&j->environment, environ);
+		env_array_merge(&j->environment, (const char **)environ);
 		j->env_size = envcount (j->environment);
 		j->script = script;
 		j->argv = remote_argv;
