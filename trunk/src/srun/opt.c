@@ -2742,7 +2742,8 @@ static void _help(void)
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
 "      --multi-prog            if set the program name specified is the\n"
-"                              configuration specificaiton for multiple programs\n"
+"                              configuration specification for multiple programs\n"
+"      --get-user-env          used by Moab.  See srun man page.\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
 "\n"
 "Allocate only:\n"
@@ -2798,6 +2799,7 @@ static void _help(void)
 			);
 	}
 	slurm_conf_unlock();
+	printf("\n");
 	spank_print_options (stdout, 6, 30);
 	printf("\n");
 

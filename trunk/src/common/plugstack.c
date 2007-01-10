@@ -948,6 +948,8 @@ int spank_print_options(FILE * fp, int left_pad, int width)
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
 		return (0);
 
+	fprintf(fp, "Options provided by plugins:\n");
+
 	i = list_iterator_create(option_cache);
 	while ((p = list_next(i))) {
 		if (p->disabled)
