@@ -383,6 +383,12 @@ Adjust corefile format for parallel job. If possible, srun will set
 up the environment for the job such that a corefile format other than
 full core dumps is enabled. If run with type = "list", srun will
 print a list of supported corefile format types to stdout and exit.
+
+.TP
+\fB\-\-msg\-timeout\fR=\fIseconds\fR
+Modify the job launch message timeout. 
+Changes to this are typically not recommended.
+
 .TP
 \fB\-\-propagate\fR[=\fIrlimits\fR]
 Allows users to specify which of the modifiable (soft) resource limits
