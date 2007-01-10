@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+
+* Changes in SLURM 1.2.0-pre12
+==============================
+
 * Changes in SLURM 1.2.0-pre11
 ==============================
  -- Add multi-core options to slurm_step_launch API.
