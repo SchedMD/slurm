@@ -189,6 +189,17 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
+#ifdef HAVE_BG
+static void _update_nodes_for_bg(int node_scaling,
+				 node_info_msg_t *node_msg,
+				 bg_info_record_t *bg_info_record);
+enum {
+	SVIEW_BG_IDLE_STATE,
+	SVIEW_BG_ERROR_STATE,
+	SVIEW_BG_ALLOC_STATE
+};
+#endif
+
 static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
@@ -199,6 +210,47 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter,
 				    int line);
+static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg);
+
+#ifdef HAVE_BG
+
+static void _update_nodes_for_bg(int node_scaling,
+				 node_info_msg_t *node_msg,
+				 bg_info_record_t *bg_info_record)
+{
+	node_info_t *node_ptr = NULL;
+	hostlist_t hl;
+	char *node_name = NULL;
+
+	/* we are using less than one node */
+	if(bg_info_record->conn_type == SELECT_SMALL) 
+		node_scaling = bg_info_record->node_cnt;
+       		   
+	hl = hostlist_create(bg_info_record->nodes);
+	while (1) {
+		if (node_name)
+			free(node_name);
+		node_name = hostlist_shift(hl);
+		if (!node_name)
+			break;
+		node_ptr = _find_node(node_name, node_msg);
+		if (!node_ptr)
+			continue;
+		/* cores is overloaded to be the cnodes in an error
+		 * state and used_cpus is overloaded to be the nodes in
+		 * use.  No block should be sent in here if it isn't
+		 * in use (that doesn't mean in a free state, it means
+		 * the user isn't slurm or the block is in an error state.  
+		 */
+		if(bg_info_record->state == RM_PARTITION_ERROR) 
+			node_ptr->cores += node_scaling;
+		else
+			node_ptr->used_cpus += node_scaling;
+	}
+	hostlist_destroy(hl);
+	
+}
+#endif
 
 static int 
 _build_min_max_16_string(char *buffer, int buf_size, 
@@ -1175,8 +1227,14 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 {
 	list_append(sview_part_sub->node_ptr_list, node_ptr);
 
+#ifdef HAVE_BG
+	node_scaling = node_ptr->threads;
+	if(!node_scaling)
+		return;
+#else
 	if(!node_scaling)
 		node_scaling = 1;
+#endif	
 	
 	if (sview_part_sub->node_cnt == 0) {	/* first node added */
 		sview_part_sub->node_state = node_ptr->node_state;
@@ -1233,8 +1291,14 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 	sview_part_sub_t *sview_part_sub_ptr = 
 		xmalloc(sizeof(sview_part_sub_t));
 	
+#ifdef HAVE_BG
+	node_scaling = node_ptr->threads;
+	if(!node_scaling)
+		return NULL;
+#else
 	if(!node_scaling)
 		node_scaling = 1;
+#endif
 
 	if (!part_ptr) {
 		g_print("got no part_ptr!\n");
@@ -1294,6 +1358,7 @@ static sview_part_info_t *_create_sview_part_info(partition_info_t* part_ptr)
 
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				   node_info_msg_t *node_info_ptr,
+				   node_select_info_msg_t *node_select_ptr,
 				   int changed)
 {
 	sview_part_info_t *sview_part_info = NULL;
@@ -1305,7 +1370,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	int i, found = 0;
 	ListIterator itr = NULL;
 	hostlist_t hl;
-
+#ifdef HAVE_BG
+	bg_info_record_t *bg_info_record = NULL;
+	int node_scaling = part_info_ptr->partition_array[0].node_scaling;
+	char *slurm_user = NULL;
+#endif
 	if(!changed && info_list) {
 		return info_list;
 	}
@@ -1318,6 +1387,40 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		g_print("malloc error\n");
 		return NULL;
 	}
+
+#ifdef HAVE_BG
+	slurm_user = xstrdup(slurmctld_conf.slurm_user_name);
+
+	for (i=0; i<node_info_ptr->record_count; i++) {
+		node_ptr = &(node_info_ptr->node_array[i]);
+		/* in each node_ptr we overload the threads var
+		 * with the number of cnodes in the used_cpus var
+		 * will be used to tell how many cnodes are
+		 * allocated and the cores will represent the cnodes
+		 * in an error state. So we can get an idle count by
+		 * subtracting those 2 numbers from the total possible
+		 * cnodes (which are the idle cnodes).
+		 */
+		node_ptr->threads = node_scaling;
+		node_ptr->cores = 0;
+		node_ptr->used_cpus = 0;
+	}
+
+	for (i=0; i<node_select_ptr->record_count; i++) {
+		bg_info_record = &(node_select_ptr->bg_info_array[i]);
+		
+		/* this block is idle we won't mark it */
+		if (bg_info_record->state != RM_PARTITION_ERROR
+		    && !strcmp(slurm_user, bg_info_record->owner_name))
+			continue;
+		_update_nodes_for_bg(node_scaling, node_info_ptr,
+				     bg_info_record);
+	}
+	xfree(slurm_user);
+
+#endif
+
+
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
@@ -1328,6 +1431,50 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		while((node_name = hostlist_shift(hl))) {
 			node_ptr = _find_node(node_name, node_info_ptr);
 			free(node_name);
+#ifdef HAVE_BG
+			for(i=0; i<3; i++) {
+				int norm = 0;
+				switch(i) {
+				case SVIEW_BG_IDLE_STATE:
+					/* get the idle node count if
+					 * we don't have any error or
+					 * allocated nodes then we set
+					 * the norm flag and add it
+					 * as it's current state 
+					 */
+					node_ptr->threads -=
+						(node_ptr->cores
+						 + node_ptr->used_cpus);
+					if(node_ptr->threads == node_scaling)
+						norm = 1;
+					else
+						node_ptr->node_state =
+							NODE_STATE_IDLE;
+					
+					break;
+				case SVIEW_BG_ERROR_STATE:
+					/* get the error node count */
+					if(!node_ptr->cores) 
+						continue;
+					node_ptr->node_state |= 
+						NODE_STATE_DRAIN;
+					node_ptr->threads = node_ptr->cores;
+					break;
+				case SVIEW_BG_ALLOC_STATE:
+					/* get the allocated node count */
+					if(!node_ptr->used_cpus) 
+						continue;
+					node_ptr->node_state =
+						NODE_STATE_ALLOCATED;
+					
+					node_ptr->threads =
+						node_ptr->used_cpus;
+					break;
+				default:
+					error("unknown state");
+					break;
+				}
+#endif
 			itr = list_iterator_create(sview_part_info->sub_list);
 			while((sview_part_sub = list_next(itr))) {
 				if(sview_part_sub->node_state
@@ -1348,11 +1495,20 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 						part_ptr,
 						node_ptr,
 						part_ptr->node_scaling);
-				list_push(sview_part_info->sub_list, 
-					  sview_part_sub);
+				if(sview_part_sub)
+					list_push(sview_part_info->sub_list, 
+						  sview_part_sub);
 			}
 
 			found = 0;
+#ifdef HAVE_BG
+			/* if we used the current state of
+			 * the node then we just continue.
+			 */
+			if(norm) 
+				break;
+			}
+#endif
 		}
 		hostlist_destroy(hl);
 		list_append(info_list, sview_part_info);
@@ -1676,9 +1832,11 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 {
 	int part_error_code = SLURM_SUCCESS;
 	int node_error_code = SLURM_SUCCESS;
+	int block_error_code = SLURM_SUCCESS;
 	static int view = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_info_msg_t *node_info_ptr = NULL;
+	static node_select_info_msg_t *node_select_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -1727,9 +1885,7 @@ get_node:
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!display_widget || view == ERROR_VIEW)
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
-			goto display_it;
-		changed = 0;
-		goto display_it;
+			goto get_node_select;
 	}
 
 	if (node_error_code != SLURM_SUCCESS) {
@@ -1747,10 +1903,41 @@ get_node:
 		goto end_it;
 	}
 
+get_node_select:
+	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
+							force_refresh))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		if((!display_widget || view == ERROR_VIEW) 
+		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)
+		   || (node_error_code != SLURM_NO_CHANGE_IN_DATA))
+			goto display_it;
+		changed = 0;
+		goto display_it;
+	}
+
+	if (block_error_code != SLURM_SUCCESS) {
+		if(view == ERROR_VIEW)
+			goto end_it;
+		view = ERROR_VIEW;
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
+		sprintf(error_char, "slurm_load_node_select: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		gtk_table_attach_defaults(table, 
+					  label,
+					  0, 1, 0, 1); 
+		gtk_widget_show(label);	
+		display_widget = gtk_widget_ref(label);
+		goto end_it;
+	}
+
 display_it:
 
 	info_list = _create_part_info_list(part_info_ptr,
-					   node_info_ptr, changed);
+					   node_info_ptr,
+					   node_select_ptr,
+					   changed);
 	if(!info_list)
 		return;
 	/* set up the grid */
@@ -1799,8 +1986,10 @@ extern void specific_info_part(popup_info_t *popup_win)
 {
 	int part_error_code = SLURM_SUCCESS;
 	int node_error_code = SLURM_SUCCESS;
+	int block_error_code = SLURM_SUCCESS;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_info_msg_t *node_info_ptr = NULL;
+	static node_select_info_msg_t *node_select_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
@@ -1854,9 +2043,7 @@ get_node:
 		if((!spec_info->display_widget 
 		    || spec_info->view == ERROR_VIEW)
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
-			goto display_it;
-		changed = 0;
-		goto display_it;
+			goto get_node_select;
 	}
 
 	if (node_error_code != SLURM_SUCCESS) {
@@ -1874,10 +2061,40 @@ get_node:
 		goto end_it;
 	}
 
+get_node_select:
+	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
+							force_refresh))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		if((!spec_info->display_widget
+		    || spec_info->view == ERROR_VIEW) 
+		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)
+		   || (node_error_code != SLURM_NO_CHANGE_IN_DATA))
+			goto display_it;
+		changed = 0;
+		goto display_it;
+	}
+
+	if (block_error_code != SLURM_SUCCESS) {
+		if(spec_info->view == ERROR_VIEW)
+			goto end_it;
+		if(spec_info->display_widget)
+			gtk_widget_destroy(spec_info->display_widget);
+		spec_info->view = ERROR_VIEW;
+		sprintf(error_char, "slurm_load_node_select: %s",
+			slurm_strerror(slurm_get_errno()));
+		label = gtk_label_new(error_char);
+		spec_info->display_widget = gtk_widget_ref(label);
+		gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1);
+		gtk_widget_show(label);	
+		goto end_it;
+	}
+
 display_it:	
 	
 	info_list = _create_part_info_list(part_info_ptr,
-					   node_info_ptr, changed);
+					   node_info_ptr,
+					   node_select_ptr,
+					   changed);
 	if(!info_list)
 		return;		
 	

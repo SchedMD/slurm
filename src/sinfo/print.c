@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -715,7 +715,7 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data && sinfo_data->nodes_total) {
 		char *upper_state = node_state_string_compact(
-				sinfo_data->node_state);
+			sinfo_data->node_state);
 		char *lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
 		xfree(lower_state);
