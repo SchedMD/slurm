@@ -45,6 +45,8 @@ controller?</a></li>
 parallel for testing purposes?</a></li>
 <li><a href="#multi_slurmd">Can multiple slurmd daemons be run
 on the compute node(s) to emulate a larger cluster?</a></li>
+<li><a href="#credential_replayed">What does a "credential
+replayed" error in the <i>SlurmdLogFile</i> indicate?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -451,15 +453,33 @@ slurm.conf. </li>
 <li>When starting the <i>slurmd</i> daemon, include the <i>NodeName</i>
 of the node that it is supposed to serve on the execute line.</li> 
 </ol>
-It is strongly recommended that SLURM version 1.2 or higher be used 
+<p>It is strongly recommended that SLURM version 1.2 or higher be used 
 for this due to it's improved support for multiple slurmd daemons.
-
 See the
 <a href="programmer_guide.shtml#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.
 
+<p><a name="credential_replayed"><b>15. What does a "credential 
+replayed" error in the <i>SlurmdLogFile</i> indicate?</b></a><br>
+This error is indicative of the <i>slurmd</i> daemon not being able 
+to respond to job initiation requests from the <i>srun</i> command
+in a timely fashion (a few seconds).
+<i>Srun</i> responds by resending the job initiation request.
+When the <i>slurmd</i> daemon finally starts to respond, it 
+processes both requests.
+The second request is rejected and the event is logged with
+the "credential replayed" error.
+If you check the <i>SlurmdLogFile</i> and <i>SlurmctldLogFile</i>, 
+you should see signs of the <i>slurmd</i> daemon's non-responsiveness.
+A variety of factors can be responsible for this problem
+including diskless nodes encountering network problems or
+very slow Network Information Service (NIS).
+The <i>--msg-timeout</i> option of <i>srun</i> may be helpful 
+to deal with the problem, although this introduces other 
+problems for fault tolerance. 
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 November 2006</p>
+<p style="text-align:center;">Last modified 10 January 2007</p>
 
 <!--#include virtual="footer.txt"-->
