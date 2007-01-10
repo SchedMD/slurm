@@ -880,7 +880,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	switch (msg->msg_type)
 	{
 	case RESPONSE_LAUNCH_TASKS:
-		debug("recevied task launch response");
+		debug("received task launch response");
 		_launch_handler(job, msg);
 		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
