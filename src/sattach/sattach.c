@@ -474,7 +474,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	   in /etc/hosts. */
 	uc = (unsigned char *)&((struct sockaddr_in *)&addr)->sin_addr.s_addr;
 	port = ((struct sockaddr_in *)&addr)->sin_port;
-	debug2("got message connection from %u.%u.%u.%u:%d",
+	debug2("got message connection from %u.%u.%u.%u:%hu",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 	fflush(stdout);
 

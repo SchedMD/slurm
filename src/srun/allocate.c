@@ -280,7 +280,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	}
 
 	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
-	debug2("got message connection from %s:%d", host, port);
+	debug2("got message connection from %s:%hu", host, port);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
