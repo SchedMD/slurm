@@ -474,9 +474,11 @@ you should see signs of the <i>slurmd</i> daemon's non-responsiveness.
 A variety of factors can be responsible for this problem
 including diskless nodes encountering network problems or
 very slow Network Information Service (NIS).
-The <i>--msg-timeout</i> option of <i>srun</i> may be helpful 
-to deal with the problem, although this introduces other 
-problems for fault tolerance. 
+In Slurm version 1.2, this can be addressed with the 
+<i>MessageTimeout</i> configuration parameter by setting a
+value higher than the default 5 seconds.
+In earlier versions of Slurm, the <i>--msg-timeout</i> option 
+of <i>srun</i> serves a similar purpose.
 
 <p class="footer"><a href="#top">top</a></p>
 
