@@ -999,7 +999,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	   in /etc/hosts. */
 	uc = (unsigned char *)&cli_addr.sin_addr.s_addr;
 	port = cli_addr.sin_port;
-	debug2("got message connection from %u.%u.%u.%u:%d",
+	debug2("got message connection from %u.%u.%u.%u:%hu",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
 	msg = xmalloc(sizeof(slurm_msg_t));
