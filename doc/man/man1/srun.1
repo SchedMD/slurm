@@ -403,7 +403,7 @@ The maximum size of core file
 The maximum amount of CPU time
 .TP
 \fBDATA\fR
-The maximum size of a process’s data segment
+The maximum size of a process's data segment
 .TP
 \fBFSIZE\fR
 The maximum size of files created
@@ -522,6 +522,17 @@ character.
 Request that a specific list of hosts not be included in the resources 
 allocated to this job. The host list will be assumed to be a filename 
 if it contains a "/"character.
+.TP
+\fB\-\-get\-user\-env\fR
+For a batch script submission, this option will tell srun to retreive the
+login environment variables for the user specified in the \-\-uid option.
+The environment variables are retrieved by running "su - <username> -c
+/usr/bin/env" and parsing the output.  Be aware that any environment
+variables already set in srun's environment will take precidence over any
+environment variables in the user's login environment.
+NOTE: This option only works if the caller has an
+effective uid of "root", and only takes effect in batch mode (\-b/\-\-batch).
+This option was originally created for use by Moab.
 
 .PP
 Affinity/Multi-core Options (when the task/affinity or task/numa 
