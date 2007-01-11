@@ -55,10 +55,6 @@ CONFIGURATION FILE CHANGES
   and RamDiskImage file can be specified along with specific groups that 
   can use them.
 
-* For BlueGene Systems only: A state save/recover file has been added to save
-  the state of the system (primarily for blocks in an error state) to be loaded
-  when the system has been brought back up.
-
 OTHER CHANGES
 
 * Several srun options are available to control layout of tasks across the 
@@ -135,6 +131,10 @@ OTHER CHANGES
   blocks in an error state or blocks and small blocks that are allocated.
   This results in some overlap of nodes displayed if you are running with
   Small blocks but the node counts will be correct for the states given. 
+
+* For BlueGene Systems only: A state save/recover file has been added to save
+  the state of the system (primarily for blocks in an error state) to be loaded
+  when the system has been brought back up.
 
 * Added "scontrol listpids" command to identify processes associated with 
   specific jobs and/or steps.
