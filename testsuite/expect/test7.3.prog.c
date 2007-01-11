@@ -137,7 +137,7 @@ int main (int argc, char *argv[])
 	 * "user managed" IO means a TCP stream for each task, directly
          * connected to the stdin, stdout, and stderr the task.
 	 */
-	slurm_job_step_launch_t_init(launch);
+	slurm_step_launch_params_t_init(launch);
 	task_argv[0] = "./test7.3.io";
 	launch->argv = task_argv;
 	launch->argc = 1;
@@ -150,7 +150,7 @@ int main (int argc, char *argv[])
 		goto done;
 	}
 
-	if (!slurm_step_launch_wait_start(ctx)) {
+	if (slurm_step_launch_wait_start(ctx) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch_wait_start");
 		rc =1;
 		goto done;
