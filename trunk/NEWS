@@ -77,7 +77,7 @@ documents those changes that are of interest to users and admins.
     code for Moab Scheduler).
  -- BLUEGENE - changed way of keeping track of smaller partitions using 
     ionode range instead of quarter nodecard notation. 
-    (i.e. bgl000[0-4] instead of bgl000.0.0)
+    (i.e. bgl000[0-3] instead of bgl000.0.0)
  -- Patch from Hongjia Cao (EINPROGRESS error message change)
  -- Fix for correct requid for jobacct plugin
  -- Added subsec timing display for sacct
