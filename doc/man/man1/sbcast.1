@@ -16,8 +16,9 @@ allocation.
 \fBDEST\fR should be the fully qualified pathname for the 
 file copy to be created on each node. 
 \fBDEST\fR should be on a file system local to that node.
-Note that parallel file systems may provide better performance 
-than \fBsbcast\fR can provide.
+Note that parallel file systems \fImay\fR provide better performance 
+than \fBsbcast\fR can provide, although performance will vary 
+by file size, degree of parallelism, and network type.
 
 .SH "OPTIONS"
 .TP
