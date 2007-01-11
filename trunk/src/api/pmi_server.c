@@ -139,7 +139,7 @@ static void *_msg_thread(void *x)
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
 
-	timeout = slurm_get_msg_timeout() * 8000;
+	timeout = slurm_get_msg_timeout() * 10000;
 	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		error("slurm_send_recv_rc_msg_only_one: %m");
 	} else if (rc != SLURM_SUCCESS) {

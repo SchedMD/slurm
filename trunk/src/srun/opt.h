@@ -52,7 +52,7 @@
 #include "src/common/env.h"
 #include "src/srun/fname.h"
 
-#define MAX_THREADS	32
+#define MAX_THREADS	60
 #define MAX_USERNAME	9
 
 #define INT_UNASSIGNED ((int)-1)

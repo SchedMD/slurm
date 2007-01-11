@@ -49,7 +49,7 @@
 #include "src/common/slurm_auth.h"
 
 #define MAX_RETRIES 5
-#define PMI_TIME    1000	/* spacing between RPCs, usec */
+#define PMI_TIME    500	/* spacing between RPCs, usec */
 
 int pmi_fd = -1;
 uint16_t srun_port = 0;
@@ -95,10 +95,17 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * the same time and refuse some connections, retry as 
 	 * needed. Spread out messages by task's rank. Also 
 	 * increase the timeout if many tasks since the srun 
-	 * command is very overloaded. */
+	 * command is very overloaded.
+	 * We also increase the timeout (default timeout is
+	 * 10 secs). */
 	usleep(pmi_rank * PMI_TIME);
-	if (pmi_size > 10)
-		timeout = slurm_get_msg_timeout() * 8000;
+	if      (pmi_size > 1000)	/* 100 secs */
+		timeout = slurm_get_msg_timeout() * 10000;
+	else if (pmi_size > 100)	/* 50 secs */
+		timeout = slurm_get_msg_timeout() * 5000;
+	else if (pmi_size > 10)		/* 20 secs */
+		timeout = slurm_get_msg_timeout() * 2000;
+
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_send_kvs_comm_set: %m");
@@ -164,10 +171,17 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * the same time and refuse some connections, retry as 
 	 * needed. Spread out messages by task's rank. Also
 	 * increase the timeout if many tasks since the srun
-	 * command is very overloaded. */
+	 * command is very overloaded.
+	 * We also increase the timeout (default timeout is
+	 * 10 secs). */
 	usleep(pmi_rank * PMI_TIME);
-	if (pmi_size > 10)
-		timeout = slurm_get_msg_timeout() * 8000;
+	if      (pmi_size > 1000)	/* 100 secs */
+		timeout = slurm_get_msg_timeout() * 10000;
+	else if (pmi_size > 100)	/* 50 secs */
+		timeout = slurm_get_msg_timeout() * 5000;
+	else if (pmi_size > 10)		/* 20 secs */
+		timeout = slurm_get_msg_timeout() * 2000;
+
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
