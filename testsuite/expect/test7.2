@@ -43,7 +43,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_prog_get
 if {![test_aix]} {
-	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lpmi -lslurm
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L/usr/lib64 -Wl,--rpath=/usr/lib64 -L${slurm_dir}/lib -Wl,--rpath=${slurm_dir}/lib -lpmi -lslurm
 } else {
 	exec $bin_cc ${file_prog_get}.c -Wl,-brtl -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lpmi -lslurm
 }
@@ -55,11 +55,14 @@ exec $bin_chmod 700 $file_prog_get
 set timeout $max_job_delay
 if { [test_bluegene] } {
 	set node_cnt 1-1024
+	set task_cnt 8
 } else {
 	if { [test_xcpu] } {
 		set node_cnt 1-1
+		set task_cnt 8
 	} else {
 		set node_cnt 1-4
+		set task_cnt 8
 	}
 }
 
@@ -67,7 +70,7 @@ if { [test_bluegene] } {
 # Adjust time limits as needed for large task counts */
 #                   times are here  vv 
 set timeout [expr $max_job_delay +  60]
-set srun_pid [spawn $srun -l -N$node_cnt -n8 -O -t1 --threads=1 $file_prog_get]
+set srun_pid [spawn $srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 $file_prog_get]
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"

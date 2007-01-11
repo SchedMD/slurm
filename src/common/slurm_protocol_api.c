@@ -802,7 +802,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
-	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
+	if(timeout > (slurm_get_msg_timeout() * 10000)) {
 		error("slurm_receive_msg: "
 		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 

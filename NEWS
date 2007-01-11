@@ -196,6 +196,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.25
 =========================
+ - switch/elan: Fix for "Failed to initialise stats structure" from
+   libelan when ELAN_STATKEY > MAX_INT.
+ - Tune PMI support logic for better scalability and performance.
 
 * Changes in SLURM 1.1.24
 =========================
