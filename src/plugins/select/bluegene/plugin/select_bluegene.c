@@ -444,6 +444,7 @@ extern int select_p_state_restore(char *dir_name)
 				bg_record->job_running = BLOCK_ERROR_STATE;
 			bg_record->state = bg_info_record->state;
 			slurm_mutex_unlock(&block_state_mutex);
+			blocks++;
 		} else {
 			int ionodes = 0;
 			char *name = NULL;

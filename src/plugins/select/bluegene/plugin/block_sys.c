@@ -626,7 +626,7 @@ int read_bg_blocks()
 			xrealloc(bg_record->nodes, i);
 		}
 		hostlist_destroy(hostlist);
-		info("got nodes of %s", bg_record->nodes);
+		debug3("got nodes of %s", bg_record->nodes);
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 		
