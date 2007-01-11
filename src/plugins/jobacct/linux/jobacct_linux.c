@@ -105,10 +105,10 @@ extern int init ( void )
 {
 	char *proctrack = slurm_get_proctrack_type();
 	if(!strcasecmp(proctrack, "proctrack/pgid")) {
-		error("we will use a much slower algorithm with "
-		      "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
-		      "or Proctracktype=proctrack/rms with %s",
-		      plugin_name);
+		info("WARNING: We will use a much slower algorithm with "
+		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
+		     "or Proctracktype=proctrack/rms with %s",
+		     plugin_name);
 		pgid_plugin = true;
 	}
 	xfree(proctrack);
