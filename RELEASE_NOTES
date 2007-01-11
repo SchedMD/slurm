@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.2
-15 December 2006 (through 1.2.0-pre10)
+11 January 2007 (through 1.2.0-pre13)
 
 
 IMPORTANT NOTE:
@@ -54,6 +54,10 @@ CONFIGURATION FILE CHANGES
 * For BlueGene systems only: Alternate BlrtsImage, LinuxImage, MloaderImage,
   and RamDiskImage file can be specified along with specific groups that 
   can use them.
+
+* For BlueGene Systems only: A state save/recover file has been added to save
+  the state of the system (primarily for blocks in an error state) to be loaded
+  when the system has been brought back up.
 
 OTHER CHANGES
 
@@ -117,6 +121,20 @@ OTHER CHANGES
 
 * For BlueGene system only: Added "--reboot" option to srun, salloc, and 
   sbatch commands to force booting of nodes before starting the job.
+
+* For BlueGene Systems only: Changed way of keeping track of smaller 
+  partitions using ionode range instead of quarter nodecard notation. 
+  (i.e. bgl000[0-3] instead of bgl000.0.0)
+
+* For BlueGene Systems only: New scontrol options to down specific ionodes 
+  without having to create blocks there.
+ (i.e. scontrol update subbp=bgl000[0-3] state=error) This will down the first
+ 4 ionodes or on a bgl system the first nodecard in the base partition.
+
+* For BlueGene Systems only: sinfo will now display correct node count's for 
+  blocks in an error state or blocks and small blocks that are allocated.
+  This results in some overlap of nodes displayed if you are running with
+  Small blocks but the node counts will be correct for the states given. 
 
 * Added "scontrol listpids" command to identify processes associated with 
   specific jobs and/or steps.
