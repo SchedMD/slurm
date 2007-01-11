@@ -694,7 +694,7 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 	 * Tell libelan the key to use for Elan state shmem segment
 	 */
 	if (qsw_statkey ((qsw_jobinfo_t) jobinfo, &id) >= 0)
-		slurm_setenvpf (env, "ELAN_STATKEY", "0x%x", id);
+		slurm_setenvpf (env, "ELAN_STATKEY", "%d", id);
 
 	return SLURM_SUCCESS;
 }
