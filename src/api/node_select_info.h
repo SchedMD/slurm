@@ -61,6 +61,10 @@ typedef struct {
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	int *ionode_inx;        /* list index pairs for ionodes in the
+				 * node listed for *ionodes:
+				 * start_range_1, end_range_1,
+				 * start_range_2, .., -1  */
 	char *blrtsimage;       /* BlrtsImage for this block */
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */

@@ -182,7 +182,6 @@ typedef struct {
 	int color;
 	int index;
 	int state;
-	int conn_type;
 	int phys_x;	
 } ba_node_t;
 

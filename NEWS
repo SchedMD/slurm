@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- BLUEGENE - Added correct node info for sinfo and sview for viewing
     allocated nodes in a partition.
+ -- BLUEGENE - Added state save on slurmctld shutdown of blocks in an error 
+    state on real systems and total block config on emulation systems.
 
 * Changes in SLURM 1.2.0-pre11
 ==============================

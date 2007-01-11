@@ -756,7 +756,7 @@ try_again:
 			}
 			
 			bit_and(slurm_block_bitmap, tmp_bitmap);
-			bit_free(tmp_bitmap);
+			FREE_NULL_BITMAP(tmp_bitmap);
 			xfree(request.save_name);
 			rc = SLURM_SUCCESS;
 			goto end_it;

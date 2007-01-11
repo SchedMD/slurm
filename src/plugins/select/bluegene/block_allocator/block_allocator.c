@@ -233,7 +233,9 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	char temp[BUFSIZE];
 	tbl = s_p_hashtbl_create(block_options);
 	s_p_parse_line(tbl, *leftover, leftover);
-	
+	if(!value) {
+		return 0;
+	}
 	n = xmalloc(sizeof(blockreq_t));
 	hl = hostlist_create(value);
 	hostlist_ranged_string(hl, BUFSIZE, temp);
@@ -1275,6 +1277,7 @@ extern int check_and_set_node_list(List nodes)
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
+		
 		if(ba_node->used) 
 			curr_ba_node->used = true;		
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
@@ -1347,6 +1350,7 @@ extern char *set_bg_block(List results, int *start,
 			grid[start[X]];	
 #endif
 	
+
 	if(!ba_node)
 		return NULL;
 
@@ -1356,6 +1360,16 @@ extern char *set_bg_block(List results, int *start,
 		send_results = 1;
 		
 	list_append(results, ba_node);
+	if(conn_type == SELECT_SMALL) {
+		/* adding the ba_node and ending */
+		ba_node->used = true;
+		name = xmalloc(4);
+		snprintf(name, 4, "%d%d%d",
+			 ba_node->coord[X],
+			 ba_node->coord[Y],
+			 ba_node->coord[Z]);
+		goto end_it; 
+	}
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord, 
 			     ba_node->coord, 
@@ -3374,7 +3388,6 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	for(i=0;i<count;i++) {
 		if(!ba_node[i]->used) {
 			ba_node[i]->used=1;
-			ba_node[i]->conn_type=conn_type;
 			if(ba_node[i]->letter == '.') {
 				ba_node[i]->letter = letters[color_count%62];
 				ba_node[i]->color = colors[color_count%6];
