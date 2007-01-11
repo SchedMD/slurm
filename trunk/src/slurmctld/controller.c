@@ -290,19 +290,6 @@ int main(int argc, char *argv[])
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 
-		/* Recover node scheduler state info */
-		if (recover) {
-			error_code = select_g_state_restore(
-					slurmctld_conf.state_save_location);
-		} else {
-			error_code = select_g_state_restore(NULL);
-		}
-		if (error_code != SLURM_SUCCESS ) {
-			error("failed to restore node selection state");
-			abort();
-		}
-
-
 		/*
 		 * create attached thread to process RPCs
 		 */

@@ -273,10 +273,8 @@ extern void destroy_bg_record(void *object)
 		xfree(bg_record->target_name);
 		if(bg_record->bg_block_list)
 			list_destroy(bg_record->bg_block_list);
-		if(bg_record->bitmap)
-			bit_free(bg_record->bitmap);
-		if(bg_record->ionode_bitmap)
-			bit_free(bg_record->ionode_bitmap);
+		FREE_NULL_BITMAP(bg_record->bitmap);
+		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
 
 		xfree(bg_record->blrtsimage);
 		xfree(bg_record->linuximage);
@@ -435,8 +433,7 @@ extern void process_nodes(bg_record_t *bg_record)
 
 	if ((bg_record->geo[X] == DIM_SIZE[X])
 	    && (bg_record->geo[Y] == DIM_SIZE[Y])
-	    && (bg_record->geo[Z] == DIM_SIZE[Z]))
-	{
+	    && (bg_record->geo[Z] == DIM_SIZE[Z])) {
 		bg_record->full_block = 1;	
 	}	
 	
@@ -497,15 +494,13 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		sec_record->start[i] = fir_record->start[i];
 	}
 
-	if(sec_record->bitmap)
-		bit_free(sec_record->bitmap);
+	FREE_NULL_BITMAP(sec_record->bitmap);
 	if(fir_record->bitmap 
 	   && (sec_record->bitmap = bit_copy(fir_record->bitmap)) == NULL) {
 		error("Unable to copy bitmap for %s", fir_record->nodes);
 		sec_record->bitmap = NULL;
 	}
-	if(sec_record->ionode_bitmap)
-		bit_free(sec_record->ionode_bitmap);
+	FREE_NULL_BITMAP(sec_record->ionode_bitmap);
 	if(fir_record->ionode_bitmap 
 	   && (sec_record->ionode_bitmap
 	       = bit_copy(fir_record->ionode_bitmap)) == NULL) {
@@ -716,10 +711,10 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	my_bitmap = bit_copy(rec_a->bitmap);
 	bit_and(my_bitmap, rec_b->bitmap);
 	if (bit_ffs(my_bitmap) == -1) {
-		bit_free(my_bitmap);
+		FREE_NULL_BITMAP(my_bitmap);
 		return false;
 	}
-	bit_free(my_bitmap);
+	FREE_NULL_BITMAP(my_bitmap);
 		
 	if(rec_a->quarter != (uint16_t) NO_VAL) {
 		if(rec_b->quarter == (uint16_t) NO_VAL)
@@ -972,8 +967,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	reset_ba_system();
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
-		while ((bg_record = (bg_record_t *) list_next(itr)) 
-		       != NULL) {
+		while((bg_record = list_next(itr))) {
 			if(bg_found_block_list) {
 				itr_found = list_iterator_create(
 					bg_found_block_list);
@@ -1185,8 +1179,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					      bg_record->bg_block_id);
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
-					if(my_bitmap)
-						bit_free(my_bitmap);
+					FREE_NULL_BITMAP(my_bitmap);
 					return SLURM_ERROR;
 				}
 				//set_node_list(bg_record->bg_block_list);
@@ -1194,8 +1187,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			}
 		}
 		list_iterator_destroy(itr);
-		if(my_bitmap)
-			bit_free(my_bitmap);
+		FREE_NULL_BITMAP(my_bitmap);
 	} else {
 		debug("No list was given");
 	}

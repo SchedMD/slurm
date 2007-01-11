@@ -670,6 +670,7 @@ int read_slurm_conf(int recover)
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
+	char *state_save_dir     = xstrdup(slurmctld_conf.state_save_location);
 	slurm_ctl_conf_t *conf;
 	select_type_plugin_info_t old_select_type_p = 
 		(select_type_plugin_info_t) slurmctld_conf.select_type_param;
@@ -739,16 +740,18 @@ int read_slurm_conf(int recover)
 		}
 		reset_first_job_id();
 		(void) slurm_sched_reconfig();
+		xfree(state_save_dir);
 	}
 
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 			!= SLURM_SUCCESS) 
 	    || (select_g_block_init(part_list) != SLURM_SUCCESS) 
+	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) 
 	    || (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		error("failed to initialize node selection plugin state");
 		abort();
 	}
-
+	xfree(state_save_dir);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
 	(void) _sync_nodes_to_jobs();

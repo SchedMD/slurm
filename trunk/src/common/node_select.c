@@ -602,6 +602,7 @@ static void _free_node_info(bg_info_record_t *bg_info_record)
 	xfree(bg_info_record->owner_name);
 	xfree(bg_info_record->bg_block_id);
 	xfree(bg_info_record->bp_inx);
+	xfree(bg_info_record->ionode_inx);
 	xfree(bg_info_record->blrtsimage);
 	xfree(bg_info_record->linuximage);
 	xfree(bg_info_record->mloaderimage);
@@ -643,6 +644,13 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 		bg_info_record->bp_inx = bitfmt2int("");
 	} else {
 		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
+		xfree(bp_inx_str);
+	}
+	safe_unpackstr_xmalloc(&bp_inx_str, &uint16_tmp, buffer);
+	if (bp_inx_str == NULL) {
+		bg_info_record->ionode_inx = bitfmt2int("");
+	} else {
+		bg_info_record->ionode_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
 	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage, &uint16_tmp, 
@@ -1219,9 +1227,8 @@ extern int select_g_unpack_node_info(node_select_info_msg_t **
 	buf->bg_info_array = xmalloc(sizeof(bg_info_record_t) * 
 		buf->record_count);
 	record_count = buf->record_count;
-
 	for(i=0; i<record_count; i++) {
-		if (_unpack_node_info(&(buf->bg_info_array[i]), buffer))
+		if (_unpack_node_info(&(buf->bg_info_array[i]), buffer)) 
 			goto unpack_error;
 	}
 	*node_select_info_msg_pptr = buf;
@@ -1250,6 +1257,7 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 		buf->record_count = 0;
 	for(i=0; i<buf->record_count; i++)
 		_free_node_info(&(buf->bg_info_array[i]));
+	xfree(buf->bg_info_array);
 	xfree(buf);
 	return SLURM_SUCCESS;
 }

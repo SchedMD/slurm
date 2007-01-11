@@ -220,9 +220,23 @@ static int _post_allocate(bg_record_t *bg_record)
 		error("bridge_free_block(): %s", bg_err_str(rc));	
 #else
 	static int block_inx = 0;
-	bg_record->bg_block_id = xmalloc(8);
-	snprintf(bg_record->bg_block_id, 8,
-		 "RMP%d", block_inx++);
+	int i=0, temp = 0;
+	if(bg_record->bg_block_id) {
+		while((bg_record->bg_block_id[i] > '9' 
+		       || bg_record->bg_block_id[i] < '0') 
+		      && (bg_record->bg_block_id[i])) 		
+			i++;
+		if(bg_record->bg_block_id[i]) {
+			temp = atoi(bg_record->bg_block_id+i)+1;
+			if(temp > block_inx)
+				block_inx = temp;
+			info("first new block inx will now be %d", block_inx);
+		}
+	} else {
+		bg_record->bg_block_id = xmalloc(8);
+		snprintf(bg_record->bg_block_id, 8,
+			 "RMP%d", block_inx++);
+	}
 #endif	
 
 	return rc;
