@@ -192,6 +192,9 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.25
+=========================
+
 * Changes in SLURM 1.1.24
 =========================
  - In sched/wiki2, add support for direct "srun --dependency=" use.
