@@ -51,7 +51,7 @@
 #include "src/srun/core-format.h"
 #include "src/common/env.h"
 
-#define MAX_THREADS	32
+#define MAX_THREADS	60
 #define MAX_USERNAME	9
 
 

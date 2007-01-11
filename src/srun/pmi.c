@@ -150,7 +150,7 @@ static void *_msg_thread(void *x)
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
 
-	timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 8;
+	timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10;
 	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		error("slurm_send_recv_rc_msg_only_one: %m");
 	} else if (rc != SLURM_SUCCESS) {
