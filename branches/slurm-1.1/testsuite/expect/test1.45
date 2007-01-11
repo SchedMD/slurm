@@ -78,7 +78,7 @@ expect {
 	}
 	-re "jobid ($number).0 submitted" {
 		set job_id_1 $expect_out(1,string)
-		send "$srun -b --jobid=$job_id_0 -o $file_out2 $bin_id \n"
+		send "$srun -b --jobid=$job_id_0 -o $file_out2 $file_in \n"
 		exp_continue
 	}
 	-re "jobid ($number).1 submitted" {
