@@ -1124,7 +1124,11 @@ int PMI_KVS_Commit( const char kvsname[] )
 	 * space. We do this by moving the local key-pairs to the 
 	 * head of the list and sending the count of local entries
 	 * rather than the full set. */
-	kvs_set.task_id       = pmi_rank;
+	kvs_set.host_cnt      = 1;
+	kvs_set.kvs_host_ptr  = malloc(sizeof(struct kvs_hosts));
+	kvs_set.kvs_host_ptr->task_id  = pmi_rank;
+	kvs_set.kvs_host_ptr->port     = 0;
+	kvs_set.kvs_host_ptr->hostname = NULL;
 	kvs_set.kvs_comm_recs = 0;
 	kvs_set.kvs_comm_ptr  = NULL;
 
@@ -1169,6 +1173,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	pthread_mutex_unlock(&kvs_mutex);
 
 	/* Free any temporary storage */
+	free(kvs_set.kvs_host_ptr);
 	for (i=0; i<kvs_set.kvs_comm_recs; i++)
 		free(kvs_set.kvs_comm_ptr[i]);
 	if (kvs_set.kvs_comm_ptr)

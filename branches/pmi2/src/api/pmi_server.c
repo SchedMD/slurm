@@ -172,6 +172,7 @@ static void *_agent(void *x)
 	/* send the messages */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	kvs_set.host_cnt = 0;
 	kvs_set.kvs_comm_recs = args->kvs_xmit_cnt;
 	kvs_set.kvs_comm_ptr  = args->kvs_xmit_ptr;
 	for (i=0; i<MSG_TRANSMITS; i++) {

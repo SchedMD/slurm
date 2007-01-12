@@ -249,6 +249,10 @@ void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	if (kvs_set_ptr == NULL)
 		return;
 
+	for (i=0; i<kvs_set_ptr->host_cnt; i++)
+		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
+	xfree(kvs_set_ptr->kvs_host_ptr);
+
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++)
 		_free_kvs_comm(kvs_set_ptr->kvs_comm_ptr[i]);
 	xfree(kvs_set_ptr->kvs_comm_ptr);
