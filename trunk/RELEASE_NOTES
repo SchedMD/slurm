@@ -123,9 +123,9 @@ OTHER CHANGES
   (i.e. bgl000[0-3] instead of bgl000.0.0)
 
 * For BlueGene Systems only: New scontrol options to down specific ionodes 
-  without having to create blocks there.
- (i.e. scontrol update subbp=bgl000[0-3] state=error) This will down the first
- 4 ionodes or on a bgl system the first nodecard in the base partition.
+  without having to create blocks there  (i.e. 
+  "scontrol update subbp=bgl000[0-3] state=error"). This will down the first 
+  four ionodes or on a BGL system the first nodecard in the base partition.
 
 * For BlueGene Systems only: sinfo will now display correct node count's for 
   blocks in an error state or blocks and small blocks that are allocated.
