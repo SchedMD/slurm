@@ -83,7 +83,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	step_req->node_list = xstrdup(step_params->node_list);
 	step_req->network = xstrdup(step_params->network);
 	step_req->name = xstrdup(step_params->name);
-	step_req->overcommit = step_params ? 1 : 0;
+	step_req->overcommit = step_params->overcommit ? 1 : 0;
 
 	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
