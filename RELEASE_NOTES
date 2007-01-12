@@ -13,11 +13,11 @@ NEW COMMANDS
 * Several new commands have been added to perform individual srun functions.
   The srun command will continue to exist, but these commands may offer 
   greater clarity and ease of use. The srun options --allocate, --attach, 
-  and --batch will eventially cease being supported. The new commands are 
+  and --batch will eventually cease being supported. The new commands are 
   salloc  - Create a job allocation (functions like "srun --allocate")
   sattach - Attach to an existing job step (functions like "srun --attach")
   sbatch  - Submit a batch job script (functions like "srun --batch")
-  See the indivual man pages for more information. 
+  See the individual man pages for more information. 
 
 * A new GUI is available for viewing and modifying state information, sview.
   Note that sview will only be built on systems which have libglade-2.0 and 
@@ -40,7 +40,7 @@ CONFIGURATION FILE CHANGES
   schedsetaffinity).
 
 * Removed defunct configuration parameter, ShedulerAuth. It has been rendered 
-  obsolute by the new wiki.conf file.
+  obsolete by the new wiki.conf file.
 
 * Several new configuration parameters can be used to specify architectural
   details of the nodes: Sockets, CoresPerSocket, and ThreadsPerCore.
@@ -48,7 +48,7 @@ CONFIGURATION FILE CHANGES
   specified in the configuration file.
 
 * For select/cons_res, an assortment of consumable resources can be supported 
-  including: CPUs, cores, socekts and/or memory. See new configuration 
+  including: CPUs, cores, sockets and/or memory. See new configuration 
   parameter SelectTypeParameters.
 
 * For BlueGene systems only: Alternate BlrtsImage, LinuxImage, MloaderImage,
@@ -78,9 +78,9 @@ OTHER CHANGES
 * Added new job field, "comment". Set by srun, salloc and sbatch. View
   with "scontrol show job". Used by sched/wiki2.
 
-* Added support for OS X operaing system.
+* Added support for OS X operating system.
 
-* A job step's actual run time is mantained with suspend/resume use.
+* A job step's actual run time is maintained with suspend/resume use.
 
 * Added support for Portable Linux Processor Affinity in the task/affinity 
   plugin (PLPA, see http://www.open-mpi.org/software/plpa).
@@ -127,7 +127,7 @@ OTHER CHANGES
   "scontrol update subbp=bgl000[0-3] state=error"). This will down the first 
   four ionodes or on a BGL system the first nodecard in the base partition.
 
-* For BlueGene Systems only: sinfo will now display correct node count's for 
+* For BlueGene Systems only: sinfo will now display correct node counts for 
   blocks in an error state or blocks and small blocks that are allocated.
   This results in some overlap of nodes displayed if you are running with
   Small blocks but the node counts will be correct for the states given. 
