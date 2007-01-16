@@ -240,6 +240,8 @@ static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
 
 	kvs_set_ptr->host_cnt = 0;
 	for (i=0; i<tmp_host_cnt; i++) {
+		if (kvs_set_ptr->kvs_host_ptr[i].port == 0)
+			continue;	/* empty */
 		slurm_msg_t_init(&msg_send);
 		msg_send.msg_type = PMI_KVS_GET_RESP;
 		msg_send.data = (void *) kvs_set_ptr;
