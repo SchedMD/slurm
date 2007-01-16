@@ -179,7 +179,7 @@ static void *_agent(void *x)
 			continue;	/* already sent message to host */
 		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * PMI_FANOUT);
 		host_cnt = 0;
-#if 1
+#if PMI_FANOUT
 		/* This code enables key-pair forwarding between 
 		 * tasks. First task on the node gets the key-pairs
 		 * with host/port information for all other tasks on
