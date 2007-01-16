@@ -275,8 +275,16 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 extern int task_layout(slurm_step_layout_t *step_layout)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
+	
+	/* if we have more hosts than tasks we will set num_hosts
+	 * to be num_tasks.
+	 */
+	if(step_layout->num_tasks < step_layout->num_hosts)
+		step_layout->num_hosts = step_layout->num_tasks;
+	
 	debug("laying out the %d tasks on %d hosts\n", 
 	      step_layout->num_tasks, step_layout->num_hosts);
+	
 	if (step_layout->cpus)	/* layout already completed */
 		return SLURM_SUCCESS;
 	
