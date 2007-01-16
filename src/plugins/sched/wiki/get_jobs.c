@@ -170,7 +170,7 @@ static char *   _dump_all_jobs(int *job_cnt, int state_info)
 
 static char *	_dump_job(struct job_record *job_ptr, int state_info)
 {
-	char tmp[512], *buf = NULL;
+	char tmp[16384], *buf = NULL;
 	uint32_t end_time, suspend_time;
 
 	if (!job_ptr)
@@ -191,6 +191,13 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	&&  (job_ptr->details->req_nodes[0])) {
 		char *hosts = bitmap2wiki_node_name(
 			job_ptr->details->req_node_bitmap);
+		snprintf(tmp, sizeof(tmp),
+			"HOSTLIST=%s;", hosts);
+		xstrcat(buf, tmp);
+		xfree(hosts);
+	} else if (!IS_JOB_FINISHED(job_ptr)) {
+		char *hosts = bitmap2wiki_node_name(
+			job_ptr->node_bitmap);
 		snprintf(tmp, sizeof(tmp),
 			"HOSTLIST=%s;", hosts);
 		xstrcat(buf, tmp);
