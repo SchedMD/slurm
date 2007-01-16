@@ -199,7 +199,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xfree(hosts);
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
 		char *hosts = bitmap2wiki_node_name(
-			job_ptr->node_bitmap)
+			job_ptr->node_bitmap);
 		snprintf(tmp, sizeof(tmp),
 			"HOSTLIST=%s;", hosts);
 		xstrcat(buf, tmp);
