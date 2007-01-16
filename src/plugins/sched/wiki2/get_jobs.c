@@ -172,7 +172,7 @@ static char *   _dump_all_jobs(int *job_cnt, int state_info)
 
 static char *	_dump_job(struct job_record *job_ptr, int state_info)
 {
-	char tmp[512], *buf = NULL;
+	char tmp[16384], *buf = NULL;
 	uint32_t end_time, suspend_time;
 
 	if (!job_ptr)
