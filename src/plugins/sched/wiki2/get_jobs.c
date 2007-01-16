@@ -197,6 +197,14 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 			"HOSTLIST=%s;", hosts);
 		xstrcat(buf, tmp);
 		xfree(hosts);
+	} else if ((job_ptr->job_state == JOB_RUNNING)
+	&&         (job_ptr->nodes) && (job_ptr->nodes[0])) {
+		char *hosts = bitmap2wiki_node_name(
+			job_ptr->nodes);
+		snprintf(tmp, sizeof(tmp),
+			"HOSTLIST=%s;", hosts);
+		xstrcat(buf, tmp);
+		xfree(hosts);
 	}
 
 	snprintf(tmp, sizeof(tmp), 
