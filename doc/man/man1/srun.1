@@ -516,6 +516,13 @@ by the slurm job manager.
 \fB\-\-contiguous\fR
 Demand a contiguous range of nodes. The default is "yes". Specify
 --contiguous=no if a contiguous range of nodes is not a constraint.
+
+.TP
+\fB\-\-exclusive\fR
+Dedicate whole nodes to the job rather than individual processors 
+even if consumable resources are enabled 
+(e.g. \fBSelectType=select/cons_res\fR).
+
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=\fIhost1,host2,...\fR or \fIfilename\fR
 Request a specific list of hosts. The job will contain \fIat least\fR
