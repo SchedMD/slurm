@@ -231,7 +231,7 @@ static void *_agent(void *x)
 		}
 	}
 
-	info("Sent KVS info to %d nodes, up to %d tasks per node",
+	verbose("Sent KVS info to %d nodes, up to %d tasks per node",
 		msg_sent, (max_forward+1));
 
 	/* wait for completion of all outgoing message */
