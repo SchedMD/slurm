@@ -199,6 +199,7 @@ documents those changes that are of interest to users and admins.
  - switch/elan: Fix for "Failed to initialise stats structure" from
    libelan when ELAN_STATKEY > MAX_INT.
  - Tune PMI support logic for better scalability and performance.
+ - Fix for running a task on each node of an allocation if not specified.
  - In sched/wiki2, set TASKLIST for running jobs.
 
 * Changes in SLURM 1.1.24

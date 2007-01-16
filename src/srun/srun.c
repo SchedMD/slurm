@@ -254,28 +254,34 @@ int srun(int ac, char **av)
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
 
+		/*
+                 * XXX: Kludgy fix to make sure job structure is created
+		 *  with the correct number of nodes. We reset opt.min_nodes
+		 *  here if it is not already set to simulate the
+		 *  user explicitly using -N or SLURM_NNODES. 
+		 *
+		 *  First we see if the user has already set the nodes.
+		 *  If not and the processes were set then we use
+		 *  that number as the min nodes if not then we use
+		 *  the number returned from the controller as the
+		 *  number of nodes to run on.  I am not sure there is
+		 *  any other way to set these var's correctly
+		 */
+
+		if (!opt.nodes_set) {
+			if(opt.nprocs_set)
+				opt.min_nodes = opt.nprocs;
+ 			else
+				opt.min_nodes = resp->node_cnt;
+			opt.nodes_set = true;
+		}
 		slurm_free_resource_allocation_response_msg(resp);
 		if (opt.allocate) {
 			error("job %u already has an allocation",
 			      job_id);
 			exit(1);
 		}
-		
-		/*
-                 * XXX: Kludgy fix to make sure job structure is created
-		 *  with the correct number of nodes. We reset opt.min_nodes
-		 *  here if it is not already set to simulate the
-		 *  user explicitly using -N or SLURM_NNODES.
-		 *
-		 *  This code needs to be redesigned so this isn't necessary.
-		 */
-		if (!opt.nodes_set) {
-			if (resp->node_cnt <= opt.nprocs)
-				opt.min_nodes = resp->node_cnt;
-                        else
-				opt.min_nodes = opt.nprocs;
-			opt.nodes_set = true;
-		}
+
 		job = job_step_create_allocation(job_id);
 
 		if(!job)
