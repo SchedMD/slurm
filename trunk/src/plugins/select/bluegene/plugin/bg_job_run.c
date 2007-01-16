@@ -321,6 +321,10 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		      num_block_freed, 
 		      num_block_to_free);
 	}
+	/* Zero out the values here because we are done with them and
+	   they will be ready for the next job */
+	num_block_to_free = 0;
+	num_block_freed = 0;
 	
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&job_start_mutex);
@@ -329,6 +333,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		return;
 	}
 	rc = 0;
+	slurm_mutex_lock(&block_state_mutex);
 	if(bg_update_ptr->blrtsimage 
 	   && strcasecmp(bg_update_ptr->blrtsimage, bg_record->blrtsimage)) {
 		debug3("changing BlrtsImage from %s to %s",
@@ -363,6 +368,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->ramdiskimage = xstrdup(bg_update_ptr->ramdiskimage);
 		rc = 1;
 	}
+	slurm_mutex_unlock(&block_state_mutex);
 
 	if(rc) {
 		slurm_mutex_lock(&block_state_mutex);
