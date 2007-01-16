@@ -326,14 +326,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	num_block_to_free = 0;
 	num_block_freed = 0;
 	
+	slurm_mutex_lock(&block_state_mutex);
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
+		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d already finished before boot",
 		      bg_update_ptr->job_id);
 		return;
 	}
+
 	rc = 0;
-	slurm_mutex_lock(&block_state_mutex);
 	if(bg_update_ptr->blrtsimage 
 	   && strcasecmp(bg_update_ptr->blrtsimage, bg_record->blrtsimage)) {
 		debug3("changing BlrtsImage from %s to %s",
