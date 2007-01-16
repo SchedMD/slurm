@@ -41,6 +41,7 @@
 #include "src/common/xmalloc.h"
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
+#define PMI_FANOUT      32	/* max fanout for PMI msg forwarding */
 
 /* Global variables */
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -176,7 +177,7 @@ static void *_agent(void *x)
 	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		if (args->barrier_xmit_ptr[i].port == 0)
 			continue;	/* already sent message to host */
-		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * 16);
+		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * PMI_FANOUT);
 		host_cnt = 0;
 #if 1
 		/* This code enables key-pair forwarding between 
@@ -196,7 +197,7 @@ static void *_agent(void *x)
 					args->barrier_xmit_ptr[j].hostname;
 			args->barrier_xmit_ptr[j].port = 0;/* don'tt reissue */
 			host_cnt++;
-			if (host_cnt >= 16)
+			if (host_cnt >= PMI_FANOUT)
 				break;
 		}
 #endif
