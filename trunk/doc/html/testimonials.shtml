@@ -67,6 +67,16 @@ Bryan O'Sullivan, Pathscale
 <HR SIZE=4>
 
 <i>
+"SLURM scales perfectly to the size of MareNostrum without noticeable
+performance degradation; the daemons running on the compute nodes are 
+light enough to not interfere with the applications' processes and the 
+status reports are accurate and concise, allowing us to spot possible 
+anomalies in a single sight." <br><br>
+Erest Artiaga, Barcelona Supercomputing Center
+</i>
+<HR SIZE=4>
+
+<i>
 "SLURM was a great help for us in implementing our own very concise 
 job management system on top of it which could be taylored precisely 
 to our needs, and which at the same time is very simple to use for 
@@ -92,6 +102,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 3 April 2006</p>
+<p style="text-align:center;">Last modified 17 January 2007</p>
 
 <!--#include virtual="footer.txt"-->
