@@ -190,12 +190,17 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 
 			/* restore job state */
 			job_ptr->priority = 0;
+			if (job_ptr->details) {
+				/* Details get cleared on job abort; happens
+				 * if the request is sufficiently messed up.
+				 * This happens when Moab tries to start a
+				 * a job on invalid nodes (wrong partition). */
+				xfree(job_ptr->details->req_nodes);
+				FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+			}
 			if (job_ptr->job_state == JOB_FAILED)
 				wait_string = "Invalid request, job aborted";
 			else if (job_ptr->details) {
-				xfree(job_ptr->details->req_nodes);
-				if (job_ptr->details->req_node_bitmap)
-					FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 				wait_reason = job_ptr->details->wait_reason;
 				wait_string = job_reason_string(wait_reason);
 				job_ptr->details->wait_reason = WAIT_HELD;
