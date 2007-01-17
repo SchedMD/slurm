@@ -101,7 +101,7 @@ exec $bin_chmod 700 $file_prog
 #
 global env
 set env(SLURM_CPU_BIND) "verbose"
-set srun_pid [spawn $srun --allocate -N1 --verbose -t2]
+set srun_pid [spawn $srun --allocate -N1 --exclusive --verbose -t2]
 
 #############################################################################
 #
