@@ -42,17 +42,29 @@ print_header $test_id
 # Create an allocation
 #
 set srun_pid [spawn $srun --allocate -N2 --verbose -t2]
+expect {
+	-re "More ($alpha) requested than permitted" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exit 0
+	}
+	-re $prompt {
+		send "$srun -l -c1 $file_bash | sort -n\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+}
 
 #############################################################################
 #
 # Run a job step to get allocated processor count
 #
-expect -re $prompt
 set mask 0
 set task_cnt 0
 set prev_node -1
 set node_cnt 0
-send "$srun -l -c1 $file_bash | sort -n\n"
 expect {
 	-re "nodeid:($number) taskid:($number)" {
 		set this_node $expect_out(1,string)
