@@ -8,6 +8,12 @@ documents those changes that are of interest to users and admins.
     allocated nodes in a partition.
  -- BLUEGENE - Added state save on slurmctld shutdown of blocks in an error 
     state on real systems and total block config on emulation systems.
+ -- Major update to Slurm's PMI internal logic for better scalability.
+    Communications now supported directly between appliciation tasks via 
+    Slurm's PMI library. Srun sends single message to one task on each node
+    and that forwards key-pairs to other tasks on that nodes. Old code send
+    key-pairs directly to each task. 
+    NOTE: PMI applications must re-link with this new library.
 
 * Changes in SLURM 1.2.0-pre11
 ==============================

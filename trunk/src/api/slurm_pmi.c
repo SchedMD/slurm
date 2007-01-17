@@ -55,6 +55,9 @@ int pmi_fd = -1;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
 
+static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
+static int _get_addr(void);
+
 static int _get_addr(void)
 {
 	char *env_host, *env_port;
@@ -201,7 +204,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		return errno;
 	}
 
-	while ((rc = slurm_receive_msg(srun_fd, &msg_rcv, 0)) != 0) {
+	while ((rc = slurm_receive_msg(srun_fd, &msg_rcv, timeout)) != 0) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
@@ -221,7 +224,41 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	
 	slurm_close_accepted_conn(srun_fd);
 	*kvs_set_ptr = msg_rcv.data;
-	return SLURM_SUCCESS;
+
+	rc = _forward_comm_set(*kvs_set_ptr);
+	return rc;
+}
+
+/* Forward keypair info to other tasks as required.
+* Clear message forward structure upon completion. */
+static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
+{
+	int i, rc = SLURM_SUCCESS;
+	int tmp_host_cnt = kvs_set_ptr->host_cnt;
+	slurm_msg_t msg_send;
+	int msg_rc;
+
+	kvs_set_ptr->host_cnt = 0;
+	for (i=0; i<tmp_host_cnt; i++) {
+		if (kvs_set_ptr->kvs_host_ptr[i].port == 0)
+			continue;	/* empty */
+		slurm_msg_t_init(&msg_send);
+		msg_send.msg_type = PMI_KVS_GET_RESP;
+		msg_send.data = (void *) kvs_set_ptr;
+		slurm_set_addr(&msg_send.address,
+			kvs_set_ptr->kvs_host_ptr[i].port,
+			kvs_set_ptr->kvs_host_ptr[i].hostname);
+		if (slurm_send_recv_rc_msg_only_one(&msg_send,
+				&msg_rc, 0) < 0) {
+			error("Could not forward msg to %s",
+				kvs_set_ptr->kvs_host_ptr[i].hostname);
+			msg_rc = 1;
+		}
+		rc = MAX(rc, msg_rc);
+		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
+	}
+	xfree(kvs_set_ptr->kvs_host_ptr);
+	return rc;
 }
 
 static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
@@ -248,6 +285,10 @@ void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 
 	if (kvs_set_ptr == NULL)
 		return;
+
+	for (i=0; i<kvs_set_ptr->host_cnt; i++)
+		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
+	xfree(kvs_set_ptr->kvs_host_ptr);
 
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++)
 		_free_kvs_comm(kvs_set_ptr->kvs_comm_ptr[i]);

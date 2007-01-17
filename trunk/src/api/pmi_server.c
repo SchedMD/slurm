@@ -41,7 +41,7 @@
 #include "src/common/xmalloc.h"
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
-#define MSG_TRANSMITS    2	/* transmit KVS messages this number times */
+#define PMI_FANOUT      32	/* max fanout for PMI msg forwarding */
 
 /* Global variables */
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -152,8 +152,6 @@ static void *_msg_thread(void *x)
 
 	slurm_mutex_lock(&agent_mutex);
 	agent_cnt--;
-	if (success)
-		msg_arg_ptr->bar_ptr->port = 0;
 	slurm_mutex_unlock(&agent_mutex);
 	pthread_cond_signal(&agent_cond);
 	xfree(x);
@@ -163,50 +161,90 @@ static void *_msg_thread(void *x)
 static void *_agent(void *x)
 {
 	struct agent_arg *args = (struct agent_arg *) x;
-	struct kvs_comm_set kvs_set;
+	struct kvs_comm_set *kvs_set;
 	struct msg_arg *msg_args;
-	int i, j;
+	struct kvs_hosts *kvs_host_list;
+	int i, j, kvs_set_cnt = 0, host_cnt;
+	int msg_sent = 0, max_forward = 0;
 	pthread_t msg_id;
 	pthread_attr_t attr;
 
-	/* send the messages */
+	/* only send one message to each host, 
+	 * build table of the ports on each host */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	kvs_set.kvs_comm_recs = args->kvs_xmit_cnt;
-	kvs_set.kvs_comm_ptr  = args->kvs_xmit_ptr;
-	for (i=0; i<MSG_TRANSMITS; i++) {
-		for (j=0; j<args->barrier_xmit_cnt; j++) {
+	kvs_set = xmalloc(sizeof(struct kvs_comm_set) * args->barrier_xmit_cnt);
+	for (i=0; i<args->barrier_xmit_cnt; i++) {
+		if (args->barrier_xmit_ptr[i].port == 0)
+			continue;	/* already sent message to host */
+		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * PMI_FANOUT);
+		host_cnt = 0;
+#if PMI_FANOUT
+		/* This code enables key-pair forwarding between 
+		 * tasks. First task on the node gets the key-pairs
+		 * with host/port information for all other tasks on
+		 * that node it should forward the information to. */
+		for (j=(i+1); j<args->barrier_xmit_cnt; j++) {
 			if (args->barrier_xmit_ptr[j].port == 0)
-				continue;
-			slurm_mutex_lock(&agent_mutex);
-			while (agent_cnt >= agent_max_cnt)
-				pthread_cond_wait(&agent_cond, &agent_mutex);
-			agent_cnt++;
-			slurm_mutex_unlock(&agent_mutex);
-
-			msg_args = xmalloc(sizeof(struct msg_arg));
-			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
-			msg_args->kvs_ptr = &kvs_set;
-			if (agent_max_cnt == 1) {
-				/* TotalView slows down a great deal for
-				 * pthread_create() calls, so just send the
-				 * messages inline when TotalView is in use
-				 * or for some other reason we only want 
-				 * one pthread. */
-				_msg_thread((void *) msg_args);
-			} else if (pthread_create(&msg_id, &attr, _msg_thread,
-					(void *) msg_args)) {
-				fatal("pthread_create: %m");
-			}
+				continue;	/* already sent message */
+			if (strcmp(args->barrier_xmit_ptr[i].hostname,
+				   args->barrier_xmit_ptr[j].hostname))
+				continue;	/* another host */
+			kvs_host_list[host_cnt].task_id = 0; /* not avail */
+			kvs_host_list[host_cnt].port = 
+					args->barrier_xmit_ptr[j].port;
+			kvs_host_list[host_cnt].hostname = 
+					args->barrier_xmit_ptr[j].hostname;
+			args->barrier_xmit_ptr[j].port = 0;/* don't reissue */
+			host_cnt++;
+			if (host_cnt >= PMI_FANOUT)
+				break;
 		}
+#endif
+		msg_sent++;
+		max_forward = MAX(host_cnt, max_forward);
+
 		slurm_mutex_lock(&agent_mutex);
-		while (agent_cnt > 0)
+		while (agent_cnt >= agent_max_cnt)
 			pthread_cond_wait(&agent_cond, &agent_mutex);
+		agent_cnt++;
 		slurm_mutex_unlock(&agent_mutex);
+
+		msg_args = xmalloc(sizeof(struct msg_arg));
+		msg_args->bar_ptr = &args->barrier_xmit_ptr[i];
+		msg_args->kvs_ptr = &kvs_set[kvs_set_cnt];
+		kvs_set[kvs_set_cnt].host_cnt      = host_cnt;
+		kvs_set[kvs_set_cnt].kvs_host_ptr  = kvs_host_list;
+		kvs_set[kvs_set_cnt].kvs_comm_recs = args->kvs_xmit_cnt;
+		kvs_set[kvs_set_cnt].kvs_comm_ptr  = args->kvs_xmit_ptr;
+		kvs_set_cnt++;
+		if (agent_max_cnt == 1) {
+			/* TotalView slows down a great deal for
+			 * pthread_create() calls, so just send the
+			 * messages inline when TotalView is in use
+			 * or for some other reason we only want
+			 * one pthread. */
+			_msg_thread((void *) msg_args);
+		} else if (pthread_create(&msg_id, &attr, _msg_thread,
+				(void *) msg_args)) {
+			fatal("pthread_create: %m");
+		}
 	}
+
+	verbose("Sent KVS info to %d nodes, up to %d tasks per node",
+		msg_sent, (max_forward+1));
+
+	/* wait for completion of all outgoing message */
+	slurm_mutex_lock(&agent_mutex);
+	while (agent_cnt > 0)
+		pthread_cond_wait(&agent_cond, &agent_mutex);
+	slurm_mutex_unlock(&agent_mutex);
 	slurm_attr_destroy(&attr);
 
 	/* Release allocated memory */
+	for (i=0; i<kvs_set_cnt; i++)
+		xfree(kvs_set[i].kvs_host_ptr);
+	xfree(kvs_set);
 	for (i=0; i<args->barrier_xmit_cnt; i++)
 		xfree(args->barrier_xmit_ptr[i].hostname);
 	xfree(args->barrier_xmit_ptr);
