@@ -66,7 +66,7 @@ set host_2      ""
 set host_3      ""
 set job_id      0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -l $bin_hostname]  
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -l $bin_printenv SLURMD_NODENAME]  
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -152,7 +152,7 @@ set host_1      ""
 set host_2      ""
 set job_id      0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N$node_cnt -t1 --nodelist=$all_nodes $slaunch -N2 --relative=1 -l $bin_hostname]  
+set salloc_pid [spawn $salloc -N$node_cnt -t1 --nodelist=$all_nodes $slaunch -N2 --relative=1 -l $bin_printenv SLURMD_NODENAME]  
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -224,7 +224,7 @@ set host_0      ""
 set host_1      ""
 set job_id      0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N$node_cnt --nodelist=$all_nodes -t1  $slaunch -N1 --nodelist-byname=$include_node -l $bin_hostname]
+set salloc_pid [spawn $salloc -N$node_cnt --nodelist=$all_nodes -t1  $slaunch -N1 --nodelist-byname=$include_node -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -279,7 +279,7 @@ set host_0      ""
 set host_1      ""
 set job_id      0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N$node_cnt --nodelist=$all_nodes -t1  $slaunch -N1 --nodelist-byid=2 -l $bin_hostname]  
+set salloc_pid [spawn $salloc -N$node_cnt --nodelist=$all_nodes -t1  $slaunch -N1 --nodelist-byid=2 -l $bin_printenv SLURMD_NODENAME]  
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
