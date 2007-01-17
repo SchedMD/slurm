@@ -24,34 +24,34 @@ This guide will be upgrade at that time.</p>
 
 <h3>Maui configuration</h3>
 <p>Make sure that SLURM is installed and running before building Maui.
-Then build Maui from its source distribution. This is a two step process:
+Then build Maui from its source distribution. This is a two step process:</p>
 <ol>
 <li>./configure --with-key=42 --with-wiki
 <li>gmake
 </ol>
-The key of 42 is arbitrary. You can use any value, but will need to 
+<p>The key of 42 is arbitrary. You can use any value, but will need to 
 specify the same value as a SLURM configuration parameter.</p>
 
 <p>Update the Maui configuration file <i>maui.conf</i> (Copy the file
 maui-3.2.6p9/maui.cfg.dist to maui.conf). Add the following configuration 
-paramters to maui.conf:
+paramters to maui.conf:</p>
 <pre>
 RMCFG[host]       TYPE=WIKI
 RMPORT            7321            # or whatever you choose as a port
 RMHOST            host
 RMAUTHTYPE[host]  NONE
 </pre>
-<i>host</i> is the hostname where the SLURM controller is running. 
+<p><i>host</i> is the hostname where the SLURM controller is running. 
 This must match the value of <i>ControlMachine</i> configured in 
 slurm.conf. Note that <i>localhost</i> doesn't work. If you run Maui
 and SLURM on the same machine, you must specify the actual host name. 
 The above example uses a TCP port number of 7321 for 
 communications between SLURM and Maui, but you can pick any port that 
-is available and accessible. You can also set a polling interval with
+is available and accessible. You can also set a polling interval with</p>
 <pre>
 RMPOLLINTERVAL  00:00:20
 </pre>
-It may be desired to have Maui poll SLURM quite often -- 
+<p>It may be desired to have Maui poll SLURM quite often -- 
 in this case every 20 seconds.
 Note that a job submitted to an idle cluster will not be initiated until
 the Maui daemon polls SLURM and decides to make it run, so the value of
@@ -62,11 +62,11 @@ executing Maui daemons too frequently.</p>
 <p>In order for Maui to be able to access your SLURM partition, you will 
 need to define in maui.conf a partition with the same name as the SLURM 
 partition(s). For example if nodes "linux[0-3]" are in SLURM partition 
-"PartA", slurm.conf includes a line of this sort:
+"PartA", slurm.conf includes a line of this sort:</p>
 <pre>
 PartitionName=PartA Default=yes Nodes=linux[0-3]
 </pre>
-The add the corresponding lines to maui.cfg:
+<p>The add the corresponding lines to maui.cfg:</p>
 <pre>
 PARTITIONMODE ON
 NODECFG[linux0]   PARTITION=PartA
@@ -84,13 +84,13 @@ setenv MAUIHOMEDIR /root/MAUI/maui-3.2.6p9
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>SLURM configuration</h3>
-<p>Set the slurm.conf scheduler parameters as follows:
+<p>Set the slurm.conf scheduler parameters as follows:</p>
 <pre>
 SchedulerType=sched/wiki
 SchedulerPort=7321
 SchedulerAuth=42 (for Slurm version 1.1 and earlier only)
 </pre>
-In this case, "SchedulerAuth" has been set to 42, which was the key 
+<p>In this case, "SchedulerAuth" has been set to 42, which was the key 
 specified when Maui was configured above. Just make sure the numbers match.  
 The Maui folks have assured us that the key won't always be a compiled-in 
 feature.</p>
@@ -115,7 +115,7 @@ Note that SLURM's wiki plugin does not include a mechanism
 to submit new jobs, so even without this key nobody could
 run jobs as another user.</p>
 
-<p>Here is a sample <i>wiki.conf</i> file
+<p>Here is a sample <i>wiki.conf</i> file</p>
 <pre>
 # wiki.conf
 # SLURM's wiki plugin configuration file
