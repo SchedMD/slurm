@@ -159,6 +159,8 @@ test1.87   Confirm node selection from within a job step on existing allocation
 test1.88   Basic MPI functionality tests via srun.
 test1.89   Test of CPU affinity support.
 test1.90   Test of memory affinity support for NUMA systems.
+test1.91   Test of CPU affinity for multi-core systems.
+test1.92   Test of task distribution support on multi-core systems.
 **NOTE**   The above tests for mutliple processor/partition systems only
 
 test2.#    Testing of scontrol options (to be run as unprivileged user). 
