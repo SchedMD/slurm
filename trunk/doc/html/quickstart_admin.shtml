@@ -26,7 +26,7 @@ starting SLURM daemons.</li>
 <li>Create OpenSSL keys:<br>
 <i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
 <i>openssl rsa -in  &lt;sysconfdir&gt/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i><br>
-Note that you will build the OpenSSL key files on one node and distribute them
+NOTE: You will build the OpenSSL key files on one node and distribute them
 to all of the nodes in the cluster.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
