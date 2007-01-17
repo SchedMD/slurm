@@ -299,10 +299,15 @@ static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer);
 
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
+static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer);
+static int  _unpack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer);
+
 static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer);
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer);
+
 static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer);
 static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer);
+
 static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer);
 static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer);
 
@@ -3888,6 +3893,26 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer)
+{
+	pack16(msg_ptr->task_id, buffer);
+	pack16(msg_ptr->port, buffer);
+	packstr(msg_ptr->hostname, buffer);
+}
+
+static int _unpack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	
+	safe_unpack16(&msg_ptr->task_id, buffer);
+	safe_unpack16(&msg_ptr->port, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->hostname, &uint16_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
 static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer)
 {
 	int i;
@@ -3928,8 +3953,11 @@ static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer)
 	int i;
 	xassert(msg_ptr != NULL);
 
-	pack16((uint16_t)msg_ptr->task_id, buffer);
-	pack16((uint16_t)msg_ptr->kvs_comm_recs, buffer);
+	pack16(msg_ptr->host_cnt, buffer);
+	for (i=0; i<msg_ptr->host_cnt; i++)
+		_pack_kvs_host_rec(&msg_ptr->kvs_host_ptr[i], buffer);
+
+	pack16(msg_ptr->kvs_comm_recs, buffer);
 	for (i=0; i<msg_ptr->kvs_comm_recs; i++) 
 		_pack_kvs_rec(msg_ptr->kvs_comm_ptr[i], buffer);
 }
@@ -3941,7 +3969,15 @@ static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer)
 
 	msg = xmalloc(sizeof(struct kvs_comm_set));
 	*msg_ptr = msg;
-	safe_unpack16(&msg->task_id, buffer);
+
+	safe_unpack16(&msg->host_cnt, buffer);
+	msg->kvs_host_ptr = xmalloc(sizeof(struct kvs_hosts) *
+			msg->host_cnt);
+	for (i=0; i<msg->host_cnt; i++) {
+		if (_unpack_kvs_host_rec(&msg->kvs_host_ptr[i], buffer))
+			goto unpack_error;
+	}
+
 	safe_unpack16(&msg->kvs_comm_recs, buffer);
 	msg->kvs_comm_ptr = xmalloc(sizeof(struct kvs_comm) * 
 				    msg->kvs_comm_recs);
@@ -3952,12 +3988,17 @@ static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	for (i=0; i<msg->host_cnt; i++)
+		xfree(msg->kvs_host_ptr[i].hostname);
+	xfree(msg->kvs_host_ptr);
 	for (i=0; i<msg->kvs_comm_recs; i++) {
 		xfree(msg->kvs_comm_ptr[i]->kvs_name);
 		for (j=0; j<msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
 			xfree(msg->kvs_comm_ptr[i]->kvs_keys[j]);
 			xfree(msg->kvs_comm_ptr[i]->kvs_values[j]);
 		}
+		xfree(msg->kvs_comm_ptr[i]->kvs_keys);
+		xfree(msg->kvs_comm_ptr[i]->kvs_values);
 	}
 	xfree(msg->kvs_comm_ptr);
 	xfree(msg);
