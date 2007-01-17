@@ -9,11 +9,13 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added state save on slurmctld shutdown of blocks in an error 
     state on real systems and total block config on emulation systems.
  -- Major update to Slurm's PMI internal logic for better scalability.
-    Communications now supported directly between appliciation tasks via 
+    Communications now supported directly between application tasks via 
     Slurm's PMI library. Srun sends single message to one task on each node
-    and that forwards key-pairs to other tasks on that nodes. Old code send
-    key-pairs directly to each task. 
+    and that tasks forwards key-pairs to other tasks on that nodes. The old 
+    code sent key-pairs directly to each task. 
     NOTE: PMI applications must re-link with this new library.
+ -- For multi-core support: Fix task distribution bug and add automated 
+    tests, patch.1.2.0-pre11.070111.plane from Dan Palermo (HP).
 
 * Changes in SLURM 1.2.0-pre11
 ==============================
