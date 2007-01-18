@@ -729,6 +729,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_group_time;
 	static time_t last_ping_node_time;
 	static time_t last_ping_srun_time;
+	static time_t last_purge_job_time;
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	time_t now;
@@ -755,6 +756,7 @@ static void *_slurmctld_background(void *no_data)
 	/* Let the dust settle before doing work */
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
+	last_purge_job_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	if (slurmctld_conf.slurmd_timeout) {
 		/* We ping nodes that haven't responded in SlurmdTimeout/2,
@@ -830,12 +832,16 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(part_write_lock);
 		}
 
-		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
-			last_sched_time = now;
+		if (difftime(now, last_purge_job_time) >= PURGE_JOB_INTERVAL) {
+			last_purge_job_time = now;
 			debug2("Performing purge of old job records");
 			lock_slurmctld(job_write_lock);
-			purge_old_job();	/* remove defunct job recs */
+			purge_old_job();
 			unlock_slurmctld(job_write_lock);
+		}
+
+		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
+			last_sched_time = now;
 			if (schedule())
 				last_checkpoint_time = 0;  /* force state save */
 		}

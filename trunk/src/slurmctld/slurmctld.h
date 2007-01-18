@@ -108,6 +108,10 @@
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
 
+/* Attempt to purge defunct job records and resend job kill requests
+ * every PURGE_JOB_INTERVAL seconds */
+#define PURGE_JOB_INTERVAL 300
+
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
 
