@@ -110,7 +110,7 @@
 
 /* Attempt to purge defunct job records and resend job kill requests
  * every PURGE_JOB_INTERVAL seconds */
-#define PURGE_JOB_INTERVAL 300
+#define PURGE_JOB_INTERVAL 60
 
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
