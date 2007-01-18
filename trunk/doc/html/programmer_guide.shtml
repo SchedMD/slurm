@@ -85,11 +85,10 @@ design documents (many of which are dated) can be found in <b>doc/slides</b> and
 The details of each directory's contents are proved below. The directories are 
 as follows: </p>
 
-<p style="margin-left:.2in"><b>api</b>&#151;Application Program Interfaces into 
+<p style="margin-left:.2in">
+<b>api</b>&#151;Application Program Interfaces into 
 the SLURM code. Used to send and get SLURM information from the central manager. 
 These are the functions user applications might utilize.<br>
-<b>api</b>&#151;Application Programming Interfaces for SLURM commands and 
-user application use.<br>
 <b>common</b>&#151;General purpose functions for widespread use throughout 
 SLURM.<br>
 <b>plugins</b>&#151;Plugin functions for various infrastructure. A separate 
@@ -108,6 +107,7 @@ and restart of user jobs,<br>
 functions,<br>
 <li><b>task</b> for task affinity to processors.<br>
 </ul>
+<p style="margin-left:.2in">
 <b>salloc</b>&#151;User command to allocate resources for a job.<br>
 <b>sattach</b>&#151;User command to attach standard input, output and error 
 files to a running job or job step.<br>
@@ -125,7 +125,7 @@ This is particularly valuable on systems like Blue Gene, which has a three
 dimension torus topography.<br>
 <b>squeue</b>&#151;User command to get information on SLURM jobs and job steps.<br>
 <b>srun</b>&#151;User command to submit a job, get an allocation, and/or 
-initiation a parallel job step.</p>
+initiation a parallel job step.<br>
 <b>sview</b>&#151;User command to view and update node, partition, and job 
 job state information.<br>
 
