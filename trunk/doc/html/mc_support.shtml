@@ -294,10 +294,10 @@ to -m block:cyclic with --cpu_bind=thread.</p>
 <a name="srun_constraints">
 <h3>New Constraints</h3></a>
 
-To compliment the existing SLURM job minimum constraints
+<p>To compliment the existing SLURM job minimum constraints
 (CPUs, memory, temp disk),
 constraint flags have also been added to allow a user to 
-specify a minimum number of sockets, cores, or threads:
+specify a minimum number of sockets, cores, or threads:</p>
 
 <PRE>
 --mincpus=<i>n</i>             minimum number of logical cpus per node
@@ -308,18 +308,18 @@ specify a minimum number of sockets, cores, or threads:
 --tmp=<i>MB</i>                minimum amount of temporary disk
 </PRE>
 
-These constraints are separate from the -N or -B allocation minimums.
+<p>These constraints are separate from the -N or -B allocation minimums.
 Using these constraints allows the user to exclude smaller nodes from
-the allocation request.
+the allocation request.</p>
 
 <p>See also 'srun --help' and 'man srun'</p>
 
 <a name="srun_consres">
 <h3>Memory as a Consumable Resource</h3></a>
 
-The --job-mem flag specifies the maximum amount of memory in MB
+<p>The --job-mem flag specifies the maximum amount of memory in MB
 needed by the job per node.  This flag is used to support the memory
-as a consumable resource allocation strategy.
+as a consumable resource allocation strategy.</p>
 
 <PRE>
 --job-mem=<i>MB</i>            maximum amount of real memory per node
@@ -327,9 +327,9 @@ as a consumable resource allocation strategy.
                         --mem >= --job-mem if --mem is specified.
 </PRE>
 
-This flag allows the scheduler to co-allocate jobs on specific nodes
+<p>This flag allows the scheduler to co-allocate jobs on specific nodes
 given that their added memory requirement do not exceed the amount
-of memory on the nodes.
+of memory on the nodes.</p>
 
 
 <p>In order to use memory as a consumable resource, the select/cons_res
@@ -353,7 +353,7 @@ via <a href="configurator.html">configurator.html</a>.
 <a name="srun_ntasks">
 <h3>Task invocation as a function of logical processors</h3></a>
 
-The <tt>--ntasks-per-{node,socket,core}=<i>ntasks</i></tt> flags
+<p>The <tt>--ntasks-per-{node,socket,core}=<i>ntasks</i></tt> flags
 allow the user to request that no more than <tt><i>ntasks</i></tt>
 be invoked on each node, socket, or core.
 This is similiar to using <tt>--cpus-per-task=<i>ncpus</i></tt>
@@ -366,7 +366,7 @@ assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre-existing
 allocation as one step in a larger job script.
-This can now be specified via the following flags:
+This can now be specified via the following flags:</p>
 
 <PRE>
 --ntasks-per-node=<i>n</i>     number of tasks to invoke on each node
@@ -374,9 +374,9 @@ This can now be specified via the following flags:
 --ntasks-per-core=<i>n</i>     number of tasks to invoke on each core
 </PRE>
 
-For example, given a cluster with nodes containing two sockets,
+<p>For example, given a cluster with nodes containing two sockets,
 each containing two cores, the following commands illustrate the
-behavior of these flags:
+behavior of these flags:</p>
 <pre>
 % srun -n 4 hostname
 hydra12
@@ -410,7 +410,7 @@ hydra12
 <a name="srun_hints">
 <h3>Application hints</h3></a>
 
-Different applications will have various levels of resource
+<p>Different applications will have various levels of resource
 requirements. Some applications tend to be computationally intensive
 but require little to no inter-process communication. Some applications
 will be memory bound, saturating the memory bandwidth of a processor
@@ -418,16 +418,16 @@ before exhausting the computational capabilities. Other applications
 will be highly communication intensive causing processes to block
 awaiting messages from other processes. Applications with these
 different properties tend to run well on a multi-core system given
-the right mappings.
+the right mappings.</p>
 
-For computationally intensive applications, all cores in a multi-core
+<p>For computationally intensive applications, all cores in a multi-core
 system would normally be used. For memory bound applications, only
 using a single core on each CPU will result in the highest per
 core memory bandwidth. For communication intensive applications,
 using in-core multi-threading (e.g. hyperthreading, SMT, or TMT)
 may also improve performance.
 The following command line flags can be used to communicate these
-types of application hints to the SLURM multi-core support:
+types of application hints to the SLURM multi-core support:</p>
 
 <PRE>
 --hint=             Bind tasks according to application hints
@@ -437,10 +437,10 @@ types of application hints to the SLURM multi-core support:
     help            show this help message
 </PRE>
 
-For example, given a cluster with nodes containing two sockets,
+<p>For example, given a cluster with nodes containing two sockets,
 each containing two cores, the following commands illustrate the
 behavior of these flags.  In the verbose --cpu_bind output, tasks
-are described as 'hostname, task Global_ID Local_ID [PID]':
+are described as 'hostname, task Global_ID Local_ID [PID]':</p>
 <pre>
 % srun -n 4 --hint=compute_bound --cpu_bind=verbose sleep 1
 cpu_bind=MASK - hydra12, task  0  0 [15425]: mask 0x1 set
@@ -716,8 +716,8 @@ trivial and that it assumes that users are experts.</p>
 <a name=utilities>
 <h2>Extensions to sinfo/squeue/scontrol</h2></a>
 
-Several extensions have also been made to the other SLURM utilities to
-make working with multi-core/multi-threaded systems easier.
+<p>Several extensions have also been made to the other SLURM utilities to
+make working with multi-core/multi-threaded systems easier.</p>
 
 <!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --> 
 <h3>sinfo</h3>
@@ -744,8 +744,8 @@ hydra[12-14]     3    parts*        idle    8    2:4:1   2007    41447      1   
 hydra15          1    parts*        idle   64    8:4:2   2007    41447      1   (null) none
 </PRE>
 
-For user specified output formats (-o/--format) and sorting (-S/--sort),
-the following identifiers are available:
+<p>For user specified output formats (-o/--format) and sorting (-S/--sort),
+the following identifiers are available:</p>
 
 <PRE>
 %X  Number of sockets per node
@@ -755,7 +755,7 @@ the following identifiers are available:
     sockets, core, threads (S:C:T) per node
 </PRE>
 
-For example:
+<p>For example:</p>
 
 <PRE>
 % sinfo -o '%9P %4c %8z %8X %8Y %8Z'
@@ -768,8 +768,8 @@ parts*    4    2:2:1    2        2        1
 <!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --> 
 <h3>squeue</h3>
 
-For user specified output formats (-o/--format) and sorting (-S/--sort),
-the following identifiers are available:
+<p>For user specified output formats (-o/--format) and sorting (-S/--sort),
+the following identifiers are available:</p>
 
 <PRE>
 %H  Minimum number of sockets per node requested by the job.
@@ -786,7 +786,7 @@ the following identifiers are available:
     sockets, cores, threads (S:C:T) per node
 </PRE>
 
-Below is an example squeue output after running 7 copies of:
+<p>Below is an example squeue output after running 7 copies of:</p>
 
 <UL>
 <UL>
@@ -876,7 +876,7 @@ Constraints:
    MinThreads=&lt;count&gt;   Set the job's minimum number of threads per core
 </PRE>
 
-For example:
+<p>For example:</p>
 
 <PRE>
 # scontrol update JobID=18 MinThreads=2
@@ -938,7 +938,7 @@ task/affinity plugin must be first enabled in slurm.conf:
 TaskPlugin=task/affinity          # enable task affinity   
 </PRE>
 
-This setting is part of the task launch specific parameters:
+<p>This setting is part of the task launch specific parameters:</p>
 
 <PRE>
 # o Define task launch specific parameters

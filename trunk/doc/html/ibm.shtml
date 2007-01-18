@@ -58,7 +58,7 @@ use the command: <br>
 
 <h2>System Administration</h2>
 
-<p>Three unique components are required to use SLURM on an IBM system.
+<p>Three unique components are required to use SLURM on an IBM system.</p>
 <ol>
 <li>The Federation switch plugin is required.  
 This component is packaged with the SLURM distrbution.</li>
@@ -79,7 +79,7 @@ not at this time available for distribution.
 Interested parties are welcome to pursue the possible distribution 
 of this library with IBM and SLURM developers.</li>
 </ol>
-Until this last issue is resolved, use of SLURM on an IBM AIX system 
+<p>Until this last issue is resolved, use of SLURM on an IBM AIX system 
 should not be viewed as a supported configuration (at least outside 
 of LLNL, which established a contract with IBM for this purpose).</p>
 

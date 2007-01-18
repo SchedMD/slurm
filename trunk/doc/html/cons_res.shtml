@@ -180,7 +180,7 @@ SelectType=select/cons_res
 
 <h2>Limitation and future work</h2> 
 
-We are aware of several limitations with the current consumable
+<p>We are aware of several limitations with the current consumable
 resource plug-in and plan to make enhancement the plug-in as we get
 time as well as request from users to help us prioritize the features.
 
@@ -252,7 +252,7 @@ NODELIST     NODES PARTITION  STATE  CPUS  S:C:T MEMORY
 hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007 
 </pre>
 
-Using select/cons_res plug-in with CR_Memory
+<p>Using select/cons_res plug-in with CR_Memory</p>
 <pre>
 Example:
 srun -N 5 -n 20 --job-mem=1000 sleep 100 &  <-- running
@@ -266,7 +266,7 @@ squeue
    1819  allNodes    sleep   sballe   R       0:11      5 hydra[12-16]
 </pre>
 
-Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)
+<p>Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)</p>
 <pre>
 Example 1:
 srun -N 5 -n 5 --job-mem=1000 sleep 100 &        <-- running
@@ -287,7 +287,7 @@ squeue
    1830  allNodes    sleep   sballe   R       0:07      5 hydra[12-16]
 </pre>
 
-Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)
+<p>Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)</p>
 <pre>
 Example 1:
 srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- running 

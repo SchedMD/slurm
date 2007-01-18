@@ -185,7 +185,7 @@ $ srun -n4 -A	# allocates four processors and spawns shell for job
 &gt; mpirun -np 4 a.out
 &gt; exit          # exits shell spawned by initial srun command
 </pre>
-Note that any direct use of <span class="commandline">srun</span>
+<p>Note that any direct use of <span class="commandline">srun</span>
 will only launch one task per node when the LAM/MPI plugin is used.
 To launch more than one task per node usng the
 <span class="commandline">srun</span> command, the <i>--mpi=none</i>
@@ -220,7 +220,7 @@ etc.
 &gt; lamhalt
 &gt; exit             # exits shell spawned by initial srun command
 </pre>
-Note that any direct use of <span class="commandline">srun</span> 
+<p>Note that any direct use of <span class="commandline">srun</span> 
 will only launch one task per node when the LAM/MPI plugin is configured
 as the default plugin.  To launch more than one task per node usng the 
 <span class="commandline">srun</span> command, the <i>--mpi=none</i>
