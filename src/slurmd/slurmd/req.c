@@ -870,6 +870,7 @@ _abort_job(uint32_t job_id)
 	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
 	slurm_msg_t_init(&resp_msg);
+	int rc;		/* Note: we are ignoring return code */
 
 	resp.job_id       = job_id;
 	resp.job_rc       = 1;
@@ -877,7 +878,7 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
-	return slurm_send_only_controller_msg(&resp_msg);
+	return slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
 }
 
 static int
@@ -886,7 +887,8 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	step_complete_msg_t resp;
 	slurm_msg_t resp_msg;
 	slurm_msg_t_init(&resp_msg);
-	
+	int rc;		/* Note: we are ignoring return code */
+
 	resp.job_id       = job_id;
 	resp.job_step_id  = step_id;
 	resp.range_first  = 0;
@@ -895,7 +897,7 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp.jobacct      = jobacct_g_alloc(NULL);
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
-	return slurm_send_only_controller_msg(&resp_msg);
+	return slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
 }
 
 static void
@@ -1707,6 +1709,8 @@ _epilog_complete(uint32_t jobid, int rc)
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
 	
+	/* Note: No return code to message, slurmctld will resend
+	 * TERMINATE_JOB request if message send fails */
 	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");
 		ret = SLURM_ERROR;

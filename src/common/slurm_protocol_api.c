@@ -2166,35 +2166,24 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 }
 
 /*
- *  Same as above, but send message to controller
+ *  Send message to controller and get return code.
+ *  Make use of slurm_send_recv_controller_msg(), which handles 
+ *  support for backup controller and retry during transistion.
  */
 int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 {
-	slurm_fd fd = -1;
-	int ret_c = 0;
-	slurm_addr ctrl_addr;
+	int ret_c;
 	slurm_msg_t resp;
 
-	slurm_msg_t_init(&resp);
-	
-	/* Just in case the caller didn't initialize his slurm_msg_t, and
-	 * since we KNOW that we are only sending to one node (the controller),
-	 * we initialize some forwarding variables to disable forwarding.
-	 */
-	forward_init(&req->forward, NULL);
-	req->ret_list = NULL;
-	req->forward_struct = NULL;
-		
-	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0)
-		return -1;
-	
-	if(!_send_and_recv_msg(fd, req, &resp, 0)) {
-		if(resp.auth_cred)
-			g_slurm_auth_destroy(resp.auth_cred);	
-		*rc = slurm_get_return_code(resp.msg_type, resp.data);
-		ret_c = 0;
-	} else 
-		ret_c = -1;
+	ret_c = slurm_send_recv_controller_msg(req, &resp);
+	if (ret_c == 0) {
+		if (resp.msg_type == RESPONSE_SLURM_RC) {
+			*rc = ((return_code_msg_t *) resp.data)->return_code;
+			slurm_free_return_code_msg(resp.data);
+		} else {
+			ret_c = -1;
+		}
+	}
 	return ret_c;
 }
 
