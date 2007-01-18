@@ -38,6 +38,11 @@ set file_bash   "test$test_id.bash"
 
 print_header $test_id
 
+make_bash_script $file_bash {
+echo nodeid:$SLURM_NODEID taskid:$SLURM_PROCID localid:$SLURM_LOCALID
+exit 0
+}
+
 #
 # Create an allocation
 #
@@ -272,5 +277,6 @@ expect {
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
+file delete $file_bash
 exit $exit_code
 
