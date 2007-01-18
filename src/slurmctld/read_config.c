@@ -670,7 +670,7 @@ int read_slurm_conf(int recover)
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
-	char *state_save_dir     = xstrdup(slurmctld_conf.state_save_location);
+	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	slurm_ctl_conf_t *conf;
 	select_type_plugin_info_t old_select_type_p = 
 		(select_type_plugin_info_t) slurmctld_conf.select_type_param;
