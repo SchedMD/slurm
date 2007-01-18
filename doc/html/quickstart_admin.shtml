@@ -127,7 +127,7 @@ Some macro definitions that may be used in building SLURM include:
 <dt>with_ssl
 <dd>Specifies SSL libary installation location
 </dl>
-To build SLURM on our AIX system, the following .rpmmacros file is used:
+<p>To build SLURM on our AIX system, the following .rpmmacros file is used:
 <pre>
 # .rpmmacros
 # For AIX at LLNL

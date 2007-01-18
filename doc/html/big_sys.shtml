@@ -2,7 +2,7 @@
 
 <h1>Large Cluster Administration Guide</h1>
 
-</p>This document contains SLURM administrator information specifically 
+<p>This document contains SLURM administrator information specifically 
 for clusters containing 1,024 nodes or more. 
 Virtually all SLURM components have been validated (through emulation) 
 for clusters containing up to 16,384 compute nodes. 
