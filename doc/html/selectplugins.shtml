@@ -68,7 +68,7 @@ if (<i>select_p_job_test</i>(all available nodes) != SLURM_SUCCESS) {
 wait for slurmctld shutdown request
 <i>select_p_state_save</i>()
 </pre>
-Depending upon failure modes, it is possible that 
+<p>Depending upon failure modes, it is possible that 
 <span class="commandline">select_p_state_save()</span>
 will not be called at slurmctld terminatation.
 When slurmctld is restarted, other function calls may be replayed.
