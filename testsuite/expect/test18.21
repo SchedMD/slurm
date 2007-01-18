@@ -57,6 +57,7 @@ main()
 {
 	char *id = getenv("SLURM_PROCID");
 	if (atoi(id) == 9) {
+		sleep(1); /* helps with proctrack/linuxproc problem */
 		exit(2);
 	}
 	sleep(15);
