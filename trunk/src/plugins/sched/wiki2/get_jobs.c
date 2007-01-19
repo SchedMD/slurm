@@ -74,6 +74,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
  *	[STARTDATE=<uts>;]		earliest start time, if any
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
+ *	[REJMESSAGE=<str>;]		reason job is not running, if any
  *	UPDATETIME=<uts>;		time last active
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
  *	TASKS=<cpus>;			CPUs required
