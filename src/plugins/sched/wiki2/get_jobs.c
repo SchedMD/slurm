@@ -69,13 +69,29 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  * RET 0 on success, -1 on failure
  *
  * Response format
- * ARG=<cnt>#<JOBID>;UPDATE_TIME=<uts>;STATE=<state>;UCLIMIT=<time_limit>;
- *                    TASKS=<cpus>;QUEUETIME=<submit_time>;STARTTIME=<time>;
- *                    UNAME=<user>;GNAME=<group>;RCLASS=<part>;
- *                    NODES=<node_cnt>;RMEM=<mem_size>;RDISK=<disk_space>;
- *                    COMMENT=<comment>;[COMPLETETIME=<end_time>;]
- *                    [EXITCODE=<code>;]
- *         [#<JOBID>;...];
+ * ARG=<cnt>#<JOBID>;
+ *	STATE=<state>;			Moab equivalent job state
+ *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
+ *	[STARTDATE=<uts>;]		earliest start time, if any
+ *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
+ *	UPDATETIME=<uts>;		time last active
+ *	WCLIMIT=<secs>;			wall clock time limit, seconds
+ *	TASKS=<cpus>;			CPUs required
+ *	QUEUETIME=<uts>;		submission time
+ *	STARTTIME=<uts>;		time execution started
+ *	RCLASS=<partition>;		SLURM partition name
+ *	NODES=<nodes>;			nodes required
+ *	RMEM=<MB>;			MB of memory required
+ *	RDISK=<MB>;			MB of disk space required
+ *	[COMMENT=<whatever>;]		job dependency or account number
+ *	[COMPLETETIME=<uts>;]		termination time
+ *	[SUSPENDTIME=<secs>;]		seconds that job has been suspended
+ *	UNAME=<user_name>;		user name
+ *	GNAME=<group_name>;		group name
+ * [#<JOBID>;...];			additional jobs, if any
+ *
+ * NOTE: We don't report RFEATURES due to lack of support for "&" and "|"
+ *	(logical AND and OR operators).
  */
 /* RET 0 on success, -1 on failure */
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
