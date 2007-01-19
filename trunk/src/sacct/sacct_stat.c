@@ -122,7 +122,7 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 			break;
 		default:
 			rc = slurm_get_return_code(ret_data_info->type, 
-					   ret_data_info->data);
+						   ret_data_info->data);
 			error("unknown return given %d rc = %s", 
 			      ret_data_info->type, slurm_strerror(rc));
 			break;
