@@ -177,7 +177,6 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 		cpu_cnt = node_ptr->cpus;
 	}
 	for (i=0; i<node_ptr->part_cnt; i++) {
-		char *header;
 		if (i == 0)
 			xstrcat(buf, "CCLASS=");
 		snprintf(tmp, sizeof(tmp), "[%s:%u]", 
