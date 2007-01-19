@@ -210,6 +210,7 @@ documents those changes that are of interest to users and admins.
  - Fix for running a task on each node of an allocation if not specified.
  - In sched/wiki2, set TASKLIST for running jobs.
  - In sched/wiki2, set STARTDATE for pending jobs with deferred start.
+ - Added srun --get-user-env option (for Moab scheduler).
 
 * Changes in SLURM 1.1.24
 =========================
