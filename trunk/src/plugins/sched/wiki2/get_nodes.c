@@ -54,11 +54,16 @@ static char *	_get_node_state(struct node_record *node_ptr);
  * RET 0 on success, -1 on failure
  *
  * Response format
- * ARG=<cnt>#<NODEID>:STATE=<state>;
- *                    FEATURE=<feature:feature>;
- *                    CCLASS=<part>:<cpus>[,<part>:<cpus>];
- *                    CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
- *         [#<NODEID>:...];
+ * ARG=<cnt>#<NODEID>:
+ *	STATE=<state>;		Moab equivalent node state
+ *	CCLASS=<[part:cpus]>;	SLURM partition with CPU count of node,
+ *				make have more than one partition
+ *	CMEMORY=<MB>;		MB of memory on node
+ *	CDISK=<MB>;		MB of disk space on node
+ *	CPROCS=<cpus>;		CPU count on node
+ *	[FEATURES=<feature>;]	features associated with node, if any,
+ *				colon separate	
+ *  [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 {
@@ -174,11 +179,8 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 	for (i=0; i<node_ptr->part_cnt; i++) {
 		char *header;
 		if (i == 0)
-			header = "CCLASS=";
-		else
-			header = ",";
-		snprintf(tmp, sizeof(tmp), "%s%s:%u", 
-			header,
+			xstrcat(buf, "CCLASS=");
+		snprintf(tmp, sizeof(tmp), "[%s:%u]", 
 			node_ptr->part_pptr[i]->name,
 			cpu_cnt);
 		xstrcat(buf, tmp);
