@@ -187,16 +187,24 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		return buf;
 
 	/* SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
-	if ((job_ptr->job_state == JOB_PENDING)
-	&&  (job_ptr->details)
-	&&  (job_ptr->details->req_nodes)
-	&&  (job_ptr->details->req_nodes[0])) {
-		char *hosts = bitmap2wiki_node_name(
-			job_ptr->details->req_node_bitmap);
-		snprintf(tmp, sizeof(tmp),
-			"HOSTLIST=%s;", hosts);
-		xstrcat(buf, tmp);
-		xfree(hosts);
+	if (job_ptr->job_state == JOB_PENDING) {
+		if ((job_ptr->details)
+		&&  (job_ptr->details->req_nodes)
+		&&  (job_ptr->details->req_nodes[0])) {
+			char *hosts = bitmap2wiki_node_name(
+				job_ptr->details->req_node_bitmap);
+			snprintf(tmp, sizeof(tmp),
+				"HOSTLIST=%s;", hosts);
+			xstrcat(buf, tmp);
+			xfree(hosts);
+		}
+		if ((job_ptr->details)
+		&&  (job_ptr->details->begin_time)) {
+			snprintf(tmp, sizeof(tmp),
+				"STARTDATE=%u;", (uint32_t)
+				job_ptr->details->begin_time);
+			xstrcat(buf, tmp);
+		}
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
 		char *hosts = bitmap2wiki_node_name(
 			job_ptr->node_bitmap);
