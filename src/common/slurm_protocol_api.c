@@ -1847,12 +1847,11 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 			g_slurm_auth_destroy(resp->auth_cred);
 		else 
 			rc = -1;
-			
+
 		if ((rc == 0)
 		    && (resp->msg_type == RESPONSE_SLURM_RC)
 		    && ((((return_code_msg_t *) resp->data)->return_code) 
 			== ESLURM_IN_STANDBY_MODE)
-		    && (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS)
 		    && (backup_controller_flag)
 		    && (difftime(time(NULL), start_time)
 			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
@@ -2159,6 +2158,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 		if(resp.auth_cred)
 			g_slurm_auth_destroy(resp.auth_cred);	
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
+		slurm_free_msg_data(resp.msg_type, resp.data);
 		ret_c = 0;
 	} else 
 		ret_c = -1;
@@ -2175,15 +2175,14 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	int ret_c;
 	slurm_msg_t resp;
 
-	ret_c = slurm_send_recv_controller_msg(req, &resp);
-	if (ret_c == 0) {
-		if (resp.msg_type == RESPONSE_SLURM_RC) {
-			*rc = ((return_code_msg_t *) resp.data)->return_code;
-			slurm_free_return_code_msg(resp.data);
-		} else {
-			ret_c = -1;
-		}
+	if(!slurm_send_recv_controller_msg(req, &resp)) {
+		*rc = slurm_get_return_code(resp.msg_type, resp.data);
+		slurm_free_msg_data(resp.msg_type, resp.data);
+		ret_c = 0;
+	} else {
+		ret_c = -1;
 	}
+	
 	return ret_c;
 }
 
@@ -2246,6 +2245,7 @@ extern void slurm_free_msg(slurm_msg_t * msg)
 		list_destroy(msg->ret_list);
 		msg->ret_list = NULL;
 	}
+
 	xfree(msg);
 }
 

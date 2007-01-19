@@ -1071,13 +1071,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_ALLOCATION_INFO:
 		slurm_free_job_alloc_info_msg(data);
 		break;
-	case SLURM_SUCCESS:		
-	case REQUEST_PING:		
-	case REQUEST_RECONFIGURE:
-	case REQUEST_CONTROL:
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-		/* No body to free */
-		break;
 	case REQUEST_SHUTDOWN:
 		slurm_free_shutdown_msg(data);
 		break;
@@ -1154,8 +1147,15 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_SLURM_RC:
 		slurm_free_return_code_msg(data);
 		break;
+	case SLURM_SUCCESS:		
+	case REQUEST_PING:		
+	case REQUEST_RECONFIGURE:
+	case REQUEST_CONTROL:
+	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
+		/* No body to free */
 		break;
+
 	default:
 		error("invalid type trying to be freed %u", type);
 		break; 
