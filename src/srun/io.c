@@ -238,7 +238,7 @@ _server_readable(eio_obj_t *obj)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 
-	debug4("Called _server_readable");
+	debug4("Called _server_readable (fd = %d)", obj->fd);
 
 	if (!_outgoing_buf_free(s->job)) {
 		debug4("  false, free_io_buf is empty");
@@ -619,13 +619,12 @@ static bool _file_writable(eio_obj_t *obj)
 {
 	struct file_write_info *info = (struct file_write_info *) obj->arg;
 
-	debug2("Called _file_writable");
+	debug2("Called _file_writable (fd = %d)", obj->fd);
 	if (info->out_msg != NULL
 	    || !list_is_empty(info->msg_queue))
 		return true;
 
-	debug3("  false");
-	debug3("  eof is %s", info->eof ? "true" : "false");
+	debug3("  false (eof is %s)", info->eof ? "true" : "false");
 	return false;
 }
 
