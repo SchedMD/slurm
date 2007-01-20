@@ -655,12 +655,12 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	int signal;
+	int sig;
 
 	debug("_handle_signal_container for job %u.%u",
 	      job->jobid, job->stepid);
 
-	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &sig, sizeof(int));
 
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
@@ -694,14 +694,14 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (slurm_container_signal(job->cont_id, signal) < 0) {
+	if (slurm_container_signal(job->cont_id, sig) < 0) {
 		rc = -1;
 		errnum = errno;
 		verbose("Error sending signal %d to %u.%u: %m", 
-			signal, job->jobid, job->stepid);
+			sig, job->jobid, job->stepid);
 	} else {
 		verbose("Sent signal %d to %u.%u", 
-			signal, job->jobid, job->stepid);
+			sig, job->jobid, job->stepid);
 	}
 	pthread_mutex_unlock(&suspend_mutex);
 
@@ -756,11 +756,11 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 	if (slurm_container_signal(job->cont_id, SIGKILL) < 0) {
 		rc = -1;
 		errnum = errno;
-		verbose("Error sending signal %d to %u.%u: %m", 
-			SIGKILL, job->jobid, job->stepid);
+		verbose("Error sending SIGKILL signal to %u.%u: %m", 
+			job->jobid, job->stepid);
 	} else {
-		verbose("Sent signal %d to %u.%u", 
-			signal, job->jobid, job->stepid);
+		verbose("Sent SIGKILL signal to %u.%u", 
+			job->jobid, job->stepid);
 	}
 	pthread_mutex_unlock(&suspend_mutex);
 
