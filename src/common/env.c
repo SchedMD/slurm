@@ -1192,7 +1192,7 @@ static void _strip_cr_nl(char *line)
 
 /*
  * Return an array of strings representing the specified user's default
- * environment variables, as determined by calling
+ * environment variables, as determined by calling (more-or-less)
  * "/bin/su - <username> -c /usr/bin/env".
  *
  * On error, returns NULL.
@@ -1208,13 +1208,17 @@ char **env_array_user_default(const char *username)
 	char value[BUFSIZ];
 	char *cmdstr = xstrdup("");
 	char **env = NULL;
+	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
+	char *stoptoken =  "XXXXSLURMSTOPPARSINGHEREXXXXX";
+	int len;
 
 	if (geteuid() != (uid_t)0) {
 		info("WARNING: you must be root to use --get-user-env");
 		return NULL;
 	}
 
-	xstrfmtcat(cmdstr, "/bin/su - %s -c /usr/bin/env", username);
+	xstrfmtcat(cmdstr, "/bin/su - %s -c \"echo %s; env; echo %s\"",
+		   username, starttoken, stoptoken);
 	su = popen(cmdstr, "r");
 	xfree(cmdstr);
 	if (su == NULL) {
@@ -1222,7 +1226,23 @@ char **env_array_user_default(const char *username)
 	}
 
 	env = env_array_create();
+
+	/* First look for the start token in the output */
+	len = strlen(starttoken);
 	while (fgets(line, BUFSIZ, su) != NULL) {
+		if (0 == strncmp(line, starttoken, len)) {
+			break;
+		}
+	}
+
+	/* Now read in the environment variable strings. */
+	len = strlen(stoptoken);
+	while (fgets(line, BUFSIZ, su) != NULL) {
+		/* stop at the line containing the stoptoken string */
+		if (0 == strncmp(line, stoptoken, len)) {
+			break;
+		}
+
 		_strip_cr_nl(line);
 		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
 		env_array_overwrite(&env, name, value);
