@@ -152,7 +152,7 @@ void env_array_set_environment(char **env_array);
 
 /*
  * Return an array of strings representing the specified user's default
- * environment variables, as determined by calling
+ * environment variables, as determined by calling (more-or-less)
  * "/bin/su - <username> -c /usr/bin/env".
  *
  * On error, returns NULL.
