@@ -76,7 +76,7 @@
  * minimum versions for their plugins as this API matures.
  */
 const char plugin_name[]        = "mpi MPICH-GM plugin";
-const char plugin_type[]        = "mpi/mpich-gm";
+const char plugin_type[]        = "mpi/mpichgm";
 const uint32_t plugin_version   = 100;
 
 int mpi_p_init(slurmd_job_t *job, int rank)

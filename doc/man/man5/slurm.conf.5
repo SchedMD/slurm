@@ -236,20 +236,24 @@ SLURM's active database. Set the values of \fBMaxJobCount\fR and
 its memory or other resources. The default value is 300 seconds. 
 A value of zero prevents any job record purging.
 May not exceed 65533.
+
 .TP
 \fBMpiDefault\fR
 Identifies the default type of MPI to be used. 
 Srun may override this configuration parameter in any case.
-Currently supported versions include: lam (which supports 
-LAM MPI and Open MPI, but specify "none" instead and let 
-LAM MPI and Open MPI select the plugin using an option of 
-the srun command), mpich\-gm, mvapich, 
-and none (default, which works for many other versions of MPI).
+Currently supported versions include: 
+\fBlam\fR (which supports LAM MPI, but specify "none" instead and let 
+LAM MPI select the plugin using an option of the srun command), 
+\fBmpichgm\fR, 
+\fBmvapich\fR,
+\fBopenmpi\fR (which supports Open MPI, but specify "none" instead and let
+Open MPI select the plugin using an option of the srun command), and 
+\fBnone\fR (default, which works for many other versions of MPI).
 
 .TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
-in seconds. Default value is 5 seconds.
+in seconds. Default value is 10 seconds.
 
 .TP
 \fBPluginDir\fR
