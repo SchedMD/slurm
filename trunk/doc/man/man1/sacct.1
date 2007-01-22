@@ -5,10 +5,12 @@
 .SH "NAME"
 sacct
 \- displays accounting data for all jobs and job steps in the SLURM job accounting log
+
 .SH "SYNOPSIS"
 .HP 
 .BR "sacct "
 \f2\fP\f2options \fP 
+
 .SH "DESCRIPTION"
 .PP
 Accounting information for jobs invoked with SLURM are logged in the job 
@@ -50,6 +52,7 @@ gather and report incomplete information for these calls;
 \f3sacct\fP reports values of 0 for this missing data. See your systems
 \f2getrusage(3)\fP man page for information about which data are
 actually available on your system.
+
 .SS "Options"
 .TP "10"
 \f3\-a \fP\f3,\fP \f3\-\-all\fP
@@ -58,6 +61,7 @@ Displays the job accounting data for all jobs in the job accounting log file.
 This is the default behavior when the 
 .BR "sacct "
 command is executed by the root user.
+
 .TP 
 \f3\-b \fP\f3,\fP \f3\-\-brief\fP
 Displays a brief listing, which includes the following data:
@@ -76,6 +80,7 @@ Displays a brief listing, which includes the following data:
 This option has no effect when the 
 \f3\-\-\-dump\fP 
 option is also specified.
+
 .TP 
 \f3\-d \fP\f3,\fP \f3\-\-dump\fP
 Displays (dumps) the raw data records.
@@ -88,37 +93,6 @@ options.
 .IP 
 The section titled "INTERPRETING THE \-\-dump OPTION OUTPUT" describes the 
 data output when this option is used.
-.TP
-\f3\-S \fP\f3,\fP \f3\-\-stat\fP
-.IP
-Queries the status of a job as the job is running displaying
-the following data:
-.RS 
-.TP "3"
-\(bu
-\f3jobid\fP 
-.TP "3"
-\(bu
-\f3vsize\fP 
-.TP "3"
-\(bu
-\f3rss\fP 
-.TP "3"
-\(bu
-\f3pages\fP 
-.TP "3"
-\(bu
-\f3cputime\fP 
-.TP "3"
-\(bu
-\f3ntasks\fP 
-.TP "3"
-\(bu
-\f3status\fP 
-.RE 
-.IP
-You must also include the \-\-jobs=job(.step) option if no (.step) is 
-given you will recieve the job.0 step.
 
 .TP
 \f3\-e \fP\f2time_spec\fP \f3,\fP \f3\-\-expire=\fP\f2time_spec\fP
@@ -139,6 +113,7 @@ The expired log file is a file with the same name as the accounting
 log file, with ".expired" appended to the file name. For example, if
 the accounting log file is /var/log/slurmacct.log, the expired log
 file will be /var/log/slurmacct.log.expired.
+
 .TP 
 \f3\-F \fP\f2field_list\fP \f3,\fP  \f3\-\-fields\fP\f3=\fP\f2field_list\fP
 Displays the job accounting data specified by the 
@@ -194,6 +169,7 @@ operand is
 This option has no effect when the 
 \f3\-\-dump\fP 
 option is also specified.
+
 .TP 
 \f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
 Causes the 
@@ -201,16 +177,13 @@ Causes the
 command to read job accounting data from the named 
 \f2file\fP 
 instead of the current SLURM job accounting log file.
-.TP 
-\f3\-O \fP\f3,\fP \f3\-\-formatted_dump\fP
-Dumps accounting records in an easy\-to\-read format.
-.IP 
-This option is provided for debugging.
+
 .TP 
 \f3\-g \fP\f2gid\fP\f3,\fP  \f3\-\-gid\fP\f3=\fP\f2gid\fP
 Displays the statistics only for the jobs started with GID 
 \f2gid\fP\c
 \&. 
+
 .TP 
 \f3\-g \fP\f2group\fP\f3,\fP  \f3\-\-group\fP\f3=\fP\f2group\fP
 Displays the statistics only for the jobs started by users in the
@@ -246,6 +219,7 @@ uid         user        usercpu     vsize
 .RE 
 .IP 
 The section titled "Job Accounting Fields" describes these fields.
+
 .TP 
 \f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3\-\-jobs\fP\f3=\fP\f2job(.step)\fP
 Displays information about the specified job(.step) or list of job(.step)s.
@@ -256,6 +230,7 @@ parameter is a comma\-separated list of jobs.
 Space characters are not permitted in this list.
 .IP 
 The default is to display information on all jobs.
+
 .TP 
 \f3\-l\fP\f3,\fP \f3\-\-long\fP
 Displays a long listing, which includes the following data:
@@ -297,6 +272,7 @@ Displays a long listing, which includes the following data:
 \(bu
 \f3exitcode\fP 
 .RE 
+
 .TP 
 \f3\-\-noheader\fP
 Prevents the display of the heading over the output.
@@ -305,6 +281,13 @@ The default action is to display a header.
 This option has no effect when used with the 
 \f3\-\-dump\fP 
 option.
+
+.TP 
+\f3\-O \fP\f3,\fP \f3\-\-formatted_dump\fP
+Dumps accounting records in an easy\-to\-read format.
+.IP 
+This option is provided for debugging.
+
 .TP 
 \f3\-p \fP\f2partition_list\fP \f3,\fP  \f3\-\-partition\fP\f3=\fP\f2partition_list\fP
 Displays information about jobs and job steps specified by the 
@@ -315,6 +298,39 @@ Space characters are not allowed in the
 \&. 
 .IP 
 The default is to display information on jobs and job steps on all partitions.
+
+.TP
+\f3\-S \fP\f3,\fP \f3\-\-stat\fP
+.IP
+Queries the status of a job as the job is running displaying
+the following data:
+.RS 
+.TP "3"
+\(bu
+\f3jobid\fP 
+.TP "3"
+\(bu
+\f3vsize\fP 
+.TP "3"
+\(bu
+\f3rss\fP 
+.TP "3"
+\(bu
+\f3pages\fP 
+.TP "3"
+\(bu
+\f3cputime\fP 
+.TP "3"
+\(bu
+\f3ntasks\fP 
+.TP "3"
+\(bu
+\f3status\fP 
+.RE 
+.IP
+You must also include the \-\-jobs=job(.step) option if no (.step) is 
+given you will recieve the job.0 step.
+
 .TP 
 \f3\-s \fP\f2state_list\fP \f3,\fP  \f3\-\-state\fP\f3=\fP\f2state_list\fP
 Selects jobs based on their current state, which can be designated with 
@@ -352,27 +368,33 @@ operand is a comma\-separated list of these state designators.
 Space characters are not allowed in the 
 \f2state_list\fP\c
 \&.
+
 .TP 
 \f3\-t \fP\f3,\fP \f3\-\-total\fP
 Displays only the cumulative statistics for each job.
 Intermediate steps are displayed by default.
+
 .TP 
 \f3\-u \fP\f2uid\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid\fP
 Displays the statistics only for the jobs started by the user whose UID is 
 \f2uid\fP\c
 \&.
+
 .TP 
 \f3\-u \fP\f2user\fP\f3,\fP  \f3\-\-user\fP\f3=\fP\f2user\fP
 Displays the statistics only for the jobs started by user
 \f2user\fP\c
 \&.
+
 .TP 
 \f3\-\-usage\fP
 Displays a help message.
+
 .TP 
 \f3\-v \fP\f3,\fP \f3\-\-verbose\fP
 Reports the state of certain variables during processing.
 This option is primarily used for debugging.
+
 .SS "Job Accounting Fields"
 The following describes each job accounting field:
 .RS 
@@ -1035,8 +1057,8 @@ expressed in microseconds
 .TP 
 37
 \f3vsize\fP 
-.TP 
-.RE 
+.RE
+
 .SH "EXAMPLES"
 This example illustrates the default invocation of the 
 .BR "sacct "
@@ -1118,7 +1140,7 @@ Jobid        Ncpus  Ntasks  Nsignals Status
 .RE 
 .SH "COPYING"
 
-Copyright (C) 2005 Copyright Hewlett\-Packard Development Company L.P.
+Copyright (C) 2005\-2007 Copyright Hewlett\-Packard Development Company L.P.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.
