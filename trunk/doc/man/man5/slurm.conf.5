@@ -242,13 +242,10 @@ May not exceed 65533.
 Identifies the default type of MPI to be used. 
 Srun may override this configuration parameter in any case.
 Currently supported versions include: 
-\fBlam\fR (which supports LAM MPI, but specify "none" instead and let 
-LAM MPI select the plugin using an option of the srun command), 
 \fBmpichgm\fR, 
 \fBmvapich\fR,
-\fBopenmpi\fR (which supports Open MPI, but specify "none" instead and let
-Open MPI select the plugin using an option of the srun command), and 
-\fBnone\fR (default, which works for many other versions of MPI).
+\fBnone\fR (default, which works for many other versions of MPI including 
+LAM MPI and Open MPI).
 
 .TP
 \fBMessageTimeout\fR
