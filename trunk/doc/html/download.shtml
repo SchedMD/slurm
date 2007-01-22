@@ -5,7 +5,7 @@
 SLURM source can be downloaded from <br>
 <a href="ftp://ftp.llnl.gov/pub/linux/slurm/">
 ftp://ftp.llnl.gov/pub/linux/slurm</a><br>
-The latest stable release is version 1.1.</p>
+The latest stable release is version 1.2.</p>
 
 <p><b>NOTE:</b> This server will only download files to computers 
 on which it can perform a reverse DNS lookup for the IP address 
@@ -78,6 +78,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 18 December 2006</p>
+<p style="text-align:center;">Last modified 22 January 2007</p>
 
 <!--#include virtual="footer.txt"-->
