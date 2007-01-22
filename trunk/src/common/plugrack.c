@@ -259,12 +259,13 @@ plugrack_destroy( plugrack_t rack )
 int
 plugrack_set_major_type( plugrack_t rack, const char *type )
 {
-        if ( ! rack ) return SLURM_ERROR;
-        if ( ! type ) return SLURM_ERROR;
+	if ( ! rack )
+		return SLURM_ERROR;
+	if ( ! type )
+		return SLURM_ERROR;
 
-        /* Free any pre-existing type. */
-        if ( rack->major_type ) xfree( rack->major_type );
-        rack->major_type = NULL;
+	/* Free any pre-existing type. */
+	xfree( rack->major_type );
 
         /* Install a new one. */
         if ( type != NULL ) {
@@ -285,7 +286,8 @@ plugrack_set_paranoia( plugrack_t rack,
                        const uid_t uid )
 
 {
-        if ( ! rack ) return SLURM_ERROR;
+	if ( ! rack )
+		return SLURM_ERROR;
 
         rack->paranoia = flags;
         if ( flags ) {
@@ -640,5 +642,6 @@ plugrack_print_all_plugin(plugrack_t rack)
 	while ((e = list_next(itr)) != NULL ) {
 		info("%s",e->full_type);
 	}
+	list_iterator_destroy(itr)
 	return SLURM_SUCCESS;
 }
