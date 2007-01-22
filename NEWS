@@ -208,6 +208,10 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.26
+=========================
+ - In sched/wiki2, fixes for support of job features.
+
 * Changes in SLURM 1.1.25
 =========================
  - switch/elan: Fix for "Failed to initialise stats structure" from

@@ -49,6 +49,7 @@ static char *	_dump_all_jobs(int *job_cnt, int state_info);
 static char *	_dump_job(struct job_record *job_ptr, int state_info);
 static char *	_get_group_name(gid_t gid);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
+static char *	_get_job_features(struct job_record *job_ptr);
 static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
 static uint32_t	_get_job_min_mem(struct job_record *job_ptr);
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr);
@@ -71,6 +72,8 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  * Response format
  * ARG=<cnt>#<JOBID>;
  *	STATE=<state>;			Moab equivalent job state
+ *	[RFEATURES=<features>;]		required features, if any, 
+ *					NOTE: OR operator not supported
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
  *	[STARTDATE=<uts>;]		earliest start time, if any
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
@@ -91,8 +94,6 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  *	GNAME=<group_name>;		group name
  * [#<JOBID>;...];			additional jobs, if any
  *
- * NOTE: We don't report RFEATURES due to lack of support for "&" and "|"
- *	(logical AND and OR operators).
  */
 /* RET 0 on success, -1 on failure */
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
@@ -205,6 +206,13 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 
 	/* SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
 	if (job_ptr->job_state == JOB_PENDING) {
+		char *req_features = _get_job_features(job_ptr);
+		if (req_features) {
+			snprintf(tmp, sizeof(tmp),
+				"RFEATURES=%s;", req_features);
+			xstrcat(buf, tmp);
+			xfree(req_features);
+		}
 		if ((job_ptr->details)
 		&&  (job_ptr->details->req_nodes)
 		&&  (job_ptr->details->req_nodes[0])) {
@@ -404,6 +412,35 @@ static uint32_t	_get_job_end_time(struct job_record *job_ptr)
 	if (IS_JOB_FINISHED(job_ptr))
 		return (uint32_t) job_ptr->end_time;
 	return (uint32_t) 0;
+}
+
+/* Return a job's required features, if any joined with AND.
+ * If required features are joined by OR, then return NULL.
+ * Returned string must be xfreed. */
+static char * _get_job_features(struct job_record *job_ptr)
+{
+	int i;
+	char *rfeatures;
+
+	if ((job_ptr->details == NULL)
+	||  (job_ptr->details->features == NULL)
+	||  (job_ptr->details->features[0] == '\0'))
+		return NULL;
+
+	rfeatures = xstrdup(job_ptr->details->features);
+	/* Translate "&" to ":" */
+	for (i=0; ; i++) {
+		if (rfeatures[i] == '\0')
+			return rfeatures;
+		if (rfeatures[i] == '|')
+			break;
+		if (rfeatures[i] == '&')
+			rfeatures[i] = ':';
+	}
+
+	/* Found '|' (OR), which is not supported by Moab */
+	xfree(rfeatures);
+	return NULL;
 }
 
 /* returns how long job has been suspended, in seconds */
