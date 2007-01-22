@@ -10,40 +10,52 @@ space separated list of specific job and/or job step IDs. A job or job step
 can only be signaled by the owner of that job or user root. If an attempt is 
 made by an unauthorized user to signal a job or job step, an error message will 
 be printed and the job will not be signaled. 
+
 .TP
 OPTIONS
-.TP
-\fB\-\-help\fR
-Print a help message describing all \fBscancel\fR options.
-.TP
-\fB\-\-usage\fR
-Print a brief help message listing the \fBscancel\fR options.
+
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
 Signal only the batch job shell.
+
+.TP
+\fB\-\-help\fR
+Print a help message describing all \fBscancel\fR options.
+
 .TP
 \fB\-i\fR, \fB\-\-interactive\fR
 Interactive mode. Confirm each job_id.step_id before performing the cancel operation.
+
 .TP
 \fB\-n\fR, \fB\-\-name\fR=\fIjob_name\fR
 The name of jobs to be signaled.
+
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
 The name of the partition from which jobs are to be signaled.
+
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Do not report an error if the specified job is already completed.
 This option is incompatible with the \fB\-\-verbose\fR option.
+
 .TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
 The name or number of the signal to be send. Default value is "KILL".
+
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
 The state of the jobs are to be signaled. \fIjob_state_name\fR may have a value of 
 either "PENDING", "RUNNING" or "SUSPENDED".
+
 .TP
 \fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
 The name of the user whose jobs are to be signaled.
+
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBscancel\fR options.
+
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print additional logging. Multiple v's increase logging detail.
@@ -112,7 +124,7 @@ scancel 1234
 Cancel job all pending jobs belonging to user "bob" in partition "debug":
 scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
 .SH "COPYING"
-Copyright (C) 2002 The Regents of the University of California.
+Copyright (C) 2002-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
