@@ -411,12 +411,10 @@ handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 Specify the type of MPI to be used by default. SLURM will configure environment 
 variables accordingly. Users can over-ride this specification with an srun option.<BR>
 Select one value for <B>MpiDefault</B>:<BR>
-<input type="radio" name="mpi_default" value="lam"> <B>LAM MPI</B><BR>
 <input type="radio" name="mpi_default" value="mpichgm"> <B>Mpich-Gm</B><BR>
 <input type="radio" name="mpi_default" value="mvapich"> <B>MVAPICH</B><BR>
-<input type="radio" name="mpi_default" value="openmpi"> <B>Open MPI</B><BR>
 <input type="radio" name="mpi_default" value="none" checked> <B>None</B>: 
-This works for most other MPI types.<BR>
+This works for most other MPI types including LAM MPI and Open MPI.<BR>
 <P>
 
 <H2>Process Tracking</H2>
