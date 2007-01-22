@@ -61,8 +61,8 @@ static char *	_get_node_state(struct node_record *node_ptr);
  *	CMEMORY=<MB>;		MB of memory on node
  *	CDISK=<MB>;		MB of disk space on node
  *	CPROCS=<cpus>;		CPU count on node
- *	[FEATURES=<feature>;]	features associated with node, if any,
- *				colon separate	
+ *	[FEATURE=<feature>;]	features associated with node, if any,
+ *				colon separator
  *  [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
@@ -211,12 +211,11 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 
 	if (node_ptr->config_ptr
 	&&  node_ptr->config_ptr->feature) {
-		snprintf(tmp, sizeof(tmp), "FEATURES=%s;",
+		snprintf(tmp, sizeof(tmp), "FEATURE=%s;",
 			node_ptr->config_ptr->feature);
-		/* comma separated to colon */
+		/* comma separator to colon */
 		for (i=0; (tmp[i] != '\0'); i++) {
-			if ((tmp[i] == ',')
-			||  (tmp[i] == '|'))
+			if (tmp[i] == ',')
 				tmp[i] = ':';
 		}
 		xstrcat(buf, tmp);
