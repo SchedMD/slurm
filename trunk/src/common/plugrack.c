@@ -642,6 +642,6 @@ plugrack_print_all_plugin(plugrack_t rack)
 	while ((e = list_next(itr)) != NULL ) {
 		info("%s",e->full_type);
 	}
-	list_iterator_destroy(itr)
+	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
 }
