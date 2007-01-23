@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0
 ========================
+ -- In sched/wiki2, clear required nodes list when a job is requeued.
+    Note that the required node list is set to every node used when 
+    a job is started via sched/wiki2.
 
 * Changes in SLURM 1.2.0-pre13
 ==============================
