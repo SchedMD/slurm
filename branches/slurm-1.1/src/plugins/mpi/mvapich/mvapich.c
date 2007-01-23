@@ -399,8 +399,10 @@ static void mvapich_barrier (void)
 }
 
 static void 
-mvapich_print_abort_message (slurm_step_layout_t *sl, int rank, int dest)
+mvapich_print_abort_message (srun_job_t *job, int rank, int dest, 
+		char *msg, int msglen)
 {
+	slurm_step_layout_t *sl = job->step_layout;
 	char *host;
 
 	if (!mvapich_abort_sends_rank ()) {
@@ -411,8 +413,25 @@ mvapich_print_abort_message (slurm_step_layout_t *sl, int rank, int dest)
 	host = step_layout_host_name (sl, rank);
 
 	if (dest >= 0) {
+		const char *dsthost = step_layout_host_name (sl, dest);
+
+		if (msg [msglen - 1] == '\n')
+			msg [msglen - 1] = '\0';
+
 		info ("mvapich: %M: ABORT from MPI rank %d [on %s] dest rank %d [on %s]",
-				rank, host, dest, step_layout_host_name (sl, dest));
+		      rank, host, dest, dsthost);
+
+		/*
+		 *  If we got a message from MVAPICH, log it to syslog
+		 *   so that system administrators know about possible HW events.
+		 */
+		if (msglen > 0) {
+			openlog ("srun", 0, LOG_USER);
+			syslog (LOG_WARNING, 
+					"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=%d(%s)]: %s",
+					job->jobid, job->stepid, rank, host, dest, dsthost, msg);
+			closelog();
+		}
 	}
 	else {
 		info ("mvapich: %M: ABORT from MPI rank %d [on %s]", 
@@ -424,9 +443,11 @@ mvapich_print_abort_message (slurm_step_layout_t *sl, int rank, int dest)
 
 static void mvapich_wait_for_abort(srun_job_t *job)
 {
-	int rlen;
-	char rbuf[1024];
-	int *p = (int *) rbuf;
+	int src, dst;
+	int ranks[2];
+	int n;
+	char msg [1024] = "";
+	int msglen = 0;
 
 	/*
 	 *  Wait for abort notification from any process.
@@ -445,17 +466,32 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 
 		fd_set_blocking (newfd);
 
-		if ((rlen = fd_read_n (newfd, rbuf, sizeof (rbuf))) < 0) {
-			error("MPI recv (abort-wait) returned %d", rlen);
-			close(newfd);
+		ranks[1] = -1;
+		if ((n = fd_read_n (newfd, &ranks, sizeof (ranks))) < 0) {
+			error("mvapich: MPI recv (abort-wait) failed");
+			close (newfd);
 			continue;
 		}
+
+		/*
+		 *  If we read both src/dest rank, then also try to 
+		 *   read an error message. If this fails, msglen will
+		 *   stay zero and no message will be printed.
+		 */
+		if (ranks[1] >= 0) {
+			dst = ranks[0];
+			src = ranks[1];
+			fd_read_n (newfd, &msglen, sizeof (int));
+			if (msglen)
+				fd_read_n (newfd, msg, msglen);
+		} else {
+			src = ranks[0];
+			dst = -1;
+		}
+
 		close(newfd);
 
-		if (rlen > sizeof (int)) 
-			mvapich_print_abort_message (job->step_layout, p[1], p[0]);
-		else 
-			mvapich_print_abort_message (job->step_layout, p[0], -1);
+		mvapich_print_abort_message (job, src, dst, msg, msglen);
 
 		fwd_signal(job, SIGKILL);
 	}
@@ -607,6 +643,9 @@ again:
 	while (i < nprocs) {
 		int fd;
 		
+		mvapich_debug ("Waiting to accept remote connection %d of %d\n", 
+				i, nprocs);
+
 		if ((fd = mvapich_get_next_connection (mvapich_fd)) < 0) {
 			error ("mvapich: accept: %m");
 			goto fail;
