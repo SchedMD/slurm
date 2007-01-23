@@ -346,9 +346,6 @@ Same as \fB\-\-account\fR.
 \fBSALLOC_BELL\fR
 Same as \fB\-\-bell\fR.
 .TP
-\fBSALLOC_NO_BELL\fR
-Same as \fB\-\-no\-bell\fR.
-.TP
 \fBSALLOC_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR.
 .TP
@@ -363,6 +360,9 @@ Same as \fB\-I\fR or \fB\-\-immediate\fR.
 .TP
 \fBSALLOC_JOBID\fR
 Same as \fB\-\-jobid\fR.
+.TP
+\fBSALLOC_NO_BELL\fR
+Same as \fB\-\-no\-bell\fR.
 .TP
 \fBSALLOC_NO_ROTATE\fR
 Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
@@ -408,20 +408,21 @@ repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three
 tasks and the fourth node will execute one task.
 .TP
-\fBMPIRUN_PARTITION\fR
-The block name on Blue Gene systems only.
-.TP
 \fBMPIRUN_NOALLOCATE\fR
 Do not allocate a block on Blue Gene systems only.
 .TP
 \fBMPIRUN_NOFREE\fR
 Do not free a block on Blue Gene systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
 
 .SH "SIGNALS"
 .LP 
 While salloc is waiting for a PENDING job allocation, most signals will cause salloc to revoke the allocation request and exit.
 
 However, if the allocation has been granted and salloc has already started the command speficied in its command line parameters salloc will ignore most signals.  salloc will not exit or release the allocation until the command exits.  The noteable exception is SIGHUP; a HUP signal will cause salloc to release the allocation and exit without waiting for the command to finish.
+
 .SH "EXAMPLES"
 .LP 
 To get an allocation, and open a new xterm in which srun commands may be typed interactively:
