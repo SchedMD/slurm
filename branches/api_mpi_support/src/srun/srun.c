@@ -462,7 +462,7 @@ int srun(int ac, char **av)
 	debug("done");
 	
 	
-	if (mpi_hook_client_exit () < 0)
+	if (mpi_hook_client_fini () < 0)
 		; /* eh, ignore errors here */
 
 	_run_srun_epilog(job);

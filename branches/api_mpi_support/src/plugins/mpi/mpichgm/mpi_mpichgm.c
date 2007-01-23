@@ -79,7 +79,7 @@ const char plugin_name[]        = "mpi MPICH-GM plugin";
 const char plugin_type[]        = "mpi/mpichgm";
 const uint32_t plugin_version   = 100;
 
-int mpi_p_init(slurmd_job_t *job, int rank)
+int p_mpi_hook_slurmstepd_init(slurmd_job_t *job, int rank)
 {
 	char addrbuf[1024];
 	char *p;
@@ -99,18 +99,18 @@ int mpi_p_init(slurmd_job_t *job, int rank)
 	return SLURM_SUCCESS;
 }
 
-int mpi_p_thr_create(mpi_hook_client_info_t *job, char ***env)
+int p_mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env)
 {
 	debug("Using mpi/mpich-gm");
 	return gmpi_thr_create(job, env);
 }
 
-int mpi_p_single_task()
+int p_mpi_hook_client_single_task_per_node()
 {
 	return false;
 }
 
-int mpi_p_exit()
+int p_mpi_hook_client_fini()
 {
 	return SLURM_SUCCESS;
 }

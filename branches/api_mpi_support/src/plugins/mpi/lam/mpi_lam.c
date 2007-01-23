@@ -79,24 +79,24 @@ const char plugin_name[]        = "mpi LAM plugin";
 const char plugin_type[]        = "mpi/lam";
 const uint32_t plugin_version   = 100;
 
-int mpi_p_init(slurmd_job_t *job)
+int p_mpi_hook_slurmstepd_init(slurmd_job_t *job)
 {
 	debug("Using mpi/lam");
 	return SLURM_SUCCESS;
 }
 
-int mpi_p_thr_create(mpi_hook_client_info_t *job, char ***env)
+int p_mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env)
 {
 	debug("Using mpi/lam");
 	return SLURM_SUCCESS;
 }
 
-int mpi_p_single_task()
+int p_mpi_hook_client_single_task_per_node()
 {
 	return true;
 }
 
-int mpi_p_exit()
+int p_mpi_hook_client_fini()
 {
 	return SLURM_SUCCESS;
 }

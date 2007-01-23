@@ -56,7 +56,7 @@ typedef struct {
  * Hooks called by the slurmd and/or slurmstepd.
  **********************************************************************/
 
-/* Load the plugin and call the plugin mpi_p_init() function. */
+/* Load the plugin and call the plugin p_mpi_hook_slurmstepd_init() function. */
 int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank);
 
 /**********************************************************************
@@ -75,14 +75,14 @@ int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank);
  */
 int mpi_hook_client_init (char *mpi_type);
 
-/* Call the plugin mpi_p_thr_create() function. */
+/* Call the plugin p_mpi_hook_client_thr_create() function. */
 int mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env);
 
-/* Call the plugin mpi_p_single_task() function. */
+/* Call the plugin p_mpi_hook_client_single_task_per_node() function. */
 int mpi_hook_client_single_task_per_node (void);
 
-/* Call the plugin mpi_p_exit() function. */
-int mpi_hook_client_exit (void);
+/* Call the plugin p_mpi_hook_client_fini() function. */
+int mpi_hook_client_fini (void);
 
 /**********************************************************************
  * FIXME - Nobody calls the following function.  Perhaps someone should.

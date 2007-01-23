@@ -135,10 +135,10 @@ _slurm_mpi_get_ops( slurm_mpi_context_t c )
 	 * declared for slurm_mpi_ops_t.
 	 */
 	static const char *syms[] = {
-		"mpi_p_init",
-		"mpi_p_thr_create",
-		"mpi_p_single_task",
-		"mpi_p_exit"		
+		"p_mpi_hook_slurmstepd_init",
+		"p_mpi_hook_client_thr_create",
+		"p_mpi_hook_client_single_task_per_node",
+		"p_mpi_hook_client_fini"		
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	char *plugin_dir = NULL;
@@ -285,7 +285,7 @@ int mpi_hook_client_single_task_per_node (void)
 	return (*(g_context->ops.single_task))();
 }
 
-int mpi_hook_client_exit (void)
+int mpi_hook_client_fini (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
