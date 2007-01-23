@@ -78,8 +78,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 mpi_mvapich_la_LIBADD =
-am_mpi_mvapich_la_OBJECTS = mpi_mvapich.lo mvapich.lo net.lo \
-	srun_job.lo
+am_mpi_mvapich_la_OBJECTS = mpi_mvapich.lo mvapich.lo net.lo
 mpi_mvapich_la_OBJECTS = $(am_mpi_mvapich_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -282,8 +281,8 @@ pkglib_LTLIBRARIES = mpi_mvapich.la
 
 # Null switch plugin.
 mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c mvapich.h\
-	$(top_srcdir)/src/common/net.c \
-	$(top_srcdir)/src/srun/srun_job.c
+	$(top_srcdir)/src/common/mpi.h \
+	$(top_srcdir)/src/common/net.c
 
 mpi_mvapich_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
@@ -358,7 +357,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_mvapich.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mvapich.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -387,13 +385,6 @@ net.lo: $(top_srcdir)/src/common/net.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/common/net.c' object='net.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o net.lo `test -f '$(top_srcdir)/src/common/net.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/net.c
-
-srun_job.lo: $(top_srcdir)/src/srun/srun_job.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srun_job.lo -MD -MP -MF "$(DEPDIR)/srun_job.Tpo" -c -o srun_job.lo `test -f '$(top_srcdir)/src/srun/srun_job.c' || echo '$(srcdir)/'`$(top_srcdir)/src/srun/srun_job.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/srun_job.Tpo" "$(DEPDIR)/srun_job.Plo"; else rm -f "$(DEPDIR)/srun_job.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/srun/srun_job.c' object='srun_job.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srun_job.lo `test -f '$(top_srcdir)/src/srun/srun_job.c' || echo '$(srcdir)/'`$(top_srcdir)/src/srun/srun_job.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
