@@ -10,28 +10,21 @@ sinfo \- view information about SLURM nodes and partitions.
 system running SLURM. 
 
 .SH "OPTIONS"
+
 .TP
 \fB\-a\fR, \fB\-\-all\fR
 Display information about all partions. This causes information to be 
 displayed about partitions that are configured as hidden and partitions that
 are unavailable to user's group.
+
 .TP
 \fB\-b\fR, \fB\-\-bgl\fR
 Display information about bglblocks (on Blue Gene systems only).
-.TP
-\fB\-\-help\fR
-Print a message describing all \fBsinfo\fR options.
-.TP
-\fB\-\-hide\fR
-Do not display information about hidden partitions. By default, partitions 
-that are configured as hidden or are not available to the user's group 
-will not be displayed (i.e. this is the default behavior).
-.TP
-\fB\-\-usage\fR
-Print a brief message listing the \fBsinfo\fR options.
+
 .TP
 \fB\-d\fR, \fB\-\-dead\fR
 If set only report state information for non\-responding (dead) nodes.
+
 .TP
 \fB\-e\fR, \fB\-\-exact\fR
 If set, do not group node information on multiple nodes unless
@@ -39,29 +32,45 @@ their configurations to be reported are identical. Otherwise
 cpu count, memory size, and disk space for nodes will be listed
 with the minimum value followed by a "+" for nodes with the
 same partition and state (e.g., "250+").
+
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
+
+.TP
+\fB\-\-help\fR
+Print a message describing all \fBsinfo\fR options.
+.TP
+
+\fB\-\-hide\fR
+Do not display information about hidden partitions. By default, partitions 
+that are configured as hidden or are not available to the user's group 
+will not be displayed (i.e. this is the default behavior).
+
 .TP
 \fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
 Print the state on a periodic basis. 
 Sleep for the indicated number of seconds between reports.
 By default, prints a time stamp with the header.
+
 .TP
 \fB\-l\fR, \fB\-\-long\fR
 Print more detailed information. 
 This is ignored if the \fB\-\-format\fR option is specified.
+
 .TP
 \fB\-n <nodes>\fR, \fB\-\-nodes=<nodes>\fR
 Print information only about the specified node(s). 
 Multiple nodes may be comma separated or expressed using a 
 node range expression. For example "linux[00\-07]" would 
 indicate eight nodes, "linux00" through "linux07."
+
 .TP
 \fB\-N\fR, \fB\-\-Node\fR
 Print information in a node\-oriented format.
 The default is to print information in a partition\-oriented format.
 This is ignored if the \fB\-\-format\fR option is specified.
+
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed using an \fBsinfo\fR
@@ -184,9 +193,15 @@ right justification of the field
 \fB%<Number><*>\fR 
 size of field
 .RE
+
+.TP
+\fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
+Print information only about the specified partition.  
+
 .TP
 \fB\-r\fR, \fB\-\-responding\fR
 If set only report state information for responding nodes.
+
 .TP
 \fB\-R\fR, \fB\-\-list\-reasons\fR
 List reasons nodes are down or drained. When nodes are in
@@ -200,10 +215,12 @@ however, combinations of these options that result in a list of
 nodes that are not down or drained will not produce any output.
 When used with \fB\-l\fR the output additionally includes
 the current node state.
+
 .TP
 \fB\-s\fR, \fB\-\-summarize\fR
 List only a partition state summary with no node state details.
 This is ignored if the \fB\-\-format\fR option is specified.
+
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
@@ -220,6 +237,7 @@ partition by decreasing memory size.  The default value of sort
 is "#P,\-t" (partitions ordered as configured then decreasing
 node state).  If the \fB\-\-Node\fB option is selected, the
 default sort value is "N" (increasing node name).
+
 .TP
 \fB\-t <states>\fR , \fB\-\-states=<states>\fR
 List nodes only having the given state(s).  Multiple states
@@ -230,12 +248,15 @@ UNK, and UNKNOWN.  By default nodes in the specified state are
 reported whether they are responding or not.  The \fB\-\-dead\fR 
 and \fB\-\-responding\fR options may be used to filtering nodes by 
 the responding flag.
+
 .TP
-\fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
-Print information only about the specified partition.  
+\fB\-\-usage\fR
+Print a brief message listing the \fBsinfo\fR options.
+
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Provide detailed event logging through program execution.
+
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
@@ -460,7 +481,7 @@ Not Responding                      dev8
 .ec
 
 .SH "COPYING"
-Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2002\-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP

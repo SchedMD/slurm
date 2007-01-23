@@ -16,11 +16,9 @@ This is equivalent to the \fB\-\-all\fR option of the \fBsinfo\fR and
 
 .SH "OPTIONS"
 .TP
-\fB\-\-help\fR,
-Print a message describing all \fBsmap\fR options.
-.TP
-\fB\-\-usage\fR
-Print a brief message listing the \fBsmap\fR options.
+\fB\-c\fR, \fB\-\-commandline\fR
+Print output to the commandline, no curses.
+
 .TP
 \fB\-D <option>\fR, \fB\-\-display=<option>\fR
 sets the display mode for smap. Showing revelant information about specific 
@@ -46,6 +44,27 @@ Displays current node states and allows users to configure the system.
 .RE
 
 .TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+
+.TP
+\fB\-\-help\fR,
+Print a message describing all \fBsmap\fR options.
+
+.TP
+\fB\-i <seconds>\fR , \fB\-\-iterate=<seconds>\fR
+Print the state on a periodic basis. 
+Sleep for the indicated number of seconds between reports.
+User can exit at anytime by typing 'q' or hitting the return key.
+If user is in configure mode type 'exit' to exit program, 'quit' 
+to exit configure mode.
+
+.TP
+\fB\-p\fR, \fB\-\-parse\fR
+Used with \-c commandline option. Don't format output send only single 
+tab delimited output to stdout.
+
+.TP
 \fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
 Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
                                                                                   
@@ -56,22 +75,9 @@ To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 wit
 no leading 'R'.
 
 .TP
-\fB\-h\fR, \fB\-\-noheader\fR
-Do not print a header on the output.
-.TP
-\fB\-c\fR, \fB\-\-commandline\fR
-Print output to the commandline, no curses.
-.TP
-\fB\-p\fR, \fB\-\-parse\fR
-Used with \-c commandline option. Don't format output send only single 
-tab delimited output to stdout.
-.TP
-\fB\-i <seconds>\fR , \fB\-\-iterate=<seconds>\fR
-Print the state on a periodic basis. 
-Sleep for the indicated number of seconds between reports.
-User can exit at anytime by typing 'q' or hitting the return key.
-If user is in configure mode type 'exit' to exit program, 'quit' 
-to exit configure mode.
+\fB\-\-usage\fR
+Print a brief message listing the \fBsmap\fR options.
+
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
@@ -410,7 +416,7 @@ compiled into smap.
 The location of the SLURM configuration file.
 
 .SH "COPYING"
-Copyright (C) 2004\-2006 The Regents of the University of California.
+Copyright (C) 2004\-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
