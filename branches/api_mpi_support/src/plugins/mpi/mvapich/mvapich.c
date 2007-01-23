@@ -681,7 +681,7 @@ static int process_environment (void)
 	return (0);
 }
 
-extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job)
+extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
 {
 	short port;
 	pthread_attr_t attr;
@@ -706,12 +706,19 @@ extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job)
 	/*
 	 *  Set some environment variables in current env so they'll get
 	 *   passed to all remote tasks
+	 *  Eventually, when srun is updated to use the slurm_step_launch()
+	 *  API, the "setenvf" below can be removed.
 	 */
-	setenvf (NULL, "MPIRUN_PORT",   "%d", port);
-	setenvf (NULL, "MPIRUN_NPROCS", "%d", nprocs);
-	setenvf (NULL, "MPIRUN_ID",     "%d", job->jobid);
-	if (connect_once)
+	setenvf (NULL,               "MPIRUN_PORT",   "%d", port);
+	env_array_overwrite_fmt(env, "MPIRUN_PORT",   "%d", port);
+	setenvf (NULL,               "MPIRUN_NPROCS", "%d", nprocs);
+	env_array_overwrite_fmt(env, "MPIRUN_NPROCS", "%d", nprocs);
+	setenvf (NULL,               "MPIRUN_ID",     "%d", job->jobid);
+	env_array_overwrite_fmt(env, "MPIRUN_ID",     "%d", job->jobid);
+	if (connect_once) {
 		setenvf (NULL, "MPIRUN_CONNECT_ONCE", "1");
+		env_array_overwrite_fmt(env, "MPIRUN_CONNECT_ONCE", "1");
+	}
 
 	verbose ("mvapich-0.9.[45] master listening on port %d", port);
 

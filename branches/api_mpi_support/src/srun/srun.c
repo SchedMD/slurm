@@ -136,6 +136,7 @@ int srun(int ac, char **av)
 	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
+	char **throw_away_env = NULL;
 	
 	env->stepid = -1;
 	env->procid = -1;
@@ -379,8 +380,9 @@ int srun(int ac, char **av)
 	mpi_job_info->jobid = job->jobid;
 	mpi_job_info->stepid = job->stepid;
 	mpi_job_info->step_layout = job->step_layout;
-	if (slurm_mpi_client_thr_create(mpi_job_info) < 0)
+	if (slurm_mpi_client_thr_create(mpi_job_info, &throw_away_env) < 0)
 		job_fatal (job, "Failed to initialize MPI");
+	env_array_free(throw_away_env);
 
 	srun_set_stdio_fds(job, &fds);
 	job->client_io = client_io_handler_create(fds,

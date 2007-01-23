@@ -76,7 +76,7 @@ int slurm_mpi_slurmd_init (slurmd_job_t *job, int rank);
 int slurm_mpi_client_init (char *mpi_type);
 
 /* Call the plugin mpi_p_thr_create() function. */
-int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job);
+int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job, char ***env);
 
 /* Call the plugin mpi_p_single_task() function. */
 int slurm_mpi_client_single_task_per_node (void);

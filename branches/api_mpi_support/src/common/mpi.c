@@ -59,7 +59,8 @@
  */
 typedef struct slurm_mpi_ops {
 	int          (*init)          (slurmd_job_t *job, int rank);
-	int          (*create_thread) (slurm_mpi_jobstep_info_t *job);
+	int          (*create_thread) (slurm_mpi_jobstep_info_t *job,
+				       char ***env);
 	int          (*single_task)   (void);
 	int          (*exit)          (void);
 } slurm_mpi_ops_t;
@@ -268,12 +269,12 @@ int mpi_fini (void)
 	return rc;
 }
 
-int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job)
+int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 		
-	return (*(g_context->ops.create_thread))(job);
+	return (*(g_context->ops.create_thread))(job, env);
 }
 
 int slurm_mpi_client_single_task_per_node (void)
