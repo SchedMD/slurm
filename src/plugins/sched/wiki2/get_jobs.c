@@ -79,6 +79,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
  *	[REJMESSAGE=<str>;]		reason job is not running, if any
  *	UPDATETIME=<uts>;		time last active
+ *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
  *	TASKS=<cpus>;			CPUs required
  *	QUEUETIME=<uts>;		submission time
@@ -245,6 +246,9 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 			job_reason_string(job_ptr->state_reason));
 		xstrcat(buf, tmp);
 	}
+
+	if (job_ptr->batch_flag == 0)
+		xstrcat(buf, "FLAGS=INTERACTIVE;");
 
 	snprintf(tmp, sizeof(tmp), 
 		"UPDATETIME=%u;WCLIMIT=%u;",
