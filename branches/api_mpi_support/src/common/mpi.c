@@ -234,16 +234,6 @@ done:
 	return retval;
 }
 
-int mpi_hook_client_init (char *mpi_type)
-{
-	debug("mpi type = %s", mpi_type);
-	
-	if(_mpi_init(mpi_type) == SLURM_ERROR) 
-		return SLURM_ERROR;
-	
-	return SLURM_SUCCESS;
-}
-
 
 int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank)
 {   
@@ -258,15 +248,14 @@ int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank)
 	return (*(g_context->ops.slurmstepd_init))(job, rank);
 }
 
-int mpi_fini (void)
+int mpi_hook_client_init (char *mpi_type)
 {
-	int rc;
-
-	if (!g_context)
-		return SLURM_SUCCESS;
-
-	rc = _slurm_mpi_context_destroy(g_context);
-	return rc;
+	debug("mpi type = %s", mpi_type);
+	
+	if(_mpi_init(mpi_type) == SLURM_ERROR) 
+		return SLURM_ERROR;
+	
+	return SLURM_SUCCESS;
 }
 
 int mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
@@ -291,6 +280,17 @@ int mpi_hook_client_fini (void)
 		return SLURM_ERROR;
 	
 	return (*(g_context->ops.client_fini))();
+}
+
+int mpi_fini (void)
+{
+	int rc;
+
+	if (!g_context)
+		return SLURM_SUCCESS;
+
+	rc = _slurm_mpi_context_destroy(g_context);
+	return rc;
 }
 
 

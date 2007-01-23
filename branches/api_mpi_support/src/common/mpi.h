@@ -86,7 +86,7 @@ int mpi_hook_client_init (char *mpi_type);
  * array will be allocated automaticallly.
  *
  * The returned "env" array may be manipulated (and freed) by using
- * the src/common/env.c/env_array_* functions.
+ * the src/common/env.c:env_array_* functions.
  */
 int mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env);
 

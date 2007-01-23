@@ -334,18 +334,13 @@ extern int gmpi_thr_create(mpi_hook_client_info_t *job, char ***env)
 		return -1;
 	}
 	slurm_attr_destroy(&attr);
-	setenvf (NULL,               "GMPI_PORT",  "%u", port);
+
 	env_array_overwrite_fmt(env, "GMPI_PORT",  "%u", port);
-	setenvf (NULL,               "GMPI_MAGIC", "%u", job->jobid);
 	env_array_overwrite_fmt(env, "GMPI_MAGIC", "%u", job->jobid);
-	setenvf (NULL,               "GMPI_NP",    "%d",
-		 job->step_layout->task_cnt);
 	env_array_overwrite_fmt(env, "GMPI_NP",    "%d", 
 				job->step_layout->task_cnt);
-	setenvf (NULL,               "GMPI_SHMEM", "1");
 	env_array_overwrite_fmt(env, "GMPI_SHMEM", "1");
 	/* FIXME for multi-board config. */
-	setenvf (NULL,               "GMPI_BOARD", "-1");
 	env_array_overwrite_fmt(env, "GMPI_BOARD", "-1");
 
 	debug("Started GMPI master thread (%lu)", (unsigned long) gtid);
