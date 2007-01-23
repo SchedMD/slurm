@@ -44,4 +44,4 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
-extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job, char ***env);
+extern int mvapich_thr_create(mpi_hook_client_info_t *job, char ***env);

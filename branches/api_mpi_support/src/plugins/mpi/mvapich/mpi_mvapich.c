@@ -118,7 +118,7 @@ int mpi_p_init (slurmd_job_t *job, int rank)
 	return SLURM_SUCCESS;
 }
 
-int mpi_p_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
+int mpi_p_thr_create(mpi_hook_client_info_t *job, char ***env)
 {
 	debug("Using mpi/mvapich");
 	return mvapich_thr_create(job, env);

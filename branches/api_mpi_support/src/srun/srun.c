@@ -99,7 +99,7 @@
 #define	TYPE_TEXT	1
 #define	TYPE_SCRIPT	2
 
-slurm_mpi_jobstep_info_t mpi_job_info[1];
+mpi_hook_client_info_t mpi_job_info[1];
 
 /*
  * forward declaration of static funcs
@@ -380,7 +380,7 @@ int srun(int ac, char **av)
 	mpi_job_info->jobid = job->jobid;
 	mpi_job_info->stepid = job->stepid;
 	mpi_job_info->step_layout = job->step_layout;
-	if (slurm_mpi_client_thr_create(mpi_job_info, &throw_away_env) < 0)
+	if (mpi_hook_client_thr_create(mpi_job_info, &throw_away_env) < 0)
 		job_fatal (job, "Failed to initialize MPI");
 	env_array_free(throw_away_env);
 
@@ -462,7 +462,7 @@ int srun(int ac, char **av)
 	debug("done");
 	
 	
-	if (slurm_mpi_client_exit () < 0)
+	if (mpi_hook_client_exit () < 0)
 		; /* eh, ignore errors here */
 
 	_run_srun_epilog(job);

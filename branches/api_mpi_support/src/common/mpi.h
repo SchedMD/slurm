@@ -50,14 +50,14 @@ typedef struct {
 	uint32_t jobid;
 	uint32_t stepid;
 	slurm_step_layout_t *step_layout;
-} slurm_mpi_jobstep_info_t;
+} mpi_hook_client_info_t;
 
 /**********************************************************************
  * Hooks called by the slurmd and/or slurmstepd.
  **********************************************************************/
 
 /* Load the plugin and call the plugin mpi_p_init() function. */
-int slurm_mpi_slurmd_init (slurmd_job_t *job, int rank);
+int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank);
 
 /**********************************************************************
  * Hooks called by client applications.
@@ -66,23 +66,23 @@ int slurm_mpi_slurmd_init (slurmd_job_t *job, int rank);
 
 /*
  * Just load the requested plugin.  No explicit calls into the plugin
- * once loaded.
+ * once loaded (just the implicit call to the plugin's init() function).
  *
  * This function is only called if the user explicitly
  * requested a particular plugin.  Otherwise the system-default mpi plugin
- * is initialized on demand when any of the other slurm_mpi_client_*
+ * is initialized on demand when any of the other mpi_hook_client_*
  * functions are called.
  */
-int slurm_mpi_client_init (char *mpi_type);
+int mpi_hook_client_init (char *mpi_type);
 
 /* Call the plugin mpi_p_thr_create() function. */
-int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job, char ***env);
+int mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env);
 
 /* Call the plugin mpi_p_single_task() function. */
-int slurm_mpi_client_single_task_per_node (void);
+int mpi_hook_client_single_task_per_node (void);
 
 /* Call the plugin mpi_p_exit() function. */
-int slurm_mpi_client_exit (void);
+int mpi_hook_client_exit (void);
 
 /**********************************************************************
  * FIXME - Nobody calls the following function.  Perhaps someone should.

@@ -73,7 +73,7 @@ typedef struct {
 
 static int gmpi_fd = -1;
 
-static int _gmpi_parse_init_recv_msg(slurm_mpi_jobstep_info_t *job, char *rbuf,
+static int _gmpi_parse_init_recv_msg(mpi_hook_client_info_t *job, char *rbuf,
 				     gm_slave_t *slave_data, int *ii)
 {
 	unsigned int magic, id, port_board_id, unique_high_id,
@@ -119,7 +119,7 @@ static int _gmpi_parse_init_recv_msg(slurm_mpi_jobstep_info_t *job, char *rbuf,
 }
 
 
-static int _gmpi_establish_map(slurm_mpi_jobstep_info_t *job)
+static int _gmpi_establish_map(mpi_hook_client_info_t *job)
 {
 	struct sockaddr_in addr;
 	in_addr_t *iaddrs;
@@ -241,7 +241,7 @@ static int _gmpi_establish_map(slurm_mpi_jobstep_info_t *job)
 }
 
 
-static void _gmpi_wait_abort(slurm_mpi_jobstep_info_t *job)
+static void _gmpi_wait_abort(mpi_hook_client_info_t *job)
 {
 	struct sockaddr_in addr;
 	socklen_t addrlen;
@@ -290,9 +290,9 @@ static void _gmpi_wait_abort(slurm_mpi_jobstep_info_t *job)
 
 static void *_gmpi_thr(void *arg)
 {
-	slurm_mpi_jobstep_info_t *job;
+	mpi_hook_client_info_t *job;
 
-	job = (slurm_mpi_jobstep_info_t *) arg;
+	job = (mpi_hook_client_info_t *) arg;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
 	_gmpi_establish_map(job);
@@ -304,7 +304,7 @@ static void *_gmpi_thr(void *arg)
 }
 
 
-extern int gmpi_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
+extern int gmpi_thr_create(mpi_hook_client_info_t *job, char ***env)
 {
 	short port;
 	pthread_attr_t attr;

@@ -129,7 +129,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	/* FIXME!!  mpi plugins need to copy the input param
 	   of slurm_mpi_client_thr_create(), or need to put mpi_job_info
 	   in the step_launch_state structure */
-	static slurm_mpi_jobstep_info_t mpi_job_info[1];
+	static mpi_hook_client_info_t mpi_job_info[1];
 
 	debug("Entering slurm_step_launch");
 	memset(&launch, 0, sizeof(launch));
@@ -152,22 +152,20 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
-	/* hook to initialize mpi plugin.  if mpi_plugin_name is NULL,
-	   it will automatically initialize the default mpi plugin */
-	if (slurm_mpi_client_init(params->mpi_plugin_name) == SLURM_ERROR) {
+	if (mpi_hook_client_init(params->mpi_plugin_name) == SLURM_ERROR) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
 		return SLURM_ERROR;
 	}
 	/* Now, hack the step_layout struct if the following it true.
 	   This looks like an ugly hack to support LAM/MPI's lamboot. */
-	if (slurm_mpi_client_single_task_per_node()) {
+	if (mpi_hook_client_single_task_per_node()) {
 		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
 			ctx->step_resp->step_layout->tasks[i] = 1;
 	}
 	mpi_job_info->jobid = ctx->step_req->job_id;
 	mpi_job_info->stepid = ctx->step_resp->job_step_id;
 	mpi_job_info->step_layout = ctx->step_resp->step_layout;
-	if (slurm_mpi_client_thr_create(mpi_job_info, &mpi_env) < 0) {
+	if (mpi_hook_client_thr_create(mpi_job_info, &mpi_env) < 0) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED);
 		return SLURM_ERROR;
 	}

@@ -43,4 +43,4 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
-//extern int lam_thr_create(srun_job_t *job);
+//extern int lam_thr_create(mpi_hook_client_info_t *job);

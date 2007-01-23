@@ -863,7 +863,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	    
 	case OPT_MPI:
-		if (slurm_mpi_client_init((char *)val) == SLURM_ERROR) {
+		if (mpi_hook_client_init((char *)val) == SLURM_ERROR) {
 			fatal("\"%s=%s\" -- invalid MPI type, "
 			      "--mpi=list for acceptable types.",
 			      e->var, val);
@@ -1169,7 +1169,7 @@ void set_options(const int argc, char **argv)
 				       optarg);
 			break;
 		case LONG_OPT_MPI:
-			if (slurm_mpi_client_init((char *)optarg)
+			if (mpi_hook_client_init((char *)optarg)
 			    == SLURM_ERROR) {
 				fatal("\"--mpi=%s\" -- long invalid MPI type, "
 				      "--mpi=list for acceptable types.",

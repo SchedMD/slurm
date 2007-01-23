@@ -84,7 +84,7 @@
 #endif
 
 struct mvapich_args {
-	slurm_mpi_jobstep_info_t *job;    /* job step information          */
+	mpi_hook_client_info_t *job;    /* job step information          */
 	int fd;             /* fd on which to accept new connections */
 };
 
@@ -436,7 +436,7 @@ mvapich_print_abort_message (slurm_step_layout_t *sl, int rank, int dest)
 }
 
 
-static void mvapich_wait_for_abort(slurm_mpi_jobstep_info_t *job)
+static void mvapich_wait_for_abort(mpi_hook_client_info_t *job)
 {
 	int rlen;
 	char rbuf[1024];
@@ -606,7 +606,7 @@ static void do_timings (void)
 
 static void *mvapich_thr(void *arg)
 {
-	slurm_mpi_jobstep_info_t *job = arg;
+	mpi_hook_client_info_t *job = arg;
 	int i = 0;
 	int first = 1;
 
@@ -681,7 +681,7 @@ static int process_environment (void)
 	return (0);
 }
 
-extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
+extern int mvapich_thr_create(mpi_hook_client_info_t *job, char ***env)
 {
 	short port;
 	pthread_attr_t attr;

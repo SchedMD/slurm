@@ -59,7 +59,7 @@
  */
 typedef struct slurm_mpi_ops {
 	int          (*init)          (slurmd_job_t *job, int rank);
-	int          (*create_thread) (slurm_mpi_jobstep_info_t *job,
+	int          (*create_thread) (mpi_hook_client_info_t *job,
 				       char ***env);
 	int          (*single_task)   (void);
 	int          (*exit)          (void);
@@ -234,7 +234,7 @@ done:
 	return retval;
 }
 
-int slurm_mpi_client_init (char *mpi_type)
+int mpi_hook_client_init (char *mpi_type)
 {
 	debug("mpi type = %s", mpi_type);
 	
@@ -245,7 +245,7 @@ int slurm_mpi_client_init (char *mpi_type)
 }
 
 
-int slurm_mpi_slurmd_init (slurmd_job_t *job, int rank)
+int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank)
 {   
 	char *mpi_type = getenvp (job->env, "SLURM_MPI_TYPE");
 	
@@ -269,7 +269,7 @@ int mpi_fini (void)
 	return rc;
 }
 
-int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
+int mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -277,7 +277,7 @@ int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job, char ***env)
 	return (*(g_context->ops.create_thread))(job, env);
 }
 
-int slurm_mpi_client_single_task_per_node (void)
+int mpi_hook_client_single_task_per_node (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -285,7 +285,7 @@ int slurm_mpi_client_single_task_per_node (void)
 	return (*(g_context->ops.single_task))();
 }
 
-int slurm_mpi_client_exit (void)
+int mpi_hook_client_exit (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
