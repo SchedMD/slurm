@@ -24,6 +24,9 @@ file not loading</a></li>
 <li><a href="#bluegene-block-free">How to free a block manually</a></li>
 <li><a href="#bluegene-error-state">How to set a block in an error
 state manually</a></li>
+<li><a href="#bluegene-error-state2">How to set a sub base partition
+which doesn't have a block already created in an error
+state manually</a></li>
 <li><a href="#bluegene-block-create">How to make a <i>bluegene.conf</i> 
 file that will load in SLURM</a></li>
 </ul>
@@ -268,6 +271,18 @@ an error state manually</a></h2>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
+<h2><a name="bluegene-error-state2">Bluegene: How to set a sub base partition
+which doesn't have a block already created in an error
+state manually</a></h2>
+
+<ol>
+<li>Run "<i>scontrol update state=ERROR subBPName=IONODE_LIST</i>".</li>
+IONODE_LIST is a list of the ionodes you want to down in a certain base
+partition i.e. bg000[0-3] will down the first 4 ionodes in base
+partition 000. 
+</ol>
+<p class="footer"><a href="#top">top</a></p>
+
 <h2><a name="bluegene-block-create">Bluegene: How to make a 
 <i>bluegene.conf</i> file that will load in SLURM</a></h2>
 
@@ -276,6 +291,6 @@ an error state manually</a></h2>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 November 2006</p>
+<p style="text-align:center;">Last modified 23 January 2007</p>
 
 <!--#include virtual="footer.txt"-->

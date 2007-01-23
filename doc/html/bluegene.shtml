@@ -365,6 +365,19 @@ making it so no job will run on the block.  To set it back to a usuable
 state set the state to free (i.e. 
 "<i>scontrol update BlockName=RMP0 state=free</i>"). 
 
+<p>Alternatively, if only part of a base partition needs to be put
+into an error state which isn't already in a block of the size you
+need, you can set a set of ionodes into an error state with scontrol,
+(i.e. "<i>scontrol update subbpname=bg000[0-3] state=error</i>").
+This will end any job on the nodes listed, create a block there, and set 
+the state of the block to ERROR making it so no job will run on the
+block.  To set it back to a usuable state set the state to free (i.e. 
+"<i>scontrol update BlockName=RMP0 state=free</i>" or
+ "<i>scontrol update subbpname=bg000[0-3] state=free</i>"). This is
+ helpful to allow other jobs to run on the unaffected nodes in
+ the base partition.
+
+
 <p>One of these modes must be defined in the <i>bluegene.conf</i> file 
 with the option <i>LayoutMode=MODE</i> (where MODE=STATIC, DYNAMIC or OVERLAP).</p>
 
@@ -597,6 +610,6 @@ scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 November 2006</p>
+<p style="text-align:center;">Last modified 23 January 2007</p>
 
 <!--#include virtual="footer.txt"-->
