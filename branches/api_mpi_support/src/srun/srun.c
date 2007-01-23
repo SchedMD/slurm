@@ -380,7 +380,7 @@ int srun(int ac, char **av)
 	mpi_job_info->jobid = job->jobid;
 	mpi_job_info->stepid = job->stepid;
 	mpi_job_info->step_layout = job->step_layout;
-	if (mpi_hook_client_thr_create(mpi_job_info, &throw_away_env) < 0)
+	if (mpi_hook_client_prelaunch(mpi_job_info, &throw_away_env) < 0)
 		job_fatal (job, "Failed to initialize MPI");
 	env_array_free(throw_away_env);
 

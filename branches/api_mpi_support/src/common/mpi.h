@@ -42,6 +42,8 @@
 # include "config.h"
 #endif 
 
+#include <stdbool.h>
+#include <slurm/slurm.h>
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_mpi_context *slurm_mpi_context_t;
@@ -75,11 +77,21 @@ int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank);
  */
 int mpi_hook_client_init (char *mpi_type);
 
-/* Call the plugin p_mpi_hook_client_thr_create() function. */
-int mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env);
+/*
+ * Call the plugin p_mpi_hook_client_prelaunch() function.
+ *
+ * If the plugin requires that environment variables be set in the
+ * environment of every task, it will add the necessary variables
+ * the the env array pointed to be "env".  If "env" is NULL, a new
+ * array will be allocated automaticallly.
+ *
+ * The returned "env" array may be manipulated (and freed) by using
+ * the src/common/env.c/env_array_* functions.
+ */
+int mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env);
 
 /* Call the plugin p_mpi_hook_client_single_task_per_node() function. */
-int mpi_hook_client_single_task_per_node (void);
+bool mpi_hook_client_single_task_per_node (void);
 
 /* Call the plugin p_mpi_hook_client_fini() function. */
 int mpi_hook_client_fini (void);

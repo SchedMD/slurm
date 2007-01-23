@@ -99,7 +99,7 @@ int p_mpi_hook_slurmstepd_init(slurmd_job_t *job, int rank)
 	return SLURM_SUCCESS;
 }
 
-int p_mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env)
+int p_mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
 {
 	debug("Using mpi/mpich-gm");
 	return gmpi_thr_create(job, env);

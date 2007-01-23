@@ -53,16 +53,16 @@
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job completion
- * logging plugins will stop working.  If you need to add fields, add them 
+ * fields at the beginning of the structure.  If you do, MPI plugins
+ * will stop working.  If you need to add fields, add them 
  * at the end of the structure.
  */
 typedef struct slurm_mpi_ops {
-	int          (*init)          (slurmd_job_t *job, int rank);
-	int          (*create_thread) (mpi_hook_client_info_t *job,
-				       char ***env);
-	int          (*single_task)   (void);
-	int          (*exit)          (void);
+	int          (*slurmstepd_init)   (slurmd_job_t *job, int rank);
+	int          (*client_prelaunch)  (mpi_hook_client_info_t *job,
+					   char ***env);
+	bool         (*client_single_task)(void);
+	int          (*client_fini)       (void);
 } slurm_mpi_ops_t;
 
 struct slurm_mpi_context {
@@ -136,9 +136,9 @@ _slurm_mpi_get_ops( slurm_mpi_context_t c )
 	 */
 	static const char *syms[] = {
 		"p_mpi_hook_slurmstepd_init",
-		"p_mpi_hook_client_thr_create",
+		"p_mpi_hook_client_prelaunch",
 		"p_mpi_hook_client_single_task_per_node",
-		"p_mpi_hook_client_fini"		
+		"p_mpi_hook_client_fini"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	char *plugin_dir = NULL;
@@ -255,7 +255,7 @@ int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank)
 		return SLURM_ERROR;
 	
 	unsetenvp (job->env, "SLURM_MPI_TYPE");	
-	return (*(g_context->ops.init))(job, rank);
+	return (*(g_context->ops.slurmstepd_init))(job, rank);
 }
 
 int mpi_fini (void)
@@ -269,20 +269,20 @@ int mpi_fini (void)
 	return rc;
 }
 
-int mpi_hook_client_thr_create(mpi_hook_client_info_t *job, char ***env)
+int mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 		
-	return (*(g_context->ops.create_thread))(job, env);
+	return (*(g_context->ops.client_prelaunch))(job, env);
 }
 
-int mpi_hook_client_single_task_per_node (void)
+bool mpi_hook_client_single_task_per_node (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 	
-	return (*(g_context->ops.single_task))();
+	return (*(g_context->ops.client_single_task))();
 }
 
 int mpi_hook_client_fini (void)
@@ -290,7 +290,7 @@ int mpi_hook_client_fini (void)
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 	
-	return (*(g_context->ops.exit))();
+	return (*(g_context->ops.client_fini))();
 }
 
 

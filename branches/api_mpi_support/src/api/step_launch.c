@@ -165,7 +165,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	mpi_job_info->jobid = ctx->step_req->job_id;
 	mpi_job_info->stepid = ctx->step_resp->job_step_id;
 	mpi_job_info->step_layout = ctx->step_resp->step_layout;
-	if (mpi_hook_client_thr_create(mpi_job_info, &mpi_env) < 0) {
+	if (mpi_hook_client_prelaunch(mpi_job_info, &mpi_env) < 0) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED);
 		return SLURM_ERROR;
 	}
