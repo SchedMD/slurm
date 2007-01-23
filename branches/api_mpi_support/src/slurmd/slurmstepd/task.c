@@ -327,7 +327,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 			exit(1);
 		}
 
-		slurmd_mpi_init (job, task->gtid);
+		slurm_mpi_slurmd_init (job, task->gtid);
 	
 		pdebug_stop_current(job);
 	}

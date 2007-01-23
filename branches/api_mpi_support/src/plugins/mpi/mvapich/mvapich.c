@@ -56,8 +56,6 @@
 #include "src/common/xstring.h"
 #include "src/common/net.h"
 #include "src/common/fd.h"
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
 
 /* NOTE: MVAPICH has changed protocols without changing version numbers.
  * This makes support of MVAPICH very difficult. 
@@ -85,11 +83,8 @@
 	} while (0)
 #endif
 
-/*
- *  Arguments passed to mvapich support thread.
- */
 struct mvapich_args {
-	srun_job_t *job;    /* SRUN job information                  */
+	slurm_mpi_jobstep_info_t *job;    /* job step information          */
 	int fd;             /* fd on which to accept new connections */
 };
 
@@ -441,7 +436,7 @@ mvapich_print_abort_message (slurm_step_layout_t *sl, int rank, int dest)
 }
 
 
-static void mvapich_wait_for_abort(srun_job_t *job)
+static void mvapich_wait_for_abort(slurm_mpi_jobstep_info_t *job)
 {
 	int rlen;
 	char rbuf[1024];
@@ -475,7 +470,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 			mvapich_print_abort_message (job->step_layout, p[1], p[0]);
 		else 
 			mvapich_print_abort_message (job->step_layout, p[0], -1);
-		fwd_signal(job, SIGKILL, opt.max_threads);
+		slurm_signal_job_step(job->jobid, job->stepid, SIGKILL);
 	}
 
 	return; /* but not reached */
@@ -611,7 +606,7 @@ static void do_timings (void)
 
 static void *mvapich_thr(void *arg)
 {
-	srun_job_t *job = arg;
+	slurm_mpi_jobstep_info_t *job = arg;
 	int i = 0;
 	int first = 1;
 
@@ -663,7 +658,7 @@ again:
 
 fail:
 	error ("mvapich: fatal error, killing job");
-	fwd_signal (job, SIGKILL, opt.max_threads);
+	slurm_signal_job_step(job->jobid, job->stepid, SIGKILL);
 	return (void *)0;
 }
 
@@ -686,7 +681,7 @@ static int process_environment (void)
 	return (0);
 }
 
-extern int mvapich_thr_create(srun_job_t *job)
+extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job)
 {
 	short port;
 	pthread_attr_t attr;
@@ -695,7 +690,7 @@ extern int mvapich_thr_create(srun_job_t *job)
 	if (process_environment () < 0)
 		return error ("mvapich: Failed to read environment settings\n");
 
-	nprocs = opt.nprocs;
+	nprocs = job->step_layout->task_cnt;
 
 	if (net_stream_listen(&mvapich_fd, &port) < 0)
 		return error ("Unable to create ib listen port: %m");

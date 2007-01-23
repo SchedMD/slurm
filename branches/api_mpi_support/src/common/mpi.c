@@ -59,7 +59,7 @@
  */
 typedef struct slurm_mpi_ops {
 	int          (*init)          (slurmd_job_t *job, int rank);
-	int          (*create_thread) (srun_job_t *job);
+	int          (*create_thread) (slurm_mpi_jobstep_info_t *job);
 	int          (*single_task)   (void);
 	int          (*exit)          (void);
 } slurm_mpi_ops_t;
@@ -233,7 +233,7 @@ done:
 	return retval;
 }
 
-int srun_mpi_init (char *mpi_type)
+int slurm_mpi_client_init (char *mpi_type)
 {
 	debug("mpi type = %s", mpi_type);
 	
@@ -244,7 +244,7 @@ int srun_mpi_init (char *mpi_type)
 }
 
 
-int slurmd_mpi_init (slurmd_job_t *job, int rank)
+int slurm_mpi_slurmd_init (slurmd_job_t *job, int rank)
 {   
 	char *mpi_type = getenvp (job->env, "SLURM_MPI_TYPE");
 	
@@ -268,7 +268,7 @@ int mpi_fini (void)
 	return rc;
 }
 
-int slurm_mpi_thr_create(srun_job_t *job)
+int slurm_mpi_client_thr_create(slurm_mpi_jobstep_info_t *job)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -276,7 +276,7 @@ int slurm_mpi_thr_create(srun_job_t *job)
 	return (*(g_context->ops.create_thread))(job);
 }
 
-int slurm_mpi_single_task_per_node (void)
+int slurm_mpi_client_single_task_per_node (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -284,7 +284,7 @@ int slurm_mpi_single_task_per_node (void)
 	return (*(g_context->ops.single_task))();
 }
 
-int slurm_mpi_exit (void)
+int slurm_mpi_client_exit (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;

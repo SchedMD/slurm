@@ -48,6 +48,7 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/mpi/mvapich/mvapich.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -117,7 +118,7 @@ int mpi_p_init (slurmd_job_t *job, int rank)
 	return SLURM_SUCCESS;
 }
 
-int mpi_p_thr_create(srun_job_t *job)
+int mpi_p_thr_create(slurm_mpi_jobstep_info_t *job)
 {
 	debug("Using mpi/mvapich");
 	return mvapich_thr_create(job);

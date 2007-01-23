@@ -40,8 +40,8 @@
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
+#include "src/common/mpi.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
-extern int mvapich_thr_create(srun_job_t *job);
+extern int mvapich_thr_create(slurm_mpi_jobstep_info_t *job);

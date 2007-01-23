@@ -39,7 +39,7 @@
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
+#include "src/common/mpi.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 

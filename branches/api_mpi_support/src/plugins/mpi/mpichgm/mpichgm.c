@@ -54,8 +54,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/net.h"
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
+#include "src/common/mpi.h"
 
 #include "src/plugins/mpi/mpichgm/mpichgm.h"
 
@@ -74,7 +73,7 @@ typedef struct {
 
 static int gmpi_fd = -1;
 
-static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
+static int _gmpi_parse_init_recv_msg(slurm_mpi_jobstep_info_t *job, char *rbuf,
 				     gm_slave_t *slave_data, int *ii)
 {
 	unsigned int magic, id, port_board_id, unique_high_id,
@@ -94,7 +93,7 @@ static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 		error("GMPI master received invalid magic number");
 		return -1;
 	}
-	if (id >= job->ntasks)
+	if (id >= job->step_layout->task_cnt)
 		fatal("GMPI id is out of range");
 	if (port_board_id == 0)
 		fatal("MPI id=%d was unable to open a GM port", id);
@@ -120,7 +119,7 @@ static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 }
 
 
-static int _gmpi_establish_map(srun_job_t *job)
+static int _gmpi_establish_map(slurm_mpi_jobstep_info_t *job)
 {
 	struct sockaddr_in addr;
 	in_addr_t *iaddrs;
@@ -137,7 +136,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 	 */
 	accfd = gmpi_fd;
 	addrlen = sizeof(addr);
-	nprocs = job->ntasks;
+	nprocs = job->step_layout->task_cnt;
 	iaddrs = (in_addr_t *)xmalloc(sizeof(*iaddrs)*nprocs);
 	slave_data = (gm_slave_t *)xmalloc(sizeof(*slave_data)*nprocs);
 	for (i=0; i<nprocs; i++)
@@ -242,7 +241,7 @@ static int _gmpi_establish_map(srun_job_t *job)
 }
 
 
-static void _gmpi_wait_abort(srun_job_t *job)
+static void _gmpi_wait_abort(slurm_mpi_jobstep_info_t *job)
 {
 	struct sockaddr_in addr;
 	socklen_t addrlen;
@@ -278,7 +277,7 @@ static void _gmpi_wait_abort(srun_job_t *job)
 		}
 		close(newfd);
 		debug("Received ABORT message from an MPI process.");
-		fwd_signal(job, SIGKILL, opt.max_threads);
+		slurm_signal_job_step(job->jobid, job->stepid, SIGKILL);
 #if 0
 		xfree(rbuf);
 		close(jgmpi_fd);
@@ -291,9 +290,9 @@ static void _gmpi_wait_abort(srun_job_t *job)
 
 static void *_gmpi_thr(void *arg)
 {
-	srun_job_t *job;
+	slurm_mpi_jobstep_info_t *job;
 
-	job = (srun_job_t *) arg;
+	job = (slurm_mpi_jobstep_info_t *) arg;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
 	_gmpi_establish_map(job);
@@ -305,7 +304,7 @@ static void *_gmpi_thr(void *arg)
 }
 
 
-extern int gmpi_thr_create(srun_job_t *job)
+extern int gmpi_thr_create(slurm_mpi_jobstep_info_t *job)
 {
 	short port;
 	pthread_attr_t attr;
@@ -337,7 +336,7 @@ extern int gmpi_thr_create(srun_job_t *job)
 	slurm_attr_destroy(&attr);
 	setenvf (NULL, "GMPI_PORT",  "%u", port);
 	setenvf (NULL, "GMPI_MAGIC", "%u", job->jobid);
-	setenvf (NULL, "GMPI_NP",    "%d", job->ntasks);
+	setenvf (NULL, "GMPI_NP",    "%d", job->step_layout->task_cnt);
 	setenvf (NULL, "GMPI_SHMEM", "1");
 	/* FIXME for multi-board config. */
 	setenvf (NULL, "GMPI_BOARD", "-1");

@@ -159,7 +159,7 @@ launch(void *arg)
 		r.task_flags |= TASK_PARALLEL_DEBUG;
 	
 	/* Node specific message contents */
-	if (slurm_mpi_single_task_per_node ()) {
+	if (slurm_mpi_client_single_task_per_node ()) {
 		for (i = 0; i < job->step_layout->node_cnt; i++)
 			job->step_layout->tasks[i] = 1;
 	} 
