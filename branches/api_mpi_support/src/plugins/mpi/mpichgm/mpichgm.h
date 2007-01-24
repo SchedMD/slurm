@@ -40,7 +40,6 @@
 #endif
 
 #include "src/common/mpi.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
-extern int gmpi_thr_create(mpi_hook_client_info_t *job, char ***env);
+extern int gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env);

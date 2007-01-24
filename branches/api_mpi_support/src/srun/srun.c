@@ -99,7 +99,7 @@
 #define	TYPE_TEXT	1
 #define	TYPE_SCRIPT	2
 
-mpi_hook_client_info_t mpi_job_info[1];
+mpi_plugin_client_info_t mpi_job_info[1];
 
 /*
  * forward declaration of static funcs

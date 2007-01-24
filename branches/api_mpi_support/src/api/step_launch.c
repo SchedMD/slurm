@@ -129,7 +129,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	/* FIXME!!  mpi plugins need to copy the input param
 	   of slurm_mpi_client_thr_create(), or need to put mpi_job_info
 	   in the step_launch_state structure */
-	static mpi_hook_client_info_t mpi_job_info[1];
+	static mpi_plugin_client_info_t mpi_job_info[1];
 
 	debug("Entering slurm_step_launch");
 	memset(&launch, 0, sizeof(launch));

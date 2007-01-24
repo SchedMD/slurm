@@ -48,7 +48,6 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/mpi.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
 /*
@@ -82,13 +81,15 @@ const char plugin_name[]        = "OpenMPI plugin";
 const char plugin_type[]        = "mpi/openmpi";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_init(slurmd_job_t *job)
+int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
+			       char ***env)
 {
 	debug("Using mpi/openmpi");
 	return SLURM_SUCCESS;
 }
 
-int p_mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
+int p_mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job,
+				char ***env)
 {
 	debug("Using mpi/openmpi");
 	return SLURM_SUCCESS;

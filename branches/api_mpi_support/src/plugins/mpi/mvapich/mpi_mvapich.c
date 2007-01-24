@@ -80,45 +80,46 @@ const char plugin_name[]        = "mpi MVAPICH plugin";
 const char plugin_type[]        = "mpi/mvapich";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank)
+int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
+				char ***env)
 {
 	int i;
 	char *processes = NULL;
-	char *addr = getenvp (job->env, "SLURM_LAUNCH_NODE_IPADDR");
+	char *addr = getenvp (*env, "SLURM_LAUNCH_NODE_IPADDR");
 
 	debug("Using mpi/mvapich");
-	setenvf (&job->env, "MPIRUN_HOST", "%s", addr);
-	setenvf (&job->env, "MPIRUN_RANK", "%d", rank);
-	setenvf (&job->env, "MPIRUN_MPD", "0");
+	env_array_overwrite_fmt(env, "MPIRUN_HOST", "%s", addr);
+	env_array_overwrite_fmt(env, "MPIRUN_RANK", "%u", job->gtaskid);
+	env_array_overwrite_fmt(env, "MPIRUN_MPD", "0");
 
-	debug2("init for mpi rank %d\n", rank);
+	debug2("init for mpi rank %u\n", job->gtaskid);
 	/*
 	 * Fake MPIRUN_PROCESSES env var -- we don't need this for
 	 *  SLURM at this time. (what a waste)
 	 */
-	for (i = 0; i < job->nprocs; i++)
+	for (i = 0; i < job->ntasks; i++)
 		xstrcat (processes, "x:");
 	
-	setenvf (&job->env, "MPIRUN_PROCESSES", "%s", processes);
+	env_array_overwrite_fmt(env, "MPIRUN_PROCESSES", "%s", processes);
 
 	/* 
 	 * Some mvapich versions will ignore MPIRUN_PROCESSES If
 	 *  the following env var is set.
 	 */
-	setenvf (&job->env, "NOT_USE_TOTALVIEW", "1");
+	env_array_overwrite_fmt(env, "NOT_USE_TOTALVIEW", "1");
 
 	/*
 	 * Set VIADEV_ENABLE_AFFINITY=0 so that mvapich doesn't 
 	 *  override SLURM's CPU affinity. (Unless this var is
 	 *  already set in user env)
 	 */
-	if (!getenvp (job->env, "VIADEV_ENABLE_AFFINITY"))
-		setenvf (&job->env, "VIADEV_ENABLE_AFFINITY", "0");
+	if (!getenvp (*env, "VIADEV_ENABLE_AFFINITY"))
+		env_array_overwrite_fmt(env, "VIADEV_ENABLE_AFFINITY", "0");
 
 	return SLURM_SUCCESS;
 }
 
-int p_mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
+int p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 {
 	debug("Using mpi/mvapich");
 	return mvapich_thr_create(job, env);

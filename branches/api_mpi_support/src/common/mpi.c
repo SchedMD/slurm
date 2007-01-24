@@ -58,8 +58,9 @@
  * at the end of the structure.
  */
 typedef struct slurm_mpi_ops {
-	int          (*slurmstepd_init)   (slurmd_job_t *job, int rank);
-	int          (*client_prelaunch)  (mpi_hook_client_info_t *job,
+	int          (*slurmstepd_init)   (const mpi_plugin_task_info_t *job,
+					   char ***env);
+	int          (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
 					   char ***env);
 	bool         (*client_single_task)(void);
 	int          (*client_fini)       (void);
@@ -135,7 +136,7 @@ _slurm_mpi_get_ops( slurm_mpi_context_t c )
 	 * declared for slurm_mpi_ops_t.
 	 */
 	static const char *syms[] = {
-		"p_mpi_hook_slurmstepd_init",
+		"p_mpi_hook_slurmstepd_task",
 		"p_mpi_hook_client_prelaunch",
 		"p_mpi_hook_client_single_task_per_node",
 		"p_mpi_hook_client_fini"
@@ -235,17 +236,17 @@ done:
 }
 
 
-int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank)
+int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
 {   
-	char *mpi_type = getenvp (job->env, "SLURM_MPI_TYPE");
+	char *mpi_type = getenvp (*env, "SLURM_MPI_TYPE");
 	
 	debug("mpi type = %s", mpi_type);
 
 	if(_mpi_init(mpi_type) == SLURM_ERROR) 
 		return SLURM_ERROR;
 	
-	unsetenvp (job->env, "SLURM_MPI_TYPE");	
-	return (*(g_context->ops.slurmstepd_init))(job, rank);
+	unsetenvp (*env, "SLURM_MPI_TYPE");
+	return (*(g_context->ops.slurmstepd_init))(job, env);
 }
 
 int mpi_hook_client_init (char *mpi_type)
@@ -258,7 +259,7 @@ int mpi_hook_client_init (char *mpi_type)
 	return SLURM_SUCCESS;
 }
 
-int mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
+int mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;

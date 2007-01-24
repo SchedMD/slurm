@@ -79,27 +79,28 @@ const char plugin_name[]        = "mpi MPICH-GM plugin";
 const char plugin_type[]        = "mpi/mpichgm";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_init(slurmd_job_t *job, int rank)
+int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
+			       char ***env)
 {
 	char addrbuf[1024];
 	char *p;
-	char *addr = getenvp (job->env, "SLURM_LAUNCH_NODE_IPADDR");
+	char *addr = getenvp(*env, "SLURM_LAUNCH_NODE_IPADDR");
 	
 	debug("Using mpi/mpich-gm");
-	slurm_print_slurm_addr (job->envtp->self, addrbuf, sizeof(addrbuf));
+	slurm_print_slurm_addr (job->self, addrbuf, sizeof(addrbuf));
 	
 	if ((p = strchr (addrbuf, ':')) != NULL)
 		*p = '\0';
 		
-	setenvf (&job->env, "GMPI_MASTER", "%s", addr);
-	setenvf (&job->env, "GMPI_SLAVE",  "%s", addrbuf);
-	setenvf (&job->env, "GMPI_ID",  "%d", rank);
-	debug2("init for mpi rank %d\n", rank);
+	env_array_overwrite_fmt(env, "GMPI_MASTER", "%s", addr);
+	env_array_overwrite_fmt(env, "GMPI_SLAVE",  "%s", addrbuf);
+	env_array_overwrite_fmt(env, "GMPI_ID",  "%u", job->gtaskid);
+	debug2("init for mpi rank %u\n", job->gtaskid);
 	
 	return SLURM_SUCCESS;
 }
 
-int p_mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env)
+int p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 {
 	debug("Using mpi/mpich-gm");
 	return gmpi_thr_create(job, env);

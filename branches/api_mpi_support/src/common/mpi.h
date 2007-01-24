@@ -44,7 +44,6 @@
 
 #include <stdbool.h>
 #include <slurm/slurm.h>
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_mpi_context *slurm_mpi_context_t;
 
@@ -52,14 +51,43 @@ typedef struct {
 	uint32_t jobid;
 	uint32_t stepid;
 	slurm_step_layout_t *step_layout;
-} mpi_hook_client_info_t;
+} mpi_plugin_client_info_t;
+
+typedef struct {
+	uint32_t jobid;  /* Current SLURM job id                      */
+	uint32_t stepid; /* Current step id (or NO_VAL)               */
+	uint32_t nnodes; /* number of nodes in current job step       */
+	uint32_t nodeid; /* relative position of this node in job     */
+	uint32_t ntasks; /* total number of tasks in current job      */
+	uint32_t ltasks; /* number of tasks on *this* (local) node    */
+
+	uint32_t gtaskid;/* global task rank withing the job step     */
+	int      ltaskid;/* task rank on the local node               */
+
+	slurm_addr *self;
+	slurm_addr *client;
+} mpi_plugin_task_info_t;
 
 /**********************************************************************
  * Hooks called by the slurmd and/or slurmstepd.
  **********************************************************************/
 
-/* Load the plugin and call the plugin p_mpi_hook_slurmstepd_init() function. */
-int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank);
+/*
+ * Load the plugin and call the plugin p_mpi_hook_slurmstepd_task() function.
+ *
+ * This function is called from within each process that will exec() a
+ * task.  The process will be running as the user of the job step at that
+ * point.
+ *
+ * If the plugin want to set environment variables for the task,
+ * it will add the necessary variables the the env array pointed
+ * to be "env".  If "env" is NULL, a new array will be allocated
+ * automaticallly.
+ *
+ * The returned "env" array may be manipulated (and freed) by using
+ * the src/common/env.c:env_array_* functions.
+ */
+int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env);
 
 /**********************************************************************
  * Hooks called by client applications.
@@ -70,10 +98,8 @@ int mpi_hook_slurmstepd_init (slurmd_job_t *job, int rank);
  * Just load the requested plugin.  No explicit calls into the plugin
  * once loaded (just the implicit call to the plugin's init() function).
  *
- * This function is only called if the user explicitly
- * requested a particular plugin.  Otherwise the system-default mpi plugin
- * is initialized on demand when any of the other mpi_hook_client_*
- * functions are called.
+ * If "mpi_type" is NULL, the system-default mpi plugin
+ * is initialized.
  */
 int mpi_hook_client_init (char *mpi_type);
 
@@ -88,7 +114,7 @@ int mpi_hook_client_init (char *mpi_type);
  * The returned "env" array may be manipulated (and freed) by using
  * the src/common/env.c:env_array_* functions.
  */
-int mpi_hook_client_prelaunch(mpi_hook_client_info_t *job, char ***env);
+int mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env);
 
 /* Call the plugin p_mpi_hook_client_single_task_per_node() function. */
 bool mpi_hook_client_single_task_per_node (void);
