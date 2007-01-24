@@ -67,7 +67,6 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 
 	lock_slurmctld(job_write_lock);
 	slurm_rc = job_requeue(0, jobid, -1);
-	unlock_slurmctld(job_write_lock);
 	if (slurm_rc == SLURM_SUCCESS) {
 		/* We need to clear the required node list here.
 		 * If the job was submitted with srun and a 
