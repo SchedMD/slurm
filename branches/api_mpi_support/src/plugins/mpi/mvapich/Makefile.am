@@ -11,7 +11,6 @@ pkglib_LTLIBRARIES = mpi_mvapich.la
 # Null switch plugin.
 mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c mvapich.h\
 	$(top_srcdir)/src/common/mpi.h \
-	$(top_srcdir)/src/common/net.c \
-	$(top_srcdir)/src/common/env.c
+	$(top_srcdir)/src/common/net.c
 
 mpi_mvapich_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
