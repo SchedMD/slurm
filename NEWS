@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.27
+=========================
+
 * Changes in SLURM 1.1.26
 =========================
  - In sched/wiki2, fixes for support of job features.
