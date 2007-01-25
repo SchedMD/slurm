@@ -431,7 +431,7 @@ mvapich_print_abort_message (srun_job_t *job, int rank, int dest,
 		sl, slurm_step_layout_host_id(sl, rank));
 
 	if (dest >= 0) {
-		const char *dsthost = step_layout_host_name (sl, dest);
+		const char *dsthost = slurm_step_layout_host_name (sl, dest);
 
 		if (msg [msglen - 1] == '\n')
 			msg [msglen - 1] = '\0';
