@@ -1685,6 +1685,12 @@ extern void *mult_destroy_block(void *args)
 		list_push(bg_freeing_list, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 		
+		/* 
+		 * we only are sorting this so when we send it to a
+		 * tool such as smap it will be in a nice order
+		 */
+		sort_bg_record_inc_size(bg_freeing_list);
+		
 		remove_from_request_list();
 		
 		slurm_mutex_lock(&block_state_mutex);
@@ -2565,12 +2571,13 @@ static int _bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 		return -1;
 	else if (size_a > size_b)
 		return 1;
-	size_a = strcmp(rec_a->nodes, rec_b->nodes);
-	if (size_a < 0)
-		return -1;
-	else if (size_a > 0)
-		return 1;
-	
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a < 0)
+			return -1;
+		else if (size_a > 0)
+			return 1;
+	}
 	if (rec_a->quarter < rec_b->quarter)
 		return -1;
 	else if (rec_a->quarter > rec_b->quarter)

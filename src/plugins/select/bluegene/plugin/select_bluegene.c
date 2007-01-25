@@ -687,6 +687,23 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 			error("select_p_pack_node_info: no bg_list");
 			return SLURM_ERROR;
 		}
+		/*
+		 * get all the blocks we are freeing since they have
+		 * been moved here
+		 */
+		if(bg_freeing_list) {
+			slurm_mutex_lock(&block_state_mutex);
+			itr = list_iterator_create(bg_freeing_list);
+			while ((bg_record = (bg_record_t *) list_next(itr)) 
+			       != NULL) {
+				xassert(bg_record->bg_block_id != NULL);
+				
+				pack_block(bg_record, buffer);
+				blocks_packed++;
+			}
+			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&block_state_mutex);
+		} 
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
 		pack32(blocks_packed, buffer);
