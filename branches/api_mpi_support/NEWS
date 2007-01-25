@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.0
 ========================
+ -- In sched/wiki2, clear required nodes list when a job is requeued.
+    Note that the required node list is set to every node used when 
+    a job is started via sched/wiki2.
+ -- BLUEGENE - Added display of deallocating blocks to smap and other tools. 
 
 * Changes in SLURM 1.2.0-pre13
 ==============================
@@ -211,6 +215,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.26
 =========================
  - In sched/wiki2, fixes for support of job features.
+ - In sched/wiki2, add "FLAGS=INTERACTIVE;" to GETJOBS response for 
+   non-batch (not srun --batch) jobs.
 
 * Changes in SLURM 1.1.25
 =========================

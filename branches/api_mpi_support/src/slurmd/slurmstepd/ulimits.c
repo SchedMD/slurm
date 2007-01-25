@@ -174,13 +174,17 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		/*
 		 * Report an error only if the user requested propagate 
 		 */
-		if (u_req_propagate)
+		if (u_req_propagate) {
 			error( "Can't propagate %s of %s from submit host: %m",
 				rlimit_name,
 				r.rlim_cur == RLIM_INFINITY ? "'unlimited'" :
 				rlim_to_string( r.rlim_cur, cur, sizeof(cur)));
-		debug2( "_set_limit: %s setrlimit %s failed: %m",
-				u_req_propagate?"user":"conf", rlimit_name );
+		} else {
+			verbose("Can't propagate %s of %s from submit host: %m",
+				rlimit_name,
+				r.rlim_cur == RLIM_INFINITY ? "'unlimited'" :
+				rlim_to_string( r.rlim_cur, cur, sizeof(cur)));
+		}
 		return SLURM_ERROR;
 	}
 	debug2( "_set_limit: %s setrlimit %s succeeded",

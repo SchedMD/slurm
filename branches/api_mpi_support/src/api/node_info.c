@@ -110,7 +110,7 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 {
 	uint16_t my_state = node_ptr->node_state;
 	char *comp_str = "", *drain_str = "";
-	char tmp_line[100];
+	char tmp_line[512];
 	char *out = NULL;
 
 	if (my_state & NODE_STATE_COMPLETING) {
@@ -138,11 +138,12 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"Sockets=%u Cores=%u Threads=%u "
-		"Weight=%u Features=%s Reason=%s\n" , 
+		"Weight=%u Features=%s Reason=%s" ,
 		node_ptr->sockets, node_ptr->cores, node_ptr->threads,
 		node_ptr->weight, node_ptr->features,
 		node_ptr->reason);
 	xstrcat(out, tmp_line);
+	xstrcat(out, "\n");
 
 	return out;
 }

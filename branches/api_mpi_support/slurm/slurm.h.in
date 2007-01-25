@@ -87,6 +87,29 @@ BEGIN_C_DECLS
 #include <time.h>		/* for time_t definitions */
 #include <stdbool.h>
 
+#ifdef CRAPPY_COMPILER
+  /*
+   * 'bool' can be implemented in a variety of ways.
+   * C++ may define it one way.
+   * <stdbool.h> may declare 'bool' to be a different type, such as 
+   * an enum which is not necessarily compatible with C++.
+   *
+   * If your compiler can't resolve 'bool', just add 
+   * "#define CRAPPY_COMPILER" before "#include <slurm/slurm.h> 
+   * in order for Slurm to define it's own version of bool.
+   */
+
+   #undef  TRUE
+   #define TRUE   1
+
+   #undef  FALSE
+   #define FALSE  0
+
+   typedef unsigned char SLURM_BOOL;
+   #undef  bool
+   #define bool SLURM_BOOL
+#endif
+
 /* Define slurm_addr below to avoid including extraneous slurm headers */
 #ifdef	HAVE_SYS_SOCKET_H
 #  ifndef __slurm_addr_defined
@@ -390,7 +413,7 @@ typedef enum select_type_plugin_info {
 		    * be co-allocated within cores */
 	CR_SOCKET_MEMORY, /* Socket and Memory are CRs */
 	CR_CORE_MEMORY,   /* Core and Memory are CRs */
-	CR_CPU_MEMORY,    /* CPU and Memory are CRs */
+	CR_CPU_MEMORY     /* CPU and Memory are CRs */
 } select_type_plugin_info_t ;
 
 /* Values for slurm_ctl_conf.task_plugin_param */
