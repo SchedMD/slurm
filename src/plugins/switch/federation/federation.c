@@ -1122,7 +1122,7 @@ _print_libstate(const fed_libstate_t *l)
  *
  * Used by: _unpack_nodeinfo
  */
-static void _fake_unpack_adapters(Buf buf)
+static int _fake_unpack_adapters(Buf buf)
 {
 	uint32_t adapter_count;
 	uint32_t window_count;
@@ -1135,6 +1135,8 @@ static void _fake_unpack_adapters(Buf buf)
 	for (i = 0; i < adapter_count; i++) {
 		/* no copy, just advances buf counters */
 		unpackmem_ptr(&dummyptr, &dummy16, buf);
+		if(size != FED_ADAPTERNAME_LEN)
+			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
 		safe_unpack16(&dummy16, buf);
 		safe_unpack32(&dummy32, buf);
@@ -1144,11 +1146,14 @@ static void _fake_unpack_adapters(Buf buf)
 		for (j = 0; j < window_count; j++) {
 			safe_unpack16(&dummy16, buf);
 			safe_unpack32(&dummy32, buf);
+			safe_unpack16(&dummy16, buf);
 		}
 	}
 
+	return SLURM_SUCCESS;
+
 unpack_error:
-	return;
+	return SLURM_ERROR;
 }
 
 
@@ -1186,6 +1191,24 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		goto unpack_error;
 	memcpy(name, name_ptr, size);
 
+	/* When the slurmctld is in normal operating mode (NOT backup mode),
+	 * the global fed_state structure should NEVER be NULL at the time that
+	 * this function is called.  Therefore, if fed_state is NULL here,
+	 * we assume that the controller is in backup mode.  In backup mode,
+	 * the slurmctld only unpacks RPCs to find out their identity.
+	 * Most of the RPCs, including the one calling this function, are
+	 * simply ignored.
+	 * 
+	 * So, here we just do a fake unpack to advance the buffer pointer.
+	 */
+	if (fed_state == NULL) {
+		if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
+			slurm_seterrno_ret(EUNPACK);
+		} else {
+			return SLURM_SUCCESS;
+		}
+	}
+
 	/* If we already have nodeinfo for this node, we ignore this message.
 	 * The slurmctld's view of window allocation is always better than
 	 * the slurmd's view.  We only need the slurmd's view if the slurmctld
@@ -1194,8 +1217,11 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	if (name != NULL) {
 		tmp_n = _find_node(fed_state, name);
 		if (tmp_n != NULL) {
-			_fake_unpack_adapters(buf);
-			goto copy_node;
+			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
+				goto unpack_error;
+			} else {
+				goto copy_node;
+			}
 		}
 	}
 
