@@ -217,6 +217,11 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.27
+=========================
+ - Fix possible race condition for two simultaneous "scontrol show config" 
+   calls resulting in slurm_xfree() Error: from read_config.c:642 
+
 * Changes in SLURM 1.1.26
 =========================
  - In sched/wiki2, fixes for support of job features.
@@ -669,6 +674,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.17
 =========================
  -- Set correct user groups for task epilogs.
+ -- Set SLURM_DIST_CYCLIC = 1 (needed for HP MPI, slurm.hp.env.patch).
+ -- Add more debugging for tracking slow slurmd job initiations
+    (slurm.hp.replaydebug.patch).
 
 * Changes in SLURM 1.0.16
 =========================

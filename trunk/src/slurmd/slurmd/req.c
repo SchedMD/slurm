@@ -389,12 +389,15 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	free_buf(buffer);
 	
 	/* send cached group ids array for the relevant uid */
+	debug3("_send_slurmstepd_init: call to getpwuid");
 	if (!(pw = getpwuid(uid))) {
 		error("_send_slurmstepd_init getpwuid: %m");
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 		return -1;
 	}
+	debug3("_send_slurmstepd_init: return from getpwuid");
+
 	if ((gids = _gids_cache_lookup(pw->pw_name, pw->pw_gid))) {
 		int i;
 		uint32_t tmp32;
@@ -709,8 +712,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
 
+	debug3("_rpc_launch_tasks: call to _forkexec_slurmstepd");
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
 				      step_hset);
+	debug3("_rpc_launch_tasks: return from _forkexec_slurmstepd");
 
     done:
 	if (step_hset)
@@ -846,8 +851,10 @@ _rpc_batch_job(slurm_msg_t *msg)
 		info("Launching batch job %u.%u for UID %d",
 			req->job_id, req->step_id, req->uid);
 
+	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
 				  (hostset_t)NULL);
+	debug3("_rpc_batch_job: return from _forkexec_slurmstepd");
 
 	slurm_mutex_unlock(&launch_mutex);
 
