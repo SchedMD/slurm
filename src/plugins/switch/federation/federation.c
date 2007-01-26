@@ -1135,7 +1135,7 @@ static int _fake_unpack_adapters(Buf buf)
 	for (i = 0; i < adapter_count; i++) {
 		/* no copy, just advances buf counters */
 		unpackmem_ptr(&dummyptr, &dummy16, buf);
-		if(size != FED_ADAPTERNAME_LEN)
+		if (dummy16 != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
 		safe_unpack16(&dummy16, buf);
