@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.17
 =========================
  -- Set correct user groups for task epilogs.
+ -- Set SLURM_DIST_CYCLIC = 1 (needed for HP MPI, slurm.hp.env.patch).
 
 * Changes in SLURM 1.0.16
 =========================
