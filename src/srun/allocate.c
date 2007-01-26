@@ -614,6 +614,7 @@ _step_req_create(srun_job_t *j)
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		break;
 	}
+	opt.distribution = r->task_dist;
 	
 	if (slurmctld_comm_addr.port) {
 		r->host = xstrdup(slurmctld_comm_addr.hostname);
