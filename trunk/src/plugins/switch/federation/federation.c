@@ -1248,8 +1248,7 @@ copy_node:
 	
 unpack_error:
 	/* FIX ME!  Add code here to free allocated memory */
-	if(tmp_w)
-		xfree(tmp_w);
+	xfree(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
 }
 
