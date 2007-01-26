@@ -548,7 +548,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 		
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		free_slurm_conf(&config_tbl);
+		free_slurm_conf(&config_tbl, false);
 	}
 }
 

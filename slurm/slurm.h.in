@@ -309,7 +309,7 @@ enum jobacct_data_type {
 
 /* Possible task distributions across the nodes */
 typedef enum task_dist_states {
-	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
+	SLURM_DIST_CYCLIC = 1,	/* distribute tasks 1 per node, round robin */
 	SLURM_DIST_BLOCK,	/* distribute tasks filling node by node */
 	SLURM_DIST_ARBITRARY,	/* arbitrary task distribution  */
 	SLURM_DIST_PLANE,	/* distribute tasks by filling up
