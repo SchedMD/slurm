@@ -261,8 +261,11 @@ extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 /* 
  * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.   
  * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
+ * IN purge_node_hash - purge system-wide node hash table if set,
+ *			set to zero if clearing private copy of config data
  */
-extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
+extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr,
+			     bool purge_node_hash);
 
 /*
  * getnodename - equivalent to gethostname(), but return only the first 
