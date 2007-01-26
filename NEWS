@@ -1,12 +1,15 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 1.2.0
-========================
+* Changes in SLURM 1.2.0-pre14
+==============================
  -- In sched/wiki2, clear required nodes list when a job is requeued.
     Note that the required node list is set to every node used when 
     a job is started via sched/wiki2.
  -- BLUEGENE - Added display of deallocating blocks to smap and other tools. 
+ -- Make slurmctld's working directory be same as SlurmctldLogFile (if any),
+    otherwise StateSaveDir (which is likely a shared directory, possibly 
+    making core file identification more difficult).
 
 * Changes in SLURM 1.2.0-pre13
 ==============================
