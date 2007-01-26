@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Make slurmctld's working directory be same as SlurmctldLogFile (if any),
     otherwise StateSaveDir (which is likely a shared directory, possibly 
     making core file identification more difficult).
+ -- Fix bug in switch/federation that results in the backup controller
+    aborting if it receives an epilog-complete message.
 
 * Changes in SLURM 1.2.0-pre13
 ==============================
