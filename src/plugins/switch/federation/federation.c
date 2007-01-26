@@ -1218,7 +1218,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		tmp_n = _find_node(fed_state, name);
 		if (tmp_n != NULL) {
 			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
-				goto unpack_error;
+				slurm_seterrno_ret(EUNPACK);
 			} else {
 				goto copy_node;
 			}
@@ -1258,6 +1258,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 			}
 		}
 		tmp_a->window_list = tmp_w;
+		tmp_w = NULL;	/* don't free on unpack error of next adapter */
 	}
 	
 copy_node:
@@ -1273,7 +1274,6 @@ copy_node:
 	return SLURM_SUCCESS;
 	
 unpack_error:
-	/* FIX ME!  Add code here to free allocated memory */
 	xfree(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
 }
@@ -1951,7 +1951,8 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	return SLURM_SUCCESS;
 }
 
-void
+/* return 0 on success, -1 on failure */
+static int
 _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 {
 	uint16_t size;
@@ -1970,14 +1971,13 @@ _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 	}
 	unpackmem_ptr(&name_ptr, &size, buf);
 	if (size != FED_ADAPTERNAME_LEN)
-		error("adapter_name unpack error");
-	else
-		memcpy(tableinfo->adapter_name, name_ptr, size);
-	return;
+		goto unpack_error;
+	memcpy(tableinfo->adapter_name, name_ptr, size);
+	return 0;
 
 unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 	error("unpack error in _unpack_tableinfo");
-	return;
+	return -1;
 }
 
 /* Used by: all */
@@ -1985,7 +1985,7 @@ int
 fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 {
 	uint16_t size;
-	int i;
+	int i, k;
 	
 	assert(j);
 	assert(j->magic == FED_JOBINFO_MAGIC);
@@ -2006,19 +2006,22 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	if(!j->tableinfo)
 		slurm_seterrno_ret(ENOMEM);
 	for (i = 0; i < j->tables_per_task; i++) {
-		_unpack_tableinfo(&j->tableinfo[i], buf);
+		if (_unpack_tableinfo(&j->tableinfo[i], buf) != 0)
+			goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
 	
 unpack_error:
-	/* FIX ME! Potential memory leak if we don't free 
-	 * tmp_table's elements.
- 	 */
-/* 	if(tmp_table) */
-/* 		free(tmp_table); */
-/* 	if(tmp_index) */
-/* 		free(tmp_index); */
+	error("fed_unpack_jobinfo error");
+	if (j->tableinfo) {
+		for (i = 0; i < j->tables_per_task; i++) {
+			for (k=0; k<j->tableinfo[i].table_length; k++)
+				xfree(j->tableinfo[i].table[k]);
+			xfree(j->tableinfo[i].table);
+		}
+		xfree(j->tableinfo);
+	}
 	slurm_seterrno_ret(EUNPACK);
 	return SLURM_ERROR;
 }
