@@ -1168,7 +1168,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	fed_window_t *tmp_w = NULL;
 	uint16_t size;
 	fed_nodeinfo_t *tmp_n = NULL;
-	char name[FED_HOSTLEN];
+	char *name_ptr, name[FED_HOSTLEN];
 	int magic;
 
 	/* NOTE!  We don't care at this point whether n is valid.
@@ -1181,9 +1181,10 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	safe_unpack32(&magic, buf);
 	if(magic != FED_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_FEDNODEINFO);
-	unpackmem(name, &size, buf);
+	unpackmem_ptr(&name_ptr, &size, buf);
 	if(size != FED_HOSTLEN)
 		goto unpack_error;
+	memcpy(name, name_ptr, size);
 
 	/* If we already have nodeinfo for this node, we ignore this message.
 	 * The slurmctld's view of window allocation is always better than
@@ -1207,9 +1208,10 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for(i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
-		unpackmem(tmp_a->name, &size, buf);
+		unpackmem_ptr(&name_ptr, &size, buf);
 		if(size != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
+		memcpy(tmp_a->name, name_ptr, size);
 		safe_unpack16(&tmp_a->lid, buf);
 		safe_unpack16(&tmp_a->network_id, buf);
 		safe_unpack32(&tmp_a->max_winmem, buf);
@@ -1928,6 +1930,7 @@ void
 _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 {
 	uint16_t size;
+	char *name_ptr;
 	int i;
 
 	safe_unpack32(&tableinfo->table_length, buf);
@@ -1940,10 +1943,11 @@ _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 		safe_unpack16(&tableinfo->table[i]->lid, buf);
 		safe_unpack16(&tableinfo->table[i]->window_id, buf);
 	}
-	unpackmem(tableinfo->adapter_name, &size, buf);
+	unpackmem_ptr(&name_ptr, &size, buf);
 	if (size != FED_ADAPTERNAME_LEN)
 		error("adapter_name unpack error");
-
+	else
+		memcpy(tableinfo->adapter_name, name_ptr, size);
 	return;
 
 unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
