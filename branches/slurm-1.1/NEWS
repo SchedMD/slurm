@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.27
 =========================
+ - Fix possible race condition for two simultaneous "scontrol show config" 
+   calls resulting in slurm_xfree() Error: from read_config.c:642 
 
 * Changes in SLURM 1.1.26
 =========================

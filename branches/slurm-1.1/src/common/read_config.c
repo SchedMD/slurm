@@ -929,9 +929,11 @@ getnodename (char *name, size_t len)
 /* 
  * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.   
  * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
+ * IN purge_node_hash - purge system-wide node hash table if set,
+ *			set to zero if clearing private copy of config data
  */
-void
-free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
+extern void
+free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->checkpoint_type);
@@ -973,8 +975,9 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->node_prefix);
-	
-	_free_name_hashtbl();
+
+	if (purge_node_hash)
+		_free_name_hashtbl();
 }
 
 /* 
@@ -1092,7 +1095,7 @@ _destroy_slurm_conf()
 		s_p_hashtbl_destroy(default_partition_tbl);
 		default_partition_tbl = NULL;
 	}
-	free_slurm_conf(conf_ptr);
+	free_slurm_conf(conf_ptr, true);
 	conf_initialized = false;
 	
 	/* xfree(conf_ptr); */
