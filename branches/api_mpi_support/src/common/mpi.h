@@ -46,6 +46,7 @@
 #include <slurm/slurm.h>
 
 typedef struct slurm_mpi_context *slurm_mpi_context_t;
+typedef void mpi_plugin_client_state_t;
 
 typedef struct {
 	uint32_t jobid;
@@ -113,14 +114,19 @@ int mpi_hook_client_init (char *mpi_type);
  *
  * The returned "env" array may be manipulated (and freed) by using
  * the src/common/env.c:env_array_* functions.
+ *
+ * Returns NULL on error.  On success returns an opaque pointer
+ * to MPI state for this job step.  Free the state by calling
+ * mpi_hook_client_fini().
  */
-int mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env);
+mpi_plugin_client_state_t *
+mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env);
 
 /* Call the plugin p_mpi_hook_client_single_task_per_node() function. */
 bool mpi_hook_client_single_task_per_node (void);
 
 /* Call the plugin p_mpi_hook_client_fini() function. */
-int mpi_hook_client_fini (void);
+int mpi_hook_client_fini (mpi_plugin_client_state_t *state);
 
 /**********************************************************************
  * FIXME - Nobody calls the following function.  Perhaps someone should.

@@ -43,4 +43,8 @@
 #include "src/common/mpi.h"
 #include "src/common/env.h"
 
-extern int mvapich_thr_create(const mpi_plugin_client_info_t *job, char ***env);
+typedef struct mvapich_state mvapich_state_t;
+
+extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
+					   char ***env);
+extern int mvapich_thr_destroy(mvapich_state_t *state);

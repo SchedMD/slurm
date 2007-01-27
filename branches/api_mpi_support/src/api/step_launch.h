@@ -41,6 +41,7 @@
 #include "src/common/slurm_step_layout.h"
 #include "src/common/eio.h"
 #include "src/common/bitstring.h"
+#include "src/common/mpi.h"
 
 #include "src/api/step_io.h"
 
@@ -73,8 +74,11 @@ struct step_launch_state {
 		client_io_t *normal;
 		user_managed_io_t *user;
 	} io;
+
 	slurm_step_layout_t *layout; /* a pointer into the ctx
 					step_resp, do not free */
+	mpi_plugin_client_info_t mpi_info[1];
+	mpi_plugin_client_state_t *mpi_state;
 
 	/* user registered callbacks */
 	slurm_step_launch_callbacks_t callback;

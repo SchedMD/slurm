@@ -129,7 +129,6 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	/* FIXME!!  mpi plugins need to copy the input param
 	   of slurm_mpi_client_thr_create(), or need to put mpi_job_info
 	   in the step_launch_state structure */
-	static mpi_plugin_client_info_t mpi_job_info[1];
 
 	debug("Entering slurm_step_launch");
 	memset(&launch, 0, sizeof(launch));
@@ -162,10 +161,9 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
 			ctx->step_resp->step_layout->tasks[i] = 1;
 	}
-	mpi_job_info->jobid = ctx->step_req->job_id;
-	mpi_job_info->stepid = ctx->step_resp->job_step_id;
-	mpi_job_info->step_layout = ctx->step_resp->step_layout;
-	if (mpi_hook_client_prelaunch(mpi_job_info, &mpi_env) < 0) {
+	if ((ctx->launch_state->mpi_state =
+	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
+	    == NULL) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED);
 		return SLURM_ERROR;
 	}
@@ -417,6 +415,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 		client_io_handler_destroy(sls->io.normal);
 	}
 
+	mpi_hook_client_fini(sls->mpi_state);
+
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -454,6 +454,10 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx ctx)
 		sls->resp_port = NULL;
 		sls->abort = false;
 		sls->abort_action_taken = false;
+		sls->mpi_info->jobid = ctx->step_req->job_id;
+		sls->mpi_info->stepid = ctx->step_resp->job_step_id;
+		sls->mpi_info->step_layout = ctx->step_resp->step_layout;
+		sls->mpi_state = NULL;
 		pthread_mutex_init(&sls->lock, NULL);
 		pthread_cond_init(&sls->cond, NULL);
 	}
@@ -475,7 +479,6 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	if (sls->resp_port != NULL) {
 		xfree(sls->resp_port);
 	}
-	/* FIXME - more cleanup needed */
 }
 
 

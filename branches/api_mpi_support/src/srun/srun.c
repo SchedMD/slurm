@@ -137,6 +137,7 @@ int srun(int ac, char **av)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	char **mpi_env = NULL;
+	mpi_plugin_client_state_t *mpi_state;
 	
 	env->stepid = -1;
 	env->procid = -1;
@@ -380,7 +381,7 @@ int srun(int ac, char **av)
 	mpi_job_info->jobid = job->jobid;
 	mpi_job_info->stepid = job->stepid;
 	mpi_job_info->step_layout = job->step_layout;
-	if (mpi_hook_client_prelaunch(mpi_job_info, &mpi_env) < 0)
+	if (!(mpi_state = mpi_hook_client_prelaunch(mpi_job_info, &mpi_env)))
 		job_fatal (job, "Failed to initialize MPI");
 	env_array_set_environment(mpi_env);
 	env_array_free(mpi_env);
@@ -463,7 +464,7 @@ int srun(int ac, char **av)
 	debug("done");
 	
 	
-	if (mpi_hook_client_fini () < 0)
+	if (mpi_hook_client_fini (mpi_state) < 0)
 		; /* eh, ignore errors here */
 
 	_run_srun_epilog(job);

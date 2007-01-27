@@ -60,10 +60,11 @@
 typedef struct slurm_mpi_ops {
 	int          (*slurmstepd_init)   (const mpi_plugin_task_info_t *job,
 					   char ***env);
-	int          (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
+	mpi_plugin_client_state_t *
+	             (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
 					   char ***env);
 	bool         (*client_single_task)(void);
-	int          (*client_fini)       (void);
+	int          (*client_fini)       (mpi_plugin_client_state_t *);
 } slurm_mpi_ops_t;
 
 struct slurm_mpi_context {
@@ -259,10 +260,11 @@ int mpi_hook_client_init (char *mpi_type)
 	return SLURM_SUCCESS;
 }
 
-int mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+mpi_plugin_client_state_t *
+mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
 	if (_mpi_init(NULL) < 0)
-		return SLURM_ERROR;
+		return NULL;
 		
 	return (*(g_context->ops.client_prelaunch))(job, env);
 }
@@ -275,12 +277,12 @@ bool mpi_hook_client_single_task_per_node (void)
 	return (*(g_context->ops.client_single_task))();
 }
 
-int mpi_hook_client_fini (void)
+int mpi_hook_client_fini (mpi_plugin_client_state_t *state)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 	
-	return (*(g_context->ops.client_fini))();
+	return (*(g_context->ops.client_fini))(state);
 }
 
 int mpi_fini (void)

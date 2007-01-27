@@ -70,8 +70,11 @@ typedef struct {
 
 #define GMPI_RECV_BUF_LEN 65536
 
-
-static int gmpi_fd = -1;
+struct gmpi_state {
+	pthread_t tid;
+	int fd; /* = -1 */
+	mpi_plugin_client_info_t *job;
+};
 
 static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
 				     gm_slave_t *slave_data, int *ii)
@@ -119,8 +122,9 @@ static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
 }
 
 
-static int _gmpi_establish_map(mpi_plugin_client_info_t *job)
+static int _gmpi_establish_map(gmpi_state_t *st)
 {
+	mpi_plugin_client_info_t *job = st->job;
 	struct sockaddr_in addr;
 	in_addr_t *iaddrs;
 	socklen_t addrlen;
@@ -134,7 +138,7 @@ static int _gmpi_establish_map(mpi_plugin_client_info_t *job)
 	 * Collect info from slaves.
 	 * Will never finish unless slaves are GMPI processes.
 	 */
-	accfd = gmpi_fd;
+	accfd = st->fd;
 	addrlen = sizeof(addr);
 	nprocs = job->step_layout->task_cnt;
 	iaddrs = (in_addr_t *)xmalloc(sizeof(*iaddrs)*nprocs);
@@ -240,9 +244,9 @@ static int _gmpi_establish_map(mpi_plugin_client_info_t *job)
 	return 0;
 }
 
-
-static void _gmpi_wait_abort(mpi_plugin_client_info_t *job)
+static void _gmpi_wait_abort(gmpi_state_t *st)
 {
+	mpi_plugin_client_info_t *job = st->job;
 	struct sockaddr_in addr;
 	socklen_t addrlen;
 	int newfd, rlen;
@@ -252,7 +256,7 @@ static void _gmpi_wait_abort(mpi_plugin_client_info_t *job)
 	rbuf = (char *)xmalloc(GMPI_RECV_BUF_LEN);
 	addrlen = sizeof(addr);
 	while (1) {
-		newfd = accept(gmpi_fd, (struct sockaddr *)&addr,
+		newfd = accept(st->fd, (struct sockaddr *)&addr,
 			       &addrlen);
 		if (newfd == -1) {
 			fatal("GMPI master failed to accept (abort-wait)");
@@ -290,25 +294,47 @@ static void _gmpi_wait_abort(mpi_plugin_client_info_t *job)
 
 static void *_gmpi_thr(void *arg)
 {
+	gmpi_state_t *st;
 	mpi_plugin_client_info_t *job;
 
-	job = (mpi_plugin_client_info_t *) arg;
+	st = (gmpi_state_t *) arg;
+	job = st->job;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
-	_gmpi_establish_map(job);
+	_gmpi_establish_map(st);
 	
 	debug3("GMPI master thread is waiting for ABORT message.");
-	_gmpi_wait_abort(job);
+	_gmpi_wait_abort(st);
 
 	return (void *)0;
 }
 
+static gmpi_state_t *
+gmpi_state_create(const mpi_plugin_client_info_t *job)
+{
+	gmpi_state_t *state;
 
-extern int gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
+	state = (gmpi_state_t *)xmalloc(sizeof(gmpi_state_t));
+
+	state->tid = (pthread_t)-1;
+	state->fd  = -1;
+	*(state->job) = *job;
+}
+
+static void
+gmpi_state_destroy(gmpi_state_t *st)
+{
+	xfree(st);
+}
+
+extern gmpi_state_t *
+gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 {
 	short port;
 	pthread_attr_t attr;
-	pthread_t gtid;
+	gmpi_state_t *st = NULL;
+
+	st = gmpi_state_create(job);
 
 	/*
 	 * It is possible for one to modify the mpirun command in
@@ -317,11 +343,12 @@ extern int gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	 * should not override envs nor open the master port.
 	 */
 	if (getenv("GMPI_PORT"))
-		return (0);
+		return st;
 
-	if (net_stream_listen (&gmpi_fd, &port) < 0) {
+	if (net_stream_listen (&st->fd, &port) < 0) {
 		error ("Unable to create GMPI listen port: %m");
-		return -1;
+		gmpi_state_destroy(st);
+		return NULL;
 	}
 
 	/*
@@ -329,9 +356,10 @@ extern int gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	 */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&gtid, &attr, &_gmpi_thr, (void *)job)) {
+	if (pthread_create(&st->tid, &attr, &_gmpi_thr, (void *)job)) {
 		slurm_attr_destroy(&attr);
-		return -1;
+		gmpi_state_destroy(st);
+		return NULL;
 	}
 	slurm_attr_destroy(&attr);
 
@@ -343,7 +371,19 @@ extern int gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	/* FIXME for multi-board config. */
 	env_array_overwrite_fmt(env, "GMPI_BOARD", "-1");
 
-	debug("Started GMPI master thread (%lu)", (unsigned long) gtid);
+	debug("Started GMPI master thread (%lu)", (unsigned long) st->tid);
 
-	return 0;
+	return st;
+}
+
+extern int gmpi_thr_destroy(gmpi_state_t *st)
+{
+	if (st != NULL) {
+		if (st->tid != (pthread_t)-1) {
+			pthread_cancel(st->tid);
+			pthread_join(st->tid, NULL);
+		}
+		gmpi_state_destroy(st);
+	}
+	return SLURM_SUCCESS;
 }
