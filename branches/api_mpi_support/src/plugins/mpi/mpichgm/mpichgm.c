@@ -319,6 +319,8 @@ gmpi_state_create(const mpi_plugin_client_info_t *job)
 	state->tid = (pthread_t)-1;
 	state->fd  = -1;
 	*(state->job) = *job;
+
+	return state;
 }
 
 static void
