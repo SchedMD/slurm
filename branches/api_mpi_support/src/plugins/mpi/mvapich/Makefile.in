@@ -77,7 +77,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-mpi_mvapich_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la
+mpi_mvapich_la_DEPENDENCIES =  \
+	$(top_builddir)/src/api/libslurmhelper.la
 am_mpi_mvapich_la_OBJECTS = mpi_mvapich.lo mvapich.lo
 mpi_mvapich_la_OBJECTS = $(am_mpi_mvapich_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
@@ -281,7 +282,7 @@ pkglib_LTLIBRARIES = mpi_mvapich.la
 mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c mvapich.h\
 	$(top_srcdir)/src/common/mpi.h
 
-mpi_mvapich_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+mpi_mvapich_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
 mpi_mvapich_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
