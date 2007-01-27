@@ -4,7 +4,7 @@
 <h2>For Users</h2>
 <ol>
 <li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
-<li><a href="#rlimit">Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</a></li>
+<li><a href="#rlimit">Why are my resource limits not propagated?</a></li>
 <li><a href="#pending">Why is my job not running?</a></li>
 <li><a href="#sharing">Why does the srun --overcommit option not permit multiple jobs 
 to run on nodes?</a></li>
@@ -75,14 +75,30 @@ jobs associated with that node.
 An alternative is to set the node's state to DRAIN until all jobs 
 associated with it terminate before setting it DOWN and re-booting.</p>
 
-<p><a name="rlimit"><b>2. Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</b></a><br>
+<p><a name="rlimit"><b>2. Why are my resource limits not propagated?</b></a><br>
 When the <span class="commandline">srun</span> command executes, it captures the 
 resource limits in effect at that time. These limits are propagated to the allocated 
-nodes before initiating the user's job. If the soft resource limits on the job 
-submit host are higher than the hard resource limits on the allocated host, SLURM 
-will be unable to propagate the resource limits and print an error of the type 
-shown above. It is recommended that the system administrator establish uniform 
-hard resource limits on all nodes within a cluster to prevent this from occurring.</p>
+nodes before initiating the user's job. The SLURM daemon running on that node then 
+tries to establish identical resource limits for the job being initiated. 
+There are several possible reasons for not being able to establish those 
+resource limits.
+<ul> 
+<li>The hard resource limits applied to SLURM's slurmd daemon are lower 
+than the user's soft resources limits on the submit host. Typically 
+the slurmd daemon is initiated by the init daemon with the operating 
+system default limits. This may be address either through use of the 
+ulimit command in the /etc/sysconfig/slurm file or enabling
+<a href="#pam">PAM in SLURM</a>.</li>
+<li>The user's hard resource limits on the allocated node sre lower than 
+the same user's soft  hard resource limits on the node from which the 
+job was submitted. It is recommended that the system administrator 
+establish uniform hard resource limits for users on all nodes 
+within a cluster to prevent this from occurring.</li>
+</ul></p>
+<p>NOTE: This may produce the error message &quot;Can't propagate RLIMIT_...&quot;.
+The error message is printed only if the user explicity specifies that
+the resource limit should be propagated or the srun command is running
+with verbose logging of actions from the slurmd daemon (e.g. "srun -d6 ...").</p>
 
 <p><a name="pending"><b>3. Why is my job not running?</b></a><br>
 The answer to this question depends upon the scheduler used by SLURM. Executing 
@@ -484,6 +500,6 @@ of <i>srun</i> serves a similar purpose.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 January 2007</p>
+<p style="text-align:center;">Last modified 25 January 2007</p>
 
 <!--#include virtual="footer.txt"-->

@@ -39,6 +39,7 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
 set delay        5
+set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
 
@@ -72,7 +73,7 @@ $srun $bin_sleep $sleep_time
 set start_cnt 0
 set timeout $delay
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in]
+	set srun_pid [spawn $srun --job-name=$job_name --batch --output=/dev/null --error=/dev/null -t5 $file_in]
 	expect {
 		-re "jobid ($number) submitted" {
 			incr start_cnt

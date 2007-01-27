@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 #endif   /* !NDEBUG         */
 
 	/* 
-	 * Create StateSaveLocation directory if necessary, and chdir() to it.
+	 * Create StateSaveLocation directory if necessary.
 	 */
 	if (set_slurmctld_state_loc() < 0)
 		fatal("Unable to initialize StateSaveLocation");
@@ -223,6 +223,24 @@ int main(int argc, char *argv[])
 			  slurmctld_conf.slurmctld_logfile);
 		if (error_code)
 			error("daemon error %d", error_code);
+		if (slurmctld_conf.slurmctld_logfile
+		&&  (slurmctld_conf.slurmctld_logfile[0] == '/')) {
+			char *slash_ptr, *work_dir;
+			work_dir = xstrdup(slurmctld_conf.slurmctld_logfile);
+			slash_ptr = strrchr(work_dir, '/');
+			if (slash_ptr == work_dir)
+				work_dir[1] = '\0';
+			else
+				slash_ptr[0] = '\0';
+			if (chdir(work_dir) < 0)
+				fatal("chdir(%s): %m", work_dir);
+			xfree(work_dir);
+		} else {
+			if (chdir(slurmctld_conf.state_save_location) < 0) {
+				fatal("chdir(%s): %m",
+					slurmctld_conf.state_save_location);
+			}
+		}
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
@@ -1197,15 +1215,6 @@ set_slurmctld_state_loc(void)
 	}
 	(void) unlink(tmp);
 	xfree(tmp);
-
-	/*
-	 * Only chdir() to spool directory if slurmctld will be 
-	 * running as a daemon
-	 */
-	if (daemonize && chdir(slurmctld_conf.state_save_location) < 0) {
-		error("chdir(%s): %m", slurmctld_conf.state_save_location);
-		return SLURM_ERROR;
-	}
 
 	return SLURM_SUCCESS;
 }

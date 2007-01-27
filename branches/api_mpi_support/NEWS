@@ -1,12 +1,17 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 1.2.0
-========================
+* Changes in SLURM 1.2.0-pre14
+==============================
  -- In sched/wiki2, clear required nodes list when a job is requeued.
     Note that the required node list is set to every node used when 
     a job is started via sched/wiki2.
  -- BLUEGENE - Added display of deallocating blocks to smap and other tools. 
+ -- Make slurmctld's working directory be same as SlurmctldLogFile (if any),
+    otherwise StateSaveDir (which is likely a shared directory, possibly 
+    making core file identification more difficult).
+ -- Fix bug in switch/federation that results in the backup controller
+    aborting if it receives an epilog-complete message.
 
 * Changes in SLURM 1.2.0-pre13
 ==============================
@@ -211,6 +216,11 @@ documents those changes that are of interest to users and admins.
  -- Added new configuration parameter MessageTimeout (replaces #define in 
     the code)
  -- Added support for OSX build.
+
+* Changes in SLURM 1.1.27
+=========================
+ - Fix possible race condition for two simultaneous "scontrol show config" 
+   calls resulting in slurm_xfree() Error: from read_config.c:642 
 
 * Changes in SLURM 1.1.26
 =========================
@@ -664,6 +674,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.17
 =========================
  -- Set correct user groups for task epilogs.
+ -- Set SLURM_DIST_CYCLIC = 1 (needed for HP MPI, slurm.hp.env.patch).
+ -- Add more debugging for tracking slow slurmd job initiations
+    (slurm.hp.replaydebug.patch).
 
 * Changes in SLURM 1.0.16
 =========================
