@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - Fix possible race condition for two simultaneous "scontrol show config" 
    calls resulting in slurm_xfree() Error: from read_config.c:642 
+ - BLUEGENE - Put back logic to make a block fail a boot 3 times before 
+   cancelling a users job.
 
 * Changes in SLURM 1.1.26
 =========================
