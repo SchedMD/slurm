@@ -87,6 +87,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 
 	if(bg_record->modifying)
 		return SLURM_SUCCESS;
+
 	slurm_conf_lock();
 	user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
@@ -97,29 +98,27 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	} 
 	slurm_conf_unlock();
 	
-	if(jobid > -1) {
-		kill_job_struct_t *freeit = xmalloc(sizeof(kill_job_struct_t));
-		freeit->jobid = jobid;
-		list_push(kill_job_list, freeit);
-	}	
-	if(bg_record->target_name 
-	   && bg_record->user_name) {
+	if(bg_record->target_name && bg_record->user_name) {
 		if(!strcmp(bg_record->target_name, user_name)) {
-			if(strcmp(bg_record->target_name, 
-				  bg_record->user_name)
+			if(strcmp(bg_record->target_name, bg_record->user_name)
 			   || (jobid > -1)) {
+				kill_job_struct_t *freeit =
+					xmalloc(sizeof(freeit));
+				freeit->jobid = jobid;
+				list_push(kill_job_list, freeit);
+				
 				error("Block %s was in a ready state "
 				      "for user %s but is being freed. "
 				      "Job %d was lost.",
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
 				      jobid);
-				
+
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
 					num_unused_cpus += bg_record->bp_count
-						*bg_record->cpus_per_bp;
+						* bg_record->cpus_per_bp;
 				} 
 			} else {
 				debug("Block %s was in a ready state "
@@ -136,15 +135,13 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		error("Target Name was not set "
 		      "not set for block %s.",
 		      bg_record->bg_block_id);
-		bg_record->target_name = 
-			xstrdup(bg_record->user_name);
+		bg_record->target_name = xstrdup(bg_record->user_name);
 	} else {
 		error("Target Name and User Name are "
 		      "not set for block %s.",
 		      bg_record->bg_block_id);
 		bg_record->user_name = xstrdup(user_name);
-		bg_record->target_name = 
-			xstrdup(bg_record->user_name);
+		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
 
 	xfree(user_name);
@@ -316,21 +313,18 @@ extern int update_block_list()
 			   check to make sure block went 
 			   through freeing correctly 
 			*/
-			if(bg_record->state 
-			   != RM_PARTITION_DEALLOCATING
+			if(bg_record->state != RM_PARTITION_DEALLOCATING
 			   && state == RM_PARTITION_FREE)
 				skipped_dealloc = 1;
 
 			bg_record->state = state;
 
-			if(bg_record->state 
-			   == RM_PARTITION_DEALLOCATING) {
+			if(bg_record->state == RM_PARTITION_DEALLOCATING) {
 				_block_is_deallocating(bg_record);
 			} else if(skipped_dealloc) {
 				_block_is_deallocating(bg_record);
 				skipped_dealloc = 0;
-			} else if(bg_record->state 
-				  == RM_PARTITION_CONFIGURING)
+			} else if(bg_record->state == RM_PARTITION_CONFIGURING)
 				bg_record->boot_state = 1;
 			updated = 1;
 		}
@@ -346,24 +340,20 @@ extern int update_block_list()
 				       "is the user.",
 				       bg_record->target_name);
 				slurm_conf_lock();
-				if(update_block_user(bg_record, 0) 
-				   == 1)
+				if(update_block_user(bg_record, 0) == 1)
 					last_bg_update = time(NULL);
 				slurm_conf_unlock();
 				break;
 			case RM_PARTITION_ERROR:
 				error("block in an error state");
 			case RM_PARTITION_FREE:
-				if(bg_record->boot_count 
-				   < RETRY_BOOT_COUNT) {
-					slurm_mutex_unlock(
-						&block_state_mutex);
+				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
+					slurm_mutex_unlock(&block_state_mutex);
 					if((rc = boot_block(bg_record))
 					   != SLURM_SUCCESS) {
 						updated = -1;
 					}
-					slurm_mutex_lock(
-						&block_state_mutex);
+					slurm_mutex_lock(&block_state_mutex);
 					debug("boot count for block "
 					      "%s is %d",
 					      bg_record->bg_block_id,
@@ -376,8 +366,7 @@ extern int update_block_list()
 					      "for user %s",
 					      bg_record->bg_block_id, 
 					      bg_record->target_name);
-					slurm_mutex_unlock(
-						&block_state_mutex);
+					slurm_mutex_unlock(&block_state_mutex);
 					
 					now = time(NULL);
 					slurm_make_time_str(&now, time_str,
