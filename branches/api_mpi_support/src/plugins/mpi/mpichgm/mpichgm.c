@@ -51,6 +51,7 @@
 #include <netinet/in.h>
 #include <strings.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/net.h"
