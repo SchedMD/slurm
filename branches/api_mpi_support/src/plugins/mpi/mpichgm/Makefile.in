@@ -78,7 +78,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 mpi_mpichgm_la_LIBADD =
-am_mpi_mpichgm_la_OBJECTS = mpi_mpichgm.lo mpichgm.lo net.lo
+am_mpi_mpichgm_la_OBJECTS = mpi_mpichgm.lo mpichgm.lo
 mpi_mpichgm_la_OBJECTS = $(am_mpi_mpichgm_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -281,8 +281,7 @@ pkglib_LTLIBRARIES = mpi_mpichgm.la
 
 # Null switch plugin.
 mpi_mpichgm_la_SOURCES = mpi_mpichgm.c mpichgm.c mpichgm.h\
-			  $(top_srcdir)/src/common/mpi.h \
-			  $(top_srcdir)/src/common/net.c
+			  $(top_srcdir)/src/common/mpi.h
 
 mpi_mpichgm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
@@ -356,7 +355,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_mpichgm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpichgm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -378,13 +376,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-net.lo: $(top_srcdir)/src/common/net.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT net.lo -MD -MP -MF "$(DEPDIR)/net.Tpo" -c -o net.lo `test -f '$(top_srcdir)/src/common/net.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/net.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/net.Tpo" "$(DEPDIR)/net.Plo"; else rm -f "$(DEPDIR)/net.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/common/net.c' object='net.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile --tag=CC $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o net.lo `test -f '$(top_srcdir)/src/common/net.c' || echo '$(srcdir)/'`$(top_srcdir)/src/common/net.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
