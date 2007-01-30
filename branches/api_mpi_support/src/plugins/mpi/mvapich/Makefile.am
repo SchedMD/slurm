@@ -11,6 +11,6 @@ pkglib_LTLIBRARIES = mpi_mvapich.la
 mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c mvapich.h\
 	$(top_srcdir)/src/common/mpi.h
 
-mpi_mvapich_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
+#mpi_mvapich_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
 
 mpi_mvapich_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
