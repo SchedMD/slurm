@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.0-pre16
+==============================
+
 * Changes in SLURM 1.2.0-pre15
 ==============================
  -- Fix for another spot where the backup controller calls switch/federation
