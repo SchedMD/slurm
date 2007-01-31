@@ -23,8 +23,10 @@ The major type must be &quot;jobacct.&quot;
 The minor type can be any suitable name
 for the type of accounting package. We currently use
 <ul>
-<li><b>linux</b>&#151;Gathers information from linux proctable and addes this
-information to the standard rusage information also gathered for each job. 
+<li><b>aix</b>&#151; Gathers information from AIX /proc table and adds this
+information to the standard rusage information also gathered for each job.
+<li><b>linux</b>&#151;Gathers information from Linux /proc table and adds this
+information to the standard rusage information also gathered for each job.
 <li><b>none</b>&#151;No information gathered.
 </ul>
 The <b>sacct</b> program can be used to display gathered data from regular
@@ -352,6 +354,6 @@ ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 14 December 2006</p>
+<p style="text-align:center;">Last modified 31 January 2007</p>
 
 <!--#include virtual="footer.txt"-->
