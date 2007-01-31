@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.0-pre15
+==============================
+ -- Fix for another spot where the backup controller calls switch/federation
+    code before switch/federation is initialized.
+
 * Changes in SLURM 1.2.0-pre14
 ==============================
  -- In sched/wiki2, clear required nodes list when a job is requeued.
