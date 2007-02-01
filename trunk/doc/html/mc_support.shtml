@@ -69,7 +69,7 @@ by their application.  Table 1 summarizes the new multi-core flags.
     <td>Number of sockets in a node to dedicate to a job (minimum or range)
 </td></tr>
 <tr>
-    <td> --cores-per-cpu=<i>C</i></td>
+    <td> --cores-per-socket=<i>C</i></td>
     <td> Number of cores in a CPU to dedicate to a job (minimum or range)
 </td></tr>
 <tr>
@@ -1045,7 +1045,7 @@ using NodeName:
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 9 October 2006</p>
+<p style="text-align:center;">Last modified 2 February 2007</p>
 
 <!--#include virtual="footer.txt"-->
 
