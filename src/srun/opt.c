@@ -1102,6 +1102,10 @@ env_vars_t env_vars[] = {
 	{"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
 	{"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL           },
 	{"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL           },
+	{"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL           },
+	{"SLURM_EPILOG",        OPT_STRING,     &opt.epilog,        NULL           },
+	{"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL           },
+	{"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL           },
 	{NULL, 0, NULL, NULL}
 };
 
