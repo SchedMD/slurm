@@ -64,7 +64,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->ntasks_per_node   = (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_socket = (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_core   = (uint16_t) NO_VAL;
-	job_desc_msg->task_dist   = SLURM_DIST_CYCLIC;
 	job_desc_msg->dependency  = NO_VAL;
 	job_desc_msg->environment = ((char **) NULL);
 	job_desc_msg->env_size    = 0;
