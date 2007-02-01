@@ -765,6 +765,11 @@ env_vars_t env_vars[] = {
   {"SLAUNCH_WAIT",         OPT_INT,       &opt.max_wait,      NULL           },
   {"SLAUNCH_MPI_TYPE",     OPT_MPI,       NULL,               NULL           },
   {"SLAUNCH_COMM_HOSTNAME",OPT_STRING,    &opt.comm_hostname, NULL           },
+  {"SLAUNCH_PROLOG",       OPT_STRING,    &opt.prolog,        NULL           },
+  {"SLAUNCH_EPILOG",       OPT_STRING,    &opt.epilog,        NULL           },
+  {"SLAUNCH_TASK_PROLOG",  OPT_STRING,    &opt.task_prolog,   NULL           },
+  {"SLAUNCH_TASK_EPILOG",  OPT_STRING,    &opt.task_epilog,   NULL           },
+
   {NULL, 0, NULL, NULL}
 };
 
