@@ -1049,13 +1049,15 @@ static void _usage(char *prog_name)
 	fprintf(stderr, "  -h      "
 			"\tPrint this help message.\n");
 	fprintf(stderr, "  -L logfile "
-			"\tLog messages to the specified file\n");
+			"\tLog messages to the specified file.\n");
 #if (DEFAULT_RECOVER == 0)
 	fprintf(stderr, "  -r      "
 			"\tRecover state from last checkpoint.\n");
 #endif
 	fprintf(stderr, "  -v      "
 			"\tVerbose mode. Multiple -v's increase verbosity.\n");
+	fprintf(stderr, "  -V      "
+			"\tPrint version information and exit.\n");
 }
 
 /*
