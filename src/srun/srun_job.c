@@ -204,9 +204,6 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->addrs          = resp->node_addr;
 	ai->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
 
-	if(!opt.max_nodes)
-		opt.max_nodes = opt.min_nodes;
-
 	if (opt.nodelist == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -240,6 +237,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			if (inx >= 0) {
 				debug("excluding node %s", node_name);
 				hostlist_delete_nth(hl, inx);
+				ai->nnodes--;	/* decrement node count */
 			}
 			free(node_name);
 		}
@@ -254,27 +252,32 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		opt.nodelist = xstrdup(buf);
 	}
 	
-/* 	if(!opt.nodelist)  */
-/* 		opt.nodelist = ai->nodelist; */
 	/* get the correct number of hosts to run tasks on */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
+		hostlist_uniq(hl);
 		if(!hostlist_count(hl)) {
-			error("1 Hostlist is now nothing!  Can't run job.");
+			error("Hostlist is now nothing!  Can not run job.");
 			return NULL;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
-
-		/* hostlist_uniq(hl); */
-		//ai->nnodes = hostlist_count(hl);
 	
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
 		
 	} 
-		
+
+	if (!opt.nodes_set) {
+		if(opt.nprocs_set)
+			opt.min_nodes = opt.nprocs;
+		else
+			opt.min_nodes = ai->nnodes;
+		opt.nodes_set = true;
+	}
+	if(!opt.max_nodes)
+		 opt.max_nodes = opt.min_nodes;
 	if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
 		ai->nnodes = opt.max_nodes;
 
