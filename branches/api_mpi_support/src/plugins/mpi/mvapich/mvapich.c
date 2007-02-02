@@ -114,6 +114,10 @@ struct mvapich_info
  */
 int mvapich_verbose = 0;
 
+/*  Per-job step state information.  The MPI plugin may be called
+ *  multiple times from the SLURM API's slurm_step_launch() in the
+ *  same process.
+ */
 struct mvapich_state {
 	pthread_t tid;
 	struct mvapich_info **mvarray;
