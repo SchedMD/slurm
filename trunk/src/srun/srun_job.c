@@ -169,13 +169,6 @@ job_step_create_allocation(uint32_t job_id)
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
 
-	if(!opt.max_nodes)
-		opt.max_nodes = opt.min_nodes;
-	
-	/* The reason we read in from the hostfile here is so if we don't 
-	 * need all the hostfile we only get what the user asked for 
-	 * (i.e. opt.max_nodes)
-	 */
 	if (opt.nodelist == NULL) {
 		char *nodelist = NULL;
 		char *hostfile = getenv("SLURM_HOSTFILE");
@@ -196,7 +189,12 @@ job_step_create_allocation(uint32_t job_id)
 			}
 		}
 	}
-	ai->nodelist       = opt.alloc_nodelist;
+
+	ai->nodelist = opt.alloc_nodelist;
+	hl = hostlist_create(ai->nodelist);
+	hostlist_uniq(hl);
+	ai->nnodes = hostlist_count(hl);
+	hostlist_destroy(hl);
 	
 	if (opt.exc_nodes) {
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
@@ -211,6 +209,7 @@ job_step_create_allocation(uint32_t job_id)
 			if (inx >= 0) {
 				debug("excluding node %s", node_name);
 				hostlist_delete_nth(hl, inx);
+				ai->nnodes--;	/* decrement node count */
 			}
 			free(node_name);
 		}
@@ -223,24 +222,46 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
+		/* Don't reset the ai->nodelist because that is the
+		 * nodelist we want to say the allocation is under
+		 * opt.nodelist is what is used for the allocation.
+		 */
 		/* xfree(ai->nodelist); */
 /* 		ai->nodelist = xstrdup(buf); */
 	}
 	
+	/* get the correct number of hosts to run tasks on */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
+		hostlist_uniq(hl);
 		if(!hostlist_count(hl)) {
-			error("1 Hostlist is now nothing!  Can't run job.");
+			error("Hostlist is now nothing!  Can not run job.");
 			return NULL;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
 		hostlist_destroy(hl);
+		/* Don't reset the ai->nodelist because that is the
+		 * nodelist we want to say the allocation is under
+		 * opt.nodelist is what is used for the allocation.
+		 */
 		/* xfree(ai->nodelist); */
 /* 		ai->nodelist = xstrdup(buf); */
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
+	} 
+
+	if (!opt.nodes_set) {
+		if(opt.nprocs_set)
+			opt.min_nodes = opt.nprocs;
+		else
+			opt.min_nodes = ai->nnodes;
+		opt.nodes_set = true;
 	}
+	if(!opt.max_nodes)
+		 opt.max_nodes = opt.min_nodes;
+	if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
+		ai->nnodes = opt.max_nodes;
 
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		if(count != opt.nprocs) {
@@ -250,10 +271,6 @@ job_step_create_allocation(uint32_t job_id)
 		}
 	}
 
-	hl = hostlist_create(ai->nodelist);
-	hostlist_uniq(hl);
-	ai->nnodes = hostlist_count(hl);
-	hostlist_destroy(hl);
 	if (ai->nnodes == 0) {
 		error("No nodes in allocation, can't run job");
 		goto error;
