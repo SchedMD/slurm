@@ -630,7 +630,7 @@ _step_req_create(srun_job_t *j)
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = (uint16_t)opt.relative;
 	r->overcommit = opt.overcommit ? 1 : 0;
-	debug("requesting job %d, user %d, nodes %d (%s)", 
+	debug("requesting job %d, user %d, nodes %d including (%s)", 
 	      r->job_id, r->user_id, r->node_count, r->node_list);
 	debug("cpus %d, tasks %d, name %s, relative %d", 
 	      r->cpu_count, r->num_tasks, r->name, r->relative);
