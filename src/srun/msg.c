@@ -860,7 +860,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		tasks_exited++;
 		debug2("looking for %d got %d", opt.nprocs, tasks_exited);
 		if ((tasks_exited == opt.nprocs) 
-		    || (slurm_mpi_single_task_per_node () 
+		    || (mpi_hook_client_single_task_per_node () 
 			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
 			update_job_state(job, SRUN_JOB_TERMINATED);

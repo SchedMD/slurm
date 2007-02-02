@@ -227,8 +227,8 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 			    const char *value_fmt, ...);
 
 /*
- * Set all of the environment variables in a supplied environment
- * variable array.
+ * Set in the running process's environment all of the environment
+ * variables in a supplied environment variable array.
  */
 void env_array_set_environment(char **env_array);
 

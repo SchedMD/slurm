@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/macros.h"
 
 void fd_set_close_on_exec(int fd);
 /*

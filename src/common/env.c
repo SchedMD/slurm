@@ -47,9 +47,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#include "src/common/macros.h"
 #include "slurm/slurm.h"
 #include "src/common/log.h"
-#include "src/common/macros.h"
 #include "src/common/env.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -61,9 +61,17 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
  * for details. 
  */
-strong_alias(setenvf,		slurm_setenvpf);
-strong_alias(unsetenvp,		slurm_unsetenvp);
-strong_alias(getenvp,		slurm_getenvp);
+strong_alias(setenvf,			slurm_setenvpf);
+strong_alias(unsetenvp,			slurm_unsetenvp);
+strong_alias(getenvp,			slurm_getenvp);
+strong_alias(env_array_create,		slurm_env_array_create);
+strong_alias(env_array_merge,		slurm_env_array_merge);
+strong_alias(env_array_copy,		slurm_env_array_copy);
+strong_alias(env_array_free,		slurm_env_array_free);
+strong_alias(env_array_append,		slurm_env_array_append);
+strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
+strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
+strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
 /*
  *  Return pointer to `name' entry in environment if found, or

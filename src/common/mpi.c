@@ -53,15 +53,18 @@
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job completion
- * logging plugins will stop working.  If you need to add fields, add them 
+ * fields at the beginning of the structure.  If you do, MPI plugins
+ * will stop working.  If you need to add fields, add them 
  * at the end of the structure.
  */
 typedef struct slurm_mpi_ops {
-	int          (*init)          (slurmd_job_t *job, int rank);
-	int          (*create_thread) (srun_job_t *job);
-	int          (*single_task)   (void);
-	int          (*exit)          (void);
+	int          (*slurmstepd_init)   (const mpi_plugin_task_info_t *job,
+					   char ***env);
+	mpi_plugin_client_state_t *
+	             (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
+					   char ***env);
+	bool         (*client_single_task)(void);
+	int          (*client_fini)       (mpi_plugin_client_state_t *);
 } slurm_mpi_ops_t;
 
 struct slurm_mpi_context {
@@ -134,10 +137,10 @@ _slurm_mpi_get_ops( slurm_mpi_context_t c )
 	 * declared for slurm_mpi_ops_t.
 	 */
 	static const char *syms[] = {
-		"mpi_p_init",
-		"mpi_p_thr_create",
-		"mpi_p_single_task",
-		"mpi_p_exit"		
+		"p_mpi_hook_slurmstepd_task",
+		"p_mpi_hook_client_prelaunch",
+		"p_mpi_hook_client_single_task_per_node",
+		"p_mpi_hook_client_fini"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	char *plugin_dir = NULL;
@@ -233,7 +236,21 @@ done:
 	return retval;
 }
 
-int srun_mpi_init (char *mpi_type)
+
+int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
+{   
+	char *mpi_type = getenvp (*env, "SLURM_MPI_TYPE");
+	
+	debug("mpi type = %s", mpi_type);
+
+	if(_mpi_init(mpi_type) == SLURM_ERROR) 
+		return SLURM_ERROR;
+	
+	unsetenvp (*env, "SLURM_MPI_TYPE");
+	return (*(g_context->ops.slurmstepd_init))(job, env);
+}
+
+int mpi_hook_client_init (char *mpi_type)
 {
 	debug("mpi type = %s", mpi_type);
 	
@@ -243,18 +260,29 @@ int srun_mpi_init (char *mpi_type)
 	return SLURM_SUCCESS;
 }
 
+mpi_plugin_client_state_t *
+mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+{
+	if (_mpi_init(NULL) < 0)
+		return NULL;
+		
+	return (*(g_context->ops.client_prelaunch))(job, env);
+}
 
-int slurmd_mpi_init (slurmd_job_t *job, int rank)
-{   
-	char *mpi_type = getenvp (job->env, "SLURM_MPI_TYPE");
-	
-	debug("mpi type = %s", mpi_type);
-
-	if(_mpi_init(mpi_type) == SLURM_ERROR) 
+bool mpi_hook_client_single_task_per_node (void)
+{
+	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 	
-	unsetenvp (job->env, "SLURM_MPI_TYPE");	
-	return (*(g_context->ops.init))(job, rank);
+	return (*(g_context->ops.client_single_task))();
+}
+
+int mpi_hook_client_fini (mpi_plugin_client_state_t *state)
+{
+	if (_mpi_init(NULL) < 0)
+		return SLURM_ERROR;
+	
+	return (*(g_context->ops.client_fini))(state);
 }
 
 int mpi_fini (void)
@@ -266,30 +294,6 @@ int mpi_fini (void)
 
 	rc = _slurm_mpi_context_destroy(g_context);
 	return rc;
-}
-
-int slurm_mpi_thr_create(srun_job_t *job)
-{
-	if (_mpi_init(NULL) < 0)
-		return SLURM_ERROR;
-		
-	return (*(g_context->ops.create_thread))(job);
-}
-
-int slurm_mpi_single_task_per_node (void)
-{
-	if (_mpi_init(NULL) < 0)
-		return SLURM_ERROR;
-	
-	return (*(g_context->ops.single_task))();
-}
-
-int slurm_mpi_exit (void)
-{
-	if (_mpi_init(NULL) < 0)
-		return SLURM_ERROR;
-	
-	return (*(g_context->ops.exit))();
 }
 
 

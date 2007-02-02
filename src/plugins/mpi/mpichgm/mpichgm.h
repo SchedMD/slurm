@@ -39,8 +39,12 @@
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/common/slurm_xlator.h"
+#include "src/common/mpi.h"
 #include "src/common/env.h"
 
-extern int gmpi_thr_create(srun_job_t *job);
+typedef struct gmpi_state gmpi_state_t;
+
+extern gmpi_state_t *gmpi_thr_create(const mpi_plugin_client_info_t *job,
+				     char ***env);
+extern int gmpi_thr_destroy(gmpi_state_t *state);

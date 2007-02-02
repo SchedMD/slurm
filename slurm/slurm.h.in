@@ -724,6 +724,8 @@ typedef struct {
 	uint16_t ntasks_per_core;
 	uint16_t task_dist;
 	uint16_t plane_size;
+
+	char *mpi_plugin_name;
 } slurm_step_launch_params_t;
 
 typedef struct {
