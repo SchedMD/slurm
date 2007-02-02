@@ -581,8 +581,11 @@ static int poll_mvapich_fds (mvapich_state_t *st)
 	}
 
 	mvapich_debug2 ("Going to poll %d fds", nfds);
-	if ((rc = poll (fds, nfds, -1)) < 0) 
-		return (error ("mvapich: poll: %m"));
+	if ((rc = poll (fds, nfds, -1)) < 0) {
+		error ("mvapich: poll: %m");
+		xfree (fds);
+		return SLURM_ERROR;
+	}
 
 	i = 0;
 	while (fds[i].revents != POLLIN)
