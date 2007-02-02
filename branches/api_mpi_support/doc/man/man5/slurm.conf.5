@@ -590,16 +590,16 @@ If any slurm daemons terminate abnormally, their core files will also be written
 into this directory.
 .TP
 \fBSrunEpilog\fR
-Fully qualified pathname of an executable to be run by \fBsrun\fR following the
+Fully qualified pathname of an executable to be run by srun following the
 completion of a job step.  The command line arguments for the executable will
 be the command and arguments of the job step.  This configuration parameter
-may be overridden by \fBsrun\fR\'s \fB\-\-epilog\fR parameter.
+may be overridden by srun's \fB\-\-epilog\fR parameter.
 .TP
 \fBSrunProlog\fR
-Fully qualified pathname of an executable to be run by \fBsrun\fR prior to the
+Fully qualified pathname of an executable to be run by srun prior to the
 launch of a job step.  The command line arguments for the executable will
 be the command and arguments of the job step.  This configuration parameter
-may be overridden by \fBsrun\fR\'s \fB\-\-prolog\fR parameter.
+may be overridden by srun's \fB\-\-prolog\fR parameter.
 .TP
 \fBSwitchType\fR
 Identifies the type of switch or interconnect used for application

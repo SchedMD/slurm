@@ -160,7 +160,7 @@ typedef struct {
 fed_libstate_t *fed_state = NULL;
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* slurmd/slurmd_step global variables */
+/* slurmd/slurmstepd global variables */
 hostlist_t adapter_list;
 static fed_cache_entry_t lid_cache[FED_MAXADAPTERS];
 
@@ -325,7 +325,7 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
  * _init_cache() simply initializes the cache to sane values and 
  * needs to be called before any other cache functions are called.
  *
- * Used by: slurmd/slurmd_step
+ * Used by: slurmd/slurmstepd
  */
 static void
 _init_adapter_cache(void)
@@ -341,7 +341,7 @@ _init_adapter_cache(void)
 
 /* Use ntbl_adapter_resources to cache information about local adapters.
  *
- * Used by: slurmd_step
+ * Used by: slurmstepd
  */
 static int
 _fill_in_adapter_cache(void)
@@ -1763,9 +1763,18 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 	hi = hostlist_iterator_create(uniq_hl);
 
 	_lock();
-	while((nodename = hostlist_next(hi)) != NULL) {
-		_free_windows_by_job_key(jp->job_key, nodename);
-		free(nodename);
+	if (fed_state != NULL) {
+		while((nodename = hostlist_next(hi)) != NULL) {
+			_free_windows_by_job_key(jp->job_key, nodename);
+			free(nodename);
+		}
+	} else { /* fed_state == NULL */
+		/* If there is no state at all, the job is already cleaned
+		 * up. :)  This should really only happen when the backup
+		 * controller is calling job_fini() just before it takes over
+		 * the role of active controller.
+		 */
+		debug("fed_job_step_complete called when fed_state == NULL");
 	}
 	_unlock();
 	

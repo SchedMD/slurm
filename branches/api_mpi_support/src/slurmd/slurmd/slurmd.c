@@ -1092,12 +1092,14 @@ _usage()
 {
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
-   -L logfile  Log messages to the file `logfile'\n\
-   -v          Verbose mode. Multiple -v's increase verbosity.\n\
+   -c          Force cleanup of slurmd shared memory.\n\
    -D          Run daemon in foreground.\n\
    -M          Use mlock() to lock slurmd pages into memory.\n\
-   -c          Force cleanup of slurmd shared memory.\n\
-   -h          Print this help message.\n", conf->prog);
+   -h          Print this help message.\n\
+   -f config   Read configuration from the specified file.\n\
+   -L logfile  Log messages to the file `logfile'.\n\
+   -v          Verbose mode. Multiple -v's increase verbosity.\n\
+   -V          Print version information and exit.\n", conf->prog);
 	return;
 }
 

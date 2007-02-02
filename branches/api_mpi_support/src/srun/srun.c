@@ -203,6 +203,7 @@ int srun(int ac, char **av)
 
 	} else if (opt.batch) {
 	    	/* allow binding with batch submissions */
+		env->distribution = opt.distribution;
 		env->cpu_bind_type = opt.cpu_bind_type;
 		env->cpu_bind = opt.cpu_bind;
 		env->mem_bind_type = opt.mem_bind_type;

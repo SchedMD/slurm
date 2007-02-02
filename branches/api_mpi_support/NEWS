@@ -1,6 +1,18 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.0-pre16
+==============================
+ -- Srun to use env vars for SLURM_PROLOG, SLURM_EPILOG, SLURM_TASK_PROLOG, 
+    and SLURM_TASK_EPILOG. patch.1.2.0-pre11.070201.envproepilog from 
+    Dan Palermo, HP.
+ -- Documenation update. patch.1.2.0-pre11.070201.mchtml from Dan Palermo, HP.
+ 
+* Changes in SLURM 1.2.0-pre15
+==============================
+ -- Fix for another spot where the backup controller calls switch/federation
+    code before switch/federation is initialized.
+
 * Changes in SLURM 1.2.0-pre14
 ==============================
  -- In sched/wiki2, clear required nodes list when a job is requeued.
@@ -221,6 +233,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - Fix possible race condition for two simultaneous "scontrol show config" 
    calls resulting in slurm_xfree() Error: from read_config.c:642 
+ - BLUEGENE - Put back logic to make a block fail a boot 3 times before 
+   cancelling a users job.
 
 * Changes in SLURM 1.1.26
 =========================

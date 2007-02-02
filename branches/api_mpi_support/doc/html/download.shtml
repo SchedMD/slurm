@@ -7,11 +7,15 @@ SLURM source can be downloaded from <br>
 ftp://ftp.llnl.gov/pub/linux/slurm</a><br>
 The latest stable release is version 1.2.</p>
 
-<p><b>NOTE:</b> This server will only download files to computers 
+<p><b>NOTE:</b> Depending upon your firewall configuration, the use
+of ftp passive mode may be required (use the "-p" option for the
+ftp command, e.g. "ftp -p ftp.llnl.gov"; web browsers may also
+require setting the ftp preference to passive mode).<br>
+<b>NOTE:</b> This server will only download files to computers 
 on which it can perform a reverse DNS lookup for the IP address 
-issuing the request. 
-This is a LLNL site-wide policy for security purposes that we have 
-no control over. 
+issuing the request.<br>
+These requirement are part of a LLNL site-wide policy for security 
+purposes that we have no control over. 
 Some firewalls prevent reverse DNS lookup, so you may need to download 
 the files to some computer outside of your firewall.</p>
 
@@ -78,6 +82,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 22 January 2007</p>
+<p style="text-align:center;">Last modified 2 February 2007</p>
 
 <!--#include virtual="footer.txt"-->
