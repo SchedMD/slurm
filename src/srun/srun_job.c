@@ -199,10 +199,11 @@ job_step_create_allocation(uint32_t job_id)
 	if (opt.exc_nodes) {
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
 		char *node_name = NULL;
+		
+		hl = hostlist_create(ai->nodelist);
 		if(opt.nodelist)
-			hl = hostlist_create(opt.nodelist);
-		else
-			hl = hostlist_create(ai->nodelist);
+			hostlist_push(hl, opt.nodelist);
+		hostlist_uniq(hl);
 		//info("using %s or %s", opt.nodelist, ai->nodelist);
 		while ((node_name = hostlist_shift(exc_hl))) {
 			int inx = hostlist_find(hl, node_name);
