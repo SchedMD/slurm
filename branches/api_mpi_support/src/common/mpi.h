@@ -62,8 +62,8 @@ typedef struct {
 	uint32_t ntasks; /* total number of tasks in current job      */
 	uint32_t ltasks; /* number of tasks on *this* (local) node    */
 
-	uint32_t gtaskid;/* global task rank withing the job step     */
-	int      ltaskid;/* task rank on the local node               */
+	uint32_t gtaskid;/* global task rank within the job step      */
+	int      ltaskid;/* task rank within the local node           */
 
 	slurm_addr *self;
 	slurm_addr *client;
