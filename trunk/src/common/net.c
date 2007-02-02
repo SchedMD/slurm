@@ -50,8 +50,17 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include "src/common/macros.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(net_stream_listen,		slurm_net_stream_listen);
+strong_alias(net_accept_stream,		slurm_net_accept_stream);
+strong_alias(net_set_low_water,		slurm_net_set_low_water);
 
 #ifndef NET_DEFAULT_BACKLOG
 #  define NET_DEFAULT_BACKLOG	1024
@@ -112,7 +121,7 @@ int net_stream_listen(int *fd, short *port)
 }
 
 
-int accept_stream(int fd)
+int net_accept_stream(int fd)
 {
 	int sd;
 
@@ -128,7 +137,6 @@ int accept_stream(int fd)
 
 	return sd;
 }
-
 
 int readn(int fd, void *buf, size_t nbytes)
 {

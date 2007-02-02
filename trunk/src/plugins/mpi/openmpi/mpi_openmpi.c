@@ -47,8 +47,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_xlator.h"
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/common/mpi.h"
 #include "src/common/env.h"
 
 /*
@@ -82,24 +81,27 @@ const char plugin_name[]        = "OpenMPI plugin";
 const char plugin_type[]        = "mpi/openmpi";
 const uint32_t plugin_version   = 100;
 
-int mpi_p_init(slurmd_job_t *job)
+int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
+			       char ***env)
 {
 	debug("Using mpi/openmpi");
 	return SLURM_SUCCESS;
 }
 
-int mpi_p_thr_create(srun_job_t *job)
+mpi_plugin_client_state_t *
+p_mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
 	debug("Using mpi/openmpi");
-	return SLURM_SUCCESS;
+	/* only return NULL on error */
+	return (void *)0xdeadbeef;
 }
 
-int mpi_p_single_task()
+int p_mpi_hook_client_single_task_per_node()
 {
 	return false;
 }
 
-int mpi_p_exit()
+int p_mpi_hook_client_fini()
 {
 	return SLURM_SUCCESS;
 }

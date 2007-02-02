@@ -54,7 +54,7 @@
 #include "src/common/job_options.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/srun/srun_job.h"
+/*#include "src/srun/srun_job.h"*/
 
 #include <slurm/spank.h>
 

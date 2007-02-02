@@ -58,6 +58,7 @@
 #include "src/common/forward.h"
 #include "src/common/plugstack.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/mpi.h"
 
 #include "src/api/step_launch.h"
 #include "src/api/step_ctx.h"
@@ -102,36 +103,12 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
+	/* Set all values to zero (in other words, "NULL" for pointers) */
 	memset(ptr, 0, sizeof(slurm_step_launch_params_t));
-	/* Values are set to zero or NULL above */
-/*	ptr->argc = 0;			*/
-/*	ptr->argv = NULL;		*/
-/*	ptr->envc = 0;			*/
-/*	ptr->env = NULL;		*/
-/*	ptr->cwd = NULL;		*/
-/*	ptr->user_managed_io = false;	*/
+
 	ptr->buffered_stdio = true;
-/*	ptr->labelio = false;		*/
-/*	ptr->remote_output_filename = NULL;	*/
-/*	ptr->remote_error_filename = NULL;	*/
-/*	ptr->remote_input_filename = NULL;	*/
 	memcpy(&ptr->local_fds, &fds, sizeof(fds));
 	ptr->gid = getgid();
-/*	ptr->multi_prog = false;	*/
-/*	ptr->slurmd_debug = 0;		*/
-/*	ptr->parallel_debug = false;	*/
-/*	ptr->task_prolog = NULL;	*/
-/*	ptr->task_epilog = NULL;	*/
-/*	ptr->cpu_bind_type = 0;		*/
-/*	ptr->cpu_bind = NULL;		*/
-/*	ptr->mem_bind_type = 0;		*/
-/*	ptr->mem_bind = NULL;		*/
-/*	ptr->cpus_per_task = 0;		*/
-/*	ptr->ntasks_per_node = 0;	*/
-/*	ptr->ntasks_per_socket = 0;	*/
-/*	ptr->ntasks_per_core = 0;	*/
-/*	ptr->task_dist = 0;		*/
-/*	ptr->plane_size = 0;		*/
 }
 
 /*
@@ -147,6 +124,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch_tasks_request_msg_t launch;
 	int i;
 	char **env = NULL;
+	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
 
 	debug("Entering slurm_step_launch");
@@ -170,6 +148,23 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
+	if (mpi_hook_client_init(params->mpi_plugin_name) == SLURM_ERROR) {
+		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
+		return SLURM_ERROR;
+	}
+	/* Now, hack the step_layout struct if the following it true.
+	   This looks like an ugly hack to support LAM/MPI's lamboot. */
+	if (mpi_hook_client_single_task_per_node()) {
+		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
+			ctx->step_resp->step_layout->tasks[i] = 1;
+	}
+	if ((ctx->launch_state->mpi_state =
+	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
+	    == NULL) {
+		slurm_seterrno(SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED);
+		return SLURM_ERROR;
+	}
+
 	/* Create message receiving sockets and handler thread */
 	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count);
 
@@ -182,6 +177,8 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	if (params->env == NULL) {
+		/* if the user didn't specify an environment, grab the
+		   environment of the running process */
 		env_array_merge(&env, (const char **)environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);
@@ -198,6 +195,9 @@ int slurm_step_launch (slurm_step_ctx ctx,
 				   ent->h_addr_list[0]);
 		xfree(launcher_hostname);
 	}
+	env_array_merge(&env, (const char **)mpi_env);
+	env_array_free(mpi_env);
+
 	launch.envc = envcount(env);
 	launch.env = env;
 	if (params->cwd != NULL) {
@@ -284,7 +284,10 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	if (!ctx->launch_state->user_managed_io) {
 		xfree(launch.io_port);
 	}
+	goto done;
 fail1:
+
+done:
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	env_array_free(env);
@@ -409,6 +412,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
 		client_io_handler_destroy(sls->io.normal);
 	}
 
+	mpi_hook_client_fini(sls->mpi_state);
+
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -446,6 +451,10 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx ctx)
 		sls->resp_port = NULL;
 		sls->abort = false;
 		sls->abort_action_taken = false;
+		sls->mpi_info->jobid = ctx->step_req->job_id;
+		sls->mpi_info->stepid = ctx->step_resp->job_step_id;
+		sls->mpi_info->step_layout = ctx->step_resp->step_layout;
+		sls->mpi_state = NULL;
 		pthread_mutex_init(&sls->lock, NULL);
 		pthread_cond_init(&sls->cond, NULL);
 	}
@@ -467,7 +476,6 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	if (sls->resp_port != NULL) {
 		xfree(sls->resp_port);
 	}
-	/* FIXME - more cleanup needed */
 }
 
 

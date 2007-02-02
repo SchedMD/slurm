@@ -87,6 +87,10 @@ static slurm_errtab_t slurm_errtab[] = {
           "Protocol authentication error"                       },
         { SLURM_PROTOCOL_INSANE_MSG_LENGTH,
           "Insane message length"                               },
+	{ SLURM_MPI_PLUGIN_NAME_INVALID,
+	  "Invalid MPI plugin name"                             },
+	{ SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED,
+	  "MPI plugin's pre-launch setup failed"                },
 
 	/* communication failures to/from slurmctld */
 	{ SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR,

@@ -258,6 +258,26 @@ _build_path(char* fname, char **prog_env)
 	return file_path;
 }
 
+static void
+_setup_mpi(slurmd_job_t *job, int ltaskid)
+{
+	mpi_plugin_task_info_t info[1];
+
+	info->jobid = job->jobid;
+	info->stepid = job->stepid;
+	info->nnodes = job->nnodes;
+	info->nodeid = job->nodeid;
+	info->ntasks = job->nprocs;
+	info->ltasks = job->ntasks;
+	info->gtaskid = job->task[ltaskid]->gtid;
+	info->ltaskid = job->task[ltaskid]->id;
+	info->self = job->envtp->self;
+	info->client = job->envtp->cli;
+		
+	mpi_hook_slurmstepd_task(info, &job->env);
+}
+
+
 /*
  *  Current process is running as the user when this is called.
  */
@@ -327,7 +347,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 			exit(1);
 		}
 
-		slurmd_mpi_init (job, task->gtid);
+		_setup_mpi(job, i);
 	
 		pdebug_stop_current(job);
 	}

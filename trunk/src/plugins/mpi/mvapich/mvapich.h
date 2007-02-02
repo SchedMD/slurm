@@ -40,8 +40,12 @@
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/common/slurm_xlator.h"
+#include "src/common/mpi.h"
 #include "src/common/env.h"
 
-extern int mvapich_thr_create(srun_job_t *job);
+typedef struct mvapich_state mvapich_state_t;
+
+extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
+					   char ***env);
+extern int mvapich_thr_destroy(mvapich_state_t *state);

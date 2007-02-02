@@ -47,8 +47,19 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(fd_read_n,		slurm_fd_read_n);
+strong_alias(fd_write_n,	slurm_fd_write_n);
+strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
+strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
+
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
