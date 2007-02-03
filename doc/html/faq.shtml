@@ -16,6 +16,7 @@ job?</a></li>
 <li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
 <li><a href="#orphan">Why do I have job steps when my job has already COMPLETED?</a></li>
 <li><a href="#multi_batch">How can I run a job within an existing job allocation?</a></li>
+<li><a href="#user_env">How does SLURM establish the environment for my job?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -257,6 +258,16 @@ new job ID unless explicitly set with the <i>--jobid</i> option.
 If you specify that a batch job should use an existing allocation, 
 that job allocation will be released upon the termination of 
 that batch job.</p>
+
+<p><a name="user_env"><b>12. How does SLURM establish the environment 
+for my job?</b></a><br>
+SLURM processes are not run under a shell, but directly exec'ed 
+by the <i>slurmd</i> daemon (assuming <i>srun</i> is used to launch 
+the processes).
+The environment variables in effect at the time the <i>srun</i> command 
+is executed are propagated to the spawned processes. 
+The <i>~/.profile</i> and <i>~/.bashrc</i> scripts are not executed 
+as part of the process launch.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -500,6 +511,6 @@ of <i>srun</i> serves a similar purpose.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 January 2007</p>
+<p style="text-align:center;">Last modified 2 February 2007</p>
 
 <!--#include virtual="footer.txt"-->
