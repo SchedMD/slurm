@@ -23,8 +23,10 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h> /* exit() prototype is here */
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -48,12 +50,28 @@ main (int argc, char **argv)
 			continue;
 		printf("FAILED: File descriptor %d is open\n", i);
 #if _DEBUG
-		printf("  st_mode:   0%o\n",(int) buf.st_mode);
-		printf("  st_uid:    %d\n", (int) buf.st_uid);
-		printf("  st_gid:    %d\n", (int) buf.st_gid);
-		printf("  st_size:   %d\n", (int) buf.st_size);
-		printf("  st_ino:    %d\n", (int) buf.st_ino);
-		printf("  st_dev:    %d\n", (int) buf.st_dev);
+{
+		char data[64];
+		int j;
+		size_t data_size;
+
+		printf("  st_mode:    0%o\n",(int) buf.st_mode);
+		printf("  st_uid:     %d\n", (int) buf.st_uid);
+		printf("  st_gid:     %d\n", (int) buf.st_gid);
+		printf("  st_size:    %d\n", (int) buf.st_size);
+		printf("  st_ino:     %d\n", (int) buf.st_ino);
+		printf("  st_dev:     %d\n", (int) buf.st_dev);
+
+		lseek(i, 0, SEEK_SET);
+		data_size = read(i, data, 64);
+		if (data_size < 0)
+			printf("  read error: %s", strerror(errno));
+		else {
+			printf("  bytes read: %d\n", (int) data_size);
+			for (j=0; j<data_size; j++)
+				printf("  data[%d]:0x%x\n", j, data[j]);
+		}
+}
 #endif
 	}
 	exit(0);
