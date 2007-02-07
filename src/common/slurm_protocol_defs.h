@@ -708,7 +708,7 @@ extern char *node_state_string_compact(enum node_states inx);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
-		void *ptr = buf;					\
+		char *ptr = (char *) buf;				\
 		int rc;							\
 		while (remaining > 0) {					\
                         rc = read(fd, ptr, remaining);			\
@@ -735,10 +735,10 @@ extern char *node_state_string_compact(enum node_states inx);
 
 #define safe_write(fd, buf, size) do {					\
 		int remaining = size;					\
-		void *ptr = buf;					\
+		char *ptr = (char *) buf;				\
 		int rc;							\
 		while(remaining > 0) {					\
-                        rc = write(fd, ptr, remaining);			\
+			rc = write(fd, ptr, remaining);			\
  			if (rc < 0) {					\
 				debug("%s:%d: %s: safe_write (%d of %d) failed: %m", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
