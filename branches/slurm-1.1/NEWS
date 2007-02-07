@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  - BLUEGENE - Fixed issue with nodes that return to service outside of an
    admin state is now updated in the bluegene plugin.
+ - Fix for --get-user-env parsing of non-printing characters in users' logins.
  
 * Changes in SLURM 1.1.27
 =========================
