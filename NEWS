@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  - BLUEGENE - Put back logic to make a block fail a boot 3 times before 
    cancelling a users job.
  - Fix problem using srun --exclude option for a job step.
+ - Fix problem generating slurmd error "Unrecognized request: 0" with 
+   some compilers.
 
 * Changes in SLURM 1.1.26
 =========================
