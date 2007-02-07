@@ -1210,6 +1210,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			last_node_update = time (NULL);
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 		}
+		select_g_update_node_state((node_ptr - node_record_table_ptr),
+					   node_ptr->node_state);
 		_sync_bitmaps(node_ptr, job_count);
 	}
 
@@ -1397,6 +1399,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 				updated_job = true;
 				node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 			}
+			select_g_update_node_state(
+				(node_ptr - node_record_table_ptr),
+				node_ptr->node_state);
 			_sync_bitmaps(node_ptr, jobs_on_node);
 		}
 	}

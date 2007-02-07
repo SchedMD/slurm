@@ -3,7 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.28
 =========================
-
+ - BLUEGENE - Fixed issue with nodes that return to service outside of an
+   admin state is now updated in the bluegene plugin.
+ 
 * Changes in SLURM 1.1.27
 =========================
  - Fix possible race condition for two simultaneous "scontrol show config" 
