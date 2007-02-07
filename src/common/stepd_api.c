@@ -289,6 +289,7 @@ stepd_get_info(int fd)
 
 	return info;
 rwfail:
+	xfree(info);
 	return NULL;
 }
 
