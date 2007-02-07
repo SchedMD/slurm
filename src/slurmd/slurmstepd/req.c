@@ -439,7 +439,7 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		rc = _handle_signal_task_local(fd, job, uid);
 		break;
 	case REQUEST_SIGNAL_TASK_GLOBAL:
-		debug("Handling REQUEST_SIGNAL_TASK_LOCAL (not implemented)");
+		debug("Handling REQUEST_SIGNAL_TASK_GLOBAL (not implemented)");
 		break;
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
