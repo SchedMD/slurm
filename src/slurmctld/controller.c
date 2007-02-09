@@ -1059,7 +1059,7 @@ static int _shutdown_backup_controller(int wait_time)
 	req.ret_list = NULL;
 	START_TIMER;
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 
-				(CONTROL_TIMEOUT * 1000) < 0) {
+				(CONTROL_TIMEOUT * 1000)) < 0) {
 		END_TIMER;
 		error("_shutdown_backup_controller:send/recv: %m, %s", TIME_STR);
 		return SLURM_ERROR;
