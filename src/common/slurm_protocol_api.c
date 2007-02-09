@@ -738,13 +738,11 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	if (timeout == 0)
 		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 	if(timeout > (SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10)) {
-		error("You are sending a message of type %d with very long "
-		      "timeout of %d seconds", 
-		      msg->msg_type, (timeout/1000));
+		error("You are sending a message with very long "
+		      "timeout of %d seconds", (timeout/1000));
 	} else if(timeout < 1000) {
-		error("You are sending a message of type %d with a very short "
-		      "timeout of %d msecs", 
-		      msg->msg_type, timeout);
+		error("You are sending a message with a very short "
+		      "timeout of %d msecs", timeout);
 	} 
 	
 	//info("The timeout is %d", timeout);
