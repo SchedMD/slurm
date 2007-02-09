@@ -120,7 +120,7 @@
 #define	PERIODIC_GROUP_CHECK	600
 
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
-#define CONTROL_TIMEOUT 4000	/* milliseconds */
+#define CONTROL_TIMEOUT 4	/* seconds */
 
 /*****************************************************************************\
  *  General configuration parameters and data structures
