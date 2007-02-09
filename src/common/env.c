@@ -1225,7 +1225,7 @@ char **env_array_user_default(const char *username)
 		return NULL;
 	}
 
-	xstrfmtcat(cmdstr, "/bin/su - %s -c \"echo %s; env; echo %s\"",
+	xstrfmtcat(cmdstr, "/bin/su - %s -c \"echo; echo; echo; echo %s; env; echo %s\"",
 		   username, starttoken, stoptoken);
 	su = popen(cmdstr, "r");
 	xfree(cmdstr);
