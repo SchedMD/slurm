@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.29
+=========================
+
 * Changes in SLURM 1.1.28
 =========================
  - BLUEGENE - Fixed issue with nodes that return to service outside of an
