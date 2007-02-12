@@ -1840,7 +1840,7 @@ _create_path_list(void)
 	char *c, *lc;
 
 	if (!path) {
-		error("Error in PATH environment variable");
+		verbose("No PATH environment variable");
 		return l;
 	}
 

@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
    admin state is now updated in the bluegene plugin.
  - Fix for --get-user-env parsing of non-printing characters in users' logins.
  - Restore "squeue -n localhost" support.
+ - Report lack of PATH env var as verbose message, not error in srun.
  
 * Changes in SLURM 1.1.27
 =========================
