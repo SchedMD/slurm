@@ -241,7 +241,7 @@ parse_command_line( int argc, char* argv[] )
 		if (strcasecmp("localhost", params.node) == 0) {
 			xfree(params.node);
 			params.node = xmalloc(128);
-			getnodename(params.node, 128);
+			gethostname_short(params.node, 128);
 		}
 		name1 = slurm_conf_get_nodename(params.node);
 		if (name1) {
