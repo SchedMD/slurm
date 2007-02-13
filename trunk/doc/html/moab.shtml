@@ -12,10 +12,13 @@ http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml</a>.
 <h2>Configuration</h2>
 <p>First, download the Moab scheduler kit from their web site
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-http://www.clusterresources.com/pages/products/moab-cluster-suite.php</a>. 
-Note: Moab version 4.5.0 or higher and SLURM version 1.1.10 or higher.</p>
+http://www.clusterresources.com/pages/products/moab-cluster-suite.php</a>.<br> 
+<b>Note:</b> Use Moab version 5.0.0 or higher and SLURM version 1.1.28 
+or higher.</p>
 
 <h3>SLURM configuration</h3>
+
+<h4>slurm.conf</h4>
 <p>Set the <i>slurm.conf</i> scheduler parameters as follows:</p>
 <pre>
 SchedulerType=sched/wiki2
@@ -27,6 +30,7 @@ The <i>SelectType=select/cons_res</i> parameter is not compatable
 with the <i>sched/wiki</i> plugin (both would try to schedule the 
 individual processors within a node).</p>
 
+<a name="wiki.conf"><h4>wiki.conf</h4></a>
 <p>SLURM's wiki configuration is stored in a file 
 specific to the wiki-plugin named <i>wiki.conf</i>. 
 This file should be protected from reading by users. 
@@ -86,7 +90,7 @@ Possible values are "hold" and "run" with "hold" being the default.</p>
 # SLURM's wiki plugin configuration file
 #
 # Matches KEY in moab-private.cfg
-AuthKey=1234
+AuthKey=123456789
 #
 # Have Moab control job scheduling
 JobPriority=hold
@@ -107,16 +111,17 @@ JobAggregationTime=15
 <p>Moab has support for SLURM's WIKI interface by default.
 Specify this interface in the <i>moab.cfg</i> file as follows:</p>
 <pre>
-RMCFG[slurm]         TYPE=wiki:slurm AUTHTYPE=CHECKSUM
+SCHEDCFG[base]       MODE=NORMAL
+RMCFG[slurm]         TYPE=WIKI:SLURM AUTHTYPE=CHECKSUM
 </pre>
 <p>In <i>moab-private.cfg</i> specify the private key as follows:</p>
 <pre>
-KEY=1234
+CLIENTCFG[RM:slurm] KEY=123456789
 </pre>
 <p>Insure that this file is protected from viewing by users. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 December 2006</p>
+<p style="text-align:center;">Last modified 13 February 2007</p>
 
 <!--#include virtual="footer.txt"-->
