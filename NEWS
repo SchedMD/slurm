@@ -2,10 +2,10 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.1
-==============================
+========================
 
 * Changes in SLURM 1.2.0
-==============================
+========================
  -- Srun to use env vars for SLURM_PROLOG, SLURM_EPILOG, SLURM_TASK_PROLOG, 
     and SLURM_TASK_EPILOG. patch.1.2.0-pre11.070201.envproepilog from 
     Dan Palermo, HP.
