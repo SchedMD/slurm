@@ -26,6 +26,8 @@ SchedulerPort=7321
 </pre>
 <p>Running multiple jobs per mode can be accomplished using the
 <i>Shared=yes</i> parameter on partitions.
+The default value of <i>SchedulerPort</i> is 7321, so that 
+need not be specified.
 The <i>SelectType=select/cons_res</i> parameter is not compatable
 with the <i>sched/wiki</i> plugin (both would try to schedule the 
 individual processors within a node).</p>
