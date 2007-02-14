@@ -291,6 +291,9 @@ static void *get_script_buffer(const char *filename, int *size)
 	if (script_size == 0) {
 		error("Batch script is empty!");
 		goto fail;
+	} else if (script_size >= 0xffff) {
+		error("Job script exceeds size supported by slurm");
+		goto fail;
 	} else if (xstring_is_whitespace(buf)) {
 		error("Batch script contains only whitespace!");
 		goto fail;
