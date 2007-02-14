@@ -798,6 +798,11 @@ _build_script (char *fname, int file_type)
 
 	_get_options(buffer);
 
+	if (strlen(buffer) >= 0xffff) {
+		error("Job script exceeds size supported by slurm");
+		xfree(buffer);
+	}
+
 	return buffer;
 }
 
