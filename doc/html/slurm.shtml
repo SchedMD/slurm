@@ -30,8 +30,8 @@ executing its control functions.</li>
 add functionality.</li>
 </ul></p>
 
-<p>SLURM provides resource management on about 1000 computers world-wide including 
-many of the most powerful computers in the world including:
+<p>SLURM provides resource management on about 1000 computers worldwide,
+including many of the most powerful computers in the world:
 <ul>
 <li><a href="http://www.llnl.gov/asc/computing_resources/bluegenel/bluegene_home.html">BlueGene/L</a> 
 with 65,536 dual-processor compute nodes</li>
@@ -41,7 +41,7 @@ an IBM SP/AIX cluster with 12,208 Power5 processors and Federation switch</li>
 a Linux cluster with 10,240 PowerPC processors and Myrinet switch</li>
 <li>Peloton with 1,152 nodes each having four sockets with dual core Opteron processors and an InfiniBand switch</li>
 </ul>
-There are about 150 downloads of SLURM per month from LLNL's FTP server alone.
+<p>There are about 150 downloads of SLURM per month from LLNL's FTP server alone.
 As of December 2006, SLURM has been downloaded over 4300 times to over 500 
 distinct sites in 40 countries. 
 SLURM is also distributed and supported by <a href="http://www.hp.com">
