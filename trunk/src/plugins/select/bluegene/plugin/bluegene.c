@@ -1863,8 +1863,10 @@ extern int read_bg_conf(void)
 		_reopen_bridge_log();
 		if(last_config_update == config_stat.st_mtime)
 			debug("%s unchanged", bg_conf);
-		else
-			debug("%s changed, doing nothing", bg_conf);
+		else {
+			info("Restart slurmctld for %s changes to take effect", 
+			     bg_conf);
+		}
 		last_config_update = config_stat.st_mtime; 
 		return SLURM_SUCCESS;
 	}
