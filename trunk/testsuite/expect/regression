@@ -62,6 +62,7 @@ for major in `seq 1 20`; do
 			COMPLETIONS=$((COMPLETIONS+1))
 		else
 			FAILURES=$((FAILURES+1))
+			echo "$TEST failed" >& 2
 		fi
 		/bin/echo "============================================"
 	done
@@ -76,6 +77,7 @@ echo ""
 echo "Completions:$COMPLETIONS"
 echo "Failures:   $FAILURES"
 echo "Time (sec): $DELTA_TIME"
+echo "Remember to check for mail send by tests" >& 2
 
 if [ $FAILURES -eq 0 ]
 then
