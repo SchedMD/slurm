@@ -751,8 +751,8 @@ job_manager(slurmd_job_t *job)
 	 *    is moved behind wait_for_io(), we may block waiting for IO
 	 *    on a hung process.
 	 */
+	_kill_running_tasks(job);
 	if (!job->batch) {
-		_kill_running_tasks(job);
 		if (interconnect_postfini(job->switch_job, job->jmgr_pid,
 				job->jobid, job->stepid) < 0)
 			error("interconnect_postfini: %m");
@@ -1184,17 +1184,11 @@ _wait_for_all_tasks(slurmd_job_t *job)
  * Make sure all processes in session are dead for interactive jobs.  On 
  * systems with an IBM Federation switch, all processes must be terminated 
  * before the switch window can be released by interconnect_postfini().
- *  For batch jobs, we let spawned processes continue by convention
- * (although this could go either way). The Epilog program could be used 
- * to terminate any "orphan" processes.
  */
 static void
 _kill_running_tasks(slurmd_job_t *job)
 {
 	int          delay = 1;
-
-	if (job->batch)
-		return;
 
 	if (job->cont_id) {
 		slurm_container_signal(job->cont_id, SIGKILL);
