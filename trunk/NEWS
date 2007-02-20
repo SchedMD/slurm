@@ -233,8 +233,13 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.30
+=========================
+
 * Changes in SLURM 1.1.29
 =========================
+ - Fix bug which could leave orphan process put into background from 
+   batch script.
 
 * Changes in SLURM 1.1.28
 =========================
