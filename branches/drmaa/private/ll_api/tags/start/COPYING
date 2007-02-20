@@ -1,6 +1,0 @@
-These files contain information which is considered IBM-confidential,
-namely details of LoadLevler API functionality and its interfaces with 
-IBM's POE (Parallel Operating Environment). 
-
-They may be freely used within LLNL, but are not to be distributed 
-outside of LLNL without the express written permission of IBM.
