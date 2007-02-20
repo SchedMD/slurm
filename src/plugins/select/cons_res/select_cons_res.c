@@ -825,6 +825,10 @@ extern int select_p_state_restore(char *dir_name)
 
 	info("cons_res: select_p_state_restore");
 
+	if (!dir_name) {
+		info("Starting cons_res with clean slate");
+		return SLURM_SUCCESS;
+	}
         file_name = xstrdup(dir_name);
         xstrcat(file_name, "/cons_res_state");
         state_fd = open (file_name, O_RDONLY);
