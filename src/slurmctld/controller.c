@@ -265,6 +265,7 @@ int main(int argc, char *argv[])
 			    slurmctld_conf.backup_controller) == 0)) {
 			slurm_sched_fini();	/* make sure shutdown */
 			run_backup();
+			recover = 2;
 		} else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
 			  == 0)) {
@@ -344,7 +345,6 @@ int main(int argc, char *argv[])
 		switch_save(slurmctld_conf.state_save_location);
 		if (slurmctld_config.resume_backup == false)
 			break;
-		recover = 2;
 	}
 
 	/* Since pidfile is created as user root (its owner is
