@@ -1,0 +1,11 @@
+#!/unix
+proctrack_job_reg_self		syscall3264
+proctrack_job_reg_pid		syscall3264
+proctrack_job_reg		syscall3264
+proctrack_job_unreg		syscall3264
+proctrack_get_job_id		syscall3264
+proctrack_dump_records		syscall3264
+proctrack_job_kill		syscall3264
+proctrack_version		syscall3264
+proctrack_get_pids		syscall3264
+proctrack_get_all_pids		syscall3264

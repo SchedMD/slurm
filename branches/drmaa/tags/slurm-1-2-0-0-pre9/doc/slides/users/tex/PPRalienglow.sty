@@ -1,0 +1,69 @@
+%%=============================================================================
+%% PPRalienglow.sty (a slide style for Prosper)
+%% Copyright 2000-2001 Frédéric Goualard
+%%
+%% This program may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.2
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.2 or later is part of all distributions of LaTeX 
+%% version 1999/12/01 or later.
+%%
+%% This program consists of the files listed in manifest.txt
+%%
+%% CVSId : $Id$
+%%=============================================================================
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+\ProvidesPackage{PPRalienglow}[2000/10/18]
+\typeout{`Alien glow' style for prosper ---}
+\typeout{(c) 2000 Frederic Goualard, CWI, The Netherlands}
+\typeout{CVSId: $Id$}
+\typeout{ }
+
+\IfFileExists{pst-grad}{\RequirePackage{pst-grad}}{\RequirePackage{gradient}}
+
+\newrgbcolor{myblue}{.357 .541 .710}
+\newrgbcolor{mydarkblue}{0.257 0.441 0.61}
+
+\FontTitle{%
+  \usefont{T1}{pag}{b}{n}\fontsize{20.74pt}{20pt}\selectfont%
+  \mydarkblue}{%
+  \usefont{T1}{pag}{b}{n}\fontsize{20.74pt}{20pt}\selectfont%
+  \mydarkblue}
+\FontText{\myblue\usefont{T1}{phv}{m}{n}\fontsize{14.4pt}{14pt}%
+  \selectfont}{%
+  \myblue\usefont{T1}{phv}{m}{n}\fontsize{14.4pt}{14pt}\selectfont}
+
+\ColorFoot{\myblue}
+
+\newcommand{\slidetitle}[1]{%
+  \rput[lt](1,4){\fontTitle{#1}}}
+
+%\LogoPosition{-0.5,-0.5}
+\LogoPosition{-0.0,-0.8}
+
+\newcommand{\alienglowFrame}[1]{%
+  \psframe[framearc=0.25,fillstyle=solid,fillcolor=black](-0.9,-.9)(12.25,8.925)
+  \rput[l](-.5,6.6){\includegraphics[width=12.0cm,height=10pt]{rule-glow.ps}}
+  \PutLogo % Mandatory
+  {#1}}
+
+
+\myitem{1}{\includegraphics[width=.4cm]{bullet-glow.ps}}
+\myitem{2}{\includegraphics[width=.3cm]{arrow-glow.ps}}
+\myitem{3}{\includegraphics[width=.2cm]{bullet-glow.ps}}
+
+\NewSlideStyle{t}{5.5,2.4}{alienglowFrame}
+
+\RequirePackage{semhelv}
+
+\PDFCroppingBox{5 10 590 810}
+
+
+\endinput
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

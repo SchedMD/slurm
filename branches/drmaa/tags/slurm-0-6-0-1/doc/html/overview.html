@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+                        "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
+Linux clusters, high-performance computing, Livermore Computing">
+<meta name="LLNLRandR" content="UCRL-WEB-213976">
+<meta name="LLNLRandRdate" content="25 April 2005">
+<meta name="distribution" content="global">
+<meta name="description" content="Simple Linux Utility for Resource Management">
+<meta name="copyright"
+content="This document is copyrighted U.S.
+Department of Energy under Contract W-7405-Eng-48">
+<meta name="Author" content="Morris Jette">
+<meta name="email" content="jette1@llnl.gov">
+<meta name="Classification"
+content="DOE:DOE Web sites via organizational
+structure:Laboratories and Other Field Facilities">
+<title>Simple Linux Utility for Resource Management:Overview</title>
+<link href="slurmstyles.css" rel="stylesheet" type="text/css">
+</head>
+
+<body bgcolor="#000000" text="#000000" leftmargin="0" topmargin="0">
+<table width="770" border="0" cellspacing="0" cellpadding="0">
+<tr> 
+<td><img src="slurm_banner.jpg" width="770" height="145" usemap="#Map" border="0" alt="Simple Linux Utility for Resource Management"></td>
+</tr>
+</table>
+<table width="770" border="0" cellspacing="0" cellpadding="3" bgcolor="#FFFFFF">
+<tr> 
+<td width="100%"> 
+<table width="760" border="0" cellspacing="0" cellpadding="4" align="right">
+<tr>
+<td valign="top" bgcolor="#000000"><p><img src="spacer.gif" width="110" height="1" alt=""></p>
+<p><a href="slurm.html" class="nav" align="center">Home</a></p>
+<p><span class="whitetext">About</span><br>
+<a href="overview.html" class="nav">Overview</a><br>
+<a href="news.html" class="nav">What's New</a><br>
+<a href="publications.html" class="nav">Publications</a><br>
+<a href="team.html" class="nav">SLURM Team</a></p>
+<p><span class="whitetext">Using</span><br>
+<a href="documentation.html" class="nav">Documentation</a><br>
+<a href="faq.html" class="nav">FAQ</a><br>
+<a href="help.html" class="nav">Getting Help</a><br>
+<a href="mail.html"  class="nav">Mailing Lists</a></p>
+<p><span class="whitetext">Installing</span><br>
+<a href="platforms.html" class="nav">Platforms</a><br>
+<a href="download.html" class="nav">Download</a><br>
+<a href="quickstart_admin.html" class="nav">Guide</a></p></td>
+<td><img src="spacer.gif" width="10" height="1" alt=""></td>
+<td valign="top"><h2><a name="top">Overview</a></h2>
+<p>The Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job scheduling system 
+for large and small Linux clusters. SLURM requires no kernel modifications for
+its operation and is relatively self-contained. As a cluster resource manager,
+SLURM has three key functions. First, it allocates exclusive and/or non-exclusive 
+access to resources (compute nodes) to users for some duration of time so they
+can perform work. Second, it provides a framework for starting, executing, and
+monitoring work (normally a parallel job) on the set of allocated nodes. Finally, 
+it arbitrates conflicting requests for resources by managing a queue of pending
+work.</p>
+
+<p>SLURM has been developed through the collaborative efforts of 
+<a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
+<a href="http://www.hp.com/">HP</a>,
+<a href="http://www.lnxi.com/">Linux NetworX</a>, and
+<a href="http://www.pathscale.com/">PathScale</a>.
+Linux NetworX distributes SLURM as a component in their ClusterWorX software.
+HP distributes and supports SLURM as a component in their XC System Software.</p>
+
+<h3>Architecture</h3>
+<p>SLURM has a centralized manager, <b>slurmctld</b>, to monitor resources and 
+work. There may also be a backup manager to assume those responsibilities in the 
+event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which 
+can be compared to a remote shell: it waits for work, executes that work, returns 
+status, and waits for more work. User tools include <b>srun</b> to initiate jobs, 
+<b>scancel</b> to terminate queued or running jobs, <b>sinfo</b> to report system 
+status, and <b>squeue</b> to report the status of jobs. There is also an administrative 
+tool <b>scontrol</b> available to monitor and/or modify configuration and state 
+information. APIs are available for all functions.</p>
+<p><img src="arch.gif" width="552" height="432"></p>
+<p>SLURM has a general-purpose plugin mechanism available to easily support various 
+infrastructure. These plugins presently include: 
+<ul>
+<li>Authentication of communications: <a href="http://www.theether.org/authd/">authd</a>, 
+<a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a>, or none (default).</li>
+<li>Checkpoint: AIX (under development) or none.</li>
+<li>Job logging: text file, arbitrary script, or none (default).</li>
+<li>Node selection: Blue Gene (a 3-D torus interconnect) or linear.</li>
+<li>Scheduler: <a href="http://supercluster.org/maui">The Maui Scheduler</a>, 
+backfill, or FIFO (default).</li>
+<li>Switch or interconnect: <a href="http://www.quadrics.com/">Quadrics</a> 
+(Elan3 or Elan4), Federation 
+(<a href="http://publib-b.boulder.ibm.com/Redbooks.nsf/f338d71ccde39f08852568dd006f956d/55258945787efc2e85256db00051980a?OpenDocument">
+IBM High Performance Switch</a>), or none (actually means nothing requiring 
+special handling, such as Ethernet or 
+<a href="http://www.myricom.com/">Myrinet</a>, default).</li>
+</ul>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Configurability</h3>
+<p>Node state monitored include: count of processors, size of real memory, size 
+of temporary disk space, and state (UP, DOWN, etc.). Additional node information 
+includes weight (preference in being allocated work) and features (arbitrary information 
+such as processor speed or type). Nodes are grouped into disjoint partitions. 
+Partition information includes: name, list of associated nodes, state (UP or DOWN), 
+maximum job time limit, maximum node count per job, group access list, and shared 
+node access (YES, NO or FORCE). Bit maps are used to represent nodes and scheduling 
+decisions can be made by performing a small number of comparisons and a series 
+of fast bit map manipulations. A sample (partial) SLURM configuration file follows.</p>
+<pre>
+# 
+# Sample /etc/slurm.conf
+#
+ControlMachine=linux0001
+BackupController=linux0002
+#
+AuthType=auth/munge
+Epilog=/usr/local/slurm/sbin/epilog
+HeartbeatInterval=60
+PluginDir=/usr/local/slurm/lib
+Prolog=/usr/local/slurm/sbin/prolog
+SlurmctldPort=7002
+SlurmctldTimeout=120
+SlurmdPort=7003
+SlurmdSpoolDir=/var/tmp/slurmd.spool
+SlurmdTimeout=120
+StateSaveLocation=/usr/local/slurm/slurm.state
+SwitchType=switch/elan
+TmpFS=/tmp
+#
+# Node Configurations
+#
+NodeName=DEFAULT TmpDisk=16384 State=IDLE
+NodeName=lx[0001-0002] State=DRAINED
+NodeName=lx[0003-8000] Procs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] Procs=32 RealMemory=4096 Weight=40 Feature=1200MHz
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT MaxTime=30 MaxNodes=2
+PartitionName=login Nodes=lx[0001-0002] State=DOWN
+PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
+PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
+PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
+</pre>
+<h3>Status</h3>
+<p>SLURM has been deployed on all LLNL Linux clusters having Quadrics Elan switches 
+since the summer of 2003. This includes IA32 and IA64 clusters having over 1000 
+nodes. Fault-tolerance has been excellent. Parallel job performance has also been 
+excellent. The throughput rate of simple 2000 task jobs across 1000 nodes is over 
+12 per minute or under 5 seconds per job.</p>
+<p class="footer"><a href="#top">top</a></p></td>
+</tr>
+<tr> 
+<td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
+<p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
+<p class="footer">UCRL-WEB-213976<br>
+Last modified 25 April 2005</p></td>
+</tr>
+</table>
+</td>
+ </tr>
+</table>
+<map name="Map">
+<area shape="rect" coords="616,4,762,97" href="../">
+<area shape="rect" coords="330,1,468,11" href="http://www.llnl.gov/disclaimer.html">
+<area shape="rect" coords="11,23,213,115" href="slurm.html">
+</map>
+</body>
+</html>

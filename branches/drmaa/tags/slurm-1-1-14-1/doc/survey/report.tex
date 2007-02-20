@@ -1,0 +1,336 @@
+\documentclass{article}
+\usepackage{graphics}
+\usepackage{epsfig}
+\usepackage{draftcopy}
+\author{Moe Jette, Chris Dunlap, Jim Garlick, Mark Grondona\\
+        \{jette,cdunlap,garlick,grondona\}@llnl.gov} 
+\title{Survey of Batch/Resource Management-Related System Software}
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job 
+scheduling system for Linux clusters of 
+thousands of nodes.  Components include machine status, partition
+management, job management, and scheduling modules.  The design also 
+includes a scalable, general-purpose communication infrastructure.
+Development will take place in four phases:  Phase I results in a solid
+infrastructure;  Phase II produces a functional but limited interactive 
+job initiation capability without use of the interconnect/switch; 
+Phase III provides switch support and documentation; Phase IV provides 
+job statusing, fault-tolerance, and job queueing and control through  
+Livermore's Distributed Production Control System (DPCS), a metabatch and
+resource management system.
+\end{abstract}
+
+\vspace{0.25in}
+
+\section{PBS (Portable Batch System)}
+
+The Portable Batch System (PBS)\footnote{http://www.openpbs.org/}
+is a flexible batch queuing and 
+workload management system originally developed by Veridian Systems 
+for NASA.  It operates on networked, multi-platform UNIX environments, 
+including heterogeneous clusters of workstations, supercomputers, and 
+massively parallel systems. PBS was developed as a replacement for 
+NQS (Network Queuing System) by many of the same people.
+
+PBS supports sophisticated scheduling logic (via the Maui 
+Scheduler\footnote{http://superclustergroup.org/maui}). 
+PBS spawn's daemons on each 
+machine to shepherd the job's tasks (similar to LoadLeveler 
+and Condor). It provides an interface for administrators to easily 
+interface their own scheduling modules (a nice feature).  PBS can support 
+long delays in file staging (in and out) with retry.  Host 
+authentication is provided by checking port numbers (low ports numbers are only 
+accessible to user root).  Credential service is used for user authentication. 
+It has the job prolog and epilog feature, which is useful.  PBS Supports 
+high priority queue for smaller "interactive" jobs.  Signal to daemons 
+causes current log file (e.g. accounting) to be closed, renamed with 
+time-stamp, and a new log file created.
+
+Specific complaints about PBS from members of the OSCAR group (Jeremy Enos, 
+Jeff Squyres, Tim Mattson):
+\begin{itemize}
+\item Sensitivity to hostname configuration on the server; improper 
+      configuration results in hard to diagnose failure modes.  Once 
+      configuration is correct, this issue disappears.
+\item When a compute node in the system dies, everything slows down.  
+      PBS is single-threaded and continues to try to contact down nodes,
+      while other activities like scheduling jobs, answering qsub/qstat 
+      requests, etc., have to wait for a complete timeout cycle before being
+      processed.
+\item Default scheduler is just FIFO, but Maui can be plugged in so this
+      is not a big issue.
+\item Weak mechanism for starting/cleaning up parallel jobs (pbsdsh).
+      When a job is killed, pbsdsh kills the processes it started, but
+      if the process doesn't die on the first shot it may continue on.
+\item PBS server continues to mark specific nodes offline, even though they 
+      are healthy.  Restarting the server fixes this.
+\item Lingering jobs.  Jobs assigned to nodes, and then bounced back to the 
+      queue for any reason, maintain their assignment to those nodes, even 
+      if another job had already started on them.  This is a poor clean up 
+      issue.
+\item When the PBS server process is restarted, it puts running jobs at risk.
+\item Poor diagnostic messages.  This problem can be as serious as ANY other 
+      problem.  This problem makes small, simple problems turn into huge 
+      turmoil occasionally.  For example, the variety of symptoms that arise 
+      from improper hostname configuration.  All the symptoms that result are 
+      very misleading to the real problem.
+\item Rumored to have problems when the number of jobs in the queues gets
+      large.
+\item Scalability problems on large systems.
+\item Non-portable to Windows
+\item Source code is a mess and difficult for others (e.g. the open source
+      community) to improve/expand.
+\item Licensing problems (see below).
+\end{itemize}
+The one strength mentioned is PBS's portability and broad user base.
+
+PBS is owned by Veridian and is released as three separate products with
+different licenses: {\em PBS Pro} is a commercial product sold by Veridian;
+{\em OpenPBS} is an pseudo open source version of PBS that requires 
+registration; and
+{\em PBS} is a GPL-like, true open source version of PBS.
+
+Bug fixes go into PBS Pro.  When a major revision of PBS Pro comes out,
+the previous version of PBS Pro becomes OpenPBS, and the previous version
+of OpenPBS becomes PBS.  The delay getting bug fixes (some reported by the
+open source community) into the true open source version of PBS is the source
+of some frustration.
+
+\section{Maui}
+
+Maui Scheduler\footnote{http://supercluster.org/maui}
+is an advance reservation HPC batch scheduler for use with SP, 
+O2K, and UNIX/Linux clusters. It is widely used to extend the 
+functionality of PBS and LoadLeveler
+
+\section{DPCS}
+
+The Distributed Production Control System (DPCS)\footnote{
+http://www.llnl.gov/icc/lc/dpcs/dpcs\_overview.html}
+is a resource manager developed by Lawrence Livermore National Laboratory (LLNL). 
+DPCS is (or will soon be) open source, although its use is presently 
+confined to LLNL. The development of DPCS began in 1990 and it has 
+evolved into a highly scalable and fault-tolerant meta-scheduler 
+operating on top of LoadLeveler, RMS, and NQS. DPCS provides: 
+\begin{itemize}
+\item Basic data collection and reporting mechanisms for project-level, 
+      near real-time accounting.
+\item Resource allocation to customers with established limits per 
+      customers' organizational budgets. 
+\item Proactive delivery of services to organizations that are relatively 
+      underserviced using a fair-share resource allocation scheme.
+\item Automated, highly flexible system with feedback for proactive delivery 
+      of resources.
+\item Even distribution of the workload across available computers.
+\item Flexible prioritization of production workload, including "run on demand."
+\item Dynamic reconfiguration and re-tuning.
+\item Graceful degradation in service to prevent overuse of a computer where 
+      not authorized.
+\end{itemize}
+
+While DPCS does have some attractive characteristics, it supports only a 
+limited number of computer systems: IBM RS/6000 and SP, Linux with RMS, 
+Sun Solaris, and Compaq Alpha. DPCS also lacks commercial support.
+
+\section{LoadLeveler}
+
+LoadLeveler\footnote{
+http://www-1.ibm.com/servers/eserver/pseries/library/sp\_books/loadleveler.html}
+is a proprietary batch system and parallel job manager by 
+IBM. LoadLeveler supports few non-IBM systems. Very primitive 
+scheduling software exists and other software is required for reasonable 
+performance (e.g. Maui and DPCS). Many soft and hard limits are available. 
+A very flexible queue and job class structure is available operating in "matrix" fashion 
+(probably overly complex). Many configuration files exist with signals to 
+daemons used to update configuration (like LSF, good). All jobs must 
+be initiated through LoadLeveler (no real "interactive" jobs, just 
+high priority queue for smaller jobs). Job accounting is only available 
+on termination (very bad for long-running jobs). Good status 
+information on nodes and LoadLeveler daemons is available. LoadLeveler 
+allocates jobs either entire nodes or shared nodes ,depending upon configuration.
+
+A special version of MPI is required. LoadLeveler allocates 
+interconnect resources, spawns the user's processes, and manages the 
+job afterwards. Daemons also monitor the switch and node health using 
+a "heart-beat monitor." One fundamental problem is that when the 
+"Central Manager" restarts, it forgets about all nodes and jobs. They 
+appear in the database only after checking in via the heartbeat. It 
+needs to periodically write state to disk instead of doing 
+"cold-starts" after the daemon fails, which is rare. It has the job 
+prolog and epilog feature, which permits us to enable/disable logins 
+and remove stray processes.
+
+LoadLeveler evolved from Condor, or what was Condor a decade ago. 
+While I am less familiar with LSF and Condor than LoadLeveler, they 
+all appear very similar with LSF having the far more sophisticated 
+scheduler. We should carefully review their data structures and 
+daemons before designing our own.
+
+\section{LSF (Load Sharing Facility)}
+
+LSF\footnote{http://www.platform.com/}
+is a proprietary batch system and parallel job manager by 
+Platform Computing. Widely deployed on a wide variety of computer 
+architectures. Sophisticated scheduling software including 
+fair-share, backfill, consumable resources, job preemption, many soft 
+and hard limits, etc. Very flexible queue structure (perhaps overly 
+complex). Limits are available on both a per process bs per-job  
+basis. Time limits include CPU time and wall-clock time. Many 
+configuration files with signals to daemons used to update 
+configuration (like LoadLeveler, good). All jobs must be initiated 
+through LSF to be accounted for and managed by LSF ("interactive" 
+jobs can be executed through a high priority queue for 
+smaller jobs). Job accounting only available in near real-time (important 
+for long-running jobs). Jobs initiated from same directory as 
+submitted from (not good for computer centers with diverse systems 
+under LSF control). Good status information on nodes and LSF daemons. 
+Allocates jobs either entire nodes or shared nodes depending upon 
+configuration.
+
+A special version of MPI is required. LSF allocates interconnect 
+resources, spawns the user's processes, and manages the job 
+afterwards. While I am less familiar with LSF than LoadLeveler, they 
+appear very similar with LSF having the far more sophisticated 
+scheduler. We should carefully review their data structures and 
+daemons before designing our own.
+
+
+\section{Condor}
+
+
+Condor\footnote{http://www.cs.wisc.edu/condor/} is a
+batch system and parallel job manager 
+developed by the University of Wisconsin. 
+Condor was the basis for IBM's LoadLeveler and both share very similar 
+underlying infrastructure. Condor has a very sophisticated checkpoint/restart 
+service that does not rely upon kernel changes, but a variety of 
+library changes (which prevent it from being completely general). The 
+Condor checkpoint/restart service has been integrated into LSF, 
+Codine, and DPCS. Condor is designed to operate across a 
+heterogeneous environment, mostly to harness the compute resources of 
+workstations and PCs. It has an interesting "advertising" service. 
+Servers advertise their available resources and consumers advertise 
+their requirements for a broker to perform matches. The checkpoint 
+mechanism is used to relocate work on demand (when the "owner" of a 
+desktop machine wants to resume work).
+
+
+
+\section{Memory Channel (Compaq)}
+
+Memory Channel is a high-speed interconnect developed by 
+Digital/Compaq with related software for parallel job execution. 
+Special version of MPI required. The application spawns tasks on 
+other nodes. These tasks connect themselves to the high speed 
+interconnect. No system level tool to spawns the tasks, allocates 
+interconnect resources, or otherwise manages the parallel job (Note: 
+This is sometimes a problem when jobs fail, requiring system 
+administrators to release interconnect resources. There are also 
+performance problems related to resource sharing).
+
+\section{Linux PAGG Process Aggregates}
+
+
+PAGG\footnote{http://oss.sgi.com/projects/pagg/}
+consists of modifications to the linux kernel that allows
+developers to implement Process AGGregates as loadable kernel modules.
+A process aggregate is defined as a collection of processes that are
+all members of the same set. A set would be implemented as a container
+for the member processes. For instance, process sessions and groups
+could have been implemented as process aggregates.
+
+\section{BPROC}
+
+
+The Beowulf Distributed Process Space 
+(BProc\footnote{http://bproc.sourceforge.net/})
+is set of kernel
+modifications, utilities and libraries which allow a user to start
+processes on other machines in a Beowulf-style cluster.  Remote
+processes started with this mechanism appear in the process table
+of the front end machine in a cluster. This allows remote process
+management using the normal UNIX process control facilities. Signals
+are transparently forwarded to remote processes and exit status is
+received using the usual wait() mechanisms.
+
+\section{xcat}
+
+Presumably IBM's suite of cluster management software 
+(xcat\footnote{http://publib-b.boulder.ibm.com/Redbooks.nsf/RedbookAbstracts/sg246041.html})
+includes a batch system.  Look into this.
+
+\section{CPLANT}
+
+CPLANT\footnote{http://www.cs.sandia.gov/cplant/} includes
+Parallel Job Launcher, Compute Node Daemon Process,
+Compute Node Allocator, Compute Node Status Tool.
+
+\section{NQS} 
+
+NQS\footnote{http://umbc7.umbc.edu/nqs/nqsmain.html}, 
+the Network Queueing System, is a serial batch system.
+
+\section{LAM / MPI}
+
+LAM (Local Area Multicomputer)\footnote{http://www.lam-mpi.org/}
+is an MPI programming environment and development system for heterogeneous 
+computers on a network. 
+With LAM, a dedicated cluster or an existing network
+computing infrastructure can act as one parallel computer solving
+one problem.  LAM features extensive debugging support in the
+application development cycle and peak performance for production
+applications. LAM features a full implementation of the MPI
+communication standard.
+
+\section{MPICH}
+
+MPICH\footnote{http://www-unix.mcs.anl.gov/mpi/mpich/}
+is a freely available, portable implementation of MPI,
+the Standard for message-passing libraries.
+
+\section{Quadrics RMS}
+
+Quadrics
+RMS\footnote{http://www.quadrics.com/downloads/documentation/}
+(Resource Management System) is a cluster management system for 
+Linux and Tru64 which supports the
+Elan3 interconnect.  
+
+\section{Sun Grid Engine}
+
+SGE\footnote{http://www.sun.com/gridware/} is now proprietary.
+
+
+\section{SCIDAC}
+
+The Scientific Discovery through Advanced Computing (SciDAC) 
+project\footnote{http://www.scidac.org/ScalableSystems}
+has a Resource Management and Accounting working group
+and a white paper\cite{Res2000}. Deployment of a system with 
+the required fault-tolerance and scalability is scheduled 
+for June 2006.
+
+\section{GNU Queue}
+
+GNU Queue\footnote{http://www.gnuqueue.org/home.html}.
+
+\section{Clubmask}
+Clubmask\footnote{http://clubmask.sourceforge.net} is based on bproc.
+Separate queueing system?
+
+\section{SQMX}
+Part of the SCE Project\footnote{http://www.opensce.org/}, 
+SQMX\footnote{http://www.beowulf.org/pipermail/beowulf-announce/2001-January/000086.html} is worth taking a look at.
+                                                                                
+\newpage
+\bibliographystyle{plain}
+\bibliography{project}
+
+\end{document}

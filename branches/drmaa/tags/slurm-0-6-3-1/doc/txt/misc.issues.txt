@@ -1,0 +1,16 @@
+Requirements Discussion 12/25/2001, Chris, Jim, Py Watson:
+- Atomic needed for DPCS willrun - schedule - run operations.
+- schedule debug windows (ratchet down limits) / include interactive
+- burst over limits when nodes available but mark jobs as killable
+- haiku error messages (see perl module)
+- speed
+- no core by default, core "lite", overrideable, core.hostname.pid,
+  core directory to avoid contention no creating directory
+- preemption (SIGSTOP job in the way), EINTR issues, mark "non-preemptable"
+- checkpoint/restart
+- refer to purple RFP comments on batch systems
+
+Meeting 1/4/2001, Moe, Mark G., Jim, Chris:
+- Elan needs contiguous nodes for hardware broadcast; achieving this
+  is incompatible with DPCS's scheduling algorithm.  RMS uses box packing.
+- Need DPCS constraint for contiguous nodes, passed in with willrun query.
