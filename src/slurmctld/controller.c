@@ -250,7 +250,8 @@ int main(int argc, char *argv[])
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
-	if (select_g_state_restore(slurmctld_conf.state_save_location))
+	if (recover &&
+	    select_g_state_restore(slurmctld_conf.state_save_location))
 		fatal( "failed to restore node selection plugin state");
 
 	while (1) {
@@ -288,7 +289,8 @@ int main(int argc, char *argv[])
 			fatal("failed to initialize scheduling plugin");
 
 		/* Recover node scheduler state info */
-		if (select_g_state_restore(slurmctld_conf.state_save_location)
+		if (recover && 
+		    select_g_state_restore(slurmctld_conf.state_save_location)
 				!= SLURM_SUCCESS ) {
 			error("failed to restore node selection state");
 			abort();
@@ -342,6 +344,7 @@ int main(int argc, char *argv[])
 		switch_save(slurmctld_conf.state_save_location);
 		if (slurmctld_config.resume_backup == false)
 			break;
+		recover = 2;
 	}
 
 	/* Since pidfile is created as user root (its owner is
