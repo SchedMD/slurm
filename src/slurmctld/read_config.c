@@ -684,6 +684,7 @@ int read_slurm_conf(int recover)
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
+	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	slurm_ctl_conf_t *conf;
 
 	/* initialization */
@@ -722,6 +723,7 @@ int read_slurm_conf(int recover)
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
 		xfree(old_node_table_ptr);
+		xfree(state_save_dir);
 		return EINVAL;
 	}
 
@@ -753,7 +755,7 @@ int read_slurm_conf(int recover)
 		error("failed to initialize node selection plugin state");
 		abort();
 	}
-
+	xfree(state_save_dir);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
 	(void) _sync_nodes_to_jobs();
