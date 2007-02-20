@@ -610,8 +610,23 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 	if (part->nodes) {
 		if (part_ptr->nodes) {
-			xstrcat(part_ptr->nodes, ",");
-			xstrcat(part_ptr->nodes, part->nodes);
+			int cnt_tot, cnt_uniq, buf_size;
+			hostlist_t hl = hostlist_create(part_ptr->nodes);
+			
+			hostlist_push(hl, part->nodes);
+			cnt_tot = hostlist_count(hl);
+			hostlist_uniq(hl);
+			cnt_uniq = hostlist_count(hl);
+			if (cnt_tot != cnt_uniq) {
+				fatal("Duplicate Nodes for Partition %s",
+					part->name);
+			}
+			buf_size = strlen(part_ptr->nodes) + 1 +
+				   strlen(part->nodes) + 1;
+			xfree(part_ptr->nodes);
+			part_ptr->nodes = xmalloc(buf_size);
+			hostlist_ranged_string(hl, buf_size, part_ptr->nodes);
+			hostlist_destroy(hl);
 		} else {
 			part_ptr->nodes = xstrdup(part->nodes);
 		}
