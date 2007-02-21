@@ -63,7 +63,8 @@ for major in `seq 1 20`; do
 		else
 			FAILURES=$((FAILURES+1))
 			echo "=============" >& 2
-			echo "$TEST failed"  >& 2
+			echo "$TEST FAILURE" >& 2
+			echo "$TEST FAILURE"
 			grep "$TEST " README >& 2
 			echo "=============" >& 2
 		fi
