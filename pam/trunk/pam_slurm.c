@@ -96,7 +96,9 @@ pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     struct _options opts;
     int retval;
-    const char *user;
+    char *user;
+    void *dummy;  /* needed to eliminate warning:
+                   * dereferencing type-punned pointer will break strict-aliasing rules */
     struct passwd *pw;
     uid_t uid;
     int auth = PAM_PERM_DENIED;
@@ -105,7 +107,8 @@ pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
     if (flags & PAM_SILENT)
         opts.enable_silence = 1;
 
-    retval = pam_get_item(pamh, PAM_USER, (const void **) &user);
+    retval = pam_get_item(pamh, PAM_USER, (const void **) &dummy);
+    user = (char *) dummy;
     if ((retval != PAM_SUCCESS) || (user == NULL) || (*user == '\0')) {
         _log_msg(LOG_ERR, "unable to identify user: %s",
             pam_strerror(pamh, retval));
@@ -329,6 +332,8 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 {
     int retval;
     struct pam_conv *conv;
+    void *dummy;    /* needed to eliminate warning:
+                     * dereferencing type-punned pointer will break strict-aliasing rules */
     int n;
     char str[PAM_MAX_MSG_SIZE];
     struct pam_message msg[1];
@@ -337,7 +342,8 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 
     /*  Get conversation function to talk with app.
      */
-    retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
+    retval = pam_get_item(pamh, PAM_CONV, (const void **) &dummy);
+    conv = (struct pam_conv *) dummy;
     if (retval != PAM_SUCCESS) {
         _log_msg(LOG_ERR, "unable to get pam_conv: %s",
             pam_strerror(pamh, retval));
