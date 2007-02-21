@@ -54,7 +54,10 @@
  * A hostlist is a list of hostnames optimized for a prefixXXXX style 
  * naming convention, where XXXX  is a decimal, numeric suffix.
  */
-typedef struct hostlist * hostlist_t;
+#ifndef   __hostlist_t_defined
+#  define __hostlist_t_defined
+   typedef struct hostlist * hostlist_t;
+#endif
 
 /* A hostset is a special case of a hostlist. It:
  *
