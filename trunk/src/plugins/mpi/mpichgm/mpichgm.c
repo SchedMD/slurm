@@ -319,7 +319,7 @@ gmpi_state_create(const mpi_plugin_client_info_t *job)
 
 	state->tid = (pthread_t)-1;
 	state->fd  = -1;
-	*(state->job) = *job;
+	state->job = job;
 
 	return state;
 }
@@ -359,7 +359,7 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	 */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&st->tid, &attr, &_gmpi_thr, (void *)job)) {
+	if (pthread_create(&st->tid, &attr, &_gmpi_thr, (void *)st)) {
 		slurm_attr_destroy(&attr);
 		gmpi_state_destroy(st);
 		return NULL;
