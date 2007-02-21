@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.1
 ========================
+ -- MPICHGM support bug fixes from Ernest Artiaga, BSC.
 
 * Changes in SLURM 1.2.0
 ========================
