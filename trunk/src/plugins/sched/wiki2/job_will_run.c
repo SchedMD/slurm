@@ -52,7 +52,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
 	int i;
 	uint32_t jobid;
-	char host_string[1024];
+	char host_string[2048];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
