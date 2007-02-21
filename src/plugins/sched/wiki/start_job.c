@@ -202,6 +202,11 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 				wait_string = "Invalid request, job aborted";
 			else {
 				wait_reason = job_ptr->state_reason;
+				if (wait_reason == WAIT_HELD) {
+					/* some job is completing, slurmctld did
+					 * not even try to schedule this job */
+					wait_reason = WAIT_RESOURCES;
+				}
 				wait_string = job_reason_string(wait_reason);
 				job_ptr->state_reason = WAIT_HELD;
 			}
