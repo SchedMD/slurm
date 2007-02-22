@@ -106,7 +106,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 {
 	int j;
 	char tmp1[7], tmp2[7];
-	char tmp_line[128];
+	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
 
 	/****** Line 1 ******/
@@ -200,9 +200,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	
 	/****** Line 4 ******/
 #ifdef HAVE_BG
-	sprintf(tmp_line, "BasePartitions=%s BPIndices=", part_ptr->nodes);
+	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s BPIndices=", 
+		part_ptr->nodes);
 #else
-	sprintf(tmp_line, "Nodes=%s NodeIndices=", part_ptr->nodes);
+	snprintf(tmp_line, sizeof(tmp_line), "Nodes=%s NodeIndices=", 
+		part_ptr->nodes);
 #endif
 	xstrcat(out, tmp_line);
 	for (j = 0; (part_ptr->node_inx && (part_ptr->node_inx[j] != -1)); 

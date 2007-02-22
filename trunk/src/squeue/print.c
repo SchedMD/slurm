@@ -187,9 +187,9 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 int _print_nodes(char *nodes, int width, bool right, bool cut)
 {
 	hostlist_t hl = hostlist_create(nodes);
-	char buf[1024];
+	char buf[MAXHOSTRANGELEN];
 	int retval;
-	hostlist_ranged_string(hl, 1024, buf);
+	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
 	retval = _print_str(buf, width, right, false);
 	hostlist_destroy(hl);
 	return retval;

@@ -51,7 +51,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	int i;
 	uint32_t jobid;
 	hostlist_t hl;
-	char host_string[2048];
+	char host_string[MAXHOSTRANGELEN];
 	static char reply_msg[128];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");

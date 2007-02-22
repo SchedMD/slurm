@@ -599,7 +599,7 @@ void
 report_task_status(srun_job_t *job)
 {
 	int i;
-	char buf[1024];
+	char buf[MAXHOSTRANGELEN+2];
 	hostlist_t hl[NTASK_STATES];
 
 	for (i = 0; i < NTASK_STATES; i++)
@@ -614,7 +614,7 @@ report_task_status(srun_job_t *job)
 
 	for (i = 0; i< NTASK_STATES; i++) {
 		if (hostlist_count(hl[i]) > 0) {
-			hostlist_ranged_string(hl[i], 1022, buf);
+			hostlist_ranged_string(hl[i], MAXHOSTRANGELEN, buf);
 			info("%s: %s", buf, _task_state_name(i));
 		}
 		hostlist_destroy(hl[i]);
