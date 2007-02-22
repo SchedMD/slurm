@@ -187,7 +187,7 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	node_info_t *node_info;
 	uint16_t node_state, base_state;
 	hostlist_t all_nodes, comp_nodes, down_nodes;
-	char node_buf[1024];
+	char node_buf[MAXHOSTRANGELEN];
 
 	all_nodes  = hostlist_create(job_ptr->nodes);
 	comp_nodes = hostlist_create("");

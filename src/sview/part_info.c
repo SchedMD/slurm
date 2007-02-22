@@ -1023,7 +1023,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	char tmp_cnt[7];
 	partition_info_t *part_ptr = sview_part_sub->part_ptr;
 	char *upper = NULL, *lower = NULL;		     
-	char tmp[1024];
+	char tmp[MAXHOSTRANGELEN];
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 	

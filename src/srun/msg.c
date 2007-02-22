@@ -745,7 +745,7 @@ rwfail:
 static void 
 _print_exit_status(srun_job_t *job, hostlist_t hl, char *host, int status)
 {
-	char buf[1024];
+	char buf[MAXHOSTRANGELEN];
 	char *corestr = "";
 	bool signaled  = false;
 	void (*print) (const char *, ...) = (void *) &error; 
@@ -1401,7 +1401,7 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 	if (_verbose) {
 		int i;
 		hostlist_t pids = hostlist_create(NULL);
-		char buf[1024];
+		char buf[MAXHOSTRANGELEN];
 		
 		for (i = 0; i < ntasks; i++) {
 			snprintf(buf, sizeof(buf), "pids:%d", pid[i]);

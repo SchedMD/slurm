@@ -245,12 +245,12 @@ slurmd_job_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job = NULL;
-	char       buf[1024];
+	char       buf[MAXHOSTRANGELEN];
 	hostlist_t hl = hostlist_create(msg->nodes);
 	if (!hl)
 		return NULL;
 		
-	hostlist_ranged_string(hl, 1024, buf);
+	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
 	
 	if (!(job = job_batch_job_create(msg))) {
 		error("job_batch_job_create() failed: %m");

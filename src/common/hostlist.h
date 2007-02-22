@@ -40,6 +40,9 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
+/* max size of internal hostrange buffer */
+#define MAXHOSTRANGELEN 8192
+
 /* Notes:
  *
  * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
