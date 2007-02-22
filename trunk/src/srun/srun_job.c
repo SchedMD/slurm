@@ -198,11 +198,14 @@ job_step_create_allocation(uint32_t job_id)
 	
 	if (opt.exc_nodes) {
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
+		hostlist_t inc_hl = NULL;
 		char *node_name = NULL;
 		
 		hl = hostlist_create(ai->nodelist);
-		if(opt.nodelist)
+		if(opt.nodelist) {
 			hostlist_push(hl, opt.nodelist);
+			inc_hl = hostlist_create(opt.nodelist);
+		}
 		hostlist_uniq(hl);
 		//info("using %s or %s", opt.nodelist, ai->nodelist);
 		while ((node_name = hostlist_shift(exc_hl))) {
@@ -212,13 +215,28 @@ job_step_create_allocation(uint32_t job_id)
 				hostlist_delete_nth(hl, inx);
 				ai->nnodes--;	/* decrement node count */
 			}
+			if(inc_hl) {
+				inx = hostlist_find(inc_hl, node_name);
+				if (inx >= 0) {
+					error("Requested node %s is also "
+					      "in the excluded list.",
+					      node_name);
+					error("Job not submitted.");
+					hostlist_destroy(exc_hl);
+					hostlist_destroy(inc_hl);
+					goto error;
+				}
+			}
 			free(node_name);
 		}
+		hostlist_destroy(exc_hl);
+		if(inc_hl) 
+			hostlist_destroy(inc_hl);
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can't run job.");
-			return NULL;
+			hostlist_destroy(hl);
+			goto error;
 		}
-		hostlist_destroy(exc_hl);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
@@ -237,6 +255,7 @@ job_step_create_allocation(uint32_t job_id)
 		hostlist_uniq(hl);
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
+			hostlist_destroy(hl);
 			return NULL;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
