@@ -250,18 +250,21 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 					      "in the excluded list.",
 					      node_name);
 					error("Job not submitted.");
+					hostlist_destroy(exc_hl);
+					hostlist_destroy(inc_hl);
 					return NULL;
 				}
 			}
 			free(node_name);
 		}
-		if(!hostlist_count(hl)) {
-			error("Hostlist is now nothing!  Can't run job.");
-			return NULL;
-		}
 		hostlist_destroy(exc_hl);
 		if(inc_hl) 
 			hostlist_destroy(inc_hl);
+		if(!hostlist_count(hl)) {
+			error("Hostlist is now nothing!  Can't run job.");
+			hostlist_destroy(hl);
+			return NULL;
+		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
@@ -274,6 +277,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		hostlist_uniq(hl);
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
+			hostlist_destroy(hl);
 			return NULL;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);

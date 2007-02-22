@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.30
 =========================
+ - Fix to make sure users don't include and exclude the same node in their srun
+   line.
 
 * Changes in SLURM 1.1.29
 =========================
