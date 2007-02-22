@@ -252,7 +252,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 					error("Job not submitted.");
 					hostlist_destroy(exc_hl);
 					hostlist_destroy(inc_hl);
-					return NULL;
+					goto error;
 				}
 			}
 			free(node_name);
@@ -263,7 +263,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can't run job.");
 			hostlist_destroy(hl);
-			return NULL;
+			goto error;
 		}
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
