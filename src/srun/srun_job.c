@@ -276,28 +276,46 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			ai->nnodes = opt.max_nodes;
 
 		count = hostlist_count(hl);
+		if(!count) {
+			error("Hostlist is now nothing!  Can't run job.");
+			hostlist_destroy(hl);
+			goto error;
+		}
 		if(inc_hl) {
+			count = hostlist_count(inc_hl);
+			if(count < ai->nnodes) {
+				/* add more nodes to get correct number for
+				   allocation */
+				hostlist_t tmp_hl = hostlist_copy(hl);
+				int i=0;
+				int diff = ai->nnodes - count;
+				hostlist_ranged_string(inc_hl,
+						       sizeof(buf), buf);
+				hostlist_delete(tmp_hl, buf);
+				while((node_name = hostlist_shift(tmp_hl))
+				      && (i < diff)) {
+					hostlist_push(inc_hl, node_name);
+					i++;
+				}
+				hostlist_destroy(tmp_hl);
+			}
 			hostlist_ranged_string(inc_hl, sizeof(buf), buf);
 			hostlist_destroy(inc_hl);
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(buf);
 		} else {
 			if(count > ai->nnodes) {
+				/* remove more nodes than needed for
+				   allocation */
 				int i=0;
-				for(i=count; i>ai->nnodes; i--) {
+				for(i=count; i>ai->nnodes; i--) 
 					hostlist_delete_nth(hl, i);
-				}
 			}
 			hostlist_ranged_string(hl, sizeof(buf), buf);
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(buf);
 		}
 
-		if(!count) {
-			error("Hostlist is now nothing!  Can't run job.");
-			hostlist_destroy(hl);
-			goto error;
-		}
 		hostlist_destroy(hl);			
 	} else {
 		if (!opt.nodes_set) {
