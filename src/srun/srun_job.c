@@ -231,7 +231,6 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		
 		hl = hostlist_create(ai->nodelist);
 		if(opt.nodelist) {
-			hostlist_push(hl, opt.nodelist);
 			inc_hl = hostlist_create(opt.nodelist);
 		}
 		hostlist_uniq(hl);
@@ -258,17 +257,60 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			free(node_name);
 		}
 		hostlist_destroy(exc_hl);
-		if(inc_hl) 
+
+		/* we need to set this here so if there are more nodes
+		 * available than we requested we can set it
+		 * straight. If there is no exclude list then we set
+		 * the vars then.
+		 */
+		if (!opt.nodes_set) {
+			if(opt.nprocs_set)
+				opt.min_nodes = opt.nprocs;
+			else
+				opt.min_nodes = ai->nnodes;
+			opt.nodes_set = true;
+		}
+		if(!opt.max_nodes)
+			opt.max_nodes = opt.min_nodes;
+		if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
+			ai->nnodes = opt.max_nodes;
+
+		count = hostlist_count(hl);
+		if(inc_hl) {
+			hostlist_ranged_string(inc_hl, sizeof(buf), buf);
 			hostlist_destroy(inc_hl);
-		if(!hostlist_count(hl)) {
+			xfree(opt.nodelist);
+			opt.nodelist = xstrdup(buf);
+		} else {
+			if(count > ai->nnodes) {
+				int i=0;
+				for(i=count; i>ai->nnodes; i--) {
+					hostlist_delete_nth(hl, i);
+				}
+			}
+			hostlist_ranged_string(hl, sizeof(buf), buf);
+			xfree(opt.nodelist);
+			opt.nodelist = xstrdup(buf);
+		}
+
+		if(!count) {
 			error("Hostlist is now nothing!  Can't run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}
-		hostlist_ranged_string(hl, sizeof(buf), buf);
-		hostlist_destroy(hl);
-		xfree(opt.nodelist);
-		opt.nodelist = xstrdup(buf);
+		hostlist_destroy(hl);			
+	} else {
+		if (!opt.nodes_set) {
+			if(opt.nprocs_set)
+				opt.min_nodes = opt.nprocs;
+			else
+				opt.min_nodes = ai->nnodes;
+			opt.nodes_set = true;
+		}
+		if(!opt.max_nodes)
+			opt.max_nodes = opt.min_nodes;
+		if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
+			ai->nnodes = opt.max_nodes;
 	}
 	
 	/* get the correct number of hosts to run tasks on */
@@ -278,8 +320,9 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
 			hostlist_destroy(hl);
-			return NULL;
+			goto error;
 		}
+		
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
 	
@@ -288,19 +331,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		opt.nodelist = xstrdup(buf);
 		
 	} 
-
-	if (!opt.nodes_set) {
-		if(opt.nprocs_set)
-			opt.min_nodes = opt.nprocs;
-		else
-			opt.min_nodes = ai->nnodes;
-		opt.nodes_set = true;
-	}
-	if(!opt.max_nodes)
-		 opt.max_nodes = opt.min_nodes;
-	if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
-		ai->nnodes = opt.max_nodes;
-
+	
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		if(count != opt.nprocs) {
 			error("You asked for %d tasks but specified %d nodes",
