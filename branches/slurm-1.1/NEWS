@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
    their srun line.
  - mpi/mvapich: Forcibly terminate job 60s after first MPI_Abort() 
    to avoid waiting indefinitely for hung processes.
+ - proctrack/sgi_job: Fix segv when destroying an active ob container 
+   with processes still running.
 
 * Changes in SLURM 1.1.29
 =========================
