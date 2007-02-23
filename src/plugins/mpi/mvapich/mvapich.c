@@ -116,6 +116,7 @@ static int  protocol_phase   = 0;
 static int  connect_once     = 1;
 static int  mvapich_verbose  = 0;
 static int  do_timing        = 0;
+static time_t first_abort_time = 0;
 
 
 #define mvapich_debug(args...) \
@@ -441,6 +442,49 @@ mvapich_print_abort_message (srun_job_t *job, int rank, int dest,
 }
 
 
+static int mvapich_abort_timeout (void)
+{
+	int timeout;
+
+	if (first_abort_time == 0)
+		return (-1);
+
+	timeout = 60 - (time (NULL) - first_abort_time);
+
+	if (timeout < 0)
+		return (0);
+
+	return (timeout * 1000);
+}
+
+static int mvapich_accept (srun_job_t *job, int fd)
+{
+	slurm_addr addr;
+	int rc;
+	struct pollfd pfds[1];
+
+	pfds->fd = fd;
+	pfds->events = POLLIN;
+
+	while ((rc = poll (pfds, 1, mvapich_abort_timeout ())) < 0) {
+		if (errno != EINTR)
+			return (-1);
+	}
+
+	/* 
+	 *  If poll() timed out, forcibly kill job and exit instead of
+	 *   waiting longer for remote IO, process exit, etc.
+	 */
+	if (rc == 0) {
+		job_fatal (job, 
+				"Timeout waiting for all tasks after MVAPICH ABORT. Exiting.");
+		/* NORETURN */
+	}
+
+	return (slurm_accept_msg_conn (fd, &addr));
+}
+
+
 static void mvapich_wait_for_abort(srun_job_t *job)
 {
 	int src, dst;
@@ -457,8 +501,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 	 *   its rank.
 	 */
 	while (1) {
-		slurm_addr addr;
-		int newfd = slurm_accept_msg_conn (mvapich_fd, &addr);
+		int newfd = mvapich_accept (job, mvapich_fd);
 
 		if (newfd == -1) {
 			fatal("MPI master failed to accept (abort-wait)");
@@ -494,6 +537,8 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 		mvapich_print_abort_message (job, src, dst, msg, msglen);
 
 		fwd_signal(job, SIGKILL);
+		if (!first_abort_time)
+			first_abort_time = time (NULL);
 	}
 
 	return; /* but not reached */

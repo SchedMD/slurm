@@ -3,8 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.30
 =========================
- - Fix to make sure users don't include and exclude the same node in their srun
-   line.
+ - Fix to make sure users don't include and exclude the same node in 
+   their srun line.
+ - mpi/mvapich: Forcibly terminate job 60s after first MPI_Abort() 
+   to avoid waiting indefinitely for hung processes.
 
 * Changes in SLURM 1.1.29
 =========================
