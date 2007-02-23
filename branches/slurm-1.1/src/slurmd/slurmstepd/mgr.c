@@ -766,9 +766,11 @@ job_manager(slurmd_job_t *job)
 		_wait_for_io(job);
 	}
 
+	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
 		error ("spank_fini failed\n");
 	}
+	debug2("After call to spank_fini()");
 
     fail1:
 	/* If interactive job startup was abnormal, 
@@ -811,10 +813,12 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
+	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {
 		error ("Plugin stack initialization failed.\n");
 		return SLURM_ERROR;
 	}
+	debug2("After call to spank_init()");
 
 	/*
 	 * Pre-allocate a pipe for each of the tasks
