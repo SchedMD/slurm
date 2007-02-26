@@ -26,8 +26,7 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    svn copy https://eris.llnl.gov/svn/slurm/trunk \
      https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3 \
      -m "description"
-3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
-   (.rpmrc for newer versions of rpmbuild) file containing:
+3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
 	%_enable_debug    "--enable-debug"
    I usually build with using the following syntax:
@@ -129,11 +128,12 @@ Configuration file update procedures:
   - then run "dist_local slurm" on SN and FENs to update /etc/slurm
 
 Some RPM commands:
-  - rpm -querry --all | grep slurm
-  - rpm --erase package_name
-  - rpm --install --ignoresize file_name
+  rpm -qa | grep slurm                  (determine what is installed)
+  rpm -qpl slurm-1.1.9-1.rpm            (check contents of an rpm)
+  rpm -e slurm-1.1.8-1                  (erase an rpm
+  rpm -i --ignoresize slurm-1.1.9-1.rpm (install a new rpm)
 For main SLURM plugin installation on BGL service node:
-  - rpm --install --force --nodeps --ignoresize slurm-#.rpm
+  rpm -i --force --nodeps --ignoresize slurm-1.1.9-1.rpm
 
 
 To clear a wedged job:
