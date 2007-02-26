@@ -150,6 +150,9 @@ Patches:
   - Run the patch command with epilog_complete.patch as stdin:
     patch -p[path_level_to_filter] [--dry-run] < epilog_complete.patch
 
+To get the process and job IDs with proctrack/sgi_job:
+  - jstat -p
+
 CVS and gnats:
 Include "gnats:<id> e.g. "(gnats:123)" as part of cvs commit to
 automatically record that update in gnats database. NOTE: Does
