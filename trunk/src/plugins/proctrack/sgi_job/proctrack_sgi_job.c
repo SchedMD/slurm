@@ -234,7 +234,8 @@ int slurm_container_signal (uint32_t id, int sig)
 
 int slurm_container_destroy (uint32_t id)
 {
-	_job_waitjid ((jid_t) id, NULL, 0);
+	int status;
+	_job_waitjid ((jid_t) id, &status, 0);
 	/*  Assume any error means job doesn't exist. Therefore,
 	 *   return SUCCESS to slurmd so it doesn't retry continuously
 	 */

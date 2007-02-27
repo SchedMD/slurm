@@ -662,10 +662,10 @@ _get_shell (void)
 {
 	struct passwd *pw_ent_ptr;
 
-	pw_ent_ptr = getpwuid (getuid ());
+	pw_ent_ptr = getpwuid (opt.uid);
 	if ( ! pw_ent_ptr ) {
 		pw_ent_ptr = getpwnam( "nobody" );
-		info( "warning - no user information for user %d", getuid() );
+		info( "warning - no user information for user %d", opt.uid );
 	}
 	return pw_ent_ptr->pw_shell;
 }

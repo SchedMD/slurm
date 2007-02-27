@@ -235,10 +235,22 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.31
+=========================
+ - Correctly identify a user's login shell when running "srun -b --uid"
+   as root.  Use the --uid field for the /etc/passwd lookup instead of
+   getuid().
+
 * Changes in SLURM 1.1.30
 =========================
- - Fix to make sure users don't include and exclude the same node in their srun
-   line.
+ - Fix to make sure users don't include and exclude the same node in 
+   their srun line.
+ - mpi/mvapich: Forcibly terminate job 60s after first MPI_Abort() 
+   to avoid waiting indefinitely for hung processes.
+ - proctrack/sgi_job: Fix segv when destroying an active job container 
+   with processes still running.
+ - Abort a job's stdout/err to srun if not processed within 5 minutes
+   (prevents node hanging in completing state if the srun is stopped).
 
 * Changes in SLURM 1.1.29
 =========================
