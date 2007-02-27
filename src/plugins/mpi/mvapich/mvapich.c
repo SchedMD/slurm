@@ -113,6 +113,7 @@ struct mvapich_info
 /*  Globals for the mvapich thread.
  */
 int mvapich_verbose = 0;
+static time_t first_abort_time = 0;
 
 /*  Per-job step state information.  The MPI plugin may be called
  *  multiple times from the SLURM API's slurm_step_launch() in the
@@ -461,6 +462,50 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 }
 
 
+static int mvapich_abort_timeout (void)
+{
+	int timeout;
+
+	if (first_abort_time == 0)
+		return (-1);
+
+	timeout = 60 - (time (NULL) - first_abort_time);
+
+	if (timeout < 0)
+		return (0);
+
+	return (timeout * 1000);
+}
+
+static int mvapich_accept (uint32_t jobid, uint32_t stepid, int fd)
+{
+	slurm_addr addr;
+	int rc;
+	struct pollfd pfds[1];
+
+	pfds->fd = fd;
+	pfds->events = POLLIN;
+
+	while ((rc = poll (pfds, 1, mvapich_abort_timeout ())) < 0) {
+		if (errno != EINTR)
+			return (-1);
+	}
+
+	/* 
+	 *  If poll() timed out, forcibly kill job and exit instead of
+	 *   waiting longer for remote IO, process exit, etc.
+	 */
+	if (rc == 0) {
+		error("Timeout waiting for all tasks after MVAPICH ABORT. Exiting.");
+		slurm_signal_job_step(jobid, stepid, SIGKILL);
+		exit(1);
+		/* NORETURN */
+	}
+
+	return (slurm_accept_msg_conn (fd, &addr));
+}
+
+
 static void mvapich_wait_for_abort(mvapich_state_t *st)
 {
 	int src, dst;
@@ -477,8 +522,8 @@ static void mvapich_wait_for_abort(mvapich_state_t *st)
 	 *   its rank.
 	 */
 	while (1) {
-		slurm_addr addr;
-		int newfd = slurm_accept_msg_conn (st->fd, &addr);
+		int newfd = mvapich_accept (st->job->jobid, st->job->stepid,
+					    st->fd);
 
 		if (newfd == -1) {
 			fatal("MPI master failed to accept (abort-wait)");
@@ -513,6 +558,8 @@ static void mvapich_wait_for_abort(mvapich_state_t *st)
 
 		mvapich_print_abort_message (st, src, dst, msg, msglen);
 		slurm_signal_job_step(st->job->jobid, st->job->stepid, SIGKILL);
+		if (!first_abort_time)
+			first_abort_time = time (NULL);
 	}
 
 	return; /* but not reached */

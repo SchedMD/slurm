@@ -1490,13 +1490,13 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	if ((job_ptr->user_id != uid) && (!super_user)) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
 		      uid);
-		return ESLURM_USER_ID_MISSING;
+		return ESLURM_ACCESS_DENIED;
 	}
 	if ((!super_user) && job_ptr->part_ptr
 	    &&  (job_ptr->part_ptr->root_only)) {
 		info("Attempt to cancel job in RootOnly partition from uid %d",
 		     uid);
-		return ESLURM_USER_ID_MISSING;
+		return ESLURM_ACCESS_DENIED;
 	}
 
 	if (IS_JOB_FINISHED(job_ptr))
