@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.31
+=========================
+ - Correctly identify a user's login shell when running "srun -b --uid"
+   as root.  Use the --uid field for the /etc/passwd lookup instead of
+   getuid().
+
 * Changes in SLURM 1.1.30
 =========================
  - Fix to make sure users don't include and exclude the same node in 
