@@ -426,7 +426,7 @@ _job_create_structure(allocation_info_t *ainfo)
 #endif
 
 #ifndef HAVE_BG
-	if(opt.min_nodes > job->nhosts && !opt.overcommit) {
+	if(opt.min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt.min_nodes);
 		return NULL;
