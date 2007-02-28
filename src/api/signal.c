@@ -194,7 +194,7 @@ _get_step_addresses(const job_step_info_t *step,
 	slurm_addr *addrs;
 	int num_nodes;
 	char *hostname;
-	int i;
+	int i, j=0;
 	
 	alloc_nodes = hostset_create(allocation->node_list);
 	step_nodes = hostset_create(step->nodes);
@@ -204,7 +204,7 @@ _get_step_addresses(const job_step_info_t *step,
 	addrs = xmalloc(sizeof(slurm_addr) * num_nodes);
 	while (hostname = hostlist_next(step_nodes_it)) {
 		i = hostset_index(alloc_nodes, hostname, 0);
-		addrs[i] = allocation->node_addr[i];
+		addrs[j++] = allocation->node_addr[i];
 		free(hostname);
 	}
 
