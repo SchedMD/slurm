@@ -350,9 +350,9 @@ job_step_create_allocation(uint32_t job_id)
 		
 		ai->num_cpu_groups = 0;
 		ai->cpus_per_node = xmalloc(sizeof(uint32_t) * ai->nnodes);
-		ai->cpu_count_reps =xmalloc(sizeof(uint32_t) * ai->nnodes);
+		ai->cpu_count_reps = xmalloc(sizeof(uint32_t) * ai->nnodes);
 		
-		while(tasks_per_node[i]) {
+		while(tasks_per_node[i] && (ai->num_cpu_groups < ai->nnodes)) {
 			if(tasks_per_node[i] >= '0' 
 			   && tasks_per_node[i] <= '9')
 				ai->cpus_per_node[ai->num_cpu_groups] =
@@ -402,15 +402,6 @@ job_step_create_allocation(uint32_t job_id)
 		ai->cpu_count_reps = &ai->nnodes;
 	}
 
-	/* get the correct number of hosts to run tasks on */
-	/* if(opt.nodelist) { */
-/* 		hl = hostlist_create(opt.nodelist); */
-/* 		hostlist_uniq(hl); */
-/* 		ai->nnodes = hostlist_count(hl); */
-/* 		hostlist_destroy(hl); */
-/* 	} else */
-	if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
-		ai->nnodes = opt.max_nodes;
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
 /* 	     ai->nnodes, ai->nodelist, opt.nodelist); */
 	/* 
