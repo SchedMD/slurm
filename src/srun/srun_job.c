@@ -164,6 +164,7 @@ job_step_create_allocation(uint32_t job_id)
 	hostlist_t hl = NULL;
 	char buf[8192];
 	int count = 0;
+	uint32_t alloc_count = 0;
 	char *tasks_per_node = xstrdup(getenv("SLURM_TASKS_PER_NODE"));
 	
 	ai->jobid          = job_id;
@@ -193,7 +194,8 @@ job_step_create_allocation(uint32_t job_id)
 	ai->nodelist = opt.alloc_nodelist;
 	hl = hostlist_create(ai->nodelist);
 	hostlist_uniq(hl);
-	ai->nnodes = hostlist_count(hl);
+	alloc_count = hostlist_count(hl);
+	ai->nnodes = alloc_count;
 	hostlist_destroy(hl);
 	
 	if (opt.exc_nodes) {
@@ -349,10 +351,11 @@ job_step_create_allocation(uint32_t job_id)
 		int i = 0;
 		
 		ai->num_cpu_groups = 0;
-		ai->cpus_per_node = xmalloc(sizeof(uint32_t) * ai->nnodes);
-		ai->cpu_count_reps = xmalloc(sizeof(uint32_t) * ai->nnodes);
+		ai->cpus_per_node = xmalloc(sizeof(uint32_t) * alloc_count);
+		ai->cpu_count_reps = xmalloc(sizeof(uint32_t) * alloc_count);
 		
-		while(tasks_per_node[i] && (ai->num_cpu_groups < ai->nnodes)) {
+		while(tasks_per_node[i]
+		      && (ai->num_cpu_groups < alloc_count)) {
 			if(tasks_per_node[i] >= '0' 
 			   && tasks_per_node[i] <= '9')
 				ai->cpus_per_node[ai->num_cpu_groups] =
@@ -395,11 +398,11 @@ job_step_create_allocation(uint32_t job_id)
 		}
 		xfree(tasks_per_node);
 	} else {
-		uint32_t cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
+		uint32_t cpn = (opt.nprocs + alloc_count - 1) / alloc_count;
 		debug("SLURM_TASKS_PER_NODE not set! "
 		      "Guessing %d cpus per node", cpn);
 		ai->cpus_per_node  = &cpn;
-		ai->cpu_count_reps = &ai->nnodes;
+		ai->cpu_count_reps = &alloc_count;
 	}
 
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
