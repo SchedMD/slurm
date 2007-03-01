@@ -245,7 +245,7 @@ static char *	_copy_nodelist_no_dup(char *node_list)
  */
 extern char *	bitmap2wiki_node_name(bitstr_t *bitmap)
 {
-	int i, first = 1;
+	int i;
 	char *buf = NULL;
 
 	if (use_host_exp)
@@ -257,9 +257,8 @@ extern char *	bitmap2wiki_node_name(bitstr_t *bitmap)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		if (first == 0)
+		if (buf)
 			xstrcat(buf, ":");
-		first = 0;
 		xstrcat(buf, node_record_table_ptr[i].name);
 	}
 	return buf;
