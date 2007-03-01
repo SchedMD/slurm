@@ -235,6 +235,11 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.32
+=========================
+ - If a job's stdout/err file names are unusable (bad path), use the 
+   default names.
+ 
 * Changes in SLURM 1.1.31
 =========================
  - Correctly identify a user's login shell when running "srun -b --uid"
