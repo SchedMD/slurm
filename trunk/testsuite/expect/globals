@@ -137,6 +137,11 @@ cset max_job_delay 120
 cset max_file_delay 60
 
 #
+# Desired job state must be reached within this number of seconds.
+#
+cset max_job_state_delay 360
+
+#
 # Specify the maximum number of tasks to use in the stress tests.
 #
 cset max_stress_tasks 4
@@ -376,7 +381,7 @@ proc wait_for_file { file_name } {
 ################################################################
 
 proc wait_for_job { job_id desired_state } {
-	global scontrol
+	global scontrol max_job_state_delay
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -389,6 +394,7 @@ proc wait_for_job { job_id desired_state } {
 	}
 
 	set sleep_time  1
+	set my_delay    0
 	while 1 {
 		set fd [open "|$scontrol -o show job $job_id"]
 		gets $fd line
@@ -429,7 +435,13 @@ proc wait_for_job { job_id desired_state } {
 			}
 		}
 
-		sleep $sleep_time
+		if { $my_delay > $max_job_state_delay } {
+			send_user "FAILURE: Timeout waiting for job state $state\n"
+			return 1
+		}
+
+		exec sleep $sleep_time
+		set my_delay [expr $my_delay + $sleep_time]
 		set sleep_time  [expr $sleep_time * 2]
 		if { $sleep_time > 10 } {
 			set sleep_time 10
