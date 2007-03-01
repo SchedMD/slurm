@@ -264,7 +264,12 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		 * the vars then.
 		 */
 		if (!opt.nodes_set) {
-			if(opt.nprocs_set)
+			/* we don't want to set the number of nodes =
+			 * to the number of requested processes unless we
+			 * know it is less than the number of nodes
+			 * in the allocation
+			 */
+			if(opt.nprocs_set && (opt.nprocs < ai->nnodes))
 				opt.min_nodes = opt.nprocs;
 			else
 				opt.min_nodes = ai->nnodes;
@@ -319,7 +324,12 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		hostlist_destroy(hl);			
 	} else {
 		if (!opt.nodes_set) {
-			if(opt.nprocs_set)
+			/* we don't want to set the number of nodes =
+			 * to the number of requested processes unless we
+			 * know it is less than the number of nodes
+			 * in the allocation
+			 */
+			if(opt.nprocs_set && (opt.nprocs < ai->nnodes))
 				opt.min_nodes = opt.nprocs;
 			else
 				opt.min_nodes = ai->nnodes;
