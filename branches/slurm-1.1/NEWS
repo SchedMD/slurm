@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - If a job's stdout/err file names are unusable (bad path), use the 
    default names.
+ - sched/wiki - Fix logic to be compatable with select/cons_res plugin
+   for allocating individual processors within nodes.
  
 * Changes in SLURM 1.1.31
 =========================
