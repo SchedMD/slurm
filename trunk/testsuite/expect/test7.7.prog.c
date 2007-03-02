@@ -350,7 +350,7 @@ static void _job_requeue(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=JOBREQUEUE ARG=%ld",
+		"TS=%u AUTH=root DT=CMD=REQUEUEJOB ARG=%ld",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
@@ -399,6 +399,7 @@ int main(int argc, char * argv[])
 	_get_nodes();
 	_job_will_run(job_id);
 	_start_job(job_id);
+	_get_jobs();
 	_suspend_job(job_id);
 	_resume_job(job_id);
 	_modify_job(job_id);
