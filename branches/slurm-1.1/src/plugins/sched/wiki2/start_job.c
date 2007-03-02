@@ -48,7 +48,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
-	int i, task_cnt = 1;
+	int i, task_cnt = 0;
 	uint32_t jobid;
 	hostlist_t hl;
 	char host_string[2048];
@@ -77,6 +77,8 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	node_ptr = task_ptr + 9;
+	if (node_ptr[0])
+		task_cnt = 1;
 	for (i=0; node_ptr[i]!='\0'; i++) {
 		if (node_ptr[i] == ':') {
 			node_ptr[i] = ',';
@@ -114,7 +116,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			int *err_code, char **err_msg)
 {
-	int rc = 0, old_task_cnt;
+	int rc = 0, old_task_cnt = 1;
 	struct job_record *job_ptr;
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
@@ -165,7 +167,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 
 	/* User excluded node list incompatable with Wiki
 	 * Exclude all nodes not explicitly requested */
-	if (job_ptr->cr_enabled) {
+	if (job_ptr->cr_enabled && task_cnt) {
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
