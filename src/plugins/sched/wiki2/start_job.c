@@ -41,14 +41,14 @@
 #include "src/slurmctld/state_save.h"
 
 static char *	_copy_nodelist_no_dup(char *node_list);
-static int	_start_job(uint32_t jobid, char *hostlist, 
+static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
 			int *err_code, char **err_msg);
 
 /* RET 0 on success, -1 on failure */
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
-	int i;
+	int i, task_cnt = 1;
 	uint32_t jobid;
 	hostlist_t hl;
 	char host_string[MAXHOSTRANGELEN];
@@ -78,8 +78,10 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	node_ptr = task_ptr + 9;
 	for (i=0; node_ptr[i]!='\0'; i++) {
-		if (node_ptr[i] == ':')
+		if (node_ptr[i] == ':') {
 			node_ptr[i] = ',';
+			task_cnt++;
+		}
 	}
 	hl = hostlist_create(node_ptr);
 	if (hl == NULL) {
@@ -100,7 +102,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 			host_string);
 		return -1;
 	}
-	if (_start_job(jobid, host_string, err_code, err_msg) != 0)
+	if (_start_job(jobid, task_cnt, host_string, err_code, err_msg) != 0)
 		return -1;
 
 	snprintf(reply_msg, sizeof(reply_msg), 
@@ -109,10 +111,10 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static int	_start_job(uint32_t jobid, char *hostlist,
+static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			int *err_code, char **err_msg)
 {
-	int rc = 0;
+	int rc = 0, old_task_cnt;
 	struct job_record *job_ptr;
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
@@ -161,12 +163,12 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		goto fini;
 	}
 
-	/* Remove any excluded nodes, incompatable with Wiki */
-	if (job_ptr->details->exc_nodes) {
-		error("wiki: clearing exc_nodes for job %u", jobid);
-		xfree(job_ptr->details->exc_nodes);
-		if (job_ptr->details->exc_node_bitmap)
-			FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
+	/* User excluded node list incompatable with Wiki
+	 * Exclude all nodes not explicitly requested */
+	if (job_ptr->cr_enabled) {
+		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
+		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);
+		bit_not(job_ptr->details->exc_node_bitmap);
 	}
 
 	/* start it now */
@@ -174,6 +176,8 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	job_ptr->details->req_nodes = new_node_list;
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	job_ptr->details->req_node_bitmap = new_bitmap;
+	old_task_cnt = job_ptr->num_procs;
+	job_ptr->num_procs = MAX(task_cnt, old_task_cnt); 
 	job_ptr->priority = 100000000;
 
  fini:	unlock_slurmctld(job_write_lock);
@@ -189,6 +193,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 
 			/* restore job state */
 			job_ptr->priority = 0;
+			job_ptr->num_procs = old_task_cnt;
 			if (job_ptr->details) {
 				/* Details get cleared on job abort; happens 
 				 * if the request is sufficiently messed up.
