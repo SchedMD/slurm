@@ -46,6 +46,8 @@ controller?</a></li>
 parallel for testing purposes?</a></li>
 <li><a href="#multi_slurmd">Can multiple slurmd daemons be run
 on the compute node(s) to emulate a larger cluster?</a></li>
+<li><a href="#extra_procs">Can SLURM emulate nodes with more 
+resources than physically exist on the node?</a></li>
 <li><a href="#credential_replayed">What does a "credential
 replayed" error in the <i>SlurmdLogFile</i> indicate?</a></li>
 </ol>
@@ -488,7 +490,17 @@ See the
 <a href="programmer_guide.shtml#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.
 
-<p><a name="credential_replayed"><b>15. What does a "credential 
+<p><a name="extra_procs"><b>15. Can SLURM emulate nodes with more
+resources than physically exist on the node?</b></a><br>
+Yes in SLURM version 1.2 or higher.
+In the <i>slurm.conf</i> file, set <i>FastSchedule=2</i> and specify
+any desired node resource specifications (<i>Procs</i>, <i>Sockets</i>,
+<i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
+SLURM will use the resource specification for each node that is 
+given in <i>slurm.conf</i> and will not check these specifications 
+against those actaully found on the node.
+
+<p><a name="credential_replayed"><b>16. What does a "credential 
 replayed" error in the <i>SlurmdLogFile</i> indicate?</b></a><br>
 This error is indicative of the <i>slurmd</i> daemon not being able 
 to respond to job initiation requests from the <i>srun</i> command
@@ -501,9 +513,13 @@ the "credential replayed" error.
 If you check the <i>SlurmdLogFile</i> and <i>SlurmctldLogFile</i>, 
 you should see signs of the <i>slurmd</i> daemon's non-responsiveness.
 A variety of factors can be responsible for this problem
-including diskless nodes encountering network problems or
-very slow Network Information Service (NIS).
-In Slurm version 1.2, this can be addressed with the 
+including
+<ul>
+<li>Diskless nodes encountering network problems</li>
+<li>Very slow Network Information Service (NIS)</li>
+<li>The <i>Prolog</i> script taking a long time to complete</li>
+</ul>
+<p>In Slurm version 1.2, this can be addressed with the 
 <i>MessageTimeout</i> configuration parameter by setting a
 value higher than the default 5 seconds.
 In earlier versions of Slurm, the <i>--msg-timeout</i> option 
@@ -511,6 +527,6 @@ of <i>srun</i> serves a similar purpose.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 February 2007</p>
+<p style="text-align:center;">Last modified 2 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
