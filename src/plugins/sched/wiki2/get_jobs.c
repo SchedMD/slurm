@@ -73,6 +73,7 @@ static char *	_full_task_list(struct job_record *job_ptr);
  * Response format
  * ARG=<cnt>#<JOBID>;
  *	STATE=<state>;			Moab equivalent job state
+ *	[EXITCODE=<number>;]		Job exit code, if completed
  *	[RFEATURES=<features>;]		required features, if any, 
  *					NOTE: OR operator not supported
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
