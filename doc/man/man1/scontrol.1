@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2006" "scontrol 1.2" "Slurm components"
+.TH SCONTROL "1" "March 2007" "scontrol 1.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -404,6 +404,18 @@ Hidden partitions will by default not be reported by SLURM APIs
 or commands. 
 Possible values are"YES" and "NO".
 .TP
+\fIMaxNodes\fP=<count>
+Set the maximum number of nodes which will be allocated to any single job 
+in the partition. Specify a number or "INFINITE".
+.TP
+\fIMaxTime\fP=<minutes>
+Set the maximum run time for a jobs in minutes. 
+Specify a number or "INFINITE"
+.TP
+\fIMinNodes\fP=<count>
+Set the minimum number of nodes which will be allocated to any single job 
+in the partition. 
+.TP
 \fINodes\fP=<name>
 Identify the node(s) to be associated with this partition. Multiple node names 
 may be specified using simple node range expressions (e.g. "lx[10\-20]"). 
@@ -428,14 +440,6 @@ Possible values are"UP" and "DOWN".
 If a partition allocated nodes to running jobs, those jobs will continue 
 execution even after the partition's state is set to "DOWN". The jobs 
 must be explicitly canceled to force their termination.
-.TP
-\fIMaxNodes\fP=<count>
-Set the maximum number of nodes which will be allocated to any single job 
-in the partition. Specify a number or "INFINITE".
-.TP
-\fIMinNodes\fP=<count>
-Set the minimum number of nodes which will be allocated to any single job 
-in the partition. 
 .TP
 \fBSPECIFICATIONS FOR UPDATE, BLOCK \fR
 .TP
