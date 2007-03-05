@@ -7,6 +7,9 @@ SLURM source can be downloaded from <br>
 ftp://ftp.llnl.gov/pub/linux/slurm</a> and <br>
 <a href="https://sourceforge.net/projects/slurm/">
 https://sourceforge.net/projects/slurm/</a><br>
+There is also a Debian package repository at <br>
+<a href="http://www.na.icar.cnr.it/~oliva/debs/slurm-llnl/">
+http://www.na.icar.cnr.it/~oliva/debs/slurm-llnl/</a><br>
 The latest stable release is version 1.2.</p>
 
 <p><b>NOTE:</b> The LLNL FTP server has strict firewall restrictions.
