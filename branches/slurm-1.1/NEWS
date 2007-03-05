@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
 =========================
  - If a job's stdout/err file names are unusable (bad path), use the 
    default names.
- - sched/wiki - Fix logic to be compatable with select/cons_res plugin
+ - sched/wiki - Fix logic to be compatible with select/cons_res plugin
    for allocating individual processors within nodes.
  - Fix job end time calculation when changed from an initial value of 
    INFINITE.
