@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.33
+=========================
+
 * Changes in SLURM 1.1.32
 =========================
  - If a job's stdout/err file names are unusable (bad path), use the 
