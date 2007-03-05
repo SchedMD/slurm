@@ -532,7 +532,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 		break;
 	default:
 		if (endtime_cache)
-		*end_time_ptr  = endtime_cache;
+			*end_time_ptr  = endtime_cache;
 		else
 			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
