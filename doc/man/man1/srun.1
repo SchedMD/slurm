@@ -1167,6 +1167,9 @@ Same as \fB\-v, \-\-verbose\fR
 \fBSLURMD_DEBUG\fR
 Same as \fB\-d, \-\-slurmd\-debug\fR
 .TP
+\fBSLURM_DEPENDENCY\fR
+\fB\-P, \-\-dependency\fR=\fIjobid\fR
+.TP
 \fBSLURM_DISABLE_STATUS\fR
 Same as \fB\-X, \-\-disable\-status\fR
 .TP
@@ -1181,6 +1184,9 @@ Same as \fB\-\-epilog\fR=\fIexecutable\fR
 .TP
 \fBSLURM_GEOMETRY\fR
 Same as \fB\-g, \-\-geometry\fR=\fIX,Y,Z\fR
+.TP
+\fBSLURM_JOB_NAME\fR
+\fB\-J, \-\-job\-name\fR=\fIjobname\fR
 .TP
 \fBSLURM_LABELIO\fR
 Same as \fB\-l, \-\-label\fR
@@ -1250,7 +1256,9 @@ Same as \fB-u, --unbuffered\fR
 .TP
 \fBSLURM_WAIT\fR
 Same as \fB\-W, \-\-wait\fR=\fIseconds\fR
-
+.TP
+\fBSLURM_WORKING_DIR\fR
+\fB\-D, \-\-chdir\fR=\fIpath\fR
 .PP
 Additionally, srun will set some environment variables in the environment 
 of the executing tasks on the remote compute nodes. 
