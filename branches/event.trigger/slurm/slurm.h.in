@@ -1852,11 +1852,17 @@ extern void slurm_hostlist_destroy PARAMS(( hostlist_t hl ));
 extern int slurm_set_trigger PARAMS(( trigger_info_t trigger_set ));
 
 /*
+ * slurm_clear_trigger - clear/delete an existing event trigger
+ * RET 0 or a slurm error code
+ */
+extern int slurm_claer_trigger PARAMS(( uint32_t trig_id ));
+
+/*
  * slurm_get_triggers - get all event trigger information
  * use slurm_free_triggers to free the memory allocated by this function
  * RET 0 or a slurm error code
  */
-extern int slurm_set_triggers PARAMS(( trigger_info_msg_t ** trigger_get ));
+extern int slurm_get_triggers PARAMS(( trigger_info_msg_t ** trigger_get ));
 
 /*
  * slurm_free_triggers - free data structure returned by slurm_get_triggers

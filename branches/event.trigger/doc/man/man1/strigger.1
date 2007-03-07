@@ -76,6 +76,10 @@ Print version information and exit.
 \fBCOMMANDS\fR
 
 .TP
+\fBclear\fP
+Clear or delete a previously defined event trigger.
+
+.TP
 \fBget\fP
 Show registered event triggers.
 Specified options are used for filtering.
@@ -155,6 +159,13 @@ Show all triggers associated with job 1235.
 TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
     123      job   1235 time   -600  joe /home/bob/clean_up
     125      job   1235 down      0  joe /home/bob/node_died
+.fi
+
+.PP
+Delete event trigger 125.
+
+.fp
+> strigger --id=125 clear
 .fi
 
 .SH "COPYING"
