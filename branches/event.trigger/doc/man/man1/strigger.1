@@ -1,24 +1,41 @@
 .TH SCONTROL "1" "March 2007" "strigger 1.2" "Slurm components"
 
 .SH "NAME"
-strigger \- Used set and get Slurm trigger information.
+strigger \- Used set, get or clear Slurm trigger information.
 
 .SH "SYNOPSIS"
-\fBstrigger\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
+\fBstrigger --set\fR   [\fIOPTIONS\fR...]
+.TP
+\fBstrigger --get\fR   [\fIOPTIONS\fR...]
+.TP
+\fBstrigger --clear\fR [\fIOPTIONS\fR...]
 
 .SH "DESCRIPTION"
-\fBstrigger\fR is used to set and get Slurm trigger information.
-Triggers include events such as a job reaching its time limit or 
-a node failing. 
+\fBstrigger\fR is used to set, get or clear Slurm trigger information.
+Triggers include events such as a node failing, a job reaching its 
+time limit or a job terminating.
 These events can cause actions such as the execution of an arbitrary 
 script. 
 Typical uses include notifying system administrators of node failures 
 and gracefully terminating a job when it's time limit is approaching.
 
-.SH "OPTIONS"
+.SH "ARGUMENTS"
+.TP
+\fB\-\-clear\fP
+Clear or delete a previously defined event trigger.
+
 .TP
 \fB\-d\fR, \fB\-\-down\fR
 Trigger an event if the specified node goes into a DOWN state.
+
+.TP
+\fB\-f\fR, \fB\-\-fini\fR
+Trigger an event when the specified job completes execution.
+
+.TP
+\fB\-\-get\fP
+Show registered event triggers.
+Specified options are used for filtering.
 
 .TP
 \fB\-i\fR, \fB\-\-id\fR
@@ -31,11 +48,10 @@ NOTE: The \fB\-\-jobid\fR option can not be used in conjunction with
 the \fB\-\-node\fR option.
 
 .TP
-\fB\-n\fR, \fB\-\-node\fR=\fIhost\fR
+\fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]
 Host name of interest. 
-A \fIhost\fR value of "*" is used to indicated all nodes and can 
-be used to trigger an event when an event occurs on any node in 
-the cluster.
+If no \fIhost\fR value is specified, all nodes associated with the 
+job (if \fB\-\-jobid\fR is specified) or on the system are included.
 NOTE: The \fB\-\-node\fR option can not be used in conjunction with 
 the \fB\-\-jobid\fR option.
 
@@ -43,7 +59,10 @@ the \fB\-\-jobid\fR option.
 \fB\-o\fR, \fB\-\-offset\fR=\fIseconds\fR
 The specified action should follow the event by this time interval.
 Specify a negative value if action should preceded the event.
-The default value is zero if no \fBoffset\fR option is specified.
+The default value is zero if no \fB\-\-offset\fR option is specified.
+The resolution of this time is about one minute, so to execute 
+a script not less than five minutes prior to a job reaching its 
+time limit, specify \fB\-\-offset=360\fR (six minutes).
 
 .TP
 \fB\-p\fR, \fB\-\-program\fR=\fIpath\fR
@@ -52,6 +71,13 @@ when the event occurs.
 The program will be executed as the user who sets the trigger.
 If the program fails to complete within a few seconds, it will 
 be killed.
+
+.TP
+\fB\-\-set\fP
+Register an event trigger based upon the supplied options.
+NOTE: An event is only triggered once. A new event trigger 
+must be set established for future events of the same type 
+to be processed. 
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR
@@ -71,25 +97,6 @@ record counts, etc.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
-
-.TP
-\fBCOMMANDS\fR
-
-.TP
-\fBclear\fP
-Clear or delete a previously defined event trigger.
-
-.TP
-\fBget\fP
-Show registered event triggers.
-Specified options are used for filtering.
-
-.TP
-\fBset\fP
-Register an event trigger based upon the supplied options.
-NOTE: An event is only triggered once. A new event trigger 
-must be set established for future events of the same type 
-to be processed. 
 
 .SH "OUTPUT FIELD DESCRIPTIONS"
 .TP
@@ -126,21 +133,23 @@ Execute the program "/usr/sbin/slurm_admin_notify" whenever
 any node in the cluster goes down. 
 
 .nf
-> cat /usr/sbin/slurm_admin_notify
-#!/bin/bash
-/usr/bin/strigger --node --down \\
-                  --program=/usr/sbin/slurm_admin_notify set
-/bin/mail slurm_admin@site.com -s NodeDown
+	> cat /usr/sbin/slurm_admin_notify
+	#!/bin/bash
+	strigger --set --node --down \\
+	         --program=/usr/sbin/slurm_admin_notify
+	/bin/mail slurm_admin@site.com -s NodeDown
 
-> strigger --node --down --program=/usr/sbin/slurm_admin_notify set
+	> strigger --set --node --down \\
+	           --program=/usr/sbin/slurm_admin_notify
 .fi
 
 .PP
 Execute the program "/home/joe/clean_up" when job 1234 is within 
-5 minutes of reaching its time limit.
+10 minutes of reaching its time limit.
 
 .nf
-> strigger --jobid=1234 --time --offset=-600 --program=/home/joe/clean_up set
+	> strigger --set --jobid=1234 --time --offset=-600 \\
+	           --program=/home/joe/clean_up
 .fi
 
 .PP
@@ -148,24 +157,32 @@ Execute the program "/home/joe/node_died" when any node allocated to
 job 1234 enters the DOWN state.
 
 .nf
-> strigger --jobid=1234 --down --program=/home/joe/node_died set
+	> strigger --set --jobid=1234 --down \\
+	           --program=/home/joe/node_died
 .fi
 
 .PP
 Show all triggers associated with job 1235.
 
 .nf
-> strigger --jobid=1235 get
-TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
-    123      job   1235 time   -600  joe /home/bob/clean_up
-    125      job   1235 down      0  joe /home/bob/node_died
+	> strigger --get --jobid=1235
+	TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
+	    123      job   1235 time   -600  joe /home/bob/clean_up
+	    125      job   1235 down      0  joe /home/bob/node_died
 .fi
 
 .PP
 Delete event trigger 125.
 
 .fp
-> strigger --id=125 clear
+	> strigger --clear --id=125
+.fi
+
+.PP
+Execute /home/joe/job_fini upon completion of job 1237.
+
+.fp
+	> strigger --set --jobid=1237 --fini --program=/home/joe/job_fini
 .fi
 
 .SH "COPYING"
