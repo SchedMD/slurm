@@ -1,0 +1,180 @@
+.TH SCONTROL "1" "March 2007" "strigger 1.2" "Slurm components"
+
+.SH "NAME"
+strigger \- Used set and get Slurm trigger information.
+
+.SH "SYNOPSIS"
+\fBstrigger\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
+
+.SH "DESCRIPTION"
+\fBstrigger\fR is used to set and get Slurm trigger information.
+Triggers include events such as a job reaching its time limit or 
+a node failing. 
+These events can cause actions such as the execution of an arbitrary 
+script. 
+Typical uses include notifying system administrators of node failures 
+and gracefully terminating a job when it's time limit is approaching.
+
+.SH "OPTIONS"
+.TP
+\fB\-d\fR, \fB\-\-down\fR
+Trigger an event if the specified node goes into a DOWN state.
+
+.TP
+\fB\-i\fR, \fB\-\-id\fR
+Trigger ID number.
+
+.TP
+\fB\-j\fR, \fB\-\-jobid\fR=\fIid\fR
+Job ID of interest.
+NOTE: The \fB\-\-jobid\fR option can not be used in conjunction with 
+the \fB\-\-node\fR option.
+
+.TP
+\fB\-n\fR, \fB\-\-node\fR=\fIhost\fR
+Host name of interest. 
+A \fIhost\fR value of "*" is used to indicated all nodes and can 
+be used to trigger an event when an event occurs on any node in 
+the cluster.
+NOTE: The \fB\-\-node\fR option can not be used in conjunction with 
+the \fB\-\-jobid\fR option.
+
+.TP
+\fB\-o\fR, \fB\-\-offset\fR=\fIseconds\fR
+The specified action should follow the event by this time interval.
+Specify a negative value if action should preceeded the event.
+The default value is zero if no \fBoffset\fR option is specified.
+
+.TP
+\fB\-p\fR, \fB\-\-program\fR=\fIpath\fR
+Execute the program at the specified fully qualified pathname
+when the event occurs.
+The program will be executed as the user who sets the trigger.
+If the program fails to complete within a few seconds, it will 
+be killed.
+
+.TP
+\fB\-t\fR, \fB\-\-time\fR
+Trigger an event when the specified job's time limit is reached.
+This must be used in conjunction with the \fB\-\-node\fR option.
+
+.TP
+\fB\-u\fR, \fB\-\-up\fR
+Trigger an event if the specified node is returned to service
+from a DOWN state.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Print detailed event logging. This includes time\-stamps on data structures, 
+record counts, etc.
+
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
+
+.TP
+\fBCOMMANDS\fR
+
+.TP
+\fBget\fP
+Show registered event triggers.
+Specified options are used for filtering.
+
+.TP
+\fBset\fP
+Register an event trigger based upon the supplied options.
+NOTE: An event is only triggered once. A new event trigger 
+must be set established for future events of the same type 
+to be processed. 
+
+.SH "OUTPUT FIELD DESCRIPTIONS"
+.TP
+\fBTRIG_ID\fP
+Trigger ID number.
+
+.TP
+\fBRES_TYPE\fP
+Resource type: job or node
+
+.TP
+\fBRES_ID\fP
+Resource ID: job ID or host name or "*" for any host
+
+.TP
+\fBTYPE\fP
+Trigger type: time (for jobs only), down or up (for jobs or nodes)
+
+.TP
+\fBOFFSET\fP
+Time offset in seconds. Negative numbers indicated the action should 
+occur before the event (if possible)
+
+.TP
+\fBUSER\fP
+Name of the user requesting the action
+
+.TP
+\fBPROGRAM\fP
+Pathname of the program to execute when the event occurs
+
+.SH "EXAMPLES"
+Execute the program "/usr/sbin/slurm_admin_notify" whenever 
+any node in the cluster goes down. 
+
+.nf
+> cat /usr/sbin/slurm_admin_notify
+#!/bin/bash
+/usr/bin/strigger --node --down \\
+                  --program=/usr/sbin/slurm_admin_notify set
+/bin/mail slurm_admin@site.com -s NodeDown
+
+> strigger --node --down --program=/usr/sbin/slurm_admin_notify set
+.fi
+
+.PP
+Execute the program "/home/joe/clean_up" when job 1234 is within 
+5 minutes of reaching its time limit.
+
+.nf
+> strigger --jobid=1234 --time --offset=-600 --program=/home/joe/clean_up set
+.fi
+
+.PP
+Execute the program "/home/joe/node_died" when any node allocated to
+job 1234 enters the DOWN state.
+
+.nf
+> strigger --jobid=1234 --down --program=/home/joe/node_died set
+.fi
+
+.PP
+Show all triggers associated with job 1235.
+
+.nf
+> strigger --jobid=1235 get
+TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
+    123      job   1235 time   -600  joe /home/bob/clean_up
+    125      job   1235 down      0  joe /home/bob/node_died
+.fi
+
+.SH "COPYING"
+Copyright (C) 2007 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL\-CODE\-226842.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBscontrol\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1)
+
