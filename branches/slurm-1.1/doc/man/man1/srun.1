@@ -922,11 +922,20 @@ The location of the SLURM configuration file.
 \fBSLURMD_DEBUG\fR
 \fB\-d, \-\-slurmd-debug\fR
 .TP
+\fBSLURM_DEPENDENCY\fR
+\fB\-P, \-\-dependency\fR=\fIjobid\fR
+.TP
+\fBSLURM_DISABLE_STATUS\fR
+\fB\-X, \-\-disable-status\fR
+.TP
 \fBSLURM_DISTRIBUTION\fR
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic|hostfile\fR)
 .TP
 \fBSLURM_GEOMETRY\fR
 \fB\-g, \-\-geometry\fR=\fIX,Y,Z\fR
+.TP
+\fBSLURM_JOB_NAME\fR
+\fB\-J, \-\-job\-name\fR=\fIjobname\fR
 .TP
 \fBSLURM_LABELIO\fR
 \fB-l, --label\fR
@@ -981,8 +990,8 @@ The location of the SLURM configuration file.
 \fBSLURM_WAIT\fR
 \fB\-W, \-\-wait\fR=\fIseconds\fR
 .TP
-\fBSLURM_DISABLE_STATUS\fR
-\fB\-X, \-\-disable-status\fR
+\fBSLURM_WORKING_DIR\fR
+\fB\-D, \-\-chdir\fR=\fIpath\fR
 .PP
 Additionally,
 .B srun
