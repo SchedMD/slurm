@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.2
 ========================
+ -- Added new command "strigger" for event trigger support.
 
 * Changes in SLURM 1.2.1
 ========================
