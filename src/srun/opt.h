@@ -99,7 +99,8 @@ typedef struct srun_options {
 	uid_t euid;		/* effective user --uid=user	*/
 	gid_t egid;		/* effective group --gid=group	*/
 	char *cwd;		/* current working directory	*/
-
+	bool cwd_set;		/* true if cwd is explicitly set */
+	
 	int  nprocs;		/* --nprocs=n,      -n n	*/
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
@@ -117,6 +118,7 @@ typedef struct srun_options {
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
+	bool job_name_set;	/* true if job_name explicitly set */
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true of jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
