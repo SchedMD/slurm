@@ -83,6 +83,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int first = 1;
 	int opt_char;
 	int option_index;
+	long tmp_l;
 	static struct option long_options[] = {
 		{"down",      no_argument,       0, 'd'},
 		{"fini",      no_argument,       0, 'f'},
@@ -127,7 +128,12 @@ extern void parse_command_line(int argc, char *argv[])
 			params.trigger_id = atoi(optarg);
 			break;
 		case (int)'j':
-			params.job_id = atoi(optarg);
+			tmp_l = atol(optarg);
+			if (tmp_l <= 0) {
+				error("Invalid job id %s", optarg);
+				exit(1);
+			}
+			params.job_id = tmp_l;
 			break;
 		case (int)'n':
 			xfree(params.node_id);
@@ -237,8 +243,20 @@ static void _validate_options( void )
 		error("You must specify a trigger (--down, --up, --time or --fini)");
 		exit(1);
 	}
+
 	if (params.mode_set && (params.program == NULL)) {
 		error("You must specify a --program value");
+		exit(1);
+	}
+
+	if (((params.job_fini + params.time_limit) != 0)
+	&&  (params.job_id == 0)) {
+		error("You must specify a --jobid value");
+		exit(1);
+	}
+
+	if (params.program && (params.program[0] != '/')) {
+		error("The --program value must start with \"/\"");
 		exit(1);
 	}
 }

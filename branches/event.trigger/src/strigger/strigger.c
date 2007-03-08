@@ -41,11 +41,13 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <slurm/slurm_errno.h>
+#include <slurm/slurm.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -53,8 +55,17 @@
 #include "src/common/xstring.h"
 #include "src/strigger/strigger.h"
 
+static int   _clear_trigger(void);
+static int   _get_trigger(void);
+static char *_res_type(uint8_t  res_type);
+static int   _set_trigger(void);
+static int   _trig_offset(uint16_t offset);
+static char *_trig_type(uint8_t  trig_type);
+static char *_trig_user(uint32_t user_id);
+
 int main(int argc, char *argv[])
 {
+	int rc = 0;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("strigger", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
@@ -64,7 +75,187 @@ int main(int argc, char *argv[])
 		log_alter(opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
 
-info("code under development");
+	if      (params.mode_set)
+		rc = _set_trigger();
+	else if (params.mode_get)
+		rc = _get_trigger();
+	else if (params.mode_clear)
+		rc = _clear_trigger();
+	else {
+		error("Invalid mode");
+		rc = 1;
+	}
 
-	exit(0);
+	exit(rc);
 }
+
+static int _clear_trigger(void)
+{
+	trigger_info_t ti;
+	char tmp_c[128];
+
+	bzero(&ti, sizeof(trigger_info_t));
+	ti.trig_id	= params.trigger_id;
+	if (params.job_id) {
+		ti.res_type = 1;
+		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
+		ti.res_id   = tmp_c;
+	}
+	if (slurm_clear_trigger(ti)) {
+		slurm_perror("slurm_clear_trigger");
+		return 1;
+	}
+
+	if (params.job_id) {
+		info("triggers for job %s cleared", ti.res_id);
+	} else
+		info("trigger %u cleared", ti.trig_id);
+	return 0;
+}
+
+static int _set_trigger(void)
+{
+	info("code under development");
+	return 1;
+}
+
+static int _get_trigger(void)
+{
+	trigger_info_msg_t * trig_msg;
+	int line_no = 0, i;
+
+	if (slurm_get_triggers(&trig_msg)) {
+		slurm_perror("slurm_get_triggers");
+		return 1;
+	}
+	if (params.verbose)
+		info("Read %u trigger records", trig_msg->record_count);
+
+	for (i=0; i<trig_msg->record_count; i++) {
+		/* perform filtering */
+		if (params.job_fini) {
+			if (trig_msg->trigger_array[i].trig_type != 4)
+				continue;
+		}
+		if (params.job_id) {
+			long jid;
+			if (trig_msg->trigger_array[i].res_type != 1)
+				continue;
+			jid = atol(trig_msg->trigger_array[i].res_id);
+			if (jid != params.job_id)
+				continue;
+		}
+		if (params.node_down) {
+			if ((trig_msg->trigger_array[i].res_type  != 2)
+			||  (trig_msg->trigger_array[i].trig_type != 2))
+				continue;
+		}
+		if (params.node_id) {
+			/* no filtering performed, avoid hostlist support */
+		}
+		if (params.node_up) {
+			if ((trig_msg->trigger_array[i].res_type  != 2)
+			||  (trig_msg->trigger_array[i].trig_type != 1))
+				continue;
+		}
+		if (params.time_limit) {
+			if ((trig_msg->trigger_array[i].res_type  != 1)
+			||  (trig_msg->trigger_array[i].trig_type != 3))
+				continue;
+		}
+		if (params.trigger_id) {
+			if (params.trigger_id != 
+			    trig_msg->trigger_array[i].trig_id)
+				continue;
+		}
+
+		if (line_no == 0) {
+			/*      7777777 88888888 7777777 4444 666666 88888888 xxxxxxx */
+			printf("TRIG_ID RES_TYPE  RES_ID TYPE OFFSET     USER PROGRAM\n");
+		}
+		line_no++;
+
+		printf("%7u %8s %7s %4s %6d %8.8s %s\n",
+			trig_msg->trigger_array[i].trig_id,
+			_res_type(trig_msg->trigger_array[i].res_type),
+			trig_msg->trigger_array[i].res_id,
+			_trig_type(trig_msg->trigger_array[i].trig_type),
+			_trig_offset(trig_msg->trigger_array[i].offset),
+			_trig_user(trig_msg->trigger_array[i].user_id),
+			trig_msg->trigger_array[i].program);
+	}
+
+	slurm_free_triggers(trig_msg);
+	return 0;
+}
+
+static char *_res_type(uint8_t  res_type)
+{
+	if      (res_type == 1)
+		return "job";
+	else if (res_type == 2)
+		return "node";
+	else
+		return "unknown";
+}
+
+static char *_trig_type(uint8_t  trig_type)
+{
+	if      (trig_type == 1)
+		return "up";
+	else if (trig_type == 2)
+		return "down";
+	else if (trig_type == 3)
+		return "time";
+	else if (trig_type == 4)
+		return "fini";
+	else
+		return "unknown";
+}
+
+static int _trig_offset(uint16_t offset)
+{
+	static int rc;
+	rc  = offset;
+	rc -= 0x8000;
+	return rc;
+}
+
+static char *_trig_user(uint32_t user_id)
+{
+	uid_t uid = user_id;
+	struct passwd *pw;
+
+	pw = getpwuid(uid);
+	if (pw == NULL)
+		return "unknown";
+	return pw->pw_name;
+}
+
+#if 0
+typedef struct trigger_info {
+	uint32_t trig_id;	/* trigger ID */
+	uint8_t  res_type;	/* 1=job, 2=node */
+	char *   res_id;	/* resource ID */
+	uint8_t  trig_type;	/* 1=node_up, 2=node_down, 3=job_time */
+	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
+	uint32_t user_id;	/* user requesting trigger */
+	char *   program;	/* program to execute */
+} trigger_info_t;
+
+struct strigger_parameters {
+	bool     job_fini;
+	uint32_t job_id;
+	bool     mode_set;
+	bool     mode_get;
+	bool     mode_clear;
+	bool     node_down;
+	char *   node_id;
+	bool     node_up;
+	int      offset;
+	char *   program;
+	bool     time_limit;
+	uint32_t trigger_id;
+	int      verbose;
+};
+#endif

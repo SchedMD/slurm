@@ -942,11 +942,10 @@ typedef struct trigger_info {
 	uint32_t trig_id;	/* trigger ID */
 	uint8_t  res_type;	/* 1=job, 2=node */
 	char *   res_id;	/* resource ID */
-	uint8_t  trig_type;	/* 1=node_up, 2=node_down, 3=job_time */
+	uint8_t  trig_type;	/* 1=node_up, 2=node_down, 3=job_time 4=job_fini */
 	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
 	uint32_t user_id;	/* user requesting trigger */
 	char *   program;	/* program to execute */
-	uint32_t trigger_id;	/* trigger ID */
 } trigger_info_t;
 
 typedef struct trigger_info_msg {
