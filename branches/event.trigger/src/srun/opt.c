@@ -917,6 +917,7 @@ static void _opt_default()
 	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
 		fatal("getcwd failed: %m");
 	opt.cwd = xstrdup(buf);
+	opt.cwd_set = false;
 
 	opt.progname = NULL;
 
@@ -948,6 +949,7 @@ static void _opt_default()
 	opt.relative = NO_VAL;
 	opt.relative_set = false;
 	opt.job_name = NULL;
+	opt.job_name_set = false;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
 	opt.dependency = NO_VAL;
@@ -1064,49 +1066,52 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-	{"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-	{"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           },
-	{"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
-	{"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
-	{"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-	{"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
-	{"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-	{"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-	{"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
-	{"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-	{"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
-	{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
-	{"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
-	{"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
-	{"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL           },
-	{"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
-	{"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
-	{"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL           },
-	{"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL           },
-	{"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL           },
-	{"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL           },
-	{"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-	{"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
-	{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-	{"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-	{"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
-	{"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
-	{"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
-	{"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL           },
-	{"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL           },
-	{"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
-	{"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-	{"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
-	{"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
-	{"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL           },
-	{"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL           },
-	{"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL           },
-	{"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL           },
-	{"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL           },
-	{"SLURM_EPILOG",        OPT_STRING,     &opt.epilog,        NULL           },
-	{"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL           },
-	{"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL           },
-	{NULL, 0, NULL, NULL}
+{"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
+{"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL             },
+{"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
+{"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
+{"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
+{"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL             },
+{"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
+{"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
+{"SLURM_DEPENDENCY",    OPT_INT,        &opt.dependency,    NULL             },
+{"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
+{"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
+{"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL             },
+{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,      &opt.job_name_set},
+{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
+{"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
+{"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
+{"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
+{"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
+{"SLURM_NNODES",        OPT_NODES,      NULL,               NULL             },
+{"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
+{"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
+{"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL             },
+{"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL             },
+{"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
+{"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set  },
+{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
+{"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
+{"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
+{"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
+{"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
+{"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL             },
+{"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL             },
+{"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL             },
+{"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
+{"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
+{"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
+{"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL             },
+{"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
+{"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL             },
+{"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL             },
+{"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL             },
+{"SLURM_EPILOG",        OPT_STRING,     &opt.epilog,        NULL             },
+{"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL             },
+{"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
+{"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
+{NULL, 0, NULL, NULL}
 };
 
 
@@ -1314,7 +1319,6 @@ _get_resource_range(const char *arg, const char *what, int* min, int *max,
 void set_options(const int argc, char **argv, int first)
 {
 	int opt_char, option_index = 0;
-	static bool set_cwd=false, set_name=false;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        required_argument, 0, 'a'},
@@ -1524,10 +1528,10 @@ void set_options(const int argc, char **argv, int first)
 				_get_int(optarg, "slurmd-debug", false);
 			break;
 		case (int)'D':
-			if(!first && set_cwd)
+			if(!first && opt.cwd_set)
 				break;
 
-			set_cwd = true;
+			opt.cwd_set = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
@@ -1567,10 +1571,10 @@ void set_options(const int argc, char **argv, int first)
 			opt.join = true;
 			break;
 		case (int)'J':
-			if(!first && set_name)
+			if(!first && opt.job_name_set)
 				break;
 
-			set_name = true;
+			opt.job_name_set = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
@@ -2745,7 +2749,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI commaunications from srun\n"
+"      --ctrl-comm-ifhn=addr   interface hostname for PMI communications from srun\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"

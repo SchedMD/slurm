@@ -47,8 +47,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	tryssldir="$tryssldir $prefix"
   fi
   if test "x$tryssldir" == "xno" ; then
-     AC_MSG_ERROR([OpenSSL libary is required for SLURM operation])
-     AC_MSG_ERROR([Download and install OpenSSL from http://www.openssl.org/])
+     AC_MSG_ERROR([OpenSSL libary is required for SLURM operation, download from www.openssl.org])
   fi
   
   AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
@@ -109,8 +108,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	done
   
   	if test -z "$found_crypto" ; then
-  		AC_MSG_ERROR([Could not find working OpenSSL library)]
-		AC_MSG_ERROR([Download and install OpenSSL from http://www.openssl.org/])
+  		AC_MSG_ERROR([Could not find working OpenSSL library, download from www.openssl.org])
   	fi
   	if test -z "$ssldir" ; then
   		ssldir="(system)"
