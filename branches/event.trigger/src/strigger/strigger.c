@@ -97,7 +97,7 @@ static int _clear_trigger(void)
 	bzero(&ti, sizeof(trigger_info_t));
 	ti.trig_id	= params.trigger_id;
 	if (params.job_id) {
-		ti.res_type = 1;
+		ti.res_type = TRIGGER_RES_TYPE_JOB;
 		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
 		ti.res_id   = tmp_c;
 	}
@@ -106,17 +106,46 @@ static int _clear_trigger(void)
 		return 1;
 	}
 
-	if (params.job_id) {
+	if (params.job_id)
 		info("triggers for job %s cleared", ti.res_id);
-	} else
+	else
 		info("trigger %u cleared", ti.trig_id);
 	return 0;
 }
 
 static int _set_trigger(void)
 {
-	info("code under development");
-	return 1;
+	trigger_info_t ti;
+	char tmp_c[128];
+
+	bzero(&ti, sizeof(trigger_info_t));
+	if (params.job_id) {
+		ti.res_type = TRIGGER_RES_TYPE_JOB;
+		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
+		ti.res_id = tmp_c;
+		if (params.job_fini)
+			ti.trig_type |= TRIGGER_TYPE_FINI;
+		if (params.time_limit)
+			ti.trig_type |= TRIGGER_TYPE_TIME;
+	} else {
+		ti.res_type = TRIGGER_RES_TYPE_NODE;
+		ti.res_id   = params.node_id;	/* may be NULL */
+	}
+	if (params.node_down)
+		ti.trig_type |= TRIGGER_TYPE_DOWN;
+	if (params.node_up)
+		ti.trig_type |= TRIGGER_TYPE_UP;
+	ti.offset = params.offset + 0x8000;
+	ti.program = params.program;
+
+	if (slurm_set_trigger(ti)) {
+		slurm_perror("slurm_set_trigger");
+		return 1;
+	}
+
+
+	info("trigger set");
+	return 0;
 }
 
 static int _get_trigger(void)
@@ -191,9 +220,9 @@ static int _get_trigger(void)
 
 static char *_res_type(uint8_t  res_type)
 {
-	if      (res_type == 1)
+	if      (res_type == TRIGGER_RES_TYPE_JOB)
 		return "job";
-	else if (res_type == 2)
+	else if (res_type == TRIGGER_RES_TYPE_NODE)
 		return "node";
 	else
 		return "unknown";
@@ -201,13 +230,13 @@ static char *_res_type(uint8_t  res_type)
 
 static char *_trig_type(uint8_t  trig_type)
 {
-	if      (trig_type == 1)
+	if      (trig_type == TRIGGER_TYPE_UP)
 		return "up";
-	else if (trig_type == 2)
+	else if (trig_type == TRIGGER_TYPE_DOWN)
 		return "down";
-	else if (trig_type == 3)
+	else if (trig_type == TRIGGER_TYPE_TIME)
 		return "time";
-	else if (trig_type == 4)
+	else if (trig_type == TRIGGER_TYPE_FINI)
 		return "fini";
 	else
 		return "unknown";
@@ -231,31 +260,3 @@ static char *_trig_user(uint32_t user_id)
 		return "unknown";
 	return pw->pw_name;
 }
-
-#if 0
-typedef struct trigger_info {
-	uint32_t trig_id;	/* trigger ID */
-	uint8_t  res_type;	/* 1=job, 2=node */
-	char *   res_id;	/* resource ID */
-	uint8_t  trig_type;	/* 1=node_up, 2=node_down, 3=job_time */
-	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
-	uint32_t user_id;	/* user requesting trigger */
-	char *   program;	/* program to execute */
-} trigger_info_t;
-
-struct strigger_parameters {
-	bool     job_fini;
-	uint32_t job_id;
-	bool     mode_set;
-	bool     mode_get;
-	bool     mode_clear;
-	bool     node_down;
-	char *   node_id;
-	bool     node_up;
-	int      offset;
-	char *   program;
-	bool     time_limit;
-	uint32_t trigger_id;
-	int      verbose;
-};
-#endif

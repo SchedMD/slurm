@@ -240,7 +240,8 @@ static void _validate_options( void )
 	if (params.mode_set
 	&&  ((params.node_down + params.node_up +
 	      params.job_fini  + params.time_limit) == 0)) {
-		error("You must specify a trigger (--down, --up, --time or --fini)");
+		error("You must specify a trigger (--down, --up, "
+			"--time or --fini)");
 		exit(1);
 	}
 
@@ -257,6 +258,11 @@ static void _validate_options( void )
 
 	if (params.program && (params.program[0] != '/')) {
 		error("The --program value must start with \"/\"");
+		exit(1);
+	}
+
+	if ((params.offset < -32000) || (params.offset > 32000)) {
+		error("The --offset parameter must be between +/-32000");
 		exit(1);
 	}
 }

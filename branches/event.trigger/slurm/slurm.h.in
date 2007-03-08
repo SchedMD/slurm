@@ -938,11 +938,17 @@ typedef struct partition_info update_part_msg_t;
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 
+#define TRIGGER_RES_TYPE_JOB   1
+#define TRIGGER_RES_TYPE_NODE  2
+#define TRIGGER_TYPE_UP        1
+#define TRIGGER_TYPE_DOWN      2
+#define TRIGGER_TYPE_TIME      4
+#define TRIGGER_TYPE_FINI      8
 typedef struct trigger_info {
 	uint32_t trig_id;	/* trigger ID */
-	uint8_t  res_type;	/* 1=job, 2=node */
+	uint8_t  res_type;	/* TRIGGER_RES_TYPE_* */
 	char *   res_id;	/* resource ID */
-	uint8_t  trig_type;	/* 1=node_up, 2=node_down, 3=job_time 4=job_fini */
+	uint8_t  trig_type;	/* TRIGGER_TYPE_* */
 	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
 	uint32_t user_id;	/* user requesting trigger */
 	char *   program;	/* program to execute */
