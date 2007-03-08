@@ -101,7 +101,7 @@ static int _clear_trigger(void)
 		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
 		ti.res_id   = tmp_c;
 	}
-	if (slurm_clear_trigger(ti)) {
+	if (slurm_clear_trigger(&ti)) {
 		slurm_perror("slurm_clear_trigger");
 		return 1;
 	}
@@ -138,7 +138,7 @@ static int _set_trigger(void)
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
 
-	if (slurm_set_trigger(ti)) {
+	if (slurm_set_trigger(&ti)) {
 		slurm_perror("slurm_set_trigger");
 		return 1;
 	}
