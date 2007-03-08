@@ -1,14 +1,14 @@
-/****************************************************************************\
- *  strigger.h - definitions used for strigger functions
+/*****************************************************************************\
+ *  strigger.c - Manage slurm event triggers
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
- *
+ *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
- *
+ *  
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
@@ -24,46 +24,47 @@
  *  so. If you do not wish to do so, delete this exception statement from your
  *  version.  If you delete this exception statement from all source files in 
  *  the program, then also delete it here.
- *
+ *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *
+ *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-\****************************************************************************/
-
-#ifndef _STRIGGER_H
-#define _STRIGGER_H
+\*****************************************************************************/
 
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#include <slurm/slurm.h>
-#include <src/common/macros.h>
-#include <src/common/slurm_protocol_defs.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+#include <slurm/slurm_errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-struct strigger_parameters {
-	bool     job_fini;
-	uint32_t job_id;
-	bool     mode_set;
-	bool     mode_get;
-	bool     mode_clear;
-	bool     node_down;
-	char *   node_id;
-	bool     node_up;
-	int      offset;
-	char *   program;
-	bool     time_limit;
-	uint32_t trigger_id;
-	int      verbose;
-};
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/strigger/strigger.h"
 
-extern struct strigger_parameters params;
+int main(int argc, char *argv[])
+{
+	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+	log_init("strigger", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-extern void parse_command_line(int argc, char *argv[]);
+	parse_command_line(argc, argv);
+	if (params.verbose) {
+		opts.stderr_level += params.verbose;
+		log_alter(opts, SYSLOG_FACILITY_DAEMON, NULL);
+	}
 
-#endif
+info("code under development");
+
+	exit(0);
+}

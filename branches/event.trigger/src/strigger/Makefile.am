@@ -11,7 +11,7 @@ strigger_LDADD =					  \
 	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = strigger.h
-strigger_SOURCES = sttrigger.c opts.c
+strigger_SOURCES = strigger.c opts.c
 
 force:
 $(strigger_LDADD) : force

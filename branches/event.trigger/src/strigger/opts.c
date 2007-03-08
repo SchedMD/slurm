@@ -53,6 +53,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/strigger/strigger.h"
 
@@ -70,14 +71,15 @@ static void     _init_options( void );
 static void     _print_options( void );
 static void     _print_version( void );
 static void     _usage( void );
-static void     _validate_version( void );
+static void     _validate_options( void );
+
+struct strigger_parameters params;
 
 /*
  * parse_command_line, fill in params data structure with data
  */
 extern void parse_command_line(int argc, char *argv[])
 {
-	char *env_val = NULL;
 	int first = 1;
 	int opt_char;
 	int option_index;
@@ -130,16 +132,16 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int)'n':
 			xfree(params.node_id);
 			if (optarg)
-				params.node_id = xstrcpy(optarg);
+				params.node_id = xstrdup(optarg);
 			else
-				params.node_id = xstrcpy("*");
+				params.node_id = xstrdup("*");
 			break;
 		case (int)'o':
 			params.offset = atoi(optarg);
 			break;
 		case (int)'p':
 			xfree(params.program);
-			params.program = xstrcpy(optarg);
+			params.program = xstrdup(optarg);
 			break;
 		case (int)'t':
 			params.time_limit = true;
@@ -177,7 +179,7 @@ extern void parse_command_line(int argc, char *argv[])
 }
 
 /* initialize the parameters */
-static void _print_options( void )
+static void _init_options( void )
 {
 	params.mode_set   = false;
 	params.mode_get   = false;
