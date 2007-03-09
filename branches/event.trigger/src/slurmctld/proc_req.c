@@ -2490,13 +2490,21 @@ inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
 inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 {
 	uid_t uid;
+	trigger_info_msg_t *resp_data;
+	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	slurm_msg_t response_msg;
 
 	debug("Processing RPC: REQUEST_TRIGGER_GET");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	trigger_get(uid, msg->conn_fd);
-/* FIXME */
-	slurm_send_rc_msg(msg, SLURM_ERROR);
+	resp_data = trigger_get(uid, trigger_ptr);
+
+	slurm_msg_t_init(&response_msg);
+	response_msg.address  = msg->address;
+	response_msg.msg_type = RESPONSE_TRIGGER_GET;
+	response_msg.data     = resp_data;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	slurm_free_trigger_msg(resp_data);
 }
 
 inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)

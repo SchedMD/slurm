@@ -44,7 +44,7 @@
 
 
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg);
-extern int trigger_get(uid_t uid, slurm_fd conn_fd);
+extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg);
 extern int trigger_set(uid_t uid, trigger_info_msg_t *msg);
 
 #endif /* !_HAVE_TRIGGERS_H */

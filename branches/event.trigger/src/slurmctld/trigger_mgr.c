@@ -178,12 +178,13 @@ fini:	slurm_mutex_unlock(&trigger_mutex);
 	return rc;
 }
 
-extern int trigger_get(uid_t uid, slurm_fd conn_fd)
+extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 {
 	trigger_info_msg_t *resp_data;
 	ListIterator trig_iter;
 	trigger_info_t *trig_out;
 	trig_mgr_info_t *trig_in;
+	int recs_written = 0;
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_list == NULL)
@@ -197,6 +198,8 @@ extern int trigger_get(uid_t uid, slurm_fd conn_fd)
 	trig_iter = list_iterator_create(trigger_list);
 	trig_out = resp_data->trigger_array;
 	while ((trig_in = list_next(trig_iter))) {
+		/* FIXME: filter entries here */
+
 		trig_out->trig_id   = trig_in->trig_id;
 		trig_out->res_type  = trig_in->res_type;
 		trig_out->res_id    = xstrdup(trig_in->res_id);
@@ -205,14 +208,14 @@ extern int trigger_get(uid_t uid, slurm_fd conn_fd)
 		trig_out->user_id   = trig_in->user_id;
 		trig_out->program   = xstrdup(trig_in->program);
 		trig_out++;
+		recs_written++;
 	}
 	list_iterator_destroy(trig_iter);
 	slurm_mutex_unlock(&trigger_mutex);
+	resp_data->record_count = recs_written;
 
 	_dump_trigger_msg("trigger_got", resp_data);
-/* Send the message here */
-	slurm_free_trigger_msg(resp_data);
-	return SLURM_SUCCESS;
+	return resp_data;
 }
 
 extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
