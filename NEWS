@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.2
 ========================
+ -- srun --get-user-env now sends su's stderr to /dev/null
 
 * Changes in SLURM 1.2.1
 ========================
