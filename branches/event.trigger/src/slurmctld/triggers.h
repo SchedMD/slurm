@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  ping_nodes.h - header to manager node ping
+ *  triggers.h - header to manager event triggers
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -35,39 +35,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_PING_NODES_H
-#define _HAVE_PING_NODES_H
+#ifndef _HAVE_TRIGGERS_H
+#define _HAVE_TRIGGERS_H
 
-#include "src/common/macros.h"
+#include <unistd.h>
+#include <sys/types.h>
+#include <src/common/slurm_protocol_defs.h>
 
-/*
- * is_ping_done - test if the last node ping cycle has completed.
- *	Use this to avoid starting a new set of ping requests before the 
- *	previous one completes
- * RET true if ping process is done, false otherwise
- */
-extern bool is_ping_done (void);
 
-/*
- * ping_begin - record that a ping cycle has begin. This can be called more 
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION 
- *	for selected nodes). Matching ping_end calls must be made for each 
- *	before is_ping_done returns true.
- */
-extern void ping_begin (void);
+extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg, slurm_fd conn_fd);
+extern int trigger_get(uid_t uid, slurm_fd conn_fd);
+extern int trigger_set(uid_t uid, trigger_info_msg_t *msg, slurm_fd conn_fd);
 
-/*
- * ping_end - record that a ping cycle has ended. This can be called more 
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION 
- *	for selected nodes). Matching ping_end calls must be made for each 
- *	before is_ping_done returns true.
- */
-extern void ping_end (void);
-
-/*
- * ping_nodes - check that all nodes and daemons are alive,  
- *	get nodes in UNKNOWN state to register
- */
-extern void ping_nodes (void);
-
-#endif /* !_HAVE_PING_NODES_H */
+#endif /* !_HAVE_TRIGGERS_H */

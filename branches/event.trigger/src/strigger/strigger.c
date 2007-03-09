@@ -214,7 +214,7 @@ static int _get_trigger(void)
 			trig_msg->trigger_array[i].program);
 	}
 
-	slurm_free_triggers(trig_msg);
+	slurm_free_trigger_msg(trig_msg);
 	return 0;
 }
 

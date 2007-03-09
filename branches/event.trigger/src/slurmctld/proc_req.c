@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew
  *  <tew1@llnl.gov>, et. al. 
@@ -76,6 +76,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/triggers.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
@@ -114,6 +115,9 @@ inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
+inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
+inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg);
+inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
@@ -268,6 +272,17 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_STEP_LAYOUT:
 		_slurm_rpc_step_layout(msg);
 		slurm_free_job_step_id_msg(msg->data);
+		break;
+	case REQUEST_TRIGGER_SET:
+		_slurm_rpc_trigger_set(msg);
+		slurm_free_trigger_msg(msg->data);
+		break;
+	case REQUEST_TRIGGER_GET:
+		_slurm_rpc_trigger_get(msg);
+		break;
+	case REQUEST_TRIGGER_CLEAR:
+		_slurm_rpc_trigger_clear(msg);
+		slurm_free_trigger_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -2459,3 +2474,34 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	return SLURM_SUCCESS;
 }
 
+inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
+{
+	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	uid_t uid;
+
+	info("Processing RPC: REQUEST_TRIGGER_CLEAR");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	trigger_clear(uid, trigger_ptr, msg->conn_fd);
+}
+
+inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
+{
+	uid_t uid;
+
+	info("Processing RPC: REQUEST_TRIGGER_GET");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	trigger_get(uid, msg->conn_fd);
+}
+
+inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
+{
+	uid_t uid;
+	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+
+	info("Processing RPC: REQUEST_TRIGGER_SET");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	trigger_set(uid, trigger_ptr, msg->conn_fd);
+}

@@ -108,7 +108,7 @@ extern int slurm_clear_trigger (trigger_info_t *trigger_clear)
 
 /*
  * slurm_get_triggers - Get all event trigger information
- * Use slurm_free_triggers() to free the memory allocated by this function
+ * Use slurm_free_trigger() to free the memory allocated by this function
  * RET 0 or a slurm error code
  */
 extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get)
@@ -145,22 +145,4 @@ extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get)
 	}
 
 	return SLURM_PROTOCOL_SUCCESS ;
-}
-
-/*
- * slurm_free_triggers - Free data structure returned by slurm_get_triggers()
- * RET 0 or a slurm error code
- */
-extern int slurm_free_triggers (trigger_info_msg_t * trigger_free)
-{
-	int i;
-
-	for (i=0; i<trigger_free->record_count; i++) {
-		xfree(trigger_free->trigger_array[i].res_id);
-		xfree(trigger_free->trigger_array[i].program);
-	}
-	xfree(trigger_free->trigger_array);
-	xfree(trigger_free);
-
-	return SLURM_SUCCESS;
 }

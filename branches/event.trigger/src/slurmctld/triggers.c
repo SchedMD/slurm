@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  ping_nodes.h - header to manager node ping
+ *  triggers.c - Event trigger management
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -35,39 +35,86 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_PING_NODES_H
-#define _HAVE_PING_NODES_H
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-#include "src/common/macros.h"
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif
 
-/*
- * is_ping_done - test if the last node ping cycle has completed.
- *	Use this to avoid starting a new set of ping requests before the 
- *	previous one completes
- * RET true if ping process is done, false otherwise
- */
-extern bool is_ping_done (void);
+#include "src/slurmctld/triggers.h"
 
-/*
- * ping_begin - record that a ping cycle has begin. This can be called more 
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION 
- *	for selected nodes). Matching ping_end calls must be made for each 
- *	before is_ping_done returns true.
- */
-extern void ping_begin (void);
+#define _DEBUG 1
 
-/*
- * ping_end - record that a ping cycle has ended. This can be called more 
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION 
- *	for selected nodes). Matching ping_end calls must be made for each 
- *	before is_ping_done returns true.
- */
-extern void ping_end (void);
 
-/*
- * ping_nodes - check that all nodes and daemons are alive,  
- *	get nodes in UNKNOWN state to register
- */
-extern void ping_nodes (void);
+static char *_res_type(uint8_t  res_type)
+{
+	if      (res_type == TRIGGER_RES_TYPE_JOB)
+		return "job";
+	else if (res_type == TRIGGER_RES_TYPE_NODE)
+		return "node";
+	else
+		return "unknown";
+}
 
-#endif /* !_HAVE_PING_NODES_H */
+static char *_trig_type(uint8_t  trig_type)
+{
+	if      (trig_type == TRIGGER_TYPE_UP)
+		return "up";
+	else if (trig_type == TRIGGER_TYPE_DOWN)
+		return "down";
+	else if (trig_type == TRIGGER_TYPE_TIME)
+		return "time";
+	else if (trig_type == TRIGGER_TYPE_FINI)
+		return "fini";
+	else
+		return "unknown";
+}
+
+static int _trig_offset(uint16_t offset)
+{
+	static int rc;
+	rc  = offset;
+	rc -= 0x8000;
+	return rc;
+}
+
+static void _dump_trigger_msg(trigger_info_msg_t *msg)
+{
+#if _DEBUG
+	int i;
+
+	if (msg->record_count == 0) {
+		info("Trigger has no entries");
+		return;
+	}
+
+	info("INDEX TRIG_ID RES_TYPE RES_ID TRIG_TYPE OFFSET UID PROGRAM");
+	for (i=0; i<msg->record_count; i++) {
+		info("Trigger[%d] %u %s %s %s %d %u %s", i,
+			msg->trigger_array[i].trig_id,
+			_res_type(msg->trigger_array[i].res_type),
+			msg->trigger_array[i].res_id,
+			_trig_type(msg->trigger_array[i].trig_type),
+			_trig_offset(msg->trigger_array[i].offset),
+			msg->trigger_array[i].user_id,
+			msg->trigger_array[i].program);
+	}
+#endif
+}
+
+extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg, slurm_fd conn_fd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int trigger_get(uid_t uid, slurm_fd conn_fd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int trigger_set(uid_t uid, trigger_info_msg_t *msg, slurm_fd conn_fd)
+{
+	return SLURM_SUCCESS;
+}

@@ -3948,12 +3948,7 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	for (i=0; i<msg->record_count; i++) {
-		xfree(msg->trigger_array[i].res_id);
-		xfree(msg->trigger_array[i].program);
-	}
-	xfree(msg->trigger_array);
-	xfree(msg);
+	slurm_free_trigger_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

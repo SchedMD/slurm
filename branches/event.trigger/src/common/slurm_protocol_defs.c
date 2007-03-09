@@ -1023,7 +1023,17 @@ void inline slurm_free_node_select_msg(
 {
 	xfree(msg);
 }
+void inline slurm_free_trigger_msg(trigger_info_msg_t *msg)
+{
+	int i;
 
+	for (i=0; i<msg->record_count; i++) {
+		xfree(msg->trigger_array[i].res_id);
+		xfree(msg->trigger_array[i].program);
+	}
+	xfree(msg->trigger_array);
+	xfree(msg);
+}
 
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
