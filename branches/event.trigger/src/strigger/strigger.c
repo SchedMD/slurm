@@ -129,7 +129,10 @@ static int _set_trigger(void)
 			ti.trig_type |= TRIGGER_TYPE_TIME;
 	} else {
 		ti.res_type = TRIGGER_RES_TYPE_NODE;
-		ti.res_id   = params.node_id;	/* may be NULL */
+		if (params.node_id)
+			ti.res_id = params.node_id;
+		else
+			ti.res_id = "*";
 	}
 	if (params.node_down)
 		ti.trig_type |= TRIGGER_TYPE_DOWN;
