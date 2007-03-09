@@ -43,8 +43,22 @@
 #include <src/common/slurm_protocol_defs.h>
 
 
+/* User RPC processing to set, get, and clear triggers */
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg);
 extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg);
 extern int trigger_set(uid_t uid, trigger_info_msg_t *msg);
+
+/* Note the some event has occured and flag triggers as needed */
+extern void trigger_node_down(char *node_name);
+extern void trigger_node_up(char *node_name);
+extern void trigger_job_fini(uint32_t job_id);
+
+/* Save and restore state for slurmctld fail-over or restart */
+extern void trigger_state_save(void);
+extern void trigger_state_restore(void);
+
+/* Execute programs as needed for triggers that have been pulled
+ * and purge any vestigial trigger records */
+extern void trigger_process(void);
 
 #endif /* !_HAVE_TRIGGERS_H */

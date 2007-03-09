@@ -66,6 +66,7 @@ typedef struct trig_mgr_info {
 	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
 	uint32_t user_id;	/* user requesting trigger */
 	char *   program;	/* program to execute */
+	uint8_t  state;		/* 0=pending, 1=pulled, 2=completed */
 } trig_mgr_info_t;
 
 /* Prototype for ListDelF */
@@ -121,7 +122,7 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 
 	info("INDEX TRIG_ID RES_TYPE RES_ID TRIG_TYPE OFFSET UID PROGRAM");
 	for (i=0; i<msg->record_count; i++) {
-		info("Trigger[%d] %u %s %s %s %d %u %s", i,
+		info("trigger[%d] %u %s %s %s %d %u %s", i,
 			msg->trigger_array[i].trig_id,
 			_res_type(msg->trigger_array[i].res_type),
 			msg->trigger_array[i].res_id,
@@ -254,4 +255,59 @@ extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
 
 	slurm_mutex_unlock(&trigger_mutex);
 	return SLURM_SUCCESS;
+}
+
+extern void trigger_node_down(char *node_name)
+{
+	/* FIXME */
+}
+
+extern void trigger_node_up(char *node_name)
+{
+	/* FIXME */
+}
+
+extern void trigger_job_fini(uint32_t job_id)
+{
+	ListIterator trig_iter;
+	trig_mgr_info_t *trig_test;
+
+	if (job_id == 0) {
+		error("trigger_job_fini: job_id=0");
+		return;
+	}
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
+
+	trig_iter = list_iterator_create(trigger_list);
+	while ((trig_test = list_next(trig_iter))) {
+		if ((job_id != trig_test->job_id)
+		||  (trig_test->state != 0))
+			continue;
+		trig_test->state = 1;
+#if _DEBUG
+		info("trigger[%d] for job %u fini pulled",
+			trig_test->trig_id, job_id);
+#endif
+	}
+	list_iterator_destroy(trig_iter);
+
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
+extern void trigger_state_save(void)
+{
+	/* FIXME */
+}
+
+extern void trigger_state_restore(void)
+{
+	/* FIXME */
+}
+
+extern void trigger_process(void)
+{
+	/* FIXME */
 }
