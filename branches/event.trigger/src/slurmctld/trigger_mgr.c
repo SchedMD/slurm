@@ -198,8 +198,7 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 	trig_iter = list_iterator_create(trigger_list);
 	trig_out = resp_data->trigger_array;
 	while ((trig_in = list_next(trig_iter))) {
-		/* FIXME: filter entries here */
-
+		/* Note: All filtering currently done by strigger */
 		trig_out->trig_id   = trig_in->trig_id;
 		trig_out->res_type  = trig_in->res_type;
 		trig_out->res_id    = xstrdup(trig_in->res_id);

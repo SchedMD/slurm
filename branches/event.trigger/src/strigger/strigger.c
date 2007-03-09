@@ -107,9 +107,9 @@ static int _clear_trigger(void)
 	}
 
 	if (params.job_id)
-		info("triggers for job %s cleared", ti.res_id);
+		verbose("triggers for job %s cleared", ti.res_id);
 	else
-		info("trigger %u cleared", ti.trig_id);
+		verbose("trigger %u cleared", ti.trig_id);
 	return 0;
 }
 
@@ -147,7 +147,7 @@ static int _set_trigger(void)
 	}
 
 
-	info("trigger set");
+	verbose("trigger set");
 	return 0;
 }
 
@@ -160,39 +160,48 @@ static int _get_trigger(void)
 		slurm_perror("slurm_get_triggers");
 		return 1;
 	}
-	if (params.verbose)
-		info("Read %u trigger records", trig_msg->record_count);
+	verbose("Read %u trigger records", trig_msg->record_count);
 
 	for (i=0; i<trig_msg->record_count; i++) {
 		/* perform filtering */
 		if (params.job_fini) {
-			if (trig_msg->trigger_array[i].trig_type != 4)
+			if (trig_msg->trigger_array[i].trig_type 
+					!= TRIGGER_TYPE_FINI)
 				continue;
 		}
 		if (params.job_id) {
 			long jid;
-			if (trig_msg->trigger_array[i].res_type != 1)
+			if (trig_msg->trigger_array[i].res_type 
+					!= TRIGGER_RES_TYPE_JOB)
 				continue;
 			jid = atol(trig_msg->trigger_array[i].res_id);
 			if (jid != params.job_id)
 				continue;
 		}
 		if (params.node_down) {
-			if ((trig_msg->trigger_array[i].res_type  != 2)
-			||  (trig_msg->trigger_array[i].trig_type != 2))
+			if ((trig_msg->trigger_array[i].res_type  
+					!= TRIGGER_RES_TYPE_NODE)
+			||  (trig_msg->trigger_array[i].trig_type 
+					!= TRIGGER_TYPE_DOWN))
 				continue;
 		}
 		if (params.node_id) {
-			/* no filtering performed, avoid hostlist support */
+			if (trig_msg->trigger_array[i].res_type  
+					!= TRIGGER_RES_TYPE_NODE)
+				continue;
 		}
 		if (params.node_up) {
-			if ((trig_msg->trigger_array[i].res_type  != 2)
-			||  (trig_msg->trigger_array[i].trig_type != 1))
+			if ((trig_msg->trigger_array[i].res_type 
+					!= TRIGGER_RES_TYPE_NODE)
+			||  (trig_msg->trigger_array[i].trig_type 
+					!= TRIGGER_TYPE_UP))
 				continue;
 		}
 		if (params.time_limit) {
-			if ((trig_msg->trigger_array[i].res_type  != 1)
-			||  (trig_msg->trigger_array[i].trig_type != 3))
+			if ((trig_msg->trigger_array[i].res_type  
+					!= TRIGGER_RES_TYPE_JOB)
+			||  (trig_msg->trigger_array[i].trig_type 
+					!= TRIGGER_TYPE_TIME))
 				continue;
 		}
 		if (params.trigger_id) {
