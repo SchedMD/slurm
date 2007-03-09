@@ -49,9 +49,11 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG 1
+#define MAX_TRIGGERS 100
 
 List trigger_list;
 uint32_t next_trigger_id = 1;
@@ -62,6 +64,7 @@ typedef struct trig_mgr_info {
 	uint8_t  res_type;	/* TRIGGER_RES_TYPE_* */
 	char *   res_id;	/* node name or job_id (string) */
 	uint32_t job_id;	/* job ID (if applicable) */
+	struct job_record *job_ptr; /* pointer to job record (if applicable) */
 	uint8_t  trig_type;	/* TRIGGER_TYPE_* */
 	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
 	uint32_t user_id;	/* user requesting trigger */
@@ -221,40 +224,54 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
 {
 	int i;
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id;
 	trig_mgr_info_t * trig_add;
+	struct job_record *job_ptr;
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_list == NULL)
 		trigger_list = list_create(_trig_del);
+	} else if (list_count(trigger_list) > MAX_TRIGGERS) {
+		return EAGAIN;
+	}
 
+	_dump_trigger_msg("trigger_set", msg);
 	for (i=0; i<msg->record_count; i++) {
+		if (msg->trigger_array[i].res_type ==
+				TRIGGER_RES_TYPE_JOB) {
+			job_id = (uint32_t) atol(
+				msg->trigger_array[i].res_id);
+			job_ptr = find_job_record(job_id);
+			if (job_ptr == NULL) {
+				rc = ESLURM_INVALID_JOB_ID;
+				break;
+			}
+		} else {
+			job_id = 0;
+			job_ptr = NULL;
+		}
 		trig_add = xmalloc(sizeof(trig_mgr_info_t));
 		msg->trigger_array[i].trig_id = next_trigger_id;
 		trig_add->trig_id = next_trigger_id;
 		next_trigger_id++;
 		trig_add->res_type = msg->trigger_array[i].res_type;
-		if (trig_add->res_type == TRIGGER_RES_TYPE_JOB) {
-			trig_add->job_id = (uint32_t) atol(
-				msg->trigger_array[i].res_id);
-		}
+		trig_add->job_id = job_id;
+		trig_add->job_ptr = job_ptr;
 		/* move don't copy "res_id" */
 		trig_add->res_id = msg->trigger_array[i].res_id;
+		msg->trigger_array[i].res_id = NULL;
 		trig_add->trig_type = msg->trigger_array[i].trig_type;
 		trig_add->offset = msg->trigger_array[i].offset;
 		trig_add->user_id = (uint32_t) uid;
 		/* move don't copy "program" */
 		trig_add->program = msg->trigger_array[i].program;
-		list_append(trigger_list, trig_add);
-	}
-	_dump_trigger_msg("trigger_set", msg);
-	/* Relocated pointers, clear now to avoid duplicate free */
-	for (i=0; i<msg->record_count; i++) {
-		msg->trigger_array[i].res_id = NULL;
 		msg->trigger_array[i].program = NULL;
+		list_append(trigger_list, trig_add);
 	}
 
 	slurm_mutex_unlock(&trigger_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern void trigger_node_down(char *node_name)
@@ -283,12 +300,13 @@ extern void trigger_job_fini(uint32_t job_id)
 
 	trig_iter = list_iterator_create(trigger_list);
 	while ((trig_test = list_next(trig_iter))) {
-		if ((job_id != trig_test->job_id)
+		if ((trig_test->job_id != job_id)
+		||  ((trig_test->trig_type & TRIGGER_TYPE_FINI) == 0)
 		||  (trig_test->state != 0))
 			continue;
 		trig_test->state = 1;
 #if _DEBUG
-		info("trigger[%d] for job %u fini pulled",
+		info("trigger[%d] pulled for job %u fini",
 			trig_test->trig_id, job_id);
 #endif
 	}
