@@ -43,9 +43,36 @@
 #  include <pthread.h>
 #endif
 
+#include <errno.h>
+#include <stdlib.h>
+
+#include "src/common/list.h"
+#include "src/common/xmalloc.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG 1
+
+List trigger_list;
+uint32_t next_trigger_id = 1;
+
+typedef struct trig_mgr_info {
+	uint32_t trig_id;	/* trigger ID */
+	uint8_t  res_type;	/* TRIGGER_RES_TYPE_* */
+	char *   node_name;	/* node name (if applicable) */
+	uint32_t job_id;	/* job ID (if applicable) */
+	uint8_t  trig_type;	/* TRIGGER_TYPE_* */
+	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
+	uint32_t user_id;	/* user requesting trigger */
+	char *   program;	/* program to execute */
+} trig_mgr_info_t;
+
+/* Prototype for ListDelF */
+void _trig_del(void *x) {
+	trig_mgr_info_t * tmp = (trig_mgr_info_t *) x;
+	xfree(tmp->node_name);
+	xfree(tmp->program);
+	xfree(tmp);
+}
 
 static char *_res_type(uint8_t  res_type)
 {
@@ -106,12 +133,51 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 {
+	int rc = ESRCH;
+	ListIterator trig_iter;
+	trigger_info_t *trig_in;
+	trig_mgr_info_t *trig_test;
+	uint32_t job_id = 0;
+
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
+
+	/* validate the request, need a job_id and/or trigger_id */
 	_dump_trigger_msg("trigger_clear", msg);
-	return SLURM_SUCCESS;
+	if (msg->record_count != 1)
+		return rc;
+	trig_in = msg->trigger_array;
+	if (trig_in->res_type == TRIGGER_RES_TYPE_JOB) {
+		job_id = (uint32_t) atol(trig_in->res_id);
+		if (job_id == 0)
+			return rc;
+	} else if (trig_in->trig_id == 0)
+		return rc;
+
+	/* now look for a valid request, matching uid */
+	trig_iter = list_iterator_create(trigger_list);
+	while ((trig_test = list_next(trig_iter))) {
+		if ((trig_test->user_id != (uint32_t) uid)
+		&&  (uid != 0))
+			continue;
+		if (trig_in->trig_id
+		&&  (trig_in->trig_id != trig_test->trig_id))
+			continue;
+		if (job_id
+		&& (job_id != trig_test->job_id))
+			continue;
+		list_delete(trig_iter);
+		rc = SLURM_SUCCESS;
+	}
+	list_iterator_destroy(trig_iter);
+	return rc;
 }
 
 extern int trigger_get(uid_t uid, slurm_fd conn_fd)
 {
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
+
 	_dump_trigger_msg("trigger_get", NULL);
 	return SLURM_SUCCESS;
 }
@@ -119,10 +185,32 @@ extern int trigger_get(uid_t uid, slurm_fd conn_fd)
 extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
 {
 	int i;
+	trig_mgr_info_t * trig_add;
 
-	for (i=0; i<msg->record_count; i++)
-		msg->trigger_array[i].user_id = (uint32_t) uid)
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
 
+	for (i=0; i<msg->record_count; i++) {
+		trig_add = xmalloc(sizeof(trig_mgr_info_t));
+		trig_add->trig_id = next_trigger_id++;
+		trig_add->res_type = msg->trigger_array[i].res_type;
+		if (trig_add->res_type == TRIGGER_RES_TYPE_JOB) {
+			trig_add->job_id = (uint32_t) atol(
+				msg->trigger_array[i].res_id);
+		} else {
+			/* move don't copy node name */
+			trig_add->node_name = msg->trigger_array[i].res_id;
+			msg->trigger_array[i].res_id = NULL;
+		}
+		trig_add->trig_type = msg->trigger_array[i].trig_type;
+		trig_add->offset = msg->trigger_array[i].offset;
+		trig_add->user_id = (uint32_t) uid;
+		/* move don't copy program */
+		trig_add->program = msg->trigger_array[i].program;
+		msg->trigger_array[i].program = NULL;
+		list_append(trigger_list, trig_add);
+	}
 	_dump_trigger_msg("trigger_set", msg);
+
 	return SLURM_SUCCESS;
 }
