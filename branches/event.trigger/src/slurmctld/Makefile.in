@@ -76,7 +76,7 @@ am_slurmctld_OBJECTS = agent.$(OBJEXT) backup.$(OBJEXT) \
 	proc_req.$(OBJEXT) read_config.$(OBJEXT) \
 	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
 	state_save.$(OBJEXT) step_mgr.$(OBJEXT)	\
-	triggers.$(OBJEXT)
+	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la
@@ -288,8 +288,8 @@ slurmctld_SOURCES = \
 	state_save.c	\
 	state_save.h	\
 	step_mgr.c	\
-	triggers.c	\
-	triggers.h
+	trigger_mgr.c	\
+	trigger_mgr.h
 
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
 			$(FEDERATION_LDFLAGS)	
@@ -381,7 +381,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_comm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_mgr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/triggers.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/trigger_mgr.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

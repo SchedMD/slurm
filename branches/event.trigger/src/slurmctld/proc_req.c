@@ -76,7 +76,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/triggers.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
@@ -2476,32 +2476,38 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
 {
-	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	int rc;
 	uid_t uid;
+	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
 
-	info("Processing RPC: REQUEST_TRIGGER_CLEAR");
+	debug("Processing RPC: REQUEST_TRIGGER_CLEAR");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	trigger_clear(uid, trigger_ptr, msg->conn_fd);
+	rc = trigger_clear(uid, trigger_ptr);
+	slurm_send_rc_msg(msg, rc);
 }
 
 inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 {
 	uid_t uid;
 
-	info("Processing RPC: REQUEST_TRIGGER_GET");
+	debug("Processing RPC: REQUEST_TRIGGER_GET");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	trigger_get(uid, msg->conn_fd);
+/* FIXME */
+	slurm_send_rc_msg(msg, SLURM_ERROR);
 }
 
 inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 {
+	int rc;
 	uid_t uid;
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
 
-	info("Processing RPC: REQUEST_TRIGGER_SET");
+	debug("Processing RPC: REQUEST_TRIGGER_SET");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	trigger_set(uid, trigger_ptr, msg->conn_fd);
+	rc = trigger_set(uid, trigger_ptr);
+	slurm_send_rc_msg(msg, rc);
 }
