@@ -51,6 +51,8 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "src/common/xmalloc.h"
@@ -259,6 +261,18 @@ static void _validate_options( void )
 	if (params.program && (params.program[0] != '/')) {
 		error("The --program value must start with \"/\"");
 		exit(1);
+	}
+
+	if (params.program) {
+		struct stat buf;
+		if (stat(params.program, &buf)) {
+			error("Invalid --program value, file not found");
+			exit(1);
+		}
+		if (!S_ISREG(buf.st_mode)) {
+			error("Invalid --program value, not regular file");
+			exit(1);
+		}
 	}
 
 	if ((params.offset < -32000) || (params.offset > 32000)) {

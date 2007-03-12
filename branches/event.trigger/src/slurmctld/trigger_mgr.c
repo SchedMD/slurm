@@ -53,7 +53,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG 1
-#define MAX_TRIGGERS 100
+#define MAX_PROG_TIME 300	/* maximum run time for program */
 
 List trigger_list;
 uint32_t next_trigger_id = 1;
@@ -66,8 +66,9 @@ typedef struct trig_mgr_info {
 	uint32_t job_id;	/* job ID (if applicable) */
 	struct job_record *job_ptr; /* pointer to job record (if applicable) */
 	uint8_t  trig_type;	/* TRIGGER_TYPE_* */
-	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
+	time_t time;		/* offset (pending) or time stamp (complete) */
 	uint32_t user_id;	/* user requesting trigger */
+	uint32_t group_id;	/* user's group id (pending) or pid (complete) */
 	char *   program;	/* program to execute */
 	uint8_t  state;		/* 0=pending, 1=pulled, 2=completed */
 } trig_mgr_info_t;
@@ -125,7 +126,7 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 
 	info("INDEX TRIG_ID RES_TYPE RES_ID TRIG_TYPE OFFSET UID PROGRAM");
 	for (i=0; i<msg->record_count; i++) {
-		info("trigger[%d] %u %s %s %s %d %u %s", i,
+		info("trigger[%u] %u %s %s %s %d %u %s", i,
 			msg->trigger_array[i].trig_id,
 			_res_type(msg->trigger_array[i].res_type),
 			msg->trigger_array[i].res_id,
@@ -202,12 +203,14 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 	trig_iter = list_iterator_create(trigger_list);
 	trig_out = resp_data->trigger_array;
 	while ((trig_in = list_next(trig_iter))) {
-		/* Note: All filtering currently done by strigger */
+		/* Note: Filtering currently done by strigger */
+		if (trig_in->state > 1)
+			continue;	/* no longer pending */
 		trig_out->trig_id   = trig_in->trig_id;
 		trig_out->res_type  = trig_in->res_type;
 		trig_out->res_id    = xstrdup(trig_in->res_id);
 		trig_out->trig_type = trig_in->trig_type;
-		trig_out->offset    = trig_in->offset;
+		trig_out->offset    = trig_in->time;
 		trig_out->user_id   = trig_in->user_id;
 		trig_out->program   = xstrdup(trig_in->program);
 		trig_out++;
@@ -221,7 +224,7 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 	return resp_data;
 }
 
-extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
+extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 {
 	int i;
 	int rc = SLURM_SUCCESS;
@@ -230,9 +233,10 @@ extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
 	struct job_record *job_ptr;
 
 	slurm_mutex_lock(&trigger_mutex);
-	if (trigger_list == NULL)
+	if (trigger_list == NULL) {
 		trigger_list = list_create(_trig_del);
-	} else if (list_count(trigger_list) > MAX_TRIGGERS) {
+	} else if ((uid != 0) &&
+	           (list_count(trigger_list) >= slurmctld_conf.max_job_cnt)) {
 		return EAGAIN;
 	}
 
@@ -245,6 +249,10 @@ extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
 			job_ptr = find_job_record(job_id);
 			if (job_ptr == NULL) {
 				rc = ESLURM_INVALID_JOB_ID;
+				break;
+			}
+			if (IS_JOB_FINISHED(job_ptr)) {
+				rc = ESLURM_ALREADY_DONE;
 				break;
 			}
 		} else {
@@ -262,8 +270,9 @@ extern int trigger_set(uid_t uid, trigger_info_msg_t *msg)
 		trig_add->res_id = msg->trigger_array[i].res_id;
 		msg->trigger_array[i].res_id = NULL;
 		trig_add->trig_type = msg->trigger_array[i].trig_type;
-		trig_add->offset = msg->trigger_array[i].offset;
+		trig_add->time = msg->trigger_array[i].offset;
 		trig_add->user_id = (uint32_t) uid;
+		trig_add->group_id = (uint32_t) gid;
 		/* move don't copy "program" */
 		trig_add->program = msg->trigger_array[i].program;
 		msg->trigger_array[i].program = NULL;
@@ -306,7 +315,7 @@ extern void trigger_job_fini(uint32_t job_id)
 			continue;
 		trig_test->state = 1;
 #if _DEBUG
-		info("trigger[%d] pulled for job %u fini",
+		info("trigger[%u] event for job %u fini",
 			trig_test->trig_id, job_id);
 #endif
 	}
@@ -325,7 +334,74 @@ extern void trigger_state_restore(void)
 	/* FIXME */
 }
 
+static void _trigger_run_program(trig_mgr_info_t *trig_in)
+{
+	char program[256], arg0[128], arg1[128], *pname;
+	uid_t uid;
+	gid_t gid;
+	pid_t child;
+
+	strncpy(program, trig_in->program, sizeof(program));
+	pname = strrchr(program, '/');
+	if (pname == NULL)
+		pname = program;
+	else
+		pname++;
+	strncpy(arg0, pname, sizeof(arg0));
+/* FIXME: set to actual node list below */
+	strncpy(arg1, trig_in->res_id, sizeof(arg1));
+	uid = trig_in->user_id;
+	gid = trig_in->group_id;
+	child = fork();
+	if (child > 0) {
+		trig_in->group_id = child;
+	} else if (child == 0) {
+		int i;
+		for (i=0; i<128; i++)
+			close(i);
+		setpgrp();
+		setsid();
+		setuid(uid);
+		setgid(gid);
+		execl(program, arg0, arg1, NULL);
+		exit(1);
+	} else
+		error("fork: %m");
+}
+
 extern void trigger_process(void)
 {
-	/* FIXME */
+	ListIterator trig_iter;
+	trig_mgr_info_t *trig_in;
+	time_t now = time(NULL);
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
+
+	trig_iter = list_iterator_create(trigger_list);
+	while ((trig_in = list_next(trig_iter))) {
+		if (trig_in->state == 0) {
+			/* still waiting for event */
+			continue;
+		} else if (trig_in->state == 1) {
+#if _DEBUG
+			info("launching program for trigger[%u]",
+				trig_in->trig_id);
+#endif
+			trig_in->state = 2;
+			trig_in->time = now;
+			_trigger_run_program(trig_in);
+		} else if ((trig_in->state == 2) && 
+			   (difftime(now, trig_in->time) > MAX_PROG_TIME)) {
+#if _DEBUG
+			info("purging trigger[%u]", trig_in->trig_id);
+#endif
+			if (trig_in->group_id != 0)
+				kill(-trig_in->group_id, SIGKILL);
+			list_delete(trig_iter);
+		}
+	}
+	list_iterator_destroy(trig_iter);
+	slurm_mutex_unlock(&trigger_mutex);
 }

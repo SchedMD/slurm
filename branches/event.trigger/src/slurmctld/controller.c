@@ -84,6 +84,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
@@ -750,6 +751,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_purge_job_time;
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
+	static time_t last_trigger;
 	time_t now;
 	int ping_interval;
 	DEF_TIMERS;
@@ -774,7 +776,7 @@ static void *_slurmctld_background(void *no_data)
 	/* Let the dust settle before doing work */
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
-	last_purge_job_time = now;
+	last_purge_job_time = last_trigger = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	if (slurmctld_conf.slurmd_timeout) {
 		/* We ping nodes that haven't responded in SlurmdTimeout/2,
@@ -862,6 +864,11 @@ static void *_slurmctld_background(void *no_data)
 			last_sched_time = now;
 			if (schedule())
 				last_checkpoint_time = 0;  /* force state save */
+		}
+
+		if (difftime(now, last_trigger) > TRIGGER_INTERVAL) {
+			last_trigger = now;
+			trigger_process();
 		}
 
 		if (difftime(now, last_checkpoint_time) >=

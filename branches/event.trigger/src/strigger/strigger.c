@@ -141,9 +141,11 @@ static int _set_trigger(void)
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
 
-	if (slurm_set_trigger(&ti)) {
+	while (slurm_set_trigger(&ti)) {
 		slurm_perror("slurm_set_trigger");
-		return 1;
+		if (slurm_get_errno() != EAGAIN)
+			return 1;
+		sleep(5);
 	}
 
 

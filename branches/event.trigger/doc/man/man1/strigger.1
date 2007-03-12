@@ -44,16 +44,22 @@ Trigger ID number.
 .TP
 \fB\-j\fR, \fB\-\-jobid\fR=\fIid\fR
 Job ID of interest.
-NOTE: The \fB\-\-jobid\fR option can not be used in conjunction with 
-the \fB\-\-node\fR option.
+\fBNOTE:\fR The \fB\-\-jobid\fR option can not be used in conjunction 
+with the \fB\-\-node\fR option. When the \fB\-\-jobid\fR option is 
+used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option, 
+all nodes allocated to that job will considered the nodes used as a 
+trigger event.
 
 .TP
 \fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]
-Host name of interest. 
+Host names of interest. 
 If no \fIhost\fR value is specified, all nodes associated with the 
 job (if \fB\-\-jobid\fR is specified) or on the system are included.
-NOTE: The \fB\-\-node\fR option can not be used in conjunction with 
-the \fB\-\-jobid\fR option.
+\fBNOTE:\fR The \fB\-\-node\fR option can not be used in conjunction 
+with the \fB\-\-jobid\fR option. When the \fB\-\-jobid\fR option is 
+used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option, 
+all nodes allocated to that job will considered the nodes used as a 
+trigger event.
 
 .TP
 \fB\-o\fR, \fB\-\-offset\fR=\fIseconds\fR
@@ -135,8 +141,10 @@ any node in the cluster goes down.
 .nf
 	> cat /usr/sbin/slurm_admin_notify
 	#!/bin/bash
+	# Submit trigger for next event
 	strigger --set --node --down \\
 	         --program=/usr/sbin/slurm_admin_notify
+	# Notify administrator using by e-mail
 	/bin/mail slurm_admin@site.com -s NodeDown
 
 	> strigger --set --node --down \\

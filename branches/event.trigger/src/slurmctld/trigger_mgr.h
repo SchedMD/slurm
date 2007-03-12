@@ -46,7 +46,7 @@
 /* User RPC processing to set, get, and clear triggers */
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg);
 extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg);
-extern int trigger_set(uid_t uid, trigger_info_msg_t *msg);
+extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg);
 
 /* Note the some event has occured and flag triggers as needed */
 extern void trigger_node_down(char *node_name);

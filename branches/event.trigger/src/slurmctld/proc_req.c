@@ -2511,11 +2511,13 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 {
 	int rc;
 	uid_t uid;
+	gid_t gid;
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
 
 	debug("Processing RPC: REQUEST_TRIGGER_SET");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
+	gid = g_slurm_auth_get_gid(msg->auth_cred);
 
-	rc = trigger_set(uid, trigger_ptr);
+	rc = trigger_set(uid, gid, trigger_ptr);
 	slurm_send_rc_msg(msg, rc);
 }
