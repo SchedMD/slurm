@@ -1303,7 +1303,7 @@ Node local task ID for the process within a job
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
 \-\-mem_bind map or mask list (<list of IDs or masks for this node>)
-                                                                                        
+
 .TP
 \fBSLURM_NNODES\fR
 Total number of nodes in the job's resource allocation
@@ -1316,6 +1316,10 @@ List of nodes allocated to the job
 .TP
 \fBSLURM_NPROCS\fR
 Total number of processes in the current job
+.TP
+\fBSLURM_PRIO_PROCESS\fR
+The scheduling priority (nice value) at the time of job submission.
+This value is propaged to the spawned processes.
 .TP
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
@@ -1334,6 +1338,10 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three 
 tasks and the fourth node will execute one task.
+.TP
+\fBSLURM_UMASK\fR
+The umask (user file\-create mask) at the time of job submission.
+This value is propagated to the spawned processes.
 .TP
 \fBMPIRUN_NOALLOCATE\fR
 Do not allcate a block on Blue Gene systems only.
