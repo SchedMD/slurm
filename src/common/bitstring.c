@@ -69,7 +69,6 @@ strong_alias(bit_or,		slurm_bit_or);
 strong_alias(bit_set_count,	slurm_bit_set_count);
 strong_alias(bit_clear_count,	slurm_bit_clear_count);
 strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
-strong_alias(bit_and_set_count,	slurm_bit_and_set_count);
 strong_alias(int_and_set_count,	slurm_int_and_set_count);
 strong_alias(bit_rotate_copy,	slurm_bit_rotate_copy);
 strong_alias(bit_rotate,	slurm_bit_rotate);
@@ -507,16 +506,14 @@ extern int
 bit_overlap(bitstr_t *b1, bitstr_t *b2)
 {
 	int count = 0;
-	bitstr_t *my_bitmap = NULL;
+	bitoff_t bit;
 	
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
 	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
-	my_bitmap = bit_copy(b1);
-	bit_and(my_bitmap, b2);
-	count = bit_set_count(my_bitmap);
-	bit_free(my_bitmap);
+	for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
+		count += hweight(b1[_bit_word(bit)] & b2[_bit_word(bit)]);
 
 	return count;
 }
@@ -727,29 +724,6 @@ bit_nset_max_count(bitstr_t *b)
 	}
 
 	return maxcnt;
-}
-
-/*
- * And two bitstrings and count the number of set bits: SUM(b1 & b2)
- *   b1 (IN)		first bitstring
- *   b2 (IN)		second bitstring
- */
-int
-bit_and_set_count(bitstr_t *b1, bitstr_t *b2) {
-	bitoff_t bit;
-	bitstr_t word;
-	int sum;
-
-	_assert_bitstr_valid(b1);
-	_assert_bitstr_valid(b2);
-	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
-
-	sum = 0;
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
-		word = b1[_bit_word(bit)] & b2[_bit_word(bit)];
-		sum += hweight(word);
-	}
-	return(sum);
 }
 
 /*

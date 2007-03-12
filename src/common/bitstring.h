@@ -168,7 +168,6 @@ void	bit_or(bitstr_t *b1, bitstr_t *b2);
 int	bit_set_count(bitstr_t *b);
 int	bit_clear_count(bitstr_t *b);
 int	bit_nset_max_count(bitstr_t *b);
-int	bit_and_set_count(bitstr_t *b1, bitstr_t *b2);
 int	int_and_set_count(int *i1, int ilen, bitstr_t *b2);
 bitstr_t *bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits);
 void	bit_rotate(bitstr_t *b1, int n);
