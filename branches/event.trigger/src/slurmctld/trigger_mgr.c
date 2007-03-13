@@ -62,6 +62,7 @@ uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
 bitstr_t *trigger_down_nodes_bitmap = NULL;
 bitstr_t *trigger_up_nodes_bitmap   = NULL;
+static bool trigger_node_reconfig = false;
 
 typedef struct trig_mgr_info {
 	uint32_t trig_id;	/* trigger ID */
@@ -107,6 +108,8 @@ static char *_trig_type(uint8_t  trig_type)
 		return "time";
 	else if (trig_type == TRIGGER_TYPE_FINI)
 		return "fini";
+	else if (trig_type == TRIGGER_TYPE_RECONFIG)
+		return "reconfig";
 	else
 		return "unknown";
 }
@@ -312,18 +315,29 @@ extern void trigger_node_down(struct node_record *node_ptr)
 {
         int inx = node_ptr - node_record_table_ptr;
 
+	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_down_nodes_bitmap == NULL)
 		trigger_down_nodes_bitmap = bit_alloc(node_record_count);
 	bit_set(trigger_down_nodes_bitmap, inx);
+	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_up(struct node_record *node_ptr)
 {
         int inx = node_ptr - node_record_table_ptr;
 
+	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_up_nodes_bitmap == NULL)
 		trigger_up_nodes_bitmap = bit_alloc(node_record_count);
 	bit_set(trigger_up_nodes_bitmap, inx);
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
+extern void trigger_reconfig(void)
+{
+	slurm_mutex_lock(&trigger_mutex);
+	trigger_node_reconfig = true;
+	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_state_save(void)
@@ -404,6 +418,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	&&   trigger_down_nodes_bitmap
 	&&   (bit_ffs(trigger_down_nodes_bitmap) != -1)) {
 		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
+			xfree(trig_in->res_id);
 			trig_in->res_id = bitmap2node_name(
 					trigger_down_nodes_bitmap);
 			trig_in->state = 1;
@@ -428,6 +443,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	&&   trigger_up_nodes_bitmap
 	&&   (bit_ffs(trigger_up_nodes_bitmap) != -1)) {
 		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
+			xfree(trig_in->res_id);
 			trig_in->res_id = bitmap2node_name(
 					trigger_up_nodes_bitmap);
 			trig_in->state = 1;
@@ -447,6 +463,16 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 #endif
 			return;
 		}
+	}
+	if ((trig_in->trig_type & TRIGGER_TYPE_RECONFIG)
+	&&   trigger_node_reconfig) {
+		trig_in->state = 1;
+		xfree(trig_in->res_id);
+		trig_in->res_id = xstrdup("reconfig");
+#if _DEBUG
+		info("trigger[%u] for reconfig", trig_in->trig_id);
+#endif
+		return;
 	}
 }
 
@@ -485,6 +511,15 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		error("fork: %m");
 }
 
+static void _clear_event_triggers(void)
+{
+	if (trigger_down_nodes_bitmap)
+		bit_nclear(trigger_down_nodes_bitmap, 0, (node_record_count-1));
+	if (trigger_up_nodes_bitmap)
+		bit_nclear(trigger_up_nodes_bitmap,   0, (node_record_count-1));
+	trigger_node_reconfig = false;
+}
+
 extern void trigger_process(void)
 {
 	ListIterator trig_iter;
@@ -510,6 +545,8 @@ extern void trigger_process(void)
 #if _DEBUG
 			info("launching program for trigger[%u]",
 				trig_in->trig_id);
+//			info("  program=%s arg=%s", trig_in->program, 
+//				trig_in->res_id);
 #endif
 			trig_in->state = 2;
 			trig_in->trig_time = now;
@@ -526,10 +563,7 @@ extern void trigger_process(void)
 		}
 	}
 	list_iterator_destroy(trig_iter);
-	if (trigger_down_nodes_bitmap)
-		bit_nclear(trigger_down_nodes_bitmap, 0, (node_record_count-1));
-	if (trigger_up_nodes_bitmap)
-		bit_nclear(trigger_up_nodes_bitmap,   0, (node_record_count-1));
+	_clear_event_triggers();
 	slurm_mutex_unlock(&trigger_mutex);
 	unlock_slurmctld(job_node_read_lock);
 }

@@ -1415,6 +1415,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		}
 		in_progress = false;
 		unlock_slurmctld(config_write_lock);
+		trigger_reconfig();
 	}
 	END_TIMER;
 
@@ -1906,6 +1907,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	if (schedule())
 		schedule_job_save();
 	schedule_node_save();
+	trigger_reconfig();
 }
 
 /* _slurm_rpc_update_partition - process RPC to update the configuration 

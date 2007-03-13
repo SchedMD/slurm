@@ -94,6 +94,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"node",      optional_argument, 0, 'n'},
 		{"offset",    required_argument, 0, 'o'},
 		{"program",   required_argument, 0, 'p'},
+		{"reconfig",  no_argument,       0, 'r'},
 		{"time",      no_argument,       0, 't'},
 		{"up",        no_argument,       0, 'u'},
 		{"verbose",   no_argument,       0, 'v'},
@@ -109,7 +110,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dfi:j:no:p:tuvV",
+	while((opt_char = getopt_long(argc, argv, "dfi:j:no:p:rtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -150,6 +151,9 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int)'p':
 			xfree(params.program);
 			params.program = xstrdup(optarg);
+			break;
+		case (int)'r':
+			params.reconfig = true;
 			break;
 		case (int)'t':
 			params.time_limit = true;
@@ -200,6 +204,7 @@ static void _init_options( void )
 	params.node_id    = NULL;
 	params.offset     = 0;
 	params.program    = NULL;
+	params.reconfig   = false;
 	params.time_limit = false;
 	params.node_up    = false;
 	params.verbose    = 0;
@@ -219,6 +224,7 @@ static void _print_options( void )
 	info("node       = %s", params.node_id);
 	info("offset     = %d secs", params.offset);
 	info("program    = %s", params.program);
+	info("reconfig   = %s", params.reconfig ? "true" : "false");
 	info("time_limit = %s", params.time_limit ? "true" : "false");
 	info("node_up    = %s", params.node_up ? "true" : "false");
 	info("verbose    = %d", params.verbose);
@@ -240,10 +246,10 @@ static void _validate_options( void )
 	}
 
 	if (params.mode_set
-	&&  ((params.node_down + params.node_up +
+	&&  ((params.node_down + params.node_up + params.reconfig +
 	      params.job_fini  + params.time_limit) == 0)) {
 		error("You must specify a trigger (--down, --up, "
-			"--time or --fini)");
+			"--reconfig, --time or --fini)");
 		exit(1);
 	}
 
@@ -305,6 +311,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -n, --node[=host]   trigger related to specific node, all nodes by default\n\
   -o, --offset=#      trigger's offset time from event, negative to preceed\n\
   -p, --program=path  pathname of program to execute when triggered\n\
+  -r, --reconfig      trigger event on configuration changes\n\
   -t, --time          trigger event on job's time limit\n\
   -u, --up            trigger event when node returned to service from DOWN state\n\
   -v, --verbose       print detailed event logging\n\

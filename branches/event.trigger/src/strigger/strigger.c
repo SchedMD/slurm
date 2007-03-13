@@ -138,6 +138,9 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_DOWN;
 	if (params.node_up)
 		ti.trig_type |= TRIGGER_TYPE_UP;
+	if (params.reconfig)
+		ti.trig_type |= TRIGGER_TYPE_RECONFIG;
+
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
 
@@ -213,12 +216,12 @@ static int _get_trigger(void)
 		}
 
 		if (line_no == 0) {
-			/*      7777777 88888888 7777777 4444 666666 88888888 xxxxxxx */
-			printf("TRIG_ID RES_TYPE  RES_ID TYPE OFFSET     USER PROGRAM\n");
+			/*      7777777 88888888 7777777 88888888 666666 88888888 xxxxxxx */
+			printf("TRIG_ID RES_TYPE  RES_ID TYPE     OFFSET     USER PROGRAM\n");
 		}
 		line_no++;
 
-		printf("%7u %8s %7s %4s %6d %8.8s %s\n",
+		printf("%7u %8s %7s %8s %6d %8.8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
@@ -252,6 +255,8 @@ static char *_trig_type(uint8_t  trig_type)
 		return "time";
 	else if (trig_type == TRIGGER_TYPE_FINI)
 		return "fini";
+	else if (trig_type == TRIGGER_TYPE_RECONFIG)
+		return "reconfig";
 	else
 		return "unknown";
 }

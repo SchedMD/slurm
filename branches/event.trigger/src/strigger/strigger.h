@@ -57,6 +57,7 @@ struct strigger_parameters {
 	bool     node_up;
 	int      offset;
 	char *   program;
+	bool     reconfig;
 	bool     time_limit;
 	uint32_t trigger_id;
 	int      verbose;
